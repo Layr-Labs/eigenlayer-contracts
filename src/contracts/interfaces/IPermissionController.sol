@@ -124,7 +124,7 @@ interface IPermissionController is IPermissionControllerErrors, IPermissionContr
     ) external view returns (address[] memory);
 
     /**
-     * @notice Checks if the given caller has permissions to call the fucntion
+     * @notice Checks if the given caller has permissions to call the function
      * @param account to check
      * @param caller to check permission for
      * @param target to check permission for

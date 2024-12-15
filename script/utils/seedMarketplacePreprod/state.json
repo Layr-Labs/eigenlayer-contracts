@@ -1,0 +1,27 @@
+{
+    "superAdmin": "0x8D8A8D3f88f6a6DA2083D865062bFBE3f1cfc293",
+    "avsProxyAdmin": "0xe5E4ed41ECfCa8B51cBc46F02eDD040327246AA8",
+    "numAVSsDeployed": 4,
+    "avss": [
+        "0xA7BAFB187a85f41c85B70f359D75F3cdaC62CD71",
+        "0x52afefd93F89aB5C7c2A31432ea1B9B9d377BA58",
+        "0x69AA865947F6C9191B02954B1dD1a44131541226",
+        "0x9DaD29AB748Ffb744f8a00EEA4c9E7f20c651df4"
+    ],
+    "numOperatorsDeployed": 5,
+    "operators": [
+        "0xfe430C6588c633bAE761F89E218464d79c8AAE80",
+        "0x6355eA4FB1Fca0c794950FfF5efd6E2EE28Acc14",
+        "0x93A797473810c125ECe22F25a2087b6cEb8cE886",
+        "0xEbBd8cb3611Cffd4C5340a608189967240190b16",
+        "0xFBf1ba7E299899bA98e1BF85D41a3eebA2723C4b"
+    ],
+    "numStrategiesDeployed": 5,
+    "strategies": [
+        "0x947e522010E22856071f8fb03e735fEDFCcD6E9F",
+        "0x5C8b55722f421556a2AAfb7A3EA63d4c3e514312",
+        "0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0",
+        "0x1bc0b67ccCD43AAeb380c56a3A17200F3d1Cf81b",
+        "0xEe2eEABA1458F1C8419993F098F9a82Fe92954bC"
+    ]
+}
