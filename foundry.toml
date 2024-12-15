@@ -1,46 +1,69 @@
 [profile.default]
-src = 'src'
-out = 'out'
-libs = ['lib']
-fs_permissions = [{ access = "read-write", path = "./"}]
-show_progress=true
-gas_reports = ["*"]
-# ignore upgrade testing in scripts by default
-no_match_test = "queueUpgrade"
-no_match_path = "script/releases/**/*.sol"
-remappings = [
-    "@openzeppelin/=lib/openzeppelin-contracts-v4.9.0/",
-    "@openzeppelin-upgrades/=lib/openzeppelin-contracts-upgradeable-v4.9.0/",
-    "ds-test/=lib/ds-test/src/",
-    "forge-std/=lib/forge-std/src/"
-]
-sparse_mode = true
+    src = 'src'
+    out = 'out'
+    libs = ['lib']
+    remappings = [
+        "@openzeppelin/=lib/openzeppelin-contracts-v4.9.0/",
+        "@openzeppelin-upgrades/=lib/openzeppelin-contracts-upgradeable-v4.9.0/",
+        "ds-test/=lib/ds-test/src/",
+        "forge-std/=lib/forge-std/src/"
+    ]
+    no_match_test = "queueUpgrade"
+    no_match_path = "script/releases/**/*.sol"
+    solc_version = '0.8.27'
+    optimizer = true
+    optimizer_runs = 200
+    via_ir = false
+    gas_reports = ["*"]
+    show_progress=true
+    sparse_mode = true
+    fs_permissions = [{ access = "read-write", path = "./"}]
 
-# A list of ignored solc error codes
+[profile.default.fmt]
+    # Single-line vs multi-line statement blocks
+    single_line_statement_blocks = "preserve"  # Options: "single", "multi", "preserve"
+    # Formatting style for long function headers
+    multiline_func_header = "params_first"  # Options: "attributes_first", "params_first", "all"
+    # Sort import statements alphabetically
+    sort_imports = true  # Options: true, false
+    # Add empty lines before and after contract definitions
+    contract_new_lines = true  # Options: true, false
+    # Space between 'override' keyword and parent contracts
+    override_spacing = true  # Options: true, false
+    # Maximum line length where formatter will wrap the line
+    line_length = 120  # Default: 120
+    # Number of spaces per indentation level
+    tab_width = 4  # Default: 4
+    # Whether to print spaces between brackets
+    bracket_spacing = false  # Options: true, false
+    # Style of uint/int256 types
+    int_types = "long"  # Options: "long", "short", "preserve"
+    # Quotation mark style
+    quote_style = "double"  # Options: "double", "single", "preserve"
+    # Style of underscores in number literals
+    number_underscore = "thousands"  # Options: "preserve", "thousands", "remove"
+    # Whether or not to wrap comments at line_length
+    wrap_comments = false  # Options: true, false
+    # List of files to ignore during formatting (can use glob patterns)
+    ignore = [
+        "./script/**/*",
+        "./src/test/**/*"
+    ]
 
-# Enables or disables the optimizer
-optimizer = true
-# The number of optimizer runs
-optimizer_runs = 200
-# Whether or not to use the Yul intermediate representation compilation pipeline
-via_ir = false
-# Override the Solidity version (this overrides `auto_detect_solc`)
-solc_version = '0.8.27'
+[profile.test.fmt]
+    int_types = "short"
+    line_length = 140
+    ignore = [
+        "./src/contracts/**/*"
+    ]
 
-[rpc_endpoints]
-mainnet = "${RPC_MAINNET}"
-holesky = "${RPC_HOLESKY}"
-
-[fmt]
-bracket_spacing = false
-int_types = "long"
-line_length = 120
-multiline_func_header = "params_first"
-number_underscore = "thousands"
-quote_style = "double"
-tab_width = 4
-
-# See more config options https://github.com/gakonst/foundry/tree/master/config
+[profile.lite.fuzz]
+    optimizer = false
+    runs=32
 
 [profile.forktest.fuzz]
-runs=20
+    runs=20
+
+[rpc_endpoints]
+    mainnet = "${RPC_MAINNET}"
+    holesky = "${RPC_HOLESKY}"
