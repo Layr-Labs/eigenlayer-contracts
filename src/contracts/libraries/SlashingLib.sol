@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin-upgrades/contracts/utils/math/SafeCastUpgradeable.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 
 /// @dev the stakerScalingFactor and operatorMagnitude have initial default values to 1e18 as "1"
 /// to preserve precision with uint256 math. We use `WAD` where these variables are used
@@ -31,6 +31,7 @@ using SlashingLib for DepositScalingFactor global;
 
 // TODO: validate order of operations everywhere
 library SlashingLib {
+
     using Math for uint256;
     using SlashingLib for uint256;
     using SafeCastUpgradeable for uint256;
@@ -167,4 +168,5 @@ library SlashingLib {
         // round up mulDiv so we don't overslash
         return operatorShares - operatorShares.mulDiv(newMaxMagnitude, prevMaxMagnitude, Math.Rounding.Up);
     }
+
 }

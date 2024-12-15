@@ -10,14 +10,15 @@ import "forge-std/Test.sol";
 // RUST_LOG=forge,foundry=trace forge script script/tasks/slash_operatorSet.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run(string memory configFile,address operator,uint32 operatorSetId,uint256 wadToSlash)" -- <DEPLOYMENT_OUTPUT_JSON> <OPERATOR_ADDRESS> <OPERATOR_SET_ID> <WADS_TO_SLASH>
 // RUST_LOG=forge,foundry=trace forge script script/tasks/slash_operatorSet.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run(string memory configFile,address operator,uint32 operatorSetId,uint256 wadToSlash)" -- local/slashing_output.json 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 00000001 05000000
 contract SlashOperatorSet is Script, Test, IAllocationManagerTypes {
+
     Vm cheats = Vm(VM_ADDRESS);
 
     function run(
-        string memory configFile, 
-        address operator, 
-        uint32 operatorSetId, 
-        IStrategy[] memory strategies, 
-        uint256[] memory wadsToSlash
+        string memory configFile,
+        address operator,
+        uint32 operatorSetId,
+        IStrategy[] memory strategies,
+        uint[] memory wadsToSlash
     ) public {
         // Load config
         string memory deployConfigPath = string(bytes(string.concat("script/output/", configFile)));
@@ -43,8 +44,9 @@ contract SlashOperatorSet is Script, Test, IAllocationManagerTypes {
 
         // Perform slashing
         am.slashOperator(operator, slashing);
-        
+
         // STOP RECORDING TRANSACTIONS FOR DEPLOYMENT
         vm.stopBroadcast();
     }
+
 }

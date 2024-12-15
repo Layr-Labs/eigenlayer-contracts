@@ -20,6 +20,7 @@ import "../interfaces/IPausable.sol";
  * indicates specifically that if the *third bit* of `_paused` is flipped -- i.e. it is a '1' -- then deposits should be paused
  */
 abstract contract Pausable is IPausable {
+
     /// Constants
 
     uint256 internal constant _UNPAUSE_ALL = 0;
@@ -127,4 +128,5 @@ abstract contract Pausable is IPausable {
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
     uint256[48] private __gap;
+
 }

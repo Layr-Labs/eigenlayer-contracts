@@ -9,6 +9,7 @@ import "../interfaces/ISignatureUtils.sol";
 /// @notice A mixin to provide EIP-712 signature validation utilities.
 /// @dev Domain name is hardcoded to "EigenLayer".
 abstract contract SignatureUtils is ISignatureUtils {
+
     using SignatureCheckerUpgradeable for address;
 
     /// CONSTANTS
@@ -80,4 +81,5 @@ abstract contract SignatureUtils is ISignatureUtils {
         require(expiry >= block.timestamp, SignatureExpired());
         require(signer.isValidSignatureNow(signableDigest, signature), InvalidSignature());
     }
+
 }

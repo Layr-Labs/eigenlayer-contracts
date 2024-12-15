@@ -2,26 +2,29 @@
 pragma solidity ^0.8.27;
 
 // Imports
-import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
-import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
-import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+
 import "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
 import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
+import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
+import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
+
 import "forge-std/Test.sol";
 
 import "src/contracts/core/DelegationManager.sol";
 import "src/contracts/core/StrategyManager.sol";
-import "src/contracts/strategies/StrategyFactory.sol";
-import "src/contracts/strategies/StrategyBase.sol";
-import "src/contracts/strategies/StrategyBaseTVLLimits.sol";
-import "src/contracts/pods/EigenPodManager.sol";
-import "src/contracts/pods/EigenPod.sol";
+
 import "src/contracts/permissions/PauserRegistry.sol";
 import "src/contracts/permissions/PermissionController.sol";
+import "src/contracts/pods/EigenPod.sol";
+import "src/contracts/pods/EigenPodManager.sol";
+import "src/contracts/strategies/StrategyBase.sol";
+import "src/contracts/strategies/StrategyBaseTVLLimits.sol";
+import "src/contracts/strategies/StrategyFactory.sol";
 
-import "src/test/mocks/EmptyContract.sol";
-import "src/test/mocks/ETHDepositMock.sol";
 import "src/test/integration/mocks/BeaconChainMock.t.sol";
+import "src/test/mocks/ETHDepositMock.sol";
+import "src/test/mocks/EmptyContract.sol";
 
 import "src/test/integration/users/AVS.t.sol";
 import "src/test/integration/users/User.t.sol";
@@ -47,6 +50,7 @@ uint8 constant PAUSED_NON_PROOF_WITHDRAWALS = 5;
 IStrategy constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 
 abstract contract IntegrationDeployer is ExistingDeploymentParser {
+
     using StdStyle for *;
 
     // Fork ids for specific fork tests
@@ -170,46 +174,42 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
          * First, deploy upgradeable proxy contracts that **will point** to the implementations. Since the implementation contracts are
          * not yet deployed, we give these proxies an empty contract as the initial implementation, to act as if they have no code.
          */
-        delegationManager = DelegationManager(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
-        );
-        strategyManager = StrategyManager(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
-        );
-        eigenPodManager = EigenPodManager(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
-        );
-        avsDirectory = AVSDirectory(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
-        );
-        strategyFactory = StrategyFactory(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
-        );
-        allocationManager = AllocationManager(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
-        );
-        permissionController = PermissionController(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
-        );
+        delegationManager =
+            DelegationManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
+        strategyManager =
+            StrategyManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
+        eigenPodManager =
+            EigenPodManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
+        avsDirectory = AVSDirectory(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
+        strategyFactory =
+            StrategyFactory(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
+        allocationManager =
+            AllocationManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
+        permissionController =
+            PermissionController(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
 
         // Deploy EigenPod Contracts
         eigenPodImplementation = new EigenPod(ethPOSDeposit, eigenPodManager, GENESIS_TIME_LOCAL);
 
         eigenPodBeacon = new UpgradeableBeacon(address(eigenPodImplementation));
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
-        delegationManagerImplementation = new DelegationManager(strategyManager, eigenPodManager, allocationManager, eigenLayerPauserReg, permissionController, DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS);
-        strategyManagerImplementation = new StrategyManager(delegationManager, eigenLayerPauserReg);
-        eigenPodManagerImplementation = new EigenPodManager(
-            ethPOSDeposit,
-            eigenPodBeacon,
-            delegationManager,
-            eigenLayerPauserReg
+        delegationManagerImplementation = new DelegationManager(
+            strategyManager,
+            eigenPodManager,
+            allocationManager,
+            eigenLayerPauserReg,
+            permissionController,
+            DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS
         );
+        strategyManagerImplementation = new StrategyManager(delegationManager, eigenLayerPauserReg);
+        eigenPodManagerImplementation = new EigenPodManager(ethPOSDeposit, eigenPodBeacon, delegationManager, eigenLayerPauserReg);
         strategyManagerImplementation = new StrategyManager(delegationManager, eigenLayerPauserReg);
         eigenPodManagerImplementation = new EigenPodManager(ethPOSDeposit, eigenPodBeacon, delegationManager, eigenLayerPauserReg);
         avsDirectoryImplementation = new AVSDirectory(delegationManager, eigenLayerPauserReg);
         strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg);
-        allocationManagerImplementation = new AllocationManager(delegationManager, eigenLayerPauserReg, permissionController, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
+        allocationManagerImplementation = new AllocationManager(
+            delegationManager, eigenLayerPauserReg, permissionController, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY
+        );
         permissionControllerImplementation = new PermissionController();
 
         // Third, upgrade the proxy contracts to point to the implementations
@@ -266,8 +266,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         );
         //PermissionController
         eigenLayerProxyAdmin.upgrade(
-            ITransparentUpgradeableProxy(payable(address(permissionController))),
-            address(permissionControllerImplementation)
+            ITransparentUpgradeableProxy(payable(address(permissionController))), address(permissionControllerImplementation)
         );
         // Create base strategy implementation and deploy a few strategies
         baseStrategyImplementation = new StrategyBase(strategyManager, eigenLayerPauserReg);
@@ -322,17 +321,24 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
         // First, deploy the new contracts as empty contracts
         emptyContract = new EmptyContract();
-        allocationManager = AllocationManager(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
-        );
-        permissionController = PermissionController(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
-        );
+        allocationManager =
+            AllocationManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
+        permissionController =
+            PermissionController(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
 
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
-        allocationManagerImplementation = new AllocationManager(delegationManager, eigenLayerPauserReg, permissionController, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
+        allocationManagerImplementation = new AllocationManager(
+            delegationManager, eigenLayerPauserReg, permissionController, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY
+        );
         permissionControllerImplementation = new PermissionController();
-        delegationManagerImplementation = new DelegationManager(strategyManager, eigenPodManager, allocationManager, eigenLayerPauserReg, permissionController, DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS);
+        delegationManagerImplementation = new DelegationManager(
+            strategyManager,
+            eigenPodManager,
+            allocationManager,
+            eigenLayerPauserReg,
+            permissionController,
+            DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS
+        );
         strategyManagerImplementation = new StrategyManager(delegationManager, eigenLayerPauserReg);
         rewardsCoordinatorImplementation = new RewardsCoordinator(
             delegationManager,
@@ -347,18 +353,13 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP
         );
         avsDirectoryImplementation = new AVSDirectory(delegationManager, eigenLayerPauserReg);
-        eigenPodManagerImplementation = new EigenPodManager(
-            ethPOSDeposit,
-            eigenPodBeacon,
-            delegationManager,
-            eigenLayerPauserReg
-        );
+        eigenPodManagerImplementation = new EigenPodManager(ethPOSDeposit, eigenPodBeacon, delegationManager, eigenLayerPauserReg);
         eigenPodImplementation = new EigenPod(ethPOSDeposit, eigenPodManager, GENESIS_TIME_MAINNET);
         strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg);
         baseStrategyImplementation = new StrategyBase(strategyManager, eigenLayerPauserReg);
 
         // Third, upgrade the proxy contracts to point to the implementations
-        
+
         // Initialize the newly deployed contracts
         eigenLayerProxyAdmin.upgradeAndCall(
             ITransparentUpgradeableProxy(payable(address(allocationManager))),
@@ -370,8 +371,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             )
         );
         eigenLayerProxyAdmin.upgrade(
-            ITransparentUpgradeableProxy(payable(address(permissionController))),
-            address(permissionControllerImplementation)
+            ITransparentUpgradeableProxy(payable(address(permissionController))), address(permissionControllerImplementation)
         );
 
         // DelegationManager
@@ -386,10 +386,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         eigenLayerProxyAdmin.upgrade(
             ITransparentUpgradeableProxy(payable(address(rewardsCoordinator))), address(rewardsCoordinatorImplementation)
         );
-        // AVSDirectory 
-        eigenLayerProxyAdmin.upgrade(
-            ITransparentUpgradeableProxy(payable(address(avsDirectory))), address(avsDirectoryImplementation)
-        );
+        // AVSDirectory
+        eigenLayerProxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(avsDirectory))), address(avsDirectoryImplementation));
         // EigenPodManager
         eigenLayerProxyAdmin.upgrade(
             ITransparentUpgradeableProxy(payable(address(eigenPodManager))), address(eigenPodManagerImplementation)
@@ -407,8 +405,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         for (uint i = 0; i < numStrategiesDeployed; i++) {
             // Upgrade existing strategy
             eigenLayerProxyAdmin.upgrade(
-                ITransparentUpgradeableProxy(payable(address(deployedStrategyArray[i]))),
-                address(baseStrategyImplementation)
+                ITransparentUpgradeableProxy(payable(address(deployedStrategyArray[i]))), address(baseStrategyImplementation)
             );
         }
 
@@ -440,19 +437,19 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         eigenPodImplementation = new EigenPod(ethPOSDeposit, eigenPodManager, 0);
         eigenPodBeacon.upgradeTo(address(eigenPodImplementation));
         // Deploy AVSDirectory, contract has not been deployed on mainnet yet
-        avsDirectory = AVSDirectory(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
-        );
+        avsDirectory = AVSDirectory(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
 
         // First, deploy the *implementation* contracts, using the *proxy contracts* as inputs
-        delegationManagerImplementation = new DelegationManager(strategyManager, eigenPodManager, allocationManager, eigenLayerPauserReg, permissionController, DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS);
-        strategyManagerImplementation = new StrategyManager(delegationManager, eigenLayerPauserReg);
-        eigenPodManagerImplementation = new EigenPodManager(
-            ethPOSDeposit,
-            eigenPodBeacon,
-            delegationManager,
-            eigenLayerPauserReg
+        delegationManagerImplementation = new DelegationManager(
+            strategyManager,
+            eigenPodManager,
+            allocationManager,
+            eigenLayerPauserReg,
+            permissionController,
+            DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS
         );
+        strategyManagerImplementation = new StrategyManager(delegationManager, eigenLayerPauserReg);
+        eigenPodManagerImplementation = new EigenPodManager(ethPOSDeposit, eigenPodBeacon, delegationManager, eigenLayerPauserReg);
         strategyManagerImplementation = new StrategyManager(delegationManager, eigenLayerPauserReg);
         eigenPodManagerImplementation = new EigenPodManager(ethPOSDeposit, eigenPodBeacon, delegationManager, eigenLayerPauserReg);
         avsDirectoryImplementation = new AVSDirectory(delegationManager, eigenLayerPauserReg);
@@ -488,8 +485,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         for (uint i = 0; i < numStrategiesDeployed; i++) {
             // Upgrade existing strategy
             eigenLayerProxyAdmin.upgrade(
-                ITransparentUpgradeableProxy(payable(address(deployedStrategyArray[i]))),
-                address(baseStrategyImplementation)
+                ITransparentUpgradeableProxy(payable(address(deployedStrategyArray[i]))), address(baseStrategyImplementation)
             );
         }
 
@@ -556,7 +552,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         // Using uint24 for the seed type so that if a test fails, it's easier
         // to manually use the seed to replay the same test.
         random = _hash(_randomSeed);
-        
+
         // Convert flag bitmaps to bytes of set bits for easy use with _randUint
         assetTypes = _bitmapToBytes(_assetTypes);
         userTypes = _bitmapToBytes(_userTypes);
@@ -902,29 +898,31 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         return userType;
     }
 
-    function _shuffle(IStrategy[] memory strats) internal returns (IStrategy[] memory) {        
+    function _shuffle(
+        IStrategy[] memory strats
+    ) internal returns (IStrategy[] memory) {
         // Fisher-Yates shuffle algorithm
-        for (uint i = strats.length - 1; i > 0; i--)  {
-            uint randomIndex = _randUint({ min: 0, max: i });
-            
+        for (uint i = strats.length - 1; i > 0; i--) {
+            uint randomIndex = _randUint({min: 0, max: i});
+
             // Swap elements
             IStrategy temp = strats[i];
             strats[i] = strats[randomIndex];
             strats[randomIndex] = temp;
         }
-        
+
         return strats;
     }
 
     function _randomStrategies() internal returns (IStrategy[][] memory strategies) {
-        uint numOpSets = _randUint({ min: 1, max: 5 });
+        uint numOpSets = _randUint({min: 1, max: 5});
 
         strategies = new IStrategy[][](numOpSets);
-        
+
         for (uint i; i < numOpSets; ++i) {
             IStrategy[] memory randomStrategies = _shuffle(allStrats);
 
-            uint numStrategies = _randUint({ min: 1, max: allStrats.length });
+            uint numStrategies = _randUint({min: 1, max: allStrats.length});
 
             // Modify the length of the array in memory (thus ignoring remaining elements).
             assembly {
@@ -965,4 +963,5 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     ) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked(x));
     }
+
 }

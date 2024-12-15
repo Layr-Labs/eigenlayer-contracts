@@ -3,7 +3,6 @@ pragma solidity ^0.8.27;
 
 import "../../contracts/interfaces/IETHPOSDeposit.sol";
 
-
 contract ETHPOSDepositMock is IETHPOSDeposit {
 
     function deposit(
@@ -12,7 +11,6 @@ contract ETHPOSDepositMock is IETHPOSDeposit {
         bytes calldata signature,
         bytes32 deposit_data_root
     ) external payable {}
-
 
     function get_deposit_root() external pure returns (bytes32) {
         bytes32 root;
@@ -26,6 +24,4 @@ contract ETHPOSDepositMock is IETHPOSDeposit {
         return root;
     }
 
-
 }
-

@@ -18,6 +18,7 @@ pragma solidity ^0.8.0;
  * against this attack out of the box.
  */
 library Merkle {
+
     error InvalidProofLength();
 
     /**
@@ -164,4 +165,5 @@ library Merkle {
         //the first node in the layer is the root
         return layer[0];
     }
+
 }

@@ -5,37 +5,27 @@ import "../Env.sol";
 import {QueueAndUnpause} from "./2-queueUpgradeAndUnpause.s.sol";
 import {Pause} from "./3-pause.s.sol";
 
-import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
+import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 contract Execute is QueueAndUnpause, Pause {
+
     using Env for *;
 
-    function _runAsMultisig() prank(Env.protocolCouncilMultisig()) internal override(Pause, QueueAndUnpause) {
+    function _runAsMultisig() internal override (Pause, QueueAndUnpause) prank(Env.protocolCouncilMultisig()) {
         bytes memory calldata_to_executor = _getCalldataToExecutor();
 
         TimelockController timelock = Env.timelockController();
-        timelock.execute({
-            target: Env.executorMultisig(),
-            value: 0,
-            payload: calldata_to_executor,
-            predecessor: 0,
-            salt: 0
-        });
+        timelock.execute({target: Env.executorMultisig(), value: 0, payload: calldata_to_executor, predecessor: 0, salt: 0});
     }
 
-    function testScript() public virtual override(Pause, QueueAndUnpause) {
+    function testScript() public virtual override (Pause, QueueAndUnpause) {
         runAsEOA();
 
         TimelockController timelock = Env.timelockController();
         bytes memory calldata_to_executor = _getCalldataToExecutor();
-        bytes32 txHash = timelock.hashOperation({
-            target: Env.executorMultisig(),
-            value: 0,
-            data: calldata_to_executor,
-            predecessor: 0,
-            salt: 0
-        });
+        bytes32 txHash =
+            timelock.hashOperation({target: Env.executorMultisig(), value: 0, data: calldata_to_executor, predecessor: 0, salt: 0});
 
         assertFalse(timelock.isOperationPending(txHash), "Transaction should NOT be queued.");
 
@@ -46,7 +36,7 @@ contract Execute is QueueAndUnpause, Pause {
         assertTrue(timelock.isOperationPending(txHash), "Transaction should be queued.");
         assertFalse(timelock.isOperationReady(txHash), "Transaction should NOT be ready for execution.");
         assertFalse(timelock.isOperationDone(txHash), "Transaction should NOT be complete.");
-        
+
         // 2- run pausing logic
         Pause._runAsMultisig();
         _unsafeResetHasPranked(); // reset hasPranked so we can use it again
@@ -56,13 +46,13 @@ contract Execute is QueueAndUnpause, Pause {
         // 2- warp past delay
         vm.warp(block.timestamp + timelock.getMinDelay()); // 1 tick after ETA
         assertEq(timelock.isOperationReady(txHash), true, "Transaction should be executable.");
-        
+
         // 3- execute
         execute();
 
         assertTrue(timelock.isOperationDone(txHash), "Transaction should be complete.");
 
-        _validateNewImplAddresses({ areMatching: true });
+        _validateNewImplAddresses({areMatching: true});
         _validateStrategiesAreWhitelisted();
         _validateProxyAdmins();
         _validateProxyConstructors();
@@ -73,14 +63,14 @@ contract Execute is QueueAndUnpause, Pause {
         ProxyAdmin pa = ProxyAdmin(Env.proxyAdmin());
 
         assertTrue(
-            pa.getProxyImplementation(ITransparentUpgradeableProxy(address(Env.proxy.allocationManager()))) ==
-            address(Env.impl.allocationManager()),
+            pa.getProxyImplementation(ITransparentUpgradeableProxy(address(Env.proxy.allocationManager())))
+                == address(Env.impl.allocationManager()),
             "allocationManager impl failed"
         );
 
         assertTrue(
-            pa.getProxyImplementation(ITransparentUpgradeableProxy(address(Env.proxy.permissionController()))) ==
-            address(Env.impl.permissionController()),
+            pa.getProxyImplementation(ITransparentUpgradeableProxy(address(Env.proxy.permissionController())))
+                == address(Env.impl.permissionController()),
             "permissionController impl failed"
         );
     }
@@ -100,7 +90,7 @@ contract Execute is QueueAndUnpause, Pause {
 
             /// PermissionController has no initial storage
         }
-        
+
         {
             /// core/
 
@@ -109,8 +99,10 @@ contract Execute is QueueAndUnpause, Pause {
             assertTrue(allocationManager.pauserRegistry() == Env.impl.pauserRegistry(), "alm.pR invalid");
             assertTrue(allocationManager.permissionController() == Env.proxy.permissionController(), "alm.pc invalid");
             assertTrue(allocationManager.DEALLOCATION_DELAY() == Env.MIN_WITHDRAWAL_DELAY(), "alm.deallocDelay invalid");
-            assertTrue(allocationManager.ALLOCATION_CONFIGURATION_DELAY() == Env.ALLOCATION_CONFIGURATION_DELAY(), "alm.configDelay invalid");
-            
+            assertTrue(
+                allocationManager.ALLOCATION_CONFIGURATION_DELAY() == Env.ALLOCATION_CONFIGURATION_DELAY(), "alm.configDelay invalid"
+            );
+
             AVSDirectory avsDirectory = Env.proxy.avsDirectory();
             assertTrue(avsDirectory.delegation() == Env.proxy.delegationManager(), "avsD.dm invalid");
             assertTrue(avsDirectory.pauserRegistry() == Env.impl.pauserRegistry(), "avsD.pR invalid");
@@ -134,7 +126,7 @@ contract Execute is QueueAndUnpause, Pause {
             assertTrue(rewards.MAX_RETROACTIVE_LENGTH() == Env.MAX_RETROACTIVE_LENGTH(), "rc.retroLength invalid");
             assertTrue(rewards.MAX_FUTURE_LENGTH() == Env.MAX_FUTURE_LENGTH(), "rc.futureLength invalid");
             assertTrue(rewards.GENESIS_REWARDS_TIMESTAMP() == Env.GENESIS_REWARDS_TIMESTAMP(), "rc.genesis invalid");
-            
+
             StrategyManager strategyManager = Env.proxy.strategyManager();
             assertTrue(strategyManager.delegation() == Env.proxy.delegationManager(), "sm.dm invalid");
             assertTrue(strategyManager.pauserRegistry() == Env.impl.pauserRegistry(), "sm.pR invalid");
@@ -182,7 +174,7 @@ contract Execute is QueueAndUnpause, Pause {
 
         /// permissions/
         // PermissionController is initializable, but does not expose the `initialize` method
-        
+
         {
             /// core/
 
@@ -191,7 +183,7 @@ contract Execute is QueueAndUnpause, Pause {
             allocationManager.initialize(address(0), 0);
             assertTrue(allocationManager.owner() == Env.executorMultisig(), "alm.owner invalid");
             assertTrue(allocationManager.paused() == 0, "alm.paused invalid");
-            
+
             AVSDirectory avsDirectory = Env.proxy.avsDirectory();
             vm.expectRevert(errInit);
             avsDirectory.initialize(address(0), 0);
@@ -264,4 +256,5 @@ contract Execute is QueueAndUnpause, Pause {
             assertTrue(strategyFactory.strategyBeacon() == Env.beacon.strategyBase(), "sFact.beacon invalid");
         }
     }
+
 }

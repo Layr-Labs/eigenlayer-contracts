@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./IPauserRegistry.sol";
 import "./IStrategy.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface IRewardsCoordinatorErrors {
+
     /// @dev Thrown when msg.sender is not allowed to call a function
     error UnauthorizedCaller();
     /// @dev Thrown when a earner not an AVS or Operator
@@ -80,9 +81,11 @@ interface IRewardsCoordinatorErrors {
     error RootNotActivated();
     /// @dev Thrown if a root has already been activated.
     error RootAlreadyActivated();
+
 }
 
 interface IRewardsCoordinatorTypes {
+
     /**
      * @notice A linear combination of strategies and multipliers for AVSs to weigh
      * EigenLayer strategies.
@@ -234,9 +237,11 @@ interface IRewardsCoordinatorTypes {
         bytes[] tokenTreeProofs;
         TokenTreeMerkleLeaf[] tokenLeaves;
     }
+
 }
 
 interface IRewardsCoordinatorEvents is IRewardsCoordinatorTypes {
+
     /// @notice emitted when an AVS creates a valid RewardsSubmission
     event AVSRewardsSubmissionCreated(
         address indexed avs,
@@ -342,6 +347,7 @@ interface IRewardsCoordinatorEvents is IRewardsCoordinatorTypes {
         IERC20 token,
         uint256 claimedAmount
     );
+
 }
 
 /**
@@ -354,6 +360,7 @@ interface IRewardsCoordinatorEvents is IRewardsCoordinatorTypes {
  * a Merkle root against which Stakers & Operators can make claims.
  */
 interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorEvents {
+
     /**
      * @dev Initializes the addresses of the initial owner, pauser registry, rewardsUpdater and
      * configures the initial paused status, activationDelay, and defaultOperatorSplitBips.
@@ -626,4 +633,5 @@ interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorE
 
     /// @notice absolute min timestamp (seconds) that a submission can start at
     function GENESIS_REWARDS_TIMESTAMP() external view returns (uint32);
+
 }

@@ -9,6 +9,7 @@ import "../interfaces/IStrategyFactory.sol";
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
 abstract contract StrategyFactoryStorage is IStrategyFactory {
+
     /// @notice Upgradeable beacon which new Strategies deployed by this contract point to
     IBeacon public strategyBeacon;
 
@@ -30,4 +31,5 @@ abstract contract StrategyFactoryStorage is IStrategyFactory {
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
     uint256[48] private __gap;
+
 }

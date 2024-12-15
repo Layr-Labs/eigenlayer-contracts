@@ -5,33 +5,25 @@ pragma solidity ^0.8.9;
 import "forge-std/Test.sol";
 
 contract Reenterer is Test {
+
     Vm cheats = Vm(VM_ADDRESS);
 
     address public target;
-    uint256 public msgValue;
+    uint public msgValue;
     bytes public callData;
     bytes public expectedRevertData;
     bytes public dataToReturn;
 
     event Reentered(bytes returnData);
 
-    function prepare(
-        address targetToUse,
-        uint256 msgValueToUse,
-        bytes memory callDataToUse
-    ) external {
+    function prepare(address targetToUse, uint msgValueToUse, bytes memory callDataToUse) external {
         target = targetToUse;
         msgValue = msgValueToUse;
         callData = callDataToUse;
     }
 
     // added function that allows writing to `expectedRevertData`
-    function prepare(
-        address targetToUse,
-        uint256 msgValueToUse,
-        bytes memory callDataToUse,
-        bytes memory expectedRevertDataToUse
-    ) external {
+    function prepare(address targetToUse, uint msgValueToUse, bytes memory callDataToUse, bytes memory expectedRevertDataToUse) external {
         target = targetToUse;
         msgValue = msgValueToUse;
         callData = callDataToUse;
@@ -39,7 +31,9 @@ contract Reenterer is Test {
     }
 
     // added function that allows writing to `dataToReturn`
-    function prepareReturnData(bytes memory returnDataToUse) external {
+    function prepareReturnData(
+        bytes memory returnDataToUse
+    ) external {
         dataToReturn = returnDataToUse;
     }
 
@@ -48,9 +42,7 @@ contract Reenterer is Test {
         if (expectedRevertData.length != 0) {
             cheats.expectRevert(expectedRevertData);
         }
-        (bool success, bytes memory returnData) = target.call{
-            value: msgValue
-        }(callData);
+        (bool success, bytes memory returnData) = target.call{value: msgValue}(callData);
 
         if (!success) {
             assembly {
@@ -62,7 +54,7 @@ contract Reenterer is Test {
         emit Reentered(returnData);
 
         // added dataToReturn logic
-        uint256 dataToReturnLength = dataToReturn.length;
+        uint dataToReturnLength = dataToReturn.length;
         if (dataToReturnLength > 0) {
             bytes memory _dataToReturn = dataToReturn;
             assembly {
@@ -77,9 +69,7 @@ contract Reenterer is Test {
         if (expectedRevertData.length != 0) {
             cheats.expectRevert(expectedRevertData);
         }
-        (bool success, bytes memory returnData) = target.call{
-            value: msgValue
-        }(callData);
+        (bool success, bytes memory returnData) = target.call{value: msgValue}(callData);
 
         if (!success) {
             assembly {
@@ -91,7 +81,7 @@ contract Reenterer is Test {
         emit Reentered(returnData);
 
         // added dataToReturn logic
-        uint256 dataToReturnLength = dataToReturn.length;
+        uint dataToReturnLength = dataToReturn.length;
         if (dataToReturnLength > 0) {
             bytes memory _dataToReturn = dataToReturn;
             assembly {
@@ -99,4 +89,5 @@ contract Reenterer is Test {
             }
         }
     }
+
 }

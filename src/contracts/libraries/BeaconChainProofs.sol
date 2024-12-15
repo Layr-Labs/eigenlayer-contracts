@@ -2,14 +2,15 @@
 
 pragma solidity ^0.8.0;
 
-import "./Merkle.sol";
 import "../libraries/Endian.sol";
+import "./Merkle.sol";
 
 //Utility library for parsing and PHASE0 beacon chain block headers
 //SSZ Spec: https://github.com/ethereum/consensus-specs/blob/dev/ssz/simple-serialize.md#merkleization
 //BeaconBlockHeader Spec: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#beaconblockheader
 //BeaconState Spec: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#beaconstate
 library BeaconChainProofs {
+
     /// @dev Thrown when a proof is invalid.
     error InvalidProof();
     /// @dev Thrown when a proof with an invalid length is provided.
@@ -312,4 +313,5 @@ library BeaconChainProofs {
     ) internal pure returns (uint64) {
         return Endian.fromLittleEndianUint64(validatorFields[VALIDATOR_EXIT_EPOCH_INDEX]);
     }
+
 }

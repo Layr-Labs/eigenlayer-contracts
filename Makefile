@@ -46,3 +46,7 @@ gha-docker:
 
 storage-report:
 	bash "bin/storage-report.sh" "docs/storage-report/"
+
+fmt:
+	forge fmt
+	FOUNDRY_PROFILE=test forge fmt

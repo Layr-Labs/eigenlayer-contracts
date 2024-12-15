@@ -1,54 +1,38 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.9;
 
-import "forge-std/Test.sol";
 import "../../contracts/interfaces/IStrategy.sol";
 import "../../contracts/libraries/Snapshots.sol";
+import "forge-std/Test.sol";
 
 contract AllocationManagerMock is Test {
+
     using Snapshots for Snapshots.DefaultWadHistory;
 
     receive() external payable {}
     fallback() external payable {}
 
-    mapping(address avs => uint256) public getOperatorSetCount;
+    mapping(address avs => uint) public getOperatorSetCount;
     mapping(address => mapping(IStrategy => Snapshots.DefaultWadHistory)) internal _maxMagnitudeHistory;
 
-    function setMaxMagnitudes(
-        address operator,
-        IStrategy[] calldata strategies,
-        uint64[] calldata maxMagnitudes
-    ) external {
-        for (uint256 i = 0; i < strategies.length; ++i) {
+    function setMaxMagnitudes(address operator, IStrategy[] calldata strategies, uint64[] calldata maxMagnitudes) external {
+        for (uint i = 0; i < strategies.length; ++i) {
             setMaxMagnitude(operator, strategies[i], maxMagnitudes[i]);
         }
     }
 
-    function setMaxMagnitude(
-        address operator,
-        IStrategy strategy,
-        uint64 maxMagnitude
-    ) public {
-        _maxMagnitudeHistory[operator][strategy].push({
-            key: uint32(block.number),
-            value: maxMagnitude
-        });
+    function setMaxMagnitude(address operator, IStrategy strategy, uint64 maxMagnitude) public {
+        _maxMagnitudeHistory[operator][strategy].push({key: uint32(block.number), value: maxMagnitude});
     }
 
-    function getMaxMagnitude(
-        address operator,
-        IStrategy strategy
-    ) external view returns (uint64) {
+    function getMaxMagnitude(address operator, IStrategy strategy) external view returns (uint64) {
         return _maxMagnitudeHistory[operator][strategy].latest();
     }
 
-    function getMaxMagnitudes(
-        address operator,
-        IStrategy[] calldata strategies
-    ) external view returns (uint64[] memory) {
+    function getMaxMagnitudes(address operator, IStrategy[] calldata strategies) external view returns (uint64[] memory) {
         uint64[] memory maxMagnitudes = new uint64[](strategies.length);
 
-        for (uint256 i = 0; i < strategies.length; ++i) {
+        for (uint i = 0; i < strategies.length; ++i) {
             maxMagnitudes[i] = _maxMagnitudeHistory[operator][strategies[i]].latest();
         }
 
@@ -62,16 +46,15 @@ contract AllocationManagerMock is Test {
     ) external view returns (uint64[] memory) {
         uint64[] memory maxMagnitudes = new uint64[](strategies.length);
 
-        for (uint256 i = 0; i < strategies.length; ++i) {
-            maxMagnitudes[i] = _maxMagnitudeHistory[operator][strategies[i]].upperLookup({
-                key: blockNumber
-            });
+        for (uint i = 0; i < strategies.length; ++i) {
+            maxMagnitudes[i] = _maxMagnitudeHistory[operator][strategies[i]].upperLookup({key: blockNumber});
         }
 
         return maxMagnitudes;
     }
 
-    function setAVSSetCount(address avs, uint256 numSets) external {
+    function setAVSSetCount(address avs, uint numSets) external {
         getOperatorSetCount[avs] = numSets;
     }
+
 }

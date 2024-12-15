@@ -23,6 +23,7 @@ import "./SlashingLib.sol";
  * _Available since v4.5._
  */
 library Snapshots {
+
     struct DefaultWadHistory {
         Snapshot[] _snapshots;
     }
@@ -181,4 +182,5 @@ library Snapshots {
             result.slot := add(keccak256(0, 0x20), pos)
         }
     }
+
 }

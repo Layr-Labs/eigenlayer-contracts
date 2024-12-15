@@ -1,21 +1,23 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
+import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
-import "../../src/contracts/core/StrategyManager.sol";
-import "../../src/contracts/core/DelegationManager.sol";
 import "../../src/contracts/core/AVSDirectory.sol";
-import "../../src/contracts/core/RewardsCoordinator.sol";
+
 import "../../src/contracts/core/AllocationManager.sol";
+import "../../src/contracts/core/DelegationManager.sol";
+import "../../src/contracts/core/RewardsCoordinator.sol";
+import "../../src/contracts/core/StrategyManager.sol";
+
 import "../../src/contracts/permissions/PermissionController.sol";
 
-import "../../src/contracts/strategies/StrategyFactory.sol";
+import "../../src/contracts/strategies/EigenStrategy.sol";
 import "../../src/contracts/strategies/StrategyBase.sol";
 import "../../src/contracts/strategies/StrategyBaseTVLLimits.sol";
-import "../../src/contracts/strategies/EigenStrategy.sol";
+import "../../src/contracts/strategies/StrategyFactory.sol";
 
 import "../../src/contracts/pods/EigenPod.sol";
 import "../../src/contracts/pods/EigenPodManager.sol";
@@ -44,6 +46,7 @@ struct DeployedEigenPods {
 }
 
 contract ExistingDeploymentParser is Script, Logger {
+
     using stdJson for string;
 
     /// -----------------------------------------------------------------------
@@ -51,19 +54,19 @@ contract ExistingDeploymentParser is Script, Logger {
     /// -----------------------------------------------------------------------
 
     /// @dev AllocationManager
-    uint256 ALLOCATION_MANAGER_INIT_PAUSED_STATUS;
+    uint ALLOCATION_MANAGER_INIT_PAUSED_STATUS;
     uint32 DEALLOCATION_DELAY;
     uint32 ALLOCATION_CONFIGURATION_DELAY;
 
     /// @dev AVSDirectory
-    uint256 AVS_DIRECTORY_INIT_PAUSED_STATUS;
+    uint AVS_DIRECTORY_INIT_PAUSED_STATUS;
 
     /// @dev DelegationManager
-    uint256 DELEGATION_MANAGER_INIT_PAUSED_STATUS;
+    uint DELEGATION_MANAGER_INIT_PAUSED_STATUS;
     uint32 DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS;
 
     /// @dev EigenPodManager
-    uint256 EIGENPOD_MANAGER_INIT_PAUSED_STATUS;
+    uint EIGENPOD_MANAGER_INIT_PAUSED_STATUS;
 
     /// @dev EigenPod
     uint64 EIGENPOD_GENESIS_TIME;
@@ -71,7 +74,7 @@ contract ExistingDeploymentParser is Script, Logger {
     address ETHPOSDepositAddress;
 
     /// @dev RewardsCoordinator
-    uint256 REWARDS_COORDINATOR_INIT_PAUSED_STATUS;
+    uint REWARDS_COORDINATOR_INIT_PAUSED_STATUS;
     uint32 REWARDS_COORDINATOR_MAX_REWARDS_DURATION;
     uint32 REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH;
     uint32 REWARDS_COORDINATOR_MAX_FUTURE_LENGTH;
@@ -84,12 +87,12 @@ contract ExistingDeploymentParser is Script, Logger {
     uint32 REWARDS_COORDINATOR_OPERATOR_SET_MAX_RETROACTIVE_LENGTH;
 
     /// @dev StrategyManager
-    uint256 STRATEGY_MANAGER_INIT_PAUSED_STATUS;
+    uint STRATEGY_MANAGER_INIT_PAUSED_STATUS;
     address STRATEGY_MANAGER_WHITELISTER;
 
     /// @dev Strategy Deployment
-    uint256 STRATEGY_MAX_PER_DEPOSIT;
-    uint256 STRATEGY_MAX_TOTAL_DEPOSITS;
+    uint STRATEGY_MAX_PER_DEPOSIT;
+    uint STRATEGY_MAX_TOTAL_DEPOSITS;
 
     /// -----------------------------------------------------------------------
     /// EigenLayer Contracts
@@ -99,7 +102,7 @@ contract ExistingDeploymentParser is Script, Logger {
     PauserRegistry public eigenLayerPauserReg;
     UpgradeableBeacon public eigenPodBeacon;
     UpgradeableBeacon public strategyBeacon;
-    
+
     /// @dev AllocationManager
     AllocationManager public allocationManager;
     AllocationManager public allocationManagerImplementation;
@@ -128,7 +131,7 @@ contract ExistingDeploymentParser is Script, Logger {
     /// @dev StrategyManager
     StrategyManager public strategyManager;
     StrategyManager public strategyManagerImplementation;
-    
+
     /// @dev StrategyFactory
     StrategyFactory public strategyFactory;
     StrategyFactory public strategyFactoryImplementation;
@@ -164,14 +167,14 @@ contract ExistingDeploymentParser is Script, Logger {
     address timelock;
 
     // strategies deployed
-    uint256 numStrategiesDeployed;
+    uint numStrategiesDeployed;
     StrategyBase[] public deployedStrategyArray;
     // Strategies to Deploy
-    uint256 numStrategiesToDeploy;
+    uint numStrategiesToDeploy;
     StrategyUnderlyingTokenConfig[] public strategiesToDeploy;
 
     /// -----------------------------------------------------------------------
-    /// 
+    ///
     /// -----------------------------------------------------------------------
 
     function NAME() public view virtual override returns (string memory) {
@@ -187,14 +190,14 @@ contract ExistingDeploymentParser is Script, Logger {
         string memory existingDeploymentInfoPath
     ) internal virtual {
         // read and log the chainID
-        uint256 currentChainId = block.chainid;
+        uint currentChainId = block.chainid;
         console.log("You are parsing on ChainID", currentChainId);
 
         // READ JSON CONFIG DATA
         string memory json = cheats.readFile(existingDeploymentInfoPath);
 
         // check that the chainID matches the one in the config
-        uint256 configChainId = json.readUint(".chainInfo.chainId");
+        uint configChainId = json.readUint(".chainInfo.chainId");
         assertEq(configChainId, currentChainId, "You are on the wrong chain for this config");
 
         console.log("Using addresses file", existingDeploymentInfoPath);
@@ -255,7 +258,7 @@ contract ExistingDeploymentParser is Script, Logger {
 
         // Strategies Deployed, load strategy list
         numStrategiesDeployed = json.readUint(".addresses.numStrategiesDeployed");
-        for (uint256 i = 0; i < numStrategiesDeployed; ++i) {
+        for (uint i = 0; i < numStrategiesDeployed; ++i) {
             // Form the key for the current element
             string memory key = string.concat(".addresses.strategyAddresses[", cheats.toString(i), "]");
             // Use the key and parse the strategy address
@@ -276,20 +279,24 @@ contract ExistingDeploymentParser is Script, Logger {
     function _parseDeployedEigenPods(
         string memory existingDeploymentInfoPath
     ) internal returns (DeployedEigenPods memory) {
-        uint256 currentChainId = block.chainid;
+        uint currentChainId = block.chainid;
 
         // READ JSON CONFIG DATA
         string memory json = cheats.readFile(existingDeploymentInfoPath);
 
         // check that the chainID matches the one in the config
-        uint256 configChainId = json.readUint(".chainInfo.chainId");
+        uint configChainId = json.readUint(".chainInfo.chainId");
         assertEq(configChainId, currentChainId, "You are on the wrong chain for this config");
 
         multiValidatorPods = json.readAddressArray(".eigenPods.multiValidatorPods");
         singleValidatorPods = json.readAddressArray(".eigenPods.singleValidatorPods");
         inActivePods = json.readAddressArray(".eigenPods.inActivePods");
         allEigenPods = json.readAddressArray(".eigenPods.allEigenPods");
-        return DeployedEigenPods({multiValidatorPods: multiValidatorPods, singleValidatorPods: singleValidatorPods, inActivePods: inActivePods});
+        return DeployedEigenPods({
+            multiValidatorPods: multiValidatorPods,
+            singleValidatorPods: singleValidatorPods,
+            inActivePods: inActivePods
+        });
     }
 
     /// @notice use for deploying a new set of EigenLayer contracts
@@ -298,14 +305,14 @@ contract ExistingDeploymentParser is Script, Logger {
         string memory initialDeploymentParamsPath
     ) internal virtual {
         // read and log the chainID
-        uint256 currentChainId = block.chainid;
+        uint currentChainId = block.chainid;
         console.log("You are parsing on ChainID", currentChainId);
 
         // READ JSON CONFIG DATA
         string memory json = cheats.readFile(initialDeploymentParamsPath);
 
         // check that the chainID matches the one in the config
-        uint256 configChainId = json.readUint(".chainInfo.chainId");
+        uint configChainId = json.readUint(".chainInfo.chainId");
         assertEq(configChainId, currentChainId, "You are on the wrong chain for this config");
 
         console.log("Using config file", initialDeploymentParamsPath);
@@ -321,7 +328,7 @@ contract ExistingDeploymentParser is Script, Logger {
         numStrategiesToDeploy = json.readUint(".strategies.numStrategies");
         STRATEGY_MAX_PER_DEPOSIT = json.readUint(".strategies.MAX_PER_DEPOSIT");
         STRATEGY_MAX_TOTAL_DEPOSITS = json.readUint(".strategies.MAX_TOTAL_DEPOSITS");
-        for (uint256 i = 0; i < numStrategiesToDeploy; ++i) {
+        for (uint i = 0; i < numStrategiesToDeploy; ++i) {
             // Form the key for the current element
             string memory key = string.concat(".strategies.strategiesToDeploy[", cheats.toString(i), "]");
 
@@ -353,7 +360,8 @@ contract ExistingDeploymentParser is Script, Logger {
         REWARDS_COORDINATOR_DEFAULT_OPERATOR_SPLIT_BIPS = uint32(json.readUint(".rewardsCoordinator.default_operator_split_bips"));
         REWARDS_COORDINATOR_OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP =
             uint32(json.readUint(".rewardsCoordinator.OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP"));
-        REWARDS_COORDINATOR_OPERATOR_SET_MAX_RETROACTIVE_LENGTH = uint32(json.readUint(".rewardsCoordinator.OPERATOR_SET_MAX_RETROACTIVE_LENGTH"));
+        REWARDS_COORDINATOR_OPERATOR_SET_MAX_RETROACTIVE_LENGTH =
+            uint32(json.readUint(".rewardsCoordinator.OPERATOR_SET_MAX_RETROACTIVE_LENGTH"));
         // AVSDirectory
         AVS_DIRECTORY_INIT_PAUSED_STATUS = json.readUint(".avsDirectory.init_paused_status");
         // EigenPodManager
@@ -373,7 +381,9 @@ contract ExistingDeploymentParser is Script, Logger {
         // AVSDirectory
         assertTrue(avsDirectory.delegation() == delegationManager, "avsDirectory: delegationManager address not set correctly");
         // RewardsCoordinator
-        assertTrue(rewardsCoordinator.delegationManager() == delegationManager, "rewardsCoordinator: delegationManager address not set correctly");
+        assertTrue(
+            rewardsCoordinator.delegationManager() == delegationManager, "rewardsCoordinator: delegationManager address not set correctly"
+        );
         assertTrue(rewardsCoordinator.strategyManager() == strategyManager, "rewardsCoordinator: strategyManager address not set correctly");
         // DelegationManager
         assertTrue(delegationManager.strategyManager() == strategyManager, "delegationManager: strategyManager address not set correctly");
@@ -381,9 +391,14 @@ contract ExistingDeploymentParser is Script, Logger {
         // StrategyManager
         assertTrue(strategyManager.delegation() == delegationManager, "strategyManager: delegationManager address not set correctly");
         // EPM
-        assertTrue(address(eigenPodManager.ethPOS()) == ETHPOSDepositAddress, "eigenPodManager: ethPOSDeposit contract address not set correctly");
+        assertTrue(
+            address(eigenPodManager.ethPOS()) == ETHPOSDepositAddress, "eigenPodManager: ethPOSDeposit contract address not set correctly"
+        );
         assertTrue(eigenPodManager.eigenPodBeacon() == eigenPodBeacon, "eigenPodManager: eigenPodBeacon contract address not set correctly");
-        assertTrue(eigenPodManager.delegationManager() == delegationManager, "eigenPodManager: delegationManager contract address not set correctly");
+        assertTrue(
+            eigenPodManager.delegationManager() == delegationManager,
+            "eigenPodManager: delegationManager contract address not set correctly"
+        );
     }
 
     /// @notice verify implementations for Transparent Upgradeable Proxies
@@ -414,7 +429,7 @@ contract ExistingDeploymentParser is Script, Logger {
             "eigenPodManager: implementation set incorrectly"
         );
 
-        for (uint256 i = 0; i < deployedStrategyArray.length; ++i) {
+        for (uint i = 0; i < deployedStrategyArray.length; ++i) {
             assertEq(
                 eigenLayerProxyAdmin.getProxyImplementation(ITransparentUpgradeableProxy(payable(address(deployedStrategyArray[i])))),
                 address(baseStrategyImplementation),
@@ -455,7 +470,7 @@ contract ExistingDeploymentParser is Script, Logger {
         cheats.expectRevert(bytes("Initializable: contract is already initialized"));
         eigenPodManager.initialize(address(0), EIGENPOD_MANAGER_INIT_PAUSED_STATUS);
         // Strategies
-        for (uint256 i = 0; i < deployedStrategyArray.length; ++i) {
+        for (uint i = 0; i < deployedStrategyArray.length; ++i) {
             cheats.expectRevert(bytes("Initializable: contract is already initialized"));
             StrategyBaseTVLLimits(address(deployedStrategyArray[i])).initialize(0, 0, IERC20(address(0)));
         }
@@ -488,7 +503,9 @@ contract ExistingDeploymentParser is Script, Logger {
             "rewardsCoordinator: maxRetroactiveLength not set correctly"
         );
         assertEq(
-            rewardsCoordinator.MAX_FUTURE_LENGTH(), REWARDS_COORDINATOR_MAX_FUTURE_LENGTH, "rewardsCoordinator: maxFutureLength not set correctly"
+            rewardsCoordinator.MAX_FUTURE_LENGTH(),
+            REWARDS_COORDINATOR_MAX_FUTURE_LENGTH,
+            "rewardsCoordinator: maxFutureLength not set correctly"
         );
         assertEq(
             rewardsCoordinator.GENESIS_REWARDS_TIMESTAMP(),
@@ -499,7 +516,11 @@ contract ExistingDeploymentParser is Script, Logger {
         //     rewardsCoordinator.rewardsUpdater(), REWARDS_COORDINATOR_UPDATER,
         //     "rewardsCoordinator: rewardsUpdater not set correctly"
         // );
-        assertEq(rewardsCoordinator.activationDelay(), REWARDS_COORDINATOR_ACTIVATION_DELAY, "rewardsCoordinator: activationDelay not set correctly");
+        assertEq(
+            rewardsCoordinator.activationDelay(),
+            REWARDS_COORDINATOR_ACTIVATION_DELAY,
+            "rewardsCoordinator: activationDelay not set correctly"
+        );
         assertEq(
             rewardsCoordinator.CALCULATION_INTERVAL_SECONDS(),
             REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
@@ -519,7 +540,9 @@ contract ExistingDeploymentParser is Script, Logger {
         assertEq(strategyManager.owner(), executorMultisig, "strategyManager: owner not set correctly");
         assertEq(strategyManager.paused(), STRATEGY_MANAGER_INIT_PAUSED_STATUS, "strategyManager: init paused status set incorrectly");
         if (block.chainid == 1) {
-            assertEq(strategyManager.strategyWhitelister(), address(strategyFactory), "strategyManager: strategyWhitelister not set correctly");
+            assertEq(
+                strategyManager.strategyWhitelister(), address(strategyFactory), "strategyManager: strategyWhitelister not set correctly"
+            );
         } else if (block.chainid == 17_000) {
             // On holesky, for ease of whitelisting we set to executorMultisig
             // assertEq(
@@ -538,11 +561,14 @@ contract ExistingDeploymentParser is Script, Logger {
         assertEq(eigenPodImplementation.GENESIS_TIME(), EIGENPOD_GENESIS_TIME, "eigenPodImplementation: GENESIS TIME not set correctly");
         assertEq(address(eigenPodImplementation.ethPOS()), ETHPOSDepositAddress, "eigenPodImplementation: ethPOS not set correctly");
         // Strategies
-        for (uint256 i = 0; i < deployedStrategyArray.length; ++i) {
-            assertTrue(deployedStrategyArray[i].pauserRegistry() == eigenLayerPauserReg, "StrategyBaseTVLLimits: pauser registry not set correctly");
+        for (uint i = 0; i < deployedStrategyArray.length; ++i) {
+            assertTrue(
+                deployedStrategyArray[i].pauserRegistry() == eigenLayerPauserReg, "StrategyBaseTVLLimits: pauser registry not set correctly"
+            );
             assertEq(deployedStrategyArray[i].paused(), 0, "StrategyBaseTVLLimits: init paused status set incorrectly");
             assertTrue(
-                strategyManager.strategyIsWhitelistedForDeposit(deployedStrategyArray[i]), "StrategyBaseTVLLimits: strategy should be whitelisted"
+                strategyManager.strategyIsWhitelistedForDeposit(deployedStrategyArray[i]),
+                "StrategyBaseTVLLimits: strategy should be whitelisted"
             );
         }
 
@@ -573,7 +599,7 @@ contract ExistingDeploymentParser is Script, Logger {
         console.log("ETHPOSDepositAddress", ETHPOSDepositAddress);
 
         console.log("==== Strategies to Deploy,==");
-        for (uint256 i = 0; i < numStrategiesToDeploy; ++i) {
+        for (uint i = 0; i < numStrategiesToDeploy; ++i) {
             // Decode the token information into the Token struct
             StrategyUnderlyingTokenConfig memory tokenInfo = strategiesToDeploy[i];
 
@@ -594,7 +620,7 @@ contract ExistingDeploymentParser is Script, Logger {
         string memory parent_object = "parent object";
 
         string memory deployed_strategies = "strategies";
-        for (uint256 i = 0; i < numStrategiesToDeploy; ++i) {
+        for (uint i = 0; i < numStrategiesToDeploy; ++i) {
             deployed_strategies.serialize(strategiesToDeploy[i].tokenSymbol, address(deployedStrategyArray[i]));
         }
         string memory deployed_strategies_output = numStrategiesToDeploy == 0
@@ -647,14 +673,14 @@ contract ExistingDeploymentParser is Script, Logger {
         string memory initialDeploymentParamsPath
     ) internal virtual {
         // read and log the chainID
-        uint256 currentChainId = block.chainid;
+        uint currentChainId = block.chainid;
         console.log("You are parsing on ChainID", currentChainId);
 
         // READ JSON CONFIG DATA
         string memory json = cheats.readFile(initialDeploymentParamsPath);
 
         // check that the chainID matches the one in the config
-        uint256 configChainId = json.readUint(".config.environment.chainid");
+        uint configChainId = json.readUint(".config.environment.chainid");
         assertEq(configChainId, currentChainId, "You are on the wrong chain for this config");
 
         console.log("Using config file", initialDeploymentParamsPath);
@@ -666,4 +692,5 @@ contract ExistingDeploymentParser is Script, Logger {
         REWARDS_COORDINATOR_MAX_FUTURE_LENGTH = uint32(json.readUint(".config.params.MAX_FUTURE_LENGTH"));
         REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP = uint32(json.readUint(".config.params.GENESIS_REWARDS_TIMESTAMP"));
     }
+
 }

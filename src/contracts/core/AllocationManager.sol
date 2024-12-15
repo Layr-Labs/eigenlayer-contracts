@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
+import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 
+import "../libraries/OperatorSetLib.sol";
+import "../libraries/SlashingLib.sol";
 import "../mixins/PermissionControllerMixin.sol";
 import "../permissions/Pausable.sol";
-import "../libraries/SlashingLib.sol";
-import "../libraries/OperatorSetLib.sol";
+
 import "./AllocationManagerStorage.sol";
 
 contract AllocationManager is
@@ -19,6 +20,7 @@ contract AllocationManager is
     ReentrancyGuardUpgradeable,
     PermissionControllerMixin
 {
+
     using DoubleEndedQueue for DoubleEndedQueue.Bytes32Deque;
     using EnumerableSet for *;
 
@@ -838,4 +840,5 @@ contract AllocationManager is
             }
         }
     }
+
 }

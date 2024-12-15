@@ -5,6 +5,7 @@ import "../interfaces/IAVSDirectory.sol";
 import "../interfaces/IDelegationManager.sol";
 
 abstract contract AVSDirectoryStorage is IAVSDirectory {
+
     // Constants
 
     /// @notice The EIP-712 typehash for the `Registration` struct used by the contract
@@ -56,4 +57,5 @@ abstract contract AVSDirectoryStorage is IAVSDirectory {
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
     uint256[47] private __gap;
+
 }

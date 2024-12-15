@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 /// @author Anderson Singh.
 
 contract WETH is ERC20 {
+
     constructor() ERC20("Wrapped Ether", "WETH") {}
 
     /// @dev mint tokens for sender based on amount of ether sent.
@@ -16,7 +17,9 @@ contract WETH is ERC20 {
     }
 
     /// @dev withdraw ether based on requested amount and user balance.
-    function withdraw(uint256 _amount) external {
+    function withdraw(
+        uint _amount
+    ) external {
         require(balanceOf(msg.sender) >= _amount, "insufficient balance.");
         _burn(msg.sender, _amount);
         payable(msg.sender).transfer(_amount);
@@ -29,4 +32,5 @@ contract WETH is ERC20 {
     receive() external payable {
         deposit();
     }
+
 }

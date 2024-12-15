@@ -2,6 +2,7 @@
 pragma solidity >=0.5.0;
 
 interface IAVSRegistrar {
+
     /**
      * @notice Called by the AllocationManager when an operator wants to register
      * for one or more operator sets. This method should revert if registration
@@ -19,4 +20,5 @@ interface IAVSRegistrar {
      * @param operatorSetIds the list of operator set ids being deregistered from
      */
     function deregisterOperator(address operator, uint32[] calldata operatorSetIds) external;
+
 }

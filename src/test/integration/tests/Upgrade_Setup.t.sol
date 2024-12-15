@@ -60,34 +60,20 @@ contract IntegrationMainnetFork_UpgradeSetup is IntegrationCheckUtils {
 
     /// @notice Ensure contracts point at each other correctly via constructors
     /// override to remove ethPOSDeposit contract check
-    function _verifyContractPointers() internal virtual override view {
+    function _verifyContractPointers() internal view virtual override {
         // AVSDirectory
-        require(
-            avsDirectory.delegation() == delegationManager,
-            "avsDirectory: delegationManager address not set correctly"
-        );
+        require(avsDirectory.delegation() == delegationManager, "avsDirectory: delegationManager address not set correctly");
         // DelegationManager
-        require(
-            delegationManager.strategyManager() == strategyManager,
-            "delegationManager: strategyManager address not set correctly"
-        );
-        require(
-            delegationManager.eigenPodManager() == eigenPodManager,
-            "delegationManager: eigenPodManager address not set correctly"
-        );
+        require(delegationManager.strategyManager() == strategyManager, "delegationManager: strategyManager address not set correctly");
+        require(delegationManager.eigenPodManager() == eigenPodManager, "delegationManager: eigenPodManager address not set correctly");
         // StrategyManager
-        require(
-            strategyManager.delegation() == delegationManager,
-            "strategyManager: delegationManager address not set correctly"
-        );
+        require(strategyManager.delegation() == delegationManager, "strategyManager: delegationManager address not set correctly");
         // EPM
-        require(
-            eigenPodManager.eigenPodBeacon() == eigenPodBeacon,
-            "eigenPodManager: eigenPodBeacon contract address not set correctly"
-        );
+        require(eigenPodManager.eigenPodBeacon() == eigenPodBeacon, "eigenPodManager: eigenPodBeacon contract address not set correctly");
         require(
             eigenPodManager.delegationManager() == delegationManager,
             "eigenPodManager: delegationManager contract address not set correctly"
         );
     }
+
 }

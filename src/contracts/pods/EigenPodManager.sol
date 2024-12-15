@@ -1,15 +1,16 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "@openzeppelin/contracts/utils/Create2.sol";
-import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
+import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts/utils/Create2.sol";
 
 import "../libraries/SlashingLib.sol";
 import "../permissions/Pausable.sol";
-import "./EigenPodPausingConstants.sol";
+
 import "./EigenPodManagerStorage.sol";
+import "./EigenPodPausingConstants.sol";
 
 /**
  * @title The contract used for creating and managing EigenPods
@@ -29,6 +30,7 @@ contract EigenPodManager is
     EigenPodManagerStorage,
     ReentrancyGuardUpgradeable
 {
+
     using SlashingLib for *;
     using Math for *;
 
@@ -325,4 +327,5 @@ contract EigenPodManager is
         BeaconChainSlashingFactor memory bsf = _beaconChainSlashingFactor[podOwner];
         return bsf.isSet ? bsf.slashingFactor : WAD;
     }
+
 }

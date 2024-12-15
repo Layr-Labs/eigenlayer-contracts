@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "../interfaces/IRewardsCoordinator.sol";
-import "../interfaces/IDelegationManager.sol";
-import "../interfaces/IStrategyManager.sol";
 import "../interfaces/IAllocationManager.sol";
+import "../interfaces/IDelegationManager.sol";
+import "../interfaces/IRewardsCoordinator.sol";
+import "../interfaces/IStrategyManager.sol";
 
 /**
  * @title Storage variables for the `RewardsCoordinator` contract.
@@ -13,6 +13,7 @@ import "../interfaces/IAllocationManager.sol";
  * @notice This storage contract is separate from the logic to simplify the upgrade process.
  */
 abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
+
     // Constants
 
     /// @dev Index for flag that pauses calling createAVSRewardsSubmission
@@ -154,4 +155,5 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
     uint256[37] private __gap;
+
 }

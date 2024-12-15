@@ -1,21 +1,20 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "src/test/integration/users/User.t.sol";
 import "src/test/integration/IntegrationChecks.t.sol";
+import "src/test/integration/users/User.t.sol";
 
 contract Integration_Deposit_QueueWithdrawal_Complete is IntegrationCheckUtils {
+
     /// Randomly generates a user with different held assets. Then:
     /// 1. deposit into strategy
     /// 2. queueWithdrawal
     /// 3. completeQueuedWithdrawal"
-    function testFuzz_deposit_queueWithdrawal_completeAsTokens(uint24 _random) public {
+    function testFuzz_deposit_queueWithdrawal_completeAsTokens(
+        uint24 _random
+    ) public {
         // Configure the random parameters for the test
-        _configRand({
-            _randomSeed: _random,
-            _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
-            _userTypes: DEFAULT | ALT_METHODS
-        });
+        _configRand({_randomSeed: _random, _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL, _userTypes: DEFAULT | ALT_METHODS});
 
         // Create a staker with a nonzero balance and corresponding strategies
         (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
@@ -45,13 +44,11 @@ contract Integration_Deposit_QueueWithdrawal_Complete is IntegrationCheckUtils {
         assertFalse(delegationManager.isDelegated(address(staker)), "Staker should still not be delegated after withdrawal");
     }
 
-    function testFuzz_deposit_queueWithdrawal_completeAsShares(uint24 _random) public {
+    function testFuzz_deposit_queueWithdrawal_completeAsShares(
+        uint24 _random
+    ) public {
         // Configure the random parameters for the test
-        _configRand({
-            _randomSeed: _random,
-            _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
-            _userTypes: DEFAULT | ALT_METHODS
-        });
+        _configRand({_randomSeed: _random, _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL, _userTypes: DEFAULT | ALT_METHODS});
 
         // Create a staker with a nonzero balance and corresponding strategies
         (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
@@ -72,11 +69,12 @@ contract Integration_Deposit_QueueWithdrawal_Complete is IntegrationCheckUtils {
         // 3. Complete Queued Withdrawal
         _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint i = 0; i < withdrawals.length; i++) {
-            staker.completeWithdrawalAsShares(withdrawals[i]); 
+            staker.completeWithdrawalAsShares(withdrawals[i]);
             check_Withdrawal_AsShares_State(staker, User(payable(0)), withdrawals[i], strategies, shares);
         }
 
         // Ensure staker is still not delegated to anyone post withdrawal completion
         assertFalse(delegationManager.isDelegated(address(staker)), "Staker should still not be delegated after withdrawal");
     }
+
 }

@@ -9,6 +9,7 @@ import "../interfaces/IPauserRegistry.sol";
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
 contract PauserRegistry is IPauserRegistry {
+
     /// @notice Mapping of addresses to whether they hold the pauser role.
     mapping(address => bool) public isPauser;
 
@@ -54,4 +55,5 @@ contract PauserRegistry is IPauserRegistry {
         emit UnpauserChanged(unpauser, newUnpauser);
         unpauser = newUnpauser;
     }
+
 }

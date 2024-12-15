@@ -6,12 +6,13 @@ import "../Env.sol";
 import {MultisigBuilder} from "zeus-templates/templates/MultisigBuilder.sol";
 
 /**
- * Purpose: Enqueue a transaction which immediately sets `EigenPodManager.PAUSED_START_CHECKPOINT=true` 
+ * Purpose: Enqueue a transaction which immediately sets `EigenPodManager.PAUSED_START_CHECKPOINT=true`
  */
 contract Pause is MultisigBuilder, EigenPodPausingConstants {
+
     using Env for *;
 
-    function _runAsMultisig() prank(Env.pauserMultisig()) internal virtual override {
+    function _runAsMultisig() internal virtual override prank(Env.pauserMultisig()) {
         uint mask = 1 << PAUSED_START_CHECKPOINT;
 
         Env.proxy.eigenPodManager().pause(mask);
@@ -29,4 +30,5 @@ contract Pause is MultisigBuilder, EigenPodPausingConstants {
         vm.expectRevert("EigenPod.onlyWhenNotPaused: index is paused in EigenPodManager");
         pod.startCheckpoint(false);
     }
+
 }

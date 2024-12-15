@@ -14,29 +14,14 @@ contract DelegationManagerHarness is DelegationManager {
         IPermissionController _permissionController,
         uint32 _MIN_WITHDRAWAL_DELAY
     )
-        DelegationManager(
-            _strategyManager,
-            _eigenPodManager,
-            _allocationManager,
-            _pauserRegistry,
-            _permissionController,
-            _MIN_WITHDRAWAL_DELAY
-        )
+        DelegationManager(_strategyManager, _eigenPodManager, _allocationManager, _pauserRegistry, _permissionController, _MIN_WITHDRAWAL_DELAY)
     {}
 
-    function getSlashingFactor(
-        address staker,
-        IStrategy strategy,
-        uint64 operatorMaxMagnitude
-    ) external view returns (uint256) {
+    function getSlashingFactor(address staker, IStrategy strategy, uint64 operatorMaxMagnitude) external view returns (uint) {
         return _getSlashingFactor(staker, strategy, operatorMaxMagnitude);
     }
 
-    function getSlashingFactors(
-        address staker,
-        address operator,
-        IStrategy[] memory strategies
-    ) external view returns (uint256[] memory) {
+    function getSlashingFactors(address staker, address operator, IStrategy[] memory strategies) external view returns (uint[] memory) {
         return _getSlashingFactors(staker, operator, strategies);
     }
 
@@ -45,7 +30,7 @@ contract DelegationManagerHarness is DelegationManager {
         address operator,
         IStrategy[] memory strategies,
         uint32 blockNumber
-    ) external view returns (uint256[] memory) {
+    ) external view returns (uint[] memory) {
         return _getSlashingFactorsAtBlock(staker, operator, strategies, blockNumber);
     }
 
@@ -54,14 +39,12 @@ contract DelegationManagerHarness is DelegationManager {
         IStrategy strategy,
         uint64 prevMaxMagnitude,
         uint64 newMaxMagnitude
-    ) external view returns (uint256) {
+    ) external view returns (uint) {
         return _getSlashedSharesInQueue(operator, strategy, prevMaxMagnitude, newMaxMagnitude);
     }
 
-    function getDepositScalingFactor(
-        address staker,
-        IStrategy strategy
-    ) external view returns (uint256) {
+    function getDepositScalingFactor(address staker, IStrategy strategy) external view returns (uint) {
         return _depositScalingFactor[staker][strategy]._scalingFactor;
     }
+
 }

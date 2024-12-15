@@ -3,14 +3,15 @@ pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
 
-import "../interfaces/IStrategy.sol";
-import "../interfaces/IEigenPodManager.sol";
-import "../interfaces/IStrategyManager.sol";
 import "../interfaces/IDelegationManager.sol";
 import "../interfaces/IETHPOSDeposit.sol";
 import "../interfaces/IEigenPod.sol";
+import "../interfaces/IEigenPodManager.sol";
+import "../interfaces/IStrategy.sol";
+import "../interfaces/IStrategyManager.sol";
 
 abstract contract EigenPodManagerStorage is IEigenPodManager {
+
     /**
      *
      *                            CONSTANTS / IMMUTABLES
@@ -90,4 +91,5 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
     uint256[43] private __gap;
+
 }

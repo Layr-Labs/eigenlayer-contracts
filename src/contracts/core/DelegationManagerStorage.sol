@@ -3,10 +3,10 @@ pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
-import "../libraries/SlashingLib.sol";
+import "../interfaces/IAllocationManager.sol";
 import "../interfaces/IDelegationManager.sol";
 import "../interfaces/IEigenPodManager.sol";
-import "../interfaces/IAllocationManager.sol";
+import "../libraries/SlashingLib.sol";
 
 import {Snapshots} from "../libraries/Snapshots.sol";
 
@@ -17,6 +17,7 @@ import {Snapshots} from "../libraries/Snapshots.sol";
  * @notice This storage contract is separate from the logic to simplify the upgrade process.
  */
 abstract contract DelegationManagerStorage is IDelegationManager {
+
     using Snapshots for Snapshots.DefaultZeroHistory;
 
     // Constants
@@ -135,4 +136,5 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
     uint256[35] private __gap;
+
 }

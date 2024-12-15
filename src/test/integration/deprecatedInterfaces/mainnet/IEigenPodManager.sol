@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "./IStrategyManager.sol";
-import "./IEigenPod.sol";
 import "./IBeaconChainOracle.sol";
+import "./IEigenPod.sol";
+import "./IStrategyManager.sol";
+
 import "src/contracts/interfaces/IPausable.sol";
 
 /**
@@ -12,8 +13,8 @@ import "src/contracts/interfaces/IPausable.sol";
  * @author Layr Labs, Inc.
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
-
 interface IEigenPodManager_DeprecatedM2 is IPausable {
+
     /**
      * @notice Creates an EigenPod for the sender.
      * @dev Function will revert if the `msg.sender` already has an EigenPod.
@@ -38,13 +39,17 @@ interface IEigenPodManager_DeprecatedM2 is IPausable {
      * @dev Callable only by the podOwner's EigenPod contract.
      * @dev Reverts if `sharesDelta` is not a whole Gwei amount
      */
-    function recordBeaconChainETHBalanceUpdate(address podOwner, int256 sharesDelta) external;
+    function recordBeaconChainETHBalanceUpdate(address podOwner, int sharesDelta) external;
 
     /// @notice Returns the address of the `podOwner`'s EigenPod if it has been deployed.
-    function ownerToPod(address podOwner) external view returns (IEigenPod);
+    function ownerToPod(
+        address podOwner
+    ) external view returns (IEigenPod);
 
     /// @notice Returns the address of the `podOwner`'s EigenPod (whether it is deployed yet or not).
-    function getPod(address podOwner) external view returns (IEigenPod);
+    function getPod(
+        address podOwner
+    ) external view returns (IEigenPod);
 
     /// @notice The ETH2 Deposit Contract
     function ethPOS() external view returns (IETHPOSDeposit);
@@ -56,10 +61,12 @@ interface IEigenPodManager_DeprecatedM2 is IPausable {
     function strategyManager() external view returns (IStrategyManager);
 
     /// @notice Returns 'true' if the `podOwner` has created an EigenPod, and 'false' otherwise.
-    function hasPod(address podOwner) external view returns (bool);
+    function hasPod(
+        address podOwner
+    ) external view returns (bool);
 
     /// @notice Returns the number of EigenPods that have been created
-    function numPods() external view returns (uint256);
+    function numPods() external view returns (uint);
 
     /**
      * @notice Mapping from Pod owner owner to the number of shares they have in the virtual beacon chain ETH strategy.
@@ -69,7 +76,9 @@ interface IEigenPodManager_DeprecatedM2 is IPausable {
      * Likewise, when a withdrawal is completed, this "deficit" is decreased and the withdrawal amount is decreased; We can think of this
      * as the withdrawal "paying off the deficit".
      */
-    function podOwnerShares(address podOwner) external view returns (int256);
+    function podOwnerShares(
+        address podOwner
+    ) external view returns (int);
 
     /// @notice returns canonical, virtual beaconChainETH strategy
     function beaconChainETHStrategy() external view returns (IStrategy);
@@ -82,7 +91,7 @@ interface IEigenPodManager_DeprecatedM2 is IPausable {
      * shares from the operator to whom the staker is delegated.
      * @dev Reverts if `shares` is not a whole Gwei amount
      */
-    function removeShares(address podOwner, uint256 shares) external;
+    function removeShares(address podOwner, uint shares) external;
 
     /**
      * @notice Increases the `podOwner`'s shares by `shares`, paying off deficit if possible.
@@ -91,14 +100,15 @@ interface IEigenPodManager_DeprecatedM2 is IPausable {
      * in the event that the podOwner has an existing shares deficit (i.e. `podOwnerShares[podOwner]` starts below zero)
      * @dev Reverts if `shares` is not a whole Gwei amount
      */
-    function addShares(address podOwner, uint256 shares) external returns (uint256);
+    function addShares(address podOwner, uint shares) external returns (uint);
 
     /**
      * @notice Used by the DelegationManager to complete a withdrawal, sending tokens to some destination address
      * @dev Prioritizes decreasing the podOwner's share deficit, if they have one
      * @dev Reverts if `shares` is not a whole Gwei amount
      */
-    function withdrawSharesAsTokens(address podOwner, address destination, uint256 shares) external;
+    function withdrawSharesAsTokens(address podOwner, address destination, uint shares) external;
+
 }
 /**
  * @notice DEPRECATED INTERFACE at commit hash https://github.com/Layr-Labs/eigenlayer-contracts/tree/0139d6213927c0a7812578899ddd3dda58051928
@@ -108,6 +118,7 @@ interface IEigenPodManager_DeprecatedM2 is IPausable {
  */
 
 interface IEigenPodManager_DeprecatedM1 is IPausable {
+
     /**
      * @notice Creates an EigenPod for the sender.
      * @dev Function will revert if the `msg.sender` already has an EigenPod.
@@ -115,7 +126,7 @@ interface IEigenPodManager_DeprecatedM1 is IPausable {
     function createPod() external;
 
     /**
-     * @notice Stakes for a new beacon chain validator on the sender's EigenPod. 
+     * @notice Stakes for a new beacon chain validator on the sender's EigenPod.
      * Also creates an EigenPod for the sender if they don't have one already.
      * @param pubkey The 48 bytes public key of the beacon chain validator.
      * @param signature The validator's signature of the deposit data.
@@ -129,19 +140,19 @@ interface IEigenPodManager_DeprecatedM1 is IPausable {
      * @param amount The amount of ETH to 'deposit' (i.e. be credited to the podOwner).
      * @dev Callable only by the podOwner's EigenPod contract.
      */
-    function restakeBeaconChainETH(address podOwner, uint256 amount) external;
+    function restakeBeaconChainETH(address podOwner, uint amount) external;
 
     /**
      * @notice Removes beacon chain ETH from EigenLayer on behalf of the owner of an EigenPod, when the
      *         balance of a validator is lower than how much stake they have committed to EigenLayer
      * @param podOwner The owner of the pod whose balance must be removed.
-     * @param beaconChainETHStrategyIndex is the index of the beaconChainETHStrategy for the pod owner for the callback to 
+     * @param beaconChainETHStrategyIndex is the index of the beaconChainETHStrategy for the pod owner for the callback to
      *                                    the StrategyManager in case it must be removed from the list of the podOwner's strategies
      * @param amount The amount of ETH to remove.
      * @dev Callable only by the podOwner's EigenPod contract.
      */
-    function recordOvercommittedBeaconChainETH(address podOwner, uint256 beaconChainETHStrategyIndex, uint256 amount) external;
-    
+    function recordOvercommittedBeaconChainETH(address podOwner, uint beaconChainETHStrategyIndex, uint amount) external;
+
     /**
      * @notice Withdraws ETH from an EigenPod. The ETH must have first been withdrawn from the beacon chain.
      * @param podOwner The owner of the pod whose balance must be withdrawn.
@@ -149,29 +160,40 @@ interface IEigenPodManager_DeprecatedM1 is IPausable {
      * @param amount The amount of ETH to withdraw.
      * @dev Callable only by the StrategyManager contract.
      */
-    function withdrawRestakedBeaconChainETH(address podOwner, address recipient, uint256 amount) external;
+    function withdrawRestakedBeaconChainETH(address podOwner, address recipient, uint amount) external;
 
     /**
      * @notice Updates the oracle contract that provides the beacon chain state root
      * @param newBeaconChainOracle is the new oracle contract being pointed to
      * @dev Callable only by the owner of this contract (i.e. governance)
      */
-    function updateBeaconChainOracle(IBeaconChainOracle_DeprecatedM1 newBeaconChainOracle) external;
+    function updateBeaconChainOracle(
+        IBeaconChainOracle_DeprecatedM1 newBeaconChainOracle
+    ) external;
 
     /// @notice Returns the address of the `podOwner`'s EigenPod if it has been deployed.
-    function ownerToPod(address podOwner) external view returns(IEigenPod_DeprecatedM1);
+    function ownerToPod(
+        address podOwner
+    ) external view returns (IEigenPod_DeprecatedM1);
 
     /// @notice Returns the address of the `podOwner`'s EigenPod (whether it is deployed yet or not).
-    function getPod(address podOwner) external view returns(IEigenPod_DeprecatedM1);
+    function getPod(
+        address podOwner
+    ) external view returns (IEigenPod_DeprecatedM1);
 
     /// @notice Oracle contract that provides updates to the beacon chain's state
-    function beaconChainOracle() external view returns(IBeaconChainOracle_DeprecatedM1);    
+    function beaconChainOracle() external view returns (IBeaconChainOracle_DeprecatedM1);
 
     /// @notice Returns the Beacon Chain state root at `blockNumber`. Reverts if the Beacon Chain state root at `blockNumber` has not yet been finalized.
-    function getBeaconChainStateRoot(uint64 blockNumber) external view returns(bytes32);
+    function getBeaconChainStateRoot(
+        uint64 blockNumber
+    ) external view returns (bytes32);
 
     /// @notice EigenLayer's StrategyManager contract
-    function strategyManager() external view returns(IStrategyManager_DeprecatedM1);
-    
-    function hasPod(address podOwner) external view returns (bool);
+    function strategyManager() external view returns (IStrategyManager_DeprecatedM1);
+
+    function hasPod(
+        address podOwner
+    ) external view returns (bool);
+
 }

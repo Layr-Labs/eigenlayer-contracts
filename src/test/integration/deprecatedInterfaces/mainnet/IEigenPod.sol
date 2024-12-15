@@ -6,11 +6,12 @@ import "./IEigenPodManager.sol";
 
 /**
  * @notice M2 DEPRECATED INTERFACE at commit hash https://github.com/Layr-Labs/eigenlayer-contracts/tree/426f461c59b4f0e16f8becdffd747075edcaded8
- * @title The implementation contract used for restaking beacon chain ETH on EigenLayer 
+ * @title The implementation contract used for restaking beacon chain ETH on EigenLayer
  * @author Layr Labs, Inc.
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
 interface IEigenPod_DeprecatedM2 {
+
     /**
      *
      *                                STRUCTS / ENUMS
@@ -48,7 +49,9 @@ interface IEigenPod_DeprecatedM2 {
      */
 
     /// @notice Used to initialize the pointers to contracts crucial to the pod's functionality, in beacon proxy construction from EigenPodManager
-    function initialize(address owner) external;
+    function initialize(
+        address owner
+    ) external;
 
     /// @notice Called by EigenPodManager when the owner wants to create another ETH validator.
     function stake(bytes calldata pubkey, bytes calldata signature, bytes32 depositDataRoot) external payable;
@@ -60,7 +63,7 @@ interface IEigenPod_DeprecatedM2 {
      * `amountWei` input (when converted to GWEI).
      * @dev Reverts if `amountWei` is not a whole Gwei amount
      */
-    function withdrawRestakedBeaconChainETH(address recipient, uint256 amount) external;
+    function withdrawRestakedBeaconChainETH(address recipient, uint amount) external;
 
     /**
      * @dev Create a checkpoint used to prove this pod's active validator set. Checkpoints are completed
@@ -74,7 +77,9 @@ interface IEigenPod_DeprecatedM2 {
      * @param revertIfNoBalance Forces a revert if the pod ETH balance is 0. This allows the pod owner
      * to prevent accidentally starting a checkpoint that will not increase their shares
      */
-    function startCheckpoint(bool revertIfNoBalance) external;
+    function startCheckpoint(
+        bool revertIfNoBalance
+    ) external;
 
     /**
      * @dev Progress the current checkpoint towards completion by submitting one or more validator
@@ -150,7 +155,7 @@ interface IEigenPod_DeprecatedM2 {
     ) external;
 
     /// @notice called by owner of a pod to remove any ERC20s deposited in the pod
-    function recoverTokens(IERC20[] memory tokenList, uint256[] memory amountsToWithdraw, address recipient) external;
+    function recoverTokens(IERC20[] memory tokenList, uint[] memory amountsToWithdraw, address recipient) external;
 
     /// @notice Allows the owner of a pod to update the proof submitter, a permissioned
     /// address that can call `startCheckpoint` and `verifyWithdrawalCredentials`.
@@ -159,7 +164,9 @@ interface IEigenPod_DeprecatedM2 {
     /// only address that can call these methods.
     /// @param newProofSubmitter The new proof submitter address. If set to 0, only the
     /// pod owner will be able to call `startCheckpoint` and `verifyWithdrawalCredentials`
-    function setProofSubmitter(address newProofSubmitter) external;
+    function setProofSubmitter(
+        address newProofSubmitter
+    ) external;
 
     /**
      *
@@ -183,19 +190,27 @@ interface IEigenPod_DeprecatedM2 {
     function podOwner() external view returns (address);
 
     /// @notice Returns the validatorInfo struct for the provided pubkeyHash
-    function validatorPubkeyHashToInfo(bytes32 validatorPubkeyHash) external view returns (ValidatorInfo memory);
+    function validatorPubkeyHashToInfo(
+        bytes32 validatorPubkeyHash
+    ) external view returns (ValidatorInfo memory);
 
     /// @notice Returns the validatorInfo struct for the provided pubkey
-    function validatorPubkeyToInfo(bytes calldata validatorPubkey) external view returns (ValidatorInfo memory);
+    function validatorPubkeyToInfo(
+        bytes calldata validatorPubkey
+    ) external view returns (ValidatorInfo memory);
 
     /// @notice This returns the status of a given validator
-    function validatorStatus(bytes32 pubkeyHash) external view returns (VALIDATOR_STATUS);
+    function validatorStatus(
+        bytes32 pubkeyHash
+    ) external view returns (VALIDATOR_STATUS);
 
     /// @notice This returns the status of a given validator pubkey
-    function validatorStatus(bytes calldata validatorPubkey) external view returns (VALIDATOR_STATUS);
+    function validatorStatus(
+        bytes calldata validatorPubkey
+    ) external view returns (VALIDATOR_STATUS);
 
     /// @notice Number of validators with proven withdrawal credentials, who do not have proven full withdrawals
-    function activeValidatorCount() external view returns (uint256);
+    function activeValidatorCount() external view returns (uint);
 
     /// @notice The timestamp of the last checkpoint finalized
     function lastCheckpointTimestamp() external view returns (uint64);
@@ -234,17 +249,22 @@ interface IEigenPod_DeprecatedM2 {
     /// - The final partial withdrawal for an exited validator will be likely be included in this mapping.
     ///   i.e. if a validator was last checkpointed at 32.1 ETH before exiting, the next checkpoint will calculate their
     ///   "exited" amount to be 32.1 ETH rather than 32 ETH.
-    function checkpointBalanceExitedGwei(uint64) external view returns (uint64);
+    function checkpointBalanceExitedGwei(
+        uint64
+    ) external view returns (uint64);
 
     /// @notice Query the 4788 oracle to get the parent block root of the slot with the given `timestamp`
     /// @param timestamp of the block for which the parent block root will be returned. MUST correspond
     /// to an existing slot within the last 24 hours. If the slot at `timestamp` was skipped, this method
     /// will revert.
-    function getParentBlockRoot(uint64 timestamp) external view returns (bytes32);
+    function getParentBlockRoot(
+        uint64 timestamp
+    ) external view returns (bytes32);
+
 }
 /**
  * @notice DEPRECATED INTERFACE at commit hash https://github.com/Layr-Labs/eigenlayer-contracts/tree/0139d6213927c0a7812578899ddd3dda58051928
- * @title The implementation contract used for restaking beacon chain ETH on EigenLayer 
+ * @title The implementation contract used for restaking beacon chain ETH on EigenLayer
  * @author Layr Labs, Inc.
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice The main functionalities are:
@@ -257,12 +277,15 @@ interface IEigenPod_DeprecatedM2 {
  * @dev Note that all beacon chain balances are stored as gwei within the beacon chain datastructures. We choose
  *   to account balances in terms of gwei in the EigenPod contract and convert to wei when making calls to other contracts
  */
+
 interface IEigenPod_DeprecatedM1 {
+
     enum VALIDATOR_STATUS {
         INACTIVE, // doesnt exist
         ACTIVE, // staked on ethpos and withdrawal credentials are pointed to the EigenPod
         OVERCOMMITTED, // proven to be overcommitted to EigenLayer
         WITHDRAWN // withdrawn from the Beacon Chain
+
     }
 
     // this struct keeps track of PartialWithdrawalClaims
@@ -283,19 +306,23 @@ interface IEigenPod_DeprecatedM1 {
     }
 
     /// @notice The amount of eth, in gwei, that is restaked per validator
-    function REQUIRED_BALANCE_GWEI() external view returns(uint64);
+    function REQUIRED_BALANCE_GWEI() external view returns (uint64);
 
     /// @notice The amount of eth, in wei, that is restaked per validator
-    function REQUIRED_BALANCE_WEI() external view returns(uint256);
+    function REQUIRED_BALANCE_WEI() external view returns (uint);
 
     /// @notice this is a mapping of validator indices to a Validator struct containing pertinent info about the validator
-    function validatorStatus(uint40 validatorIndex) external view returns(VALIDATOR_STATUS);
+    function validatorStatus(
+        uint40 validatorIndex
+    ) external view returns (VALIDATOR_STATUS);
 
-    /// @notice the amount of execution layer ETH in this contract that is staked in EigenLayer (i.e. withdrawn from beaconchain but not EigenLayer), 
-    function restakedExecutionLayerGwei() external view returns(uint64);
+    /// @notice the amount of execution layer ETH in this contract that is staked in EigenLayer (i.e. withdrawn from beaconchain but not EigenLayer),
+    function restakedExecutionLayerGwei() external view returns (uint64);
 
     /// @notice Used to initialize the pointers to contracts crucial to the pod's functionality, in beacon proxy construction from EigenPodManager
-    function initialize(address owner) external;
+    function initialize(
+        address owner
+    ) external;
 
     /// @notice Called by EigenPodManager when the owner wants to create another ETH validator.
     function stake(bytes calldata pubkey, bytes calldata signature, bytes32 depositDataRoot) external payable;
@@ -306,7 +333,7 @@ interface IEigenPod_DeprecatedM1 {
      * @dev Called during withdrawal or slashing.
      * @dev Note that this function is marked as non-reentrant to prevent the recipient calling back into it
      */
-    function withdrawRestakedBeaconChainETH(address recipient, uint256 amount) external;
+    function withdrawRestakedBeaconChainETH(address recipient, uint amount) external;
 
     /// @notice The single EigenPodManager for EigenLayer
     function eigenPodManager() external view returns (IEigenPodManager_DeprecatedM1);
@@ -320,7 +347,6 @@ interface IEigenPod_DeprecatedM1 {
     /// @notice block number of the most recent withdrawal
     function mostRecentWithdrawalBlockNumber() external view returns (uint64);
 
-
     ///@notice mapping that tracks proven partial withdrawals
     function provenPartialWithdrawal(uint40 validatorIndex, uint64 slot) external view returns (bool);
 
@@ -329,9 +355,9 @@ interface IEigenPod_DeprecatedM1 {
      * this contract. It also verifies the current (not effective) balance  of the validator.  It verifies the provided proof of the ETH validator against the beacon chain state
      * root, marks the validator as 'active' in EigenLayer, and credits the restaked ETH in Eigenlayer.
      * @param oracleBlockNumber is the Beacon Chain blockNumber whose state root the `proof` will be proven against.
-     * @param validatorIndex is the index of the validator being proven, refer to consensus specs 
+     * @param validatorIndex is the index of the validator being proven, refer to consensus specs
      * @param proofs is the bytes that prove the ETH validator's balance and withdrawal credentials against a beacon chain state root
-     * @param validatorFields are the fields of the "Validator Container", refer to consensus specs 
+     * @param validatorFields are the fields of the "Validator Container", refer to consensus specs
      * for details: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
      */
     function verifyWithdrawalCredentialsAndBalance(
@@ -340,16 +366,16 @@ interface IEigenPod_DeprecatedM1 {
         BeaconChainProofs_DeprecatedM1.ValidatorFieldsAndBalanceProofs memory proofs,
         bytes32[] calldata validatorFields
     ) external;
-    
+
     /**
      * @notice This function records an overcommitment of stake to EigenLayer on behalf of a certain ETH validator.
      *         If successful, the overcommitted balance is penalized (available for withdrawal whenever the pod's balance allows).
      *         The ETH validator's shares in the enshrined beaconChainETH strategy are also removed from the StrategyManager and undelegated.
      * @param oracleBlockNumber The oracleBlockNumber whose state root the `proof` will be proven against.
      *        Must be within `VERIFY_OVERCOMMITTED_WINDOW_BLOCKS` of the current block.
-     * @param validatorIndex is the index of the validator being proven, refer to consensus specs 
+     * @param validatorIndex is the index of the validator being proven, refer to consensus specs
      * @param proofs is the proof of the validator's balance and validatorFields in the balance tree and the balanceRoot to prove for
-     * @param beaconChainETHStrategyIndex is the index of the beaconChainETHStrategy for the pod owner for the callback to 
+     * @param beaconChainETHStrategyIndex is the index of the beaconChainETHStrategy for the pod owner for the callback to
      *                                    the StrategyManager in case it must be removed from the list of the podOwners strategies
      * @param validatorFields are the fields of the "Validator Container", refer to consensus specs
      * @dev For more details on the Beacon Chain spec, see: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
@@ -358,7 +384,7 @@ interface IEigenPod_DeprecatedM1 {
         uint40 validatorIndex,
         BeaconChainProofs_DeprecatedM1.ValidatorFieldsAndBalanceProofs calldata proofs,
         bytes32[] calldata validatorFields,
-        uint256 beaconChainETHStrategyIndex,
+        uint beaconChainETHStrategyIndex,
         uint64 oracleBlockNumber
     ) external;
 
@@ -368,18 +394,19 @@ interface IEigenPod_DeprecatedM1 {
      * @param validatorFieldsProof is the proof of the validator's fields in the validator tree
      * @param withdrawalFields are the fields of the withdrawal being proven
      * @param validatorFields are the fields of the validator being proven
-     * @param beaconChainETHStrategyIndex is the index of the beaconChainETHStrategy for the pod owner for the callback to 
+     * @param beaconChainETHStrategyIndex is the index of the beaconChainETHStrategy for the pod owner for the callback to
      *        the EigenPodManager to the StrategyManager in case it must be removed from the podOwner's list of strategies
      */
     function verifyAndProcessWithdrawal(
-        BeaconChainProofs_DeprecatedM1.WithdrawalProofs calldata withdrawalProofs, 
+        BeaconChainProofs_DeprecatedM1.WithdrawalProofs calldata withdrawalProofs,
         bytes calldata validatorFieldsProof,
         bytes32[] calldata validatorFields,
         bytes32[] calldata withdrawalFields,
-        uint256 beaconChainETHStrategyIndex,
+        uint beaconChainETHStrategyIndex,
         uint64 oracleBlockNumber
     ) external;
 
     /// @notice Called by the pod owner to withdraw the balance of the pod when `hasRestaked` is set to false
     function withdrawBeforeRestaking() external;
+
 }

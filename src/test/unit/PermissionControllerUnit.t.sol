@@ -3,12 +3,13 @@ pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
 
-import "src/contracts/permissions/PermissionController.sol";
 import "src/contracts/interfaces/IPermissionController.sol";
+import "src/contracts/permissions/PermissionController.sol";
 
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
 
 contract PermissionControllerUnitTests is EigenLayerUnitTestSetup, IPermissionControllerEvents, IPermissionControllerErrors {
+
     address account = address(0x1);
     address admin = address(0x2);
     address admin2 = address(0x3);
@@ -20,7 +21,7 @@ contract PermissionControllerUnitTests is EigenLayerUnitTestSetup, IPermissionCo
     bytes4 selector1 = IDelegationManager.updateOperatorMetadataURI.selector;
     bytes4 selector2 = IAllocationManager.modifyAllocations.selector;
 
-    function setUp() virtual public override {
+    function setUp() public virtual override {
         // Setup - already deploys permissionController
         EigenLayerUnitTestSetup.setUp();
 
@@ -28,10 +29,14 @@ contract PermissionControllerUnitTests is EigenLayerUnitTestSetup, IPermissionCo
         target1 = address(delegationManagerMock);
         target2 = address(allocationManagerMock);
     }
+
 }
 
 contract PermissionControllerUnitTests_AddPendingAdmin is PermissionControllerUnitTests {
-    function testFuzz_getAdmin_notSet(address account) public view filterFuzzedAddressInputs(account) {
+
+    function testFuzz_getAdmin_notSet(
+        address account
+    ) public view filterFuzzedAddressInputs(account) {
         address[] memory admins = permissionController.getAdmins(account);
         assertEq(admins[0], account, "Account is not admin");
         assertTrue(permissionController.isAdmin(account, account), "Account is not admin");
@@ -67,10 +72,12 @@ contract PermissionControllerUnitTests_AddPendingAdmin is PermissionControllerUn
         assertTrue(permissionController.isPendingAdmin(account, admin), "Pending admin not set correctly");
         assertFalse(permissionController.isAdmin(account, admin), "Pending admin not set correctly");
     }
+
 }
 
 contract PermissionControllerUnitTests_RemovePendingAdmin is PermissionControllerUnitTests {
-    function setUp() virtual public override {
+
+    function setUp() public virtual override {
         // Setup
         PermissionControllerUnitTests.setUp();
 
@@ -103,10 +110,12 @@ contract PermissionControllerUnitTests_RemovePendingAdmin is PermissionControlle
         address[] memory pendingAdmins = permissionController.getPendingAdmins(account);
         assertEq(pendingAdmins.length, 0, "Pending admin not removed");
     }
+
 }
 
 contract PermissionControllerUnitTests_AcceptAdmin is PermissionControllerUnitTests {
-    function setUp() virtual public override {
+
+    function setUp() public virtual override {
         // Setup
         PermissionControllerUnitTests.setUp();
 
@@ -162,7 +171,7 @@ contract PermissionControllerUnitTests_AcceptAdmin is PermissionControllerUnitTe
         assertTrue(permissionController.canCall(account, admin, address(0), bytes4(0)), "Admin cannot call");
         assertTrue(permissionController.canCall(account, admin2, address(0), bytes4(0)), "Admin cannot call");
     }
-    
+
     function test_addMultipleAdmin_newAdminAdds() public {
         // Accept admin
         cheats.startPrank(admin);
@@ -184,10 +193,12 @@ contract PermissionControllerUnitTests_AcceptAdmin is PermissionControllerUnitTe
         assertTrue(permissionController.canCall(account, admin, address(0), bytes4(0)), "Admin cannot call");
         assertTrue(permissionController.canCall(account, admin2, address(0), bytes4(0)), "Admin cannot call");
     }
+
 }
 
 contract PermissionControllerUnitTests_RemoveAdmin is PermissionControllerUnitTests {
-    function setUp() virtual public override {
+
+    function setUp() public virtual override {
         // Setup
         PermissionControllerUnitTests.setUp();
 
@@ -214,7 +225,7 @@ contract PermissionControllerUnitTests_RemoveAdmin is PermissionControllerUnitTe
         cheats.prank(admin);
         cheats.expectRevert(IPermissionControllerErrors.AdminNotSet.selector);
         permissionController.removeAdmin(account, appointee1);
-    }   
+    }
 
     function test_revert_cannotHaveZeroAdmins() public {
         // Remove admin2
@@ -244,10 +255,12 @@ contract PermissionControllerUnitTests_RemoveAdmin is PermissionControllerUnitTe
         assertTrue(permissionController.isAdmin(account, admin2), "Admin2 is not admin");
         assertFalse(permissionController.isAdmin(account, admin), "Account should not be admin");
     }
+
 }
 
 contract PermissionControllerUnitTests_SetAppointee is PermissionControllerUnitTests {
-    function setUp() virtual public override {
+
+    function setUp() public virtual override {
         // Setup
         PermissionControllerUnitTests.setUp();
 
@@ -276,7 +289,7 @@ contract PermissionControllerUnitTests_SetAppointee is PermissionControllerUnitT
     }
 
     function test_revert_appointeeAlreadySet() public {
-        // Set appointee 
+        // Set appointee
         cheats.startPrank(admin);
         permissionController.setAppointee(account, appointee1, target1, selector1);
 
@@ -306,22 +319,22 @@ contract PermissionControllerUnitTests_SetAppointee is PermissionControllerUnitT
     }
 
     function _validateAppointeePermissions(address accountToCheck, address appointee, address target, bytes4 selector) internal view {
-       (address[] memory targets, bytes4[] memory selectors) = permissionController.getAppointeePermissions(accountToCheck, appointee);
-       bool foundTargetSelector = false;
-       for (uint256 i = 0; i < targets.length; ++i) {
-           if (targets[i] == target) {
+        (address[] memory targets, bytes4[] memory selectors) = permissionController.getAppointeePermissions(accountToCheck, appointee);
+        bool foundTargetSelector = false;
+        for (uint i = 0; i < targets.length; ++i) {
+            if (targets[i] == target) {
                 assertEq(selectors[i], selector, "Selector does not match target");
-                foundTargetSelector = true; 
+                foundTargetSelector = true;
                 break;
-           }
-       }
-       assertTrue(foundTargetSelector, "Appointee does not have permission for given target and selector");
+            }
+        }
+        assertTrue(foundTargetSelector, "Appointee does not have permission for given target and selector");
     }
 
     function _validateGetAppointees(address accountToCheck, address appointee, address target, bytes4 selector) internal view {
         (address[] memory appointees) = permissionController.getAppointees(accountToCheck, target, selector);
         bool foundAppointee = false;
-        for (uint256 i = 0; i < appointees.length; ++i) {
+        for (uint i = 0; i < appointees.length; ++i) {
             if (appointees[i] == appointee) {
                 foundAppointee = true;
                 break;
@@ -329,10 +342,12 @@ contract PermissionControllerUnitTests_SetAppointee is PermissionControllerUnitT
         }
         assertTrue(foundAppointee, "Appointee not in list of appointees for given target and selector");
     }
+
 }
 
 contract PermissionControllerUnitTests_RemoveAppointee is PermissionControllerUnitTests {
-    function setUp() virtual public override {
+
+    function setUp() public virtual override {
         // Setup
         PermissionControllerUnitTests.setUp();
 
@@ -397,29 +412,33 @@ contract PermissionControllerUnitTests_RemoveAppointee is PermissionControllerUn
         assertEq(selectors[0], selector1, "Incorrect selector");
     }
 
-
     function _validateRemoveAppointee(address accountToCheck, address appointee, address target, bytes4 selector) internal view {
         assertFalse(permissionController.canCall(accountToCheck, appointee, target, selector));
         _validateAppointeePermissionsRemoved(accountToCheck, appointee, target, selector);
         _validateGetAppointeesRemoved(accountToCheck, appointee, target, selector);
     }
 
-    function _validateAppointeePermissionsRemoved(address accountToCheck, address appointee, address target, bytes4 selector) internal view {
-       (address[] memory targets, bytes4[] memory selectors) = permissionController.getAppointeePermissions(accountToCheck, appointee);
-       bool foundTargetSelector = false;
-       for (uint256 i = 0; i < targets.length; ++i) {
-           if (targets[i] == target && selectors[i] == selector) {
-                foundTargetSelector = true; 
+    function _validateAppointeePermissionsRemoved(
+        address accountToCheck,
+        address appointee,
+        address target,
+        bytes4 selector
+    ) internal view {
+        (address[] memory targets, bytes4[] memory selectors) = permissionController.getAppointeePermissions(accountToCheck, appointee);
+        bool foundTargetSelector = false;
+        for (uint i = 0; i < targets.length; ++i) {
+            if (targets[i] == target && selectors[i] == selector) {
+                foundTargetSelector = true;
                 break;
-           }
-       }
-       assertFalse(foundTargetSelector, "Appointee still has permission for given target and selector");
+            }
+        }
+        assertFalse(foundTargetSelector, "Appointee still has permission for given target and selector");
     }
 
     function _validateGetAppointeesRemoved(address accountToCheck, address appointee, address target, bytes4 selector) internal view {
         (address[] memory appointees) = permissionController.getAppointees(accountToCheck, target, selector);
         bool foundAppointee = false;
-        for (uint256 i = 0; i < appointees.length; ++i) {
+        for (uint i = 0; i < appointees.length; ++i) {
             if (appointees[i] == appointee) {
                 foundAppointee = true;
                 break;
@@ -427,4 +446,5 @@ contract PermissionControllerUnitTests_RemoveAppointee is PermissionControllerUn
         }
         assertFalse(foundAppointee, "Appointee still in list of appointees for given target and selector");
     }
+
 }

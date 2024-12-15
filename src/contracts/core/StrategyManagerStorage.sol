@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "../interfaces/IStrategyManager.sol";
-import "../interfaces/IStrategy.sol";
-import "../interfaces/IEigenPodManager.sol";
-import "../interfaces/IDelegationManager.sol";
 import "../interfaces/IAVSDirectory.sol";
+import "../interfaces/IDelegationManager.sol";
+import "../interfaces/IEigenPodManager.sol";
+import "../interfaces/IStrategy.sol";
+import "../interfaces/IStrategyManager.sol";
 
 /**
  * @title Storage variables for the `StrategyManager` contract.
@@ -14,6 +14,7 @@ import "../interfaces/IAVSDirectory.sol";
  * @notice This storage contract is separate from the logic to simplify the upgrade process.
  */
 abstract contract StrategyManagerStorage is IStrategyManager {
+
     // Constants
 
     /// @notice The EIP-712 typehash for the deposit struct used by the contract
@@ -86,4 +87,5 @@ abstract contract StrategyManagerStorage is IStrategyManager {
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
     uint256[39] private __gap;
+
 }

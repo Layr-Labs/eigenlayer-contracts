@@ -2,10 +2,11 @@
 pragma solidity ^0.8.27;
 
 // NOTE: Mainnet uses the OpenZeppelin v4.9.0 contracts, but this imports the 4.7.1 version. This will be changed after an upgrade.
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
+import "../interfaces/IEigen.sol";
 import "../interfaces/IStrategyManager.sol";
 import "../strategies/StrategyBase.sol";
-import "../interfaces/IEigen.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
  * @title Eigen Strategy implementation of `IStrategy` interface, designed to be inherited from by more complex strategies.
@@ -25,6 +26,7 @@ import "../interfaces/IEigen.sol";
  * We specifically use a share offset of `SHARES_OFFSET` and a balance offset of `BALANCE_OFFSET`.
  */
 contract EigenStrategy is StrategyBase {
+
     using SafeERC20 for IERC20;
 
     /**
@@ -105,4 +107,5 @@ contract EigenStrategy is StrategyBase {
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
     uint256[49] private __gap;
+
 }

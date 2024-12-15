@@ -20,6 +20,7 @@ import "../interfaces/IPauserRegistry.sol";
  * indicates specifically that if the *third bit* of `_paused` is flipped -- i.e. it is a '1' -- then deposits should be paused
  */
 interface IPausable {
+
     /// @dev Thrown when caller is not pauser.
     error OnlyPauser();
     /// @dev Thrown when caller is not unpauser.
@@ -72,4 +73,5 @@ interface IPausable {
     function paused(
         uint8 index
     ) external view returns (bool);
+
 }

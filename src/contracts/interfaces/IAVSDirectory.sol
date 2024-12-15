@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.5.0;
 
-import "./ISignatureUtils.sol";
 import "./IPauserRegistry.sol";
+import "./ISignatureUtils.sol";
 import "./IStrategy.sol";
 
 interface IAVSDirectoryErrors {
+
     /// Operator Status
 
     /// @dev Thrown when an operator does not exist in the DelegationManager
@@ -16,9 +17,11 @@ interface IAVSDirectoryErrors {
     error OperatorAlreadyRegisteredToAVS();
     /// @dev Thrown when attempting to spend a spent eip-712 salt.
     error SaltSpent();
+
 }
 
 interface IAVSDirectoryTypes {
+
     /// @notice Enum representing the registration status of an operator with an AVS.
     /// @notice Only used by legacy M2 AVSs that have not integrated with operatorSets.
     enum OperatorAVSRegistrationStatus {
@@ -37,9 +40,11 @@ interface IAVSDirectoryTypes {
         bool registered;
         uint32 lastDeregisteredTimestamp;
     }
+
 }
 
 interface IAVSDirectoryEvents is IAVSDirectoryTypes {
+
     /**
      *  @notice Emitted when an operator's registration status with an AVS id udpated
      *  @notice Only used by legacy M2 AVSs that have not integrated with operatorSets.
@@ -57,9 +62,11 @@ interface IAVSDirectoryEvents is IAVSDirectoryTypes {
 
     /// @notice Emitted when an operator is migrated from M2 registration to operator sets.
     event OperatorMigratedToOperatorSets(address indexed operator, address indexed avs, uint32[] operatorSetIds);
+
 }
 
 interface IAVSDirectory is IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureUtils {
+
     /**
      *
      *                         EXTERNAL FUNCTIONS
@@ -147,4 +154,5 @@ interface IAVSDirectory is IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureU
 
     /// @notice The EIP-712 typehash for the OperatorSetRegistration struct used by the contract.
     function OPERATOR_SET_REGISTRATION_TYPEHASH() external view returns (bytes32);
+
 }

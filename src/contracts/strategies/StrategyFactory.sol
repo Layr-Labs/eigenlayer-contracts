@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
-import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
-import "./StrategyFactoryStorage.sol";
-import "./StrategyBase.sol";
 import "../permissions/Pausable.sol";
+import "./StrategyBase.sol";
+import "./StrategyFactoryStorage.sol";
+import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
 
 /**
  * @title Factory contract for deploying BeaconProxies of a Strategy contract implementation for arbitrary ERC20 tokens
@@ -15,6 +15,7 @@ import "../permissions/Pausable.sol";
  * @dev This may not be compatible with non-standard ERC20 tokens. Caution is warranted.
  */
 contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable {
+
     uint8 internal constant PAUSED_NEW_STRATEGIES = 0;
 
     /// @notice EigenLayer's StrategyManager contract
@@ -125,4 +126,5 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
         emit StrategyBeaconModified(strategyBeacon, _strategyBeacon);
         strategyBeacon = _strategyBeacon;
     }
+
 }

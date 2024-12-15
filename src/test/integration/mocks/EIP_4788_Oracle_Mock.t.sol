@@ -22,11 +22,14 @@ contract EIP_4788_Oracle_Mock {
         }
     }
 
-    function timestampToBlockRoot(uint timestamp) public view returns (bytes32) {
+    function timestampToBlockRoot(
+        uint timestamp
+    ) public view returns (bytes32) {
         return blockRoots[uint64(timestamp)];
     }
 
     function setBlockRoot(uint64 timestamp, bytes32 blockRoot) public {
         blockRoots[timestamp] = blockRoot;
     }
+
 }

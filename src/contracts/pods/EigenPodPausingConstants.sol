@@ -7,6 +7,7 @@ pragma solidity ^0.8.27;
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
 abstract contract EigenPodPausingConstants {
+
     /// @notice Index for flag that pauses creation of new EigenPods when set. See EigenPodManager code for details.
     uint8 internal constant PAUSED_NEW_EIGENPODS = 0;
     /**
@@ -33,4 +34,5 @@ abstract contract EigenPodPausingConstants {
     uint8 internal constant PAUSED_EIGENPODS_VERIFY_CHECKPOINT_PROOFS = 7;
 
     uint8 internal constant PAUSED_VERIFY_STALE_BALANCE = 8;
+
 }

@@ -5,12 +5,11 @@ import "src/test/integration/IntegrationChecks.t.sol";
 import "src/test/integration/users/User.t.sol";
 
 contract Integration_EigenPod_Slashing_Migration is IntegrationCheckUtils, EigenPodPausingConstants {
-    modifier r(uint24 _rand) {
-        _configRand({
-            _randomSeed: _rand,
-            _assetTypes: HOLDS_ETH,
-            _userTypes: DEFAULT
-        });
+
+    modifier r(
+        uint24 _rand
+    ) {
+        _configRand({_randomSeed: _rand, _assetTypes: HOLDS_ETH, _userTypes: DEFAULT});
 
         _;
     }
@@ -22,19 +21,21 @@ contract Integration_EigenPod_Slashing_Migration is IntegrationCheckUtils, Eigen
      * 3. Pause starting checkpoints
      * 4. Complete in progress checkpoint
      * 5. Upgrade EigenPod contracts
-     * 6. Exit subset of Validators 
+     * 6. Exit subset of Validators
      */
-    function test_upgrade_eigenpod_migration(uint24 _rand) public r(_rand) {
+    function test_upgrade_eigenpod_migration(
+        uint24 _rand
+    ) public r(_rand) {
         // Only run this test as a fork test
         if (forkType == LOCAL) {
             return;
         }
 
         // Initialize state
-        (User staker, ,) = _newRandomStaker();    
+        (User staker,,) = _newRandomStaker();
 
         (uint40[] memory validators, uint64 beaconBalanceGwei) = staker.startValidators();
-        beaconChain.advanceEpoch_NoRewards(); 
+        beaconChain.advanceEpoch_NoRewards();
 
         // 1. Verify validators' withdrawal credentials
         staker.verifyWithdrawalCredentials(validators);
@@ -72,4 +73,5 @@ contract Integration_EigenPod_Slashing_Migration is IntegrationCheckUtils, Eigen
         staker.completeCheckpoint();
         check_CompleteCheckpoint_WithExits_State(staker, subset, exitedBalanceGwei);
     }
+
 }

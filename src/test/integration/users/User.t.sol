@@ -5,21 +5,25 @@ import "forge-std/Test.sol";
 
 import "src/contracts/core/AllocationManager.sol";
 import "src/contracts/core/DelegationManager.sol";
-import "src/contracts/permissions/PermissionController.sol";
+
 import "src/contracts/core/StrategyManager.sol";
-import "src/contracts/pods/EigenPodManager.sol";
+import "src/contracts/permissions/PermissionController.sol";
+
 import "src/contracts/pods/EigenPod.sol";
+import "src/contracts/pods/EigenPodManager.sol";
 
 import "src/test/integration/TimeMachine.t.sol";
 import "src/test/integration/mocks/BeaconChainMock.t.sol";
-import "src/test/utils/Logger.t.sol";
+
 import "src/test/utils/ArrayLib.sol";
+import "src/test/utils/Logger.t.sol";
 
 struct Validator {
     uint40 index;
 }
 
 interface IUserDeployer {
+
     function allocationManager() external view returns (AllocationManager);
     function delegationManager() external view returns (DelegationManager);
     function permissionController() external view returns (PermissionController);
@@ -27,9 +31,11 @@ interface IUserDeployer {
     function eigenPodManager() external view returns (EigenPodManager);
     function timeMachine() external view returns (TimeMachine);
     function beaconChain() external view returns (BeaconChainMock);
+
 }
 
 contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
+
     using StdStyle for *;
     using SlashingLib for *;
     using ArrayLib for *;
@@ -40,7 +46,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     // TODO: fix this and view function getters. These are newly added contracts so these are initially
     // 0 addresses for fork tests. To work around this, we read these addresses directly off the delegationManager
     // from its immutable addresses. This is a temporary solution until we can figure out a better way to handle this.
-    // AllocationManager allocationManager; 
+    // AllocationManager allocationManager;
     // PermissionController permissionController;
     DelegationManager delegationManager;
     StrategyManager strategyManager;
@@ -65,7 +71,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         delegationManager = deployer.delegationManager();
         strategyManager = deployer.strategyManager();
         eigenPodManager = deployer.eigenPodManager();
-        
+
         timeMachine = deployer.timeMachine();
         beaconChain = deployer.beaconChain();
 
@@ -92,29 +98,20 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     /// @dev Allocates randomly accross the operator set's strategies with a sum of `magnitudeSum`.
     /// NOTE: Calling more than once will lead to deallocations...
     function modifyAllocations(
-        OperatorSet memory operatorSet, 
+        OperatorSet memory operatorSet,
         uint64[] memory magnitudes
     ) public virtual createSnapshot returns (AllocateParams memory) {
         print.method(
             "modifyAllocations",
-            string.concat(
-                "{avs: ",
-                Logger(operatorSet.avs).NAME_COLORED(),
-                ", operatorSetId: ",
-                cheats.toString(operatorSet.id),
-                "}"
-            )
+            string.concat("{avs: ", Logger(operatorSet.avs).NAME_COLORED(), ", operatorSetId: ", cheats.toString(operatorSet.id), "}")
         );
 
         IStrategy[] memory strategies = allocationManager().getStrategiesInOperatorSet(operatorSet);
 
         require(strategies.length == magnitudes.length, "User.modifyAllocations: length mismatch");
 
-        AllocateParams[] memory allocateParams = AllocateParams({
-            operatorSet: operatorSet,
-            strategies: strategies,
-            newMagnitudes: magnitudes
-        }).toArray();
+        AllocateParams[] memory allocateParams =
+            AllocateParams({operatorSet: operatorSet, strategies: strategies, newMagnitudes: magnitudes}).toArray();
 
         _tryPrankAppointee_AllocationManager(IAllocationManager.modifyAllocations.selector);
         allocationManager().modifyAllocations(address(this), allocateParams);
@@ -122,20 +119,17 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
 
         return allocateParams[0];
     }
-    
+
     function deallocateAll(
         OperatorSet memory operatorSet
     ) public virtual returns (AllocateParams memory) {
-        return modifyAllocations(
-            operatorSet, 
-            new uint64[](allocationManager().getStrategiesInOperatorSet(operatorSet).length)
-        );
+        return modifyAllocations(operatorSet, new uint64[](allocationManager().getStrategiesInOperatorSet(operatorSet).length));
     }
 
     function registerForOperatorSets(
         OperatorSet[] memory operatorSets
     ) public virtual createSnapshot {
-        for (uint256 i; i < operatorSets.length; ++i) {
+        for (uint i; i < operatorSets.length; ++i) {
             registerForOperatorSet(operatorSets[i]);
         }
     }
@@ -145,19 +139,12 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     ) public virtual createSnapshot {
         print.method(
             "registerForOperatorSet",
-            string.concat(
-                "{avs: ",
-                Logger(operatorSet.avs).NAME_COLORED(),
-                ", operatorSetId: ",
-                cheats.toString(operatorSet.id),
-                "}"
-            )
+            string.concat("{avs: ", Logger(operatorSet.avs).NAME_COLORED(), ", operatorSetId: ", cheats.toString(operatorSet.id), "}")
         );
-        
+
         _tryPrankAppointee_AllocationManager(IAllocationManager.registerForOperatorSets.selector);
         allocationManager().registerForOperatorSets(
-            address(this),
-            RegisterParams({avs: operatorSet.avs, operatorSetIds: operatorSet.id.toArrayU32(), data: ""})
+            address(this), RegisterParams({avs: operatorSet.avs, operatorSetIds: operatorSet.id.toArrayU32(), data: ""})
         );
         print.gasUsed();
     }
@@ -167,27 +154,19 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     ) public virtual createSnapshot {
         print.method(
             "deregisterFromOperatorSet",
-            string.concat(
-                "{avs: ",
-                Logger(operatorSet.avs).NAME_COLORED(),
-                ", operatorSetId: ",
-                cheats.toString(operatorSet.id),
-                "}"
-            )
+            string.concat("{avs: ", Logger(operatorSet.avs).NAME_COLORED(), ", operatorSetId: ", cheats.toString(operatorSet.id), "}")
         );
-        
+
         _tryPrankAppointee_AllocationManager(IAllocationManager.deregisterFromOperatorSets.selector);
         allocationManager().deregisterFromOperatorSets(
-            DeregisterParams({
-                operator: address(this),
-                avs: operatorSet.avs,
-                operatorSetIds: operatorSet.id.toArrayU32()
-            })
+            DeregisterParams({operator: address(this), avs: operatorSet.avs, operatorSetIds: operatorSet.id.toArrayU32()})
         );
         print.gasUsed();
     }
 
-    function setAllocationDelay(uint32 delay) public virtual createSnapshot {
+    function setAllocationDelay(
+        uint32 delay
+    ) public virtual createSnapshot {
         print.method("setAllocationDelay");
         _tryPrankAppointee_AllocationManager(IAllocationManager.setAllocationDelay.selector);
         allocationManager().setAllocationDelay(address(this), delay);
@@ -227,15 +206,13 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         delegationManager.undelegate(address(this));
         print.gasUsed();
 
-        for (uint256 i = 0; i < expectedWithdrawals.length; i++) {
+        for (uint i = 0; i < expectedWithdrawals.length; i++) {
             IStrategy strat = expectedWithdrawals[i].strategies[0];
 
-            string memory name = strat == beaconChainETHStrategy 
-                ? "Native ETH" 
-                : IERC20Metadata(address(strat.underlyingToken())).name();
-            
+            string memory name = strat == beaconChainETHStrategy ? "Native ETH" : IERC20Metadata(address(strat.underlyingToken())).name();
+
             console.log(
-                "   Expecting withdrawal with nonce %s of %s for %s scaled shares.", 
+                "   Expecting withdrawal with nonce %s of %s for %s scaled shares.",
                 expectedWithdrawals[i].nonce,
                 name,
                 expectedWithdrawals[i].scaledShares[0]
@@ -261,18 +238,17 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     /// @dev Queues a single withdrawal for every share and strategy pair
     function queueWithdrawals(
         IStrategy[] memory strategies,
-        uint256[] memory depositShares
+        uint[] memory depositShares
     ) public virtual createSnapshot returns (Withdrawal[] memory) {
         print.method("queueWithdrawals");
 
         address operator = delegationManager.delegatedTo(address(this));
         address withdrawer = address(this);
-        uint256 nonce = delegationManager.cumulativeWithdrawalsQueued(address(this));
+        uint nonce = delegationManager.cumulativeWithdrawalsQueued(address(this));
 
         // Create queueWithdrawals params
         QueuedWithdrawalParams[] memory params = new QueuedWithdrawalParams[](1);
-        params[0] =
-            QueuedWithdrawalParams({strategies: strategies, depositShares: depositShares, withdrawer: withdrawer});
+        params[0] = QueuedWithdrawalParams({strategies: strategies, depositShares: depositShares, withdrawer: withdrawer});
 
         // Create Withdrawal struct using same info
         Withdrawal[] memory withdrawals = new Withdrawal[](1);
@@ -300,7 +276,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     ) public virtual createSnapshot returns (IERC20[][] memory tokens) {
         print.method("completeWithdrawalsAsTokens");
         tokens = new IERC20[][](withdrawals.length);
-        for (uint256 i = 0; i < withdrawals.length; i++) {
+        for (uint i = 0; i < withdrawals.length; i++) {
             tokens[i] = _completeQueuedWithdrawal(withdrawals[i], true);
         }
     }
@@ -317,7 +293,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     ) public virtual createSnapshot returns (IERC20[][] memory tokens) {
         print.method("completeWithdrawalAsShares");
         tokens = new IERC20[][](withdrawals.length);
-        for (uint256 i = 0; i < withdrawals.length; i++) {
+        for (uint i = 0; i < withdrawals.length; i++) {
             tokens[i] = _completeQueuedWithdrawal(withdrawals[i], false);
         }
     }
@@ -393,15 +369,12 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     /// -----------------------------------------------------------------------
 
     /// @dev For each strategy/token balance, call the relevant deposit method
-    function depositIntoEigenlayer(
-        IStrategy[] memory strategies,
-        uint256[] memory tokenBalances
-    ) public virtual createSnapshot {
+    function depositIntoEigenlayer(IStrategy[] memory strategies, uint[] memory tokenBalances) public virtual createSnapshot {
         print.method("depositIntoEigenlayer");
 
-        for (uint256 i = 0; i < strategies.length; i++) {
+        for (uint i = 0; i < strategies.length; i++) {
             IStrategy strat = strategies[i];
-            uint256 tokenBalance = tokenBalances[i];
+            uint tokenBalance = tokenBalances[i];
 
             if (strat == BEACONCHAIN_ETH_STRAT) {
                 (uint40[] memory newValidators,) = _startValidators();
@@ -417,12 +390,12 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         }
     }
 
-    function updateBalances(IStrategy[] memory strategies, int256[] memory tokenDeltas) public virtual createSnapshot {
+    function updateBalances(IStrategy[] memory strategies, int[] memory tokenDeltas) public virtual createSnapshot {
         print.method("updateBalances");
 
-        for (uint256 i = 0; i < strategies.length; i++) {
+        for (uint i = 0; i < strategies.length; i++) {
             IStrategy strat = strategies[i];
-            int256 delta = tokenDeltas[i];
+            int delta = tokenDeltas[i];
 
             if (strat == BEACONCHAIN_ETH_STRAT) {
                 // If any balance update has occured, a checkpoint will pick it up
@@ -431,7 +404,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
                     _completeCheckpoint();
                 }
             } else {
-                uint256 tokens = uint256(delta);
+                uint tokens = uint(delta);
                 IERC20 underlyingToken = strat.underlyingToken();
                 underlyingToken.approve(address(strategyManager), tokens);
                 strategyManager.depositIntoStrategy(strat, underlyingToken, tokens);
@@ -452,13 +425,10 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         return PermissionController(address(delegationManager.permissionController()));
     }
 
-    function _completeQueuedWithdrawal(
-        Withdrawal memory withdrawal,
-        bool receiveAsTokens
-    ) internal virtual returns (IERC20[] memory) {
+    function _completeQueuedWithdrawal(Withdrawal memory withdrawal, bool receiveAsTokens) internal virtual returns (IERC20[] memory) {
         IERC20[] memory tokens = new IERC20[](withdrawal.strategies.length);
 
-        for (uint256 i = 0; i < tokens.length; i++) {
+        for (uint i = 0; i < tokens.length; i++) {
             IStrategy strat = withdrawal.strategies[i];
 
             if (strat == BEACONCHAIN_ETH_STRAT) {
@@ -499,17 +469,17 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     /// Note: This method also advances one epoch forward on the beacon chain, so that
     /// withdrawal credential proofs are generated for each validator.
     function _startValidators() internal returns (uint40[] memory, uint64) {
-        uint256 balanceWei = address(this).balance;
+        uint balanceWei = address(this).balance;
 
         // Number of full validators: balance / 32 ETH
-        uint256 numValidators = balanceWei / 32 ether;
+        uint numValidators = balanceWei / 32 ether;
         balanceWei -= (numValidators * 32 ether);
 
         // If we still have at least 1 ETH left over, we can create another (non-full) validator
         // Note that in the mock beacon chain this validator will generate rewards like any other.
         // The main point is to ensure pods are able to handle validators that have less than 32 ETH
-        uint256 lastValidatorBalance;
-        uint256 totalValidators = numValidators;
+        uint lastValidatorBalance;
+        uint totalValidators = numValidators;
         if (balanceWei >= 1 ether) {
             lastValidatorBalance = balanceWei - (balanceWei % 1 gwei);
             balanceWei -= lastValidatorBalance;
@@ -524,7 +494,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         console.log("- depositing balance to beacon chain (gwei)", totalBeaconBalanceGwei);
 
         // Create each of the full validators
-        for (uint256 i = 0; i < numValidators; i++) {
+        for (uint i = 0; i < numValidators; i++) {
             uint40 validatorIndex = beaconChain.newValidator{value: 32 ether}(_podWithdrawalCredentials());
 
             newValidators[i] = validatorIndex;
@@ -547,7 +517,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     ) internal returns (uint64 exitedBalanceGwei) {
         console.log("- exiting num validators", _validators.length);
 
-        for (uint256 i = 0; i < _validators.length; i++) {
+        for (uint i = 0; i < _validators.length; i++) {
             exitedBalanceGwei += beaconChain.exitValidator(_validators[i]);
         }
 
@@ -614,10 +584,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         return abi.encodePacked(bytes1(uint8(1)), bytes11(0), address(pod));
     }
 
-    function _getSlashingFactor(
-        address staker,
-        IStrategy strategy
-    ) internal view returns (uint256) {
+    function _getSlashingFactor(address staker, IStrategy strategy) internal view returns (uint) {
         address operator = delegationManager.delegatedTo(staker);
         uint64 maxMagnitude = allocationManager().getMaxMagnitudes(operator, strategy.toArray())[0];
         if (strategy == beaconChainETHStrategy) {
@@ -631,21 +598,17 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     function _getExpectedWithdrawalStructsForStaker(
         address staker
     ) internal view returns (Withdrawal[] memory expectedWithdrawals) {
-        (IStrategy[] memory strategies, )
-             = delegationManager.getDepositedShares(staker);
+        (IStrategy[] memory strategies,) = delegationManager.getDepositedShares(staker);
 
         expectedWithdrawals = new Withdrawal[](strategies.length);
 
-        (uint256[] memory withdrawableShares,)
-             = delegationManager.getWithdrawableShares(staker, strategies);
+        (uint[] memory withdrawableShares,) = delegationManager.getWithdrawableShares(staker, strategies);
 
         address delegatedTo = delegationManager.delegatedTo(staker);
-        uint256 nonce = delegationManager.cumulativeWithdrawalsQueued(staker);
-        
-        for (uint256 i = 0; i < strategies.length; ++i) {
-            uint256 scaledShares = withdrawableShares[i].scaleForQueueWithdrawal(
-                _getSlashingFactor(staker, strategies[i])
-            );
+        uint nonce = delegationManager.cumulativeWithdrawalsQueued(staker);
+
+        for (uint i = 0; i < strategies.length; ++i) {
+            uint scaledShares = withdrawableShares[i].scaleForQueueWithdrawal(_getSlashingFactor(staker, strategies[i]));
 
             if (strategies[i] == beaconChainETHStrategy) {
                 scaledShares -= scaledShares % 1 gwei;
@@ -666,9 +629,9 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     function getActiveValidators() public view returns (uint40[] memory) {
         uint40[] memory activeValidators = new uint40[](validators.length);
 
-        uint256 numActive;
-        uint256 pos;
-        for (uint256 i = 0; i < validators.length; i++) {
+        uint numActive;
+        uint pos;
+        for (uint i = 0; i < validators.length; i++) {
             if (beaconChain.isActive(validators[i])) {
                 activeValidators[pos] = validators[i];
                 numActive++;
@@ -684,10 +647,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         return activeValidators;
     }
 
-    function _tryPrankAppointee(
-        address target,
-        bytes4 selector
-    ) internal {
+    function _tryPrankAppointee(address target, bytes4 selector) internal {
         address[] memory appointees = permissionController().getAppointees(address(this), target, selector);
         if (appointees.length != 0) cheats.prank(appointees[0]);
     }
@@ -703,26 +663,25 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     ) internal {
         return _tryPrankAppointee(address(delegationManager), selector);
     }
+
 }
 
 /// @notice A user contract that calls nonstandard methods (like xBySignature methods)
 contract User_AltMethods is User {
+
     mapping(bytes32 => bool) public signedHashes;
 
     constructor(
         string memory name
     ) User(name) {}
 
-    function depositIntoEigenlayer(
-        IStrategy[] memory strategies,
-        uint256[] memory tokenBalances
-    ) public override createSnapshot {
+    function depositIntoEigenlayer(IStrategy[] memory strategies, uint[] memory tokenBalances) public override createSnapshot {
         print.method("depositIntoEigenlayer_ALT");
 
-        uint256 expiry = type(uint256).max;
-        for (uint256 i = 0; i < strategies.length; i++) {
+        uint expiry = type(uint).max;
+        for (uint i = 0; i < strategies.length; i++) {
             IStrategy strat = strategies[i];
-            uint256 tokenBalance = tokenBalances[i];
+            uint tokenBalance = tokenBalances[i];
 
             if (strat == BEACONCHAIN_ETH_STRAT) {
                 (uint40[] memory newValidators,) = _startValidators();
@@ -735,29 +694,18 @@ contract User_AltMethods is User {
                 underlyingToken.approve(address(strategyManager), tokenBalance);
 
                 // Get signature
-                uint256 nonceBefore = strategyManager.nonces(address(this));
+                uint nonceBefore = strategyManager.nonces(address(this));
                 bytes32 structHash = keccak256(
-                    abi.encode(
-                        strategyManager.DEPOSIT_TYPEHASH(),
-                        address(this),
-                        strat,
-                        underlyingToken,
-                        tokenBalance,
-                        nonceBefore,
-                        expiry
-                    )
+                    abi.encode(strategyManager.DEPOSIT_TYPEHASH(), address(this), strat, underlyingToken, tokenBalance, nonceBefore, expiry)
                 );
-                bytes32 digestHash =
-                    keccak256(abi.encodePacked("\x19\x01", strategyManager.domainSeparator(), structHash));
+                bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", strategyManager.domainSeparator(), structHash));
                 bytes memory signature = bytes(abi.encodePacked(digestHash)); // dummy sig data
 
                 // Mark hash as signed
                 signedHashes[digestHash] = true;
 
                 // Deposit
-                strategyManager.depositIntoStrategyWithSignature(
-                    strat, underlyingToken, tokenBalance, address(this), expiry, signature
-                );
+                strategyManager.depositIntoStrategyWithSignature(strat, underlyingToken, tokenBalance, address(this), expiry, signature);
 
                 // Mark hash as used
                 signedHashes[digestHash] = false;
@@ -774,4 +722,5 @@ contract User_AltMethods is User {
             return 0xffffffff;
         }
     }
+
 }

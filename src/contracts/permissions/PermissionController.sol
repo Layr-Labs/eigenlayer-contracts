@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "./PermissionControllerStorage.sol";
+import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 
 contract PermissionController is Initializable, PermissionControllerStorage {
+
     using EnumerableSet for *;
 
     modifier onlyAdmin(
@@ -224,4 +225,5 @@ contract PermissionController is Initializable, PermissionControllerStorage {
         bytes32 targetSelector = _encodeTargetSelector(target, selector);
         return _permissions[account].permissionAppointees[targetSelector].values();
     }
+
 }

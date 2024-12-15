@@ -1,15 +1,16 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
+import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "../libraries/Merkle.sol";
+
+import "../mixins/PermissionControllerMixin.sol";
 import "../permissions/Pausable.sol";
 import "./RewardsCoordinatorStorage.sol";
-import "../mixins/PermissionControllerMixin.sol";
 
 /**
  * @title RewardsCoordinator
@@ -28,6 +29,7 @@ contract RewardsCoordinator is
     RewardsCoordinatorStorage,
     PermissionControllerMixin
 {
+
     using SafeERC20 for IERC20;
 
     modifier onlyRewardsUpdater() {
@@ -650,4 +652,5 @@ contract RewardsCoordinator is
         }
         revert InvalidRoot();
     }
+
 }

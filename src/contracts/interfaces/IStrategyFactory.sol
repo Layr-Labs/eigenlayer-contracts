@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
+import "./IStrategy.sol";
 import "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "./IStrategy.sol";
 
 /**
  * @title Interface for the `StrategyFactory` contract.
@@ -12,6 +12,7 @@ import "./IStrategy.sol";
  * @dev This may not be compatible with non-standard ERC20 tokens. Caution is warranted.
  */
 interface IStrategyFactory {
+
     /// @dev Thrown when attempting to deploy a strategy for a blacklisted token.
     error BlacklistedToken();
     /// @dev Thrown when attempting to deploy a strategy that already exists.
@@ -65,4 +66,5 @@ interface IStrategyFactory {
 
     /// @notice Emitted whenever a slot is set in the `tokenStrategy` mapping
     event StrategySetForToken(IERC20 token, IStrategy strategy);
+
 }

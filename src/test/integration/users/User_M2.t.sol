@@ -3,18 +3,20 @@ pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
 
+import "src/test/integration/deprecatedInterfaces/mainnet/IDelegationManager.sol";
 import "src/test/integration/deprecatedInterfaces/mainnet/IEigenPod.sol";
 import "src/test/integration/deprecatedInterfaces/mainnet/IEigenPodManager.sol";
 import "src/test/integration/deprecatedInterfaces/mainnet/IStrategyManager.sol";
-import "src/test/integration/deprecatedInterfaces/mainnet/IDelegationManager.sol";
 
-import "src/test/integration/users/User.t.sol";
 import "src/test/integration/TimeMachine.t.sol";
 import "src/test/integration/mocks/BeaconChainMock.t.sol";
-import "src/test/utils/Logger.t.sol";
+import "src/test/integration/users/User.t.sol";
+
 import "src/test/utils/ArrayLib.sol";
+import "src/test/utils/Logger.t.sol";
 
 interface IUserM2MainnetForkDeployer {
+
     function delegationManager() external view returns (DelegationManager);
     function strategyManager() external view returns (StrategyManager);
     function eigenPodManager() external view returns (EigenPodManager);
@@ -23,6 +25,7 @@ interface IUserM2MainnetForkDeployer {
     function eigenPodManager_M2() external view returns (IEigenPodManager_DeprecatedM2);
     function timeMachine() external view returns (TimeMachine);
     function beaconChain() external view returns (BeaconChainMock);
+
 }
 
 /**
@@ -30,6 +33,7 @@ interface IUserM2MainnetForkDeployer {
  * to perform current local contract methods after a upgrade of core contracts
  */
 contract User_M2 is User {
+
     using ArrayLib for *;
     using print for *;
 
@@ -68,18 +72,18 @@ contract User_M2 is User {
     /// @dev Returns the withdrawal struct of the new slashing interface
     function queueWithdrawals(
         IStrategy[] memory strategies,
-        uint256[] memory shares
+        uint[] memory shares
     ) public virtual override createSnapshot returns (Withdrawal[] memory) {
         print.method("queueWithdrawals_M2");
 
         address operator = delegationManager_M2.delegatedTo(address(this));
         address withdrawer = address(this);
-        uint256 nonce = delegationManager_M2.cumulativeWithdrawalsQueued(address(this));
+        uint nonce = delegationManager_M2.cumulativeWithdrawalsQueued(address(this));
 
         // Create queueWithdrawals params
-        IDelegationManager_DeprecatedM2.QueuedWithdrawalParams[] memory params = new IDelegationManager_DeprecatedM2.QueuedWithdrawalParams[](1);
-        params[0] =
-            IDelegationManager_DeprecatedM2.QueuedWithdrawalParams({strategies: strategies, shares: shares, withdrawer: withdrawer});
+        IDelegationManager_DeprecatedM2.QueuedWithdrawalParams[] memory params =
+            new IDelegationManager_DeprecatedM2.QueuedWithdrawalParams[](1);
+        params[0] = IDelegationManager_DeprecatedM2.QueuedWithdrawalParams({strategies: strategies, shares: shares, withdrawer: withdrawer});
 
         // Create Withdrawal struct using same info
         IDelegationManager_DeprecatedM2.Withdrawal[] memory withdrawals = new IDelegationManager_DeprecatedM2.Withdrawal[](1);
@@ -126,12 +130,12 @@ contract User_M2 is User {
     /// Strategy Methods
     /// -----------------------------------------------------------------------
 
-    function updateBalances(IStrategy[] memory strategies, int256[] memory tokenDeltas) public virtual override createSnapshot {
+    function updateBalances(IStrategy[] memory strategies, int[] memory tokenDeltas) public virtual override createSnapshot {
         print.method("updateBalances_M2");
 
-        for (uint256 i = 0; i < strategies.length; i++) {
+        for (uint i = 0; i < strategies.length; i++) {
             IStrategy strat = strategies[i];
-            int256 delta = tokenDeltas[i];
+            int delta = tokenDeltas[i];
 
             if (strat == BEACONCHAIN_ETH_STRAT) {
                 // If any balance update has occured, a checkpoint will pick it up
@@ -140,7 +144,7 @@ contract User_M2 is User {
                     _completeCheckpoint();
                 }
             } else {
-                uint256 tokens = uint256(delta);
+                uint tokens = uint(delta);
                 IERC20 underlyingToken = strat.underlyingToken();
                 underlyingToken.approve(address(strategyManager), tokens);
                 strategyManager_M2.depositIntoStrategy(strat, underlyingToken, tokens);
@@ -170,14 +174,13 @@ contract User_M2 is User {
         cheats.resumeTracing();
     }
 
-
     function _completeQueuedWithdrawal_M2(
         IDelegationManager_DeprecatedM2.Withdrawal memory withdrawal,
         bool receiveAsTokens
     ) internal virtual returns (IERC20[] memory) {
         IERC20[] memory tokens = new IERC20[](withdrawal.strategies.length);
 
-        for (uint256 i = 0; i < tokens.length; i++) {
+        for (uint i = 0; i < tokens.length; i++) {
             IStrategy strat = withdrawal.strategies[i];
 
             if (strat == BEACONCHAIN_ETH_STRAT) {
@@ -211,16 +214,16 @@ contract User_M2 is User {
     function _getExpectedM2WithdrawalStructsForStaker(
         address staker
     ) internal view returns (IDelegationManager_DeprecatedM2.Withdrawal[] memory) {
-        (IStrategy[] memory strategies, uint256[] memory shares)
-            = delegationManager_M2.getDelegatableShares(staker);
+        (IStrategy[] memory strategies, uint[] memory shares) = delegationManager_M2.getDelegatableShares(staker);
 
-        IDelegationManager_DeprecatedM2.Withdrawal[] memory expectedWithdrawals = new IDelegationManager_DeprecatedM2.Withdrawal[](strategies.length);
+        IDelegationManager_DeprecatedM2.Withdrawal[] memory expectedWithdrawals =
+            new IDelegationManager_DeprecatedM2.Withdrawal[](strategies.length);
         address delegatedTo = delegationManager_M2.delegatedTo(staker);
-        uint256 nonce = delegationManager_M2.cumulativeWithdrawalsQueued(staker);
+        uint nonce = delegationManager_M2.cumulativeWithdrawalsQueued(staker);
 
-        for (uint256 i = 0; i < strategies.length; ++i) {
+        for (uint i = 0; i < strategies.length; ++i) {
             IStrategy[] memory singleStrategy = new IStrategy[](1);
-            uint256[] memory singleShares = new uint256[](1);
+            uint[] memory singleShares = new uint[](1);
             singleStrategy[0] = strategies[i];
             singleShares[0] = shares[i];
             expectedWithdrawals[i] = IDelegationManager_DeprecatedM2.Withdrawal({
@@ -236,26 +239,25 @@ contract User_M2 is User {
 
         return expectedWithdrawals;
     }
+
 }
 
 /// @notice A user contract that calls nonstandard methods (like xBySignature methods)
 contract User_M2_AltMethods is User_M2 {
+
     mapping(bytes32 => bool) public signedHashes;
 
     constructor(
         string memory name
     ) User_M2(name) {}
 
-    function depositIntoEigenlayer(
-        IStrategy[] memory strategies,
-        uint256[] memory tokenBalances
-    ) public override createSnapshot {
+    function depositIntoEigenlayer(IStrategy[] memory strategies, uint[] memory tokenBalances) public override createSnapshot {
         print.method("depositIntoEigenlayer_ALT");
 
-        uint256 expiry = type(uint256).max;
-        for (uint256 i = 0; i < strategies.length; i++) {
+        uint expiry = type(uint).max;
+        for (uint i = 0; i < strategies.length; i++) {
             IStrategy strat = strategies[i];
-            uint256 tokenBalance = tokenBalances[i];
+            uint tokenBalance = tokenBalances[i];
 
             if (strat == BEACONCHAIN_ETH_STRAT) {
                 (uint40[] memory newValidators,) = _startValidators();
@@ -268,29 +270,20 @@ contract User_M2_AltMethods is User_M2 {
                 underlyingToken.approve(address(strategyManager), tokenBalance);
 
                 // Get signature
-                uint256 nonceBefore = strategyManager_M2.nonces(address(this));
+                uint nonceBefore = strategyManager_M2.nonces(address(this));
                 bytes32 structHash = keccak256(
                     abi.encode(
-                        strategyManager_M2.DEPOSIT_TYPEHASH(),
-                        address(this),
-                        strat,
-                        underlyingToken,
-                        tokenBalance,
-                        nonceBefore,
-                        expiry
+                        strategyManager_M2.DEPOSIT_TYPEHASH(), address(this), strat, underlyingToken, tokenBalance, nonceBefore, expiry
                     )
                 );
-                bytes32 digestHash =
-                    keccak256(abi.encodePacked("\x19\x01", strategyManager_M2.domainSeparator(), structHash));
+                bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", strategyManager_M2.domainSeparator(), structHash));
                 bytes memory signature = bytes(abi.encodePacked(digestHash)); // dummy sig data
 
                 // Mark hash as signed
                 signedHashes[digestHash] = true;
 
                 // Deposit
-                strategyManager_M2.depositIntoStrategyWithSignature(
-                    strat, underlyingToken, tokenBalance, address(this), expiry, signature
-                );
+                strategyManager_M2.depositIntoStrategyWithSignature(strat, underlyingToken, tokenBalance, address(this), expiry, signature);
 
                 // Mark hash as used
                 signedHashes[digestHash] = false;
@@ -307,4 +300,5 @@ contract User_M2_AltMethods is User_M2 {
             return 0xffffffff;
         }
     }
+
 }

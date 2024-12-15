@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
+import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "../mixins/SignatureUtils.sol";
 import "../interfaces/IEigenPodManager.sol";
+import "../mixins/SignatureUtils.sol";
 import "../permissions/Pausable.sol";
 import "./StrategyManagerStorage.sol";
 
@@ -28,6 +28,7 @@ contract StrategyManager is
     StrategyManagerStorage,
     SignatureUtils
 {
+
     using SlashingLib for *;
     using SafeERC20 for IERC20;
 
@@ -376,4 +377,5 @@ contract StrategyManager is
             )
         );
     }
+
 }

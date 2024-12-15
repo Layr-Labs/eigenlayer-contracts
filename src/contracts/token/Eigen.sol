@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin-upgrades/contracts/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
+import "@openzeppelin-upgrades/contracts/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable {
+
     /// CONSTANTS & IMMUTABLES
     /// @notice the address of the backing Eigen token bEIGEN
     IERC20 public immutable bEIGEN;
@@ -193,4 +194,5 @@ contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable {
     function CLOCK_MODE() public pure override returns (string memory) {
         return "mode=timestamp";
     }
+
 }

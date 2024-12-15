@@ -7,6 +7,7 @@ pragma solidity >=0.5.0;
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
 interface ISignatureUtils {
+
     error InvalidSignature();
     error SignatureExpired();
 
@@ -27,4 +28,5 @@ interface ISignatureUtils {
         // the expiration timestamp (UTC) of the signature
         uint256 expiry;
     }
+
 }

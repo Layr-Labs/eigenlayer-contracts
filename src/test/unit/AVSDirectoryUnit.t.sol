@@ -5,13 +5,14 @@ import "src/contracts/core/AVSDirectory.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
 
 contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureUtils {
+
     uint8 constant PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS = 0;
 
     AVSDirectory avsDirectory;
 
     address defaultAVS;
     address defaultOperator;
-    uint256 defaultOperatorPk;
+    uint defaultOperatorPk;
     SignatureWithSaltAndExpiry defaultOperatorSignature;
 
     function setUp() public virtual override {
@@ -26,16 +27,13 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, 
             operatorPk: defaultOperatorPk,
             avs: defaultAVS,
             salt: bytes32(cheats.randomUint()),
-            expiry: type(uint256).max
+            expiry: type(uint).max
         });
 
         delegationManagerMock.setIsOperator(defaultOperator, true);
     }
 
-    function _deployAVSD(
-        address delegationManager,
-        IPauserRegistry pauserRegistry
-    ) internal returns (AVSDirectory avsd) {
+    function _deployAVSD(address delegationManager, IPauserRegistry pauserRegistry) internal returns (AVSDirectory avsd) {
         avsd = AVSDirectory(
             address(
                 new TransparentUpgradeableProxy(
@@ -53,14 +51,13 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, 
     }
 
     function _newOperatorRegistrationSignature(
-        uint256 operatorPk,
+        uint operatorPk,
         address avs,
         bytes32 salt,
-        uint256 expiry
+        uint expiry
     ) internal view returns (SignatureWithSaltAndExpiry memory) {
-        (uint8 v, bytes32 r, bytes32 s) = cheats.sign(
-            operatorPk, avsDirectory.calculateOperatorAVSRegistrationDigestHash(cheats.addr(operatorPk), avs, salt, expiry)
-        );
+        (uint8 v, bytes32 r, bytes32 s) =
+            cheats.sign(operatorPk, avsDirectory.calculateOperatorAVSRegistrationDigestHash(cheats.addr(operatorPk), avs, salt, expiry));
         return SignatureWithSaltAndExpiry({signature: abi.encodePacked(r, s, v), salt: salt, expiry: expiry});
     }
 
@@ -141,9 +138,7 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, 
         cheats.prank(defaultAVS);
         avsDirectory.registerOperatorToAVS(defaultOperator, defaultOperatorSignature);
 
-        assertTrue(
-            avsDirectory.avsOperatorStatus(defaultAVS, defaultOperator) == OperatorAVSRegistrationStatus.REGISTERED
-        );
+        assertTrue(avsDirectory.avsOperatorStatus(defaultAVS, defaultOperator) == OperatorAVSRegistrationStatus.REGISTERED);
         assertTrue(avsDirectory.operatorSaltIsSpent(defaultOperator, defaultOperatorSignature.salt));
     }
 
@@ -168,15 +163,12 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, 
         avsDirectory.registerOperatorToAVS(defaultOperator, defaultOperatorSignature);
 
         cheats.expectEmit(true, true, true, false, address(avsDirectory));
-        emit OperatorAVSRegistrationStatusUpdated(
-            defaultOperator, defaultAVS, OperatorAVSRegistrationStatus.UNREGISTERED
-        );
+        emit OperatorAVSRegistrationStatusUpdated(defaultOperator, defaultAVS, OperatorAVSRegistrationStatus.UNREGISTERED);
 
         avsDirectory.deregisterOperatorFromAVS(defaultOperator);
         cheats.stopPrank();
 
-        assertTrue(
-            avsDirectory.avsOperatorStatus(defaultAVS, defaultOperator) == OperatorAVSRegistrationStatus.UNREGISTERED
-        );
+        assertTrue(avsDirectory.avsOperatorStatus(defaultAVS, defaultOperator) == OperatorAVSRegistrationStatus.UNREGISTERED);
     }
+
 }

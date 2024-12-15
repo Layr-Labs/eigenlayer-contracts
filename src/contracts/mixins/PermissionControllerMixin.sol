@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import "../interfaces/IPermissionController.sol";
 
 abstract contract PermissionControllerMixin {
+
     /// @dev Thrown when the caller is not allowed to call a function on behalf of an account.
     error InvalidPermissions();
 
@@ -35,4 +36,5 @@ abstract contract PermissionControllerMixin {
     ) internal returns (bool) {
         return permissionController.canCall(account, msg.sender, address(this), msg.sig);
     }
+
 }
