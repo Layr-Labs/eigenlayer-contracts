@@ -19,11 +19,15 @@ jobs:
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: nightly
-      - name: Run forge fmt
+      - name: Run forge fmt for src/contracts
         run: |
-          forge fmt --check src/contracts
-        id: fmt
-      - name: install npm dependencies
+          forge fmt --check
+        id: fmt_contracts
+      - name: Run forge fmt for script and src/test
+        run: |
+          FOUNDRY_PROFILE=test forge fmt --check
+        id: fmt_script_test
+      - name: Install npm dependencies
         run: npm install --include=dev
-      - name: run solhint
+      - name: Run solhint
         run: npm run hint
