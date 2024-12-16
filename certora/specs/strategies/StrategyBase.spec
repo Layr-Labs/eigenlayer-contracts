@@ -1,8 +1,5 @@
 using StrategyManager as strategyManager;
 methods {
-    // external calls to StrategyManager
-    function _.stakerStrategyShares(address, address) external => DISPATCHER(true);
-    
     // external calls to PauserRegistry
     function _.isPauser(address) external => DISPATCHER(true);
 	function _.unpauser() external => DISPATCHER(true);
@@ -10,11 +7,7 @@ methods {
     // external calls to ERC20
     function _.balanceOf(address) external => DISPATCHER(true);
     function _.transfer(address, uint256) external => DISPATCHER(true);
-    function _.transferFrom(address, address, uint256) external => DISPATCHER(true);
-
-	// external calls from StrategyManager to Slasher
-    function _.isFrozen(address) external => DISPATCHER(true);
-	function _.canWithdraw(address,uint32,uint256) external => DISPATCHER(true);
+    function _.decimals() external => DISPATCHER(true);
 
     // envfree functions
     function totalShares() external returns (uint256) envfree;
@@ -37,3 +30,5 @@ methods {
 
 // invariant totalSharesIsSumOfShares()
 //     totalShares() == sumOfShares()
+
+use builtin rule sanity;

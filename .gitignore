@@ -51,3 +51,6 @@ surya_report.md
 *state.json
 deployed_strategies.json
 populate_src*
+
+# cerota
+.certora_internal/*
