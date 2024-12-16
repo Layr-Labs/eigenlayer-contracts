@@ -6,7 +6,6 @@ import "../../contracts/permissions/Pausable.sol";
 import "forge-std/Test.sol";
 
 contract EigenPodManagerMock is Test, Pausable {
-
     receive() external payable {}
     fallback() external payable {}
 
@@ -84,5 +83,4 @@ contract EigenPodManagerMock is Test, Pausable {
         BeaconChainSlashingFactor memory bsf = _beaconChainSlashingFactor[staker];
         return bsf.isSet ? bsf.slashingFactor : WAD;
     }
-
 }

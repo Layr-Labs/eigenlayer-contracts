@@ -7,7 +7,6 @@ import "./ISignatureUtils.sol";
 import "./IStrategy.sol";
 
 interface IDelegationManagerErrors {
-
     /// @dev Thrown when caller is neither the StrategyManager or EigenPodManager contract.
     error OnlyStrategyManagerOrEigenPodManager();
     /// @dev Thrown when msg.sender is not the EigenPodManager
@@ -58,11 +57,9 @@ interface IDelegationManagerErrors {
     error WithdrawerNotCaller();
     /// @dev Thrown when `withdrawer` is not staker.
     error WithdrawerNotStaker();
-
 }
 
 interface IDelegationManagerTypes {
-
     // @notice Struct used for storing information about a single operator who has registered with EigenLayer
     struct OperatorDetails {
         /// @notice DEPRECATED -- this field is no longer used, payments are handled in RewardsCoordinator.sol
@@ -130,11 +127,9 @@ interface IDelegationManagerTypes {
         // The address of the withdrawer
         address withdrawer;
     }
-
 }
 
 interface IDelegationManagerEvents is IDelegationManagerTypes {
-
     // @notice Emitted when a new operator registers in EigenLayer and provides their delegation approver.
     event OperatorRegistered(address indexed operator, address delegationApprover);
 
@@ -178,7 +173,6 @@ interface IDelegationManagerEvents is IDelegationManagerTypes {
 
     /// @notice Emitted when a queued withdrawal is completed
     event SlashingWithdrawalCompleted(bytes32 withdrawalRoot);
-
 }
 
 /**
@@ -192,7 +186,6 @@ interface IDelegationManagerEvents is IDelegationManagerTypes {
  * - enabling a staker to undelegate its assets from the operator it is delegated to (performed as part of the withdrawal process, initiated through the StrategyManager)
  */
 interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDelegationManagerEvents {
-
     /**
      * @dev Initializes the initial owner and paused status.
      */
@@ -537,5 +530,4 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
 
     /// @notice The EIP-712 typehash for the DelegationApproval struct used by the contract
     function DELEGATION_APPROVAL_TYPEHASH() external view returns (bytes32);
-
 }

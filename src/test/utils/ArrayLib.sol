@@ -5,7 +5,6 @@ import "src/contracts/interfaces/IAllocationManager.sol";
 import "src/contracts/interfaces/IDelegationManager.sol";
 
 library ArrayLib {
-
     using ArrayLib for *;
     using ArrayLib for uint[];
     using ArrayLib for address[];
@@ -334,5 +333,4 @@ library ArrayLib {
 
         return array;
     }
-
 }

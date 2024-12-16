@@ -7,7 +7,6 @@ import "src/test/integration/users/User.t.sol";
 // TODO: move randomness from tests
 
 contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
-
     function testFuzz_deposit_delegate_allocate(
         uint24 _random
     ) public {
@@ -175,5 +174,4 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
     function testFuzz_deposit_delegate_allocate_deregister_slash(
         uint24 _random
     ) public {}
-
 }

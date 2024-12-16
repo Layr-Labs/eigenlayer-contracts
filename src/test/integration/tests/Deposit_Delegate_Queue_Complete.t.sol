@@ -5,7 +5,6 @@ import "src/test/integration/IntegrationChecks.t.sol";
 import "src/test/integration/users/User.t.sol";
 
 contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
-
     /**
      *
      *                             FULL WITHDRAWALS
@@ -285,5 +284,4 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
         cheats.expectRevert();
         staker.delegateTo(operator);
     }
-
 }

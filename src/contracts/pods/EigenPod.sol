@@ -24,7 +24,6 @@ import "./EigenPodStorage.sol";
  *   to account balances in terms of gwei in the EigenPod contract and convert to wei when making calls to other contracts
  */
 contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingConstants, EigenPodStorage {
-
     using BytesLib for bytes;
     using SafeERC20 for IERC20;
     using BeaconChainProofs for *;
@@ -732,5 +731,4 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
         require(success && result.length > 0, InvalidEIP4788Response());
         return abi.decode(result, (bytes32));
     }
-
 }

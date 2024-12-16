@@ -9,7 +9,6 @@ import {MultisigBuilder} from "zeus-templates/templates/MultisigBuilder.sol";
  * Purpose: Enqueue a transaction which immediately sets `EigenPodManager.PAUSED_START_CHECKPOINT=true`
  */
 contract Pause is MultisigBuilder, EigenPodPausingConstants {
-
     using Env for *;
 
     function _runAsMultisig() internal virtual override prank(Env.pauserMultisig()) {
@@ -30,5 +29,4 @@ contract Pause is MultisigBuilder, EigenPodPausingConstants {
         vm.expectRevert("EigenPod.onlyWhenNotPaused: index is paused in EigenPodManager");
         pod.startCheckpoint(false);
     }
-
 }

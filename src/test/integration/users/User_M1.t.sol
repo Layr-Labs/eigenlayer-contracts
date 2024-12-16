@@ -8,7 +8,6 @@ import "src/test/integration/deprecatedInterfaces/mainnet/IStrategyManager.sol";
 import "src/test/integration/users/User.t.sol";
 
 interface IUserM1MainnetForkDeployer {
-
     function delegationManager() external view returns (DelegationManager);
     function strategyManager() external view returns (StrategyManager);
     function eigenPodManager() external view returns (EigenPodManager);
@@ -16,7 +15,6 @@ interface IUserM1MainnetForkDeployer {
     function beaconChain() external view returns (BeaconChainMock);
     function strategyManager_M1() external view returns (IStrategyManager_DeprecatedM1);
     function eigenPodManager_M1() external view returns (IEigenPodManager_DeprecatedM1);
-
 }
 
 /**
@@ -24,7 +22,6 @@ interface IUserM1MainnetForkDeployer {
  * to perform current local contract methods after a upgrade of core contracts
  */
 contract User_M1 is User {
-
     IStrategyManager_DeprecatedM1 strategyManager_M1;
     IEigenPodManager_DeprecatedM1 eigenPodManager_M1;
 
@@ -67,11 +64,9 @@ contract User_M1 is User {
         // get EigenPod address
         pod = EigenPod(payable(address(IEigenPodManager_DeprecatedM1(address(eigenPodManager)).ownerToPod(address(this)))));
     }
-
 }
 
 contract User_M1_AltMethods is User_M1 {
-
     /// @notice The EIP-712 typehash for the contract's domain.
     bytes32 internal constant EIP712_DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
 
@@ -125,5 +120,4 @@ contract User_M1_AltMethods is User_M1 {
             return 0xffffffff;
         }
     }
-
 }

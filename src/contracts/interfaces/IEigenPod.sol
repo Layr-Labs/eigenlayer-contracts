@@ -7,7 +7,6 @@ import "../libraries/BeaconChainProofs.sol";
 import "./IEigenPodManager.sol";
 
 interface IEigenPodErrors {
-
     /// @dev Thrown when msg.sender is not the EPM.
     error OnlyEigenPodManager();
     /// @dev Thrown when msg.sender is not the pod owner.
@@ -67,11 +66,9 @@ interface IEigenPodErrors {
     error MsgValueNot32ETH();
     /// @dev Thrown when provided `beaconTimestamp` is too far in the past.
     error BeaconTimestampTooFarInPast();
-
 }
 
 interface IEigenPodTypes {
-
     enum VALIDATOR_STATUS {
         INACTIVE, // doesnt exist
         ACTIVE, // staked on ethpos and withdrawal credentials are pointed to the EigenPod
@@ -97,11 +94,9 @@ interface IEigenPodTypes {
         int64 balanceDeltasGwei;
         uint64 prevBeaconBalanceGwei;
     }
-
 }
 
 interface IEigenPodEvents is IEigenPodTypes {
-
     /// @notice Emitted when an ETH validator stakes via this eigenPod
     event EigenPodStaked(bytes pubkey);
 
@@ -134,7 +129,6 @@ interface IEigenPodEvents is IEigenPodTypes {
 
     /// @notice Emitted when a validaor is proven to have 0 balance at a given checkpoint
     event ValidatorWithdrawn(uint64 indexed checkpointTimestamp, uint40 indexed validatorIndex);
-
 }
 
 /**
@@ -145,7 +139,6 @@ interface IEigenPodEvents is IEigenPodTypes {
  *   to account balances in terms of gwei in the EigenPod contract and convert to wei when making calls to other contracts
  */
 interface IEigenPod is IEigenPodErrors, IEigenPodEvents {
-
     /// @notice Used to initialize the pointers to contracts crucial to the pod's functionality, in beacon proxy construction from EigenPodManager
     function initialize(
         address owner
@@ -358,5 +351,4 @@ interface IEigenPod is IEigenPodErrors, IEigenPodEvents {
     function getParentBlockRoot(
         uint64 timestamp
     ) external view returns (bytes32);
-
 }

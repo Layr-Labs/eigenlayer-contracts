@@ -20,7 +20,6 @@ import "src/test/utils/EigenLayerUnitTestSetup.sol";
  * Contracts not mocked: StrategyBase, PauserRegistry
  */
 contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManagerEvents, IDelegationManagerErrors {
-
     using SlashingLib for *;
     using ArrayLib for *;
     using Math for *;
@@ -1145,11 +1144,9 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
             }
         }
     }
-
 }
 
 contract DelegationManagerUnitTests_Initialization_Setters is DelegationManagerUnitTests {
-
     function test_initialization() public view {
         assertEq(
             address(delegationManager.strategyManager()),
@@ -1185,11 +1182,9 @@ contract DelegationManagerUnitTests_Initialization_Setters is DelegationManagerU
         cheats.expectRevert("Initializable: contract is already initialized");
         delegationManager.initialize(address(this), 0);
     }
-
 }
 
 contract DelegationManagerUnitTests_RegisterModifyOperator is DelegationManagerUnitTests {
-
     function test_registerAsOperator_revert_paused() public {
         // set the pausing flag
         cheats.prank(pauser);
@@ -1418,11 +1413,9 @@ contract DelegationManagerUnitTests_RegisterModifyOperator is DelegationManagerU
         emit OperatorMetadataURIUpdated(defaultOperator, metadataURI);
         delegationManager.updateOperatorMetadataURI(defaultOperator, metadataURI);
     }
-
 }
 
 contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
-
     using ArrayLib for *;
     using SlashingLib for *;
 
@@ -2685,11 +2678,9 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
             );
         }
     }
-
 }
 
 contract DelegationManagerUnitTests_increaseDelegatedShares is DelegationManagerUnitTests {
-
     using ArrayLib for *;
     using SlashingLib for *;
     using Math for *;
@@ -3120,11 +3111,9 @@ contract DelegationManagerUnitTests_increaseDelegatedShares is DelegationManager
             "drift should be 4.418e13 from previous tests"
         );
     }
-
 }
 
 contract DelegationManagerUnitTests_decreaseDelegatedShares is DelegationManagerUnitTests {
-
     using ArrayLib for *;
     using SlashingLib for *;
     using Math for *;
@@ -3382,11 +3371,9 @@ contract DelegationManagerUnitTests_decreaseDelegatedShares is DelegationManager
             "operator shares not decreased correctly"
         );
     }
-
 }
 
 contract DelegationManagerUnitTests_undelegate is DelegationManagerUnitTests {
-
     using SlashingLib for uint;
     using ArrayLib for *;
     using Math for uint;
@@ -4117,11 +4104,9 @@ contract DelegationManagerUnitTests_undelegate is DelegationManagerUnitTests {
             operatorSharesAfter, operatorSharesBefore, "operator shares should be less than or equal to before due to potential rounding"
         );
     }
-
 }
 
 contract DelegationManagerUnitTests_redelegate is DelegationManagerUnitTests {
-
     // @notice Verifies that redelegating is not possible when the "delegation paused" switch is flipped
     function testFuzz_Revert_redelegate_delegatePaused(
         Randomness r
@@ -4427,11 +4412,9 @@ contract DelegationManagerUnitTests_redelegate is DelegationManagerUnitTests {
         );
         assertEq(uint(eigenPodManagerMock.podOwnerDepositShares(staker)), stakerShares[1], "beacon shares should be equal to beaconShares");
     }
-
 }
 
 contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTests {
-
     using SlashingLib for *;
     using ArrayLib for *;
 
@@ -5174,11 +5157,9 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
         assertEq(delegationManager.delegatedTo(defaultStaker), defaultOperator, "staker should be delegated to operator");
         assertEq(nonceBefore + 1, delegationManager.cumulativeWithdrawalsQueued(defaultStaker), "staker nonce should have incremented");
     }
-
 }
 
 contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManagerUnitTests {
-
     using ArrayLib for *;
     using SlashingLib for *;
     using Math for uint;
@@ -5845,11 +5826,9 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         assertEq(operatorSharesAfter, operatorSharesBefore + withdrawalAmount, "operator shares not increased correctly");
         assertFalse(delegationManager.pendingWithdrawals(withdrawalRoot), "withdrawalRoot should be completed and marked false now");
     }
-
 }
 
 contract DelegationManagerUnitTests_burningShares is DelegationManagerUnitTests {
-
     using ArrayLib for *;
     using SlashingLib for *;
     using Math for *;
@@ -6807,13 +6786,11 @@ contract DelegationManagerUnitTests_burningShares is DelegationManagerUnitTests 
         (withdrawableShares,) = delegationManager.getWithdrawableShares(defaultStaker, beaconChainETHStrategy.toArray());
         assertEq(withdrawableShares[0], sharesAfterAllSlashing, "shares after all slashing should be the same");
     }
-
 }
 
 /// @notice Fuzzed Unit tests to compare totalWitdrawable shares for an operator vs their actual operatorShares.
 /// Requires the WRITE_CSV_TESTS env variable to be set to true to output to a test file
 contract DelegationManagerUnitTests_SharesUnderflowChecks is DelegationManagerUnitTests {
-
     using SlashingLib for *;
 
     /**
@@ -7310,7 +7287,6 @@ contract DelegationManagerUnitTests_SharesUnderflowChecks is DelegationManagerUn
             );
         }
     }
-
 }
 
 contract DelegationManagerUnitTests_Rounding is DelegationManagerUnitTests {}
@@ -7331,7 +7307,6 @@ contract DelegationManagerUnitTests_Rounding is DelegationManagerUnitTests {}
  *    10. Invariant check getWithdrawableShares = sum(deposits), Multiple deposits with operator who HAS been been slashed
  */
 contract DelegationManagerUnitTests_Lifecycle is DelegationManagerUnitTests {
-
     using ArrayLib for *;
 
     // 2. RegisterOperator, Deposit, Delegate, Queue, Complete
@@ -7481,5 +7456,4 @@ contract DelegationManagerUnitTests_Lifecycle is DelegationManagerUnitTests {
         assertEq(depositShares[0], 0, "staker deposit shares not reset correctly");
         assertEq(delegationManager.operatorShares(newOperator, strategy), 0, "new operator shares should be unchanged");
     }
-
 }

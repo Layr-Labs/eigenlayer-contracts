@@ -15,7 +15,6 @@ import "src/test/integration/users/User.t.sol";
 import "src/test/integration/users/User_M1.t.sol";
 
 abstract contract IntegrationBase is IntegrationDeployer {
-
     using StdStyle for *;
     using SlashingLib for *;
     using Strings for *;
@@ -1493,5 +1492,4 @@ abstract contract IntegrationBase is IntegrationDeployer {
     function _getPrevCheckpointBalanceExited(User staker, uint64 checkpointTimestamp) internal timewarp returns (uint64) {
         return _getCheckpointBalanceExited(staker, checkpointTimestamp);
     }
-
 }

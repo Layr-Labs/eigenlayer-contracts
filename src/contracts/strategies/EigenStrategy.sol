@@ -26,7 +26,6 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
  * We specifically use a share offset of `SHARES_OFFSET` and a balance offset of `BALANCE_OFFSET`.
  */
 contract EigenStrategy is StrategyBase {
-
     using SafeERC20 for IERC20;
 
     /**
@@ -107,5 +106,4 @@ contract EigenStrategy is StrategyBase {
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
     uint256[49] private __gap;
-
 }

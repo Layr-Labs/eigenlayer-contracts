@@ -4,7 +4,6 @@ pragma solidity ^0.8.27;
 import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 
 contract ERC20_SetTransferReverting_Mock is ERC20PresetFixedSupply {
-
     bool public transfersRevert;
 
     constructor(
@@ -25,5 +24,4 @@ contract ERC20_SetTransferReverting_Mock is ERC20PresetFixedSupply {
             // revert("ERC20_SetTransferReverting_Mock._beforeTokenTransfer: transfersRevert set");
         }
     }
-
 }

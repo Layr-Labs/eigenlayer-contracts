@@ -17,7 +17,6 @@ import "src/test/utils/EigenLayerUnitTestSetup.sol";
  * Contracts not mocked: StrategyBase, PauserRegistry
  */
 contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordinatorEvents, IRewardsCoordinatorErrors {
-
     // used for stack too deep
     struct FuzzAVSRewardsSubmission {
         address avs;
@@ -279,11 +278,9 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
         }
         return arr;
     }
-
 }
 
 contract RewardsCoordinatorUnitTests_initializeAndSetters is RewardsCoordinatorUnitTests {
-
     function testFuzz_setClaimerFor(address earner, address claimer) public filterFuzzedAddressInputs(earner) {
         cheats.startPrank(earner);
         cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
@@ -427,11 +424,9 @@ contract RewardsCoordinatorUnitTests_initializeAndSetters is RewardsCoordinatorU
         cheats.expectRevert("Ownable: caller is not the owner");
         rewardsCoordinator.setRewardsForAllSubmitter(submitter, newValue);
     }
-
 }
 
 contract RewardsCoordinatorUnitTests_setOperatorAVSSplit is RewardsCoordinatorUnitTests {
-
     // Revert when paused
     function testFuzz_Revert_WhenPaused(address operator, address avs, uint16 split) public filterFuzzedAddressInputs(operator) {
         cheats.assume(operator != address(0));
@@ -574,11 +569,9 @@ contract RewardsCoordinatorUnitTests_setOperatorAVSSplit is RewardsCoordinatorUn
         cheats.warp(activatedAt);
         assertEq(secondSplit, rewardsCoordinator.getOperatorAVSSplit(operator, avs), "Incorrect Operator split");
     }
-
 }
 
 contract RewardsCoordinatorUnitTests_setOperatorPISplit is RewardsCoordinatorUnitTests {
-
     // Revert when paused
     function testFuzz_Revert_WhenPaused(address operator, uint16 split) public filterFuzzedAddressInputs(operator) {
         cheats.assume(operator != address(0));
@@ -712,11 +705,9 @@ contract RewardsCoordinatorUnitTests_setOperatorPISplit is RewardsCoordinatorUni
         cheats.warp(activatedAt);
         assertEq(secondSplit, rewardsCoordinator.getOperatorPISplit(operator), "Incorrect Operator split");
     }
-
 }
 
 contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordinatorUnitTests {
-
     // Revert when paused
     function test_Revert_WhenPaused() public {
         cheats.prank(pauser);
@@ -1210,11 +1201,9 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
             );
         }
     }
-
 }
 
 contract RewardsCoordinatorUnitTests_createRewardsForAllSubmission is RewardsCoordinatorUnitTests {
-
     // Revert when paused
     function test_Revert_WhenPaused() public {
         cheats.prank(pauser);
@@ -1413,11 +1402,9 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllSubmission is RewardsCoo
             );
         }
     }
-
 }
 
 contract RewardsCoordinatorUnitTests_createRewardsForAllEarners is RewardsCoordinatorUnitTests {
-
     // Revert when paused
     function test_Revert_WhenPaused() public {
         cheats.prank(pauser);
@@ -1618,11 +1605,9 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllEarners is RewardsCoordi
             );
         }
     }
-
 }
 
 contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission is RewardsCoordinatorUnitTests {
-
     // used for stack too deep
     struct FuzzOperatorDirectedAVSRewardsSubmission {
         address avs;
@@ -2459,11 +2444,9 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
             );
         }
     }
-
 }
 
 contract RewardsCoordinatorUnitTests_submitRoot is RewardsCoordinatorUnitTests {
-
     // only callable by rewardsUpdater
     function testFuzz_Revert_WhenNotRewardsUpdater(
         address invalidRewardsUpdater
@@ -2532,12 +2515,10 @@ contract RewardsCoordinatorUnitTests_submitRoot is RewardsCoordinatorUnitTests {
 
         assertEq(index, rewardsCoordinator.getRootIndexFromHash(roots[index]), "root index not found");
     }
-
 }
 
 /// @notice Tests for sets of JSON data with different distribution roots
 contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests {
-
     using stdStorage for StdStorage;
 
     /// @notice earner address used for proofs
@@ -3386,5 +3367,4 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
 
         return claims;
     }
-
 }

@@ -11,7 +11,6 @@ import "../interfaces/IStrategy.sol";
 import "../interfaces/IStrategyManager.sol";
 
 abstract contract EigenPodManagerStorage is IEigenPodManager {
-
     /**
      *
      *                            CONSTANTS / IMMUTABLES
@@ -91,5 +90,4 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
     uint256[43] private __gap;
-
 }

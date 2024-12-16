@@ -17,15 +17,12 @@ struct Validator {
 }
 
 interface IUserDeployer {
-
     function timeMachine() external view returns (TimeMachine);
     function beaconChain() external view returns (BeaconChainMock);
     function eigenPodBeacon() external view returns (IBeacon);
-
 }
 
 contract EigenPodUser is Logger {
-
     TimeMachine timeMachine;
     BeaconChainMock beaconChain;
     IBeacon public eigenPodBeacon;
@@ -254,5 +251,4 @@ contract EigenPodUser is Logger {
 
         return activeValidators;
     }
-
 }

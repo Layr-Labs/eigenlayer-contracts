@@ -7,7 +7,6 @@ import "../../contracts/interfaces/IPausable.sol";
 import "../../contracts/permissions/PauserRegistry.sol";
 
 contract PauserRegistryUnitTests is Test {
-
     Vm cheats = Vm(VM_ADDRESS);
 
     PauserRegistry public pauserRegistry;
@@ -103,5 +102,4 @@ contract PauserRegistryUnitTests is Test {
         pauserRegistry.setUnpauser(newUnpauser);
         cheats.stopPrank();
     }
-
 }

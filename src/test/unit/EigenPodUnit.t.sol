@@ -19,7 +19,6 @@ import "src/test/integration/mocks/EIP_4788_Oracle_Mock.t.sol";
 import "src/test/utils/EigenPodUser.t.sol";
 
 contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants, IEigenPodEvents {
-
     using BytesLib for bytes;
     using BeaconChainProofs for *;
 
@@ -312,11 +311,9 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
     function _calcBalanceDelta(uint64 newAmountGwei, uint64 previousAmountGwei) internal pure returns (int128) {
         return int128(uint128(newAmountGwei)) - int128(uint128(previousAmountGwei));
     }
-
 }
 
 contract EigenPodUnitTests_Initialization is EigenPodUnitTests {
-
     function test_constructor() public {
         EigenPod pod = new EigenPod(ethPOSDepositMock, IEigenPodManager(address(eigenPodManagerMock)), GENESIS_TIME_LOCAL);
 
@@ -380,11 +377,9 @@ contract EigenPodUnitTests_Initialization is EigenPodUnitTests {
 
         assertEq(pod.proofSubmitter(), newProofSubmitter, "did not update proof submitter");
     }
-
 }
 
 contract EigenPodUnitTests_EPMFunctions is EigenPodUnitTests {
-
     /**
      *
      *                         stake() tests
@@ -546,11 +541,9 @@ contract EigenPodUnitTests_EPMFunctions is EigenPodUnitTests {
             "withdrawableRestakedExecutionLayerGwei should have decreased by amount withdrawn"
         );
     }
-
 }
 
 contract EigenPodUnitTests_recoverTokens is EigenPodUnitTests {
-
     /**
      *
      *                         recoverTokens() tests
@@ -632,11 +625,9 @@ contract EigenPodUnitTests_recoverTokens is EigenPodUnitTests {
         // Checks
         assertEq(dummyToken.balanceOf(recipient), 1e18, "Incorrect amount recovered");
     }
-
 }
 
 contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, ProofParsing {
-
     /**
      *
      *                         verifyWithdrawalCredentials() tests
@@ -994,11 +985,9 @@ contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, Pro
             assertEq(info.lastCheckpointedAt, pod.lastCheckpointTimestamp(), "should have recorded correct update time");
         }
     }
-
 }
 
 contract EigenPodUnitTests_startCheckpoint is EigenPodUnitTests {
-
     /**
      *
      *                         startCheckpoint() tests
@@ -1118,11 +1107,9 @@ contract EigenPodUnitTests_startCheckpoint is EigenPodUnitTests {
             pod.currentCheckpoint().proofsRemaining, uint24(validators.length), "should have one proof remaining pre verified validator"
         );
     }
-
 }
 
 contract EigenPodUnitTests_verifyCheckpointProofs is EigenPodUnitTests {
-
     /**
      *
      *                         verifyCheckpointProofs() tests
@@ -1396,11 +1383,9 @@ contract EigenPodUnitTests_verifyCheckpointProofs is EigenPodUnitTests {
         pod.verifyCheckpointProofs({balanceContainerProof: proofs.balanceContainerProof, proofs: proofs.balanceProofs});
         assertEq(pod.currentCheckpointTimestamp(), 0, "checkpoint should be complete");
     }
-
 }
 
 contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
-
     /// @notice test verifyStaleBalance reverts when paused
     function testFuzz_revert_verifyStaleBalancePaused(
         uint rand
@@ -1683,11 +1668,9 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
         });
         check_StartCheckpoint_State(staker);
     }
-
 }
 
 contract EigenPodHarnessSetup is EigenPodUnitTests {
-
     // Harness that exposes internal functions for test
     EigenPodHarness public eigenPodHarnessImplementation;
     EigenPodHarness public eigenPodHarness;
@@ -1703,13 +1686,11 @@ contract EigenPodHarnessSetup is EigenPodUnitTests {
         UpgradeableBeacon(address(eigenPodBeacon)).upgradeTo(address(eigenPodHarnessImplementation));
         eigenPodHarness = EigenPodHarness(payable(eigenPod));
     }
-
 }
 
 /// @notice No unit tests as of now but would be good to add specific unit tests using proofs from our proofGen library
 /// for a EigenPod on Holesky
 contract EigenPodUnitTests_proofParsingTests is EigenPodHarnessSetup, ProofParsing {
-
     using BytesLib for bytes;
     using BeaconChainProofs for *;
 
@@ -1759,5 +1740,4 @@ contract EigenPodUnitTests_proofParsingTests is EigenPodHarnessSetup, ProofParsi
         eigenPodHarness.verifyWithdrawalCredentials(beaconStateRoot, validatorIndex, validatorFieldsProof, validatorFields);
         _;
     }
-
 }

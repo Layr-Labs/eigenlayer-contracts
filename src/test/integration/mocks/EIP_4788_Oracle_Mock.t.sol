@@ -2,7 +2,6 @@
 pragma solidity ^0.8.27;
 
 contract EIP_4788_Oracle_Mock {
-
     mapping(uint => bytes32) blockRoots;
 
     uint constant HISTORY_BUFFER_LENGTH = 8191;
@@ -31,5 +30,4 @@ contract EIP_4788_Oracle_Mock {
     function setBlockRoot(uint64 timestamp, bytes32 blockRoot) public {
         blockRoots[timestamp] = blockRoot;
     }
-
 }

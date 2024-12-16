@@ -8,7 +8,6 @@ pragma solidity ^0.8.27;
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
 interface IBeaconChainOracle_DeprecatedM1 {
-
     /// @notice Largest blockNumber that has been confirmed by the oracle.
     function latestConfirmedOracleBlockNumber() external view returns (uint64);
     /// @notice Mapping: Beacon Chain blockNumber => the Beacon Chain state root at the specified blockNumber.
@@ -72,5 +71,4 @@ interface IBeaconChainOracle_DeprecatedM1 {
      * @param stateRoot The Beacon Chain state root that the caller asserts was the correct root, at the specified `blockNumber`.
      */
     function voteForBeaconChainStateRoot(uint64 blockNumber, bytes32 stateRoot) external;
-
 }

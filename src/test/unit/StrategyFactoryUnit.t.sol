@@ -13,7 +13,6 @@ import "src/test/utils/EigenLayerUnitTestSetup.sol";
  * Contracts tested: StrategyFactory
  */
 contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
-
     // Contract under test
     StrategyFactory public strategyFactory;
     StrategyFactory public strategyFactoryImplementation;
@@ -192,5 +191,4 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
             )
         );
     }
-
 }

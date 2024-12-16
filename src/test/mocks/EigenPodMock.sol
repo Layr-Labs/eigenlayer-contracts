@@ -5,7 +5,6 @@ import "../../contracts/interfaces/IEigenPod.sol";
 import "forge-std/Test.sol";
 
 contract EigenPodMock is IEigenPod, Test {
-
     function nonBeaconChainETHBalanceWei() external view returns (uint) {}
 
     /// @notice the amount of execution layer ETH in this contract that is staked in EigenLayer (i.e. withdrawn from beaconchain but not EigenLayer),
@@ -120,5 +119,4 @@ contract EigenPodMock is IEigenPod, Test {
     function getParentBlockRoot(
         uint64 timestamp
     ) external view returns (bytes32) {}
-
 }

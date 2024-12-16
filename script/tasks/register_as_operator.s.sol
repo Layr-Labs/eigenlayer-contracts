@@ -17,7 +17,6 @@ import "forge-std/Test.sol";
 // RUST_LOG=forge,foundry=trace forge script script/tasks/register_as_operator.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run(string memory configFile,address operator,string memory metadataURI)" -- <DEPLOYMENT_OUTPUT_JSON> <OPERATOR_ADDRESS> <METADATA_URI>
 // RUST_LOG=forge,foundry=trace forge script script/tasks/register_as_operator.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run(string memory configFile,address operator,string metadataURI)" -- local/slashing_output.json 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 "test"
 contract RegisterAsOperator is Script, Test {
-
     Vm cheats = Vm(VM_ADDRESS);
 
     function run(string memory configFile, address operator, string memory metadataURI) public {
@@ -40,5 +39,4 @@ contract RegisterAsOperator is Script, Test {
         // STOP RECORDING TRANSACTIONS FOR DEPLOYMENT
         vm.stopBroadcast();
     }
-
 }

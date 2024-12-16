@@ -11,7 +11,6 @@ import "src/contracts/libraries/Merkle.sol";
 //BeaconBlockHeader Spec: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#beaconblockheader
 //BeaconState Spec: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#beaconstate
 library BeaconChainProofs_DeprecatedM1 {
-
     // constants are the number of fields and the heights of the different merkle trees used in merkleizing beacon chain containers
     uint internal constant NUM_BEACON_BLOCK_HEADER_FIELDS = 5;
     uint internal constant BEACON_BLOCK_HEADER_FIELD_TREE_HEIGHT = 3;
@@ -300,5 +299,4 @@ library BeaconChainProofs_DeprecatedM1 {
             "BeaconChainProofs.verifyWithdrawalProofs: Invalid withdrawal merkle proof"
         );
     }
-
 }

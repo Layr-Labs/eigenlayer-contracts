@@ -36,7 +36,6 @@ import "forge-std/Test.sol";
 // # To deploy and verify our contract
 // forge script script/deploy/local/deploy_from_scratch.slashing.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run(string memory configFile)" -- local/deploy_from_scratch.slashing.anvil.config.json
 contract DeployFromScratch is Script, Test {
-
     Vm cheats = Vm(VM_ADDRESS);
 
     // struct used to encode token info in config file
@@ -548,5 +547,4 @@ contract DeployFromScratch is Script, Test {
             require(setMaxDeposits == maxDeposits, "setMaxDeposits not set correctly");
         }
     }
-
 }

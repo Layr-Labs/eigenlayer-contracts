@@ -9,7 +9,6 @@
 pragma solidity >=0.8.0 <0.9.0;
 
 library BytesLib {
-
     error Overflow();
     error OutOfBounds();
 
@@ -477,5 +476,4 @@ library BytesLib {
 
         return success;
     }
-
 }

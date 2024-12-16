@@ -35,7 +35,6 @@ uint constant MAINNET = (FLAG << 1);
 uint constant HOLESKY = (FLAG << 2);
 
 abstract contract Logger is Test {
-
     using StdStyle for *;
 
     /// -----------------------------------------------------------------------
@@ -119,12 +118,10 @@ abstract contract Logger is Test {
         logging = !logging;
         console.log("\n%s logging %s...", NAME_COLORED(), logging ? "enabled" : "disabled");
     }
-
 }
 
 /// @dev Assumes the user is a `Logger`.
 library print {
-
     using print for *;
     using StdStyle for *;
 
@@ -292,5 +289,4 @@ library print {
     function _logging() internal view returns (bool) {
         return _logger().logging();
     }
-
 }

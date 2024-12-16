@@ -4,7 +4,6 @@ pragma solidity ^0.8.27;
 import "../interfaces/IEigenPod.sol";
 
 abstract contract EigenPodStorage is IEigenPod {
-
     /// @notice The owner of this EigenPod
     address public podOwner;
 
@@ -83,5 +82,4 @@ abstract contract EigenPodStorage is IEigenPod {
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
     uint256[35] private __gap;
-
 }

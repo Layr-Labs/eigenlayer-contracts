@@ -5,7 +5,6 @@ import "forge-std/StdJson.sol";
 import "forge-std/Test.sol";
 
 contract ProofParsing is Test {
-
     string internal proofConfigJson;
     string prefix;
 
@@ -198,5 +197,4 @@ contract ProofParsing is Test {
         }
         return validatorFieldsProof;
     }
-
 }

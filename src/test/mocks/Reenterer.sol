@@ -5,7 +5,6 @@ pragma solidity ^0.8.9;
 import "forge-std/Test.sol";
 
 contract Reenterer is Test {
-
     Vm cheats = Vm(VM_ADDRESS);
 
     address public target;
@@ -89,5 +88,4 @@ contract Reenterer is Test {
             }
         }
     }
-
 }

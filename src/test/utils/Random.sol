@@ -10,7 +10,6 @@ type Randomness is uint;
 using Random for Randomness global;
 
 library Random {
-
     /// -----------------------------------------------------------------------
     /// Constants
     /// -----------------------------------------------------------------------
@@ -334,5 +333,4 @@ library Random {
     ) internal pure returns (uint) {
         return Randomness.unwrap(r);
     }
-
 }

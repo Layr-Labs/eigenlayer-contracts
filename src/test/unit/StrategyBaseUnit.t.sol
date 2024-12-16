@@ -14,7 +14,6 @@ import "../mocks/StrategyManagerMock.sol";
 import "forge-std/Test.sol";
 
 contract StrategyBaseUnitTests is Test {
-
     Vm cheats = Vm(VM_ADDRESS);
 
     ProxyAdmin public proxyAdmin;
@@ -417,5 +416,4 @@ contract StrategyBaseUnitTests is Test {
         cheats.prank(address(strategyManager));
         strategy.withdraw(address(this), underlyingToken, sharesToWithdraw);
     }
-
 }

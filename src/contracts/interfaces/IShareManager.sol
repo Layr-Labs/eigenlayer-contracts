@@ -12,7 +12,6 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  * @notice This contract is used by the DelegationManager as a unified interface to interact with the EigenPodManager and StrategyManager
  */
 interface IShareManager {
-
     /// @notice Used by the DelegationManager to remove a Staker's shares from a particular strategy when entering the withdrawal queue
     /// @dev strategy must be beaconChainETH when talking to the EigenPodManager
     function removeDepositShares(address staker, IStrategy strategy, uint256 depositSharesToRemove) external;
@@ -38,5 +37,4 @@ interface IShareManager {
     /// @dev strategy must be beaconChainETH when talking to the EigenPodManager
     /// @dev returns 0 if the user has negative shares
     function stakerDepositShares(address user, IStrategy strategy) external view returns (uint256 depositShares);
-
 }

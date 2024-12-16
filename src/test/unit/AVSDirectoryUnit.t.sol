@@ -5,7 +5,6 @@ import "src/contracts/core/AVSDirectory.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
 
 contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureUtils {
-
     uint8 constant PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS = 0;
 
     AVSDirectory avsDirectory;
@@ -170,5 +169,4 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, 
 
         assertTrue(avsDirectory.avsOperatorStatus(defaultAVS, defaultOperator) == OperatorAVSRegistrationStatus.UNREGISTERED);
     }
-
 }

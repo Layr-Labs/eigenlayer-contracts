@@ -30,7 +30,6 @@ contract EigenPodManager is
     EigenPodManagerStorage,
     ReentrancyGuardUpgradeable
 {
-
     using SlashingLib for *;
     using Math for *;
 
@@ -327,5 +326,4 @@ contract EigenPodManager is
         BeaconChainSlashingFactor memory bsf = _beaconChainSlashingFactor[podOwner];
         return bsf.isSet ? bsf.slashingFactor : WAD;
     }
-
 }

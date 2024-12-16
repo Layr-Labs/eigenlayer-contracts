@@ -9,7 +9,6 @@ import "./ISignatureUtils.sol";
 import "./IStrategy.sol";
 
 interface IAllocationManagerErrors {
-
     /// Input Validation
 
     /// @dev Thrown when `wadToSlash` is zero or greater than 1e18
@@ -56,11 +55,9 @@ interface IAllocationManagerErrors {
     error ModificationAlreadyPending();
     /// @dev Thrown when an allocation is attempted that exceeds a given operators total allocatable magnitude.
     error InsufficientMagnitude();
-
 }
 
 interface IAllocationManagerTypes {
-
     /**
      * @notice Defines allocation information from a strategy to an operator set, for an operator
      * @param currentMagnitude the current magnitude allocated from the strategy to the operator set
@@ -171,11 +168,9 @@ interface IAllocationManagerTypes {
         uint32 operatorSetId;
         IStrategy[] strategies;
     }
-
 }
 
 interface IAllocationManagerEvents is IAllocationManagerTypes {
-
     /// @notice Emitted when operator updates their allocation delay.
     event AllocationDelaySet(address operator, uint32 delay, uint32 effectBlock);
 
@@ -217,11 +212,9 @@ interface IAllocationManagerEvents is IAllocationManagerTypes {
 
     /// @notice Emitted when a strategy is removed from an operator set.
     event StrategyRemovedFromOperatorSet(OperatorSet operatorSet, IStrategy strategy);
-
 }
 
 interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllocationManagerEvents {
-
     /**
      * @dev Initializes the initial owner and paused status.
      */
@@ -556,5 +549,4 @@ interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllo
         IStrategy[] memory strategies,
         uint32 futureBlock
     ) external view returns (uint256[][] memory slashableStake);
-
 }

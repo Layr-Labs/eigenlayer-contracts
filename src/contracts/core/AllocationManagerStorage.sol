@@ -10,7 +10,6 @@ import "../interfaces/IDelegationManager.sol";
 import {Snapshots} from "../libraries/Snapshots.sol";
 
 abstract contract AllocationManagerStorage is IAllocationManager {
-
     using Snapshots for Snapshots.DefaultWadHistory;
 
     // Constants
@@ -110,5 +109,4 @@ abstract contract AllocationManagerStorage is IAllocationManager {
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
     uint256[37] private __gap;
-
 }

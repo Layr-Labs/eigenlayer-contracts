@@ -4,7 +4,6 @@ pragma solidity ^0.8.27;
 import "../../contracts/token/Eigen.sol";
 
 contract EigenHarness is Eigen {
-
     constructor(
         IERC20 _bEIGEN
     ) Eigen(_bEIGEN) {}
@@ -34,5 +33,4 @@ contract EigenHarness is Eigen {
     ) external {
         _transferOwnership(newOwner);
     }
-
 }

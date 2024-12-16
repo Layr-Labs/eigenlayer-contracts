@@ -7,7 +7,6 @@ import "../../contracts/permissions/PauserRegistry.sol";
 import "../harnesses/PausableHarness.sol";
 
 contract PausableUnitTests is Test {
-
     Vm cheats = Vm(VM_ADDRESS);
 
     PauserRegistry public pauserRegistry;
@@ -163,5 +162,4 @@ contract PausableUnitTests is Test {
         pausable.unpause(newPausedStatus);
         cheats.stopPrank();
     }
-
 }

@@ -5,7 +5,6 @@ import "src/test/integration/IntegrationChecks.t.sol";
 import "src/test/integration/users/User.t.sol";
 
 contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
-
     modifier r(
         uint24 _rand
     ) {
@@ -848,5 +847,4 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         assert_PodBalance_Eq(staker, (gweiSent * GWEI_TO_WEI) + remainderSent, "pod balance should equal expected");
         check_CompleteCheckpoint_WithPodBalance_State(staker, 0);
     }
-
 }

@@ -11,7 +11,6 @@ import "./StrategyBase.sol";
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
 contract StrategyBaseTVLLimits is StrategyBase {
-
     /// The maximum deposit (in underlyingToken) that this strategy will accept per deposit
     uint256 public maxPerDeposit;
 
@@ -89,5 +88,4 @@ contract StrategyBaseTVLLimits is StrategyBase {
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
     uint256[48] private __gap;
-
 }

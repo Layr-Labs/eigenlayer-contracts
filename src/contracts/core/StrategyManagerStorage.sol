@@ -14,7 +14,6 @@ import "../interfaces/IStrategyManager.sol";
  * @notice This storage contract is separate from the logic to simplify the upgrade process.
  */
 abstract contract StrategyManagerStorage is IStrategyManager {
-
     // Constants
 
     /// @notice The EIP-712 typehash for the deposit struct used by the contract
@@ -87,5 +86,4 @@ abstract contract StrategyManagerStorage is IStrategyManager {
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
     uint256[39] private __gap;
-
 }

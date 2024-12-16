@@ -11,7 +11,6 @@ import "./IEigenPodManager.sol";
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
 interface IEigenPod_DeprecatedM2 {
-
     /**
      *
      *                                STRUCTS / ENUMS
@@ -260,7 +259,6 @@ interface IEigenPod_DeprecatedM2 {
     function getParentBlockRoot(
         uint64 timestamp
     ) external view returns (bytes32);
-
 }
 /**
  * @notice DEPRECATED INTERFACE at commit hash https://github.com/Layr-Labs/eigenlayer-contracts/tree/0139d6213927c0a7812578899ddd3dda58051928
@@ -279,7 +277,6 @@ interface IEigenPod_DeprecatedM2 {
  */
 
 interface IEigenPod_DeprecatedM1 {
-
     enum VALIDATOR_STATUS {
         INACTIVE, // doesnt exist
         ACTIVE, // staked on ethpos and withdrawal credentials are pointed to the EigenPod
@@ -408,5 +405,4 @@ interface IEigenPod_DeprecatedM1 {
 
     /// @notice Called by the pod owner to withdraw the balance of the pod when `hasRestaked` is set to false
     function withdrawBeforeRestaking() external;
-
 }

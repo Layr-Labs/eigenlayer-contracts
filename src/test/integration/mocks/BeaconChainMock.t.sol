@@ -39,7 +39,6 @@ struct StaleBalanceProofs {
 }
 
 contract BeaconChainMock is Logger {
-
     using StdStyle for *;
     using print for *;
 
@@ -1024,5 +1023,4 @@ contract BeaconChainMock is Logger {
     ) public view returns (bool) {
         return validators[validatorIndex].exitEpoch == BeaconChainProofs.FAR_FUTURE_EPOCH;
     }
-
 }

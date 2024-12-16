@@ -5,7 +5,6 @@ import "../../contracts/permissions/Pausable.sol";
 
 // wrapper around the Pausable contract that exposes the internal `_setPausedStatus` function.
 contract PausableHarness is Pausable {
-
     constructor(
         IPauserRegistry _pauserRegistry
     ) Pausable(_pauserRegistry) {}
@@ -15,5 +14,4 @@ contract PausableHarness is Pausable {
     ) external {
         _setPausedStatus(initPausedStatus);
     }
-
 }

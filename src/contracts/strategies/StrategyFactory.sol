@@ -15,7 +15,6 @@ import "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
  * @dev This may not be compatible with non-standard ERC20 tokens. Caution is warranted.
  */
 contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable {
-
     uint8 internal constant PAUSED_NEW_STRATEGIES = 0;
 
     /// @notice EigenLayer's StrategyManager contract
@@ -126,5 +125,4 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
         emit StrategyBeaconModified(strategyBeacon, _strategyBeacon);
         strategyBeacon = _strategyBeacon;
     }
-
 }

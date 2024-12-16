@@ -17,7 +17,6 @@ import {TimelockController} from "@openzeppelin/contracts/governance/TimelockCon
  *  This should be run via the protocol council multisig.
  */
 contract QueueAndUnpause is MultisigBuilder, Deploy {
-
     using Env for *;
     using Encode for *;
 
@@ -108,5 +107,4 @@ contract QueueAndUnpause is MultisigBuilder, Deploy {
         // Check that the upgrade has been added to the timelock
         assertTrue(timelock.isOperationPending(txHash), "Transaction should be queued.");
     }
-
 }

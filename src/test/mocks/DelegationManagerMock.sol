@@ -8,7 +8,6 @@ import "src/contracts/interfaces/IStrategyManager.sol";
 import "src/contracts/libraries/SlashingLib.sol";
 
 contract DelegationManagerMock is Test {
-
     receive() external payable {}
     fallback() external payable {}
 
@@ -113,5 +112,4 @@ contract DelegationManagerMock is Test {
     ) external {
         strategyManager.withdrawSharesAsTokens(recipient, strategy, token, shares);
     }
-
 }

@@ -31,7 +31,6 @@ contract DelegationManager is
     SignatureUtils,
     PermissionControllerMixin
 {
-
     using SlashingLib for *;
     using Snapshots for Snapshots.DefaultZeroHistory;
     using EnumerableSet for EnumerableSet.Bytes32Set;
@@ -1005,5 +1004,4 @@ contract DelegationManager is
             )
         );
     }
-
 }

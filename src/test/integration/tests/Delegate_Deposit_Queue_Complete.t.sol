@@ -5,7 +5,6 @@ import "src/test/integration/IntegrationChecks.t.sol";
 import "src/test/integration/users/User.t.sol";
 
 contract Integration_Delegate_Deposit_Queue_Complete is IntegrationCheckUtils {
-
     function testFuzz_delegate_deposit_queue_completeAsShares(
         uint24 _random
     ) public {
@@ -81,5 +80,4 @@ contract Integration_Delegate_Deposit_Queue_Complete is IntegrationCheckUtils {
             check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], strategies, shares, tokens, expectedTokens);
         }
     }
-
 }

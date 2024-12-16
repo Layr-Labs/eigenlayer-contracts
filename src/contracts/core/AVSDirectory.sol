@@ -17,7 +17,6 @@ contract AVSDirectory is
     ReentrancyGuardUpgradeable,
     SignatureUtils
 {
-
     /**
      *
      *                         INITIALIZING FUNCTIONS
@@ -140,5 +139,4 @@ contract AVSDirectory is
             keccak256(abi.encode(OPERATOR_AVS_REGISTRATION_TYPEHASH, operator, avs, salt, expiry))
         );
     }
-
 }

@@ -6,7 +6,6 @@ import "../../contracts/libraries/Snapshots.sol";
 import "forge-std/Test.sol";
 
 contract AllocationManagerMock is Test {
-
     using Snapshots for Snapshots.DefaultWadHistory;
 
     receive() external payable {}
@@ -56,5 +55,4 @@ contract AllocationManagerMock is Test {
     function setAVSSetCount(address avs, uint numSets) external {
         getOperatorSetCount[avs] = numSets;
     }
-
 }

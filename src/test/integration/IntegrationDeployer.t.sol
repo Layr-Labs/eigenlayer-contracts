@@ -50,7 +50,6 @@ uint8 constant PAUSED_NON_PROOF_WITHDRAWALS = 5;
 IStrategy constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 
 abstract contract IntegrationDeployer is ExistingDeploymentParser {
-
     using StdStyle for *;
 
     // Fork ids for specific fork tests
@@ -963,5 +962,4 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     ) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked(x));
     }
-
 }

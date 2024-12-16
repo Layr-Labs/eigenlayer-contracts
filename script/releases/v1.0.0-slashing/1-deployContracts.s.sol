@@ -13,7 +13,6 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
  * Purpose: use an EOA to deploy all of the new contracts for this upgrade.
  */
 contract Deploy is EOADeployer {
-
     using Env for *;
 
     function _runAsEOA() internal override {
@@ -454,5 +453,4 @@ contract Deploy is EOADeployer {
     function _assertNotMatch(address a, address b, string memory err) private pure {
         assertNotEq(a, b, err);
     }
-
 }

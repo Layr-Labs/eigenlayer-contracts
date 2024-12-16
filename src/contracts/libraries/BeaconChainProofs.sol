@@ -10,7 +10,6 @@ import "./Merkle.sol";
 //BeaconBlockHeader Spec: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#beaconblockheader
 //BeaconState Spec: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#beaconstate
 library BeaconChainProofs {
-
     /// @dev Thrown when a proof is invalid.
     error InvalidProof();
     /// @dev Thrown when a proof with an invalid length is provided.
@@ -313,5 +312,4 @@ library BeaconChainProofs {
     ) internal pure returns (uint64) {
         return Endian.fromLittleEndianUint64(validatorFields[VALIDATOR_EXIT_EPOCH_INDEX]);
     }
-
 }

@@ -2,7 +2,6 @@
 pragma solidity ^0.8.27;
 
 interface IPermissionControllerErrors {
-
     /// @notice Thrown when the caller is not the admin
     error NotAdmin();
     /// @notice Thrown when the admin to remove is not an admin
@@ -19,11 +18,9 @@ interface IPermissionControllerErrors {
     error AdminNotPending();
     /// @notice Thrown when an admin is already pending
     error AdminAlreadyPending();
-
 }
 
 interface IPermissionControllerEvents {
-
     /// @notice Emitted when an appointee is set
     event AppointeeSet(address indexed account, address indexed appointee, address target, bytes4 selector);
 
@@ -41,11 +38,9 @@ interface IPermissionControllerEvents {
 
     /// @notice Emitted when an admin is removed for a given account
     event AdminRemoved(address indexed account, address admin);
-
 }
 
 interface IPermissionController is IPermissionControllerErrors, IPermissionControllerEvents {
-
     /**
      * @notice Sets a pending admin of an account
      * @param account to set pending admin for
@@ -156,5 +151,4 @@ interface IPermissionController is IPermissionControllerErrors, IPermissionContr
      * @dev Does NOT include admin as an appointee, even though it can call
      */
     function getAppointees(address account, address target, bytes4 selector) external returns (address[] memory);
-
 }

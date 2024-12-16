@@ -14,7 +14,6 @@ import "src/contracts/interfaces/IPausable.sol";
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
 interface IEigenPodManager_DeprecatedM2 is IPausable {
-
     /**
      * @notice Creates an EigenPod for the sender.
      * @dev Function will revert if the `msg.sender` already has an EigenPod.
@@ -108,7 +107,6 @@ interface IEigenPodManager_DeprecatedM2 is IPausable {
      * @dev Reverts if `shares` is not a whole Gwei amount
      */
     function withdrawSharesAsTokens(address podOwner, address destination, uint shares) external;
-
 }
 /**
  * @notice DEPRECATED INTERFACE at commit hash https://github.com/Layr-Labs/eigenlayer-contracts/tree/0139d6213927c0a7812578899ddd3dda58051928
@@ -118,7 +116,6 @@ interface IEigenPodManager_DeprecatedM2 is IPausable {
  */
 
 interface IEigenPodManager_DeprecatedM1 is IPausable {
-
     /**
      * @notice Creates an EigenPod for the sender.
      * @dev Function will revert if the `msg.sender` already has an EigenPod.
@@ -195,5 +192,4 @@ interface IEigenPodManager_DeprecatedM1 is IPausable {
     function hasPod(
         address podOwner
     ) external view returns (bool);
-
 }

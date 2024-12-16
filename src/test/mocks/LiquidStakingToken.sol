@@ -8,7 +8,6 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 /// @author Anderson Singh.
 
 contract WETH is ERC20 {
-
     constructor() ERC20("Wrapped Ether", "WETH") {}
 
     /// @dev mint tokens for sender based on amount of ether sent.
@@ -32,5 +31,4 @@ contract WETH is ERC20 {
     receive() external payable {
         deposit();
     }
-
 }

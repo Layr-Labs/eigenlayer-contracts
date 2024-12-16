@@ -5,7 +5,6 @@ import "src/test/integration/IntegrationChecks.t.sol";
 import "src/test/integration/users/User.t.sol";
 
 contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUtils {
-
     /// Randomly generates a user with different held assets. Then:
     /// 1. deposit into strategy
     /// 2. delegate to an operator
@@ -481,5 +480,4 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
             check_Withdrawal_AsShares_State(staker, operator2, withdrawals[i], strategies, shares);
         }
     }
-
 }

@@ -38,7 +38,6 @@ import "forge-std/Test.sol";
 // # To deploy and verify our contract
 // forge script script/deploy/devnet/deploy_from_scratch.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run(string memory configFile)" -- local/deploy_from_scratch.anvil.config.json
 contract DeployFromScratch is Script, Test {
-
     Vm cheats = Vm(VM_ADDRESS);
 
     string public deployConfigPath;
@@ -527,5 +526,4 @@ contract DeployFromScratch is Script, Test {
             " eigenPodImplementation: eigenPodManager contract address not set correctly"
         );
     }
-
 }

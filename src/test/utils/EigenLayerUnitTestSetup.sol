@@ -25,7 +25,6 @@ import "src/test/utils/Random.sol";
 import "src/test/utils/ArrayLib.sol";
 
 abstract contract EigenLayerUnitTestSetup is Test {
-
     using ArrayLib for *;
 
     uint internal constant MAX_PRIVATE_KEY = 0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364140;
@@ -99,5 +98,4 @@ abstract contract EigenLayerUnitTestSetup is Test {
         isExcludedFuzzAddress[address(delegationManagerMock)] = true;
         isExcludedFuzzAddress[address(eigenPodManagerMock)] = true;
     }
-
 }

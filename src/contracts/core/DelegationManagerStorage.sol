@@ -17,7 +17,6 @@ import {Snapshots} from "../libraries/Snapshots.sol";
  * @notice This storage contract is separate from the logic to simplify the upgrade process.
  */
 abstract contract DelegationManagerStorage is IDelegationManager {
-
     using Snapshots for Snapshots.DefaultZeroHistory;
 
     // Constants
@@ -136,5 +135,4 @@ abstract contract DelegationManagerStorage is IDelegationManager {
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
     uint256[35] private __gap;
-
 }

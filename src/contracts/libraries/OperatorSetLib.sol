@@ -7,7 +7,6 @@ struct OperatorSet {
 }
 
 library OperatorSetLib {
-
     function key(
         OperatorSet memory os
     ) internal pure returns (bytes32) {
@@ -23,5 +22,4 @@ library OperatorSetLib {
             id: uint32(uint256(_key) & type(uint96).max)
         });
     }
-
 }

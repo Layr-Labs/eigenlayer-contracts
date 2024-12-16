@@ -13,7 +13,6 @@ import "src/test/mocks/EigenPodMock.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
 
 contract EigenPodManagerUnitTests is EigenLayerUnitTestSetup, IEigenPodManagerEvents {
-
     // Contracts Under Test: EigenPodManager
     EigenPodManager public eigenPodManagerImplementation;
     EigenPodManager public eigenPodManager;
@@ -99,11 +98,9 @@ contract EigenPodManagerUnitTests is EigenLayerUnitTestSetup, IEigenPodManagerEv
         assertEq(address(eigenPodManager.ownerToPod(staker)), expectedPod, "Expected pod not deployed");
         assertEq(eigenPodManager.numPods(), numPodsBefore + 1, "Num pods not incremented");
     }
-
 }
 
 contract EigenPodManagerUnitTests_Initialization_Setters is EigenPodManagerUnitTests {
-
     /**
      *
      *                             Initialization Tests
@@ -127,11 +124,9 @@ contract EigenPodManagerUnitTests_Initialization_Setters is EigenPodManagerUnitT
         cheats.expectRevert("Initializable: contract is already initialized");
         eigenPodManager.initialize(initialOwner, 0 /*initialPausedStatus*/ );
     }
-
 }
 
 contract EigenPodManagerUnitTests_CreationTests is EigenPodManagerUnitTests {
-
     function test_createPod() public {
         // Get expected pod address and pods before
         IEigenPod expectedPod = eigenPodManager.getPod(defaultStaker);
@@ -150,11 +145,9 @@ contract EigenPodManagerUnitTests_CreationTests is EigenPodManagerUnitTests {
         cheats.expectRevert(IEigenPodManagerErrors.EigenPodAlreadyExists.selector);
         eigenPodManager.createPod();
     }
-
 }
 
 contract EigenPodManagerUnitTests_StakeTests is EigenPodManagerUnitTests {
-
     function test_stake_podAlreadyDeployed() public deployPodForStaker(defaultStaker) {
         // Declare dummy variables
         bytes memory pubkey = bytes("pubkey");
@@ -183,11 +176,9 @@ contract EigenPodManagerUnitTests_StakeTests is EigenPodManagerUnitTests {
         // Expect pod has 32 ether
         assertEq(address(defaultPod).balance, 32 ether, "ETH not staked in EigenPod");
     }
-
 }
 
 contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
-
     /**
      *
      *                             Add Shares Tests
@@ -307,11 +298,9 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
         // Check storage update
         assertEq(eigenPodManager.podOwnerDepositShares(podOwner), 0, "Shares not reset to zero");
     }
-
 }
 
 contract EigenPodManagerUnitTests_WithdrawSharesAsTokensTests is EigenPodManagerUnitTests {
-
     // Wrapper contract that exposes the internal `_calculateChangeInDelegatableShares` function
     EigenPodManagerWrapper public eigenPodManagerWrapper;
 
@@ -429,11 +418,9 @@ contract EigenPodManagerUnitTests_WithdrawSharesAsTokensTests is EigenPodManager
         // Check storage remains the same
         assertEq(eigenPodManager.podOwnerDepositShares(defaultStaker), sharesBeginning, "Shares should not be adjusted");
     }
-
 }
 
 contract EigenPodManagerUnitTests_BeaconChainETHBalanceUpdateTests is EigenPodManagerUnitTests {
-
     // Wrapper contract that exposes the internal `_calculateChangeInDelegatableShares` function
     EigenPodManagerWrapper public eigenPodManagerWrapper;
 
@@ -534,5 +521,4 @@ contract EigenPodManagerUnitTests_BeaconChainETHBalanceUpdateTests is EigenPodMa
         assertEq(eigenPodManager.podOwnerDepositShares(defaultStaker), int(sharesBefore), "Shares should not be adjusted");
         assertTrue(eigenPodManager.beaconChainSlashingFactor(defaultStaker) <= prevSlashingFactor, "bcsf should always decrease");
     }
-
 }

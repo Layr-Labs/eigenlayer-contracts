@@ -38,7 +38,6 @@ import "src/contracts/token/BackingEigen.sol";
 import "src/contracts/token/Eigen.sol";
 
 library Env {
-
     using ZEnvHelpers for *;
 
     /// Dummy types and variables to facilitate syntax, e.g: `Env.proxy.delegationManager()`
@@ -400,5 +399,4 @@ library Env {
     ) private view returns (uint16) {
         return ZEnvHelpers.state().envU16(key);
     }
-
 }

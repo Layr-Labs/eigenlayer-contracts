@@ -12,7 +12,6 @@ import "./IStrategyManager.sol";
 import "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
 
 interface IEigenPodManagerErrors {
-
     /// @dev Thrown when caller is not a EigenPod.
     error OnlyEigenPod();
     /// @dev Thrown when caller is not DelegationManager.
@@ -28,11 +27,9 @@ interface IEigenPodManagerErrors {
     /// @dev Thrown when the pods shares are negative and a beacon chain balance update is attempted.
     /// The podOwner should complete legacy withdrawal first.
     error LegacyWithdrawalsNotCompleted();
-
 }
 
 interface IEigenPodManagerEvents {
-
     /// @notice Emitted to notify the deployment of an EigenPod
     event PodDeployed(address indexed eigenPod, address indexed podOwner);
 
@@ -59,11 +56,9 @@ interface IEigenPodManagerEvents {
     event BeaconChainSlashingFactorDecreased(
         address staker, uint64 prevBeaconChainSlashingFactor, uint64 newBeaconChainSlashingFactor
     );
-
 }
 
 interface IEigenPodManagerTypes {
-
     /**
      * @notice The amount of beacon chain slashing experienced by a pod owner as a proportion of WAD
      * @param isSet whether the slashingFactor has ever been updated. Used to distinguish between
@@ -77,7 +72,6 @@ interface IEigenPodManagerTypes {
         bool isSet;
         uint64 slashingFactor;
     }
-
 }
 
 /**
@@ -92,7 +86,6 @@ interface IEigenPodManager is
     IShareManager,
     IPausable
 {
-
     /**
      * @notice Creates an EigenPod for the sender.
      * @dev Function will revert if the `msg.sender` already has an EigenPod.
@@ -170,5 +163,4 @@ interface IEigenPodManager is
     function beaconChainSlashingFactor(
         address staker
     ) external view returns (uint64);
-
 }

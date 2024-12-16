@@ -3,7 +3,6 @@ pragma solidity ^0.8.27;
 
 /// @notice DEPRECATED INTERFACE at commit hash https://github.com/Layr-Labs/eigenlayer-contracts/tree/0139d6213927c0a7812578899ddd3dda58051928
 interface IDelayedWithdrawalRouter_DeprecatedM1 {
-
     // struct used to pack data into a single storage slot
     struct DelayedWithdrawal {
         uint224 amount;
@@ -73,5 +72,4 @@ interface IDelayedWithdrawalRouter_DeprecatedM1 {
      * up to a maximum of `MAX_WITHDRAWAL_DELAY_BLOCKS`. Minimum value is 0 (i.e. no delay enforced).
      */
     function withdrawalDelayBlocks() external view returns (uint);
-
 }

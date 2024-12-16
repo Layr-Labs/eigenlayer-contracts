@@ -9,7 +9,6 @@ import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 contract Execute is QueueAndUnpause, Pause {
-
     using Env for *;
 
     function _runAsMultisig() internal override (Pause, QueueAndUnpause) prank(Env.protocolCouncilMultisig()) {
@@ -256,5 +255,4 @@ contract Execute is QueueAndUnpause, Pause {
             assertTrue(strategyFactory.strategyBeacon() == Env.beacon.strategyBase(), "sFact.beacon invalid");
         }
     }
-
 }

@@ -11,7 +11,6 @@ import "forge-std/Test.sol";
 // RUST_LOG=forge,foundry=trace forge script script/tasks/allocate_operatorSet.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run(string memory configFile,address strategy,address avs,uint32 operatorSetId,uint64 magnitude)" -- <DEPLOYMENT_OUTPUT_JSON> <STRATEGY_ADDRESS> <AVS_ADDRESS> <OPERATOR_SET_ID> <MAGNITUDE>
 // RUST_LOG=forge,foundry=trace forge script script/tasks/allocate_operatorSet.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run(string memory configFile,address strategy,address avs,uint32 operatorSetId,uint64 magnitude)" -- local/slashing_output.json 0x8aCd85898458400f7Db866d53FCFF6f0D49741FF 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 00000001 0500000000000000000
 contract AllocateOperatorSet is Script, Test {
-
     Vm cheats = Vm(VM_ADDRESS);
 
     function run(string memory configFile, address strategy, address avs, uint32 operatorSetId, uint64 magnitude) public {
@@ -50,5 +49,4 @@ contract AllocateOperatorSet is Script, Test {
         // STOP RECORDING TRANSACTIONS FOR DEPLOYMENT
         vm.stopBroadcast();
     }
-
 }

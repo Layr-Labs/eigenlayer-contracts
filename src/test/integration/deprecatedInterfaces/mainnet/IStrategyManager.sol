@@ -13,7 +13,6 @@ import "src/contracts/interfaces/IStrategy.sol";
  * @notice See the `StrategyManager` contract itself for implementation details.
  */
 interface IStrategyManager_DeprecatedM2 {
-
     /**
      * @notice Deposits `amount` of `token` into the specified `strategy`, with the resultant shares credited to `msg.sender`
      * @param strategy is the specified strategy where deposit is to be made,
@@ -153,7 +152,6 @@ interface IStrategyManager_DeprecatedM2 {
     ) external view returns (uint);
 
     function DEPOSIT_TYPEHASH() external view returns (bytes32);
-
 }
 
 /**
@@ -164,7 +162,6 @@ interface IStrategyManager_DeprecatedM2 {
  * @notice See the `StrategyManager` contract itself for implementation details.
  */
 interface IStrategyManager_DeprecatedM1 {
-
     // packed struct for queued withdrawals; helps deal with stack-too-deep errors
     struct WithdrawerAndNonce {
         address withdrawer;
@@ -412,5 +409,4 @@ interface IStrategyManager_DeprecatedM1 {
     function numWithdrawalsQueued(
         address staker
     ) external view returns (uint);
-
 }

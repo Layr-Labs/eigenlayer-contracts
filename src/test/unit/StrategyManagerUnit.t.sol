@@ -22,7 +22,6 @@ import "src/test/utils/EigenLayerUnitTestSetup.sol";
  * Contracts not mocked: StrategyBase, PauserRegistry
  */
 contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEvents {
-
     StrategyManager public strategyManagerImplementation;
     StrategyManager public strategyManager;
 
@@ -225,11 +224,9 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEv
 
         return strategyArray;
     }
-
 }
 
 contract StrategyManagerUnitTests_initialize is StrategyManagerUnitTests {
-
     function test_CannotReinitialize() public {
         cheats.expectRevert("Initializable: contract is already initialized");
         strategyManager.initialize(initialOwner, initialOwner, 0);
@@ -240,11 +237,9 @@ contract StrategyManagerUnitTests_initialize is StrategyManagerUnitTests {
         assertEq(strategyManager.strategyWhitelister(), initialOwner, "strategyManager.strategyWhitelister() != initialOwner");
         assertEq(address(strategyManager.pauserRegistry()), address(pauserRegistry), "strategyManager.pauserRegistry() != pauserRegistry");
     }
-
 }
 
 contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTests {
-
     function testFuzz_depositIntoStrategySuccessfully(address staker, uint amount) public filterFuzzedAddressInputs(staker) {
         IERC20 token = dummyToken;
         IStrategy strategy = dummyStrat;
@@ -781,11 +776,9 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
         cheats.expectRevert(IStrategyManagerErrors.SharesAmountZero.selector);
         strategyManager.depositIntoStrategy(strategy, token, amount);
     }
-
 }
 
 contract StrategyManagerUnitTests_depositIntoStrategyWithSignature is StrategyManagerUnitTests {
-
     function test_Revert_WhenSignatureInvalid() public {
         address staker = cheats.addr(privateKey);
         IStrategy strategy = dummyStrat;
@@ -1054,11 +1047,9 @@ contract StrategyManagerUnitTests_depositIntoStrategyWithSignature is StrategyMa
 
         _depositIntoStrategyWithSignature(staker, amount, type(uint).max, IStrategyManagerErrors.StrategyNotWhitelisted.selector);
     }
-
 }
 
 contract StrategyManagerUnitTests_removeDepositShares is StrategyManagerUnitTests {
-
     /**
      * @notice Should revert if not called by DelegationManager
      */
@@ -1238,11 +1229,9 @@ contract StrategyManagerUnitTests_removeDepositShares is StrategyManagerUnitTest
             "stakerStrategyListLengthBefore - numPoppedStrategies != strategyManager.stakerStrategyListLength(staker)"
         );
     }
-
 }
 
 contract StrategyManagerUnitTests_addShares is StrategyManagerUnitTests {
-
     function test_Revert_DelegationManagerModifier() external {
         DelegationManagerMock invalidDelegationManager = new DelegationManagerMock();
         cheats.expectRevert(IStrategyManagerErrors.OnlyDelegationManager.selector);
@@ -1344,11 +1333,9 @@ contract StrategyManagerUnitTests_addShares is StrategyManagerUnitTests {
         cheats.expectRevert(IStrategyManagerErrors.MaxStrategiesExceeded.selector);
         strategyManager.depositIntoStrategy(strategy, token, amount);
     }
-
 }
 
 contract StrategyManagerUnitTests_withdrawSharesAsTokens is StrategyManagerUnitTests {
-
     function test_Revert_DelegationManagerModifier() external {
         DelegationManagerMock invalidDelegationManager = new DelegationManagerMock();
         cheats.expectRevert(IStrategyManagerErrors.OnlyDelegationManager.selector);
@@ -1391,11 +1378,9 @@ contract StrategyManagerUnitTests_withdrawSharesAsTokens is StrategyManagerUnitT
         uint balanceAfter = token.balanceOf(staker);
         assertEq(balanceAfter, balanceBefore + sharesAmount, "balanceAfter != balanceBefore + sharesAmount");
     }
-
 }
 
 contract StrategyManagerUnitTests_burnShares is StrategyManagerUnitTests {
-
     function test_Revert_DelegationManagerModifier() external {
         DelegationManagerMock invalidDelegationManager = new DelegationManagerMock();
         cheats.prank(address(invalidDelegationManager));
@@ -1482,11 +1467,9 @@ contract StrategyManagerUnitTests_burnShares is StrategyManagerUnitTests {
         assertEq(burnAddressBalanceBefore, burnAddressBalanceAfter, "burnAddressBalanceBefore != burnAddressBalanceAfter");
         assertEq(strategyBalanceBefore, strategyBalanceAfter, "strategyBalanceBefore != strategyBalanceAfter");
     }
-
 }
 
 contract StrategyManagerUnitTests_setStrategyWhitelister is StrategyManagerUnitTests {
-
     function testFuzz_SetStrategyWhitelister(
         address newWhitelister
     ) external filterFuzzedAddressInputs(newWhitelister) {
@@ -1506,11 +1489,9 @@ contract StrategyManagerUnitTests_setStrategyWhitelister is StrategyManagerUnitT
         cheats.expectRevert("Ownable: caller is not the owner");
         strategyManager.setStrategyWhitelister(newWhitelister);
     }
-
 }
 
 contract StrategyManagerUnitTests_addStrategiesToDepositWhitelist is StrategyManagerUnitTests {
-
     function testFuzz_Revert_WhenCalledByNotStrategyWhitelister(
         address notStrategyWhitelister
     ) external filterFuzzedAddressInputs(notStrategyWhitelister) {
@@ -1563,11 +1544,9 @@ contract StrategyManagerUnitTests_addStrategiesToDepositWhitelist is StrategyMan
         cheats.assume(numberOfStrategiesToAdd <= 16);
         _addStrategiesToWhitelist(numberOfStrategiesToAdd);
     }
-
 }
 
 contract StrategyManagerUnitTests_removeStrategiesFromDepositWhitelist is StrategyManagerUnitTests {
-
     function testFuzz_Revert_WhenCalledByNotStrategyWhitelister(
         address notStrategyWhitelister
     ) external filterFuzzedAddressInputs(notStrategyWhitelister) {
@@ -1651,5 +1630,4 @@ contract StrategyManagerUnitTests_removeStrategiesFromDepositWhitelist is Strate
             }
         }
     }
-
 }

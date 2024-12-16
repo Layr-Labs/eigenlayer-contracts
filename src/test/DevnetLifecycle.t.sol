@@ -17,7 +17,6 @@ import "forge-std/Test.sol";
 /// @notice Tests deployed contracts as part of the public devnet
 /// Run with: forge test --mc Devnet_Lifecycle_Test --rpc-url $RPC_HOLESKY
 contract Devnet_Lifecycle_Test is Test, IAllocationManagerTypes {
-
     using ArrayLib for *;
 
     // Contracts
@@ -224,5 +223,4 @@ contract Devnet_Lifecycle_Test is Test, IAllocationManagerTypes {
         // Assert tokens
         assertEq(weth.balanceOf(staker), wethAmount / 2);
     }
-
 }

@@ -9,7 +9,6 @@ import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.so
 import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 
 contract EigenTransferRestrictionsTest is Test {
-
     mapping(address => bool) fuzzedOutAddresses;
 
     address minter1 = 0xbb00DDa2832850a43840A3A86515E3Fe226865F2;
@@ -194,5 +193,4 @@ contract EigenTransferRestrictionsTest is Test {
         // set owner to minter1
         EigenHarness(address(eigen)).transferOwnershipPermissionless(minter1);
     }
-
 }

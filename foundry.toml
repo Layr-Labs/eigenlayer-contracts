@@ -78,7 +78,7 @@
     # Sort import statements alphabetically
     sort_imports = true  
     # Add empty lines before and after contract definitions
-    contract_new_lines = true  
+    contract_new_lines = false  
     # Space between 'override' keyword and parent contracts
     override_spacing = true  
     # Maximum line length where formatter will wrap the line

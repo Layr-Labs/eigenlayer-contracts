@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 library Endian {
-
     /**
      * @notice Converts a little endian-formatted uint64 to a big endian-formatted uint64
      * @param lenum little endian-formatted uint64 input, provided as 'bytes32' type
@@ -25,5 +24,4 @@ library Endian {
             ((0x000000000000FF00 & n) << 40) | 
             ((0x00000000000000FF & n) << 56);
     }
-
 }

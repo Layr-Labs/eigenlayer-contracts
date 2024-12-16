@@ -35,7 +35,6 @@ import "@openzeppelin/contracts/utils/Context.sol";
  * allowances. See {IERC20-approve}.
  */
 contract ERC20Mock is Context, IERC20 {
-
     mapping(address => uint) private _balances;
 
     mapping(address => mapping(address => uint)) private _allowances;
@@ -282,5 +281,4 @@ contract ERC20Mock is Context, IERC20 {
      * To learn more about hooks, head to xref:ROOT:extending-contracts.adoc#using-hooks[Using Hooks].
      */
     function _afterTokenTransfer(address from, address to, uint amount) internal virtual {}
-
 }

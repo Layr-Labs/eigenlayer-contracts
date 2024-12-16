@@ -46,7 +46,6 @@ struct DeployedEigenPods {
 }
 
 contract ExistingDeploymentParser is Script, Logger {
-
     using stdJson for string;
 
     /// -----------------------------------------------------------------------
@@ -692,5 +691,4 @@ contract ExistingDeploymentParser is Script, Logger {
         REWARDS_COORDINATOR_MAX_FUTURE_LENGTH = uint32(json.readUint(".config.params.MAX_FUTURE_LENGTH"));
         REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP = uint32(json.readUint(".config.params.GENESIS_REWARDS_TIMESTAMP"));
     }
-
 }

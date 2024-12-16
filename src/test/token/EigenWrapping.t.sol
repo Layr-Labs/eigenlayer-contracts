@@ -10,7 +10,6 @@ import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.so
 import "../../contracts/token/BackingEigen.sol";
 
 contract EigenWrappingTests is Test {
-
     mapping(address => bool) fuzzedOutAddresses;
 
     address minter1 = 0xbb00DDa2832850a43840A3A86515E3Fe226865F2;
@@ -206,5 +205,4 @@ contract EigenWrappingTests is Test {
         bEIGEN.setAllowedFrom(minter1, true);
         vm.stopPrank();
     }
-
 }

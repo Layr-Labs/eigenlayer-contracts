@@ -9,7 +9,6 @@ import "src/contracts/permissions/PermissionController.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
 
 contract PermissionControllerUnitTests is EigenLayerUnitTestSetup, IPermissionControllerEvents, IPermissionControllerErrors {
-
     address account = address(0x1);
     address admin = address(0x2);
     address admin2 = address(0x3);
@@ -29,11 +28,9 @@ contract PermissionControllerUnitTests is EigenLayerUnitTestSetup, IPermissionCo
         target1 = address(delegationManagerMock);
         target2 = address(allocationManagerMock);
     }
-
 }
 
 contract PermissionControllerUnitTests_AddPendingAdmin is PermissionControllerUnitTests {
-
     function testFuzz_getAdmin_notSet(
         address account
     ) public view filterFuzzedAddressInputs(account) {
@@ -72,11 +69,9 @@ contract PermissionControllerUnitTests_AddPendingAdmin is PermissionControllerUn
         assertTrue(permissionController.isPendingAdmin(account, admin), "Pending admin not set correctly");
         assertFalse(permissionController.isAdmin(account, admin), "Pending admin not set correctly");
     }
-
 }
 
 contract PermissionControllerUnitTests_RemovePendingAdmin is PermissionControllerUnitTests {
-
     function setUp() public virtual override {
         // Setup
         PermissionControllerUnitTests.setUp();
@@ -110,11 +105,9 @@ contract PermissionControllerUnitTests_RemovePendingAdmin is PermissionControlle
         address[] memory pendingAdmins = permissionController.getPendingAdmins(account);
         assertEq(pendingAdmins.length, 0, "Pending admin not removed");
     }
-
 }
 
 contract PermissionControllerUnitTests_AcceptAdmin is PermissionControllerUnitTests {
-
     function setUp() public virtual override {
         // Setup
         PermissionControllerUnitTests.setUp();
@@ -193,11 +186,9 @@ contract PermissionControllerUnitTests_AcceptAdmin is PermissionControllerUnitTe
         assertTrue(permissionController.canCall(account, admin, address(0), bytes4(0)), "Admin cannot call");
         assertTrue(permissionController.canCall(account, admin2, address(0), bytes4(0)), "Admin cannot call");
     }
-
 }
 
 contract PermissionControllerUnitTests_RemoveAdmin is PermissionControllerUnitTests {
-
     function setUp() public virtual override {
         // Setup
         PermissionControllerUnitTests.setUp();
@@ -255,11 +246,9 @@ contract PermissionControllerUnitTests_RemoveAdmin is PermissionControllerUnitTe
         assertTrue(permissionController.isAdmin(account, admin2), "Admin2 is not admin");
         assertFalse(permissionController.isAdmin(account, admin), "Account should not be admin");
     }
-
 }
 
 contract PermissionControllerUnitTests_SetAppointee is PermissionControllerUnitTests {
-
     function setUp() public virtual override {
         // Setup
         PermissionControllerUnitTests.setUp();
@@ -342,11 +331,9 @@ contract PermissionControllerUnitTests_SetAppointee is PermissionControllerUnitT
         }
         assertTrue(foundAppointee, "Appointee not in list of appointees for given target and selector");
     }
-
 }
 
 contract PermissionControllerUnitTests_RemoveAppointee is PermissionControllerUnitTests {
-
     function setUp() public virtual override {
         // Setup
         PermissionControllerUnitTests.setUp();
@@ -446,5 +433,4 @@ contract PermissionControllerUnitTests_RemoveAppointee is PermissionControllerUn
         }
         assertFalse(foundAppointee, "Appointee still in list of appointees for given target and selector");
     }
-
 }

@@ -17,17 +17,14 @@ import "src/contracts/interfaces/IAVSRegistrar.sol";
 import "src/test/utils/ArrayLib.sol";
 
 interface IAVSDeployer {
-
     function delegationManager() external view returns (DelegationManager);
     function allocationManager() external view returns (AllocationManager);
     function strategyFactory() external view returns (StrategyFactory);
     function permissionController() external view returns (PermissionController);
     function timeMachine() external view returns (TimeMachine);
-
 }
 
 contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
-
     using print for *;
     using ArrayLib for *;
 
@@ -221,5 +218,4 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
     ) internal {
         return _tryPrankAppointee(address(allocationManager()), selector);
     }
-
 }

@@ -20,7 +20,6 @@ contract AllocationManager is
     ReentrancyGuardUpgradeable,
     PermissionControllerMixin
 {
-
     using DoubleEndedQueue for DoubleEndedQueue.Bytes32Deque;
     using EnumerableSet for *;
 
@@ -840,5 +839,4 @@ contract AllocationManager is
             }
         }
     }
-
 }

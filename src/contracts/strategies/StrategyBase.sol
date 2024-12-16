@@ -30,7 +30,6 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
  * We specifically use a share offset of `SHARES_OFFSET` and a balance offset of `BALANCE_OFFSET`.
  */
 contract StrategyBase is Initializable, Pausable, IStrategy {
-
     using SafeERC20 for IERC20;
 
     uint8 internal constant PAUSED_DEPOSITS = 0;
@@ -329,5 +328,4 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
     uint256[48] private __gap;
-
 }

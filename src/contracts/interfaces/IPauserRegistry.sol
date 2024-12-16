@@ -7,7 +7,6 @@ pragma solidity >=0.5.0;
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
 interface IPauserRegistry {
-
     error OnlyUnpauser();
     error InputAddressZero();
 
@@ -22,5 +21,4 @@ interface IPauserRegistry {
 
     /// @notice Unique address that holds the unpauser role. Capable of changing *both* the pauser and unpauser addresses.
     function unpauser() external view returns (address);
-
 }

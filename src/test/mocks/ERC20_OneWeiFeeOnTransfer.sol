@@ -18,7 +18,6 @@ pragma solidity ^0.8.27;
  * This contract is only required for intermediate, library-like contracts.
  */
 abstract contract OpenZeppelin_Context {
-
     function _msgSender() internal view virtual returns (address) {
         return msg.sender;
     }
@@ -26,7 +25,6 @@ abstract contract OpenZeppelin_Context {
     function _msgData() internal view virtual returns (bytes calldata) {
         return msg.data;
     }
-
 }
 
 // OpenZeppelin Contracts (last updated v4.6.0) (token/ERC20/IERC20.sol)
@@ -37,7 +35,6 @@ abstract contract OpenZeppelin_Context {
  * @dev Interface of the ERC20 standard as defined in the EIP.
  */
 interface OpenZeppelin_IERC20 {
-
     /**
      * @dev Emitted when `value` tokens are moved from one account (`from`) to
      * another (`to`).
@@ -108,7 +105,6 @@ interface OpenZeppelin_IERC20 {
      * Emits a {Transfer} event.
      */
     function transferFrom(address from, address to, uint amount) external returns (bool);
-
 }
 
 // OpenZeppelin Contracts v4.4.1 (token/ERC20/extensions/IERC20Metadata.sol)
@@ -123,7 +119,6 @@ interface OpenZeppelin_IERC20 {
  * _Available since v4.1._
  */
 interface OpenZeppelin_IERC20Metadata is OpenZeppelin_IERC20 {
-
     /**
      * @dev Returns the name of the token.
      */
@@ -138,7 +133,6 @@ interface OpenZeppelin_IERC20Metadata is OpenZeppelin_IERC20 {
      * @dev Returns the decimals places of the token.
      */
     function decimals() external view returns (uint8);
-
 }
 
 // OpenZeppelin Contracts (last updated v4.8.0) (token/ERC20/ERC20.sol)
@@ -176,7 +170,6 @@ interface OpenZeppelin_IERC20Metadata is OpenZeppelin_IERC20 {
  * allowances. See {IERC20-approve}.
  */
 contract OpenZeppelin_ERC20 is OpenZeppelin_Context, OpenZeppelin_IERC20, OpenZeppelin_IERC20Metadata {
-
     mapping(address => uint) internal _balances;
 
     mapping(address => mapping(address => uint)) private _allowances;
@@ -506,7 +499,6 @@ contract OpenZeppelin_ERC20 is OpenZeppelin_Context, OpenZeppelin_IERC20, OpenZe
      * To learn more about hooks, head to xref:ROOT:extending-contracts.adoc#using-hooks[Using Hooks].
      */
     function _afterTokenTransfer(address from, address to, uint amount) internal virtual {}
-
 }
 
 // OpenZeppelin Contracts (last updated v4.5.0) (token/ERC20/extensions/ERC20Burnable.sol)
@@ -522,7 +514,6 @@ contract OpenZeppelin_ERC20 is OpenZeppelin_Context, OpenZeppelin_IERC20, OpenZe
  * recognized off-chain (via event analysis).
  */
 abstract contract OpenZeppelin_ERC20Burnable is OpenZeppelin_Context, OpenZeppelin_ERC20 {
-
     /**
      * @dev Destroys `amount` tokens from the caller.
      *
@@ -549,7 +540,6 @@ abstract contract OpenZeppelin_ERC20Burnable is OpenZeppelin_Context, OpenZeppel
         _spendAllowance(account, _msgSender(), amount);
         _burn(account, amount);
     }
-
 }
 
 // OpenZeppelin Contracts (last updated v4.5.0) (token/ERC20/presets/ERC20PresetFixedSupply.sol)
@@ -572,7 +562,6 @@ abstract contract OpenZeppelin_ERC20Burnable is OpenZeppelin_Context, OpenZeppel
  * _Deprecated in favor of https://wizard.openzeppelin.com/[Contracts Wizard]._
  */
 contract OpenZeppelin_ERC20PresetFixedSupply is OpenZeppelin_ERC20Burnable {
-
     /**
      * @dev Mints `initialSupply` amount of token and transfers them to `owner`.
      *
@@ -581,12 +570,10 @@ contract OpenZeppelin_ERC20PresetFixedSupply is OpenZeppelin_ERC20Burnable {
     constructor(string memory name, string memory symbol, uint initialSupply, address owner) OpenZeppelin_ERC20(name, symbol) {
         _mint(owner, initialSupply);
     }
-
 }
 
 // actual mock code
 contract ERC20_OneWeiFeeOnTransfer is OpenZeppelin_ERC20PresetFixedSupply {
-
     constructor(
         uint initSupply,
         address initOwner
@@ -627,5 +614,4 @@ contract ERC20_OneWeiFeeOnTransfer is OpenZeppelin_ERC20PresetFixedSupply {
 
         _afterTokenTransfer(from, to, amount);
     }
-
 }

@@ -4,7 +4,6 @@ pragma solidity ^0.8.27;
 import "src/test/integration/IntegrationChecks.t.sol";
 
 contract IntegrationMainnetFork_UpgradeSetup is IntegrationCheckUtils {
-
     // /// @notice Test upgrade setup is correct
     // /// forge-config: default.fuzz.runs = 1
     // function test_mainnet_upgrade_setup(uint24 _random) public {
@@ -75,5 +74,4 @@ contract IntegrationMainnetFork_UpgradeSetup is IntegrationCheckUtils {
             "eigenPodManager: delegationManager contract address not set correctly"
         );
     }
-
 }

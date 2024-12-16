@@ -6,7 +6,6 @@ import "./StrategyBaseUnit.t.sol";
 import "../../contracts/strategies/StrategyBaseTVLLimits.sol";
 
 contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
-
     StrategyBaseTVLLimits public strategyBaseTVLLimitsImplementation;
     StrategyBaseTVLLimits public strategyWithTVLLimits;
 
@@ -304,5 +303,4 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
     ) public virtual override filterToValidDepositAmounts(amountToDeposit) {
         StrategyBaseUnitTests.testWithdrawWithPriorTotalSharesAndAmountSharesNotEqual(amountToDeposit, sharesToWithdraw);
     }
-
 }

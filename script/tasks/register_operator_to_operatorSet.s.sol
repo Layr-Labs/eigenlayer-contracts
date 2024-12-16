@@ -12,18 +12,15 @@ import "forge-std/Test.sol";
 
 // Define dummy AVSRegistrar contract to prevent revert
 contract AVSRegistrar is IAVSRegistrar {
-
     function registerOperator(address operator, uint32[] calldata operatorSetIds, bytes calldata data) external {}
     function deregisterOperator(address operator, uint32[] calldata operatorSetIds) external {}
     fallback() external {}
-
 }
 
 // use forge:
 // RUST_LOG=forge,foundry=trace forge script script/tasks/register_operator_to_operatorSet.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run(string memory configFile)" -- <DEPLOYMENT_OUTPUT_JSON>
 // RUST_LOG=forge,foundry=trace forge script script/tasks/register_operator_to_operatorSet.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run(string memory configFile)" -- local/slashing_output.json
 contract RegisterOperatorToOperatorSets is Script, Test {
-
     Vm cheats = Vm(VM_ADDRESS);
 
     function run(
@@ -80,5 +77,4 @@ contract RegisterOperatorToOperatorSets is Script, Test {
         // STOP RECORDING TRANSACTIONS FOR DEPLOYMENT
         vm.stopBroadcast();
     }
-
 }

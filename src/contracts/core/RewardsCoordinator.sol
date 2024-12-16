@@ -29,7 +29,6 @@ contract RewardsCoordinator is
     RewardsCoordinatorStorage,
     PermissionControllerMixin
 {
-
     using SafeERC20 for IERC20;
 
     modifier onlyRewardsUpdater() {
@@ -652,5 +651,4 @@ contract RewardsCoordinator is
         }
         revert InvalidRoot();
     }
-
 }

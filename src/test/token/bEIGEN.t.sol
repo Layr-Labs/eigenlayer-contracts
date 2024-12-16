@@ -10,7 +10,6 @@ import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.so
 import "../../contracts/token/BackingEigen.sol";
 
 contract bEIGENTest is Test {
-
     mapping(address => bool) fuzzedOutAddresses;
 
     address initialOwner = 0xbb00DDa2832850a43840A3A86515E3Fe226865F2;
@@ -112,5 +111,4 @@ contract bEIGENTest is Test {
         vm.expectRevert("BackingEigen.mint: caller is not a minter");
         bEIGEN.mint(mintTo, amountToMint);
     }
-
 }

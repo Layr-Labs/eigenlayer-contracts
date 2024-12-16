@@ -6,7 +6,6 @@ import "@openzeppelin-upgrades/contracts/token/ERC20/extensions/ERC20VotesUpgrad
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable {
-
     /// CONSTANTS & IMMUTABLES
     /// @notice the address of the backing Eigen token bEIGEN
     IERC20 public immutable bEIGEN;
@@ -194,5 +193,4 @@ contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable {
     function CLOCK_MODE() public pure override returns (string memory) {
         return "mode=timestamp";
     }
-
 }

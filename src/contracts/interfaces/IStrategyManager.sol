@@ -7,7 +7,6 @@ import "./IShareManager.sol";
 import "./IStrategy.sol";
 
 interface IStrategyManagerErrors {
-
     /// @dev Thrown when total strategies deployed exceeds max.
     error MaxStrategiesExceeded();
     /// @dev Thrown when call attempted from address that's not delegation manager.
@@ -24,11 +23,9 @@ interface IStrategyManagerErrors {
     error StrategyNotFound();
     /// @dev Thrown when attempting to deposit to a non-whitelisted strategy.
     error StrategyNotWhitelisted();
-
 }
 
 interface IStrategyManagerEvents {
-
     /**
      * @notice Emitted when a new deposit occurs on behalf of `staker`.
      * @param staker Is the staker who is depositing funds into EigenLayer.
@@ -46,7 +43,6 @@ interface IStrategyManagerEvents {
 
     /// @notice Emitted when a strategy is removed from the approved list of strategies for deposit
     event StrategyRemovedFromDepositWhitelist(IStrategy strategy);
-
 }
 
 /**
@@ -56,7 +52,6 @@ interface IStrategyManagerEvents {
  * @notice See the `StrategyManager` contract itself for implementation details.
  */
 interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IShareManager {
-
     /**
      * @notice Initializes the strategy manager contract. Sets the `pauserRegistry` (currently **not** modifiable after being set),
      * and transfers contract ownership to the specified `initialOwner`.
@@ -193,5 +188,4 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
         uint256 nonce,
         uint256 expiry
     ) external view returns (bytes32);
-
 }

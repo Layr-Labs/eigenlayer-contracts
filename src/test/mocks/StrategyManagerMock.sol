@@ -6,7 +6,6 @@ import "forge-std/Test.sol";
 import "../../contracts/interfaces/IDelegationManager.sol";
 
 contract StrategyManagerMock is Test {
-
     IDelegationManager public delegation;
     address public strategyWhitelister;
 
@@ -148,5 +147,4 @@ contract StrategyManagerMock is Test {
 
     fallback() external payable {}
     receive() external payable {}
-
 }

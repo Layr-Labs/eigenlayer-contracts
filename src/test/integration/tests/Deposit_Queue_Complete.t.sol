@@ -5,7 +5,6 @@ import "src/test/integration/IntegrationChecks.t.sol";
 import "src/test/integration/users/User.t.sol";
 
 contract Integration_Deposit_QueueWithdrawal_Complete is IntegrationCheckUtils {
-
     /// Randomly generates a user with different held assets. Then:
     /// 1. deposit into strategy
     /// 2. queueWithdrawal
@@ -76,5 +75,4 @@ contract Integration_Deposit_QueueWithdrawal_Complete is IntegrationCheckUtils {
         // Ensure staker is still not delegated to anyone post withdrawal completion
         assertFalse(delegationManager.isDelegated(address(staker)), "Staker should still not be delegated after withdrawal");
     }
-
 }

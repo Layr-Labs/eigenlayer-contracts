@@ -23,7 +23,6 @@ struct Validator {
 }
 
 interface IUserDeployer {
-
     function allocationManager() external view returns (AllocationManager);
     function delegationManager() external view returns (DelegationManager);
     function permissionController() external view returns (PermissionController);
@@ -31,11 +30,9 @@ interface IUserDeployer {
     function eigenPodManager() external view returns (EigenPodManager);
     function timeMachine() external view returns (TimeMachine);
     function beaconChain() external view returns (BeaconChainMock);
-
 }
 
 contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
-
     using StdStyle for *;
     using SlashingLib for *;
     using ArrayLib for *;
@@ -663,12 +660,10 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     ) internal {
         return _tryPrankAppointee(address(delegationManager), selector);
     }
-
 }
 
 /// @notice A user contract that calls nonstandard methods (like xBySignature methods)
 contract User_AltMethods is User {
-
     mapping(bytes32 => bool) public signedHashes;
 
     constructor(
@@ -722,5 +717,4 @@ contract User_AltMethods is User {
             return 0xffffffff;
         }
     }
-
 }

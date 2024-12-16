@@ -15,7 +15,6 @@ pragma solidity >=0.5.0;
 /// @notice This is the Ethereum 2.0 deposit contract interface.
 /// For more information see the Phase 0 specification under https://github.com/ethereum/eth2.0-specs
 interface IETHPOSDeposit {
-
     /// @notice A processed deposit event.
     event DepositEvent(bytes pubkey, bytes withdrawal_credentials, bytes amount, bytes signature, bytes index);
 
@@ -39,5 +38,4 @@ interface IETHPOSDeposit {
     /// @notice Query the current deposit count.
     /// @return The deposit count encoded as a little endian 64-bit number.
     function get_deposit_count() external view returns (bytes memory);
-
 }

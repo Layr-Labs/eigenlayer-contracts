@@ -7,7 +7,6 @@ import "src/test/mocks/MockAVSRegistrar.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
 
 contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManagerErrors, IAllocationManagerEvents {
-
     using StdStyle for *;
     using ArrayLib for *;
 
@@ -493,11 +492,9 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
     function _defaultAllocEffectBlock() internal view returns (uint32) {
         return uint32(block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY);
     }
-
 }
 
 contract AllocationManagerUnitTests_Initialization_Setters is AllocationManagerUnitTests {
-
     /// -----------------------------------------------------------------------
     /// initialize()
     /// -----------------------------------------------------------------------
@@ -529,11 +526,9 @@ contract AllocationManagerUnitTests_Initialization_Setters is AllocationManagerU
         assertEq(alm.owner(), expectedInitialOwner);
         assertEq(alm.paused(), initialPausedStatus);
     }
-
 }
 
 contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests {
-
     using ArrayLib for *;
     using SlashingLib for *;
 
@@ -1614,11 +1609,9 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
             expectedMagnitudes: Magnitudes({encumbered: expectedMaxMag, max: expectedMaxMag, allocatable: 0})
         });
     }
-
 }
 
 contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTests {
-
     using ArrayLib for *;
     using OperatorSetLib for *;
     using SlashingLib for *;
@@ -2639,11 +2632,9 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
             }
         }
     }
-
 }
 
 contract AllocationManagerUnitTests_ClearDeallocationQueue is AllocationManagerUnitTests {
-
     using ArrayLib for *;
 
     /// -----------------------------------------------------------------------
@@ -2890,11 +2881,9 @@ contract AllocationManagerUnitTests_ClearDeallocationQueue is AllocationManagerU
         cheats.prank(defaultOperator);
         allocationManager.modifyAllocations(defaultOperator, thirdAllocation);
     }
-
 }
 
 contract AllocationManagerUnitTests_SetAllocationDelay is AllocationManagerUnitTests {
-
     /// -----------------------------------------------------------------------
     /// setAllocationDelay() + getAllocationDelay()
     /// -----------------------------------------------------------------------
@@ -3022,11 +3011,9 @@ contract AllocationManagerUnitTests_SetAllocationDelay is AllocationManagerUnitT
         assertTrue(isSet, "isSet should be set");
         assertEq(delay, returnedDelay, "delay not set");
     }
-
 }
 
 contract AllocationManagerUnitTests_registerForOperatorSets is AllocationManagerUnitTests {
-
     using ArrayLib for *;
 
     RegisterParams defaultRegisterParams;
@@ -3105,11 +3092,9 @@ contract AllocationManagerUnitTests_registerForOperatorSets is AllocationManager
             assertEq(allocationManager.getMembers(OperatorSet(defaultAVS, operatorSetIds[k]))[0], operator, "should be member of set");
         }
     }
-
 }
 
 contract AllocationManagerUnitTests_deregisterFromOperatorSets is AllocationManagerUnitTests {
-
     using ArrayLib for *;
 
     DeregisterParams defaultDeregisterParams;
@@ -3205,11 +3190,9 @@ contract AllocationManagerUnitTests_deregisterFromOperatorSets is AllocationMana
             assertEq(allocationManager.getMemberCount(OperatorSet(defaultAVS, operatorSetIds[k])), 0, "should not be member of set");
         }
     }
-
 }
 
 contract AllocationManagerUnitTests_addStrategiesToOperatorSet is AllocationManagerUnitTests {
-
     using ArrayLib for *;
 
     function test_addStrategiesToOperatorSet_InvalidOperatorSet() public {
@@ -3261,11 +3244,9 @@ contract AllocationManagerUnitTests_addStrategiesToOperatorSet is AllocationMana
             assertTrue(strategiesInSet[j + 1] == strategies[j], "should be strat of set");
         }
     }
-
 }
 
 contract AllocationManagerUnitTests_removeStrategiesFromOperatorSet is AllocationManagerUnitTests {
-
     using ArrayLib for *;
 
     function test_removeStrategiesFromOperatorSet_InvalidOperatorSet() public {
@@ -3302,11 +3283,9 @@ contract AllocationManagerUnitTests_removeStrategiesFromOperatorSet is Allocatio
         // The orginal strategy should still be in the operator set.
         assertEq(allocationManager.getStrategiesInOperatorSet(defaultOperatorSet).length, 1, "should not be strat of set");
     }
-
 }
 
 contract AllocationManagerUnitTests_createOperatorSets is AllocationManagerUnitTests {
-
     using ArrayLib for *;
 
     function testRevert_createOperatorSets_InvalidOperatorSet() public {
@@ -3360,11 +3339,9 @@ contract AllocationManagerUnitTests_createOperatorSets is AllocationManagerUnitT
 
         assertEq(createSetParams.length, allocationManager.getOperatorSetCount(avs), "should be correct number of sets");
     }
-
 }
 
 contract AllocationManagerUnitTests_setAVSRegistrar is AllocationManagerUnitTests {
-
     function test_getAVSRegistrar() public {
         address randomAVS = random().Address();
         IAVSRegistrar avsRegistrar = allocationManager.getAVSRegistrar(randomAVS);
@@ -3384,11 +3361,9 @@ contract AllocationManagerUnitTests_setAVSRegistrar is AllocationManagerUnitTest
         allocationManager.setAVSRegistrar(avs, avsRegistrar);
         assertTrue(avsRegistrar == allocationManager.getAVSRegistrar(avs), "should be set");
     }
-
 }
 
 contract AllocationManagerUnitTests_updateAVSMetadataURI is AllocationManagerUnitTests {
-
     function test_updateAVSMetadataURI_Correctness() public {
         string memory newURI = "test";
         cheats.expectEmit(true, true, true, true, address(allocationManager));
@@ -3396,11 +3371,9 @@ contract AllocationManagerUnitTests_updateAVSMetadataURI is AllocationManagerUni
         cheats.prank(defaultAVS);
         allocationManager.updateAVSMetadataURI(defaultAVS, newURI);
     }
-
 }
 
 contract AllocationManagerUnitTests_getStrategyAllocations is AllocationManagerUnitTests {
-
     using ArrayLib for *;
 
     function testFuzz_getStrategyAllocations_Correctness(
@@ -3435,11 +3408,9 @@ contract AllocationManagerUnitTests_getStrategyAllocations is AllocationManagerU
             })
         });
     }
-
 }
 
 contract AllocationManagerUnitTests_getSlashableStake is AllocationManagerUnitTests {
-
     using SlashingLib for *;
 
     /**
@@ -3657,11 +3628,9 @@ contract AllocationManagerUnitTests_getSlashableStake is AllocationManagerUnitTe
             expectedSlashableStake: expectedCurrentMagnitude - uint128(-expectedPendingDiff) - 1
         });
     }
-
 }
 
 contract AllocationManagerUnitTests_getMaxMagnitudesAtBlock is AllocationManagerUnitTests {
-
     using ArrayLib for *;
 
     function testFuzz_correctness(
@@ -3712,5 +3681,4 @@ contract AllocationManagerUnitTests_getMaxMagnitudesAtBlock is AllocationManager
             "max magnitude after second slash not correct"
         );
     }
-
 }

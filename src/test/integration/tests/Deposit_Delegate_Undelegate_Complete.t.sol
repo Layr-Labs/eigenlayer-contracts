@@ -5,7 +5,6 @@ import "src/test/integration/IntegrationChecks.t.sol";
 import "src/test/integration/users/User.t.sol";
 
 contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUtils {
-
     /// Randomly generates a user with different held assets. Then:
     /// 1. deposit into strategy
     /// 2. delegate to an operator
@@ -273,5 +272,4 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
         assert_HasUnderlyingTokenBalances(staker, strategies, tokenBalances, "staker should once again have original token tokenBalances");
         assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }
-
 }

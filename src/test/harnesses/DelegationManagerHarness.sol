@@ -5,7 +5,6 @@ import "../../contracts/core/DelegationManager.sol";
 import "forge-std/Test.sol";
 
 contract DelegationManagerHarness is DelegationManager {
-
     constructor(
         IStrategyManager _strategyManager,
         IEigenPodManager _eigenPodManager,
@@ -46,5 +45,4 @@ contract DelegationManagerHarness is DelegationManager {
     function getDepositScalingFactor(address staker, IStrategy strategy) external view returns (uint) {
         return _depositScalingFactor[staker][strategy]._scalingFactor;
     }
-
 }

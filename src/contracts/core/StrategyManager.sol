@@ -28,7 +28,6 @@ contract StrategyManager is
     StrategyManagerStorage,
     SignatureUtils
 {
-
     using SlashingLib for *;
     using SafeERC20 for IERC20;
 
@@ -377,5 +376,4 @@ contract StrategyManager is
             )
         );
     }
-
 }

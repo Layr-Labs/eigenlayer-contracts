@@ -13,7 +13,6 @@ import "../interfaces/IStrategyManager.sol";
  * @notice This storage contract is separate from the logic to simplify the upgrade process.
  */
 abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
-
     // Constants
 
     /// @dev Index for flag that pauses calling createAVSRewardsSubmission
@@ -155,5 +154,4 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
     uint256[37] private __gap;
-
 }

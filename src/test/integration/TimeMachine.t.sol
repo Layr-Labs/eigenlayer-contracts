@@ -5,7 +5,6 @@ import "forge-std/Test.sol";
 import "src/test/utils/Logger.t.sol";
 
 contract TimeMachine is Test, Logger {
-
     uint[] public snapshots;
 
     function NAME() public view virtual override returns (string memory) {
@@ -49,5 +48,4 @@ contract TimeMachine is Test, Logger {
     function pastExists() public view returns (bool) {
         return snapshots.length != 0;
     }
-
 }

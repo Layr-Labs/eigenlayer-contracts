@@ -5,7 +5,6 @@ import "../../contracts/pods/EigenPod.sol";
 import "forge-std/Test.sol";
 
 contract EigenPodHarness is EigenPod {
-
     constructor(
         IETHPOSDeposit _ethPOS,
         IEigenPodManager _eigenPodManager,
@@ -38,5 +37,4 @@ contract EigenPodHarness is EigenPod {
     function setValidatorRestakedBalance(bytes32 pkhash, uint64 restakedBalanceGwei) public {
         _validatorPubkeyHashToInfo[pkhash].restakedBalanceGwei = restakedBalanceGwei;
     }
-
 }

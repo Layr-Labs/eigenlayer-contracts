@@ -12,7 +12,6 @@ import "src/contracts/interfaces/IStrategy.sol";
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
 interface IDelegationManager_DeprecatedM2 is IPausable, ISignatureUtils {
-
     // @notice Struct used for storing information about a single operator who has registered with EigenLayer
     struct OperatorDetails {
         /// @notice DEPRECATED -- this field is no longer used, payments are handled in PaymentCoordinator.sol
@@ -440,5 +439,4 @@ interface IDelegationManager_DeprecatedM2 is IPausable, ISignatureUtils {
     function calculateWithdrawalRoot(
         Withdrawal memory withdrawal
     ) external pure returns (bytes32);
-
 }

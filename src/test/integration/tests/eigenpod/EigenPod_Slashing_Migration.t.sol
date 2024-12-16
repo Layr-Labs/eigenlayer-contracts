@@ -5,7 +5,6 @@ import "src/test/integration/IntegrationChecks.t.sol";
 import "src/test/integration/users/User.t.sol";
 
 contract Integration_EigenPod_Slashing_Migration is IntegrationCheckUtils, EigenPodPausingConstants {
-
     modifier r(
         uint24 _rand
     ) {
@@ -73,5 +72,4 @@ contract Integration_EigenPod_Slashing_Migration is IntegrationCheckUtils, Eigen
         staker.completeCheckpoint();
         check_CompleteCheckpoint_WithExits_State(staker, subset, exitedBalanceGwei);
     }
-
 }

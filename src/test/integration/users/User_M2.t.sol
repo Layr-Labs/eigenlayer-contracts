@@ -16,7 +16,6 @@ import "src/test/utils/ArrayLib.sol";
 import "src/test/utils/Logger.t.sol";
 
 interface IUserM2MainnetForkDeployer {
-
     function delegationManager() external view returns (DelegationManager);
     function strategyManager() external view returns (StrategyManager);
     function eigenPodManager() external view returns (EigenPodManager);
@@ -25,7 +24,6 @@ interface IUserM2MainnetForkDeployer {
     function eigenPodManager_M2() external view returns (IEigenPodManager_DeprecatedM2);
     function timeMachine() external view returns (TimeMachine);
     function beaconChain() external view returns (BeaconChainMock);
-
 }
 
 /**
@@ -33,7 +31,6 @@ interface IUserM2MainnetForkDeployer {
  * to perform current local contract methods after a upgrade of core contracts
  */
 contract User_M2 is User {
-
     using ArrayLib for *;
     using print for *;
 
@@ -239,12 +236,10 @@ contract User_M2 is User {
 
         return expectedWithdrawals;
     }
-
 }
 
 /// @notice A user contract that calls nonstandard methods (like xBySignature methods)
 contract User_M2_AltMethods is User_M2 {
-
     mapping(bytes32 => bool) public signedHashes;
 
     constructor(
@@ -300,5 +295,4 @@ contract User_M2_AltMethods is User_M2 {
             return 0xffffffff;
         }
     }
-
 }

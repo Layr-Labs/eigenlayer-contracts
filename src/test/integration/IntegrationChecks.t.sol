@@ -8,7 +8,6 @@ import "src/test/integration/users/User_M2.t.sol";
 
 /// @notice Contract that provides utility functions to reuse common test blocks & checks
 contract IntegrationCheckUtils is IntegrationBase {
-
     using ArrayLib for IStrategy[];
     using SlashingLib for *;
 
@@ -365,5 +364,4 @@ contract IntegrationCheckUtils is IntegrationBase {
             staker, operator, withdrawal, withdrawal.strategies, withdrawal.scaledShares, tokens, expectedTokens
         );
     }
-
 }
