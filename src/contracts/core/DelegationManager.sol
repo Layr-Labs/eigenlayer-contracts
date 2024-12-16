@@ -964,7 +964,7 @@ contract DelegationManager is
             for (uint256 j; j < withdrawals[i].strategies.length; ++j) {
                 shares[i][j] = SlashingLib.scaleForCompleteWithdrawal({
                     scaledShares: withdrawals[i].scaledShares[j],
-                    slashingFactor: slashingFactors[i]
+                    slashingFactor: slashingFactors[j]
                 });
             }
         }

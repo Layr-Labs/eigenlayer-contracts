@@ -68,7 +68,6 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
     // Helper to use in storage
     DepositScalingFactor dsf;
     uint256 stakerDSF;
-    uint256 slashingFactor;
 
     /// @notice mappings used to handle duplicate entries in fuzzed address array input
     mapping(address => uint256) public totalSharesForStrategyInArray;
@@ -8272,5 +8271,58 @@ contract DelegationManagerUnitTests_Lifecycle is DelegationManagerUnitTests {
         assertEq(stakerWithdrawableShares[0], 0, "staker withdrawable shares not calculated correctly");
         assertEq(depositShares[0], 0, "staker deposit shares not reset correctly");
         assertEq(delegationManager.operatorShares(newOperator, strategy), 0, "new operator shares should be unchanged");
+    }
+}
+
+contract DelegationManagerUnitTests_getQueuedWithdrawals is DelegationManagerUnitTests {
+    using ArrayLib for *;
+    using SlashingLib for *;
+
+    function test_getQueuedWithdrawals_Correctness(Randomness r) public {
+        uint256 numStrategies = r.Uint256(2, 8);
+        uint256[] memory depositShares = r.Uint256Array({
+            len: numStrategies, 
+            min: 2, 
+            max: 100 ether
+        });
+
+        IStrategy[] memory strategies = _deployAndDepositIntoStrategies(defaultStaker, depositShares, false);
+        _registerOperatorWithBaseDetails(defaultOperator);
+        _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
+
+        for (uint256 i; i < numStrategies; ++i) {
+            uint256 newStakerShares = depositShares[i] / 2;
+            _setOperatorMagnitude(defaultOperator, strategies[i], 0.5 ether);
+            cheats.prank(address(allocationManagerMock));
+            delegationManager.burnOperatorShares(defaultOperator, strategies[i], WAD, 0.5 ether);
+            uint256 afterSlash = delegationManager.operatorShares(defaultOperator, strategies[i]);
+            assertApproxEqAbs(afterSlash, newStakerShares, 1, "bad operator shares after slash");
+        }
+
+        // Queue withdrawals.
+        (
+            QueuedWithdrawalParams[] memory queuedWithdrawalParams,
+            Withdrawal memory withdrawal,
+            bytes32 withdrawalRoot
+        ) = _setUpQueueWithdrawals({
+            staker: defaultStaker,
+            withdrawer: defaultStaker,
+            strategies: strategies,
+            depositWithdrawalAmounts: depositShares
+        });
+
+        cheats.prank(defaultStaker);
+        delegationManager.queueWithdrawals(queuedWithdrawalParams);
+
+        // Get queued withdrawals.
+        (Withdrawal[] memory withdrawals, uint256[][] memory shares) = delegationManager.getQueuedWithdrawals(defaultStaker);
+
+        // Checks
+        for (uint256 i; i < numStrategies; ++i) {
+            uint256 newStakerShares = depositShares[i] / 2;
+            assertApproxEqAbs(shares[0][i], newStakerShares, 1, "staker shares should be decreased by half +- 1");
+        }
+        
+        assertEq(keccak256(abi.encode(withdrawal)), keccak256(abi.encode(withdrawals[0])), "withdrawal should be the same");
     }
 }
