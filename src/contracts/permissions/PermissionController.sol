@@ -13,7 +13,7 @@ contract PermissionController is Initializable, PermissionControllerStorage {
         require(isAdmin(account, msg.sender), NotAdmin());
         _;
     }
-    
+
     /**
      *
      *                         EXTERNAL FUNCTIONS
