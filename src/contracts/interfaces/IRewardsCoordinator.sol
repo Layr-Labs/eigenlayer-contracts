@@ -36,15 +36,17 @@ interface IRewardsCoordinatorErrors {
     error AmountExceedsMax();
     /// @dev Thrown when input `split` exceeds `ONE_HUNDRED_IN_BIPS`
     error SplitExceedsMax();
+    /// @dev Thrown when an operator attempts to set a split before the previous one becomes active
+    error PreviousSplitPending();
     /// @dev Thrown when input `duration` exceeds maximum.
     error DurationExceedsMax();
-    /// @dev Thrown when input `duration` is not evenly divisible by CALCULATION_INTERVAL_SECONDS.
+    /// @dev Thrown when input `duration` is not evenly divisble by CALCULATION_INTERVAL_SECONDS.
     error InvalidDurationRemainder();
-    /// @dev Thrown when GENESIS_REWARDS_TIMESTAMP is not evenly divisible by CALCULATION_INTERVAL_SECONDS.
+    /// @dev Thrown when GENESIS_REWARDS_TIMESTAMP is not evenly divisble by CALCULATION_INTERVAL_SECONDS.
     error InvalidGenesisRewardsTimestampRemainder();
-    /// @dev Thrown when CALCULATION_INTERVAL_SECONDS is not evenly divisible by SNAPSHOT_CADENCE.
+    /// @dev Thrown when CALCULATION_INTERVAL_SECONDS is not evenly divisble by SNAPSHOT_CADENCE.
     error InvalidCalculationIntervalSecondsRemainder();
-    /// @dev Thrown when `startTimestamp` is not evenly divisible by CALCULATION_INTERVAL_SECONDS.
+    /// @dev Thrown when `startTimestamp` is not evenly divisble by CALCULATION_INTERVAL_SECONDS.
     error InvalidStartTimestampRemainder();
     /// @dev Thrown when `startTimestamp` is too far in the future.
     error StartTimestampTooFarInFuture();
@@ -67,7 +69,7 @@ interface IRewardsCoordinatorErrors {
     error InvalidTokenLeafIndex();
     /// @dev Thrown when an invalid earner leaf index is provided.
     error InvalidEarnerLeafIndex();
-    /// @dev Thrown when cumulative earnings are not greater than cumulative claimed.
+    /// @dev Thrown when cummulative earnings are not greater than cummulative claimed.
     error EarningsNotGreaterThanClaimed();
 
     /// Reward Root Checks
@@ -557,7 +559,7 @@ interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorE
     /// @notice Mapping: claimer => token => total amount claimed
     function cumulativeClaimed(address claimer, IERC20 token) external view returns (uint256);
 
-    /// @notice the default split for all operators across all avss
+    /// @notice the defautl split for all operators across all avss
     function defaultOperatorSplitBips() external view returns (uint16);
 
     /// @notice the split for a specific `operator` for a specific `avs`

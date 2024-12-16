@@ -24,7 +24,7 @@ contract AVSDirectory is
      */
 
     /**
-     * @dev Initializes the immutable addresses of the strategy manager, delegationManager,
+     * @dev Initializes the immutable addresses of the strategy mananger, delegationManager,
      * and eigenpodManager contracts
      */
     constructor(
