@@ -34,7 +34,7 @@ contract Integration_EigenPod_Slashing_Migration is IntegrationCheckUtils, Eigen
         // Initialize state
         (User staker,,) = _newRandomStaker();
 
-        (uint40[] memory validators, uint64 beaconBalanceGwei) = staker.startValidators();
+        (uint40[] memory validators, /* uint64 beaconBalanceGwei */ ) = staker.startValidators();
         beaconChain.advanceEpoch_NoRewards();
 
         // 1. Verify validators' withdrawal credentials

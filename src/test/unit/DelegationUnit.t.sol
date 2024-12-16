@@ -71,7 +71,6 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
     // Helper to use in storage
     DepositScalingFactor dsf;
     uint stakerDSF;
-    uint slashingFactor;
 
     /// @notice mappings used to handle duplicate entries in fuzzed address array input
     mapping(address => uint) public totalSharesForStrategyInArray;
