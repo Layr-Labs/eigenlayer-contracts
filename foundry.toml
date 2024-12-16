@@ -1,22 +1,73 @@
 [profile.default]
-    src = 'src'
-    out = 'out'
-    libs = ['lib']
+    # Project Configuration
+
+    # Path to contract sources relative to the root of the project.
+    src = "src"
+    # Path to the test contract sources relative to the root of the project.
+    test = "src/test"
+    # Path to the script contract sources relative to the root of the project.
+    script = "script"
+    # Path to store contract artifacts relative to the root of the project.
+    out = "out"
+    # Array of paths that contain libraries, relative to the root of the project.
+    libs = ["lib"]
+    # Enable or disable caching.
+    cache = true
+    # Path to the cache relative to the root of the project.
+    cache_path = "cache"
+    # Path to store broadcast transaction logs, relative to the root of the project.
+    broadcast = "broadcast" 
+    # Whether or not to perform a clean build, discarding the cache.
+    force = false
+
+    # Solidity Compiler Configuration
+
+    # Defines paths for Solidity imports.
     remappings = [
         "@openzeppelin/=lib/openzeppelin-contracts-v4.9.0/",
         "@openzeppelin-upgrades/=lib/openzeppelin-contracts-upgradeable-v4.9.0/",
         "ds-test/=lib/ds-test/src/",
         "forge-std/=lib/forge-std/src/"
     ]
+    # Specifies the exact version of Solidity to use, overriding auto-detection.
+    solc_version = '0.8.27'
+    # If enabled, Foundry will not attempt to download any missing solc versions.
+    offline = false 
+    # If enabled, treats Solidity compiler warnings as errors, preventing artifact generation if warnings are present.
+    deny_warnings = true 
+    # If set to true, changes compilation pipeline to go through the new IR optimizer.
+    via_ir = false
+    # Whether or not to enable the Solidity optimizer.
+    optimizer = true
+    # The number of runs specifies roughly how often each opcode of the deployed code will be executed 
+    # across the life-time of the contract. This means it is a trade-off parameter between code size (deploy cost) 
+    # and code execution cost (cost after deployment).
+    optimizer_runs = 200
+
+    # Test Configuration
+
+    # Verbosity level during test execution. Higher levels provide more detailed information:
+    # - 2 (-vv): Logs emitted during tests are displayed.
+    # - 3 (-vvv): Stack traces for failing tests are displayed.
+    # - 4 (-vvvv): Stack traces for all tests and setup traces for failing tests are displayed.
+    # - 5 (-vvvvv): Stack and setup traces are always displayed.
+    verbosity = 0
+    # Enables the Foreign Function Interface (FFI) cheatcode. 
+    # WARNING: This allows arbitrary programs to run on your computer, which poses security risks.
+    ffi = false
+    # Contracts to include in gas reports. By default, all contracts are included.
+    gas_reports = ["./src/contracts/**/*"]
+    # Show test execution progress if set to true.
+    show_progress = true
+    # Print compiled contract names if set to true.
+    names = true
+    # Print compiled contract sizes if set to true.
+    sizes = true
+    # Sparse mode only compiles files that match certain criteria.
+    sparse_mode = true
+    
     no_match_test = "queueUpgrade"
     no_match_path = "script/releases/**/*.sol"
-    solc_version = '0.8.27'
-    optimizer = true
-    optimizer_runs = 200
-    via_ir = false
-    gas_reports = ["*"]
-    show_progress=true
-    sparse_mode = true
     fs_permissions = [{ access = "read-write", path = "./"}]
 
 [profile.default.fmt]
@@ -25,17 +76,17 @@
     # Formatting style for long function headers
     multiline_func_header = "params_first"  # Options: "attributes_first", "params_first", "all"
     # Sort import statements alphabetically
-    sort_imports = true  # Options: true, false
+    sort_imports = true  
     # Add empty lines before and after contract definitions
-    contract_new_lines = true  # Options: true, false
+    contract_new_lines = true  
     # Space between 'override' keyword and parent contracts
-    override_spacing = true  # Options: true, false
+    override_spacing = true  
     # Maximum line length where formatter will wrap the line
     line_length = 120  # Default: 120
     # Number of spaces per indentation level
     tab_width = 4  # Default: 4
     # Whether to print spaces between brackets
-    bracket_spacing = false  # Options: true, false
+    bracket_spacing = false  
     # Style of uint/int256 types
     int_types = "long"  # Options: "long", "short", "preserve"
     # Quotation mark style
@@ -43,7 +94,7 @@
     # Style of underscores in number literals
     number_underscore = "thousands"  # Options: "preserve", "thousands", "remove"
     # Whether or not to wrap comments at line_length
-    wrap_comments = false  # Options: true, false
+    wrap_comments = false  
     # List of files to ignore during formatting (can use glob patterns)
     ignore = [
         "./script/**/*",
@@ -59,10 +110,10 @@
 
 [profile.lite.fuzz]
     optimizer = false
-    runs=32
+    runs = 32
 
 [profile.forktest.fuzz]
-    runs=20
+    runs = 20
 
 [rpc_endpoints]
     mainnet = "${RPC_MAINNET}"
