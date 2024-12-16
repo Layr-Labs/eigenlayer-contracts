@@ -61,7 +61,7 @@ contract DelegationManager is
      */
 
     /**
-     * @dev Initializes the immutable addresses of the strategy mananger, eigenpod manager, and allocation manager.
+     * @dev Initializes the immutable addresses of the strategy manager, eigenpod manager, and allocation manager.
      */
     constructor(
         IStrategyManager _strategyManager,
@@ -251,7 +251,7 @@ contract DelegationManager is
         uint256 length = withdrawalRoots.length();
         numToComplete = numToComplete > length ? length : numToComplete;
 
-        // Read withdrawals to complete. We use 2 seperate loops here because the second
+        // Read withdrawals to complete. We use 2 separate loops here because the second
         // loop will remove elements by index from `withdrawalRoots`.
         Withdrawal[] memory withdrawals = new Withdrawal[](numToComplete);
         for (uint256 i; i < withdrawals.length; ++i) {
@@ -463,7 +463,7 @@ contract DelegationManager is
      * This is a result of any slashing that has occurred during the time the staker has been delegated to an operator. So the proportional amount that is withdrawn
      * out of the amount withdrawable for the staker has to also be decremented from the staker's deposit shares.
      * So the amount of depositShares withdrawn out has to be proportionally scaled down depending on the slashing that has occurred.
-     * Ex. Suppose as a staker, I have 100 depositShares for a strategy thats sitting in the StrategyManager in the `stakerDepositShares` mapping but I actually have been slashed 50%
+     * Ex. Suppose as a staker, I have 100 depositShares for a strategy that's sitting in the StrategyManager in the `stakerDepositShares` mapping but I actually have been slashed 50%
      * and my real withdrawable amount is 50 shares.
      * Now when I go to withdraw 40 depositShares, I'm proportionally withdrawing 40% of my withdrawable shares. We calculate below the actual shares withdrawn via the `toShares()` function to
      * get 20 shares to queue withdraw. The end state is that I have 60 depositShares and 30 withdrawable shares now, this still accurately reflects a 50% slashing that has occurred on my existing stake.

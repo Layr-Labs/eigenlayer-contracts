@@ -1480,7 +1480,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         uint64 strategy2Magnitude = r.Uint64(1, 1e18);
         uint256 wadToSlash = r.Uint256(1, 1e18);
 
-        // Crate and allocate to operatorSets
+        // Create and allocate to operatorSets
         OperatorSet memory operatorSet = OperatorSet(defaultAVS, random().Uint32());
         _createOperatorSet(operatorSet, random().StrategyArray(2));
         _registerForOperatorSet(defaultOperator, operatorSet);
@@ -3398,7 +3398,7 @@ contract AllocationManagerUnitTests_removeStrategiesFromOperatorSet is Allocatio
         cheats.prank(defaultAVS);
         allocationManager.removeStrategiesFromOperatorSet(defaultAVS, defaultOperatorSet.id, strategies);
 
-        // The orginal strategy should still be in the operator set.
+        // The original strategy should still be in the operator set.
         assertEq(
             allocationManager.getStrategiesInOperatorSet(defaultOperatorSet).length, 1, "should not be strat of set"
         );

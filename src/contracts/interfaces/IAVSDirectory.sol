@@ -41,7 +41,7 @@ interface IAVSDirectoryTypes {
 
 interface IAVSDirectoryEvents is IAVSDirectoryTypes {
     /**
-     *  @notice Emitted when an operator's registration status with an AVS id udpated
+     *  @notice Emitted when an operator's registration status with an AVS id updated
      *  @notice Only used by legacy M2 AVSs that have not integrated with operatorSets.
      */
     event OperatorAVSRegistrationStatusUpdated(
