@@ -613,6 +613,15 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         allocationManager.slashOperator(defaultAVS, _randSlashingParams(random().Address(), 0));
     }
 
+    function test_revert_InputArrayLengthMismatch() public {
+        SlashingParams memory slashingParams = _randSlashingParams(defaultOperator, 0);
+        slashingParams.strategies = slashingParams.strategies.setLength(2);
+
+        cheats.prank(defaultAVS);
+        cheats.expectRevert(InputArrayLengthMismatch.selector);
+        allocationManager.slashOperator(defaultAVS, slashingParams);
+    }
+
     function test_revert_StrategiesMustBeInAscendingOrder() public {
         IStrategy[] memory strategies = new IStrategy[](3);
         strategies[0] = IStrategy(address(3));

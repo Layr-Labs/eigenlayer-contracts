@@ -63,6 +63,7 @@ contract AllocationManager is
         // Check that the operator set exists and the operator is registered to it
         OperatorSet memory operatorSet = OperatorSet(avs, params.operatorSetId);
         bool isOperatorSlashable = _isOperatorSlashable(params.operator, operatorSet);
+        require(params.strategies.length == params.wadsToSlash.length, InputArrayLengthMismatch());
         require(_operatorSets[operatorSet.avs].contains(operatorSet.id), InvalidOperatorSet());
         require(isOperatorSlashable, OperatorNotSlashable());
 

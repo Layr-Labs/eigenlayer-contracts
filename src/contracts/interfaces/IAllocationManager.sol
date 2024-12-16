@@ -4,7 +4,6 @@ pragma solidity >=0.5.0;
 import {OperatorSet} from "../libraries/OperatorSetLib.sol";
 import "./IPauserRegistry.sol";
 import "./IStrategy.sol";
-import "./ISignatureUtils.sol";
 import "./IAVSRegistrar.sol";
 
 interface IAllocationManagerErrors {
@@ -213,7 +212,7 @@ interface IAllocationManagerEvents is IAllocationManagerTypes {
     event StrategyRemovedFromOperatorSet(OperatorSet operatorSet, IStrategy strategy);
 }
 
-interface IAllocationManager is ISignatureUtils, IAllocationManagerErrors, IAllocationManagerEvents {
+interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEvents {
     /**
      * @dev Initializes the initial owner and paused status.
      */
