@@ -338,6 +338,10 @@ contract IntegrationCheckUtils is IntegrationBase {
                                  ALLOCATION MANAGER CHECKS
     *******************************************************************************/
 
+    function _calculateSlippage(uint256 x, uint256 y, uint256 z) internal pure returns (uint256 r) {
+        return mulmod(x, y, z) > 0 ? 1 : 0;
+    }
+
     function check_Withdrawal_AsTokens_State_AfterSlash(
         User staker,
         User operator,
@@ -348,7 +352,7 @@ contract IntegrationCheckUtils is IntegrationBase {
     ) internal {
         IERC20[] memory tokens = new IERC20[](withdrawal.strategies.length);
 
-        for (uint256 i; i < withdrawal.strategies.length; i++) {
+        for (uint i; i < withdrawal.strategies.length; i++) {
             IStrategy strat = withdrawal.strategies[i];
 
             bool isBeaconChainETHStrategy = strat == beaconChainETHStrategy;
@@ -356,10 +360,14 @@ contract IntegrationCheckUtils is IntegrationBase {
             tokens[i] = isBeaconChainETHStrategy ? NATIVE_ETH : withdrawal.strategies[i].underlyingToken();
             
             if (slashingParams.strategies.contains(strat)) {
-                uint256 wadToSlash = slashingParams.wadsToSlash[slashingParams.strategies.indexOf(strat)];
+                uint wadToSlash = slashingParams.wadsToSlash[slashingParams.strategies.indexOf(strat)];
 
                 expectedTokens[i] -= expectedTokens[i]
                     .mulWadRoundUp(allocateParams.newMagnitudes[i].mulWadRoundUp(wadToSlash));
+
+                uint256 max = allocationManager.getMaxMagnitude(address(operator), strat);
+
+                withdrawal.scaledShares[i] -= withdrawal.scaledShares[i].calcSlashedAmount(WAD, max);
 
                 // Round down to the nearest gwei for beaconchain ETH strategy.
                 if (isBeaconChainETHStrategy) {

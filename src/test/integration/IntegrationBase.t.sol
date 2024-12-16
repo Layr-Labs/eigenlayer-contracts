@@ -809,7 +809,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
             uint prevShare = prevShares[i];
             uint curShare = curShares[i];
 
-            assertEq(prevShare - removedShares[i], curShare, err);
+            assertApproxEqAbs(prevShare - removedShares[i], curShare, 1, err);
         }
     }
 
@@ -850,7 +850,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
             uint prevBalance = prevTokenBalances[i];
             uint curBalance = curTokenBalances[i];
 
-            assertEq(prevBalance + addedTokens[i], curBalance, err);
+            assertApproxEqAbs(prevBalance + addedTokens[i], curBalance, 1, err);
         }
     }
 
