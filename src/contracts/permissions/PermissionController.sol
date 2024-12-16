@@ -16,6 +16,15 @@ contract PermissionController is Initializable, PermissionControllerStorage {
 
     /**
      *
+     *                         INITIALIZING FUNCTIONS
+     *
+     */
+    constructor() {
+        _disableInitializers();
+    }
+
+    /**
+     *
      *                         EXTERNAL FUNCTIONS
      *
      */
