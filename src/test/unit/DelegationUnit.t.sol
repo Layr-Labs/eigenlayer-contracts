@@ -8278,6 +8278,10 @@ contract DelegationManagerUnitTests_getQueuedWithdrawals is DelegationManagerUni
     using ArrayLib for *;
     using SlashingLib for *;
 
+    function _withdrawalRoot(Withdrawal memory withdrawal) internal pure returns (bytes32) {
+        return keccak256(abi.encode(withdrawal));
+    }
+
     function test_getQueuedWithdrawals_Correctness(Randomness r) public {
         uint256 numStrategies = r.Uint256(2, 8);
         uint256[] memory depositShares = r.Uint256Array({
@@ -8323,6 +8327,67 @@ contract DelegationManagerUnitTests_getQueuedWithdrawals is DelegationManagerUni
             assertApproxEqAbs(shares[0][i], newStakerShares, 1, "staker shares should be decreased by half +- 1");
         }
         
-        assertEq(keccak256(abi.encode(withdrawal)), keccak256(abi.encode(withdrawals[0])), "withdrawal should be the same");
+        assertEq(_withdrawalRoot(withdrawal), _withdrawalRoot(withdrawals[0]), "_withdrawalRoot(withdrawal) != _withdrawalRoot(withdrawals[0])");
+        assertEq(_withdrawalRoot(withdrawal), withdrawalRoot, "_withdrawalRoot(withdrawal) != withdrawalRoot");
+    }
+
+    function test_getQueuedWithdrawals_TotalQueuedGreaterThanTotalStrategies(Randomness r) public {
+        uint256 totalDepositShares = r.Uint256(2, 100 ether);
+
+        _registerOperatorWithBaseDetails(defaultOperator);
+        strategyManagerMock.addDeposit(defaultStaker, strategyMock, totalDepositShares);
+        _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
+        
+        uint256 newStakerShares = totalDepositShares / 2;
+        _setOperatorMagnitude(defaultOperator, strategyMock, 0.5 ether);
+        cheats.prank(address(allocationManagerMock));
+        delegationManager.burnOperatorShares(defaultOperator, strategyMock, WAD, 0.5 ether);
+        uint256 afterSlash = delegationManager.operatorShares(defaultOperator, strategyMock);
+        assertApproxEqAbs(afterSlash, newStakerShares, 1, "bad operator shares after slash");
+
+        // Queue withdrawals.
+        (
+            QueuedWithdrawalParams[] memory queuedWithdrawalParams0,
+            Withdrawal memory withdrawal0,
+            bytes32 withdrawalRoot0
+        ) = _setUpQueueWithdrawalsSingleStrat({
+            staker: defaultStaker,
+            withdrawer: defaultStaker,
+            strategy: strategyMock,
+            depositSharesToWithdraw: totalDepositShares / 2
+        });
+
+        cheats.prank(defaultStaker);
+        delegationManager.queueWithdrawals(queuedWithdrawalParams0);
+
+        (
+            QueuedWithdrawalParams[] memory queuedWithdrawalParams1,
+            Withdrawal memory withdrawal1,
+            bytes32 withdrawalRoot1
+        ) = _setUpQueueWithdrawalsSingleStrat({
+            staker: defaultStaker,
+            withdrawer: defaultStaker,
+            strategy: strategyMock,
+            depositSharesToWithdraw:  totalDepositShares / 2
+        });
+
+        cheats.prank(defaultStaker);
+        delegationManager.queueWithdrawals(queuedWithdrawalParams1);
+
+        // Get queued withdrawals.
+        (Withdrawal[] memory withdrawals, uint256[][] memory shares) = delegationManager.getQueuedWithdrawals(defaultStaker);
+
+        // Sanity
+        assertEq(withdrawals.length, 2, "withdrawal.length != 2");
+        assertEq(withdrawals[0].strategies.length, 1, "withdrawals[0].strategies.length != 1");
+        assertEq(withdrawals[1].strategies.length, 1, "withdrawals[1].strategies.length != 1");
+
+        // Checks
+        assertApproxEqAbs(shares[0][0], newStakerShares / 2, 1, "shares[0][0] != newStakerShares");
+        assertApproxEqAbs(shares[1][0], newStakerShares / 2, 1, "shares[1][0] != newStakerShares");
+        assertEq(_withdrawalRoot(withdrawal0), _withdrawalRoot(withdrawals[0]), "withdrawal0 != withdrawals[0]");
+        assertEq(_withdrawalRoot(withdrawal1), _withdrawalRoot(withdrawals[1]), "withdrawal1 != withdrawals[1]");
+        assertEq(_withdrawalRoot(withdrawal0), withdrawalRoot0, "_withdrawalRoot(withdrawal0) != withdrawalRoot0");
+        assertEq(_withdrawalRoot(withdrawal1), withdrawalRoot1, "_withdrawalRoot(withdrawal1) != withdrawalRoot1");
     }
 }
