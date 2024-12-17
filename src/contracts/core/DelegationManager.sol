@@ -242,28 +242,6 @@ contract DelegationManager is
     }
 
     /// @inheritdoc IDelegationManager
-    function completeQueuedWithdrawals(
-        IERC20[][] calldata tokens,
-        bool[] calldata receiveAsTokens,
-        uint256 numToComplete
-    ) external onlyWhenNotPaused(PAUSED_EXIT_WITHDRAWAL_QUEUE) nonReentrant {
-        EnumerableSet.Bytes32Set storage withdrawalRoots = _stakerQueuedWithdrawalRoots[msg.sender];
-        uint256 length = withdrawalRoots.length();
-        numToComplete = numToComplete > length ? length : numToComplete;
-
-        // Read withdrawals to complete. We use 2 seperate loops here because the second
-        // loop will remove elements by index from `withdrawalRoots`.
-        Withdrawal[] memory withdrawals = new Withdrawal[](numToComplete);
-        for (uint256 i; i < withdrawals.length; ++i) {
-            withdrawals[i] = queuedWithdrawals[withdrawalRoots.at(i)];
-        }
-
-        for (uint256 i; i < withdrawals.length; ++i) {
-            _completeQueuedWithdrawal(withdrawals[i], tokens[i], receiveAsTokens[i]);
-        }
-    }
-
-    /// @inheritdoc IDelegationManager
     function increaseDelegatedShares(
         address staker,
         IStrategy strategy,
@@ -581,7 +559,7 @@ contract DelegationManager is
                 staker: withdrawal.staker,
                 operator: withdrawal.delegatedTo,
                 strategies: withdrawal.strategies,
-                blockNumber: completableBlock
+                blockNumber: completableBlock - 1
             });
         }
 
@@ -959,7 +937,27 @@ contract DelegationManager is
             withdrawals[i] = queuedWithdrawals[withdrawalRoots[i]];
             shares[i] = new uint256[](withdrawals[i].strategies.length);
 
-            uint256[] memory slashingFactors = _getSlashingFactors(staker, operator, withdrawals[i].strategies);
+            uint32 completableBlock = withdrawals[i].startBlock + MIN_WITHDRAWAL_DELAY_BLOCKS;
+
+            uint256[] memory slashingFactors;
+            // if the completion block is in the future, simply read current slashing factors
+            // still possible however for the slashing factors to change before the withdrawal is completable
+            // and the shares withdrawn to be less
+            if (completableBlock > uint32(block.number)) {
+                slashingFactors = _getSlashingFactors({
+                    staker: staker,
+                    operator: operator,
+                    strategies: withdrawals[i].strategies
+                });
+            // Read slashing factors at the completable block
+            } else {
+                slashingFactors = _getSlashingFactorsAtBlock({
+                    staker: staker, 
+                    operator: operator, 
+                    strategies: withdrawals[i].strategies,
+                    blockNumber: completableBlock - 1
+                });
+            }
 
             for (uint256 j; j < withdrawals[i].strategies.length; ++j) {
                 shares[i][j] = SlashingLib.scaleForCompleteWithdrawal({
