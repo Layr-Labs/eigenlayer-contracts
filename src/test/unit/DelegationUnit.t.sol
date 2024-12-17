@@ -6594,6 +6594,64 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         assertEq(operatorSharesAfter, operatorSharesBefore + withdrawalAmount, "operator shares not increased correctly");
         assertFalse(delegationManager.pendingWithdrawals(withdrawalRoot), "withdrawalRoot should be completed and marked false now");
     }
+
+    function test_completeQueuedWithdrawals_OutOfOrderBlocking(Randomness r) public {
+        uint256 totalDepositShares = r.Uint256(4, 100 ether);
+        uint256 depositSharesPerWithdrawal = totalDepositShares / 4;
+
+        _registerOperatorWithBaseDetails(defaultOperator);
+        strategyManagerMock.addDeposit(defaultStaker, strategyMock, totalDepositShares);
+        _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
+
+        QueuedWithdrawalParams[] memory queuedParams = new QueuedWithdrawalParams[](4);
+        Withdrawal[] memory withdrawals = new Withdrawal[](4);
+        
+        for (uint256 i; i < 4; ++i) {
+            (
+                QueuedWithdrawalParams[] memory params, 
+                Withdrawal memory withdrawal,
+            ) = _setUpQueueWithdrawalsSingleStrat(
+                defaultStaker, 
+                defaultStaker, 
+                strategyMock, 
+                depositSharesPerWithdrawal
+            );
+
+            (queuedParams[i], withdrawals[i]) = (params[0], withdrawal);
+        }
+
+        uint256 startBlock = block.number;
+        uint256 delay = delegationManager.minWithdrawalDelayBlocks();
+
+        cheats.startPrank(defaultStaker);
+        delegationManager.queueWithdrawals(queuedParams[0].toArray());
+        cheats.roll(startBlock + 1);
+        delegationManager.queueWithdrawals(queuedParams[1].toArray());
+        
+        (
+            Withdrawal[] memory firstWithdrawals, 
+            uint256[][] memory firstShares
+        ) = delegationManager.getQueuedWithdrawals(defaultStaker);
+
+        cheats.roll(startBlock + 2);
+        delegationManager.queueWithdrawals(queuedParams[2].toArray());
+        cheats.roll(startBlock + 3);
+        delegationManager.queueWithdrawals(queuedParams[3].toArray());
+
+        IERC20[][] memory tokens = new IERC20[][](2);
+        bool[] memory receiveAsTokens = new bool[](2);
+        for (uint256 i; i < 2; ++i) {
+            tokens[i] = strategyMock.underlyingToken().toArray();
+        }
+
+        cheats.roll(startBlock + delay + 1);
+        delegationManager.completeQueuedWithdrawals(firstWithdrawals, tokens, true.toArray(2));
+        
+        // Throws `WithdrawalNotQueued`.
+        cheats.roll(startBlock + delay + 2);
+        delegationManager.completeQueuedWithdrawals(withdrawals[2].toArray(), tokens, true.toArray());
+        cheats.stopPrank();
+    }
 }
 
 contract DelegationManagerUnitTests_burningShares is DelegationManagerUnitTests {
