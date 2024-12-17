@@ -6595,7 +6595,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         assertFalse(delegationManager.pendingWithdrawals(withdrawalRoot), "withdrawalRoot should be completed and marked false now");
     }
 
-    function test_completeQueuedWithdrawals_OutOfOrderBlocking(Randomness r) public {
+    function testFuzz_completeQueuedWithdrawals_OutOfOrderBlocking(Randomness r) public {
         uint256 totalDepositShares = r.Uint256(4, 100 ether);
         uint256 depositSharesPerWithdrawal = totalDepositShares / 4;
 
@@ -6606,7 +6606,10 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         QueuedWithdrawalParams[] memory queuedParams = new QueuedWithdrawalParams[](4);
         Withdrawal[] memory withdrawals = new Withdrawal[](4);
         
+        uint256 startBlock = block.number;
+
         for (uint256 i; i < 4; ++i) {
+            cheats.roll(startBlock + i);
             (
                 QueuedWithdrawalParams[] memory params, 
                 Withdrawal memory withdrawal,
@@ -6620,10 +6623,12 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
             (queuedParams[i], withdrawals[i]) = (params[0], withdrawal);
         }
 
-        uint256 startBlock = block.number;
         uint256 delay = delegationManager.minWithdrawalDelayBlocks();
 
         cheats.startPrank(defaultStaker);
+        cheats.roll(startBlock);
+        
+        assertEq(queuedParams[0].effectBlock, block.timestamp);
         delegationManager.queueWithdrawals(queuedParams[0].toArray());
         cheats.roll(startBlock + 1);
         delegationManager.queueWithdrawals(queuedParams[1].toArray());
