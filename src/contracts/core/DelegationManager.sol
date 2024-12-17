@@ -944,16 +944,13 @@ contract DelegationManager is
             // still possible however for the slashing factors to change before the withdrawal is completable
             // and the shares withdrawn to be less
             if (completableBlock > uint32(block.number)) {
-                slashingFactors = _getSlashingFactors({
-                    staker: staker,
-                    operator: operator,
-                    strategies: withdrawals[i].strategies
-                });
-            // Read slashing factors at the completable block
+                slashingFactors =
+                    _getSlashingFactors({staker: staker, operator: operator, strategies: withdrawals[i].strategies});
+                // Read slashing factors at the completable block
             } else {
                 slashingFactors = _getSlashingFactorsAtBlock({
-                    staker: staker, 
-                    operator: operator, 
+                    staker: staker,
+                    operator: operator,
                     strategies: withdrawals[i].strategies,
                     blockNumber: completableBlock - 1
                 });
