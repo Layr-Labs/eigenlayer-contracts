@@ -533,7 +533,7 @@ contract DelegationManager is
      * @dev This function completes a queued withdrawal for a staker.
      * This will apply any slashing that has occurred since the the withdrawal was queued by multiplying the withdrawal's
      * scaledShares by the operator's maxMagnitude for each strategy. This ensures that any slashing that has occurred
-     * during the period the withdrawal was queued until its completable timestamp is applied to the withdrawal amount.
+     * during the period the withdrawal was queued until its slashableUntil block is applied to the withdrawal amount.
      * If receiveAsTokens is true, then these shares will be withdrawn as tokens.
      * If receiveAsTokens is false, then they will be redeposited according to the current operator the staker is delegated to,
      * and added back to the operator's delegatedShares.
@@ -550,8 +550,10 @@ contract DelegationManager is
 
         uint256[] memory prevSlashingFactors;
         {
-            uint32 completableBlock = withdrawal.startBlock + MIN_WITHDRAWAL_DELAY_BLOCKS;
-            require(completableBlock <= uint32(block.number), WithdrawalDelayNotElapsed());
+            // slashableUntil is block inclusive so we need to check if the current block is strictly greater than the slashableUntil block
+            // meaning the withdrawal can be completed.
+            uint32 slashableUntil = withdrawal.startBlock + MIN_WITHDRAWAL_DELAY_BLOCKS;
+            require(slashableUntil < uint32(block.number), WithdrawalDelayNotElapsed());
 
             // Given the max magnitudes of the operator the staker was originally delegated to, calculate
             // the slashing factors for each of the withdrawal's strategies.
@@ -559,7 +561,7 @@ contract DelegationManager is
                 staker: withdrawal.staker,
                 operator: withdrawal.delegatedTo,
                 strategies: withdrawal.strategies,
-                blockNumber: completableBlock
+                blockNumber: slashableUntil
             });
         }
 
@@ -761,9 +763,12 @@ contract DelegationManager is
     ) internal view returns (uint256) {
         // Fetch the cumulative scaled shares sitting in the withdrawal queue both now and before
         // the withdrawal delay.
+        // NOTE: We want all the shares in the window [block.number - MIN_WITHDRAWAL_DELAY_BLOCKS, block.number]
+        // as this is all slashable and since prevCumulativeScaledShares is being subtracted from curCumulativeScaledShares
+        // we do a -1 on the block number to also include (block.number - MIN_WITHDRAWAL_DELAY_BLOCKS) as slashable.
         uint256 curCumulativeScaledShares = _cumulativeScaledSharesHistory[operator][strategy].latest();
         uint256 prevCumulativeScaledShares = _cumulativeScaledSharesHistory[operator][strategy].upperLookup({
-            key: uint32(block.number) - MIN_WITHDRAWAL_DELAY_BLOCKS
+            key: uint32(block.number) - MIN_WITHDRAWAL_DELAY_BLOCKS - 1
         });
 
         // The difference between these values represents the number of scaled shares that entered the
@@ -937,7 +942,24 @@ contract DelegationManager is
             withdrawals[i] = queuedWithdrawals[withdrawalRoots[i]];
             shares[i] = new uint256[](withdrawals[i].strategies.length);
 
-            uint256[] memory slashingFactors = _getSlashingFactors(staker, operator, withdrawals[i].strategies);
+            uint32 slashableUntil = withdrawals[i].startBlock + MIN_WITHDRAWAL_DELAY_BLOCKS;
+
+            uint256[] memory slashingFactors;
+            // If slashableUntil block is in the past, read the slashing factors at that block
+            // Otherwise read the current slashing factors. Note that if the slashableUntil block is the current block
+            // or in the future then the slashing factors are still subject to change before the withdrawal is completable
+            // and the shares withdrawn to be less
+            if (slashableUntil < uint32(block.number)) {
+                slashingFactors = _getSlashingFactorsAtBlock({
+                    staker: staker,
+                    operator: operator,
+                    strategies: withdrawals[i].strategies,
+                    blockNumber: slashableUntil
+                });
+            } else {
+                slashingFactors =
+                    _getSlashingFactors({staker: staker, operator: operator, strategies: withdrawals[i].strategies});
+            }
 
             for (uint256 j; j < withdrawals[i].strategies.length; ++j) {
                 shares[i][j] = SlashingLib.scaleForCompleteWithdrawal({

@@ -200,7 +200,9 @@ contract AllocationManager is
                         // the deallocation delay. This magnitude remains slashable until then.
                         deallocationQueue[operator][strategy].pushBack(operatorSet.key());
 
-                        allocation.effectBlock = uint32(block.number) + DEALLOCATION_DELAY;
+                        // deallocations are slashable in the window [block.number, block.number + deallocationDelay]
+                        // therefore, the effectBlock is set to the block right after the slashable window
+                        allocation.effectBlock = uint32(block.number) + DEALLOCATION_DELAY + 1;
                     } else {
                         // Deallocation immediately updates/frees magnitude if the operator is not slashable
                         info.encumberedMagnitude = _addInt128(info.encumberedMagnitude, allocation.pendingDiff);
@@ -446,7 +448,9 @@ contract AllocationManager is
     function _isOperatorSlashable(address operator, OperatorSet memory operatorSet) internal view returns (bool) {
         RegistrationStatus memory status = registrationStatus[operator][operatorSet.key()];
 
-        return status.registered || block.number < status.slashableUntil;
+        // slashableUntil returns the last block the operator is slashable in so we check for
+        // less than or equal to
+        return status.registered || block.number <= status.slashableUntil;
     }
 
     /// @notice returns whether the operator's allocation is slashable in the given operator set
