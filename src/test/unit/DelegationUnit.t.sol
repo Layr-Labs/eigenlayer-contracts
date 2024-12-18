@@ -5946,46 +5946,6 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         delegationManager.completeQueuedWithdrawal(withdrawal, tokens, receiveAsTokens);
     }
 
-    /// @notice Verifies that when we complete a withdrawal as shares after a full slash, we revert
-    function test_revert_fullySlashed() public {
-        // Register operator
-        _registerOperatorWithBaseDetails(defaultOperator);
-        _setOperatorMagnitude(defaultOperator, strategyMock, WAD);
-
-        // Set the staker deposits in the strategies
-        uint256 depositAmount = 100e18;
-        strategyManagerMock.addDeposit(defaultStaker, strategyMock, depositAmount);
-        _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
-
-        // Queue withdrawal
-        uint256 withdrawalAmount = depositAmount;
-        (
-            QueuedWithdrawalParams[] memory queuedWithdrawalParams,
-            Withdrawal memory withdrawal,
-        ) = _setUpQueueWithdrawalsSingleStrat({
-            staker: defaultStaker,
-            strategy: strategyMock,
-            depositSharesToWithdraw: withdrawalAmount
-        });
-        cheats.prank(defaultStaker);
-        delegationManager.queueWithdrawals(queuedWithdrawalParams);
-
-        // Warp to just before the MIN_WITHDRAWAL_DELAY_BLOCKS
-        cheats.roll(withdrawal.startBlock + delegationManager.minWithdrawalDelayBlocks());
-
-        // Slash all of operator's shares
-        _setOperatorMagnitude(defaultOperator, strategyMock, 0);
-        cheats.prank(address(allocationManagerMock));
-        delegationManager.slashOperatorShares(defaultOperator, strategyMock, WAD, 0);
-
-        // Complete withdrawal as shares and assert that operator has no shares increased
-        cheats.roll(block.number + 1);
-        IERC20[] memory tokens = strategyMock.underlyingToken().toArray();
-        cheats.expectRevert(FullySlashed.selector);
-        cheats.prank(defaultStaker);
-        delegationManager.completeQueuedWithdrawal(withdrawal, tokens, false);
-    }
-
     /**
      * Test completing multiple queued withdrawals for a single strategy by passing in the withdrawals
      */
@@ -6593,6 +6553,189 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
         cheats.prank(address(allocationManagerMock));
         delegationManager.slashOperatorShares(defaultOperator, strategyMock, WAD, WAD/2);
         assertEq(delegationManager.operatorShares(defaultOperator, strategyMock), 0, "shares should not have changed");
+    }
+
+    /// @notice Verifies that shares are burnable for a withdrawal slashed just before the MIN_WITHDRAWAL_DELAY_BLOCKS is hit
+    function test_sharesBurnableAtMinDelayBlocks() public {
+        // Register operator
+        _registerOperatorWithBaseDetails(defaultOperator);
+        _setOperatorMagnitude(defaultOperator, strategyMock, WAD);
+
+        // Set the staker deposits in the strategies
+        uint256 depositAmount = 100e18;
+        strategyManagerMock.addDeposit(defaultStaker, strategyMock, depositAmount);
+        _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
+
+        // Queue withdrawal
+        uint256 withdrawalAmount = depositAmount;
+        (
+            QueuedWithdrawalParams[] memory queuedWithdrawalParams,
+            Withdrawal memory withdrawal,
+            bytes32 withdrawalRoot
+        ) = _setUpQueueWithdrawalsSingleStrat({
+            staker: defaultStaker,
+            withdrawer: defaultStaker,
+            strategy: strategyMock,
+            depositSharesToWithdraw: withdrawalAmount
+        });
+        cheats.prank(defaultStaker);
+        delegationManager.queueWithdrawals(queuedWithdrawalParams);
+
+        // Warp to just before the MIN_WITHDRAWAL_DELAY_BLOCKS
+        cheats.roll(withdrawal.startBlock + delegationManager.minWithdrawalDelayBlocks());
+
+        uint256 slashableSharesInQueue = delegationManager.getSlashableSharesInQueue(defaultOperator, strategyMock);
+
+        // Slash all of operator's shares
+        _setOperatorMagnitude(defaultOperator, strategyMock, 0);
+        cheats.expectEmit(true, true, true, true, address(delegationManager));
+        emit OperatorSharesBurned(defaultOperator, strategyMock, depositAmount);
+        cheats.prank(address(allocationManagerMock));
+        delegationManager.burnOperatorShares(defaultOperator, strategyMock, WAD, 0);
+
+        uint256 slashableSharesInQueueAfter = delegationManager.getSlashableSharesInQueue(defaultOperator, strategyMock);
+
+        // Complete withdrawal as tokens and assert that nothing is returned
+        cheats.roll(block.number + 1);
+        IERC20[] memory tokens = strategyMock.underlyingToken().toArray();
+        cheats.expectCall(
+            address(strategyManagerMock),
+            abi.encodeWithSelector(
+                IShareManager.withdrawSharesAsTokens.selector,
+                defaultStaker,
+                strategyMock,
+                strategyMock.underlyingToken(),
+                0
+            )
+        );
+        cheats.prank(defaultStaker);
+        delegationManager.completeQueuedWithdrawal(withdrawal, tokens, true);
+
+        assertEq(
+            slashableSharesInQueue,
+            depositAmount,
+            "the withdrawal in queue from block.number - minWithdrawalDelayBlocks should still be included"
+        );
+        assertEq(
+            slashableSharesInQueueAfter,
+            0,
+            "slashable shares in queue should be 0 after burning"
+        );
+    }
+
+    /// @notice Verifies that shares are NOT burnable for a withdrawal queued just before the MIN_WITHDRAWAL_DELAY_BLOCKS
+    function test_sharesNotBurnableWhenWithdrawalCompletable() public {
+        // Register operator
+        _registerOperatorWithBaseDetails(defaultOperator);
+        _setOperatorMagnitude(defaultOperator, strategyMock, WAD);
+
+        // Set the staker deposits in the strategies
+        uint256 depositAmount = 100e18;
+        strategyManagerMock.addDeposit(defaultStaker, strategyMock, depositAmount);
+        _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
+
+        // Queue withdrawal
+        uint256 withdrawalAmount = depositAmount;
+        (
+            QueuedWithdrawalParams[] memory queuedWithdrawalParams,
+            Withdrawal memory withdrawal,
+            bytes32 withdrawalRoot
+        ) = _setUpQueueWithdrawalsSingleStrat({
+            staker: defaultStaker,
+            withdrawer: defaultStaker,
+            strategy: strategyMock,
+            depositSharesToWithdraw: withdrawalAmount
+        });
+        cheats.prank(defaultStaker);
+        delegationManager.queueWithdrawals(queuedWithdrawalParams);
+
+        // Warp to completion time
+        cheats.roll(withdrawal.startBlock + delegationManager.minWithdrawalDelayBlocks() + 1);
+        uint256 slashableShares = delegationManager.getSlashableSharesInQueue(defaultOperator, strategyMock);
+        assertEq(slashableShares, 0, "shares should not be slashable");
+
+        // Slash all of operator's shares
+        _setOperatorMagnitude(defaultOperator, strategyMock, 0);
+        cheats.prank(address(allocationManagerMock));
+        delegationManager.burnOperatorShares(defaultOperator, strategyMock, WAD, 0);
+
+        // Complete withdrawal as tokens and assert that we call back into teh SM with 100 tokens
+        IERC20[] memory tokens = strategyMock.underlyingToken().toArray();
+        cheats.expectCall(
+            address(strategyManagerMock),
+            abi.encodeWithSelector(
+                IShareManager.withdrawSharesAsTokens.selector,
+                defaultStaker,
+                strategyMock,
+                strategyMock.underlyingToken(),
+                100e18
+            )
+        );
+        cheats.prank(defaultStaker);
+        delegationManager.completeQueuedWithdrawal(withdrawal, tokens, true);        
+    }
+
+    /**
+     * @notice Queues 5 withdrawals at different blocks. Then, warps such that the first 2 are completable. Validates the slashable shares
+     */
+    function test_slashableSharesInQueue() public {
+        // Register operator
+        _registerOperatorWithBaseDetails(defaultOperator);
+        _setOperatorMagnitude(defaultOperator, strategyMock, WAD);
+
+        // Set the staker deposits in the strategies
+        uint256 depositAmount = 120e18;
+        strategyManagerMock.addDeposit(defaultStaker, strategyMock, depositAmount);
+        _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
+
+        // Queue 5 withdrawals
+        uint256 startBlock = block.number;
+        uint256 withdrawalAmount = depositAmount / 6;
+        for(uint256 i = 0; i < 5; i++) {
+            (
+                QueuedWithdrawalParams[] memory queuedWithdrawalParams,
+                Withdrawal memory withdrawal,
+                bytes32 withdrawalRoot
+            ) = _setUpQueueWithdrawalsSingleStrat({
+                staker: defaultStaker,
+                withdrawer: defaultStaker,
+                strategy: strategyMock,
+                depositSharesToWithdraw: withdrawalAmount
+            });
+            cheats.prank(defaultStaker);
+            delegationManager.queueWithdrawals(queuedWithdrawalParams);
+            cheats.roll(startBlock + i + 1);
+        }
+
+        // Warp to completion time for the first 2 withdrawals
+        // First withdrawal queued at startBlock. Second queued at startBlock + 1
+        cheats.roll(startBlock + 1 + delegationManager.minWithdrawalDelayBlocks() + 1);
+
+        // Get slashable shares
+        uint256 slashableSharesInQueue = delegationManager.getSlashableSharesInQueue(defaultOperator, strategyMock);
+        assertEq(slashableSharesInQueue, depositAmount/6 * 3, "slashable shares in queue should be 3/6 of the deposit amount");
+
+        // Slash all of operator's shares
+        _setOperatorMagnitude(defaultOperator, strategyMock, 0);
+        cheats.prank(address(allocationManagerMock));
+        cheats.expectEmit(true, true, true, true, address(delegationManager));
+        emit OperatorSharesDecreased(
+            defaultOperator,
+            address(0),
+            strategyMock,
+            depositAmount / 6 // 1 withdrawal not queued so decreased
+        );
+        cheats.expectEmit(true, true, true, true, address(delegationManager));
+        emit OperatorSharesBurned(
+            defaultOperator,
+            strategyMock,
+            depositAmount / 6 * 4 // 4 parts are burned
+        );
+        delegationManager.burnOperatorShares(defaultOperator, strategyMock, WAD, 0);
+        
+        // Assert slashable shares
+        slashableSharesInQueue = delegationManager.getSlashableSharesInQueue(defaultOperator, strategyMock);
+        assertEq(slashableSharesInQueue, 0);
     }
 
     /// @notice Verifies that shares are burnable for a withdrawal slashed just before the MIN_WITHDRAWAL_DELAY_BLOCKS is hit
@@ -8518,249 +8661,3 @@ contract DelegationManagerUnitTests_ConvertToDepositShares is DelegationManagerU
     }
 }
 
-contract DelegationManagerUnitTests_getQueuedWithdrawals is DelegationManagerUnitTests {
-    using ArrayLib for *;
-    using SlashingLib for *;
-
-    function _withdrawalRoot(Withdrawal memory withdrawal) internal pure returns (bytes32) {
-        return keccak256(abi.encode(withdrawal));
-    }
-
-    function test_getQueuedWithdrawals_Correctness(Randomness r) public rand(r) {
-        uint256 numStrategies = r.Uint256(2, 8);
-        uint256[] memory depositShares = r.Uint256Array({
-            len: numStrategies, 
-            min: 2, 
-            max: 100 ether
-        });
-
-        IStrategy[] memory strategies = _deployAndDepositIntoStrategies(defaultStaker, depositShares, false);
-        _registerOperatorWithBaseDetails(defaultOperator);
-        _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
-
-        for (uint256 i; i < numStrategies; ++i) {
-            uint256 newStakerShares = depositShares[i] / 2;
-            _setOperatorMagnitude(defaultOperator, strategies[i], 0.5 ether);
-            cheats.prank(address(allocationManagerMock));
-            delegationManager.slashOperatorShares(defaultOperator, strategies[i], WAD, 0.5 ether);
-            uint256 afterSlash = delegationManager.operatorShares(defaultOperator, strategies[i]);
-            assertApproxEqAbs(afterSlash, newStakerShares, 1, "bad operator shares after slash");
-        }
-
-        // Queue withdrawals.
-        (
-            QueuedWithdrawalParams[] memory queuedWithdrawalParams,
-            Withdrawal memory withdrawal,
-            bytes32 withdrawalRoot
-        ) = _setUpQueueWithdrawals({
-            staker: defaultStaker,
-            strategies: strategies,
-            depositWithdrawalAmounts: depositShares
-        });
-
-        cheats.prank(defaultStaker);
-        delegationManager.queueWithdrawals(queuedWithdrawalParams);
-        
-        // Get queued withdrawals.
-        (Withdrawal[] memory withdrawals, uint256[][] memory shares) = delegationManager.getQueuedWithdrawals(defaultStaker);
-        // Checks
-        for (uint256 i; i < strategies.length; ++i) {
-            uint256 newStakerShares = depositShares[i] / 2;
-            assertApproxEqAbs(shares[0][i], newStakerShares, 1, "staker shares should be decreased by half +- 1");
-        }
-        
-        assertEq(_withdrawalRoot(withdrawal), _withdrawalRoot(withdrawals[0]), "_withdrawalRoot(withdrawal) != _withdrawalRoot(withdrawals[0])");
-        assertEq(_withdrawalRoot(withdrawal), withdrawalRoot, "_withdrawalRoot(withdrawal) != withdrawalRoot");
-    }
-
-    function test_getQueuedWithdrawals_TotalQueuedGreaterThanTotalStrategies(
-        Randomness r
-    ) public rand(r) {
-        uint256 totalDepositShares = r.Uint256(2, 100 ether);
-
-        _registerOperatorWithBaseDetails(defaultOperator);
-        strategyManagerMock.addDeposit(defaultStaker, strategyMock, totalDepositShares);
-        _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
-        
-        uint256 newStakerShares = totalDepositShares / 2;
-        _setOperatorMagnitude(defaultOperator, strategyMock, 0.5 ether);
-        cheats.prank(address(allocationManagerMock));
-        delegationManager.slashOperatorShares(defaultOperator, strategyMock, WAD, 0.5 ether);
-        uint256 afterSlash = delegationManager.operatorShares(defaultOperator, strategyMock);
-        assertApproxEqAbs(afterSlash, newStakerShares, 1, "bad operator shares after slash");
-
-        // Queue withdrawals.
-        (
-            QueuedWithdrawalParams[] memory queuedWithdrawalParams0,
-            Withdrawal memory withdrawal0,
-            bytes32 withdrawalRoot0
-        ) = _setUpQueueWithdrawalsSingleStrat({
-            staker: defaultStaker,
-            strategy: strategyMock,
-            depositSharesToWithdraw: totalDepositShares / 2
-        });
-
-        cheats.prank(defaultStaker);
-        delegationManager.queueWithdrawals(queuedWithdrawalParams0);
-
-        (
-            QueuedWithdrawalParams[] memory queuedWithdrawalParams1,
-            Withdrawal memory withdrawal1,
-            bytes32 withdrawalRoot1
-        ) = _setUpQueueWithdrawalsSingleStrat({
-            staker: defaultStaker,
-            strategy: strategyMock,
-            depositSharesToWithdraw:  totalDepositShares / 2
-        });
-
-        cheats.prank(defaultStaker);
-        delegationManager.queueWithdrawals(queuedWithdrawalParams1);
-
-        // Get queued withdrawals.
-        (Withdrawal[] memory withdrawals, uint256[][] memory shares) = delegationManager.getQueuedWithdrawals(defaultStaker);
-
-        // Sanity
-        assertEq(withdrawals.length, 2, "withdrawal.length != 2");
-        assertEq(withdrawals[0].strategies.length, 1, "withdrawals[0].strategies.length != 1");
-        assertEq(withdrawals[1].strategies.length, 1, "withdrawals[1].strategies.length != 1");
-
-        // Checks
-        assertApproxEqAbs(shares[0][0], newStakerShares / 2, 1, "shares[0][0] != newStakerShares");
-        assertApproxEqAbs(shares[1][0], newStakerShares / 2, 1, "shares[1][0] != newStakerShares");
-        assertEq(_withdrawalRoot(withdrawal0), _withdrawalRoot(withdrawals[0]), "withdrawal0 != withdrawals[0]");
-        assertEq(_withdrawalRoot(withdrawal1), _withdrawalRoot(withdrawals[1]), "withdrawal1 != withdrawals[1]");
-        assertEq(_withdrawalRoot(withdrawal0), withdrawalRoot0, "_withdrawalRoot(withdrawal0) != withdrawalRoot0");
-        assertEq(_withdrawalRoot(withdrawal1), withdrawalRoot1, "_withdrawalRoot(withdrawal1) != withdrawalRoot1");
-    }
-
-    /**
-     * @notice Assert that the shares returned in the view function `getQueuedWithdrawals` are unaffected from a
-     * slash that occurs after the withdrawal is completed. Also assert that completing the withdrawal matches the
-     * expected withdrawn shares from the view function.
-     * Slashing on the completableBlock of the withdrawal should have no affect on the withdrawn shares.
-     */
-    function test_getQueuedWithdrawals_SlashAfterWithdrawalCompletion(Randomness r) public rand(r) {
-        uint256 depositAmount = r.Uint256(1, MAX_STRATEGY_SHARES);
-
-        // Deposit Staker
-        strategyManagerMock.addDeposit(defaultStaker, strategyMock, depositAmount);
-
-        // Register operator and delegate to it
-        _registerOperatorWithBaseDetails(defaultOperator);
-        _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
-
-        // Queue withdrawal
-        (
-            QueuedWithdrawalParams[] memory queuedWithdrawalParams,
-            Withdrawal memory withdrawal,
-            bytes32 withdrawalRoot
-        ) = _setUpQueueWithdrawalsSingleStrat({
-            staker: defaultStaker,
-            strategy: strategyMock,
-            depositSharesToWithdraw: depositAmount
-        });
-        {
-            uint256 operatorSharesBeforeQueue = delegationManager.operatorShares(defaultOperator, strategyMock);
-            cheats.prank(defaultStaker);
-            delegationManager.queueWithdrawals(queuedWithdrawalParams);
-
-            assertTrue(delegationManager.pendingWithdrawals(withdrawalRoot), "withdrawalRoot should be pending");
-            uint256 operatorSharesAfterQueue = delegationManager.operatorShares(defaultOperator, strategyMock);
-            uint256 sharesWithdrawn = _calcWithdrawableShares({
-                depositShares: depositAmount,
-                depositScalingFactor: uint256(WAD),
-                slashingFactor: uint256(WAD)
-            });
-            assertEq(
-                operatorSharesAfterQueue,
-                operatorSharesBeforeQueue - sharesWithdrawn,
-                "operator shares should be decreased after queue"
-            );
-        }
-
-        // Slash operator 50% while staker has queued withdrawal
-        {
-            uint256 operatorSharesAfterQueue = delegationManager.operatorShares(defaultOperator, strategyMock);
-            (uint256 sharesToDecrement, ) = _calcSlashedAmount({
-                operatorShares: operatorSharesAfterQueue,
-                prevMaxMagnitude: uint64(WAD),
-                newMaxMagnitude: 50e16
-            });
-            _setOperatorMagnitude(defaultOperator, strategyMock, 50e16);
-            cheats.prank(address(allocationManagerMock));
-            delegationManager.slashOperatorShares(defaultOperator, withdrawal.strategies[0], uint64(WAD), 50e16);
-            uint256 operatorSharesAfterSlash = delegationManager.operatorShares(defaultOperator, strategyMock);
-            assertEq(
-                operatorSharesAfterSlash,
-                operatorSharesAfterQueue - sharesToDecrement,
-                "operator shares should be decreased after slash"
-            );
-        }
-
-        // Assert that the getQueuedWithdrawals returns shares that are halved as a result of being slashed 50%
-        {
-            (Withdrawal[] memory withdrawals, uint256[][] memory shares) = delegationManager.getQueuedWithdrawals(defaultStaker);
-            assertEq(withdrawals.length, 1, "withdrawals.length != 1");
-            assertEq(withdrawals[0].strategies.length, 1, "withdrawals[0].strategies.length != 1");
-            assertEq(shares[0][0], depositAmount / 2, "shares[0][0] != depositAmount / 2");
-        }
-
-        // Roll blocks to after withdrawal completion
-        uint32 completableBlock = withdrawal.startBlock + delegationManager.minWithdrawalDelayBlocks() + 1;
-        cheats.roll(completableBlock);
-
-        // slash operator 50% again
-        {
-            uint256 operatorShares = delegationManager.operatorShares(defaultOperator, strategyMock);
-            (uint256 sharesToDecrement, ) = _calcSlashedAmount({
-                operatorShares: operatorShares,
-                prevMaxMagnitude: 50e16,
-                newMaxMagnitude: 25e16
-            });
-            _setOperatorMagnitude(defaultOperator, strategyMock, 25e16);
-            cheats.prank(address(allocationManagerMock));
-            delegationManager.slashOperatorShares(defaultOperator, withdrawal.strategies[0], 50e16, 25e16);
-            uint256 operatorSharesAfterSecondSlash = delegationManager.operatorShares(defaultOperator, strategyMock);
-            assertEq(
-                operatorSharesAfterSecondSlash,
-                operatorShares - sharesToDecrement,
-                "operator shares should be decreased after slash"
-            );
-        }
-
-        // Assert that the getQueuedWithdrawals returns shares that are halved as a result of being slashed 50% and hasn't been
-        // affected by the second slash
-        uint256 expectedSharesIncrease = depositAmount / 2;
-        uint256 queuedWithdrawableShares;
-        {
-            (Withdrawal[] memory withdrawals, uint256[][] memory shares) = delegationManager.getQueuedWithdrawals(defaultStaker);
-            queuedWithdrawableShares = shares[0][0];
-            assertEq(withdrawals.length, 1, "withdrawals.length != 1");
-            assertEq(withdrawals[0].strategies.length, 1, "withdrawals[0].strategies.length != 1");
-            assertEq(queuedWithdrawableShares, depositAmount / 2, "queuedWithdrawableShares != withdrawalAmount / 2");
-        }
-
-        // Complete queued Withdrawal with shares added back. Since total deposit slashed by 50% and not 75%
-        (uint256[] memory withdrawableSharesBefore, ) = delegationManager.getWithdrawableShares(defaultStaker, withdrawal.strategies);
-        cheats.prank(defaultStaker);
-        delegationManager.completeQueuedWithdrawal(withdrawal, tokenMock.toArray(), false);
-        (uint256[] memory withdrawableSharesAfter, ) = delegationManager.getWithdrawableShares(defaultStaker, withdrawal.strategies);
-
-        // Added shares
-        assertEq(
-            withdrawableSharesAfter[0],
-            withdrawableSharesBefore[0] + expectedSharesIncrease,
-            "withdrawableShares should be increased by expectedSharesIncrease"
-        );
-        assertEq(
-            expectedSharesIncrease,
-            queuedWithdrawableShares,
-            "expectedSharesIncrease should be equal to queuedWithdrawableShares"
-        );
-        assertEq(
-            block.number,
-            completableBlock,
-            "block.number should be the completableBlock"
-        );
-    }
-}
