@@ -1317,7 +1317,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         for (uint i = 0; i < withdrawals.length; ++i) {
             if (withdrawals[i].startBlock > latest) latest = withdrawals[i].startBlock;
         }
-        cheats.roll(latest + delegationManager.minWithdrawalDelayBlocks());
+        cheats.roll(latest + delegationManager.minWithdrawalDelayBlocks() + 1);
     }
 
     /// @dev Rolls forward by the default allocation delay blocks.
@@ -1328,7 +1328,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
     /// @dev Rolls forward by the default deallocation delay blocks.
     function _rollBlocksForCompleteDeallocation() internal {
-        cheats.roll(block.number + allocationManager.DEALLOCATION_DELAY());
+        cheats.roll(block.number + allocationManager.DEALLOCATION_DELAY() + 1);
     }
 
     /// @dev Uses timewarp modifier to get the operator set strategy allocations at the last snapshot.

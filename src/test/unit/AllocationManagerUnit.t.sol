@@ -1131,7 +1131,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
 
         // Deallocate
         allocationManager.modifyAllocations(defaultOperator, deallocateParams);
-        uint32 deallocationEffectBlock = uint32(block.number + DEALLOCATION_DELAY);
+        uint32 deallocationEffectBlock = uint32(block.number + DEALLOCATION_DELAY + 1);
         cheats.stopPrank();
 
         uint256 magnitudeAllocated = allocateParams[0].newMagnitudes[0];
@@ -1265,7 +1265,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
 
         // Validate event for the deallocation
         cheats.expectEmit(true, true, true, true, address(allocationManager));
-        emit AllocationUpdated(defaultOperator, defaultOperatorSet, strategyMock, 0, uint32(block.number + DEALLOCATION_DELAY));
+        emit AllocationUpdated(defaultOperator, defaultOperatorSet, strategyMock, 0, uint32(block.number + DEALLOCATION_DELAY + 1));
 
         // Slash operator for 100%
         cheats.prank(defaultAVS);
@@ -1285,12 +1285,12 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
             operator: defaultOperator,
             operatorSet: defaultOperatorSet,
             strategy: strategyMock,
-            expectedAllocation: Allocation({currentMagnitude: 0, pendingDiff: 0, effectBlock: uint32(block.number) + DEALLOCATION_DELAY}),
+            expectedAllocation: Allocation({currentMagnitude: 0, pendingDiff: 0, effectBlock: uint32(block.number) + DEALLOCATION_DELAY + 1}),
             expectedMagnitudes: Magnitudes({encumbered: 0, max: 0, allocatable: 0})
         });
 
         // Complete deallocation
-        cheats.roll(uint32(block.number) + DEALLOCATION_DELAY);
+        cheats.roll(uint32(block.number) + DEALLOCATION_DELAY + 1);
         allocationManager.clearDeallocationQueue(defaultOperator, defaultStrategies, _maxNumToClear());
 
         // Validate allocatable amount is 0
@@ -1319,7 +1319,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         AllocateParams[] memory deallocateParams = _newAllocateParams(defaultOperatorSet, 5e17);
         cheats.prank(defaultOperator);
         allocationManager.modifyAllocations(defaultOperator, deallocateParams);
-        uint32 deallocationEffectBlock = uint32(block.number + DEALLOCATION_DELAY);
+        uint32 deallocationEffectBlock = uint32(block.number + DEALLOCATION_DELAY + 1);
 
         // Warp to deallocation effect block
         cheats.roll(deallocationEffectBlock);
@@ -1598,7 +1598,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         allocationManager.modifyAllocations(defaultOperator, allocateParams);
         cheats.roll(block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY);
         allocationManager.modifyAllocations(defaultOperator, deallocateParams);
-        cheats.roll(block.number + DEALLOCATION_DELAY);
+        cheats.roll(block.number + DEALLOCATION_DELAY + 1);
         cheats.stopPrank();
 
         // Slash operator for some random amount (1% -> 99%).
@@ -2190,14 +2190,14 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
             operatorSet: defaultOperatorSet,
             strategy: strategyMock,
             magnitude: secondMod,
-            effectBlock: uint32(block.number + DEALLOCATION_DELAY)
+            effectBlock: uint32(block.number + DEALLOCATION_DELAY + 1)
         });
 
         cheats.prank(defaultOperator);
         allocationManager.modifyAllocations(defaultOperator, allocateParams);
 
         // Check storage after dealloc
-        uint32 effectBlock = uint32(block.number + DEALLOCATION_DELAY);
+        uint32 effectBlock = uint32(block.number + DEALLOCATION_DELAY + 1);
 
         _checkAllocationStorage({
             operator: defaultOperator,
@@ -2287,7 +2287,7 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
 
         // Deallocate
         AllocateParams[] memory deallocateParams = r.DeallocateParams(allocateParams);
-        uint32 deallocEffectBlock = uint32(block.number + DEALLOCATION_DELAY);
+        uint32 deallocEffectBlock = uint32(block.number + DEALLOCATION_DELAY + 1);
         cheats.prank(defaultOperator);
         allocationManager.modifyAllocations(defaultOperator, deallocateParams);
 
@@ -2449,7 +2449,7 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
                 operatorSet: deallocSets[i],
                 strategy: strategyMock,
                 magnitude: 0,
-                effectBlock: uint32(block.number + DEALLOCATION_DELAY)
+                effectBlock: uint32(block.number + DEALLOCATION_DELAY + 1)
             });
         }
 
@@ -2463,7 +2463,7 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         );
 
         // Move forward to deallocation completion
-        cheats.roll(block.number + DEALLOCATION_DELAY);
+        cheats.roll(block.number + DEALLOCATION_DELAY + 1);
 
         // Check that we now have sufficient allocatable magnitude
         assertEq(
@@ -2536,14 +2536,14 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
             operatorSet: defaultOperatorSet,
             strategy: strategyMock,
             magnitude: 0,
-            effectBlock: uint32(block.number + DEALLOCATION_DELAY)
+            effectBlock: uint32(block.number + DEALLOCATION_DELAY + 1)
         });
 
         cheats.prank(defaultOperator);
         allocationManager.modifyAllocations(defaultOperator, allocateParams);
 
         // Warp to completion and clear deallocation queue
-        cheats.roll(block.number + DEALLOCATION_DELAY);
+        cheats.roll(block.number + DEALLOCATION_DELAY + 1);
         allocationManager.clearDeallocationQueue(defaultOperator, defaultStrategies, uint16(1).toArrayU16());
 
         // Check storage
@@ -2652,7 +2652,7 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
                     operatorSet: deallocateParams[i].operatorSet,
                     strategy: deallocateParams[i].strategies[j],
                     magnitude: deallocateParams[i].newMagnitudes[j],
-                    effectBlock: uint32(block.number + DEALLOCATION_DELAY)
+                    effectBlock: uint32(block.number + DEALLOCATION_DELAY + 1)
                 });
             }
         }
@@ -2670,7 +2670,7 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
                     expectedAllocation: Allocation({
                         currentMagnitude: allocateParams[i].newMagnitudes[j],
                         pendingDiff: expectedDiff,
-                        effectBlock: uint32(block.number + DEALLOCATION_DELAY)
+                        effectBlock: uint32(block.number + DEALLOCATION_DELAY + 1)
                     }),
                     expectedMagnitudes: Magnitudes({
                         encumbered: allocateParams[i].newMagnitudes[j],
@@ -2682,7 +2682,7 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         }
 
         // Warp to deallocation complete block
-        cheats.roll(block.number + DEALLOCATION_DELAY);
+        cheats.roll(block.number + DEALLOCATION_DELAY + 1);
         for (uint256 i; i < allocateParams.length; ++i) {
             for (uint256 j = 0; j < allocateParams[i].strategies.length; j++) {
                 _checkAllocationStorage({
@@ -2799,7 +2799,7 @@ contract AllocationManagerUnitTests_ClearDeallocationQueue is AllocationManagerU
             operatorSet: defaultOperatorSet,
             strategy: strategyMock,
             magnitude: deallocateParams[0].newMagnitudes[0],
-            effectBlock: uint32(block.number + DEALLOCATION_DELAY)
+            effectBlock: uint32(block.number + DEALLOCATION_DELAY + 1)
         });
         cheats.prank(defaultOperator);
         allocationManager.modifyAllocations(defaultOperator, deallocateParams);
@@ -2815,7 +2815,7 @@ contract AllocationManagerUnitTests_ClearDeallocationQueue is AllocationManagerU
             expectedAllocation: Allocation({
                 currentMagnitude: allocateParams[0].newMagnitudes[0],
                 pendingDiff: -int128(uint128(allocateParams[0].newMagnitudes[0] - deallocateParams[0].newMagnitudes[0])),
-                effectBlock: uint32(block.number + DEALLOCATION_DELAY)
+                effectBlock: uint32(block.number + DEALLOCATION_DELAY + 1)
             }),
             expectedMagnitudes: Magnitudes({
                 encumbered: allocateParams[0].newMagnitudes[0],
@@ -2825,7 +2825,7 @@ contract AllocationManagerUnitTests_ClearDeallocationQueue is AllocationManagerU
         });
 
         // Warp to deallocation complete block
-        cheats.roll(block.number + DEALLOCATION_DELAY);
+        cheats.roll(block.number + DEALLOCATION_DELAY + 1);
 
         // Clear queue
         _checkClearDeallocationQueueEvents({
@@ -2866,7 +2866,7 @@ contract AllocationManagerUnitTests_ClearDeallocationQueue is AllocationManagerU
         cheats.roll(block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY);
 
         // Deallocate half from default operator set
-        uint32 deallocationEffectBlock = uint32(block.number + DEALLOCATION_DELAY);
+        uint32 deallocationEffectBlock = uint32(block.number + DEALLOCATION_DELAY + 1);
         AllocateParams[] memory firstDeallocation = _newAllocateParams(defaultOperatorSet, 25e16);
         cheats.prank(defaultOperator);
         allocationManager.modifyAllocations(defaultOperator, firstDeallocation);
@@ -2950,7 +2950,7 @@ contract AllocationManagerUnitTests_ClearDeallocationQueue is AllocationManagerU
         assertEq(allocationEffectBlock, allocation.effectBlock, "effect block not correct");
 
         // Deallocate all from opSet1
-        uint32 deallocationEffectBlock = uint32(block.number + DEALLOCATION_DELAY);
+        uint32 deallocationEffectBlock = uint32(block.number + DEALLOCATION_DELAY + 1);
         AllocateParams[] memory firstDeallocation = _newAllocateParams(defaultOperatorSet, 0);
         cheats.prank(defaultOperator);
         allocationManager.modifyAllocations(defaultOperator, firstDeallocation);
@@ -3658,11 +3658,11 @@ contract AllocationManagerUnitTests_getSlashableStake is AllocationManagerUnitTe
             operator: defaultOperator,
             strategies: defaultStrategies,
             expectedSlashableStake: DEFAULT_OPERATOR_SHARES.mulWad(secondMod),
-            futureBlock: uint32(block.number + DEALLOCATION_DELAY)
+            futureBlock: uint32(block.number + DEALLOCATION_DELAY + 1)
         });
 
         // Warp to deallocation effect block
-        cheats.roll(block.number + DEALLOCATION_DELAY);
+        cheats.roll(block.number + DEALLOCATION_DELAY + 1);
 
         // 5. Check slashable stake at the deallocation effect block
         _checkSlashableStake({
@@ -3702,7 +3702,7 @@ contract AllocationManagerUnitTests_getSlashableStake is AllocationManagerUnitTe
 
         // Deallocate
         allocationManager.modifyAllocations(defaultOperator, deallocateParams);
-        uint32 deallocationEffectBlock = uint32(block.number + DEALLOCATION_DELAY);
+        uint32 deallocationEffectBlock = uint32(block.number + DEALLOCATION_DELAY + 1);
         cheats.stopPrank();
 
         // Check slashable stake after deallocation (still pending; no change)
