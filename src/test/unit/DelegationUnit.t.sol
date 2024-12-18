@@ -6610,10 +6610,16 @@ contract DelegationManagerUnitTests_burningShares is DelegationManagerUnitTests 
         // Warp to just before the MIN_WITHDRAWAL_DELAY_BLOCKS
         cheats.roll(withdrawal.startBlock + delegationManager.minWithdrawalDelayBlocks());
 
+        uint256 slashableSharesInQueue = delegationManager.getSlashableSharesInQueue(defaultOperator, strategyMock);
+
         // Slash all of operator's shares
         _setOperatorMagnitude(defaultOperator, strategyMock, 0);
+        cheats.expectEmit(true, true, true, true, address(delegationManager));
+        emit OperatorSharesBurned(defaultOperator, strategyMock, depositAmount);
         cheats.prank(address(allocationManagerMock));
         delegationManager.burnOperatorShares(defaultOperator, strategyMock, WAD, 0);
+
+        uint256 slashableSharesInQueueAfter = delegationManager.getSlashableSharesInQueue(defaultOperator, strategyMock);
 
         // Complete withdrawal as tokens and assert that nothing is returned
         cheats.roll(block.number + 1);
@@ -6630,6 +6636,17 @@ contract DelegationManagerUnitTests_burningShares is DelegationManagerUnitTests 
         );
         cheats.prank(defaultStaker);
         delegationManager.completeQueuedWithdrawal(withdrawal, tokens, true);
+
+        assertEq(
+            slashableSharesInQueue,
+            depositAmount,
+            "the withdrawal in queue from block.number - minWithdrawalDelayBlocks should still be included"
+        );
+        assertEq(
+            slashableSharesInQueueAfter,
+            0,
+            "slashable shares in queue should be 0 after burning"
+        );
     }
 
     /// @notice Verifies that shares are NOT burnable for a withdrawal queued just before the MIN_WITHDRAWAL_DELAY_BLOCKS
