@@ -1,4 +1,4 @@
-name: Certora Prover
+name: Certora
 
 on:
   push:
