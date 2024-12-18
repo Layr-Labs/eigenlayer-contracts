@@ -5994,7 +5994,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         });
 
         // prank as withdrawer address
-        cheats.roll(withdrawal.startBlock + MIN_WITHDRAWAL_DELAY_BLOCKS - 1);
+        cheats.roll(withdrawal.startBlock + MIN_WITHDRAWAL_DELAY_BLOCKS);
         cheats.expectRevert(WithdrawalDelayNotElapsed.selector);
         cheats.prank(defaultStaker);
         delegationManager.completeQueuedWithdrawal(withdrawal, tokens, receiveAsTokens);
