@@ -479,7 +479,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
                         string.concat(err, " (pendingDiff)")
                     );
 
-                    delay = DEALLOCATION_DELAY;
+                    delay = DEALLOCATION_DELAY + 1;
                 }
 
                 assertEq(
@@ -1328,7 +1328,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
     /// @dev Rolls forward by the default deallocation delay blocks.
     function _rollBlocksForCompleteDeallocation() internal {
-        cheats.roll(block.number + allocationManager.DEALLOCATION_DELAY() + 1);
+        rollForward({blocks: allocationManager.DEALLOCATION_DELAY() + 1});
     }
 
     /// @dev Uses timewarp modifier to get the operator set strategy allocations at the last snapshot.

@@ -397,6 +397,7 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
 
         // 4. Deallocate all.
         operator.deallocateAll(operatorSet);
+        _rollBlocksForCompleteDeallocation();
 
         // 5. Slash operator
         IAllocationManagerTypes.SlashingParams memory slashingParams;
