@@ -289,20 +289,6 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
     ) external returns (bytes32[] memory);
 
     /**
-     * @notice Used to complete the all queued withdrawals.
-     * Used to complete the specified `withdrawals`. The function caller must match `withdrawals[...].withdrawer`
-     * @param tokens Array of tokens for each Withdrawal. See `completeQueuedWithdrawal` for the usage of a single array.
-     * @param receiveAsTokens Whether or not to complete each withdrawal as tokens. See `completeQueuedWithdrawal` for the usage of a single boolean.
-     * @param numToComplete The number of withdrawals to complete. This must be less than or equal to the number of queued withdrawals.
-     * @dev See `completeQueuedWithdrawal` for relevant dev tags
-     */
-    function completeQueuedWithdrawals(
-        IERC20[][] calldata tokens,
-        bool[] calldata receiveAsTokens,
-        uint256 numToComplete
-    ) external;
-
-    /**
      * @notice Used to complete the lastest queued withdrawal.
      * @param withdrawal The withdrawal to complete.
      * @param tokens Array in which the i-th entry specifies the `token` input to the 'withdraw' function of the i-th Strategy in the `withdrawal.strategies` array.
