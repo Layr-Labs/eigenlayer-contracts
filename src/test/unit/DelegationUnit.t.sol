@@ -8192,3 +8192,98 @@ contract DelegationManagerUnitTests_Lifecycle is DelegationManagerUnitTests {
         assertEq(delegationManager.operatorShares(newOperator, strategy), 0, "new operator shares should be unchanged");
     }
 }
+
+contract DelegationManagerUnitTests_ConvertToDepositShares is DelegationManagerUnitTests {
+    using ArrayLib for *;
+
+    function test_convertToDepositShares_noSlashing() public {
+        IStrategy[] memory strategies = new IStrategy[](1);
+        strategies[0] = strategyMock;
+        uint256[] memory shares = uint256(100 ether).toArrayU256();
+
+        // Set the staker deposits in the strategies
+        strategyManagerMock.addDeposit(defaultStaker, strategies[0], shares[0]);
+
+        _checkDepositSharesConvertCorrectly(strategies, shares);
+    }
+
+    function test_convertToDepositShares_withSlashing() public {
+        IStrategy[] memory strategies = new IStrategy[](1);
+        strategies[0] = strategyMock;
+        uint256[] memory shares = uint256(100 ether).toArrayU256();
+
+        // Set the staker deposits in the strategies
+        strategyManagerMock.addDeposit(defaultStaker, strategies[0], shares[0]);
+
+        // register *this contract* as an operator
+        _registerOperatorWithBaseDetails(defaultOperator);
+        _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
+        _setOperatorMagnitude(defaultOperator, strategyMock, WAD/3);
+
+        _checkDepositSharesConvertCorrectly(strategies, shares);        
+    }
+
+    function test_convertToDepositShares_beaconChainETH() public {
+        IStrategy[] memory strategies = new IStrategy[](1);
+        strategies[0] = beaconChainETHStrategy;
+        uint256[] memory shares = uint256(100 ether).toArrayU256();
+
+        // Set the staker deposits in the strategies
+        eigenPodManagerMock.setPodOwnerShares(defaultStaker, int256(shares[0]));
+
+        uint256[] memory depositShares = delegationManager.convertToDepositShares(defaultStaker, strategies, shares);
+        assertEq(depositShares[0], shares[0], "deposit shares not converted correctly");
+
+        // delegate to an operator and slash
+        _registerOperatorWithBaseDetails(defaultOperator);
+        _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
+        _setOperatorMagnitude(defaultOperator, strategyMock, WAD/3);
+
+        _checkDepositSharesConvertCorrectly(strategies, shares);
+
+        // slash on beacon chain by 1/3
+        _decreaseBeaconChainShares(defaultStaker, int256(shares[0]), shares[0]/3);
+
+        _checkDepositSharesConvertCorrectly(strategies, shares);
+        
+    }
+
+    function _checkDepositSharesConvertCorrectly(IStrategy[] memory strategies, uint256[] memory expectedDepositShares) public {
+        (uint256[] memory withdrawableShares,) = delegationManager.getWithdrawableShares(defaultStaker, strategies);
+        // get the deposit shares
+        uint256[] memory depositShares = delegationManager.convertToDepositShares(defaultStaker, strategies, withdrawableShares);
+
+        for (uint256 i = 0; i < strategies.length; i++) {
+            assertApproxEqRel(
+                expectedDepositShares[i],
+                depositShares[i],
+                APPROX_REL_DIFF,
+                "deposit shares not converted correctly"
+            );
+
+            // make sure that the deposit shares are less than or equal to the shares, 
+            // so this value is sane to input into `completeQueuedWithdrawals`
+            assertLe(
+                depositShares[i],
+                expectedDepositShares[i],
+                "deposit shares should be less than or equal to expected deposit shares"
+            );
+        }
+
+        // get the deposit shares
+        uint256[] memory oneThirdWithdrawableShares = new uint256[](strategies.length);
+        for (uint256 i = 0; i < strategies.length; i++) {
+            oneThirdWithdrawableShares[i] = withdrawableShares[i]/3;
+        }
+        uint256[] memory oneThirdDepositShares = delegationManager.convertToDepositShares(defaultStaker, strategies, oneThirdWithdrawableShares);
+        for (uint256 i = 0; i < strategies.length; i++) {
+            assertApproxEqRel(
+                expectedDepositShares[i]/3,
+                oneThirdDepositShares[i],
+                APPROX_REL_DIFF,
+                "deposit shares not converted correctly"
+            );
+        }
+    }
+}
+
