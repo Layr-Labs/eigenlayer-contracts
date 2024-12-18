@@ -480,7 +480,7 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
     function getQueuedWithdrawals(
         address staker
     ) external view returns (Withdrawal[] memory withdrawals, uint256[][] memory shares);
-    
+
     /**
      * @notice Converts shares for a set of strategies to deposit shares, likely in order to input into `queueWithdrawals`
      * @param staker the staker to convert shares for
@@ -489,7 +489,11 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
      * @return the deposit shares
      * @dev will be a few wei off due to rounding errors
      */
-    function convertToDepositShares(address staker, IStrategy[] memory strategies, uint256[] memory withdrawableShares) external view returns (uint256[] memory);
+    function convertToDepositShares(
+        address staker,
+        IStrategy[] memory strategies,
+        uint256[] memory withdrawableShares
+    ) external view returns (uint256[] memory);
 
     /// @notice Returns the keccak256 hash of `withdrawal`.
     function calculateWithdrawalRoot(

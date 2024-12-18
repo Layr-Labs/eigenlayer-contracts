@@ -949,7 +949,11 @@ contract DelegationManager is
     }
 
     /// @inheritdoc IDelegationManager
-    function convertToDepositShares(address staker, IStrategy[] memory strategies, uint256[] memory withdrawableShares) external view returns (uint256[] memory) {
+    function convertToDepositShares(
+        address staker,
+        IStrategy[] memory strategies,
+        uint256[] memory withdrawableShares
+    ) external view returns (uint256[] memory) {
         // Get the slashing factors for the staker/operator/strategies
         address operator = delegatedTo[staker];
         uint256[] memory slashingFactors = _getSlashingFactors(staker, operator, strategies);
