@@ -209,6 +209,24 @@ contract ExistingDeploymentParser is Script, Logger {
 
         eigenLayerProxyAdmin = ProxyAdmin(json.readAddress(".addresses.eigenLayerProxyAdmin"));
         eigenLayerPauserReg = PauserRegistry(json.readAddress(".addresses.eigenLayerPauserReg"));
+        
+        // FIXME: hotfix - remove later...
+        permissionControllerImplementation = new PermissionController();
+        permissionController = PermissionController(
+            address(new TransparentUpgradeableProxy(address(permissionControllerImplementation), address(eigenLayerProxyAdmin), ""))
+        );
+
+        allocationManagerImplementation = new AllocationManager(
+            delegationManager, 
+            eigenLayerPauserReg, 
+            permissionController, 
+            DEALLOCATION_DELAY, 
+            ALLOCATION_CONFIGURATION_DELAY
+        );
+        allocationManager = AllocationManager(
+            address(new TransparentUpgradeableProxy(address(allocationManagerImplementation), address(eigenLayerProxyAdmin), ""))
+        );
+
 
         // // AllocationManager
         // allocationManager = AllocationManager(json.readAddress(".addresses.allocationManager"));

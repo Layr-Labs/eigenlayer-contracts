@@ -71,7 +71,6 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
         });
 
         // Create a staker and an operator with a nonzero balance and corresponding strategies
-        (, OperatorSet[] memory operatorSets) = _newRandomAVS();
         (User staker, IStrategy[] memory strategies, uint256[] memory tokenBalances) = _newRandomStaker();
         (User operator,,) = _newRandomOperator();
 
@@ -88,6 +87,8 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
         assert_Snap_Added_OperatorShares(operator, strategies, shares, "operator should have received shares");
 
         _upgradeEigenLayerContracts();
+
+        (AVS avs, OperatorSet[] memory operatorSets) = _newRandomAVS();
 
         operator.registerForOperatorSets(operatorSets);
 
