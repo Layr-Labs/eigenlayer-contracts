@@ -330,8 +330,6 @@ contract AllocationManager is
     /// @inheritdoc IAllocationManager
     function createOperatorSets(address avs, CreateSetParams[] calldata params) external checkCanCall(avs) {
         for (uint256 i = 0; i < params.length; i++) {
-            require(params[i].strategies.length <= MAX_OPERATOR_SET_STRATEGY_LIST_LENGTH, MaxStrategiesExceeded());
-
             OperatorSet memory operatorSet = OperatorSet(avs, params[i].operatorSetId);
 
             // Create the operator set, ensuring it does not already exist
@@ -355,11 +353,6 @@ contract AllocationManager is
     ) external checkCanCall(avs) {
         OperatorSet memory operatorSet = OperatorSet(avs, operatorSetId);
         bytes32 operatorSetKey = operatorSet.key();
-
-        require(
-            _operatorSetStrategies[operatorSetKey].length() + strategies.length <= MAX_OPERATOR_SET_STRATEGY_LIST_LENGTH,
-            MaxStrategiesExceeded()
-        );
 
         require(_operatorSets[avs].contains(operatorSet.id), InvalidOperatorSet());
 

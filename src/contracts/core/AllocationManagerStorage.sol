@@ -23,10 +23,6 @@ abstract contract AllocationManagerStorage is IAllocationManager {
     /// @dev Index for flag that pauses operator register/deregister to operator sets when set.
     uint8 internal constant PAUSED_OPERATOR_SET_REGISTRATION_AND_DEREGISTRATION = 2;
 
-    /// @dev Returns the maximum number of strategies an operator set can support.
-    /// NOTE: 32 LST strategies + 1 beacon chain ETH strategy = 33 total strategies.
-    uint8 internal constant MAX_OPERATOR_SET_STRATEGY_LIST_LENGTH = 33;
-
     // Immutables
 
     /// @notice The DelegationManager contract for EigenLayer
