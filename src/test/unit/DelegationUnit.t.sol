@@ -8220,7 +8220,15 @@ contract DelegationManagerUnitTests_ConvertToDepositShares is DelegationManagerU
         _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
         _setOperatorMagnitude(defaultOperator, strategyMock, WAD/3);
 
-        _checkDepositSharesConvertCorrectly(strategies, shares);        
+        _checkDepositSharesConvertCorrectly(strategies, shares);   
+
+        // queue and complete a withdrawal for half the deposit shares
+        (uint256[] memory withdrawableShares,) = delegationManager.getWithdrawableShares(defaultStaker, strategies);
+        _queueAndCompleteWithdrawalForSingleStrategy(strategies[0], shares[0] / 2);
+
+        // queued a withdrawal for half the deposit shares, and added back as withdrawable shares
+        shares[0] = shares[0] / 2 + withdrawableShares[0] / 2;
+        _checkDepositSharesConvertCorrectly(strategies, shares);
     }
 
     function test_convertToDepositShares_beaconChainETH() public {
@@ -8237,7 +8245,7 @@ contract DelegationManagerUnitTests_ConvertToDepositShares is DelegationManagerU
         // delegate to an operator and slash
         _registerOperatorWithBaseDetails(defaultOperator);
         _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
-        _setOperatorMagnitude(defaultOperator, strategyMock, WAD/3);
+        _setOperatorMagnitude(defaultOperator, beaconChainETHStrategy, WAD/3);
 
         _checkDepositSharesConvertCorrectly(strategies, shares);
 
@@ -8245,7 +8253,14 @@ contract DelegationManagerUnitTests_ConvertToDepositShares is DelegationManagerU
         _decreaseBeaconChainShares(defaultStaker, int256(shares[0]), shares[0]/3);
 
         _checkDepositSharesConvertCorrectly(strategies, shares);
-        
+
+        // queue and complete a withdrawal for half the deposit shares
+        (uint256[] memory withdrawableShares,) = delegationManager.getWithdrawableShares(defaultStaker, strategies);
+        _queueAndCompleteWithdrawalForSingleStrategy(strategies[0], shares[0] / 2);
+
+        // queued a withdrawal for half the deposit shares, and added back as withdrawable shares
+        shares[0] = shares[0] / 2 + withdrawableShares[0] / 2;
+        _checkDepositSharesConvertCorrectly(strategies, shares);
     }
 
     function _checkDepositSharesConvertCorrectly(IStrategy[] memory strategies, uint256[] memory expectedDepositShares) public {
@@ -8284,6 +8299,26 @@ contract DelegationManagerUnitTests_ConvertToDepositShares is DelegationManagerU
                 "deposit shares not converted correctly"
             );
         }
+    }
+
+    function _queueAndCompleteWithdrawalForSingleStrategy(IStrategy strategy, uint256 shares) public {
+        IStrategy[] memory strategies = new IStrategy[](1);
+        strategies[0] = strategy;
+        uint256[] memory depositShares = uint256(shares).toArrayU256();
+
+        (QueuedWithdrawalParams[] memory queuedWithdrawalParams, Withdrawal memory withdrawal, bytes32 withdrawalRoot) = _setUpQueueWithdrawalsSingleStrat({
+            staker: defaultStaker,
+            withdrawer: defaultStaker,
+            strategy: strategy,
+            depositSharesToWithdraw: shares
+        });
+
+        cheats.prank(defaultStaker);
+        delegationManager.queueWithdrawals(queuedWithdrawalParams);
+
+        cheats.roll(block.number + delegationManager.minWithdrawalDelayBlocks());
+        cheats.prank(defaultStaker);
+        delegationManager.completeQueuedWithdrawal(withdrawal, tokenMock.toArray(), false);
     }
 }
 

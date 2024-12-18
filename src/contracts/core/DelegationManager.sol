@@ -949,7 +949,7 @@ contract DelegationManager is
     }
 
     /// @inheritdoc IDelegationManager
-    function convertToDepositShares(address staker, IStrategy[] memory strategies, uint256[] memory shares) external view returns (uint256[] memory) {
+    function convertToDepositShares(address staker, IStrategy[] memory strategies, uint256[] memory withdrawableShares) external view returns (uint256[] memory) {
         // Get the slashing factors for the staker/operator/strategies
         address operator = delegatedTo[staker];
         uint256[] memory slashingFactors = _getSlashingFactors(staker, operator, strategies);
@@ -958,7 +958,7 @@ contract DelegationManager is
         uint256[] memory depositShares = new uint256[](strategies.length);
         for (uint256 i = 0; i < strategies.length; ++i) {
             DepositScalingFactor memory dsf = _depositScalingFactor[staker][strategies[i]];
-            depositShares[i] = dsf.calcDepositShares(shares[i], slashingFactors[i]);
+            depositShares[i] = dsf.calcDepositShares(withdrawableShares[i], slashingFactors[i]);
         }
         return depositShares;
     }
