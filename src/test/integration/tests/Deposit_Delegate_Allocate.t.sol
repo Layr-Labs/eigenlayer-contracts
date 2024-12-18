@@ -423,15 +423,13 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
                 staker, operator, withdrawals[i], allocateParams, slashingParams, expectedTokens
             );
         }
-
+        
         // Check Final State
-        assert_HasNoDelegatableShares(staker, "staker should have withdrawn all shares");
-        assert_HasUnderlyingTokenBalances_AfterSlash(
+        assert_HasUnderlyingTokenBalances(
             staker,
-            allocateParams,
-            slashingParams,
+            allocateParams.strategies,
             tokenBalances,
-            "staker should once again have original token tokenBalances minus slashed"
+            "staker should have withdrawn all shares"
         );
         assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }

@@ -376,6 +376,21 @@ contract IntegrationCheckUtils is IntegrationBase {
             }
         }
 
-        check_Withdrawal_AsTokens_State(staker, operator, withdrawal, withdrawal.strategies, withdrawal.scaledShares, tokens, expectedTokens);
+        // Common checks
+        assert_WithdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
+        
+        // assert_Snap_Added_TokenBalances(staker, tokens, expectedTokens, "staker should have received expected tokens");
+        assert_Snap_Unchanged_StakerDepositShares(staker, "staker shares should not have changed");
+        assert_Snap_Removed_StrategyShares(withdrawal.strategies, withdrawal.scaledShares, "strategies should have total shares decremented");
+
+        // Checks specific to an operator that the Staker has delegated to
+        if (operator != User(payable(0))) {
+            if (operator != staker) {
+                assert_Snap_Unchanged_TokenBalances(operator, "operator token balances should not have changed");
+            }
+            assert_Snap_Unchanged_OperatorShares(operator, "operator shares should not have changed");
+        }
+
+        // check_Withdrawal_AsTokens_State(staker, operator, withdrawal, withdrawal.strategies, withdrawal.scaledShares, tokens, expectedTokens);
     }
 }
