@@ -159,6 +159,17 @@ library SlashingLib {
             .mulWad(slashingFactor);
     }
 
+    function calcDepositShares(
+        DepositScalingFactor memory dsf,
+        uint256 withdrawableShares,
+        uint256 slashingFactor
+    ) internal pure returns (uint256) {
+        /// forgefmt: disable-next-item
+        return withdrawableShares
+            .divWad(dsf.scalingFactor())
+            .divWad(slashingFactor);
+    }
+
     function calcSlashedAmount(
         uint256 operatorShares,
         uint256 prevMaxMagnitude,
