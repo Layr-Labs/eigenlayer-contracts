@@ -13,8 +13,6 @@ interface IAllocationManagerErrors {
     error InvalidWadToSlash();
     /// @dev Thrown when two array parameters have mismatching lengths.
     error InputArrayLengthMismatch();
-    /// @dev Thrown when creating an operator set with more than max strategies.
-    error MaxStrategiesExceeded();
 
     /// Caller
 
