@@ -10,7 +10,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 contract Deploy is EOADeployer {
-    using EigenLabsUpgrade for *;
+    using Env for *;
 
     function _runAsEOA() internal override {
         vm.startBroadcast();
@@ -42,9 +42,33 @@ contract Deploy is EOADeployer {
 
     function testDeploy() public virtual {
         _runAsEOA();
-
+        _validateNewImplAddresses(false);
         _validateImplConstructors();
         _validateImplsInitialized();
+    }
+
+
+    /// @dev Validate that the `Env.impl` addresses are updated to be distinct from what the proxy
+    /// admin reports as the current implementation address.
+    ///
+    /// Note: The upgrade script can call this with `areMatching == true` to check that these impl
+    /// addresses _are_ matches.
+    function _validateNewImplAddresses(bool areMatching) internal view {
+        function (address, address, string memory) internal pure assertion =
+            areMatching ? _assertMatch : _assertNotMatch;
+
+
+        assertion(
+            _getProxyImpl(address(Env.proxy.delegationManager())),
+            address(Env.impl.delegationManager()),
+            "delegationManager impl failed"
+        );
+
+        assertion(
+            _getProxyImpl(address(Env.proxy.allocationManager())),
+            address(Env.impl.allocationManager()),
+            "allocationManager impl failed"
+        );
     }
 
     /// @dev Validate the immutables set in the new implementation constructors
@@ -77,5 +101,23 @@ contract Deploy is EOADeployer {
         DelegationManager delegation = Env.impl.delegationManager();
         vm.expectRevert(errInit);
         delegation.initialize(address(0), 0);
+    }
+
+    /// @dev Query and return `proxyAdmin.getProxyImplementation(proxy)`
+    function _getProxyImpl(address proxy) internal view returns (address) {
+        return ProxyAdmin(Env.proxyAdmin()).getProxyImplementation(ITransparentUpgradeableProxy(proxy));
+    }
+
+    /// @dev Query and return `proxyAdmin.getProxyAdmin(proxy)`
+    function _getProxyAdmin(address proxy) internal view returns (address) {
+        return ProxyAdmin(Env.proxyAdmin()).getProxyAdmin(ITransparentUpgradeableProxy(proxy));
+    }
+
+    function _assertMatch(address a, address b, string memory err) private pure {
+        assertEq(a, b, err);
+    }
+
+    function _assertNotMatch(address a, address b, string memory err) private pure {
+        assertNotEq(a, b, err);
     }
 }
