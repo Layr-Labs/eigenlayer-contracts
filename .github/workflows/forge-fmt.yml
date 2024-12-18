@@ -1,15 +1,17 @@
-name: Lint and Check Format
+name: CI
+
 on:
   workflow_dispatch:
   pull_request:
   push:
     branches:
       - "dev"
+      
 jobs:
   check:
+    name: Forge Fmt
     strategy:
       fail-fast: true
-    name: Foundry Fmt
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,7 +23,7 @@ jobs:
           version: nightly
       - name: Run forge fmt
         run: |
-          forge fmt --check src/contracts
+          forge fmt --check
         id: fmt
       - name: install npm dependencies
         run: npm install --include=dev

@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+    types: [opened, reopened]
+
+env:
+  FOUNDRY_PROFILE: intense
+  RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
+  RPC_HOLESKY: ${{ secrets.RPC_HOLESKY }}
+  CHAIN_ID: ${{ secrets.CHAIN_ID }}
+
+jobs:
+  run-tests:
+    name: Continous Fuzzing
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+
+    steps:
+    - name: Checkout Layr-Labs/eigenlayer-contracts
+      uses: actions/checkout@v2
+
+    - name: Install Node.js
+      run: |
+        curl -fsSL https://deb.nodesource.com/setup_21.x | sudo -E bash -
+        sudo apt-get install -y nodejs
+    
+    - name: Install Foundry
+      uses: foundry-rs/foundry-toolchain@v1
+      with:
+        version: nightly
+
+    - name: Run Forge build
+      run: |
+        forge --version
+        forge build --sizes
+      id: build
+
+    - name: Run unit and integration tests
+      run: forge test
