@@ -449,7 +449,7 @@ contract AllocationManager is
         RegistrationStatus memory status = registrationStatus[operator][operatorSet.key()];
 
         // slashableUntil returns the last block the operator is slashable in so we check for
-        // than or equal to
+        // less than or equal to
         return status.registered || block.number <= status.slashableUntil;
     }
 

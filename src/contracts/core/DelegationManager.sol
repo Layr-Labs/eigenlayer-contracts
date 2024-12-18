@@ -764,7 +764,7 @@ contract DelegationManager is
         // Fetch the cumulative scaled shares sitting in the withdrawal queue both now and before
         // the withdrawal delay.
         // NOTE: We want all the shares in the window [block.number - MIN_WITHDRAWAL_DELAY_BLOCKS, block.number]
-        // as this is all slashable and since prevprevCumulativeScaledShares is being subtracted from curCumulativeScaledShares
+        // as this is all slashable and since prevCumulativeScaledShares is being subtracted from curCumulativeScaledShares
         // we do a -1 on the block number to also include (block.number - MIN_WITHDRAWAL_DELAY_BLOCKS) as slashable.
         uint256 curCumulativeScaledShares = _cumulativeScaledSharesHistory[operator][strategy].latest();
         uint256 prevCumulativeScaledShares = _cumulativeScaledSharesHistory[operator][strategy].upperLookup({
