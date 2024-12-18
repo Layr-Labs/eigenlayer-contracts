@@ -231,11 +231,10 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
 
         for (uint256 i = 0; i < withdrawals.length; ++i) {
             staker.completeWithdrawalAsShares(withdrawals[i]);
-            // FIXME: check_Withdrawal_AsShares_State(staker, operator, withdrawals[i], strategies, shares);
+            check_Withdrawal_AsShares_State_AfterSlash(staker, operator, withdrawals[i], allocateParams, slashingParams);
         }
 
         // Check final state:
-        // FIXME: assert_HasExpectedShares(staker, strategies, shares, "staker should have all original shares");
         assert_HasNoUnderlyingTokenBalance(staker, strategies, "staker not have any underlying tokens");
         assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }
@@ -357,11 +356,10 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
 
         for (uint256 i = 0; i < withdrawals.length; ++i) {
             staker.completeWithdrawalAsShares(withdrawals[i]);
-            // FIXME: check_Withdrawal_AsShares_State(staker, operator, withdrawals[i], strategies, shares);
+            check_Withdrawal_AsShares_State_AfterSlash(staker, operator, withdrawals[i], allocateParams, slashingParams);
         }
 
         // Check final state:
-        // FIXME: assert_HasExpectedShares(staker, strategies, shares, "staker should have all original shares");
         assert_HasNoUnderlyingTokenBalance(staker, strategies, "staker not have any underlying tokens");
         assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }

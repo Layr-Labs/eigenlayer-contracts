@@ -337,10 +337,8 @@ contract IntegrationCheckUtils is IntegrationBase {
     /*******************************************************************************
                                  ALLOCATION MANAGER CHECKS
     *******************************************************************************/
-
-    function _calculateSlippage(uint256 x, uint256 y, uint256 z) internal pure returns (uint256 r) {
-        return mulmod(x, y, z) > 0 ? 1 : 0;
-    }
+    
+    // TODO: improvement needed 
 
     function check_Withdrawal_AsTokens_State_AfterSlash(
         User staker,
@@ -390,7 +388,42 @@ contract IntegrationCheckUtils is IntegrationBase {
             }
             assert_Snap_Unchanged_OperatorShares(operator, "operator shares should not have changed");
         }
+    }
 
-        // check_Withdrawal_AsTokens_State(staker, operator, withdrawal, withdrawal.strategies, withdrawal.scaledShares, tokens, expectedTokens);
+    function check_Withdrawal_AsShares_State_AfterSlash(
+        User staker,
+        User operator,
+        IDelegationManagerTypes.Withdrawal memory withdrawal,
+        IAllocationManagerTypes.AllocateParams memory allocateParams,
+        IAllocationManagerTypes.SlashingParams memory slashingParams
+    ) internal {
+        IERC20[] memory tokens = new IERC20[](withdrawal.strategies.length);
+
+        for (uint i; i < withdrawal.strategies.length; i++) {
+            IStrategy strat = withdrawal.strategies[i];
+
+            bool isBeaconChainETHStrategy = strat == beaconChainETHStrategy;
+
+            tokens[i] = isBeaconChainETHStrategy ? NATIVE_ETH : withdrawal.strategies[i].underlyingToken();
+            
+            if (slashingParams.strategies.contains(strat)) {
+                uint256 max = allocationManager.getMaxMagnitude(address(operator), strat);
+
+                withdrawal.scaledShares[i] -= withdrawal.scaledShares[i].calcSlashedAmount(WAD, max);
+            }
+        }
+        
+        // Common checks applicable to both user and non-user operator types
+        assert_WithdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
+        assert_Snap_Unchanged_TokenBalances(staker, "staker should not have any change in underlying token balances");
+        assert_Snap_Added_Staker_DepositShares(staker, withdrawal.strategies,  withdrawal.scaledShares, "staker should have received expected shares");
+        assert_Snap_Unchanged_StrategyShares(withdrawal.strategies, "strategies should have total shares unchanged");
+
+        // Additional checks or handling for the non-user operator scenario
+        if (operator != User(User(payable(0)))) {
+            if (operator != staker) {
+                assert_Snap_Unchanged_TokenBalances(operator, "operator should not have any change in underlying token balances");
+            }
+        }
     }
 }
