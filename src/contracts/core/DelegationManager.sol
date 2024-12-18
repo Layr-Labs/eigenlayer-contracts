@@ -945,20 +945,20 @@ contract DelegationManager is
             uint32 slashableUntil = withdrawals[i].startBlock + MIN_WITHDRAWAL_DELAY_BLOCKS;
 
             uint256[] memory slashingFactors;
-            // if the slashableUntil block is in the future, simply read current slashing factors
-            // still possible however for the slashing factors to change before the withdrawal is completable
+            // If slashableUntil block is in the past, read the slashing factors at that block
+            // Otherwise read the current slashing factors. Note that if the slashableUntil block is the current block
+            // or in the future then the slashing factors are still subject to change before the withdrawal is completable
             // and the shares withdrawn to be less
-            if (slashableUntil > uint32(block.number)) {
-                slashingFactors =
-                    _getSlashingFactors({staker: staker, operator: operator, strategies: withdrawals[i].strategies});
-                // Read slashing factors at the slashableUntil block
-            } else {
+            if (slashableUntil < uint32(block.number)) {
                 slashingFactors = _getSlashingFactorsAtBlock({
                     staker: staker,
                     operator: operator,
                     strategies: withdrawals[i].strategies,
                     blockNumber: slashableUntil
                 });
+            } else {
+                slashingFactors =
+                    _getSlashingFactors({staker: staker, operator: operator, strategies: withdrawals[i].strategies});
             }
 
             for (uint256 j; j < withdrawals[i].strategies.length; ++j) {
