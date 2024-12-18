@@ -8524,7 +8524,7 @@ contract DelegationManagerUnitTests_ConvertToDepositShares is DelegationManagerU
         cheats.prank(defaultStaker);
         delegationManager.queueWithdrawals(queuedWithdrawalParams);
 
-        cheats.roll(block.number + delegationManager.minWithdrawalDelayBlocks());
+        cheats.roll(block.number + delegationManager.minWithdrawalDelayBlocks() + 1);
         cheats.prank(defaultStaker);
         delegationManager.completeQueuedWithdrawal(withdrawal, tokenMock.toArray(), false);
     }
