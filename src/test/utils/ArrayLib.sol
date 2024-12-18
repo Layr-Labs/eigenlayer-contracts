@@ -152,6 +152,13 @@ library ArrayLib {
         array[0] = withdrawal;
     }
 
+    function toArray(
+        IDelegationManagerTypes.QueuedWithdrawalParams memory queuedWithdrawalParams
+    ) internal pure returns (IDelegationManagerTypes.QueuedWithdrawalParams[] memory array) {
+        array = new IDelegationManagerTypes.QueuedWithdrawalParams[](1);
+        array[0] = queuedWithdrawalParams;
+    }
+
     /// -----------------------------------------------------------------------
     /// Length Updates
     /// -----------------------------------------------------------------------
@@ -236,6 +243,16 @@ library ArrayLib {
         return array;
     }
 
+    function setLength(
+        IDelegationManagerTypes.Withdrawal[] memory array,
+        uint256 len
+    ) internal pure returns (IDelegationManagerTypes.Withdrawal[] memory) {
+        assembly {
+            mstore(array, len)
+        }
+        return array;
+    }
+
     /// -----------------------------------------------------------------------
     /// Contains
     /// -----------------------------------------------------------------------
@@ -310,6 +327,26 @@ library ArrayLib {
         return false;
     }
 
+    function contains(
+        OperatorSet[] memory array,
+        OperatorSet memory x
+    ) internal pure returns (bool) {
+        for (uint256 i; i < array.length; ++i) {
+            if (keccak256(abi.encode(array[i])) == keccak256(abi.encode(x))) return true;
+        }
+        return false;
+    }
+
+    function contains(
+        IDelegationManagerTypes.Withdrawal[] memory array,
+        IDelegationManagerTypes.Withdrawal memory x
+    ) internal pure returns (bool) {
+        for (uint256 i; i < array.length; ++i) {
+            if (keccak256(abi.encode(array[i])) == keccak256(abi.encode(x))) return true;
+        }
+        return false;
+    }
+
     /// -----------------------------------------------------------------------
     /// indexOf
     /// -----------------------------------------------------------------------
@@ -380,6 +417,26 @@ library ArrayLib {
     ) internal pure returns (uint256) {
         for (uint256 i; i < array.length; ++i) {
             if (array[i] == x) return i;
+        }
+        return type(uint256).max;
+    }
+
+    function indexOf(
+        OperatorSet[] memory array,
+        OperatorSet memory x
+    ) internal pure returns (uint256) {
+        for (uint256 i; i < array.length; ++i) {
+            if (keccak256(abi.encode(array[i])) == keccak256(abi.encode(x))) return i;
+        }
+        return type(uint256).max;
+    }
+
+    function indexOf(
+        IDelegationManagerTypes.Withdrawal[] memory array,
+        IDelegationManagerTypes.Withdrawal memory x
+    ) internal pure returns (uint256) {
+        for (uint256 i; i < array.length; ++i) {
+            if (keccak256(abi.encode(array[i])) == keccak256(abi.encode(x))) return i;
         }
         return type(uint256).max;
     }
