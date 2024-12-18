@@ -1664,6 +1664,165 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
             })
         });
     }
+
+    /**
+     * Allocates magnitude to an operator, deallocates all, warps to deallocation effect block and attempts to slash
+     * Asserts that the operator is not slashed
+     */
+    function test_noFundsSlashedAfterDeallocationDelay() public {
+        // Allocate all magnitude
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(defaultOperator, _newAllocateParams(defaultOperatorSet, WAD));
+        cheats.roll(block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY);
+
+        // Deallocate all
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(defaultOperator, _newAllocateParams(defaultOperatorSet, 0));
+
+        // Warp to deallocation effect block
+        cheats.roll(block.number + DEALLOCATION_DELAY + 1);
+
+        // Slash operator for all wad
+        cheats.prank(defaultAVS);
+        allocationManager.slashOperator(
+            defaultAVS,
+            SlashingParams({
+                operator: defaultOperator,
+                operatorSetId: defaultOperatorSet.id,
+                strategies: defaultStrategies,
+                wadsToSlash: WAD.toArrayU256(),
+                description: "test"
+            })
+        );
+
+        // Assert that the operator's max magnitude and allocatable magnitude are still WAD
+        assertEq(
+            WAD,
+            allocationManager.getAllocatableMagnitude(defaultOperator, strategyMock),
+            "Allocatable magnitude should be WAD"
+        );
+        assertEq(
+            WAD,
+            allocationManager.getMaxMagnitude(defaultOperator, strategyMock),
+            "Max magnitude should be WAD"
+        );
+    }
+
+    function testRevert_noFundsSlashedAfterDeregistration() public {
+        // Allocate all magnitude
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(defaultOperator, _newAllocateParams(defaultOperatorSet, WAD));
+        cheats.roll(block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY);
+
+        // Deregister operator
+        DeregisterParams memory deregisterParams = DeregisterParams({
+            operator: defaultOperator,
+            avs: defaultAVS,
+            operatorSetIds: defaultOperatorSet.id.toArrayU32()
+        });
+        cheats.prank(defaultOperator);
+        allocationManager.deregisterFromOperatorSets(deregisterParams);
+
+        // Warp to deallocation effect block
+        cheats.roll(block.number + DEALLOCATION_DELAY + 1);
+
+        // Slash operator for all wad
+        cheats.expectRevert(OperatorNotSlashable.selector);
+        cheats.prank(defaultAVS);
+        allocationManager.slashOperator(
+            defaultAVS,
+            SlashingParams({
+                operator: defaultOperator,
+                operatorSetId: defaultOperatorSet.id,
+                strategies: defaultStrategies,
+                wadsToSlash: WAD.toArrayU256(),
+                description: "test"
+            })
+        );
+    }
+
+    function test_deallocationSlashedJustBeforeEffectBlock() public {
+        // Allocate all magnitude
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(defaultOperator, _newAllocateParams(defaultOperatorSet, WAD));
+        cheats.roll(block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY);
+
+        // Deallocate all
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(defaultOperator, _newAllocateParams(defaultOperatorSet, 0));
+
+        // Warp to just before deallocation effect block
+        cheats.roll(block.number + DEALLOCATION_DELAY);
+
+        // Slash operator for all wad
+        cheats.prank(defaultAVS);
+        allocationManager.slashOperator(
+            defaultAVS,
+            SlashingParams({
+                operator: defaultOperator,
+                operatorSetId: defaultOperatorSet.id,
+                strategies: defaultStrategies,
+                wadsToSlash: WAD.toArrayU256(),
+                description: "test"
+            })
+        );
+
+        // Assert that the operator has no max magnitude or allocatable magnitude
+        assertEq(
+            0,
+            allocationManager.getAllocatableMagnitude(defaultOperator, strategyMock),
+            "Allocatable magnitude should be 0"
+        );
+        assertEq(
+            0,
+            allocationManager.getMaxMagnitude(defaultOperator, strategyMock),
+            "Max magnitude should be 0"
+        );
+    }
+
+    function test_deregisteredOperatorSlashableBeforeDelay() public {
+        // Allocate all magnitude
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(defaultOperator, _newAllocateParams(defaultOperatorSet, WAD));
+        cheats.roll(block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY);
+
+        // Deregister operator
+        DeregisterParams memory deregisterParams = DeregisterParams({
+            operator: defaultOperator,
+            avs: defaultAVS,
+            operatorSetIds: defaultOperatorSet.id.toArrayU32()
+        });
+        cheats.prank(defaultOperator);
+        allocationManager.deregisterFromOperatorSets(deregisterParams);
+
+        // Roll to the slashableUntil at block
+        cheats.roll(block.number + DEALLOCATION_DELAY);
+
+        // Slash operator for all wad
+        cheats.prank(defaultAVS);
+        allocationManager.slashOperator(
+            defaultAVS,
+            SlashingParams({
+                operator: defaultOperator,
+                operatorSetId: defaultOperatorSet.id,
+                strategies: defaultStrategies,
+                wadsToSlash: WAD.toArrayU256(),
+                description: "test"
+            })
+        );
+
+        // Assert that the operator has no max magnitude or allocatable magnitude
+        assertEq(
+            0,
+            allocationManager.getAllocatableMagnitude(defaultOperator, strategyMock),
+            "Allocatable magnitude should be 0"
+        );
+        assertEq(
+            0,
+            allocationManager.getMaxMagnitude(defaultOperator, strategyMock),
+            "Max magnitude should be 0"
+        );
+    }
 }
 
 contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTests {
