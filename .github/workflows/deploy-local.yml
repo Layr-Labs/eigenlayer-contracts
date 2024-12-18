@@ -1,21 +1,12 @@
-name: Run Local Build
+name: CI
 
 on:
   push:
   workflow_dispatch: {}
 
 jobs:
-  prepare:
-    runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
-
   run-local-build:
-    needs: prepare
+    name: Anvil Deployment
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -23,10 +14,6 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
-    - name: Install lcov
-      run: |
-        sudo apt-get install lcov
-      id: lcov
     - name: Install Foundry
       uses: foundry-rs/foundry-toolchain@v1
       with:
