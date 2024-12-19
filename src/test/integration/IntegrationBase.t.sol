@@ -1321,14 +1321,33 @@ abstract contract IntegrationBase is IntegrationDeployer {
     }
 
     /// @dev Rolls forward by the default allocation delay blocks.
-    function _rollBlocksForCompleteAllocation() internal {
-        (, uint32 delay) = allocationManager.getAllocationDelay(address(this));
-        rollForward({blocks: delay});
+    function _rollBlocksForCompleteAllocation(
+        User operator,
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies
+    ) internal {
+        uint256 latest;
+        for (uint i = 0; i < strategies.length; ++i) {
+            uint effectBlock = allocationManager.getAllocation(address(operator), operatorSet, strategies[i]).effectBlock;
+            if (effectBlock > latest) latest = effectBlock;
+        }
+        cheats.roll(latest + 1);
     }
 
-    /// @dev Rolls forward by the default deallocation delay blocks.
-    function _rollBlocksForCompleteDeallocation() internal {
-        rollForward({blocks: allocationManager.DEALLOCATION_DELAY() + 1});
+    /// @dev Rolls forward by the default allocation delay blocks.
+    function _rollBlocksForCompleteAllocation(
+        User operator,
+        OperatorSet[] memory operatorSets,
+        IStrategy[] memory strategies
+    ) internal {
+        uint256 latest;
+        for (uint i = 0; i < operatorSets.length; ++i) {
+            for (uint j = 0; j < strategies.length; ++j) {
+                uint effectBlock = allocationManager.getAllocation(address(operator), operatorSets[i], strategies[j]).effectBlock;
+                if (effectBlock > latest) latest = effectBlock;
+            }
+        }
+        cheats.roll(latest + 1);
     }
 
     /// @dev Uses timewarp modifier to get the operator set strategy allocations at the last snapshot.

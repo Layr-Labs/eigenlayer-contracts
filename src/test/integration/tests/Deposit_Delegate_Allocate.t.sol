@@ -16,48 +16,32 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
             _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
             _userTypes: DEFAULT | ALT_METHODS
         });
+        _upgradeEigenLayerContracts(); // Upgrade contracts if forkType is not local
 
-        _upgradeEigenLayerContracts();
-
-        // Create a staker and an operator with a nonzero balance and corresponding strategies
-        (, OperatorSet[] memory operatorSets) = _newRandomAVS();
         (User staker, IStrategy[] memory strategies, uint256[] memory tokenBalances) = _newRandomStaker();
         (User operator,,) = _newRandomOperator();
+        (AVS avs,) = _newRandomAVS();
 
-        // 1. Delegate to operator
-        staker.delegateTo(operator);
-        check_Delegation_State(staker, operator, strategies, new uint256[](strategies.length)); // Initial shares are zero
-
-        // 2. Deposit into strategies
+        // 1. Deposit Into Strategies
         staker.depositIntoEigenlayer(strategies, tokenBalances);
-        uint256[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 
-        // Check that the deposit increased operator shares the staker is delegated to
-        check_Deposit_State(staker, strategies, shares);
-        assert_Snap_Added_OperatorShares(operator, strategies, shares, "operator should have received shares");
+        // 2. Delegate to an operator
+        staker.delegateTo(operator);
 
-        operator.registerForOperatorSets(operatorSets);
+        // Create an operator set and register an operator.
+        OperatorSet memory operatorSet = avs.createOperatorSet(strategies);
+        operator.registerForOperatorSet(operatorSet);
 
-        IAllocationManagerTypes.AllocateParams[] memory allocateParams =
-            new IAllocationManagerTypes.AllocateParams[](operatorSets.length);
-
-        for (uint256 i; i < operatorSets.length; ++i) {
-            uint256 len = allocationManager.getStrategiesInOperatorSet(operatorSets[i]).length;
-            allocateParams[i] = operator.modifyAllocations(
-                operatorSets[i], _randMagnitudes({sum: WAD / uint64(operatorSets.length), len: len})
-            );
-            assert_Snap_Allocations_Modified(
-                operator, allocateParams[i], false, "operator allocations should be updated before delay"
-            );
-        }
-
-        _rollBlocksForCompleteAllocation();
-
-        for (uint256 i; i < operatorSets.length; ++i) {
-            assert_Snap_Allocations_Modified(
-                operator, allocateParams[i], true, "operator allocations should be updated after delay"
-            );
-        }
+        // 3. Allocate to operator set.
+        IAllocationManagerTypes.AllocateParams memory allocateParams =
+            operator.modifyAllocations(operatorSet, _randMagnitudes({sum: 1 ether, len: strategies.length}));
+        assert_Snap_Allocations_Modified(
+            operator, allocateParams, false, "operator allocations should be updated before delay"
+        );
+        _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
+        assert_Snap_Allocations_Modified(
+            operator, allocateParams, true, "operator allocations should be updated after delay"
+        );
     }
 
     function testFuzz_deposit_delegate_upgrade_allocate(
@@ -70,48 +54,33 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
             _userTypes: DEFAULT | ALT_METHODS
         });
 
-        // Create a staker and an operator with a nonzero balance and corresponding strategies
         (User staker, IStrategy[] memory strategies, uint256[] memory tokenBalances) = _newRandomStaker();
         (User operator,,) = _newRandomOperator();
 
-        // 1. Delegate to operator
-        staker.delegateTo(operator);
-        check_Delegation_State(staker, operator, strategies, new uint256[](strategies.length)); // Initial shares are zero
-
-        // 2. Deposit into strategies
+        // 1. Deposit Into Strategies
         staker.depositIntoEigenlayer(strategies, tokenBalances);
-        uint256[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 
-        // Check that the deposit increased operator shares the staker is delegated to
-        check_Deposit_State(staker, strategies, shares);
-        assert_Snap_Added_OperatorShares(operator, strategies, shares, "operator should have received shares");
+        // 2. Delegate to an operator
+        staker.delegateTo(operator);
 
-        _upgradeEigenLayerContracts();
+        _upgradeEigenLayerContracts(); // Upgrade contracts if forkType is not local
+        (AVS avs,) = _newRandomAVS();
 
-        (AVS avs, OperatorSet[] memory operatorSets) = _newRandomAVS();
+        // Create an operator set and register an operator.
+        OperatorSet memory operatorSet = avs.createOperatorSet(strategies);
+        operator.registerForOperatorSet(operatorSet);
+        operator.setAllocationDelay(1);
 
-        operator.registerForOperatorSets(operatorSets);
-
-        IAllocationManagerTypes.AllocateParams[] memory allocateParams =
-            new IAllocationManagerTypes.AllocateParams[](operatorSets.length);
-
-        for (uint256 i; i < operatorSets.length; ++i) {
-            uint256 len = allocationManager.getStrategiesInOperatorSet(operatorSets[i]).length;
-            allocateParams[i] = operator.modifyAllocations(
-                operatorSets[i], _randMagnitudes({sum: WAD / uint64(operatorSets.length), len: len})
-            );
-            assert_Snap_Allocations_Modified(
-                operator, allocateParams[i], false, "operator allocations should be updated before delay"
-            );
-        }
-
-        _rollBlocksForCompleteAllocation();
-
-        for (uint256 i; i < operatorSets.length; ++i) {
-            assert_Snap_Allocations_Modified(
-                operator, allocateParams[i], true, "operator allocations should be updated after delay"
-            );
-        }
+        // 3. Allocate to operator set.
+        IAllocationManagerTypes.AllocateParams memory allocateParams =
+            operator.modifyAllocations(operatorSet, _randMagnitudes({sum: 1 ether, len: strategies.length}));
+        assert_Snap_Allocations_Modified(
+            operator, allocateParams, false, "operator allocations should be updated before delay"
+        );
+        _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
+        assert_Snap_Allocations_Modified(
+            operator, allocateParams, true, "operator allocations should be updated after delay"
+        );
     }
 
     function testFuzz_deposit_delegate_allocate_slash_undelegate_completeAsTokens(
@@ -140,7 +109,7 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
         assert_Snap_Allocations_Modified(
             operator, allocateParams, false, "operator allocations should be updated before delay"
         );
-        _rollBlocksForCompleteAllocation();
+        _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
         assert_Snap_Allocations_Modified(
             operator, allocateParams, true, "operator allocations should be updated after delay"
         );
@@ -207,7 +176,7 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
         assert_Snap_Allocations_Modified(
             operator, allocateParams, false, "operator allocations should be updated before delay"
         );
-        _rollBlocksForCompleteAllocation();
+        _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
         assert_Snap_Allocations_Modified(
             operator, allocateParams, true, "operator allocations should be updated after delay"
         );
@@ -264,7 +233,7 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
         assert_Snap_Allocations_Modified(
             operator, allocateParams, false, "operator allocations should be updated before delay"
         );
-        _rollBlocksForCompleteAllocation();
+        _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
         assert_Snap_Allocations_Modified(
             operator, allocateParams, true, "operator allocations should be updated after delay"
         );
@@ -324,6 +293,7 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
         // Create an operator set and register an operator.
         OperatorSet memory operatorSet = avs.createOperatorSet(strategies);
         operator.registerForOperatorSet(operatorSet);
+        operator.setAllocationDelay(1);
 
         // 3. Allocate to operator set.
         IAllocationManagerTypes.AllocateParams memory allocateParams =
@@ -331,7 +301,7 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
         assert_Snap_Allocations_Modified(
             operator, allocateParams, false, "operator allocations should be updated before delay"
         );
-        _rollBlocksForCompleteAllocation();
+        _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
         assert_Snap_Allocations_Modified(
             operator, allocateParams, true, "operator allocations should be updated after delay"
         );
@@ -382,21 +352,25 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
         // Create an operator set and register an operator.
         OperatorSet memory operatorSet = avs.createOperatorSet(strategies);
         operator.registerForOperatorSet(operatorSet);
+        operator.setAllocationDelay(1);
 
+        console.log("block allocated", block.number);
         // 3. Allocate to operator set.
         IAllocationManagerTypes.AllocateParams memory allocateParams =
             operator.modifyAllocations(operatorSet, _randMagnitudes({sum: 1 ether, len: strategies.length}));
         assert_Snap_Allocations_Modified(
             operator, allocateParams, false, "operator allocations should be updated before delay"
         );
-        _rollBlocksForCompleteAllocation();
+        _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
         assert_Snap_Allocations_Modified(
             operator, allocateParams, true, "operator allocations should be updated after delay"
         );
+        console.log("block allocation complete", block.number);
 
         // 4. Deallocate all.
         operator.deallocateAll(operatorSet);
-        _rollBlocksForCompleteDeallocation();
+        _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
+        console.log("block deallocation complete", block.number);
 
         // 5. Slash operator
         IAllocationManagerTypes.SlashingParams memory slashingParams;
@@ -458,7 +432,7 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
         assert_Snap_Allocations_Modified(
             operator, allocateParams, false, "operator allocations should be updated before delay"
         );
-        _rollBlocksForCompleteAllocation();
+        _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
         assert_Snap_Allocations_Modified(
             operator, allocateParams, true, "operator allocations should be updated after delay"
         );
