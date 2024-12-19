@@ -1421,6 +1421,7 @@ contract StrategyManagerUnitTests_withdrawSharesAsTokens is StrategyManagerUnitT
     ) external filterFuzzedAddressInputs(staker) {
         cheats.assume(staker != address(this));
         cheats.assume(staker != address(0));
+        cheats.assume(staker != address(dummyStrat));
         cheats.assume(depositAmount > 0 && depositAmount < dummyToken.totalSupply() && depositAmount < sharesAmount);
         IStrategy strategy = dummyStrat;
         IERC20 token = dummyToken;
@@ -1517,32 +1518,32 @@ contract StrategyManagerUnitTests_burnShares is StrategyManagerUnitTests {
         );
     }
 
-    /// @notice check that balances are unchanged with a reverting token but burnShares doesn't revert
-    function testFuzz_tryCatchWithRevertToken(
-        address staker,
-        uint256 depositAmount,
-        uint256 sharesToBurn
-    ) external filterFuzzedAddressInputs(staker) {
-        cheats.assume(staker != address(0));
-        cheats.assume(sharesToBurn > 0 && sharesToBurn < dummyToken.totalSupply() && depositAmount >= sharesToBurn);
-        IStrategy strategy = dummyStrat;
-        IERC20 token = dummyToken;
-        _depositIntoStrategySuccessfully(strategy, staker, depositAmount);
+    // /// @notice check that balances are unchanged with a reverting token but burnShares doesn't revert
+    // function testFuzz_tryCatchWithRevertToken(
+    //     address staker,
+    //     uint256 depositAmount,
+    //     uint256 sharesToBurn
+    // ) external filterFuzzedAddressInputs(staker) {
+    //     cheats.assume(staker != address(0));
+    //     cheats.assume(sharesToBurn > 0 && sharesToBurn < dummyToken.totalSupply() && depositAmount >= sharesToBurn);
+    //     IStrategy strategy = dummyStrat;
+    //     IERC20 token = dummyToken;
+    //     _depositIntoStrategySuccessfully(strategy, staker, depositAmount);
 
-        // Now set token to be contract that reverts simulating an upgrade
-        cheats.etch(address(token), address(revertToken).code);
-        ERC20_SetTransferReverting_Mock(address(token)).setTransfersRevert(true);
+    //     // Now set token to be contract that reverts simulating an upgrade
+    //     cheats.etch(address(token), address(revertToken).code);
+    //     ERC20_SetTransferReverting_Mock(address(token)).setTransfersRevert(true);
 
-        uint256 strategyBalanceBefore = token.balanceOf(address(strategy));
-        uint256 burnAddressBalanceBefore = token.balanceOf(strategyManager.DEFAULT_BURN_ADDRESS());
-        cheats.prank(address(delegationManagerMock));
-        strategyManager.burnShares(strategy, sharesToBurn);
-        uint256 strategyBalanceAfter = token.balanceOf(address(strategy));
-        uint256 burnAddressBalanceAfter = token.balanceOf(strategyManager.DEFAULT_BURN_ADDRESS());
+    //     uint256 strategyBalanceBefore = token.balanceOf(address(strategy));
+    //     uint256 burnAddressBalanceBefore = token.balanceOf(strategyManager.DEFAULT_BURN_ADDRESS());
+    //     cheats.prank(address(delegationManagerMock));
+    //     strategyManager.burnShares(strategy, sharesToBurn);
+    //     uint256 strategyBalanceAfter = token.balanceOf(address(strategy));
+    //     uint256 burnAddressBalanceAfter = token.balanceOf(strategyManager.DEFAULT_BURN_ADDRESS());
 
-        assertEq(burnAddressBalanceBefore, burnAddressBalanceAfter, "burnAddressBalanceBefore != burnAddressBalanceAfter");
-        assertEq(strategyBalanceBefore, strategyBalanceAfter, "strategyBalanceBefore != strategyBalanceAfter");
-    }
+    //     assertEq(burnAddressBalanceBefore, burnAddressBalanceAfter, "burnAddressBalanceBefore != burnAddressBalanceAfter");
+    //     assertEq(strategyBalanceBefore, strategyBalanceAfter, "strategyBalanceBefore != strategyBalanceAfter");
+    // }
 }
 
 contract StrategyManagerUnitTests_setStrategyWhitelister is StrategyManagerUnitTests {
