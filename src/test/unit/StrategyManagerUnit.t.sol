@@ -1458,10 +1458,10 @@ contract StrategyManagerUnitTests_burnShares is StrategyManagerUnitTests {
     }
 
     /**
-     * @notice deposits a single strategy and withdrawSharesAsTokens() function reverts when sharesAmount is
-     * higher than depositAmount
+     * @notice deposits a single strategy and withdrawSharesAsTokens(). Tests that we revert when we
+     * burn more than expected
      */
-    function testFuzz_ShareAmountTooHigh(
+    function testFuzz_RevertShareAmountTooHigh(
         address staker,
         uint256 depositAmount,
         uint256 sharesToBurn
@@ -1472,15 +1472,9 @@ contract StrategyManagerUnitTests_burnShares is StrategyManagerUnitTests {
         IERC20 token = dummyToken;
         _depositIntoStrategySuccessfully(strategy, staker, depositAmount);
 
-        uint256 strategyBalanceBefore = token.balanceOf(address(strategy));
-        uint256 burnAddressBalanceBefore = token.balanceOf(strategyManager.DEFAULT_BURN_ADDRESS());
         cheats.prank(address(delegationManagerMock));
+        cheats.expectRevert(IStrategyErrors.WithdrawalAmountExceedsTotalDeposits.selector);
         strategyManager.burnShares(strategy, sharesToBurn);
-        uint256 strategyBalanceAfter = token.balanceOf(address(strategy));
-        uint256 burnAddressBalanceAfter = token.balanceOf(strategyManager.DEFAULT_BURN_ADDRESS());
-
-        assertEq(burnAddressBalanceBefore, burnAddressBalanceAfter, "burnAddressBalanceBefore != burnAddressBalanceAfter");
-        assertEq(strategyBalanceBefore, strategyBalanceAfter, "strategyBalanceBefore != strategyBalanceAfter");
     }
 
     function testFuzz_SingleStrategyDeposited(
