@@ -540,6 +540,29 @@ abstract contract IntegrationBase is IntegrationDeployer {
         }
     }
 
+    function assert_Snap_StakerWithdrawableShares_AfterSlash(
+        User staker,
+        IAllocationManagerTypes.AllocateParams memory allocateParams,
+        IAllocationManagerTypes.SlashingParams memory slashingParams,
+        string memory err
+    ) internal {
+        uint[] memory curShares = _getWithdrawableShares(staker, allocateParams.strategies);
+        uint[] memory prevShares = _getPrevWithdrawableShares(staker, allocateParams.strategies);
+
+        for (uint i = 0; i < allocateParams.strategies.length; i++) {
+            IStrategy strat = allocateParams.strategies[i];
+
+            uint256 slashedShares = 0;
+
+            if (slashingParams.strategies.contains(strat)) {
+                uint wadToSlash = slashingParams.wadsToSlash[slashingParams.strategies.indexOf(strat)];
+                slashedShares = prevShares[i].mulWadRoundUp(allocateParams.newMagnitudes[i].mulWadRoundUp(wadToSlash));
+            }
+
+            assertApproxEqAbs(prevShares[i] - slashedShares, curShares[i], 1, err);
+        }
+    }
+
     // TODO: slashable stake
 
     /*******************************************************************************
@@ -1545,6 +1568,14 @@ abstract contract IntegrationBase is IntegrationDeployer {
         }
 
         return shares;
+    }
+
+    function _getPrevWithdrawableShares(User staker, IStrategy[] memory strategies) internal timewarp() returns (uint[] memory) {
+        return _getWithdrawableShares(staker, strategies);
+    }
+
+    function _getWithdrawableShares(User staker, IStrategy[] memory strategies) internal view returns (uint[] memory withdrawableShares) {
+        (withdrawableShares, ) =  delegationManager.getWithdrawableShares(address(staker), strategies);
     }
 
     function _getActiveValidatorCount(User staker) internal view returns (uint) {

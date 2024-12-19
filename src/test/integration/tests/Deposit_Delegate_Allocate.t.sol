@@ -121,6 +121,8 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
                 _randStrategiesAndWadsToSlash(operatorSet);
             slashingParams = avs.slashOperator(operator, operatorSet.id, strategiesToSlash, wadsToSlash);
             assert_Snap_Allocations_Slashed(slashingParams, operatorSet, true, "operator allocations should be slashed");
+            assert_Snap_Unchanged_StakerDepositShares(staker, "staker deposit shares should be unchanged after slashing");
+            assert_Snap_StakerWithdrawableShares_AfterSlash(staker, allocateParams, slashingParams, "staker deposit shares should be slashed");
         }
 
         // 5. Undelegate from an operator
@@ -188,6 +190,8 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
                 _randStrategiesAndWadsToSlash(operatorSet);
             slashingParams = avs.slashOperator(operator, operatorSet.id, strategiesToSlash, wadsToSlash);
             assert_Snap_Allocations_Slashed(slashingParams, operatorSet, true, "operator allocations should be slashed");
+            assert_Snap_Unchanged_StakerDepositShares(staker, "staker deposit shares should be unchanged after slashing");
+            assert_Snap_StakerWithdrawableShares_AfterSlash(staker, allocateParams, slashingParams, "staker deposit shares should be slashed");
         }
 
         // 5. Undelegate from an operator
@@ -250,6 +254,8 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
                 _randStrategiesAndWadsToSlash(operatorSet);
             slashingParams = avs.slashOperator(operator, operatorSet.id, strategiesToSlash, wadsToSlash);
             assert_Snap_Allocations_Slashed(slashingParams, operatorSet, true, "operator allocations should be slashed");
+            assert_Snap_Unchanged_StakerDepositShares(staker, "staker deposit shares should be unchanged after slashing");
+            assert_Snap_StakerWithdrawableShares_AfterSlash(staker, allocateParams, slashingParams, "staker deposit shares should be slashed");
         }
 
         // 6. Complete withdrawal
@@ -318,6 +324,8 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
                 _randStrategiesAndWadsToSlash(operatorSet);
             slashingParams = avs.slashOperator(operator, operatorSet.id, strategiesToSlash, wadsToSlash);
             assert_Snap_Allocations_Slashed(slashingParams, operatorSet, true, "operator allocations should be slashed");
+            assert_Snap_Unchanged_StakerDepositShares(staker, "staker deposit shares should be unchanged after slashing");
+            assert_Snap_StakerWithdrawableShares_AfterSlash(staker, allocateParams, slashingParams, "staker deposit shares should be slashed");
         }
 
         // 4. Complete withdrawal
@@ -365,12 +373,10 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
         assert_Snap_Allocations_Modified(
             operator, allocateParams, true, "operator allocations should be updated after delay"
         );
-        console.log("block allocation complete", block.number);
 
         // 4. Deallocate all.
-        operator.deallocateAll(operatorSet);
+        IAllocationManagerTypes.AllocateParams memory deallocateParams = operator.deallocateAll(operatorSet);
         _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
-        console.log("block deallocation complete", block.number);
 
         // 5. Slash operator
         IAllocationManagerTypes.SlashingParams memory slashingParams;
@@ -379,6 +385,8 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
                 _randStrategiesAndWadsToSlash(operatorSet);
             slashingParams = avs.slashOperator(operator, operatorSet.id, strategiesToSlash, wadsToSlash);
             assert_Snap_Allocations_Slashed(slashingParams, operatorSet, true, "operator allocations should be slashed");
+            assert_Snap_Unchanged_StakerDepositShares(staker, "staker deposit shares should be unchanged after slashing");
+            assert_Snap_StakerWithdrawableShares_AfterSlash(staker, deallocateParams, slashingParams, "staker deposit shares should be slashed");
         }
         
         // 6. Queue withdrawals
@@ -447,6 +455,8 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
                 _randStrategiesAndWadsToSlash(operatorSet);
             slashingParams = avs.slashOperator(operator, operatorSet.id, strategiesToSlash, wadsToSlash);
             assert_Snap_Allocations_Slashed(slashingParams, operatorSet, true, "operator allocations should be slashed");
+            assert_Snap_Unchanged_StakerDepositShares(staker, "staker deposit shares should be unchanged after slashing");
+            assert_Snap_StakerWithdrawableShares_AfterSlash(staker, allocateParams, slashingParams, "staker deposit shares should be slashed");
         }
     }
 }
