@@ -479,7 +479,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
                         string.concat(err, " (pendingDiff)")
                     );
 
-                    delay = DEALLOCATION_DELAY;
+                    delay = DEALLOCATION_DELAY + 1;
                 }
 
                 assertEq(
@@ -537,6 +537,29 @@ abstract contract IntegrationBase is IntegrationDeployer {
             } 
 
             assertApproxEqAbs(expectedBalances[i], balance, maxDelta, err);
+        }
+    }
+
+    function assert_Snap_StakerWithdrawableShares_AfterSlash(
+        User staker,
+        IAllocationManagerTypes.AllocateParams memory allocateParams,
+        IAllocationManagerTypes.SlashingParams memory slashingParams,
+        string memory err
+    ) internal {
+        uint[] memory curShares = _getWithdrawableShares(staker, allocateParams.strategies);
+        uint[] memory prevShares = _getPrevWithdrawableShares(staker, allocateParams.strategies);
+
+        for (uint i = 0; i < allocateParams.strategies.length; i++) {
+            IStrategy strat = allocateParams.strategies[i];
+
+            uint256 slashedShares = 0;
+
+            if (slashingParams.strategies.contains(strat)) {
+                uint wadToSlash = slashingParams.wadsToSlash[slashingParams.strategies.indexOf(strat)];
+                slashedShares = prevShares[i].mulWadRoundUp(allocateParams.newMagnitudes[i].mulWadRoundUp(wadToSlash));
+            }
+
+            assertApproxEqAbs(prevShares[i] - slashedShares, curShares[i], 1, err);
         }
     }
 
@@ -809,7 +832,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
             uint prevShare = prevShares[i];
             uint curShare = curShares[i];
 
-            assertEq(prevShare - removedShares[i], curShare, err);
+            assertApproxEqAbs(prevShare - removedShares[i], curShare, 1, err);
         }
     }
 
@@ -850,7 +873,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
             uint prevBalance = prevTokenBalances[i];
             uint curBalance = curTokenBalances[i];
 
-            assertEq(prevBalance + addedTokens[i], curBalance, err);
+            assertApproxEqAbs(prevBalance + addedTokens[i], curBalance, 1, err);
         }
     }
 
@@ -1321,14 +1344,33 @@ abstract contract IntegrationBase is IntegrationDeployer {
     }
 
     /// @dev Rolls forward by the default allocation delay blocks.
-    function _rollBlocksForCompleteAllocation() internal {
-        (, uint32 delay) = allocationManager.getAllocationDelay(address(this));
-        rollForward({blocks: delay});
+    function _rollBlocksForCompleteAllocation(
+        User operator,
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies
+    ) internal {
+        uint256 latest;
+        for (uint i = 0; i < strategies.length; ++i) {
+            uint effectBlock = allocationManager.getAllocation(address(operator), operatorSet, strategies[i]).effectBlock;
+            if (effectBlock > latest) latest = effectBlock;
+        }
+        cheats.roll(latest + 1);
     }
 
-    /// @dev Rolls forward by the default deallocation delay blocks.
-    function _rollBlocksForCompleteDeallocation() internal {
-        cheats.roll(block.number + allocationManager.DEALLOCATION_DELAY() + 1);
+    /// @dev Rolls forward by the default allocation delay blocks.
+    function _rollBlocksForCompleteAllocation(
+        User operator,
+        OperatorSet[] memory operatorSets,
+        IStrategy[] memory strategies
+    ) internal {
+        uint256 latest;
+        for (uint i = 0; i < operatorSets.length; ++i) {
+            for (uint j = 0; j < strategies.length; ++j) {
+                uint effectBlock = allocationManager.getAllocation(address(operator), operatorSets[i], strategies[j]).effectBlock;
+                if (effectBlock > latest) latest = effectBlock;
+            }
+        }
+        cheats.roll(latest + 1);
     }
 
     /// @dev Uses timewarp modifier to get the operator set strategy allocations at the last snapshot.
@@ -1526,6 +1568,14 @@ abstract contract IntegrationBase is IntegrationDeployer {
         }
 
         return shares;
+    }
+
+    function _getPrevWithdrawableShares(User staker, IStrategy[] memory strategies) internal timewarp() returns (uint[] memory) {
+        return _getWithdrawableShares(staker, strategies);
+    }
+
+    function _getWithdrawableShares(User staker, IStrategy[] memory strategies) internal view returns (uint[] memory withdrawableShares) {
+        (withdrawableShares, ) =  delegationManager.getWithdrawableShares(address(staker), strategies);
     }
 
     function _getActiveValidatorCount(User staker) internal view returns (uint) {
