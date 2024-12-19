@@ -46,7 +46,7 @@ contract Deploy is EOADeployer {
 
         assertion(
             _getProxyImpl(address(Env.proxy.strategyManager())),
-            address(Env.impl.delegationManager()),
+            address(Env.impl.strategyManager()),
             "strategyManager impl failed"
         );
     }
