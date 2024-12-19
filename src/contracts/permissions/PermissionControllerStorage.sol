@@ -9,6 +9,10 @@ abstract contract PermissionControllerStorage is IPermissionController {
     using EnumerableSet for EnumerableSet.Bytes32Set;
     using EnumerableSet for EnumerableSet.AddressSet;
 
+    bytes32 public constant PERMIT_APPOINTEE_TYPEHASH = keccak256(
+        "PermitAppointee(address appointee,address target,bytes4 selector,bool permitted,bytes32 salt,uint32 expiry)"
+    );
+
     struct AccountPermissions {
         /// @notice The pending admins of the account
         EnumerableSet.AddressSet pendingAdmins;
@@ -22,6 +26,9 @@ abstract contract PermissionControllerStorage is IPermissionController {
 
     /// @notice Mapping from an account to its permission
     mapping(address account => AccountPermissions) internal _permissions;
+
+    /// @notice Mapping from an account to its nonce
+    mapping(address account => mapping(bytes32 => bool)) public isSaltSpent;
 
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new

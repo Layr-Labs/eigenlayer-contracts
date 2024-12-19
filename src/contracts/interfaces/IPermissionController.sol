@@ -18,6 +18,10 @@ interface IPermissionControllerErrors {
     error AdminNotPending();
     /// @notice Thrown when an admin is already pending
     error AdminAlreadyPending();
+    /// @dev Thrown when the caller is not allowed to call a function on behalf of an account.
+    error InvalidPermissions();
+    /// @notice Thrown when a salt has already been spent
+    error SaltAlreadySpent();
 }
 
 interface IPermissionControllerEvents {

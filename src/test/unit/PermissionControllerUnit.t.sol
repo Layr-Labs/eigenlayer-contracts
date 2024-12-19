@@ -9,7 +9,9 @@ import "src/contracts/interfaces/IPermissionController.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
 
 contract PermissionControllerUnitTests is EigenLayerUnitTestSetup, IPermissionControllerEvents, IPermissionControllerErrors {
-    address account = address(0x1);
+    address account;
+    uint256 accountPk = 1;
+
     address admin = address(0x2);
     address admin2 = address(0x3);
     address appointee1 = address(0x4);
@@ -27,6 +29,69 @@ contract PermissionControllerUnitTests is EigenLayerUnitTestSetup, IPermissionCo
         // Set targets
         target1 = address(delegationManagerMock);
         target2 = address(allocationManagerMock);
+
+        account = cheats.addr(accountPk);
+    }
+
+    function _validateSetAppointee(address accountToCheck, address appointee, address target, bytes4 selector) internal view {
+        assertTrue(permissionController.canCall(accountToCheck, appointee, target, selector));
+        _validateAppointeePermissions(accountToCheck, appointee, target, selector);
+        _validateGetAppointees(accountToCheck, appointee, target, selector);
+    }
+
+    function _validateRemoveAppointee(address accountToCheck, address appointee, address target, bytes4 selector) internal view {
+        assertFalse(permissionController.canCall(accountToCheck, appointee, target, selector));
+        _validateAppointeePermissionsRemoved(accountToCheck, appointee, target, selector);
+        _validateGetAppointeesRemoved(accountToCheck, appointee, target, selector);
+    }
+
+    function _validateAppointeePermissions(address accountToCheck, address appointee, address target, bytes4 selector) internal view {
+       (address[] memory targets, bytes4[] memory selectors) = permissionController.getAppointeePermissions(accountToCheck, appointee);
+       bool foundTargetSelector = false;
+       for (uint256 i = 0; i < targets.length; ++i) {
+           if (targets[i] == target) {
+                assertEq(selectors[i], selector, "Selector does not match target");
+                foundTargetSelector = true; 
+                break;
+           }
+       }
+       assertTrue(foundTargetSelector, "Appointee does not have permission for given target and selector");
+    }
+
+    function _validateGetAppointees(address accountToCheck, address appointee, address target, bytes4 selector) internal view {
+        (address[] memory appointees) = permissionController.getAppointees(accountToCheck, target, selector);
+        bool foundAppointee = false;
+        for (uint256 i = 0; i < appointees.length; ++i) {
+            if (appointees[i] == appointee) {
+                foundAppointee = true;
+                break;
+            }
+        }
+        assertTrue(foundAppointee, "Appointee not in list of appointees for given target and selector");
+    }
+
+    function _validateAppointeePermissionsRemoved(address accountToCheck, address appointee, address target, bytes4 selector) internal view {
+       (address[] memory targets, bytes4[] memory selectors) = permissionController.getAppointeePermissions(accountToCheck, appointee);
+       bool foundTargetSelector = false;
+       for (uint256 i = 0; i < targets.length; ++i) {
+           if (targets[i] == target && selectors[i] == selector) {
+                foundTargetSelector = true; 
+                break;
+           }
+       }
+       assertFalse(foundTargetSelector, "Appointee still has permission for given target and selector");
+    }
+
+    function _validateGetAppointeesRemoved(address accountToCheck, address appointee, address target, bytes4 selector) internal view {
+        (address[] memory appointees) = permissionController.getAppointees(accountToCheck, target, selector);
+        bool foundAppointee = false;
+        for (uint256 i = 0; i < appointees.length; ++i) {
+            if (appointees[i] == appointee) {
+                foundAppointee = true;
+                break;
+            }
+        }
+        assertFalse(foundAppointee, "Appointee still in list of appointees for given target and selector");
     }
 }
 
@@ -298,37 +363,6 @@ contract PermissionControllerUnitTests_SetAppointee is PermissionControllerUnitT
         _validateSetAppointee(account, appointee1, target2, selector2);
         _validateSetAppointee(account, appointee2, target1, selector1);
     }
-
-    function _validateSetAppointee(address accountToCheck, address appointee, address target, bytes4 selector) internal view {
-        assertTrue(permissionController.canCall(accountToCheck, appointee, target, selector));
-        _validateAppointeePermissions(accountToCheck, appointee, target, selector);
-        _validateGetAppointees(accountToCheck, appointee, target, selector);
-    }
-
-    function _validateAppointeePermissions(address accountToCheck, address appointee, address target, bytes4 selector) internal view {
-       (address[] memory targets, bytes4[] memory selectors) = permissionController.getAppointeePermissions(accountToCheck, appointee);
-       bool foundTargetSelector = false;
-       for (uint256 i = 0; i < targets.length; ++i) {
-           if (targets[i] == target) {
-                assertEq(selectors[i], selector, "Selector does not match target");
-                foundTargetSelector = true; 
-                break;
-           }
-       }
-       assertTrue(foundTargetSelector, "Appointee does not have permission for given target and selector");
-    }
-
-    function _validateGetAppointees(address accountToCheck, address appointee, address target, bytes4 selector) internal view {
-        (address[] memory appointees) = permissionController.getAppointees(accountToCheck, target, selector);
-        bool foundAppointee = false;
-        for (uint256 i = 0; i < appointees.length; ++i) {
-            if (appointees[i] == appointee) {
-                foundAppointee = true;
-                break;
-            }
-        }
-        assertTrue(foundAppointee, "Appointee not in list of appointees for given target and selector");
-    }
 }
 
 contract PermissionControllerUnitTests_RemoveAppointee is PermissionControllerUnitTests {
@@ -396,35 +430,88 @@ contract PermissionControllerUnitTests_RemoveAppointee is PermissionControllerUn
         assertEq(targets[0], target1, "Incorrect target");
         assertEq(selectors[0], selector1, "Incorrect selector");
     }
+}
 
+contract PermissionControllerUnitTests_PermitAppointee is PermissionControllerUnitTests, ISignatureUtils {
+    SignatureWithSaltAndExpiry s;
+    bytes32 salt = keccak256("");
 
-    function _validateRemoveAppointee(address accountToCheck, address appointee, address target, bytes4 selector) internal view {
-        assertFalse(permissionController.canCall(accountToCheck, appointee, target, selector));
-        _validateAppointeePermissionsRemoved(accountToCheck, appointee, target, selector);
-        _validateGetAppointeesRemoved(accountToCheck, appointee, target, selector);
+    function setUp() virtual public override {
+        PermissionControllerUnitTests.setUp();
+        s = SignatureWithSaltAndExpiry({
+            salt: keccak256(""),
+            expiry: block.timestamp + 1 days,
+            signature: _createValidSignature(account, appointee1, target1, selector1, true, salt, block.timestamp + 1 days).signature
+        });
     }
 
-    function _validateAppointeePermissionsRemoved(address accountToCheck, address appointee, address target, bytes4 selector) internal view {
-       (address[] memory targets, bytes4[] memory selectors) = permissionController.getAppointeePermissions(accountToCheck, appointee);
-       bool foundTargetSelector = false;
-       for (uint256 i = 0; i < targets.length; ++i) {
-           if (targets[i] == target && selectors[i] == selector) {
-                foundTargetSelector = true; 
-                break;
-           }
-       }
-       assertFalse(foundTargetSelector, "Appointee still has permission for given target and selector");
+    function test_permitAppointee_setAppointee() public {
+        cheats.prank(appointee1);
+        permissionController.permitAppointee(account, appointee1, target1, selector1, true, s);
+        _validateSetAppointee(account, appointee1, target1, selector1);
     }
 
-    function _validateGetAppointeesRemoved(address accountToCheck, address appointee, address target, bytes4 selector) internal view {
-        (address[] memory appointees) = permissionController.getAppointees(accountToCheck, target, selector);
-        bool foundAppointee = false;
-        for (uint256 i = 0; i < appointees.length; ++i) {
-            if (appointees[i] == appointee) {
-                foundAppointee = true;
-                break;
-            }
-        }
-        assertFalse(foundAppointee, "Appointee still in list of appointees for given target and selector");
+    function test_permitAppointee_removeAppointee() public {
+        cheats.prank(appointee1);
+        permissionController.permitAppointee(account, appointee1, target1, selector1, true, s);
+        
+        s = _createValidSignature(account, appointee1, target1, selector1, false, keccak256("yeet"), block.timestamp + 1 days);
+        cheats.prank(appointee1);
+        permissionController.permitAppointee(account, appointee1, target1, selector1, false, s);
+        _validateRemoveAppointee(account, appointee1, target1, selector1);
+    }
+
+    function test_revert_invalidSignature() public {
+        s = _createValidSignature(account, appointee1, target1, selector1, false, salt, block.timestamp + 1 days);  
+        cheats.prank(appointee1);
+        cheats.expectRevert(InvalidSignature.selector);
+        permissionController.permitAppointee(account, appointee1, target1, selector1, true, s);
+    }
+
+    function test_revert_saltAlreadySpent() public {
+        cheats.prank(appointee1);
+        permissionController.permitAppointee(account, appointee1, target1, selector1, true, s);
+        
+        cheats.prank(appointee1);
+        cheats.expectRevert(SaltAlreadySpent.selector);
+        permissionController.permitAppointee(account, appointee1, target1, selector1, true, s);
+    }
+
+    function test_revert_expiredSignature() public {
+        // Set expiry to the past
+        s = _createValidSignature(account, appointee1, target1, selector1, true, salt, block.timestamp - 1);  
+        cheats.prank(appointee1);
+        cheats.expectRevert(SignatureExpired.selector);
+        permissionController.permitAppointee(account, appointee1, target1, selector1, true, s);
+    }
+
+    function _emptySignature() internal pure returns (SignatureWithSaltAndExpiry memory) {
+        return SignatureWithSaltAndExpiry({
+            signature: bytes(""),
+            salt: bytes32(0),
+            expiry: 0
+        });
+    }
+
+    function _createValidSignature(
+        address account,
+        address appointee,
+        address target,
+        bytes4 selector,
+        bool permitted,
+        bytes32 salt,
+        uint256 expiry
+    ) internal view returns (ISignatureUtils.SignatureWithSaltAndExpiry memory) {
+        bytes32 digest = permissionController.calculatePermitAppointeeDigestHash(
+            appointee, target, selector, permitted, salt, expiry
+        );
+
+        (uint8 v, bytes32 r, bytes32 s) = cheats.sign(accountPk, digest);
+
+        return ISignatureUtils.SignatureWithSaltAndExpiry({
+            signature: abi.encodePacked(r, s, v),
+            salt: salt,
+            expiry: expiry
+        });
     }
 }

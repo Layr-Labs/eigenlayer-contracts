@@ -3,8 +3,9 @@ pragma solidity ^0.8.27;
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "./PermissionControllerStorage.sol";
+import "../mixins/SignatureUtils.sol";
 
-contract PermissionController is Initializable, PermissionControllerStorage {
+contract PermissionController is Initializable, PermissionControllerStorage, SignatureUtils {
     using EnumerableSet for *;
 
     modifier onlyAdmin(
@@ -91,6 +92,66 @@ contract PermissionController is Initializable, PermissionControllerStorage {
         address target,
         bytes4 selector
     ) external onlyAdmin(account) {
+        _setAppointee(account, appointee, target, selector);
+    }
+
+    /// @inheritdoc IPermissionController
+    function removeAppointee(
+        address account,
+        address appointee,
+        address target,
+        bytes4 selector
+    ) external onlyAdmin(account) {
+        _removeAppointee(account, appointee, target, selector);
+    }
+
+    function permitAppointee(
+        address account,
+        address appointee,
+        address target,
+        bytes4 selector,
+        bool permitted,
+        SignatureWithSaltAndExpiry memory signatureWithSaltAndExpiry
+    ) external {
+        require(msg.sender == appointee, InvalidPermissions());
+        require(!isSaltSpent[account][signatureWithSaltAndExpiry.salt], SaltAlreadySpent());
+
+        _checkIsValidSignatureNow(
+            account,
+            _calculateSignableDigest(
+                keccak256(
+                    abi.encode(
+                        PERMIT_APPOINTEE_TYPEHASH,
+                        appointee,
+                        target,
+                        selector,
+                        permitted,
+                        signatureWithSaltAndExpiry.salt,
+                        signatureWithSaltAndExpiry.expiry
+                    )
+                )
+            ),
+            signatureWithSaltAndExpiry.signature,
+            signatureWithSaltAndExpiry.expiry
+        );
+
+        isSaltSpent[account][signatureWithSaltAndExpiry.salt] = true;
+
+        if (permitted) {
+            _setAppointee(account, appointee, target, selector);
+        } else {
+            _removeAppointee(account, appointee, target, selector);
+        }
+    }
+
+    /**
+     *
+     *                         INTERNAL FUNCTIONS
+     *
+     */
+
+    /// @dev Sets an appointee for a given account
+    function _setAppointee(address account, address appointee, address target, bytes4 selector) internal {
         AccountPermissions storage permissions = _permissions[account];
 
         bytes32 targetSelector = _encodeTargetSelector(target, selector);
@@ -103,13 +164,8 @@ contract PermissionController is Initializable, PermissionControllerStorage {
         emit AppointeeSet(account, appointee, target, selector);
     }
 
-    /// @inheritdoc IPermissionController
-    function removeAppointee(
-        address account,
-        address appointee,
-        address target,
-        bytes4 selector
-    ) external onlyAdmin(account) {
+    /// @dev Removes an appointee for a given account
+    function _removeAppointee(address account, address appointee, address target, bytes4 selector) internal {
         AccountPermissions storage permissions = _permissions[account];
 
         bytes32 targetSelector = _encodeTargetSelector(target, selector);
@@ -121,12 +177,6 @@ contract PermissionController is Initializable, PermissionControllerStorage {
 
         emit AppointeeRemoved(account, appointee, target, selector);
     }
-
-    /**
-     *
-     *                         INTERNAL FUNCTIONS
-     *
-     */
 
     /// @dev Encodes the target and selector into a single bytes32 values
     /// @dev Encoded Format: [160 bits target][32 bits selector][64 bits padding],
@@ -223,5 +273,18 @@ contract PermissionController is Initializable, PermissionControllerStorage {
     function getAppointees(address account, address target, bytes4 selector) external view returns (address[] memory) {
         bytes32 targetSelector = _encodeTargetSelector(target, selector);
         return _permissions[account].permissionAppointees[targetSelector].values();
+    }
+
+    function calculatePermitAppointeeDigestHash(
+        address appointee,
+        address target,
+        bytes4 selector,
+        bool permitted,
+        bytes32 salt,
+        uint256 deadline
+    ) external view returns (bytes32) {
+        return _calculateSignableDigest(
+            keccak256(abi.encode(PERMIT_APPOINTEE_TYPEHASH, appointee, target, selector, permitted, salt, deadline))
+        );
     }
 }
