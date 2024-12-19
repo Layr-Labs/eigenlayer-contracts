@@ -143,7 +143,7 @@ contract StrategyManager is
     /// @inheritdoc IStrategyManager
     function burnShares(IStrategy strategy, uint256 sharesToBurn) external onlyDelegationManager {
         // burning shares is functionally the same as withdrawing but with different destination address
-        try strategy.withdraw(DEFAULT_BURN_ADDRESS, strategy.underlyingToken(), sharesToBurn) {} catch {}
+        strategy.withdraw(DEFAULT_BURN_ADDRESS, strategy.underlyingToken(), sharesToBurn);
     }
 
     /// @inheritdoc IStrategyManager
