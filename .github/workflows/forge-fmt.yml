@@ -1,4 +1,4 @@
-name: CI
+name: Forge Fmt
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ on:
       
 jobs:
   check:
-    name: Forge Fmt
+    name: CI
     strategy:
       fail-fast: true
     runs-on: ubuntu-latest

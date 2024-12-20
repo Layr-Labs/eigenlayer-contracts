@@ -1,4 +1,4 @@
-name: CI
+name: Coverage
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
 
 jobs:
   run-coverage:
-    name: Coverage
+    name: CI
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false

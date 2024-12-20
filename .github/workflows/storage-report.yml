@@ -1,4 +1,4 @@
-name: CI
+name: Storage Layout
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ on:
       
 jobs:
   check_storage:
-    name: Storage Layout
+    name: CI
     runs-on: "ubuntu-latest"
     steps:
       - uses: actions/checkout@v4
