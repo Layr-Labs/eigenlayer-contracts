@@ -204,6 +204,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         print.method("registerAsOperator");
         delegationManager.registerAsOperator(address(0), withdrawalDelay, "metadata");
         print.gasUsed();
+        rollForward({blocks: allocationManager().ALLOCATION_CONFIGURATION_DELAY() + 1});
     }
 
     /// @dev Delegate to the operator without a signature
