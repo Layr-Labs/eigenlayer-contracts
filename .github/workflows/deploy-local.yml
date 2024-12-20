@@ -1,4 +1,4 @@
-name: CI
+name: Anvil Deployment
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
 
 jobs:
   run-local-build:
-    name: Anvil Deployment
+    name: CI
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false

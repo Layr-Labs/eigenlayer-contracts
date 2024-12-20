@@ -1,4 +1,4 @@
-name: CI
+name: Commit Linting
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
 
 jobs:
   commitlint:
-    name: Commit Linting
+    name: CI
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
