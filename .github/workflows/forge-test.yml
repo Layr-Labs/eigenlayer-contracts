@@ -1,4 +1,4 @@
-name: CI
+name: Forge Tests
 
 on:
   push:
@@ -13,7 +13,7 @@ env:
 
 jobs:
   run-tests:
-    name: Forge Tests
+    name: CI
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false

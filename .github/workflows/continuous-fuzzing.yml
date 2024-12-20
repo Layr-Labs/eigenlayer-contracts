@@ -1,4 +1,4 @@
-name: CI
+name: Continous Fuzzing
 
 on:
   push:
@@ -13,7 +13,7 @@ env:
 
 jobs:
   run-tests:
-    name: Continous Fuzzing
+    name: CI
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
