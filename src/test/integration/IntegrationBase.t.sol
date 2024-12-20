@@ -101,7 +101,10 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
             operator.registerAsOperator();
             operator.depositIntoEigenlayer(strategies, tokenBalances);
-        }
+
+            // Roll passed the allocation configuration delay
+            rollForward({blocks: block.number + ALLOCATION_CONFIGURATION_DELAY});
+        }        
 
         assert_Snap_Added_Staker_DepositShares(operator, strategies, addedShares, "_newRandomOperator: failed to add delegatable shares");
         assert_Snap_Added_OperatorShares(operator, strategies, addedShares, "_newRandomOperator: failed to award shares to operator");

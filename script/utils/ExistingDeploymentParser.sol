@@ -683,5 +683,9 @@ contract ExistingDeploymentParser is Script, Logger {
         REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH = uint32(json.readUint(".config.params.MAX_RETROACTIVE_LENGTH"));
         REWARDS_COORDINATOR_MAX_FUTURE_LENGTH = uint32(json.readUint(".config.params.MAX_FUTURE_LENGTH"));
         REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP = uint32(json.readUint(".config.params.GENESIS_REWARDS_TIMESTAMP"));
+
+        DEALLOCATION_DELAY = uint32(json.readUint(".config.params.MIN_WITHDRAWAL_DELAY_BLOCKS"));
+        ALLOCATION_CONFIGURATION_DELAY = uint32(json.readUint(".config.params.ALLOCATION_CONFIGURATION_DELAY"));
+        DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS = uint32(json.readUint(".config.params.MIN_WITHDRAWAL_DELAY_BLOCKS"));
     }
 }

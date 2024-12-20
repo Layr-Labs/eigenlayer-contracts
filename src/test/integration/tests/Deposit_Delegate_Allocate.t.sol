@@ -69,7 +69,6 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
         // Create an operator set and register an operator.
         OperatorSet memory operatorSet = avs.createOperatorSet(strategies);
         operator.registerForOperatorSet(operatorSet);
-        operator.setAllocationDelay(1);
 
         // 3. Allocate to operator set.
         IAllocationManagerTypes.AllocateParams memory allocateParams =
