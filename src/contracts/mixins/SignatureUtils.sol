@@ -65,14 +65,7 @@ abstract contract SignatureUtils is ISignatureUtils {
             // If the chain ID is the same, return the original domain separator.
             _INITIAL_DOMAIN_SEPARATOR :
             // If the chain ID is different, return the new domain separator.
-            keccak256(
-                abi.encode(
-                    EIP712_DOMAIN_TYPEHASH, 
-                    keccak256(bytes("EigenLayer")), 
-                    block.chainid, 
-                    address(this)
-                )
-            );
+            _domainSeparator();
     }
 
     /// @dev Helper for creating valid EIP-712 signable digests.
