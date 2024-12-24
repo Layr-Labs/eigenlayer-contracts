@@ -27,7 +27,7 @@ abstract contract SignatureUtils is ISignatureUtils {
 
     constructor() {
         _INITIAL_CHAIN_ID = block.chainid;
-        _INITIAL_DOMAIN_SEPARATOR = _calculateDomainSeparator();
+        _INITIAL_DOMAIN_SEPARATOR = _domainSeparator();
     }
 
     /// EXTERNAL FUNCTIONS
@@ -45,6 +45,18 @@ abstract contract SignatureUtils is ISignatureUtils {
     }
 
     /// INTERNAL HELPERS
+
+    /// @dev Helper for calculating the initial domain separator.
+    function _domainSeparator() internal view returns (bytes32) {
+        return keccak256(
+            abi.encode(
+                EIP712_DOMAIN_TYPEHASH, 
+                keccak256(bytes("EigenLayer")), 
+                block.chainid, 
+                address(this)
+            )
+        );
+    }
 
     /// @dev Helper for calculating the contract's current domain separator.
     function _calculateDomainSeparator() internal view returns (bytes32) {

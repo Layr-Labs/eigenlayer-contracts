@@ -265,6 +265,20 @@ contract StrategyManagerUnitTests_initialize is StrategyManagerUnitTests {
     }
 }
 
+contract StrategyManagerUnitTests_signatureUtils is StrategyManagerUnitTests {
+    function test_DomainSeparator() public view {
+        bytes32 domainSeparator = keccak256(
+            abi.encode(
+                keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)"),
+                keccak256(bytes("EigenLayer")), 
+                block.chainid, 
+                address(strategyManagerImplementation)
+            )
+        );
+        assertEq(strategyManager.domainSeparator(), domainSeparator, "strategyManager.domainSeparator() != domainSeparator");
+    }
+}
+
 contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTests {
     function testFuzz_depositIntoStrategySuccessfully(
         address staker,
