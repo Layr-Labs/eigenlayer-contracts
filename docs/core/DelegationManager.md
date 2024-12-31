@@ -191,6 +191,32 @@ TODO
 The `DelegationManager` tracks withdrawal-related state in the following mappings:
 
 ```solidity
+/**
+ * @dev A struct representing an existing queued withdrawal. After the withdrawal delay has elapsed, this withdrawal can be completed via `completeQueuedWithdrawal`.
+ * A `Withdrawal` is created by the `DelegationManager` when `queueWithdrawals` is called. The `withdrawalRoots` hashes returned by `queueWithdrawals` can be used
+ * to fetch the corresponding `Withdrawal` from storage (via `queuedWithdrawals`).
+ *
+ * @param staker The address that queued the withdrawal
+ * @param delegatedTo The address that the staker was delegated to at the time the withdrawal was queued. Used to determine if additional slashing occurred before
+ * this withdrawal became completeable.
+ * @param withdrawer The address that will call the contract to complete the withdrawal. Note that this will always equal `staker`; alternate withdrawers are not
+ * supported at this time.
+ * @param nonce The staker's `cumulativeWithdrawalsQueued` at time of queuing. Used to ensure withdrawals have unique hashes.
+ * @param startBlock The block number when the withdrawal was queued.
+ * @param strategies The strategies requested for withdrawal when the withdrawal was queued
+ * @param scaledShares The staker's deposit shares requested for withdrawal, scaled by the staker's `depositScalingFactor`. Upon completion, these will be
+ * scaled by the appropriate slashing factor as of the withdrawal's completable block. The result is what is actually withdrawable.
+ */
+struct Withdrawal {
+    address staker;
+    address delegatedTo;
+    address withdrawer;
+    uint256 nonce;
+    uint32 startBlock;
+    IStrategy[] strategies;
+    uint256[] scaledShares;
+}
+
 /// @dev Returns whether a withdrawal is pending for a given `withdrawalRoot`.
 /// @dev This variable will be deprecated in the future, values should only be read or deleted.
 mapping(bytes32 withdrawalRoot => bool pending) public pendingWithdrawals;
@@ -361,6 +387,9 @@ Just as with a normal queued withdrawal, these withdrawals can be completed by t
 * The `staker` is undelegated from their operator
 * If the `staker` has no deposit shares, there is no withdrawal queued or further effects
 * For each strategy held by the `staker`, a `Withdrawal` is queued:
+    * _Deposit shares_ are removed from the staker's deposit share balances
+        * See [`EigenPodManager.removeDepositShares`](./EigenPodManager.md#removedepositshares)
+        * See [`StrategyManager.removeDepositShares`](./StrategyManager.md#removedepositshares)
     * _Deposit shares_ are converted to _withdrawable shares_ (See [Slashing Factors and Scaling Deposits](#slashing-factors-and-scaling-shares)). These are decremented from the operator's delegated shares.
     * _Deposit shares_ are converted to _scaled shares_  (See [Applying Slashing to Withdrawals](#applying-slashing-to-withdrawals)), which are stored in the `Withdrawal` struct
     * _Scaled shares_ are pushed to `_cumulativeScaledSharesHistory`, which is used for burning slashed shares
@@ -369,8 +398,6 @@ Just as with a normal queued withdrawal, these withdrawals can be completed by t
         * The hash of the `Withdrawal` is set in a mapping to the `Withdrawal` struct itself
         * The hash of the `Withdrawal` is pushed to `_stakerQueuedWithdrawalRoots`
     * The staker's withdrawal nonce is increased by 1 for each `Withdrawal`
-* See [`EigenPodManager.removeDepositShares`](./EigenPodManager.md#removedepositshares)
-* See [`StrategyManager.removeDepositShares`](./StrategyManager.md#removedepositshares)
 
 *Requirements*:
 * Pause status MUST NOT be set: `PAUSED_ENTER_WITHDRAWAL_QUEUE`
@@ -415,6 +442,32 @@ Just as with a normal queued withdrawal, these withdrawals can be completed by t
 #### `queueWithdrawals`
 
 ```solidity
+/**
+ * @param strategies The strategies to withdraw from
+ * @param depositShares For each strategy, the number of deposit shares to withdraw. Deposit shares can 
+ * be queried via `getDepositedShares`. 
+ * NOTE: The number of shares ultimately received when a withdrawal is completed may be lower depositShares
+ * if the staker or their delegated operator has experienced slashing.
+ * @param withdrawer The address that will ultimately complete the withdrawal and receive the shares/tokens.
+ * NOTE: This MUST be msg.sender; alternate withdrawers are not supported at this time.
+ */
+struct QueuedWithdrawalParams {
+    IStrategy[] strategies;
+    uint256[] depositShares;
+    address withdrawer;
+}
+
+/**
+ * @notice Allows a staker to queue a withdrawal of their deposit shares. The withdrawal can be 
+ * completed after the MIN_WITHDRAWAL_DELAY_BLOCKS via either of the completeQueuedWithdrawal methods.
+ * 
+ * While in the queue, these shares are removed from the staker's balance, as well as from their operator's
+ * delegated share balance (if applicable). Note that while in the queue, deposit shares are still subject
+ * to slashing. If any slashing has occurred, the shares received may be less than the queued deposit shares.
+ *
+ * @dev To view all the staker's strategies/deposit shares that can be queued for withdrawal, see `getDepositedShares`
+ * @dev To view the current coversion between a staker's deposit shares and withdrawable shares, see `getWithdrawableShares`
+ */
 function queueWithdrawals(
     QueuedWithdrawalParams[] calldata queuedWithdrawalParams
 ) 
@@ -423,37 +476,39 @@ function queueWithdrawals(
     returns (bytes32[] memory)
 ```
 
-Allows the caller to queue one or more withdrawals of their held shares across any strategy (in either/both the `EigenPodManager` or `StrategyManager`). If the caller is delegated to an operator, the `depositShares and `strategies` being withdrawn are calculated to their respective withdrawable shares, which is then immediately removed from that operator's delegated share balances. Note that if the caller is an operator, this still applies, as operators are essentially delegated to themselves.
+Allows the caller to queue their deposit shares for withdrawal across any strategy. Withdrawals can be completed after `MIN_WITHDRAWAL_DELAY_BLOCKS`, by calling [`completeQueuedWithdrawal`](#completequeuedwithdrawal). This method accepts _deposit shares_ as input - however, the amounts received upon completion may be lower if the staker has experienced slashing (See [Shares Accounting - Terminology](./accounting/SharesAccounting.md#terminology) and [Slashing Factors and Scaling Shares](#slashing-factors-and-scaling-shares)).
 
-`queueWithdrawals` works very similarly to `undelegate`, except that the caller is not undelegated, and also may choose which strategies and how many deposit shares to withdraw (as opposed to ALL depositShares/strategies).
-
-All deposit shares being withdrawn (whether via the `EigenPodManager` or `StrategyManager`) are removed while the withdrawals are in the queue.
-
-Withdrawals can be completed by the caller after `minWithdrawalDelayBlocks()`. Withdrawals do not require the caller to "fully exit" from the system -- they may choose to receive their withdrawable shares back in full once the withdrawal is completed (see [`completeQueuedWithdrawal`](#completequeuedwithdrawal) for details). 
+For each `QueuedWithdrawalParams` passed as input, a `Withdrawal` is created in storage (See [Legacy and Post-Slashing Withdrawals](#legacy-and-post-slashing-withdrawals) for details on structure and querying). Queueing a withdrawal involves multiple transformations to a staker's _deposit shares_, serving a few different purposes:
+* The raw _deposit shares_ are removed from the staker's deposit share balance in the corresponding share manager (`EigenPodManager` or `StrategyManager`).
+* _Scaled shares_ are calculated by applying the staker's _deposit scaling factor_ to their _deposit shares_. Scaled shares:
+    * are stored in the `Withdrawal` itself and used during withdrawal completion
+    * are added to the operator's `cumulativeScaledSharesHistory`, where they can be burned if slashing occurs while the withdrawal is in the queue
+* _Withdrawable shares_ are calculated by applying both the staker's _deposit scaling factor_ AND any appropriate _slashing factor_ to the staker's _deposit shares_. These "currently withdrawable shares" are removed from the operator's delegated shares (if applicable).
 
 Note that the `QueuedWithdrawalParams` struct has a `withdrawer` field. Originally, this was used to specify an address that the withdrawal would be credited to once completed. However, `queueWithdrawals` now requires that `withdrawer == msg.sender`. Any other input is rejected.
 
 *Effects*:
-* For each withdrawal:
-    * If the caller is delegated to an operator, deposit shares for the staker are converted to withdrawable shares which then is decremented from the operator's delegated shares.
-    * The staker's withdrawal nonce is increased by 1 for each `Withdrawal`
-    * If the Strategy is not beaconChainETHStrategy, `_cumulativeScaledSharesHistory` is updated for the corresponding (operator, Strategy).
+* For each `QueuedWithdrawalParams` element:
+    * _Deposit shares_ are removed from the staker's deposit share balances
+        * See [`EigenPodManager.removeDepositShares`](./EigenPodManager.md#removedepositshares)
+        * See [`StrategyManager.removeDepositShares`](./StrategyManager.md#removedepositshares)
+    * _Deposit shares_ are converted to _withdrawable shares_ (See [Slashing Factors and Scaling Deposits](#slashing-factors-and-scaling-shares)). These are decremented from their operator's delegated shares (if applicable)
+    * _Deposit shares_ are converted to _scaled shares_  (See [Applying Slashing to Withdrawals](#applying-slashing-to-withdrawals)), which are stored in the `Withdrawal` struct
+    * If the caller is delegated to an operator, _scaled shares_ are pushed to that operator's `_cumulativeScaledSharesHistory`, which may be burned if slashing occurs.
     * The `Withdrawal` is saved to storage
         * The hash of the `Withdrawal` is marked as "pending"
         * The hash of the `Withdrawal` is set in a mapping to the `Withdrawal` struct itself
         * The hash of the `Withdrawal` is pushed to `_stakerQueuedWithdrawalRoots`
-    * See [`EigenPodManager.removeShares`](./EigenPodManager.md#eigenpodmanagerremoveshares)
-    * See [`StrategyManager.removeShares`](./StrategyManager.md#removeshares)
+    * The staker's withdrawal nonce is increased by 1
 
 *Requirements*:
 * Pause status MUST NOT be set: `PAUSED_ENTER_WITHDRAWAL_QUEUE`
-* For each withdrawal:
+* For each `QueuedWithdrawalParams` element:
     * `strategies.length` MUST equal `depositShares.length`
     * The `withdrawer` MUST equal `msg.sender`
     * `strategies.length` MUST NOT be equal to 0
-    * `depositSharesToWithdraw` MUST be less than or equal to existing depositShares in `StrategyManager` or `EigenPodManager`
-    * See [`EigenPodManager.removeShares`](./EigenPodManager.md#eigenpodmanagerremoveshares)
-    * See [`StrategyManager.removeShares`](./StrategyManager.md#removeshares)
+    * See [`EigenPodManager.removeDepositShares`](./EigenPodManager.md#removedepositshares)
+    * See [`StrategyManager.removeDepositShares`](./StrategyManager.md#removedepositshares)
 
 #### `completeQueuedWithdrawal`
 
