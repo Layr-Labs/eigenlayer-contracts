@@ -84,8 +84,8 @@ interface IAllocationManagerTypes {
     /**
      * @notice Contains registration details for an operator pertaining to an operator set
      * @param registered Whether the operator is currently registered for the operator set
-     * @param slashableUntil If the operator is not registered, how long until the operator is no longer
-     * slashable by the AVS.
+     * @param slashableUntil If the operator is not registered, they are still slashable until
+     * this block is reached.
      */
     struct RegistrationStatus {
         bool registered;
@@ -228,7 +228,6 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
      * @param operator the operator to modify allocations for
      * @param params array of magnitude adjustments for one or more operator sets
      * @dev Updates encumberedMagnitude for the updated strategies
-     * @dev msg.sender is used as operator
      */
     function modifyAllocations(address operator, AllocateParams[] calldata params) external;
 
@@ -252,8 +251,9 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
     /**
      * @notice Allows an operator to register for one or more operator sets for an AVS. If the operator
      * has any stake allocated to these operator sets, it immediately becomes slashable.
-     * @dev After registering within the ALM, this method calls `avs.registerOperator` to complete
-     * registration. This call MUST succeed in order for registration to be successful.
+     * @dev After registering within the ALM, this method calls the AVS Registrar's `IAVSRegistrar.
+     * registerOperator` method to complete registration. This call MUST succeed in order for
+     * registration to be successful.
      */
     function registerForOperatorSets(address operator, RegisterParams calldata params) external;
 
@@ -261,8 +261,9 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
      * @notice Allows an operator or AVS to deregister the operator from one or more of the AVS's operator sets.
      * If the operator has any slashable stake allocated to the AVS, it remains slashable until the
      * DEALLOCATION_DELAY has passed.
-     * @dev After deregistering within the ALM, this method calls `avs.deregisterOperator` to complete
-     * deregistration. If this call reverts, it is ignored.
+     * @dev After deregistering within the ALM, this method calls the AVS Registrar's `IAVSRegistrar.
+     * deregisterOperator` method to complete deregistration. Unlike when registering, this call MAY FAIL.
+     * Failure is permitted to prevent AVSs from being able to maliciously prevent operators from deregistering.
      */
     function deregisterFromOperatorSets(
         DeregisterParams calldata params

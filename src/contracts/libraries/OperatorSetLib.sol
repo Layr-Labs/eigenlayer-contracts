@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
+/**
+ * @notice An operator set identified by the AVS address and an identifier
+ * @param avs The address of the AVS this operator set belongs to
+ * @param id The unique identifier for the operator set
+ */
 struct OperatorSet {
     address avs;
     uint32 id;
