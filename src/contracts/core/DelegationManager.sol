@@ -248,6 +248,9 @@ contract DelegationManager is
         uint256 prevDepositShares,
         uint256 addedShares
     ) external onlyStrategyManagerOrEigenPodManager {
+        /// Note: Unlike `decreaseDelegatedShares`, we don't return early if the staker has no operator.
+        /// This is because `_increaseDelegation` updates the staker's deposit scaling factor, which we
+        /// need to do even if not delegated.
         address operator = delegatedTo[staker];
         uint64 maxMagnitude = allocationManager.getMaxMagnitude(operator, strategy);
         uint256 slashingFactor = _getSlashingFactor(staker, strategy, maxMagnitude);
@@ -300,30 +303,30 @@ contract DelegationManager is
         uint64 newMaxMagnitude
     ) external onlyAllocationManager {
         /// forgefmt: disable-next-item
-        uint256 sharesToDecrement = SlashingLib.calcSlashedAmount({
+        uint256 operatorSharesSlashed = SlashingLib.calcSlashedAmount({
             operatorShares: operatorShares[operator][strategy],
             prevMaxMagnitude: prevMaxMagnitude,
             newMaxMagnitude: newMaxMagnitude
         });
 
-        // While `sharesToDecrement` describes the amount we should directly remove from the operator's delegated
-        // shares, `sharesToBurn` also includes any shares that have been queued for withdrawal and are still
+        // While `operatorSharesSlashed` describes the amount we should directly remove from the operator's delegated
+        // shares, `operatorSharesToBurn` also includes any shares that have been queued for withdrawal and are still
         // slashable given the withdrawal delay.
-        uint256 sharesToBurn =
-            sharesToDecrement + _getSlashedSharesInQueue(operator, strategy, prevMaxMagnitude, newMaxMagnitude);
+        uint256 operatorSharesToBurn =
+            operatorSharesSlashed + _getSlashedSharesInQueue(operator, strategy, prevMaxMagnitude, newMaxMagnitude);
 
         // Remove shares from operator
         _decreaseDelegation({
             operator: operator,
             staker: address(0), // we treat this as a decrease for the zero address staker
             strategy: strategy,
-            sharesToDecrease: sharesToDecrement
+            sharesToDecrease: operatorSharesSlashed
         });
 
         // NOTE: native ETH shares will be burned by a different mechanism in a future release
         if (strategy != beaconChainETHStrategy) {
-            strategyManager.burnShares(strategy, sharesToBurn);
-            emit OperatorSharesBurned(operator, strategy, sharesToBurn);
+            strategyManager.burnShares(strategy, operatorSharesToBurn);
+            emit OperatorSharesBurned(operator, strategy, operatorSharesToBurn);
         }
     }
 
