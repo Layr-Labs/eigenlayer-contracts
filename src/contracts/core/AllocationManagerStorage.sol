@@ -43,7 +43,7 @@ abstract contract AllocationManagerStorage is IAllocationManager {
     /// Note: if set to 0, defaults to the AVS's address
     mapping(address avs => IAVSRegistrar) internal _avsRegistrar;
 
-    /// @dev Lists the operator sets an AVS has created
+    /// @dev Lists the operator set ids an AVS has created
     mapping(address avs => EnumerableSet.UintSet) internal _operatorSets;
 
     /// @dev Lists the strategies an AVS supports for an operator set
