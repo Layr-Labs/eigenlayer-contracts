@@ -1,10 +1,11 @@
 [middleware-repo]: https://github.com/Layr-Labs/eigenlayer-middleware/
+[elip-002]: https://github.com/eigenfoundation/ELIPs/blob/main/ELIPs/ELIP-002.md
 
-## EigenLayer Docs - v0.4.0 Release
+## EigenLayer Docs - v1.0.0 Release
 
-This repo contains the EigenLayer core contracts, which enable restaking of liquid staking tokens (LSTs) and beacon chain ETH to secure new services, called AVSs (actively validated services). For more info on AVSs, check out the EigenLayer middleware contracts [here][middleware-repo].
+This repo contains the EigenLayer core contracts, which enable restaking of liquid staking tokens (LSTs), beacon chain ETH, and permissionlessly deployed ERC20 Strategies to secure new services called AVSs (actively validated services). For more info on AVSs, check out the EigenLayer middleware contracts [here][middleware-repo].
 
-This document provides an overview of system components, contracts, and user roles. Further documentation on the major system contracts can be found in [/core](./core/).
+This document provides an overview of system components, contracts, and user roles and is up-to-date with the latest [ELIP-002][elip-002]. Further documentation on the major system contracts can be found in [/core](./core/).
 
 #### Contents
 
@@ -14,7 +15,7 @@ This document provides an overview of system components, contracts, and user rol
     * [`DelegationManager`](#delegationmanager)
     * [`RewardsCoordinator`](#rewardscoordinator)
     * [`AVSDirectory`](#avsdirectory)
-    * [`Slasher`](#slasher)
+    * [`AllocationManager`](#allocationmanager)
 * [Roles and Actors](#roles-and-actors)
 * [Common User Flows](#common-user-flows)
     * [Depositing Into EigenLayer](#depositing-into-eigenlayer)
@@ -53,7 +54,7 @@ See full documentation in:
 These contracts work together to enable restaking for ERC20 tokens supported by EigenLayer:
 * The `StrategyManager` acts as the entry and exit point for any supported tokens in EigenLayer. It handles deposits into LST-specific strategies, and manages accounting+interactions between users with restaked LSTs and the `DelegationManager`.
 * `StrategyFactory` allows anyone to deploy strategies to support deposits/withdrawals for new ERC20 tokens
-* `StrategyBaseTVLLimits` is deployed as multiple separate instances, one for each supported token. When a user deposits into a strategy through the `StrategyManager`, this contract receives the tokens and awards the user with a proportional quantity of shares in the strategy. When a user withdraws, the strategy contract sends the LSTs back to the user.
+* `StrategyBaseTVLLimits` is deployed as multiple separate instances, one for each supported token. When a user deposits into a strategy through the `StrategyManager`, this contract receives the tokens and awards the user with a proportional quantity of deposit shares in the strategy. When a user withdraws, the strategy contract sends the LSTs back to the user.
 
 See full documentation in [`/core/StrategyManager.md`](./core/StrategyManager.md).
 
@@ -63,7 +64,8 @@ See full documentation in [`/core/StrategyManager.md`](./core/StrategyManager.md
 | -------- | -------- | -------- |
 | [`DelegationManager.sol`](../src/contracts/core/DelegationManager.sol) | Singleton | Transparent proxy |
 
-The `DelegationManager` sits between the `EigenPodManager` and `StrategyManager` to manage delegation and undelegation of Stakers to Operators. Its primary features are to allow Operators to register as Operators (`registerAsOperator`), to keep track of shares being delegated to Operators across different strategies, and to manage withdrawals on behalf of the `EigenPodManager` and `StrategyManager`.
+The `DelegationManager` sits between the `EigenPodManager` and `StrategyManager` to manage delegation and undelegation of Stakers to Operators. Its primary features are to allow Operators to register as Operators (`registerAsOperator`), to keep track of delegated shares to Operators across different strategies, and to manage withdrawals on behalf of the `EigenPodManager` and `StrategyManager`.
+The `DelegationManager` is tightly coupled with the `AllocationManager` as withdrawable shares for a Staker is dependent on reading state from the `AllocationManager`. That is, a staker's withdrawable shares is decreased in the event their delegated Operator was slashed by an AVS (more specifically an operatorSet but more on this later).
 
 See full documentation in [`/core/DelegationManager.md`](./core/DelegationManager.md).
 
@@ -86,21 +88,33 @@ See full documentation in [`/core/RewardsCoordinator.md`](./core/RewardsCoordina
 | -------- | -------- | -------- |
 | [`AVSDirectory.sol`](../src/contracts/core/AVSDirectory.sol) | Singleton | Transparent proxy |
 
-The `AVSDirectory` handles interactions between AVSs and the EigenLayer core contracts. Once registered as an Operator in EigenLayer core (via the `DelegationManager`), Operators can register with one or more AVSs (via the AVS's contracts) to begin providing services to them offchain. As a part of registering with an AVS, the AVS will record this registration in the core contracts by calling into the `AVSDirectory`.
+##### Note: This contract is left unchanged for backwards compatability. Operator<>AVS Registrations are to be replaced entirely with the `AllocationManager` and this contract will be deprecated(no longer indexed) in a future release.
+
+The `AVSDirectory` handles interactions between AVSs and the EigenLayer core contracts. Once registered as an Operator in EigenLayer core (via the `DelegationManager`), Operators can register with one or more AVSs (via the AVS's contracts) to begin providing services to them offchain. As a part of registering with an AVS, the AVS will record this registration in the core contracts by calling into the `AVSDirectory`. 
 
 See full documentation in [`/core/AVSDirectory.md`](./core/AVSDirectory.md).
 
 For more information on AVS contracts, see the [middleware repo][middleware-repo].
 
-#### Slasher
+#### AllocationManager
 
 | File | Type | Proxy |
 | -------- | -------- | -------- |
-| [`Slasher.sol`](../src/contracts/core/Slasher.sol) | - | - |
+| [`AllocationManager.sol`](../src/contracts/core/AllocationManager.sol) | Singleton | Transparent proxy |
 
-<p align="center"><b>
-🚧 The Slasher contract is under active development and its interface expected to change. We recommend writing slashing logic without integrating with the Slasher at this point in time. Although the Slasher is deployed, it will remain completely paused/unusable during M2. No contracts interact with it, and its design is not finalized. 🚧
-</b><p>
+The `AllocationManager` is meant to replace the AVSDirectory with the introduction of OperatorSets as well as introduce the core functionality of Slashing. It handles several use cases:
+* AVSs can create OperatorSets and can define the EigenLayer Strategies within them
+* Operators can register/deregister with AVS operatorSets
+* Operators can make slashable security commitments to an operatorSet by allocating a proportion of their total delegated stake for a Strategy to be slashable. Ex. As an operator, I can allocate 50% of my stETH to be slashable by a specific OperatorSet
+* AVSs can slash an operator (without being objectively attributable) who has slashable allocations to the AVS's corresponding OperatorSet.
+
+See full documentation in [`/core/AllocationManager.md`](./core/AllocationManager.md).
+
+---
+
+#### Shares Accounting
+
+TODO
 
 ---
 
