@@ -51,12 +51,6 @@ interface IAVSDirectoryEvents is IAVSDirectoryTypes {
     /// @notice Emitted when an AVS updates their metadata URI (Uniform Resource Identifier).
     /// @dev The URI is never stored; it is simply emitted through an event for off-chain indexing.
     event AVSMetadataURIUpdated(address indexed avs, string metadataURI);
-
-    /// @notice Emitted when an AVS migrates to using operator sets.
-    event AVSMigratedToOperatorSets(address indexed avs);
-
-    /// @notice Emitted when an operator is migrated from M2 registration to operator sets.
-    event OperatorMigratedToOperatorSets(address indexed operator, address indexed avs, uint32[] operatorSetIds);
 }
 
 interface IAVSDirectory is IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureUtils {
