@@ -444,17 +444,17 @@ Just as with a normal queued withdrawal, these withdrawals can be completed by t
 ```solidity
 /**
  * @param strategies The strategies to withdraw from
- * @param depositShares For each strategy, the number of deposit shares to withdraw. Deposit shares can 
- * be queried via `getDepositedShares`. 
+ * @param depositShares For each strategy, the number of deposit shares to withdraw. Deposit shares can
+ * be queried via `getDepositedShares`.
  * NOTE: The number of shares ultimately received when a withdrawal is completed may be lower depositShares
  * if the staker or their delegated operator has experienced slashing.
- * @param withdrawer The address that will ultimately complete the withdrawal and receive the shares/tokens.
- * NOTE: This MUST be msg.sender; alternate withdrawers are not supported at this time.
+ * @param __deprecated_withdrawer This field is ignored. The only party that may complete a withdrawal
+ * is the staker that originally queued it. Alternate withdrawers are not supported.
  */
 struct QueuedWithdrawalParams {
     IStrategy[] strategies;
     uint256[] depositShares;
-    address withdrawer;
+    address __deprecated_withdrawer;
 }
 
 /**
@@ -485,7 +485,7 @@ For each `QueuedWithdrawalParams` passed as input, a `Withdrawal` is created in 
     * are added to the operator's `cumulativeScaledSharesHistory`, where they can be burned if slashing occurs while the withdrawal is in the queue
 * _Withdrawable shares_ are calculated by applying both the staker's _deposit scaling factor_ AND any appropriate _slashing factor_ to the staker's _deposit shares_. These "currently withdrawable shares" are removed from the operator's delegated shares (if applicable).
 
-Note that the `QueuedWithdrawalParams` struct has a `withdrawer` field. Originally, this was used to specify an address that the withdrawal would be credited to once completed. However, `queueWithdrawals` now requires that `withdrawer == msg.sender`. Any other input is rejected.
+Note that the `QueuedWithdrawalParams.__deprecated_withdrawer` field is ignored. Originally, this was used to create withdrawals that could be completed by a third party. This functionality was removed during the M2 release due to growing concerns over the phish risk this presented. Until the slashing release, this field was explicitly checked for equivalence with `msg.sender`; however, at present it is ignored. All `Withdrawals` are created with `withdrawer == staker` regardless of this field's value.
 
 *Effects*:
 * For each `QueuedWithdrawalParams` element:
