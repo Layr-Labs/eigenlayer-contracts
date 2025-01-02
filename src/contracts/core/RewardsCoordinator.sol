@@ -29,6 +29,7 @@ contract RewardsCoordinator is
     PermissionControllerMixin
 {
     using SafeERC20 for IERC20;
+    using OperatorSetLib for OperatorSet;
 
     modifier onlyRewardsUpdater() {
         require(msg.sender == rewardsUpdater, UnauthorizedCaller());
@@ -178,6 +179,34 @@ contract RewardsCoordinator is
     }
 
     /// @inheritdoc IRewardsCoordinator
+    function createOperatorDirectedOperatorSetRewardsSubmission(
+        OperatorSet calldata operatorSet,
+        OperatorDirectedRewardsSubmission[] calldata rewardsSubmissions
+    )
+        external
+        onlyWhenNotPaused(PAUSED_OPERATOR_DIRECTED_OPERATOR_SET_REWARDS_SUBMISSION)
+        checkCanCall(operatorSet.avs)
+        nonReentrant
+    {
+        require(allocationManager.isOperatorSet(operatorSet), InvalidOperatorSet());
+        for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
+            OperatorDirectedRewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
+            uint256 nonce = submissionNonce[operatorSet.avs];
+            bytes32 rewardsSubmissionHash = keccak256(abi.encode(operatorSet.avs, nonce, rewardsSubmission));
+
+            uint256 totalAmount = _validateOperatorDirectedRewardsSubmission(rewardsSubmission);
+
+            isOperatorSetPerformanceRewardsSubmissionHash[operatorSet.avs][rewardsSubmissionHash] = true;
+            submissionNonce[operatorSet.avs] = nonce + 1;
+
+            emit OperatorDirectedOperatorSetRewardsSubmissionCreated(
+                msg.sender, operatorSet, rewardsSubmissionHash, nonce, rewardsSubmission
+            );
+            rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), totalAmount);
+        }
+    }
+
+    /// @inheritdoc IRewardsCoordinator
     function processClaim(
         RewardsMerkleClaim calldata claim,
         address recipient
@@ -268,8 +297,8 @@ contract RewardsCoordinator is
         uint16 split
     ) external onlyWhenNotPaused(PAUSED_OPERATOR_AVS_SPLIT) checkCanCall(operator) {
         uint32 activatedAt = uint32(block.timestamp) + activationDelay;
-        uint16 oldSplit = _getOperatorSplit(operatorAVSSplitBips[operator][avs]);
-        _setOperatorSplit(operatorAVSSplitBips[operator][avs], split, activatedAt);
+        uint16 oldSplit = _getOperatorSplit(_operatorAVSSplitBips[operator][avs]);
+        _setOperatorSplit(_operatorAVSSplitBips[operator][avs], split, activatedAt);
 
         emit OperatorAVSSplitBipsSet(msg.sender, operator, avs, activatedAt, oldSplit, split);
     }
@@ -280,10 +309,25 @@ contract RewardsCoordinator is
         uint16 split
     ) external onlyWhenNotPaused(PAUSED_OPERATOR_PI_SPLIT) checkCanCall(operator) {
         uint32 activatedAt = uint32(block.timestamp) + activationDelay;
-        uint16 oldSplit = _getOperatorSplit(operatorPISplitBips[operator]);
-        _setOperatorSplit(operatorPISplitBips[operator], split, activatedAt);
+        uint16 oldSplit = _getOperatorSplit(_operatorPISplitBips[operator]);
+        _setOperatorSplit(_operatorPISplitBips[operator], split, activatedAt);
 
         emit OperatorPISplitBipsSet(msg.sender, operator, activatedAt, oldSplit, split);
+    }
+
+    /// @inheritdoc IRewardsCoordinator
+    function setOperatorSetSplit(
+        address operator,
+        OperatorSet calldata operatorSet,
+        uint16 split
+    ) external onlyWhenNotPaused(PAUSED_OPERATOR_SET_OPERATOR_SPLIT) checkCanCall(operator) {
+        require(allocationManager.isOperatorSet(operatorSet), InvalidOperatorSet());
+
+        uint32 activatedAt = uint32(block.timestamp) + activationDelay;
+        uint16 oldSplit = _getOperatorSplit(_operatorOperatorSetSplitBips[operator][operatorSet.key()]);
+        _setOperatorSplit(_operatorOperatorSetSplitBips[operator][operatorSet.key()], split, activatedAt);
+
+        emit OperatorOperatorSetSplitBipsSet(msg.sender, operator, operatorSet, activatedAt, oldSplit, split);
     }
 
     /// @inheritdoc IRewardsCoordinator
@@ -602,14 +646,19 @@ contract RewardsCoordinator is
 
     /// @inheritdoc IRewardsCoordinator
     function getOperatorAVSSplit(address operator, address avs) external view returns (uint16) {
-        return _getOperatorSplit(operatorAVSSplitBips[operator][avs]);
+        return _getOperatorSplit(_operatorAVSSplitBips[operator][avs]);
     }
 
     /// @inheritdoc IRewardsCoordinator
     function getOperatorPISplit(
         address operator
     ) external view returns (uint16) {
-        return _getOperatorSplit(operatorPISplitBips[operator]);
+        return _getOperatorSplit(_operatorPISplitBips[operator]);
+    }
+
+    /// @inheritdoc IRewardsCoordinator
+    function getOperatorSetSplit(address operator, OperatorSet calldata operatorSet) external view returns (uint16) {
+        return _getOperatorSplit(_operatorOperatorSetSplitBips[operator][operatorSet.key()]);
     }
 
     /// @inheritdoc IRewardsCoordinator
