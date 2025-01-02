@@ -427,7 +427,7 @@ contract RewardsCoordinatorUnitTests_setOperatorAVSSplit is RewardsCoordinatorUn
         split = uint16(bound(split, ONE_HUNDRED_IN_BIPS + 1, type(uint16).max));
 
         cheats.prank(operator);
-        cheats.expectRevert("RewardsCoordinator.setOperatorAVSSplit: split must be <= 10000 bips");
+        cheats.expectRevert("RewardsCoordinator._setOperatorSplit: split must be <= 10000 bips");
         rewardsCoordinator.setOperatorAVSSplit(operator, avs, split);
     }
 
@@ -566,7 +566,7 @@ contract RewardsCoordinatorUnitTests_setOperatorPISplit is RewardsCoordinatorUni
         split = uint16(bound(split, ONE_HUNDRED_IN_BIPS + 1, type(uint16).max));
 
         cheats.prank(operator);
-        cheats.expectRevert("RewardsCoordinator.setOperatorPISplit: split must be <= 10000 bips");
+        cheats.expectRevert("RewardsCoordinator._setOperatorSplit: split must be <= 10000 bips");
         rewardsCoordinator.setOperatorPISplit(operator, split);
     }
 
