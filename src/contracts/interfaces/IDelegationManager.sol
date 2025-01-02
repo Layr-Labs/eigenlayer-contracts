@@ -484,6 +484,12 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
         address staker
     ) external view returns (Withdrawal[] memory withdrawals, uint256[][] memory shares);
 
+    /// @notice Returns a list of queued withdrawal roots for the `staker`.
+    /// NOTE that this only returns withdrawals queued AFTER the slashing release.
+    function getQueuedWithdrawalRoots(
+        address staker
+    ) external view returns (bytes32[] memory);
+
     /**
      * @notice Converts shares for a set of strategies to deposit shares, likely in order to input into `queueWithdrawals`
      * @param staker the staker to convert shares for

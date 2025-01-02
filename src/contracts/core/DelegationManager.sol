@@ -913,7 +913,7 @@ contract DelegationManager is
     function getQueuedWithdrawals(
         address staker
     ) external view returns (Withdrawal[] memory withdrawals, uint256[][] memory shares) {
-        bytes32[] memory withdrawalRoots = _stakerQueuedWithdrawalRoots[staker].values();
+        bytes32[] memory withdrawalRoots = getQueuedWithdrawalRoots(staker);
 
         uint256 totalQueued = withdrawalRoots.length;
         withdrawals = new Withdrawal[](totalQueued);
@@ -951,6 +951,13 @@ contract DelegationManager is
                 });
             }
         }
+    }
+
+    /// @inheritdoc IDelegationManager
+    function getQueuedWithdrawalRoots(
+        address staker
+    ) public view returns (bytes32[] memory) {
+        return _stakerQueuedWithdrawalRoots[staker].values();
     }
 
     /// @inheritdoc IDelegationManager
