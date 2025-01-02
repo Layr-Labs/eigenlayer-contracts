@@ -57,11 +57,4 @@ contract DelegationManagerHarness is DelegationManager {
     ) external view returns (uint256) {
         return _getSlashedSharesInQueue(operator, strategy, prevMaxMagnitude, newMaxMagnitude);
     }
-
-    function getDepositScalingFactor(
-        address staker,
-        IStrategy strategy
-    ) external view returns (uint256) {
-        return _depositScalingFactor[staker][strategy]._scalingFactor;
-    }
 }
