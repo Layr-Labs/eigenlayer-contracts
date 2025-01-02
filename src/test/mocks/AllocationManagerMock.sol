@@ -2,17 +2,28 @@
 pragma solidity ^0.8.9;
 
 import "forge-std/Test.sol";
-import "../../contracts/interfaces/IStrategy.sol";
-import "../../contracts/libraries/Snapshots.sol";
+import "src/contracts/interfaces/IStrategy.sol";
+import "src/contracts/libraries/Snapshots.sol";
+import "src/contracts/libraries/OperatorSetLib.sol";
 
 contract AllocationManagerMock is Test {
     using Snapshots for Snapshots.DefaultWadHistory;
+    using OperatorSetLib for OperatorSet;
 
     receive() external payable {}
     fallback() external payable {}
 
+    mapping(bytes32 operatorSetKey => bool) public _isOperatorSet;
     mapping(address avs => uint256) public getOperatorSetCount;
     mapping(address => mapping(IStrategy => Snapshots.DefaultWadHistory)) internal _maxMagnitudeHistory;
+
+    function setIsOperatorSet(OperatorSet memory operatorSet, bool boolean) external {
+        _isOperatorSet[operatorSet.key()] = boolean;
+    }
+
+    function isOperatorSet(OperatorSet memory operatorSet) external view returns (bool) {
+        return _isOperatorSet[operatorSet.key()];
+    }
 
     function setMaxMagnitudes(
         address operator,
