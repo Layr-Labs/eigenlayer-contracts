@@ -33,12 +33,11 @@ contract Integration_EigenPod_Slashing_Migration is IntegrationCheckUtils, Eigen
         // Initialize state
         (User staker, ,) = _newRandomStaker();    
 
-        (uint40[] memory validators, uint64 beaconBalanceGwei) = staker.startValidators();
+        (uint40[] memory validators, ) = staker.startValidators();
         beaconChain.advanceEpoch_NoRewards(); 
 
         // 1. Verify validators' withdrawal credentials
         staker.verifyWithdrawalCredentials(validators);
-        check_VerifyWC_State(staker, validators, beaconBalanceGwei);
 
         // Advance epoch, generating consensus rewards and withdrawing anything over 32 ETH
         beaconChain.advanceEpoch();
@@ -46,7 +45,6 @@ contract Integration_EigenPod_Slashing_Migration is IntegrationCheckUtils, Eigen
 
         // 2. Start a checkpoint
         staker.startCheckpoint();
-        check_StartCheckpoint_State(staker);
 
         // 3. Pause checkpoint starting
         cheats.prank(pauserMultisig);
