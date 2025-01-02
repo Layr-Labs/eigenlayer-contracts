@@ -1469,7 +1469,6 @@ contract StrategyManagerUnitTests_burnShares is StrategyManagerUnitTests {
         cheats.assume(staker != address(0));
         cheats.assume(depositAmount > 0 && depositAmount < dummyToken.totalSupply() && depositAmount < sharesToBurn);
         IStrategy strategy = dummyStrat;
-        IERC20 token = dummyToken;
         _depositIntoStrategySuccessfully(strategy, staker, depositAmount);
 
         cheats.prank(address(delegationManagerMock));
