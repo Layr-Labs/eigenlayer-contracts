@@ -51,12 +51,8 @@ interface IDelegationManagerErrors {
 
     /// @dev Thrown when attempting to withdraw before delay has elapsed.
     error WithdrawalDelayNotElapsed();
-    /// @dev Thrown when a withdraw amount larger than max is attempted.
-    error WithdrawalExceedsMax();
     /// @dev Thrown when withdrawer is not the current caller.
     error WithdrawerNotCaller();
-    /// @dev Thrown when `withdrawer` is not staker.
-    error WithdrawerNotStaker();
 }
 
 interface IDelegationManagerTypes {
@@ -94,7 +90,7 @@ interface IDelegationManagerTypes {
     /**
      * @dev A struct representing an existing queued withdrawal. After the withdrawal delay has elapsed, this withdrawal can be completed via `completeQueuedWithdrawal`.
      * A `Withdrawal` is created by the `DelegationManager` when `queueWithdrawals` is called. The `withdrawalRoots` hashes returned by `queueWithdrawals` can be used
-     * to fetch the corresponding `Withdrawal` from storage (via `queuedWithdrawals`).
+     * to fetch the corresponding `Withdrawal` from storage (via `getQueuedWithdrawal`).
      *
      * @param staker The address that queued the withdrawal
      * @param delegatedTo The address that the staker was delegated to at the time the withdrawal was queued. Used to determine if additional slashing occurred before
@@ -123,13 +119,13 @@ interface IDelegationManagerTypes {
      * be queried via `getDepositedShares`.
      * NOTE: The number of shares ultimately received when a withdrawal is completed may be lower depositShares
      * if the staker or their delegated operator has experienced slashing.
-     * @param withdrawer The address that will ultimately complete the withdrawal and receive the shares/tokens.
-     * NOTE: This MUST be msg.sender; alternate withdrawers are not supported at this time.
+     * @param __deprecated_withdrawer This field is ignored. The only party that may complete a withdrawal
+     * is the staker that originally queued it. Alternate withdrawers are not supported.
      */
     struct QueuedWithdrawalParams {
         IStrategy[] strategies;
         uint256[] depositShares;
-        address withdrawer;
+        address __deprecated_withdrawer;
     }
 }
 
@@ -477,10 +473,22 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
      */
     function depositScalingFactor(address staker, IStrategy strategy) external view returns (uint256);
 
+    /// @notice Returns the Withdrawal associated with a `withdrawalRoot`, if it exists. NOTE that
+    /// withdrawals queued before the slashing release can NOT be queried with this method.
+    function getQueuedWithdrawal(
+        bytes32 withdrawalRoot
+    ) external view returns (Withdrawal memory);
+
     /// @notice Returns a list of pending queued withdrawals for a `staker`, and the `shares` to be withdrawn.
     function getQueuedWithdrawals(
         address staker
     ) external view returns (Withdrawal[] memory withdrawals, uint256[][] memory shares);
+
+    /// @notice Returns a list of queued withdrawal roots for the `staker`.
+    /// NOTE that this only returns withdrawals queued AFTER the slashing release.
+    function getQueuedWithdrawalRoots(
+        address staker
+    ) external view returns (bytes32[] memory);
 
     /**
      * @notice Converts shares for a set of strategies to deposit shares, likely in order to input into `queueWithdrawals`

@@ -48,7 +48,7 @@ contract WithdrawFromStrategy is Script, Test {
         queueWithdrawals[0] = IDelegationManagerTypes.QueuedWithdrawalParams({
             strategies: strategies,
             depositShares: shares,
-            withdrawer: msg.sender
+            __deprecated_withdrawer: address(0)
         });
 
         // Withdrawal roots will be returned when we queue

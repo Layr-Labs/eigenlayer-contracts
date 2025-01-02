@@ -201,7 +201,7 @@ contract Devnet_Lifecycle_Test is Test, IAllocationManagerTypes {
         queuedWithdrawals[0] = IDelegationManagerTypes.QueuedWithdrawalParams({
             strategies: strategies,
             depositShares: withdrawableShares,
-            withdrawer: staker
+            __deprecated_withdrawer: address(0)
         });
 
         // Generate withdrawal params
