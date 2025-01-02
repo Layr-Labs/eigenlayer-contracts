@@ -482,11 +482,8 @@ contract DelegationManager is
             // Calculate how many shares can be withdrawn after factoring in slashing
             sharesToWithdraw[i] = dsf.calcWithdrawable(depositSharesToWithdraw[i], slashingFactors[i]);
 
-            // Apply slashing. If the staker or operator has been fully slashed, this will return 0
-            scaledShares[i] = SlashingLib.scaleForQueueWithdrawal({
-                sharesToWithdraw: sharesToWithdraw[i],
-                slashingFactor: slashingFactors[i]
-            });
+            // Scale shares for queue withdrawal
+            scaledShares[i] = dsf.scaleForQueueWithdrawal(depositSharesToWithdraw[i]);
 
             // Remove delegated shares from the operator
             if (operator != address(0)) {
@@ -641,6 +638,7 @@ contract DelegationManager is
     ) internal {
         // Ensure that the operator has not been fully slashed for a strategy
         // and that the staker has not been fully slashed if it is the beaconChainStrategy
+        // This is to prevent a divWad by 0 when updating the depositScalingFactor
         require(slashingFactor != 0, FullySlashed());
 
         // Update the staker's depositScalingFactor. This only results in an update
@@ -834,7 +832,7 @@ contract DelegationManager is
     }
 
     /// @inheritdoc IDelegationManager
-    function depositScalingFactor(address staker, IStrategy strategy) public view returns (uint256) {
+    function depositScalingFactor(address staker, IStrategy strategy) external view returns (uint256) {
         return _depositScalingFactor[staker][strategy].scalingFactor();
     }
 

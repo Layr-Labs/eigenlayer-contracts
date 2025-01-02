@@ -31,7 +31,6 @@ struct DepositScalingFactor {
 
 using SlashingLib for DepositScalingFactor global;
 
-// TODO: validate order of operations everywhere
 library SlashingLib {
     using Math for uint256;
     using SlashingLib for uint256;
@@ -72,14 +71,10 @@ library SlashingLib {
     }
 
     function scaleForQueueWithdrawal(
-        uint256 sharesToWithdraw,
-        uint256 slashingFactor
+        DepositScalingFactor memory dsf,
+        uint256 depositSharesToWithdraw
     ) internal pure returns (uint256) {
-        if (slashingFactor == 0) {
-            return 0;
-        }
-
-        return sharesToWithdraw.divWad(slashingFactor);
+        return depositSharesToWithdraw.mulWad(dsf.scalingFactor());
     }
 
     function scaleForCompleteWithdrawal(uint256 scaledShares, uint256 slashingFactor) internal pure returns (uint256) {
