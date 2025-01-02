@@ -81,10 +81,7 @@ contract CompleteWithdrawFromStrategy is Script, Test {
 
         // Get scaled shares for the given amount
         uint256[] memory scaledShares = new uint256[](1);
-        scaledShares[0] = SlashingLib.scaleForQueueWithdrawal({
-            sharesToWithdraw: sharesToWithdraw,
-            slashingFactor: slashingFactor
-        });
+        scaledShares[0] = dsf.scaleForQueueWithdrawal(sharesToWithdraw);
 
         // Log the current state before completing
         emit log_uint(dsf.scalingFactor());
