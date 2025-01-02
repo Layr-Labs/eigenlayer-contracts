@@ -48,13 +48,4 @@ contract DelegationManagerHarness is DelegationManager {
     ) external view returns (uint256[] memory) {
         return _getSlashingFactorsAtBlock(staker, operator, strategies, blockNumber);
     }
-
-    function getSlashedSharesInQueue(
-        address operator,
-        IStrategy strategy,
-        uint64 prevMaxMagnitude,
-        uint64 newMaxMagnitude
-    ) external view returns (uint256) {
-        return _getSlashedSharesInQueue(operator, strategy, prevMaxMagnitude, newMaxMagnitude);
-    }
 }
