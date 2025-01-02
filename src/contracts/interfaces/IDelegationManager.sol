@@ -51,12 +51,8 @@ interface IDelegationManagerErrors {
 
     /// @dev Thrown when attempting to withdraw before delay has elapsed.
     error WithdrawalDelayNotElapsed();
-    /// @dev Thrown when a withdraw amount larger than max is attempted.
-    error WithdrawalExceedsMax();
     /// @dev Thrown when withdrawer is not the current caller.
     error WithdrawerNotCaller();
-    /// @dev Thrown when `withdrawer` is not staker.
-    error WithdrawerNotStaker();
 }
 
 interface IDelegationManagerTypes {
@@ -123,13 +119,13 @@ interface IDelegationManagerTypes {
      * be queried via `getDepositedShares`.
      * NOTE: The number of shares ultimately received when a withdrawal is completed may be lower depositShares
      * if the staker or their delegated operator has experienced slashing.
-     * @param withdrawer The address that will ultimately complete the withdrawal and receive the shares/tokens.
-     * NOTE: This MUST be msg.sender; alternate withdrawers are not supported at this time.
+     * @param __deprecated_withdrawer This field is ignored. The only party that may complete a withdrawal
+     * is the staker that originally queued it. Alternate withdrawers are not supported.
      */
     struct QueuedWithdrawalParams {
         IStrategy[] strategies;
         uint256[] depositShares;
-        address withdrawer;
+        address __deprecated_withdrawer;
     }
 }
 

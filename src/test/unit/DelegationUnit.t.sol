@@ -306,7 +306,6 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
 
     function _setUpQueueWithdrawalsSingleStrat(
         address staker,
-        address withdrawer,
         IStrategy strategy,
         uint256 depositSharesToWithdraw
     ) internal view returns (
@@ -321,7 +320,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
             queuedWithdrawalParams[0] = QueuedWithdrawalParams({
                 strategies: strategyArray,
                 depositShares: withdrawalAmounts,
-                withdrawer: withdrawer
+                __deprecated_withdrawer: address(0)
             });
         }
 
@@ -331,7 +330,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         Withdrawal memory withdrawal = Withdrawal({
             staker: staker,
             delegatedTo: delegationManager.delegatedTo(staker),
-            withdrawer: withdrawer,
+            withdrawer: staker,
             nonce: delegationManager.cumulativeWithdrawalsQueued(staker),
             startBlock: uint32(block.number),
             strategies: strategyArray,
@@ -344,7 +343,6 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
 
     function _setUpQueueWithdrawals(
         address staker,
-        address withdrawer,
         IStrategy[] memory strategies,
         uint256[] memory depositWithdrawalAmounts
     ) internal view returns (
@@ -357,7 +355,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
             queuedWithdrawalParams[0] = QueuedWithdrawalParams({
                 strategies: strategies,
                 depositShares: depositWithdrawalAmounts,
-                withdrawer: withdrawer
+                __deprecated_withdrawer: address(0)
             });
         }
 
@@ -370,7 +368,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         Withdrawal memory withdrawal = Withdrawal({
             staker: staker,
             delegatedTo: delegationManager.delegatedTo(staker),
-            withdrawer: withdrawer,
+            withdrawer: staker,
             nonce: delegationManager.cumulativeWithdrawalsQueued(staker),
             startBlock: uint32(block.number),
             strategies: strategies,
@@ -446,7 +444,6 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
      */
     function _setUpCompleteQueuedWithdrawalSingleStrat(
         address staker,
-        address withdrawer,
         uint256 depositAmount,
         uint256 withdrawalAmount,
         bool isBeaconChainStrategy
@@ -460,7 +457,6 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
             bytes32 withdrawalRoot
         ) = _setUpQueueWithdrawalsSingleStrat({
             staker: staker,
-            withdrawer: withdrawer,
             strategy: strategies[0],
             depositSharesToWithdraw: withdrawalAmount
         });
@@ -488,7 +484,6 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
      */
     function _setUpCompleteQueuedWithdrawalsSingleStrat(
         address staker,
-        address withdrawer,
         uint256 depositAmount,
         uint256 numWithdrawals
     ) internal returns (
@@ -511,7 +506,6 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
                 bytes32 withdrawalRoot
             ) = _setUpQueueWithdrawalsSingleStrat({
                 staker: staker,
-                withdrawer: withdrawer,
                 strategy: strategies[0],
                 depositSharesToWithdraw: depositAmount
             });
@@ -544,7 +538,6 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
      */
     function _setUpCompleteQueuedWithdrawal(
         address staker,
-        address withdrawer,
         uint256[] memory depositAmounts,
         uint256[] memory withdrawalAmounts,
         bool depositBeaconChainShares
@@ -562,7 +555,6 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
             bytes32 withdrawalRoot
         ) = _setUpQueueWithdrawals({
             staker: staker,
-            withdrawer: withdrawer,
             strategies: strategies,
             depositWithdrawalAmounts: withdrawalAmounts
         });
@@ -4055,7 +4047,6 @@ contract DelegationManagerUnitTests_undelegate is DelegationManagerUnitTests {
             bytes32 withdrawalRoot
         ) = _setUpQueueWithdrawalsSingleStrat({
             staker: defaultStaker,
-            withdrawer: defaultStaker,
             strategy: strategy,
             depositSharesToWithdraw: shares
         });
@@ -4133,7 +4124,6 @@ contract DelegationManagerUnitTests_undelegate is DelegationManagerUnitTests {
             bytes32 withdrawalRoot
         ) = _setUpQueueWithdrawalsSingleStrat({
             staker: defaultStaker,
-            withdrawer: defaultStaker,
             strategy: strategy,
             depositSharesToWithdraw: shares
         });
@@ -4274,7 +4264,6 @@ contract DelegationManagerUnitTests_undelegate is DelegationManagerUnitTests {
                 bytes32 withdrawalRoot
             ) = _setUpQueueWithdrawalsSingleStrat({
                 staker: defaultStaker,
-                withdrawer: defaultStaker,
                 strategy: strategy,
                 depositSharesToWithdraw: shares
             });
@@ -4367,7 +4356,6 @@ contract DelegationManagerUnitTests_undelegate is DelegationManagerUnitTests {
             bytes32 withdrawalRoot
         ) = _setUpQueueWithdrawalsSingleStrat({
             staker: defaultStaker,
-            withdrawer: defaultStaker,
             strategy: strategy,
             depositSharesToWithdraw: shares
         });
@@ -4512,7 +4500,6 @@ contract DelegationManagerUnitTests_undelegate is DelegationManagerUnitTests {
                 bytes32 withdrawalRoot
             ) = _setUpQueueWithdrawalsSingleStrat({
                 staker: stakers[i],
-                withdrawer: stakers[i],
                 strategy: strategyMock,
                 depositSharesToWithdraw: stakerDepositShares[stakers[i]]
             });
@@ -4595,7 +4582,6 @@ contract DelegationManagerUnitTests_undelegate is DelegationManagerUnitTests {
             bytes32 withdrawalRoot
         ) = _setUpQueueWithdrawalsSingleStrat({
             staker: defaultStaker,
-            withdrawer: defaultStaker,
             strategy: strategyMock,
             depositSharesToWithdraw: shares
         });
@@ -4840,7 +4826,6 @@ contract DelegationManagerUnitTests_redelegate is DelegationManagerUnitTests {
             bytes32 withdrawalRoot
         ) = _setUpQueueWithdrawalsSingleStrat({
             staker: defaultStaker,
-            withdrawer: defaultStaker,
             strategy: strategy,
             depositSharesToWithdraw: shares
         });
@@ -4934,7 +4919,6 @@ contract DelegationManagerUnitTests_redelegate is DelegationManagerUnitTests {
             Withdrawal memory strategyWithdrawal,
         ) = _setUpQueueWithdrawalsSingleStrat({
             staker: staker,
-            withdrawer: staker,
             strategy: strategyMock,
             depositSharesToWithdraw: strategyShares
         });
@@ -4943,7 +4927,6 @@ contract DelegationManagerUnitTests_redelegate is DelegationManagerUnitTests {
             Withdrawal memory beaconWithdrawal,
         ) = _setUpQueueWithdrawalsSingleStrat({
             staker: staker,
-            withdrawer: staker,
             strategy: IStrategy(address(beaconChainETHStrategy)),
             depositSharesToWithdraw: uint256(beaconShares)
         });
@@ -5007,7 +4990,6 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
         delegationManager.pause(2 ** PAUSED_ENTER_WITHDRAWAL_QUEUE);
         (QueuedWithdrawalParams[] memory queuedWithdrawalParams, , ) = _setUpQueueWithdrawalsSingleStrat({
             staker: defaultStaker,
-            withdrawer: defaultStaker,
             strategy: strategyMock,
             depositSharesToWithdraw: 100
         });
@@ -5025,37 +5007,41 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
         queuedWithdrawalParams[0] = QueuedWithdrawalParams({
             strategies: strategyArray,
             depositShares: shareAmounts,
-            withdrawer: defaultStaker
+            __deprecated_withdrawer: address(0)
         });
 
         cheats.expectRevert(InputArrayLengthMismatch.selector);
         delegationManager.queueWithdrawals(queuedWithdrawalParams);
     }
 
-    function testFuzz_Revert_WhenNotStakerWithdrawer(address withdrawer) public {
-        cheats.assume(withdrawer != defaultStaker);
-
+    function testFuzz_IgnoresWithdrawerField(address withdrawer) public {
+        _depositIntoStrategies(defaultStaker, strategyMock.toArray(), uint(100).toArrayU256());
         (QueuedWithdrawalParams[] memory queuedWithdrawalParams, , ) = _setUpQueueWithdrawalsSingleStrat({
             staker: defaultStaker,
-            withdrawer: withdrawer,
             strategy: strategyMock,
             depositSharesToWithdraw: 100
         });
-        cheats.expectRevert(WithdrawerNotStaker.selector);
+
+        // set the ignored field to a different address. the dm should ignore this.
+        queuedWithdrawalParams[0].__deprecated_withdrawer = withdrawer;
+
         cheats.prank(defaultStaker);
-        delegationManager.queueWithdrawals(queuedWithdrawalParams);
+        bytes32 withdrawalRoot = delegationManager.queueWithdrawals(queuedWithdrawalParams)[0];
+
+        Withdrawal memory withdrawal = delegationManager.getQueuedWithdrawal(withdrawalRoot);
+        assertEq(withdrawal.staker, defaultStaker, "staker should be msg.sender");
+        assertEq(withdrawal.withdrawer, defaultStaker, "withdrawer should be msg.sender");
     }
 
     function test_Revert_WhenEmptyStrategiesArray() public {
         IStrategy[] memory strategyArray = new IStrategy[](0);
         uint256[] memory shareAmounts = new uint256[](0);
-        address withdrawer = defaultOperator;
 
         QueuedWithdrawalParams[] memory queuedWithdrawalParams = new QueuedWithdrawalParams[](1);
         queuedWithdrawalParams[0] = QueuedWithdrawalParams({
             strategies: strategyArray,
             depositShares: shareAmounts,
-            withdrawer: withdrawer
+            __deprecated_withdrawer: address(0)
         });
 
         cheats.expectRevert(InputArrayLengthZero.selector);
@@ -5094,7 +5080,6 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
             bytes32 withdrawalRoot
         ) = _setUpQueueWithdrawalsSingleStrat({
             staker: defaultStaker,
-            withdrawer: defaultStaker,
             strategy: strategies[0],
             depositSharesToWithdraw: withdrawalAmount
         });
@@ -5167,7 +5152,6 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
             bytes32 withdrawalRoot
         ) = _setUpQueueWithdrawalsSingleStrat({
             staker: defaultStaker,
-            withdrawer: defaultStaker,
             strategy: strategyMock,
             depositSharesToWithdraw: withdrawalAmount
         });
@@ -5259,7 +5243,6 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
                 bytes32 withdrawalRoot
             ) = _setUpQueueWithdrawalsSingleStrat({
                 staker: defaultStaker,
-                withdrawer: defaultStaker,
                 strategy: strategyMock,
                 depositSharesToWithdraw: withdrawalAmount
             });
@@ -5330,7 +5313,6 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
             bytes32 withdrawalRoot
         ) = _setUpQueueWithdrawalsSingleStrat({
             staker: defaultStaker,
-            withdrawer: defaultStaker,
             strategy: strategyMock,
             depositSharesToWithdraw: 0 // expected 0 since slashed 100%
         });
@@ -5425,7 +5407,6 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
             bytes32 withdrawalRoot
         ) = _setUpQueueWithdrawals({
             staker: defaultStaker,
-            withdrawer: defaultStaker,
             strategies: strategies,
             depositWithdrawalAmounts: withdrawalAmounts
         });
@@ -5527,7 +5508,6 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
                 bytes32 withdrawalRoot
             ) = _setUpQueueWithdrawals({
                 staker: defaultStaker,
-                withdrawer: defaultStaker,
                 strategies: strategies,
                 depositWithdrawalAmounts: withdrawalAmounts
             });
@@ -5645,7 +5625,6 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
                 bytes32 withdrawalRoot
             ) = _setUpQueueWithdrawals({
                 staker: defaultStaker,
-                withdrawer: defaultStaker,
                 strategies: strategies,
                 depositWithdrawalAmounts: withdrawalAmounts
             });
@@ -5775,7 +5754,6 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
                 bytes32 withdrawalRoot
             ) = _setUpQueueWithdrawals({
                 staker: defaultStaker,
-                withdrawer: defaultStaker,
                 strategies: strategies,
                 depositWithdrawalAmounts: withdrawalAmounts
             });
@@ -5842,7 +5820,6 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
             /* bytes32 withdrawalRoot */
         ) = _setUpCompleteQueuedWithdrawalSingleStrat({
             staker: defaultStaker,
-            withdrawer: defaultStaker,
             depositAmount: 100,
             withdrawalAmount: 100,
             isBeaconChainStrategy: false
@@ -5875,7 +5852,6 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
             /* bytes32 withdrawalRoot */
         ) = _setUpCompleteQueuedWithdrawalSingleStrat({
             staker: defaultStaker,
-            withdrawer: defaultStaker,
             depositAmount: 100,
             withdrawalAmount: 100,
             isBeaconChainStrategy: false
@@ -5906,7 +5882,6 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
             IERC20[] memory tokens,
         ) = _setUpCompleteQueuedWithdrawalSingleStrat({
             staker: defaultStaker,
-            withdrawer: defaultStaker,
             depositAmount: 100,
             withdrawalAmount: 100,
             isBeaconChainStrategy: false
@@ -5926,7 +5901,6 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
             bytes32 withdrawalRoot
         ) = _setUpCompleteQueuedWithdrawalSingleStrat({
             staker: defaultStaker,
-            withdrawer: defaultStaker,
             depositAmount: 100,
             withdrawalAmount: 100,
             isBeaconChainStrategy: false
@@ -5965,7 +5939,6 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
             /* bytes32 withdrawalRoot */
         ) = _setUpCompleteQueuedWithdrawal({
             staker: defaultStaker,
-            withdrawer: defaultStaker,
             depositAmounts: depositAmounts,
             withdrawalAmounts: withdrawalAmounts,
             depositBeaconChainShares: false
@@ -5997,7 +5970,6 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
             bytes32 withdrawalRoot
         ) = _setUpQueueWithdrawalsSingleStrat({
             staker: defaultStaker,
-            withdrawer: defaultStaker,
             strategy: strategyMock,
             depositSharesToWithdraw: withdrawalAmount
         });
@@ -6035,7 +6007,6 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
             bytes32[] memory withdrawalRoots
         ) = _setUpCompleteQueuedWithdrawalsSingleStrat({
             staker: staker,
-            withdrawer: staker,
             depositAmount: depositAmount,
             numWithdrawals: numWithdrawals
         });
@@ -6130,7 +6101,6 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
             bytes32 withdrawalRoot
         ) = _setUpCompleteQueuedWithdrawalSingleStrat({
             staker: defaultStaker,
-            withdrawer: defaultStaker,
             depositAmount: depositAmount,
             withdrawalAmount: withdrawalAmount,
             isBeaconChainStrategy: false
@@ -6199,7 +6169,6 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
             bytes32 withdrawalRoot
         ) = _setUpQueueWithdrawalsSingleStrat({
             staker: defaultStaker,
-            withdrawer: defaultStaker,
             strategy: strategyMock,
             depositSharesToWithdraw: withdrawalAmount
         });
@@ -6310,7 +6279,6 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
             bytes32 withdrawalRoot
         ) = _setUpQueueWithdrawalsSingleStrat({
             staker: defaultStaker,
-            withdrawer: defaultStaker,
             strategy: beaconChainETHStrategy,
             depositSharesToWithdraw: withdrawalAmount
         });
@@ -6415,7 +6383,6 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
             bytes32 withdrawalRoot
         ) = _setUpQueueWithdrawalsSingleStrat({
             staker: defaultStaker,
-            withdrawer: defaultStaker,
             strategy: beaconChainETHStrategy,
             depositSharesToWithdraw: withdrawalAmount
         });
@@ -6505,7 +6472,6 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
             bytes32 withdrawalRoot
         ) = _setUpCompleteQueuedWithdrawalSingleStrat({
             staker: staker,
-            withdrawer: staker,
             depositAmount: depositAmount,
             withdrawalAmount: withdrawalAmount,
             isBeaconChainStrategy: false
@@ -6555,7 +6521,6 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
                 QueuedWithdrawalParams[] memory params, 
                 Withdrawal memory withdrawal,
             ) = _setUpQueueWithdrawalsSingleStrat(
-                defaultStaker, 
                 defaultStaker, 
                 strategyMock, 
                 depositSharesPerWithdrawal
@@ -6659,7 +6624,6 @@ contract DelegationManagerUnitTests_burningShares is DelegationManagerUnitTests 
             bytes32 withdrawalRoot
         ) = _setUpQueueWithdrawalsSingleStrat({
             staker: defaultStaker,
-            withdrawer: defaultStaker,
             strategy: strategyMock,
             depositSharesToWithdraw: withdrawalAmount
         });
@@ -6727,7 +6691,6 @@ contract DelegationManagerUnitTests_burningShares is DelegationManagerUnitTests 
             bytes32 withdrawalRoot
         ) = _setUpQueueWithdrawalsSingleStrat({
             staker: defaultStaker,
-            withdrawer: defaultStaker,
             strategy: strategyMock,
             depositSharesToWithdraw: withdrawalAmount
         });
@@ -6783,7 +6746,6 @@ contract DelegationManagerUnitTests_burningShares is DelegationManagerUnitTests 
                 bytes32 withdrawalRoot
             ) = _setUpQueueWithdrawalsSingleStrat({
                 staker: defaultStaker,
-                withdrawer: defaultStaker,
                 strategy: strategyMock,
                 depositSharesToWithdraw: withdrawalAmount
             });
@@ -7016,7 +6978,6 @@ contract DelegationManagerUnitTests_burningShares is DelegationManagerUnitTests 
                 Withdrawal memory withdrawal,
             ) = _setUpQueueWithdrawalsSingleStrat({
                 staker: staker2,
-                withdrawer: staker2,
                 strategy: strategyMock,
                 depositSharesToWithdraw: withdrawAmount
             });
@@ -7095,7 +7056,6 @@ contract DelegationManagerUnitTests_burningShares is DelegationManagerUnitTests 
                 QueuedWithdrawalParams[] memory queuedWithdrawalParams,,
             ) = _setUpQueueWithdrawalsSingleStrat({
                 staker: staker2,
-                withdrawer: staker2,
                 strategy: strategyMock,
                 depositSharesToWithdraw: withdrawAmount
             });
@@ -7173,7 +7133,6 @@ contract DelegationManagerUnitTests_burningShares is DelegationManagerUnitTests 
                 Withdrawal memory withdrawal,
             ) = _setUpQueueWithdrawalsSingleStrat({
                 staker: staker,
-                withdrawer: staker,
                 strategy: strategyMock,
                 depositSharesToWithdraw: withdrawAmount1
             });
@@ -7190,7 +7149,6 @@ contract DelegationManagerUnitTests_burningShares is DelegationManagerUnitTests 
                 withdrawal,
             ) = _setUpQueueWithdrawalsSingleStrat({
                 staker: staker,
-                withdrawer: staker,
                 strategy: strategyMock,
                 depositSharesToWithdraw: withdrawAmount2
             });
@@ -7272,7 +7230,6 @@ contract DelegationManagerUnitTests_burningShares is DelegationManagerUnitTests 
                 QueuedWithdrawalParams[] memory queuedWithdrawalParams,,
             ) = _setUpQueueWithdrawalsSingleStrat({
                 staker: staker,
-                withdrawer: staker,
                 strategy: strategyMock,
                 depositSharesToWithdraw: depositSharesToWithdraw1
             });
@@ -7329,7 +7286,6 @@ contract DelegationManagerUnitTests_burningShares is DelegationManagerUnitTests 
                 QueuedWithdrawalParams[] memory queuedWithdrawalParams,,
             ) = _setUpQueueWithdrawalsSingleStrat({
                 staker: staker,
-                withdrawer: staker,
                 strategy: strategyMock,
                 depositSharesToWithdraw: depositSharesToWithdraw2
             });
@@ -7408,7 +7364,6 @@ contract DelegationManagerUnitTests_burningShares is DelegationManagerUnitTests 
                 Withdrawal memory withdrawal,
             ) = _setUpQueueWithdrawalsSingleStrat({
                 staker: staker,
-                withdrawer: staker,
                 strategy: strategyMock,
                 depositSharesToWithdraw: depositAmount
             });
@@ -7510,7 +7465,6 @@ contract DelegationManagerUnitTests_burningShares is DelegationManagerUnitTests 
                 QueuedWithdrawalParams[] memory queuedWithdrawalParams,,
             ) = _setUpQueueWithdrawalsSingleStrat({
                 staker: staker2,
-                withdrawer: staker2,
                 strategy: beaconChainETHStrategy,
                 depositSharesToWithdraw: withdrawAmount
             });
@@ -8326,7 +8280,7 @@ contract DelegationManagerUnitTests_Lifecycle is DelegationManagerUnitTests {
         queuedWithdrawalParams[0] = QueuedWithdrawalParams({
             strategies: strategies,
             depositShares: depositShares,
-            withdrawer: staker
+            __deprecated_withdrawer: address(0)
         });
         cheats.prank(staker);
         delegationManager.queueWithdrawals(queuedWithdrawalParams);
@@ -8396,7 +8350,6 @@ contract DelegationManagerUnitTests_Lifecycle is DelegationManagerUnitTests {
             bytes32 withdrawalRoot
         ) = _setUpQueueWithdrawalsSingleStrat({
             staker: defaultStaker,
-            withdrawer: defaultStaker,
             strategy: strategy,
             depositSharesToWithdraw: shares
         });
@@ -8590,7 +8543,6 @@ contract DelegationManagerUnitTests_ConvertToDepositShares is DelegationManagerU
 
         (QueuedWithdrawalParams[] memory queuedWithdrawalParams, Withdrawal memory withdrawal, bytes32 withdrawalRoot) = _setUpQueueWithdrawalsSingleStrat({
             staker: defaultStaker,
-            withdrawer: defaultStaker,
             strategy: strategy,
             depositSharesToWithdraw: shares
         });
@@ -8640,7 +8592,6 @@ contract DelegationManagerUnitTests_getQueuedWithdrawals is DelegationManagerUni
             bytes32 withdrawalRoot
         ) = _setUpQueueWithdrawals({
             staker: defaultStaker,
-            withdrawer: defaultStaker,
             strategies: strategies,
             depositWithdrawalAmounts: depositShares
         });
@@ -8683,7 +8634,6 @@ contract DelegationManagerUnitTests_getQueuedWithdrawals is DelegationManagerUni
             bytes32 withdrawalRoot0
         ) = _setUpQueueWithdrawalsSingleStrat({
             staker: defaultStaker,
-            withdrawer: defaultStaker,
             strategy: strategyMock,
             depositSharesToWithdraw: totalDepositShares / 2
         });
@@ -8697,7 +8647,6 @@ contract DelegationManagerUnitTests_getQueuedWithdrawals is DelegationManagerUni
             bytes32 withdrawalRoot1
         ) = _setUpQueueWithdrawalsSingleStrat({
             staker: defaultStaker,
-            withdrawer: defaultStaker,
             strategy: strategyMock,
             depositSharesToWithdraw:  totalDepositShares / 2
         });
@@ -8745,7 +8694,6 @@ contract DelegationManagerUnitTests_getQueuedWithdrawals is DelegationManagerUni
             bytes32 withdrawalRoot
         ) = _setUpQueueWithdrawalsSingleStrat({
             staker: defaultStaker,
-            withdrawer: defaultStaker,
             strategy: strategyMock,
             depositSharesToWithdraw: depositAmount
         });

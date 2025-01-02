@@ -266,20 +266,22 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         print.method("queueWithdrawals");
 
         address operator = delegationManager.delegatedTo(address(this));
-        address withdrawer = address(this);
         uint256 nonce = delegationManager.cumulativeWithdrawalsQueued(address(this));
 
         // Create queueWithdrawals params
         QueuedWithdrawalParams[] memory params = new QueuedWithdrawalParams[](1);
-        params[0] =
-            QueuedWithdrawalParams({strategies: strategies, depositShares: depositShares, withdrawer: withdrawer});
+        params[0] = QueuedWithdrawalParams({
+            strategies: strategies, 
+            depositShares: depositShares, 
+            __deprecated_withdrawer: address(0)
+        });
 
         // Create Withdrawal struct using same info
         Withdrawal[] memory withdrawals = new Withdrawal[](1);
         withdrawals[0] = Withdrawal({
             staker: address(this),
             delegatedTo: operator,
-            withdrawer: withdrawer,
+            withdrawer: address(this),
             nonce: nonce,
             startBlock: uint32(block.number),
             strategies: strategies,

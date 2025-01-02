@@ -194,7 +194,6 @@ contract DelegationManager is
 
         for (uint256 i = 0; i < params.length; i++) {
             require(params[i].strategies.length == params[i].depositShares.length, InputArrayLengthMismatch());
-            require(params[i].withdrawer == msg.sender, WithdrawerNotStaker());
 
             uint256[] memory slashingFactors = _getSlashingFactors(msg.sender, operator, params[i].strategies);
 
