@@ -309,24 +309,29 @@ contract DelegationManager is
             newMaxMagnitude: newMaxMagnitude
         });
 
-        // While `operatorSharesSlashed` describes the amount we should directly remove from the operator's delegated
-        // shares, `operatorSharesToBurn` also includes any shares that have been queued for withdrawal and are still
-        // slashable given the withdrawal delay.
-        uint256 operatorSharesToBurn =
-            operatorSharesSlashed + _getSlashedSharesInQueue(operator, strategy, prevMaxMagnitude, newMaxMagnitude);
+        uint256 scaledSharesSlashedFromQueue = _getSlashableSharesInQueue({
+            operator: operator,
+            strategy: strategy,
+            prevMaxMagnitude: prevMaxMagnitude,
+            newMaxMagnitude: newMaxMagnitude
+        });
+
+        // Calculate the total deposit shares to burn - slashed operator shares plus still-slashable
+        // shares sitting in the withdrawal queue.
+        uint256 totalDepositSharesToBurn = operatorSharesSlashed + scaledSharesSlashedFromQueue;
 
         // Remove shares from operator
         _decreaseDelegation({
             operator: operator,
-            staker: address(0), // we treat this as a decrease for the zero address staker
+            staker: address(0), // we treat this as a decrease for the 0-staker (only used for events)
             strategy: strategy,
             sharesToDecrease: operatorSharesSlashed
         });
 
         // NOTE: native ETH shares will be burned by a different mechanism in a future release
         if (strategy != beaconChainETHStrategy) {
-            strategyManager.burnShares(strategy, operatorSharesToBurn);
-            emit OperatorSharesBurned(operator, strategy, operatorSharesToBurn);
+            strategyManager.burnShares(strategy, totalDepositSharesToBurn);
+            emit OperatorSharesBurned(operator, strategy, totalDepositSharesToBurn);
         }
     }
 
@@ -553,7 +558,7 @@ contract DelegationManager is
             // slashableUntil is block inclusive so we need to check if the current block is strictly greater than the slashableUntil block
             // meaning the withdrawal can be completed.
             uint32 slashableUntil = withdrawal.startBlock + MIN_WITHDRAWAL_DELAY_BLOCKS;
-            require(slashableUntil < uint32(block.number), WithdrawalDelayNotElapsed());
+            require(uint32(block.number) > slashableUntil, WithdrawalDelayNotElapsed());
 
             // Given the max magnitudes of the operator the staker was originally delegated to, calculate
             // the slashing factors for each of the withdrawal's strategies.
@@ -756,29 +761,27 @@ contract DelegationManager is
      * Note: To get the total amount of slashable shares in the queue withdrawable, set newMaxMagnitude to 0 and prevMaxMagnitude
      * is the current maxMagnitude of the operator.
      */
-    function _getSlashedSharesInQueue(
+    function _getSlashableSharesInQueue(
         address operator,
         IStrategy strategy,
         uint64 prevMaxMagnitude,
         uint64 newMaxMagnitude
     ) internal view returns (uint256) {
-        // Fetch the cumulative scaled shares sitting in the withdrawal queue both now and before
-        // the withdrawal delay.
-        // NOTE: We want all the shares in the window [block.number - MIN_WITHDRAWAL_DELAY_BLOCKS, block.number]
-        // as this is all slashable and since prevCumulativeScaledShares is being subtracted from curCumulativeScaledShares
-        // we do a -1 on the block number to also include (block.number - MIN_WITHDRAWAL_DELAY_BLOCKS) as slashable.
-        uint256 curCumulativeScaledShares = _cumulativeScaledSharesHistory[operator][strategy].latest();
-        uint256 prevCumulativeScaledShares = _cumulativeScaledSharesHistory[operator][strategy].upperLookup({
+        // We want ALL shares added to the withdrawal queue in the window [block.number - MIN_WITHDRAWAL_DELAY_BLOCKS, block.number]
+        //
+        // To get this, we take the current shares in the withdrawal queue and subtract the number of shares
+        // that were in the queue before MIN_WITHDRAWAL_DELAY_BLOCKS.
+        uint256 curQueuedScaledShares = _cumulativeScaledSharesHistory[operator][strategy].latest();
+        uint256 prevQueuedScaledShares = _cumulativeScaledSharesHistory[operator][strategy].upperLookup({
             key: uint32(block.number) - MIN_WITHDRAWAL_DELAY_BLOCKS - 1
         });
 
-        // The difference between these values represents the number of scaled shares that entered the
-        // withdrawal queue less than `MIN_WITHDRAWAL_DELAY_BLOCKS` ago. These shares are still slashable,
-        // so we use them to calculate the number of slashable shares in the withdrawal queue.
-        uint256 slashableScaledShares = curCumulativeScaledShares - prevCumulativeScaledShares;
+        // The difference between these values is the number of scaled shares that entered the withdrawal queue 
+        // less than or equal to MIN_WITHDRAWAL_DELAY_BLOCKS ago. These shares are still slashable.
+        uint256 scaledSharesAdded = curQueuedScaledShares - prevQueuedScaledShares;
 
         return SlashingLib.scaleForBurning({
-            scaledShares: slashableScaledShares,
+            scaledShares: scaledSharesAdded,
             prevMaxMagnitude: prevMaxMagnitude,
             newMaxMagnitude: newMaxMagnitude
         });
@@ -862,11 +865,10 @@ contract DelegationManager is
 
     /// @inheritdoc IDelegationManager
     function getSlashableSharesInQueue(address operator, IStrategy strategy) public view returns (uint256) {
-        IStrategy[] memory strategies = new IStrategy[](1);
-        strategies[0] = strategy;
-        uint64 maxMagnitude = allocationManager.getMaxMagnitudes(operator, strategies)[0];
-        // Return amount of shares slashed if all remaining magnitude were to be slashed
-        return _getSlashedSharesInQueue({
+        uint64 maxMagnitude = allocationManager.getMaxMagnitude(operator, strategy);
+
+        // Return amount of slashable scaled shares remaining
+        return _getSlashableSharesInQueue({
             operator: operator,
             strategy: strategy,
             prevMaxMagnitude: maxMagnitude,
