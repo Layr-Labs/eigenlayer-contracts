@@ -464,7 +464,7 @@ contract DelegationManager is
         require(strategies.length != 0, InputArrayLengthZero());
 
         uint256[] memory scaledShares = new uint256[](strategies.length);
-        uint256[] memory sharesToWithdraw = new uint256[](strategies.length);
+        uint256[] memory withdrawableShares = new uint256[](strategies.length);
 
         // Remove shares from staker and operator
         // Each of these operations fail if we attempt to remove more shares than exist
@@ -472,14 +472,8 @@ contract DelegationManager is
             IShareManager shareManager = _getShareManager(strategies[i]);
             DepositScalingFactor memory dsf = _depositScalingFactor[staker][strategies[i]];
 
-            // Check withdrawing deposit shares amount doesn't exceed balance
-            require(
-                depositSharesToWithdraw[i] <= shareManager.stakerDepositShares(staker, strategies[i]),
-                WithdrawalExceedsMax()
-            );
-
             // Calculate how many shares can be withdrawn after factoring in slashing
-            sharesToWithdraw[i] = dsf.calcWithdrawable(depositSharesToWithdraw[i], slashingFactors[i]);
+            withdrawableShares[i] = dsf.calcWithdrawable(depositSharesToWithdraw[i], slashingFactors[i]);
 
             // Scale shares for queue withdrawal
             scaledShares[i] = dsf.scaleForQueueWithdrawal(depositSharesToWithdraw[i]);
@@ -496,7 +490,7 @@ contract DelegationManager is
                     operator: operator,
                     staker: staker,
                     strategy: strategies[i],
-                    sharesToDecrease: sharesToWithdraw[i]
+                    sharesToDecrease: withdrawableShares[i]
                 });
             }
 
@@ -524,7 +518,7 @@ contract DelegationManager is
         queuedWithdrawals[withdrawalRoot] = withdrawal;
         _stakerQueuedWithdrawalRoots[staker].add(withdrawalRoot);
 
-        emit SlashingWithdrawalQueued(withdrawalRoot, withdrawal, sharesToWithdraw);
+        emit SlashingWithdrawalQueued(withdrawalRoot, withdrawal, withdrawableShares);
         return withdrawalRoot;
     }
 
