@@ -94,7 +94,7 @@ interface IDelegationManagerTypes {
     /**
      * @dev A struct representing an existing queued withdrawal. After the withdrawal delay has elapsed, this withdrawal can be completed via `completeQueuedWithdrawal`.
      * A `Withdrawal` is created by the `DelegationManager` when `queueWithdrawals` is called. The `withdrawalRoots` hashes returned by `queueWithdrawals` can be used
-     * to fetch the corresponding `Withdrawal` from storage (via `queuedWithdrawals`).
+     * to fetch the corresponding `Withdrawal` from storage (via `getQueuedWithdrawal`).
      *
      * @param staker The address that queued the withdrawal
      * @param delegatedTo The address that the staker was delegated to at the time the withdrawal was queued. Used to determine if additional slashing occurred before
@@ -476,6 +476,12 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
      * @notice Returns the scaling factor applied to a staker's deposits for a given strategy
      */
     function depositScalingFactor(address staker, IStrategy strategy) external view returns (uint256);
+
+    /// @notice Returns the Withdrawal associated with a `withdrawalRoot`, if it exists. NOTE that
+    /// withdrawals queued before the slashing release can NOT be queried with this method.
+    function getQueuedWithdrawal(
+        bytes32 withdrawalRoot
+    ) external view returns (Withdrawal memory);
 
     /// @notice Returns a list of pending queued withdrawals for a `staker`, and the `shares` to be withdrawn.
     function getQueuedWithdrawals(

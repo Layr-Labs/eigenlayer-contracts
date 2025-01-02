@@ -558,6 +558,13 @@ contract DelegationManager is
             });
         }
 
+        // Remove the withdrawal from the queue. Note that for legacy withdrawals, the removals
+        // from `_stakerQueuedWithdrawalRoots` and `queuedWithdrawals` will no-op.
+        _stakerQueuedWithdrawalRoots[withdrawal.staker].remove(withdrawalRoot);
+        delete queuedWithdrawals[withdrawalRoot];
+        delete pendingWithdrawals[withdrawalRoot];
+        emit SlashingWithdrawalCompleted(withdrawalRoot);
+
         // Given the max magnitudes of the operator the staker is now delegated to, calculate the current
         // slashing factors to apply to each withdrawal if it is received as shares.
         address newOperator = delegatedTo[withdrawal.staker];
@@ -602,13 +609,6 @@ contract DelegationManager is
                 });
             }
         }
-
-        _stakerQueuedWithdrawalRoots[withdrawal.staker].remove(withdrawalRoot);
-
-        delete queuedWithdrawals[withdrawalRoot];
-        delete pendingWithdrawals[withdrawalRoot];
-
-        emit SlashingWithdrawalCompleted(withdrawalRoot);
     }
 
     /**
@@ -915,6 +915,13 @@ contract DelegationManager is
         }
 
         return (strategies, shares);
+    }
+
+    /// @inheritdoc IDelegationManager
+    function getQueuedWithdrawal(
+        bytes32 withdrawalRoot
+    ) external view returns (Withdrawal memory) {
+        return queuedWithdrawals[withdrawalRoot];
     }
 
     /// @inheritdoc IDelegationManager
