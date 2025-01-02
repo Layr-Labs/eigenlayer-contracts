@@ -3934,15 +3934,6 @@ contract DelegationManagerUnitTests_undelegate is DelegationManagerUnitTests {
         delegationManager.undelegate(defaultOperator);
     }
 
-    function test_Revert_undelegate_zeroAddress() public {
-        _registerOperatorWithBaseDetails(defaultOperator);
-        _delegateToOperatorWhoAcceptsAllStakers(address(0), defaultOperator);
-
-        cheats.prank(address(0));
-        cheats.expectRevert(IPausable.InputAddressZero.selector);
-        delegationManager.undelegate(address(0));
-    }
-
     /**
      * @notice Verifies that the `undelegate` function has proper access controls (can only be called by the operator who the `staker` has delegated
      * to or the operator's `delegationApprover`), or the staker themselves

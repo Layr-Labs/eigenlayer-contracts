@@ -148,17 +148,11 @@ contract DelegationManager is
         require(isDelegated(staker), NotActivelyDelegated());
         require(!isOperator(staker), OperatorsCannotUndelegate());
 
-        // Validate caller is the staker, the operator, or the operator's `delegationApprover`
-        require(staker != address(0), InputAddressZero());
+        // If the action is not being initiated by the staker, validate that it is initiated
+        // by the operator or their delegationApprover.
         address operator = delegatedTo[staker];
-        require(
-            msg.sender == staker || _checkCanCall(operator)
-                || msg.sender == _operatorDetails[operator].delegationApprover,
-            CallerCannotUndelegate()
-        );
-
-        // Emit an event if this action was not initiated by the staker themselves
         if (msg.sender != staker) {
+            require(_checkCanCall(operator) || msg.sender == delegationApprover(operator), CallerCannotUndelegate());
             emit StakerForceUndelegated(staker, operator);
         }
 
@@ -776,7 +770,7 @@ contract DelegationManager is
             key: uint32(block.number) - MIN_WITHDRAWAL_DELAY_BLOCKS - 1
         });
 
-        // The difference between these values is the number of scaled shares that entered the withdrawal queue 
+        // The difference between these values is the number of scaled shares that entered the withdrawal queue
         // less than or equal to MIN_WITHDRAWAL_DELAY_BLOCKS ago. These shares are still slashable.
         uint256 scaledSharesAdded = curQueuedScaledShares - prevQueuedScaledShares;
 
@@ -830,7 +824,7 @@ contract DelegationManager is
     /// @inheritdoc IDelegationManager
     function delegationApprover(
         address operator
-    ) external view returns (address) {
+    ) public view returns (address) {
         return _operatorDetails[operator].delegationApprover;
     }
 
