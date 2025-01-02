@@ -638,7 +638,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
 
         expectedWithdrawals = new Withdrawal[](strategies.length);
 
-        (uint256[] memory withdrawableShares, uint256[] memory depositShares)
+        (, uint256[] memory depositShares)
              = delegationManager.getWithdrawableShares(staker, strategies);
 
         address delegatedTo = delegationManager.delegatedTo(staker);
