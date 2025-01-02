@@ -124,7 +124,7 @@ contract DelegationManager is
         address operator,
         SignatureWithExpiry memory approverSignatureAndExpiry,
         bytes32 approverSalt
-    ) external {
+    ) public {
         require(!isDelegated(msg.sender), ActivelyDelegated());
         require(isOperator(operator), OperatorNotRegistered());
 
@@ -143,15 +143,16 @@ contract DelegationManager is
     /// @inheritdoc IDelegationManager
     function undelegate(
         address staker
-    ) external returns (bytes32[] memory withdrawalRoots) {
+    ) public returns (bytes32[] memory withdrawalRoots) {
         // Check that the `staker` can undelegate
         require(isDelegated(staker), NotActivelyDelegated());
         require(!isOperator(staker), OperatorsCannotUndelegate());
 
         // If the action is not being initiated by the staker, validate that it is initiated
         // by the operator or their delegationApprover.
-        address operator = delegatedTo[staker];
         if (msg.sender != staker) {
+            address operator = delegatedTo[staker];
+
             require(_checkCanCall(operator) || msg.sender == delegationApprover(operator), CallerCannotUndelegate());
             emit StakerForceUndelegated(staker, operator);
         }
@@ -165,24 +166,9 @@ contract DelegationManager is
         SignatureWithExpiry memory newOperatorApproverSig,
         bytes32 approverSalt
     ) external returns (bytes32[] memory withdrawalRoots) {
-        // Check that the staker can undelegate, and `newOperator` can be delegated to
-        require(isDelegated(msg.sender), NotActivelyDelegated());
-        require(!isOperator(msg.sender), OperatorsCannotUndelegate());
-        require(isOperator(newOperator), OperatorNotRegistered());
-
-        // Undelegate the staker and queue any deposited assets for withdrawal
-        withdrawalRoots = _undelegate(msg.sender);
-
-        // If the operator has a `delegationApprover`, check the provided signature
-        _checkApproverSignature({
-            staker: msg.sender,
-            operator: newOperator,
-            signature: newOperatorApproverSig,
-            salt: approverSalt
-        });
-
-        // Delegate to the new operator
-        _delegate(msg.sender, newOperator);
+        withdrawalRoots = undelegate(msg.sender);
+        // delegateTo uses msg.sender as staker
+        delegateTo(newOperator, newOperatorApproverSig, approverSalt);
     }
 
     /// @inheritdoc IDelegationManager
