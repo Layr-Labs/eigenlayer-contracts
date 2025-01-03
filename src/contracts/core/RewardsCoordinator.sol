@@ -301,7 +301,6 @@ contract RewardsCoordinator is
         uint16 split
     ) external onlyWhenNotPaused(PAUSED_OPERATOR_AVS_SPLIT) {
         require(msg.sender == operator, "RewardsCoordinator.setOperatorAVSSplit: caller is not the operator");
-        require(split <= ONE_HUNDRED_IN_BIPS, "RewardsCoordinator.setOperatorAVSSplit: split must be <= 10000 bips");
 
         uint32 activatedAt = uint32(block.timestamp) + activationDelay;
         uint16 oldSplit = _getOperatorSplit(operatorAVSSplitBips[operator][avs]);
@@ -313,7 +312,6 @@ contract RewardsCoordinator is
     /// @inheritdoc IRewardsCoordinator
     function setOperatorPISplit(address operator, uint16 split) external onlyWhenNotPaused(PAUSED_OPERATOR_PI_SPLIT) {
         require(msg.sender == operator, "RewardsCoordinator.setOperatorPISplit: caller is not the operator");
-        require(split <= ONE_HUNDRED_IN_BIPS, "RewardsCoordinator.setOperatorPISplit: split must be <= 10000 bips");
 
         uint32 activatedAt = uint32(block.timestamp) + activationDelay;
         uint16 oldSplit = _getOperatorSplit(operatorPISplitBips[operator]);
@@ -395,13 +393,14 @@ contract RewardsCoordinator is
      * @param activatedAt The timestamp when the split is activated.
      */
     function _setOperatorSplit(OperatorSplit storage operatorSplit, uint16 split, uint32 activatedAt) internal {
+        require(split <= ONE_HUNDRED_IN_BIPS, "RewardsCoordinator._setOperatorSplit: split must be <= 10000 bips");
         require(
             block.timestamp > operatorSplit.activatedAt,
             "RewardsCoordinator._setOperatorSplit: earlier split not activated yet"
         );
         if (operatorSplit.activatedAt == 0) {
-            // If the operator split has not been initialized yet, set the old split to the default split.
-            operatorSplit.oldSplitBips = defaultOperatorSplitBips;
+            // If the operator split has not been initialized yet, set the old split to `type(uint16).max` as a flag.
+            operatorSplit.oldSplitBips = type(uint16).max;
         } else {
             operatorSplit.oldSplitBips = operatorSplit.newSplitBips;
         }
@@ -632,8 +631,12 @@ contract RewardsCoordinator is
      * @return The split in basis points.
      */
     function _getOperatorSplit(OperatorSplit memory operatorSplit) internal view returns (uint16) {
-        if (operatorSplit.activatedAt == 0) {
+        if (
+            (operatorSplit.activatedAt == 0) ||
+            (operatorSplit.oldSplitBips == type(uint16).max && block.timestamp < operatorSplit.activatedAt)
+        ) {
             // Return the Default Operator Split if the operator split has not been initialized.
+            // Also return the Default Operator Split if the operator split has been initialized but not activated yet. (i.e the first initialization)
             return defaultOperatorSplitBips;
         } else {
             // Return the new split if the new split has been activated, else return the old split.
