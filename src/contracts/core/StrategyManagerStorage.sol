@@ -69,6 +69,9 @@ abstract contract StrategyManagerStorage is IStrategyManager {
     /// @dev Do not remove, deprecated storage.
     mapping(IStrategy strategy => bool) private __deprecated_thirdPartyTransfersForbidden;
 
+    /// @notice Returns the amount of `shares` that have been slashed on EigenLayer but not burned yet.
+    mapping(IStrategy strategy => uint256) public burnableShares;
+
     // Construction
 
     /**
@@ -85,5 +88,5 @@ abstract contract StrategyManagerStorage is IStrategyManager {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[39] private __gap;
+    uint256[38] private __gap;
 }

@@ -141,7 +141,18 @@ contract StrategyManager is
     }
 
     /// @inheritdoc IStrategyManager
-    function burnShares(IStrategy strategy, uint256 sharesToBurn) external onlyDelegationManager {
+    function increaseBurnableShares(IStrategy strategy, uint256 addedSharesToBurn) external onlyDelegationManager {
+        // burning shares is functionally the same as withdrawing but with different destination address
+        burnableShares[strategy] += addedSharesToBurn;
+        emit BurnableSharesIncreased(strategy, addedSharesToBurn);
+    }
+
+    /// @inheritdoc IStrategyManager
+    function burnShares(IStrategy strategy, uint256 sharesToBurn) external nonReentrant {
+        require(strategyIsWhitelistedForDeposit[strategy], StrategyNotWhitelisted());
+        require(sharesToBurn <= burnableShares[strategy], BurnSharesAmountTooHigh());
+        burnableShares[strategy] -= sharesToBurn;
+        emit BurnableSharesDecreased(strategy, sharesToBurn);
         // burning shares is functionally the same as withdrawing but with different destination address
         try strategy.withdraw(DEFAULT_BURN_ADDRESS, strategy.underlyingToken(), sharesToBurn) {} catch {}
     }
