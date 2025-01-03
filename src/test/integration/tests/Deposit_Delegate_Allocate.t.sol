@@ -66,12 +66,15 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
         _upgradeEigenLayerContracts(); // Upgrade contracts if forkType is not local
         (AVS avs,) = _newRandomAVS();
 
-        // Create an operator set and register an operator.
+        // 3. Set allocation delay for operator
+        operator.setAllocationDelay(1);
+        rollForward({blocks: ALLOCATION_CONFIGURATION_DELAY});
+
+        // 4. Create an operator set and register an operator.
         OperatorSet memory operatorSet = avs.createOperatorSet(strategies);
         operator.registerForOperatorSet(operatorSet);
-        operator.setAllocationDelay(1);
 
-        // 3. Allocate to operator set.
+        // 5. Allocate to operator set.
         IAllocationManagerTypes.AllocateParams memory allocateParams =
             operator.modifyAllocations(operatorSet, _randMagnitudes({sum: 1 ether, len: strategies.length}));
         assert_Snap_Allocations_Modified(
