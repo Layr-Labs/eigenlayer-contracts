@@ -40,19 +40,21 @@ abstract contract SignatureUtils is ISignatureUtils {
      * for more detailed information please read EIP-712.
      * @dev Use `_calculateDomainSeparator` rather than using this function.
      */
-    function domainSeparator() external view virtual returns (bytes32) {
-        return _calculateDomainSeparator();
+    function domainSeparator() public view virtual returns (bytes32) {
+        /// forgefmt: disable-next-item
+        return block.chainid == _INITIAL_CHAIN_ID
+            // If the chain ID is the same, return the original domain separator.
+            ? _INITIAL_DOMAIN_SEPARATOR
+            // If the chain ID is different, return the new domain separator.
+            : _calculateDomainSeparator();
     }
 
     /// INTERNAL HELPERS
 
-    /// @dev Helper for calculating the contract's current domain separator.
+    /// @dev Helper for calculating the contract's domain separator.
     function _calculateDomainSeparator() internal view returns (bytes32) {
         /// forgefmt: disable-next-item
-        return block.chainid == _INITIAL_CHAIN_ID ?
-            // If the chain ID is the same, return the original domain separator.
-            _INITIAL_DOMAIN_SEPARATOR :
-            // If the chain ID is different, return the new domain separator.
+        return 
             keccak256(
                 abi.encode(
                     EIP712_DOMAIN_TYPEHASH, 
@@ -67,7 +69,7 @@ abstract contract SignatureUtils is ISignatureUtils {
     function _calculateSignableDigest(
         bytes32 hash
     ) internal view returns (bytes32) {
-        return keccak256(abi.encodePacked("\x19\x01", _calculateDomainSeparator(), hash));
+        return keccak256(abi.encodePacked("\x19\x01", domainSeparator(), hash));
     }
 
     /// @dev Helper for checking if a signature is valid, reverts if not valid.
