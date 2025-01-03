@@ -37,7 +37,29 @@ contract Queue is MultisigBuilder, Deploy {
                     proxy: address(Env.proxy.strategyManager()),
                     impl: address(Env.impl.strategyManager())
                 })
+            })
+            .append({
+                to: Env.proxyAdmin(),
+                data: Encode.proxyAdmin.upgrade({
+                    proxy: address(Env.proxy.avsDirectory()),
+                    impl: address(Env.impl.avsDirectory())
+                })
+            })
+            .append({
+                to: Env.proxyAdmin(),
+                data: Encode.proxyAdmin.upgrade({
+                    proxy: address(Env.proxy.delegationManager()),
+                    impl: address(Env.impl.delegationManager())
+                })
+            })
+            .append({
+                to: Env.proxyAdmin(),
+                data: Encode.proxyAdmin.upgrade({
+                    proxy: address(Env.proxy.rewardsCoordinator()),
+                    impl: address(Env.impl.rewardsCoordinator())
+                })
             });
+
         
         return Encode.gnosisSafe.execTransaction({
             from: address(Env.timelockController()),
