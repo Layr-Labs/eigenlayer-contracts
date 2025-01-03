@@ -275,20 +275,23 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
                 numTokensToDeposit[i] = tokenBalances[i] / 2;
                 numTokensRemaining[i] = tokenBalances[i] - numTokensToDeposit[i];
             }
-            uint[] memory sharesFromFirstDeposit = _calculateExpectedShares(strategies, numTokensToDeposit);
+            {
+                uint[] memory sharesFromFirstDeposit = _calculateExpectedShares(strategies, numTokensToDeposit);
+                //delegatable shares equals deposit shares here because no bc slashing
+                uint[] memory delegatableShares = sharesFromFirstDeposit;
 
-            /// 1. Deposit Into Strategies
-            staker.depositIntoEigenlayer(strategies, numTokensToDeposit);
-            check_Deposit_State_PartialDeposit(staker, strategies, sharesFromFirstDeposit, numTokensRemaining);
+                /// 1. Deposit Into Strategies
+                staker.depositIntoEigenlayer(strategies, numTokensToDeposit);
+                check_Deposit_State_PartialDeposit(staker, strategies, sharesFromFirstDeposit, numTokensRemaining);
 
-            // 2. Delegate to an operator
-            staker.delegateTo(operator1);
-            check_Delegation_State(staker, operator1, strategies, sharesFromFirstDeposit);
+                // 2. Delegate to an operator
+                staker.delegateTo(operator1);
+                check_Delegation_State(staker, operator1, strategies, sharesFromFirstDeposit);
 
-            // 3. Undelegate from an operator
-            IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.undelegate();
-            bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
-            check_Undelegate_State(staker, operator1, withdrawals, withdrawalRoots, strategies, sharesFromFirstDeposit);
+                // 3. Undelegate from an operator
+                Withdrawal[] memory withdrawals = staker.undelegate();
+                bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+                check_Undelegate_State(staker, operator1, withdrawals, withdrawalRoots, strategies, sharesFromFirstDeposit, delegatableShares);
 
                 // 4. Complete withdrawal as shares
                 // Fast forward to when we can complete the withdrawal
@@ -309,16 +312,6 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
                 check_Deposit_State(staker, strategies, sharesFromSecondDeposit);
             }
 
-            // 5. Deposit into Strategies
-            uint[] memory sharesFromSecondDeposit = _calculateExpectedShares(strategies, numTokensRemaining);
-            for (uint i = 0; i < strategies.length; i++) {
-                totalShares[i] = sharesFromFirstDeposit[i] + sharesFromSecondDeposit[i];
-            }
-
-            staker.depositIntoEigenlayer(strategies, numTokensRemaining);
-            tokenBalances = _calculateExpectedTokens(strategies, totalShares);
-            check_Deposit_State(staker, strategies, sharesFromSecondDeposit);
-
             // 6. Delegate to a new operator
             staker.delegateTo(operator2);
             check_Delegation_State(staker, operator2, strategies, totalShares);
@@ -328,7 +321,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         {
             // 7. Queue Withdrawal
             totalShares = _calculateExpectedShares(strategies, tokenBalances);
-            IDelegationManagerTypes.Withdrawal[] memory newWithdrawals = staker.queueWithdrawals(strategies, totalShares);
+            Withdrawal[] memory newWithdrawals = staker.queueWithdrawals(strategies, totalShares);
             bytes32[] memory newWithdrawalRoots = _getWithdrawalHashes(newWithdrawals);
             check_QueuedWithdrawal_State(staker, operator2, strategies, totalShares, newWithdrawals, newWithdrawalRoots);
 
