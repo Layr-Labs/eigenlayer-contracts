@@ -128,23 +128,9 @@ $a_n = s_n k_n l_n m_n$ - The withdrawable shares that the staker owns at time $
 
 For an amount of newly deposited shares $d_n$,
 
-#### Operator Level
-
-The operator magnitude doesn’t change.
-
-$$
-m_{n+1} = m_n
-$$
-
-For the operator,
-
-$$
-op_{n+1} = op_n+d_n
-$$
-
 #### Staker Level
 
-From the conceptual level,
+From the conceptual level, the staker's deposit shares and withdrawable shares should increase by the deposited amount $d_n$. Let's workout how this math impacts some of the deposit scaling factor $k_n$.
 
 $$
 a_{n+1} = a_n + d_n
@@ -170,6 +156,16 @@ $$
 k_{n+1} = \frac{s_n k_n m_n + d_n}{s_{n+1} l_{n+1} m_{n+1}}=\frac{s_n k_n l_n m_n + d_n}{(s_n+d_n)m_n}
 $$
 
+#### Operator Level
+
+For the operator (if the staker is delegated), the delegated operator shares should increase by the exact amount
+the staker just deposited. Therefore $op_n$ is updated as follows:
+
+$$
+op_{n+1} = op_n+d_n
+$$
+
+
 See implementation in:
 * [`StrategyManager.depositIntoStrategy`](../../../src/contracts/core/StrategyManager.sol)
 * [`EigenPod`](../../../src/contracts/pods/EigenPod.sol)
@@ -193,7 +189,7 @@ $$
  => op_{n+1} = op_n \frac {m_{n+1}} {m_n}
 $$ 
 
-However, since we don't overwrite `operatorShares` directly in storage and perform increments/decrements we will calculate the amount of $sharesToDecrement$.
+However, since we don't overwrite `operatorShares` directly in storage and perform increment/decrement operations we will calculate the amount of $sharesToDecrement$.
 
 $$
  sharesToDecrement = op_n - op_{n+1}
@@ -356,7 +352,6 @@ $$
 = x_t k_t l_t m_t (\frac{m_{t+delay} l_{now}}{m_t l_t} )
 $$
 
-
 $$ 
 = x_t k_t m_{t+delay} l_{now}
 $$
@@ -378,7 +373,7 @@ See implementation in:
 * [`DelegationManager.completeQueuedWithdrawal`](../../../src/contracts/core/DelegationManager.sol)
 * [`SlashingLib.scaleForCompleteWithdrawal`](../../../src/contracts/libraries/SlashingLib.sol)
 
-<br> 
+<br>
 
 ### EigenPod BeaconChain Slashing (Negative Shares decrements)
 
