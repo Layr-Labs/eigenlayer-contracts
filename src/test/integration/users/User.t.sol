@@ -192,7 +192,6 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         _tryPrankAppointee_AllocationManager(IAllocationManager.setAllocationDelay.selector);
         allocationManager().setAllocationDelay(address(this), delay);
         print.gasUsed();
-        rollForward({blocks: allocationManager().ALLOCATION_CONFIGURATION_DELAY()});
     }
 
     /// -----------------------------------------------------------------------

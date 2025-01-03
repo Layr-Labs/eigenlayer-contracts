@@ -166,6 +166,11 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         EmptyContract emptyContract = new EmptyContract();
         ethPOSDeposit = new ETHPOSDepositMock();
 
+        // Matching parameters to testnet
+        DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS = 50;
+        DEALLOCATION_DELAY = 50;
+        ALLOCATION_CONFIGURATION_DELAY = 75;
+
         /**
          * First, deploy upgradeable proxy contracts that **will point** to the implementations. Since the implementation contracts are
          * not yet deployed, we give these proxies an empty contract as the initial implementation, to act as if they have no code.
