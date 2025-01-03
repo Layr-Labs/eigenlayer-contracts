@@ -18,6 +18,6 @@ User stories are often expressed in a simple sentence, structured as follows: 'A
 Acceptance criteria are the requirements that need to be met in order to mark a user story as complete. For example, if your user story is, "As a New Relic customer, I want to know how to interpret AI anomalies in order to monitor my site and protect myself against incidents," then the acceptance criteria would be: "A complete and published doc describing AI anomalies," and all related quality checks. 
 
 **Don't Forget To**
-* Assign this to a project (our default is [eigenlayer](https://github.com/orgs/Layr-Labs/projects/3/))
+* Assign this to a project (our default is [eigenlayer](https://github.com/orgs/Layr-Labs/))
 * Add priority + size estimate
 * Set status to New
