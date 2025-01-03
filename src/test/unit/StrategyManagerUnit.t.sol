@@ -251,6 +251,7 @@ contract StrategyManagerUnitTests_initialize is StrategyManagerUnitTests {
     }
 
     function test_InitializedStorageProperly() public view {
+        assertTrue(strategyManager.domainSeparator() != bytes32(0), "sanity check");
         assertEq(strategyManager.owner(), initialOwner, "strategyManager.owner() != initialOwner");
         assertEq(
             strategyManager.strategyWhitelister(),
