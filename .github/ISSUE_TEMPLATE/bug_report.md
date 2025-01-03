@@ -28,6 +28,6 @@ Enter important environment info needed to reproduce the bug.
  - [e.g. version]
 
 **Don't Forget To**
-* Assign this to a project (our default is [eigenlayer](https://github.com/orgs/Layr-Labs/projects/3/))
+* Assign this to a project (our default is [eigenlayer](https://github.com/orgs/Layr-Labs/))
 * Add priority + size estimate
 * Set status to New
