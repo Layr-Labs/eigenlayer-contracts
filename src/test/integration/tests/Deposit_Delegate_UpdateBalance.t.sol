@@ -9,7 +9,7 @@ contract Integration_Deposit_Delegate_UpdateBalance is IntegrationCheckUtils {
     /// Generates a random stake and operator. The staker:
     /// 1. deposits all assets into strategies
     /// 2. delegates to an operator
-    /// 3. queues a withdrawal for a ALL shares
+    /// 3. queues a withdrawal for an ALL shares
     /// 4. updates their balance randomly
     /// 5. completes the queued withdrawal as tokens
     function testFuzz_deposit_delegate_updateBalance_completeAsTokens(uint24 _random) public {
