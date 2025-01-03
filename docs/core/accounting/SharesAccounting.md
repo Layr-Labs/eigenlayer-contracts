@@ -284,8 +284,9 @@ $$
  s_{n+1} = s_n - x_n
 $$
 
-The DelegationManager will tell the EigenPodManager/StrategyManager to decrement the depositShares the staker is withdrawing.
+The DelegationManager will call the EigenPodManager/StrategyManager to decrement the depositShares the staker is withdrawing.
 We want to show that the withdrawable shares for the Staker are decreased accordingly where $a_{n+1} = a_n - w_n$.
+
 $$
  a_{n+1} = s_{n+1} k_{n+1} l_{n+1} m_{n+1}
 $$
@@ -329,12 +330,12 @@ The operator shares were already decremented at the time of withdrawal and remai
 
 There are no storage updates for the staker outside of needing to calculate the shares to send the staker.
 
-The shares that were attempted to be withdrawn by the staker is equal is $w_t$ 
+The shares that were attempted to be withdrawn by the staker is equal is $w_t$
+
 $$
  w_t = q_t m_t l_t
 
  w_t = x_t k_t l_t m_t
-
 $$
 
 However, the staker's shares in their withdrawal may have been slashed both from in EigenLayer during the queued withdrawal period and from the BeaconChain (if the Strategy is native ETH). The amount of shares they actually receive is proportionally the following:
@@ -344,6 +345,7 @@ $$
 $$
 
 So the actual amount of shares withdrawn on completion is calculated to be:
+
 $$
  sharesWithdrawn = w_t (\frac{m_{t+delay} l_{now}}{m_t l_t} )
 
@@ -364,7 +366,7 @@ $$
 = q_t m_{t+delay} l_{now}
 $$
 
-From the above equations the known values we have during the time of queue withdrawal is $x_t k_t$ and we only know $ m_{t+delay} l_{now}$ when the queued withdrawal is completable. This is why we store scaled shares as $q_t = x_t k_t$ and $ m_{t+delay} l_{now}$ has to be later read during the completing transaction of the withdrawal.
+From the above equations the known values we have during the time of queue withdrawal is $x_t k_t$ and we only know $m_{t+delay} l_{now}$ when the queued withdrawal is completable. This is why we store scaled shares as $q_t = x_t k_t$ and $m_{t+delay} l_{now}$ has to be later read during the completing transaction of the withdrawal.
 
 Note: Reading $m_{t+delay}$ is performed by a historical Snapshot lookup of the max magnitude in the `AllocationManager` while $l_{now}$, the current beacon chain slashing factor, is done through the EigenPodManager(default to value of 1 if the Strategy is not native ETH).
 
