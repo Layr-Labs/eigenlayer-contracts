@@ -94,4 +94,55 @@ contract Execute is Queue {
         assertTrue(strategyManager.delegation() == Env.proxy.delegationManager(), "sm.dm invalid");
         assertTrue(strategyManager.pauserRegistry() == Env.impl.pauserRegistry(), "sm.pR invalid");
     }
+
+    function _validateRC() internal view {
+        RewardsCoordinator rewards = Env.proxy.rewardsCoordinator();
+        assertEq(
+            rewards.defaultOperatorSplitBips(),
+            Env.DEFAULT_SPLIT_BIPS(),
+            "expected defaultOperatorSplitBips"
+        );
+
+        uint256 pausedStatusAfter = rewards.paused();
+
+        assertEq(
+            Env.REWARDS_PAUSE_STATUS(),
+            pausedStatusAfter,
+            "expected paused status to be the same before and after initialization"
+        );
+
+        assertEq(
+            rewards.CALCULATION_INTERVAL_SECONDS(),
+            Env.CALCULATION_INTERVAL_SECONDS(),
+            "expected REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS"
+        );
+        assertEq(
+            rewards.CALCULATION_INTERVAL_SECONDS(),
+            1 days,
+            "expected REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS"
+        );
+        assertGt(
+            rewards.CALCULATION_INTERVAL_SECONDS(),
+            0,
+            "expected non-zero REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS"
+        );
+
+        assertEq(rewards.MAX_REWARDS_DURATION(), Env.MAX_REWARDS_DURATION());
+        assertGt(rewards.MAX_REWARDS_DURATION(), 0);
+
+        assertEq(
+            rewards.MAX_RETROACTIVE_LENGTH(),
+            Env.MAX_RETROACTIVE_LENGTH()
+        );
+        assertGt(rewards.MAX_RETROACTIVE_LENGTH(), 0);
+
+        assertEq(rewards.MAX_FUTURE_LENGTH(), Env.MAX_FUTURE_LENGTH());
+        assertGt(rewards.MAX_FUTURE_LENGTH(), 0);
+
+        assertEq(
+            rewards.GENESIS_REWARDS_TIMESTAMP(),
+            Env.GENESIS_REWARDS_TIMESTAMP()
+        );
+        assertGt(rewards.GENESIS_REWARDS_TIMESTAMP(), 0);
+    }
 }

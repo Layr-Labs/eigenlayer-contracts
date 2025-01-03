@@ -73,6 +73,7 @@ contract Deploy is EOADeployer {
         _validateNewImplAddresses(false);
         _validateImplConstructors();
         _validateImplsInitialized();
+        _validateRCValues();
     }
 
     function _validateDomainSeparatorNonZero() internal view {
@@ -170,6 +171,44 @@ contract Deploy is EOADeployer {
         vm.expectRevert(errInit);
         strategyManager.initialize(address(0), address(0), 0);
     }
+
+    function _validateRCValues() internal view {
+
+        RewardsCoordinator rewardsCoordinatorImpl = Env.impl.rewardsCoordinator();
+        assertEq(
+            rewardsCoordinatorImpl.CALCULATION_INTERVAL_SECONDS(),
+            Env.CALCULATION_INTERVAL_SECONDS(),
+            "expected REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS"
+        );
+        assertEq(
+            rewardsCoordinatorImpl.CALCULATION_INTERVAL_SECONDS(),
+            1 days,
+            "expected REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS"
+        );
+        assertGt(
+            rewardsCoordinatorImpl.CALCULATION_INTERVAL_SECONDS(),
+            0,
+            "expected non-zero REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS"
+        );
+
+        assertEq(rewardsCoordinatorImpl.MAX_REWARDS_DURATION(), Env.MAX_REWARDS_DURATION());
+        assertGt(rewardsCoordinatorImpl.MAX_REWARDS_DURATION(), 0);
+
+        assertEq(
+            rewardsCoordinatorImpl.MAX_RETROACTIVE_LENGTH(),
+            Env.MAX_RETROACTIVE_LENGTH()
+        );
+        assertGt(rewardsCoordinatorImpl.MAX_RETROACTIVE_LENGTH(), 0);
+
+        assertEq(rewardsCoordinatorImpl.MAX_FUTURE_LENGTH(), Env.MAX_FUTURE_LENGTH());
+        assertGt(rewardsCoordinatorImpl.MAX_FUTURE_LENGTH(), 0);
+
+        assertEq(
+            rewardsCoordinatorImpl.GENESIS_REWARDS_TIMESTAMP(),
+            Env.GENESIS_REWARDS_TIMESTAMP()
+        );
+        assertGt(rewardsCoordinatorImpl.GENESIS_REWARDS_TIMESTAMP(), 0);
+    }   
 
     /// @dev Query and return `proxyAdmin.getProxyImplementation(proxy)`
     function _getProxyImpl(address proxy) internal view returns (address) {
