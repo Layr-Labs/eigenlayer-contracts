@@ -461,14 +461,28 @@ contract RewardsCoordinatorUnitTests_setOperatorAVSSplit is RewardsCoordinatorUn
         split = uint16(bound(split, 0, ONE_HUNDRED_IN_BIPS));
         uint32 activatedAt = uint32(block.timestamp) + activationDelay;
         uint16 oldSplit = rewardsCoordinator.getOperatorAVSSplit(operator, avs);
-        assertEq(oldSplit, defaultSplitBips, "Operator split is not Default split before Initialization");
+        // Check that the split returns the default split before initialization for the first time.
+        assertEq(
+            oldSplit,
+            rewardsCoordinator.defaultOperatorSplitBips(),
+            "Operator split is not Default split before Initialization"
+        );
 
         cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
         emit OperatorAVSSplitBipsSet(operator, operator, avs, activatedAt, oldSplit, split);
         cheats.prank(operator);
         rewardsCoordinator.setOperatorAVSSplit(operator, avs, split);
 
-        assertEq(oldSplit, rewardsCoordinator.getOperatorAVSSplit(operator, avs), "Incorrect Operator split");
+        cheats.prank(address(this)); // Owner of RewardsCoordinator
+        // Change default split to check if it is returned before activation
+        rewardsCoordinator.setDefaultOperatorSplit(5000);
+        // Check that the split returns the default split before activation for the first time.
+        assertEq(
+            rewardsCoordinator.defaultOperatorSplitBips(),
+            rewardsCoordinator.getOperatorAVSSplit(operator, avs),
+            "Operator split is not Default split before Activation for first time"
+        );
+
         cheats.warp(activatedAt);
         assertEq(split, rewardsCoordinator.getOperatorAVSSplit(operator, avs), "Incorrect Operator split");
     }
@@ -595,14 +609,28 @@ contract RewardsCoordinatorUnitTests_setOperatorPISplit is RewardsCoordinatorUni
         split = uint16(bound(split, 0, ONE_HUNDRED_IN_BIPS));
         uint32 activatedAt = uint32(block.timestamp) + activationDelay;
         uint16 oldSplit = rewardsCoordinator.getOperatorPISplit(operator);
-        assertEq(oldSplit, defaultSplitBips, "Operator split is not Default split before Initialization");
+        // Check that the split returns the default split before initialization for the first time.
+        assertEq(
+            oldSplit,
+            rewardsCoordinator.defaultOperatorSplitBips(),
+            "Operator split is not Default split before Initialization"
+        );
 
         cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
         emit OperatorPISplitBipsSet(operator, operator, activatedAt, oldSplit, split);
         cheats.prank(operator);
         rewardsCoordinator.setOperatorPISplit(operator, split);
 
-        assertEq(oldSplit, rewardsCoordinator.getOperatorPISplit(operator), "Incorrect Operator split");
+        cheats.prank(address(this)); // Owner of RewardsCoordinator
+        // Change default split to check if it is returned before activation
+        rewardsCoordinator.setDefaultOperatorSplit(5000);
+        // Check that the split returns the default split before activation for the first time.
+        assertEq(
+            rewardsCoordinator.defaultOperatorSplitBips(),
+            rewardsCoordinator.getOperatorPISplit(operator),
+            "Operator split is not Default split before Activation for first time"
+        );
+
         cheats.warp(activatedAt);
         assertEq(split, rewardsCoordinator.getOperatorPISplit(operator), "Incorrect Operator split");
     }
