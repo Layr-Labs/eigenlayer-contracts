@@ -149,7 +149,6 @@ contract StrategyManager is
 
     /// @inheritdoc IStrategyManager
     function burnShares(IStrategy strategy, uint256 sharesToBurn) external nonReentrant {
-        require(strategyIsWhitelistedForDeposit[strategy], StrategyNotWhitelisted());
         require(sharesToBurn <= burnableShares[strategy], BurnSharesAmountTooHigh());
         burnableShares[strategy] -= sharesToBurn;
         emit BurnableSharesDecreased(strategy, sharesToBurn);
