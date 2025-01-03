@@ -235,25 +235,19 @@ $$
 3. Third rounded term
 
 $$
-\lfloor \frac{m \cdot l}{WAD} \rfloor
-
-= \frac{m \cdot l}{WAD}  - \epsilon_3
+\lfloor \frac{m \cdot l}{WAD} \rfloor = \frac{m \cdot l}{WAD}  - \epsilon_3
 $$
 
 $$
 =>
 \frac{\lfloor \frac{m \cdot l}{WAD} \rfloor}{WAD} = \frac{\frac{m \cdot l}{WAD} - \epsilon_3}{WAD}
-
 $$
 
 $$
 =>
 \frac{\lfloor \frac{m \cdot l}{WAD} \rfloor}{WAD} = 
-
 \frac{m \cdot l}{WAD^2}
-
 - \frac{\epsilon_3}{WAD}
-
 $$
 
 4. Now bringing it all back to the original equation
@@ -281,7 +275,6 @@ d \cdot \frac{WAD \cdot WAD}{m_{deposit} \cdot l_{deposit} \cdot WAD} - d \cdot 
 \frac{m \cdot l}{WAD^2} - \frac{\epsilon_3}{WAD}
 \right)
 \rfloor
-
 $$
 
 $$
@@ -294,7 +287,6 @@ d \cdot \frac{WAD \cdot WAD}{m_{deposit} \cdot l_{deposit} \cdot WAD} - d \cdot 
 \frac{m \cdot l}{WAD^2} - \frac{\epsilon_3}{WAD}
 \right)
 - \epsilon_4
-
 $$
 
 After expansion and some simplification
@@ -306,7 +298,6 @@ d \cdot \frac{m\cdot l}{m_{deposit} \cdot l_{deposit}\cdot WAD}
 - \frac{\epsilon_2 \cdot m \cdot l}{WAD^2}
 - d \cdot \frac{\epsilon_3}{m_{deposit} \cdot l_{deposit} }
 + \text{(higher-order terms)}
-
 $$
 
 Note that (higher-order terms) are the terms with multiple epsilon terms where the amounts become negligible, because each term $e$ is < 1.
@@ -334,37 +325,28 @@ withdrawableShares
 - \frac{\epsilon_2 \cdot m \cdot l}{WAD^2}
 - d \cdot \frac{\epsilon_3 }{m_{deposit} \cdot l_{deposit} }
 + \text{(higher-order terms)}
-
 $$
 
 This intuitively makes sense as all the rounding error comes from the epsilon terms and how they propagate out from being nested. Therefore the introduced error from rounding are all the rounding terms added up ignoring the higher-order terms.
 
 $$
-roundedError =d \cdot \frac{\epsilon_1 \cdot m \cdot l}{WAD^3}
-+ \frac{\epsilon_2 \cdot m \cdot l}{WAD^2}
-+ d \cdot \frac{\epsilon_3 }{m_{\text{deposit}} \cdot l_{deposit} }
+roundedError =d \cdot \frac{\epsilon_1 \cdot m \cdot l}{WAD^3} + \frac{\epsilon_2 \cdot m \cdot l}{WAD^2} + d \cdot \frac{\epsilon_3 }{m_{\text{deposit}} \cdot l_{deposit} }
 $$
 
 Now lets assume the worst case scenario of maximizing this sum above, if each epsilon $e$ is replaced with the value of 1 due to a full wei being rounded off we can get the following.
 
 $$
-d \cdot \frac{m \cdot l}{WAD^3}
-+ \frac{ m \cdot l}{WAD^2}
-+ \frac{ d}{m_{\text{deposit}} \cdot l_{deposit}}
+d \cdot \frac{m \cdot l}{WAD^3} + \frac{ m \cdot l}{WAD^2} + \frac{ d}{m_{\text{deposit}} \cdot l_{deposit}}
 $$
 
 Assuming close to max values that results in rounding behaviour, we can maximize this total sum by having $d = 1e38$ ,  $m, m_{deposit}, l, l_{deposit}$ equal to WAD(1e18) then we get the following:
 
 $$
-\frac{1e38\cdot WAD^2}{WAD^3}
-+ \frac{ WAD^2}{WAD^2}
-+ \frac{1e38}{1e36}
+\frac{1e38\cdot WAD^2}{WAD^3} + \frac{ WAD^2}{WAD^2} + \frac{1e38}{1e36}
 $$
 
 $$
-=> \frac{1e38}{1e18}
-+ 1
-+ 100
+=> \frac{1e38}{1e18} + 1 + 100
 $$
 
 $$
