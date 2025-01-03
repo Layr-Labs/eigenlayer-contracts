@@ -50,6 +50,8 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, 
             )
         );
         isExcludedFuzzAddress[address(avsd)] = true;
+
+        assertTrue(avsd.domainSeparator() != bytes32(0), "sanity check");
     }
 
     function _newOperatorRegistrationSignature(

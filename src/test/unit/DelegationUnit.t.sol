@@ -1335,6 +1335,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
 
 contract DelegationManagerUnitTests_Initialization_Setters is DelegationManagerUnitTests {
     function test_initialization() public view {
+        assertTrue(delegationManager.domainSeparator() != bytes32(0), "sanity check");
         assertEq(
             address(delegationManager.strategyManager()),
             address(strategyManagerMock),
