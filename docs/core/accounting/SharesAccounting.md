@@ -6,7 +6,7 @@
 
 This document outlines the changes to the Staker and Operator Shares accounting resulting from the Slashing Upgrade. There are several introduced variables such as the _deposit scaling factor_ ($k_n$), _max magnitude_ ($m_n$), and _beacon chain slashing factor_ ($l_n$). How these interact with the Operator and Staker events like deposits, slashing, withdrawals will all be described below.
 
-## Prerequisite Documents
+## Prior Reading
 
 * [ELIP-002: Slashing via Unique Stake and Operator Sets](https://github.com/eigenfoundation/ELIPs/blob/main/ELIPs/ELIP-002.md)
 
@@ -144,6 +144,10 @@ $$
 l_{n+1} = l_n
 $$
 
+$$
+m_{n+1} = m_n
+$$
+
 Expanding the $a_{n+1}$ calculation
 
 $$
@@ -153,7 +157,7 @@ $$
 Which yields
 
 $$
-k_{n+1} = \frac{s_n k_n m_n + d_n}{s_{n+1} l_{n+1} m_{n+1}}=\frac{s_n k_n l_n m_n + d_n}{(s_n+d_n)m_n}
+k_{n+1} = \frac{s_n k_n m_n + d_n}{s_{n+1} l_{n+1} m_{n+1}}=\frac{s_n k_n l_n m_n + d_n}{(s_n+d_n)l_nm_n}
 $$
 
 #### Operator Level
@@ -172,6 +176,8 @@ See implementation in:
 * [`EigenPodManager.recordBeaconChainETHBalanceUpdate`](../../../src/contracts/pods/EigenPodManager.sol)
 
 <br> 
+
+---
 
 ### Slashing
 
@@ -249,6 +255,8 @@ See implementation in:
 
 <br>
 
+---
+
 ### Queue Withdrawal
 
 Withdrawals are queued by inputting a `depositShares` amount $x_n <= s_n$ which corresponds to the deposit shares amount stored in $s_n$.
@@ -313,6 +321,8 @@ See implementation in:
 
 <br>
 
+---
+
 ### Complete Withdrawal
 
 Now the staker completes a withdrawal $(q_t, t)$ which was queued at time $t$.
@@ -374,6 +384,8 @@ See implementation in:
 * [`SlashingLib.scaleForCompleteWithdrawal`](../../../src/contracts/libraries/SlashingLib.sol)
 
 <br>
+
+---
 
 ### EigenPod BeaconChain Slashing (Negative Shares decrements)
 
