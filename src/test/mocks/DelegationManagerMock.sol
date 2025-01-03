@@ -32,7 +32,7 @@ contract DelegationManagerMock is Test {
         uint64 newMaxMagnitude
     ) external {
         uint256 amountSlashed = SlashingLib.calcSlashedAmount({
-            operatorShares: operatorShares[operator][strategy],
+            shares: operatorShares[operator][strategy],
             prevMaxMagnitude: prevMaxMagnitude,
             newMaxMagnitude: newMaxMagnitude
         });

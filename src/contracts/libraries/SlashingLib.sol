@@ -4,24 +4,26 @@ pragma solidity ^0.8.27;
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin-upgrades/contracts/utils/math/SafeCastUpgradeable.sol";
 
-/// @dev the stakerScalingFactor and operatorMagnitude have initial default values to 1e18 as "1"
-/// to preserve precision with uint256 math. We use `WAD` where these variables are used
-/// and divide to represent as 1
+/// @dev All scaling factors have `1e18` as an initial/default value. This value is represented
+/// by the constant `WAD`, which is used to preserve precision with uint256 math.
+///
+/// When applying scaling factors, they are typically multiplied/divided by `WAD`, allowing this
+/// constant to act as a "1" in mathematical formulae.
 uint64 constant WAD = 1e18;
 
 /*
  * There are 2 types of shares:
- *      1. depositShares
+ *      1. deposit shares
  *          - These can be converted to an amount of tokens given a strategy
  *              - by calling `sharesToUnderlying` on the strategy address (they're already tokens 
  *              in the case of EigenPods)
- *          - These live in the storage of EPM and SM strategies 
- *      2. shares
+ *          - These live in the storage of the EigenPodManager and individual StrategyManager strategies 
+ *      2. withdrawable shares
  *          - For a staker, this is the amount of shares that they can withdraw
- *          - For an operator, this is the sum of its staker's withdrawable shares       
- * 
- * Note that `withdrawal.scaledShares` is scaled for the beaconChainETHStrategy to divide by the beaconChainScalingFactor upon queueing
- * and multiply by the beaconChainScalingFactor upon withdrawal
+ *          - For an operator, the shares delegated to them are equal to the sum of their stakers'
+ *            withdrawable shares
+ *
+ * Along with a slashing factor, the DepositScalingFactor is used to convert between the two share types.
  */
 struct DepositScalingFactor {
     uint256 _scalingFactor;
@@ -29,7 +31,6 @@ struct DepositScalingFactor {
 
 using SlashingLib for DepositScalingFactor global;
 
-// TODO: validate order of operations everywhere
 library SlashingLib {
     using Math for uint256;
     using SlashingLib for uint256;
@@ -70,14 +71,10 @@ library SlashingLib {
     }
 
     function scaleForQueueWithdrawal(
-        uint256 sharesToWithdraw,
-        uint256 slashingFactor
+        DepositScalingFactor memory dsf,
+        uint256 depositSharesToWithdraw
     ) internal pure returns (uint256) {
-        if (slashingFactor == 0) {
-            return 0;
-        }
-
-        return sharesToWithdraw.divWad(slashingFactor);
+        return depositSharesToWithdraw.mulWad(dsf.scalingFactor());
     }
 
     function scaleForCompleteWithdrawal(uint256 scaledShares, uint256 slashingFactor) internal pure returns (uint256) {
@@ -159,12 +156,29 @@ library SlashingLib {
             .mulWad(slashingFactor);
     }
 
+    function calcDepositShares(
+        DepositScalingFactor memory dsf,
+        uint256 withdrawableShares,
+        uint256 slashingFactor
+    ) internal pure returns (uint256) {
+        /// forgefmt: disable-next-item
+        return withdrawableShares
+            .divWad(dsf.scalingFactor())
+            .divWad(slashingFactor);
+    }
+
+    /**
+     * @notice Used for calculating amount of operatorShares that were slashed to decrement
+     * operatorShares. This is also used for calculating the amount of shares that are slashed
+     * from the withdrawal queue for a given (strategy, operator) tuple.
+     * NOTE: max magnitude is guaranteed to only ever decrease.
+     */
     function calcSlashedAmount(
-        uint256 operatorShares,
+        uint256 shares,
         uint256 prevMaxMagnitude,
         uint256 newMaxMagnitude
     ) internal pure returns (uint256) {
         // round up mulDiv so we don't overslash
-        return operatorShares - operatorShares.mulDiv(newMaxMagnitude, prevMaxMagnitude, Math.Rounding.Up);
+        return shares - shares.mulDiv(newMaxMagnitude, prevMaxMagnitude, Math.Rounding.Up);
     }
 }

@@ -6683,7 +6683,7 @@ contract DelegationManagerUnitTests_burningShares is DelegationManagerUnitTests 
             for (uint256 i = 0; i < strategies.length; ++i) {
                 uint256 currentShares = delegationManager.operatorShares(defaultOperator, strategies[i]);
                 uint256 sharesToDecrease = SlashingLib.calcSlashedAmount({
-                    operatorShares: currentShares,
+                    shares: currentShares,
                     prevMaxMagnitude: prevMaxMagnitude,
                     newMaxMagnitude: newMaxMagnitude
                 });

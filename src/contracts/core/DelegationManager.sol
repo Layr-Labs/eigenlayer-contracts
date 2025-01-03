@@ -283,7 +283,7 @@ contract DelegationManager is
     ) external onlyAllocationManager {
         /// forgefmt: disable-next-item
         uint256 operatorSharesSlashed = SlashingLib.calcSlashedAmount({
-            operatorShares: operatorShares[operator][strategy],
+            shares: operatorShares[operator][strategy],
             prevMaxMagnitude: prevMaxMagnitude,
             newMaxMagnitude: newMaxMagnitude
         });
@@ -752,8 +752,8 @@ contract DelegationManager is
         // less than or equal to MIN_WITHDRAWAL_DELAY_BLOCKS ago. These shares are still slashable.
         uint256 scaledSharesAdded = curQueuedScaledShares - prevQueuedScaledShares;
 
-        return SlashingLib.scaleForBurning({
-            scaledShares: scaledSharesAdded,
+        return SlashingLib.calcSlashedAmount({
+            shares: scaledSharesAdded,
             prevMaxMagnitude: prevMaxMagnitude,
             newMaxMagnitude: newMaxMagnitude
         });
