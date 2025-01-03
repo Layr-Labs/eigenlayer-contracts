@@ -245,9 +245,7 @@ $$
 
 $$
 =>
-\frac{\lfloor \frac{m \cdot l}{WAD} \rfloor}{WAD} = 
-\frac{m \cdot l}{WAD^2}
-- \frac{\epsilon_3}{WAD}
+\frac{\lfloor \frac{m \cdot l}{WAD} \rfloor}{WAD} = \frac{m \cdot l}{WAD^2} - \frac{\epsilon_3}{WAD}
 $$
 
 4. Now bringing it all back to the original equation
@@ -266,38 +264,24 @@ d \space\cdot\space
 $$
 
 $$
-= \lfloor
-\left(
-d \cdot \frac{WAD \cdot WAD}{m_{deposit} \cdot l_{deposit} \cdot WAD} - d \cdot \frac{\epsilon_1}{WAD} - \epsilon_2
-\right)
-\cdot
-\left(
-\frac{m \cdot l}{WAD^2} - \frac{\epsilon_3}{WAD}
-\right)
-\rfloor
+= \lfloor\left(d \cdot \frac{WAD \cdot WAD}{m_{deposit} \cdot l_{deposit} \cdot WAD} - d \cdot \frac{\epsilon_1}{WAD} - \epsilon_2\right)\cdot\left(\frac{m \cdot l}{WAD^2} - \frac{\epsilon_3}{WAD}\right)\rfloor
 $$
 
 $$
-= 
-\left(
+= \left(
 d \cdot \frac{WAD \cdot WAD}{m_{deposit} \cdot l_{deposit} \cdot WAD} - d \cdot \frac{\epsilon_1}{WAD} - \epsilon_2
 \right)
 \cdot
 \left(
 \frac{m \cdot l}{WAD^2} - \frac{\epsilon_3}{WAD}
-\right)
-- \epsilon_4
+\right) - \epsilon_4
 $$
 
 After expansion and some simplification
 
 $$
 withdrawableShares (rounded) =
-d \cdot \frac{m\cdot l}{m_{deposit} \cdot l_{deposit}\cdot WAD}
-- d \cdot \frac{\epsilon_1 \cdot m \cdot l}{WAD^3}
-- \frac{\epsilon_2 \cdot m \cdot l}{WAD^2}
-- d \cdot \frac{\epsilon_3}{m_{deposit} \cdot l_{deposit} }
-+ \text{(higher-order terms)}
+d \cdot \frac{m\cdot l}{m_{deposit} \cdot l_{deposit}\cdot WAD} - d \cdot \frac{\epsilon_1 \cdot m \cdot l}{WAD^3} - \frac{\epsilon_2 \cdot m \cdot l}{WAD^2} - d \cdot \frac{\epsilon_3}{m_{deposit} \cdot l_{deposit} } + \text{(higher-order terms)}
 $$
 
 Note that (higher-order terms) are the terms with multiple epsilon terms where the amounts become negligible, because each term $e$ is < 1.
@@ -320,11 +304,7 @@ But we can see this term show in the withdrawableShares(rounded) above in the fi
 
 $$
 withdrawableShares (rounded) =
-withdrawableShares
-- d \cdot \frac{\epsilon_1 \cdot m \cdot l}{WAD^3}
-- \frac{\epsilon_2 \cdot m \cdot l}{WAD^2}
-- d \cdot \frac{\epsilon_3 }{m_{deposit} \cdot l_{deposit} }
-+ \text{(higher-order terms)}
+withdrawableShares - d \cdot \frac{\epsilon_1 \cdot m \cdot l}{WAD^3} - \frac{\epsilon_2 \cdot m \cdot l}{WAD^2} - d \cdot \frac{\epsilon_3 }{m_{deposit} \cdot l_{deposit} } + \text{(higher-order terms)}
 $$
 
 This intuitively makes sense as all the rounding error comes from the epsilon terms and how they propagate out from being nested. Therefore the introduced error from rounding are all the rounding terms added up ignoring the higher-order terms.
