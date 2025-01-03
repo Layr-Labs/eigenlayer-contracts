@@ -168,17 +168,15 @@ library SlashingLib {
     }
 
     /**
-     * @notice Used for calculating amount of operatorShares that were slashed to decrement
-     * operatorShares. This is also used for calculating the amount of shares that are slashed
-     * from the withdrawal queue for a given (strategy, operator) tuple.
+     * @notice Used for calculating amount of operatorShares that were slashed and need to be decremented. 
      * NOTE: max magnitude is guaranteed to only ever decrease.
      */
     function calcSlashedAmount(
-        uint256 shares,
+        uint256 operatorShares,
         uint256 prevMaxMagnitude,
         uint256 newMaxMagnitude
     ) internal pure returns (uint256) {
         // round up mulDiv so we don't overslash
-        return shares - shares.mulDiv(newMaxMagnitude, prevMaxMagnitude, Math.Rounding.Up);
+        return operatorShares - operatorShares.mulDiv(newMaxMagnitude, prevMaxMagnitude, Math.Rounding.Up);
     }
 }
