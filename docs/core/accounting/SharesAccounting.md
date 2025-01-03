@@ -334,8 +334,10 @@ The shares that were attempted to be withdrawn by the staker is equal is $w_t$
 
 $$
 w_t = q_t m_t l_t
+$$
 
-w_t = x_t k_t l_t m_t
+$$
+= x_t k_t l_t m_t
 $$
 
 However, the staker's shares in their withdrawal may have been slashed both from in EigenLayer during the queued withdrawal period and from the BeaconChain (if the Strategy is native ETH). The amount of shares they actually receive is proportionally the following:
@@ -347,8 +349,7 @@ $$
 So the actual amount of shares withdrawn on completion is calculated to be:
 
 $$
- sharesWithdrawn = w_t (\frac{m_{t+delay} l_{now}}{m_t l_t} )
-
+sharesWithdrawn = w_t (\frac{m_{t+delay} l_{now}}{m_t l_t} )
 $$
 
 $$ 
