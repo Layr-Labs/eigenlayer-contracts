@@ -54,8 +54,15 @@ contract Execute is Queue {
         // 4. Validate
         _validateNewImplAddresses(true);
         _validateProxyConstructors();
-        // TODO:
-        // _validateProxyDomainSeparators();
+        _validateProxyDomainSeparators();
+    }
+
+    function _validateProxyDomainSeparators() internal view {
+        bytes32 zeroDomainSeparator = bytes32(0);
+
+        assertFalse(Env.proxy.avsDirectory().domainSeparator() == zeroDomainSeparator, "avsD.domainSeparator is zero");
+        assertFalse(Env.proxy.delegationManager().domainSeparator() == zeroDomainSeparator, "dm.domainSeparator is zero");
+        assertFalse(Env.proxy.strategyManager().domainSeparator() == zeroDomainSeparator, "rc.domainSeparator is zero");
     }
 
     function _validateProxyConstructors() internal view {
