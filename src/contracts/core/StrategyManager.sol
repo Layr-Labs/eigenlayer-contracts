@@ -140,7 +140,7 @@ contract StrategyManager is
         strategy.withdraw(staker, token, shares);
     }
 
-    /// @inheritdoc IStrategyManager
+    /// @inheritdoc IShareManager
     function increaseBurnableShares(IStrategy strategy, uint256 addedSharesToBurn) external onlyDelegationManager {
         burnableShares[strategy] += addedSharesToBurn;
         emit BurnableSharesIncreased(strategy, addedSharesToBurn);

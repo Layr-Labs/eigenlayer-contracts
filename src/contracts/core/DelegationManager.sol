@@ -307,10 +307,9 @@ contract DelegationManager is
             sharesToDecrease: operatorSharesSlashed
         });
 
-        // NOTE: native ETH shares will be burned by a different mechanism in a future release
-        if (strategy != beaconChainETHStrategy) {
-            strategyManager.increaseBurnableShares(strategy, totalDepositSharesToBurn);
-        }
+        IShareManager shareManager = _getShareManager(strategy);
+        // NOTE: for beaconChainETHStrategy, increased burnable shares currently have no mechanism for burning
+        shareManager.increaseBurnableShares(strategy, totalDepositSharesToBurn);
     }
 
     /**

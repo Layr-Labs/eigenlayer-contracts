@@ -351,7 +351,7 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
 
     /**
      * @notice Decreases the operators shares in storage after a slash and increases the burnable shares by calling
-     * into the StrategyManager. Burnable shares for the beaconChainETHStrategy/EigenPodManager are specifically not handled.
+     * into either the StrategyManager or EigenPodManager (if the strategy is beaconChainETH).
      * @param operator The operator to decrease shares for
      * @param strategy The strategy to decrease shares for
      * @param prevMaxMagnitude the previous maxMagnitude of the operator
