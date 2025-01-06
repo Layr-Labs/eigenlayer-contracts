@@ -148,9 +148,6 @@ interface IDelegationManagerEvents is IDelegationManagerTypes {
     /// @notice Emitted whenever an operator's shares are decreased for a given strategy. Note that shares is the delta in the operator's shares.
     event OperatorSharesDecreased(address indexed operator, address staker, IStrategy strategy, uint256 shares);
 
-    /// @notice Emitted whenever an operator's shares are burned for a given strategy
-    event OperatorSharesBurned(address indexed operator, IStrategy strategy, uint256 shares);
-
     /// @notice Emitted when @param staker delegates to @param operator.
     event StakerDelegated(address indexed staker, address indexed operator);
 
@@ -353,8 +350,8 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
     ) external;
 
     /**
-     * @notice Decreases the operators shares in storage after a slash and burns the corresponding Strategy shares
-     * by calling into the StrategyManager or EigenPodManager to burn the shares.
+     * @notice Decreases the operators shares in storage after a slash and increases the burnable shares by calling
+     * into the StrategyManager. Burnable shares for the beaconChainETHStrategy/EigenPodManager are specifically not handled.
      * @param operator The operator to decrease shares for
      * @param strategy The strategy to decrease shares for
      * @param prevMaxMagnitude the previous maxMagnitude of the operator
@@ -363,7 +360,7 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
      * @dev Note: Assumes `prevMaxMagnitude <= newMaxMagnitude`. This invariant is maintained in
      * the AllocationManager.
      */
-    function burnOperatorShares(
+    function slashOperatorShares(
         address operator,
         IStrategy strategy,
         uint64 prevMaxMagnitude,

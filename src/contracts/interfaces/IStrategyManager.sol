@@ -43,6 +43,12 @@ interface IStrategyManagerEvents {
 
     /// @notice Emitted when a strategy is removed from the approved list of strategies for deposit
     event StrategyRemovedFromDepositWhitelist(IStrategy strategy);
+
+    /// @notice Emitted when an operator is slashed and shares to be burned are increased
+    event BurnableSharesIncreased(IStrategy strategy, uint256 shares);
+
+    /// @notice Emitted when shares are burned
+    event BurnableSharesDecreased(IStrategy strategy, uint256 shares);
 }
 
 /**
@@ -109,12 +115,22 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
     ) external returns (uint256 shares);
 
     /**
-     * @notice Burns Strategy shares for the given strategy by calling into the strategy to transfer to the default burn address.
+     * @notice Increases burnable Strategy shares for the given strategy when an operator is slashed.
+     * @notice Increase the amount of burnable shares for a given Strategy. This is called by the DelegationManager
+     * when an operator is slashed in EigenLayer. The shares can be burned in a separate transaction calling `burnShares`.
      * @param strategy The strategy to burn shares in.
-     * @param sharesToBurn The amount of shares to burn.
+     * @param addedSharesToBurn The amount of added shares to burn.
      * @dev This function is only called by the DelegationManager when an operator is slashed.
      */
-    function burnShares(IStrategy strategy, uint256 sharesToBurn) external;
+    function increaseBurnableShares(IStrategy strategy, uint256 addedSharesToBurn) external;
+
+     /**
+     * @notice Burns Strategy shares for the given strategy by calling into the strategy to transfer
+     * to the default burn address.
+     * @param strategy The strategy to burn shares in.
+     */
+    function burnShares(IStrategy strategy) external;
+
 
     /**
      * @notice Owner-only function to change the `strategyWhitelister` address.

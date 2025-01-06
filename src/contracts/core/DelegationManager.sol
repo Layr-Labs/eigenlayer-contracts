@@ -275,7 +275,7 @@ contract DelegationManager is
     }
 
     /// @inheritdoc IDelegationManager
-    function burnOperatorShares(
+    function slashOperatorShares(
         address operator,
         IStrategy strategy,
         uint64 prevMaxMagnitude,
@@ -309,8 +309,7 @@ contract DelegationManager is
 
         // NOTE: native ETH shares will be burned by a different mechanism in a future release
         if (strategy != beaconChainETHStrategy) {
-            strategyManager.burnShares(strategy, totalDepositSharesToBurn);
-            emit OperatorSharesBurned(operator, strategy, totalDepositSharesToBurn);
+            strategyManager.increaseBurnableShares(strategy, totalDepositSharesToBurn);
         }
     }
 
