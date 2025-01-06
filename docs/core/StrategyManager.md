@@ -24,13 +24,11 @@ This document organizes methods according to the following themes (click each to
 
 #### Important state variables
 
-* `mapping(address => mapping(IStrategy => uint256)) public stakerStrategyShares`: Tracks the current balance a Staker holds in a given strategy. Updated on deposit/withdraw.
+* `mapping(address => mapping(IStrategy => uint256)) public stakerDepositShares`: Tracks the current balance a Staker holds in a given strategy. Updated on deposit/withdraw.
+    * Note that not all shares may be withdrawable in the event of a slashing.
 * `mapping(address => IStrategy[]) public stakerStrategyList`: Maintains a list of the strategies a Staker holds a nonzero number of shares in.
     * Updated as needed when Stakers deposit and withdraw: if a Staker has a zero balance in a Strategy, it is removed from the list. Likewise, if a Staker deposits into a Strategy and did not previously have a balance, it is added to the list.
 * `mapping(IStrategy => bool) public strategyIsWhitelistedForDeposit`: The `strategyWhitelister` is (as of M2) a permissioned role that can be changed by the contract owner. The `strategyWhitelister` has currently whitelisted 3 `StrategyBaseTVLLimits` contracts in this mapping, one for each supported LST.
-* `mapping(IStrategy => bool) public thirdPartyTransfersForbidden`: The `strategyWhitelister` can disable third party transfers for a given strategy. If `thirdPartyTransfersForbidden[strategy] == true`:
-    * Users cannot deposit on behalf of someone else (see [`depositIntoStrategyWithSignature`](#depositintostrategywithsignature)). 
-    * Users cannot withdraw on behalf of someone else. (see [`DelegationManager.queueWithdrawals`](./DelegationManager.md#queuewithdrawals)) 
 
 #### Helpful definitions
 
@@ -55,8 +53,8 @@ Withdrawals are performed through the `DelegationManager` (see [`DelegationManag
 
 ```solidity
 function depositIntoStrategy(
-    IStrategy strategy, 
-    IERC20 token, 
+    IStrategy strategy,
+    IERC20 token,
     uint256 amount
 )
     external
@@ -75,13 +73,13 @@ If the Staker is delegated to an Operator, the Operator's delegated shares are i
 *Effects*:
 * `token.safeTransferFrom`: Transfers `amount` of `token` to `strategy` on behalf of the caller.
 * See [`StrategyBaseTVLLimits.deposit`](#strategybasetvllimitsdeposit)
-* `StrategyManager` awards the Staker with the newly-created shares 
+* `StrategyManager` awards the Staker with the newly-created shares
 * See [`DelegationManager.increaseDelegatedShares`](./DelegationManager.md#increasedelegatedshares)
 
 *Requirements*:
 * Pause status MUST NOT be set: `PAUSED_DEPOSITS`
 * Caller MUST allow at least `amount` of `token` to be transferred by `StrategyManager` to the strategy
-* `strategy` in question MUST be whitelisted for deposits. 
+* `strategy` in question MUST be whitelisted for deposits.
 * See [`StrategyBaseTVLLimits.deposit`](#strategybasetvllimitsdeposit)
 
 #### `depositIntoStrategyWithSignature`
@@ -115,20 +113,21 @@ This method has a similar purpose as `depositIntoStrategy()`, except it is inten
 
 ### Withdrawal Processing
 
-These methods are callable ONLY by the `DelegationManager`, and are used when processing undelegations and withdrawals:
-* [`StrategyManager.removeShares`](#removeshares)
+These methods are callable ONLY by the `DelegationManager`, and are used when processing undelegations, withdrawals, and slashes:
+* [`StrategyManager.removeDepositShares`](#removedepositshares)
 * [`StrategyManager.addShares`](#addshares)
 * [`StrategyManager.withdrawSharesAsTokens`](#withdrawsharesastokens)
+* [`StrategyManager.burnShares`](#burnshares)
 
 See [`DelegationManager.md`](./DelegationManager.md) for more context on how these methods are used.
 
-#### `removeShares`
+#### `removeDepositShares`
 
 ```solidity
-function removeShares(
+function removeDepositShares(
     address staker,
     IStrategy strategy,
-    uint256 shares
+    uint256 depositSharesToRemove
 )
     external
     onlyDelegationManager
@@ -138,19 +137,20 @@ The `DelegationManager` calls this method when a Staker queues a withdrawal (or 
 
 The Staker's share balance for the `strategy` is decreased by the removed `shares`. If this causes the Staker's share balance to hit zero, the `strategy` is removed from the Staker's strategy list.
 
+If the Staker has been slashed (i.e. it has delegated to an Operator which has been slashed), then the Staker would be ineligible to withdraw some amount of shares as enforced by the `DelegationManager`.
+
 *Entry Points*:
 * `DelegationManager.undelegate`
 * `DelegationManager.queueWithdrawals`
 
 *Effects*:
-* The Staker's share balance for the given `strategy` is decreased by the given `shares`
+* Decrease the Staker's share balance for the given `strategy` by the given `depositSharesToRemove`
     * If this causes the balance to hit zero, the `strategy` is removed from the Staker's strategy list
 
 *Requirements*:
 * Caller MUST be the `DelegationManager`
-* `staker` parameter MUST NOT be zero
-* `shares` parameter MUST NOT be zero
-* `staker` MUST have at least `shares` balance for the given `strategy`
+* `depositSharesToRemove` parameter MUST NOT be zero
+* `staker` MUST have at least `depositSharesToRemove` balance for the given `strategy`
 
 #### `addShares`
 
@@ -158,41 +158,47 @@ The Staker's share balance for the `strategy` is decreased by the removed `share
 function addShares(
     address staker,
     IStrategy strategy,
+    IERC20 token,
     uint256 shares
-) 
-    external 
+)
+    external
     onlyDelegationManager
+    returns (uint256, uint256)
 ```
 
-The `DelegationManager` calls this method when a queued withdrawal is completed and the withdrawer specifies that they want to receive the withdrawal as "shares" (rather than as the underlying tokens). In this case, the `shares` originally removed (via `removeShares`) are awarded to the `staker` passed in by the `DelegationManager`.
+The `DelegationManager` calls this method when a queued withdrawal is completed and the withdrawer specifies that they want to receive the withdrawal as "shares" (rather than as the underlying tokens). In this case, the `shares` originally removed (via `removeDepositShares`) are awarded to the `staker` passed in by the `DelegationManager`.
+
+If any slashing results need to be applied, the `DelegationManager` will calculate the number of shares to slash and return the remaining number of shares the user is eligible to withdraw, then redelegate them.
 
 *Entry Points*:
 * `DelegationManager.completeQueuedWithdrawal`
 * `DelegationManager.completeQueuedWithdrawals`
 
 *Effects*:
-* The `staker's` share balance for the given `strategy` is increased by `shares`
+* Increase the `staker's` share balance for the given `strategy` by `shares`
     * If the prior balance was zero, the `strategy` is added to the `staker's` strategy list
+* Emit a `Deposit` event
 
 *Requirements*:
 * Caller MUST be the `DelegationManager`
 * `staker` parameter MUST NOT be zero
 * `shares` parameter MUST NOT be zero
+* Length of `stakerStrategyList` for the `staker` MUST NOT exceed `MAX_STAKER_STRATEGY_LIST_LENGTH`
 
 #### `withdrawSharesAsTokens`
 
 ```solidity
 function withdrawSharesAsTokens(
-    address recipient,
+    address staker,
     IStrategy strategy,
-    uint shares,
-    IERC20 token
+    IERC20 token,
+    uint256 shares
 )
     external
     onlyDelegationManager
 ```
 
-The `DelegationManager` calls this method when a queued withdrawal is completed and the withdrawer specifies that they want to receive the withdrawal as the tokens underlying the shares. In this case, the `shares` originally removed (via `removeShares`) are converted to tokens within the `strategy` and sent to the `recipient`.
+The `DelegationManager` calls this method when a queued withdrawal is completed and the withdrawer specifies that they want to receive the withdrawal as the tokens underlying the shares. In this case, the `shares` originally removed (via `removeDepositShares`) are converted to tokens within the `strategy` and sent to the `recipient`.
 
 *Entry Points*:
 * `DelegationManager.completeQueuedWithdrawal`
@@ -204,6 +210,28 @@ The `DelegationManager` calls this method when a queued withdrawal is completed 
 *Requirements*:
 * Caller MUST be the `DelegationManager`
 * See [`StrategyBaseTVLLimits.withdraw`](#strategybasetvllimitswithdraw)
+
+#### `burnShares`
+
+```solidity
+function burnShares(
+    IStrategy strategy,
+    uint256 sharesToBurn
+)
+    external
+    onlyDelegationManager
+```
+
+The `AllocationManager` calls this method via the `DelegationManager` when an operator is slashed. This function will withdraw shares of a given strategy and transfer the corresponding amount of tokens to a predesignated `DEFAULT_BURN_ADDRESS`, disallowing the Staker from retrieving tokens by removing them from circulation.
+
+*Entry Points*:
+* `DelegationManager.burnOperatorShares`
+
+*Effects*:
+* Calls `withdraw` on the `strategy`, withdrawing shares and sending a corresponding amount of tokens to the `DEFAULT_BURN_ADDRESS`
+
+*Requirements*:
+* Caller MUST be the `DelegationManager`
 
 ---
 
@@ -224,7 +252,7 @@ Additionally, using the `StrategyFactory`, anyone can deploy a new `StrategyBase
 
 ```solidity
 function deposit(
-    IERC20 token, 
+    IERC20 token,
     uint256 amount
 )
     external
@@ -259,8 +287,8 @@ The new shares created are returned to the `StrategyManager` to be added to the 
 
 ```solidity
 function withdraw(
-    address recipient, 
-    IERC20 token, 
+    address recipient,
+    IERC20 token,
     uint256 amountShares
 )
     external
@@ -268,7 +296,7 @@ function withdraw(
     onlyStrategyManager
 ```
 
-The `StrategyManager` calls this method when a queued withdrawal is completed and the withdrawer has specified they would like to convert their withdrawn shares to tokens. 
+The `StrategyManager` calls this method when a queued withdrawal is completed and the withdrawer has specified they would like to convert their withdrawn shares to tokens.
 
 This method converts the withdrawal shares back into tokens using the strategy's exchange rate. The strategy's total shares are decreased to reflect the withdrawal before transferring the tokens to the `recipient`.
 
@@ -336,8 +364,8 @@ Note that once the owner adds tokens to the blacklist, they cannot be removed. T
 function whitelistStrategies(
     IStrategy[] calldata strategiesToWhitelist,
     bool[] calldata thirdPartyTransfersForbiddenValues
-) 
-    external 
+)
+    external
     onlyOwner
 ```
 
@@ -410,8 +438,8 @@ Allows the `owner` to update the Strategy Whitelister address. Currently, the St
 function addStrategiesToDepositWhitelist(
     IStrategy[] calldata strategiesToWhitelist,
     bool[] calldata thirdPartyTransfersForbiddenValues
-) 
-    external 
+)
+    external
     onlyStrategyWhitelister
 ```
 
@@ -429,8 +457,8 @@ Allows the Strategy Whitelister to add any number of strategies to the `Strategy
 ```solidity
 function removeStrategiesFromDepositWhitelist(
     IStrategy[] calldata strategiesToRemoveFromWhitelist
-) 
-    external 
+)
+    external
     onlyStrategyWhitelister
 ```
 
@@ -448,8 +476,8 @@ Allows the Strategy Whitelister to remove any number of strategies from the `Str
 function setThirdPartyTransfersForbidden(
     IStrategy strategy,
     bool value
-) 
-    external 
+)
+    external
     onlyStrategyWhitelister
 ```
 
