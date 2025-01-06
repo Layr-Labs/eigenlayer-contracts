@@ -432,7 +432,7 @@ contract AllocationManager is
         }
 
         info.pendingDelay = delay;
-        info.effectBlock = uint32(block.number) + ALLOCATION_CONFIGURATION_DELAY;
+        info.effectBlock = uint32(block.number) + ALLOCATION_CONFIGURATION_DELAY + 1;
 
         _allocationDelayInfo[operator] = info;
         emit AllocationDelaySet(operator, delay, info.effectBlock);

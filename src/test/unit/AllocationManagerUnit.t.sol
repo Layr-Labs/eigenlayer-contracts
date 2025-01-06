@@ -24,7 +24,7 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
 
     uint32 constant ASSUMED_BLOCK_TIME = 12 seconds;
     uint32 constant DEALLOCATION_DELAY = 14 days / ASSUMED_BLOCK_TIME;
-    uint32 constant ALLOCATION_CONFIGURATION_DELAY = 21 days / ASSUMED_BLOCK_TIME;
+    uint32 constant ALLOCATION_CONFIGURATION_DELAY = 17.5 days / ASSUMED_BLOCK_TIME;
     uint32 constant DEFAULT_OPERATOR_ALLOCATION_DELAY = 1 days / ASSUMED_BLOCK_TIME;
 
     uint256 constant DEFAULT_OPERATOR_SHARES = 1e18;
@@ -115,7 +115,7 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
     function _setAllocationDelay(address operator, uint32 delay) internal {
         cheats.prank(operator);
         allocationManager.setAllocationDelay(operator, delay);
-        cheats.roll(block.number + ALLOCATION_CONFIGURATION_DELAY);
+        cheats.roll(block.number + ALLOCATION_CONFIGURATION_DELAY + 1);
     }
 
     function _createOperatorSet(
@@ -2028,7 +2028,7 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
 
         allocationManager.setAllocationDelay(defaultOperator, secondDelay);
 
-        cheats.roll(block.number + ALLOCATION_CONFIGURATION_DELAY);
+        cheats.roll(block.number + ALLOCATION_CONFIGURATION_DELAY + 1);
         allocationManager.modifyAllocations(defaultOperator, _newAllocateParams(defaultOperatorSet, half+1));
 
         cheats.stopPrank();
@@ -3092,7 +3092,7 @@ contract AllocationManagerUnitTests_ClearDeallocationQueue is AllocationManagerU
         uint32 allocationDelay = DEALLOCATION_DELAY * 2;
         cheats.prank(defaultOperator);
         allocationManager.setAllocationDelay(defaultOperator, allocationDelay);
-        cheats.roll(block.number + ALLOCATION_CONFIGURATION_DELAY);
+        cheats.roll(block.number + ALLOCATION_CONFIGURATION_DELAY + 1);
         (, uint32 storedDelay) = allocationManager.getAllocationDelay(defaultOperator);
         assertEq(allocationDelay, storedDelay, "allocation delay not valid");
 
@@ -3164,6 +3164,21 @@ contract AllocationManagerUnitTests_SetAllocationDelay is AllocationManagerUnitT
         allocationManager.setAllocationDelay(operatorToSet, 1);
     }
 
+    function test_regression_boundary() public {
+        cheats.prank(operatorToSet);
+        allocationManager.setAllocationDelay(operatorToSet, 0);
+
+        // Warp to the allocation config delay - we should not be set yet
+        cheats.roll(block.number + ALLOCATION_CONFIGURATION_DELAY);
+        (bool isSet, uint32 delay) = allocationManager.getAllocationDelay(operatorToSet);
+        assertFalse(isSet, "isSet should not be set");
+
+        // Warp to the next block - we should be set now
+        cheats.roll(block.number + 1);
+        (isSet, delay) = allocationManager.getAllocationDelay(operatorToSet);
+        assertTrue(isSet, "isSet should be set");
+    }
+
     function testFuzz_setDelay(
         Randomness r
     ) public rand(r) {
@@ -3171,7 +3186,7 @@ contract AllocationManagerUnitTests_SetAllocationDelay is AllocationManagerUnitT
 
         // Set delay
         cheats.expectEmit(true, true, true, true, address(allocationManager));
-        emit AllocationDelaySet(operatorToSet, delay, uint32(block.number + ALLOCATION_CONFIGURATION_DELAY));
+        emit AllocationDelaySet(operatorToSet, delay, uint32(block.number + ALLOCATION_CONFIGURATION_DELAY + 1));
         cheats.prank(operatorToSet);
         allocationManager.setAllocationDelay(operatorToSet, delay);
 
@@ -3181,7 +3196,7 @@ contract AllocationManagerUnitTests_SetAllocationDelay is AllocationManagerUnitT
         assertEq(0, returnedDelay, "returned delay should be 0");
 
         // Warp to effect block
-        cheats.roll(block.number + ALLOCATION_CONFIGURATION_DELAY);
+        cheats.roll(block.number + ALLOCATION_CONFIGURATION_DELAY + 1);
 
         // Check values after config delay
         (isSet, returnedDelay) = allocationManager.getAllocationDelay(operatorToSet);
@@ -3200,11 +3215,11 @@ contract AllocationManagerUnitTests_SetAllocationDelay is AllocationManagerUnitT
         allocationManager.setAllocationDelay(operatorToSet, firstDelay);
 
         // Warp just before effect block
-        cheats.roll(block.number + ALLOCATION_CONFIGURATION_DELAY - 1);
+        cheats.roll(block.number + ALLOCATION_CONFIGURATION_DELAY);
 
         // Set delay again
         cheats.expectEmit(true, true, true, true, address(allocationManager));
-        emit AllocationDelaySet(operatorToSet, secondDelay, uint32(block.number + ALLOCATION_CONFIGURATION_DELAY));
+        emit AllocationDelaySet(operatorToSet, secondDelay, uint32(block.number + ALLOCATION_CONFIGURATION_DELAY + 1));
         cheats.prank(operatorToSet);
         allocationManager.setAllocationDelay(operatorToSet, secondDelay);
 
@@ -3217,7 +3232,7 @@ contract AllocationManagerUnitTests_SetAllocationDelay is AllocationManagerUnitT
         assertEq(0, returnedDelay, "returned delay should be 0");
 
         // Warp to effect block of second delay
-        cheats.roll(block.number + ALLOCATION_CONFIGURATION_DELAY);
+        cheats.roll(block.number + ALLOCATION_CONFIGURATION_DELAY + 1);
         (isSet, returnedDelay) = allocationManager.getAllocationDelay(operatorToSet);
         assertTrue(isSet, "isSet should be set");
         assertEq(secondDelay, returnedDelay, "delay not set");
@@ -3234,7 +3249,7 @@ contract AllocationManagerUnitTests_SetAllocationDelay is AllocationManagerUnitT
         allocationManager.setAllocationDelay(operatorToSet, firstDelay);
 
         // Warp to effect block of first delay
-        cheats.roll(block.number + ALLOCATION_CONFIGURATION_DELAY);
+        cheats.roll(block.number + ALLOCATION_CONFIGURATION_DELAY + 1);
 
         // Set delay again
         cheats.prank(operatorToSet);
@@ -3246,7 +3261,7 @@ contract AllocationManagerUnitTests_SetAllocationDelay is AllocationManagerUnitT
         assertEq(firstDelay, returnedDelay, "delay not set");
 
         // Warp to effect block of second delay
-        cheats.roll(block.number + ALLOCATION_CONFIGURATION_DELAY);
+        cheats.roll(block.number + ALLOCATION_CONFIGURATION_DELAY + 1);
 
         // Check values after second delay
         (isSet, returnedDelay) = allocationManager.getAllocationDelay(operatorToSet);
@@ -3263,7 +3278,7 @@ contract AllocationManagerUnitTests_SetAllocationDelay is AllocationManagerUnitT
         allocationManager.setAllocationDelay(operatorToSet, delay);
 
         // Warp to effect block
-        cheats.roll(block.number + ALLOCATION_CONFIGURATION_DELAY);
+        cheats.roll(block.number + ALLOCATION_CONFIGURATION_DELAY + 1);
         (bool isSet, uint32 returnedDelay) = allocationManager.getAllocationDelay(operatorToSet);
         assertTrue(isSet, "isSet should be set");
         assertEq(delay, returnedDelay, "delay not set");
