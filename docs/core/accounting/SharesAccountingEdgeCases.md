@@ -1,4 +1,3 @@
-[magnitude-doc]: https://github.com/eigenfoundation/ELIPs/blob/main/ELIPs/ELIP-002.md
 [elip-002]: https://github.com/eigenfoundation/ELIPs/blob/main/ELIPs/ELIP-002.md
 
 # Shares Accounting Edge Cases

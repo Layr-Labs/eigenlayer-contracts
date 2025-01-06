@@ -1,5 +1,4 @@
 
-[magnitude-doc]: https://github.com/eigenfoundation/ELIPs/blob/main/ELIPs/ELIP-002.md
 [elip-002]: https://github.com/eigenfoundation/ELIPs/blob/main/ELIPs/ELIP-002.md
 
 # Shares Accounting
@@ -79,7 +78,7 @@ Later after the withdrawal delay has passed, the Staker can complete their withd
 
 As of release `v1.0.0` and the introduction of Unique Stake and Operator Sets, programmatic slashing will be enabled in the core EigenLayer protocol where Staker deposits can be subject to slashing. 
 The remaining portions of this document will assume understanding of Allocations/Deallocations, Max Magnitudes, and OperatorSets.
-For more information on this, there is the [ELIP-002][elip-002] which has a high-level but detailed overview of the Slashing upgrade as well as the separate [Magnitude document][magnitude-doc] here.
+For more information on this, there is the [ELIP-002][elip-002] which has a high-level but detailed overview of the Slashing upgrade.
 
 We now introduce a few new types of Shares concepts:
 
