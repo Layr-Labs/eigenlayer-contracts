@@ -362,8 +362,7 @@ Note that once the owner adds tokens to the blacklist, they cannot be removed. T
 
 ```solidity
 function whitelistStrategies(
-    IStrategy[] calldata strategiesToWhitelist,
-    bool[] calldata thirdPartyTransfersForbiddenValues
+    IStrategy[] calldata strategiesToWhitelist
 )
     external
     onlyOwner
@@ -436,8 +435,7 @@ Allows the `owner` to update the Strategy Whitelister address. Currently, the St
 
 ```solidity
 function addStrategiesToDepositWhitelist(
-    IStrategy[] calldata strategiesToWhitelist,
-    bool[] calldata thirdPartyTransfersForbiddenValues
+    IStrategy[] calldata strategiesToWhitelist
 )
     external
     onlyStrategyWhitelister
@@ -447,7 +445,6 @@ Allows the Strategy Whitelister to add any number of strategies to the `Strategy
 
 *Effects*:
 * Adds entries to `StrategyManager.strategyIsWhitelistedForDeposit`
-* Sets `thirdPartyTransfersForbidden` for each added strategy
 
 *Requirements*:
 * Caller MUST be the `strategyWhitelister`
@@ -466,27 +463,6 @@ Allows the Strategy Whitelister to remove any number of strategies from the `Str
 
 *Effects*:
 * Removes entries from `StrategyManager.strategyIsWhitelistedForDeposit`
-
-*Requirements*:
-* Caller MUST be the `strategyWhitelister`
-
-#### `setThirdPartyTransfersForbidden`
-
-```solidity
-function setThirdPartyTransfersForbidden(
-    IStrategy strategy,
-    bool value
-)
-    external
-    onlyStrategyWhitelister
-```
-
-Allows the Strategy Whitelister to enable or disable third-party transfers for any `strategy`. If third-party transfers are disabled:
-* Deposits via [`depositIntoStrategyWithSiganture`](#depositintostrategywithsignature) are disabled.
-* Withdrawals to a different address via [`DelegationManager.queueWithdrawals`](./DelegationManager.md#queuewithdrawals) are disabled.
-
-*Effects*:
-* Sets `thirdPartyTransfersForbidden[strategy]`, even if that strategy is not currently whitelisted
 
 *Requirements*:
 * Caller MUST be the `strategyWhitelister`
