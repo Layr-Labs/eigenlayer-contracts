@@ -54,6 +54,9 @@ interface IEigenPodManagerEvents {
     event BeaconChainSlashingFactorDecreased(
         address staker, uint64 prevBeaconChainSlashingFactor, uint64 newBeaconChainSlashingFactor
     );
+
+    /// @notice Emitted when an operator is slashed and shares to be burned are increased
+    event BurnableETHSharesIncreased(uint256 shares);
 }
 
 interface IEigenPodManagerTypes {
@@ -161,4 +164,7 @@ interface IEigenPodManager is
     function beaconChainSlashingFactor(
         address staker
     ) external view returns (uint64);
+
+    /// @notice Returns the accumulated amount of beacon chain ETH Strategy shares
+    function burnableETHShares() external view returns (uint256);
 }

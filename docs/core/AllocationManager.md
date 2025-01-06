@@ -623,7 +623,7 @@ Once slashing is processed for a strategy, [slashed stake is burned via the `Del
     * If the `allocation` now has a `currentMagnitude` of 0:
         * Removes `strategy` from the `allocatedStrategies[operator][operatorSetKey]` list
         * If this list now has a length of 0, remove `operatorSetKey` from `allocatedSets[operator]`
-    * Calls [`DelegationManager.burnOperatorShares`](./DelegationManager.md#burnoperatorshares)
+    * Calls [`DelegationManager.slashOperatorShares`](./DelegationManager.md#slashoperatorshares)
 * Emit an `OperatorSlashed` event
 
 *Requirements*:
