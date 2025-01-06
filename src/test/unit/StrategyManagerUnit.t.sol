@@ -1450,33 +1450,62 @@ contract StrategyManagerUnitTests_withdrawSharesAsTokens is StrategyManagerUnitT
     }
 }
 
-contract StrategyManagerUnitTests_burnShares is StrategyManagerUnitTests {
+contract StrategyManagerUnitTests_increaseBurnableShares is StrategyManagerUnitTests {
     function test_Revert_DelegationManagerModifier() external {
         DelegationManagerMock invalidDelegationManager = new DelegationManagerMock();
         cheats.prank(address(invalidDelegationManager));
         cheats.expectRevert(IStrategyManagerErrors.OnlyDelegationManager.selector);
-        strategyManager.burnShares(dummyStrat, 1);
+        strategyManager.increaseBurnableShares(dummyStrat, 1);
     }
 
-    /**
-     * @notice deposits a single strategy and withdrawSharesAsTokens(). Tests that we revert when we
-     * burn more than expected
-     */
-    function testFuzz_RevertShareAmountTooHigh(
-        address staker,
-        uint256 depositAmount,
-        uint256 sharesToBurn
-    ) external filterFuzzedAddressInputs(staker) {
-        cheats.assume(staker != address(0));
-        cheats.assume(depositAmount > 0 && depositAmount < dummyToken.totalSupply() && depositAmount < sharesToBurn);
+    function testFuzz_increaseBurnableShares(uint256 addedSharesToBurn) external {
         IStrategy strategy = dummyStrat;
-        _depositIntoStrategySuccessfully(strategy, staker, depositAmount);
-
+        
+        cheats.expectEmit(true, true, true, true, address(strategyManager));
+        emit BurnableSharesIncreased(strategy, addedSharesToBurn);
         cheats.prank(address(delegationManagerMock));
-        cheats.expectRevert(IStrategyErrors.WithdrawalAmountExceedsTotalDeposits.selector);
-        strategyManager.burnShares(strategy, sharesToBurn);
+        strategyManager.increaseBurnableShares(strategy, addedSharesToBurn);
+        assertEq(
+            strategyManager.burnableShares(strategy),
+            addedSharesToBurn,
+            "strategyManager.burnableShares(strategy) != addedSharesToBurn"
+        );
     }
 
+    function testFuzz_increaseBurnableShares_existingShares(
+        uint256 existingBurnableShares,
+        uint256 addedSharesToBurn
+    ) external {
+        // preventing fuzz overflow, in practice StrategyBase has a 1e38 - 1 maxShares limit so this won't
+        // be an issue on mainnet/testnet environments
+        existingBurnableShares = bound(existingBurnableShares, 1, type(uint256).max/2);
+        addedSharesToBurn = bound(addedSharesToBurn, 1, type(uint256).max/2);
+
+        IStrategy strategy = dummyStrat;
+        cheats.prank(address(delegationManagerMock));
+        cheats.expectEmit(true, true, true, true, address(strategyManager));
+        emit BurnableSharesIncreased(strategy, existingBurnableShares);
+        strategyManager.increaseBurnableShares(strategy, existingBurnableShares);
+        assertEq(
+            strategyManager.burnableShares(strategy),
+            existingBurnableShares,
+            "strategyManager.burnableShares(strategy) != existingBurnableShares"
+        );
+        
+        cheats.prank(address(delegationManagerMock));
+        cheats.expectEmit(true, true, true, true, address(strategyManager));
+        emit BurnableSharesIncreased(strategy, addedSharesToBurn);
+        strategyManager.increaseBurnableShares(strategy, addedSharesToBurn);
+
+        assertEq(
+            strategyManager.burnableShares(strategy),
+            existingBurnableShares + addedSharesToBurn,
+            "strategyManager.burnableShares(strategy) != existingBurnableShares + addedSharesToBurn"
+        );
+    }
+}
+
+contract StrategyManagerUnitTests_burnShares is StrategyManagerUnitTests {
     function testFuzz_SingleStrategyDeposited(
         address staker,
         uint256 depositAmount,
@@ -1488,17 +1517,21 @@ contract StrategyManagerUnitTests_burnShares is StrategyManagerUnitTests {
         IStrategy strategy = dummyStrat;
         IERC20 token = dummyToken;
         _depositIntoStrategySuccessfully(strategy, staker, depositAmount);
+
+        // slash shares and increase amount to burn from DelegationManager
+        cheats.prank(address(delegationManagerMock));
+        cheats.expectEmit(true, true, true, true, address(strategyManager));
+        emit BurnableSharesIncreased(strategy, sharesToBurn);
+        strategyManager.increaseBurnableShares(strategy, sharesToBurn);
+
         uint256 strategyBalanceBefore = token.balanceOf(address(strategy));
         uint256 burnAddressBalanceBefore = token.balanceOf(strategyManager.DEFAULT_BURN_ADDRESS());
         cheats.prank(address(delegationManagerMock));
-        strategyManager.burnShares(strategy, sharesToBurn);
+        cheats.expectEmit(true, true, true, true, address(strategyManager));
+        emit BurnableSharesDecreased(strategy, sharesToBurn);
+        strategyManager.burnShares(strategy);
         uint256 strategyBalanceAfter = token.balanceOf(address(strategy));
         uint256 burnAddressBalanceAfter = token.balanceOf(strategyManager.DEFAULT_BURN_ADDRESS());
-
-        console.log(strategyBalanceAfter);
-        console.log(strategyBalanceBefore);
-        console.log(strategyBalanceBefore - sharesToBurn);
-        console.log(sharesToBurn);
 
         assertEq(
             strategyBalanceBefore - sharesToBurn,
@@ -1513,7 +1546,7 @@ contract StrategyManagerUnitTests_burnShares is StrategyManagerUnitTests {
     }
 
     /// @notice check that balances are unchanged with a reverting token but burnShares doesn't revert
-    function testFuzz_revertTryCatchWithRevertToken(
+    function testFuzz_BurnableSharesUnchangedWithRevertToken(
         address staker,
         uint256 depositAmount,
         uint256 sharesToBurn
@@ -1524,13 +1557,25 @@ contract StrategyManagerUnitTests_burnShares is StrategyManagerUnitTests {
         IERC20 token = dummyToken;
         _depositIntoStrategySuccessfully(strategy, staker, depositAmount);
 
+        // slash shares and increase amount to burn from DelegationManager
+        cheats.prank(address(delegationManagerMock));
+        cheats.expectEmit(true, true, true, true, address(strategyManager));
+        emit BurnableSharesIncreased(strategy, sharesToBurn);
+        strategyManager.increaseBurnableShares(strategy, sharesToBurn);
+
         // Now set token to be contract that reverts simulating an upgrade
         cheats.etch(address(token), address(revertToken).code);
         ERC20_SetTransferReverting_Mock(address(token)).setTransfersRevert(true);
 
         cheats.expectRevert("SafeERC20: low-level call failed");
         cheats.prank(address(delegationManagerMock));
-        strategyManager.burnShares(strategy, sharesToBurn);
+        strategyManager.burnShares(strategy);
+
+        assertEq(
+            strategyManager.burnableShares(strategy),
+            sharesToBurn,
+            "burnable shares should be unchanged"
+        );
     }
 }
 
