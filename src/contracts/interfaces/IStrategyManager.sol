@@ -124,13 +124,14 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
      */
     function increaseBurnableShares(IStrategy strategy, uint256 addedSharesToBurn) external;
 
-     /**
+    /**
      * @notice Burns Strategy shares for the given strategy by calling into the strategy to transfer
      * to the default burn address.
      * @param strategy The strategy to burn shares in.
      */
-    function burnShares(IStrategy strategy) external;
-
+    function burnShares(
+        IStrategy strategy
+    ) external;
 
     /**
      * @notice Owner-only function to change the `strategyWhitelister` address.

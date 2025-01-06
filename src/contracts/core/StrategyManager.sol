@@ -147,7 +147,9 @@ contract StrategyManager is
     }
 
     /// @inheritdoc IStrategyManager
-    function burnShares(IStrategy strategy) external nonReentrant {
+    function burnShares(
+        IStrategy strategy
+    ) external nonReentrant {
         uint256 sharesToBurn = burnableShares[strategy];
         burnableShares[strategy] = 0;
         emit BurnableSharesDecreased(strategy, sharesToBurn);
