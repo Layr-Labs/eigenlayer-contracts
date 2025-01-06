@@ -321,19 +321,15 @@ However, if the staker completes the withdrawal _as shares_, the shares are adde
 
 Recall from [Queue Withdrawal](#queue-withdrawal) that, when a withdrawal is queued, the `Withdrawal` struct stores _scaled shares_, defined as $q_t = x_t k_t$ where $x_t$ is the deposit share amount requested for withdrawal and $t$ is the time of the queuing.
 
-And, given the formula for calculating withdrawable shares, the withdrawable shares given to the staker are $w_t$
-
-The shares that were attempted to be withdrawn by the staker is equal to $w_t$
+And, given the formula for calculating withdrawable shares, the withdrawable shares given to the staker are $w_t$:
 
 $$
-w_t = q_t m_t l_t
+w_t = q_t m_t l_t = x_t k_t l_t m_t
 $$
 
-$$
-= x_t k_t l_t m_t
-$$
+However, the staker's shares in their withdrawal may have been slashed while the withdrawal was in the queue. Their operator may have been slashed by an AVS, or, if the strategy is the `beaconChainETHStrategy`, the staker's validators may have been slashed/penalized.
 
-However, the staker's shares in their withdrawal may have been slashed both from in EigenLayer during the queued withdrawal period and from the BeaconChain (if the Strategy is native ETH). The amount of shares they actually receive is proportionally the following:
+The amount of shares they actually receive is proportionally the following:
 
 $$
     \frac{m_{t+delay} l_{now} }{m_t l_t}
@@ -359,46 +355,48 @@ $$
 = q_t m_{t+delay} l_{now}
 $$
 
-From the above equations the known values we have during the time of queue withdrawal is $x_t k_t$ and we only know $m_{t+delay} l_{now}$ when the queued withdrawal is completable. This is why we store scaled shares as $q_t = x_t k_t$ and $m_{t+delay} l_{now}$ has to be later read during the completing transaction of the withdrawal.
+From the above equations the known values we have during the time of queue withdrawal is $x_t k_t$ and we only know $m_{t+delay} l_{now}$ when the queued withdrawal is completable. This is why we store scaled shares as $q_t = x_t k_t$. The other term ($m_{t+delay} l_{now}$) is read during the completing transaction of the withdrawal.
 
-Note: Reading $m_{t+delay}$ is performed by a historical Snapshot lookup of the max magnitude in the `AllocationManager` while $l_{now}$, the current beacon chain slashing factor, is done through the EigenPodManager(default to value of 1 if the Strategy is not native ETH).
+Note: Reading $m_{t+delay}$ is performed by a historical Snapshot lookup of the max magnitude in the `AllocationManager` while $l_{now}$, the current beacon chain slashing factor, is done through the `EigenPodManager`. Recall that if the strategy in question is not the `beaconChainETHStrategy`, $l_{now}$ will default to "1".
 
-The definition of scaled shares is used solely for handling withdrawals and accounting for slashing
-that may have occurred(both on EigenLayer and on the BeaconChain) during the queue period.
+The definition of scaled shares is used solely for handling withdrawals and accounting for slashing that may have occurred (both on EigenLayer and on the beacon chain) during the queue period.
 
 See implementation in:
-* [`DelegationManager.completeQueuedWithdrawal`](../../../src/contracts/core/DelegationManager.sol)
-* [`SlashingLib.scaleForCompleteWithdrawal`](../../../src/contracts/libraries/SlashingLib.sol)
-
-<br>
+* `DelegationManager.completeQueuedWithdrawal`
+* `SlashingLib.scaleForCompleteWithdrawal`
 
 ---
 
-### EigenPod BeaconChain Slashing (Negative Shares decrements)
+### Handling Beacon Chain Balance Decreases in EigenPods
 
-Accounting handling Beacon Chain slashing, aka negative share delta's for EigenPods, is handled differently after the Slashing upgrade with the introduction of $l_n$ the Beacon Chain slashing factor. Prior to the upgrade, any decreases in an EigenPod balance for a staker as a result of completing a checkpoint immediately decrements from the staker's shares in the `EigenPodManager`. The introduction of $l_n$ the Beacon Chain slashing factor allows us to slash from both the staker's shares in the `EigenPodManager` and also any queued withdrawals. 
-The below diagram helps visualizing this.
+Beacon chain balance decreases are handled differently after the slashing upgrade with the introduction of $l_n$ the beacon chain slashing factor. 
+
+Prior to the upgrade, any decreases in an `EigenPod` balance for a staker as a result of completing a checkpoint immediately decrements from the staker's shares in the `EigenPodManager`. As an edge case, this meant that a staker's shares could go negative if, for example, they queued a withdrawal for all their shares and then completed a checkpoint on their `EigenPod` showing a balance decrease.
+
+With the introduction of the beacon chain slashing factor, beacon chain balance decreases no longer result in a decrease in deposit shares. Instead, the staker's beacon chain slashing factor is decreased, allowing the system to realize that slash in any existing shares, as well as in any existing queued withdrawals. Effectively, this means that beacon chain slashing is accounted for similarly to EigenLayer-native slashing; _deposit shares remain the same, while withdrawable shares are reduced:_
 
 ![.](../../images/slashing-model.png)
 
-Now lets consider when Beacon Chain slashing occurs and we have a total negative delta in a staker's EigenPod.
-
+Now let's consider how beacon chain balance decreases are handled when they represent a negative share delta for a staker's EigenPod.
 
 #### Added Definitions
 
-$welw$ is `withdrawableRestakedExecutionLayerGwei` \
-Note: this is what is withdrawable in the EigenPod without considering any slashing that has occurred in EigenLayer. `DelegationManager.getWithdrawableShares` can be called  to account for EigenLayer and Beacon Chain slashing. \
-$before\text{ }complete$ is time just before the completeCheckpoint transaction is included in the chain \
-$before\text{ }start$ is time just before the the checkpoint is started (whether voluntarily or involuntarily) \
-$after\text{ }complete$ is the time just after the checkpoint is completed \
-For a completed checkpoint that results in a decrease from \
-$g_n = welw_{before\text{ }complete}+\sum_i validator_i.balance_{before\text{ }start}$ \
-$h_n = welw_{after\text{ }complete}+\sum_i validator_i.balance_{after\text{ }complete}$
+$welw$ is `withdrawableExecutionLayerGwei`. This is purely native ETH in the `EigenPod`, attributed via checkpoint and considered withdrawable by the pod (but without factoring in any EigenLayer-native slashing). `DelegationManager.getWithdrawableShares` can be called  to account for both EigenLayer and beacon chain slashing.
 
+$before\text{ }start$ is time just before a checkpoint is started
+
+<!-- $before\text{ }complete$ is time just before a checkpoint is completed -->
+
+$after\text{ }complete$ is the time just after a checkpoint is completed 
+
+As a checkpoint is completed, the total assets represented by the pod's native ETH and beacon chain balances _before_ and _after_ are given by:
+
+$g_n = welw_{before\text{ }start}+\sum_i validator_i.balance_{before\text{ }start}$ \
+$h_n = welw_{after\text{ }complete}+\sum_i validator_i.balance_{after\text{ }complete}$
 
 #### Staker Level
 
-From a conceptual level, the above logic specifies that we decrease the owned share by the proportion slashed
+Conceptually, the above logic specifies that we decrease the staker's withdrawable shares proportionally to the balance decrease:
 
 $$
 a_{n+1} = \frac{h_n}{g_n}a_n
@@ -410,7 +408,13 @@ $$
 l_{n+1}=\frac{h_n}{g_n}l_n
 $$
 
-Clearly, $m_{n+1}=m_n$ (since we don’t want to affect the operator’s other stakers) and we keep $s_{n+1} = s_n$ **(no subtraction)** and $k_{n+1}=k_n$:
+Given:
+
+$m_{n+1}=m_n$ (staker beacon chain slashing does not affect its operator's magnitude)
+$s_{n+1} = s_n$ (no subtraction of deposit shares)
+$k_{n+1}=k_n$
+
+Then, plugging into the formula for withdrawable shares:
 
 $$
 a_{n+1} = s_{n+1}k_{n+1}l_{n+1}m_{n+1}
@@ -423,8 +427,6 @@ $$
 $$
 = \frac{h_n}{g_n}a_n
 $$
-
-as wanted.
 
 #### Operator Level
 
@@ -447,9 +449,10 @@ $$
 $$
 
 See implementation in:
-* [`EigenPod`](../../../src/contracts/pods/EigenPod.sol)
-* [`EigenPodManager.recordBeaconChainETHBalanceUpdate`](../../../src/contracts/pods/EigenPodManager.sol)
-* [`DelegationManager.decreaseDelegatedShares`](../../../src/contracts/core/DelegationManager.sol)
+* `EigenPodManager.recordBeaconChainETHBalanceUpdate`
+* `DelegationManager.decreaseDelegatedShares`
+
+---
 
 ## Implementation Details
 
