@@ -6586,10 +6586,8 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
 
         // Slash all of operator's shares
         _setOperatorMagnitude(defaultOperator, strategyMock, 0);
-        cheats.expectEmit(true, true, true, true, address(delegationManager));
-        emit OperatorSharesBurned(defaultOperator, strategyMock, depositAmount);
         cheats.prank(address(allocationManagerMock));
-        delegationManager.burnOperatorShares(defaultOperator, strategyMock, WAD, 0);
+        delegationManager.slashOperatorShares(defaultOperator, strategyMock, WAD, 0);
 
         uint256 slashableSharesInQueueAfter = delegationManager.getSlashableSharesInQueue(defaultOperator, strategyMock);
 
@@ -6653,7 +6651,7 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
         // Slash all of operator's shares
         _setOperatorMagnitude(defaultOperator, strategyMock, 0);
         cheats.prank(address(allocationManagerMock));
-        delegationManager.burnOperatorShares(defaultOperator, strategyMock, WAD, 0);
+        delegationManager.slashOperatorShares(defaultOperator, strategyMock, WAD, 0);
 
         // Complete withdrawal as tokens and assert that we call back into teh SM with 100 tokens
         IERC20[] memory tokens = strategyMock.underlyingToken().toArray();
@@ -6718,13 +6716,7 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
             strategyMock,
             depositAmount / 6 // 1 withdrawal not queued so decreased
         );
-        cheats.expectEmit(true, true, true, true, address(delegationManager));
-        emit OperatorSharesBurned(
-            defaultOperator,
-            strategyMock,
-            depositAmount / 6 * 4 // 4 parts are burned
-        );
-        delegationManager.burnOperatorShares(defaultOperator, strategyMock, WAD, 0);
+        delegationManager.slashOperatorShares(defaultOperator, strategyMock, WAD, 0);
         
         // Assert slashable shares
         slashableSharesInQueue = delegationManager.getSlashableSharesInQueue(defaultOperator, strategyMock);

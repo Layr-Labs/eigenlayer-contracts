@@ -43,6 +43,12 @@ interface IStrategyManagerEvents {
 
     /// @notice Emitted when a strategy is removed from the approved list of strategies for deposit
     event StrategyRemovedFromDepositWhitelist(IStrategy strategy);
+
+    /// @notice Emitted when an operator is slashed and shares to be burned are increased
+    event BurnableSharesIncreased(IStrategy strategy, uint256 shares);
+
+    /// @notice Emitted when shares are burned
+    event BurnableSharesDecreased(IStrategy strategy, uint256 shares);
 }
 
 /**
