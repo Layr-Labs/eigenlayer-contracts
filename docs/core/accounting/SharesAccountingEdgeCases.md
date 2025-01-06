@@ -10,24 +10,29 @@ This document is meant to explore and analyze the different mathematical operati
 * [Shares Accounting](./SharesAccounting.md)
 
 
-## Fully Slashed for a Strategy (100% slashed)
+## Fully Slashed for a Strategy
 
-Within the context of a single Strategy, recall that the deposit scaling factor $k_n$ is defined as the following:
+Within the context of a single Strategy, recall that updates to the deposit scaling factor $k_n$ are defined as the following:
 
 $$
 k_{n+1} = \frac{s_n k_n m_n + d_n}{s_{n+1} l_{n+1} m_{n+1}}=\frac{s_n k_n l_n m_n + d_n}{(s_n+d_n)l_nm_n}
 $$
 
-We can see here that calculating $k_{n+1}$ can give us a divide by 0 error if $l_n$ or $m_n$ are equal to 0. \
-This situation occurs when an operator is 100% slashed for a given Strategy and their max magnitude $m_n = 0$.
-Alternatively for a staker, if they have been slashed enough to have a beacon chain slashing factor of $l_n = 0$ then they will also be in the same situation.
+We can see here that calculating $k_{n+1}$ can give us a divide by 0 error if any of $(s_n + d_n)$, $l_n$, or $m_n$ are equal to 0. The $(s_n + d_n) = 0$ case should not arise because the `EigenPodManager` and `StrategyManager` will not report share increases in this case. However, the other two terms may reach 0:
+* When an operator is 100% slashed for a given strategy and their max magnitude $m_n = 0$
+* When a staker's `EigenPod` native ETH balance is 0 _and_ their validators have all been slashed such that $l_n = 0$
 
-In either case, we know that since either the operator was fully slashed or the staker was fully slashed for beaconChainETHStrategy then
-$a_n$ = 0.
+In these cases, updates to a staker's deposit scaling factor will encounter a division by 0 error. In either case, we know that since either the operator was fully slashed or the staker was fully slashed for the `beaconChainETHStrategy` then their withdrawable shares $a_n = 0$.
 
-If $m_n = 0$ then any further deposits for a staker delegated to said operator are blocked and they cannot update their deposit shares $s_n$.
-As a staker who has existing depositShares, delegating to an operator who is fully slashed for that strategy will result in a revert. However, the staker can still delegate to the operator if they don't contain any shares for the Strategy which has a 0 max magnitude $m_n$. This is because delegation in EigenLayer is all or nothing of staker assets delegated to the operator.
-Undelegating from a fully slashed operator is still possible and a staker can redeposit more assets by undelegating or redelegating.
+In practice, if $m_n = 0$ for a given operator, then:
+1. Any staker who is already delegated to this operator _will be unable to deposit additional assets into the corresponding strategy_ 
+2. Any staker that currently holds deposit shares in this strategy and is NOT delegated to the operator _will be unable to delegate to the operator_
+
+Note that in the first case, it _is_ possible for the staker to undelegate, queue, and complete withdrawals - though as $a_n = 0$, they will not receive any withdrawable shares as a result.
+
+Additionally, if $l_n = 0$ for a given staker in the beacon chain ETH strategy, then **any further deposits of ETH or restaking of validators will not yield shares in EigenLayer.** This should only occur in extraordinary circumstances, as a beacon chain slashing factor of 0 means that a staker both has ~0 assets in their `EigenPod`, and ALL of their validators have been ~100% slashed on the beacon chain - something that happens only when coordinated groups of validators are slashed. If this case occurs, an `EigenPod` is essentially bricked - the pod owner should NOT send ETH to the pod, and should NOT point additional validators at the pod.
+
+These are all expected edge cases and their occurances and side effects are within acceptable tolerances.
 
 ## Upper Bound on Deposit Scaling Factor $k_n$
 
@@ -48,19 +53,15 @@ function calcWithdrawable(
 }
 ```
 
-`depositShares` are the staker’s shares $s_n$ in storage. We know this can at max be 1e38 - 1 as this is the max total shares we allow in a strategy.
-$l_n ≤ 1e18$ and $m_n ≤ 1e18$ as they are montonically decreasing values. So a `mulWad` of the `slashingFactor` operation should never result in a overflow, it will
-always result in a smaller or equal number.
-The question now comes to `depositShares.mulWad(dsf.scalingFactor())` and whether this term will overflow a uint256. Let's examine the math behind this more below.
+`depositShares` are the staker’s shares $s_n$ in storage. We know this can at max be 1e38 - 1 as this is the max total shares we allow in a strategy. $l_n ≤ 1e18$ and $m_n ≤ 1e18$ as they are montonically decreasing values. So a `mulWad` of the `slashingFactor` operation should never result in a overflow, it will always result in a smaller or equal number.
 
-The function `SlashingLib.updateDepositScalingFactor` is doing the below calculation.
+The question now comes to `depositShares.mulWad(dsf.scalingFactor())` and whether this term will overflow a `uint256`. Let's examine the math behind this. The function `SlashingLib.update` performs the following calculation:
 
 $$
 k_{n+1} =\frac{s_n k_n l_n m_n + d_n}{(s_n+d_n)l_nm_n}
 $$
 
-Now lets just do some analysis on k in this equation \
-Assumptions:
+Assuming:
 - $k_0 = 1$
 - 0 < $l_0$ ≤ 1 and is monotonically decreasing but doesn’t reach 0
 - 0 < $m_0$ ≤ 1 and is monotonically decreasing but doesn’t reach 0
@@ -105,6 +106,7 @@ k_{1e38-1} \approx (1e38-1)\cdot 1e36 < 1e74
 $$
 
 After 1e38-1 iterations/deposits, the upper bound on k we calculate is 1e74 in the _worst_ case scenario. This is technically possible if as a staker, you are delegated to an operator for the beaconChainStrategy where your operator has been slashed 99.9999999…% for native ETH but also as a staker you have had proportional EigenPod balance decreases up to 99.9999999…..%.
+
 The max shares of 1e38-1 also accommodates the entire supply of ETH as well (only needs 27 bits). For normal StrategyManager strategies,  ${l_n} = 1$ and ${k_n}$ would not grow nearly to the same extent.
 
 Clearly this value of 1e74 for ${k_n}$ fits within a uint256 storage slot.
