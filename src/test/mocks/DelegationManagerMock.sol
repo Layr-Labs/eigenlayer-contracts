@@ -25,7 +25,7 @@ contract DelegationManagerMock is Test {
         isOperator[operator] = _isOperatorReturnValue;
     }
 
-    function burnOperatorShares(
+    function slashOperatorShares(
         address operator,
         IStrategy strategy,
         uint64 prevMaxMagnitude,
