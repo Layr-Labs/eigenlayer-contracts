@@ -7,8 +7,6 @@ import {console} from "forge-std/console.sol";
 
 contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is IntegrationCheckUtils, IDelegationManagerTypes {
 
-    using ArrayLib for IStrategy[];
-
     function testFuzz_deposit_delegate_allocate_fullSlash_queue_complete_redeposit(
         uint24 _random
     ) public {
