@@ -80,7 +80,6 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
             uint256[] memory expectedTokens =
                 _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].scaledShares);
             for (uint256 i = 0; i < expectedTokens.length; i++) {
-                console.log(expectedTokens[i]);
             }
             staker.completeWithdrawalAsTokens(withdrawals[i]);
             check_Withdrawal_AsTokens_State_AfterSlash(staker, operator, withdrawals[i], allocateParams, slashingParams, expectedTokens);
@@ -93,16 +92,6 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
 
         // Final state checks
         assert_HasExpectedShares(staker, strategies, shares, "staker should have expected shares after redeposit");
-        assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
-    }
-
-
-    function _logBalances(User staker, IStrategy[] memory strategies) internal view {
-        for (uint i = 0; i < strategies.length; i++) {
-            IStrategy strategy = strategies[i];
-            IERC20 token = strategy.underlyingToken();
-            uint256 balance = token.balanceOf(address(staker));
-            console.log("Balance for strategy", i, ":", balance);
-        }
+        assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");      
     }
 }
