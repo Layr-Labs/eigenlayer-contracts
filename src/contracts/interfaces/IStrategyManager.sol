@@ -78,12 +78,16 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
      * @param amount the number of tokens to deposit
      * @return depositShares the number of deposit shares credited to the caller
      * @dev The caller must have previously approved this contract to transfer at least `amount` of `token` on their behalf.
-     * 
+     *
      * WARNING: Be extremely cautious when depositing tokens that do not strictly adhere to ERC20 standards.
      * Tokens that diverge significantly from ERC20 norms can cause unexpected behavior in token balances for
      * that strategy, e.g. ERC-777 tokens allowing cross-contract reentrancy.
      */
-    function depositIntoStrategy(IStrategy strategy, IERC20 token, uint256 amount) external returns (uint256 depositShares);
+    function depositIntoStrategy(
+        IStrategy strategy,
+        IERC20 token,
+        uint256 amount
+    ) external returns (uint256 depositShares);
 
     /**
      * @notice Deposits `amount` of `token` into the specified `strategy` and credits shares to the `staker`
