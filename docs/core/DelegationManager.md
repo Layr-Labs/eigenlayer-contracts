@@ -235,13 +235,19 @@ mapping(address operator => mapping(IStrategy strategy => Snapshots.DefaultZeroH
     _cumulativeScaledSharesHistory;
 ```
 
-Of these mappings, only `pendingWithdrawals` and `cumulativeWithdrawalsQueued`
+Prior to the slashing release, withdrawals were only stored as hashes in the `pendingWithdrawals` mapping. 
+
+With the slashing release, withdrawals are now stored entirely in state, and two new mappings have been added to support this:
+* `_stakedQueuedWithdrawalRoots`: a list of all the currently-queued withdrawal hashes belonging to a staker
+* `queuedWithdrawals`: maps queued withdrawal hash to `Withdrawal` struct
+
+Legacy withdrawals remain completable using the same methods as new withdrawals. The primary difference between the two is that it is not possible to query the corresponding `Withdrawal` struct for a legacy withdrawal hash. When determining what `Withdrawal` struct to supply to the contract to complete a legacy withdrawal, the caller will need to derive the original `Withdrawal` struct generated when the withdrawal was queued.
 
 #### Slashing Factors and Scaling Shares
 
 _See the [Shares Accounting](./accounting/SharesAccounting.md) doc for a more thorough explanation with examples._
 
-Throughout the `DelegationManager`, a staker's _deposit shares_ can be converted into their current _withdrawable shares_ by applying two factors: the _slashing factor_ and the _deposit scaling factor_. These two values are scaling factors used in conjuction with _deposit shares_ to calculate a Staker's _withdrawable shares_. By default, these factors start at `1 WAD` (`1e18`). A fundamental constraint of the system is that _slashing factors_ are monotonically decreasing.
+Throughout the `DelegationManager`, a staker's _deposit shares_ can be converted into their current _withdrawable shares_ by applying two factors: the _slashing factor_ and the _deposit scaling factor_. These two values are scaling factors that act as numerators when scaling shares. By default, these values start at `1 WAD` (`1e18`), which also acts as the denominator when scaling.
 
 ```solidity
 /// @dev All scaling factors have `1e18` as an initial/default value. This value is represented
