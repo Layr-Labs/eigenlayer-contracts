@@ -132,8 +132,8 @@ contract AllocationManager is
 
             _updateMaxMagnitude(params.operator, params.strategies[i], info.maxMagnitude);
 
-            // 6. Decrease and burn operators shares in the DelegationManager
-            delegation.burnOperatorShares({
+            // 6. Slash operators shares in the DelegationManager
+            delegation.slashOperatorShares({
                 operator: params.operator,
                 strategy: params.strategies[i],
                 prevMaxMagnitude: prevMaxMagnitude,

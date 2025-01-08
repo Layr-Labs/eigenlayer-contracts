@@ -102,6 +102,14 @@ surya mdreport surya_report.md ./src/contracts/**/*.sol
 make bindings
 ```
 
+### Generate updated Storage Report
+
+To update the storage reports in `/docs/storage-report` run:
+
+```bash
+make storage-report
+```
+
 ## Deployments
 
 ### Current Mainnet Deployment
