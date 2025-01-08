@@ -81,8 +81,8 @@ contract StrategyManager is
         IStrategy strategy,
         IERC20 token,
         uint256 amount
-    ) external onlyWhenNotPaused(PAUSED_DEPOSITS) nonReentrant returns (uint256 depositedShares) {
-        depositedShares = _depositIntoStrategy(msg.sender, strategy, token, amount);
+    ) external onlyWhenNotPaused(PAUSED_DEPOSITS) nonReentrant returns (uint256 depositShares) {
+        depositShares = _depositIntoStrategy(msg.sender, strategy, token, amount);
     }
 
     /// @inheritdoc IStrategyManager
@@ -93,7 +93,7 @@ contract StrategyManager is
         address staker,
         uint256 expiry,
         bytes memory signature
-    ) external onlyWhenNotPaused(PAUSED_DEPOSITS) nonReentrant returns (uint256 depositedShares) {
+    ) external onlyWhenNotPaused(PAUSED_DEPOSITS) nonReentrant returns (uint256 depositShares) {
         // Cache staker's nonce to avoid sloads.
         uint256 nonce = nonces[staker];
         // Assert that the signature is valid.
@@ -108,7 +108,7 @@ contract StrategyManager is
             nonces[staker] = nonce + 1;
         }
         // deposit the tokens (from the `msg.sender`) and credit the new shares to the `staker`
-        depositedShares = _depositIntoStrategy(staker, strategy, token, amount);
+        depositShares = _depositIntoStrategy(staker, strategy, token, amount);
     }
 
     /// @inheritdoc IShareManager
