@@ -92,7 +92,7 @@ See full documentation in [`/core/RewardsCoordinator.md`](./core/RewardsCoordina
 | -------- | -------- | -------- |
 | [`AVSDirectory.sol`](../src/contracts/core/AVSDirectory.sol) | Singleton | Transparent proxy |
 
-##### Note: This contract is left unchanged for backwards compatability. Operator<>AVS Registrations are to be replaced entirely with the `AllocationManager` and this contract will be deprecated(no longer indexed) in a future release.
+##### Note: This contract is left unchanged for backwards compatability. Operator<>AVS Registrations are to be replaced entirely with the `AllocationManager` and this contract will be deprecated in a future release.
 
 ##### Note: This contract is left unchanged for backwards compatability. Operator<>AVS Registrations are to be replaced entirely with the `AllocationManager` and this contract will be deprecated in a future release.
 
