@@ -18,10 +18,13 @@ This document organizes methods according to the following themes (click each to
 
 #### Important State Variables
 
-* `mapping(address => IEigenPod) public ownerToPod`: Tracks the deployed `EigenPod` for each Staker
-* `mapping(address => int256) public podOwnerDepositShares`: Keeps track of the actively restaked beacon chain ETH for each Staker.
-    * In some cases, a beacon chain balance update may cause a Staker's balance to drop below zero. This is because when queueing for a withdrawal in the `DelegationManager`, the Staker's current shares are fully removed. If the Staker's beacon chain balance drops after this occurs, their `podOwnerDepositShares` may go negative. This is a temporary change to account for the drop in balance, and is ultimately corrected when the withdrawal is finally processed.
+* `mapping(address podOwner => IEigenPod) public ownerToPod`: Tracks the deployed `EigenPod` for each Staker
+* `mapping(address podOwner => int256 shares) public podOwnerDepositShares`: Keeps track of the actively restaked beacon chain ETH for each Staker
+    * In some cases prior to the slashing release, a beacon chain balance update may cause a Staker's balance to drop below zero. This is because when queueing for a withdrawal in the `DelegationManager`, the Staker's current shares are fully removed. If the Staker's beacon chain balance drops after this occurs, their `podOwnerDepositShares` may go negative. This is a temporary change to account for the drop in balance, and is ultimately corrected when the withdrawal is finally processed.
     * Since balances on the consensus layer are stored only in Gwei amounts, the EigenPodManager enforces the invariant that `podOwnerDepositShares` is always a whole Gwei amount for every staker, i.e. `podOwnerDepositShares[staker] % 1e9 == 0` always.
+* `mapping(address staker => BeaconChainSlashingFactor) internal _beaconChainSlashingFactor`: Tracks the "slashing factor" for a given staker
+    * This is a substitute for the previous model of decreasing the shares below 0. Instead, the slashing factor tracks the amount by which a staker has been slashed, which is used by the `DelegationManager` to determine how many shares to withhold due to beacon chain balance decreases and EigenLayer slashing events.
+* `uint256 public burnableETHShares`: Tracks the total amount of ETH across pods which has been slashed on EigenLayer but not yet burned.
 
 ---
 
