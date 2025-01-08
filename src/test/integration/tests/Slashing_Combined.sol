@@ -72,19 +72,19 @@ contract Integration_Slashing_Combined is IntegrationCheckUtils {
         check_Delegation_State(
             ctx.staker, 
             ctx.operator, 
-            allStrats, 
-            _getStakerDepositShares(ctx.staker, allStrats)
+            ctx.strategies, 
+            _getStakerDepositShares(ctx.staker, ctx.strategies)
         );
 
         // Setup operator set
-        ctx.operatorSet = ctx.avs.createOperatorSet(allStrats);
+        ctx.operatorSet = ctx.avs.createOperatorSet(ctx.strategies);
         ctx.operator.registerForOperatorSet(ctx.operatorSet);
         
         ctx.allocateParams = ctx.operator.modifyAllocations(
             ctx.operatorSet,
-            _randMagnitudes({sum: 1 ether, len: allStrats.length})
+            _randMagnitudes({sum: 1 ether, len: ctx.strategies.length})
         );
-        _rollBlocksForCompleteAllocation(ctx.operator, ctx.operatorSet, allStrats);
+        _rollBlocksForCompleteAllocation(ctx.operator, ctx.operatorSet, ctx.strategies);
     }
 
     function _handleEigenLayerSlashing(TestContext memory ctx) internal {
@@ -126,8 +126,8 @@ contract Integration_Slashing_Combined is IntegrationCheckUtils {
         beaconChain.advanceEpoch_NoRewards();
         
         // checkpoint 
-        ctx.staker.startCheckpoint();
-        ctx.staker.completeCheckpoint();
+        //ctx.staker.startCheckpoint();
+        //ctx.staker.completeCheckpoint();
 
         console.log("After checkpoint:");
         console.log("Restaked execution layer gwei:", pod.withdrawableRestakedExecutionLayerGwei());
@@ -155,6 +155,9 @@ contract Integration_Slashing_Combined is IntegrationCheckUtils {
                 withdrawals[i].scaledShares
             );
             
+            for (uint256 i = 0; i < expectedTokens.length; i++) {
+                console.log(expectedTokens[i]);
+            }
             IERC20[] memory tokens = ctx.staker.completeWithdrawalAsTokens(withdrawals[i]);
             check_Withdrawal_AsTokens_State_AfterSlash(
                 ctx.staker,
