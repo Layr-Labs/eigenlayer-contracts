@@ -241,7 +241,7 @@ Of these mappings, only `pendingWithdrawals` and `cumulativeWithdrawalsQueued`
 
 _See the [Shares Accounting](./accounting/SharesAccounting.md) doc for a more thorough explanation with examples._
 
-Throughout the `DelegationManager`, a staker's _deposit shares_ can be converted into their current _withdrawable shares_ by applying two factors: the _slashing factor_ and the _deposit scaling factor_. These two values are scaling factors that act as numerators or denominators when scaling shares. By default, these values start at `1 WAD` (`1e18`). A fundamental constraint of the system is that both _slashing factors_ and _deposit scaling factors_ are monotonically decreasing.
+Throughout the `DelegationManager`, a staker's _deposit shares_ can be converted into their current _withdrawable shares_ by applying two factors: the _slashing factor_ and the _deposit scaling factor_. These two values are scaling factors used in conjuction with _deposit shares_ to calculate a Staker's _withdrawable shares_. By default, these factors start at `1 WAD` (`1e18`). A fundamental constraint of the system is that _slashing factors_ are monotonically decreasing.
 
 ```solidity
 /// @dev All scaling factors have `1e18` as an initial/default value. This value is represented
@@ -679,7 +679,7 @@ Additionally, any _slashable shares_ in the withdrawal queue are marked for burn
  * @param prevDepositShares The number of deposit shares the staker had in the strategy prior to the increase
  * @param addedShares The number of deposit shares added by the staker
  *
- * @dev Note that if the either the staker's current operator has been slashed 100% for `strategy`, OR the
+ * @dev Note that if either the staker's current operator has been slashed 100% for `strategy`, OR the
  * staker has been slashed 100% on the beacon chain such that the calculated slashing factor is 0, this
  * method WILL REVERT.
  */
@@ -697,7 +697,7 @@ Called by either the `StrategyManager` or `EigenPodManager` when a staker's depo
 
 If the staker is delegated to an operator, the new deposit shares are directly added to that operator's `operatorShares`. Regardless of delegation status, the staker's deposit scaling factor is updated.
 
-**Note** that if the either the staker's current operator has been slashed 100% for `strategy`, OR the staker has been slashed 100% on the beacon chain such that the calculated slashing factor is 0, this method WILL REVERT. See [Shares Accounting - Fully Slashed](./accounting/SharesAccountingEdgeCases.md#fully-slashed-for-a-strategy) for details.
+**Note** that if either the staker's current operator has been slashed 100% for `strategy`, OR the staker has been slashed 100% on the beacon chain such that the calculated slashing factor is 0, this method WILL REVERT. See [Shares Accounting - Fully Slashed](./accounting/SharesAccountingEdgeCases.md#fully-slashed-for-a-strategy) for details.
 
 *Effects*:
 * If the staker is delegated to an operator, `addedShares` are added to the operator's shares
