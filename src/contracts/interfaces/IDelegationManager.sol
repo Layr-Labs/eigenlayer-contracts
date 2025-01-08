@@ -283,15 +283,15 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
     ) external returns (bytes32[] memory);
 
     /**
-     * @notice Used to complete the lastest queued withdrawal.
-     * @param withdrawal The withdrawal to complete.
+     * @notice Used to complete a queued withdrawal
+     * @param withdrawal The withdrawal to complete
      * @param tokens Array in which the i-th entry specifies the `token` input to the 'withdraw' function of the i-th Strategy in the `withdrawal.strategies` array.
-     * @param receiveAsTokens If true, the shares calculated to be withdrawn will be withdrawn from the specified strategies themselves
-     * and sent to the caller, through calls to `withdrawal.strategies[i].withdraw`. If false, then the shares in the specified strategies
-     * will simply be transferred to the caller directly.
-     * @dev beaconChainETHStrategy shares are non-transferrable, so if `receiveAsTokens = false` and `withdrawal.withdrawer != withdrawal.staker`, note that
-     * any beaconChainETHStrategy shares in the `withdrawal` will be _returned to the staker_, rather than transferred to the withdrawer, unlike shares in
-     * any other strategies, which will be transferred to the withdrawer.
+     * @param tokens For each `withdrawal.strategies`, the underlying token of the strategy
+     * NOTE: if `receiveAsTokens` is false, the `tokens` array is unused and can be filled with default values. However, `tokens.length` MUST still be equal to `withdrawal.strategies.length`.
+     * NOTE: For the `beaconChainETHStrategy`, the corresponding `tokens` value is ignored (can be 0).
+     * @param receiveAsTokens If true, withdrawn shares will be converted to tokens and sent to the caller. If false, the caller receives shares that can be delegated to an operator.
+     * NOTE: if the caller receives shares and is currently delegated to an operator, the received shares are
+     * automatically delegated to the caller's current operator.
      */
     function completeQueuedWithdrawal(
         Withdrawal calldata withdrawal,
@@ -300,8 +300,7 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
     ) external;
 
     /**
-     * @notice Used to complete the all queued withdrawals.
-     * Used to complete the specified `withdrawals`. The function caller must match `withdrawals[...].withdrawer`
+     * @notice Used to complete multiple queued withdrawals
      * @param withdrawals Array of Withdrawals to complete. See `completeQueuedWithdrawal` for the usage of a single Withdrawal.
      * @param tokens Array of tokens for each Withdrawal. See `completeQueuedWithdrawal` for the usage of a single array.
      * @param receiveAsTokens Whether or not to complete each withdrawal as tokens. See `completeQueuedWithdrawal` for the usage of a single boolean.
@@ -314,18 +313,17 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
     ) external;
 
     /**
-     * @notice Increases a staker's delegated share balance in a strategy. Note that before adding to operator shares,
-     * the delegated delegatedShares. The staker's depositScalingFactor is updated here.
-     * @param staker The address to increase the delegated shares for their operator.
-     * @param strategy The strategy in which to increase the delegated shares.
-     * @param prevDepositShares The number of deposit shares the staker already had in the strategy. This is the shares amount stored in the
-     * StrategyManager/EigenPodManager for the staker's shares.
-     * @param addedShares The number of shares added to the staker's shares in the strategy
+     * @notice Called by a share manager when a staker's deposit share balance in a strategy increases.
+     * This method delegates any new shares to an operator (if applicable), and updates the staker's
+     * deposit scaling factor regardless.
+     * @param staker The address whose deposit shares have increased
+     * @param strategy The strategy in which shares have been deposited
+     * @param prevDepositShares The number of deposit shares the staker had in the strategy prior to the increase
+     * @param addedShares The number of deposit shares added by the staker
      *
-     * @dev *If the staker is actively delegated*, then increases the `staker`'s delegated delegatedShares in `strategy`.
-     * Otherwise does nothing.
-     * @dev If the operator was slashed 100% for the strategy (the operator's maxMagnitude = 0), then increasing delegated shares is blocked and will revert.
-     * @dev Callable only by the StrategyManager or EigenPodManager.
+     * @dev Note that if the either the staker's current operator has been slashed 100% for `strategy`, OR the
+     * staker has been slashed 100% on the beacon chain such that the calculated slashing factor is 0, this
+     * method WILL REVERT.
      */
     function increaseDelegatedShares(
         address staker,
