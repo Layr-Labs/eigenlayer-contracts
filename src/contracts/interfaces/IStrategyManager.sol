@@ -72,38 +72,35 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
     ) external;
 
     /**
-     * @notice Deposits `amount` of `token` into the specified `strategy`, with the resultant shares credited to `msg.sender`
-     * @param strategy is the specified strategy where deposit is to be made,
-     * @param token is the denomination in which the deposit is to be made,
-     * @param amount is the amount of token to be deposited in the strategy by the staker
-     * @return shares The amount of new shares in the `strategy` created as part of the action.
-     * @dev The `msg.sender` must have previously approved this contract to transfer at least `amount` of `token` on their behalf.
-     * @dev Cannot be called by an address that is 'frozen' (this function will revert if the `msg.sender` is frozen).
-     *
-     * WARNING: Depositing tokens that allow reentrancy (eg. ERC-777) into a strategy is not recommended.  This can lead to attack vectors
-     *          where the token balance and corresponding strategy shares are not in sync upon reentrancy.
+     * @notice Deposits `amount` of `token` into the specified `strategy` and credits shares to the caller
+     * @param strategy the strategy that handles `token`
+     * @param token the token from which the `amount` will be transferred
+     * @param amount the number of tokens to deposit
+     * @return depositShares the number of deposit shares credited to the caller
+     * @dev The caller must have previously approved this contract to transfer at least `amount` of `token` on their behalf.
+     * 
+     * WARNING: Be extremely cautious when depositing tokens that do not strictly adhere to ERC20 standards.
+     * Tokens that diverge significantly from ERC20 norms can cause unexpected behavior in token balances for
+     * that strategy, e.g. ERC-777 tokens allowing cross-contract reentrancy.
      */
-    function depositIntoStrategy(IStrategy strategy, IERC20 token, uint256 amount) external returns (uint256 shares);
+    function depositIntoStrategy(IStrategy strategy, IERC20 token, uint256 amount) external returns (uint256 depositShares);
 
     /**
-     * @notice Used for depositing an asset into the specified strategy with the resultant shares credited to `staker`,
-     * who must sign off on the action.
-     * Note that the assets are transferred out/from the `msg.sender`, not from the `staker`; this function is explicitly designed
-     * purely to help one address deposit 'for' another.
-     * @param strategy is the specified strategy where deposit is to be made,
-     * @param token is the denomination in which the deposit is to be made,
-     * @param amount is the amount of token to be deposited in the strategy by the staker
+     * @notice Deposits `amount` of `token` into the specified `strategy` and credits shares to the `staker`
+     * Note tokens are transferred from `msg.sender`, NOT from `staker`. This method allows the caller, using a
+     * signature, to deposit their tokens to another staker's balance.
+     * @param strategy the strategy that handles `token`
+     * @param token the token from which the `amount` will be transferred
+     * @param amount the number of tokens to transfer from the caller to the strategy
      * @param staker the staker that the deposited assets will be credited to
      * @param expiry the timestamp at which the signature expires
-     * @param signature is a valid signature from the `staker`. either an ECDSA signature if the `staker` is an EOA, or data to forward
-     * following EIP-1271 if the `staker` is a contract
-     * @return shares The amount of new shares in the `strategy` created as part of the action.
-     * @dev The `msg.sender` must have previously approved this contract to transfer at least `amount` of `token` on their behalf.
-     * @dev A signature is required for this function to eliminate the possibility of griefing attacks, specifically those
-     * targeting stakers who may be attempting to undelegate.
+     * @param signature a valid ECDSA or EIP-1271 signature from `staker`
+     * @return depositShares the number of deposit shares credited to `staker`
+     * @dev The caller must have previously approved this contract to transfer at least `amount` of `token` on their behalf.
      *
-     *  WARNING: Depositing tokens that allow reentrancy (eg. ERC-777) into a strategy is not recommended.  This can lead to attack vectors
-     *          where the token balance and corresponding strategy shares are not in sync upon reentrancy
+     * WARNING: Be extremely cautious when depositing tokens that do not strictly adhere to ERC20 standards.
+     * Tokens that diverge significantly from ERC20 norms can cause unexpected behavior in token balances for
+     * that strategy, e.g. ERC-777 tokens allowing cross-contract reentrancy.
      */
     function depositIntoStrategyWithSignature(
         IStrategy strategy,
@@ -112,7 +109,7 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
         address staker,
         uint256 expiry,
         bytes memory signature
-    ) external returns (uint256 shares);
+    ) external returns (uint256 depositShares);
 
     /**
      * @notice Burns Strategy shares for the given strategy by calling into the strategy to transfer
