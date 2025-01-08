@@ -247,7 +247,7 @@ Legacy withdrawals remain completable using the same methods as new withdrawals.
 
 _See the [Shares Accounting](./accounting/SharesAccounting.md) doc for a more thorough explanation with examples._
 
-Throughout the `DelegationManager`, a staker's _deposit shares_ can be converted into their current _withdrawable shares_ by applying two factors: the _slashing factor_ and the _deposit scaling factor_. These two values are scaling factors that act as numerators when scaling shares. By default, these values start at `1 WAD` (`1e18`), which also acts as the denominator when scaling.
+Throughout the `DelegationManager`, a staker's _deposit shares_ can be converted into their current _withdrawable shares_ by applying two factors: the _slashing factor_ and the _deposit scaling factor_. These two values are scaling factors that act as numerators when scaling shares. By default, these values start at `1 WAD` (`1e18`). `1 WAD` also acts as the denominator when scaling.
 
 ```solidity
 /// @dev All scaling factors have `1e18` as an initial/default value. This value is represented
