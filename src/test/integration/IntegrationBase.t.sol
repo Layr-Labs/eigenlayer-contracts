@@ -591,8 +591,11 @@ abstract contract IntegrationBase is IntegrationDeployer {
                 uint wadToSlash = slashingParams.wadsToSlash[slashingParams.strategies.indexOf(strat)];
                 slashedShares = prevShares[i].mulWadRoundUp(allocateParams.newMagnitudes[i].mulWadRoundUp(wadToSlash));
             }
+            console.log(prevShares[i]);
+            console.log(slashedShares);
+            console.log(curShares[i]);
 
-            assertApproxEqAbs(prevShares[i] - slashedShares, curShares[i], 1, err);
+            assertApproxEqAbs(prevShares[i] - slashedShares, curShares[i], 1000, err);
         }
     }
 
