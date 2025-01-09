@@ -7,6 +7,8 @@ import {console} from "forge-std/console.sol";
 
 contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is IntegrationCheckUtils, IDelegationManagerTypes {
 
+    // TODO: Partial deposits don't work when beacon chain eth balance is initialized to < 64 ETH, need to write _newRandomStaker variant that ensures beacon chain ETH balance
+    // greater than or equal to 64
     function testFuzz_deposit_delegate_allocate_fullSlash_queue_complete_redeposit(
         uint24 _random
     ) public {
