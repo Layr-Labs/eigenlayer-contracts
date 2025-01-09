@@ -390,6 +390,56 @@ contract IntegrationCheckUtils is IntegrationBase {
         }
     }
 
+    function check_Withdrawal_AsTokens_State_AfterBeaconSlash(
+        User staker,
+        User operator,
+        IDelegationManagerTypes.Withdrawal memory withdrawal,
+        IAllocationManagerTypes.AllocateParams memory allocateParams,
+        IAllocationManagerTypes.SlashingParams memory slashingParams,
+        uint[] memory expectedTokens
+    ) internal {
+        IERC20[] memory tokens = new IERC20[](withdrawal.strategies.length);
+
+        for (uint i; i < withdrawal.strategies.length; i++) {
+            IStrategy strat = withdrawal.strategies[i];
+
+            bool isBeaconChainETHStrategy = strat == beaconChainETHStrategy;
+
+            tokens[i] = isBeaconChainETHStrategy ? NATIVE_ETH : withdrawal.strategies[i].underlyingToken();
+            
+            if (slashingParams.strategies.contains(strat)) {
+                uint wadToSlash = slashingParams.wadsToSlash[slashingParams.strategies.indexOf(strat)];
+
+                expectedTokens[i] -= expectedTokens[i]
+                    .mulWadRoundUp(allocateParams.newMagnitudes[i].mulWadRoundUp(wadToSlash));
+
+                uint256 max = allocationManager.getMaxMagnitude(address(operator), strat);
+
+                withdrawal.scaledShares[i] -= withdrawal.scaledShares[i].calcSlashedAmount(WAD, max);
+
+                // Round down to the nearest gwei for beaconchain ETH strategy.
+                if (isBeaconChainETHStrategy) {
+                    expectedTokens[i] -= expectedTokens[i] % 1 gwei;
+                }
+            }
+        }
+
+        // Common checks
+        assert_WithdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
+        
+        // assert_Snap_Added_TokenBalances(staker, tokens, expectedTokens, "staker should have received expected tokens");
+        assert_Snap_Unchanged_StakerDepositShares(staker, "staker shares should not have changed");
+        assert_Snap_Removed_StrategyShares(withdrawal.strategies, withdrawal.scaledShares, "strategies should have total shares decremented");
+
+        // Checks specific to an operator that the Staker has delegated to
+        if (operator != User(payable(0))) {
+            if (operator != staker) {
+                assert_Snap_Unchanged_TokenBalances(operator, "operator token balances should not have changed");
+            }
+            assert_Snap_Unchanged_OperatorShares(operator, "operator shares should not have changed");
+        }
+    }
+
     function check_Withdrawal_AsShares_State_AfterSlash(
         User staker,
         User operator,
