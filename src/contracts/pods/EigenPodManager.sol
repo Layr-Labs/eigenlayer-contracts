@@ -150,9 +150,8 @@ contract EigenPodManager is
     }
 
     /**
-     * @notice Increases the `podOwner`'s shares by `shares`, paying off deficit if possible.
+     * @notice Increases the `podOwner`'s shares by `shares`, paying off negative shares if needed.
      * Used by the DelegationManager to award a pod owner shares on exiting the withdrawal queue
-     * @dev Reverts if `shares` is not a whole Gwei amount
      * @return existingDepositShares the pod owner's shares prior to any additions. Returns 0 if negative
      * @return addedShares the number of shares added to the staker's balance above 0. This means that if,
      * after shares are added, the staker's balance is non-positive, this will return 0.
@@ -168,9 +167,8 @@ contract EigenPodManager is
     }
 
     /**
-     * @notice Used by the DelegationManager to complete a withdrawal, sending tokens to some destination address
+     * @notice Used by the DelegationManager to complete a withdrawal, sending tokens to the pod owner
      * @dev Prioritizes decreasing the podOwner's share deficit, if they have one
-     * @dev Reverts if `shares` is not a whole Gwei amount
      * @dev This function assumes that `removeShares` has already been called by the delegationManager, hence why
      *      we do not need to update the podOwnerDepositShares if `currentpodOwnerDepositShares` is positive
      */
