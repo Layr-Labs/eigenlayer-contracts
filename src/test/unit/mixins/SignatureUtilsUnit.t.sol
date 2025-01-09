@@ -16,7 +16,7 @@ contract MockSigner {
     }
 }
 
-contract SignatureUtilsUnit is Test, SignatureUtils {
+contract SignatureUtilsUnit is Test, SignatureUtils(address(this)) {
     uint256 signerPk;
     address signer;
     bytes32 hash;

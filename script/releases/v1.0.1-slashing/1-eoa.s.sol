@@ -28,6 +28,7 @@ contract Deploy is EOADeployer {
         deployImpl({
             name: type(DelegationManager).name,
             deployedTo: address(new DelegationManager({
+                _verifyingContract: address(Env.proxy.delegationManager()),
                 _strategyManager: Env.proxy.strategyManager(),
                 _eigenPodManager: Env.proxy.eigenPodManager(),
                 _allocationManager: Env.proxy.allocationManager(),

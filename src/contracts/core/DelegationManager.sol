@@ -64,6 +64,7 @@ contract DelegationManager is
      * @dev Initializes the immutable addresses of the strategy mananger, eigenpod manager, and allocation manager.
      */
     constructor(
+        address _verifyingContract,
         IStrategyManager _strategyManager,
         IEigenPodManager _eigenPodManager,
         IAllocationManager _allocationManager,
@@ -74,6 +75,7 @@ contract DelegationManager is
         DelegationManagerStorage(_strategyManager, _eigenPodManager, _allocationManager, _MIN_WITHDRAWAL_DELAY)
         Pausable(_pauserRegistry)
         PermissionControllerMixin(_permissionController)
+        SignatureUtils(_verifyingContract)
     {
         _disableInitializers();
     }

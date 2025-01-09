@@ -37,23 +37,24 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEv
 
     function setUp() public override {
         EigenLayerUnitTestSetup.setUp();
+
+        strategyManager = StrategyManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
+
         strategyManagerImplementation = new StrategyManager(
-            IDelegationManager(address(delegationManagerMock)), pauserRegistry
+            address(strategyManager), IDelegationManager(address(delegationManagerMock)), pauserRegistry
         );
-        strategyManager = StrategyManager(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(strategyManagerImplementation),
-                    address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(
-                        StrategyManager.initialize.selector,
-                        initialOwner,
-                        initialOwner,
-                        0 /*initialPausedStatus*/
-                    )
-                )
+        
+        eigenLayerProxyAdmin.upgradeAndCall(
+            ITransparentUpgradeableProxy(payable(address(strategyManager))),
+            address(strategyManagerImplementation),
+            abi.encodeWithSelector(
+                StrategyManager.initialize.selector,
+                initialOwner,
+                initialOwner,
+                0 /*initialPausedStatus*/
             )
         );
+
         dummyToken = new ERC20PresetFixedSupply(
             "mock token",
             "MOCK",

@@ -78,6 +78,7 @@ contract Deploy is EOADeployer {
         deployImpl({
             name: type(AVSDirectory).name,
             deployedTo: address(new AVSDirectory({
+                _verifyingContract: address(Env.proxy.avsDirectory()),
                 _delegation: Env.proxy.delegationManager(),
                 _pauserRegistry: Env.impl.pauserRegistry()
             }))
@@ -86,6 +87,7 @@ contract Deploy is EOADeployer {
         deployImpl({
             name: type(DelegationManager).name,
             deployedTo: address(new DelegationManager({
+                _verifyingContract: address(Env.proxy.delegationManager()),
                 _strategyManager: Env.proxy.strategyManager(),
                 _eigenPodManager: Env.proxy.eigenPodManager(),
                 _allocationManager: Env.proxy.allocationManager(),
@@ -114,6 +116,7 @@ contract Deploy is EOADeployer {
         deployImpl({
             name: type(StrategyManager).name,
             deployedTo: address(new StrategyManager({
+                _verifyingContract: address(Env.proxy.strategyManager()),
                 _delegation: Env.proxy.delegationManager(),
                 _pauserRegistry: Env.impl.pauserRegistry()
             }))

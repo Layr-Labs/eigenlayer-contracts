@@ -18,6 +18,7 @@ contract Deploy is EOADeployer {
         deployImpl({
             name: type(StrategyManager).name,
             deployedTo: address(new StrategyManager({
+                _verifyingContract: address(Env.proxy.strategyManager()),
                 _delegation: Env.proxy.delegationManager(),
                 _pauserRegistry: Env.impl.pauserRegistry()
             }))

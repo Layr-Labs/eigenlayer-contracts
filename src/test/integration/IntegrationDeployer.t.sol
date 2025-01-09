@@ -202,17 +202,17 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
         eigenPodBeacon = new UpgradeableBeacon(address(eigenPodImplementation));
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
-        delegationManagerImplementation = new DelegationManager(strategyManager, eigenPodManager, allocationManager, eigenLayerPauserReg, permissionController, DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS);
-        strategyManagerImplementation = new StrategyManager(delegationManager, eigenLayerPauserReg);
+        delegationManagerImplementation = new DelegationManager(address(delegationManager), strategyManager, eigenPodManager, allocationManager, eigenLayerPauserReg, permissionController, DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS);
+        strategyManagerImplementation = new StrategyManager(address(strategyManager), delegationManager, eigenLayerPauserReg);
         eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit,
             eigenPodBeacon,
             delegationManager,
             eigenLayerPauserReg
         );
-        strategyManagerImplementation = new StrategyManager(delegationManager, eigenLayerPauserReg);
+        strategyManagerImplementation = new StrategyManager(address(strategyManager), delegationManager, eigenLayerPauserReg);
         eigenPodManagerImplementation = new EigenPodManager(ethPOSDeposit, eigenPodBeacon, delegationManager, eigenLayerPauserReg);
-        avsDirectoryImplementation = new AVSDirectory(delegationManager, eigenLayerPauserReg);
+        avsDirectoryImplementation = new AVSDirectory(address(avsDirectory), delegationManager, eigenLayerPauserReg);
         strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg);
         allocationManagerImplementation = new AllocationManager(delegationManager, eigenLayerPauserReg, permissionController, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
         permissionControllerImplementation = new PermissionController();
@@ -337,8 +337,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
         allocationManagerImplementation = new AllocationManager(delegationManager, eigenLayerPauserReg, permissionController, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
         permissionControllerImplementation = new PermissionController();
-        delegationManagerImplementation = new DelegationManager(strategyManager, eigenPodManager, allocationManager, eigenLayerPauserReg, permissionController, DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS);
-        strategyManagerImplementation = new StrategyManager(delegationManager, eigenLayerPauserReg);
+        delegationManagerImplementation = new DelegationManager(address(delegationManager), strategyManager, eigenPodManager, allocationManager, eigenLayerPauserReg, permissionController, DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS);
+        strategyManagerImplementation = new StrategyManager(address(strategyManager), delegationManager, eigenLayerPauserReg);
         rewardsCoordinatorImplementation = new RewardsCoordinator(
             delegationManager,
             strategyManager,
@@ -351,7 +351,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             REWARDS_COORDINATOR_MAX_FUTURE_LENGTH,
             REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP
         );
-        avsDirectoryImplementation = new AVSDirectory(delegationManager, eigenLayerPauserReg);
+        avsDirectoryImplementation = new AVSDirectory(address(avsDirectory), delegationManager, eigenLayerPauserReg);
         eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit,
             eigenPodBeacon,
@@ -450,17 +450,17 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         );
 
         // First, deploy the *implementation* contracts, using the *proxy contracts* as inputs
-        delegationManagerImplementation = new DelegationManager(strategyManager, eigenPodManager, allocationManager, eigenLayerPauserReg, permissionController, DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS);
-        strategyManagerImplementation = new StrategyManager(delegationManager, eigenLayerPauserReg);
+        delegationManagerImplementation = new DelegationManager(address(delegationManager), strategyManager, eigenPodManager, allocationManager, eigenLayerPauserReg, permissionController, DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS);
+        strategyManagerImplementation = new StrategyManager(address(strategyManager), delegationManager, eigenLayerPauserReg);
         eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit,
             eigenPodBeacon,
             delegationManager,
             eigenLayerPauserReg
         );
-        strategyManagerImplementation = new StrategyManager(delegationManager, eigenLayerPauserReg);
+        strategyManagerImplementation = new StrategyManager(address(strategyManager), delegationManager, eigenLayerPauserReg);
         eigenPodManagerImplementation = new EigenPodManager(ethPOSDeposit, eigenPodBeacon, delegationManager, eigenLayerPauserReg);
-        avsDirectoryImplementation = new AVSDirectory(delegationManager, eigenLayerPauserReg);
+        avsDirectoryImplementation = new AVSDirectory(address(avsDirectory), delegationManager, eigenLayerPauserReg);
 
         // Second, upgrade the proxy contracts to point to the implementations
         // DelegationManager

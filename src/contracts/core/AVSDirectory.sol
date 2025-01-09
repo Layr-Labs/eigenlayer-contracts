@@ -28,9 +28,10 @@ contract AVSDirectory is
      * and eigenpodManager contracts
      */
     constructor(
+        address _verifyingContract,
         IDelegationManager _delegation,
         IPauserRegistry _pauserRegistry
-    ) AVSDirectoryStorage(_delegation) Pausable(_pauserRegistry) {
+    ) AVSDirectoryStorage(_delegation) Pausable(_pauserRegistry) SignatureUtils(_verifyingContract) {
         _disableInitializers();
     }
 

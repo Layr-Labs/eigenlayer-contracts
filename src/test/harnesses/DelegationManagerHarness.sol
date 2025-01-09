@@ -15,6 +15,7 @@ contract DelegationManagerHarness is DelegationManager {
         uint32 _MIN_WITHDRAWAL_DELAY
     )
         DelegationManager(
+            address(this),
             _strategyManager,
             _eigenPodManager,
             _allocationManager,

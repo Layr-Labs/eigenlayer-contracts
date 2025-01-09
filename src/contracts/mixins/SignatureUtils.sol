@@ -13,8 +13,8 @@ abstract contract SignatureUtils is ISignatureUtils {
 
     /// CONSTANTS
 
-    /// @notice The EIP-712 typehash for the contract's domain.
-    bytes32 internal constant EIP712_DOMAIN_TYPEHASH =
+    /// @dev Return the EIP-712 typehash for the contract's domain.
+    bytes32 internal constant _EIP712_DOMAIN_TYPEHASH =
         keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
 
     /// @dev Returns the original chain ID from the time the contract was deployed.
@@ -25,9 +25,11 @@ abstract contract SignatureUtils is ISignatureUtils {
 
     /// CONSTRUCTION
 
-    constructor() {
+    constructor(
+        address verifyingContract
+    ) {
         _INITIAL_CHAIN_ID = block.chainid;
-        _INITIAL_DOMAIN_SEPARATOR = _calculateDomainSeparator();
+        _INITIAL_DOMAIN_SEPARATOR = _calculateDomainSeparator(verifyingContract);
     }
 
     /// EXTERNAL FUNCTIONS
@@ -46,21 +48,23 @@ abstract contract SignatureUtils is ISignatureUtils {
             // If the chain ID is the same, return the original domain separator.
             ? _INITIAL_DOMAIN_SEPARATOR
             // If the chain ID is different, return the new domain separator.
-            : _calculateDomainSeparator();
+            : _calculateDomainSeparator(address(this));
     }
 
     /// INTERNAL HELPERS
 
     /// @dev Helper for calculating the contract's domain separator.
-    function _calculateDomainSeparator() internal view returns (bytes32) {
+    function _calculateDomainSeparator(
+        address verifyingContract
+    ) internal view returns (bytes32) {
         /// forgefmt: disable-next-item
         return 
             keccak256(
                 abi.encode(
-                    EIP712_DOMAIN_TYPEHASH, 
+                    _EIP712_DOMAIN_TYPEHASH, 
                     keccak256(bytes("EigenLayer")), 
                     block.chainid, 
-                    address(this)
+                    verifyingContract
                 )
             );
     }

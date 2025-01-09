@@ -52,9 +52,10 @@ contract StrategyManager is
      * @param _delegation The delegation contract of EigenLayer.
      */
     constructor(
+        address _verifyingContract,
         IDelegationManager _delegation,
         IPauserRegistry _pauserRegistry
-    ) StrategyManagerStorage(_delegation) Pausable(_pauserRegistry) {
+    ) StrategyManagerStorage(_delegation) Pausable(_pauserRegistry) SignatureUtils(_verifyingContract) {
         _disableInitializers();
     }
 

@@ -37,18 +37,17 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, 
         IPauserRegistry pauserRegistry
     ) internal returns (AVSDirectory avsd) {
         avsd = AVSDirectory(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(new AVSDirectory(IDelegationManager(delegationManager), pauserRegistry)),
-                    address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(
-                        AVSDirectory.initialize.selector,
-                        address(this),
-                        0 // 0 is initialPausedStatus
-                    )
-                )
-            )
+            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
+
+        address impl = address(new AVSDirectory(address(avsd), IDelegationManager(delegationManager), pauserRegistry));
+
+        eigenLayerProxyAdmin.upgradeAndCall(
+            ITransparentUpgradeableProxy(payable(address(avsd))),
+            address(impl), 
+            abi.encodeWithSelector(AVSDirectory.initialize.selector, address(this), 0)
+        );
+
         isExcludedFuzzAddress[address(avsd)] = true;
 
         assertTrue(avsd.domainSeparator() != bytes32(0), "sanity check");
