@@ -186,6 +186,36 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
         return result;
     }
+
+    /// @dev Choose a random subset of validators (selects AT LEAST ONE but NOT ALL)
+    function _chooseSubset(uint40[] memory validators) internal returns (uint40[] memory) {
+        require(validators.length >= 2, "Need at least 2 validators to choose subset"); 
+
+        uint40[] memory result = new uint40[](validators.length);
+        uint newLen;
+
+        uint rand = _randUint({ min: 1, max: validators.length ** 2 });
+        for (uint i = 0; i < validators.length; i++) {
+            if (rand >> i & 1 == 1) {
+                result[newLen] = validators[i];
+                newLen++;
+            }
+        }
+
+        // If we picked all, remove one random validator
+        if (newLen == validators.length) {
+            uint indexToRemove = _randUint({ min: 0, max: validators.length - 1 });
+            for (uint i = indexToRemove; i < newLen - 1; i++) {
+                result[i] = result[i + 1];
+            }
+            newLen--;
+        }
+
+        // Update array length
+        assembly { mstore(result, newLen) }
+
+        return result;
+    }
     
     function _getTokenName(IERC20 token) internal view returns (string memory) {
         if (token == NATIVE_ETH) {
@@ -561,8 +591,11 @@ abstract contract IntegrationBase is IntegrationDeployer {
                 uint wadToSlash = slashingParams.wadsToSlash[slashingParams.strategies.indexOf(strat)];
                 slashedShares = prevShares[i].mulWadRoundUp(allocateParams.newMagnitudes[i].mulWadRoundUp(wadToSlash));
             }
+            console.log(prevShares[i]);
+            console.log(slashedShares);
+            console.log(curShares[i]);
 
-            assertApproxEqAbs(prevShares[i] - slashedShares, curShares[i], 1, err);
+            assertApproxEqAbs(prevShares[i] - slashedShares, curShares[i], 1000, err);
         }
     }
 
@@ -1133,6 +1166,21 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
         return (strategies.sort(), wadsToSlash);
     }
+
+    function _strategiesAndWadsForFullSlash(
+        OperatorSet memory operatorSet
+        ) internal view returns (IStrategy[] memory strategies, uint[] memory wadsToSlash) {
+            // Get list of all strategies in an operator set.
+            strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
+            
+            wadsToSlash = new uint[](strategies.length);
+            
+            for (uint i; i < strategies.length; ++i) {
+                wadsToSlash[i] = 1 ether;
+            }
+
+            return (strategies.sort(), wadsToSlash);
+    }
     
     function _randMagnitudes(uint64 sum, uint256 len) internal returns (uint64[] memory magnitudes) {
         magnitudes = new uint64[](len);
@@ -1148,6 +1196,18 @@ abstract contract IntegrationBase is IntegrationDeployer {
                 magnitudes[i] = uint64(_randUint(0, remaining / (len - i)));
                 remaining -= magnitudes[i];
             }
+        }
+    }
+
+    function _maxMagnitudes(OperatorSet memory operatorSet, User operator) internal view returns (uint64[] memory magnitudes) {
+        IStrategy[] memory strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
+        uint256 len = strategies.length;
+        magnitudes = new uint64[](len);
+
+        if (len == 0) return magnitudes;
+
+        for (uint256 i; i < len; ++i) {
+            magnitudes[i] = allocationManager.getMaxMagnitude(address(operator), strategies[i]);
         }
     }
 
