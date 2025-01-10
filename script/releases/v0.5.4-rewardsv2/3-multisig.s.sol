@@ -9,6 +9,7 @@ import {TimelockController} from "@openzeppelin/contracts/governance/TimelockCon
 import {RewardsCoordinator} from "src/contracts/core/RewardsCoordinator.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
+import {PauserRegistry} from "src/contracts/permissions/PauserRegistry.sol";
 import {IPauserRegistry} from "src/contracts/interfaces/IPauserRegistry.sol";
 import {DelegationManager} from "src/contracts/core/DelegationManager.sol";
 import {StrategyManager} from "src/contracts/core/StrategyManager.sol";
@@ -82,7 +83,7 @@ contract Execute is Queue {
 
         uint256 pausedStatusAfter = rewardsCoordinatorProxy.paused();
         address owner = this._operationsMultisig();
-        IPauserRegistry pauserRegistry = IPauserRegistry(this._pauserRegistry());
+        IPauserRegistry pauserRegistry = IPauserRegistry(zDeployedImpl(type(PauserRegistry).name));
         uint64 initPausedStatus = zUint64("REWARDS_COORDINATOR_INIT_PAUSED_STATUS");
         address rewardsUpdater = zAddress("REWARDS_COORDINATOR_UPDATER");
         uint32 activationDelay = zUint32("REWARDS_COORDINATOR_ACTIVATION_DELAY");
