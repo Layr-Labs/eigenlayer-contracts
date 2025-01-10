@@ -139,7 +139,6 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
     /**
      * @notice Used to withdraw tokens from this Strategy, to the `recipient`'s address
      * @param recipient is the address to receive the withdrawn funds
-     * @param token is the ERC20 token being transferred out
      * @param amountShares is the amount of shares being withdrawn
      * @dev This function is only callable by the strategyManager contract. It is invoked inside of the strategyManager's
      * other functions, and individual share balances are recorded in the strategyManager as well.
@@ -147,11 +146,8 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      */
     function withdraw(
         address recipient,
-        IERC20 token,
         uint256 amountShares
     ) external virtual override onlyWhenNotPaused(PAUSED_WITHDRAWALS) onlyStrategyManager {
-        // call hook to allow for any pre-withdrawal logic
-        _beforeWithdrawal(recipient, token, amountShares);
 
         // copy `totalShares` value to memory, prior to any change
         uint256 priorTotalShares = totalShares;
@@ -173,7 +169,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
         // emit exchange rate
         _emitExchangeRate(virtualTokenBalance - amountToSend, totalShares + SHARES_OFFSET);
 
-        _afterWithdrawal(recipient, token, amountToSend);
+        _afterWithdrawal(recipient, amountToSend);
     }
 
     /**
@@ -203,11 +199,10 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * @notice Transfers tokens to the recipient after a withdrawal is processed
      * @dev Called in the external `withdraw` function after all logic is executed
      * @param recipient The destination of the tokens
-     * @param token The ERC20 being transferred
      * @param amountToSend The amount of `token` to transfer
      */
-    function _afterWithdrawal(address recipient, IERC20 token, uint256 amountToSend) internal virtual {
-        token.safeTransfer(recipient, amountToSend);
+    function _afterWithdrawal(address recipient, uint256 amountToSend) internal virtual {
+        underlyingToken.safeTransfer(recipient, amountToSend);
     }
 
     /**

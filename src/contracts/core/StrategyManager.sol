@@ -134,10 +134,9 @@ contract StrategyManager is
     function withdrawSharesAsTokens(
         address staker,
         IStrategy strategy,
-        IERC20 token,
         uint256 shares
     ) external onlyDelegationManager {
-        strategy.withdraw(staker, token, shares);
+        strategy.withdraw(staker, shares);
     }
 
     /// @inheritdoc IShareManager
@@ -154,7 +153,7 @@ contract StrategyManager is
         burnableShares[strategy] = 0;
         emit BurnableSharesDecreased(strategy, sharesToBurn);
         // burning shares is functionally the same as withdrawing but with different destination address
-        strategy.withdraw(DEFAULT_BURN_ADDRESS, strategy.underlyingToken(), sharesToBurn);
+        strategy.withdraw(DEFAULT_BURN_ADDRESS,  sharesToBurn);
     }
 
     /// @inheritdoc IStrategyManager
