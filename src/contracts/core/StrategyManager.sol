@@ -124,10 +124,9 @@ contract StrategyManager is
     function addShares(
         address staker,
         IStrategy strategy,
-        IERC20 token,
         uint256 shares
     ) external onlyDelegationManager returns (uint256, uint256) {
-        return _addShares(staker, token, strategy, shares);
+        return _addShares(staker, strategy, shares);
     }
 
     /// @inheritdoc IShareManager
@@ -197,7 +196,6 @@ contract StrategyManager is
     /**
      * @notice This function adds `shares` for a given `strategy` to the `staker` and runs through the necessary update logic.
      * @param staker The address to add shares to
-     * @param token The token that is being deposited (used for indexing)
      * @param strategy The Strategy in which the `staker` is receiving shares
      * @param shares The amount of shares to grant to the `staker`
      * @dev In particular, this function calls `delegation.increaseDelegatedShares(staker, strategy, shares)` to ensure that all
@@ -206,7 +204,6 @@ contract StrategyManager is
      */
     function _addShares(
         address staker,
-        IERC20 token,
         IStrategy strategy,
         uint256 shares
     ) internal returns (uint256, uint256) {
@@ -225,7 +222,7 @@ contract StrategyManager is
         // add the returned depositedShares to their existing shares for this strategy
         stakerDepositShares[staker][strategy] = prevDepositShares + shares;
 
-        emit Deposit(staker, token, strategy, shares);
+        emit Deposit(staker, strategy, shares);
         return (prevDepositShares, shares);
     }
 
@@ -251,7 +248,7 @@ contract StrategyManager is
         shares = strategy.deposit(token, amount);
 
         // add the returned shares to the staker's existing shares for this strategy
-        (uint256 prevDepositShares, uint256 addedShares) = _addShares(staker, token, strategy, shares);
+        (uint256 prevDepositShares, uint256 addedShares) = _addShares(staker, strategy, shares);
 
         // Increase shares delegated to operator
         delegation.increaseDelegatedShares({

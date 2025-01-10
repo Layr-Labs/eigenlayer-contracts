@@ -30,10 +30,9 @@ interface IStrategyManagerEvents {
      * @notice Emitted when a new deposit occurs on behalf of `staker`.
      * @param staker Is the staker who is depositing funds into EigenLayer.
      * @param strategy Is the strategy that `staker` has deposited into.
-     * @param token Is the token that `staker` deposited.
      * @param shares Is the number of new shares `staker` has been granted in `strategy`.
      */
-    event Deposit(address staker, IERC20 token, IStrategy strategy, uint256 shares);
+    event Deposit(address staker, IStrategy strategy, uint256 shares);
 
     /// @notice Emitted when the `strategyWhitelister` is changed
     event StrategyWhitelisterChanged(address previousAddress, address newAddress);

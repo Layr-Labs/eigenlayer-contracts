@@ -120,7 +120,7 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEv
         token.approve(address(strategyManager), amount);
 
         cheats.expectEmit(true, true, true, true, address(strategyManager));
-        emit Deposit(staker, token, strategy, expectedDepositShares);
+        emit Deposit(staker, strategy, expectedDepositShares);
         uint256 shares = strategyManager.depositIntoStrategy(strategy, token, amount);
 
         cheats.stopPrank();
@@ -182,7 +182,7 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEv
             // needed for expecting an event with the right parameters
             uint256 expectedDepositShares = amount;
             cheats.expectEmit(true, true, true, true, address(strategyManager));
-            emit Deposit(staker, dummyToken, dummyStrat, expectedDepositShares);
+            emit Deposit(staker, dummyStrat, expectedDepositShares);
         }
         uint256 shares = strategyManager.depositIntoStrategyWithSignature(
             dummyStrat,
@@ -297,7 +297,7 @@ contract StrategyManagerUnitTests_depositIntoStrategy is StrategyManagerUnitTest
         token.approve(address(strategyManager), amount);
 
         cheats.expectEmit(true, true, true, true, address(strategyManager));
-        emit Deposit(staker, token, strategy, expectedDepositShares);
+        emit Deposit(staker, strategy, expectedDepositShares);
         uint256 depositedShares = strategyManager.depositIntoStrategy(strategy, token, amount);
 
         cheats.stopPrank();
