@@ -202,11 +202,7 @@ contract StrategyManager is
      * delegated shares are tracked, increases the stored share amount in `stakerDepositShares[staker][strategy]`, and adds `strategy`
      * to the `staker`'s list of strategies, if it is not in the list already.
      */
-    function _addShares(
-        address staker,
-        IStrategy strategy,
-        uint256 shares
-    ) internal returns (uint256, uint256) {
+    function _addShares(address staker, IStrategy strategy, uint256 shares) internal returns (uint256, uint256) {
         // sanity checks on inputs
         require(staker != address(0), StakerAddressZero());
         require(shares != 0, SharesAmountZero());
