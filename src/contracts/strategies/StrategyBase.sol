@@ -142,7 +142,6 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
      * @param amountShares is the amount of shares being withdrawn
      * @dev This function is only callable by the strategyManager contract. It is invoked inside of the strategyManager's
      * other functions, and individual share balances are recorded in the strategyManager as well.
-     * @dev Note that any validation of `token` is done inside `_beforeWithdrawal`. This can be overridden if needed.
      */
     function withdraw(
         address recipient,
@@ -179,18 +178,6 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
     function _beforeDeposit(
         IERC20 token,
         uint256 // amount
-    ) internal virtual {
-        require(token == underlyingToken, OnlyUnderlyingToken());
-    }
-
-    /**
-     * @notice Called in the external `withdraw` function, before any logic is executed.  Expected to be overridden if strategies want such logic.
-     * @param token The token being withdrawn
-     */
-    function _beforeWithdrawal(
-        address, // recipient
-        IERC20 token,
-        uint256 // amountShares
     ) internal virtual {
         require(token == underlyingToken, OnlyUnderlyingToken());
     }

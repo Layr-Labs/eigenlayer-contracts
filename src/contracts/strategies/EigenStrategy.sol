@@ -64,20 +64,6 @@ contract EigenStrategy is StrategyBase {
     }
 
     /**
-     * @notice This function hook is called in EigenStrategy.withdraw() before withdrawn shares are calculated and is
-     * overridden here to allow for withdrawing shares either into EIGEN or bEIGEN tokens. If wrapping bEIGEN into EIGEN is needed,
-     * it is performed in _afterWithdrawal(). This hook just checks the token paramater is either EIGEN or bEIGEN.
-     * @param token token to be withdrawn, can be either EIGEN or bEIGEN. If EIGEN, then bEIGEN is wrapped into EIGEN
-     */
-    function _beforeWithdrawal(
-        address, /*recipient*/
-        IERC20 token,
-        uint256 /*amountShares*/
-    ) internal virtual override {
-        require(token == underlyingToken || token == EIGEN, OnlyUnderlyingToken());
-    }
-
-    /**
      * @notice This function hook is called in EigenStrategy.withdraw() after withdrawn shares are calculated and is
      * overridden here to allow for withdrawing shares either into EIGEN or bEIGEN tokens. If token is bEIGEN aka the underlyingToken,
      * then the contract functions exactly the same as the StrategyBase contract and transfers out bEIGEN to the recipient.
@@ -86,13 +72,12 @@ contract EigenStrategy is StrategyBase {
      * @param token token to be withdrawn, can be either EIGEN or bEIGEN. If EIGEN, then bEIGEN is wrapped into EIGEN
      * @param amountToSend amount of tokens to transfer
      */
-    function _afterWithdrawal(address recipient, IERC20 token, uint256 amountToSend) internal virtual override {
-        if (token == EIGEN) {
-            // wrap bEIGEN into EIGEN assuming a 1-1 wrapping amount
-            // the strategy will then hold `amountToSend` of EIGEN
-            underlyingToken.approve(address(token), amountToSend);
-            EIGEN.wrap(amountToSend);
-        }
+    function _afterWithdrawal(address recipient, uint256 amountToSend) internal virtual override {
+
+        // wrap bEIGEN into EIGEN assuming a 1-1 wrapping amount
+        // the strategy will then hold `amountToSend` of EIGEN
+        underlyingToken.approve(address(token), amountToSend);
+        EIGEN.wrap(amountToSend);
 
         // Whether the withdrawal specified EIGEN or bEIGEN, the strategy
         // holds the correct balance and can transfer to the recipient here
