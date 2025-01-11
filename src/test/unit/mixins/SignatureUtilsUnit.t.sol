@@ -36,6 +36,7 @@ contract SignatureUtilsUnit is Test, SignatureUtils {
             abi.encode(
                 keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)"),
                 keccak256(bytes("EigenLayer")), 
+                keccak256(bytes(version())),
                 block.chainid, 
                 address(this)
             )
@@ -65,11 +66,15 @@ contract SignatureUtilsUnit is Test, SignatureUtils {
     function test_checkIsValidSignatureNow_Expired() public {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPk, digest);
 
-        vm.expectRevert(ISignatureUtils.SignatureExpired.selector);
+        vm.expectRevert(ISignatureUtilsErrors.SignatureExpired.selector);
         _checkIsValidSignatureNow(signer, digest, abi.encode(r, s, v), block.timestamp - 1);
     }
 
     function testFail_checkIsValidSignatureNow_InvalidSignature() public {
         _checkIsValidSignatureNow(signer, digest, "", block.timestamp);
+    }
+
+    function version() public pure override returns (string memory) {
+        return "test";
     }
 }

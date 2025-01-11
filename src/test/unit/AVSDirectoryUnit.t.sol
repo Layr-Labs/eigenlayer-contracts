@@ -4,7 +4,7 @@ pragma solidity ^0.8.27;
 import "src/contracts/core/AVSDirectory.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
 
-contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureUtils {
+contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureUtilsTypes {
     uint8 constant PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS = 0;
 
     AVSDirectory avsDirectory;
@@ -54,7 +54,8 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, 
         bytes32 expectedDomainSeparator = keccak256(
                 abi.encode(
                     EIP712_DOMAIN_TYPEHASH, 
-                    keccak256(bytes("EigenLayer")), 
+                    keccak256(bytes("EigenLayer")),
+                    keccak256(bytes(avsd.version())),
                     block.chainid, 
                     address(avsd)
                 )
@@ -119,7 +120,7 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, 
 
     function test_registerOperatorToAVS_SignatureExpired() public {
         defaultOperatorSignature.expiry = block.timestamp - 1;
-        cheats.expectRevert(SignatureExpired.selector);
+        cheats.expectRevert(ISignatureUtilsErrors.SignatureExpired.selector);
         avsDirectory.registerOperatorToAVS(defaultOperator, defaultOperatorSignature);
     }
 

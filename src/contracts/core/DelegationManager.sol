@@ -1015,4 +1015,8 @@ contract DelegationManager is
             )
         );
     }
+
+    function version() public pure override(ISignatureUtils, SignatureUtils) returns (string memory) {
+        return "1";
+    }
 }

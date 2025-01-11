@@ -98,7 +98,7 @@ interface IAVSDirectory is IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureU
      */
     function registerOperatorToAVS(
         address operator,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
+        ISignatureUtilsTypes.SignatureWithSaltAndExpiry memory operatorSignature
     ) external;
 
     /**
