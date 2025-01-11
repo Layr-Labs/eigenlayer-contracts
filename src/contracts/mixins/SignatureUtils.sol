@@ -17,19 +17,6 @@ abstract contract SignatureUtils is ISignatureUtils {
     bytes32 internal constant EIP712_DOMAIN_TYPEHASH =
         keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
 
-    /// @dev Returns the original chain ID from the time the contract was deployed.
-    uint256 internal immutable _INITIAL_CHAIN_ID;
-
-    /// @dev Returns the original domain separator from the time the contract was deployed.
-    bytes32 internal immutable _INITIAL_DOMAIN_SEPARATOR;
-
-    /// CONSTRUCTION
-
-    constructor() {
-        _INITIAL_CHAIN_ID = block.chainid;
-        _INITIAL_DOMAIN_SEPARATOR = _calculateDomainSeparator();
-    }
-
     /// EXTERNAL FUNCTIONS
 
     /**
@@ -41,12 +28,7 @@ abstract contract SignatureUtils is ISignatureUtils {
      * @dev Use `_calculateDomainSeparator` rather than using this function.
      */
     function domainSeparator() public view virtual returns (bytes32) {
-        /// forgefmt: disable-next-item
-        return block.chainid == _INITIAL_CHAIN_ID
-            // If the chain ID is the same, return the original domain separator.
-            ? _INITIAL_DOMAIN_SEPARATOR
-            // If the chain ID is different, return the new domain separator.
-            : _calculateDomainSeparator();
+        return _calculateDomainSeparator();
     }
 
     /// INTERNAL HELPERS

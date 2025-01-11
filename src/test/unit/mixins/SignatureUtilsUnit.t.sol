@@ -43,7 +43,6 @@ contract SignatureUtilsUnit is Test, SignatureUtils {
     }
 
     function test_domainSeparator_NonZero() public {
-        assertTrue(_INITIAL_DOMAIN_SEPARATOR != 0, "The initial domain separator should be non-zero");
         assertTrue(domainSeparator() != 0, "The domain separator should be non-zero");
         assertTrue(domainSeparator() == expectedDomainSeparator, "The domain separator should be as expected");
     }
