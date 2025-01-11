@@ -46,3 +46,6 @@ gha-docker:
 
 storage-report:
 	bash "bin/storage-report.sh" "docs/storage-report/"
+
+update-gap:
+	bash "bin/update-gap.sh"
