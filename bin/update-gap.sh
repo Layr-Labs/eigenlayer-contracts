@@ -10,13 +10,15 @@ grep -r "uint256\[[0-9]*\] private __gap" src/contracts/ | grep "Storage.sol" | 
 
   # Run forge inspect for the specific contract to generate storage information in JSON format and parse it directly
   echo "Inspecting contract: $contract_name"
-  num_storage_vars=$(forge inspect "$contract_name" storage --json | jq '.storage | length')
+  
+  # Get all unique slot values
+  unique_slots=$(forge inspect "$contract_name" storage --json | jq -r '.storage | map(.slot) | unique | length')
 
   # Subtract 1 to account for the gap variable
-  num_storage_vars=$((num_storage_vars - 1))
+  unique_slots=$((unique_slots - 1))
 
-  # Calculate the storage gap as 50 - total number of variables
-  storage_gap=$((50 - num_storage_vars))
+  # Calculate the storage gap as 50 - total number of unique slots
+  storage_gap=$((50 - unique_slots))
 
   # Output the storage gap
   echo "Contract: $contract_name - Storage gap: $storage_gap"
