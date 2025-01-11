@@ -1361,6 +1361,17 @@ contract DelegationManagerUnitTests_Initialization_Setters is DelegationManagerU
         );
         assertEq(delegationManager.owner(), address(this), "constructor / initializer incorrect, owner set wrong");
         assertEq(delegationManager.paused(), 0, "constructor / initializer incorrect, paused status set wrong");
+
+        bytes32 expectedDomainSeparator = keccak256(
+                abi.encode(
+                    EIP712_DOMAIN_TYPEHASH, 
+                    keccak256(bytes("EigenLayer")), 
+                    block.chainid, 
+                    address(delegationManager)
+                )
+            );
+        
+        assertEq(delegationManager.domainSeparator(), expectedDomainSeparator, "sanity check");
     }
 
     /// @notice Verifies that the DelegationManager cannot be iniitalized multiple times

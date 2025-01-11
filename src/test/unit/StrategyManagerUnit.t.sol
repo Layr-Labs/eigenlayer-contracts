@@ -263,6 +263,17 @@ contract StrategyManagerUnitTests_initialize is StrategyManagerUnitTests {
             address(pauserRegistry),
             "strategyManager.pauserRegistry() != pauserRegistry"
         );
+
+        bytes32 expectedDomainSeparator = keccak256(
+                abi.encode(
+                    EIP712_DOMAIN_TYPEHASH, 
+                    keccak256(bytes("EigenLayer")), 
+                    block.chainid, 
+                    address(strategyManager)
+                )
+            );
+
+        assertEq(strategyManager.domainSeparator(), expectedDomainSeparator, "sanity check");
     }
 }
 

@@ -51,7 +51,16 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, 
         );
         isExcludedFuzzAddress[address(avsd)] = true;
 
-        assertTrue(avsd.domainSeparator() != bytes32(0), "sanity check");
+        bytes32 expectedDomainSeparator = keccak256(
+                abi.encode(
+                    EIP712_DOMAIN_TYPEHASH, 
+                    keccak256(bytes("EigenLayer")), 
+                    block.chainid, 
+                    address(avsd)
+                )
+            );
+
+        assertEq(avsd.domainSeparator(), expectedDomainSeparator, "sanity check");
     }
 
     function _newOperatorRegistrationSignature(
