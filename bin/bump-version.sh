@@ -12,7 +12,7 @@ CONTRACTS_DIR="src/contracts"
 # Find and update the version in matching contracts
 find "$CONTRACTS_DIR" -type f -name "*.sol" | while read -r file; do
     if grep -q 'function version() public pure override' "$file"; then
-        sed -i '' "s/return \"[0-9]*\";/return \"$NEW_VERSION\";/" "$file"
+        sed -i '' "s/return \".*\";/return \"$NEW_VERSION\";/" "$file"
         echo "Updated version in: $file"
     fi
 done
