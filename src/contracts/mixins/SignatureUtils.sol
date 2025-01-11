@@ -5,17 +5,14 @@ import "@openzeppelin-upgrades/contracts/utils/cryptography/SignatureCheckerUpgr
 
 import "../interfaces/ISignatureUtils.sol";
 
+bytes32 constant EIP712_DOMAIN_TYPEHASH =
+    keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
+
 /// @title SignatureUtils
 /// @notice A mixin to provide EIP-712 signature validation utilities.
 /// @dev Domain name is hardcoded to "EigenLayer".
 abstract contract SignatureUtils is ISignatureUtils {
     using SignatureCheckerUpgradeable for address;
-
-    /// CONSTANTS
-
-    /// @notice The EIP-712 typehash for the contract's domain.
-    bytes32 internal constant EIP712_DOMAIN_TYPEHASH =
-        keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
 
     /// EXTERNAL FUNCTIONS
 
@@ -23,19 +20,10 @@ abstract contract SignatureUtils is ISignatureUtils {
      * @notice Returns the current EIP-712 domain separator for this contract.
      *
      * @dev The domain separator will change in the event of a fork that changes the ChainID.
-     * @dev By introducing a domain separator the DApp developers are guaranteed that there can be no signature collision.
-     * for more detailed information please read EIP-712.
-     * @dev Use `_calculateDomainSeparator` rather than using this function.
+     * @dev The domain separator is always recomputed to avoid the need for storage or immutable variables.
      */
     function domainSeparator() public view virtual returns (bytes32) {
-        return _calculateDomainSeparator();
-    }
-
-    /// INTERNAL HELPERS
-
-    /// @dev Helper for calculating the contract's domain separator.
-    function _calculateDomainSeparator() internal view returns (bytes32) {
-        /// forgefmt: disable-next-item
+        // forgefmt: disable-next-item
         return 
             keccak256(
                 abi.encode(
@@ -46,6 +34,8 @@ abstract contract SignatureUtils is ISignatureUtils {
                 )
             );
     }
+
+    /// INTERNAL HELPERS
 
     /// @dev Helper for creating valid EIP-712 signable digests.
     function _calculateSignableDigest(
