@@ -70,7 +70,7 @@ contract AVSDirectory is
     /// @inheritdoc IAVSDirectory
     function registerOperatorToAVS(
         address operator,
-        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
+        ISignatureUtilsTypes.SignatureWithSaltAndExpiry memory operatorSignature
     ) external override onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
         // Assert that the `operator` is not actively registered to the AVS.
         require(
@@ -138,5 +138,9 @@ contract AVSDirectory is
         return _calculateSignableDigest(
             keccak256(abi.encode(OPERATOR_AVS_REGISTRATION_TYPEHASH, operator, avs, salt, expiry))
         );
+    }
+
+    function version() public pure override(ISignatureUtils, SignatureUtils) returns (string memory) {
+        return "1";
     }
 }

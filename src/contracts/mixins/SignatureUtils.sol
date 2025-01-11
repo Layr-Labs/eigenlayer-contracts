@@ -16,19 +16,18 @@ abstract contract SignatureUtils is ISignatureUtils {
 
     /// EXTERNAL FUNCTIONS
 
-    /**
-     * @notice Returns the current EIP-712 domain separator for this contract.
-     *
-     * @dev The domain separator will change in the event of a fork that changes the ChainID.
-     * @dev The domain separator is always recomputed to avoid the need for storage or immutable variables.
-     */
+    /// @inheritdoc ISignatureUtils
+    function version() public pure virtual returns (string memory);
+
+    /// @inheritdoc ISignatureUtils
     function domainSeparator() public view virtual returns (bytes32) {
         // forgefmt: disable-next-item
         return 
             keccak256(
                 abi.encode(
                     EIP712_DOMAIN_TYPEHASH, 
-                    keccak256(bytes("EigenLayer")), 
+                    keccak256(bytes("EigenLayer")),
+                    keccak256(bytes(version())),
                     block.chainid, 
                     address(this)
                 )
