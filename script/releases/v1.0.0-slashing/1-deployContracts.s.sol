@@ -35,7 +35,7 @@ contract Deploy is EOADeployer {
 
         deployImpl({
             name: type(PermissionController).name,
-            deployedTo: address(new PermissionController())
+            deployedTo: address(new PermissionController(Env.version()))
         });
 
         deployProxy({
@@ -56,7 +56,8 @@ contract Deploy is EOADeployer {
                 _pauserRegistry: Env.impl.pauserRegistry(),
                 _permissionController: Env.proxy.permissionController(),
                 _DEALLOCATION_DELAY: Env.MIN_WITHDRAWAL_DELAY(),
-                _ALLOCATION_CONFIGURATION_DELAY: Env.ALLOCATION_CONFIGURATION_DELAY()
+                _ALLOCATION_CONFIGURATION_DELAY: Env.ALLOCATION_CONFIGURATION_DELAY(),
+                _version: Env.version()
             }))
         });
 
@@ -79,7 +80,8 @@ contract Deploy is EOADeployer {
             name: type(AVSDirectory).name,
             deployedTo: address(new AVSDirectory({
                 _delegation: Env.proxy.delegationManager(),
-                _pauserRegistry: Env.impl.pauserRegistry()
+                _pauserRegistry: Env.impl.pauserRegistry(),
+                _version: Env.version()
             }))
         });
 
@@ -91,31 +93,36 @@ contract Deploy is EOADeployer {
                 _allocationManager: Env.proxy.allocationManager(),
                 _pauserRegistry: Env.impl.pauserRegistry(),
                 _permissionController: Env.proxy.permissionController(),
-                _MIN_WITHDRAWAL_DELAY: Env.MIN_WITHDRAWAL_DELAY()
+                _MIN_WITHDRAWAL_DELAY: Env.MIN_WITHDRAWAL_DELAY(),
+                _version: Env.version()
             }))
         });
 
         deployImpl({
             name: type(RewardsCoordinator).name,
-            deployedTo: address(new RewardsCoordinator({
-                _delegationManager: Env.proxy.delegationManager(),
-                _strategyManager: Env.proxy.strategyManager(),
-                _allocationManager: Env.proxy.allocationManager(),
-                _pauserRegistry: Env.impl.pauserRegistry(),
-                _permissionController: Env.proxy.permissionController(),
-                _CALCULATION_INTERVAL_SECONDS: Env.CALCULATION_INTERVAL_SECONDS(),
-                _MAX_REWARDS_DURATION: Env.MAX_REWARDS_DURATION(),
-                _MAX_RETROACTIVE_LENGTH: Env.MAX_RETROACTIVE_LENGTH(),
-                _MAX_FUTURE_LENGTH: Env.MAX_FUTURE_LENGTH(),
-                _GENESIS_REWARDS_TIMESTAMP: Env.GENESIS_REWARDS_TIMESTAMP()
-            }))
+            deployedTo: address(new RewardsCoordinator(
+                IRewardsCoordinatorTypes.RewardsCoordinatorConstructorParams({
+                    delegationManager: Env.proxy.delegationManager(),
+                    strategyManager: Env.proxy.strategyManager(),
+                    allocationManager: Env.proxy.allocationManager(),
+                    pauserRegistry: Env.impl.pauserRegistry(),
+                    permissionController: Env.proxy.permissionController(),
+                    CALCULATION_INTERVAL_SECONDS: Env.CALCULATION_INTERVAL_SECONDS(),
+                    MAX_REWARDS_DURATION: Env.MAX_REWARDS_DURATION(),
+                    MAX_RETROACTIVE_LENGTH: Env.MAX_RETROACTIVE_LENGTH(),
+                    MAX_FUTURE_LENGTH: Env.MAX_FUTURE_LENGTH(),
+                    GENESIS_REWARDS_TIMESTAMP: Env.GENESIS_REWARDS_TIMESTAMP(),
+                    version: Env.version()
+                })
+            ))
         });
 
         deployImpl({
             name: type(StrategyManager).name,
             deployedTo: address(new StrategyManager({
                 _delegation: Env.proxy.delegationManager(),
-                _pauserRegistry: Env.impl.pauserRegistry()
+                _pauserRegistry: Env.impl.pauserRegistry(),
+                _version: Env.version()
             }))
         });
 
@@ -127,7 +134,8 @@ contract Deploy is EOADeployer {
                 _ethPOS: Env.ethPOS(),
                 _eigenPodBeacon: Env.beacon.eigenPod(),
                 _delegationManager: Env.proxy.delegationManager(),
-                _pauserRegistry: Env.impl.pauserRegistry()
+                _pauserRegistry: Env.impl.pauserRegistry(),
+                _version: Env.version()
             }))
         });
 
@@ -136,7 +144,8 @@ contract Deploy is EOADeployer {
             deployedTo: address(new EigenPod({
                 _ethPOS: Env.ethPOS(),
                 _eigenPodManager: Env.proxy.eigenPodManager(),
-                _GENESIS_TIME: Env.EIGENPOD_GENESIS_TIME()
+                _GENESIS_TIME: Env.EIGENPOD_GENESIS_TIME(),
+                _version: Env.version()
             }))
         });
 
@@ -146,7 +155,8 @@ contract Deploy is EOADeployer {
             name: type(StrategyBaseTVLLimits).name,
             deployedTo: address(new StrategyBaseTVLLimits({
                 _strategyManager: Env.proxy.strategyManager(),
-                _pauserRegistry: Env.impl.pauserRegistry()
+                _pauserRegistry: Env.impl.pauserRegistry(),
+                _version: Env.version()
             }))
         });
 
@@ -154,7 +164,8 @@ contract Deploy is EOADeployer {
             name: type(EigenStrategy).name,
             deployedTo: address(new EigenStrategy({
                 _strategyManager: Env.proxy.strategyManager(),
-                _pauserRegistry: Env.impl.pauserRegistry()
+                _pauserRegistry: Env.impl.pauserRegistry(),
+                _version: Env.version()
             }))
         });
 
@@ -162,7 +173,8 @@ contract Deploy is EOADeployer {
             name: type(StrategyFactory).name,
             deployedTo: address(new StrategyFactory({
                 _strategyManager: Env.proxy.strategyManager(),
-                _pauserRegistry: Env.impl.pauserRegistry()
+                _pauserRegistry: Env.impl.pauserRegistry(),
+                _version: Env.version()
             }))
         });
 
@@ -171,7 +183,8 @@ contract Deploy is EOADeployer {
             name: type(StrategyBase).name,
             deployedTo: address(new StrategyBase({
                 _strategyManager: Env.proxy.strategyManager(),
-                _pauserRegistry: Env.impl.pauserRegistry()
+                _pauserRegistry: Env.impl.pauserRegistry(),
+                _version: Env.version()
             }))
         });
 

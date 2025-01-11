@@ -21,7 +21,8 @@ contract Deploy is EOADeployer {
                 _pauserRegistry: Env.impl.pauserRegistry(),
                 _permissionController: Env.proxy.permissionController(),
                 _DEALLOCATION_DELAY: Env.MIN_WITHDRAWAL_DELAY(),
-                _ALLOCATION_CONFIGURATION_DELAY: Env.ALLOCATION_CONFIGURATION_DELAY()
+                _ALLOCATION_CONFIGURATION_DELAY: Env.ALLOCATION_CONFIGURATION_DELAY(),
+                _version: Env.version()
             }))
         });
 
@@ -33,7 +34,8 @@ contract Deploy is EOADeployer {
                 _allocationManager: Env.proxy.allocationManager(),
                 _pauserRegistry: Env.impl.pauserRegistry(),
                 _permissionController: Env.proxy.permissionController(),
-                _MIN_WITHDRAWAL_DELAY: Env.MIN_WITHDRAWAL_DELAY()
+                _MIN_WITHDRAWAL_DELAY: Env.MIN_WITHDRAWAL_DELAY(),
+                _version: Env.version()
             }))
         });
 

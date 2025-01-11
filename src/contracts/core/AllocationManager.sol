@@ -6,6 +6,7 @@ import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 
 import "../mixins/PermissionControllerMixin.sol";
+import "../mixins/SemVerMixin.sol";
 import "../permissions/Pausable.sol";
 import "../libraries/SlashingLib.sol";
 import "../libraries/OperatorSetLib.sol";
@@ -17,7 +18,8 @@ contract AllocationManager is
     Pausable,
     AllocationManagerStorage,
     ReentrancyGuardUpgradeable,
-    PermissionControllerMixin
+    PermissionControllerMixin,
+    SemVerMixin
 {
     using DoubleEndedQueue for DoubleEndedQueue.Bytes32Deque;
     using EnumerableSet for *;
@@ -41,11 +43,13 @@ contract AllocationManager is
         IPauserRegistry _pauserRegistry,
         IPermissionController _permissionController,
         uint32 _DEALLOCATION_DELAY,
-        uint32 _ALLOCATION_CONFIGURATION_DELAY
+        uint32 _ALLOCATION_CONFIGURATION_DELAY,
+        string memory _version
     )
         AllocationManagerStorage(_delegation, _DEALLOCATION_DELAY, _ALLOCATION_CONFIGURATION_DELAY)
         Pausable(_pauserRegistry)
         PermissionControllerMixin(_permissionController)
+        SemVerMixin(_version)
     {
         _disableInitializers();
     }

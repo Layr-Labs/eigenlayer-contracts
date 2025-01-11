@@ -25,7 +25,8 @@ contract Deploy is EOADeployer {
                 _allocationManager: Env.proxy.allocationManager(),
                 _pauserRegistry: Env.impl.pauserRegistry(),
                 _permissionController: Env.proxy.permissionController(),
-                _MIN_WITHDRAWAL_DELAY: Env.MIN_WITHDRAWAL_DELAY()
+                _MIN_WITHDRAWAL_DELAY: Env.MIN_WITHDRAWAL_DELAY(),
+                _version: Env.version()
             }))
         });
 
@@ -34,7 +35,8 @@ contract Deploy is EOADeployer {
             name: type(AVSDirectory).name,
             deployedTo: address(new AVSDirectory({
                 _delegation: Env.proxy.delegationManager(),
-                _pauserRegistry: Env.impl.pauserRegistry()
+                _pauserRegistry: Env.impl.pauserRegistry(),
+                _version: Env.version()
             }))
         });
 
@@ -43,25 +45,29 @@ contract Deploy is EOADeployer {
             name: type(StrategyManager).name,
             deployedTo: address(new StrategyManager({
                 _delegation: Env.proxy.delegationManager(),
-                _pauserRegistry: Env.impl.pauserRegistry()
+                _pauserRegistry: Env.impl.pauserRegistry(),
+                _version: Env.version()
             }))
         });
 
         // Deploy RC
         deployImpl({
             name: type(RewardsCoordinator).name,
-            deployedTo: address(new RewardsCoordinator({
-                _delegationManager: Env.proxy.delegationManager(),
-                _strategyManager: Env.proxy.strategyManager(),
-                _allocationManager: Env.proxy.allocationManager(),
-                _pauserRegistry: Env.impl.pauserRegistry(),
-                _permissionController: Env.proxy.permissionController(),
-                _CALCULATION_INTERVAL_SECONDS: Env.CALCULATION_INTERVAL_SECONDS(),
-                _MAX_REWARDS_DURATION: Env.MAX_REWARDS_DURATION(),
-                _MAX_RETROACTIVE_LENGTH: Env.MAX_RETROACTIVE_LENGTH(),
-                _MAX_FUTURE_LENGTH: Env.MAX_FUTURE_LENGTH(),
-                _GENESIS_REWARDS_TIMESTAMP: Env.GENESIS_REWARDS_TIMESTAMP()
-            }))
+            deployedTo: address(new RewardsCoordinator(
+                IRewardsCoordinatorTypes.RewardsCoordinatorConstructorParams({
+                    delegationManager: Env.proxy.delegationManager(),
+                    strategyManager: Env.proxy.strategyManager(),
+                    allocationManager: Env.proxy.allocationManager(),
+                    pauserRegistry: Env.impl.pauserRegistry(),
+                    permissionController: Env.proxy.permissionController(),
+                    CALCULATION_INTERVAL_SECONDS: Env.CALCULATION_INTERVAL_SECONDS(),
+                    MAX_REWARDS_DURATION: Env.MAX_REWARDS_DURATION(),
+                    MAX_RETROACTIVE_LENGTH: Env.MAX_RETROACTIVE_LENGTH(),
+                    MAX_FUTURE_LENGTH: Env.MAX_FUTURE_LENGTH(),
+                    GENESIS_REWARDS_TIMESTAMP: Env.GENESIS_REWARDS_TIMESTAMP(),
+                    version: Env.version()
+                })
+            ))
         });
 
         vm.stopBroadcast();
