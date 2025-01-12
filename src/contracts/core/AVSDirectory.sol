@@ -3,10 +3,12 @@ pragma solidity ^0.8.27;
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
-import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 
-import "../mixins/SignatureUtils.sol";
 import "../permissions/Pausable.sol";
+
+import "../mixins/ReentrancyGuardMixin.sol";
+import "../mixins/SignatureUtils.sol";
+
 import "./AVSDirectoryStorage.sol";
 
 contract AVSDirectory is
@@ -14,7 +16,7 @@ contract AVSDirectory is
     OwnableUpgradeable,
     Pausable,
     AVSDirectoryStorage,
-    ReentrancyGuardUpgradeable,
+    ReentrancyGuardMixin,
     SignatureUtils
 {
     /**

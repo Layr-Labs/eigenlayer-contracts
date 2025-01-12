@@ -3,8 +3,8 @@ pragma solidity ^0.8.27;
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
-import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 
+import "../mixins/ReentrancyGuardMixin.sol";
 import "../mixins/PermissionControllerMixin.sol";
 import "../permissions/Pausable.sol";
 import "../libraries/SlashingLib.sol";
@@ -16,7 +16,7 @@ contract AllocationManager is
     OwnableUpgradeable,
     Pausable,
     AllocationManagerStorage,
-    ReentrancyGuardUpgradeable,
+    ReentrancyGuardMixin,
     PermissionControllerMixin
 {
     using DoubleEndedQueue for DoubleEndedQueue.Bytes32Deque;

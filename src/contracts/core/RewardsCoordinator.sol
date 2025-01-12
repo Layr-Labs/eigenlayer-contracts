@@ -3,9 +3,9 @@ pragma solidity ^0.8.27;
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
-import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
+import "../mixins/ReentrancyGuardMixin.sol";
 import "../libraries/Merkle.sol";
 import "../permissions/Pausable.sol";
 import "./RewardsCoordinatorStorage.sol";
@@ -24,7 +24,7 @@ contract RewardsCoordinator is
     Initializable,
     OwnableUpgradeable,
     Pausable,
-    ReentrancyGuardUpgradeable,
+    ReentrancyGuardMixin,
     RewardsCoordinatorStorage,
     PermissionControllerMixin
 {

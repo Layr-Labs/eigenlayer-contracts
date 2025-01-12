@@ -4,8 +4,8 @@ pragma solidity ^0.8.27;
 import "@openzeppelin/contracts/utils/Create2.sol";
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
-import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 
+import "../mixins/ReentrancyGuardMixin.sol";
 import "../libraries/SlashingLib.sol";
 import "../permissions/Pausable.sol";
 import "./EigenPodPausingConstants.sol";
@@ -27,7 +27,7 @@ contract EigenPodManager is
     Pausable,
     EigenPodPausingConstants,
     EigenPodManagerStorage,
-    ReentrancyGuardUpgradeable
+    ReentrancyGuardMixin
 {
     using SlashingLib for *;
     using Math for *;
