@@ -1018,6 +1018,6 @@ contract DelegationManager is
     }
 
     function version() public pure override(ISignatureUtilsMixin, SignatureUtilsMixin) returns (string memory) {
-        return "1.0.3";
+        return "1";
     }
 }
