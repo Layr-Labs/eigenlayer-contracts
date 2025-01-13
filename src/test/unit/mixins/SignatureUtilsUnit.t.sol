@@ -2,7 +2,7 @@
 pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
-import "src/contracts/mixins/SignatureUtils.sol";
+import "src/contracts/mixins/SignatureUtilsMixin.sol";
 
 contract MockSigner {
     mapping(bytes32 => mapping(bytes => bool)) public validSignatures;
@@ -16,7 +16,7 @@ contract MockSigner {
     }
 }
 
-contract SignatureUtilsUnit is Test, SignatureUtils {
+contract SignatureUtilsMixinUnit is Test, SignatureUtilsMixin {
     uint256 signerPk;
     address signer;
     bytes32 hash;
@@ -66,7 +66,7 @@ contract SignatureUtilsUnit is Test, SignatureUtils {
     function test_checkIsValidSignatureNow_Expired() public {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPk, digest);
 
-        vm.expectRevert(ISignatureUtilsErrors.SignatureExpired.selector);
+        vm.expectRevert(ISignatureUtilsMixinErrors.SignatureExpired.selector);
         _checkIsValidSignatureNow(signer, digest, abi.encode(r, s, v), block.timestamp - 1);
     }
 

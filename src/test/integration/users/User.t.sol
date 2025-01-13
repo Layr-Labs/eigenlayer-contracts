@@ -212,7 +212,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     ) public virtual createSnapshot {
         print.method("delegateTo", operator.NAME_COLORED());
 
-        ISignatureUtilsTypes.SignatureWithExpiry memory emptySig;
+        ISignatureUtilsMixinTypes.SignatureWithExpiry memory emptySig;
         delegationManager.delegateTo(address(operator), emptySig, bytes32(0));
         print.gasUsed();
     }

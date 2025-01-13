@@ -3,23 +3,23 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin-upgrades/contracts/utils/cryptography/SignatureCheckerUpgradeable.sol";
 
-import "../interfaces/ISignatureUtils.sol";
+import "../interfaces/ISignatureUtilsMixin.sol";
 
 bytes32 constant EIP712_DOMAIN_TYPEHASH =
     keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
 
-/// @title SignatureUtils
+/// @title SignatureUtilsMixin
 /// @notice A mixin to provide EIP-712 signature validation utilities.
 /// @dev Domain name is hardcoded to "EigenLayer".
-abstract contract SignatureUtils is ISignatureUtils {
+abstract contract SignatureUtilsMixin is ISignatureUtilsMixin {
     using SignatureCheckerUpgradeable for address;
 
     /// EXTERNAL FUNCTIONS
 
-    /// @inheritdoc ISignatureUtils
+    /// @inheritdoc ISignatureUtilsMixin
     function version() public pure virtual returns (string memory);
 
-    /// @inheritdoc ISignatureUtils
+    /// @inheritdoc ISignatureUtilsMixin
     function domainSeparator() public view virtual returns (bytes32) {
         // forgefmt: disable-next-item
         return 
