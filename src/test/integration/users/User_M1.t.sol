@@ -5,7 +5,7 @@ import "src/test/integration/deprecatedInterfaces/mainnet/IEigenPod.sol";
 import "src/test/integration/deprecatedInterfaces/mainnet/IEigenPodManager.sol";
 import "src/test/integration/deprecatedInterfaces/mainnet/IStrategyManager.sol";
 import "src/test/integration/users/User.t.sol";
-import "src/contracts/mixins/SignatureUtils.sol";
+import "src/contracts/mixins/SignatureUtilsMixin.sol";
 
 interface IUserM1MainnetForkDeployer {
     function delegationManager() external view returns (DelegationManager);

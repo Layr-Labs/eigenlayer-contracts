@@ -64,7 +64,7 @@ contract RegisterOperatorToOperatorSets is Script, Test {
 
         // Register the Operator to the AVS
         avsDirectory.registerOperatorToAVS(
-            operator, ISignatureUtilsTypes.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), bytes32(uint256(0) + 1), expiry)
+            operator, ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), bytes32(uint256(0) + 1), expiry)
         );
 
         // Deploy and set registrar.

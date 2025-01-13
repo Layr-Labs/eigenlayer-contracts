@@ -5,7 +5,7 @@ import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 
-import "../mixins/SignatureUtils.sol";
+import "../mixins/SignatureUtilsMixin.sol";
 import "../mixins/PermissionControllerMixin.sol";
 import "../permissions/Pausable.sol";
 import "../libraries/SlashingLib.sol";
@@ -28,7 +28,7 @@ contract DelegationManager is
     Pausable,
     DelegationManagerStorage,
     ReentrancyGuardUpgradeable,
-    SignatureUtils,
+    SignatureUtilsMixin,
     PermissionControllerMixin
 {
     using SlashingLib for *;
@@ -1016,7 +1016,7 @@ contract DelegationManager is
         );
     }
 
-    function version() public pure override(ISignatureUtils, SignatureUtils) returns (string memory) {
+    function version() public pure override(ISignatureUtilsMixin, SignatureUtilsMixin) returns (string memory) {
         return "1.0.3";
     }
 }

@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 
 import "src/contracts/core/RewardsCoordinator.sol";
 import "src/contracts/strategies/StrategyBase.sol";
-import "src/contracts/mixins/SignatureUtils.sol";
+import "src/contracts/mixins/SignatureUtilsMixin.sol";
 
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
 import "src/test/mocks/Reenterer.sol";
