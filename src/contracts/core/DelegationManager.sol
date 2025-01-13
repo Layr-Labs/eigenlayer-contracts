@@ -562,6 +562,11 @@ contract DelegationManager is
                 slashingFactor: prevSlashingFactors[i]
             });
 
+            //Do nothing if 0 shares to withdraw
+            if (sharesToWithdraw == 0) {
+                continue;
+            }
+
             if (receiveAsTokens) {
                 // Withdraws `shares` in `strategy` to `withdrawer`. If the shares are virtual beaconChainETH shares,
                 // then a call is ultimately forwarded to the `staker`s EigenPod; otherwise a call is ultimately forwarded
