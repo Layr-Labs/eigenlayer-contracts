@@ -5946,8 +5946,8 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         delegationManager.completeQueuedWithdrawal(withdrawal, tokens, receiveAsTokens);
     }
 
-    /// @notice Verifies that when we complete a withdrawal as shares after a full slash, we revert
-    function test_revert_fullySlashed() public {
+    /// @notice Verifies that when we complete a withdrawal as shares after a full slash, we clear the withdrawal
+    function test_clearWithdrawal_fullySlashed() public {
         // Register operator
         _registerOperatorWithBaseDetails(defaultOperator);
         _setOperatorMagnitude(defaultOperator, strategyMock, WAD);
@@ -5978,12 +5978,22 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         cheats.prank(address(allocationManagerMock));
         delegationManager.slashOperatorShares(defaultOperator, strategyMock, WAD, 0);
 
-        // Complete withdrawal as shares and assert that operator has no shares increased
+        // Complete withdrawal as shares and check that withdrawal was cleared
         cheats.roll(block.number + 1);
         IERC20[] memory tokens = strategyMock.underlyingToken().toArray();
-        cheats.expectRevert(FullySlashed.selector);
+
+        bytes32 withdrawalRoot = delegationManager.calculateWithdrawalRoot(withdrawal);
+        assertTrue(delegationManager.pendingWithdrawals(withdrawalRoot), "withdrawal should be pending before completion");
+
         cheats.prank(defaultStaker);
         delegationManager.completeQueuedWithdrawal(withdrawal, tokens, false);
+
+        assertFalse(delegationManager.pendingWithdrawals(withdrawalRoot), "withdrawal should be cleared after completion");
+    
+        // Assert that no shares were added back
+        assertEq(delegationManager.operatorShares(defaultOperator, strategyMock), 0, "operator shares should remain 0");
+        (uint256[] memory withdrawableShares, ) = delegationManager.getWithdrawableShares(defaultStaker, strategyMock.toArray());
+        assertEq(withdrawableShares[0], 0, "withdrawable shares should be 0");
     }
 
     /**
@@ -6631,21 +6641,17 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
 
         uint256 slashableSharesInQueueAfter = delegationManager.getSlashableSharesInQueue(defaultOperator, strategyMock);
 
-        // Complete withdrawal as tokens and assert that nothing is returned
+        // Complete withdrawal as tokens and assert that nothing is returned and withdrawal is cleared
         cheats.roll(block.number + 1);
         IERC20[] memory tokens = strategyMock.underlyingToken().toArray();
-        cheats.expectCall(
-            address(strategyManagerMock),
-            abi.encodeWithSelector(
-                IShareManager.withdrawSharesAsTokens.selector,
-                defaultStaker,
-                strategyMock,
-                strategyMock.underlyingToken(),
-                0
-            )
-        );
+
+        bytes32 withdrawalRoot = delegationManager.calculateWithdrawalRoot(withdrawal);
+        assertTrue(delegationManager.pendingWithdrawals(withdrawalRoot), "withdrawal should be pending before completion");
+    
         cheats.prank(defaultStaker);
         delegationManager.completeQueuedWithdrawal(withdrawal, tokens, true);
+
+        assertFalse(delegationManager.pendingWithdrawals(withdrawalRoot), "withdrawal should be cleared after completion");
 
         assertEq(
             slashableSharesInQueue,
