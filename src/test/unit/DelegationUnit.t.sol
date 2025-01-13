@@ -5946,7 +5946,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         delegationManager.completeQueuedWithdrawal(withdrawal, tokens, receiveAsTokens);
     }
 
-    /// @notice Verifies that when we complete a withdrawal as shares after a full slash, we revert
+    /// @notice Verifies that when we complete a withdrawal as shares after a full slash, we clear the withdrawal
     function test_clearWithdrawal_fullySlashed() public {
         // Register operator
         _registerOperatorWithBaseDetails(defaultOperator);
