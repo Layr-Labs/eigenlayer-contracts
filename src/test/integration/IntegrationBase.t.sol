@@ -1149,7 +1149,29 @@ abstract contract IntegrationBase is IntegrationDeployer {
         return(strategies.sort(), wadsToSlash);
     }
 
-            
+    function _strategiesAndWadsForRandFullSlash(
+        OperatorSet memory operatorSet
+    ) internal returns (IStrategy[] memory strategies, uint[] memory wadsToSlash) {
+        // Get list of all strategies in an operator set.
+        strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
+
+        // Randomly select a subset of strategies to slash.
+        uint len = _randUint({ min: 1, max: strategies.length-1 });
+
+        // Update length of strategies array.
+        assembly {
+            mstore(strategies, len)
+        }
+        
+        wadsToSlash = new uint[](len);
+        
+        // Randomly select a `wadToSlash` for each strategy.
+        for (uint i; i < len; ++i) {
+            wadsToSlash[i] = 1 ether;
+        }
+
+        return (strategies.sort(), wadsToSlash);
+    }     
     
     function _randMagnitudes(uint64 sum, uint256 len) internal returns (uint64[] memory magnitudes) {
         magnitudes = new uint64[](len);
