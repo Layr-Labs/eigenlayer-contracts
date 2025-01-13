@@ -6591,21 +6591,17 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
 
         uint256 slashableSharesInQueueAfter = delegationManager.getSlashableSharesInQueue(defaultOperator, strategyMock);
 
-        // Complete withdrawal as tokens and assert that nothing is returned
+        // Complete withdrawal as tokens and assert that nothing is returned and withdrawal is cleared
         cheats.roll(block.number + 1);
         IERC20[] memory tokens = strategyMock.underlyingToken().toArray();
-        cheats.expectCall(
-            address(strategyManagerMock),
-            abi.encodeWithSelector(
-                IShareManager.withdrawSharesAsTokens.selector,
-                defaultStaker,
-                strategyMock,
-                strategyMock.underlyingToken(),
-                0
-            )
-        );
+
+        bytes32 withdrawalRoot = delegationManager.calculateWithdrawalRoot(withdrawal);
+        assertTrue(delegationManager.pendingWithdrawals(withdrawalRoot), "withdrawal should be pending before completion");
+    
         cheats.prank(defaultStaker);
         delegationManager.completeQueuedWithdrawal(withdrawal, tokens, true);
+
+        assertFalse(delegationManager.pendingWithdrawals(withdrawalRoot), "withdrawal should be cleared after completion");
 
         assertEq(
             slashableSharesInQueue,
