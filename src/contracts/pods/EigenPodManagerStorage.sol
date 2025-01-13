@@ -62,20 +62,30 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
 
     // BEGIN STORAGE VARIABLES ADDED AFTER MAINNET DEPLOYMENT -- DO NOT SUGGEST REORDERING TO CONVENTIONAL ORDER
     /**
-     * // TODO: Update this comment
-     * @notice Mapping from Pod owner owner to the number of deposit shares they have in the virtual beacon chain ETH strategy.
-     * @dev The deposit share amount can become negative. This is necessary to accommodate the fact that a pod owner's virtual beacon chain ETH shares can
-     * decrease between the pod owner queuing and completing a withdrawal.
-     * When the pod owner's shares would otherwise increase, this "deficit" is decreased first _instead_.
-     * Likewise, when a withdrawal is completed, this "deficit" is decreased and the withdrawal amount is decreased; We can think of this
-     * as the withdrawal "paying off the deficit".
+     * @notice mapping from pod owner to the deposit shares they have in the virtual beacon chain ETH strategy
+     *
+     * @dev When an EigenPod registers a balance increase, deposit shares are increased. When registering a balance
+     * decrease, however, deposit shares are NOT decreased. Instead, the pod owner's beacon chain slashing factor
+     * is decreased proportional to the balance decrease. This impacts the number of shares that will be withdrawn
+     * when the deposit shares are queued for withdrawal in the DelegationManager.
+     *
+     * Note that prior to the slashing release, deposit shares were decreased when balance decreases occurred.
+     * In certain cases, a combination of queueing a withdrawal plus registering a balance decrease could result
+     * in a staker having negative deposit shares in this mapping. This negative value would be corrected when the
+     * staker completes a withdrawal (as tokens or as shares).
+     *
+     * With the slashing release, negative shares are no longer possible. However, a staker can still have negative
+     * shares if they met the conditions for them before the slashing release. If this is the case, that staker
+     * should complete any outstanding queued withdrawal in the DelegationManager ("as shares"). This will correct
+     * the negative share count and allow the staker to continue using their pod as normal.
      */
     mapping(address podOwner => int256 shares) public podOwnerDepositShares;
 
     uint64 internal __deprecated_denebForkTimestamp;
 
     /// @notice Returns the slashing factor applied to the `staker` for the `beaconChainETHStrategy`
-    /// Note: this is specifically updated when the staker's beacon chain balance decreases
+    /// Note: this value starts at 1 WAD (1e18) for all stakers, and is updated when a staker's pod registers
+    /// a balance decrease.
     mapping(address staker => BeaconChainSlashingFactor) internal _beaconChainSlashingFactor;
 
     /// @notice Returns the amount of `shares` that have been slashed on EigenLayer but not burned yet.

@@ -37,9 +37,9 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
     }
 
     /**
-     * @notice Deploy a new strategyBeacon contract for the ERC20 token.
+     * @notice Deploy a new StrategyBase contract for the ERC20 token, using a beacon proxy
      * @dev A strategy contract must not yet exist for the token.
-     * $dev Immense caution is warranted for non-standard ERC20 tokens, particularly "reentrant" tokens
+     * @dev Immense caution is warranted for non-standard ERC20 tokens, particularly "reentrant" tokens
      * like those that conform to ERC777.
      */
     function deployNewStrategy(
