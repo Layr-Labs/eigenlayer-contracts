@@ -81,8 +81,6 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         for (uint256 i = 0; i < withdrawals.length; ++i) {
             uint256[] memory expectedTokens =
                 _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].scaledShares);
-            for (uint256 i = 0; i < expectedTokens.length; i++) {
-            }
             staker.completeWithdrawalAsTokens(withdrawals[i]);
             check_Withdrawal_AsTokens_State_AfterSlash(staker, operator, withdrawals[i], allocateParams, slashingParams, expectedTokens);
         }
@@ -169,8 +167,6 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         for (uint256 i = 0; i < withdrawals.length; ++i) {
             uint256[] memory expectedTokens =
                 _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].scaledShares);
-            for (uint256 i = 0; i < expectedTokens.length; i++) {
-            }
             staker.completeWithdrawalAsTokens(withdrawals[i]);
             check_Withdrawal_AsTokens_State_AfterSlash(staker, operator, withdrawals[i], allocateParams, slashingParams, expectedTokens);
         }
@@ -266,8 +262,6 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         for (uint256 i = 0; i < withdrawals.length; ++i) {
             uint256[] memory expectedTokens =
                 _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].scaledShares);
-            for (uint256 i = 0; i < expectedTokens.length; i++) {
-            }
             staker.completeWithdrawalAsTokens(withdrawals[i]);
             check_Withdrawal_AsTokens_State_AfterSlash(staker, operator, withdrawals[i], allocateParams, slashingParams, expectedTokens);
         }

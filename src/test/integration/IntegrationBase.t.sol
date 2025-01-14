@@ -1165,7 +1165,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         
         wadsToSlash = new uint[](len);
         
-        // Randomly select a `wadToSlash` for each strategy.
+        // Fully slash each selected strategy
         for (uint i; i < len; ++i) {
             wadsToSlash[i] = 1 ether;
         }
