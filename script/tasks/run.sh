@@ -67,7 +67,7 @@ forge script ../tasks/allocate_operatorSet.s.sol \
 # Slash the OperatorSet (50%)
 forge script ../tasks/slash_operatorSet.s.sol \
     --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast \
-    --sig "run(string memory configFile,address operator,uint32 operatorSetId,uint256 wadToSlash)" \
+    --sig "run(string memory configFile,address operator,uint32 operatorSetId,address[] memory strategies,uint256[] memory wadsToSlash)" \
     -- local/slashing_output.json $SENDER 00000001 0500000000000000000
 
 # Deposit more shares into strategy
@@ -96,7 +96,7 @@ cast rpc anvil_mine 5 --rpc-url $RPC_URL
 # Slash the OperatorSet (50%)
 forge script ../tasks/slash_operatorSet.s.sol \
     --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast \
-    --sig "run(string memory configFile,address operator,uint32 operatorSetId,uint256 wadToSlash)" \
+    --sig "run(string memory configFile,address operator,uint32 operatorSetId,address[] memory strategies,uint256[] memory wadsToSlash)" \
     -- local/slashing_output.json $SENDER 00000001 0500000000000000000
 
 # Complete the withdrawal process
