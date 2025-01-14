@@ -28,6 +28,9 @@ abstract contract StrategyFactoryStorage is IStrategyFactory {
      * @dev This empty reserved space is put in place to allow future versions to add new
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
+     * 
+     * @dev This gap is off by one compared to our mainet deployment, this means an upgrade
+     * will change the storage layout.
      */
     uint256[47] private __gap;
 }
