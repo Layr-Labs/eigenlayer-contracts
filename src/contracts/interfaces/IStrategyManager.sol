@@ -179,6 +179,9 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
     /// @notice Returns the address of the `strategyWhitelister`
     function strategyWhitelister() external view returns (address);
 
+    /// @notice Returns the burnable shares of a strategy
+    function getBurnableShares(IStrategy strategy) external view returns(uint256);
+
     /**
      * @param staker The address of the staker.
      * @param strategy The strategy to deposit into.

@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
+import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
+
 import "../interfaces/IStrategyManager.sol";
 import "../interfaces/IStrategy.sol";
 import "../interfaces/IEigenPodManager.sol";
 import "../interfaces/IDelegationManager.sol";
 import "../interfaces/IAVSDirectory.sol";
-import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 
 /**
  * @title Storage variables for the `StrategyManager` contract.
@@ -84,10 +85,10 @@ abstract contract StrategyManagerStorage is IStrategyManager {
         delegation = _delegation;
     }
 
-    //Access for burnableShares
+    /// @inheritdoc IStrategyManager
     function getBurnableShares(
         IStrategy strategy
-    ) public view returns (uint256) {
+    ) external view returns (uint256) {
         (, uint256 shares) = EnumerableMap.tryGet(burnableShares, address(strategy));
         return shares;
     }
