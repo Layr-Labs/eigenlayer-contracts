@@ -147,20 +147,16 @@ abstract contract IntegrationBase is IntegrationDeployer {
             emit log("_upgradeEigenLayerContracts: upgrading mainnet to slashing");
             _upgradeMainnetContracts();
 
+            // Unpause EigenPodManager
+            cheats.prank(eigenLayerPauserReg.unpauser());
+            eigenPodManager.unpause(0);
+
             // Bump block.timestamp forward to allow verifyWC proofs for migrated pods
             emit log("advancing block time to start of next epoch:");
 
             beaconChain.advanceEpoch_NoRewards();
 
             emit log("======");
-
-            isUpgraded = true;
-            emit log("_upgradeEigenLayerContracts: slashing upgrade complete");
-        } else if (forkType == HOLESKY) {
-            require(!isUpgraded, "_upgradeEigenLayerContracts: already performed slashing upgrade");
-
-            emit log("_upgradeEigenLayerContracts: upgrading holesky to slashing");
-            _upgradeHoleskyContracts();
 
             isUpgraded = true;
             emit log("_upgradeEigenLayerContracts: slashing upgrade complete");
