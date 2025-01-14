@@ -40,8 +40,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     bool isUpgraded;
     uint mainnetForkBlock = 21_616_692; // Post Protocol Council upgrade
 
-    string version = "v9.9.9";
-
     // Beacon chain genesis time when running locally
     // Multiple of 12 for sanity's sake
     uint64 constant GENESIS_TIME_LOCAL = 1 hours * 12;
@@ -81,27 +79,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     bytes userTypes;
     // Set only once in setUp, if FORK_MAINNET env is set
     uint forkType;
-
-    /// @dev used to configure randomness and default user/asset types
-    ///
-    /// Tests that want alternate user/asset types can still use this modifier,
-    /// and then configure user/asset types individually using the methods:
-    /// _configAssetTypes(...)
-    /// _configUserTypes(...)
-    ///
-    /// (Alternatively, this modifier can be overwritten)
-    modifier rand(uint24 r) virtual {
-        _configRand({
-            _randomSeed: r,
-            _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
-            _userTypes: DEFAULT | ALT_METHODS
-        });
-
-        // Used to create shared setups between tests
-        _init();
-
-        _;
-    }
 
     constructor() {
         address stETH_Holesky = 0x3F1c547b21f65e10480dE3ad8E19fAAC46C95034;
@@ -145,25 +122,11 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         }
     }
 
-    /// @dev Used to create shared setup between tests. This method is called
-    /// when the `rand` modifier is run, before a test starts
-    function _init() internal virtual {
-        return;
-    }
-
-    /**
-     * env FOUNDRY_PROFILE=forktest forge t --mc Integration
-     *
-     * Running foundry like this will trigger the fork test profile,
-     * lowering fuzz runs and using a remote RPC to test against mainnet state
-     */
-    function isForktest() public view returns (bool) {
-        return _hash("forktest") == _hash(cheats.envOr(string("FOUNDRY_PROFILE"), string("default")));
-    }
-
     /// Deploy EigenLayer locally
-    function _setUpLocal() public noTracing virtual {
+    function _setUpLocal() public virtual {
         console.log("Setting up `%s` integration tests:", "LOCAL".yellow().bold());
+        // Bypass upgrade tests when running locally
+        isUpgraded = true;
 
         // Deploy ProxyAdmin
         eigenLayerProxyAdmin = new ProxyAdmin();
@@ -204,7 +167,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         ethStrats.push(BEACONCHAIN_ETH_STRAT);
         allStrats.push(BEACONCHAIN_ETH_STRAT);
         allTokens.push(NATIVE_ETH);
-        maxUniqueAssetsHeld = allStrats.length;
 
         // Create time machine and beacon chain. Set block time to beacon chain genesis time
         BEACON_GENESIS_TIME = GENESIS_TIME_LOCAL;
@@ -214,7 +176,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     }
 
     /// Parse existing contracts from mainnet
-    function _setUpMainnet() public noTracing virtual {
+    function _setUpMainnet() public virtual {
         console.log("Setting up `%s` integration tests:", "MAINNET_FORK".green().bold());
         console.log("RPC:", cheats.rpcUrl("mainnet"));
         console.log("Block:", mainnetForkBlock);
@@ -240,20 +202,13 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             allTokens.push(strategy.underlyingToken());
         }
 
-        maxUniqueAssetsHeld = allStrats.length;
-        
         // Create time machine and mock beacon chain
         BEACON_GENESIS_TIME = GENESIS_TIME_MAINNET;
         timeMachine = new TimeMachine();
         beaconChain = new BeaconChainMock(eigenPodManager, BEACON_GENESIS_TIME);
-
-        // Since we haven't done the slashing upgrade on mainnet yet, upgrade mainnet contracts
-        // prior to test. `isUpgraded` is true by default, but is set to false in `UpgradeTest.t.sol`
-        if (isUpgraded) {
-            _upgradeMainnetContracts();
-        }
     }
 
+    /// Deploy current implementation contracts and upgrade existing proxies
     function _upgradeMainnetContracts() public virtual {
         cheats.startPrank(address(executorMultisig));
 
@@ -285,7 +240,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         ethStrats.push(BEACONCHAIN_ETH_STRAT);
         allStrats.push(BEACONCHAIN_ETH_STRAT);
         allTokens.push(NATIVE_ETH);
-        maxUniqueAssetsHeld = allStrats.length;
     }
 
     function _deployProxies() public {
@@ -319,25 +273,10 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
     /// Deploy an implementation contract for each contract in the system
     function _deployImplementations() public {
-        allocationManagerImplementation = new AllocationManager(
-            delegationManager, 
-            eigenLayerPauserReg, 
-            permissionController, 
-            DEALLOCATION_DELAY, 
-            ALLOCATION_CONFIGURATION_DELAY,
-            version
-        );
-        permissionControllerImplementation = new PermissionController(version);
-        delegationManagerImplementation = new DelegationManager(
-            strategyManager, 
-            eigenPodManager, 
-            allocationManager, 
-            eigenLayerPauserReg, 
-            permissionController, 
-            DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS,
-            version
-        );
-        strategyManagerImplementation = new StrategyManager(delegationManager, eigenLayerPauserReg, version);
+        allocationManagerImplementation = new AllocationManager(delegationManager, eigenLayerPauserReg, permissionController, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
+        permissionControllerImplementation = new PermissionController();
+        delegationManagerImplementation = new DelegationManager(strategyManager, eigenPodManager, allocationManager, eigenLayerPauserReg, permissionController, DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS);
+        strategyManagerImplementation = new StrategyManager(delegationManager, eigenLayerPauserReg);
         rewardsCoordinatorImplementation = new RewardsCoordinator(
             IRewardsCoordinatorTypes.RewardsCoordinatorConstructorParams({
                 delegationManager: delegationManager,
@@ -361,17 +300,17 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             eigenLayerPauserReg,
             "v9.9.9"
         );
-        strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg, "v9.9.9");
+        strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg);
 
         // Beacon implementations
-        eigenPodImplementation = new EigenPod(DEPOSIT_CONTRACT, eigenPodManager, BEACON_GENESIS_TIME, "v9.9.9");
-        baseStrategyImplementation = new StrategyBase(strategyManager, eigenLayerPauserReg, "v9.9.9");
+        eigenPodImplementation = new EigenPod(DEPOSIT_CONTRACT, eigenPodManager, BEACON_GENESIS_TIME);
+        baseStrategyImplementation = new StrategyBase(strategyManager, eigenLayerPauserReg);
 
         // Pre-longtail StrategyBaseTVLLimits implementation
         // TODO - need to update ExistingDeploymentParser
     }
 
-    function _upgradeProxies() public noTracing {
+    function _upgradeProxies() public {
         // DelegationManager
         eigenLayerProxyAdmin.upgrade(
             ITransparentUpgradeableProxy(payable(address(delegationManager))),
@@ -436,7 +375,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         }
     }
 
-    function _initializeProxies() public noTracing {
+    function _initializeProxies() public {
         delegationManager.initialize({
             initialOwner: executorMultisig,
             initialPausedStatus: 0
@@ -518,25 +457,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         // Convert flag bitmaps to bytes of set bits for easy use with _randUint
         _configAssetTypes(_assetTypes);
         _configUserTypes(_userTypes);
-    }
-
-    function _configAssetTypes(uint _assetTypes) internal {
-        assetTypes = _bitmapToBytes(_assetTypes);
-        assertTrue(assetTypes.length != 0, "_configRand: no asset types selected");
-    }
-
-    function _configAssetAmounts(uint _maxUniqueAssetsHeld) internal {
-        if (_maxUniqueAssetsHeld > allStrats.length) {
-            _maxUniqueAssetsHeld = allStrats.length;
-        }
-
-        maxUniqueAssetsHeld = _maxUniqueAssetsHeld;
-        require(maxUniqueAssetsHeld != 0, "_configAssetAmounts: invalid 0");
-    }
-
-    function _configUserTypes(uint _userTypes) internal {
-        userTypes = _bitmapToBytes(_userTypes);
-        assertTrue(userTypes.length != 0, "_configRand: no user types selected");
     }
 
     /**
