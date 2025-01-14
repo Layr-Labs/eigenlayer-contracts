@@ -1129,6 +1129,45 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
         return (strategies.sort(), wadsToSlash);
     }
+
+    function _strategiesAndWadsForFullSlash(
+        OperatorSet memory operatorSet
+    ) internal view returns (IStrategy[] memory strategies, uint[] memory wadsToSlash) {
+        // Get list of all strategies in an operator set.
+        strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
+
+        wadsToSlash = new uint[](strategies.length);
+
+        for (uint i; i < strategies.length; ++i) {
+            wadsToSlash[i] = 1 ether;
+        }
+
+        return(strategies.sort(), wadsToSlash);
+    }
+
+    function _strategiesAndWadsForRandFullSlash(
+        OperatorSet memory operatorSet
+    ) internal returns (IStrategy[] memory strategies, uint[] memory wadsToSlash) {
+        // Get list of all strategies in an operator set.
+        strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
+
+        // Randomly select a subset of strategies to slash.
+        uint len = _randUint({ min: 1, max: strategies.length-1 });
+
+        // Update length of strategies array.
+        assembly {
+            mstore(strategies, len)
+        }
+        
+        wadsToSlash = new uint[](len);
+        
+        // Fully slash each selected strategy
+        for (uint i; i < len; ++i) {
+            wadsToSlash[i] = 1 ether;
+        }
+
+        return (strategies.sort(), wadsToSlash);
+    }     
     
     function _randMagnitudes(uint64 sum, uint256 len) internal returns (uint64[] memory magnitudes) {
         magnitudes = new uint64[](len);
@@ -1144,6 +1183,18 @@ abstract contract IntegrationBase is IntegrationDeployer {
                 magnitudes[i] = uint64(_randUint(0, remaining / (len - i)));
                 remaining -= magnitudes[i];
             }
+        }
+    }
+
+    function _maxMagnitudes(OperatorSet memory operatorSet, User operator) internal view returns (uint64[] memory magnitudes) {
+        IStrategy[] memory strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
+        uint256 len = strategies.length;
+        magnitudes = new uint64[](len);
+
+        if (len == 0) return magnitudes;
+
+        for (uint256 i; i < len; ++i) {
+            magnitudes[i] = allocationManager.getMaxMagnitude(address(operator), strategies[i]);
         }
     }
 
