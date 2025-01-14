@@ -6,6 +6,7 @@ import "../interfaces/IStrategy.sol";
 import "../interfaces/IEigenPodManager.sol";
 import "../interfaces/IDelegationManager.sol";
 import "../interfaces/IAVSDirectory.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 
 /**
  * @title Storage variables for the `StrategyManager` contract.
@@ -70,7 +71,7 @@ abstract contract StrategyManagerStorage is IStrategyManager {
     mapping(IStrategy strategy => bool) private __deprecated_thirdPartyTransfersForbidden;
 
     /// @notice Returns the amount of `shares` that have been slashed on EigenLayer but not burned yet.
-    mapping(IStrategy strategy => uint256) public burnableShares;
+    EnumerableMap.AddressToUintMap internal burnableShares;
 
     // Construction
 
@@ -81,6 +82,12 @@ abstract contract StrategyManagerStorage is IStrategyManager {
         IDelegationManager _delegation
     ) {
         delegation = _delegation;
+    }
+
+    //Access for burnableShares
+    function getBurnableShares(IStrategy strategy) public view returns (uint256) {
+        (, uint256 shares) = EnumerableMap.tryGet(burnableShares, address(strategy));
+        return shares;
     }
 
     /**

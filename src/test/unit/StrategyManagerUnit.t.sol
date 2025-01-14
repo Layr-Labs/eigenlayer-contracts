@@ -1466,7 +1466,7 @@ contract StrategyManagerUnitTests_increaseBurnableShares is StrategyManagerUnitT
         cheats.prank(address(delegationManagerMock));
         strategyManager.increaseBurnableShares(strategy, addedSharesToBurn);
         assertEq(
-            strategyManager.burnableShares(strategy),
+            strategyManager.getBurnableShares(strategy),
             addedSharesToBurn,
             "strategyManager.burnableShares(strategy) != addedSharesToBurn"
         );
@@ -1487,7 +1487,7 @@ contract StrategyManagerUnitTests_increaseBurnableShares is StrategyManagerUnitT
         emit BurnableSharesIncreased(strategy, existingBurnableShares);
         strategyManager.increaseBurnableShares(strategy, existingBurnableShares);
         assertEq(
-            strategyManager.burnableShares(strategy),
+            strategyManager.getBurnableShares(strategy),
             existingBurnableShares,
             "strategyManager.burnableShares(strategy) != existingBurnableShares"
         );
@@ -1498,7 +1498,7 @@ contract StrategyManagerUnitTests_increaseBurnableShares is StrategyManagerUnitT
         strategyManager.increaseBurnableShares(strategy, addedSharesToBurn);
 
         assertEq(
-            strategyManager.burnableShares(strategy),
+            strategyManager.getBurnableShares(strategy),
             existingBurnableShares + addedSharesToBurn,
             "strategyManager.burnableShares(strategy) != existingBurnableShares + addedSharesToBurn"
         );
@@ -1572,7 +1572,7 @@ contract StrategyManagerUnitTests_burnShares is StrategyManagerUnitTests {
         strategyManager.burnShares(strategy);
 
         assertEq(
-            strategyManager.burnableShares(strategy),
+            strategyManager.getBurnableShares(strategy),
             sharesToBurn,
             "burnable shares should be unchanged"
         );
