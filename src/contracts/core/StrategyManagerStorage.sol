@@ -85,7 +85,9 @@ abstract contract StrategyManagerStorage is IStrategyManager {
     }
 
     //Access for burnableShares
-    function getBurnableShares(IStrategy strategy) public view returns (uint256) {
+    function getBurnableShares(
+        IStrategy strategy
+    ) public view returns (uint256) {
         (, uint256 shares) = EnumerableMap.tryGet(burnableShares, address(strategy));
         return shares;
     }
