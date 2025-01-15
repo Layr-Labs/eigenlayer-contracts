@@ -185,6 +185,16 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
     ) external view returns (uint256);
 
     /**
+     * @notice Gets every strategy with burnable shares and the amount of burnable shares in each said strategy
+     *
+     * WARNING: This operation can copy the entire storage to memory, which can be quite expensive. This is designed
+     * to mostly be used by view accessors that are queried without any gas fees. Users should keep in mind that
+     * this function has an unbounded cost, and using it as part of a state-changing function may render the function
+     * uncallable if the map grows to a point where copying to memory consumes too much gas to fit in a block.
+     */
+    function getStrategiesWithBurnableShares() external view returns (address[] memory, uint256[] memory);
+
+    /**
      * @param staker The address of the staker.
      * @param strategy The strategy to deposit into.
      * @param token The token to deposit.

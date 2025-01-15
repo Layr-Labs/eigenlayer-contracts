@@ -85,14 +85,6 @@ abstract contract StrategyManagerStorage is IStrategyManager {
         delegation = _delegation;
     }
 
-    /// @inheritdoc IStrategyManager
-    function getBurnableShares(
-        IStrategy strategy
-    ) external view returns (uint256) {
-        (, uint256 shares) = EnumerableMap.tryGet(burnableShares, address(strategy));
-        return shares;
-    }
-
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
      * variables without shifting down storage in the inheritance chain.
