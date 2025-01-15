@@ -71,7 +71,7 @@ abstract contract StrategyManagerStorage is IStrategyManager {
     /// @dev Do not remove, deprecated storage.
     mapping(IStrategy strategy => bool) private __deprecated_thirdPartyTransfersForbidden;
 
-    /// @notice Returns the amount of `shares` that have been slashed on EigenLayer but not burned yet.
+    /// @notice Returns the amount of `shares` that have been slashed on EigenLayer but not burned yet. Takes 3 storage slots.
     EnumerableMap.AddressToUintMap internal burnableShares;
 
     // Construction
