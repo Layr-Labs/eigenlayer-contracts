@@ -140,8 +140,4 @@ contract AVSDirectory is
             keccak256(abi.encode(OPERATOR_AVS_REGISTRATION_TYPEHASH, operator, avs, salt, expiry))
         );
     }
-
-    function version() public pure override(ISignatureUtilsMixin, SignatureUtilsMixin) returns (string memory) {
-        return "1";
-    }
 }
