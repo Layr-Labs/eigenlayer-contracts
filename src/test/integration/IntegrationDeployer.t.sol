@@ -78,6 +78,23 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     // Set only once in setUp, if FORK_MAINNET env is set
     uint forkType;
 
+    /// @dev used to configure randomness and default user/asset types
+    ///
+    /// Tests that want alternate user/asset types can still use this modifier,
+    /// and then configure user/asset types individually using the methods:
+    /// _configAssetTypes(...)
+    /// _configUserTypes(...)
+    ///
+    /// (Alternatively, this modifier can be overwritten)
+    modifier rand(uint24 r) virtual {
+        _configRand({
+            _randomSeed: r,
+            _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
+            _userTypes: DEFAULT | ALT_METHODS
+        });
+        _;
+    }
+
     constructor() {
         address stETH_Holesky = 0x3F1c547b21f65e10480dE3ad8E19fAAC46C95034;
         address stETH_Mainnet = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
@@ -91,6 +108,10 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         tokensNotTested[osETH_Holesky] = true;
         tokensNotTested[osETH_Mainnet] = true;
         tokensNotTested[cbETH_Holesky] = true;
+
+        // Use current contracts by default. Upgrade tests are only run with mainnet fork tests
+        // using the `UpgradeTest.t.sol` mixin.
+        isUpgraded = true;
     }
 
     function NAME() public view virtual override returns (string memory) {
@@ -105,15 +126,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
      * Note that forkIds are also created so you can make explicit fork tests using cheats.selectFork(forkId)
      */
     function setUp() public virtual {
-        isUpgraded = false;
-
-        /**
-         * env FOUNDRY_PROFILE=forktest forge t --mc Integration
-         *
-         * Running foundry like this will trigger the fork test profile,
-         * lowering fuzz runs and using a remote RPC to test against mainnet state
-         */
-        bool forkMainnet = _hash("forktest") == _hash(cheats.envOr(string("FOUNDRY_PROFILE"), string("default")));
+        bool forkMainnet = isForktest();
 
         if (forkMainnet) {
             forkType = MAINNET;
@@ -124,11 +137,19 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         }
     }
 
+    /**
+     * env FOUNDRY_PROFILE=forktest forge t --mc Integration
+     *
+     * Running foundry like this will trigger the fork test profile,
+     * lowering fuzz runs and using a remote RPC to test against mainnet state
+     */
+    function isForktest() public view returns (bool) {
+        return _hash("forktest") == _hash(cheats.envOr(string("FOUNDRY_PROFILE"), string("default")));
+    }
+
     /// Deploy EigenLayer locally
     function _setUpLocal() public virtual {
         console.log("Setting up `%s` integration tests:", "LOCAL".yellow().bold());
-        // Bypass upgrade tests when running locally
-        isUpgraded = true;
 
         // Deploy ProxyAdmin
         eigenLayerProxyAdmin = new ProxyAdmin();
@@ -203,14 +224,19 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             allStrats.push(strategy);
             allTokens.push(strategy.underlyingToken());
         }
-
+        
         // Create time machine and mock beacon chain
         BEACON_GENESIS_TIME = GENESIS_TIME_MAINNET;
         timeMachine = new TimeMachine();
         beaconChain = new BeaconChainMock(eigenPodManager, BEACON_GENESIS_TIME);
+
+        // Since we haven't done the slashing upgrade on mainnet yet, upgrade mainnet contracts
+        // prior to test. `isUpgraded` is true by default, but is set to false in `UpgradeTest.t.sol`
+        if (isUpgraded) {
+            _upgradeMainnetContracts();
+        }
     }
 
-    /// Deploy current implementation contracts and upgrade existing proxies
     function _upgradeMainnetContracts() public virtual {
         cheats.startPrank(address(executorMultisig));
 
@@ -453,10 +479,17 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         random = _hash(_randomSeed);
         
         // Convert flag bitmaps to bytes of set bits for easy use with _randUint
-        assetTypes = _bitmapToBytes(_assetTypes);
-        userTypes = _bitmapToBytes(_userTypes);
+        _configAssetTypes(_assetTypes);
+        _configUserTypes(_userTypes);
+    }
 
+    function _configAssetTypes(uint _assetTypes) internal {
+        assetTypes = _bitmapToBytes(_assetTypes);
         assertTrue(assetTypes.length != 0, "_configRand: no asset types selected");
+    }
+
+    function _configUserTypes(uint _userTypes) internal {
+        userTypes = _bitmapToBytes(_userTypes);
         assertTrue(userTypes.length != 0, "_configRand: no user types selected");
     }
 
