@@ -5,9 +5,25 @@ import "src/test/integration/UpgradeTest.t.sol";
 
 contract Integration_Upgrade_EigenPod_Slashing_Migration is UpgradeTest, EigenPodPausingConstants {
     
+<<<<<<< HEAD
     function _init() internal override {
         _configAssetTypes(HOLDS_ETH);
         _configUserTypes(DEFAULT);   
+=======
+<<<<<<<< HEAD:src/test/integration/tests/eigenpod/EigenPod_Slashing_Migration.t.sol
+    function _init() internal override {
+        _configAssetTypes(HOLDS_ETH);
+        _configUserTypes(DEFAULT);   
+========
+    modifier rand(uint24 _rand) override {
+        _configRand({
+            _randomSeed: _rand,
+            _assetTypes: HOLDS_ETH,
+            _userTypes: DEFAULT
+        });
+        _;
+>>>>>>>> 0156d76e (test: separate upgrade test functionality from main integration tests (#1031)):src/test/integration/tests/upgrade/EigenPod_Slashing_Migration.t.sol
+>>>>>>> 0156d76e (test: separate upgrade test functionality from main integration tests (#1031))
     }
 
     /**

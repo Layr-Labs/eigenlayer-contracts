@@ -14,7 +14,7 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal is UpgradeTest {
 
         staker.depositIntoEigenlayer(strategies, tokenBalances);
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
-        Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
     
         /// Upgrade to slashing contracts
         _upgradeEigenLayerContracts();
@@ -27,7 +27,7 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal is UpgradeTest {
         }
     }
 
-    function testFuzz_delegate_deposit_queue_upgrade_completeAsShares(uint24 _random) public rand(_random) {
+    function testFuzz_delegate_deposit_queue_completeAsShares(uint24 _random) public rand(_random) {
         /// Pre-upgrade:
         /// 1. Create staker and operator with some asset amounts
         /// 2. Staker delegates to operator
@@ -39,7 +39,7 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal is UpgradeTest {
         staker.delegateTo(operator);
         staker.depositIntoEigenlayer(strategies, tokenBalances);
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
-        Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
 
         /// Upgrade to slashing contracts
         _upgradeEigenLayerContracts();
@@ -63,7 +63,7 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal is UpgradeTest {
         staker.depositIntoEigenlayer(strategies, tokenBalances);
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
         uint[] memory expectedTokens = _calculateExpectedTokens(strategies, shares);
-        Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
     
         /// Upgrade to slashing contracts
         _upgradeEigenLayerContracts();
@@ -76,7 +76,7 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal is UpgradeTest {
         }
     }
 
-    function testFuzz_delegate_deposit_queue_upgrade_completeAsTokens(uint24 _random) public rand(_random) {
+    function testFuzz_delegate_deposit_queue_completeAsTokens(uint24 _random) public rand(_random) {
         /// Pre-upgrade:
         /// 1. Create staker and operator with some asset amounts
         /// 2. Staker delegates to operator
@@ -89,7 +89,7 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal is UpgradeTest {
         staker.depositIntoEigenlayer(strategies, tokenBalances);
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
         uint[] memory expectedTokens = _calculateExpectedTokens(strategies, shares);
-        Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
 
         /// Upgrade to slashing contracts
         _upgradeEigenLayerContracts();
