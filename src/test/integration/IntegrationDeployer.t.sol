@@ -39,6 +39,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     bool isUpgraded;
     uint mainnetForkBlock = 21_616_692; // Post Protocol Council upgrade
 
+    string version = "v9.9.9";
+
     // Beacon chain genesis time when running locally
     // Multiple of 12 for sanity's sake
     uint64 constant GENESIS_TIME_LOCAL = 1 hours * 12;
@@ -303,8 +305,16 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     function _deployImplementations() public {
         allocationManagerImplementation = new AllocationManager(delegationManager, eigenLayerPauserReg, permissionController, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
         permissionControllerImplementation = new PermissionController();
-        delegationManagerImplementation = new DelegationManager(strategyManager, eigenPodManager, allocationManager, eigenLayerPauserReg, permissionController, DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS);
-        strategyManagerImplementation = new StrategyManager(delegationManager, eigenLayerPauserReg);
+        delegationManagerImplementation = new DelegationManager(
+            strategyManager, 
+            eigenPodManager, 
+            allocationManager, 
+            eigenLayerPauserReg, 
+            permissionController, 
+            DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS,
+            version
+        );
+        strategyManagerImplementation = new StrategyManager(delegationManager, eigenLayerPauserReg, version);
         rewardsCoordinatorImplementation = new RewardsCoordinator(
             delegationManager,
             strategyManager,
@@ -317,7 +327,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             REWARDS_COORDINATOR_MAX_FUTURE_LENGTH,
             REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP
         );
-        avsDirectoryImplementation = new AVSDirectory(delegationManager, eigenLayerPauserReg);
+        avsDirectoryImplementation = new AVSDirectory(delegationManager, eigenLayerPauserReg, version);
         eigenPodManagerImplementation = new EigenPodManager(
             DEPOSIT_CONTRACT,
             eigenPodBeacon,

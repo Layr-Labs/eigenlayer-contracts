@@ -41,7 +41,7 @@ interface ISignatureUtilsMixin is ISignatureUtilsMixinErrors, ISignatureUtilsMix
      *
      * @dev Must be overridden by the inheriting contract.
      */
-    function version() external pure returns (string memory);
+    function version() external view returns (string memory);
 
     /**
      * @notice Returns the current EIP-712 domain separator for this contract.

@@ -76,6 +76,8 @@ contract DeployFromScratch is Script, Test {
     // strategies deployed
     StrategyBaseTVLLimits[] public deployedStrategyArray;
 
+    string EIP712_VERSION;
+
     // IMMUTABLES TO SET
     uint64 GOERLI_GENESIS_TIME = 1616508000;
 
@@ -120,6 +122,8 @@ contract DeployFromScratch is Script, Test {
         deployConfigPath = string(bytes(string.concat("script/configs/", configFileName)));
         string memory config_data = vm.readFile(deployConfigPath);
         // bytes memory parsedData = vm.parseJson(config_data);
+
+        EIP712_VERSION = stdJson.readString(config_data, ".eip712_version");
 
         STRATEGY_MANAGER_INIT_PAUSED_STATUS = stdJson.readUint(config_data, ".strategyManager.init_paused_status");
         DELEGATION_INIT_PAUSED_STATUS = stdJson.readUint(config_data, ".delegation.init_paused_status");
@@ -234,9 +238,18 @@ contract DeployFromScratch is Script, Test {
 
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
 
-        delegationImplementation = new DelegationManager(strategyManager, eigenPodManager, allocationManager, eigenLayerPauserReg, permissionController, MIN_WITHDRAWAL_DELAY);
-        strategyManagerImplementation = new StrategyManager(delegation, eigenLayerPauserReg);
-        avsDirectoryImplementation = new AVSDirectory(delegation, eigenLayerPauserReg);
+        delegationImplementation = new DelegationManager(
+            strategyManager, 
+            eigenPodManager, 
+            allocationManager, 
+            eigenLayerPauserReg, 
+            permissionController, 
+            MIN_WITHDRAWAL_DELAY,
+            EIP712_VERSION
+        );
+
+        strategyManagerImplementation = new StrategyManager(delegation, eigenLayerPauserReg, EIP712_VERSION);
+        avsDirectoryImplementation = new AVSDirectory(delegation, eigenLayerPauserReg, EIP712_VERSION);
         eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit,
             eigenPodBeacon,

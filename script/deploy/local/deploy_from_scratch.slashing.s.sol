@@ -73,6 +73,8 @@ contract DeployFromScratch is Script, Test {
     address operationsMultisig;
     address pauserMultisig;
 
+    string EIP712_VERSION;
+
     // the ETH2 deposit contract -- if not on mainnet, we deploy a mock as stand-in
     IETHPOSDeposit public ethPOSDeposit;
 
@@ -123,6 +125,8 @@ contract DeployFromScratch is Script, Test {
         deployConfigPath = string(bytes(string.concat("script/configs/", configFileName)));
         string memory config_data = vm.readFile(deployConfigPath);
         // bytes memory parsedData = vm.parseJson(config_data);
+
+        EIP712_VERSION = stdJson.readString(config_data, ".eip712_version");
 
         MIN_WITHDRAWAL_DELAY = uint32(stdJson.readUint(config_data, ".delegation.withdrawal_delay_blocks"));
         STRATEGY_MANAGER_INIT_PAUSED_STATUS = stdJson.readUint(config_data, ".strategyManager.init_paused_status");
@@ -241,9 +245,17 @@ contract DeployFromScratch is Script, Test {
 
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
 
-        delegationImplementation = new DelegationManager(strategyManager, eigenPodManager, allocationManager, eigenLayerPauserReg, permissionController, MIN_WITHDRAWAL_DELAY);
-        strategyManagerImplementation = new StrategyManager(delegation, eigenLayerPauserReg);
-        avsDirectoryImplementation = new AVSDirectory(delegation, eigenLayerPauserReg);
+        delegationImplementation = new DelegationManager(
+            strategyManager, 
+            eigenPodManager, 
+            allocationManager, 
+            eigenLayerPauserReg, 
+            permissionController, 
+            MIN_WITHDRAWAL_DELAY,
+            EIP712_VERSION
+        );
+        strategyManagerImplementation = new StrategyManager(delegation, eigenLayerPauserReg, EIP712_VERSION);
+        avsDirectoryImplementation = new AVSDirectory(delegation, eigenLayerPauserReg, EIP712_VERSION);
         eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit,
             eigenPodBeacon,

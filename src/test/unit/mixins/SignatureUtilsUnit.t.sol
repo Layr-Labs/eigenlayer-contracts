@@ -16,7 +16,7 @@ contract MockSigner {
     }
 }
 
-contract SignatureUtilsMixinUnit is Test, SignatureUtilsMixin {
+contract SignatureUtilsMixinUnit is Test, SignatureUtilsMixin("v0.0.0") {
     uint256 signerPk;
     address signer;
     bytes32 hash;
