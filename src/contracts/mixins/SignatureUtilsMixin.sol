@@ -22,7 +22,9 @@ abstract contract SignatureUtilsMixin is ISignatureUtilsMixin {
 
     /// CONSTRUCTION
 
-    constructor(string memory _version) {
+    constructor(
+        string memory _version
+    ) {
         _VERSION = _version.toShortString();
     }
 
