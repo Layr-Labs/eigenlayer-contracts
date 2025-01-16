@@ -75,7 +75,7 @@ contract DelegationManager is
         DelegationManagerStorage(_strategyManager, _eigenPodManager, _allocationManager, _MIN_WITHDRAWAL_DELAY)
         Pausable(_pauserRegistry)
         PermissionControllerMixin(_permissionController)
-        SignatureUtilsMixin(_version) 
+        SignatureUtilsMixin(_version)
     {
         _disableInitializers();
     }

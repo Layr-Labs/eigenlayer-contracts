@@ -31,7 +31,7 @@ contract AVSDirectory is
         IDelegationManager _delegation,
         IPauserRegistry _pauserRegistry,
         string memory _version
-    ) AVSDirectoryStorage(_delegation) Pausable(_pauserRegistry) SignatureUtilsMixin(_version)  {
+    ) AVSDirectoryStorage(_delegation) Pausable(_pauserRegistry) SignatureUtilsMixin(_version) {
         _disableInitializers();
     }
 
