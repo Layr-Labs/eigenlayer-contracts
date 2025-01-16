@@ -138,31 +138,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
         return (gweiSent, remainderSent);
     }
-
-    /// @dev If we're on mainnet, upgrade contracts to slashing and migrate stakers/operators
-    function _upgradeEigenLayerContracts() internal {
-        if (forkType == MAINNET) {
-            require(!isUpgraded, "_upgradeEigenLayerContracts: already performed slashing upgrade");
-
-            emit log("_upgradeEigenLayerContracts: upgrading mainnet to slashing");
-            _upgradeMainnetContracts();
-
-            // Unpause EigenPodManager
-            cheats.prank(eigenLayerPauserReg.unpauser());
-            eigenPodManager.unpause(0);
-
-            // Bump block.timestamp forward to allow verifyWC proofs for migrated pods
-            emit log("advancing block time to start of next epoch:");
-
-            beaconChain.advanceEpoch_NoRewards();
-
-            emit log("======");
-
-            isUpgraded = true;
-            emit log("_upgradeEigenLayerContracts: slashing upgrade complete");
-        }
-    }
-
+    
     /// @dev Choose a random subset of validators (selects AT LEAST ONE)
     function _choose(uint40[] memory validators) internal returns (uint40[] memory) {
         uint rand = _randUint({ min: 1, max: validators.length ** 2 });
