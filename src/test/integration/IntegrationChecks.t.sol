@@ -16,17 +16,6 @@ contract IntegrationCheckUtils is IntegrationBase {
     *******************************************************************************/
 
     function check_VerifyWC_State(
-        User_M2 staker,
-        uint40[] memory validators,
-        uint64 beaconBalanceGwei
-    ) internal {
-        uint beaconBalanceWei = beaconBalanceGwei * GWEI_TO_WEI;
-        assert_Snap_Added_Staker_DepositShares(staker, BEACONCHAIN_ETH_STRAT, beaconBalanceWei, "staker should have added deposit shares to beacon chain strat");
-        assert_Snap_Added_ActiveValidatorCount(staker, validators.length, "staker should have increased active validator count");
-        assert_Snap_Added_ActiveValidators(staker, validators, "validators should each be active");
-    }
-
-    function check_VerifyWC_State(
         User staker,
         uint40[] memory validators,
         uint64 beaconBalanceGwei
