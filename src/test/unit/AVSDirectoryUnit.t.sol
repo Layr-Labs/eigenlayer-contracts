@@ -39,7 +39,7 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, 
         avsd = AVSDirectory(
             address(
                 new TransparentUpgradeableProxy(
-                    address(new AVSDirectory(IDelegationManager(delegationManager), pauserRegistry)),
+                    address(new AVSDirectory(IDelegationManager(delegationManager), pauserRegistry, "v9.9.9")),
                     address(eigenLayerProxyAdmin),
                     abi.encodeWithSelector(
                         AVSDirectory.initialize.selector,

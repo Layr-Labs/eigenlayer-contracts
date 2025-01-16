@@ -53,6 +53,10 @@ library Env {
      * env
      */
 
+    function version() internal view returns (string memory) {
+        return _envString("version");
+    }
+
     function executorMultisig() internal view returns (address) {
         return _envAddress("executorMultisig");
     }
@@ -299,6 +303,10 @@ library Env {
 
     function _deployedImpl(string memory name) private view returns (address) {
         return ZEnvHelpers.state().deployedImpl(name);
+    }
+
+    function _envString(string memory key) private view returns (string memory) {
+        return ZEnvHelpers.state().envString(key);
     }
 
     function _envAddress(string memory key) private view returns (address) {

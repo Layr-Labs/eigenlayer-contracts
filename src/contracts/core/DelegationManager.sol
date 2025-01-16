@@ -69,11 +69,13 @@ contract DelegationManager is
         IAllocationManager _allocationManager,
         IPauserRegistry _pauserRegistry,
         IPermissionController _permissionController,
-        uint32 _MIN_WITHDRAWAL_DELAY
+        uint32 _MIN_WITHDRAWAL_DELAY,
+        string memory _version
     )
         DelegationManagerStorage(_strategyManager, _eigenPodManager, _allocationManager, _MIN_WITHDRAWAL_DELAY)
         Pausable(_pauserRegistry)
         PermissionControllerMixin(_permissionController)
+        SignatureUtilsMixin(_version) 
     {
         _disableInitializers();
     }

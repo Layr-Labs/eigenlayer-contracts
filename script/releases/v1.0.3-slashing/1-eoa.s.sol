@@ -25,7 +25,8 @@ contract Deploy is EOADeployer {
                 _allocationManager: Env.proxy.allocationManager(),
                 _pauserRegistry: Env.impl.pauserRegistry(),
                 _permissionController: Env.proxy.permissionController(),
-                _MIN_WITHDRAWAL_DELAY: Env.MIN_WITHDRAWAL_DELAY()
+                _MIN_WITHDRAWAL_DELAY: Env.MIN_WITHDRAWAL_DELAY(),
+                _version: Env.version()
             }))
         });
 
@@ -34,7 +35,8 @@ contract Deploy is EOADeployer {
             name: type(AVSDirectory).name,
             deployedTo: address(new AVSDirectory({
                 _delegation: Env.proxy.delegationManager(),
-                _pauserRegistry: Env.impl.pauserRegistry()
+                _pauserRegistry: Env.impl.pauserRegistry(),
+                _version: Env.version()
             }))
         });
 
@@ -43,7 +45,8 @@ contract Deploy is EOADeployer {
             name: type(StrategyManager).name,
             deployedTo: address(new StrategyManager({
                 _delegation: Env.proxy.delegationManager(),
-                _pauserRegistry: Env.impl.pauserRegistry()
+                _pauserRegistry: Env.impl.pauserRegistry(),
+                _version: Env.version()
             }))
         });
 

@@ -19,7 +19,8 @@ contract Deploy is EOADeployer {
             name: type(StrategyManager).name,
             deployedTo: address(new StrategyManager({
                 _delegation: Env.proxy.delegationManager(),
-                _pauserRegistry: Env.impl.pauserRegistry()
+                _pauserRegistry: Env.impl.pauserRegistry(),
+                _version: Env.version()
             }))
         });
 

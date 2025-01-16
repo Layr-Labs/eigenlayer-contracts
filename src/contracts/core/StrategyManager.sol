@@ -53,8 +53,9 @@ contract StrategyManager is
      */
     constructor(
         IDelegationManager _delegation,
-        IPauserRegistry _pauserRegistry
-    ) StrategyManagerStorage(_delegation) Pausable(_pauserRegistry) {
+        IPauserRegistry _pauserRegistry,
+        string memory _version
+    ) StrategyManagerStorage(_delegation) Pausable(_pauserRegistry) SignatureUtilsMixin(_version) {
         _disableInitializers();
     }
 

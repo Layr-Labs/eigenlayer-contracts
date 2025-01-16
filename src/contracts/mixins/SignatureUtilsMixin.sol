@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.0;
 
+import "@openzeppelin-upgrades/contracts/utils/ShortStringsUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/utils/cryptography/SignatureCheckerUpgradeable.sol";
 
 import "../interfaces/ISignatureUtilsMixin.sol";
@@ -12,12 +13,24 @@ bytes32 constant EIP712_DOMAIN_TYPEHASH =
 /// @notice A mixin to provide EIP-712 signature validation utilities.
 /// @dev Domain name is hardcoded to "EigenLayer".
 abstract contract SignatureUtilsMixin is ISignatureUtilsMixin {
+    using ShortStringsUpgradeable for *;
     using SignatureCheckerUpgradeable for address;
+
+    /// IMMUTABLES
+
+    ShortString private immutable _VERSION;
+
+    /// CONSTRUCTION
+
+    constructor(string memory _version) {
+        _VERSION = _version.toShortString();
+    }
 
     /// EXTERNAL FUNCTIONS
 
-    /// @inheritdoc ISignatureUtilsMixin
-    function version() public pure virtual returns (string memory);
+    function version() public view virtual returns (string memory) {
+        return _VERSION.toString();
+    }
 
     /// @inheritdoc ISignatureUtilsMixin
     function domainSeparator() public view virtual returns (bytes32) {
