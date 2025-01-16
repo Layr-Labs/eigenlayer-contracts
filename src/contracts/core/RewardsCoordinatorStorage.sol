@@ -117,13 +117,8 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     /// @notice Returns whether a `hash` is a `valid` rewards submission for all earners hash for a given `avs`.
     mapping(address avs => mapping(bytes32 hash => bool valid)) public isRewardsSubmissionForAllEarnersHash;
 
-    // Construction
-
     /// @notice Returns whether a `hash` is a `valid` operator set performance rewards submission hash for a given `avs`.
     mapping(address avs => mapping(bytes32 hash => bool valid)) public isOperatorDirectedAVSRewardsSubmissionHash;
-
-    /// @notice Returns whether a `hash` is a `valid` operator set performance rewards submission hash for a given `avs`.
-    mapping(address avs => mapping(bytes32 hash => bool valid)) public isOperatorSetPerformanceRewardsSubmissionHash;
 
     /// @notice Returns the `split` an `operator` takes for an `avs`.
     mapping(address operator => mapping(address avs => OperatorSplit split)) internal _operatorAVSSplitBips;
@@ -134,6 +129,11 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     /// @notice Returns the `split` an `operator` takes for a given operator set.
     mapping(address operator => mapping(bytes32 operatorSetKey => OperatorSplit split)) internal
         _operatorOperatorSetSplitBips;
+
+    /// @notice Returns whether a `hash` is a `valid` operator set performance rewards submission hash for a given `avs`.
+    mapping(address avs => mapping(bytes32 hash => bool valid)) public isOperatorSetPerformanceRewardsSubmissionHash;
+
+    // Construction
 
     constructor(
         IDelegationManager _delegationManager,
