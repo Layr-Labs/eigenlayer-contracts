@@ -5,18 +5,9 @@ import "src/test/integration/users/User.t.sol";
 import "src/test/integration/IntegrationChecks.t.sol";
 
 contract Integration_Deposit_Register_QueueWithdrawal_Complete is IntegrationCheckUtils {
-    function testFuzz_deposit_registerOperator_queueWithdrawal_completeAsShares(uint24 _random) public {
-        // Configure the random parameters for the test
-        _configRand({
-            _randomSeed: _random,
-            _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
-            _userTypes: DEFAULT | ALT_METHODS
-        });
-
+    function testFuzz_deposit_registerOperator_queueWithdrawal_completeAsShares(uint24 _random) public rand(_random) {
         // Create a staker with a nonzero balance and corresponding strategies
         (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
-        // Upgrade contracts if forkType is not local
-        _upgradeEigenLayerContracts();
 
         // 1. Staker deposits into strategy
         staker.depositIntoEigenlayer(strategies, tokenBalances);
@@ -40,19 +31,9 @@ contract Integration_Deposit_Register_QueueWithdrawal_Complete is IntegrationChe
         }
     }
 
-    function testFuzz_deposit_registerOperator_queueWithdrawal_completeAsTokens(uint24 _random) public {
-        // Configure the random parameters for the test
-        _configRand({
-            _randomSeed: _random,
-            _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
-            _userTypes: DEFAULT | ALT_METHODS
-        });
-
+    function testFuzz_deposit_registerOperator_queueWithdrawal_completeAsTokens(uint24 _random) public rand(_random) {
         // Create a staker with a nonzero balance and corresponding strategies
         (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
-        // Upgrade contracts if forkType is not local
-        _upgradeEigenLayerContracts();
-
         // 1. Staker deposits into strategy
         staker.depositIntoEigenlayer(strategies, tokenBalances);
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
