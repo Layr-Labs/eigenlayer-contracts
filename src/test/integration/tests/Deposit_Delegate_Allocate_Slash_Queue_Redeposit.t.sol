@@ -9,12 +9,18 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
 
     // TODO: Partial deposits don't work when beacon chain eth balance is initialized to < 64 ETH, need to write _newRandomStaker variant that ensures beacon chain ETH balance
     // greater than or equal to 64
+    modifier rand(uint24 r) override {
+        _configRand({
+            _randomSeed: r,
+            _assetTypes: HOLDS_LST,
+            _userTypes: DEFAULT
+        });
+        _;
+    }
+  
     function testFuzz_deposit_delegate_allocate_fullSlash_queue_complete_redeposit(
         uint24 _random
-    ) public {
-        _configRand({_randomSeed: _random, _assetTypes: HOLDS_LST, _userTypes: DEFAULT});
-        _upgradeEigenLayerContracts();
-
+    ) public rand(_random) {
         (User staker, IStrategy[] memory strategies, uint256[] memory tokenBalances) = _newRandomStaker();
         (User operator,,) = _newRandomOperator();
         (AVS avs,) = _newRandomAVS();
@@ -97,10 +103,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
 
     function testFuzz_deposit_delegate_allocate_queue_fullSlash_complete_redeposit(
         uint24 _random
-    ) public {
-        _configRand({_randomSeed: _random, _assetTypes: HOLDS_LST, _userTypes: DEFAULT});
-        _upgradeEigenLayerContracts();
-
+    ) public rand(_random) {
         (User staker, IStrategy[] memory strategies, uint256[] memory tokenBalances) = _newRandomStaker();
         (User operator,,) = _newRandomOperator();
         (AVS avs,) = _newRandomAVS();
@@ -183,10 +186,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
 
     function testFuzz_deposit_delegate_allocateMultSets_fullSlash_queue_complete_redeposit(
         uint24 _random
-    ) public {
-        _configRand({_randomSeed: _random, _assetTypes: HOLDS_LST, _userTypes: DEFAULT});
-        _upgradeEigenLayerContracts();
-
+    ) public rand(_random) {
         (User staker, IStrategy[] memory strategies, uint256[] memory tokenBalances) = _newRandomStaker();
         (User operator,,) = _newRandomOperator();
         (AVS avs,) = _newRandomAVS();
@@ -278,9 +278,8 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
 
     function testFuzz_deposit_delegate_allocate_fullSlash_undelegate_completeAsShares(
         uint24 _random
-    ) public {
-        _configRand({_randomSeed: _random, _assetTypes: HOLDS_ALL, _userTypes: DEFAULT});
-        _upgradeEigenLayerContracts(); // Upgrade contracts if forkType is not local
+    ) public rand(_random) {
+        _configAssetTypes(HOLDS_ALL);
 
         (User staker, IStrategy[] memory strategies, uint256[] memory tokenBalances) = _newRandomStaker();
         (User operator,,) = _newRandomOperator();
