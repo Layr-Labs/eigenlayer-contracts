@@ -13,14 +13,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
     /// 5. delegate to a new operator
     /// 5. queueWithdrawal
     /// 7. complete their queued withdrawal as tokens
-    function testFuzz_deposit_delegate_reDelegate_completeAsTokens(uint24 _random) public {   
-        // When new Users are created, they will choose a random configuration from these params: 
-        _configRand({
-            _randomSeed: _random,
-            _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
-            _userTypes: DEFAULT | ALT_METHODS
-        });
-
+    function testFuzz_deposit_delegate_reDelegate_completeAsTokens(uint24 _random) public rand(_random) {   
         /// 0. Create an operator and a staker with:
         // - some nonzero underlying token balances
         // - corresponding to a random number of strategies
@@ -34,8 +27,6 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         ) = _newRandomStaker();
         (User operator1, ,) = _newRandomOperator();
         (User operator2, ,) = _newRandomOperator();
-        // Upgrade contracts if forkType is not local
-        _upgradeEigenLayerContracts();
         
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 
@@ -85,14 +76,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         }
     }
 
-    function testFuzz_deposit_delegate_reDelegate_completeAsShares(uint24 _random) public {   
-        // When new Users are created, they will choose a random configuration from these params: 
-        _configRand({
-            _randomSeed: _random,
-            _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
-            _userTypes: DEFAULT | ALT_METHODS
-        });
-
+    function testFuzz_deposit_delegate_reDelegate_completeAsShares(uint24 _random) public rand(_random) {   
         /// 0. Create an operator and a staker with:
         // - some nonzero underlying token balances
         // - corresponding to a random number of strategies
@@ -106,8 +90,6 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         ) = _newRandomStaker();
         (User operator1, ,) = _newRandomOperator();
         (User operator2, ,) = _newRandomOperator();
-        // Upgrade contracts if forkType is not local
-        _upgradeEigenLayerContracts();
 
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 
@@ -170,13 +152,8 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         );
     }
 
-    function testFuzz_deposit_delegate_reDelegate_depositAfterRedelegate(uint24 _random) public {
-        // When new Users are created, they will choose a random configuration from these params: 
-        _configRand({
-            _randomSeed: _random,
-            _assetTypes: HOLDS_LST, // not holding ETH since we can only deposit 32 ETH multiples
-            _userTypes: DEFAULT | ALT_METHODS
-        });
+    function testFuzz_deposit_delegate_reDelegate_depositAfterRedelegate(uint24 _random) public rand(_random) {
+        _configAssetTypes(HOLDS_LST); // not holding ETH since we can only deposit 32 ETH multiples
 
         /// 0. Create an operator and a staker with:
         // - some nonzero underlying token balances
@@ -191,8 +168,6 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         ) = _newRandomStaker();
         (User operator1, ,) = _newRandomOperator();
         (User operator2, ,) = _newRandomOperator();
-        // Upgrade contracts if forkType is not local
-        _upgradeEigenLayerContracts();
 
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 
@@ -262,13 +237,8 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         }
     }
 
-    function testFuzz_deposit_delegate_reDelegate_depositBeforeRedelegate(uint24 _random) public {
-        // When new Users are created, they will choose a random configuration from these params: 
-        _configRand({
-            _randomSeed: _random,
-            _assetTypes: HOLDS_LST, // not holding ETH since we can only deposit 32 ETH multiples
-            _userTypes: DEFAULT | ALT_METHODS
-        });
+    function testFuzz_deposit_delegate_reDelegate_depositBeforeRedelegate(uint24 _random) public rand(_random) {
+        _configAssetTypes(HOLDS_LST); // not holding ETH since we can only deposit 32 ETH multiples
 
         /// 0. Create an operator and a staker with:
         // - some nonzero underlying token balances
@@ -283,8 +253,6 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         ) = _newRandomStaker();
         (User operator1, ,) = _newRandomOperator();
         (User operator2, ,) = _newRandomOperator();
-        // Upgrade contracts if forkType is not local
-        _upgradeEigenLayerContracts();
 
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 
@@ -354,14 +322,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         }
     }
 
-    function testFuzz_deposit_delegate_undelegate_withdrawAsTokens_reDelegate_completeAsTokens(uint24 _random) public {
-        // When new Users are created, they will choose a random configuration from these params: 
-        _configRand({
-            _randomSeed: _random,
-            _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
-            _userTypes: DEFAULT | ALT_METHODS
-        });
-
+    function testFuzz_deposit_delegate_undelegate_withdrawAsTokens_reDelegate_completeAsTokens(uint24 _random) public rand(_random) {
         /// 0. Create operators and a staker
         (
             User staker,
@@ -370,8 +331,6 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         ) = _newRandomStaker();
         (User operator1, ,) = _newRandomOperator();
         (User operator2, ,) = _newRandomOperator();
-        // Upgrade contracts if forkType is not local
-        _upgradeEigenLayerContracts();
 
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 
@@ -428,14 +387,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         }
     }
 
-    function testFuzz_deposit_delegate_undelegate_withdrawAsTokens_reDelegate_completeAsShares(uint24 _random) public {
-        // When new Users are created, they will choose a random configuration from these params: 
-        _configRand({
-            _randomSeed: _random,
-            _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
-            _userTypes: DEFAULT | ALT_METHODS
-        });
-
+    function testFuzz_deposit_delegate_undelegate_withdrawAsTokens_reDelegate_completeAsShares(uint24 _random) public rand(_random) {
         /// 0. Create operators and a staker
         (
             User staker,
@@ -444,8 +396,6 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         ) = _newRandomStaker();
         (User operator1, ,) = _newRandomOperator();
         (User operator2, ,) = _newRandomOperator();
-        // Upgrade contracts if forkType is not local
-        _upgradeEigenLayerContracts();
 
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 
