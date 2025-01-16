@@ -73,8 +73,4 @@ contract SignatureUtilsMixinUnit is Test, SignatureUtilsMixin("v0.0.0") {
     function testFail_checkIsValidSignatureNow_InvalidSignature() public {
         _checkIsValidSignatureNow(signer, digest, "", block.timestamp);
     }
-
-    function version() public pure override returns (string memory) {
-        return "test";
-    }
 }
