@@ -102,8 +102,7 @@ contract StrategyManagerMock is Test {
 
     function addShares(
         address staker, 
-        IStrategy strategy, 
-        IERC20, // token 
+        IStrategy strategy,
         uint256 addedShares
     ) external returns (uint, uint) {
         // Increase the staker's shares

@@ -582,7 +582,6 @@ contract DelegationManager is
                 (uint256 prevDepositShares, uint256 addedShares) = shareManager.addShares({
                     staker: withdrawal.staker,
                     strategy: withdrawal.strategies[i],
-                    token: tokens[i],
                     shares: sharesToWithdraw
                 });
 
