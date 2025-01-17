@@ -80,6 +80,27 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     // Set only once in setUp, if FORK_MAINNET env is set
     uint forkType;
 
+    /// @dev used to configure randomness and default user/asset types
+    ///
+    /// Tests that want alternate user/asset types can still use this modifier,
+    /// and then configure user/asset types individually using the methods:
+    /// _configAssetTypes(...)
+    /// _configUserTypes(...)
+    ///
+    /// (Alternatively, this modifier can be overwritten)
+    modifier rand(uint24 r) virtual {
+        _configRand({
+            _randomSeed: r,
+            _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
+            _userTypes: DEFAULT | ALT_METHODS
+        });
+
+        // Used to create shared setups between tests
+        _init();
+
+        _;
+    }
+
     constructor() {
         address stETH_Holesky = 0x3F1c547b21f65e10480dE3ad8E19fAAC46C95034;
         address stETH_Mainnet = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
@@ -120,6 +141,22 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             forkType = LOCAL;
             _setUpLocal();
         }
+    }
+
+    /// @dev Used to create shared setup between tests. This method is called
+    /// when the `rand` modifier is run, before a test starts
+    function _init() internal virtual {
+        return;
+    }
+
+    /**
+     * env FOUNDRY_PROFILE=forktest forge t --mc Integration
+     *
+     * Running foundry like this will trigger the fork test profile,
+     * lowering fuzz runs and using a remote RPC to test against mainnet state
+     */
+    function isForktest() public view returns (bool) {
+        return _hash("forktest") == _hash(cheats.envOr(string("FOUNDRY_PROFILE"), string("default")));
     }
 
     /// Deploy EigenLayer locally
@@ -449,7 +486,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         allTokens.push(underlyingToken);
     }
 
-    function _configRand(uint24 _randomSeed, uint _assetTypes, uint _userTypes) private noTracing {
+    function _configRand(uint24 _randomSeed, uint _assetTypes, uint _userTypes) private {
         // Using uint24 for the seed type so that if a test fails, it's easier
         // to manually use the seed to replay the same test.
         random = _hash(_randomSeed);

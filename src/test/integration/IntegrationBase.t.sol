@@ -1483,6 +1483,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         for (uint i = 0; i < strategies.length; i++) {
             assertEq(prevShares[i], curShares[i], err);
         }
+<<<<<<< HEAD
     }
 
     /// @dev Check that the staker's withdrawable shares have increased by `addedShares`
@@ -1503,6 +1504,28 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     }
 
     /// @dev Check that the staker's withdrawable shares have decreased by `removedShares`
+=======
+    }
+
+    /// @dev Check that the staker's withdrawable shares have decreased by `removedShares`
+    function assert_Snap_Added_Staker_WithdrawableShares(
+        User staker, 
+        IStrategy[] memory strategies, 
+        uint[] memory addedShares,
+        string memory err
+    ) internal {
+        uint[] memory curShares = _getStakerWithdrawableShares(staker, strategies);
+        // Use timewarp to get previous staker shares
+        uint[] memory prevShares = _getPrevStakerWithdrawableShares(staker, strategies);
+
+        // For each strategy, check (prev - removed == cur)
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(prevShares[i] + addedShares[i], curShares[i], err);
+        }
+    }
+
+    /// @dev Check that the staker's withdrawable shares have decreased by `removedShares`
+>>>>>>> 6eac6b5b (test: enable shared setups for integration tests (#1036))
     function assert_Snap_Removed_Staker_WithdrawableShares(
         User staker, 
         IStrategy[] memory strategies, 
@@ -1519,6 +1542,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
+<<<<<<< HEAD
     /// @dev Check that all the staker's withdrawable shares have been removed
     function assert_Snap_RemovedAll_Staker_WithdrawableShares(
         User staker, 
@@ -1544,6 +1568,19 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     /// @dev Check that the staker's withdrawable shares have decreased by `removedShares`
     /// FIX THIS WHEN WORKING ON ROUNDING ISSUES
     function assert_Snap_Unchanged_Staker_WithdrawableShares_Delegation(
+=======
+    function assert_Snap_Removed_Staker_WithdrawableShares(
+        User staker, 
+        IStrategy strat, 
+        uint removedShares,
+        string memory err
+    ) internal {
+        assert_Snap_Removed_Staker_WithdrawableShares(staker, strat.toArray(), removedShares.toArrayU256(), err);
+    }
+
+    /// @dev Check that the staker's withdrawable shares have decreased by `removedShares`
+    function assert_Snap_Unchanged_Staker_WithdrawableShares(
+>>>>>>> 6eac6b5b (test: enable shared setups for integration tests (#1036))
         User staker,
         string memory err
     ) internal {
@@ -1555,7 +1592,11 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
 
         // For each strategy, check (prev - removed == cur)
         for (uint i = 0; i < strategies.length; i++) {
+<<<<<<< HEAD
             assertApproxEqAbs(prevShares[i], curShares[i], 100000, err);
+=======
+            assertEq(prevShares[i], curShares[i], err);
+>>>>>>> 6eac6b5b (test: enable shared setups for integration tests (#1036))
         }
     }
 

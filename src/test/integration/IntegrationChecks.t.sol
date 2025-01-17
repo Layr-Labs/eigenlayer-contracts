@@ -249,6 +249,7 @@ contract IntegrationCheckUtils is IntegrationBase {
             "check_Undelegate_State: staker should have increased nonce by withdrawals.length");
         assert_Snap_Removed_OperatorShares(operator, strategies, stakerDelegatedShares,
             "check_Undelegate_State: failed to remove operator shares");
+<<<<<<< HEAD
         assert_Snap_Removed_Staker_DepositShares(staker, strategies, stakerDepositShares,
             "check_Undelegate_State: failed to remove staker shares");
         assert_Snap_RemovedAll_Staker_WithdrawableShares(staker, strategies,
@@ -282,6 +283,11 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Removed_Staker_DepositShares(staker, strategies, stakerDepositShares,
             "check_Redelegate_State: failed to remove staker shares");
         assert_Snap_RemovedAll_Staker_WithdrawableShares(staker, strategies,
+=======
+        assert_Snap_Removed_Staker_DepositShares(staker, strategies, shares,
+            "check_Undelegate_State: failed to remove staker shares");
+        assert_Snap_Removed_Staker_WithdrawableShares(staker, strategies, shares,
+>>>>>>> 6eac6b5b (test: enable shared setups for integration tests (#1036))
             "check_QueuedWithdrawal_State: failed to remove staker withdrawable shares");
     }
 
