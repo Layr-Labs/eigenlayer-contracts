@@ -5,13 +5,9 @@ import "src/test/integration/UpgradeTest.t.sol";
 
 contract Integration_Upgrade_EigenPod_Slashing_Migration is UpgradeTest, EigenPodPausingConstants {
     
-    modifier rand(uint24 _rand) override {
-        _configRand({
-            _randomSeed: _rand,
-            _assetTypes: HOLDS_ETH,
-            _userTypes: DEFAULT
-        });
-        _;
+    function _init() internal override {
+        _configAssetTypes(HOLDS_ETH);
+        _configUserTypes(DEFAULT);
     }
 
     /**

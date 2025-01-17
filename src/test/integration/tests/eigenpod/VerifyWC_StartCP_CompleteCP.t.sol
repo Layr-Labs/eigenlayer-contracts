@@ -6,13 +6,9 @@ import "src/test/integration/users/User.t.sol";
 
 contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
 
-    modifier rand(uint24 r) override {
-        _configRand({
-            _randomSeed: r,
-            _assetTypes: HOLDS_ETH,
-            _userTypes: DEFAULT
-        });
-        _;
+    function _init() internal override {
+        _configAssetTypes(HOLDS_ETH);
+        _configUserTypes(DEFAULT);
     }
 
     function test_GasMetering() public rand(0) {
