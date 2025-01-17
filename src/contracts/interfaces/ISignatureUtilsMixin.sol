@@ -36,18 +36,18 @@ interface ISignatureUtilsMixinTypes {
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
 interface ISignatureUtilsMixin is ISignatureUtilsMixinErrors, ISignatureUtilsMixinTypes {
-    /**
-     * @notice Returns the version of the contract.
-     *
-     * @dev Must be overridden by the inheriting contract.
-     */
+    /// @notice Returns the semantic version string used in the domain separator.
+    /// @return The version string as a regular string (converted from ShortString).
+    /// @dev Returns a SemVer-formatted string with 'v' prefix (e.g., "v1.1.1").
     function version() external view returns (string memory);
 
-    /**
-     * @notice Returns the current EIP-712 domain separator for this contract.
-     *
-     * @dev The domain separator will change in the event of a fork that changes the ChainID.
-     * @dev The domain separator is always recomputed to avoid the need for storage or immutable variables.
-     */
+    /// @notice Computes the EIP-712 domain separator used for signature validation.
+    /// @dev The domain separator is computed according to EIP-712 specification, using:
+    ///      - The hardcoded name "EigenLayer"
+    ///      - The contract's version string
+    ///      - The current chain ID
+    ///      - This contract's address
+    /// @return The 32-byte domain separator hash used in EIP-712 structured data signing.
+    /// @dev See https://eips.ethereum.org/EIPS/eip-712#definition-of-domainseparator.
     function domainSeparator() external view returns (bytes32);
 }
