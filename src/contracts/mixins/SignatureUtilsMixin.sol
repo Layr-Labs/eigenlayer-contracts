@@ -15,15 +15,19 @@ bytes32 constant EIP712_DOMAIN_TYPEHASH =
 /// @title SignatureUtilsMixin
 /// @notice A mixin contract that provides utilities for validating signatures according to EIP-712 and EIP-1271 standards.
 /// @dev The domain name is hardcoded to "EigenLayer". This contract implements signature validation functionality that can be
-///      inherited by other contracts.
+///      inherited by other contracts. The domain separator uses the major version (e.g., "v1") to maintain EIP-712
+///      signature compatibility across minor and patch version updates.
 abstract contract SignatureUtilsMixin is ISignatureUtilsMixin, SemVerMixin {
     using SignatureCheckerUpgradeable for address;
 
     /// @notice Initializes the contract with a semantic version string.
     /// @param _version The SemVer-formatted version string (e.g., "v1.1.1") to use for this contract's domain separator.
     /// @dev Version should follow SemVer 2.0.0 format with 'v' prefix: vMAJOR.MINOR.PATCH.
-    ///      WARNING: Modifying this version will invalidate all existing EIP-712 signatures since it changes the domain separator.
-    constructor(string memory _version) SemVerMixin(_version) {}
+    ///      Only the major version component is used in the domain separator to maintain signature compatibility
+    ///      across minor and patch version updates.
+    constructor(
+        string memory _version
+    ) SemVerMixin(_version) {}
 
     /// EXTERNAL FUNCTIONS ///
 
@@ -35,7 +39,7 @@ abstract contract SignatureUtilsMixin is ISignatureUtilsMixin, SemVerMixin {
                 abi.encode(
                     EIP712_DOMAIN_TYPEHASH, 
                     keccak256(bytes("EigenLayer")),
-                    keccak256(bytes(version())),
+                    keccak256(bytes(_majorVersion())),
                     block.chainid, 
                     address(this)
                 )

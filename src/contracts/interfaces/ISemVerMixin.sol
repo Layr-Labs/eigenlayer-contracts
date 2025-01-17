@@ -8,4 +8,4 @@ interface ISemVerMixin {
     /// @notice Returns the semantic version string of the contract.
     /// @return The version string in SemVer format (e.g., "v1.1.1")
     function version() external view returns (string memory);
-} 
+}
