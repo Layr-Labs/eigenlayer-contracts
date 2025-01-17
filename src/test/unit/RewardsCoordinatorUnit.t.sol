@@ -83,17 +83,17 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
     /// @dev Index for flag that pauses calling createOperatorDirectedAVSRewardsSubmission
     uint8 internal constant PAUSED_OPERATOR_DIRECTED_AVS_REWARDS_SUBMISSION = 5;
 
-    /// @dev Index for flag that pauses calling setOperatorSetPerformanceRewardsSubmission
-    uint8 internal constant PAUSED_OPERATOR_DIRECTED_OPERATOR_SET_REWARDS_SUBMISSION = 6;
-
     /// @dev Index for flag that pauses calling setOperatorAVSSplit
-    uint8 internal constant PAUSED_OPERATOR_AVS_SPLIT = 7;
+    uint8 internal constant PAUSED_OPERATOR_AVS_SPLIT = 6;
 
     /// @dev Index for flag that pauses calling setOperatorPISplit
-    uint8 internal constant PAUSED_OPERATOR_PI_SPLIT = 8;
+    uint8 internal constant PAUSED_OPERATOR_PI_SPLIT = 7;
 
     /// @dev Index for flag that pauses calling setOperatorSetSplit
-    uint8 internal constant PAUSED_OPERATOR_SET_OPERATOR_SPLIT = 9;
+    uint8 internal constant PAUSED_OPERATOR_SET_OPERATOR_SPLIT = 8;
+
+    /// @dev Index for flag that pauses calling setOperatorSetPerformanceRewardsSubmission
+    uint8 internal constant PAUSED_OPERATOR_DIRECTED_OPERATOR_SET_REWARDS_SUBMISSION = 9;
 
     // RewardsCoordinator entities
     address rewardsUpdater = address(1000);

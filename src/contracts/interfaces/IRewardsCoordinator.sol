@@ -281,7 +281,7 @@ interface IRewardsCoordinatorEvents is IRewardsCoordinatorTypes {
     );
 
     /**
-     * @notice Emitted when an AVS creates a valid performance based `OperatorDirectedRewardsSubmission`
+     * @notice Emitted when an AVS creates a valid performance based `OperatorDirectedRewardsSubmission` for an operator set.
      * @param caller The address calling `createOperatorDirectedOperatorSetRewardsSubmission`.
      * @param operatorSet The operatorSet on behalf of which the performance rewards are being submitted.
      * @param performanceRewardsSubmissionHash Keccak256 hash of (`avs`, `submissionNonce` and `performanceRewardsSubmission`).
@@ -457,8 +457,19 @@ interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorE
         OperatorDirectedRewardsSubmission[] calldata operatorDirectedRewardsSubmissions
     ) external;
 
-    /// @notice operatorSet parallel of createAVSPerformanceRewardsSubmission
-    /// @dev sender must be the avs of the given operatorSet
+    /**
+     * @notice Creates a new operator-directed rewards submission for an operator set, to be split amongst the operators and
+     * set of stakers delegated to operators who are part of the operator set.
+     * @param operatorSet The operator set for which the rewards are being submitted
+     * @param performanceRewardsSubmissions The operator-directed rewards submissions being created
+     * @dev Expected to be called by the AVS that created the operator set
+     * @dev The duration of the `rewardsSubmission` cannot exceed `MAX_REWARDS_DURATION`
+     * @dev The tokens are sent to the `RewardsCoordinator` contract
+     * @dev The `RewardsCoordinator` contract needs a token approval of sum of all `operatorRewards` in the `performanceRewardsSubmissions`, before calling this function
+     * @dev Strategies must be in ascending order of addresses to check for duplicates
+     * @dev Operators must be in ascending order of addresses to check for duplicates
+     * @dev This function will revert if the `performanceRewardsSubmissions` is malformed
+     */
     function createOperatorDirectedOperatorSetRewardsSubmission(
         OperatorSet calldata operatorSet,
         OperatorDirectedRewardsSubmission[] calldata performanceRewardsSubmissions
@@ -571,6 +582,9 @@ interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorE
      * @param operator The operator who is setting the split.
      * @param operatorSet The operatorSet for which the split is being set by the operator.
      * @param split The split for the operator for the specific operatorSet in bips.
+     * @dev Only callable by the operator
+     * @dev Split has to be between 0 and 10000 bips (inclusive)
+     * @dev The split will be activated after the activation delay
      */
     function setOperatorSetSplit(address operator, OperatorSet calldata operatorSet, uint16 split) external;
 
