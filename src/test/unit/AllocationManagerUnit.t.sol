@@ -275,17 +275,17 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
         uint256 expectedSlashableStake,
         uint256 futureBlock
     ) internal view {
-        uint256[] memory slashableStake = allocationManager.getMinimumSlashableStake({
+        (uint256[][] memory slashableStake, ) = allocationManager.getMinimumSlashableStake({
             operatorSet: operatorSet,
             operators: operator.toArray(),
             strategies: strategies,
             futureBlock: uint32(futureBlock)
-        })[0];
+        });
 
         for (uint256 i = 0; i < strategies.length; i++) {
             console.log("\nChecking Slashable Stake:".yellow());
-            console.log("   slashableStake[%d] = %d", i, slashableStake[i]);
-            assertEq(slashableStake[i], expectedSlashableStake, "slashableStake != expected");
+            console.log("   slashableStake[%d] = %d", i, slashableStake[0][i]);
+            assertEq(slashableStake[0][i], expectedSlashableStake, "slashableStake != expected");
         }
 
         console.log("Success!".green().bold());
@@ -1412,7 +1412,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         cheats.roll(block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY);
 
         // Get slashable shares for each operatorSet
-        uint256 opset2SlashableSharesBefore = allocationManager.getMinimumSlashableStake(operatorSet2, defaultOperator.toArray(), defaultStrategies, uint32(block.number))[0][0];
+        (uint256[][] memory opset2SlashableSharesBefore, ) = allocationManager.getMinimumSlashableStake(operatorSet2, defaultOperator.toArray(), defaultStrategies, uint32(block.number));
         // Slash operator on operatorSet1 for 50%
         SlashingParams memory slashingParams = SlashingParams({
             operator: defaultOperator,
@@ -1467,10 +1467,10 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         );
 
         // Assert that slashable stake is the same - we add slippage here due to rounding error from the slash itself
+        (uint256[][] memory minSlashableStake, ) = allocationManager.getMinimumSlashableStake(operatorSet2, defaultOperator.toArray(), defaultStrategies, uint32(block.number));
         assertEq(
-            opset2SlashableSharesBefore,
-            allocationManager.getMinimumSlashableStake(operatorSet2, defaultOperator.toArray(), defaultStrategies, uint32(block.number))[0][0] 
-            + 1,          
+            opset2SlashableSharesBefore[0][0],
+            minSlashableStake[0][0] + 1,          
             "opSet2 slashable shares should be the same"
         );
     }
@@ -3908,6 +3908,130 @@ contract AllocationManagerUnitTests_getSlashableStake is AllocationManagerUnitTe
             operator: defaultOperator,
             strategies: allocateParams[0].strategies,
             expectedSlashableStake: expectedCurrentMagnitude - uint128(-expectedPendingDiff) - 1
+        });
+    }
+}
+
+contract AllocationManagerUnitTests_isOperatorSlashable is AllocationManagerUnitTests {
+    using SlashingLib for *;
+    using ArrayLib for *;
+
+    function test_registeredOperator() public {
+        assertEq(
+            allocationManager.isOperatorSlashable(defaultOperator, defaultOperatorSet),
+            true,
+            "registered operator should be slashable"
+        );
+        assertEq(
+            allocationManager.isMemberOfOperatorSet(defaultOperator, defaultOperatorSet),
+            true,
+            "operator should be member of set"
+        );
+    }
+
+    function test_deregisteredOperatorAndSlashable() public {
+        // 1. deregister defaultOperator from defaultOperator set
+        uint32 deregisterBlock = uint32(block.number);
+        cheats.prank(defaultOperator);
+        allocationManager.deregisterFromOperatorSets(
+            DeregisterParams(defaultOperator, defaultOperatorSet.avs, defaultOperatorSet.id.toArrayU32())
+        );
+        assertEq(
+            allocationManager.isMemberOfOperatorSet(defaultOperator, defaultOperatorSet),
+            false,
+            "operator should not be member of set"
+        );
+
+        // 2. assert operator is still slashable
+        assertEq(
+            allocationManager.isOperatorSlashable(defaultOperator, defaultOperatorSet),
+            true,
+            "deregistered operator should be slashable"
+        );
+
+        // 3. roll blocks forward to slashableUntil block assert still slashable
+        cheats.roll(deregisterBlock + DEALLOCATION_DELAY);
+        assertEq(
+            allocationManager.isOperatorSlashable(defaultOperator, defaultOperatorSet),
+            true,
+            "deregistered operator should be slashable"
+        );
+
+        // 4. roll 1 block forward and assert not slashable
+        cheats.roll(deregisterBlock + DEALLOCATION_DELAY + 1);
+        assertEq(
+            allocationManager.isOperatorSlashable(defaultOperator, defaultOperatorSet),
+            false,
+            "deregistered operator should not be slashable"
+        );
+    }
+
+    /**
+     * Allocates half of magnitude for a single strategy to an operatorSet. Then allocates again. Slashes 50%
+     * of the first allocation. Validates slashable stake at each step.
+     * Deregisters the operator at the very beginning of the test and checks the operator is not slashable by the operatorSet
+     * even though they have allocated "slashable stake".
+     */
+    function test_allocate_onePendingAllocation(
+        Randomness r
+    ) public rand(r) {
+        cheats.prank(defaultOperator);
+        allocationManager.deregisterFromOperatorSets(
+            DeregisterParams(defaultOperator, defaultOperatorSet.avs, defaultOperatorSet.id.toArrayU32())
+        );
+        cheats.roll(block.number + DEALLOCATION_DELAY + 1);
+        assertEq(
+            allocationManager.isOperatorSlashable(defaultOperator, defaultOperatorSet),
+            false,
+            "deregistered operator should not be slashable"
+        );
+
+        // Generate allocation for `strategyMock`, we allocate half
+        {
+            AllocateParams[] memory allocateParams = _newAllocateParams(defaultOperatorSet, 5e17);
+            cheats.prank(defaultOperator);
+            allocationManager.modifyAllocations(defaultOperator, allocateParams);
+            cheats.roll(block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY);
+        }
+
+        _checkSlashableStake({
+            operatorSet: defaultOperatorSet,
+            operator: defaultOperator,
+            strategies: defaultStrategies,
+            expectedSlashableStake: DEFAULT_OPERATOR_SHARES.mulWad(5e17)
+        });
+
+        // Allocate the other half
+        AllocateParams[] memory allocateParams2 = _newAllocateParams(defaultOperatorSet, WAD);
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(defaultOperator, allocateParams2);
+        uint32 secondAllocEffectBlock = _defaultAllocEffectBlock();
+
+        // Check minimum slashable stake remains the same
+        _checkSlashableStake({
+            operatorSet: defaultOperatorSet,
+            operator: defaultOperator,
+            strategies: defaultStrategies,
+            expectedSlashableStake: DEFAULT_OPERATOR_SHARES.mulWad(5e17)
+        });
+        
+        // Check minimum slashable stake would not change even after the second allocation becomes effective
+        // This is because the allocation is not effective yet & we're getting a MINIMUM
+        _checkSlashableStake({
+            operatorSet: defaultOperatorSet,
+            operator: defaultOperator,
+            strategies: defaultStrategies,
+            expectedSlashableStake: DEFAULT_OPERATOR_SHARES.mulWad(5e17),
+            futureBlock: secondAllocEffectBlock + 1
+        });
+
+        // Check minimum slashable stake after the second allocation becomes effective
+        cheats.roll(secondAllocEffectBlock);
+        _checkSlashableStake({
+            operatorSet: defaultOperatorSet,
+            operator: defaultOperator,
+            strategies: defaultStrategies,
+            expectedSlashableStake: DEFAULT_OPERATOR_SHARES
         });
     }
 }

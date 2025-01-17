@@ -821,13 +821,16 @@ contract AllocationManager is
         address[] memory operators,
         IStrategy[] memory strategies,
         uint32 futureBlock
-    ) external view returns (uint256[][] memory slashableStake) {
+    ) external view returns (uint256[][] memory slashableStake, bool[] memory isSlashable) {
         slashableStake = new uint256[][](operators.length);
+        isSlashable = new bool[](operators.length);
         uint256[][] memory delegatedStake = delegation.getOperatorsShares(operators, strategies);
 
         for (uint256 i = 0; i < operators.length; i++) {
             address operator = operators[i];
             slashableStake[i] = new uint256[](strategies.length);
+
+            isSlashable[i] = _isOperatorSlashable(operator, operatorSet);
 
             for (uint256 j = 0; j < strategies.length; j++) {
                 IStrategy strategy = strategies[j];
@@ -853,5 +856,10 @@ contract AllocationManager is
                 slashableStake[i][j] = delegatedStake[i][j].mulWad(slashableProportion);
             }
         }
+    }
+
+    /// @inheritdoc IAllocationManager
+    function isOperatorSlashable(address operator, OperatorSet memory operatorSet) external view returns (bool) {
+        return _isOperatorSlashable(operator, operatorSet);
     }
 }
