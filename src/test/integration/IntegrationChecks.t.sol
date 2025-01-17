@@ -371,7 +371,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         // Common checks
         assert_WithdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
         
-        //TODO FIXME HACK
+        // TODO FIXME
         // assert_Snap_Added_TokenBalances(staker, tokens, expectedTokens, "staker should have received expected tokens");
         assert_Snap_Unchanged_Staker_DepositShares(staker, "staker shares should not have changed");
         assert_Snap_Removed_StrategyShares(withdrawal.strategies, withdrawal.scaledShares, "strategies should have total shares decremented");
