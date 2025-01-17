@@ -228,7 +228,7 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
         assertEq(expectedAllocation.pendingDiff, allocation.pendingDiff, "pendingDiff != expected");
         assertEq(expectedAllocation.effectBlock, allocation.effectBlock, "effectBlock != expected");
 
-        uint256 encumberedMagnitude = allocationManager.encumberedMagnitude(operator, strategy);
+        uint256 encumberedMagnitude = allocationManager.getEncumberedMagnitude(operator, strategy);
         uint256 maxMagnitude = allocationManager.getMaxMagnitudes(operator, strategy.toArray())[0];
         uint256 allocatableMagnitude = allocationManager.getAllocatableMagnitude(operator, strategy);
 
@@ -683,7 +683,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         cheats.prank(defaultOperator);
         allocationManager.modifyAllocations(defaultOperator, allocateParams);    
 
-        uint64 encumberedMagnitudeBefore = allocationManager.encumberedMagnitude(defaultOperator, strategyMock);
+        uint64 encumberedMagnitudeBefore = allocationManager.getEncumberedMagnitude(defaultOperator, strategyMock);
         uint64 maxMagnitudeBefore = allocationManager.getMaxMagnitudes(defaultOperator, strategyMock.toArray())[0];
 
         // The only slash event we expect is the OperatorSlashed. Validate the number
@@ -710,7 +710,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         // Assert encumberedMagnitude and maxMagnitude are unchanged
         assertEq(
             encumberedMagnitudeBefore,
-            allocationManager.encumberedMagnitude(defaultOperator, strategyMock),
+            allocationManager.getEncumberedMagnitude(defaultOperator, strategyMock),
             "encumberedMagnitude mutated"
         );
 
@@ -2309,7 +2309,7 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         for (uint256 i; i < numStrats; ++i) {
             assertEq(
                 WAD,
-                allocationManager.encumberedMagnitude(defaultOperator, strategies[i]),
+                allocationManager.getEncumberedMagnitude(defaultOperator, strategies[i]),
                 "encumberedMagnitude not max"
             );
         }
@@ -2385,7 +2385,7 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
             operatorSet: defaultOperatorSet,
             strategy: strategyMock,
             expectedAllocation: Allocation({currentMagnitude: secondMod, pendingDiff: 0, effectBlock: 0}),
-            expectedMagnitudes: Magnitudes({encumbered: firstMod, max: WAD, allocatable: WAD - secondMod})
+            expectedMagnitudes: Magnitudes({encumbered: secondMod, max: WAD, allocatable: WAD - secondMod})
         });
 
         // Check storage after clearing deallocation queue
@@ -2484,7 +2484,7 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
             operatorSet: defaultOperatorSet,
             strategy: strategyMock,
             expectedAllocation: Allocation({currentMagnitude: deallocateParams[0].newMagnitudes[0], pendingDiff: 0, effectBlock: 0}),
-            expectedMagnitudes: Magnitudes({encumbered: allocateParams[0].newMagnitudes[0], max: WAD, allocatable: WAD - deallocateParams[0].newMagnitudes[0]})
+            expectedMagnitudes: Magnitudes({encumbered: deallocateParams[0].newMagnitudes[0], max: WAD, allocatable: WAD - deallocateParams[0].newMagnitudes[0]})
         });
     }
 
@@ -2862,7 +2862,7 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
                         effectBlock: 0
                     }),
                     expectedMagnitudes: Magnitudes({
-                        encumbered: allocateParams[i].newMagnitudes[j],
+                        encumbered: deallocateParams[i].newMagnitudes[j],
                         max: WAD,
                         allocatable: WAD - deallocateParams[i].newMagnitudes[j]
                     })
@@ -3131,7 +3131,7 @@ contract AllocationManagerUnitTests_ClearDeallocationQueue is AllocationManagerU
         // At this point, we should be able to allocate again to opSet1 AND have only 5e17 encumbered magnitude
         assertEq(
             5e17,
-            allocationManager.encumberedMagnitude(defaultOperator, strategyMock),
+            allocationManager.getEncumberedMagnitude(defaultOperator, strategyMock),
             "encumbered magnitude not correct"
         );
         AllocateParams[] memory thirdAllocation = _newAllocateParams(defaultOperatorSet, 5e17);
