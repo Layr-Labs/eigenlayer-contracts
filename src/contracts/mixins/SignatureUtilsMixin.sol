@@ -89,7 +89,7 @@ abstract contract SignatureUtilsMixin is ISignatureUtilsMixin {
         bytes memory signature,
         uint256 expiry
     ) internal view {
-        // First, check if the signature has expired by comparing the expiry timestamp 
+        // First, check if the signature has expired by comparing the expiry timestamp
         // against the current block timestamp.
         require(expiry >= block.timestamp, SignatureExpired());
 
