@@ -7,15 +7,11 @@ import {console} from "forge-std/console.sol";
 
 contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is IntegrationCheckUtils, IDelegationManagerTypes {
 
-    // TODO: Partial deposits don't work when beacon chain eth balance is initialized to < 64 ETH, need to write _newRandomStaker variant that ensures beacon chain ETH balance
-    // greater than or equal to 64
-    modifier rand(uint24 r) override {
-        _configRand({
-            _randomSeed: r,
-            _assetTypes: HOLDS_LST,
-            _userTypes: DEFAULT
-        });
-        _;
+    function _init() internal override {
+        // TODO: Partial deposits don't work when beacon chain eth balance is initialized to < 64 ETH, need to write _newRandomStaker variant that ensures beacon chain ETH balance
+        // greater than or equal to 64
+        _configAssetTypes(HOLDS_LST);
+        _configUserTypes(DEFAULT);
     }
   
     function testFuzz_deposit_delegate_allocate_fullSlash_queue_complete_redeposit(
@@ -74,7 +70,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
 
             slashingParams = avs.slashOperator(operator, operatorSet.id, strategiesToSlash, wadsToSlash);
             assert_Snap_Allocations_Slashed(slashingParams, operatorSet, true, "operator allocations should be slashed");
-            assert_Snap_Unchanged_StakerDepositShares(staker, "staker deposit shares should be unchanged after slashing");
+            assert_Snap_Unchanged_Staker_DepositShares(staker, "staker deposit shares should be unchanged after slashing");
             assert_Snap_StakerWithdrawableShares_AfterSlash(staker, allocateParams, slashingParams, "staker deposit shares should be slashed");
         }
 
@@ -161,7 +157,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
 
             slashingParams = avs.slashOperator(operator, operatorSet.id, strategiesToSlash, wadsToSlash);
             assert_Snap_Allocations_Slashed(slashingParams, operatorSet, true, "operator allocations should be slashed");
-            assert_Snap_Unchanged_StakerDepositShares(staker, "staker deposit shares should be unchanged after slashing");
+            assert_Snap_Unchanged_Staker_DepositShares(staker, "staker deposit shares should be unchanged after slashing");
             assert_Snap_StakerWithdrawableShares_AfterSlash(staker, allocateParams, slashingParams, "staker deposit shares should be slashed");
         }
 
@@ -249,7 +245,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
 
             slashingParams = avs.slashOperator(operator, operatorSet.id, strategiesToSlash, wadsToSlash);
             assert_Snap_Allocations_Slashed(slashingParams, operatorSet, true, "operator allocations should be slashed");
-            assert_Snap_Unchanged_StakerDepositShares(staker, "staker deposit shares should be unchanged after slashing");
+            assert_Snap_Unchanged_Staker_DepositShares(staker, "staker deposit shares should be unchanged after slashing");
             assert_Snap_StakerWithdrawableShares_AfterSlash(staker, allocateParams, slashingParams, "staker deposit shares should be slashed");
         }
 
@@ -316,7 +312,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
                 _strategiesAndWadsForRandFullSlash(operatorSet);
             slashingParams = avs.slashOperator(operator, operatorSet.id, strategiesToSlash, wadsToSlash);
             assert_Snap_Allocations_Slashed(slashingParams, operatorSet, true, "operator allocations should be slashed");
-            assert_Snap_Unchanged_StakerDepositShares(staker, "staker deposit shares should be unchanged after slashing");
+            assert_Snap_Unchanged_Staker_DepositShares(staker, "staker deposit shares should be unchanged after slashing");
             assert_Snap_StakerWithdrawableShares_AfterSlash(staker, allocateParams, slashingParams, "staker deposit shares should be slashed");
         }
 
