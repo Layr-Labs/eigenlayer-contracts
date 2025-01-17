@@ -2,27 +2,48 @@
 pragma solidity ^0.8.27;
 
 import "src/test/integration/IntegrationChecks.t.sol";
-import "src/test/integration/users/User.t.sol";
 
-contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
-    function testFuzz_deposit_delegate_allocate(uint24 _random) public rand(_random) {
-        (User staker, IStrategy[] memory strategies, uint256[] memory tokenBalances) = _newRandomStaker();
-        (User operator,,) = _newRandomOperator();
-        (AVS avs,) = _newRandomAVS();
+contract SlashingWithdrawals is IntegrationCheckUtils {
+    
+    AVS avs;
+    OperatorSet operatorSet;
+
+    User operator;
+    IAllocationManagerTypes.AllocateParams allocateParams;
+
+    User staker;
+    IStrategy[] strategies;
+    uint[] initTokenBalances;
+
+    /// Shared setup:
+    /// 
+    /// 1. Generate staker, operator, and AVS
+    /// 2. Staker deposits and delegates to operator
+    /// 3. AVS creates an operator set containing the strategies held by the staker
+    /// 4. Operator registers for operator set (default allocation delay)
+    /// 5. Operator allocates to operator set
+    function _init() internal override {
+        (staker, strategies, initTokenBalances) = _newRandomStaker();
+        (operator,,) = _newRandomOperator();
+        (avs,) = _newRandomAVS();
 
         // 1. Deposit Into Strategies
-        staker.depositIntoEigenlayer(strategies, tokenBalances);
+        staker.depositIntoEigenlayer(strategies, initTokenBalances);
+        uint[] memory shares = _calculateExpectedShares(strategies, initTokenBalances);
+        check_Deposit_State(staker, strategies, shares);
 
         // 2. Delegate to an operator
         staker.delegateTo(operator);
+        check_Delegation_State(staker, operator, strategies, shares);
 
-        // Create an operator set and register an operator.
-        OperatorSet memory operatorSet = avs.createOperatorSet(strategies);
+        // 3. Create an operator set and register an operator.
+        operatorSet = avs.createOperatorSet(strategies);
+        // TODO invariant checks here
         operator.registerForOperatorSet(operatorSet);
-
-        // 3. Allocate to operator set.
-        IAllocationManagerTypes.AllocateParams memory allocateParams =
-            operator.modifyAllocations(operatorSet, _randMagnitudes({sum: 1 ether, len: strategies.length}));
+        // TODO invariant checks here
+        
+        // 4. Allocate to operator set
+        allocateParams = operator.modifyAllocations(operatorSet, _randMagnitudes({sum: 1 ether, len: strategies.length}));
         assert_Snap_Allocations_Modified(
             operator, allocateParams, false, "operator allocations should be updated before delay"
         );
@@ -32,34 +53,9 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
         );
     }
 
-    function testFuzz_deposit_delegate_allocate_slash_undelegate_completeAsTokens(
+    function testFuzz_slash_undelegate_completeAsTokens(
         uint24 _random
     ) public rand(_random) {
-        (User staker, IStrategy[] memory strategies, uint256[] memory tokenBalances) = _newRandomStaker();
-        (User operator,,) = _newRandomOperator();
-        (AVS avs,) = _newRandomAVS();
-
-        // 1. Deposit Into Strategies
-        staker.depositIntoEigenlayer(strategies, tokenBalances);
-
-        // 2. Delegate to an operator
-        staker.delegateTo(operator);
-
-        // Create an operator set and register an operator.
-        OperatorSet memory operatorSet = avs.createOperatorSet(strategies);
-        operator.registerForOperatorSet(operatorSet);
-
-        // 3. Allocate to operator set.
-        IAllocationManagerTypes.AllocateParams memory allocateParams =
-            operator.modifyAllocations(operatorSet, _randMagnitudes({sum: 1 ether, len: strategies.length}));
-        assert_Snap_Allocations_Modified(
-            operator, allocateParams, false, "operator allocations should be updated before delay"
-        );
-        _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
-        assert_Snap_Allocations_Modified(
-            operator, allocateParams, true, "operator allocations should be updated after delay"
-        );
-
         // 4. Slash operator
         IAllocationManagerTypes.SlashingParams memory slashingParams;
         {
@@ -67,7 +63,7 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
                 _randStrategiesAndWadsToSlash(operatorSet);
             slashingParams = avs.slashOperator(operator, operatorSet.id, strategiesToSlash, wadsToSlash);
             assert_Snap_Allocations_Slashed(slashingParams, operatorSet, true, "operator allocations should be slashed");
-            assert_Snap_Unchanged_StakerDepositShares(staker, "staker deposit shares should be unchanged after slashing");
+            assert_Snap_Unchanged_Staker_DepositShares(staker, "staker deposit shares should be unchanged after slashing");
             assert_Snap_StakerWithdrawableShares_AfterSlash(staker, allocateParams, slashingParams, "staker deposit shares should be slashed");
         }
 
@@ -90,42 +86,15 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
             staker,
             allocateParams,
             slashingParams,
-            tokenBalances,
-            "staker should once again have original token tokenBalances minus slashed"
+            initTokenBalances,
+            "staker should once again have original token initTokenBalances minus slashed"
         );
         assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }
 
-    function testFuzz_deposit_delegate_allocate_slash_undelegate_completeAsShares(
+    function testFuzz_slash_undelegate_completeAsShares(
         uint24 _random
     ) public rand(_random) {
-        (User staker, IStrategy[] memory strategies, uint256[] memory tokenBalances) = _newRandomStaker();
-        (User operator,,) = _newRandomOperator();
-        (AVS avs,) = _newRandomAVS();
-
-
-        // 1. Deposit Into Strategies
-        staker.depositIntoEigenlayer(strategies, tokenBalances);
-        // TODO - post-deposit and post-delegate checks?
-
-        // 2. Delegate to an operator
-        staker.delegateTo(operator);
-
-        // Create an operator set and register an operator.
-        OperatorSet memory operatorSet = avs.createOperatorSet(strategies);
-        operator.registerForOperatorSet(operatorSet);
-
-        // 3. Allocate to operator set.
-        IAllocationManagerTypes.AllocateParams memory allocateParams =
-            operator.modifyAllocations(operatorSet, _randMagnitudes({sum: 1 ether, len: strategies.length}));
-        assert_Snap_Allocations_Modified(
-            operator, allocateParams, false, "operator allocations should be updated before delay"
-        );
-        _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
-        assert_Snap_Allocations_Modified(
-            operator, allocateParams, true, "operator allocations should be updated after delay"
-        );
-
         // 4. Slash operator
         IAllocationManagerTypes.SlashingParams memory slashingParams;
         {
@@ -133,7 +102,7 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
                 _randStrategiesAndWadsToSlash(operatorSet);
             slashingParams = avs.slashOperator(operator, operatorSet.id, strategiesToSlash, wadsToSlash);
             assert_Snap_Allocations_Slashed(slashingParams, operatorSet, true, "operator allocations should be slashed");
-            assert_Snap_Unchanged_StakerDepositShares(staker, "staker deposit shares should be unchanged after slashing");
+            assert_Snap_Unchanged_Staker_DepositShares(staker, "staker deposit shares should be unchanged after slashing");
             assert_Snap_StakerWithdrawableShares_AfterSlash(staker, allocateParams, slashingParams, "staker deposit shares should be slashed");
         }
 
@@ -155,36 +124,12 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
         assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }
 
-    function testFuzz_deposit_delegate_allocate_queue_slash_completeAsTokens(
+    function testFuzz_queue_slash_completeAsTokens(
         uint24 _random
     ) public rand(_random) {
-        (User staker, IStrategy[] memory strategies, uint256[] memory tokenBalances) = _newRandomStaker();
-        (User operator,,) = _newRandomOperator();
-        (AVS avs,) = _newRandomAVS();
-
-        // 1. Deposit Into Strategies
-        staker.depositIntoEigenlayer(strategies, tokenBalances);
-        // 2. Delegate to an operator
-        staker.delegateTo(operator);
-
-        // Create an operator set and register an operator.
-        OperatorSet memory operatorSet = avs.createOperatorSet(strategies);
-        operator.registerForOperatorSet(operatorSet);
-
-        // 3. Allocate to operator set.
-        IAllocationManagerTypes.AllocateParams memory allocateParams =
-            operator.modifyAllocations(operatorSet, _randMagnitudes({sum: 1 ether, len: strategies.length}));
-        assert_Snap_Allocations_Modified(
-            operator, allocateParams, false, "operator allocations should be updated before delay"
-        );
-        _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
-        assert_Snap_Allocations_Modified(
-            operator, allocateParams, true, "operator allocations should be updated after delay"
-        );
-
         // 4. Queue withdrawal
         IDelegationManagerTypes.Withdrawal[] memory withdrawals =
-            staker.queueWithdrawals(strategies, _calculateExpectedShares(strategies, tokenBalances));
+            staker.queueWithdrawals(strategies, _calculateExpectedShares(strategies, initTokenBalances));
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
 
         // 5. Slash operator
@@ -194,7 +139,7 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
                 _randStrategiesAndWadsToSlash(operatorSet);
             slashingParams = avs.slashOperator(operator, operatorSet.id, strategiesToSlash, wadsToSlash);
             assert_Snap_Allocations_Slashed(slashingParams, operatorSet, true, "operator allocations should be slashed");
-            assert_Snap_Unchanged_StakerDepositShares(staker, "staker deposit shares should be unchanged after slashing");
+            assert_Snap_Unchanged_Staker_DepositShares(staker, "staker deposit shares should be unchanged after slashing");
             assert_Snap_StakerWithdrawableShares_AfterSlash(staker, allocateParams, slashingParams, "staker deposit shares should be slashed");
         }
 
@@ -215,43 +160,18 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
             staker,
             allocateParams,
             slashingParams,
-            tokenBalances,
-            "staker should once again have original token tokenBalances minus slashed"
+            initTokenBalances,
+            "staker should once again have original token initTokenBalances minus slashed"
         );
         assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }
 
-    function testFuzz_deposit_delegate_allocate_queue_slash_completeAsShares(
+    function testFuzz_queue_slash_completeAsShares(
         uint24 _random
     ) public rand(_random) {
-        (User staker, IStrategy[] memory strategies, uint256[] memory tokenBalances) = _newRandomStaker();
-        (User operator,,) = _newRandomOperator();
-        (AVS avs,) = _newRandomAVS();
-
-        // 1. Deposit Into Strategies
-        staker.depositIntoEigenlayer(strategies, tokenBalances);
-        // 2. Delegate to an operator
-        staker.delegateTo(operator);
-
-        // Create an operator set and register an operator.
-        OperatorSet memory operatorSet = avs.createOperatorSet(strategies);
-        operator.registerForOperatorSet(operatorSet);
-        operator.setAllocationDelay(1);
-
-        // 3. Allocate to operator set.
-        IAllocationManagerTypes.AllocateParams memory allocateParams =
-            operator.modifyAllocations(operatorSet, _randMagnitudes({sum: 1 ether, len: strategies.length}));
-        assert_Snap_Allocations_Modified(
-            operator, allocateParams, false, "operator allocations should be updated before delay"
-        );
-        _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
-        assert_Snap_Allocations_Modified(
-            operator, allocateParams, true, "operator allocations should be updated after delay"
-        );
-
         // 4. Queue withdrawal
         IDelegationManagerTypes.Withdrawal[] memory withdrawals =
-            staker.queueWithdrawals(strategies, _calculateExpectedShares(strategies, tokenBalances));
+            staker.queueWithdrawals(strategies, _calculateExpectedShares(strategies, initTokenBalances));
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
 
         // 5. Slash operator
@@ -261,7 +181,7 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
                 _randStrategiesAndWadsToSlash(operatorSet);
             slashingParams = avs.slashOperator(operator, operatorSet.id, strategiesToSlash, wadsToSlash);
             assert_Snap_Allocations_Slashed(slashingParams, operatorSet, true, "operator allocations should be slashed");
-            assert_Snap_Unchanged_StakerDepositShares(staker, "staker deposit shares should be unchanged after slashing");
+            assert_Snap_Unchanged_Staker_DepositShares(staker, "staker deposit shares should be unchanged after slashing");
             assert_Snap_StakerWithdrawableShares_AfterSlash(staker, allocateParams, slashingParams, "staker deposit shares should be slashed");
         }
 
@@ -279,35 +199,9 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
         assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }
 
-    function testFuzz_deposit_delegate_allocate_deallocate_slash_queue_completeAsTokens(
+    function testFuzz_deallocate_slash_queue_completeAsTokens(
         uint24 _random
     ) public rand(_random) {
-        (User staker, IStrategy[] memory strategies, uint256[] memory tokenBalances) = _newRandomStaker();
-        (User operator,,) = _newRandomOperator();
-        (AVS avs,) = _newRandomAVS();
-
-        // 1. Deposit Into Strategies
-        staker.depositIntoEigenlayer(strategies, tokenBalances);
-        // 2. Delegate to an operator
-        staker.delegateTo(operator);
-
-        // Create an operator set and register an operator.
-        OperatorSet memory operatorSet = avs.createOperatorSet(strategies);
-        operator.registerForOperatorSet(operatorSet);
-        operator.setAllocationDelay(1);
-
-        console.log("block allocated", block.number);
-        // 3. Allocate to operator set.
-        IAllocationManagerTypes.AllocateParams memory allocateParams =
-            operator.modifyAllocations(operatorSet, _randMagnitudes({sum: 1 ether, len: strategies.length}));
-        assert_Snap_Allocations_Modified(
-            operator, allocateParams, false, "operator allocations should be updated before delay"
-        );
-        _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
-        assert_Snap_Allocations_Modified(
-            operator, allocateParams, true, "operator allocations should be updated after delay"
-        );
-
         // 4. Deallocate all.
         IAllocationManagerTypes.AllocateParams memory deallocateParams = operator.deallocateAll(operatorSet);
         _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
@@ -319,13 +213,13 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
                 _randStrategiesAndWadsToSlash(operatorSet);
             slashingParams = avs.slashOperator(operator, operatorSet.id, strategiesToSlash, wadsToSlash);
             assert_Snap_Allocations_Slashed(slashingParams, operatorSet, true, "operator allocations should be slashed");
-            assert_Snap_Unchanged_StakerDepositShares(staker, "staker deposit shares should be unchanged after slashing");
+            assert_Snap_Unchanged_Staker_DepositShares(staker, "staker deposit shares should be unchanged after slashing");
             assert_Snap_StakerWithdrawableShares_AfterSlash(staker, deallocateParams, slashingParams, "staker deposit shares should be slashed");
         }
         
         // 6. Queue withdrawals
         IDelegationManagerTypes.Withdrawal[] memory withdrawals =
-            staker.queueWithdrawals(strategies, _calculateExpectedShares(strategies, tokenBalances));
+            staker.queueWithdrawals(strategies, _calculateExpectedShares(strategies, initTokenBalances));
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
 
         // 7. Complete withdrawal
@@ -343,39 +237,15 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
         assert_HasUnderlyingTokenBalances(
             staker,
             allocateParams.strategies,
-            tokenBalances,
+            initTokenBalances,
             "staker should have withdrawn all shares"
         );
         assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }
 
-    function testFuzz_deposit_delegate_allocate_deregister_slash(
+    function testFuzz_deregister_slash(
         uint24 _random
     ) public rand(_random) {
-        (User staker, IStrategy[] memory strategies, uint256[] memory tokenBalances) = _newRandomStaker();
-        (User operator,,) = _newRandomOperator();
-        (AVS avs,) = _newRandomAVS();
-
-        // 1. Deposit Into Strategies
-        staker.depositIntoEigenlayer(strategies, tokenBalances);
-        // 2. Delegate to an operator
-        staker.delegateTo(operator);
-
-        // Create an operator set and register an operator.
-        OperatorSet memory operatorSet = avs.createOperatorSet(strategies);
-        operator.registerForOperatorSet(operatorSet);
-
-        // 3. Allocate to operator set.
-        IAllocationManagerTypes.AllocateParams memory allocateParams =
-            operator.modifyAllocations(operatorSet, _randMagnitudes({sum: 1 ether, len: strategies.length}));
-        assert_Snap_Allocations_Modified(
-            operator, allocateParams, false, "operator allocations should be updated before delay"
-        );
-        _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
-        assert_Snap_Allocations_Modified(
-            operator, allocateParams, true, "operator allocations should be updated after delay"
-        );
-
         // 4. Deregister.
         operator.deregisterFromOperatorSet(operatorSet);
 
@@ -386,7 +256,7 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
                 _randStrategiesAndWadsToSlash(operatorSet);
             slashingParams = avs.slashOperator(operator, operatorSet.id, strategiesToSlash, wadsToSlash);
             assert_Snap_Allocations_Slashed(slashingParams, operatorSet, true, "operator allocations should be slashed");
-            assert_Snap_Unchanged_StakerDepositShares(staker, "staker deposit shares should be unchanged after slashing");
+            assert_Snap_Unchanged_Staker_DepositShares(staker, "staker deposit shares should be unchanged after slashing");
             assert_Snap_StakerWithdrawableShares_AfterSlash(staker, allocateParams, slashingParams, "staker deposit shares should be slashed");
         }
     }
