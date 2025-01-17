@@ -95,7 +95,7 @@ contract Integration_Slashing_Combined is IntegrationCheckUtils {
             true, 
             "operator allocations should be slashed"
         );
-        assert_Snap_Unchanged_StakerDepositShares(
+        assert_Snap_Unchanged_Staker_DepositShares(
             ctx.staker, 
             "staker deposit shares should be unchanged after slashing"
         );
