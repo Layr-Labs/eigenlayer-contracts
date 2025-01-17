@@ -153,12 +153,17 @@ contract EigenPodManagerUnitTests_CreationTests is EigenPodManagerUnitTests, IEi
 }
 
 contract EigenPodManagerUnitTests_StakeTests is EigenPodManagerUnitTests {
-
+        
     function test_stake_podAlreadyDeployed() deployPodForStaker(defaultStaker) public {
         // Declare dummy variables
-        bytes memory pubkey = bytes("pubkey");
-        bytes memory sig = bytes("sig");
-        bytes32 depositDataRoot = bytes32("depositDataRoot");
+        bytes memory pubkey = _generateDummyVariable("pubkey", 48);
+        bytes memory sig = _generateDummyVariable("sig", 96);
+        bytes32 depositDataRoot = this.computeDepositDataRoot(
+            address(this),
+            32 ether,
+            pubkey,
+            sig
+        );
 
         // Stake
         eigenPodManager.stake{value: 32 ether}(pubkey, sig, depositDataRoot);
@@ -169,9 +174,14 @@ contract EigenPodManagerUnitTests_StakeTests is EigenPodManagerUnitTests {
 
     function test_stake_newPodDeployed() public {
         // Declare dummy variables
-        bytes memory pubkey = bytes("pubkey");
-        bytes memory sig = bytes("sig");
-        bytes32 depositDataRoot = bytes32("depositDataRoot");
+        bytes memory pubkey = _generateDummyVariable("pubkey", 48);
+        bytes memory sig = _generateDummyVariable("sig", 96);
+        bytes32 depositDataRoot = this.computeDepositDataRoot(
+            address(this),
+            32 ether,
+            pubkey,
+            sig
+        );
 
         // Stake
         eigenPodManager.stake{value: 32 ether}(pubkey, sig, depositDataRoot);
@@ -181,6 +191,66 @@ contract EigenPodManagerUnitTests_StakeTests is EigenPodManagerUnitTests {
         
         // Expect pod has 32 ether
         assertEq(address(defaultPod).balance, 32 ether, "ETH not staked in EigenPod");
+    }
+
+    function computeDepositDataRoot(
+        address podOwner,
+        uint256 amount,
+        bytes calldata pubkey,
+        bytes calldata signature
+    ) external view returns (bytes32 depositDataRoot) {
+        // Compute deposit data root (`DepositData` hash tree root)
+        bytes32 pubkeyRoot = sha256(abi.encodePacked(pubkey, bytes16(0)));
+        bytes32 signatureRoot = sha256(
+            abi.encodePacked(
+                sha256(abi.encodePacked(signature[:64])),
+                sha256(abi.encodePacked(signature[64:], bytes32(0)))
+            )
+        );
+        bytes32 withdrawalCredentials = bytes32(
+            abi.encodePacked(
+                bytes1(uint8(1)),
+                bytes11(0),
+                eigenPodManager.getPod(podOwner)
+            )
+        );
+        depositDataRoot = sha256(
+            abi.encodePacked(
+                sha256(abi.encodePacked(pubkeyRoot, withdrawalCredentials)),
+                sha256(
+                    abi.encodePacked(
+                        _toLittleEndian64(uint64(amount / 1e9)),
+                        bytes24(0),
+                        signatureRoot
+                    )
+                )
+            )
+        );
+    }
+
+    function _toLittleEndian64(
+        uint64 value
+    ) internal pure returns (bytes memory ret) {
+        ret = new bytes(8);
+        bytes8 bytesValue = bytes8(value);
+        // Byteswapping during copying to bytes.
+        ret[0] = bytesValue[7];
+        ret[1] = bytesValue[6];
+        ret[2] = bytesValue[5];
+        ret[3] = bytesValue[4];
+        ret[4] = bytesValue[3];
+        ret[5] = bytesValue[2];
+        ret[6] = bytesValue[1];
+        ret[7] = bytesValue[0];
+    }
+
+    function _generateDummyVariable(
+        string memory key,
+        uint256 length
+    ) internal pure returns (bytes memory data) {
+        for (uint256 i = 0; i < length / bytes(key).length + 1; i++) {
+            data = abi.encodePacked(data, key);
+        }
     }
 }
 

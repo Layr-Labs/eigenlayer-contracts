@@ -84,6 +84,8 @@ contract EigenPodManager is
         bytes calldata signature,
         bytes32 depositDataRoot
     ) external payable onlyWhenNotPaused(PAUSED_NEW_EIGENPODS) {
+        _checkDepositData(pubkey, signature, depositDataRoot);
+
         IEigenPod pod = ownerToPod[msg.sender];
         if (address(pod) == address(0)) {
             //deploy a pod if the sender doesn't have one already
@@ -275,6 +277,58 @@ contract EigenPodManager is
                 return (sharesAfter - sharesBefore);
             }
         }
+    }
+
+    function _checkDepositData(
+        bytes calldata pubkey,
+        bytes calldata signature,
+        bytes32 depositDataRoot
+    ) internal view {
+        // Compute deposit data root (`DepositData` hash tree root)
+        bytes32 pubkeyRoot = sha256(abi.encodePacked(pubkey, bytes16(0)));
+        bytes32 signatureRoot = sha256(
+            abi.encodePacked(
+                sha256(abi.encodePacked(signature[:64])),
+                sha256(abi.encodePacked(signature[64:], bytes32(0)))
+            )
+        );
+        bytes32 withdrawalCredentials = bytes32(
+            abi.encodePacked(bytes1(uint8(1)), bytes11(0), getPod(msg.sender))
+        );
+        bytes32 node = sha256(
+            abi.encodePacked(
+                sha256(abi.encodePacked(pubkeyRoot, withdrawalCredentials)),
+                sha256(
+                    abi.encodePacked(
+                        _toLittleEndian64(uint64(msg.value / 1e9)),
+                        bytes24(0),
+                        signatureRoot
+                    )
+                )
+            )
+        );
+
+        // Verify computed and expected deposit data roots match
+        require(
+            node == depositDataRoot,
+            "EigenPodManager.stake: Reconstructed DepositData does not match supplied depositDataRoot"
+        );
+    }
+
+    function _toLittleEndian64(
+        uint64 value
+    ) internal pure returns (bytes memory ret) {
+        ret = new bytes(8);
+        bytes8 bytesValue = bytes8(value);
+        // Byteswapping during copying to bytes.
+        ret[0] = bytesValue[7];
+        ret[1] = bytesValue[6];
+        ret[2] = bytesValue[5];
+        ret[3] = bytesValue[4];
+        ret[4] = bytesValue[3];
+        ret[5] = bytesValue[2];
+        ret[6] = bytesValue[1];
+        ret[7] = bytesValue[0];
     }
 
     // VIEW FUNCTIONS
