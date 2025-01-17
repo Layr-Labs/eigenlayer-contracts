@@ -20,7 +20,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
     using Strings for *;
     using print for *;
 
-    using ArrayLib for IStrategy[];
+    using ArrayLib for *;
 
     uint numStakers = 0;
     uint numOperators = 0;
@@ -49,7 +49,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         IStrategy[] memory strategies;
         uint[] memory tokenBalances;
 
-        if (forkType == MAINNET && !isUpgraded) {
+        if (!isUpgraded) {
             stakerName = string.concat("M2Staker", cheats.toString(numStakers));
 
             (staker, strategies, tokenBalances) = _randUser(stakerName);
@@ -79,7 +79,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         uint[] memory tokenBalances;
         uint[] memory addedShares;
 
-        if (forkType == MAINNET && !isUpgraded) {
+        if (!isUpgraded) {
             string memory operatorName = string.concat("M2Operator", numOperators.toString());
 
             // Create an operator for M2.
@@ -102,11 +102,12 @@ abstract contract IntegrationBase is IntegrationDeployer {
             operator.registerAsOperator();
             operator.depositIntoEigenlayer(strategies, tokenBalances);
 
-            // Roll passed the allocation configuration delay
+            // Roll past the allocation configuration delay
             rollForward({blocks: ALLOCATION_CONFIGURATION_DELAY});
-        }        
 
-        assert_Snap_Added_Staker_DepositShares(operator, strategies, addedShares, "_newRandomOperator: failed to add delegatable shares");
+            assert_Snap_Added_Staker_DepositShares(operator, strategies, addedShares, "_newRandomOperator: failed to add delegatable shares");
+        }        
+        
         assert_Snap_Added_OperatorShares(operator, strategies, addedShares, "_newRandomOperator: failed to award shares to operator");
         assertTrue(delegationManager.isOperator(address(operator)), "_newRandomOperator: operator should be registered");
 
@@ -141,13 +142,13 @@ abstract contract IntegrationBase is IntegrationDeployer {
     
     /// @dev Choose a random subset of validators (selects AT LEAST ONE)
     function _choose(uint40[] memory validators) internal returns (uint40[] memory) {
-        uint rand = _randUint({ min: 1, max: validators.length ** 2 });
+        uint _rand = _randUint({ min: 1, max: validators.length ** 2 });
 
         uint40[] memory result = new uint40[](validators.length);
         uint newLen;
         for (uint i = 0; i < validators.length; i++) {
             // if bit set, add validator
-            if (rand >> i & 1 == 1) {
+            if (_rand >> i & 1 == 1) {
                 result[newLen] = validators[i];
                 newLen++;
             }
@@ -645,20 +646,15 @@ abstract contract IntegrationBase is IntegrationDeployer {
     function assert_Snap_Added_Staker_DepositShares(
         User staker, 
         IStrategy strat, 
-        uint _addedShares,
+        uint addedShares,
         string memory err
     ) internal {
-        IStrategy[] memory strategies = new IStrategy[](1);
-        uint[] memory addedShares = new uint[](1);
-        strategies[0] = strat;
-        addedShares[0] = _addedShares;
-
-        assert_Snap_Added_Staker_DepositShares(staker, strategies, addedShares, err);
+        assert_Snap_Added_Staker_DepositShares(staker, strat.toArray(), addedShares.toArrayU256(), err);
     }
 
     /// @dev Check that the staker has `removedShares` fewer delegatable shares
     /// for each strategy since the last snapshot
-    function assert_Snap_Removed_StakerDepositShares(
+    function assert_Snap_Removed_Staker_DepositShares(
         User staker, 
         IStrategy[] memory strategies, 
         uint[] memory removedShares,
@@ -674,22 +670,52 @@ abstract contract IntegrationBase is IntegrationDeployer {
         }
     }
 
-    function assert_Snap_Removed_StakerDepositShares(
+    function assert_Snap_Removed_Staker_DepositShares(
         User staker, 
         IStrategy strat, 
-        uint _removedShares,
+        uint removedShares,
         string memory err
     ) internal {
-        IStrategy[] memory strategies = new IStrategy[](1);
-        uint[] memory removedShares = new uint[](1);
-        strategies[0] = strat;
-        removedShares[0] = _removedShares;
+        assert_Snap_Removed_Staker_DepositShares(staker, strat.toArray(), removedShares.toArrayU256(), err);
+    }
 
-        assert_Snap_Removed_StakerDepositShares(staker, strategies, removedShares, err);
+    /// @dev Check that the staker's delegatable shares in ALL strategies have not changed
+    /// since the last snapshot
+    function assert_Snap_Unchanged_Staker_DepositShares(
+        User staker,
+        string memory err
+    ) internal {
+        IStrategy[] memory strategies = allStrats;
+
+        uint[] memory curShares = _getStakerDepositShares(staker, strategies);
+        // Use timewarp to get previous staker shares
+        uint[] memory prevShares = _getPrevStakerDepositShares(staker, strategies);
+
+        // For each strategy, check (prev == cur)
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(prevShares[i], curShares[i], err);
+        }
     }
 
     /// @dev Check that the staker's withdrawable shares have decreased by `removedShares`
-    function assert_Snap_Removed_StakerWithdrawableShares(
+    function assert_Snap_Added_Staker_WithdrawableShares(
+        User staker, 
+        IStrategy[] memory strategies, 
+        uint[] memory addedShares,
+        string memory err
+    ) internal {
+        uint[] memory curShares = _getStakerWithdrawableShares(staker, strategies);
+        // Use timewarp to get previous staker shares
+        uint[] memory prevShares = _getPrevStakerWithdrawableShares(staker, strategies);
+
+        // For each strategy, check (prev - removed == cur)
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(prevShares[i] + addedShares[i], curShares[i], err);
+        }
+    }
+
+    /// @dev Check that the staker's withdrawable shares have decreased by `removedShares`
+    function assert_Snap_Removed_Staker_WithdrawableShares(
         User staker, 
         IStrategy[] memory strategies, 
         uint[] memory removedShares,
@@ -705,18 +731,30 @@ abstract contract IntegrationBase is IntegrationDeployer {
         }
     }
 
-    function assert_Snap_Removed_StakerWithdrawableShares(
+    function assert_Snap_Removed_Staker_WithdrawableShares(
         User staker, 
         IStrategy strat, 
-        uint _removedShares,
+        uint removedShares,
         string memory err
     ) internal {
-        IStrategy[] memory strategies = new IStrategy[](1);
-        uint[] memory removedShares = new uint[](1);
-        strategies[0] = strat;
-        removedShares[0] = _removedShares;
+        assert_Snap_Removed_Staker_WithdrawableShares(staker, strat.toArray(), removedShares.toArrayU256(), err);
+    }
 
-        assert_Snap_Removed_StakerWithdrawableShares(staker, strategies, removedShares, err);
+    /// @dev Check that the staker's withdrawable shares have decreased by `removedShares`
+    function assert_Snap_Unchanged_Staker_WithdrawableShares(
+        User staker,
+        string memory err
+    ) internal {
+        IStrategy[] memory strategies = allStrats;
+
+        uint[] memory curShares = _getStakerWithdrawableShares(staker, strategies);
+        // Use timewarp to get previous staker shares
+        uint[] memory prevShares = _getPrevStakerWithdrawableShares(staker, strategies);
+
+        // For each strategy, check (prev - removed == cur)
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(prevShares[i], curShares[i], err);
+        }
     }
 
     /// @dev Check that the staker's withdrawable shares have decreased by at least `removedShares`
@@ -743,30 +781,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         uint removedShares,
         string memory err
     ) internal {
-        IStrategy[] memory strategies = new IStrategy[](1);
-        uint[] memory removedSharesArr = new uint[](1);
-        strategies[0] = strat;
-        removedSharesArr[0] = removedShares;
-
-        assert_Snap_Removed_Staker_WithdrawableShares_AtLeast(staker, strategies, removedSharesArr, err);
-    }
-
-    /// @dev Check that the staker's delegatable shares in ALL strategies have not changed
-    /// since the last snapshot
-    function assert_Snap_Unchanged_StakerDepositShares(
-        User staker,
-        string memory err
-    ) internal {
-        IStrategy[] memory strategies = allStrats;
-
-        uint[] memory curShares = _getStakerDepositShares(staker, strategies);
-        // Use timewarp to get previous staker shares
-        uint[] memory prevShares = _getPrevStakerDepositShares(staker, strategies);
-
-        // For each strategy, check (prev == cur)
-        for (uint i = 0; i < strategies.length; i++) {
-            assertEq(prevShares[i], curShares[i], err);
-        }
+        assert_Snap_Removed_Staker_WithdrawableShares_AtLeast(staker, strat.toArray(), removedShares.toArrayU256(), err);
     }
 
     function assert_Snap_Delta_StakerShares(
@@ -1485,12 +1500,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
                 // This method should only be used for tests that handle positive
                 // balances. Negative balances are an edge case that require
                 // the own tests and helper methods.
-                int shares;
-                if (forkType != LOCAL && !isUpgraded) {
-                    shares = int(IEigenPodManager_DeprecatedM2(address(eigenPodManager)).podOwnerShares(address(staker)));
-                } else {
-                    shares = int(eigenPodManager.podOwnerDepositShares(address(staker)));
-                }
+                int shares = eigenPodManager.podOwnerDepositShares(address(staker));
 
                 if (shares < 0) {
                     revert("_getStakerDepositShares: negative shares");
@@ -1498,11 +1508,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
                 curShares[i] = uint(shares);
             } else {
-                if (forkType != LOCAL && !isUpgraded) {
-                    curShares[i] = IStrategyManager_DeprecatedM2(address(strategyManager)).stakerStrategyShares(address(staker), strat);
-                } else {
-                    curShares[i] = strategyManager.stakerDepositShares(address(staker), strat);
-                }
+                curShares[i] = strategyManager.stakerDepositShares(address(staker), strat);
             }
         }
 
@@ -1656,13 +1662,8 @@ abstract contract IntegrationBase is IntegrationDeployer {
     }
 
     function _getCheckpointPodBalanceGwei(User staker) internal view returns (uint64) {
-        if (forkType != LOCAL && !isUpgraded) {
-            IEigenPod_DeprecatedM2 pod = IEigenPod_DeprecatedM2(address(staker.pod()));
-            return uint64(pod.currentCheckpoint().podBalanceGwei);
-        } else {
-            EigenPod pod = staker.pod();
-            return uint64(pod.currentCheckpoint().podBalanceGwei);
-        }
+        EigenPod pod = staker.pod();
+        return uint64(pod.currentCheckpoint().podBalanceGwei);
     }
 
     function _getPrevCheckpointPodBalanceGwei(User staker) internal timewarp() returns (uint64) {
