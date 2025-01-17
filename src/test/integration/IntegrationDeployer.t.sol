@@ -10,6 +10,7 @@ import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import "forge-std/Test.sol";
 
 import "src/contracts/core/DelegationManager.sol";
+import "src/contracts/core/AllocationManager.sol";
 import "src/contracts/core/StrategyManager.sol";
 import "src/contracts/strategies/StrategyFactory.sol";
 import "src/contracts/strategies/StrategyBase.sol";
@@ -92,6 +93,10 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
             _userTypes: DEFAULT | ALT_METHODS
         });
+
+        // Used to create shared setups between tests
+        _init();
+
         _;
     }
 
@@ -135,6 +140,12 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             forkType = LOCAL;
             _setUpLocal();
         }
+    }
+
+    /// @dev Used to create shared setup between tests. This method is called
+    /// when the `rand` modifier is run, before a test starts
+    function _init() internal virtual {
+        return;
     }
 
     /**
@@ -473,7 +484,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         allTokens.push(underlyingToken);
     }
 
-    function _configRand(uint24 _randomSeed, uint _assetTypes, uint _userTypes) internal {
+    function _configRand(uint24 _randomSeed, uint _assetTypes, uint _userTypes) private {
         // Using uint24 for the seed type so that if a test fails, it's easier
         // to manually use the seed to replay the same test.
         random = _hash(_randomSeed);
