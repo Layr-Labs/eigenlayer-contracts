@@ -42,7 +42,7 @@ interface IRewardsCoordinatorEvents {
         uint256 submissionNonce,
         IRewardsCoordinator.OperatorDirectedRewardsSubmission operatorDirectedRewardsSubmission
     );
-    /// @notice rewardsUpdater is responsible for submiting DistributionRoots, only owner can set rewardsUpdater
+    /// @notice rewardsUpdater is responsible for submitting DistributionRoots, only owner can set rewardsUpdater
     event RewardsUpdaterSet(address indexed oldRewardsUpdater, address indexed newRewardsUpdater);
     event RewardsForAllSubmitterSet(
         address indexed rewardsForAllSubmitter,

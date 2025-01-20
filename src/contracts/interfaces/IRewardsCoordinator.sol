@@ -207,7 +207,7 @@ interface IRewardsCoordinator {
         OperatorDirectedRewardsSubmission operatorDirectedRewardsSubmission
     );
 
-    /// @notice rewardsUpdater is responsible for submiting DistributionRoots, only owner can set rewardsUpdater
+    /// @notice rewardsUpdater is responsible for submitting DistributionRoots, only owner can set rewardsUpdater
     event RewardsUpdaterSet(address indexed oldRewardsUpdater, address indexed newRewardsUpdater);
     event RewardsForAllSubmitterSet(
         address indexed rewardsForAllSubmitter,
@@ -306,7 +306,7 @@ interface IRewardsCoordinator {
     /// @notice Mapping: claimer => token => total amount claimed
     function cumulativeClaimed(address claimer, IERC20 token) external view returns (uint256);
 
-    /// @notice the defautl split for all operators across all avss
+    /// @notice the default split for all operators across all avss
     function defaultOperatorSplitBips() external view returns (uint16);
 
     /// @notice the split for a specific `operator` for a specific `avs`
