@@ -534,8 +534,7 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
     /**
      * @notice Returns the minimum amount of stake that will be slashable as of some future block,
      * according to each operator's allocation from each strategy to the operator set. Note that this function
-     * is calculating the slashable stake assuming that the operatorSet CAN slash an operator. If the operatorSet
-     * cannot slash the operator according to the `isOperatorSlashable` function, then the real *actual* slashable stake is zero.
+     * will return 0 for the slashable stake if the operator is not slashable at the time of the call.
      * @dev This method queries actual delegated stakes in the DelegationManager and applies
      * each operator's allocation to the stake to produce the slashable stake each allocation
      * represents.
@@ -548,16 +547,25 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
      * @param operators the list of operators whose slashable stakes will be returned
      * @param strategies the strategies that each slashable stake corresponds to
      * @param futureBlock the block at which to get allocation information. Should be a future block.
-     * @return slashableStake a list of slashable stakes, indexed by [operator][strategy]
-     * @return isSlashable a list of booleans indicating whether each operator is slashable by the operatorSet, indexed by [operator]
-     * For more information on this return value see `isOperatorSlashable`.
      */
     function getMinimumSlashableStake(
         OperatorSet memory operatorSet,
         address[] memory operators,
         IStrategy[] memory strategies,
         uint32 futureBlock
-    ) external view returns (uint256[][] memory slashableStake, bool[] memory isSlashable);
+    ) external view returns (uint256[][] memory slashableStake);
+
+    /**
+     * @notice Returns the current allocated stake, irrespective of the operator's slashable status for the operatorSet.
+     * @param operatorSet the operator set to query
+     * @param operators the operators to query
+     * @param strategies the strategies to query
+     */
+    function getAllocatedStake(
+        OperatorSet memory operatorSet,
+        address[] memory operators,
+        IStrategy[] memory strategies
+    ) external view returns (uint256[][] memory slashableStake);
 
     /**
      * @notice Returns whether an operator is slashable by an operator set.

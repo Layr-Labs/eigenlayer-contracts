@@ -275,7 +275,7 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
         uint256 expectedSlashableStake,
         uint256 futureBlock
     ) internal view {
-        (uint256[][] memory slashableStake, ) = allocationManager.getMinimumSlashableStake({
+        uint256[][] memory slashableStake = allocationManager.getMinimumSlashableStake({
             operatorSet: operatorSet,
             operators: operator.toArray(),
             strategies: strategies,
@@ -1412,7 +1412,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         cheats.roll(block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY);
 
         // Get slashable shares for each operatorSet
-        (uint256[][] memory opset2SlashableSharesBefore, ) = allocationManager.getMinimumSlashableStake(operatorSet2, defaultOperator.toArray(), defaultStrategies, uint32(block.number));
+        uint256[][] memory opset2SlashableSharesBefore = allocationManager.getMinimumSlashableStake(operatorSet2, defaultOperator.toArray(), defaultStrategies, uint32(block.number));
         // Slash operator on operatorSet1 for 50%
         SlashingParams memory slashingParams = SlashingParams({
             operator: defaultOperator,
@@ -1467,7 +1467,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         );
 
         // Assert that slashable stake is the same - we add slippage here due to rounding error from the slash itself
-        (uint256[][] memory minSlashableStake, ) = allocationManager.getMinimumSlashableStake(operatorSet2, defaultOperator.toArray(), defaultStrategies, uint32(block.number));
+        uint256[][] memory minSlashableStake = allocationManager.getMinimumSlashableStake(operatorSet2, defaultOperator.toArray(), defaultStrategies, uint32(block.number));
         assertEq(
             opset2SlashableSharesBefore[0][0],
             minSlashableStake[0][0] + 1,          
