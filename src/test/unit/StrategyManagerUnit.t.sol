@@ -1466,7 +1466,7 @@ contract StrategyManagerUnitTests_increaseBurnableShares is StrategyManagerUnitT
         cheats.prank(address(delegationManagerMock));
         strategyManager.increaseBurnableShares(strategy, addedSharesToBurn);
         assertEq(
-            strategyManager.burnableShares(strategy),
+            strategyManager.getBurnableShares(strategy),
             addedSharesToBurn,
             "strategyManager.burnableShares(strategy) != addedSharesToBurn"
         );
@@ -1487,7 +1487,7 @@ contract StrategyManagerUnitTests_increaseBurnableShares is StrategyManagerUnitT
         emit BurnableSharesIncreased(strategy, existingBurnableShares);
         strategyManager.increaseBurnableShares(strategy, existingBurnableShares);
         assertEq(
-            strategyManager.burnableShares(strategy),
+            strategyManager.getBurnableShares(strategy),
             existingBurnableShares,
             "strategyManager.burnableShares(strategy) != existingBurnableShares"
         );
@@ -1498,7 +1498,7 @@ contract StrategyManagerUnitTests_increaseBurnableShares is StrategyManagerUnitT
         strategyManager.increaseBurnableShares(strategy, addedSharesToBurn);
 
         assertEq(
-            strategyManager.burnableShares(strategy),
+            strategyManager.getBurnableShares(strategy),
             existingBurnableShares + addedSharesToBurn,
             "strategyManager.burnableShares(strategy) != existingBurnableShares + addedSharesToBurn"
         );
@@ -1543,6 +1543,11 @@ contract StrategyManagerUnitTests_burnShares is StrategyManagerUnitTests {
             burnAddressBalanceBefore + sharesToBurn,
             "balanceAfter != balanceBefore + sharesAmount"
         );
+
+        // Verify strategy was removed from burnable shares
+        (address[] memory strategiesAfterBurn, uint256[] memory sharesAfterBurn) = strategyManager.getStrategiesWithBurnableShares();
+        assertEq(strategiesAfterBurn.length, 0, "Should have no strategies after burning");
+        assertEq(strategyManager.getBurnableShares(strategy), 0, "getBurnableShares should return 0 after burning");
     }
 
     /// @notice check that balances are unchanged with a reverting token but burnShares doesn't revert
@@ -1572,7 +1577,7 @@ contract StrategyManagerUnitTests_burnShares is StrategyManagerUnitTests {
         strategyManager.burnShares(strategy);
 
         assertEq(
-            strategyManager.burnableShares(strategy),
+            strategyManager.getBurnableShares(strategy),
             sharesToBurn,
             "burnable shares should be unchanged"
         );
@@ -1750,5 +1755,79 @@ contract StrategyManagerUnitTests_removeStrategiesFromDepositWhitelist is Strate
                 );
             }
         }
+    }
+}
+
+contract StrategyManagerUnitTests_getStrategiesWithBurnableShares is StrategyManagerUnitTests {
+    
+    function test_getStrategiesWithBurnableShares_Empty() public {
+        (address[] memory strategies, uint256[] memory shares) = strategyManager.getStrategiesWithBurnableShares();
+        assertEq(strategies.length, 0, "Should have no strategies when empty");
+        assertEq(shares.length, 0, "Should have no shares when empty");
+    }
+
+    function testFuzz_getStrategiesWithBurnableShares_Single(uint256 sharesToAdd) public {
+        //ensure non-zero
+        cheats.assume(sharesToAdd > 0);
+        
+        // Add burnable shares
+        cheats.prank(address(delegationManagerMock));
+        strategyManager.increaseBurnableShares(dummyStrat, sharesToAdd);
+
+        // Get strategies with burnable shares
+        (address[] memory strategies, uint256[] memory shares) = strategyManager.getStrategiesWithBurnableShares();
+        
+        // Verify results
+        assertEq(strategies.length, 1, "Should have one strategy");
+        assertEq(shares.length, 1, "Should have one share amount");
+        assertEq(strategies[0], address(dummyStrat), "Wrong strategy address");
+        assertEq(shares[0], sharesToAdd, "Wrong shares amount");
+    }
+
+    function testFuzz_getStrategiesWithBurnableShares_Multiple(
+        uint256[3] calldata sharesToAdd
+    ) public {
+        IStrategy[] memory strategies = new IStrategy[](3);
+        strategies[0] = dummyStrat;
+        strategies[1] = dummyStrat2;
+        strategies[2] = dummyStrat3;
+        uint256[3] memory expectedShares;
+        uint256 expectedLength = 0;
+        
+        // Add non-zero shares to strategies
+        for (uint256 i = 0; i < 3; i++) {
+            expectedShares[i] = sharesToAdd[i];
+            if (sharesToAdd[i] > 0) {
+                expectedLength++;
+                cheats.prank(address(delegationManagerMock));
+                strategyManager.increaseBurnableShares(strategies[i], sharesToAdd[i]);
+            }
+        }
+
+        // Get strategies with burnable shares
+        (address[] memory returnedStrategies, uint256[] memory returnedShares) = 
+            strategyManager.getStrategiesWithBurnableShares();
+
+        // Verify lengths match
+        assertEq(returnedStrategies.length, expectedLength, "Wrong number of strategies returned");
+        assertEq(returnedShares.length, expectedLength, "Wrong number of share amounts returned");
+
+        // For all strategies with non-zero shares, verify they are in the returned arrays
+        uint256 foundCount = 0;
+        for (uint256 i = 0; i < 3; i++) {
+            if (expectedShares[i] > 0) {
+                bool found = false;
+                for (uint256 j = 0; j < returnedStrategies.length; j++) {
+                    if (returnedStrategies[j] == address(strategies[i])) {
+                        assertEq(returnedShares[j], expectedShares[i], "Wrong share amount");
+                        found = true;
+                        foundCount++;
+                        break;
+                    }
+                }
+                assertTrue(found, "Strategy with non-zero shares not found in returned array");
+            }
+        }
+        assertEq(foundCount, expectedLength, "Number of found strategies doesn't match expected length");
     }
 }
