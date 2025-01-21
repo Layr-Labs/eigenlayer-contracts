@@ -332,13 +332,17 @@ contract IntegrationCheckUtils is IntegrationBase {
                                  ALLOCATION MANAGER CHECKS
     *******************************************************************************/
     
-    /// Check an operator's first allocation to an operator set
+    /// @dev Check an operator's first allocation to an operator set
     function check_Initial_Allocation_State(
         User operator,
-        IAllocationManagerTypes.AllocateParams memory params
+        IAllocationManagerTypes.AllocateParams memory params,
+        uint[] memory slashableShares
     ) internal {
+        // First allocation to an operator set
+        assert_Snap_Added_AllocatedSet(operator, params.operatorSet, "should have increased operators allocated sets");
+
         // Any call that allocates more magnitude
-        assert_Snap_Created_PendingIncrease(operator, params, "should have created a pending increase in allocated magnitude");
+        assert_Snap_Created_PendingIncrease(operator, params, "should have created a pending allocation");
         assert_Snap_Added_EncumberedMagnitude(operator, params.strategies, params.newMagnitudes, "encumbered mag should have increased by allocated amount");
         assert_Snap_Removed_AllocatableMagnitude(operator, params.strategies, params.newMagnitudes, "allocatable mag should have decreased by allocated amount");
 
@@ -346,15 +350,45 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Unchanged_MaxMagnitude(operator, params.strategies, "max magnitude should not have changed");
         assert_MaxEqualsAllocatablePlusEncumbered(operator, "max magnitude should equal encumbered plus allocatable");
 
-        // Roll forward so we can check the upated allocation
+        // Roll forward so we can check the updated allocation
         _rollForward_AllocationDelay(operator);
 
         assert_MaxEqualsAllocatablePlusEncumbered(operator, "max magnitude should equal encumbered plus allocatable");
+        assert_Snap_Added_SlashableStake(operator, params.operatorSet, params.strategies, slashableShares, "operator should have added slashable stake after allocation is active");
         assert_CurrentMagnitude(operator, params, "current magnitude should match allocate params");
         assert_NoPendingModification(operator, params.operatorSet, params.strategies, "there should not be a pending modification for any strategy");
 
         // Reset block number so test is not affected
         _rollBackward_AllocationDelay(operator);
+    }
+
+    function check_Slashable_Deallocation_State(
+        User operator,
+        IAllocationManagerTypes.AllocateParams memory params
+        // uint[] memory 
+    ) internal {
+        assert_Snap_Unchanged_AllocatedSet(operator, params.operatorSet, "should not have removed operator set from allocated sets");
+
+        // Any call that deallocates magnitude
+        assert_Snap_Created_PendingDecrease(operator, params, "should have created a pending deallocation");
+        assert_Snap_Unchanged_EncumberedMagnitude(operator, params.strategies, "should not have changed encumbered magnitude");
+        assert_Snap_Unchanged_AllocatableMagnitude(operator, params.strategies, "should not have changed allocatable magnitude");
+        assert_Snap_Unchanged_SlashableStake(operator, params.operatorSet, params.strategies, "operator should have unchanged slashable stake");
+
+        // All calls to modifyAllocations
+        assert_Snap_Unchanged_MaxMagnitude(operator, params.strategies, "max magnitude should not have changed");
+        assert_MaxEqualsAllocatablePlusEncumbered(operator, "max magnitude should equal encumbered plus allocatable");
+
+        // Roll forward so we can check the updated deallocation
+        _rollForward_DeallocationDelay();
+
+        assert_MaxEqualsAllocatablePlusEncumbered(operator, "max magnitude should equal encumbered plus allocatable");
+        // assert_Snap_Removed_SlashableStake(operator, params.operatorSet, params.strategies, "operator should have unchanged slashable stake");
+        assert_CurrentMagnitude(operator, params, "current magnitude should match deallocate params");
+        assert_NoPendingModification(operator, params.operatorSet, params.strategies, "there should not be a pending modification for any strategy");
+
+        // Reset block number so test is not affected
+        _rollBackward_DeallocationDelay();
     }
 
     // TODO: improvement needed 

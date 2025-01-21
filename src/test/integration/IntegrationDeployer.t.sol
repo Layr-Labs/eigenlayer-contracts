@@ -560,6 +560,23 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         return (user, strategies, tokenBalances);
     }
 
+    /// @dev Creates a new user without any assets
+    function _randUser_NoAssets(
+        string memory name
+    ) internal returns (User) {
+        // For the new user, select what type of assets they'll have and whether
+        // they'll use `xWithSignature` methods.
+        //
+        // The values selected here are in the ranges configured via `_configRand`
+        uint userType = _randUserType();
+
+        // Deploy new User contract
+        User user = _genRandUser(name, userType);
+
+        print.user(name, NO_ASSETS, userType, new IStrategy[](0), new uint[](0));
+        return user;
+    }
+
     function _genRandUser(string memory name, uint userType) internal returns (User user) {
         // Create User contract based on userType:
         if (forkType == LOCAL) {

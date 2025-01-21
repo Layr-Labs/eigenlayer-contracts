@@ -115,6 +115,34 @@ abstract contract IntegrationBase is IntegrationDeployer {
         return (operator, strategies, tokenBalances);
     }
 
+    /// @dev Creates a new operator with no assets
+    function _newRandomOperator_NoAssets() internal returns (User) {
+        User operator;
+
+        if (!isUpgraded) {
+            string memory operatorName = string.concat("M2Operator", numOperators.toString());
+
+            // Create an operator for M2.
+            operator = _randUser_NoAssets(operatorName);
+            User_M2(payable(operator)).registerAsOperator_M2();
+
+            operatorsToMigrate.push(operator);
+        } else {
+            string memory operatorName = string.concat("operator", numOperators.toString());
+
+            operator = _randUser_NoAssets(operatorName);
+            operator.registerAsOperator();
+
+            // Roll past the allocation configuration delay
+            rollForward({blocks: ALLOCATION_CONFIGURATION_DELAY});
+        }        
+
+        assertTrue(delegationManager.isOperator(address(operator)), "_newRandomOperator: operator should be registered");
+
+        numOperators++;
+        return operator;
+    }
+
     function _newRandomAVS() internal returns (AVS avs, OperatorSet[] memory operatorSets) {
         string memory avsName = string.concat("avs", numAVSs.toString());
         avs = _genRandAVS(avsName);
@@ -340,12 +368,113 @@ abstract contract IntegrationBase is IntegrationDeployer {
                          SNAPSHOT ASSERTIONS: ALLOCATIONS
     *******************************************************************************/
 
+    /// @dev Assert that we created a pending allocation with a POSITIVE pendingDiff
     function assert_Snap_Created_PendingIncrease(
         User operator,
-        IAllocationManagerTypes.AllocateParams memory allocateParams,
+        IAllocationManagerTypes.AllocateParams memory params,
         string memory err
-    ) internal pure {
-        // TODO - alloc delay of 0?
+    ) internal {
+        // Roll backward -1 before reading allocation from state. This allows us to query
+        // a pending allocation, even if the operator's allocation delay is 0.
+        cheats.roll(block.number - 1);
+        IAllocationManagerTypes.Allocation[] memory curAllocations = _getAllocations(operator, params.operatorSet, params.strategies);
+        cheats.roll(block.number + 1);
+        
+        // We don't roll here, because at the current block number (before the call to modifyAllocations), the
+        // allocations should be completable.
+        IAllocationManagerTypes.Allocation[] memory prevAllocations = _getPrevAllocations(operator, params.operatorSet, params.strategies);
+
+        for (uint i = 0; i < curAllocations.length; i++) {
+            // As of completion time, the previous allocation's fields should represent an "updated, completable" allocation
+            assertEq(prevAllocations[i].effectBlock, 0, err);
+            assertEq(prevAllocations[i].pendingDiff, 0, err);
+            // Previous allocation's current magnitude should be less than params.newMagnitude
+            assertLt(prevAllocations[i].currentMagnitude, params.newMagnitudes[i], err);
+
+            // Current allocation should be pending
+            assertGt(curAllocations[i].effectBlock, 0, err);
+            assertGt(curAllocations[i].pendingDiff, 0, err);
+            assertEq(curAllocations[i].currentMagnitude, prevAllocations[i].currentMagnitude, err);
+        }
+    }
+
+    /// @dev Assert that we created a pending allocation with a NEGATIVE pendingDiff
+    function assert_Snap_Created_PendingDecrease(
+        User operator,
+        IAllocationManagerTypes.AllocateParams memory params,
+        string memory err
+    ) internal {
+        IAllocationManagerTypes.Allocation[] memory curAllocations = _getAllocations(operator, params.operatorSet, params.strategies);
+        IAllocationManagerTypes.Allocation[] memory prevAllocations = _getPrevAllocations(operator, params.operatorSet, params.strategies);
+
+        uint32 deallocEffectBlock = uint32(block.number) + allocationManager.DEALLOCATION_DELAY() + 1;
+
+        for (uint i = 0; i < curAllocations.length; i++) {
+            // As of completion time, the previous allocation's fields should represent an "updated, completable" allocation
+            assertEq(prevAllocations[i].effectBlock, 0, err);
+            assertEq(prevAllocations[i].pendingDiff, 0, err);
+            // Previous allocation's current magnitude should be greater than params.newMagnitude
+            assertGt(prevAllocations[i].currentMagnitude, params.newMagnitudes[i], err);
+
+            // Current allocation should be pending
+            assertEq(curAllocations[i].effectBlock, deallocEffectBlock, err);
+            assertLt(curAllocations[i].pendingDiff, 0, err);
+            assertEq(curAllocations[i].currentMagnitude, prevAllocations[i].currentMagnitude, err);
+        }
+    }
+
+    function assert_Snap_Added_AllocatedSet(
+        User operator,
+        OperatorSet memory operatorSet,
+        string memory err
+    ) internal {
+        OperatorSet[] memory curAllocatedSets = _getAllocatedSets(operator);
+        OperatorSet[] memory prevAllocatedSets = _getPrevAllocatedSets(operator);
+
+        assertEq(curAllocatedSets.length, prevAllocatedSets.length + 1, err);
+        OperatorSet memory addedSet = curAllocatedSets[curAllocatedSets.length - 1];
+        assertEq(addedSet.avs, operatorSet.avs, err);
+        assertEq(addedSet.id, operatorSet.id, err);
+    }
+
+    function assert_Snap_Unchanged_AllocatedSet(
+        User operator,
+        OperatorSet memory operatorSet,
+        string memory err
+    ) internal {
+        OperatorSet[] memory curAllocatedSets = _getAllocatedSets(operator);
+        OperatorSet[] memory prevAllocatedSets = _getPrevAllocatedSets(operator);
+
+        assertEq(curAllocatedSets.length, prevAllocatedSets.length, err);
+    }
+
+    function assert_Snap_Added_SlashableStake(
+        User operator,
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies,
+        uint[] memory slashableShares,
+        string memory err
+    ) internal {
+        uint[] memory curSlashableStake = _getMinSlashableStake(operator, operatorSet, strategies);
+        uint[] memory prevSlashableStake = _getPrevMinSlashableStake(operator, operatorSet, strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(curSlashableStake[i], prevSlashableStake[i] + slashableShares[i], err);
+        }
+    }
+
+    function assert_Snap_Unchanged_SlashableStake(
+        User operator,
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal {
+        uint[] memory curSlashableStake = _getMinSlashableStake(operator, operatorSet, strategies);
+        uint[] memory prevSlashableStake = _getPrevMinSlashableStake(operator, operatorSet, strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(curSlashableStake[i], prevSlashableStake[i], err);
+        }
     }
 
     function assert_Snap_Added_EncumberedMagnitude(
@@ -362,6 +491,19 @@ abstract contract IntegrationBase is IntegrationDeployer {
         }
     }
 
+    function assert_Snap_Unchanged_EncumberedMagnitude(
+        User operator,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal {
+        Magnitudes[] memory curMagnitudes = _getMagnitudes(operator, strategies);
+        Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(curMagnitudes[i].encumbered, prevMagnitudes[i].encumbered, err);
+        }
+    }
+
     function assert_Snap_Removed_AllocatableMagnitude(
         User operator,
         IStrategy[] memory strategies,
@@ -373,6 +515,19 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
         for (uint i = 0; i < strategies.length; i++) {
             assertEq(curMagnitudes[i].allocatable, prevMagnitudes[i].allocatable - magnitudeAllocated[i], err);
+        }
+    }
+
+    function assert_Snap_Unchanged_AllocatableMagnitude(
+        User operator,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal {
+        Magnitudes[] memory curMagnitudes = _getMagnitudes(operator, strategies);
+        Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(curMagnitudes[i].allocatable, prevMagnitudes[i].allocatable, err);
         }
     }
 
@@ -1179,12 +1334,27 @@ abstract contract IntegrationBase is IntegrationDeployer {
                                 UTILITY METHODS
     *******************************************************************************/
     
+    /// @dev Generate params to allocate all available magnitude to each strategy in the operator set
+    function _genAllocation_AllAvailable(
+        User operator, 
+        OperatorSet memory operatorSet
+    ) internal view returns (IAllocationManagerTypes.AllocateParams memory params) {
+        params.operatorSet = operatorSet;
+        params.strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
+        params.newMagnitudes = new uint64[](params.strategies.length);
+
+        for (uint i = 0; i < params.strategies.length; i++) {
+            IStrategy strategy = params.strategies[i];
+            params.newMagnitudes[i] = allocationManager.getAllocatableMagnitude(address(operator), strategy);
+        }
+    }
+
     /// @dev Gen params to allocate half of available magnitude to each strategy in the operator set
     /// returns the params to complete this allocation
     function _genAllocation_HalfAvailable(
         User operator, 
         OperatorSet memory operatorSet
-    ) internal returns (IAllocationManagerTypes.AllocateParams memory params) {
+    ) internal view returns (IAllocationManagerTypes.AllocateParams memory params) {
         params.operatorSet = operatorSet;
         params.strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
         params.newMagnitudes = new uint64[](params.strategies.length);
@@ -1193,6 +1363,15 @@ abstract contract IntegrationBase is IntegrationDeployer {
             IStrategy strategy = params.strategies[i];
             params.newMagnitudes[i] = allocationManager.getAllocatableMagnitude(address(operator), strategy) / 2;
         }
+    }
+
+    function _genDeallocation_All(
+        User operator,
+        OperatorSet memory operatorSet
+    ) internal view returns (IAllocationManagerTypes.AllocateParams memory params) {
+        params.operatorSet = operatorSet;
+        params.strategies = allocationManager.getAllocatedStrategies(address(operator), operatorSet);
+        params.newMagnitudes = new uint64[](params.strategies.length);
     }
 
     function _randWadToSlash() internal returns (uint) {
@@ -1500,6 +1679,14 @@ abstract contract IntegrationBase is IntegrationDeployer {
         cheats.roll(block.number - delay);
     }
 
+    function _rollForward_DeallocationDelay() internal {
+        cheats.roll(uint32(block.number) + allocationManager.DEALLOCATION_DELAY() + 1);
+    }
+
+    function _rollBackward_DeallocationDelay() internal {
+        cheats.roll(uint32(block.number) - allocationManager.DEALLOCATION_DELAY() - 1);
+    }
+
     /// @dev Rolls forward by the default allocation delay blocks.
     function _rollBlocksForCompleteAllocation(
         User operator,
@@ -1551,6 +1738,18 @@ abstract contract IntegrationBase is IntegrationDeployer {
         }
     }
 
+    function _getPrevAllocatedSets(
+        User operator
+    ) internal timewarp() returns (OperatorSet[] memory) {
+        return _getAllocatedSets(operator);
+    }
+
+    function _getAllocatedSets(
+        User operator
+    ) internal view returns (OperatorSet[] memory) {
+        return allocationManager.getAllocatedSets(address(operator));
+    }
+
     struct Magnitudes {
         uint256 encumbered;
         uint256 allocatable;
@@ -1576,6 +1775,27 @@ abstract contract IntegrationBase is IntegrationDeployer {
                 max: allocationManager.getMaxMagnitude(address(operator), strategies[i])
             });
         }
+    }
+
+    function _getPrevMinSlashableStake(
+        User operator,
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies
+    ) internal timewarp() returns (uint[] memory) {
+        return _getMinSlashableStake(operator, operatorSet, strategies);
+    }
+
+    function _getMinSlashableStake(
+        User operator,
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies
+    ) internal view returns (uint[] memory) {
+        return allocationManager.getMinimumSlashableStake({
+            operatorSet: operatorSet,
+            operators: address(operator).toArray(),
+            strategies: strategies,
+            futureBlock: uint32(block.number)
+        })[0];
     }
 
     /// @dev Uses timewarp modifier to get operator shares at the last snapshot
