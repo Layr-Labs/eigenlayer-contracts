@@ -194,7 +194,7 @@ contract ExistingDeploymentParser is Script, Logger {
         // READ JSON CONFIG DATA
         string memory json = cheats.readFile(existingDeploymentInfoPath);
 
-        SEMVER = stdJson.readString(json, ".parameters.version");
+        SEMVER = stdJson.readString(json, ".parameters.semver");
 
         // check that the chainID matches the one in the config
         uint256 configChainId = json.readUint(".chainInfo.chainId");
