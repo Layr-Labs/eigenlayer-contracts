@@ -314,7 +314,14 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
     /// Deploy an implementation contract for each contract in the system
     function _deployImplementations() public {
-        allocationManagerImplementation = new AllocationManager(delegationManager, eigenLayerPauserReg, permissionController, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
+        allocationManagerImplementation = new AllocationManager(
+            delegationManager, 
+            eigenLayerPauserReg, 
+            permissionController, 
+            DEALLOCATION_DELAY, 
+            ALLOCATION_CONFIGURATION_DELAY,
+            version
+        );
         permissionControllerImplementation = new PermissionController();
         delegationManagerImplementation = new DelegationManager(
             strategyManager, 
@@ -327,16 +334,19 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         );
         strategyManagerImplementation = new StrategyManager(delegationManager, eigenLayerPauserReg, version);
         rewardsCoordinatorImplementation = new RewardsCoordinator(
-            delegationManager,
-            strategyManager,
-            allocationManager,
-            eigenLayerPauserReg,
-            permissionController,
-            REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
-            REWARDS_COORDINATOR_MAX_REWARDS_DURATION,
-            REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH,
-            REWARDS_COORDINATOR_MAX_FUTURE_LENGTH,
-            REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP
+            IRewardsCoordinatorTypes.RewardsCoordinatorConstructorParams({
+                delegationManager: delegationManager,
+                strategyManager: strategyManager,
+                allocationManager: allocationManager,
+                pauserRegistry: eigenLayerPauserReg,
+                permissionController: permissionController,
+                CALCULATION_INTERVAL_SECONDS: REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
+                MAX_REWARDS_DURATION: REWARDS_COORDINATOR_MAX_REWARDS_DURATION,
+                MAX_RETROACTIVE_LENGTH: REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH,
+                MAX_FUTURE_LENGTH: REWARDS_COORDINATOR_MAX_FUTURE_LENGTH,
+                GENESIS_REWARDS_TIMESTAMP: REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP,
+                version: version
+            })
         );
         avsDirectoryImplementation = new AVSDirectory(delegationManager, eigenLayerPauserReg, version);
         eigenPodManagerImplementation = new EigenPodManager(

@@ -36,11 +36,6 @@ interface ISignatureUtilsMixinTypes {
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
 interface ISignatureUtilsMixin is ISignatureUtilsMixinErrors, ISignatureUtilsMixinTypes {
-    /// @notice Returns the semantic version string used in the domain separator.
-    /// @return The version string as a regular string (converted from ShortString).
-    /// @dev Returns a SemVer-formatted string with 'v' prefix (e.g., "v1.1.1").
-    function version() external view returns (string memory);
-
     /// @notice Computes the EIP-712 domain separator used for signature validation.
     /// @dev The domain separator is computed according to EIP-712 specification, using:
     ///      - The hardcoded name "EigenLayer"

@@ -96,7 +96,8 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
                             _pauserRegistry,
                             IPermissionController(address(permissionController)),
                             DEALLOCATION_DELAY,
-                            ALLOCATION_CONFIGURATION_DELAY
+                            ALLOCATION_CONFIGURATION_DELAY,
+                            "v9.9.9"
                         )
                     ),
                     address(eigenLayerProxyAdmin),

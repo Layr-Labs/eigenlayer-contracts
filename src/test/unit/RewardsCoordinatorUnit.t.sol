@@ -102,17 +102,21 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
 
         // Deploy RewardsCoordinator proxy and implementation
         rewardsCoordinatorImplementation = new RewardsCoordinator(
-            IDelegationManager(address(delegationManagerMock)),
-            IStrategyManager(address(strategyManagerMock)),
-            IAllocationManager(address(allocationManagerMock)),
-            pauserRegistry,
-            IPermissionController(address(permissionController)),
-            CALCULATION_INTERVAL_SECONDS,
-            MAX_REWARDS_DURATION,
-            MAX_RETROACTIVE_LENGTH,
-            MAX_FUTURE_LENGTH,
-            GENESIS_REWARDS_TIMESTAMP
+            IRewardsCoordinatorTypes.RewardsCoordinatorConstructorParams({
+                delegationManager: IDelegationManager(address(delegationManagerMock)),
+                strategyManager: IStrategyManager(address(strategyManagerMock)),
+                allocationManager: IAllocationManager(address(allocationManagerMock)),
+                pauserRegistry: pauserRegistry,
+                permissionController: IPermissionController(address(permissionController)),
+                CALCULATION_INTERVAL_SECONDS: CALCULATION_INTERVAL_SECONDS,
+                MAX_REWARDS_DURATION: MAX_REWARDS_DURATION,
+                MAX_RETROACTIVE_LENGTH: MAX_RETROACTIVE_LENGTH,
+                MAX_FUTURE_LENGTH: MAX_FUTURE_LENGTH,
+                GENESIS_REWARDS_TIMESTAMP: GENESIS_REWARDS_TIMESTAMP,
+                version: "v9.9.9"
+            })
         );
+        
         rewardsCoordinator = RewardsCoordinator(
             address(
                 new TransparentUpgradeableProxy(

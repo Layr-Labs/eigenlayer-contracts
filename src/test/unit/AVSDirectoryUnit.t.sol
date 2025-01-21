@@ -51,11 +51,12 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, 
         );
         isExcludedFuzzAddress[address(avsd)] = true;
 
+        bytes memory v = bytes(avsd.version());
         bytes32 expectedDomainSeparator = keccak256(
                 abi.encode(
                     EIP712_DOMAIN_TYPEHASH, 
                     keccak256(bytes("EigenLayer")),
-                    keccak256(bytes(avsd.version())),
+                    keccak256(bytes.concat(v[0], v[1])),
                     block.chainid, 
                     address(avsd)
                 )

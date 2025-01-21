@@ -5,6 +5,7 @@ import "@openzeppelin-upgrades/contracts/utils/ShortStringsUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/utils/cryptography/SignatureCheckerUpgradeable.sol";
 
 import "../interfaces/ISignatureUtilsMixin.sol";
+import "./SemVerMixin.sol";
 
 /// @dev The EIP-712 domain type hash used for computing the domain separator
 ///      See https://eips.ethereum.org/EIPS/eip-712#definition-of-domainseparator
@@ -14,36 +15,21 @@ bytes32 constant EIP712_DOMAIN_TYPEHASH =
 /// @title SignatureUtilsMixin
 /// @notice A mixin contract that provides utilities for validating signatures according to EIP-712 and EIP-1271 standards.
 /// @dev The domain name is hardcoded to "EigenLayer". This contract implements signature validation functionality that can be
-///      inherited by other contracts.
-abstract contract SignatureUtilsMixin is ISignatureUtilsMixin {
-    using ShortStringsUpgradeable for *;
+///      inherited by other contracts. The domain separator uses the major version (e.g., "v1") to maintain EIP-712
+///      signature compatibility across minor and patch version updates.
+abstract contract SignatureUtilsMixin is ISignatureUtilsMixin, SemVerMixin {
     using SignatureCheckerUpgradeable for address;
-
-    /// IMMUTABLES ///
-
-    /// @notice The semantic version string for this contract, stored as a ShortString for gas efficiency.
-    /// @dev Follows SemVer 2.0.0 specification (https://semver.org/). Prefixed with 'v' (e.g., "v1.1.1").
-    ///      WARNING: Modifying this version will invalidate all existing EIP-712 signatures since it changes the domain separator.
-    ShortString private immutable _VERSION;
-
-    /// CONSTRUCTION ///
 
     /// @notice Initializes the contract with a semantic version string.
     /// @param _version The SemVer-formatted version string (e.g., "v1.1.1") to use for this contract's domain separator.
     /// @dev Version should follow SemVer 2.0.0 format with 'v' prefix: vMAJOR.MINOR.PATCH.
-    ///      WARNING: Modifying this version will invalidate all existing EIP-712 signatures since it changes the domain separator.
+    ///      Only the major version component is used in the domain separator to maintain signature compatibility
+    ///      across minor and patch version updates.
     constructor(
         string memory _version
-    ) {
-        _VERSION = _version.toShortString();
-    }
+    ) SemVerMixin(_version) {}
 
     /// EXTERNAL FUNCTIONS ///
-
-    /// @inheritdoc ISignatureUtilsMixin
-    function version() public view virtual returns (string memory) {
-        return _VERSION.toString();
-    }
 
     /// @inheritdoc ISignatureUtilsMixin
     function domainSeparator() public view virtual returns (bytes32) {
@@ -53,7 +39,7 @@ abstract contract SignatureUtilsMixin is ISignatureUtilsMixin {
                 abi.encode(
                     EIP712_DOMAIN_TYPEHASH, 
                     keccak256(bytes("EigenLayer")),
-                    keccak256(bytes(version())),
+                    keccak256(bytes(_majorVersion())),
                     block.chainid, 
                     address(this)
                 )

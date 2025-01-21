@@ -79,7 +79,7 @@ contract DeployFromScratch is Script, Test {
     // strategies deployed
     StrategyBaseTVLLimits[] public deployedStrategyArray;
 
-    string EIP712_VERSION;
+    string SEMVER;
 
     // IMMUTABLES TO SET
     uint64 GOERLI_GENESIS_TIME = 1616508000;
@@ -126,7 +126,7 @@ contract DeployFromScratch is Script, Test {
         string memory config_data = vm.readFile(deployConfigPath);
         // bytes memory parsedData = vm.parseJson(config_data);
 
-        EIP712_VERSION = stdJson.readString(config_data, ".eip712_version");
+        SEMVER = stdJson.readString(config_data, ".SEMVER");
 
         STRATEGY_MANAGER_INIT_PAUSED_STATUS = stdJson.readUint(config_data, ".strategyManager.init_paused_status");
         DELEGATION_INIT_PAUSED_STATUS = stdJson.readUint(config_data, ".delegation.init_paused_status");
@@ -257,10 +257,10 @@ contract DeployFromScratch is Script, Test {
             eigenLayerPauserReg, 
             permissionController, 
             MIN_WITHDRAWAL_DELAY,
-            EIP712_VERSION
+            SEMVER
         );
-        strategyManagerImplementation = new StrategyManager(delegation, eigenLayerPauserReg, EIP712_VERSION);
-        avsDirectoryImplementation = new AVSDirectory(delegation, eigenLayerPauserReg, EIP712_VERSION);
+        strategyManagerImplementation = new StrategyManager(delegation, eigenLayerPauserReg, SEMVER);
+        avsDirectoryImplementation = new AVSDirectory(delegation, eigenLayerPauserReg, SEMVER);
         eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit,
             eigenPodBeacon,
@@ -268,18 +268,28 @@ contract DeployFromScratch is Script, Test {
             eigenLayerPauserReg
         );
         rewardsCoordinatorImplementation = new RewardsCoordinator(
-            delegation,
-            strategyManager,
-            allocationManager,
-            eigenLayerPauserReg,
-            permissionController,
-            REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
-            REWARDS_COORDINATOR_MAX_REWARDS_DURATION,
-            REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH,
-            REWARDS_COORDINATOR_MAX_FUTURE_LENGTH,
-            REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP
+            IRewardsCoordinatorTypes.RewardsCoordinatorConstructorParams(
+                delegation,
+                strategyManager,
+                allocationManager,
+                eigenLayerPauserReg,
+                permissionController,
+                REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
+                REWARDS_COORDINATOR_MAX_REWARDS_DURATION,
+                REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH,
+                REWARDS_COORDINATOR_MAX_FUTURE_LENGTH,
+                REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP,
+                SEMVER
+            )
         );
-        allocationManagerImplementation = new AllocationManager(delegation, eigenLayerPauserReg, permissionController, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
+        allocationManagerImplementation = new AllocationManager(
+            delegation, 
+            eigenLayerPauserReg, 
+            permissionController, 
+            DEALLOCATION_DELAY, 
+            ALLOCATION_CONFIGURATION_DELAY,
+            SEMVER
+        );
         permissionControllerImplementation = new PermissionController();
 
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
