@@ -644,12 +644,29 @@ contract AllocationManager is
     }
 
     /// @inheritdoc IAllocationManager
+    function getEncumberedMagnitude(address operator, IStrategy strategy) external view returns (uint64) {
+        (uint64 curEncumberedMagnitude,) = _getFreeAndUsedMagnitude(operator, strategy);
+        return curEncumberedMagnitude;
+    }
+
+    /// @inheritdoc IAllocationManager
     function getAllocatableMagnitude(address operator, IStrategy strategy) external view returns (uint64) {
+        (, uint64 curAllocatableMagnitude) = _getFreeAndUsedMagnitude(operator, strategy);
+        return curAllocatableMagnitude;
+    }
+
+    /// @dev For an operator, returns up-to-date amounts for current encumbered and available
+    /// magnitude. Note that these two values will always add up to the operator's max magnitude
+    /// for the strategy
+    function _getFreeAndUsedMagnitude(
+        address operator,
+        IStrategy strategy
+    ) internal view returns (uint64 curEncumberedMagnitude, uint64 curAllocatableMagnitude) {
         // This method needs to simulate clearing any pending deallocations.
         // This roughly mimics the calculations done in `_clearDeallocationQueue` and
         // `_getUpdatedAllocation`, while operating on a `curEncumberedMagnitude`
         // rather than continually reading/updating state.
-        uint64 curEncumberedMagnitude = encumberedMagnitude[operator][strategy];
+        curEncumberedMagnitude = encumberedMagnitude[operator][strategy];
 
         uint256 length = deallocationQueue[operator][strategy].length();
         for (uint256 i = 0; i < length; ++i) {
@@ -670,7 +687,8 @@ contract AllocationManager is
 
         // The difference between the operator's max magnitude and its encumbered magnitude
         // is the magnitude that can be allocated.
-        return _maxMagnitudeHistory[operator][strategy].latest() - curEncumberedMagnitude;
+        curAllocatableMagnitude = _maxMagnitudeHistory[operator][strategy].latest() - curEncumberedMagnitude;
+        return (curEncumberedMagnitude, curAllocatableMagnitude);
     }
 
     /// @inheritdoc IAllocationManager
