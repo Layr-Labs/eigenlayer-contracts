@@ -293,6 +293,43 @@ abstract contract IntegrationBase is IntegrationDeployer {
         EigenPod pod = staker.pod();
         assertEq(pod.currentCheckpoint().podBalanceGwei, expectedPodBalanceGwei, err);
     }
+
+    function assert_MaxEqualsAllocatablePlusEncumbered(
+        User operator,
+        string memory err
+    ) internal view {
+        Magnitudes[] memory mags = _getMagnitudes(operator, allStrats);
+
+        for (uint i = 0; i < allStrats.length; i++) {
+            Magnitudes memory m = mags[i];
+            assertEq(m.max, m.encumbered + m.allocatable, err);
+        }
+    }
+
+    function assert_CurrentMagnitude(
+        User operator,
+        IAllocationManagerTypes.AllocateParams memory params,
+        string memory err
+    ) internal view {
+        IAllocationManagerTypes.Allocation[] memory allocations = _getAllocations(operator, params.operatorSet, params.strategies);
+
+        for (uint i = 0; i < allocations.length; i++) {
+            assertEq(allocations[i].currentMagnitude, params.newMagnitudes[i], err);
+        }
+    }
+
+    function assert_NoPendingModification(
+        User operator,
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal view {
+        IAllocationManagerTypes.Allocation[] memory allocations = _getAllocations(operator, operatorSet, strategies);
+
+        for (uint i = 0; i < allocations.length; i++) {
+            assertEq(0, allocations[i].effectBlock, err);
+        }
+    }
     
     /*******************************************************************************
                                 SNAPSHOT ASSERTIONS
@@ -302,6 +339,55 @@ abstract contract IntegrationBase is IntegrationDeployer {
     /*******************************************************************************
                          SNAPSHOT ASSERTIONS: ALLOCATIONS
     *******************************************************************************/
+
+    function assert_Snap_Created_PendingIncrease(
+        User operator,
+        IAllocationManagerTypes.AllocateParams memory allocateParams,
+        string memory err
+    ) internal pure {
+        // TODO - alloc delay of 0?
+    }
+
+    function assert_Snap_Added_EncumberedMagnitude(
+        User operator,
+        IStrategy[] memory strategies,
+        uint64[] memory magnitudeAdded,
+        string memory err
+    ) internal {
+        Magnitudes[] memory curMagnitudes = _getMagnitudes(operator, strategies);
+        Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(curMagnitudes[i].encumbered, prevMagnitudes[i].encumbered + magnitudeAdded[i], err);
+        }
+    }
+
+    function assert_Snap_Removed_AllocatableMagnitude(
+        User operator,
+        IStrategy[] memory strategies,
+        uint64[] memory magnitudeAllocated,
+        string memory err
+    ) internal {
+        Magnitudes[] memory curMagnitudes = _getMagnitudes(operator, strategies);
+        Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(curMagnitudes[i].allocatable, prevMagnitudes[i].allocatable - magnitudeAllocated[i], err);
+        }
+    }
+
+    function assert_Snap_Unchanged_MaxMagnitude(
+        User operator,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal {
+        Magnitudes[] memory curMagnitudes = _getMagnitudes(operator, strategies);
+        Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(curMagnitudes[i].max, prevMagnitudes[i].max, err);
+        }
+    }
 
     function assert_Snap_Allocations_Modified(
         User operator,
@@ -1093,6 +1179,22 @@ abstract contract IntegrationBase is IntegrationDeployer {
                                 UTILITY METHODS
     *******************************************************************************/
     
+    /// @dev Gen params to allocate half of available magnitude to each strategy in the operator set
+    /// returns the params to complete this allocation
+    function _genAllocation_HalfAvailable(
+        User operator, 
+        OperatorSet memory operatorSet
+    ) internal returns (IAllocationManagerTypes.AllocateParams memory params) {
+        params.operatorSet = operatorSet;
+        params.strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
+        params.newMagnitudes = new uint64[](params.strategies.length);
+
+        for (uint i = 0; i < params.strategies.length; i++) {
+            IStrategy strategy = params.strategies[i];
+            params.newMagnitudes[i] = allocationManager.getAllocatableMagnitude(address(operator), strategy) / 2;
+        }
+    }
+
     function _randWadToSlash() internal returns (uint) {
         return _randUint({ min: 0.01 ether, max: 1 ether });
     }
@@ -1382,6 +1484,20 @@ abstract contract IntegrationBase is IntegrationDeployer {
             if (withdrawals[i].startBlock > latest) latest = withdrawals[i].startBlock;
         }
         cheats.roll(latest + delegationManager.minWithdrawalDelayBlocks() + 1);
+    }
+
+    function _rollForward_AllocationDelay(User operator) internal {
+        (bool isSet, uint32 delay) = allocationManager.getAllocationDelay(address(operator));
+        require(isSet, "_rollForward_AllocationDelay: delay not set");
+
+        cheats.roll(block.number + delay);
+    }
+
+    function _rollBackward_AllocationDelay(User operator) internal {
+        (bool isSet, uint32 delay) = allocationManager.getAllocationDelay(address(operator));
+        require(isSet, "_rollForward_AllocationDelay: delay not set");
+
+        cheats.roll(block.number - delay);
     }
 
     /// @dev Rolls forward by the default allocation delay blocks.

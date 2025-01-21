@@ -15,13 +15,22 @@ contract SlashingWithdrawals is IntegrationCheckUtils {
     IStrategy[] strategies;
     uint[] initTokenBalances;
 
+    /**
+     * Current test setup uses a single operator set and multiple strategies. Slashes
+     * are simple, done on that single operator set.
+     * -- good for testing full slashes where 100% of a strategy's magnitude is impacted
+     * -- could have a separate setup with multiple operator sets and one strategy
+     *    to test "full slashes" that don't hit 100% of a strategy's magnitude (but are
+     *    100% of allocated magnitude for that operator set)
+     */
+
     /// Shared setup:
     /// 
     /// 1. Generate staker, operator, and AVS
     /// 2. Staker deposits and delegates to operator
     /// 3. AVS creates an operator set containing the strategies held by the staker
-    /// 4. Operator registers for operator set (default allocation delay)
-    /// 5. Operator allocates to operator set
+    /// 4. Operator allocates to operator set
+    /// 5. Operator registers for operator set
     function _init() internal override {
         (staker, strategies, initTokenBalances) = _newRandomStaker();
         (operator,,) = _newRandomOperator();
@@ -39,18 +48,26 @@ contract SlashingWithdrawals is IntegrationCheckUtils {
         // 3. Create an operator set and register an operator.
         operatorSet = avs.createOperatorSet(strategies);
         // TODO invariant checks here
+
+        // idea: bool flip between modify -> register / register -> modify
+    
         operator.registerForOperatorSet(operatorSet);
         // TODO invariant checks here
+
+        /// TODO - explain WHY we are doing a half allocation here
+        allocateParams = _genAllocation_HalfAvailable(operator, operatorSet);
+        operator.modifyAllocations(allocateParams); // idea: operator.allocateHalfAvailable(operatorSet)?
+        check_Initial_Allocation_State(operator, allocateParams);
         
         // 4. Allocate to operator set
-        allocateParams = operator.modifyAllocations(operatorSet, _randMagnitudes({sum: 1 ether, len: strategies.length}));
-        assert_Snap_Allocations_Modified(
-            operator, allocateParams, false, "operator allocations should be updated before delay"
-        );
+        // allocateParams = operator.modifyAllocations(operatorSet, _randMagnitudes({sum: 1 ether, len: strategies.length}));
+        // assert_Snap_Allocations_Modified(
+        //     operator, allocateParams, false, "operator allocations should be updated before delay"
+        // );
         _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
-        assert_Snap_Allocations_Modified(
-            operator, allocateParams, true, "operator allocations should be updated after delay"
-        );
+        // assert_Snap_Allocations_Modified(
+        //     operator, allocateParams, true, "operator allocations should be updated after delay"
+        // );
     }
 
     function testFuzz_slash_undelegate_completeAsTokens(

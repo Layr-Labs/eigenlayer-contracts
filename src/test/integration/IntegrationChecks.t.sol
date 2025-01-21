@@ -332,6 +332,31 @@ contract IntegrationCheckUtils is IntegrationBase {
                                  ALLOCATION MANAGER CHECKS
     *******************************************************************************/
     
+    /// Check an operator's first allocation to an operator set
+    function check_Initial_Allocation_State(
+        User operator,
+        IAllocationManagerTypes.AllocateParams memory params
+    ) internal {
+        // Any call that allocates more magnitude
+        assert_Snap_Created_PendingIncrease(operator, params, "should have created a pending increase in allocated magnitude");
+        assert_Snap_Added_EncumberedMagnitude(operator, params.strategies, params.newMagnitudes, "encumbered mag should have increased by allocated amount");
+        assert_Snap_Removed_AllocatableMagnitude(operator, params.strategies, params.newMagnitudes, "allocatable mag should have decreased by allocated amount");
+
+        // All calls to modifyAllocations
+        assert_Snap_Unchanged_MaxMagnitude(operator, params.strategies, "max magnitude should not have changed");
+        assert_MaxEqualsAllocatablePlusEncumbered(operator, "max magnitude should equal encumbered plus allocatable");
+
+        // Roll forward so we can check the upated allocation
+        _rollForward_AllocationDelay(operator);
+
+        assert_MaxEqualsAllocatablePlusEncumbered(operator, "max magnitude should equal encumbered plus allocatable");
+        assert_CurrentMagnitude(operator, params, "current magnitude should match allocate params");
+        assert_NoPendingModification(operator, params.operatorSet, params.strategies, "there should not be a pending modification for any strategy");
+
+        // Reset block number so test is not affected
+        _rollBackward_AllocationDelay(operator);
+    }
+
     // TODO: improvement needed 
 
     function check_Withdrawal_AsTokens_State_AfterSlash(
