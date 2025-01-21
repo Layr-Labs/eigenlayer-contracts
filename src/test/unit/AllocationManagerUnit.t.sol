@@ -4086,3 +4086,84 @@ contract AllocationManagerUnitTests_getMaxMagnitudesAtBlock is AllocationManager
         );
     }
 }
+
+contract AllocationManagerUnitTests_getAllocatedStake is AllocationManagerUnitTests {
+    using ArrayLib for *;
+    using SlashingLib for *;
+
+    /**
+     * Allocates to `firstMod` magnitude and validates allocated stake is correct
+     */
+    function testFuzz_allocate(
+        Randomness r
+    ) public rand(r) {
+        // Generate allocation for `strategyMock`, we allocate half
+        AllocateParams[] memory allocateParams = _newAllocateParams(defaultOperatorSet, 5e17);
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(defaultOperator, allocateParams);
+        cheats.roll(block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY);
+
+        uint256[][] memory allocatedStake = allocationManager.getAllocatedStake(defaultOperatorSet, defaultOperator.toArray(), defaultStrategies);
+
+        assertEq(allocatedStake[0][0], DEFAULT_OPERATOR_SHARES.mulWad(5e17), "allocated stake not correct");
+    }
+
+    /**
+     * Allocates to `firstMod` magnitude and then deallocate to `secondMod` magnitude
+     * Validates allocated stake is updated even after deallocation is cleared in storage
+     */
+    function testFuzz_allocate_deallocate(
+        Randomness r
+    ) public rand(r) { 
+        // Bound allocation and deallocation
+        uint64 firstMod = r.Uint64(1, WAD);
+        uint64 secondMod = r.Uint64(0, firstMod - 1);
+
+        // 1. Allocate magnitude to default registered set & warp to allocation complete block
+        AllocateParams[] memory allocateParams = _newAllocateParams(defaultOperatorSet, firstMod);
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(defaultOperator, allocateParams);
+        cheats.roll(block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY);
+
+        // 2. Deallocate
+        allocateParams = _newAllocateParams(defaultOperatorSet, secondMod);
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(defaultOperator, allocateParams);
+
+        // 3. Check allocated stake right after deallocation - shouldn't be updated
+        uint256[][] memory allocatedStake = allocationManager.getAllocatedStake(defaultOperatorSet, defaultOperator.toArray(), defaultStrategies);
+        assertEq(allocatedStake[0][0], DEFAULT_OPERATOR_SHARES.mulWad(firstMod), "allocated stake not correct");
+
+        // 4. Check slashable stake at the deallocation effect block
+        // Warp to deallocation effect block
+        cheats.roll(block.number + DEALLOCATION_DELAY + 1);
+
+        allocatedStake = allocationManager.getAllocatedStake(defaultOperatorSet, defaultOperator.toArray(), defaultStrategies);
+        assertEq(allocatedStake[0][0], DEFAULT_OPERATOR_SHARES.mulWad(secondMod), "allocated stake not correct");
+    }
+
+    /**
+     * Allocates to `firstMod` magnitude and then deregisters the operator. 
+     * Validates allocated stake is nonzero even after deregistration delay
+     */
+    function testFuzz_allocate_deregister(
+        Randomness r
+    ) public rand(r) {
+        // 1. Generate allocation for `strategyMock`, we allocate half
+        AllocateParams[] memory allocateParams = _newAllocateParams(defaultOperatorSet, 5e17);
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(defaultOperator, allocateParams);
+        cheats.roll(block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY);
+
+        // 2. Deregister from operator set & warp to deregistration effect block
+        cheats.prank(defaultOperator);
+        allocationManager.deregisterFromOperatorSets(
+            DeregisterParams(defaultOperator, defaultOperatorSet.avs, defaultOperatorSet.id.toArrayU32())
+        );
+        cheats.roll(block.number + DEALLOCATION_DELAY + 1);
+
+        // 3. Check allocated stake
+        uint256[][] memory allocatedStake = allocationManager.getAllocatedStake(defaultOperatorSet, defaultOperator.toArray(), defaultStrategies);
+        assertEq(allocatedStake[0][0], DEFAULT_OPERATOR_SHARES.mulWad(5e17), "allocated stake should remain same after deregistration");
+    }
+}
