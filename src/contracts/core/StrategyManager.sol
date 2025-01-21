@@ -141,7 +141,8 @@ contract StrategyManager is
 
     /// @inheritdoc IShareManager
     function increaseBurnableShares(IStrategy strategy, uint256 addedSharesToBurn) external onlyDelegationManager {
-        burnableShares[strategy] += addedSharesToBurn;
+        (, uint256 currentShares) = EnumerableMap.tryGet(burnableShares, address(strategy));
+        EnumerableMap.set(burnableShares, address(strategy), currentShares + addedSharesToBurn);
         emit BurnableSharesIncreased(strategy, addedSharesToBurn);
     }
 
@@ -149,8 +150,8 @@ contract StrategyManager is
     function burnShares(
         IStrategy strategy
     ) external nonReentrant {
-        uint256 sharesToBurn = burnableShares[strategy];
-        burnableShares[strategy] = 0;
+        (, uint256 sharesToBurn) = EnumerableMap.tryGet(burnableShares, address(strategy));
+        EnumerableMap.remove(burnableShares, address(strategy));
         emit BurnableSharesDecreased(strategy, sharesToBurn);
         // burning shares is functionally the same as withdrawing but with different destination address
         strategy.withdraw(DEFAULT_BURN_ADDRESS, strategy.underlyingToken(), sharesToBurn);
@@ -379,5 +380,29 @@ contract StrategyManager is
                 )
             )
         );
+    }
+
+    /// @inheritdoc IStrategyManager
+    function getBurnableShares(
+        IStrategy strategy
+    ) external view returns (uint256) {
+        (, uint256 shares) = EnumerableMap.tryGet(burnableShares, address(strategy));
+        return shares;
+    }
+
+    /// @inheritdoc IStrategyManager
+    function getStrategiesWithBurnableShares() external view returns (address[] memory, uint256[] memory) {
+        uint256 totalEntries = EnumerableMap.length(burnableShares);
+
+        address[] memory strategies = new address[](totalEntries);
+        uint256[] memory shares = new uint256[](totalEntries);
+
+        for (uint256 i = 0; i < totalEntries; i++) {
+            (address strategy, uint256 shareAmount) = EnumerableMap.at(burnableShares, i);
+            strategies[i] = strategy;
+            shares[i] = shareAmount;
+        }
+
+        return (strategies, shares);
     }
 }

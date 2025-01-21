@@ -250,7 +250,7 @@ This method directs the `strategy` to convert the input deposit shares to tokens
 
 ## Burning Slashed Shares
 
-The following methods handle burning of slashed shares:
+Slashed shares are marked as burnable, and anyone can call `burnShares` to transfer them to the default burn address. Burnable shares are stored in `burnableShares`, an [EnumerableMap](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/utils/structs/EnumerableMap.sol) with strategy contract addresses as keys and associated view functions. The following methods handle burning of slashed shares:
 * [`StrategyManager.increaseBurnableShares`](#increaseburnableshares)
 * [`StrategyManager.burnShares`](#burnshares)
 
@@ -294,7 +294,6 @@ function burnShares(
     IStrategy strategy
 )
     external
-    onlyDelegationManager
 ```
 
 Anyone can call this method to burn slashed shares previously added by the `DelegationManager` via `increaseBurnableShares`. This method resets the strategy's burnable shares to 0, and directs the corresponding `strategy` to convert the shares to tokens and transfer them to `DEFAULT_BURN_ADDRESS`, rendering them unrecoverable.
