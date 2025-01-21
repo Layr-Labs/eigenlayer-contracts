@@ -257,18 +257,28 @@ contract DeployFromScratch is Script, Test {
             eigenLayerPauserReg
         );
         rewardsCoordinatorImplementation = new RewardsCoordinator(
-            delegation,
-            strategyManager,
-            allocationManager,
-            eigenLayerPauserReg,
-            permissionController,
-            REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
-            REWARDS_COORDINATOR_MAX_REWARDS_DURATION,
-            REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH,
-            REWARDS_COORDINATOR_MAX_FUTURE_LENGTH,
-            REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP
+            IRewardsCoordinatorTypes.RewardsCoordinatorConstructorParams(
+                delegation,
+                strategyManager,
+                allocationManager,
+                eigenLayerPauserReg,
+                permissionController,
+                REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
+                REWARDS_COORDINATOR_MAX_REWARDS_DURATION,
+                REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH,
+                REWARDS_COORDINATOR_MAX_FUTURE_LENGTH,
+                REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP,
+                EIP712_VERSION
+            )
         );
-        allocationManagerImplementation = new AllocationManager(delegation, eigenLayerPauserReg, permissionController, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
+        allocationManagerImplementation = new AllocationManager(
+            delegation, 
+            eigenLayerPauserReg, 
+            permissionController, 
+            DEALLOCATION_DELAY, 
+            ALLOCATION_CONFIGURATION_DELAY, 
+            EIP712_VERSION
+        );
         permissionControllerImplementation = new PermissionController();
         strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg);
 

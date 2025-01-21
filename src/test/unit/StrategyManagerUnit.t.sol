@@ -264,11 +264,13 @@ contract StrategyManagerUnitTests_initialize is StrategyManagerUnitTests {
             "strategyManager.pauserRegistry() != pauserRegistry"
         );
 
+        bytes memory v = bytes(strategyManager.version());
+
         bytes32 expectedDomainSeparator = keccak256(
                 abi.encode(
                     EIP712_DOMAIN_TYPEHASH, 
                     keccak256(bytes("EigenLayer")), 
-                    keccak256(bytes(strategyManager.version())),
+                    keccak256(bytes(bytes.concat(v[0], v[1]))),
                     block.chainid, 
                     address(strategyManager)
                 )

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.0;
 
-import "@openzeppelin-upgrades/contracts/utils/ShortStringsUpgradeable.sol";
 import "../interfaces/ISemVerMixin.sol";
+import "@openzeppelin-upgrades/contracts/utils/ShortStringsUpgradeable.sol";
 
 /// @title SemVerMixin
 /// @notice A mixin contract that provides semantic versioning functionality.
@@ -30,6 +30,7 @@ abstract contract SemVerMixin is ISemVerMixin {
     }
 
     /// @notice Returns the major version of the contract.
+    /// @dev Supports single digit major versions (e.g., "v1" for version "v1.2.3")
     /// @return The major version string (e.g., "v1" for version "v1.2.3")
     function _majorVersion() internal view returns (string memory) {
         bytes memory v = bytes(_VERSION.toString());

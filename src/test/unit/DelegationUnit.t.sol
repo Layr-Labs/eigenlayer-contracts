@@ -1362,11 +1362,12 @@ contract DelegationManagerUnitTests_Initialization_Setters is DelegationManagerU
         assertEq(delegationManager.owner(), address(this), "constructor / initializer incorrect, owner set wrong");
         assertEq(delegationManager.paused(), 0, "constructor / initializer incorrect, paused status set wrong");
 
+        bytes memory v = bytes(delegationManager.version());
         bytes32 expectedDomainSeparator = keccak256(
                 abi.encode(
                     EIP712_DOMAIN_TYPEHASH, 
                     keccak256(bytes("EigenLayer")),
-                    keccak256(bytes(delegationManager.version())),
+                    keccak256(bytes.concat(v[0], v[1])),
                     block.chainid, 
                     address(delegationManager)
                 )

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.5.0;
 
-import "./IStrategy.sol";
+import "../libraries/SlashingLib.sol";
 import "./IPauserRegistry.sol";
 import "./ISignatureUtilsMixin.sol";
-import "../libraries/SlashingLib.sol";
+import "./IStrategy.sol";
 
 interface IDelegationManagerErrors {
     /// @dev Thrown when caller is neither the StrategyManager or EigenPodManager contract.

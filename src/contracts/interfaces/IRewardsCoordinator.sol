@@ -2,7 +2,12 @@
 pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
+import "./IAllocationManager.sol";
+import "./IDelegationManager.sol";
+import "./IStrategyManager.sol";
 import "./IPauserRegistry.sol";
+import "./IPermissionController.sol";
 import "./IStrategy.sol";
 
 interface IRewardsCoordinatorErrors {
@@ -233,6 +238,35 @@ interface IRewardsCoordinatorTypes {
         uint32[] tokenIndices;
         bytes[] tokenTreeProofs;
         TokenTreeMerkleLeaf[] tokenLeaves;
+    }
+
+    /**
+     * @notice Parameters for the RewardsCoordinator constructor
+     * @param delegationManager The address of the DelegationManager contract
+     * @param strategyManager The address of the StrategyManager contract
+     * @param allocationManager The address of the AllocationManager contract
+     * @param pauserRegistry The address of the PauserRegistry contract
+     * @param permissionController The address of the PermissionController contract
+     * @param CALCULATION_INTERVAL_SECONDS The interval at which rewards are calculated
+     * @param MAX_REWARDS_DURATION The maximum duration of a rewards submission
+     * @param MAX_RETROACTIVE_LENGTH The maximum retroactive length of a rewards submission
+     * @param MAX_FUTURE_LENGTH The maximum future length of a rewards submission
+     * @param GENESIS_REWARDS_TIMESTAMP The timestamp at which rewards are first calculated
+     * @param version The semantic version of the contract (e.g. "v1.2.3")
+     * @dev Needed to avoid stack-too-deep errors
+     */
+    struct RewardsCoordinatorConstructorParams {
+        IDelegationManager delegationManager;
+        IStrategyManager strategyManager;
+        IAllocationManager allocationManager;
+        IPauserRegistry pauserRegistry;
+        IPermissionController permissionController;
+        uint32 CALCULATION_INTERVAL_SECONDS;
+        uint32 MAX_REWARDS_DURATION;
+        uint32 MAX_RETROACTIVE_LENGTH;
+        uint32 MAX_FUTURE_LENGTH;
+        uint32 GENESIS_REWARDS_TIMESTAMP;
+        string version;
     }
 }
 

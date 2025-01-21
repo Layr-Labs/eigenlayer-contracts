@@ -36,7 +36,7 @@ contract SignatureUtilsMixinUnit is Test, SignatureUtilsMixin("v0.0.0") {
             abi.encode(
                 keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
                 keccak256(bytes("EigenLayer")), 
-                keccak256(bytes(version())),
+                keccak256(bytes(_majorVersion())),
                 block.chainid, 
                 address(this)
             )

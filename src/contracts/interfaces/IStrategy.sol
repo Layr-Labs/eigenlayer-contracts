@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.5.0;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../libraries/SlashingLib.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface IStrategyErrors {
     /// @dev Thrown when called by an account that is not strategy manager.
