@@ -50,7 +50,7 @@ contract ExistingDeploymentParser is Script, Logger {
     /// EigenLayer Contract Parameters
     /// -----------------------------------------------------------------------
 
-    string public EIP712_VERSION;
+    string public SEMVER;
     /// @dev AllocationManager
     uint256 ALLOCATION_MANAGER_INIT_PAUSED_STATUS;
     uint32 DEALLOCATION_DELAY;
@@ -194,7 +194,7 @@ contract ExistingDeploymentParser is Script, Logger {
         // READ JSON CONFIG DATA
         string memory json = cheats.readFile(existingDeploymentInfoPath);
 
-        EIP712_VERSION = stdJson.readString(json, ".parameters.version");
+        SEMVER = stdJson.readString(json, ".parameters.version");
 
         // check that the chainID matches the one in the config
         uint256 configChainId = json.readUint(".chainInfo.chainId");
@@ -225,7 +225,7 @@ contract ExistingDeploymentParser is Script, Logger {
             permissionController, 
             DEALLOCATION_DELAY, 
             ALLOCATION_CONFIGURATION_DELAY,
-            EIP712_VERSION
+            SEMVER
         );
         allocationManager = AllocationManager(
             address(new TransparentUpgradeableProxy(address(allocationManagerImplementation), address(eigenLayerProxyAdmin), ""))
