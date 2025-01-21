@@ -190,13 +190,11 @@ Note that the amount of deposit shares removed while in the withdrawal queue may
 ```solidity
 /// @notice Used by the DelegationManager to award a Staker some shares that have passed through the withdrawal queue
 /// @dev strategy must be beaconChainETH when talking to the EigenPodManager
-/// @dev token is not validated; it is only emitted as an event
 /// @return existingDepositShares the shares the staker had before any were added
 /// @return addedShares the new shares added to the staker's balance
 function addShares(
     address staker,
     IStrategy strategy,
-    IERC20 token,
     uint256 shares
 )
     external

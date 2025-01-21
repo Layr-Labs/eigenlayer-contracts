@@ -492,25 +492,25 @@ func (_IStrategyManager *IStrategyManagerCallerSession) StrategyWhitelister() (c
 	return _IStrategyManager.Contract.StrategyWhitelister(&_IStrategyManager.CallOpts)
 }
 
-// AddShares is a paid mutator transaction binding the contract method 0xc4623ea1.
+// AddShares is a paid mutator transaction binding the contract method 0x50ff7225.
 //
-// Solidity: function addShares(address staker, address strategy, address token, uint256 shares) returns(uint256, uint256)
-func (_IStrategyManager *IStrategyManagerTransactor) AddShares(opts *bind.TransactOpts, staker common.Address, strategy common.Address, token common.Address, shares *big.Int) (*types.Transaction, error) {
-	return _IStrategyManager.contract.Transact(opts, "addShares", staker, strategy, token, shares)
+// Solidity: function addShares(address staker, address strategy, uint256 shares) returns(uint256, uint256)
+func (_IStrategyManager *IStrategyManagerTransactor) AddShares(opts *bind.TransactOpts, staker common.Address, strategy common.Address, shares *big.Int) (*types.Transaction, error) {
+	return _IStrategyManager.contract.Transact(opts, "addShares", staker, strategy, shares)
 }
 
-// AddShares is a paid mutator transaction binding the contract method 0xc4623ea1.
+// AddShares is a paid mutator transaction binding the contract method 0x50ff7225.
 //
-// Solidity: function addShares(address staker, address strategy, address token, uint256 shares) returns(uint256, uint256)
-func (_IStrategyManager *IStrategyManagerSession) AddShares(staker common.Address, strategy common.Address, token common.Address, shares *big.Int) (*types.Transaction, error) {
-	return _IStrategyManager.Contract.AddShares(&_IStrategyManager.TransactOpts, staker, strategy, token, shares)
+// Solidity: function addShares(address staker, address strategy, uint256 shares) returns(uint256, uint256)
+func (_IStrategyManager *IStrategyManagerSession) AddShares(staker common.Address, strategy common.Address, shares *big.Int) (*types.Transaction, error) {
+	return _IStrategyManager.Contract.AddShares(&_IStrategyManager.TransactOpts, staker, strategy, shares)
 }
 
-// AddShares is a paid mutator transaction binding the contract method 0xc4623ea1.
+// AddShares is a paid mutator transaction binding the contract method 0x50ff7225.
 //
-// Solidity: function addShares(address staker, address strategy, address token, uint256 shares) returns(uint256, uint256)
-func (_IStrategyManager *IStrategyManagerTransactorSession) AddShares(staker common.Address, strategy common.Address, token common.Address, shares *big.Int) (*types.Transaction, error) {
-	return _IStrategyManager.Contract.AddShares(&_IStrategyManager.TransactOpts, staker, strategy, token, shares)
+// Solidity: function addShares(address staker, address strategy, uint256 shares) returns(uint256, uint256)
+func (_IStrategyManager *IStrategyManagerTransactorSession) AddShares(staker common.Address, strategy common.Address, shares *big.Int) (*types.Transaction, error) {
+	return _IStrategyManager.Contract.AddShares(&_IStrategyManager.TransactOpts, staker, strategy, shares)
 }
 
 // AddStrategiesToDepositWhitelist is a paid mutator transaction binding the contract method 0x5de08ff2.
@@ -1063,15 +1063,14 @@ func (it *IStrategyManagerDepositIterator) Close() error {
 // IStrategyManagerDeposit represents a Deposit event raised by the IStrategyManager contract.
 type IStrategyManagerDeposit struct {
 	Staker   common.Address
-	Token    common.Address
 	Strategy common.Address
 	Shares   *big.Int
 	Raw      types.Log // Blockchain specific contextual infos
 }
 
-// FilterDeposit is a free log retrieval operation binding the contract event 0x7cfff908a4b583f36430b25d75964c458d8ede8a99bd61be750e97ee1b2f3a96.
+// FilterDeposit is a free log retrieval operation binding the contract event 0x5548c837ab068cf56a2c2479df0882a4922fd203edb7517321831d95078c5f62.
 //
-// Solidity: event Deposit(address staker, address token, address strategy, uint256 shares)
+// Solidity: event Deposit(address staker, address strategy, uint256 shares)
 func (_IStrategyManager *IStrategyManagerFilterer) FilterDeposit(opts *bind.FilterOpts) (*IStrategyManagerDepositIterator, error) {
 
 	logs, sub, err := _IStrategyManager.contract.FilterLogs(opts, "Deposit")
@@ -1081,9 +1080,9 @@ func (_IStrategyManager *IStrategyManagerFilterer) FilterDeposit(opts *bind.Filt
 	return &IStrategyManagerDepositIterator{contract: _IStrategyManager.contract, event: "Deposit", logs: logs, sub: sub}, nil
 }
 
-// WatchDeposit is a free log subscription operation binding the contract event 0x7cfff908a4b583f36430b25d75964c458d8ede8a99bd61be750e97ee1b2f3a96.
+// WatchDeposit is a free log subscription operation binding the contract event 0x5548c837ab068cf56a2c2479df0882a4922fd203edb7517321831d95078c5f62.
 //
-// Solidity: event Deposit(address staker, address token, address strategy, uint256 shares)
+// Solidity: event Deposit(address staker, address strategy, uint256 shares)
 func (_IStrategyManager *IStrategyManagerFilterer) WatchDeposit(opts *bind.WatchOpts, sink chan<- *IStrategyManagerDeposit) (event.Subscription, error) {
 
 	logs, sub, err := _IStrategyManager.contract.WatchLogs(opts, "Deposit")
@@ -1118,9 +1117,9 @@ func (_IStrategyManager *IStrategyManagerFilterer) WatchDeposit(opts *bind.Watch
 	}), nil
 }
 
-// ParseDeposit is a log parse operation binding the contract event 0x7cfff908a4b583f36430b25d75964c458d8ede8a99bd61be750e97ee1b2f3a96.
+// ParseDeposit is a log parse operation binding the contract event 0x5548c837ab068cf56a2c2479df0882a4922fd203edb7517321831d95078c5f62.
 //
-// Solidity: event Deposit(address staker, address token, address strategy, uint256 shares)
+// Solidity: event Deposit(address staker, address strategy, uint256 shares)
 func (_IStrategyManager *IStrategyManagerFilterer) ParseDeposit(log types.Log) (*IStrategyManagerDeposit, error) {
 	event := new(IStrategyManagerDeposit)
 	if err := _IStrategyManager.contract.UnpackLog(event, "Deposit", log); err != nil {

@@ -698,25 +698,25 @@ func (_EigenPodManager *EigenPodManagerCallerSession) StakerDepositShares(user c
 	return _EigenPodManager.Contract.StakerDepositShares(&_EigenPodManager.CallOpts, user, strategy)
 }
 
-// AddShares is a paid mutator transaction binding the contract method 0xc4623ea1.
+// AddShares is a paid mutator transaction binding the contract method 0x50ff7225.
 //
-// Solidity: function addShares(address staker, address strategy, address , uint256 shares) returns(uint256, uint256)
-func (_EigenPodManager *EigenPodManagerTransactor) AddShares(opts *bind.TransactOpts, staker common.Address, strategy common.Address, arg2 common.Address, shares *big.Int) (*types.Transaction, error) {
-	return _EigenPodManager.contract.Transact(opts, "addShares", staker, strategy, arg2, shares)
+// Solidity: function addShares(address staker, address strategy, uint256 shares) returns(uint256, uint256)
+func (_EigenPodManager *EigenPodManagerTransactor) AddShares(opts *bind.TransactOpts, staker common.Address, strategy common.Address, shares *big.Int) (*types.Transaction, error) {
+	return _EigenPodManager.contract.Transact(opts, "addShares", staker, strategy, shares)
 }
 
-// AddShares is a paid mutator transaction binding the contract method 0xc4623ea1.
+// AddShares is a paid mutator transaction binding the contract method 0x50ff7225.
 //
-// Solidity: function addShares(address staker, address strategy, address , uint256 shares) returns(uint256, uint256)
-func (_EigenPodManager *EigenPodManagerSession) AddShares(staker common.Address, strategy common.Address, arg2 common.Address, shares *big.Int) (*types.Transaction, error) {
-	return _EigenPodManager.Contract.AddShares(&_EigenPodManager.TransactOpts, staker, strategy, arg2, shares)
+// Solidity: function addShares(address staker, address strategy, uint256 shares) returns(uint256, uint256)
+func (_EigenPodManager *EigenPodManagerSession) AddShares(staker common.Address, strategy common.Address, shares *big.Int) (*types.Transaction, error) {
+	return _EigenPodManager.Contract.AddShares(&_EigenPodManager.TransactOpts, staker, strategy, shares)
 }
 
-// AddShares is a paid mutator transaction binding the contract method 0xc4623ea1.
+// AddShares is a paid mutator transaction binding the contract method 0x50ff7225.
 //
-// Solidity: function addShares(address staker, address strategy, address , uint256 shares) returns(uint256, uint256)
-func (_EigenPodManager *EigenPodManagerTransactorSession) AddShares(staker common.Address, strategy common.Address, arg2 common.Address, shares *big.Int) (*types.Transaction, error) {
-	return _EigenPodManager.Contract.AddShares(&_EigenPodManager.TransactOpts, staker, strategy, arg2, shares)
+// Solidity: function addShares(address staker, address strategy, uint256 shares) returns(uint256, uint256)
+func (_EigenPodManager *EigenPodManagerTransactorSession) AddShares(staker common.Address, strategy common.Address, shares *big.Int) (*types.Transaction, error) {
+	return _EigenPodManager.Contract.AddShares(&_EigenPodManager.TransactOpts, staker, strategy, shares)
 }
 
 // CreatePod is a paid mutator transaction binding the contract method 0x84d81062.
