@@ -861,10 +861,10 @@ contract AllocationManager is
     ) external view returns (uint256[][] memory slashableStake) {
         slashableStake = _getMinimumAllocatedStake(operatorSet, operators, strategies, futureBlock);
 
-        for(uint256 i = 0; i < operators.length; i++) {
+        for (uint256 i = 0; i < operators.length; i++) {
             // If the operator is not slashable by the opSet, all strategies should have a slashable stake of 0
             if (!isOperatorSlashable(operators[i], operatorSet)) {
-                for(uint256 j = 0; j < strategies.length; j++) {
+                for (uint256 j = 0; j < strategies.length; j++) {
                     slashableStake[i][j] = 0;
                 }
             }
@@ -879,7 +879,7 @@ contract AllocationManager is
     ) public view returns (uint256[][] memory) {
         /// This helper function returns the minimum allocated stake by taking into account deallocations at some `futureBlock`.
         /// We use the block.number, as the `futureBlock`, so it is safe to use.
-        return _getMinimumAllocatedStake(operatorSet, operators,strategies, uint32(block.number));
+        return _getMinimumAllocatedStake(operatorSet, operators, strategies, uint32(block.number));
     }
 
     /// @inheritdoc IAllocationManager
