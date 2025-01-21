@@ -574,8 +574,5 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
      * @param operator the operator to check slashability for
      * @param operatorSet the operator set to check slashability for
      */
-    function isOperatorSlashable(
-        address operator,
-        OperatorSet memory operatorSet
-    ) external view returns (bool);
+    function isOperatorSlashable(address operator, OperatorSet memory operatorSet) external view returns (bool);
 }
