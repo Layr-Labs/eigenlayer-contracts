@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "../interfaces/IAVSDirectory.sol";
-import "../interfaces/IDelegationManager.sol";
-import "../interfaces/IEigenPodManager.sol";
-import "../interfaces/IStrategy.sol";
 import "../interfaces/IStrategyManager.sol";
+import "../interfaces/IStrategy.sol";
+import "../interfaces/IEigenPodManager.sol";
+import "../interfaces/IDelegationManager.sol";
+import "../interfaces/IAVSDirectory.sol";
 
 /**
  * @title Storage variables for the `StrategyManager` contract.
