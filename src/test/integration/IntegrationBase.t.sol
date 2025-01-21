@@ -1455,7 +1455,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         magnitudes = new Magnitudes[](strategies.length);
         for (uint i = 0; i < strategies.length; ++i) {
             magnitudes[i] = Magnitudes({
-                encumbered: allocationManager.encumberedMagnitude(address(operator), strategies[i]),
+                encumbered: allocationManager.getEncumberedMagnitude(address(operator), strategies[i]),
                 allocatable: allocationManager.getAllocatableMagnitude(address(operator), strategies[i]),
                 max: allocationManager.getMaxMagnitude(address(operator), strategies[i])
             });
