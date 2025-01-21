@@ -1,15 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.5.0;
 
-import "./IETHPOSDeposit.sol";
-
-import "./IEigenPod.sol";
-
-import "./IPausable.sol";
-import "./IShareManager.sol";
-import "./IStrategy.sol";
-import "./IStrategyManager.sol";
 import "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
+import "./IETHPOSDeposit.sol";
+import "./IStrategyManager.sol";
+import "./IEigenPod.sol";
+import "./IShareManager.sol";
+import "./IPausable.sol";
+import "./IStrategy.sol";
 
 interface IEigenPodManagerErrors {
     /// @dev Thrown when caller is not a EigenPod.

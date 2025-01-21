@@ -2,10 +2,9 @@
 pragma solidity >=0.5.0;
 
 import {OperatorSet} from "../libraries/OperatorSetLib.sol";
-
-import "./IAVSRegistrar.sol";
 import "./IPauserRegistry.sol";
 import "./IStrategy.sol";
+import "./IAVSRegistrar.sol";
 
 interface IAllocationManagerErrors {
     /// Input Validation

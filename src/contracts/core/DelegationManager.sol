@@ -1,18 +1,15 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 
+import "../mixins/SignatureUtilsMixin.sol";
+import "../mixins/PermissionControllerMixin.sol";
+import "../permissions/Pausable.sol";
 import "../libraries/SlashingLib.sol";
 import "../libraries/Snapshots.sol";
-
-import "../mixins/PermissionControllerMixin.sol";
-import "../mixins/SignatureUtilsMixin.sol";
-
-import "../permissions/Pausable.sol";
-
 import "./DelegationManagerStorage.sol";
 
 /**

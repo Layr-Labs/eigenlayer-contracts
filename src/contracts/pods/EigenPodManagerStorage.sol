@@ -3,12 +3,12 @@ pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
 
+import "../interfaces/IStrategy.sol";
+import "../interfaces/IEigenPodManager.sol";
+import "../interfaces/IStrategyManager.sol";
 import "../interfaces/IDelegationManager.sol";
 import "../interfaces/IETHPOSDeposit.sol";
 import "../interfaces/IEigenPod.sol";
-import "../interfaces/IEigenPodManager.sol";
-import "../interfaces/IStrategy.sol";
-import "../interfaces/IStrategyManager.sol";
 
 abstract contract EigenPodManagerStorage is IEigenPodManager {
     /**

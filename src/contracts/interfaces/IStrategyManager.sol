@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.5.0;
 
+import "./IStrategy.sol";
+import "./IShareManager.sol";
 import "./IDelegationManager.sol";
 import "./IEigenPodManager.sol";
-import "./IShareManager.sol";
-import "./IStrategy.sol";
 
 interface IStrategyManagerErrors {
     /// @dev Thrown when total strategies deployed exceeds max.

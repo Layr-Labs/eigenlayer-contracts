@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "@openzeppelin-upgrades/contracts/utils/math/SafeCastUpgradeable.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
+import "@openzeppelin-upgrades/contracts/utils/math/SafeCastUpgradeable.sol";
 
 /// @dev All scaling factors have `1e18` as an initial/default value. This value is represented
 /// by the constant `WAD`, which is used to preserve precision with uint256 math.
