@@ -401,6 +401,14 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
     ) external view returns (OperatorSet[] memory, Allocation[] memory);
 
     /**
+     * @notice For a strategy, get the amount of magnitude that is allocated across one or more operator sets
+     * @param operator the operator to query
+     * @param strategy the strategy to get allocatable magnitude for
+     * @return currently allocated magnitude
+     */
+    function getEncumberedMagnitude(address operator, IStrategy strategy) external view returns (uint64);
+
+    /**
      * @notice For a strategy, get the amount of magnitude not currently allocated to any operator set
      * @param operator the operator to query
      * @param strategy the strategy to get allocatable magnitude for
