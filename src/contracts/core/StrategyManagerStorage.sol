@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
+import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
+
 import "../interfaces/IStrategyManager.sol";
 import "../interfaces/IStrategy.sol";
 import "../interfaces/IEigenPodManager.sol";
@@ -69,8 +71,8 @@ abstract contract StrategyManagerStorage is IStrategyManager {
     /// @dev Do not remove, deprecated storage.
     mapping(IStrategy strategy => bool) private __deprecated_thirdPartyTransfersForbidden;
 
-    /// @notice Returns the amount of `shares` that have been slashed on EigenLayer but not burned yet.
-    mapping(IStrategy strategy => uint256) public burnableShares;
+    /// @notice Returns the amount of `shares` that have been slashed on EigenLayer but not burned yet. Takes 3 storage slots.
+    EnumerableMap.AddressToUintMap internal burnableShares;
 
     // Construction
 
@@ -88,5 +90,5 @@ abstract contract StrategyManagerStorage is IStrategyManager {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[38] private __gap;
+    uint256[36] private __gap;
 }
