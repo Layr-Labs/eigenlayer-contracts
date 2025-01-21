@@ -3692,6 +3692,7 @@ contract AllocationManagerUnitTests_getStrategyAllocations is AllocationManagerU
 
 contract AllocationManagerUnitTests_getSlashableStake is AllocationManagerUnitTests {
     using SlashingLib for *;
+    using ArrayLib for *;
 
     /**
      * Allocates half of magnitude for a single strategy to an operatorSet. Then allocates again. Slashes 50%
@@ -3908,6 +3909,37 @@ contract AllocationManagerUnitTests_getSlashableStake is AllocationManagerUnitTe
             operator: defaultOperator,
             strategies: allocateParams[0].strategies,
             expectedSlashableStake: expectedCurrentMagnitude - uint128(-expectedPendingDiff) - 1
+        });
+    }
+
+    function testFuzz_allocate_deregister(
+        Randomness r
+    ) public rand(r) {
+        AllocateParams[] memory allocateParams = _newAllocateParams(defaultOperatorSet, 5e17);
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(defaultOperator, allocateParams);
+        cheats.roll(block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY);
+
+        cheats.prank(defaultOperator);
+        allocationManager.deregisterFromOperatorSets(
+            DeregisterParams(defaultOperator, defaultOperatorSet.avs, defaultOperatorSet.id.toArrayU32())
+        );
+
+        // Check slashable stake right after deregistration
+        _checkSlashableStake({
+            operatorSet: allocateParams[0].operatorSet,
+            operator: defaultOperator,
+            strategies: allocateParams[0].strategies,
+            expectedSlashableStake: DEFAULT_OPERATOR_SHARES.mulWad(5e17)
+        });
+
+        // Assert slashable stake after deregistration delay is 0
+        cheats.roll(block.number + DEALLOCATION_DELAY + 1);
+        _checkSlashableStake({
+            operatorSet: allocateParams[0].operatorSet,
+            operator: defaultOperator,
+            strategies: allocateParams[0].strategies,
+            expectedSlashableStake: 0
         });
     }
 }
