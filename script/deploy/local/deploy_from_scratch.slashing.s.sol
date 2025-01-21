@@ -126,7 +126,7 @@ contract DeployFromScratch is Script, Test {
         string memory config_data = vm.readFile(deployConfigPath);
         // bytes memory parsedData = vm.parseJson(config_data);
 
-        SEMVER = stdJson.readString(config_data, ".SEMVER");
+        SEMVER = stdJson.readString(config_data, ".semver");
 
         MIN_WITHDRAWAL_DELAY = uint32(stdJson.readUint(config_data, ".delegation.withdrawal_delay_blocks"));
         STRATEGY_MANAGER_INIT_PAUSED_STATUS = stdJson.readUint(config_data, ".strategyManager.init_paused_status");
