@@ -55,13 +55,6 @@ library SlashingLib {
         return x.mulDiv(y, WAD, Math.Rounding.Up);
     }
 
-    /**
-     * @notice Used as part of calculating wadSlashed in the EPM to ensure that we don't overslash
-     */
-    function divWadRoundUp(uint256 x, uint256 y) internal pure returns (uint256) {
-        return x.mulDiv(WAD, y, Math.Rounding.Up);
-    }
-
     // GETTERS
 
     function scalingFactor(
