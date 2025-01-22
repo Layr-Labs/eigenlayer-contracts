@@ -820,6 +820,14 @@ contract RewardsCoordinatorUnitsTests_setOperatorSetSplit is RewardsCoordinatorU
         rewardsCoordinator.setOperatorSetSplit(operator, operatorSet, split);
     }
 
+    function testFuzz_Revert_InvalidOperatorSet(address operator, uint16 split) public filterFuzzedAddressInputs(operator) {
+        cheats.assume(operator != address(0));
+        operatorSet.id = 2; // Invalid operator set id
+        cheats.prank(operator);
+        cheats.expectRevert(InvalidOperatorSet.selector);
+        rewardsCoordinator.setOperatorSetSplit(operator, operatorSet, split);
+    }
+
     function testFuzz_setOperatorSetSplit(address operator, uint16 split) public filterFuzzedAddressInputs(operator) {
         cheats.assume(operator != address(0));
 
@@ -2920,51 +2928,62 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
         rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, operatorDirectedRewardsSubmissions);
     }
 
-    // // Revert from reentrancy
-    // function testFuzz_Revert_WhenReentrancy(uint256 startTimestamp, uint256 duration) public {
-    //     // 1. Bound fuzz inputs to valid ranges and amounts
-    //     duration = bound(duration, 0, MAX_REWARDS_DURATION);
-    //     duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
-    //     startTimestamp = bound(
-    //         startTimestamp,
-    //         uint256(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
-    //             CALCULATION_INTERVAL_SECONDS -
-    //             1,
-    //         block.timestamp - duration - 1
-    //     );
-    //     startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
+    function testFuzz_Revert_InvalidOperatorSet(uint32 id) public  {
+        cheats.assume(id != 1);
+        operatorSet.id = id;
+        OperatorDirectedRewardsSubmission[] memory operatorDirectedRewardsSubmissions;
+        cheats.prank(operatorSet.avs);
+        cheats.expectRevert(InvalidOperatorSet.selector);
+        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, operatorDirectedRewardsSubmissions);
+    }
 
-    //     // 2. Deploy Reenterer
-    //     Reenterer reenterer = new Reenterer();
+    // Revert from reentrancy
+    function testFuzz_Revert_WhenReentrancy(uint256 startTimestamp, uint256 duration) public {
+        // 1. Bound fuzz inputs to valid ranges and amounts
+        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
+        startTimestamp = bound(
+            startTimestamp,
+            uint256(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
+                CALCULATION_INTERVAL_SECONDS -
+                1,
+            block.timestamp - duration - 1
+        );
+        startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
-    //     // 2. Create operator directed rewards submission input param
-    //     OperatorDirectedRewardsSubmission[]
-    //         memory operatorDirectedRewardsSubmissions = new OperatorDirectedRewardsSubmission[](1);
-    //     operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
-    //         strategiesAndMultipliers: defaultStrategyAndMultipliers,
-    //         token: IERC20(address(reenterer)),
-    //         operatorRewards: defaultOperatorRewards,
-    //         startTimestamp: uint32(startTimestamp),
-    //         duration: uint32(duration),
-    //         description: ""
-    //     });
+        // 2. Deploy Reenterer
+        Reenterer reenterer = new Reenterer();
 
-    //     address targetToUse = address(rewardsCoordinator);
-    //     uint256 msgValueToUse = 0;
-    //     bytes memory calldataToUse = abi.encodeWithSelector(
-    //         RewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission.selector,
-    //         address(reenterer),
-    //         operatorDirectedRewardsSubmissions
-    //     );
-    //     reenterer.prepare(targetToUse, msgValueToUse, calldataToUse);
+        // 2. Create operator directed rewards submission input param
+        OperatorDirectedRewardsSubmission[]
+            memory operatorDirectedRewardsSubmissions = new OperatorDirectedRewardsSubmission[](1);
+        operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
+            strategiesAndMultipliers: defaultStrategyAndMultipliers,
+            token: IERC20(address(reenterer)),
+            operatorRewards: defaultOperatorRewards,
+            startTimestamp: uint32(startTimestamp),
+            duration: uint32(duration),
+            description: ""
+        });
 
-    //     cheats.prank(address(reenterer));
-    //     cheats.expectRevert("ReentrancyGuard: reentrant call");
-    //     rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(
-    //         address(reenterer),
-    //         operatorDirectedRewardsSubmissions
-    //     );
-    // }
+        operatorSet = OperatorSet(address(reenterer), 1);
+        allocationManagerMock.setIsOperatorSet(operatorSet, true);
+        address targetToUse = address(rewardsCoordinator);
+        uint256 msgValueToUse = 0;
+        bytes memory calldataToUse = abi.encodeWithSelector(
+            RewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission.selector,
+            operatorSet,
+            operatorDirectedRewardsSubmissions
+        );
+        reenterer.prepare(targetToUse, msgValueToUse, calldataToUse);
+
+        cheats.prank(address(reenterer));
+        cheats.expectRevert("ReentrancyGuard: reentrant call");
+        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(
+            operatorSet,
+            operatorDirectedRewardsSubmissions
+        );
+    }
 
     // Revert with 0 length strats and multipliers
     function testFuzz_Revert_WhenEmptyStratsAndMultipliers(
