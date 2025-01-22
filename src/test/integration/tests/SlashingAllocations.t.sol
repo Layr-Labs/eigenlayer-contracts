@@ -39,70 +39,99 @@ contract Integration_SlashingAllocations is IntegrationCheckUtils {
         operatorSet = avs.createOperatorSet(strategies);
     }
 
-    function testFuzz_register_allocate(
+    function testFuzz_allocate_deallocate(
         uint24 _random
     ) public rand(_random) {
+        // 1. Allocate to the operator set. The allocation will be slashable at the effect block
+        allocateParams = _genAllocation_AllAvailable(operator, operatorSet);
+        operator.modifyAllocations(allocateParams);
+        check_NotSlashable_Allocation_State(operator, allocateParams);
+
+        // 2. Roll to the allocation's effect block. The allocation remains unslashable (operator not registered)
+        _rollForward_AllocationDelay(operator);
+
+        // 3. Deallocate fully from the operator set
+        IAllocationManagerTypes.AllocateParams memory deallocateParams = _genDeallocation_Full(operator, operatorSet);
+        operator.modifyAllocations(deallocateParams);
+        check_NotSlashable_Deallocation_State(operator, allocateParams, deallocateParams);
+
+        // 4. Check the operator is fully deallocated. We shouldn't need to roll to the effect block
+        // because the operator is not slashable
+        check_FullyDeallocated_State(operator, allocateParams, deallocateParams);
+    }
+
+    function testFuzz_register_allocate_deallocate(
+        uint24 _random
+    ) public rand(_random) {
+        // 1. Register for the operator set before allocating
         operator.registerForOperatorSet(operatorSet);
         check_Unallocated_Registration_State(operator, operatorSet);
 
+        // 2. Allocate to the operator set. The allocation will be slashable at the effect block
         allocateParams = _genAllocation_AllAvailable(operator, operatorSet);
-        operator.modifyAllocations(allocateParams); // idea: operator.allocateHalfAvailable(operatorSet)?
+        operator.modifyAllocations(allocateParams);
         check_Slashable_Allocation_State(operator, allocateParams, initDepositShares);
 
-        // // idea - do this before/after the allocation is completable
-        // // before - instant deallocation
-        // // after - queued deallocation
-        // operator.deregisterFromOperatorSet(operatorSet);
-        // check_Allocated_Deregistration_State(operator, operatorSet);
+        // 3. Roll to the allocation's effect block. The allocation becomes slashable
+        _rollForward_AllocationDelay(operator);
 
-        // _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
+        // 4. Deallocate fully from the operator set
+        IAllocationManagerTypes.AllocateParams memory deallocateParams = _genDeallocation_Full(operator, operatorSet);
+        operator.modifyAllocations(deallocateParams);
+        check_Slashable_Deallocation_State(operator, deallocateParams, initDepositShares);
 
-
+        // 5. Roll forward to the deallocation's effect block and check the operator is fully deallocated
+        _rollForward_DeallocationDelay();
+        check_FullyDeallocated_State(operator, allocateParams, deallocateParams);
     }
 
-    function testFuzz_allocate_registerWhilePending(
+    function testFuzz_allocate_registerWhilePending_deallocate(
         uint24 _random
     ) public rand(_random) {
+        // 1. Allocate 100% to the operator set
         allocateParams = _genAllocation_AllAvailable(operator, operatorSet);
-        operator.modifyAllocations(allocateParams); // idea: operator.allocateHalfAvailable(operatorSet)?
+        operator.modifyAllocations(allocateParams);
         check_NotSlashable_Allocation_State(operator, allocateParams);
-        
-        // _rollForward_AllocationDelay(operator);
 
+        // 2. Register for the operator set while the allocation is still pending
         operator.registerForOperatorSet(operatorSet);
         check_PendingAllocated_Registration_State(operator, operatorSet, allocateParams, initDepositShares);
 
-        // // idea - do this before/after the allocation is completable
-        // // before - instant deallocation
-        // // after - queued deallocation
-        // operator.deregisterFromOperatorSet(operatorSet);
-        // check_Allocated_Deregistration_State(operator, operatorSet);
-
-        
-
-
-    }
-
-    function testFuzz_allocate_registerWhenAllocated(
-        uint24 _random
-    ) public rand(_random) {
-        allocateParams = _genAllocation_AllAvailable(operator, operatorSet);
-        operator.modifyAllocations(allocateParams); // idea: operator.allocateHalfAvailable(operatorSet)?
-        check_NotSlashable_Allocation_State(operator, allocateParams);
-        
+        // 3. Roll to the allocation's effect block. The allocation becomes slashable
         _rollForward_AllocationDelay(operator);
 
+        // 4. Deallocate fully from the operator set
+        IAllocationManagerTypes.AllocateParams memory deallocateParams = _genDeallocation_Full(operator, operatorSet);
+        operator.modifyAllocations(deallocateParams);
+        check_Slashable_Deallocation_State(operator, deallocateParams, initDepositShares);
+
+        // 5. Roll forward to the deallocation's effect block and check the operator is fully deallocated
+        _rollForward_DeallocationDelay();
+        check_FullyDeallocated_State(operator, allocateParams, deallocateParams);
+    }
+
+    function testFuzz_allocate_registerWhenAllocated_deallocate(
+        uint24 _random
+    ) public rand(_random) {
+        // 1. Allocate 100% to the operator set
+        allocateParams = _genAllocation_AllAvailable(operator, operatorSet);
+        operator.modifyAllocations(allocateParams);
+        check_NotSlashable_Allocation_State(operator, allocateParams);
+        
+        // 2. Roll to the allocation's effect block
+        _rollForward_AllocationDelay(operator);
+
+        // 3. Register for the operator set. The allocation immediately becomes slashable
         operator.registerForOperatorSet(operatorSet);
         check_Allocated_Registration_State(operator, operatorSet, allocateParams, initDepositShares);
 
-        // // idea - do this before/after the allocation is completable
-        // // before - instant deallocation
-        // // after - queued deallocation
-        // operator.deregisterFromOperatorSet(operatorSet);
-        // check_Allocated_Deregistration_State(operator, operatorSet);
+        // 4. Deallocate fully from the operator set
+        IAllocationManagerTypes.AllocateParams memory deallocateParams = _genDeallocation_Full(operator, operatorSet);
+        operator.modifyAllocations(deallocateParams);
+        check_Slashable_Deallocation_State(operator, deallocateParams, initDepositShares);
 
-        
-
-
+        // 5. Roll forward to the deallocation's effect block and check the operator is fully deallocated
+        _rollForward_DeallocationDelay();
+        check_FullyDeallocated_State(operator, allocateParams, deallocateParams);
     }
 }

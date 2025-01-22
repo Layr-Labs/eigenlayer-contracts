@@ -126,7 +126,7 @@ abstract contract Logger is Test {
         uint256 blocks
     ) internal {
         cheats.roll(block.number + blocks);
-        console.log("%s.roll(+ %d)", colorByRole("cheats"), blocks);
+        console.log("%s.roll(+ %d blocks)", colorByRole("cheats"), blocks);
     }
 
     function rollBackward(

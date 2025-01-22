@@ -58,12 +58,12 @@ contract Integration_SlashingWithdrawals is IntegrationCheckUtils {
             check_Unallocated_Registration_State(operator, operatorSet);
 
             allocateParams = _genAllocation_AllAvailable(operator, operatorSet);
-            operator.modifyAllocations(allocateParams); // idea: operator.allocateHalfAvailable(operatorSet)?
+            operator.modifyAllocations(allocateParams);
             check_Slashable_Allocation_State(operator, allocateParams, initDepositShares);
         } else {
             // allocate -> register
             allocateParams = _genAllocation_AllAvailable(operator, operatorSet);
-            operator.modifyAllocations(allocateParams); // idea: operator.allocateHalfAvailable(operatorSet)?
+            operator.modifyAllocations(allocateParams);
             check_NotSlashable_Allocation_State(operator, allocateParams);
 
             operator.registerForOperatorSet(operatorSet);

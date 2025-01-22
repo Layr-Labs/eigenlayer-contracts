@@ -103,7 +103,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
             operator.depositIntoEigenlayer(strategies, tokenBalances);
 
             // Roll past the allocation configuration delay
-            rollForward({blocks: ALLOCATION_CONFIGURATION_DELAY});
+            rollForward({blocks: ALLOCATION_CONFIGURATION_DELAY + 1});
 
             assert_Snap_Added_Staker_DepositShares(operator, strategies, addedShares, "_newRandomOperator: failed to add delegatable shares");
         }        
@@ -134,7 +134,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
             operator.registerAsOperator();
 
             // Roll past the allocation configuration delay
-            rollForward({blocks: ALLOCATION_CONFIGURATION_DELAY});
+            rollForward({blocks: ALLOCATION_CONFIGURATION_DELAY + 1});
         }        
 
         assertTrue(delegationManager.isOperator(address(operator)), "_newRandomOperator: operator should be registered");
@@ -485,6 +485,20 @@ abstract contract IntegrationBase is IntegrationDeployer {
         assertEq(curAllocatedSets.length, prevAllocatedSets.length, err);
     }
 
+    function assert_Snap_Removed_AllocatedSet(
+        User operator,
+        OperatorSet memory operatorSet,
+        string memory err
+    ) internal {
+        OperatorSet[] memory curAllocatedSets = _getAllocatedSets(operator);
+        OperatorSet[] memory prevAllocatedSets = _getPrevAllocatedSets(operator);
+
+        assertEq(curAllocatedSets.length + 1, prevAllocatedSets.length, err);
+        OperatorSet memory removedSet = prevAllocatedSets[prevAllocatedSets.length - 1];
+        assertEq(removedSet.avs, operatorSet.avs, err);
+        assertEq(removedSet.id, operatorSet.id, err);
+    }
+
     function assert_Snap_Added_RegisteredSet(
         User operator,
         OperatorSet memory operatorSet,
@@ -583,17 +597,31 @@ abstract contract IntegrationBase is IntegrationDeployer {
         }
     }
 
-    function assert_Snap_Removed_AllocatableMagnitude(
+    function assert_Snap_Removed_EncumberedMagnitude(
         User operator,
         IStrategy[] memory strategies,
-        uint64[] memory magnitudeAllocated,
+        uint64[] memory magnitudeRemoved,
         string memory err
     ) internal {
         Magnitudes[] memory curMagnitudes = _getMagnitudes(operator, strategies);
         Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, strategies);
 
         for (uint i = 0; i < strategies.length; i++) {
-            assertEq(curMagnitudes[i].allocatable, prevMagnitudes[i].allocatable - magnitudeAllocated[i], err);
+            assertEq(curMagnitudes[i].encumbered + magnitudeRemoved[i], prevMagnitudes[i].encumbered, err);
+        }
+    }
+
+    function assert_Snap_Added_AllocatableMagnitude(
+        User operator,
+        IStrategy[] memory strategies,
+        uint64[] memory magnitudeFreed,
+        string memory err
+    ) internal {
+        Magnitudes[] memory curMagnitudes = _getMagnitudes(operator, strategies);
+        Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(curMagnitudes[i].allocatable, prevMagnitudes[i].allocatable + magnitudeFreed[i], err);
         }
     }
 
@@ -607,6 +635,20 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
         for (uint i = 0; i < strategies.length; i++) {
             assertEq(curMagnitudes[i].allocatable, prevMagnitudes[i].allocatable, err);
+        }
+    }
+
+    function assert_Snap_Removed_AllocatableMagnitude(
+        User operator,
+        IStrategy[] memory strategies,
+        uint64[] memory magnitudeAllocated,
+        string memory err
+    ) internal {
+        Magnitudes[] memory curMagnitudes = _getMagnitudes(operator, strategies);
+        Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(curMagnitudes[i].allocatable, prevMagnitudes[i].allocatable - magnitudeAllocated[i], err);
         }
     }
 

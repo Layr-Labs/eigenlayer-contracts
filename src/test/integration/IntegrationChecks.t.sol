@@ -488,6 +488,46 @@ contract IntegrationCheckUtils is IntegrationBase {
         _rollBackward_DeallocationDelay();
     }
 
+    /// @dev Checks invariants for a deallocation that was created when the operator was NOT slashable
+    /// (This means the deallocation should have been completed immediately)
+    function check_NotSlashable_Deallocation_State(
+        User operator,
+        IAllocationManagerTypes.AllocateParams memory allocateParams,
+        IAllocationManagerTypes.AllocateParams memory deallocateParams
+    ) internal {
+        OperatorSet memory operatorSet = allocateParams.operatorSet;
+
+        // Any instant deallocation
+        assert_NoPendingModification(operator, operatorSet, allocateParams.strategies, "there should not be a pending modification for any strategy");
+        assert_Snap_Removed_EncumberedMagnitude(operator, allocateParams.strategies, allocateParams.newMagnitudes, "should have removed allocation from encumbered magnitude");
+        assert_Snap_Added_AllocatableMagnitude(operator, allocateParams.strategies, allocateParams.newMagnitudes, "should have added allocation to allocatable magnitude");
+        assert_Snap_Unchanged_MaxMagnitude(operator, allocateParams.strategies, "max magnitude should not have changed");
+        
+        assert_MaxEqualsAllocatablePlusEncumbered(operator, "max magnitude should equal encumbered plus allocatable");
+        assert_CurrentMagnitude(operator, deallocateParams, "current magnitude should match deallocate params");
+        
+        assert_Snap_Unchanged_SlashableStake(operator, operatorSet, allocateParams.strategies, "slashable shares should remain unchanged because operator was not slashable");
+    }
+
+    function check_FullyDeallocated_State(
+        User operator,
+        IAllocationManagerTypes.AllocateParams memory allocateParams,
+        IAllocationManagerTypes.AllocateParams memory deallocateParams
+    ) internal {
+        OperatorSet memory operatorSet = allocateParams.operatorSet;
+        assert_NoSlashableStake(operator, operatorSet, "should not have any slashable stake");
+        assert_Snap_Removed_AllocatedSet(operator, operatorSet, "should have removed operator set from allocated sets");
+
+        // Any instant deallocation
+        assert_Snap_Removed_EncumberedMagnitude(operator, allocateParams.strategies, allocateParams.newMagnitudes, "should have removed allocation from encumbered magnitude");
+        assert_Snap_Added_AllocatableMagnitude(operator, allocateParams.strategies, allocateParams.newMagnitudes, "should have added allocation to allocatable magnitude");
+        assert_Snap_Unchanged_MaxMagnitude(operator, allStrats, "max magnitude should not have changed");
+        
+        assert_MaxEqualsAllocatablePlusEncumbered(operator, "max magnitude should equal encumbered plus allocatable");
+        assert_CurrentMagnitude(operator, deallocateParams, "current magnitude should match deallocate params");
+        assert_NoPendingModification(operator, operatorSet, deallocateParams.strategies, "there should not be a pending modification for any strategy");
+    }
+
     // TODO: improvement needed 
 
     function check_Withdrawal_AsTokens_State_AfterSlash(
