@@ -350,7 +350,7 @@ contract DeployFromScratch is Script, Test {
 
         // Deploy strategyFactory & base
         // Create base strategy implementation
-        baseStrategyImplementation = new StrategyBase(strategyManager, eigenLayerPauserReg);
+        baseStrategyImplementation = new StrategyBase(strategyManager, eigenLayerPauserReg, SEMVER);
 
         // Create a proxy beacon for base strategy implementation
         strategyBeacon = new UpgradeableBeacon(address(baseStrategyImplementation));

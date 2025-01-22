@@ -88,7 +88,7 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEv
         IPauserRegistry _pauserRegistry,
         address admin
     ) public returns (StrategyBase) {
-        StrategyBase newStrategyImplementation = new StrategyBase(_strategyManager, _pauserRegistry);
+        StrategyBase newStrategyImplementation = new StrategyBase(_strategyManager, _pauserRegistry, "v9.9.9");
         StrategyBase newStrategy = StrategyBase(address(new TransparentUpgradeableProxy(address(newStrategyImplementation), address(admin), "")));
         newStrategy.initialize(_token);
         return newStrategy;

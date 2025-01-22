@@ -155,7 +155,8 @@ contract Deploy is EOADeployer {
             name: type(StrategyBaseTVLLimits).name,
             deployedTo: address(new StrategyBaseTVLLimits({
                 _strategyManager: Env.proxy.strategyManager(),
-                _pauserRegistry: Env.impl.pauserRegistry()
+                _pauserRegistry: Env.impl.pauserRegistry(),
+                _version: Env.version()
             }))
         });
 
@@ -163,7 +164,8 @@ contract Deploy is EOADeployer {
             name: type(EigenStrategy).name,
             deployedTo: address(new EigenStrategy({
                 _strategyManager: Env.proxy.strategyManager(),
-                _pauserRegistry: Env.impl.pauserRegistry()
+                _pauserRegistry: Env.impl.pauserRegistry(),
+                _version: Env.version()
             }))
         });
 
@@ -181,7 +183,8 @@ contract Deploy is EOADeployer {
             name: type(StrategyBase).name,
             deployedTo: address(new StrategyBase({
                 _strategyManager: Env.proxy.strategyManager(),
-                _pauserRegistry: Env.impl.pauserRegistry()
+                _pauserRegistry: Env.impl.pauserRegistry(),
+                _version: Env.version()
             }))
         });
 

@@ -52,7 +52,11 @@ contract EigenPodManager is
         IDelegationManager _delegationManager,
         IPauserRegistry _pauserRegistry,
         string memory _version
-    ) EigenPodManagerStorage(_ethPOS, _eigenPodBeacon, _delegationManager) Pausable(_pauserRegistry) SemVerMixin(_version) {
+    )
+        EigenPodManagerStorage(_ethPOS, _eigenPodBeacon, _delegationManager)
+        Pausable(_pauserRegistry)
+        SemVerMixin(_version)
+    {
         _disableInitializers();
     }
 

@@ -3,6 +3,7 @@ pragma solidity ^0.8.27;
 
 import "../interfaces/IStrategyManager.sol";
 import "../permissions/Pausable.sol";
+import "../mixins/SemVerMixin.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -28,7 +29,7 @@ import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
  * [this thread](https://github.com/OpenZeppelin/openzeppelin-contracts/issues/3706) on the OpenZeppelin repo.
  * We specifically use a share offset of `SHARES_OFFSET` and a balance offset of `BALANCE_OFFSET`.
  */
-contract StrategyBase is Initializable, Pausable, IStrategy {
+contract StrategyBase is Initializable, Pausable, IStrategy, SemVerMixin {
     using SafeERC20 for IERC20;
 
     uint8 internal constant PAUSED_DEPOSITS = 0;
@@ -69,7 +70,11 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
     }
 
     /// @notice Since this contract is designed to be initializable, the constructor simply sets `strategyManager`, the only immutable variable.
-    constructor(IStrategyManager _strategyManager, IPauserRegistry _pauserRegistry) Pausable(_pauserRegistry) {
+    constructor(
+        IStrategyManager _strategyManager,
+        IPauserRegistry _pauserRegistry,
+        string memory _version
+    ) Pausable(_pauserRegistry) SemVerMixin(_version) {
         strategyManager = _strategyManager;
         _disableInitializers();
     }

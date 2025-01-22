@@ -359,7 +359,7 @@ contract DeployFromScratch is Script, Test {
         );
 
         // deploy StrategyBaseTVLLimits contract implementation
-        baseStrategyImplementation = new StrategyBaseTVLLimits(strategyManager, eigenLayerPauserReg);
+        baseStrategyImplementation = new StrategyBaseTVLLimits(strategyManager, eigenLayerPauserReg, SEMVER);
         // create upgradeable proxies that each point to the implementation and initialize them
         for (uint256 i = 0; i < strategyConfigs.length; ++i) {
             if (strategyConfigs[i].tokenAddress == address(0)) {
