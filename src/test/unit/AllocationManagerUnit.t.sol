@@ -270,17 +270,17 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
         uint256 expectedSlashableStake,
         uint256 futureBlock
     ) internal view {
-        uint256[] memory slashableStake = allocationManager.getMinimumSlashableStake({
+        uint256[][] memory slashableStake = allocationManager.getMinimumSlashableStake({
             operatorSet: operatorSet,
             operators: operator.toArray(),
             strategies: strategies,
             futureBlock: uint32(futureBlock)
-        })[0];
+        });
 
         for (uint256 i = 0; i < strategies.length; i++) {
             console.log("\nChecking Slashable Stake:".yellow());
-            console.log("   slashableStake[%d] = %d", i, slashableStake[i]);
-            assertEq(slashableStake[i], expectedSlashableStake, "slashableStake != expected");
+            console.log("   slashableStake[%d] = %d", i, slashableStake[0][i]);
+            assertEq(slashableStake[0][i], expectedSlashableStake, "slashableStake != expected");
         }
 
         console.log("Success!".green().bold());
@@ -1419,9 +1419,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         cheats.roll(block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY);
 
         // Get slashable shares for each operatorSet
-        uint256 opset2SlashableSharesBefore = allocationManager.getMinimumSlashableStake(
-            operatorSet2, defaultOperator.toArray(), defaultStrategies, uint32(block.number)
-        )[0][0];
+        uint256[][] memory opset2SlashableSharesBefore = allocationManager.getMinimumSlashableStake(operatorSet2, defaultOperator.toArray(), defaultStrategies, uint32(block.number));
         // Slash operator on operatorSet1 for 50%
         SlashingParams memory slashingParams = SlashingParams({
             operator: defaultOperator,
@@ -1476,11 +1474,10 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         );
 
         // Assert that slashable stake is the same - we add slippage here due to rounding error from the slash itself
+        uint256[][] memory minSlashableStake = allocationManager.getMinimumSlashableStake(operatorSet2, defaultOperator.toArray(), defaultStrategies, uint32(block.number));
         assertEq(
-            opset2SlashableSharesBefore,
-            allocationManager.getMinimumSlashableStake(
-                operatorSet2, defaultOperator.toArray(), defaultStrategies, uint32(block.number)
-            )[0][0] + 1,
+            opset2SlashableSharesBefore[0][0],
+            minSlashableStake[0][0] + 1,          
             "opSet2 slashable shares should be the same"
         );
     }
@@ -3720,6 +3717,7 @@ contract AllocationManagerUnitTests_getStrategyAllocations is AllocationManagerU
 
 contract AllocationManagerUnitTests_getSlashableStake is AllocationManagerUnitTests {
     using SlashingLib for *;
+    using ArrayLib for *;
 
     /**
      * Allocates half of magnitude for a single strategy to an operatorSet. Then allocates again. Slashes 50%
@@ -3938,6 +3936,92 @@ contract AllocationManagerUnitTests_getSlashableStake is AllocationManagerUnitTe
             expectedSlashableStake: expectedCurrentMagnitude - uint128(-expectedPendingDiff) - 1
         });
     }
+
+    function testFuzz_allocate_deregister(
+        Randomness r
+    ) public rand(r) {
+        AllocateParams[] memory allocateParams = _newAllocateParams(defaultOperatorSet, 5e17);
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(defaultOperator, allocateParams);
+        cheats.roll(block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY);
+
+        cheats.prank(defaultOperator);
+        allocationManager.deregisterFromOperatorSets(
+            DeregisterParams(defaultOperator, defaultOperatorSet.avs, defaultOperatorSet.id.toArrayU32())
+        );
+
+        // Check slashable stake right after deregistration
+        _checkSlashableStake({
+            operatorSet: allocateParams[0].operatorSet,
+            operator: defaultOperator,
+            strategies: allocateParams[0].strategies,
+            expectedSlashableStake: DEFAULT_OPERATOR_SHARES.mulWad(5e17)
+        });
+
+        // Assert slashable stake after deregistration delay is 0
+        cheats.roll(block.number + DEALLOCATION_DELAY + 1);
+        _checkSlashableStake({
+            operatorSet: allocateParams[0].operatorSet,
+            operator: defaultOperator,
+            strategies: allocateParams[0].strategies,
+            expectedSlashableStake: 0
+        });
+    }
+}
+
+contract AllocationManagerUnitTests_isOperatorSlashable is AllocationManagerUnitTests {
+    using SlashingLib for *;
+    using ArrayLib for *;
+
+    function test_registeredOperator() public {
+        assertEq(
+            allocationManager.isOperatorSlashable(defaultOperator, defaultOperatorSet),
+            true,
+            "registered operator should be slashable"
+        );
+        assertEq(
+            allocationManager.isMemberOfOperatorSet(defaultOperator, defaultOperatorSet),
+            true,
+            "operator should be member of set"
+        );
+    }
+
+    function test_deregisteredOperatorAndSlashable() public {
+        // 1. deregister defaultOperator from defaultOperator set
+        uint32 deregisterBlock = uint32(block.number);
+        cheats.prank(defaultOperator);
+        allocationManager.deregisterFromOperatorSets(
+            DeregisterParams(defaultOperator, defaultOperatorSet.avs, defaultOperatorSet.id.toArrayU32())
+        );
+        assertEq(
+            allocationManager.isMemberOfOperatorSet(defaultOperator, defaultOperatorSet),
+            false,
+            "operator should not be member of set"
+        );
+
+        // 2. assert operator is still slashable
+        assertEq(
+            allocationManager.isOperatorSlashable(defaultOperator, defaultOperatorSet),
+            true,
+            "deregistered operator should be slashable"
+        );
+
+        // 3. roll blocks forward to slashableUntil block assert still slashable
+        cheats.roll(deregisterBlock + DEALLOCATION_DELAY);
+        assertEq(
+            allocationManager.isOperatorSlashable(defaultOperator, defaultOperatorSet),
+            true,
+            "deregistered operator should be slashable"
+        );
+
+        // 4. roll 1 block forward and assert not slashable
+        cheats.roll(deregisterBlock + DEALLOCATION_DELAY + 1);
+        assertEq(
+            allocationManager.isOperatorSlashable(defaultOperator, defaultOperatorSet),
+            false,
+            "deregistered operator should not be slashable"
+        );
+    }
 }
 
 contract AllocationManagerUnitTests_getMaxMagnitudesAtBlock is AllocationManagerUnitTests {
@@ -3990,5 +4074,86 @@ contract AllocationManagerUnitTests_getMaxMagnitudesAtBlock is AllocationManager
             maxMagnitudeAfterSecondSlash,
             "max magnitude after second slash not correct"
         );
+    }
+}
+
+contract AllocationManagerUnitTests_getAllocatedStake is AllocationManagerUnitTests {
+    using ArrayLib for *;
+    using SlashingLib for *;
+
+    /**
+     * Allocates to `firstMod` magnitude and validates allocated stake is correct
+     */
+    function testFuzz_allocate(
+        Randomness r
+    ) public rand(r) {
+        // Generate allocation for `strategyMock`, we allocate half
+        AllocateParams[] memory allocateParams = _newAllocateParams(defaultOperatorSet, 5e17);
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(defaultOperator, allocateParams);
+        cheats.roll(block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY);
+
+        uint256[][] memory allocatedStake = allocationManager.getAllocatedStake(defaultOperatorSet, defaultOperator.toArray(), defaultStrategies);
+
+        assertEq(allocatedStake[0][0], DEFAULT_OPERATOR_SHARES.mulWad(5e17), "allocated stake not correct");
+    }
+
+    /**
+     * Allocates to `firstMod` magnitude and then deallocate to `secondMod` magnitude
+     * Validates allocated stake is updated even after deallocation is cleared in storage
+     */
+    function testFuzz_allocate_deallocate(
+        Randomness r
+    ) public rand(r) { 
+        // Bound allocation and deallocation
+        uint64 firstMod = r.Uint64(1, WAD);
+        uint64 secondMod = r.Uint64(0, firstMod - 1);
+
+        // 1. Allocate magnitude to default registered set & warp to allocation complete block
+        AllocateParams[] memory allocateParams = _newAllocateParams(defaultOperatorSet, firstMod);
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(defaultOperator, allocateParams);
+        cheats.roll(block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY);
+
+        // 2. Deallocate
+        allocateParams = _newAllocateParams(defaultOperatorSet, secondMod);
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(defaultOperator, allocateParams);
+
+        // 3. Check allocated stake right after deallocation - shouldn't be updated
+        uint256[][] memory allocatedStake = allocationManager.getAllocatedStake(defaultOperatorSet, defaultOperator.toArray(), defaultStrategies);
+        assertEq(allocatedStake[0][0], DEFAULT_OPERATOR_SHARES.mulWad(firstMod), "allocated stake not correct");
+
+        // 4. Check slashable stake at the deallocation effect block
+        // Warp to deallocation effect block
+        cheats.roll(block.number + DEALLOCATION_DELAY + 1);
+
+        allocatedStake = allocationManager.getAllocatedStake(defaultOperatorSet, defaultOperator.toArray(), defaultStrategies);
+        assertEq(allocatedStake[0][0], DEFAULT_OPERATOR_SHARES.mulWad(secondMod), "allocated stake not correct");
+    }
+
+    /**
+     * Allocates to `firstMod` magnitude and then deregisters the operator. 
+     * Validates allocated stake is nonzero even after deregistration delay
+     */
+    function testFuzz_allocate_deregister(
+        Randomness r
+    ) public rand(r) {
+        // 1. Generate allocation for `strategyMock`, we allocate half
+        AllocateParams[] memory allocateParams = _newAllocateParams(defaultOperatorSet, 5e17);
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(defaultOperator, allocateParams);
+        cheats.roll(block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY);
+
+        // 2. Deregister from operator set & warp to deregistration effect block
+        cheats.prank(defaultOperator);
+        allocationManager.deregisterFromOperatorSets(
+            DeregisterParams(defaultOperator, defaultOperatorSet.avs, defaultOperatorSet.id.toArrayU32())
+        );
+        cheats.roll(block.number + DEALLOCATION_DELAY + 1);
+
+        // 3. Check allocated stake
+        uint256[][] memory allocatedStake = allocationManager.getAllocatedStake(defaultOperatorSet, defaultOperator.toArray(), defaultStrategies);
+        assertEq(allocatedStake[0][0], DEFAULT_OPERATOR_SHARES.mulWad(5e17), "allocated stake should remain same after deregistration");
     }
 }

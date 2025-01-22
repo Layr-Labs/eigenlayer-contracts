@@ -62,10 +62,9 @@ contract AllocationManager is
     ) external onlyWhenNotPaused(PAUSED_OPERATOR_SLASHING) checkCanCall(avs) {
         // Check that the operator set exists and the operator is registered to it
         OperatorSet memory operatorSet = OperatorSet(avs, params.operatorSetId);
-        bool isOperatorSlashable = _isOperatorSlashable(params.operator, operatorSet);
         require(params.strategies.length == params.wadsToSlash.length, InputArrayLengthMismatch());
         require(_operatorSets[operatorSet.avs].contains(operatorSet.id), InvalidOperatorSet());
-        require(isOperatorSlashable, OperatorNotSlashable());
+        require(isOperatorSlashable(params.operator, operatorSet), OperatorNotSlashable());
 
         uint256[] memory wadSlashed = new uint256[](params.strategies.length);
 
@@ -172,7 +171,7 @@ contract AllocationManager is
             OperatorSet memory operatorSet = params[i].operatorSet;
             require(_operatorSets[operatorSet.avs].contains(operatorSet.id), InvalidOperatorSet());
 
-            bool isOperatorSlashable = _isOperatorSlashable(operator, operatorSet);
+            bool _isOperatorSlashable = isOperatorSlashable(operator, operatorSet);
 
             for (uint256 j = 0; j < params[i].strategies.length; j++) {
                 IStrategy strategy = params[i].strategies[j];
@@ -188,7 +187,7 @@ contract AllocationManager is
 
                 // 2. Check whether the operator's allocation is slashable. If not, we allow instant
                 // deallocation.
-                bool isSlashable = _isAllocationSlashable(operatorSet, strategy, allocation, isOperatorSlashable);
+                bool isSlashable = _isAllocationSlashable(operatorSet, strategy, allocation, _isOperatorSlashable);
 
                 // 3. Calculate the change in magnitude
                 allocation.pendingDiff = _calcDelta(allocation.currentMagnitude, params[i].newMagnitudes[j]);
@@ -261,7 +260,7 @@ contract AllocationManager is
             // Check the operator set exists and the operator is not currently registered to it
             OperatorSet memory operatorSet = OperatorSet(params.avs, params.operatorSetIds[i]);
             require(_operatorSets[operatorSet.avs].contains(operatorSet.id), InvalidOperatorSet());
-            require(!_isOperatorSlashable(operator, operatorSet), AlreadyMemberOfSet());
+            require(!isOperatorSlashable(operator, operatorSet), AlreadyMemberOfSet());
 
             // Add operator to operator set
             registeredSets[operator].add(operatorSet.key());
@@ -440,28 +439,19 @@ contract AllocationManager is
         emit AllocationDelaySet(operator, delay, info.effectBlock);
     }
 
-    /// @notice returns whether the operator is slashable in the given operator set
-    function _isOperatorSlashable(address operator, OperatorSet memory operatorSet) internal view returns (bool) {
-        RegistrationStatus memory status = registrationStatus[operator][operatorSet.key()];
-
-        // slashableUntil returns the last block the operator is slashable in so we check for
-        // less than or equal to
-        return status.registered || block.number <= status.slashableUntil;
-    }
-
     /// @notice returns whether the operator's allocation is slashable in the given operator set
     function _isAllocationSlashable(
         OperatorSet memory operatorSet,
         IStrategy strategy,
         Allocation memory allocation,
-        bool isOperatorSlashable
+        bool _isOperatorSlashable
     ) internal view returns (bool) {
         /// forgefmt: disable-next-item
         return 
             // If the operator set does not use this strategy, any allocation from it is not slashable
             _operatorSetStrategies[operatorSet.key()].contains(address(strategy)) &&
             // If the operator is not slashable by the operatorSet, any allocation is not slashable
-            isOperatorSlashable &&
+            _isOperatorSlashable &&
             // If there is nothing allocated, the allocation is not slashable
             allocation.currentMagnitude != 0;
     }
@@ -538,6 +528,53 @@ contract AllocationManager is
 
             if (allocatedStrategies[operator][operatorSetKey].length() == 0) {
                 allocatedSets[operator].remove(operatorSetKey);
+            }
+        }
+    }
+
+    /**
+     * @dev Returns the minimum allocated stake at the future block.
+     * @param operatorSet The operator set to get the minimum allocated stake for.
+     * @param operators The operators to get the minimum allocated stake for.
+     * @param strategies The strategies to get the minimum allocated stake for.
+     * @param futureBlock The future block to get the minimum allocated stake for.
+     */
+    function _getMinimumAllocatedStake(
+        OperatorSet memory operatorSet,
+        address[] memory operators,
+        IStrategy[] memory strategies,
+        uint32 futureBlock
+    ) internal view returns (uint256[][] memory allocatedStake) {
+        allocatedStake = new uint256[][](operators.length);
+        uint256[][] memory delegatedStake = delegation.getOperatorsShares(operators, strategies);
+
+        for (uint256 i = 0; i < operators.length; i++) {
+            address operator = operators[i];
+
+            allocatedStake[i] = new uint256[](strategies.length);
+
+            for (uint256 j = 0; j < strategies.length; j++) {
+                IStrategy strategy = strategies[j];
+
+                // Fetch the max magnitude and allocation for the operator/strategy.
+                // Prevent division by 0 if needed. This mirrors the "FullySlashed" checks
+                // in the DelegationManager
+                uint64 maxMagnitude = _maxMagnitudeHistory[operator][strategy].latest();
+                if (maxMagnitude == 0) {
+                    continue;
+                }
+
+                Allocation memory alloc = getAllocation(operator, operatorSet, strategy);
+
+                // If the pending change takes effect before `futureBlock`, include it in `currentMagnitude`
+                // However, ONLY include the pending change if it is a deallocation, since this method
+                // is supposed to return the minimum slashable stake between now and `futureBlock`
+                if (alloc.effectBlock <= futureBlock && alloc.pendingDiff < 0) {
+                    alloc.currentMagnitude = _addInt128(alloc.currentMagnitude, alloc.pendingDiff);
+                }
+
+                uint256 slashableProportion = uint256(alloc.currentMagnitude).divWad(maxMagnitude);
+                allocatedStake[i][j] = delegatedStake[i][j].mulWad(slashableProportion);
             }
         }
     }
@@ -824,36 +861,35 @@ contract AllocationManager is
         IStrategy[] memory strategies,
         uint32 futureBlock
     ) external view returns (uint256[][] memory slashableStake) {
-        slashableStake = new uint256[][](operators.length);
-        uint256[][] memory delegatedStake = delegation.getOperatorsShares(operators, strategies);
+        slashableStake = _getMinimumAllocatedStake(operatorSet, operators, strategies, futureBlock);
 
         for (uint256 i = 0; i < operators.length; i++) {
-            address operator = operators[i];
-            slashableStake[i] = new uint256[](strategies.length);
-
-            for (uint256 j = 0; j < strategies.length; j++) {
-                IStrategy strategy = strategies[j];
-
-                // Fetch the max magnitude and allocation for the operator/strategy.
-                // Prevent division by 0 if needed. This mirrors the "FullySlashed" checks
-                // in the DelegationManager
-                uint64 maxMagnitude = _maxMagnitudeHistory[operator][strategy].latest();
-                if (maxMagnitude == 0) {
-                    continue;
+            // If the operator is not slashable by the opSet, all strategies should have a slashable stake of 0
+            if (!isOperatorSlashable(operators[i], operatorSet)) {
+                for (uint256 j = 0; j < strategies.length; j++) {
+                    slashableStake[i][j] = 0;
                 }
-
-                Allocation memory alloc = getAllocation(operator, operatorSet, strategy);
-
-                // If the pending change takes effect before `futureBlock`, include it in `currentMagnitude`
-                // However, ONLY include the pending change if it is a deallocation, since this method
-                // is supposed to return the minimum slashable stake between now and `futureBlock`
-                if (alloc.effectBlock <= futureBlock && alloc.pendingDiff < 0) {
-                    alloc.currentMagnitude = _addInt128(alloc.currentMagnitude, alloc.pendingDiff);
-                }
-
-                uint256 slashableProportion = uint256(alloc.currentMagnitude).divWad(maxMagnitude);
-                slashableStake[i][j] = delegatedStake[i][j].mulWad(slashableProportion);
             }
         }
+    }
+
+    /// @inheritdoc IAllocationManager
+    function getAllocatedStake(
+        OperatorSet memory operatorSet,
+        address[] memory operators,
+        IStrategy[] memory strategies
+    ) public view returns (uint256[][] memory) {
+        /// This helper function returns the minimum allocated stake by taking into account deallocations at some `futureBlock`.
+        /// We use the block.number, as the `futureBlock`, meaning that no **future** deallocations are considered.
+        return _getMinimumAllocatedStake(operatorSet, operators, strategies, uint32(block.number));
+    }
+
+    /// @inheritdoc IAllocationManager
+    function isOperatorSlashable(address operator, OperatorSet memory operatorSet) public view returns (bool) {
+        RegistrationStatus memory status = registrationStatus[operator][operatorSet.key()];
+
+        // slashableUntil returns the last block the operator is slashable in so we check for
+        // less than or equal to
+        return status.registered || block.number <= status.slashableUntil;
     }
 }

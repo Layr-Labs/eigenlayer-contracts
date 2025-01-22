@@ -536,7 +536,8 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
 
     /**
      * @notice Returns the minimum amount of stake that will be slashable as of some future block,
-     * according to each operator's allocation from each strategy to the operator set.
+     * according to each operator's allocation from each strategy to the operator set. Note that this function
+     * will return 0 for the slashable stake if the operator is not slashable at the time of the call.
      * @dev This method queries actual delegated stakes in the DelegationManager and applies
      * each operator's allocation to the stake to produce the slashable stake each allocation
      * represents.
@@ -549,7 +550,6 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
      * @param operators the list of operators whose slashable stakes will be returned
      * @param strategies the strategies that each slashable stake corresponds to
      * @param futureBlock the block at which to get allocation information. Should be a future block.
-     * @return slashableStake a list of slashable stakes, indexed by [operator][strategy]
      */
     function getMinimumSlashableStake(
         OperatorSet memory operatorSet,
@@ -557,4 +557,25 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
         IStrategy[] memory strategies,
         uint32 futureBlock
     ) external view returns (uint256[][] memory slashableStake);
+
+    /**
+     * @notice Returns the current allocated stake, irrespective of the operator's slashable status for the operatorSet.
+     * @param operatorSet the operator set to query
+     * @param operators the operators to query
+     * @param strategies the strategies to query
+     */
+    function getAllocatedStake(
+        OperatorSet memory operatorSet,
+        address[] memory operators,
+        IStrategy[] memory strategies
+    ) external view returns (uint256[][] memory slashableStake);
+
+    /**
+     * @notice Returns whether an operator is slashable by an operator set.
+     * This returns true if the operator is registered or their slashableUntil block has not passed.
+     * This is because even when operators are deregistered, they still remain slashable for a period of time.
+     * @param operator the operator to check slashability for
+     * @param operatorSet the operator set to check slashability for
+     */
+    function isOperatorSlashable(address operator, OperatorSet memory operatorSet) external view returns (bool);
 }
