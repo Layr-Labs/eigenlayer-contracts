@@ -159,7 +159,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     }
 
     /// Deploy EigenLayer locally
-    function _setUpLocal() public virtual {
+    function _setUpLocal() public noTracing virtual {
         console.log("Setting up `%s` integration tests:", "LOCAL".yellow().bold());
 
         // Deploy ProxyAdmin
@@ -210,7 +210,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     }
 
     /// Parse existing contracts from mainnet
-    function _setUpMainnet() public virtual {
+    function _setUpMainnet() public noTracing virtual {
         console.log("Setting up `%s` integration tests:", "MAINNET_FORK".green().bold());
         console.log("RPC:", cheats.rpcUrl("mainnet"));
         console.log("Block:", mainnetForkBlock);
@@ -311,7 +311,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     }
 
     /// Deploy an implementation contract for each contract in the system
-    function _deployImplementations() public {
+    function _deployImplementations() public noTracing {
         allocationManagerImplementation = new AllocationManager(delegationManager, eigenLayerPauserReg, permissionController, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
         permissionControllerImplementation = new PermissionController();
         delegationManagerImplementation = new DelegationManager(strategyManager, eigenPodManager, allocationManager, eigenLayerPauserReg, permissionController, DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS);
@@ -345,7 +345,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         // TODO - need to update ExistingDeploymentParser
     }
 
-    function _upgradeProxies() public {
+    function _upgradeProxies() public noTracing {
         // DelegationManager
         eigenLayerProxyAdmin.upgrade(
             ITransparentUpgradeableProxy(payable(address(delegationManager))),
@@ -410,7 +410,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         }
     }
 
-    function _initializeProxies() public {
+    function _initializeProxies() public noTracing {
         delegationManager.initialize({
             initialOwner: executorMultisig,
             initialPausedStatus: 0
@@ -452,7 +452,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         uint initialSupply,
         address owner,
         bool useFactory
-    ) internal {
+    ) internal noTracing {
         IERC20 underlyingToken = new ERC20PresetFixedSupply(tokenName, tokenSymbol, initialSupply, owner);
 
         StrategyBase strategy;
@@ -484,7 +484,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         allTokens.push(underlyingToken);
     }
 
-    function _configRand(uint24 _randomSeed, uint _assetTypes, uint _userTypes) private {
+    function _configRand(uint24 _randomSeed, uint _assetTypes, uint _userTypes) private noTracing {
         // Using uint24 for the seed type so that if a test fails, it's easier
         // to manually use the seed to replay the same test.
         random = _hash(_randomSeed);
@@ -511,7 +511,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
      */
     function _randUser(
         string memory name
-    ) internal returns (User, IStrategy[] memory, uint[] memory) {
+    ) internal noTracing returns (User, IStrategy[] memory, uint[] memory) {
         // For the new user, select what type of assets they'll have and whether
         // they'll use `xWithSignature` methods.
         //
@@ -533,7 +533,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     /// @dev Create a new user without native ETH. See _randUser above for standard usage
     function _randUser_NoETH(
         string memory name
-    ) internal returns (User, IStrategy[] memory, uint[] memory) {
+    ) internal noTracing returns (User, IStrategy[] memory, uint[] memory) {
         // For the new user, select what type of assets they'll have and whether
         // they'll use `xWithSignature` methods.
         //
@@ -563,7 +563,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     /// @dev Creates a new user without any assets
     function _randUser_NoAssets(
         string memory name
-    ) internal returns (User) {
+    ) internal noTracing returns (User) {
         // For the new user, select what type of assets they'll have and whether
         // they'll use `xWithSignature` methods.
         //
@@ -624,7 +624,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     ///             `tokenBalances` will contain the user's eth balance
     /// HOLDS_ALL - `strategies` will contain ALL initialized strategies AND BEACONCHAIN_ETH_STRAT, and
     ///             `tokenBalances` will contain random token/eth balances accordingly
-    function _dealRandAssets(User user, uint assetType) internal returns (IStrategy[] memory, uint[] memory) {
+    function _dealRandAssets(User user, uint assetType) internal noTracing returns (IStrategy[] memory, uint[] memory) {
         IStrategy[] memory strategies;
         uint[] memory tokenBalances;
         if (assetType == NO_ASSETS) {

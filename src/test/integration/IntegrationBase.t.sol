@@ -1749,22 +1749,22 @@ abstract contract IntegrationBase is IntegrationDeployer {
         (bool isSet, uint32 delay) = allocationManager.getAllocationDelay(address(operator));
         require(isSet, "_rollForward_AllocationDelay: delay not set");
 
-        cheats.roll(block.number + delay);
+        rollForward(delay);
     }
 
     function _rollBackward_AllocationDelay(User operator) internal {
         (bool isSet, uint32 delay) = allocationManager.getAllocationDelay(address(operator));
         require(isSet, "_rollForward_AllocationDelay: delay not set");
 
-        cheats.roll(block.number - delay);
+        rollBackward(delay);
     }
 
     function _rollForward_DeallocationDelay() internal {
-        cheats.roll(uint32(block.number) + allocationManager.DEALLOCATION_DELAY() + 1);
+        rollForward(allocationManager.DEALLOCATION_DELAY() + 1);
     }
 
     function _rollBackward_DeallocationDelay() internal {
-        cheats.roll(uint32(block.number) - allocationManager.DEALLOCATION_DELAY() - 1);
+        rollBackward(allocationManager.DEALLOCATION_DELAY() + 1);
     }
 
     /// @dev Rolls forward by the default allocation delay blocks.
