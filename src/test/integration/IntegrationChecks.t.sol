@@ -332,6 +332,70 @@ contract IntegrationCheckUtils is IntegrationBase {
                                  ALLOCATION MANAGER CHECKS
     *******************************************************************************/
     
+    function check_Base_Registration_State(
+        User operator,
+        OperatorSet memory operatorSet
+    ) internal {
+        assert_IsRegistered(operator, operatorSet, "operator should be registered for set");
+        assert_Snap_Added_RegisteredSet(operator, operatorSet, "should have added operator sets to list of registered sets");
+        assert_Snap_Added_MemberOfSet(operator, operatorSet, "should have added operator to list of set members");
+    }
+
+    function check_Unallocated_Registration_State(
+        User operator,
+        OperatorSet memory operatorSet
+    ) internal {
+        check_Base_Registration_State(operator, operatorSet);
+
+        /// The operator is NOT allocated, ensure their slashable stake and magnitudes are unchanged
+        assert_IsNotAllocated(operator, operatorSet, "operator should not be allocated to set");
+        assert_Snap_Unchanged_SlashableStake(operator, operatorSet, allStrats, "operator should not have increased slashable stake");
+        assert_Snap_Unchanged_EncumberedMagnitude(operator, allStrats, "should not have updated encumbered magnitude");
+        assert_Snap_Unchanged_AllocatableMagnitude(operator, allStrats, "should not have updated allocatable magnitude");
+    }
+
+    /// @dev Check registration invariants. Assumes the operator has allocated to a strategy in the set
+    /// AND that the allocation's effect block has been reached
+    function check_Allocated_Registration_State(
+        User operator,
+        OperatorSet memory operatorSet,
+        IAllocationManagerTypes.AllocateParams memory params,
+        uint[] memory slashableShares
+    ) internal {
+        check_Base_Registration_State(operator, operatorSet);
+
+        /// The operator IS allocated, ensure their magnitudes are unchanged and that slashable stake was added
+        assert_IsAllocated(operator, operatorSet, "operator should be allocated to set");
+        assert_Snap_Unchanged_EncumberedMagnitude(operator, allStrats, "should not have updated encumbered magnitude");
+        assert_Snap_Unchanged_AllocatableMagnitude(operator, allStrats, "should not have updated allocatable magnitude");
+        
+        assert_Snap_Added_SlashableStake(operator, operatorSet, params.strategies, slashableShares, "operator should have increased slashable stake");
+    }
+
+    /// @dev Check registration invariants. Assumes the operator has a PENDING allocation
+    /// to the set, but that the allocation's effect block has not yet been reached
+    function check_PendingAllocated_Registration_State(
+        User operator,
+        OperatorSet memory operatorSet,
+        IAllocationManagerTypes.AllocateParams memory params,
+        uint[] memory slashableShares
+    ) internal {
+        check_Base_Registration_State(operator, operatorSet);
+
+        assert_IsAllocated(operator, operatorSet, "operator should be allocated to set, even while pending");
+        assert_Snap_Unchanged_SlashableStake(operator, operatorSet, allStrats, "operator should not have increased slashable stake");
+        assert_Snap_Unchanged_EncumberedMagnitude(operator, allStrats, "should not have updated encumbered magnitude");
+        assert_Snap_Unchanged_AllocatableMagnitude(operator, allStrats, "should not have updated allocatable magnitude");
+
+        /// Roll forward to check status when the allocation is completed
+        _rollForward_AllocationDelay(operator);
+
+        check_Allocated_Registration_State(operator, operatorSet, params, slashableShares);
+
+        /// Reset block number so test is not affected
+        _rollBackward_AllocationDelay(operator);
+    }
+
     /// @dev Check an operator's first allocation to an operator set
     function check_Initial_Allocation_State(
         User operator,
@@ -354,18 +418,22 @@ contract IntegrationCheckUtils is IntegrationBase {
         _rollForward_AllocationDelay(operator);
 
         assert_MaxEqualsAllocatablePlusEncumbered(operator, "max magnitude should equal encumbered plus allocatable");
-        assert_Snap_Added_SlashableStake(operator, params.operatorSet, params.strategies, slashableShares, "operator should have added slashable stake after allocation is active");
         assert_CurrentMagnitude(operator, params, "current magnitude should match allocate params");
         assert_NoPendingModification(operator, params.operatorSet, params.strategies, "there should not be a pending modification for any strategy");
+
+        // Only if registered
+        assert_Snap_Added_SlashableStake(operator, params.operatorSet, params.strategies, slashableShares, "operator should have added slashable stake after allocation is active");
 
         // Reset block number so test is not affected
         _rollBackward_AllocationDelay(operator);
     }
 
+    /// @param slashableShares for each strategy in params.strategies, the number of shares that will NO LONGER BE SLASHABLE
+    /// when the deallocation is completed
     function check_Slashable_Deallocation_State(
         User operator,
-        IAllocationManagerTypes.AllocateParams memory params
-        // uint[] memory 
+        IAllocationManagerTypes.AllocateParams memory params,
+        uint[] memory slashableShares
     ) internal {
         assert_Snap_Unchanged_AllocatedSet(operator, params.operatorSet, "should not have removed operator set from allocated sets");
 
@@ -383,9 +451,9 @@ contract IntegrationCheckUtils is IntegrationBase {
         _rollForward_DeallocationDelay();
 
         assert_MaxEqualsAllocatablePlusEncumbered(operator, "max magnitude should equal encumbered plus allocatable");
-        // assert_Snap_Removed_SlashableStake(operator, params.operatorSet, params.strategies, "operator should have unchanged slashable stake");
         assert_CurrentMagnitude(operator, params, "current magnitude should match deallocate params");
         assert_NoPendingModification(operator, params.operatorSet, params.strategies, "there should not be a pending modification for any strategy");
+        assert_Snap_Removed_SlashableStake(operator, params.operatorSet, params.strategies, slashableShares, "operator should have removed slashable shares");
 
         // Reset block number so test is not affected
         _rollBackward_DeallocationDelay();

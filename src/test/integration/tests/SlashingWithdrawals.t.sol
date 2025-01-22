@@ -48,12 +48,9 @@ contract Integration_SlashingWithdrawals is IntegrationCheckUtils {
 
         // 3. Create an operator set and register an operator.
         operatorSet = avs.createOperatorSet(strategies);
-        // TODO invariant checks here
-
-        // idea: bool flip between modify -> register / register -> modify
-    
+        // idea: bool flip between modify -> register / register -> modify TODO
         operator.registerForOperatorSet(operatorSet);
-        // TODO invariant checks here
+        check_Unallocated_Registration_State(operator, operatorSet);
 
         allocateParams = _genAllocation_AllAvailable(operator, operatorSet);
         operator.modifyAllocations(allocateParams); // idea: operator.allocateHalfAvailable(operatorSet)?
@@ -213,11 +210,11 @@ contract Integration_SlashingWithdrawals is IntegrationCheckUtils {
         uint24 _random
     ) public rand(_random) {
         // 4. Deallocate all.
-        IAllocationManagerTypes.AllocateParams memory deallocateParams = _genDeallocation_All(operator, operatorSet);
+        IAllocationManagerTypes.AllocateParams memory deallocateParams = _genDeallocation_Full(operator, operatorSet);
         operator.modifyAllocations(deallocateParams);
-        check_Slashable_Deallocation_State(operator, deallocateParams);
+        check_Slashable_Deallocation_State(operator, deallocateParams, initDepositShares);
 
-        _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
+        _rollForward_DeallocationDelay();
 
         // 5. Slash operator
         IAllocationManagerTypes.SlashingParams memory slashingParams;

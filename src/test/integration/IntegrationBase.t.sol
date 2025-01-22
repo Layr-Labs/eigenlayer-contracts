@@ -358,6 +358,30 @@ abstract contract IntegrationBase is IntegrationDeployer {
             assertEq(0, allocations[i].effectBlock, err);
         }
     }
+
+    function assert_IsRegistered(
+        User operator,
+        OperatorSet memory operatorSet,
+        string memory err
+    ) internal view {
+        assertTrue(allocationManager.isMemberOfOperatorSet(address(operator), operatorSet), err);
+    }
+
+    function assert_IsNotAllocated(
+        User operator,
+        OperatorSet memory operatorSet,
+        string memory err
+    ) internal view {
+        assertEq(allocationManager.getAllocatedStrategies(address(operator), operatorSet).length, 0, err);
+    }
+
+    function assert_IsAllocated(
+        User operator,
+        OperatorSet memory operatorSet,
+        string memory err
+    ) internal view {
+        assertGt(allocationManager.getAllocatedStrategies(address(operator), operatorSet).length, 0, err);
+    }
     
     /*******************************************************************************
                                 SNAPSHOT ASSERTIONS
@@ -448,6 +472,33 @@ abstract contract IntegrationBase is IntegrationDeployer {
         assertEq(curAllocatedSets.length, prevAllocatedSets.length, err);
     }
 
+    function assert_Snap_Added_RegisteredSet(
+        User operator,
+        OperatorSet memory operatorSet,
+        string memory err
+    ) internal {
+        OperatorSet[] memory curRegisteredSets = _getRegisteredSets(operator);
+        OperatorSet[] memory prevRegisteredSets = _getPrevRegisteredSets(operator);
+
+        assertEq(curRegisteredSets.length, prevRegisteredSets.length + 1, err);
+        OperatorSet memory addedSet = curRegisteredSets[curRegisteredSets.length - 1];
+        assertEq(addedSet.avs, operatorSet.avs, err);
+        assertEq(addedSet.id, operatorSet.id, err);
+    }
+
+    function assert_Snap_Added_MemberOfSet(
+        User operator,
+        OperatorSet memory operatorSet,
+        string memory err
+    ) internal {
+        address[] memory curOperators = _getMembers(operatorSet);
+        address[] memory prevOperators = _getPrevMembers(operatorSet);
+
+        assertEq(curOperators.length, prevOperators.length + 1, err);
+        address memberAdded = curOperators[curOperators.length - 1];
+        assertEq(memberAdded, address(operator), err);
+    }
+
     function assert_Snap_Added_SlashableStake(
         User operator,
         OperatorSet memory operatorSet,
@@ -474,6 +525,21 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
         for (uint i = 0; i < strategies.length; i++) {
             assertEq(curSlashableStake[i], prevSlashableStake[i], err);
+        }
+    }
+
+    function assert_Snap_Removed_SlashableStake(
+        User operator,
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies,
+        uint[] memory removedSlashableShares,
+        string memory err
+    ) internal {
+        uint[] memory curSlashableStake = _getMinSlashableStake(operator, operatorSet, strategies);
+        uint[] memory prevSlashableStake = _getPrevMinSlashableStake(operator, operatorSet, strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(curSlashableStake[i] + removedSlashableShares[i], prevSlashableStake[i], err);
         }
     }
 
@@ -1365,7 +1431,8 @@ abstract contract IntegrationBase is IntegrationDeployer {
         }
     }
 
-    function _genDeallocation_All(
+    /// @dev Generates params for a full deallocation from all strategies the operator is allocated to in the operator set
+    function _genDeallocation_Full(
         User operator,
         OperatorSet memory operatorSet
     ) internal view returns (IAllocationManagerTypes.AllocateParams memory params) {
@@ -1748,6 +1815,30 @@ abstract contract IntegrationBase is IntegrationDeployer {
         User operator
     ) internal view returns (OperatorSet[] memory) {
         return allocationManager.getAllocatedSets(address(operator));
+    }
+
+    function _getPrevRegisteredSets(
+        User operator
+    ) internal timewarp() returns (OperatorSet[] memory) {
+        return _getRegisteredSets(operator);
+    }
+
+    function _getRegisteredSets(
+        User operator
+    ) internal view returns (OperatorSet[] memory) {
+        return allocationManager.getRegisteredSets(address(operator));
+    }
+
+    function _getPrevMembers(
+        OperatorSet memory operatorSet
+    ) internal timewarp returns (address[] memory) {
+        return _getMembers(operatorSet);
+    }
+
+    function _getMembers(
+        OperatorSet memory operatorSet
+    ) internal view returns (address[] memory) {
+        return allocationManager.getMembers(operatorSet);
     }
 
     struct Magnitudes {
