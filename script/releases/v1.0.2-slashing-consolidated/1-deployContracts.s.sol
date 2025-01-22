@@ -35,7 +35,7 @@ contract Deploy is EOADeployer {
 
         deployImpl({
             name: type(PermissionController).name,
-            deployedTo: address(new PermissionController())
+            deployedTo: address(new PermissionController(Env.version()))
         });
 
         deployProxy({
@@ -134,7 +134,8 @@ contract Deploy is EOADeployer {
                 _ethPOS: Env.ethPOS(),
                 _eigenPodBeacon: Env.beacon.eigenPod(),
                 _delegationManager: Env.proxy.delegationManager(),
-                _pauserRegistry: Env.impl.pauserRegistry()
+                _pauserRegistry: Env.impl.pauserRegistry(),
+                _version: Env.version()
             }))
         });
 
@@ -143,7 +144,8 @@ contract Deploy is EOADeployer {
             deployedTo: address(new EigenPod({
                 _ethPOS: Env.ethPOS(),
                 _eigenPodManager: Env.proxy.eigenPodManager(),
-                _GENESIS_TIME: Env.EIGENPOD_GENESIS_TIME()
+                _GENESIS_TIME: Env.EIGENPOD_GENESIS_TIME(),
+                _version: Env.version()
             }))
         });
 
@@ -169,7 +171,8 @@ contract Deploy is EOADeployer {
             name: type(StrategyFactory).name,
             deployedTo: address(new StrategyFactory({
                 _strategyManager: Env.proxy.strategyManager(),
-                _pauserRegistry: Env.impl.pauserRegistry()
+                _pauserRegistry: Env.impl.pauserRegistry(),
+                _version: Env.version()
             }))
         });
 

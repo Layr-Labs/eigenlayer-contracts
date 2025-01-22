@@ -322,7 +322,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             ALLOCATION_CONFIGURATION_DELAY,
             version
         );
-        permissionControllerImplementation = new PermissionController();
+        permissionControllerImplementation = new PermissionController(version);
         delegationManagerImplementation = new DelegationManager(
             strategyManager, 
             eigenPodManager, 
@@ -353,12 +353,13 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             DEPOSIT_CONTRACT,
             eigenPodBeacon,
             delegationManager,
-            eigenLayerPauserReg
+            eigenLayerPauserReg,
+            "v9.9.9"
         );
-        strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg);
+        strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg, "v9.9.9");
 
         // Beacon implementations
-        eigenPodImplementation = new EigenPod(DEPOSIT_CONTRACT, eigenPodManager, BEACON_GENESIS_TIME);
+        eigenPodImplementation = new EigenPod(DEPOSIT_CONTRACT, eigenPodManager, BEACON_GENESIS_TIME, "v9.9.9");
         baseStrategyImplementation = new StrategyBase(strategyManager, eigenLayerPauserReg);
 
         // Pre-longtail StrategyBaseTVLLimits implementation

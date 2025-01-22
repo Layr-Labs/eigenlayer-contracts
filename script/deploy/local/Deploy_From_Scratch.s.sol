@@ -244,7 +244,7 @@ contract DeployFromScratch is Script, Test {
         } else {
             ethPOSDeposit = IETHPOSDeposit(stdJson.readAddress(config_data, ".ethPOSDepositAddress"));
         }
-        eigenPodImplementation = new EigenPod(ethPOSDeposit, eigenPodManager, GOERLI_GENESIS_TIME);
+        eigenPodImplementation = new EigenPod(ethPOSDeposit, eigenPodManager, GOERLI_GENESIS_TIME, SEMVER);
 
         eigenPodBeacon = new UpgradeableBeacon(address(eigenPodImplementation));
 
@@ -265,7 +265,8 @@ contract DeployFromScratch is Script, Test {
             ethPOSDeposit,
             eigenPodBeacon,
             delegation,
-            eigenLayerPauserReg
+            eigenLayerPauserReg,
+            SEMVER
         );
         rewardsCoordinatorImplementation = new RewardsCoordinator(
             IRewardsCoordinatorTypes.RewardsCoordinatorConstructorParams(
@@ -290,7 +291,7 @@ contract DeployFromScratch is Script, Test {
             ALLOCATION_CONFIGURATION_DELAY,
             SEMVER
         );
-        permissionControllerImplementation = new PermissionController();
+        permissionControllerImplementation = new PermissionController(SEMVER);
 
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
         {
