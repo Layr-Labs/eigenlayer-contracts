@@ -382,6 +382,19 @@ abstract contract IntegrationBase is IntegrationDeployer {
     ) internal view {
         assertGt(allocationManager.getAllocatedStrategies(address(operator), operatorSet).length, 0, err);
     }
+
+    function assert_NoSlashableStake(
+        User operator,
+        OperatorSet memory operatorSet,
+        string memory err
+    ) internal view {
+        IStrategy[] memory strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
+        uint[] memory slashableStake = _getMinSlashableStake(operator, operatorSet, strategies);
+
+        for (uint i = 0; i < slashableStake.length; i++) {
+            assertEq(slashableStake[i], 0, err);
+        }
+    }
     
     /*******************************************************************************
                                 SNAPSHOT ASSERTIONS

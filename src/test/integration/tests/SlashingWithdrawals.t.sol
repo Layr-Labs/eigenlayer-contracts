@@ -32,6 +32,7 @@ contract Integration_SlashingWithdrawals is IntegrationCheckUtils {
     /// 3. AVS creates an operator set containing the strategies held by the staker
     /// 4. Operator allocates to operator set
     /// 5. Operator registers for operator set
+    /// NOTE: Steps 4 and 5 are done in random order, as these should not have an outcome on the test
     function _init() internal override {
         (staker, strategies, initTokenBalances) = _newRandomStaker();
         operator = _newRandomOperator_NoAssets();
@@ -48,15 +49,27 @@ contract Integration_SlashingWithdrawals is IntegrationCheckUtils {
 
         // 3. Create an operator set and register an operator.
         operatorSet = avs.createOperatorSet(strategies);
-        // idea: bool flip between modify -> register / register -> modify TODO
-        operator.registerForOperatorSet(operatorSet);
-        check_Unallocated_Registration_State(operator, operatorSet);
 
-        allocateParams = _genAllocation_AllAvailable(operator, operatorSet);
-        operator.modifyAllocations(allocateParams); // idea: operator.allocateHalfAvailable(operatorSet)?
-        check_Initial_Allocation_State(operator, allocateParams, initDepositShares);
-        
-        // 4. Allocate to operator set
+        // randomly choose between:
+        // register -> allocate / allocate -> register
+        if (_randBool()) {
+            // register -> allocate
+            operator.registerForOperatorSet(operatorSet);
+            check_Unallocated_Registration_State(operator, operatorSet);
+
+            allocateParams = _genAllocation_AllAvailable(operator, operatorSet);
+            operator.modifyAllocations(allocateParams); // idea: operator.allocateHalfAvailable(operatorSet)?
+            check_Slashable_Allocation_State(operator, allocateParams, initDepositShares);
+        } else {
+            // allocate -> register
+            allocateParams = _genAllocation_AllAvailable(operator, operatorSet);
+            operator.modifyAllocations(allocateParams); // idea: operator.allocateHalfAvailable(operatorSet)?
+            check_NotSlashable_Allocation_State(operator, allocateParams);
+
+            operator.registerForOperatorSet(operatorSet);
+            check_PendingAllocated_Registration_State(operator, operatorSet, allocateParams, initDepositShares);
+        }
+   
         _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
     }
 

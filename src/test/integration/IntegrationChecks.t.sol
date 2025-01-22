@@ -396,15 +396,13 @@ contract IntegrationCheckUtils is IntegrationBase {
         _rollBackward_AllocationDelay(operator);
     }
 
-    /// @dev Check an operator's first allocation to an operator set
-    function check_Initial_Allocation_State(
+    /// @dev NOTE - this is for basic ALLOCATION invariants, NOT DEALLOCATION
+    function check_Base_Allocation_State(
         User operator,
-        IAllocationManagerTypes.AllocateParams memory params,
-        uint[] memory slashableShares
+        IAllocationManagerTypes.AllocateParams memory params
     ) internal {
-        // First allocation to an operator set
-        assert_Snap_Added_AllocatedSet(operator, params.operatorSet, "should have increased operators allocated sets");
-
+        assert_IsAllocated(operator, params.operatorSet, "operator should be allocated to set");
+        
         // Any call that allocates more magnitude
         assert_Snap_Created_PendingIncrease(operator, params, "should have created a pending allocation");
         assert_Snap_Added_EncumberedMagnitude(operator, params.strategies, params.newMagnitudes, "encumbered mag should have increased by allocated amount");
@@ -421,7 +419,38 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_CurrentMagnitude(operator, params, "current magnitude should match allocate params");
         assert_NoPendingModification(operator, params.operatorSet, params.strategies, "there should not be a pending modification for any strategy");
 
-        // Only if registered
+        // Reset block number so test is not affected
+        _rollBackward_AllocationDelay(operator);
+    }
+
+    /// @dev Check an operator's first allocation to an operator set
+    function check_NotSlashable_Allocation_State(
+        User operator,
+        IAllocationManagerTypes.AllocateParams memory params
+    ) internal {
+        check_Base_Allocation_State(operator, params);
+
+        // Roll forward so we can check the updated allocation
+        _rollForward_AllocationDelay(operator);
+
+        assert_NoSlashableStake(operator, params.operatorSet, "operator should not have any slashable stake");
+        assert_Snap_Unchanged_SlashableStake(operator, params.operatorSet, params.strategies, "slashable stake should not be changed");
+
+        // Reset block number so test is not affected
+        _rollBackward_AllocationDelay(operator);
+    }
+
+    /// @dev Check an operator's first allocation to an operator set
+    function check_Slashable_Allocation_State(
+        User operator,
+        IAllocationManagerTypes.AllocateParams memory params,
+        uint[] memory slashableShares
+    ) internal {
+        check_Base_Allocation_State(operator, params);
+
+        // Roll forward so we can check the updated allocation
+        _rollForward_AllocationDelay(operator);
+
         assert_Snap_Added_SlashableStake(operator, params.operatorSet, params.strategies, slashableShares, "operator should have added slashable stake after allocation is active");
 
         // Reset block number so test is not affected

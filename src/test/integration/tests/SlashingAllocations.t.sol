@@ -47,7 +47,7 @@ contract Integration_SlashingAllocations is IntegrationCheckUtils {
 
         allocateParams = _genAllocation_AllAvailable(operator, operatorSet);
         operator.modifyAllocations(allocateParams); // idea: operator.allocateHalfAvailable(operatorSet)?
-        check_Initial_Allocation_State(operator, allocateParams, initDepositShares);
+        check_Slashable_Allocation_State(operator, allocateParams, initDepositShares);
 
         // // idea - do this before/after the allocation is completable
         // // before - instant deallocation
@@ -65,7 +65,7 @@ contract Integration_SlashingAllocations is IntegrationCheckUtils {
     ) public rand(_random) {
         allocateParams = _genAllocation_AllAvailable(operator, operatorSet);
         operator.modifyAllocations(allocateParams); // idea: operator.allocateHalfAvailable(operatorSet)?
-        check_Initial_Allocation_State(operator, allocateParams, initDepositShares);
+        check_NotSlashable_Allocation_State(operator, allocateParams);
         
         // _rollForward_AllocationDelay(operator);
 
@@ -88,7 +88,7 @@ contract Integration_SlashingAllocations is IntegrationCheckUtils {
     ) public rand(_random) {
         allocateParams = _genAllocation_AllAvailable(operator, operatorSet);
         operator.modifyAllocations(allocateParams); // idea: operator.allocateHalfAvailable(operatorSet)?
-        check_Initial_Allocation_State(operator, allocateParams, initDepositShares);
+        check_NotSlashable_Allocation_State(operator, allocateParams);
         
         _rollForward_AllocationDelay(operator);
 
