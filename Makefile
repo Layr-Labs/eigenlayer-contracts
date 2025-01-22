@@ -46,7 +46,3 @@ gha-docker:
 
 storage-report:
 	bash "bin/storage-report.sh" "docs/storage-report/"
-
-# Usage: make bump-version VERSION=2
-bump-version:
-	bash "bin/bump-version.sh" $(VERSION)
