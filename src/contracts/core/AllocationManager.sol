@@ -878,7 +878,7 @@ contract AllocationManager is
         IStrategy[] memory strategies
     ) public view returns (uint256[][] memory) {
         /// This helper function returns the minimum allocated stake by taking into account deallocations at some `futureBlock`.
-        /// We use the block.number, as the `futureBlock`, so it is safe to use.
+        /// We use the block.number, as the `futureBlock`, meaning that no **future** deallocations are considered.
         return _getMinimumAllocatedStake(operatorSet, operators, strategies, uint32(block.number));
     }
 
