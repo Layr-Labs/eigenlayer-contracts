@@ -461,18 +461,18 @@ interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorE
      * @notice Creates a new operator-directed rewards submission for an operator set, to be split amongst the operators and
      * set of stakers delegated to operators who are part of the operator set.
      * @param operatorSet The operator set for which the rewards are being submitted
-     * @param performanceRewardsSubmissions The operator-directed rewards submissions being created
+     * @param operatorDirectedRewardsSubmissions The operator-directed rewards submissions being created
      * @dev Expected to be called by the AVS that created the operator set
      * @dev The duration of the `rewardsSubmission` cannot exceed `MAX_REWARDS_DURATION`
      * @dev The tokens are sent to the `RewardsCoordinator` contract
-     * @dev The `RewardsCoordinator` contract needs a token approval of sum of all `operatorRewards` in the `performanceRewardsSubmissions`, before calling this function
+     * @dev The `RewardsCoordinator` contract needs a token approval of sum of all `operatorRewards` in the `operatorDirectedRewardsSubmissions`, before calling this function
      * @dev Strategies must be in ascending order of addresses to check for duplicates
      * @dev Operators must be in ascending order of addresses to check for duplicates
-     * @dev This function will revert if the `performanceRewardsSubmissions` is malformed
+     * @dev This function will revert if the `operatorDirectedRewardsSubmissions` is malformed
      */
     function createOperatorDirectedOperatorSetRewardsSubmission(
         OperatorSet calldata operatorSet,
-        OperatorDirectedRewardsSubmission[] calldata performanceRewardsSubmissions
+        OperatorDirectedRewardsSubmission[] calldata operatorDirectedRewardsSubmissions
     ) external;
 
     /**

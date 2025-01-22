@@ -2916,8 +2916,8 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
         rewardsCoordinator.pause(2 ** PAUSED_OPERATOR_DIRECTED_OPERATOR_SET_REWARDS_SUBMISSION);
 
         cheats.expectRevert(IPausable.CurrentlyPaused.selector);
-        OperatorDirectedRewardsSubmission[] memory performanceRewardsSubmissions;
-        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, performanceRewardsSubmissions);
+        OperatorDirectedRewardsSubmission[] memory operatorDirectedRewardsSubmissions;
+        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, operatorDirectedRewardsSubmissions);
     }
 
     // // Revert from reentrancy
@@ -2939,8 +2939,8 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
 
     //     // 2. Create operator directed rewards submission input param
     //     OperatorDirectedRewardsSubmission[]
-    //         memory performanceRewardsSubmissions = new OperatorDirectedRewardsSubmission[](1);
-    //     performanceRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
+    //         memory operatorDirectedRewardsSubmissions = new OperatorDirectedRewardsSubmission[](1);
+    //     operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
     //         strategiesAndMultipliers: defaultStrategyAndMultipliers,
     //         token: IERC20(address(reenterer)),
     //         operatorRewards: defaultOperatorRewards,
@@ -2954,7 +2954,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
     //     bytes memory calldataToUse = abi.encodeWithSelector(
     //         RewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission.selector,
     //         address(reenterer),
-    //         performanceRewardsSubmissions
+    //         operatorDirectedRewardsSubmissions
     //     );
     //     reenterer.prepare(targetToUse, msgValueToUse, calldataToUse);
 
@@ -2962,7 +2962,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
     //     cheats.expectRevert("ReentrancyGuard: reentrant call");
     //     rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(
     //         address(reenterer),
-    //         performanceRewardsSubmissions
+    //         operatorDirectedRewardsSubmissions
     //     );
     // }
 
@@ -2992,10 +2992,10 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create operator directed rewards submission input param
-        OperatorDirectedRewardsSubmission[] memory performanceRewardsSubmissions =
+        OperatorDirectedRewardsSubmission[] memory operatorDirectedRewardsSubmissions =
             new OperatorDirectedRewardsSubmission[](1);
         StrategyAndMultiplier[] memory emptyStratsAndMultipliers;
-        performanceRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
+        operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
             strategiesAndMultipliers: emptyStratsAndMultipliers,
             token: rewardToken,
             operatorRewards: defaultOperatorRewards,
@@ -3007,7 +3007,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
         // 3. call createOperatorDirectedOperatorSetRewardsSubmission() with expected revert
         cheats.prank(avs);
         cheats.expectRevert(InputArrayLengthZero.selector);
-        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, performanceRewardsSubmissions);
+        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, operatorDirectedRewardsSubmissions);
     }
 
     // Revert with 0 length operator rewards
@@ -3036,10 +3036,10 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create operator directed rewards submission input param
-        OperatorDirectedRewardsSubmission[] memory performanceRewardsSubmissions =
+        OperatorDirectedRewardsSubmission[] memory operatorDirectedRewardsSubmissions =
             new OperatorDirectedRewardsSubmission[](1);
         OperatorReward[] memory emptyOperatorRewards;
-        performanceRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
+        operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: rewardToken,
             operatorRewards: emptyOperatorRewards,
@@ -3051,7 +3051,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
         // 3. call createOperatorDirectedOperatorSetRewardsSubmission() with expected revert
         cheats.prank(avs);
         cheats.expectRevert(InputArrayLengthZero.selector);
-        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, performanceRewardsSubmissions);
+        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, operatorDirectedRewardsSubmissions);
     }
 
     // Revert when operator is zero address
@@ -3080,10 +3080,10 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create operator directed rewards submission input param
-        OperatorDirectedRewardsSubmission[] memory performanceRewardsSubmissions =
+        OperatorDirectedRewardsSubmission[] memory operatorDirectedRewardsSubmissions =
             new OperatorDirectedRewardsSubmission[](1);
         defaultOperatorRewards[0].operator = address(0);
-        performanceRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
+        operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: rewardToken,
             operatorRewards: defaultOperatorRewards,
@@ -3095,7 +3095,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
         // 3. call createOperatorDirectedOperatorSetRewardsSubmission() with expected revert
         cheats.prank(avs);
         cheats.expectRevert(InvalidAddressZero.selector);
-        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, performanceRewardsSubmissions);
+        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, operatorDirectedRewardsSubmissions);
     }
 
     // Revert when duplicate operators
@@ -3124,12 +3124,12 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create operator directed rewards submission input param
-        OperatorDirectedRewardsSubmission[] memory performanceRewardsSubmissions =
+        OperatorDirectedRewardsSubmission[] memory operatorDirectedRewardsSubmissions =
             new OperatorDirectedRewardsSubmission[](1);
         OperatorReward[] memory dupOperatorRewards = new OperatorReward[](2);
         dupOperatorRewards[0] = defaultOperatorRewards[0];
         dupOperatorRewards[1] = defaultOperatorRewards[0];
-        performanceRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
+        operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: rewardToken,
             operatorRewards: dupOperatorRewards,
@@ -3141,7 +3141,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
         // 3. call createOperatorDirectedOperatorSetRewardsSubmission() with expected revert
         cheats.prank(avs);
         cheats.expectRevert(OperatorsNotInAscendingOrder.selector);
-        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, performanceRewardsSubmissions);
+        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, operatorDirectedRewardsSubmissions);
     }
 
     // Revert when operator amount is zero
@@ -3170,10 +3170,10 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create operator directed rewards submission input param
-        OperatorDirectedRewardsSubmission[] memory performanceRewardsSubmissions =
+        OperatorDirectedRewardsSubmission[] memory operatorDirectedRewardsSubmissions =
             new OperatorDirectedRewardsSubmission[](1);
         defaultOperatorRewards[0].amount = 0;
-        performanceRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
+        operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: rewardToken,
             operatorRewards: defaultOperatorRewards,
@@ -3185,7 +3185,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
         // 3. call createOperatorDirectedOperatorSetRewardsSubmission() with expected revert
         cheats.prank(avs);
         cheats.expectRevert(AmountIsZero.selector);
-        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, performanceRewardsSubmissions);
+        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, operatorDirectedRewardsSubmissions);
     }
 
     // Revert when operator amount is zero
@@ -3216,10 +3216,10 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create operator directed rewards submission input param
-        OperatorDirectedRewardsSubmission[] memory performanceRewardsSubmissions =
+        OperatorDirectedRewardsSubmission[] memory operatorDirectedRewardsSubmissions =
             new OperatorDirectedRewardsSubmission[](1);
         defaultOperatorRewards[0].amount = amount;
-        performanceRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
+        operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: rewardToken,
             operatorRewards: defaultOperatorRewards,
@@ -3231,7 +3231,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
         // 3. call createOperatorDirectedOperatorSetRewardsSubmission() with expected revert
         cheats.prank(avs);
         cheats.expectRevert(AmountExceedsMax.selector);
-        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, performanceRewardsSubmissions);
+        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, operatorDirectedRewardsSubmissions);
     }
 
     // Revert with exceeding max duration
@@ -3259,9 +3259,9 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create operator directed rewards submission input param
-        OperatorDirectedRewardsSubmission[] memory performanceRewardsSubmissions =
+        OperatorDirectedRewardsSubmission[] memory operatorDirectedRewardsSubmissions =
             new OperatorDirectedRewardsSubmission[](1);
-        performanceRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
+        operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: rewardToken,
             operatorRewards: defaultOperatorRewards,
@@ -3273,7 +3273,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
         // 3. call createOperatorDirectedOperatorSetRewardsSubmission() with expected revert
         cheats.prank(avs);
         cheats.expectRevert(DurationExceedsMax.selector);
-        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, performanceRewardsSubmissions);
+        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, operatorDirectedRewardsSubmissions);
     }
 
     // Revert with invalid interval seconds
@@ -3302,9 +3302,9 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create operator directed rewards submission input param
-        OperatorDirectedRewardsSubmission[] memory performanceRewardsSubmissions =
+        OperatorDirectedRewardsSubmission[] memory operatorDirectedRewardsSubmissions =
             new OperatorDirectedRewardsSubmission[](1);
-        performanceRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
+        operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: rewardToken,
             operatorRewards: defaultOperatorRewards,
@@ -3316,7 +3316,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
         // 3. call createOperatorDirectedOperatorSetRewardsSubmission() with expected revert
         cheats.prank(avs);
         cheats.expectRevert(InvalidDurationRemainder.selector);
-        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, performanceRewardsSubmissions);
+        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, operatorDirectedRewardsSubmissions);
     }
 
     // Revert with invalid interval start timestamp
@@ -3345,9 +3345,9 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
         cheats.assume(startTimestamp % CALCULATION_INTERVAL_SECONDS != 0);
 
         // 2. Create operator directed rewards submission input param
-        OperatorDirectedRewardsSubmission[] memory performanceRewardsSubmissions =
+        OperatorDirectedRewardsSubmission[] memory operatorDirectedRewardsSubmissions =
             new OperatorDirectedRewardsSubmission[](1);
-        performanceRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
+        operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: rewardToken,
             operatorRewards: defaultOperatorRewards,
@@ -3359,7 +3359,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
         // 3. call createOperatorDirectedOperatorSetRewardsSubmission() with expected revert
         cheats.prank(avs);
         cheats.expectRevert(InvalidStartTimestampRemainder.selector);
-        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, performanceRewardsSubmissions);
+        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, operatorDirectedRewardsSubmissions);
     }
 
     // Revert with retroactive rewards enabled and set too far in past
@@ -3385,9 +3385,9 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create operator directed rewards submission input param
-        OperatorDirectedRewardsSubmission[] memory performanceRewardsSubmissions =
+        OperatorDirectedRewardsSubmission[] memory operatorDirectedRewardsSubmissions =
             new OperatorDirectedRewardsSubmission[](1);
-        performanceRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
+        operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: rewardToken,
             operatorRewards: defaultOperatorRewards,
@@ -3399,7 +3399,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
         // 3. call createOperatorDirectedOperatorSetRewardsSubmission() with expected revert
         cheats.prank(avs);
         cheats.expectRevert(StartTimestampTooFarInPast.selector);
-        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, performanceRewardsSubmissions);
+        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, operatorDirectedRewardsSubmissions);
     }
 
     // Revert when not retroactive
@@ -3425,9 +3425,9 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create operator directed rewards submission input param
-        OperatorDirectedRewardsSubmission[] memory performanceRewardsSubmissions =
+        OperatorDirectedRewardsSubmission[] memory operatorDirectedRewardsSubmissions =
             new OperatorDirectedRewardsSubmission[](1);
-        performanceRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
+        operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: rewardToken,
             operatorRewards: defaultOperatorRewards,
@@ -3439,7 +3439,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
         // 3. call createOperatorDirectedOperatorSetRewardsSubmission() with expected revert
         cheats.prank(avs);
         cheats.expectRevert(SubmissionNotRetroactive.selector);
-        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, performanceRewardsSubmissions);
+        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, operatorDirectedRewardsSubmissions);
     }
 
     // Revert with non whitelisted strategy
@@ -3468,10 +3468,10 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create operator directed rewards submission input param
-        OperatorDirectedRewardsSubmission[] memory performanceRewardsSubmissions =
+        OperatorDirectedRewardsSubmission[] memory operatorDirectedRewardsSubmissions =
             new OperatorDirectedRewardsSubmission[](1);
         defaultStrategyAndMultipliers[0].strategy = IStrategy(address(999));
-        performanceRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
+        operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: rewardToken,
             operatorRewards: defaultOperatorRewards,
@@ -3483,7 +3483,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
         // 3. call createOperatorDirectedOperatorSetRewardsSubmission() with expected revert
         cheats.prank(avs);
         cheats.expectRevert(StrategyNotWhitelisted.selector);
-        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, performanceRewardsSubmissions);
+        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, operatorDirectedRewardsSubmissions);
     }
 
     // Revert when duplicate strategies
@@ -3512,12 +3512,12 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create operator directed rewards submission input param
-        OperatorDirectedRewardsSubmission[] memory performanceRewardsSubmissions =
+        OperatorDirectedRewardsSubmission[] memory operatorDirectedRewardsSubmissions =
             new OperatorDirectedRewardsSubmission[](1);
         StrategyAndMultiplier[] memory dupStratsAndMultipliers = new StrategyAndMultiplier[](2);
         dupStratsAndMultipliers[0] = defaultStrategyAndMultipliers[0];
         dupStratsAndMultipliers[1] = defaultStrategyAndMultipliers[0];
-        performanceRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
+        operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
             strategiesAndMultipliers: dupStratsAndMultipliers,
             token: rewardToken,
             operatorRewards: defaultOperatorRewards,
@@ -3529,7 +3529,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
         // 3. call createOperatorDirectedOperatorSetRewardsSubmission() with expected revert
         cheats.prank(avs);
         cheats.expectRevert(StrategiesNotInAscendingOrder.selector);
-        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, performanceRewardsSubmissions);
+        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, operatorDirectedRewardsSubmissions);
     }
 
     /**
@@ -3564,9 +3564,9 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create operator directed rewards submission input param
-        OperatorDirectedRewardsSubmission[] memory performanceRewardsSubmissions =
+        OperatorDirectedRewardsSubmission[] memory operatorDirectedRewardsSubmissions =
             new OperatorDirectedRewardsSubmission[](1);
-        performanceRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
+        operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: rewardToken,
             operatorRewards: defaultOperatorRewards,
@@ -3584,12 +3584,12 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
         rewardToken.approve(address(rewardsCoordinator), amount);
         uint256 currSubmissionNonce = rewardsCoordinator.submissionNonce(avs);
         bytes32 rewardsSubmissionHash =
-            keccak256(abi.encode(avs, currSubmissionNonce, performanceRewardsSubmissions[0]));
+            keccak256(abi.encode(avs, currSubmissionNonce, operatorDirectedRewardsSubmissions[0]));
         cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
         emit OperatorDirectedOperatorSetRewardsSubmissionCreated(
-            avs, operatorSet, rewardsSubmissionHash, currSubmissionNonce, performanceRewardsSubmissions[0]
+            avs, operatorSet, rewardsSubmissionHash, currSubmissionNonce, operatorDirectedRewardsSubmissions[0]
         );
-        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, performanceRewardsSubmissions);
+        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, operatorDirectedRewardsSubmissions);
         cheats.stopPrank();
 
         assertTrue(
@@ -3649,9 +3649,9 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
         // 2. Create operator directed rewards submission input param
-        IRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission[] memory performanceRewardsSubmissions =
+        IRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission[] memory operatorDirectedRewardsSubmissions =
             new IRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission[](1);
-        performanceRewardsSubmissions[0] = IRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission({
+        operatorDirectedRewardsSubmissions[0] = IRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: rewardToken,
             operatorRewards: defaultOperatorRewards,
@@ -3669,12 +3669,12 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
         rewardToken.approve(address(rewardsCoordinator), amount);
         uint256 currSubmissionNonce = rewardsCoordinator.submissionNonce(avs);
         bytes32 rewardsSubmissionHash =
-            keccak256(abi.encode(avs, currSubmissionNonce, performanceRewardsSubmissions[0]));
+            keccak256(abi.encode(avs, currSubmissionNonce, operatorDirectedRewardsSubmissions[0]));
         cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
         emit OperatorDirectedOperatorSetRewardsSubmissionCreated(
-            defaultAppointee, operatorSet, rewardsSubmissionHash, currSubmissionNonce, performanceRewardsSubmissions[0]
+            defaultAppointee, operatorSet, rewardsSubmissionHash, currSubmissionNonce, operatorDirectedRewardsSubmissions[0]
         );
-        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, performanceRewardsSubmissions);
+        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, operatorDirectedRewardsSubmissions);
         cheats.stopPrank();
 
         assertTrue(
