@@ -918,36 +918,6 @@ contract DelegationManager is
         return (strategies, shares);
     }
 
-    /// TODO: add to IDelegationManager
-    function getDelegatableShares(
-        address staker
-    ) public view returns (IStrategy[] memory, uint256[] memory) {
-        // Get a list of the staker's deposited strategies/shares in the strategy manager
-        (IStrategy[] memory tokenStrategies, uint256[] memory tokenDeposits) = strategyManager.getDeposits(staker);
-
-        // If the staker has no beacon chain ETH shares, return any shares from the strategy manager
-        uint256 podOwnerShares = eigenPodManager.stakerDepositShares(staker, beaconChainETHStrategy);
-        if (podOwnerShares == 0) {
-            return (tokenStrategies, tokenDeposits);
-        }
-
-        // Allocate extra space for beaconChainETHStrategy and shares and get BCSF
-        IStrategy[] memory strategies = new IStrategy[](tokenStrategies.length + 1);
-        uint256[] memory shares = new uint256[](tokenStrategies.length + 1);
-        uint64 beaconChainSlashingFactor = eigenPodManager.beaconChainSlashingFactor(staker);
-
-        strategies[tokenStrategies.length] = beaconChainETHStrategy;
-        shares[tokenStrategies.length] = podOwnerShares.mulWad(beaconChainSlashingFactor);
-
-        // Copy any strategy manager shares to complete array
-        for (uint256 i = 0; i < tokenStrategies.length; i++) {
-            strategies[i] = tokenStrategies[i];
-            shares[i] = tokenDeposits[i];
-        }
-
-        return (strategies, shares);
-    }
-
     /// @inheritdoc IDelegationManager
     function getQueuedWithdrawal(
         bytes32 withdrawalRoot
