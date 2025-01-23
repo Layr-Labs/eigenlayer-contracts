@@ -341,7 +341,6 @@ contract DelegationManager is
      *          1) new delegations are not paused (PAUSED_NEW_DELEGATION)
      */
     function _delegate(address staker, address operator) internal onlyWhenNotPaused(PAUSED_NEW_DELEGATION) {
-        console.log("function start");
         // read staker's deposit shares and strategies to add to operator's shares
         // with Beacon Chain ETH need to convert to use withdrawable shares to reflect slashing/deposits that have occurred in pod
         // also update the staker depositScalingFactor for each strategy
@@ -355,12 +354,8 @@ contract DelegationManager is
             IStrategy[] memory beaconChainETHStrategyArray = new IStrategy[](1);
             beaconChainETHStrategyArray[0] = beaconChainETHStrategy;
             (uint256[] memory withdrawableShares, ) = getWithdrawableShares(staker, beaconChainETHStrategyArray);
-            console.log(depositedShares[lastIndex]);
             depositedShares[lastIndex] = withdrawableShares[0];
-            console.log(depositedShares[lastIndex]);
-            console.log(eigenPodManager.beaconChainSlashingFactor(staker));
             DepositScalingFactor memory dsf = _depositScalingFactor[staker][beaconChainETHStrategy];
-            console.log(dsf._scalingFactor);
             slashingFactors[lastIndex] = uint256(allocationManager.getMaxMagnitude(operator, beaconChainETHStrategy)).divWad(dsf.scalingFactor());
         }
 
