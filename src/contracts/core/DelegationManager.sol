@@ -4,6 +4,7 @@ pragma solidity ^0.8.27;
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
+import {console} from "forge-std/console.sol";
 
 import "../mixins/SignatureUtils.sol";
 import "../mixins/PermissionControllerMixin.sol";
@@ -340,14 +341,32 @@ contract DelegationManager is
      *          1) new delegations are not paused (PAUSED_NEW_DELEGATION)
      */
     function _delegate(address staker, address operator) internal onlyWhenNotPaused(PAUSED_NEW_DELEGATION) {
+        console.log("function start");
+        // read staker's deposit shares and strategies to add to operator's shares
+        // with Beacon Chain ETH need to convert to use withdrawable shares to reflect slashing/deposits that have occurred in pod
+        // also update the staker depositScalingFactor for each strategy
+        (IStrategy[] memory strategies, uint256[] memory depositedShares) = getDepositedShares(staker);
+        //Ignoring beaconChainSlashingFactor here because Beacon Chain ETH DSF already reflects BCSF
+        uint256[] memory slashingFactors = _getSlashingFactors(staker, operator, strategies);
+        uint256 podOwnerShares = eigenPodManager.stakerDepositShares(staker, beaconChainETHStrategy);
+        //Special-casing beacon chain ETH
+        if (podOwnerShares != 0) {
+            uint lastIndex = depositedShares.length-1;
+            IStrategy[] memory beaconChainETHStrategyArray = new IStrategy[](1);
+            beaconChainETHStrategyArray[0] = beaconChainETHStrategy;
+            (uint256[] memory withdrawableShares, ) = getWithdrawableShares(staker, beaconChainETHStrategyArray);
+            console.log(depositedShares[lastIndex]);
+            depositedShares[lastIndex] = withdrawableShares[0];
+            console.log(depositedShares[lastIndex]);
+            console.log(eigenPodManager.beaconChainSlashingFactor(staker));
+            DepositScalingFactor memory dsf = _depositScalingFactor[staker][beaconChainETHStrategy];
+            console.log(dsf._scalingFactor);
+            slashingFactors[lastIndex] = uint256(allocationManager.getMaxMagnitude(operator, beaconChainETHStrategy)).divWad(dsf.scalingFactor());
+        }
+
         // record the delegation relation between the staker and operator, and emit an event
         delegatedTo[staker] = operator;
         emit StakerDelegated(staker, operator);
-
-        // read staker's delegatable shares and strategies to add to operator's shares
-        // and also update the staker depositScalingFactor for each strategy
-        (IStrategy[] memory strategies, uint256[] memory depositedShares) = getDelegatableShares(staker);
-        uint64[] memory slashingFactors = allocationManager.getMaxMagnitudes(operator, strategies);
 
         for (uint256 i = 0; i < strategies.length; ++i) {
             // forgefmt: disable-next-item
@@ -360,6 +379,9 @@ contract DelegationManager is
                 slashingFactor: slashingFactors[i]
             });
         }
+        DepositScalingFactor memory dsf = _depositScalingFactor[staker][beaconChainETHStrategy];
+        console.log("dsf");
+        console.log(dsf._scalingFactor);
     }
 
     /**
