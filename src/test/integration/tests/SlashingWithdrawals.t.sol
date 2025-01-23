@@ -55,7 +55,7 @@ contract Integration_SlashingWithdrawals is IntegrationCheckUtils {
         if (_randBool()) {
             // register -> allocate
             operator.registerForOperatorSet(operatorSet);
-            check_Unallocated_Registration_State(operator, operatorSet);
+            check_Registration_State_NoAllocation(operator, operatorSet, allStrats);
 
             allocateParams = _genAllocation_AllAvailable(operator, operatorSet);
             operator.modifyAllocations(allocateParams);
@@ -67,7 +67,7 @@ contract Integration_SlashingWithdrawals is IntegrationCheckUtils {
             check_NotSlashable_Allocation_State(operator, allocateParams);
 
             operator.registerForOperatorSet(operatorSet);
-            check_PendingAllocated_Registration_State(operator, operatorSet, allocateParams, initDepositShares);
+            check_Registration_State_PendingAllocation(operator, allocateParams);
         }
    
         _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);

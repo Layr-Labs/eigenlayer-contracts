@@ -65,7 +65,7 @@ contract Integration_SlashingAllocations is IntegrationCheckUtils {
     ) public rand(_random) {
         // 1. Register for the operator set before allocating
         operator.registerForOperatorSet(operatorSet);
-        check_Unallocated_Registration_State(operator, operatorSet);
+        check_Registration_State_NoAllocation(operator, operatorSet, allStrats);
 
         // 2. Allocate to the operator set. The allocation will be slashable at the effect block
         allocateParams = _genAllocation_AllAvailable(operator, operatorSet);
@@ -95,7 +95,7 @@ contract Integration_SlashingAllocations is IntegrationCheckUtils {
 
         // 2. Register for the operator set while the allocation is still pending
         operator.registerForOperatorSet(operatorSet);
-        check_PendingAllocated_Registration_State(operator, operatorSet, allocateParams, initDepositShares);
+        check_Registration_State_PendingAllocation(operator, allocateParams);
 
         // 3. Roll to the allocation's effect block. The allocation becomes slashable
         _rollForward_AllocationDelay(operator);
@@ -123,7 +123,7 @@ contract Integration_SlashingAllocations is IntegrationCheckUtils {
 
         // 3. Register for the operator set. The allocation immediately becomes slashable
         operator.registerForOperatorSet(operatorSet);
-        check_Allocated_Registration_State(operator, operatorSet, allocateParams, initDepositShares);
+        check_Registration_State_ActiveAllocation(operator, allocateParams);
 
         // 4. Deallocate fully from the operator set
         IAllocationManagerTypes.AllocateParams memory deallocateParams = _genDeallocation_Full(operator, operatorSet);
@@ -134,4 +134,21 @@ contract Integration_SlashingAllocations is IntegrationCheckUtils {
         _rollForward_DeallocationDelay();
         check_FullyDeallocated_State(operator, allocateParams, deallocateParams);
     }
+
+    // function testFuzz_allocatePartial_registerWhenActive(
+    //     uint24 _random
+    // ) public rand(_random) {
+    //     // 1. Allocate 100% to a random subset of strategies
+    //     IStrategy[] memory unallocated;
+    //     (allocateParams, unallocated) = _genAllocation_RandStrats(operator, operatorSet, 1e18);
+    //     operator.modifyAllocations(allocateParams);
+    //     check_NotSlashable_Allocation_State(operator, allocateParams);
+
+    //     // 2. Roll to the allocation's effect block
+    //     _rollForward_AllocationDelay(operator);
+
+    //     // 3. Register for the operator set. The allocation immediately becomes slashable
+    //     operator.registerForOperatorSet(operatorSet);
+    //     check_Registration_State()
+    // }
 }

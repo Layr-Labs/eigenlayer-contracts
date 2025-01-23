@@ -334,6 +334,33 @@ abstract contract IntegrationBase is IntegrationDeployer {
         }
     }
 
+    function assert_CurMinSlashableEqualsMinAllocated(
+        User operator,
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal view {
+        uint[] memory minSlashableStake = _getMinSlashableStake(operator, operatorSet, strategies);
+        uint[] memory minAllocatedStake = _getAllocatedStake(operator, operatorSet, strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(minSlashableStake[i], minAllocatedStake[i], err);
+        }
+    }
+
+    function assert_MaxMagsEqualMaxMagsAtCurrentBlock(
+        User operator,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal view {
+        uint64[] memory maxMagnitudes = _getMaxMagnitudes(operator, strategies);
+        uint64[] memory maxAtCurrentBlock = _getMaxMagnitudes(operator, strategies, uint32(block.number));
+
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(maxMagnitudes[i], maxAtCurrentBlock[i], err);
+        }
+    }
+
     function assert_CurrentMagnitude(
         User operator,
         IAllocationManagerTypes.AllocateParams memory params,
@@ -365,6 +392,35 @@ abstract contract IntegrationBase is IntegrationDeployer {
         string memory err
     ) internal view {
         assertTrue(allocationManager.isMemberOfOperatorSet(address(operator), operatorSet), err);
+    }
+
+    function assert_IsSlashable(
+        User operator,
+        OperatorSet memory operatorSet,
+        string memory err
+    ) internal view {
+        assertTrue(allocationManager.isOperatorSlashable(address(operator), operatorSet), err);
+    }
+
+    function assert_IsAllocatedToSet(
+        User operator,
+        OperatorSet memory operatorSet,
+        string memory err
+    ) internal view {
+        assertTrue(allocationManager.getAllocatedSets(address(operator)).contains(operatorSet), err);
+    }
+
+    function assert_IsAllocatedToStrats(
+        User operator,
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal view {
+        IStrategy[] memory allocatedStrats = allocationManager.getAllocatedStrategies(address(operator), operatorSet);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            assertTrue(allocatedStrats.contains(strategies[i]), err);
+        }
     }
 
     function assert_IsNotAllocated(
@@ -404,6 +460,30 @@ abstract contract IntegrationBase is IntegrationDeployer {
     /*******************************************************************************
                          SNAPSHOT ASSERTIONS: ALLOCATIONS
     *******************************************************************************/
+
+    function assert_Snap_Became_Registered(
+        User operator,
+        OperatorSet memory operatorSet,
+        string memory err
+    ) internal {
+        bool curIsMemberOfSet = _getIsMemberOfSet(operator, operatorSet);
+        bool prevIsMemberOfSet = _getPrevIsMemberOfSet(operator, operatorSet);
+
+        assertFalse(prevIsMemberOfSet, err);
+        assertTrue(curIsMemberOfSet, err);
+    }
+    
+    function assert_Snap_Became_Slashable(
+        User operator,
+        OperatorSet memory operatorSet,
+        string memory err
+    ) internal {
+        bool curIsSlashable = _getIsSlashable(operator, operatorSet);
+        bool prevIsSlashable = _getPrevIsSlashable(operator, operatorSet);
+
+        assertFalse(prevIsSlashable, err);
+        assertTrue(curIsSlashable, err);
+    }
 
     /// @dev Assert that we created a pending allocation with a POSITIVE pendingDiff
     function assert_Snap_Created_PendingIncrease(
@@ -460,6 +540,40 @@ abstract contract IntegrationBase is IntegrationDeployer {
         }
     }
 
+    function assert_Snap_Unchanged_AllocatedStrats(
+        User operator,
+        OperatorSet memory operatorSet,
+        string memory err
+    ) internal {
+        IStrategy[] memory curAllocatedStrats = _getAllocatedStrats(operator, operatorSet);
+        IStrategy[] memory prevAllocatedStrats = _getPrevAllocatedStrats(operator, operatorSet);
+
+        assertEq(curAllocatedStrats.length, prevAllocatedStrats.length, err);
+
+        for (uint i = 0; i < curAllocatedStrats.length; i++) {
+            assertEq(address(curAllocatedStrats[i]), address(prevAllocatedStrats[i]), err);
+        }
+    }
+
+    function assert_Snap_Unchanged_StrategyAllocations(
+        User operator,
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal {
+        IAllocationManagerTypes.Allocation[] memory curAllocations = _getAllocations(operator, operatorSet, strategies);
+        IAllocationManagerTypes.Allocation[] memory prevAllocations = _getPrevAllocations(operator, operatorSet, strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            IAllocationManagerTypes.Allocation memory curAllocation = curAllocations[i];
+            IAllocationManagerTypes.Allocation memory prevAllocation = prevAllocations[i];
+
+            assertEq(curAllocation.currentMagnitude, prevAllocation.currentMagnitude, err);
+            assertEq(curAllocation.pendingDiff, prevAllocation.pendingDiff, err);
+            assertEq(curAllocation.effectBlock, prevAllocation.effectBlock, err);
+        }
+    }
+
     function assert_Snap_Added_AllocatedSet(
         User operator,
         OperatorSet memory operatorSet,
@@ -474,9 +588,8 @@ abstract contract IntegrationBase is IntegrationDeployer {
         assertEq(addedSet.id, operatorSet.id, err);
     }
 
-    function assert_Snap_Unchanged_AllocatedSet(
+    function assert_Snap_Unchanged_AllocatedSets(
         User operator,
-        OperatorSet memory operatorSet,
         string memory err
     ) internal {
         OperatorSet[] memory curAllocatedSets = _getAllocatedSets(operator);
@@ -526,6 +639,23 @@ abstract contract IntegrationBase is IntegrationDeployer {
         assertEq(memberAdded, address(operator), err);
     }
 
+    function assert_Snap_StakeBecameSlashable(
+        User operator,
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal {
+        // OperatorSet memory operatorSet = params.operatorSet;
+        uint[] memory minAllocatedStake = _getAllocatedStake(operator, operatorSet, strategies);
+        uint[] memory curSlashableStake = _getMinSlashableStake(operator, operatorSet, strategies);
+        uint[] memory prevSlashableStake = _getPrevMinSlashableStake(operator, operatorSet, strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(prevSlashableStake[i], 0, err);
+            assertEq(curSlashableStake[i], minAllocatedStake[i], err);
+        }
+    }
+
     function assert_Snap_Added_SlashableStake(
         User operator,
         OperatorSet memory operatorSet,
@@ -567,6 +697,20 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
         for (uint i = 0; i < strategies.length; i++) {
             assertEq(curSlashableStake[i] + removedSlashableShares[i], prevSlashableStake[i], err);
+        }
+    }
+
+    function assert_Snap_Unchanged_AllocatedStake(
+        User operator,
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal {
+        uint[] memory curAllocatedStake = _getAllocatedStake(operator, operatorSet, strategies);
+        uint[] memory prevAllocatedStake = _getPrevAllocatedStake(operator, operatorSet, strategies);
+
+        for (uint i = 0; i < curAllocatedStake.length; i++) {
+            assertEq(curAllocatedStake[i], prevAllocatedStake[i], err);
         }
     }
 
@@ -1860,6 +2004,20 @@ abstract contract IntegrationBase is IntegrationDeployer {
         }
     }
 
+    function _getPrevAllocatedStrats(
+        User operator,
+        OperatorSet memory operatorSet
+    ) internal timewarp() returns (IStrategy[] memory) {
+        return _getAllocatedStrats(operator, operatorSet);
+    }
+
+    function _getAllocatedStrats(
+        User operator,
+        OperatorSet memory operatorSet
+    ) internal view returns (IStrategy[] memory) {
+        return allocationManager.getAllocatedStrategies(address(operator), operatorSet);
+    }
+
     function _getPrevAllocatedSets(
         User operator
     ) internal timewarp() returns (OperatorSet[] memory) {
@@ -1923,6 +2081,21 @@ abstract contract IntegrationBase is IntegrationDeployer {
         }
     }
 
+    function _getMaxMagnitudes(
+        User operator,
+        IStrategy[] memory strategies
+    ) internal view returns (uint64[] memory) {
+        return allocationManager.getMaxMagnitudes(address(operator), strategies);
+    }
+
+    function _getMaxMagnitudes(
+        User operator,
+        IStrategy[] memory strategies,
+        uint32 blockNum
+    ) internal view returns (uint64[] memory) {
+        return allocationManager.getMaxMagnitudesAtBlock(address(operator), strategies, blockNum);
+    }
+
     function _getPrevMinSlashableStake(
         User operator,
         OperatorSet memory operatorSet,
@@ -1942,6 +2115,54 @@ abstract contract IntegrationBase is IntegrationDeployer {
             strategies: strategies,
             futureBlock: uint32(block.number)
         })[0];
+    }
+
+    function _getPrevAllocatedStake(
+        User operator,
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies
+    ) internal timewarp() returns (uint[] memory) {
+        return _getAllocatedStake(operator, operatorSet, strategies);
+    }
+
+    function _getAllocatedStake(
+        User operator,
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies
+    ) internal view returns (uint[] memory) {
+        return allocationManager.getAllocatedStake({
+            operatorSet: operatorSet,
+            operators: address(operator).toArray(),
+            strategies: strategies
+        })[0];
+    }
+
+    function _getPrevIsSlashable(
+        User operator,
+        OperatorSet memory operatorSet
+    ) internal timewarp() returns (bool) {
+        return _getIsSlashable(operator, operatorSet);
+    }
+
+    function _getIsSlashable(
+        User operator,
+        OperatorSet memory operatorSet
+    ) internal view returns (bool) {
+        return allocationManager.isOperatorSlashable(address(operator), operatorSet);
+    }
+
+    function _getPrevIsMemberOfSet(
+        User operator,
+        OperatorSet memory operatorSet
+    ) internal timewarp() returns (bool) {
+        return _getIsMemberOfSet(operator, operatorSet);
+    }
+
+    function _getIsMemberOfSet(
+        User operator,
+        OperatorSet memory operatorSet
+    ) internal view returns (bool) {
+        return allocationManager.isMemberOfOperatorSet(address(operator), operatorSet);
     }
 
     /// @dev Uses timewarp modifier to get operator shares at the last snapshot
