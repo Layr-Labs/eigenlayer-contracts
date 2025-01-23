@@ -329,10 +329,12 @@ contract IntegrationCheckUtils is IntegrationBase {
     }
 
     /*******************************************************************************
-                                 ALLOCATION MANAGER CHECKS
+                                 ALM - REGISTRATION
     *******************************************************************************/
     
-    /// @dev Basic invariants that should hold after EVERY call to `registerForOperatorSet`
+    /// @dev Basic invariants that should hold after EVERY call to `registerForOperatorSets`
+    /// NOTE: These are only slightly modified from check_Base_Deregistration_State
+    /// If you add invariants here, consider adding them there (and vice-versa)
     function check_Base_Registration_State(
         User operator,
         OperatorSet memory operatorSet
@@ -446,6 +448,42 @@ contract IntegrationCheckUtils is IntegrationBase {
         /// Reset block number so test is not affected
         _rollBackward_AllocationDelay(operator);
     }
+
+    /*******************************************************************************
+                                 ALM - DEREGISTRATION
+    *******************************************************************************/
+
+    /// @dev Basic invariants that should hold after EVERY call to `deregisterFromOperatorSets`
+    /// NOTE: These are only slightly modified from check_Base_Registration_State
+    /// If you add invariants here, consider adding them there (and vice-versa)
+    function check_Base_Deregistration_State(
+        User operator,
+        OperatorSet memory operatorSet
+    ) internal {
+        // Global invariant
+        assert_MaxMagsEqualMaxMagsAtCurrentBlock(operator, allStrats, "max magnitudes should equal upperlookup at current block");
+
+        // Deregistration SHOULD remove the operator as a member of the set
+        assert_Snap_Became_Deregistered(operator, operatorSet, "operator should have been registered before, and is now deregistered");
+        assert_Snap_Removed_RegisteredSet(operator, operatorSet, "should have removed operator set from list of registered sets");
+        assert_Snap_Removed_MemberOfSet(operator, operatorSet, "should have removed operator from list of set members");
+
+        // Deregistration should NOT change slashability, magnitude, allocations, or allocated sets
+        assert_Snap_Remains_Slashable(operator, operatorSet, "operator should have been slashable already, and should still be slashable");
+        assert_Snap_Unchanged_AllocatedSets(operator, "should not have updated allocated sets");
+        assert_Snap_Unchanged_AllocatedStrats(operator, operatorSet, "should not have updated allocated strategies");
+        assert_Snap_Unchanged_MaxMagnitude(operator, allStrats, "should not have updated max magnitudes in any way");
+        assert_Snap_Unchanged_AllocatedStake(operator, operatorSet, allStrats, "should not have updated allocated stake in any way");
+        assert_Snap_Unchanged_StrategyAllocations(operator, operatorSet, allStrats, "should not have updated any individual allocations");
+        assert_Snap_Unchanged_EncumberedMagnitude(operator, allStrats, "should not have updated encumbered magnitude");
+        assert_Snap_Unchanged_AllocatableMagnitude(operator, allStrats, "should not have updated allocatable magnitude");
+
+        // TODO - once the deallocation delay passes, check again?
+    }
+
+    /*******************************************************************************
+                                 ALM - ALLOCATION
+    *******************************************************************************/
 
     /// @dev NOTE - this is for basic ALLOCATION invariants, NOT DEALLOCATION
     function check_Base_Allocation_State(

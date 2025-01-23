@@ -271,6 +271,7 @@ contract Integration_SlashingWithdrawals is IntegrationCheckUtils {
     ) public rand(_random) {
         // 4. Deregister.
         operator.deregisterFromOperatorSet(operatorSet);
+        check_Base_Deregistration_State(operator, operatorSet);
 
         // 5. Slash operator
         IAllocationManagerTypes.SlashingParams memory slashingParams;

@@ -472,6 +472,18 @@ abstract contract IntegrationBase is IntegrationDeployer {
         assertFalse(prevIsMemberOfSet, err);
         assertTrue(curIsMemberOfSet, err);
     }
+
+    function assert_Snap_Became_Deregistered(
+        User operator,
+        OperatorSet memory operatorSet,
+        string memory err
+    ) internal {
+        bool curIsMemberOfSet = _getIsMemberOfSet(operator, operatorSet);
+        bool prevIsMemberOfSet = _getPrevIsMemberOfSet(operator, operatorSet);
+
+        assertTrue(prevIsMemberOfSet, err);
+        assertFalse(curIsMemberOfSet, err);
+    }
     
     function assert_Snap_Became_Slashable(
         User operator,
@@ -482,6 +494,18 @@ abstract contract IntegrationBase is IntegrationDeployer {
         bool prevIsSlashable = _getPrevIsSlashable(operator, operatorSet);
 
         assertFalse(prevIsSlashable, err);
+        assertTrue(curIsSlashable, err);
+    }
+
+    function assert_Snap_Remains_Slashable(
+        User operator,
+        OperatorSet memory operatorSet,
+        string memory err
+    ) internal {
+        bool curIsSlashable = _getIsSlashable(operator, operatorSet);
+        bool prevIsSlashable = _getPrevIsSlashable(operator, operatorSet);
+
+        assertTrue(prevIsSlashable, err);
         assertTrue(curIsSlashable, err);
     }
 
@@ -583,9 +607,8 @@ abstract contract IntegrationBase is IntegrationDeployer {
         OperatorSet[] memory prevAllocatedSets = _getPrevAllocatedSets(operator);
 
         assertEq(curAllocatedSets.length, prevAllocatedSets.length + 1, err);
-        OperatorSet memory addedSet = curAllocatedSets[curAllocatedSets.length - 1];
-        assertEq(addedSet.avs, operatorSet.avs, err);
-        assertEq(addedSet.id, operatorSet.id, err);
+        assertFalse(prevAllocatedSets.contains(operatorSet), err);
+        assertTrue(curAllocatedSets.contains(operatorSet), err);
     }
 
     function assert_Snap_Unchanged_AllocatedSets(
@@ -607,9 +630,8 @@ abstract contract IntegrationBase is IntegrationDeployer {
         OperatorSet[] memory prevAllocatedSets = _getPrevAllocatedSets(operator);
 
         assertEq(curAllocatedSets.length + 1, prevAllocatedSets.length, err);
-        OperatorSet memory removedSet = prevAllocatedSets[prevAllocatedSets.length - 1];
-        assertEq(removedSet.avs, operatorSet.avs, err);
-        assertEq(removedSet.id, operatorSet.id, err);
+        assertTrue(prevAllocatedSets.contains(operatorSet), err);
+        assertFalse(curAllocatedSets.contains(operatorSet), err);
     }
 
     function assert_Snap_Added_RegisteredSet(
@@ -621,9 +643,21 @@ abstract contract IntegrationBase is IntegrationDeployer {
         OperatorSet[] memory prevRegisteredSets = _getPrevRegisteredSets(operator);
 
         assertEq(curRegisteredSets.length, prevRegisteredSets.length + 1, err);
-        OperatorSet memory addedSet = curRegisteredSets[curRegisteredSets.length - 1];
-        assertEq(addedSet.avs, operatorSet.avs, err);
-        assertEq(addedSet.id, operatorSet.id, err);
+        assertFalse(prevRegisteredSets.contains(operatorSet), err);
+        assertTrue(curRegisteredSets.contains(operatorSet), err);
+    }
+
+    function assert_Snap_Removed_RegisteredSet(
+        User operator,
+        OperatorSet memory operatorSet,
+        string memory err
+    ) internal {
+        OperatorSet[] memory curRegisteredSets = _getRegisteredSets(operator);
+        OperatorSet[] memory prevRegisteredSets = _getPrevRegisteredSets(operator);
+
+        assertEq(curRegisteredSets.length + 1, prevRegisteredSets.length, err);
+        assertTrue(prevRegisteredSets.contains(operatorSet), err);
+        assertFalse(curRegisteredSets.contains(operatorSet), err);
     }
 
     function assert_Snap_Added_MemberOfSet(
@@ -635,8 +669,21 @@ abstract contract IntegrationBase is IntegrationDeployer {
         address[] memory prevOperators = _getPrevMembers(operatorSet);
 
         assertEq(curOperators.length, prevOperators.length + 1, err);
-        address memberAdded = curOperators[curOperators.length - 1];
-        assertEq(memberAdded, address(operator), err);
+        assertFalse(prevOperators.contains(address(operator)), err);
+        assertTrue(curOperators.contains(address(operator)), err);
+    }
+
+    function assert_Snap_Removed_MemberOfSet(
+        User operator,
+        OperatorSet memory operatorSet,
+        string memory err
+    ) internal {
+        address[] memory curOperators = _getMembers(operatorSet);
+        address[] memory prevOperators = _getPrevMembers(operatorSet);
+
+        assertEq(curOperators.length + 1, prevOperators.length, err);
+        assertTrue(prevOperators.contains(address(operator)), err);
+        assertFalse(curOperators.contains(address(operator)), err);
     }
 
     function assert_Snap_StakeBecameSlashable(
