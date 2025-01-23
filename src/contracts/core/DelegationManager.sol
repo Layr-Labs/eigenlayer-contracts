@@ -374,9 +374,6 @@ contract DelegationManager is
                 slashingFactor: slashingFactors[i]
             });
         }
-        DepositScalingFactor memory dsf = _depositScalingFactor[staker][beaconChainETHStrategy];
-        console.log("dsf");
-        console.log(dsf._scalingFactor);
     }
 
     /**
