@@ -1410,9 +1410,6 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         // Use timewarp to get previous staker shares
         int[] memory prevShares = _getPrevStakerDepositSharesInt(staker, strategies);
 
-        console.log("prevShares", prevShares[0]);
-        console.log("shareDeltas", shareDeltas[0]);
-        console.log("curShares", curShares[0]);
         // For each strategy, check (prev + added == cur)
         for (uint i = 0; i < strategies.length; i++) {
             assertEq(prevShares[i] + shareDeltas[i], curShares[i], err);
