@@ -9,7 +9,7 @@ contract Integration_SlashingWithdrawals is IntegrationCheckUtils {
     OperatorSet operatorSet;
 
     User operator;
-    IAllocationManagerTypes.AllocateParams allocateParams;
+    AllocateParams allocateParams;
 
     User staker;
     IStrategy[] strategies;
@@ -77,7 +77,7 @@ contract Integration_SlashingWithdrawals is IntegrationCheckUtils {
         uint24 _random
     ) public rand(_random) {
         // 4. Slash operator
-        IAllocationManagerTypes.SlashingParams memory slashingParams;
+        SlashingParams memory slashingParams;
         {
             (IStrategy[] memory strategiesToSlash, uint256[] memory wadsToSlash) =
                 _randStrategiesAndWadsToSlash(operatorSet);
@@ -88,7 +88,7 @@ contract Integration_SlashingWithdrawals is IntegrationCheckUtils {
         }
 
         // 5. Undelegate from an operator
-        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.undelegate();
+        Withdrawal[] memory withdrawals = staker.undelegate();
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
 
         // 6. Complete withdrawal
@@ -116,7 +116,7 @@ contract Integration_SlashingWithdrawals is IntegrationCheckUtils {
         uint24 _random
     ) public rand(_random) {
         // 4. Slash operator
-        IAllocationManagerTypes.SlashingParams memory slashingParams;
+        SlashingParams memory slashingParams;
         {
             (IStrategy[] memory strategiesToSlash, uint256[] memory wadsToSlash) =
                 _randStrategiesAndWadsToSlash(operatorSet);
@@ -127,7 +127,7 @@ contract Integration_SlashingWithdrawals is IntegrationCheckUtils {
         }
 
         // 5. Undelegate from an operator
-        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.undelegate();
+        Withdrawal[] memory withdrawals = staker.undelegate();
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
 
         // 4. Complete withdrawal
@@ -148,12 +148,12 @@ contract Integration_SlashingWithdrawals is IntegrationCheckUtils {
         uint24 _random
     ) public rand(_random) {
         // 4. Queue withdrawal
-        IDelegationManagerTypes.Withdrawal[] memory withdrawals =
+        Withdrawal[] memory withdrawals =
             staker.queueWithdrawals(strategies, _calculateExpectedShares(strategies, initTokenBalances));
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
 
         // 5. Slash operator
-        IAllocationManagerTypes.SlashingParams memory slashingParams;
+        SlashingParams memory slashingParams;
         {
             (IStrategy[] memory strategiesToSlash, uint256[] memory wadsToSlash) =
                 _randStrategiesAndWadsToSlash(operatorSet);
@@ -190,12 +190,12 @@ contract Integration_SlashingWithdrawals is IntegrationCheckUtils {
         uint24 _random
     ) public rand(_random) {
         // 4. Queue withdrawal
-        IDelegationManagerTypes.Withdrawal[] memory withdrawals =
+        Withdrawal[] memory withdrawals =
             staker.queueWithdrawals(strategies, _calculateExpectedShares(strategies, initTokenBalances));
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
 
         // 5. Slash operator
-        IAllocationManagerTypes.SlashingParams memory slashingParams;
+        SlashingParams memory slashingParams;
         {
             (IStrategy[] memory strategiesToSlash, uint256[] memory wadsToSlash) =
                 _randStrategiesAndWadsToSlash(operatorSet);
@@ -223,14 +223,14 @@ contract Integration_SlashingWithdrawals is IntegrationCheckUtils {
         uint24 _random
     ) public rand(_random) {
         // 4. Deallocate all.
-        IAllocationManagerTypes.AllocateParams memory deallocateParams = _genDeallocation_Full(operator, operatorSet);
+        AllocateParams memory deallocateParams = _genDeallocation_Full(operator, operatorSet);
         operator.modifyAllocations(deallocateParams);
         check_Slashable_Deallocation_State(operator, deallocateParams, initDepositShares);
 
         _rollForward_DeallocationDelay();
 
         // 5. Slash operator
-        IAllocationManagerTypes.SlashingParams memory slashingParams;
+        SlashingParams memory slashingParams;
         {
             (IStrategy[] memory strategiesToSlash, uint256[] memory wadsToSlash) =
                 _randStrategiesAndWadsToSlash(operatorSet);
@@ -241,7 +241,7 @@ contract Integration_SlashingWithdrawals is IntegrationCheckUtils {
         }
         
         // 6. Queue withdrawals
-        IDelegationManagerTypes.Withdrawal[] memory withdrawals =
+        Withdrawal[] memory withdrawals =
             staker.queueWithdrawals(strategies, _calculateExpectedShares(strategies, initTokenBalances));
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
 
@@ -274,7 +274,7 @@ contract Integration_SlashingWithdrawals is IntegrationCheckUtils {
         check_Base_Deregistration_State(operator, operatorSet);
 
         // 5. Slash operator
-        IAllocationManagerTypes.SlashingParams memory slashingParams;
+        SlashingParams memory slashingParams;
         {
             (IStrategy[] memory strategiesToSlash, uint256[] memory wadsToSlash) =
                 _randStrategiesAndWadsToSlash(operatorSet);

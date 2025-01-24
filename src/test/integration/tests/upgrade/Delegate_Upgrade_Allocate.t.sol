@@ -28,7 +28,7 @@
 //         operator.registerForOperatorSet(operatorSet);
 
 //         // 5. Allocate to operator set.
-//         IAllocationManagerTypes.AllocateParams memory allocateParams =
+//         AllocateParams memory allocateParams =
 //             operator.modifyAllocations(operatorSet, _randMagnitudes({sum: 1 ether, len: strategies.length}));
 //         assert_Snap_Allocations_Modified(
 //             operator, allocateParams, false, "operator allocations should be updated before delay"

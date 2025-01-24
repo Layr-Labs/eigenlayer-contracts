@@ -24,7 +24,7 @@ contract Integration_Delegate_Deposit_Queue_Complete is IntegrationCheckUtils {
         assert_Snap_Added_OperatorShares(operator, strategies, shares, "operator should have received shares");
 
         // 3. Queue Withdrawal
-        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
+        Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(staker, operator, strategies, shares, withdrawals, withdrawalRoots);
 
@@ -55,7 +55,7 @@ contract Integration_Delegate_Deposit_Queue_Complete is IntegrationCheckUtils {
         assert_Snap_Added_OperatorShares(operator, strategies, shares, "operator should have received shares");
 
         // 3. Queue Withdrawal
-        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
+        Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(staker, operator, strategies, shares, withdrawals, withdrawalRoots);
 

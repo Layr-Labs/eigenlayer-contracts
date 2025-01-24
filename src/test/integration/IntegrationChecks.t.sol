@@ -197,7 +197,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         User operator, 
         IStrategy[] memory strategies, 
         uint[] memory shares, 
-        IDelegationManagerTypes.Withdrawal[] memory withdrawals, 
+        Withdrawal[] memory withdrawals, 
         bytes32[] memory withdrawalRoots
     ) internal {
         // The staker will queue one or more withdrawals for the selected strategies and shares
@@ -223,7 +223,7 @@ contract IntegrationCheckUtils is IntegrationBase {
     function check_Undelegate_State(
         User staker, 
         User operator, 
-        IDelegationManagerTypes.Withdrawal[] memory withdrawals,
+        Withdrawal[] memory withdrawals,
         bytes32[] memory withdrawalRoots,
         IStrategy[] memory strategies,
         uint[] memory shares 
@@ -262,7 +262,7 @@ contract IntegrationCheckUtils is IntegrationBase {
     function check_Withdrawal_AsTokens_State(
         User staker,
         User operator,
-        IDelegationManagerTypes.Withdrawal memory withdrawal,
+        Withdrawal memory withdrawal,
         IStrategy[] memory strategies,
         uint[] memory shares,
         IERC20[] memory tokens,
@@ -287,7 +287,7 @@ contract IntegrationCheckUtils is IntegrationBase {
     function check_Withdrawal_AsShares_State(
         User staker,
         User operator,
-        IDelegationManagerTypes.Withdrawal memory withdrawal,
+        Withdrawal memory withdrawal,
         IStrategy[] memory strategies,
         uint[] memory shares
     ) internal {
@@ -310,7 +310,7 @@ contract IntegrationCheckUtils is IntegrationBase {
     function check_Withdrawal_AsShares_Undelegated_State(
         User staker,
         User operator,
-        IDelegationManagerTypes.Withdrawal memory withdrawal,
+        Withdrawal memory withdrawal,
         IStrategy[] memory strategies,
         uint[] memory shares
     ) internal {
@@ -364,8 +364,8 @@ contract IntegrationCheckUtils is IntegrationBase {
     //     User operator,
     //     OperatorSet memory operatorSet,
     //     IStrategy[] memory unallocated,
-    //     IAllocationManagerTypes.AllocateParams memory pending,
-    //     IAllocationManagerTypes.AllocateParams memory active
+    //     AllocateParams memory pending,
+    //     AllocateParams memory active
     // ) internal {
     //     check_Base_Registration_State(operator, operatorSet);
     // }
@@ -381,7 +381,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         check_Base_Registration_State(operator, operatorSet);
 
         /// The operator is NOT allocated, ensure their slashable stake and magnitudes are unchanged
-        IAllocationManagerTypes.AllocateParams memory params = IAllocationManagerTypes.AllocateParams({
+        AllocateParams memory params = AllocateParams({
             operatorSet: operatorSet,
             strategies: unallocated,
             newMagnitudes: new uint64[](unallocated.length)
@@ -401,7 +401,7 @@ contract IntegrationCheckUtils is IntegrationBase {
     /// - params.newMagnitudes does NOT contain any `0` entries
     function check_Registration_State_ActiveAllocation(
         User operator,
-        IAllocationManagerTypes.AllocateParams memory active
+        AllocateParams memory active
     ) internal {
         OperatorSet memory operatorSet = active.operatorSet;
 
@@ -422,7 +422,7 @@ contract IntegrationCheckUtils is IntegrationBase {
     /// to the set, but that the allocation's effect block has not yet been reached
     function check_Registration_State_PendingAllocation(
         User operator,
-        IAllocationManagerTypes.AllocateParams memory params
+        AllocateParams memory params
     ) internal {
         OperatorSet memory operatorSet = params.operatorSet;
         check_Base_Registration_State(operator, operatorSet);
@@ -488,7 +488,7 @@ contract IntegrationCheckUtils is IntegrationBase {
     /// @dev NOTE - this is for basic ALLOCATION invariants, NOT DEALLOCATION
     function check_Base_Allocation_State(
         User operator,
-        IAllocationManagerTypes.AllocateParams memory params
+        AllocateParams memory params
     ) internal {
         assert_IsAllocated(operator, params.operatorSet, "operator should be allocated to set");
         
@@ -515,7 +515,7 @@ contract IntegrationCheckUtils is IntegrationBase {
     /// @dev Check an operator's first allocation to an operator set
     function check_NotSlashable_Allocation_State(
         User operator,
-        IAllocationManagerTypes.AllocateParams memory params
+        AllocateParams memory params
     ) internal {
         check_Base_Allocation_State(operator, params);
 
@@ -532,7 +532,7 @@ contract IntegrationCheckUtils is IntegrationBase {
     /// @dev Check an operator's first allocation to an operator set
     function check_Slashable_Allocation_State(
         User operator,
-        IAllocationManagerTypes.AllocateParams memory params,
+        AllocateParams memory params,
         uint[] memory slashableShares
     ) internal {
         check_Base_Allocation_State(operator, params);
@@ -550,7 +550,7 @@ contract IntegrationCheckUtils is IntegrationBase {
     /// when the deallocation is completed
     function check_Slashable_Deallocation_State(
         User operator,
-        IAllocationManagerTypes.AllocateParams memory params,
+        AllocateParams memory params,
         uint[] memory slashableShares
     ) internal {
         assert_Snap_Unchanged_AllocatedSets(operator, "should not have removed operator set from allocated sets");
@@ -581,8 +581,8 @@ contract IntegrationCheckUtils is IntegrationBase {
     /// (This means the deallocation should have been completed immediately)
     function check_NotSlashable_Deallocation_State(
         User operator,
-        IAllocationManagerTypes.AllocateParams memory allocateParams,
-        IAllocationManagerTypes.AllocateParams memory deallocateParams
+        AllocateParams memory allocateParams,
+        AllocateParams memory deallocateParams
     ) internal {
         OperatorSet memory operatorSet = allocateParams.operatorSet;
 
@@ -600,8 +600,8 @@ contract IntegrationCheckUtils is IntegrationBase {
 
     function check_FullyDeallocated_State(
         User operator,
-        IAllocationManagerTypes.AllocateParams memory allocateParams,
-        IAllocationManagerTypes.AllocateParams memory deallocateParams
+        AllocateParams memory allocateParams,
+        AllocateParams memory deallocateParams
     ) internal {
         OperatorSet memory operatorSet = allocateParams.operatorSet;
         assert_NoSlashableStake(operator, operatorSet, "should not have any slashable stake");
@@ -623,9 +623,9 @@ contract IntegrationCheckUtils is IntegrationBase {
     function check_Withdrawal_AsTokens_State_AfterSlash(
         User staker,
         User operator,
-        IDelegationManagerTypes.Withdrawal memory withdrawal,
-        IAllocationManagerTypes.AllocateParams memory allocateParams,
-        IAllocationManagerTypes.SlashingParams memory slashingParams,
+        Withdrawal memory withdrawal,
+        AllocateParams memory allocateParams,
+        SlashingParams memory slashingParams,
         uint[] memory expectedTokens
     ) internal {
         IERC20[] memory tokens = new IERC20[](withdrawal.strategies.length);
@@ -674,9 +674,9 @@ contract IntegrationCheckUtils is IntegrationBase {
     function check_Withdrawal_AsShares_State_AfterSlash(
         User staker,
         User operator,
-        IDelegationManagerTypes.Withdrawal memory withdrawal,
-        IAllocationManagerTypes.AllocateParams memory allocateParams, // TODO - was this needed?
-        IAllocationManagerTypes.SlashingParams memory slashingParams
+        Withdrawal memory withdrawal,
+        AllocateParams memory allocateParams, // TODO - was this needed?
+        SlashingParams memory slashingParams
     ) internal {
         IERC20[] memory tokens = new IERC20[](withdrawal.strategies.length);
 

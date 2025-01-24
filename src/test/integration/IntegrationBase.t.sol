@@ -9,12 +9,13 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "src/contracts/libraries/BeaconChainProofs.sol";
 import "src/contracts/libraries/SlashingLib.sol";
 
+import "src/test/integration/TypeImporter.t.sol";
 import "src/test/integration/IntegrationDeployer.t.sol";
 import "src/test/integration/TimeMachine.t.sol";
 import "src/test/integration/users/User.t.sol";
 import "src/test/integration/users/User_M1.t.sol";
 
-abstract contract IntegrationBase is IntegrationDeployer {
+abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     using StdStyle for *;
     using SlashingLib for *;
     using Strings for *;
@@ -279,7 +280,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
     }
 
     function assert_ValidWithdrawalHashes(
-        IDelegationManagerTypes.Withdrawal[] memory withdrawals,
+        Withdrawal[] memory withdrawals,
         bytes32[] memory withdrawalRoots,
         string memory err
     ) internal view {
@@ -289,7 +290,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
     }
 
     function assert_ValidWithdrawalHash(
-        IDelegationManagerTypes.Withdrawal memory withdrawal,
+        Withdrawal memory withdrawal,
         bytes32 withdrawalRoot,
         string memory err
     ) internal view {
@@ -363,10 +364,10 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
     function assert_CurrentMagnitude(
         User operator,
-        IAllocationManagerTypes.AllocateParams memory params,
+        AllocateParams memory params,
         string memory err
     ) internal view {
-        IAllocationManagerTypes.Allocation[] memory allocations = _getAllocations(operator, params.operatorSet, params.strategies);
+        Allocation[] memory allocations = _getAllocations(operator, params.operatorSet, params.strategies);
 
         for (uint i = 0; i < allocations.length; i++) {
             assertEq(allocations[i].currentMagnitude, params.newMagnitudes[i], err);
@@ -379,7 +380,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         IStrategy[] memory strategies,
         string memory err
     ) internal view {
-        IAllocationManagerTypes.Allocation[] memory allocations = _getAllocations(operator, operatorSet, strategies);
+        Allocation[] memory allocations = _getAllocations(operator, operatorSet, strategies);
 
         for (uint i = 0; i < allocations.length; i++) {
             assertEq(0, allocations[i].effectBlock, err);
@@ -512,18 +513,18 @@ abstract contract IntegrationBase is IntegrationDeployer {
     /// @dev Assert that we created a pending allocation with a POSITIVE pendingDiff
     function assert_Snap_Created_PendingIncrease(
         User operator,
-        IAllocationManagerTypes.AllocateParams memory params,
+        AllocateParams memory params,
         string memory err
     ) internal {
         // Roll backward -1 before reading allocation from state. This allows us to query
         // a pending allocation, even if the operator's allocation delay is 0.
         cheats.roll(block.number - 1);
-        IAllocationManagerTypes.Allocation[] memory curAllocations = _getAllocations(operator, params.operatorSet, params.strategies);
+        Allocation[] memory curAllocations = _getAllocations(operator, params.operatorSet, params.strategies);
         cheats.roll(block.number + 1);
         
         // We don't roll here, because at the current block number (before the call to modifyAllocations), the
         // allocations should be completable.
-        IAllocationManagerTypes.Allocation[] memory prevAllocations = _getPrevAllocations(operator, params.operatorSet, params.strategies);
+        Allocation[] memory prevAllocations = _getPrevAllocations(operator, params.operatorSet, params.strategies);
 
         for (uint i = 0; i < curAllocations.length; i++) {
             // As of completion time, the previous allocation's fields should represent an "updated, completable" allocation
@@ -542,11 +543,11 @@ abstract contract IntegrationBase is IntegrationDeployer {
     /// @dev Assert that we created a pending allocation with a NEGATIVE pendingDiff
     function assert_Snap_Created_PendingDecrease(
         User operator,
-        IAllocationManagerTypes.AllocateParams memory params,
+        AllocateParams memory params,
         string memory err
     ) internal {
-        IAllocationManagerTypes.Allocation[] memory curAllocations = _getAllocations(operator, params.operatorSet, params.strategies);
-        IAllocationManagerTypes.Allocation[] memory prevAllocations = _getPrevAllocations(operator, params.operatorSet, params.strategies);
+        Allocation[] memory curAllocations = _getAllocations(operator, params.operatorSet, params.strategies);
+        Allocation[] memory prevAllocations = _getPrevAllocations(operator, params.operatorSet, params.strategies);
 
         uint32 deallocEffectBlock = uint32(block.number) + allocationManager.DEALLOCATION_DELAY() + 1;
 
@@ -585,12 +586,12 @@ abstract contract IntegrationBase is IntegrationDeployer {
         IStrategy[] memory strategies,
         string memory err
     ) internal {
-        IAllocationManagerTypes.Allocation[] memory curAllocations = _getAllocations(operator, operatorSet, strategies);
-        IAllocationManagerTypes.Allocation[] memory prevAllocations = _getPrevAllocations(operator, operatorSet, strategies);
+        Allocation[] memory curAllocations = _getAllocations(operator, operatorSet, strategies);
+        Allocation[] memory prevAllocations = _getPrevAllocations(operator, operatorSet, strategies);
 
         for (uint i = 0; i < strategies.length; i++) {
-            IAllocationManagerTypes.Allocation memory curAllocation = curAllocations[i];
-            IAllocationManagerTypes.Allocation memory prevAllocation = prevAllocations[i];
+            Allocation memory curAllocation = curAllocations[i];
+            Allocation memory prevAllocation = prevAllocations[i];
 
             assertEq(curAllocation.currentMagnitude, prevAllocation.currentMagnitude, err);
             assertEq(curAllocation.pendingDiff, prevAllocation.pendingDiff, err);
@@ -858,18 +859,18 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
     function assert_Snap_Allocations_Modified(
         User operator,
-        IAllocationManagerTypes.AllocateParams memory allocateParams,
+        AllocateParams memory allocateParams,
         bool completed,
         string memory err
     ) internal {
-        IAllocationManagerTypes.Allocation[] memory curAllocs = _getAllocations(operator, allocateParams.operatorSet, allocateParams.strategies);
-        IAllocationManagerTypes.Allocation[] memory prevAllocs = _getPrevAllocations(operator, allocateParams.operatorSet, allocateParams.strategies);
+        Allocation[] memory curAllocs = _getAllocations(operator, allocateParams.operatorSet, allocateParams.strategies);
+        Allocation[] memory prevAllocs = _getPrevAllocations(operator, allocateParams.operatorSet, allocateParams.strategies);
         Magnitudes[] memory curMagnitudes = _getMagnitudes(operator, allocateParams.strategies);
         Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, allocateParams.strategies);
 
         for (uint i = 0; i < allocateParams.strategies.length; i++) {
-            IAllocationManagerTypes.Allocation memory curAlloc = curAllocs[i];
-            IAllocationManagerTypes.Allocation memory prevAlloc = prevAllocs[i]; 
+            Allocation memory curAlloc = curAllocs[i];
+            Allocation memory prevAlloc = prevAllocs[i]; 
             
             // Check allocations
             if (completed) {
@@ -960,23 +961,23 @@ abstract contract IntegrationBase is IntegrationDeployer {
     }
 
     function assert_Snap_Allocations_Slashed(
-        IAllocationManagerTypes.SlashingParams memory slashingParams,
+        SlashingParams memory slashingParams,
         OperatorSet memory operatorSet,
         bool completed,
         string memory err
     ) internal {
         User op = User(payable(slashingParams.operator));
         
-        IAllocationManagerTypes.Allocation[] memory curAllocs = _getAllocations(op, operatorSet, slashingParams.strategies);
-        IAllocationManagerTypes.Allocation[] memory prevAllocs = _getPrevAllocations(op, operatorSet, slashingParams.strategies);
+        Allocation[] memory curAllocs = _getAllocations(op, operatorSet, slashingParams.strategies);
+        Allocation[] memory prevAllocs = _getPrevAllocations(op, operatorSet, slashingParams.strategies);
         Magnitudes[] memory curMagnitudes = _getMagnitudes(op, slashingParams.strategies);
         Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(op, slashingParams.strategies);
 
         (, uint32 delay) = allocationManager.getAllocationDelay(slashingParams.operator);
 
         for (uint i = 0; i < slashingParams.strategies.length; i++) {
-            IAllocationManagerTypes.Allocation memory curAlloc = curAllocs[i];
-            IAllocationManagerTypes.Allocation memory prevAlloc = prevAllocs[i]; 
+            Allocation memory curAlloc = curAllocs[i];
+            Allocation memory prevAlloc = prevAllocs[i]; 
 
             uint64 slashedMagnitude = uint64(uint256(prevAlloc.currentMagnitude).mulWadRoundUp(slashingParams.wadsToSlash[i]));
             
@@ -1044,8 +1045,8 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
     function assert_HasUnderlyingTokenBalances_AfterSlash(
         User staker,
-        IAllocationManagerTypes.AllocateParams memory allocateParams,
-        IAllocationManagerTypes.SlashingParams memory slashingParams,
+        AllocateParams memory allocateParams,
+        SlashingParams memory slashingParams,
         uint[] memory expectedBalances,
         string memory err
     ) internal view {
@@ -1071,8 +1072,8 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
     function assert_Snap_StakerWithdrawableShares_AfterSlash(
         User staker,
-        IAllocationManagerTypes.AllocateParams memory allocateParams,
-        IAllocationManagerTypes.SlashingParams memory slashingParams,
+        AllocateParams memory allocateParams,
+        SlashingParams memory slashingParams,
         string memory err
     ) internal {
         uint[] memory curShares = _getWithdrawableShares(staker, allocateParams.strategies);
@@ -1465,7 +1466,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
     function assert_Snap_Added_QueuedWithdrawals(
         User staker, 
-        IDelegationManagerTypes.Withdrawal[] memory withdrawals,
+        Withdrawal[] memory withdrawals,
         string memory err
     ) internal {
         uint curQueuedWithdrawals = _getCumulativeWithdrawals(staker);
@@ -1477,7 +1478,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
     function assert_Snap_Added_QueuedWithdrawal(
         User staker, 
-        IDelegationManagerTypes.Withdrawal memory /*withdrawal*/,
+        Withdrawal memory /*withdrawal*/,
         string memory err
     ) internal {
         uint curQueuedWithdrawal = _getCumulativeWithdrawals(staker);
@@ -1530,12 +1531,12 @@ abstract contract IntegrationBase is IntegrationDeployer {
     ) internal {
         bytes32[] memory pubkeyHashes = beaconChain.getPubkeyHashes(addedValidators);
 
-        IEigenPodTypes.VALIDATOR_STATUS[] memory curStatuses = _getValidatorStatuses(staker, pubkeyHashes);
-        IEigenPodTypes.VALIDATOR_STATUS[] memory prevStatuses = _getPrevValidatorStatuses(staker, pubkeyHashes);
+        VALIDATOR_STATUS[] memory curStatuses = _getValidatorStatuses(staker, pubkeyHashes);
+        VALIDATOR_STATUS[] memory prevStatuses = _getPrevValidatorStatuses(staker, pubkeyHashes);
 
         for (uint i = 0; i < curStatuses.length; i++) {
-            assertTrue(prevStatuses[i] == IEigenPodTypes.VALIDATOR_STATUS.INACTIVE, err);
-            assertTrue(curStatuses[i] == IEigenPodTypes.VALIDATOR_STATUS.ACTIVE, err);
+            assertTrue(prevStatuses[i] == VALIDATOR_STATUS.INACTIVE, err);
+            assertTrue(curStatuses[i] == VALIDATOR_STATUS.ACTIVE, err);
         }
     }
 
@@ -1546,12 +1547,12 @@ abstract contract IntegrationBase is IntegrationDeployer {
     ) internal {
         bytes32[] memory pubkeyHashes = beaconChain.getPubkeyHashes(exitedValidators);
 
-        IEigenPodTypes.VALIDATOR_STATUS[] memory curStatuses = _getValidatorStatuses(staker, pubkeyHashes);
-        IEigenPodTypes.VALIDATOR_STATUS[] memory prevStatuses = _getPrevValidatorStatuses(staker, pubkeyHashes);
+        VALIDATOR_STATUS[] memory curStatuses = _getValidatorStatuses(staker, pubkeyHashes);
+        VALIDATOR_STATUS[] memory prevStatuses = _getPrevValidatorStatuses(staker, pubkeyHashes);
 
         for (uint i = 0; i < curStatuses.length; i++) {
-            assertTrue(prevStatuses[i] == IEigenPodTypes.VALIDATOR_STATUS.ACTIVE, err);
-            assertTrue(curStatuses[i] == IEigenPodTypes.VALIDATOR_STATUS.WITHDRAWN, err);
+            assertTrue(prevStatuses[i] == VALIDATOR_STATUS.ACTIVE, err);
+            assertTrue(curStatuses[i] == VALIDATOR_STATUS.WITHDRAWN, err);
         }
     }
 
@@ -1650,7 +1651,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
     function _genAllocation_AllAvailable(
         User operator, 
         OperatorSet memory operatorSet
-    ) internal view returns (IAllocationManagerTypes.AllocateParams memory params) {
+    ) internal view returns (AllocateParams memory params) {
         params.operatorSet = operatorSet;
         params.strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
         params.newMagnitudes = new uint64[](params.strategies.length);
@@ -1666,7 +1667,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
     function _genAllocation_HalfAvailable(
         User operator, 
         OperatorSet memory operatorSet
-    ) internal view returns (IAllocationManagerTypes.AllocateParams memory params) {
+    ) internal view returns (AllocateParams memory params) {
         params.operatorSet = operatorSet;
         params.strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
         params.newMagnitudes = new uint64[](params.strategies.length);
@@ -1681,7 +1682,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
     function _genDeallocation_Full(
         User operator,
         OperatorSet memory operatorSet
-    ) internal view returns (IAllocationManagerTypes.AllocateParams memory params) {
+    ) internal view returns (AllocateParams memory params) {
         params.operatorSet = operatorSet;
         params.strategies = allocationManager.getAllocatedStrategies(address(operator), operatorSet);
         params.newMagnitudes = new uint64[](params.strategies.length);
@@ -1935,7 +1936,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
     }
 
     function _getWithdrawalHashes(
-        IDelegationManagerTypes.Withdrawal[] memory withdrawals
+        Withdrawal[] memory withdrawals
     ) internal view returns (bytes32[] memory) {
         bytes32[] memory withdrawalRoots = new bytes32[](withdrawals.length);
 
@@ -1970,7 +1971,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
     }
 
     /// @dev Rolls forward by the minimum withdrawal delay blocks.
-    function _rollBlocksForCompleteWithdrawals(IDelegationManagerTypes.Withdrawal[] memory withdrawals) internal {     
+    function _rollBlocksForCompleteWithdrawals(Withdrawal[] memory withdrawals) internal {     
         uint256 latest;
         for (uint i = 0; i < withdrawals.length; ++i) {
             if (withdrawals[i].startBlock > latest) latest = withdrawals[i].startBlock;
@@ -2035,7 +2036,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         User operator,
         OperatorSet memory operatorSet,
         IStrategy[] memory strategies
-    ) internal timewarp() returns (IAllocationManagerTypes.Allocation[] memory) {
+    ) internal timewarp() returns (Allocation[] memory) {
         return _getAllocations(operator, operatorSet, strategies);
     }
 
@@ -2044,8 +2045,8 @@ abstract contract IntegrationBase is IntegrationDeployer {
         User operator,
         OperatorSet memory operatorSet,
         IStrategy[] memory strategies
-    ) internal view returns (IAllocationManagerTypes.Allocation[] memory allocations) {
-        allocations = new IAllocationManagerTypes.Allocation[](strategies.length);
+    ) internal view returns (Allocation[] memory allocations) {
+        allocations = new Allocation[](strategies.length);
         for (uint i = 0; i < strategies.length; ++i) {
             allocations[i] = allocationManager.getAllocation(address(operator), operatorSet, strategies[i]);
         }
@@ -2369,9 +2370,9 @@ abstract contract IntegrationBase is IntegrationDeployer {
         return _getActiveValidatorCount(staker);
     }
 
-    function _getValidatorStatuses(User staker, bytes32[] memory pubkeyHashes) internal view returns (IEigenPodTypes.VALIDATOR_STATUS[] memory) {
+    function _getValidatorStatuses(User staker, bytes32[] memory pubkeyHashes) internal view returns (VALIDATOR_STATUS[] memory) {
         EigenPod pod = staker.pod();
-        IEigenPodTypes.VALIDATOR_STATUS[] memory statuses = new IEigenPodTypes.VALIDATOR_STATUS[](pubkeyHashes.length);
+        VALIDATOR_STATUS[] memory statuses = new VALIDATOR_STATUS[](pubkeyHashes.length);
 
         for (uint i = 0; i < statuses.length; i++) {
             statuses[i] = pod.validatorStatus(pubkeyHashes[i]);
@@ -2380,7 +2381,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         return statuses;
     }
 
-    function _getPrevValidatorStatuses(User staker, bytes32[] memory pubkeyHashes) internal timewarp() returns (IEigenPodTypes.VALIDATOR_STATUS[] memory) {
+    function _getPrevValidatorStatuses(User staker, bytes32[] memory pubkeyHashes) internal timewarp() returns (VALIDATOR_STATUS[] memory) {
         return _getValidatorStatuses(staker, pubkeyHashes);
     }
 

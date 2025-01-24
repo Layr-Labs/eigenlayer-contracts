@@ -5,7 +5,7 @@
 // import "src/test/integration/users/User.t.sol";
 // import {console} from "forge-std/console.sol";
 
-// contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is IntegrationCheckUtils, IDelegationManagerTypes {
+// contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is IntegrationCheckUtils {
 
 //     function _init() internal override {
 //         // TODO: Partial deposits don't work when beacon chain eth balance is initialized to < 64 ETH, need to write _newRandomStaker variant that ensures beacon chain ETH balance
@@ -43,7 +43,7 @@
 //         operator.registerForOperatorSet(operatorSet);
 
 //         // 3. Allocate to operator set
-//         IAllocationManagerTypes.AllocateParams memory allocateParams = 
+//         AllocateParams memory allocateParams = 
 //             operator.modifyAllocations(operatorSet, _maxMagnitudes(operatorSet, operator));
         
 //         assert_Snap_Allocations_Modified(
@@ -63,7 +63,7 @@
 //         );
 
 //         // 4. Fully slash operator
-//         IAllocationManagerTypes.SlashingParams memory slashingParams;
+//         SlashingParams memory slashingParams;
 //         {
 //             (IStrategy[] memory strategiesToSlash, uint256[] memory wadsToSlash) =
 //                 _strategiesAndWadsForFullSlash(operatorSet);
@@ -75,7 +75,7 @@
 //         }
 
 //         // 5. Undelegate from an operator
-//         IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.undelegate();
+//         Withdrawal[] memory withdrawals = staker.undelegate();
 //         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
 
 //         // 6. Complete withdrawal
@@ -126,7 +126,7 @@
 //         operator.registerForOperatorSet(operatorSet);
 
 //         // 3. Allocate to operator set
-//         IAllocationManagerTypes.AllocateParams memory allocateParams = 
+//         AllocateParams memory allocateParams = 
 //             operator.modifyAllocations(operatorSet, _maxMagnitudes(operatorSet, operator));
         
 //         assert_Snap_Allocations_Modified(
@@ -146,11 +146,11 @@
 //         );
 
 //         // 4. Undelegate from an operator
-//         IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.undelegate();
+//         Withdrawal[] memory withdrawals = staker.undelegate();
 //         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
 
 //         // 5. Fully slash operator
-//         IAllocationManagerTypes.SlashingParams memory slashingParams;
+//         SlashingParams memory slashingParams;
 //         {
 //             (IStrategy[] memory strategiesToSlash, uint256[] memory wadsToSlash) =
 //                 _strategiesAndWadsForFullSlash(operatorSet);
@@ -218,7 +218,7 @@
 //         operator.registerForOperatorSet(operatorSet);
 
 //         // 3. Allocate to operator set
-//         IAllocationManagerTypes.AllocateParams memory allocateParams = 
+//         AllocateParams memory allocateParams = 
 //             operator.modifyAllocations(operatorSet, _maxMagnitudes(operatorSet, operator));
         
 //         assert_Snap_Allocations_Modified(
@@ -238,7 +238,7 @@
 //         );
 
 //         // 4. Fully slash operator
-//         IAllocationManagerTypes.SlashingParams memory slashingParams;
+//         SlashingParams memory slashingParams;
 //         {
 //             (IStrategy[] memory strategiesToSlash, uint256[] memory wadsToSlash) =
 //                 _strategiesAndWadsForFullSlash(operatorSet);
@@ -250,7 +250,7 @@
 //         }
 
 //         // 5. Undelegate from an operator
-//         IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.undelegate();
+//         Withdrawal[] memory withdrawals = staker.undelegate();
 //         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
 
 //         // 6. Complete withdrawal
@@ -295,7 +295,7 @@
 //         operator.registerForOperatorSet(operatorSet);
 
 //         // 3. Allocate to operator set.
-//         IAllocationManagerTypes.AllocateParams memory allocateParams =
+//         AllocateParams memory allocateParams =
 //             operator.modifyAllocations(operatorSet, _maxMagnitudes(operatorSet, operator));
 //         assert_Snap_Allocations_Modified(
 //             operator, allocateParams, false, "operator allocations should be updated before delay"
@@ -306,7 +306,7 @@
 //         );
 
 //         // 4. Fully slash random proper subset of operators strategies
-//         IAllocationManagerTypes.SlashingParams memory slashingParams;
+//         SlashingParams memory slashingParams;
 //         {
 //             (IStrategy[] memory strategiesToSlash, uint256[] memory wadsToSlash) =
 //                 _strategiesAndWadsForRandFullSlash(operatorSet);
@@ -317,7 +317,7 @@
 //         }
 
 //         // 5. Undelegate from an operator
-//         IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.undelegate();
+//         Withdrawal[] memory withdrawals = staker.undelegate();
 //         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
 
 //         // 6. Complete withdrawal as shares

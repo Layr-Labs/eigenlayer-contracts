@@ -9,7 +9,7 @@ contract Integration_SlashingAllocations is IntegrationCheckUtils {
     OperatorSet operatorSet;
 
     User operator;
-    IAllocationManagerTypes.AllocateParams allocateParams;
+    AllocateParams allocateParams;
 
     User staker;
     IStrategy[] strategies;
@@ -51,7 +51,7 @@ contract Integration_SlashingAllocations is IntegrationCheckUtils {
         _rollForward_AllocationDelay(operator);
 
         // 3. Deallocate fully from the operator set
-        IAllocationManagerTypes.AllocateParams memory deallocateParams = _genDeallocation_Full(operator, operatorSet);
+        AllocateParams memory deallocateParams = _genDeallocation_Full(operator, operatorSet);
         operator.modifyAllocations(deallocateParams);
         check_NotSlashable_Deallocation_State(operator, allocateParams, deallocateParams);
 
@@ -76,7 +76,7 @@ contract Integration_SlashingAllocations is IntegrationCheckUtils {
         _rollForward_AllocationDelay(operator);
 
         // 4. Deallocate fully from the operator set
-        IAllocationManagerTypes.AllocateParams memory deallocateParams = _genDeallocation_Full(operator, operatorSet);
+        AllocateParams memory deallocateParams = _genDeallocation_Full(operator, operatorSet);
         operator.modifyAllocations(deallocateParams);
         check_Slashable_Deallocation_State(operator, deallocateParams, initDepositShares);
 
@@ -101,7 +101,7 @@ contract Integration_SlashingAllocations is IntegrationCheckUtils {
         _rollForward_AllocationDelay(operator);
 
         // 4. Deallocate fully from the operator set
-        IAllocationManagerTypes.AllocateParams memory deallocateParams = _genDeallocation_Full(operator, operatorSet);
+        AllocateParams memory deallocateParams = _genDeallocation_Full(operator, operatorSet);
         operator.modifyAllocations(deallocateParams);
         check_Slashable_Deallocation_State(operator, deallocateParams, initDepositShares);
 
@@ -126,7 +126,7 @@ contract Integration_SlashingAllocations is IntegrationCheckUtils {
         check_Registration_State_ActiveAllocation(operator, allocateParams);
 
         // 4. Deallocate fully from the operator set
-        IAllocationManagerTypes.AllocateParams memory deallocateParams = _genDeallocation_Full(operator, operatorSet);
+        AllocateParams memory deallocateParams = _genDeallocation_Full(operator, operatorSet);
         operator.modifyAllocations(deallocateParams);
         check_Slashable_Deallocation_State(operator, deallocateParams, initDepositShares);
 
