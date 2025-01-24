@@ -43,7 +43,7 @@ This document is organized according to the following themes (click each to be t
     * Stakers and Operators can designate a "claimer" who can claim rewards via on their behalf via `processClaim`. If a claimer is not set in `claimerFor`, the earner will have to call `processClaim` themselves.
     * Note that the claimer isn't necessarily the reward recipient, but they do have the authority to specify the recipient when calling `processClaim` on the earner's behalf.
 * `mapping(address => mapping(IERC20 => uint256)) public cumulativeClaimed`: earner => token => total amount claimed to date
-    * Mapping for earners(Stakers/Operators) to track their total claimed earnings per reward token. This mapping is used to calculate the difference between the cumulativeEarnings stored in the merkle tree and the previous total claimed amount. This difference is then transfered to the specified destination address.
+    * Mapping for earners(Stakers/Operators) to track their total claimed earnings per reward token. This mapping is used to calculate the difference between the cumulativeEarnings stored in the merkle tree and the previous total claimed amount. This difference is then transferred to the specified destination address.
 * `uint16 public defaultOperatorSplitBips`: *Used off-chain* by the rewards updater to calculate an Operator's split for a specific reward.
     * This is expected to be a flat 10% rate for the initial rewards release. Expressed in basis points, this is `1000`.
 * `mapping(address => mapping(address => OperatorSplit)) internal operatorAVSSplitBips`: operator => AVS => `OperatorSplit`
