@@ -186,16 +186,19 @@ $$
 #### Staker Level
 
 withdrawable shares should remain unchanged
+
 $$
 a_{n+1} = a_n
 $$
 
 deposit shares should remain unchanged
+
 $$
 s_{n+1} = s_n
 $$
 
 beaconChainSlashingFactor and maxMagnitude should also remain unchanged. In this case, since the staker is not delegated, then their maxMagnitude should by default be equal to 1.
+
 $$
 l_{n+1} = l_n
 $$
@@ -215,8 +218,10 @@ $$
 $$
 
 $$
-=> k_{n+1} = \frac {s_n m_n} { m_{n+1} }
+=> k_{n+1} = \frac {k_n m_n} { m_{n+1} }
 $$
+
+Notice how the staker variables that update $k_{n+1}$ and $m_{n+1}$ do not affect previously queued withdrawals and shares received upon withdrawal completion. This is because the maxMagnitude that is looked up is dependent on the operator at the time of the queued withdrawal and the $k_n$ is effectively stored in the scaled shares field.
 
 ---
 
