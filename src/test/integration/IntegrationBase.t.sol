@@ -1410,6 +1410,9 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         // Use timewarp to get previous staker shares
         int[] memory prevShares = _getPrevStakerDepositSharesInt(staker, strategies);
 
+        console.log("prevShares", prevShares[0]);
+        console.log("shareDeltas", shareDeltas[0]);
+        console.log("curShares", curShares[0]);
         // For each strategy, check (prev + added == cur)
         for (uint i = 0; i < strategies.length; i++) {
             assertEq(prevShares[i] + shareDeltas[i], curShares[i], err);
@@ -2017,7 +2020,13 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     }
 
     function _calcNativeETHOperatorShareDelta(User staker, int shareDelta) internal view returns (int) {
-        int curPodOwnerShares = eigenPodManager.podOwnerDepositShares(address(staker));
+        // TODO: Maybe we update parent method to have an M2 and Slashing version?
+        int curPodOwnerShares;
+        if (!isUpgraded) {
+            curPodOwnerShares = IEigenPodManager_DeprecatedM2(address(eigenPodManager)).podOwnerShares(address(staker));
+        } else {
+            curPodOwnerShares = eigenPodManager.podOwnerDepositShares(address(staker));
+        }
         int newPodOwnerShares = curPodOwnerShares + shareDelta;
 
         if (curPodOwnerShares <= 0) {

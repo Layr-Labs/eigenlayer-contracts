@@ -247,7 +247,6 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
         (uint256 prevDepositShares, uint256 addedShares) = eigenPodManager.addShares(
             defaultStaker,
             beaconChainETHStrategy,
-            IERC20(address(0)),
             5
         );
 
@@ -272,7 +271,6 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
         (uint256 prevDepositShares, uint256 addedShares) = eigenPodManager.addShares(
             defaultStaker,
             beaconChainETHStrategy,
-            IERC20(address(0)),
             uint256(sharesToAdd)
         );
 
