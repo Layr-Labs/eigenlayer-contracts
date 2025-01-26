@@ -623,10 +623,28 @@ contract AllocationManager is
         OperatorSet memory operatorSet
     ) external view returns (IStrategy[] memory) {
         address[] memory values = allocatedStrategies[operator][operatorSet.key()].values();
+        
         IStrategy[] memory strategies;
-
         assembly {
             strategies := values
+        }
+
+        /// Iterate over allocatedStrategies and keep only the strategies for which we have active allocations
+        IStrategy[] memory results = new IStrategy[](values.length);
+        uint resultIdx = 0;
+        for (uint i = 0; i < strategies.length; i++) {
+            Allocation memory allocation = getAllocation(operator, operatorSet, strategies[i]);
+            
+            /// Skip if there is NEITHER a current NOR a pending allocation
+            /// TODO - do we want to keep ONLY current allocations, and expose pending in a different
+            /// method? This also brings into question _updateAllocationInfo marking things allocated
+            /// when they are in fact pending?
+            if (allocation.currentMagnitude == 0 && allocation.pendingDiff == 0) {
+                continue;
+            }
+
+            results[resultIdx] = strategies[i];
+            resultIdx++;
         }
 
         return strategies;
