@@ -1977,6 +1977,7 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         // Step 5: Modify allocations again (Should not be called)
         AllocateParams[] memory newAllocateParams = _newAllocateParams(defaultOperatorSet, 1000);
         cheats.prank(defaultOperator);
+        cheats.expectRevert(ModificationAlreadyPending.selector);
         allocationManager.modifyAllocations(defaultOperator, newAllocateParams);
 
         // Assert that the allocation was modified without reverting
@@ -2047,6 +2048,7 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         // Note: this should revert but previously it would not prior to the bugfix
         AllocateParams[] memory newAllocateParams1 = _newAllocateParams(operatorSet1, 400);
         cheats.prank(defaultOperator);
+        cheats.expectRevert(ModificationAlreadyPending.selector);
         allocationManager.modifyAllocations(defaultOperator, newAllocateParams1);
 
         // Assert that the deallocationQueue is unordered for the 2 deallocations in queue
@@ -2112,6 +2114,7 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         // Note: this should revert but previously it would not prior to the bugfix
         AllocateParams[] memory newAllocateParams1 = _newAllocateParams(operatorSet1, 5000);
         cheats.prank(defaultOperator);
+        cheats.expectRevert(ModificationAlreadyPending.selector);
         allocationManager.modifyAllocations(defaultOperator, newAllocateParams1);
 
         // Assert that the deallocationQueue is unordered for the 2 deallocations in queue
