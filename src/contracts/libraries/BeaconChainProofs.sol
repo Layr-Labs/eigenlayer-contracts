@@ -28,7 +28,7 @@ library BeaconChainProofs {
     /// |                                             HEIGHT: VALIDATOR_TREE_HEIGHT
     /// individual validators
     uint256 internal constant BEACON_BLOCK_HEADER_TREE_HEIGHT = 3;
-    uint256 internal constant BEACON_STATE_TREE_HEIGHT = 5;
+    uint256 internal constant BEACON_STATE_TREE_HEIGHT = 6;
     uint256 internal constant BALANCE_TREE_HEIGHT = 38;
     uint256 internal constant VALIDATOR_TREE_HEIGHT = 40;
 
