@@ -1,20 +1,88 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./IPauserRegistry.sol";
 import "./IStrategy.sol";
 
-/**
- * @title Interface for the `IRewardsCoordinator` contract.
- * @author Layr Labs, Inc.
- * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
- * @notice Allows AVSs to make "Rewards Submissions", which get distributed amongst the AVSs' confirmed
- * Operators and the Stakers delegated to those Operators.
- * Calculations are performed based on the completed RewardsSubmission, with the results posted in
- * a Merkle root against which Stakers & Operators can make claims.
- */
-interface IRewardsCoordinator {
-    /// STRUCTS ///
+interface IRewardsCoordinatorErrors {
+    /// @dev Thrown when msg.sender is not allowed to call a function
+    error UnauthorizedCaller();
+    /// @dev Thrown when a earner not an AVS or Operator
+    error InvalidEarner();
+
+    /// Invalid Inputs
+
+    /// @dev Thrown when an input address is zero
+    error InvalidAddressZero();
+    /// @dev Thrown when an invalid root is provided.
+    error InvalidRoot();
+    /// @dev Thrown when an invalid root index is provided.
+    error InvalidRootIndex();
+    /// @dev Thrown when input arrays length is zero.
+    error InputArrayLengthZero();
+    /// @dev Thrown when two array parameters have mismatching lengths.
+    error InputArrayLengthMismatch();
+    /// @dev Thrown when provided root is not for new calculated period.
+    error NewRootMustBeForNewCalculatedPeriod();
+    /// @dev Thrown when rewards end timestamp has not elapsed.
+    error RewardsEndTimestampNotElapsed();
+
+    /// Rewards Submissions
+
+    /// @dev Thrown when input `amount` is zero.
+    error AmountIsZero();
+    /// @dev Thrown when input `amount` exceeds maximum.
+    error AmountExceedsMax();
+    /// @dev Thrown when input `split` exceeds `ONE_HUNDRED_IN_BIPS`
+    error SplitExceedsMax();
+    /// @dev Thrown when an operator attempts to set a split before the previous one becomes active
+    error PreviousSplitPending();
+    /// @dev Thrown when input `duration` exceeds maximum.
+    error DurationExceedsMax();
+    /// @dev Thrown when input `duration` is not evenly divisble by CALCULATION_INTERVAL_SECONDS.
+    error InvalidDurationRemainder();
+    /// @dev Thrown when GENESIS_REWARDS_TIMESTAMP is not evenly divisble by CALCULATION_INTERVAL_SECONDS.
+    error InvalidGenesisRewardsTimestampRemainder();
+    /// @dev Thrown when CALCULATION_INTERVAL_SECONDS is not evenly divisble by SNAPSHOT_CADENCE.
+    error InvalidCalculationIntervalSecondsRemainder();
+    /// @dev Thrown when `startTimestamp` is not evenly divisble by CALCULATION_INTERVAL_SECONDS.
+    error InvalidStartTimestampRemainder();
+    /// @dev Thrown when `startTimestamp` is too far in the future.
+    error StartTimestampTooFarInFuture();
+    /// @dev Thrown when `startTimestamp` is too far in the past.
+    error StartTimestampTooFarInPast();
+    /// @dev Thrown when an attempt to use a non-whitelisted strategy is made.
+    error StrategyNotWhitelisted();
+    /// @dev Thrown when `strategies` is not sorted in ascending order.
+    error StrategiesNotInAscendingOrder();
+    /// @dev Thrown when `operators` are not sorted in ascending order
+    error OperatorsNotInAscendingOrder();
+    /// @dev Thrown when an operator-directed rewards submission is not retroactive
+    error SubmissionNotRetroactive();
+
+    /// Claims
+
+    /// @dev Thrown when an invalid earner claim proof is provided.
+    error InvalidClaimProof();
+    /// @dev Thrown when an invalid token leaf index is provided.
+    error InvalidTokenLeafIndex();
+    /// @dev Thrown when an invalid earner leaf index is provided.
+    error InvalidEarnerLeafIndex();
+    /// @dev Thrown when cummulative earnings are not greater than cummulative claimed.
+    error EarningsNotGreaterThanClaimed();
+
+    /// Reward Root Checks
+
+    /// @dev Thrown if a root has already been disabled.
+    error RootDisabled();
+    /// @dev Thrown if a root has not been activated yet.
+    error RootNotActivated();
+    /// @dev Thrown if a root has already been activated.
+    error RootAlreadyActivated();
+}
+
+interface IRewardsCoordinatorTypes {
     /**
      * @notice A linear combination of strategies and multipliers for AVSs to weigh
      * EigenLayer strategies.
@@ -166,9 +234,9 @@ interface IRewardsCoordinator {
         bytes[] tokenTreeProofs;
         TokenTreeMerkleLeaf[] tokenLeaves;
     }
+}
 
-    /// EVENTS ///
-
+interface IRewardsCoordinatorEvents is IRewardsCoordinatorTypes {
     /// @notice emitted when an AVS creates a valid RewardsSubmission
     event AVSRewardsSubmissionCreated(
         address indexed avs,
@@ -176,6 +244,7 @@ interface IRewardsCoordinator {
         bytes32 indexed rewardsSubmissionHash,
         RewardsSubmission rewardsSubmission
     );
+
     /// @notice emitted when a valid RewardsSubmission is created for all stakers by a valid submitter
     event RewardsSubmissionForAllCreated(
         address indexed submitter,
@@ -183,6 +252,7 @@ interface IRewardsCoordinator {
         bytes32 indexed rewardsSubmissionHash,
         RewardsSubmission rewardsSubmission
     );
+
     /// @notice emitted when a valid RewardsSubmission is created when rewardAllStakersAndOperators is called
     event RewardsSubmissionForAllEarnersCreated(
         address indexed tokenHopper,
@@ -209,11 +279,11 @@ interface IRewardsCoordinator {
 
     /// @notice rewardsUpdater is responsible for submiting DistributionRoots, only owner can set rewardsUpdater
     event RewardsUpdaterSet(address indexed oldRewardsUpdater, address indexed newRewardsUpdater);
+
     event RewardsForAllSubmitterSet(
-        address indexed rewardsForAllSubmitter,
-        bool indexed oldValue,
-        bool indexed newValue
+        address indexed rewardsForAllSubmitter, bool indexed oldValue, bool indexed newValue
     );
+
     event ActivationDelaySet(uint32 oldActivationDelay, uint32 newActivationDelay);
     event DefaultOperatorSplitBipsSet(uint16 oldDefaultOperatorSplitBips, uint16 newDefaultOperatorSplitBips);
 
@@ -252,6 +322,7 @@ interface IRewardsCoordinator {
     );
 
     event ClaimerForSet(address indexed earner, address indexed oldClaimer, address indexed claimer);
+
     /// @notice rootIndex is the specific array index of the newly created root in the storage array
     event DistributionRootSubmitted(
         uint32 indexed rootIndex,
@@ -259,7 +330,9 @@ interface IRewardsCoordinator {
         uint32 indexed rewardsCalculationEndTimestamp,
         uint32 activatedAt
     );
+
     event DistributionRootDisabled(uint32 indexed rootIndex);
+
     /// @notice root is one of the submitted distribution roots that was claimed against
     event RewardsClaimed(
         bytes32 root,
@@ -269,86 +342,29 @@ interface IRewardsCoordinator {
         IERC20 token,
         uint256 claimedAmount
     );
+}
 
+/**
+ * @title Interface for the `IRewardsCoordinator` contract.
+ * @author Layr Labs, Inc.
+ * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
+ * @notice Allows AVSs to make "Rewards Submissions", which get distributed amongst the AVSs' confirmed
+ * Operators and the Stakers delegated to those Operators.
+ * Calculations are performed based on the completed RewardsSubmission, with the results posted in
+ * a Merkle root against which Stakers & Operators can make claims.
+ */
+interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorEvents {
     /**
-     *
-     *                         VIEW FUNCTIONS
-     *
+     * @dev Initializes the addresses of the initial owner, pauser registry, rewardsUpdater and
+     * configures the initial paused status, activationDelay, and defaultOperatorSplitBips.
      */
-
-    /// @notice The address of the entity that can update the contract with new merkle roots
-    function rewardsUpdater() external view returns (address);
-
-    /**
-     * @notice The interval in seconds at which the calculation for a RewardsSubmission distribution is done.
-     * @dev Rewards Submission durations must be multiples of this interval.
-     */
-    function CALCULATION_INTERVAL_SECONDS() external view returns (uint32);
-
-    /// @notice The maximum amount of time (seconds) that a RewardsSubmission can span over
-    function MAX_REWARDS_DURATION() external view returns (uint32);
-
-    /// @notice max amount of time (seconds) that a submission can start in the past
-    function MAX_RETROACTIVE_LENGTH() external view returns (uint32);
-
-    /// @notice max amount of time (seconds) that a submission can start in the future
-    function MAX_FUTURE_LENGTH() external view returns (uint32);
-
-    /// @notice absolute min timestamp (seconds) that a submission can start at
-    function GENESIS_REWARDS_TIMESTAMP() external view returns (uint32);
-
-    /// @notice Delay in timestamp (seconds) before a posted root can be claimed against
-    function activationDelay() external view returns (uint32);
-
-    /// @notice Mapping: earner => the address of the entity who can call `processClaim` on behalf of the earner
-    function claimerFor(address earner) external view returns (address);
-
-    /// @notice Mapping: claimer => token => total amount claimed
-    function cumulativeClaimed(address claimer, IERC20 token) external view returns (uint256);
-
-    /// @notice the defautl split for all operators across all avss
-    function defaultOperatorSplitBips() external view returns (uint16);
-
-    /// @notice the split for a specific `operator` for a specific `avs`
-    function getOperatorAVSSplit(address operator, address avs) external view returns (uint16);
-
-    /// @notice the split for a specific `operator` for Programmatic Incentives
-    function getOperatorPISplit(address operator) external view returns (uint16);
-
-    /// @notice return the hash of the earner's leaf
-    function calculateEarnerLeafHash(EarnerTreeMerkleLeaf calldata leaf) external pure returns (bytes32);
-
-    /// @notice returns the hash of the earner's token leaf
-    function calculateTokenLeafHash(TokenTreeMerkleLeaf calldata leaf) external pure returns (bytes32);
-
-    /// @notice returns 'true' if the claim would currently pass the check in `processClaims`
-    /// but will revert if not valid
-    function checkClaim(RewardsMerkleClaim calldata claim) external view returns (bool);
-
-    /// @notice The timestamp until which RewardsSubmissions have been calculated
-    function currRewardsCalculationEndTimestamp() external view returns (uint32);
-
-    /// @notice returns the number of distribution roots posted
-    function getDistributionRootsLength() external view returns (uint256);
-
-    /// @notice returns the distributionRoot at the specified index
-    function getDistributionRootAtIndex(uint256 index) external view returns (DistributionRoot memory);
-
-    /// @notice returns the current distributionRoot
-    function getCurrentDistributionRoot() external view returns (DistributionRoot memory);
-
-    /// @notice loop through the distribution roots from reverse and get latest root that is not disabled and activated
-    /// i.e. a root that can be claimed against
-    function getCurrentClaimableDistributionRoot() external view returns (DistributionRoot memory);
-
-    /// @notice loop through distribution roots from reverse and return index from hash
-    function getRootIndexFromHash(bytes32 rootHash) external view returns (uint32);
-
-    /**
-     *
-     *                         EXTERNAL FUNCTIONS
-     *
-     */
+    function initialize(
+        address initialOwner,
+        uint256 initialPausedStatus,
+        address _rewardsUpdater,
+        uint32 _activationDelay,
+        uint16 _defaultSplitBips
+    ) external;
 
     /**
      * @notice Creates a new rewards submission on behalf of an AVS, to be split amongst the
@@ -361,15 +377,19 @@ interface IRewardsCoordinator {
      * @dev This function will revert if the `rewardsSubmission` is malformed,
      * e.g. if the `strategies` and `weights` arrays are of non-equal lengths
      */
-    function createAVSRewardsSubmission(RewardsSubmission[] calldata rewardsSubmissions) external;
+    function createAVSRewardsSubmission(
+        RewardsSubmission[] calldata rewardsSubmissions
+    ) external;
 
     /**
      * @notice similar to `createAVSRewardsSubmission` except the rewards are split amongst *all* stakers
      * rather than just those delegated to operators who are registered to a single avs and is
      * a permissioned call based on isRewardsForAllSubmitter mapping.
-     * @param rewardsSubmission The rewards submission being created
+     * @param rewardsSubmissions The rewards submissions being created
      */
-    function createRewardsForAllSubmission(RewardsSubmission[] calldata rewardsSubmission) external;
+    function createRewardsForAllSubmission(
+        RewardsSubmission[] calldata rewardsSubmissions
+    ) external;
 
     /**
      * @notice Creates a new rewards submission for all earners across all AVSs.
@@ -378,7 +398,9 @@ interface IRewardsCoordinator {
      * by the token hopper contract from the Eigen Foundation
      * @param rewardsSubmissions The rewards submissions being created
      */
-    function createRewardsForAllEarners(RewardsSubmission[] calldata rewardsSubmissions) external;
+    function createRewardsForAllEarners(
+        RewardsSubmission[] calldata rewardsSubmissions
+    ) external;
 
     /**
      * @notice Creates a new operator-directed rewards submission on behalf of an AVS, to be split amongst the operators and
@@ -439,28 +461,45 @@ interface IRewardsCoordinator {
      * @notice allow the rewardsUpdater to disable/cancel a pending root submission in case of an error
      * @param rootIndex The index of the root to be disabled
      */
-    function disableRoot(uint32 rootIndex) external;
+    function disableRoot(
+        uint32 rootIndex
+    ) external;
 
     /**
-     * @notice Sets the address of the entity that can call `processClaim` on behalf of the earner (msg.sender)
+     * @notice Sets the address of the entity that can call `processClaim` on ehalf of an earner
      * @param claimer The address of the entity that can call `processClaim` on behalf of the earner
-     * @dev Only callable by the `earner`
+     * @dev Assumes msg.sender is the earner
      */
-    function setClaimerFor(address claimer) external;
+    function setClaimerFor(
+        address claimer
+    ) external;
+
+    /**
+     * @notice Sets the address of the entity that can call `processClaim` on behalf of an earner
+     * @param earner The address to set the claimer for
+     * @param claimer The address of the entity that can call `processClaim` on behalf of the earner
+     * @dev Only callable by operators or AVSs. We define an AVS that has created at least one
+     *      operatorSet in the `AllocationManager`
+     */
+    function setClaimerFor(address earner, address claimer) external;
 
     /**
      * @notice Sets the delay in timestamp before a posted root can be claimed against
      * @dev Only callable by the contract owner
      * @param _activationDelay The new value for activationDelay
      */
-    function setActivationDelay(uint32 _activationDelay) external;
+    function setActivationDelay(
+        uint32 _activationDelay
+    ) external;
 
     /**
      * @notice Sets the default split for all operators across all avss.
      * @param split The default split for all operators across all avss in bips.
      * @dev Only callable by the contract owner.
      */
-    function setDefaultOperatorSplit(uint16 split) external;
+    function setDefaultOperatorSplit(
+        uint16 split
+    ) external;
 
     /**
      * @notice Sets the split for a specific operator for a specific avs
@@ -488,7 +527,9 @@ interface IRewardsCoordinator {
      * @dev Only callable by the contract owner
      * @param _rewardsUpdater The address of the new rewardsUpdater
      */
-    function setRewardsUpdater(address _rewardsUpdater) external;
+    function setRewardsUpdater(
+        address _rewardsUpdater
+    ) external;
 
     /**
      * @notice Sets the permissioned `rewardsForAllSubmitter` address which can submit createRewardsForAllSubmission
@@ -499,11 +540,90 @@ interface IRewardsCoordinator {
     function setRewardsForAllSubmitter(address _submitter, bool _newValue) external;
 
     /**
-     * @notice Getter function for the current EIP-712 domain separator for this contract.
      *
-     * @dev The domain separator will change in the event of a fork that changes the ChainID.
-     * @dev By introducing a domain separator the DApp developers are guaranteed that there can be no signature collision.
-     * for more detailed information please read EIP-712.
+     *                         VIEW FUNCTIONS
+     *
      */
-    function domainSeparator() external view returns (bytes32);
+
+    /// @notice Delay in timestamp (seconds) before a posted root can be claimed against
+    function activationDelay() external view returns (uint32);
+
+    /// @notice The timestamp until which RewardsSubmissions have been calculated
+    function currRewardsCalculationEndTimestamp() external view returns (uint32);
+
+    /// @notice Mapping: earner => the address of the entity who can call `processClaim` on behalf of the earner
+    function claimerFor(
+        address earner
+    ) external view returns (address);
+
+    /// @notice Mapping: claimer => token => total amount claimed
+    function cumulativeClaimed(address claimer, IERC20 token) external view returns (uint256);
+
+    /// @notice the defautl split for all operators across all avss
+    function defaultOperatorSplitBips() external view returns (uint16);
+
+    /// @notice the split for a specific `operator` for a specific `avs`
+    function getOperatorAVSSplit(address operator, address avs) external view returns (uint16);
+
+    /// @notice the split for a specific `operator` for Programmatic Incentives
+    function getOperatorPISplit(
+        address operator
+    ) external view returns (uint16);
+
+    /// @notice return the hash of the earner's leaf
+    function calculateEarnerLeafHash(
+        EarnerTreeMerkleLeaf calldata leaf
+    ) external pure returns (bytes32);
+
+    /// @notice returns the hash of the earner's token leaf
+    function calculateTokenLeafHash(
+        TokenTreeMerkleLeaf calldata leaf
+    ) external pure returns (bytes32);
+
+    /// @notice returns 'true' if the claim would currently pass the check in `processClaims`
+    /// but will revert if not valid
+    function checkClaim(
+        RewardsMerkleClaim calldata claim
+    ) external view returns (bool);
+
+    /// @notice returns the number of distribution roots posted
+    function getDistributionRootsLength() external view returns (uint256);
+
+    /// @notice returns the distributionRoot at the specified index
+    function getDistributionRootAtIndex(
+        uint256 index
+    ) external view returns (DistributionRoot memory);
+
+    /// @notice returns the current distributionRoot
+    function getCurrentDistributionRoot() external view returns (DistributionRoot memory);
+
+    /// @notice loop through the distribution roots from reverse and get latest root that is not disabled and activated
+    /// i.e. a root that can be claimed against
+    function getCurrentClaimableDistributionRoot() external view returns (DistributionRoot memory);
+
+    /// @notice loop through distribution roots from reverse and return index from hash
+    function getRootIndexFromHash(
+        bytes32 rootHash
+    ) external view returns (uint32);
+
+    /// @notice The address of the entity that can update the contract with new merkle roots
+    function rewardsUpdater() external view returns (address);
+
+    /**
+     * @notice The interval in seconds at which the calculation for a RewardsSubmission distribution is done.
+     * @dev Rewards Submission durations must be multiples of this interval.
+     */
+    function CALCULATION_INTERVAL_SECONDS() external view returns (uint32);
+
+    /// @notice The maximum amount of time (seconds) that a RewardsSubmission can span over
+    function MAX_REWARDS_DURATION() external view returns (uint32);
+
+    /// @notice max amount of time (seconds) that a submission can start in the past
+    function MAX_RETROACTIVE_LENGTH() external view returns (uint32);
+
+    /// @notice max amount of time (seconds) that a submission can start in the future
+    function MAX_FUTURE_LENGTH() external view returns (uint32);
+
+    /// @notice absolute min timestamp (seconds) that a submission can start at
+    function GENESIS_REWARDS_TIMESTAMP() external view returns (uint32);
 }

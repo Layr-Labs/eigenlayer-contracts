@@ -34,12 +34,12 @@ jobs:
     - name: Install Foundry
       uses: foundry-rs/foundry-toolchain@v1
       with:
-        version: nightly
+        version: stable
 
     - name: Run Forge build
       run: |
         forge --version
-        forge build --sizes
+        forge build
       id: build
 
     - name: Run unit tests
@@ -57,7 +57,7 @@ jobs:
         CHAIN_ID: ${{ secrets.CHAIN_ID }}
 
     - name: Run integration mainnet fork tests
-      run: forge test --match-contract Integration
+      run: forge test --match-contract Integration 
       env:
         FOUNDRY_PROFILE: "forktest"
         RPC_MAINNET: ${{ secrets.RPC_MAINNET }}

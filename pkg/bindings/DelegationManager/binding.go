@@ -29,29 +29,22 @@ var (
 	_ = abi.ConvertType
 )
 
-// IDelegationManagerOperatorDetails is an auto generated low-level Go binding around an user-defined struct.
-type IDelegationManagerOperatorDetails struct {
-	DeprecatedEarningsReceiver common.Address
-	DelegationApprover         common.Address
-	StakerOptOutWindowBlocks   uint32
+// IDelegationManagerTypesQueuedWithdrawalParams is an auto generated low-level Go binding around an user-defined struct.
+type IDelegationManagerTypesQueuedWithdrawalParams struct {
+	Strategies           []common.Address
+	DepositShares        []*big.Int
+	DeprecatedWithdrawer common.Address
 }
 
-// IDelegationManagerQueuedWithdrawalParams is an auto generated low-level Go binding around an user-defined struct.
-type IDelegationManagerQueuedWithdrawalParams struct {
-	Strategies []common.Address
-	Shares     []*big.Int
-	Withdrawer common.Address
-}
-
-// IDelegationManagerWithdrawal is an auto generated low-level Go binding around an user-defined struct.
-type IDelegationManagerWithdrawal struct {
-	Staker      common.Address
-	DelegatedTo common.Address
-	Withdrawer  common.Address
-	Nonce       *big.Int
-	StartBlock  uint32
-	Strategies  []common.Address
-	Shares      []*big.Int
+// IDelegationManagerTypesWithdrawal is an auto generated low-level Go binding around an user-defined struct.
+type IDelegationManagerTypesWithdrawal struct {
+	Staker       common.Address
+	DelegatedTo  common.Address
+	Withdrawer   common.Address
+	Nonce        *big.Int
+	StartBlock   uint32
+	Strategies   []common.Address
+	ScaledShares []*big.Int
 }
 
 // ISignatureUtilsSignatureWithExpiry is an auto generated low-level Go binding around an user-defined struct.
@@ -62,8 +55,8 @@ type ISignatureUtilsSignatureWithExpiry struct {
 
 // DelegationManagerMetaData contains all meta data concerning the DelegationManager contract.
 var DelegationManagerMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"constructor\",\"inputs\":[{\"name\":\"_strategyManager\",\"type\":\"address\",\"internalType\":\"contractIStrategyManager\"},{\"name\":\"_slasher\",\"type\":\"address\",\"internalType\":\"contractISlasher\"},{\"name\":\"_eigenPodManager\",\"type\":\"address\",\"internalType\":\"contractIEigenPodManager\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"DELEGATION_APPROVAL_TYPEHASH\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"DOMAIN_TYPEHASH\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"MAX_STAKER_OPT_OUT_WINDOW_BLOCKS\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"MAX_WITHDRAWAL_DELAY_BLOCKS\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"STAKER_DELEGATION_TYPEHASH\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"beaconChainETHStrategy\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"calculateCurrentStakerDelegationDigestHash\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"calculateDelegationApprovalDigestHash\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"_delegationApprover\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"approverSalt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"calculateStakerDelegationDigestHash\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"_stakerNonce\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"calculateWithdrawalRoot\",\"inputs\":[{\"name\":\"withdrawal\",\"type\":\"tuple\",\"internalType\":\"structIDelegationManager.Withdrawal\",\"components\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"delegatedTo\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"withdrawer\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"nonce\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"startBlock\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"strategies\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"},{\"name\":\"shares\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"pure\"},{\"type\":\"function\",\"name\":\"completeQueuedWithdrawal\",\"inputs\":[{\"name\":\"withdrawal\",\"type\":\"tuple\",\"internalType\":\"structIDelegationManager.Withdrawal\",\"components\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"delegatedTo\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"withdrawer\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"nonce\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"startBlock\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"strategies\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"},{\"name\":\"shares\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}]},{\"name\":\"tokens\",\"type\":\"address[]\",\"internalType\":\"contractIERC20[]\"},{\"name\":\"middlewareTimesIndex\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"receiveAsTokens\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"completeQueuedWithdrawals\",\"inputs\":[{\"name\":\"withdrawals\",\"type\":\"tuple[]\",\"internalType\":\"structIDelegationManager.Withdrawal[]\",\"components\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"delegatedTo\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"withdrawer\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"nonce\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"startBlock\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"strategies\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"},{\"name\":\"shares\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}]},{\"name\":\"tokens\",\"type\":\"address[][]\",\"internalType\":\"contractIERC20[][]\"},{\"name\":\"middlewareTimesIndexes\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"},{\"name\":\"receiveAsTokens\",\"type\":\"bool[]\",\"internalType\":\"bool[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"cumulativeWithdrawalsQueued\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"decreaseDelegatedShares\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"delegateTo\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"approverSignatureAndExpiry\",\"type\":\"tuple\",\"internalType\":\"structISignatureUtils.SignatureWithExpiry\",\"components\":[{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"approverSalt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"delegateToBySignature\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"stakerSignatureAndExpiry\",\"type\":\"tuple\",\"internalType\":\"structISignatureUtils.SignatureWithExpiry\",\"components\":[{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"approverSignatureAndExpiry\",\"type\":\"tuple\",\"internalType\":\"structISignatureUtils.SignatureWithExpiry\",\"components\":[{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"approverSalt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"delegatedTo\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"delegationApprover\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"delegationApproverSaltIsSpent\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"domainSeparator\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"eigenPodManager\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIEigenPodManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getDelegatableShares\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"},{\"name\":\"\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getOperatorShares\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategies\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getWithdrawalDelay\",\"inputs\":[{\"name\":\"strategies\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"increaseDelegatedShares\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"initialize\",\"inputs\":[{\"name\":\"initialOwner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"_pauserRegistry\",\"type\":\"address\",\"internalType\":\"contractIPauserRegistry\"},{\"name\":\"initialPausedStatus\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"_minWithdrawalDelayBlocks\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"_strategies\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"},{\"name\":\"_withdrawalDelayBlocks\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"isDelegated\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isOperator\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"minWithdrawalDelayBlocks\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"modifyOperatorDetails\",\"inputs\":[{\"name\":\"newOperatorDetails\",\"type\":\"tuple\",\"internalType\":\"structIDelegationManager.OperatorDetails\",\"components\":[{\"name\":\"__deprecated_earningsReceiver\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"delegationApprover\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"stakerOptOutWindowBlocks\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"operatorDetails\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIDelegationManager.OperatorDetails\",\"components\":[{\"name\":\"__deprecated_earningsReceiver\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"delegationApprover\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"stakerOptOutWindowBlocks\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"operatorShares\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"owner\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"pause\",\"inputs\":[{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"pauseAll\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"paused\",\"inputs\":[{\"name\":\"index\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"paused\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"pauserRegistry\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIPauserRegistry\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"pendingWithdrawals\",\"inputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"queueWithdrawals\",\"inputs\":[{\"name\":\"queuedWithdrawalParams\",\"type\":\"tuple[]\",\"internalType\":\"structIDelegationManager.QueuedWithdrawalParams[]\",\"components\":[{\"name\":\"strategies\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"},{\"name\":\"shares\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"},{\"name\":\"withdrawer\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32[]\",\"internalType\":\"bytes32[]\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"registerAsOperator\",\"inputs\":[{\"name\":\"registeringOperatorDetails\",\"type\":\"tuple\",\"internalType\":\"structIDelegationManager.OperatorDetails\",\"components\":[{\"name\":\"__deprecated_earningsReceiver\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"delegationApprover\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"stakerOptOutWindowBlocks\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"metadataURI\",\"type\":\"string\",\"internalType\":\"string\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"renounceOwnership\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setMinWithdrawalDelayBlocks\",\"inputs\":[{\"name\":\"newMinWithdrawalDelayBlocks\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setPauserRegistry\",\"inputs\":[{\"name\":\"newPauserRegistry\",\"type\":\"address\",\"internalType\":\"contractIPauserRegistry\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setStrategyWithdrawalDelayBlocks\",\"inputs\":[{\"name\":\"strategies\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"},{\"name\":\"withdrawalDelayBlocks\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"slasher\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractISlasher\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"stakerNonce\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"stakerOptOutWindowBlocks\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"strategyManager\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIStrategyManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"strategyWithdrawalDelayBlocks\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"transferOwnership\",\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"undelegate\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"withdrawalRoots\",\"type\":\"bytes32[]\",\"internalType\":\"bytes32[]\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"unpause\",\"inputs\":[{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"updateOperatorMetadataURI\",\"inputs\":[{\"name\":\"metadataURI\",\"type\":\"string\",\"internalType\":\"string\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"Initialized\",\"inputs\":[{\"name\":\"version\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"uint8\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"MinWithdrawalDelayBlocksSet\",\"inputs\":[{\"name\":\"previousValue\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"newValue\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorDetailsModified\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newOperatorDetails\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIDelegationManager.OperatorDetails\",\"components\":[{\"name\":\"__deprecated_earningsReceiver\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"delegationApprover\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"stakerOptOutWindowBlocks\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorMetadataURIUpdated\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"metadataURI\",\"type\":\"string\",\"indexed\":false,\"internalType\":\"string\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorRegistered\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"operatorDetails\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIDelegationManager.OperatorDetails\",\"components\":[{\"name\":\"__deprecated_earningsReceiver\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"delegationApprover\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"stakerOptOutWindowBlocks\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorSharesDecreased\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"staker\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIStrategy\"},{\"name\":\"shares\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorSharesIncreased\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"staker\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIStrategy\"},{\"name\":\"shares\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OwnershipTransferred\",\"inputs\":[{\"name\":\"previousOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Paused\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"PauserRegistrySet\",\"inputs\":[{\"name\":\"pauserRegistry\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIPauserRegistry\"},{\"name\":\"newPauserRegistry\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIPauserRegistry\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"StakerDelegated\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"operator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"StakerForceUndelegated\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"operator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"StakerUndelegated\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"operator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"StrategyWithdrawalDelayBlocksSet\",\"inputs\":[{\"name\":\"strategy\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIStrategy\"},{\"name\":\"previousValue\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"newValue\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Unpaused\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"WithdrawalCompleted\",\"inputs\":[{\"name\":\"withdrawalRoot\",\"type\":\"bytes32\",\"indexed\":false,\"internalType\":\"bytes32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"WithdrawalQueued\",\"inputs\":[{\"name\":\"withdrawalRoot\",\"type\":\"bytes32\",\"indexed\":false,\"internalType\":\"bytes32\"},{\"name\":\"withdrawal\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIDelegationManager.Withdrawal\",\"components\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"delegatedTo\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"withdrawer\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"nonce\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"startBlock\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"strategies\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"},{\"name\":\"shares\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}]}],\"anonymous\":false}]",
-	Bin: "0x6101006040523480156200001257600080fd5b5060405162005c4638038062005c46833981016040819052620000359162000140565b6001600160a01b0380841660805280821660c052821660a0526200005862000065565b50504660e0525062000194565b600054610100900460ff1615620000d25760405162461bcd60e51b815260206004820152602760248201527f496e697469616c697a61626c653a20636f6e747261637420697320696e697469604482015266616c697a696e6760c81b606482015260840160405180910390fd5b60005460ff908116101562000125576000805460ff191660ff9081179091556040519081527f7f26b83ff96e1f2b6a682f133852f6798a09c465da95921460cefb38474024989060200160405180910390a15b565b6001600160a01b03811681146200013d57600080fd5b50565b6000806000606084860312156200015657600080fd5b8351620001638162000127565b6020850151909350620001768162000127565b6040850151909250620001898162000127565b809150509250925092565b60805160a05160c05160e051615a1d6200022960003960006126a00152600081816105b10152818161102e015281816113aa01528181611c23015281816129f901528181613eac0152614398015260006107620152600081816104f901528181610ffc0152818161137801528181611cb701528181612ac601528181612c4901528181613fd2015261443e0152615a1d6000f3fe608060405234801561001057600080fd5b50600436106103425760003560e01c8063635bbd10116101b8578063b7f06ebe11610104578063cf80873e116100a2578063f16172b01161007c578063f16172b014610908578063f2fde38b1461091b578063f698da251461092e578063fabc1cbc1461093657600080fd5b8063cf80873e146108c1578063da8be864146108e2578063eea9064b146108f557600080fd5b8063c488375a116100de578063c488375a146107de578063c5e480db146107fe578063c94b5111146108a4578063ca661c04146108b757600080fd5b8063b7f06ebe14610784578063bb45fef2146107a7578063c448feb8146107d557600080fd5b8063886f1195116101715780639104c3191161014b5780639104c3191461070f57806399be81c81461072a578063a17884841461073d578063b13442711461075d57600080fd5b8063886f1195146106cb5780638da5cb5b146106de57806390041347146106ef57600080fd5b8063635bbd101461063657806365da1264146106495780636d70f7ae14610672578063715018a614610685578063778e55f31461068d5780637f548071146106b857600080fd5b806328a573ae116102925780634665bcda11610230578063597b36da1161020a578063597b36da146105e55780635ac86ab7146105f85780635c975abb1461061b57806360d7faed1461062357600080fd5b80634665bcda146105ac5780634fc40b61146105d3578063595c6a67146105dd57600080fd5b806339b70e381161026c57806339b70e38146104f45780633cdeb5e0146105335780633e28391d14610562578063433773821461058557600080fd5b806328a573ae146104ae57806329c77d4f146104c157806333404396146104e157600080fd5b8063132d4967116102ff57806316928365116102d957806316928365146104285780631bbce0911461046157806320606b701461047457806322bf40e41461049b57600080fd5b8063132d4967146103ef578063136439dd146104025780631522bf021461041557600080fd5b80630449ca391461034757806304a4f9791461036d5780630b9f487a146103945780630dd8dd02146103a75780630f589e59146103c757806310d67a2f146103dc575b600080fd5b61035a61035536600461484e565b610949565b6040519081526020015b60405180910390f35b61035a7f14bde674c9f64b2ad00eaaee4a8bed1fabef35c7507e3c5b9cfc9436909a2dad81565b61035a6103a23660046148b4565b6109ce565b6103ba6103b536600461484e565b610a90565b604051610364919061490f565b6103da6103d53660046149ac565b610df9565b005b6103da6103ea3660046149ff565b610f3e565b6103da6103fd366004614a23565b610ff1565b6103da610410366004614a64565b6110a8565b6103da610423366004614a7d565b6111e7565b61035a6104363660046149ff565b6001600160a01b0316600090815260996020526040902060010154600160a01b900463ffffffff1690565b61035a61046f366004614a23565b6111fb565b61035a7f8cad95687ba82c2ce50e74f7b754645e5117c3a5bec8151c0726d5857980a86681565b6103da6104a9366004614ae8565b611229565b6103da6104bc366004614a23565b61136d565b61035a6104cf3660046149ff565b609b6020526000908152604090205481565b6103da6104ef366004614b8f565b61141d565b61051b7f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160a01b039091168152602001610364565b61051b6105413660046149ff565b6001600160a01b039081166000908152609960205260409020600101541690565b6105756105703660046149ff565b61155a565b6040519015158152602001610364565b61035a7f39111bc4a4d688e1f685123d7497d4615370152a8ee4a0593e647bd06ad8bb0b81565b61051b7f000000000000000000000000000000000000000000000000000000000000000081565b61035a6213c68081565b6103da61157a565b61035a6105f3366004614e8c565b611641565b610575610606366004614ec8565b606654600160ff9092169190911b9081161490565b60665461035a565b6103da610631366004614ef9565b611671565b6103da610644366004614a64565b61170c565b61051b6106573660046149ff565b609a602052600090815260409020546001600160a01b031681565b6105756106803660046149ff565b61171d565b6103da611757565b61035a61069b366004614f88565b609860209081526000928352604080842090915290825290205481565b6103da6106c6366004615069565b61176b565b60655461051b906001600160a01b031681565b6033546001600160a01b031661051b565b6107026106fd3660046150f9565b611997565b6040516103649190615183565b61051b73beac0eeeeeeeeeeeeeeeeeeeeeeeeeeeeeebeac081565b6103da610738366004615196565b611a71565b61035a61074b3660046149ff565b609f6020526000908152604090205481565b61051b7f000000000000000000000000000000000000000000000000000000000000000081565b610575610792366004614a64565b609e6020526000908152604090205460ff1681565b6105756107b53660046151cb565b609c60209081526000928352604080842090915290825290205460ff1681565b61035a609d5481565b61035a6107ec3660046149ff565b60a16020526000908152604090205481565b61086e61080c3660046149ff565b6040805160608082018352600080835260208084018290529284018190526001600160a01b03948516815260998352839020835191820184528054851682526001015493841691810191909152600160a01b90920463ffffffff169082015290565b6040805182516001600160a01b039081168252602080850151909116908201529181015163ffffffff1690820152606001610364565b61035a6108b23660046151f7565b611b43565b61035a62034bc081565b6108d46108cf3660046149ff565b611bfc565b604051610364929190615278565b6103ba6108f03660046149ff565b611fb4565b6103da61090336600461529d565b612478565b6103da6109163660046152f5565b612595565b6103da6109293660046149ff565b612626565b61035a61269c565b6103da610944366004614a64565b6126da565b609d54600090815b838110156109c657600060a1600087878581811061097157610971615311565b905060200201602081019061098691906149ff565b6001600160a01b03166001600160a01b03168152602001908152602001600020549050828111156109b5578092505b506109bf8161533d565b9050610951565b509392505050565b604080517f14bde674c9f64b2ad00eaaee4a8bed1fabef35c7507e3c5b9cfc9436909a2dad6020808301919091526001600160a01b038681168385015288811660608401528716608083015260a0820185905260c08083018590528351808403909101815260e0909201909252805191012060009081610a4c61269c565b60405161190160f01b602082015260228101919091526042810183905260620160408051808303601f19018152919052805160209091012098975050505050505050565b60665460609060019060029081161415610ac55760405162461bcd60e51b8152600401610abc90615358565b60405180910390fd5b6000836001600160401b03811115610adf57610adf614c31565b604051908082528060200260200182016040528015610b08578160200160208202803683370190505b50336000908152609a60205260408120549192506001600160a01b03909116905b85811015610dee57868682818110610b4357610b43615311565b9050602002810190610b55919061538f565b610b639060208101906153af565b9050878783818110610b7757610b77615311565b9050602002810190610b89919061538f565b610b9390806153af565b905014610c085760405162461bcd60e51b815260206004820152603860248201527f44656c65676174696f6e4d616e616765722e717565756557697468647261776160448201527f6c3a20696e707574206c656e677468206d69736d6174636800000000000000006064820152608401610abc565b33878783818110610c1b57610c1b615311565b9050602002810190610c2d919061538f565b610c3e9060608101906040016149ff565b6001600160a01b031614610cba5760405162461bcd60e51b815260206004820152603c60248201527f44656c65676174696f6e4d616e616765722e717565756557697468647261776160448201527f6c3a2077697468647261776572206d757374206265207374616b6572000000006064820152608401610abc565b610dbf3383898985818110610cd157610cd1615311565b9050602002810190610ce3919061538f565b610cf49060608101906040016149ff565b8a8a86818110610d0657610d06615311565b9050602002810190610d18919061538f565b610d2290806153af565b808060200260200160405190810160405280939291908181526020018383602002808284376000920191909152508e92508d9150889050818110610d6857610d68615311565b9050602002810190610d7a919061538f565b610d889060208101906153af565b8080602002602001604051908101604052809392919081815260200183836020028082843760009201919091525061283692505050565b838281518110610dd157610dd1615311565b602090810291909101015280610de68161533d565b915050610b29565b509095945050505050565b610e023361155a565b15610e885760405162461bcd60e51b815260206004820152604a60248201527f44656c65676174696f6e4d616e616765722e726567697374657241734f70657260448201527f61746f723a2063616c6c657220697320616c7265616479206163746976656c796064820152690819195b1959d85d195960b21b608482015260a401610abc565b610e923384612df6565b604080518082019091526060815260006020820152610eb43380836000612fe9565b336001600160a01b03167f8e8485583a2310d41f7c82b9427d0bd49bad74bb9cff9d3402a29d8f9b28a0e285604051610eed91906153f8565b60405180910390a2336001600160a01b03167f02a919ed0e2acad1dd90f17ef2fa4ae5462ee1339170034a8531cca4b67080908484604051610f3092919061544a565b60405180910390a250505050565b606560009054906101000a90046001600160a01b03166001600160a01b031663eab66d7a6040518163ffffffff1660e01b8152600401602060405180830381865afa158015610f91573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610fb59190615479565b6001600160a01b0316336001600160a01b031614610fe55760405162461bcd60e51b8152600401610abc90615496565b610fee8161327f565b50565b336001600160a01b037f00000000000000000000000000000000000000000000000000000000000000001614806110505750336001600160a01b037f000000000000000000000000000000000000000000000000000000000000000016145b61106c5760405162461bcd60e51b8152600401610abc906154e0565b6110758361155a565b156110a3576001600160a01b038084166000908152609a6020526040902054166110a181858585613376565b505b505050565b60655460405163237dfb4760e11b81523360048201526001600160a01b03909116906346fbf68e90602401602060405180830381865afa1580156110f0573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190611114919061553d565b6111305760405162461bcd60e51b8152600401610abc9061555a565b606654818116146111a95760405162461bcd60e51b815260206004820152603860248201527f5061757361626c652e70617573653a20696e76616c696420617474656d70742060448201527f746f20756e70617573652066756e6374696f6e616c69747900000000000000006064820152608401610abc565b606681905560405181815233907fab40a374bc51de372200a8bc981af8c9ecdc08dfdaef0bb6e09f88f3c616ef3d906020015b60405180910390a250565b6111ef6133f1565b6110a18484848461344b565b6001600160a01b0383166000908152609b602052604081205461122085828686611b43565b95945050505050565b600054610100900460ff16158080156112495750600054600160ff909116105b806112635750303b158015611263575060005460ff166001145b6112c65760405162461bcd60e51b815260206004820152602e60248201527f496e697469616c697a61626c653a20636f6e747261637420697320616c72656160448201526d191e481a5b9a5d1a585b1a5e995960921b6064820152608401610abc565b6000805460ff1916600117905580156112e9576000805461ff0019166101001790555b6112f38888613671565b6112fb61375b565b609755611307896137f2565b61131086613844565b61131c8585858561344b565b8015611362576000805461ff0019169055604051600181527f7f26b83ff96e1f2b6a682f133852f6798a09c465da95921460cefb38474024989060200160405180910390a15b505050505050505050565b336001600160a01b037f00000000000000000000000000000000000000000000000000000000000000001614806113cc5750336001600160a01b037f000000000000000000000000000000000000000000000000000000000000000016145b6113e85760405162461bcd60e51b8152600401610abc906154e0565b6113f18361155a565b156110a3576001600160a01b038084166000908152609a6020526040902054166110a18185858561393e565b606654600290600490811614156114465760405162461bcd60e51b8152600401610abc90615358565b600260c95414156114995760405162461bcd60e51b815260206004820152601f60248201527f5265656e7472616e637947756172643a207265656e7472616e742063616c6c006044820152606401610abc565b600260c95560005b88811015611549576115398a8a838181106114be576114be615311565b90506020028101906114d091906155a2565b8989848181106114e2576114e2615311565b90506020028101906114f491906153af565b89898681811061150657611506615311565b9050602002013588888781811061151f5761151f615311565b905060200201602081019061153491906155b8565b6139b9565b6115428161533d565b90506114a1565b5050600160c9555050505050505050565b6001600160a01b039081166000908152609a602052604090205416151590565b60655460405163237dfb4760e11b81523360048201526001600160a01b03909116906346fbf68e90602401602060405180830381865afa1580156115c2573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906115e6919061553d565b6116025760405162461bcd60e51b8152600401610abc9061555a565b600019606681905560405190815233907fab40a374bc51de372200a8bc981af8c9ecdc08dfdaef0bb6e09f88f3c616ef3d9060200160405180910390a2565b6000816040516020016116549190615649565b604051602081830303815290604052805190602001209050919050565b6066546002906004908116141561169a5760405162461bcd60e51b8152600401610abc90615358565b600260c95414156116ed5760405162461bcd60e51b815260206004820152601f60248201527f5265656e7472616e637947756172643a207265656e7472616e742063616c6c006044820152606401610abc565b600260c9556116ff86868686866139b9565b5050600160c95550505050565b6117146133f1565b610fee81613844565b60006001600160a01b0382161580159061175157506001600160a01b038083166000818152609a6020526040902054909116145b92915050565b61175f6133f1565b61176960006137f2565b565b42836020015110156117ef5760405162461bcd60e51b815260206004820152604160248201527f44656c65676174696f6e4d616e616765722e64656c6567617465546f4279536960448201527f676e61747572653a207374616b6572207369676e6174757265206578706972656064820152601960fa1b608482015260a401610abc565b6117f88561155a565b156118815760405162461bcd60e51b815260206004820152604d60248201527f44656c65676174696f6e4d616e616765722e64656c6567617465546f4279536960448201527f676e61747572653a207374616b657220697320616c726561647920616374697660648201526c195b1e4819195b1959d85d1959609a1b608482015260a401610abc565b61188a8461171d565b6119165760405162461bcd60e51b815260206004820152605160248201527f44656c65676174696f6e4d616e616765722e64656c6567617465546f4279536960448201527f676e61747572653a206f70657261746f72206973206e6f7420726567697374656064820152703932b21034b71022b4b3b2b72630bcb2b960791b608482015260a401610abc565b6000609b6000876001600160a01b03166001600160a01b0316815260200190815260200160002054905060006119528783888860200151611b43565b6001600160a01b0388166000908152609b60205260409020600184019055855190915061198290889083906141a3565b61198e87878686612fe9565b50505050505050565b6060600082516001600160401b038111156119b4576119b4614c31565b6040519080825280602002602001820160405280156119dd578160200160208202803683370190505b50905060005b83518110156109c6576001600160a01b03851660009081526098602052604081208551909190869084908110611a1b57611a1b615311565b60200260200101516001600160a01b03166001600160a01b0316815260200190815260200160002054828281518110611a5657611a56615311565b6020908102919091010152611a6a8161533d565b90506119e3565b611a7a3361171d565b611afc5760405162461bcd60e51b815260206004820152604760248201527f44656c65676174696f6e4d616e616765722e7570646174654f70657261746f7260448201527f4d657461646174615552493a2063616c6c6572206d75737420626520616e206f6064820152663832b930ba37b960c91b608482015260a401610abc565b336001600160a01b03167f02a919ed0e2acad1dd90f17ef2fa4ae5462ee1339170034a8531cca4b67080908383604051611b3792919061544a565b60405180910390a25050565b604080517f39111bc4a4d688e1f685123d7497d4615370152a8ee4a0593e647bd06ad8bb0b6020808301919091526001600160a01b0387811683850152851660608301526080820186905260a08083018590528351808403909101815260c0909201909252805191012060009081611bb961269c565b60405161190160f01b602082015260228101919091526042810183905260620160408051808303601f190181529190528051602090910120979650505050505050565b6040516360f4062b60e01b81526001600160a01b03828116600483015260609182916000917f0000000000000000000000000000000000000000000000000000000000000000909116906360f4062b90602401602060405180830381865afa158015611c6c573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190611c90919061565c565b6040516394f649dd60e01b81526001600160a01b03868116600483015291925060009182917f0000000000000000000000000000000000000000000000000000000000000000909116906394f649dd90602401600060405180830381865afa158015611d00573d6000803e3d6000fd5b505050506040513d6000823e601f3d908101601f19168201604052611d2891908101906156d0565b9150915060008313611d3f57909590945092505050565b606080835160001415611df9576040805160018082528183019092529060208083019080368337505060408051600180825281830190925292945090506020808301908036833701905050905073beac0eeeeeeeeeeeeeeeeeeeeeeeeeeeeeebeac082600081518110611db457611db4615311565b60200260200101906001600160a01b031690816001600160a01b0316815250508481600081518110611de857611de8615311565b602002602001018181525050611fa7565b8351611e0690600161578a565b6001600160401b03811115611e1d57611e1d614c31565b604051908082528060200260200182016040528015611e46578160200160208202803683370190505b50915081516001600160401b03811115611e6257611e62614c31565b604051908082528060200260200182016040528015611e8b578160200160208202803683370190505b50905060005b8451811015611f2557848181518110611eac57611eac615311565b6020026020010151838281518110611ec657611ec6615311565b60200260200101906001600160a01b031690816001600160a01b031681525050838181518110611ef857611ef8615311565b6020026020010151828281518110611f1257611f12615311565b6020908102919091010152600101611e91565b5073beac0eeeeeeeeeeeeeeeeeeeeeeeeeeeeeebeac08260018451611f4a91906157a2565b81518110611f5a57611f5a615311565b60200260200101906001600160a01b031690816001600160a01b031681525050848160018451611f8a91906157a2565b81518110611f9a57611f9a615311565b6020026020010181815250505b9097909650945050505050565b60665460609060019060029081161415611fe05760405162461bcd60e51b8152600401610abc90615358565b611fe98361155a565b6120695760405162461bcd60e51b8152602060048201526044602482018190527f44656c65676174696f6e4d616e616765722e756e64656c65676174653a207374908201527f616b6572206d7573742062652064656c65676174656420746f20756e64656c656064820152636761746560e01b608482015260a401610abc565b6120728361171d565b156120e55760405162461bcd60e51b815260206004820152603d60248201527f44656c65676174696f6e4d616e616765722e756e64656c65676174653a206f7060448201527f657261746f72732063616e6e6f7420626520756e64656c6567617465640000006064820152608401610abc565b6001600160a01b0383166121615760405162461bcd60e51b815260206004820152603c60248201527f44656c65676174696f6e4d616e616765722e756e64656c65676174653a20636160448201527f6e6e6f7420756e64656c6567617465207a65726f2061646472657373000000006064820152608401610abc565b6001600160a01b038084166000818152609a6020526040902054909116903314806121945750336001600160a01b038216145b806121bb57506001600160a01b038181166000908152609960205260409020600101541633145b61222d5760405162461bcd60e51b815260206004820152603d60248201527f44656c65676174696f6e4d616e616765722e756e64656c65676174653a20636160448201527f6c6c65722063616e6e6f7420756e64656c6567617465207374616b65720000006064820152608401610abc565b60008061223986611bfc565b9092509050336001600160a01b0387161461228f57826001600160a01b0316866001600160a01b03167ff0eddf07e6ea14f388b47e1e94a0f464ecbd9eed4171130e0fc0e99fb4030a8a60405160405180910390a35b826001600160a01b0316866001600160a01b03167ffee30966a256b71e14bc0ebfc94315e28ef4a97a7131a9e2b7a310a73af4467660405160405180910390a36001600160a01b0386166000908152609a6020526040902080546001600160a01b0319169055815161231157604080516000815260208101909152945061246f565b81516001600160401b0381111561232a5761232a614c31565b604051908082528060200260200182016040528015612353578160200160208202803683370190505b50945060005b825181101561246d576040805160018082528183019092526000916020808301908036833750506040805160018082528183019092529293506000929150602080830190803683370190505090508483815181106123b9576123b9615311565b6020026020010151826000815181106123d4576123d4615311565b60200260200101906001600160a01b031690816001600160a01b03168152505083838151811061240657612406615311565b60200260200101518160008151811061242157612421615311565b60200260200101818152505061243a89878b8585612836565b88848151811061244c5761244c615311565b602002602001018181525050505080806124659061533d565b915050612359565b505b50505050919050565b6124813361155a565b156124ff5760405162461bcd60e51b815260206004820152604260248201527f44656c65676174696f6e4d616e616765722e64656c6567617465546f3a20737460448201527f616b657220697320616c7265616479206163746976656c792064656c65676174606482015261195960f21b608482015260a401610abc565b6125088361171d565b6125895760405162461bcd60e51b815260206004820152604660248201527f44656c65676174696f6e4d616e616765722e64656c6567617465546f3a206f7060448201527f657261746f72206973206e6f74207265676973746572656420696e2045696765606482015265372630bcb2b960d11b608482015260a401610abc565b6110a333848484612fe9565b61259e3361171d565b61261c5760405162461bcd60e51b815260206004820152604360248201527f44656c65676174696f6e4d616e616765722e6d6f646966794f70657261746f7260448201527f44657461696c733a2063616c6c6572206d75737420626520616e206f706572616064820152623a37b960e91b608482015260a401610abc565b610fee3382612df6565b61262e6133f1565b6001600160a01b0381166126935760405162461bcd60e51b815260206004820152602660248201527f4f776e61626c653a206e6577206f776e657220697320746865207a65726f206160448201526564647265737360d01b6064820152608401610abc565b610fee816137f2565b60007f00000000000000000000000000000000000000000000000000000000000000004614156126cd575060975490565b6126d561375b565b905090565b606560009054906101000a90046001600160a01b03166001600160a01b031663eab66d7a6040518163ffffffff1660e01b8152600401602060405180830381865afa15801561272d573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906127519190615479565b6001600160a01b0316336001600160a01b0316146127815760405162461bcd60e51b8152600401610abc90615496565b6066541981196066541916146127ff5760405162461bcd60e51b815260206004820152603860248201527f5061757361626c652e756e70617573653a20696e76616c696420617474656d7060448201527f7420746f2070617573652066756e6374696f6e616c69747900000000000000006064820152608401610abc565b606681905560405181815233907f3582d1828e26bf56bd801502bc021ac0bc8afb57c826e4986b45593c8fad389c906020016111dc565b60006001600160a01b0386166128cd5760405162461bcd60e51b815260206004820152605060248201527f44656c65676174696f6e4d616e616765722e5f72656d6f76655368617265734160448201527f6e6451756575655769746864726177616c3a207374616b65722063616e6e6f7460648201526f206265207a65726f206164647265737360801b608482015260a401610abc565b82516129575760405162461bcd60e51b815260206004820152604d60248201527f44656c65676174696f6e4d616e616765722e5f72656d6f76655368617265734160448201527f6e6451756575655769746864726177616c3a207374726174656769657320636160648201526c6e6e6f7420626520656d70747960981b608482015260a401610abc565b60005b8351811015612d04576001600160a01b038616156129b0576129b0868886848151811061298957612989615311565b60200260200101518685815181106129a3576129a3615311565b6020026020010151613376565b73beac0eeeeeeeeeeeeeeeeeeeeeeeeeeeeeebeac06001600160a01b03168482815181106129e0576129e0615311565b60200260200101516001600160a01b03161415612aa9577f00000000000000000000000000000000000000000000000000000000000000006001600160a01b031663beffbb8988858481518110612a3957612a39615311565b60200260200101516040518363ffffffff1660e01b8152600401612a729291906001600160a01b03929092168252602082015260400190565b600060405180830381600087803b158015612a8c57600080fd5b505af1158015612aa0573d6000803e3d6000fd5b50505050612cfc565b846001600160a01b0316876001600160a01b03161480612b7b57507f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316639b4da03d858381518110612b0557612b05615311565b60200260200101516040518263ffffffff1660e01b8152600401612b3891906001600160a01b0391909116815260200190565b602060405180830381865afa158015612b55573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190612b79919061553d565b155b612c475760405162461bcd60e51b8152602060048201526084602482018190527f44656c65676174696f6e4d616e616765722e5f72656d6f76655368617265734160448301527f6e6451756575655769746864726177616c3a2077697468647261776572206d7560648301527f73742062652073616d652061646472657373206173207374616b657220696620908201527f746869726450617274795472616e7366657273466f7262696464656e2061726560a482015263081cd95d60e21b60c482015260e401610abc565b7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316638c80d4e588868481518110612c8957612c89615311565b6020026020010151868581518110612ca357612ca3615311565b60200260200101516040518463ffffffff1660e01b8152600401612cc9939291906157b9565b600060405180830381600087803b158015612ce357600080fd5b505af1158015612cf7573d6000803e3d6000fd5b505050505b60010161295a565b506001600160a01b0386166000908152609f60205260408120805491829190612d2c8361533d565b919050555060006040518060e00160405280896001600160a01b03168152602001886001600160a01b03168152602001876001600160a01b031681526020018381526020014363ffffffff1681526020018681526020018581525090506000612d9482611641565b6000818152609e602052604090819020805460ff19166001179055519091507f9009ab153e8014fbfb02f2217f5cde7aa7f9ad734ae85ca3ee3f4ca2fdd499f990612de290839085906157dd565b60405180910390a198975050505050505050565b6213c680612e0a60608301604084016157f6565b63ffffffff161115612ebf5760405162461bcd60e51b815260206004820152606c60248201527f44656c65676174696f6e4d616e616765722e5f7365744f70657261746f72446560448201527f7461696c733a207374616b65724f70744f757457696e646f77426c6f636b732060648201527f63616e6e6f74206265203e204d41585f5354414b45525f4f50545f4f55545f5760848201526b494e444f575f424c4f434b5360a01b60a482015260c401610abc565b6001600160a01b0382166000908152609960205260409081902060010154600160a01b900463ffffffff1690612efb90606084019084016157f6565b63ffffffff161015612f915760405162461bcd60e51b815260206004820152605360248201527f44656c65676174696f6e4d616e616765722e5f7365744f70657261746f72446560448201527f7461696c733a207374616b65724f70744f757457696e646f77426c6f636b732060648201527218d85b9b9bdd08189948191958dc99585cd959606a1b608482015260a401610abc565b6001600160a01b03821660009081526099602052604090208190612fb58282615833565b505060405133907ffebe5cd24b2cbc7b065b9d0fdeb904461e4afcff57dd57acda1e7832031ba7ac90611b379084906153f8565b606654600090600190811614156130125760405162461bcd60e51b8152600401610abc90615358565b6001600160a01b038085166000908152609960205260409020600101541680158015906130485750336001600160a01b03821614155b801561305d5750336001600160a01b03861614155b156131ca5742846020015110156130dc5760405162461bcd60e51b815260206004820152603760248201527f44656c65676174696f6e4d616e616765722e5f64656c65676174653a2061707060448201527f726f766572207369676e617475726520657870697265640000000000000000006064820152608401610abc565b6001600160a01b0381166000908152609c6020908152604080832086845290915290205460ff16156131765760405162461bcd60e51b815260206004820152603760248201527f44656c65676174696f6e4d616e616765722e5f64656c65676174653a2061707060448201527f726f76657253616c7420616c7265616479207370656e740000000000000000006064820152608401610abc565b6001600160a01b0381166000908152609c6020908152604080832086845282528220805460ff191660011790558501516131b79088908890859088906109ce565b90506131c8828287600001516141a3565b505b6001600160a01b038681166000818152609a602052604080822080546001600160a01b031916948a169485179055517fc3ee9f2e5fda98e8066a1f745b2df9285f416fe98cf2559cd21484b3d87433049190a360008061322988611bfc565b9150915060005b825181101561136257613277888a85848151811061325057613250615311565b602002602001015185858151811061326a5761326a615311565b602002602001015161393e565b600101613230565b6001600160a01b03811661330d5760405162461bcd60e51b815260206004820152604960248201527f5061757361626c652e5f73657450617573657252656769737472793a206e657760448201527f50617573657252656769737472792063616e6e6f7420626520746865207a65726064820152686f206164647265737360b81b608482015260a401610abc565b606554604080516001600160a01b03928316815291831660208301527f6e9fcd539896fca60e8b0f01dd580233e48a6b0f7df013b89ba7f565869acdb6910160405180910390a1606580546001600160a01b0319166001600160a01b0392909216919091179055565b6001600160a01b038085166000908152609860209081526040808320938616835292905290812080548392906133ad9084906157a2565b92505081905550836001600160a01b03167f6909600037b75d7b4733aedd815442b5ec018a827751c832aaff64eba5d6d2dd848484604051610f30939291906157b9565b6033546001600160a01b031633146117695760405162461bcd60e51b815260206004820181905260248201527f4f776e61626c653a2063616c6c6572206973206e6f7420746865206f776e65726044820152606401610abc565b8281146134d35760405162461bcd60e51b815260206004820152604a60248201527f44656c65676174696f6e4d616e616765722e5f7365745374726174656779576960448201527f746864726177616c44656c6179426c6f636b733a20696e707574206c656e67746064820152690d040dad2e6dac2e8c6d60b31b608482015260a401610abc565b8260005b818110156136695760008686838181106134f3576134f3615311565b905060200201602081019061350891906149ff565b6001600160a01b038116600090815260a1602052604081205491925086868581811061353657613536615311565b90506020020135905062034bc08111156135fa5760405162461bcd60e51b815260206004820152607360248201527f44656c65676174696f6e4d616e616765722e5f7365745374726174656779576960448201527f746864726177616c44656c6179426c6f636b733a205f7769746864726177616c60648201527f44656c6179426c6f636b732063616e6e6f74206265203e204d41585f5749544860848201527244524157414c5f44454c41595f424c4f434b5360681b60a482015260c401610abc565b6001600160a01b038316600081815260a160209081526040918290208490558151928352820184905281018290527f0e7efa738e8b0ce6376a0c1af471655540d2e9a81647d7b09ed823018426576d9060600160405180910390a1505050806136629061533d565b90506134d7565b505050505050565b6065546001600160a01b031615801561369257506001600160a01b03821615155b6137145760405162461bcd60e51b815260206004820152604760248201527f5061757361626c652e5f696e697469616c697a655061757365723a205f696e6960448201527f7469616c697a6550617573657228292063616e206f6e6c792062652063616c6c6064820152666564206f6e636560c81b608482015260a401610abc565b606681905560405181815233907fab40a374bc51de372200a8bc981af8c9ecdc08dfdaef0bb6e09f88f3c616ef3d9060200160405180910390a26137578261327f565b5050565b604080518082018252600a81526922b4b3b2b72630bcb2b960b11b60209182015281517f8cad95687ba82c2ce50e74f7b754645e5117c3a5bec8151c0726d5857980a866818301527f71b625cfad44bac63b13dba07f2e1d6084ee04b6f8752101ece6126d584ee6ea81840152466060820152306080808301919091528351808303909101815260a0909101909252815191012090565b603380546001600160a01b038381166001600160a01b0319831681179093556040519116919082907f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e090600090a35050565b62034bc08111156138fd5760405162461bcd60e51b815260206004820152607160248201527f44656c65676174696f6e4d616e616765722e5f7365744d696e5769746864726160448201527f77616c44656c6179426c6f636b733a205f6d696e5769746864726177616c446560648201527f6c6179426c6f636b732063616e6e6f74206265203e204d41585f5749544844526084820152704157414c5f44454c41595f424c4f434b5360781b60a482015260c401610abc565b609d5460408051918252602082018390527fafa003cd76f87ff9d62b35beea889920f33c0c42b8d45b74954d61d50f4b6b69910160405180910390a1609d55565b6001600160a01b0380851660009081526098602090815260408083209386168352929052908120805483929061397590849061578a565b92505081905550836001600160a01b03167f1ec042c965e2edd7107b51188ee0f383e22e76179041ab3a9d18ff151405166c848484604051610f30939291906157b9565b60006139c76105f387615896565b6000818152609e602052604090205490915060ff16613a485760405162461bcd60e51b815260206004820152604360248201526000805160206159c883398151915260448201527f645769746864726177616c3a20616374696f6e206973206e6f7420696e20717560648201526265756560e81b608482015260a401610abc565b609d544390613a5d60a0890160808a016157f6565b63ffffffff16613a6d919061578a565b1115613af55760405162461bcd60e51b815260206004820152605f60248201526000805160206159c883398151915260448201527f645769746864726177616c3a206d696e5769746864726177616c44656c61794260648201527f6c6f636b7320706572696f6420686173206e6f74207965742070617373656400608482015260a401610abc565b613b0560608701604088016149ff565b6001600160a01b0316336001600160a01b031614613b925760405162461bcd60e51b815260206004820152605060248201526000805160206159c883398151915260448201527f645769746864726177616c3a206f6e6c7920776974686472617765722063616e60648201526f1031b7b6b83632ba329030b1ba34b7b760811b608482015260a401610abc565b8115613c1457613ba560a08701876153af565b85149050613c145760405162461bcd60e51b815260206004820152604260248201526000805160206159c883398151915260448201527f645769746864726177616c3a20696e707574206c656e677468206d69736d61746064820152610c6d60f31b608482015260a401610abc565b6000818152609e60205260409020805460ff191690558115613d795760005b613c4060a08801886153af565b9050811015613d73574360a16000613c5b60a08b018b6153af565b85818110613c6b57613c6b615311565b9050602002016020810190613c8091906149ff565b6001600160a01b03168152602081019190915260400160002054613caa60a08a0160808b016157f6565b63ffffffff16613cba919061578a565b1115613cd85760405162461bcd60e51b8152600401610abc906158a2565b613d6b613ce860208901896149ff565b33613cf660a08b018b6153af565b85818110613d0657613d06615311565b9050602002016020810190613d1b91906149ff565b613d2860c08c018c6153af565b86818110613d3857613d38615311565b905060200201358a8a87818110613d5157613d51615311565b9050602002016020810190613d6691906149ff565b61435d565b600101613c33565b50614168565b336000908152609a60205260408120546001600160a01b0316905b613da160a08901896153af565b9050811015614165574360a16000613dbc60a08c018c6153af565b85818110613dcc57613dcc615311565b9050602002016020810190613de191906149ff565b6001600160a01b03168152602081019190915260400160002054613e0b60a08b0160808c016157f6565b63ffffffff16613e1b919061578a565b1115613e395760405162461bcd60e51b8152600401610abc906158a2565b73beac0eeeeeeeeeeeeeeeeeeeeeeeeeeeeeebeac0613e5b60a08a018a6153af565b83818110613e6b57613e6b615311565b9050602002016020810190613e8091906149ff565b6001600160a01b03161415613fd0576000613e9e60208a018a6149ff565b905060006001600160a01b037f000000000000000000000000000000000000000000000000000000000000000016630e81073c83613edf60c08e018e6153af565b87818110613eef57613eef615311565b6040516001600160e01b031960e087901b1681526001600160a01b03909416600485015260200291909101356024830152506044016020604051808303816000875af1158015613f43573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190613f67919061565c565b6001600160a01b038084166000908152609a6020526040902054919250168015613fc857613fc88184613f9d60a08f018f6153af565b88818110613fad57613fad615311565b9050602002016020810190613fc291906149ff565b8561393e565b50505061415d565b7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b031663c4623ea13389898581811061401257614012615311565b905060200201602081019061402791906149ff565b61403460a08d018d6153af565b8681811061404457614044615311565b905060200201602081019061405991906149ff565b61406660c08e018e6153af565b8781811061407657614076615311565b60405160e088901b6001600160e01b03191681526001600160a01b03968716600482015294861660248601529290941660448401526020909102013560648201526084019050600060405180830381600087803b1580156140d657600080fd5b505af11580156140ea573d6000803e3d6000fd5b505050506001600160a01b0382161561415d5761415d823361410f60a08c018c6153af565b8581811061411f5761411f615311565b905060200201602081019061413491906149ff565b61414160c08d018d6153af565b8681811061415157614151615311565b9050602002013561393e565b600101613d94565b50505b6040518181527fc97098c2f658800b4df29001527f7324bcdffcf6e8751a699ab920a1eced5b1d9060200160405180910390a1505050505050565b6001600160a01b0383163b156142bd57604051630b135d3f60e11b808252906001600160a01b03851690631626ba7e906141e3908690869060040161592a565b602060405180830381865afa158015614200573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906142249190615987565b6001600160e01b031916146110a35760405162461bcd60e51b815260206004820152605360248201527f454950313237315369676e61747572655574696c732e636865636b5369676e6160448201527f747572655f454950313237313a2045524331323731207369676e6174757265206064820152721d995c9a599a58d85d1a5bdb8819985a5b1959606a1b608482015260a401610abc565b826001600160a01b03166142d1838361449d565b6001600160a01b0316146110a35760405162461bcd60e51b815260206004820152604760248201527f454950313237315369676e61747572655574696c732e636865636b5369676e6160448201527f747572655f454950313237313a207369676e6174757265206e6f742066726f6d6064820152661039b4b3b732b960c91b608482015260a401610abc565b6001600160a01b03831673beac0eeeeeeeeeeeeeeeeeeeeeeeeeeeeeebeac014156144085760405162387b1360e81b81526001600160a01b037f0000000000000000000000000000000000000000000000000000000000000000169063387b1300906143d1908890889087906004016157b9565b600060405180830381600087803b1580156143eb57600080fd5b505af11580156143ff573d6000803e3d6000fd5b50505050614496565b60405163c608c7f360e01b81526001600160a01b03858116600483015284811660248301526044820184905282811660648301527f0000000000000000000000000000000000000000000000000000000000000000169063c608c7f390608401600060405180830381600087803b15801561448257600080fd5b505af1158015611362573d6000803e3d6000fd5b5050505050565b60008060006144ac85856144b9565b915091506109c681614529565b6000808251604114156144f05760208301516040840151606085015160001a6144e4878285856146e4565b94509450505050614522565b82516040141561451a576020830151604084015161450f8683836147d1565b935093505050614522565b506000905060025b9250929050565b600081600481111561453d5761453d6159b1565b14156145465750565b600181600481111561455a5761455a6159b1565b14156145a85760405162461bcd60e51b815260206004820152601860248201527f45434453413a20696e76616c6964207369676e617475726500000000000000006044820152606401610abc565b60028160048111156145bc576145bc6159b1565b141561460a5760405162461bcd60e51b815260206004820152601f60248201527f45434453413a20696e76616c6964207369676e6174757265206c656e677468006044820152606401610abc565b600381600481111561461e5761461e6159b1565b14156146775760405162461bcd60e51b815260206004820152602260248201527f45434453413a20696e76616c6964207369676e6174757265202773272076616c604482015261756560f01b6064820152608401610abc565b600481600481111561468b5761468b6159b1565b1415610fee5760405162461bcd60e51b815260206004820152602260248201527f45434453413a20696e76616c6964207369676e6174757265202776272076616c604482015261756560f01b6064820152608401610abc565b6000807f7fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a083111561471b57506000905060036147c8565b8460ff16601b1415801561473357508460ff16601c14155b1561474457506000905060046147c8565b6040805160008082526020820180845289905260ff881692820192909252606081018690526080810185905260019060a0016020604051602081039080840390855afa158015614798573d6000803e3d6000fd5b5050604051601f1901519150506001600160a01b0381166147c1576000600192509250506147c8565b9150600090505b94509492505050565b6000806001600160ff1b038316816147ee60ff86901c601b61578a565b90506147fc878288856146e4565b935093505050935093915050565b60008083601f84011261481c57600080fd5b5081356001600160401b0381111561483357600080fd5b6020830191508360208260051b850101111561452257600080fd5b6000806020838503121561486157600080fd5b82356001600160401b0381111561487757600080fd5b6148838582860161480a565b90969095509350505050565b6001600160a01b0381168114610fee57600080fd5b80356148af8161488f565b919050565b600080600080600060a086880312156148cc57600080fd5b85356148d78161488f565b945060208601356148e78161488f565b935060408601356148f78161488f565b94979396509394606081013594506080013592915050565b6020808252825182820181905260009190848201906040850190845b818110156149475783518352928401929184019160010161492b565b50909695505050505050565b60006060828403121561496557600080fd5b50919050565b60008083601f84011261497d57600080fd5b5081356001600160401b0381111561499457600080fd5b60208301915083602082850101111561452257600080fd5b6000806000608084860312156149c157600080fd5b6149cb8585614953565b925060608401356001600160401b038111156149e657600080fd5b6149f28682870161496b565b9497909650939450505050565b600060208284031215614a1157600080fd5b8135614a1c8161488f565b9392505050565b600080600060608486031215614a3857600080fd5b8335614a438161488f565b92506020840135614a538161488f565b929592945050506040919091013590565b600060208284031215614a7657600080fd5b5035919050565b60008060008060408587031215614a9357600080fd5b84356001600160401b0380821115614aaa57600080fd5b614ab68883890161480a565b90965094506020870135915080821115614acf57600080fd5b50614adc8782880161480a565b95989497509550505050565b60008060008060008060008060c0898b031215614b0457600080fd5b8835614b0f8161488f565b97506020890135614b1f8161488f565b9650604089013595506060890135945060808901356001600160401b0380821115614b4957600080fd5b614b558c838d0161480a565b909650945060a08b0135915080821115614b6e57600080fd5b50614b7b8b828c0161480a565b999c989b5096995094979396929594505050565b6000806000806000806000806080898b031215614bab57600080fd5b88356001600160401b0380821115614bc257600080fd5b614bce8c838d0161480a565b909a50985060208b0135915080821115614be757600080fd5b614bf38c838d0161480a565b909850965060408b0135915080821115614c0c57600080fd5b614c188c838d0161480a565b909650945060608b0135915080821115614b6e57600080fd5b634e487b7160e01b600052604160045260246000fd5b60405160e081016001600160401b0381118282101715614c6957614c69614c31565b60405290565b604080519081016001600160401b0381118282101715614c6957614c69614c31565b604051601f8201601f191681016001600160401b0381118282101715614cb957614cb9614c31565b604052919050565b63ffffffff81168114610fee57600080fd5b80356148af81614cc1565b60006001600160401b03821115614cf757614cf7614c31565b5060051b60200190565b600082601f830112614d1257600080fd5b81356020614d27614d2283614cde565b614c91565b82815260059290921b84018101918181019086841115614d4657600080fd5b8286015b84811015614d6a578035614d5d8161488f565b8352918301918301614d4a565b509695505050505050565b600082601f830112614d8657600080fd5b81356020614d96614d2283614cde565b82815260059290921b84018101918181019086841115614db557600080fd5b8286015b84811015614d6a5780358352918301918301614db9565b600060e08284031215614de257600080fd5b614dea614c47565b9050614df5826148a4565b8152614e03602083016148a4565b6020820152614e14604083016148a4565b604082015260608201356060820152614e2f60808301614cd3565b608082015260a08201356001600160401b0380821115614e4e57600080fd5b614e5a85838601614d01565b60a084015260c0840135915080821115614e7357600080fd5b50614e8084828501614d75565b60c08301525092915050565b600060208284031215614e9e57600080fd5b81356001600160401b03811115614eb457600080fd5b614ec084828501614dd0565b949350505050565b600060208284031215614eda57600080fd5b813560ff81168114614a1c57600080fd5b8015158114610fee57600080fd5b600080600080600060808688031215614f1157600080fd5b85356001600160401b0380821115614f2857600080fd5b9087019060e0828a031215614f3c57600080fd5b90955060208701359080821115614f5257600080fd5b50614f5f8882890161480a565b909550935050604086013591506060860135614f7a81614eeb565b809150509295509295909350565b60008060408385031215614f9b57600080fd5b8235614fa68161488f565b91506020830135614fb68161488f565b809150509250929050565b600060408284031215614fd357600080fd5b614fdb614c6f565b905081356001600160401b0380821115614ff457600080fd5b818401915084601f83011261500857600080fd5b813560208282111561501c5761501c614c31565b61502e601f8301601f19168201614c91565b9250818352868183860101111561504457600080fd5b8181850182850137600081838501015282855280860135818601525050505092915050565b600080600080600060a0868803121561508157600080fd5b853561508c8161488f565b9450602086013561509c8161488f565b935060408601356001600160401b03808211156150b857600080fd5b6150c489838a01614fc1565b945060608801359150808211156150da57600080fd5b506150e788828901614fc1565b95989497509295608001359392505050565b6000806040838503121561510c57600080fd5b82356151178161488f565b915060208301356001600160401b0381111561513257600080fd5b61513e85828601614d01565b9150509250929050565b600081518084526020808501945080840160005b838110156151785781518752958201959082019060010161515c565b509495945050505050565b602081526000614a1c6020830184615148565b600080602083850312156151a957600080fd5b82356001600160401b038111156151bf57600080fd5b6148838582860161496b565b600080604083850312156151de57600080fd5b82356151e98161488f565b946020939093013593505050565b6000806000806080858703121561520d57600080fd5b84356152188161488f565b935060208501359250604085013561522f8161488f565b9396929550929360600135925050565b600081518084526020808501945080840160005b838110156151785781516001600160a01b031687529582019590820190600101615253565b60408152600061528b604083018561523f565b82810360208401526112208185615148565b6000806000606084860312156152b257600080fd5b83356152bd8161488f565b925060208401356001600160401b038111156152d857600080fd5b6152e486828701614fc1565b925050604084013590509250925092565b60006060828403121561530757600080fd5b614a1c8383614953565b634e487b7160e01b600052603260045260246000fd5b634e487b7160e01b600052601160045260246000fd5b600060001982141561535157615351615327565b5060010190565b60208082526019908201527f5061757361626c653a20696e6465782069732070617573656400000000000000604082015260600190565b60008235605e198336030181126153a557600080fd5b9190910192915050565b6000808335601e198436030181126153c657600080fd5b8301803591506001600160401b038211156153e057600080fd5b6020019150600581901b360382131561452257600080fd5b6060810182356154078161488f565b6001600160a01b0390811683526020840135906154238261488f565b166020830152604083013561543781614cc1565b63ffffffff811660408401525092915050565b60208152816020820152818360408301376000818301604090810191909152601f909201601f19160101919050565b60006020828403121561548b57600080fd5b8151614a1c8161488f565b6020808252602a908201527f6d73672e73656e646572206973206e6f74207065726d697373696f6e6564206160408201526939903ab73830bab9b2b960b11b606082015260800190565b60208082526037908201527f44656c65676174696f6e4d616e616765723a206f6e6c7953747261746567794d60408201527f616e616765724f72456967656e506f644d616e61676572000000000000000000606082015260800190565b60006020828403121561554f57600080fd5b8151614a1c81614eeb565b60208082526028908201527f6d73672e73656e646572206973206e6f74207065726d697373696f6e6564206160408201526739903830bab9b2b960c11b606082015260800190565b6000823560de198336030181126153a557600080fd5b6000602082840312156155ca57600080fd5b8135614a1c81614eeb565b600060018060a01b03808351168452806020840151166020850152806040840151166040850152506060820151606084015263ffffffff608083015116608084015260a082015160e060a085015261563060e085018261523f565b905060c083015184820360c08601526112208282615148565b602081526000614a1c60208301846155d5565b60006020828403121561566e57600080fd5b5051919050565b600082601f83011261568657600080fd5b81516020615696614d2283614cde565b82815260059290921b840181019181810190868411156156b557600080fd5b8286015b84811015614d6a57805183529183019183016156b9565b600080604083850312156156e357600080fd5b82516001600160401b03808211156156fa57600080fd5b818501915085601f83011261570e57600080fd5b8151602061571e614d2283614cde565b82815260059290921b8401810191818101908984111561573d57600080fd5b948201945b838610156157645785516157558161488f565b82529482019490820190615742565b9188015191965090935050508082111561577d57600080fd5b5061513e85828601615675565b6000821982111561579d5761579d615327565b500190565b6000828210156157b4576157b4615327565b500390565b6001600160a01b039384168152919092166020820152604081019190915260600190565b828152604060208201526000614ec060408301846155d5565b60006020828403121561580857600080fd5b8135614a1c81614cc1565b80546001600160a01b0319166001600160a01b0392909216919091179055565b813561583e8161488f565b6158488183615813565b5060018101602083013561585b8161488f565b6158658183615813565b50604083013561587481614cc1565b815463ffffffff60a01b191660a09190911b63ffffffff60a01b161790555050565b60006117513683614dd0565b6020808252606e908201526000805160206159c883398151915260408201527f645769746864726177616c3a207769746864726177616c44656c6179426c6f6360608201527f6b7320706572696f6420686173206e6f74207965742070617373656420666f7260808201526d207468697320737472617465677960901b60a082015260c00190565b82815260006020604081840152835180604085015260005b8181101561595e57858101830151858201606001528201615942565b81811115615970576000606083870101525b50601f01601f191692909201606001949350505050565b60006020828403121561599957600080fd5b81516001600160e01b031981168114614a1c57600080fd5b634e487b7160e01b600052602160045260246000fdfe44656c65676174696f6e4d616e616765722e5f636f6d706c6574655175657565a264697066735822122026b1fed484881843a1d9811e493fabdf693f068a2dfa3af9289c2a7fba74873e64736f6c634300080c0033",
+	ABI: "[{\"type\":\"constructor\",\"inputs\":[{\"name\":\"_strategyManager\",\"type\":\"address\",\"internalType\":\"contractIStrategyManager\"},{\"name\":\"_eigenPodManager\",\"type\":\"address\",\"internalType\":\"contractIEigenPodManager\"},{\"name\":\"_allocationManager\",\"type\":\"address\",\"internalType\":\"contractIAllocationManager\"},{\"name\":\"_pauserRegistry\",\"type\":\"address\",\"internalType\":\"contractIPauserRegistry\"},{\"name\":\"_permissionController\",\"type\":\"address\",\"internalType\":\"contractIPermissionController\"},{\"name\":\"_MIN_WITHDRAWAL_DELAY\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"DELEGATION_APPROVAL_TYPEHASH\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"allocationManager\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIAllocationManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"beaconChainETHStrategy\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"calculateDelegationApprovalDigestHash\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"approver\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"approverSalt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"calculateWithdrawalRoot\",\"inputs\":[{\"name\":\"withdrawal\",\"type\":\"tuple\",\"internalType\":\"structIDelegationManagerTypes.Withdrawal\",\"components\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"delegatedTo\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"withdrawer\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"nonce\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"startBlock\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"strategies\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"},{\"name\":\"scaledShares\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"pure\"},{\"type\":\"function\",\"name\":\"completeQueuedWithdrawal\",\"inputs\":[{\"name\":\"withdrawal\",\"type\":\"tuple\",\"internalType\":\"structIDelegationManagerTypes.Withdrawal\",\"components\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"delegatedTo\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"withdrawer\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"nonce\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"startBlock\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"strategies\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"},{\"name\":\"scaledShares\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}]},{\"name\":\"tokens\",\"type\":\"address[]\",\"internalType\":\"contractIERC20[]\"},{\"name\":\"receiveAsTokens\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"completeQueuedWithdrawals\",\"inputs\":[{\"name\":\"withdrawals\",\"type\":\"tuple[]\",\"internalType\":\"structIDelegationManagerTypes.Withdrawal[]\",\"components\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"delegatedTo\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"withdrawer\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"nonce\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"startBlock\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"strategies\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"},{\"name\":\"scaledShares\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}]},{\"name\":\"tokens\",\"type\":\"address[][]\",\"internalType\":\"contractIERC20[][]\"},{\"name\":\"receiveAsTokens\",\"type\":\"bool[]\",\"internalType\":\"bool[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"convertToDepositShares\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategies\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"},{\"name\":\"withdrawableShares\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"cumulativeWithdrawalsQueued\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"totalQueued\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"decreaseDelegatedShares\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"curDepositShares\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"beaconChainSlashingFactorDecrease\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"delegateTo\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"approverSignatureAndExpiry\",\"type\":\"tuple\",\"internalType\":\"structISignatureUtils.SignatureWithExpiry\",\"components\":[{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"approverSalt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"delegatedTo\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"delegationApprover\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"delegationApproverSaltIsSpent\",\"inputs\":[{\"name\":\"delegationApprover\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"salt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"spent\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"depositScalingFactor\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"domainSeparator\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"eigenPodManager\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIEigenPodManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getDepositedShares\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"},{\"name\":\"\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getOperatorShares\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategies\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getOperatorsShares\",\"inputs\":[{\"name\":\"operators\",\"type\":\"address[]\",\"internalType\":\"address[]\"},{\"name\":\"strategies\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256[][]\",\"internalType\":\"uint256[][]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getQueuedWithdrawal\",\"inputs\":[{\"name\":\"withdrawalRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIDelegationManagerTypes.Withdrawal\",\"components\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"delegatedTo\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"withdrawer\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"nonce\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"startBlock\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"strategies\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"},{\"name\":\"scaledShares\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getQueuedWithdrawalRoots\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32[]\",\"internalType\":\"bytes32[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getQueuedWithdrawals\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"withdrawals\",\"type\":\"tuple[]\",\"internalType\":\"structIDelegationManagerTypes.Withdrawal[]\",\"components\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"delegatedTo\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"withdrawer\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"nonce\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"startBlock\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"strategies\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"},{\"name\":\"scaledShares\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}]},{\"name\":\"shares\",\"type\":\"uint256[][]\",\"internalType\":\"uint256[][]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getSlashableSharesInQueue\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getWithdrawableShares\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategies\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"}],\"outputs\":[{\"name\":\"withdrawableShares\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"},{\"name\":\"depositShares\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"increaseDelegatedShares\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"prevDepositShares\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"addedShares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"initialize\",\"inputs\":[{\"name\":\"initialOwner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"initialPausedStatus\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"isDelegated\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isOperator\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"minWithdrawalDelayBlocks\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"modifyOperatorDetails\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"newDelegationApprover\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"operatorShares\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"}],\"outputs\":[{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"owner\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"pause\",\"inputs\":[{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"pauseAll\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"paused\",\"inputs\":[{\"name\":\"index\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"paused\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"pauserRegistry\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIPauserRegistry\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"pendingWithdrawals\",\"inputs\":[{\"name\":\"withdrawalRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"pending\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"permissionController\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIPermissionController\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"queueWithdrawals\",\"inputs\":[{\"name\":\"params\",\"type\":\"tuple[]\",\"internalType\":\"structIDelegationManagerTypes.QueuedWithdrawalParams[]\",\"components\":[{\"name\":\"strategies\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"},{\"name\":\"depositShares\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"},{\"name\":\"__deprecated_withdrawer\",\"type\":\"address\",\"internalType\":\"address\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32[]\",\"internalType\":\"bytes32[]\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"redelegate\",\"inputs\":[{\"name\":\"newOperator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"newOperatorApproverSig\",\"type\":\"tuple\",\"internalType\":\"structISignatureUtils.SignatureWithExpiry\",\"components\":[{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"approverSalt\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"withdrawalRoots\",\"type\":\"bytes32[]\",\"internalType\":\"bytes32[]\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"registerAsOperator\",\"inputs\":[{\"name\":\"initDelegationApprover\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"allocationDelay\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"metadataURI\",\"type\":\"string\",\"internalType\":\"string\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"renounceOwnership\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"slashOperatorShares\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"prevMaxMagnitude\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"newMaxMagnitude\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"strategyManager\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIStrategyManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"transferOwnership\",\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"undelegate\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"withdrawalRoots\",\"type\":\"bytes32[]\",\"internalType\":\"bytes32[]\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"unpause\",\"inputs\":[{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"updateOperatorMetadataURI\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"metadataURI\",\"type\":\"string\",\"internalType\":\"string\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"DelegationApproverUpdated\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newDelegationApprover\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"DepositScalingFactorUpdated\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIStrategy\"},{\"name\":\"newDepositScalingFactor\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Initialized\",\"inputs\":[{\"name\":\"version\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"uint8\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorMetadataURIUpdated\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"metadataURI\",\"type\":\"string\",\"indexed\":false,\"internalType\":\"string\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorRegistered\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"delegationApprover\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorSharesDecreased\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"staker\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIStrategy\"},{\"name\":\"shares\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorSharesIncreased\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"staker\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIStrategy\"},{\"name\":\"shares\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OwnershipTransferred\",\"inputs\":[{\"name\":\"previousOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Paused\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SlashingWithdrawalCompleted\",\"inputs\":[{\"name\":\"withdrawalRoot\",\"type\":\"bytes32\",\"indexed\":false,\"internalType\":\"bytes32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SlashingWithdrawalQueued\",\"inputs\":[{\"name\":\"withdrawalRoot\",\"type\":\"bytes32\",\"indexed\":false,\"internalType\":\"bytes32\"},{\"name\":\"withdrawal\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIDelegationManagerTypes.Withdrawal\",\"components\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"delegatedTo\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"withdrawer\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"nonce\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"startBlock\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"strategies\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"},{\"name\":\"scaledShares\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}]},{\"name\":\"sharesToWithdraw\",\"type\":\"uint256[]\",\"indexed\":false,\"internalType\":\"uint256[]\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"StakerDelegated\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"operator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"StakerForceUndelegated\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"operator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"StakerUndelegated\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"operator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Unpaused\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"ActivelyDelegated\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"CallerCannotUndelegate\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"CurrentlyPaused\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"FullySlashed\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InputAddressZero\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InputArrayLengthMismatch\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InputArrayLengthZero\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidNewPausedStatus\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidPermissions\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidSignature\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidSnapshotOrdering\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NotActivelyDelegated\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OnlyAllocationManager\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OnlyEigenPodManager\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OnlyPauser\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OnlyStrategyManagerOrEigenPodManager\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OnlyUnpauser\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OperatorNotRegistered\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OperatorsCannotUndelegate\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"SaltSpent\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"SignatureExpired\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"WithdrawalDelayNotElapsed\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"WithdrawalNotQueued\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"WithdrawerNotCaller\",\"inputs\":[]}]",
+	Bin: "0x610180604052348015610010575f5ffd5b50604051615e0d380380615e0d83398101604081905261002f9161021c565b8186868684876001600160a01b03811661005c576040516339b190bb60e11b815260040160405180910390fd5b6001600160a01b0390811660805293841660a05291831660c05290911660e05263ffffffff16610100524661012052610125604080518082018252600a81526922b4b3b2b72630bcb2b960b11b60209182015281517f8cad95687ba82c2ce50e74f7b754645e5117c3a5bec8151c0726d5857980a866818301527f71b625cfad44bac63b13dba07f2e1d6084ee04b6f8752101ece6126d584ee6ea81840152466060820152306080808301919091528351808303909101815260a0909101909252815191012090565b610140526001600160a01b03166101605261013e610149565b5050505050506102a7565b5f54610100900460ff16156101b45760405162461bcd60e51b815260206004820152602760248201527f496e697469616c697a61626c653a20636f6e747261637420697320696e697469604482015266616c697a696e6760c81b606482015260840160405180910390fd5b5f5460ff90811614610203575f805460ff191660ff9081179091556040519081527f7f26b83ff96e1f2b6a682f133852f6798a09c465da95921460cefb38474024989060200160405180910390a15b565b6001600160a01b0381168114610219575f5ffd5b50565b5f5f5f5f5f5f60c08789031215610231575f5ffd5b865161023c81610205565b602088015190965061024d81610205565b604088015190955061025e81610205565b606088015190945061026f81610205565b608088015190935061028081610205565b60a088015190925063ffffffff81168114610299575f5ffd5b809150509295509295509295565b60805160a05160c05160e05161010051610120516101405161016051615a7161039c5f395f818161042c01526132fa01525f61271601525f61265601525f818161070001528181611504015281816134f5015261383101525f818161075001528181610da901528181610f5a0152818161169f0152818161185e01528181611cb2015281816128eb01526133b101525f818161045301528181610ee0015281816117c501528181611a23015281816130e3015261363b01525f818161038901528181610eae01528181611977015261361501525f81816105ee01528181610b410152818161107a015261273a0152615a715ff3fe608060405234801561000f575f5ffd5b50600436106102cb575f3560e01c8063715018a61161017b578063bfae3fd2116100e4578063e4cc3f901161009e578063f2fde38b11610079578063f2fde38b146107de578063f698da25146107f1578063fabc1cbc146107f9578063fd8aa88d1461080c575f5ffd5b8063e4cc3f9014610798578063eea9064b146107ab578063f0e0e676146107be575f5ffd5b8063bfae3fd2146106e3578063c448feb8146106f6578063c978f7ac1461072a578063ca8aa7c71461074b578063cd6dc68714610772578063da8be86414610785575f5ffd5b80639104c319116101355780639104c319146106345780639435bb431461064f578063a178848414610662578063a33a343314610681578063b7f06ebe14610694578063bb45fef2146106b6575f5ffd5b8063715018a6146105a4578063778e55f3146105ac57806378296ec5146105d6578063886f1195146105e95780638da5cb5b146106105780639004134714610621575f5ffd5b806354b7c96c116102375780635dd68579116101f157806365da1264116101cc57806365da12641461053557806366d5ba931461055d5780636d70f7ae1461057e5780636e17444814610591575f5ffd5b80635dd68579146104ee578063601bb36f1461050f57806360a0d1ce14610522575f5ffd5b806354b7c96c14610475578063595c6a6714610488578063597b36da146104905780635ac86ab7146104a35780635c975abb146104c65780635d975e88146104ce575f5ffd5b806339b70e381161028857806339b70e38146103845780633c651cf2146103c35780633cdeb5e0146103d65780633e28391d146104045780634657e26a146104275780634665bcda1461044e575f5ffd5b806304a4f979146102cf5780630b9f487a146103095780630dd8dd021461031c578063136439dd1461033c57806325df922e146103515780632aa6d88814610371575b5f5ffd5b6102f67f14bde674c9f64b2ad00eaaee4a8bed1fabef35c7507e3c5b9cfc9436909a2dad81565b6040519081526020015b60405180910390f35b6102f661031736600461498e565b61081f565b61032f61032a366004614a25565b6108a7565b6040516103009190614a63565b61034f61034a366004614a9a565b610b2c565b005b61036461035f366004614c2f565b610c01565b6040516103009190614cdd565b61034f61037f366004614d3f565b610d61565b6103ab7f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160a01b039091168152602001610300565b61034f6103d1366004614d9d565b610ea3565b6103ab6103e4366004614de0565b6001600160a01b039081165f908152609960205260409020600101541690565b610417610412366004614de0565b610fea565b6040519015158152602001610300565b6103ab7f000000000000000000000000000000000000000000000000000000000000000081565b6103ab7f000000000000000000000000000000000000000000000000000000000000000081565b61034f610483366004614dfb565b611009565b61034f611065565b6102f661049e366004614eee565b611114565b6104176104b1366004614f1f565b606654600160ff9092169190911b9081161490565b6066546102f6565b6104e16104dc366004614a9a565b611143565b6040516103009190614ff6565b6105016104fc366004614de0565b61125f565b604051610300929190615056565b61034f61051d3660046150d7565b611694565b61034f610530366004615130565b6117ba565b6103ab610543366004614de0565b609a6020525f90815260409020546001600160a01b031681565b61057061056b366004614de0565b61194f565b60405161030092919061516f565b61041761058c366004614de0565b611c4f565b6102f661059f366004614dfb565b611c87565b61034f611d31565b6102f66105ba366004614dfb565b609860209081525f928352604080842090915290825290205481565b61034f6105e4366004615193565b611d42565b6103ab7f000000000000000000000000000000000000000000000000000000000000000081565b6033546001600160a01b03166103ab565b61036461062f3660046151e3565b611dca565b6103ab73beac0eeeeeeeeeeeeeeeeeeeeeeeeeeeeeebeac081565b61034f61065d36600461522f565b611ea0565b6102f6610670366004614de0565b609f6020525f908152604090205481565b61032f61068f3660046152cb565b611f70565b6104176106a2366004614a9a565b609e6020525f908152604090205460ff1681565b6104176106c43660046153b2565b609c60209081525f928352604080842090915290825290205460ff1681565b6102f66106f1366004614dfb565b611f88565b60405163ffffffff7f0000000000000000000000000000000000000000000000000000000000000000168152602001610300565b61073d6107383660046151e3565b611fc4565b6040516103009291906153dc565b6103ab7f000000000000000000000000000000000000000000000000000000000000000081565b61034f6107803660046153b2565b612251565b61032f610793366004614de0565b61236c565b61034f6107a63660046153fb565b61247c565b61034f6107b93660046152cb565b6124d2565b6107d16107cc36600461546e565b612535565b604051610300919061551b565b61034f6107ec366004614de0565b6125da565b6102f6612653565b61034f610807366004614a9a565b612738565b61032f61081a366004614de0565b61284f565b604080517f14bde674c9f64b2ad00eaaee4a8bed1fabef35c7507e3c5b9cfc9436909a2dad60208201526001600160a01b03808616928201929092528187166060820152908516608082015260a0810183905260c081018290525f9061089d9060e00160405160208183030381529060405280519060200120612872565b9695505050505050565b6066546060906001906002908116036108d35760405163840a48d560e01b815260040160405180910390fd5b5f836001600160401b038111156108ec576108ec614ab1565b604051908082528060200260200182016040528015610915578160200160208202803683370190505b50335f908152609a60205260408120549192506001600160a01b03909116905b85811015610b215786868281811061094f5761094f61552d565b90506020028101906109619190615541565b61096f90602081019061555f565b90508787838181106109835761098361552d565b90506020028101906109959190615541565b61099f908061555f565b9050146109bf576040516343714afd60e01b815260040160405180910390fd5b5f610a2933848a8a868181106109d7576109d761552d565b90506020028101906109e99190615541565b6109f3908061555f565b808060200260200160405190810160405280939291908181526020018383602002808284375f920191909152506128a092505050565b9050610afb33848a8a86818110610a4257610a4261552d565b9050602002810190610a549190615541565b610a5e908061555f565b808060200260200160405190810160405280939291908181526020018383602002808284375f920191909152508e92508d9150889050818110610aa357610aa361552d565b9050602002810190610ab59190615541565b610ac390602081019061555f565b808060200260200160405190810160405280939291908181526020018383602002808284375f920191909152508892506129e7915050565b848381518110610b0d57610b0d61552d565b602090810291909101015250600101610935565b509095945050505050565b60405163237dfb4760e11b81523360048201527f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316906346fbf68e90602401602060405180830381865afa158015610b8e573d5f5f3e3d5ffd5b505050506040513d601f19601f82011682018060405250810190610bb291906155a4565b610bcf57604051631d77d47760e21b815260040160405180910390fd5b6066548181168114610bf45760405163c61dca5d60e01b815260040160405180910390fd5b610bfd82612edc565b5050565b6001600160a01b038084165f908152609a60205260408120546060921690610c2a8683876128a0565b90505f85516001600160401b03811115610c4657610c46614ab1565b604051908082528060200260200182016040528015610c6f578160200160208202803683370190505b5090505f5b8651811015610d54576001600160a01b0388165f90815260a260205260408120885182908a9085908110610caa57610caa61552d565b60200260200101516001600160a01b03166001600160a01b031681526020019081526020015f206040518060200160405290815f820154815250509050610d2e878381518110610cfc57610cfc61552d565b6020026020010151858481518110610d1657610d1661552d565b602002602001015183612f199092919063ffffffff16565b838381518110610d4057610d4061552d565b602090810291909101015250600101610c74565b50925050505b9392505050565b610d6a33610fea565b15610d8857604051633bf2b50360e11b815260040160405180910390fd5b604051632b6241f360e11b815233600482015263ffffffff841660248201527f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316906356c483e6906044015f604051808303815f87803b158015610df2575f5ffd5b505af1158015610e04573d5f5f3e3d5ffd5b50505050610e123385612f37565b610e1c3333612f99565b6040516001600160a01b038516815233907fa453db612af59e5521d6ab9284dc3e2d06af286eb1b1b7b771fce4716c19f2c19060200160405180910390a2336001600160a01b03167f02a919ed0e2acad1dd90f17ef2fa4ae5462ee1339170034a8531cca4b67080908383604051610e959291906155bf565b60405180910390a250505050565b336001600160a01b037f0000000000000000000000000000000000000000000000000000000000000000161480610f025750336001600160a01b037f000000000000000000000000000000000000000000000000000000000000000016145b610f1f5760405163045206a560e21b815260040160405180910390fd5b6001600160a01b038481165f908152609a602052604080822054905163152667d960e31b8152908316600482018190528684166024830152927f0000000000000000000000000000000000000000000000000000000000000000169063a9333ec890604401602060405180830381865afa158015610f9f573d5f5f3e3d5ffd5b505050506040513d601f19601f82011682018060405250810190610fc391906155ed565b90505f610fd187878461309c565b9050610fe183888888888661317e565b50505050505050565b6001600160a01b039081165f908152609a602052604090205416151590565b81611013816132bc565b6110305760405163932d94f760e01b815260040160405180910390fd5b61103983611c4f565b611056576040516325ec6c1f60e01b815260040160405180910390fd5b6110608383612f37565b505050565b60405163237dfb4760e11b81523360048201527f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316906346fbf68e90602401602060405180830381865afa1580156110c7573d5f5f3e3d5ffd5b505050506040513d601f19601f820116820180604052508101906110eb91906155a4565b61110857604051631d77d47760e21b815260040160405180910390fd5b6111125f19612edc565b565b5f816040516020016111269190614ff6565b604051602081830303815290604052805190602001209050919050565b61114b61484a565b5f82815260a46020908152604091829020825160e08101845281546001600160a01b03908116825260018301548116828501526002830154168185015260038201546060820152600482015463ffffffff1660808201526005820180548551818602810186019096528086529194929360a086019392908301828280156111f957602002820191905f5260205f20905b81546001600160a01b031681526001909101906020018083116111db575b505050505081526020016006820180548060200260200160405190810160405280929190818152602001828054801561124f57602002820191905f5260205f20905b81548152602001906001019080831161123b575b5050505050815250509050919050565b6060805f61126c8461284f565b8051909150806001600160401b0381111561128957611289614ab1565b6040519080825280602002602001820160405280156112c257816020015b6112af61484a565b8152602001906001900390816112a75790505b509350806001600160401b038111156112dd576112dd614ab1565b60405190808252806020026020018201604052801561131057816020015b60608152602001906001900390816112fb5790505b506001600160a01b038087165f908152609a60205260408120549295509116905b8281101561168b5760a45f85838151811061134e5761134e61552d565b60209081029190910181015182528181019290925260409081015f20815160e08101835281546001600160a01b03908116825260018301548116828601526002830154168184015260038201546060820152600482015463ffffffff1660808201526005820180548451818702810187019095528085529194929360a086019390929083018282801561140857602002820191905f5260205f20905b81546001600160a01b031681526001909101906020018083116113ea575b505050505081526020016006820180548060200260200160405190810160405280929190818152602001828054801561145e57602002820191905f5260205f20905b81548152602001906001019080831161144a575b5050505050815250508682815181106114795761147961552d565b60200260200101819052508581815181106114965761149661552d565b602002602001015160a00151516001600160401b038111156114ba576114ba614ab1565b6040519080825280602002602001820160405280156114e3578160200160208202803683370190505b508582815181106114f6576114f661552d565b60200260200101819052505f7f00000000000000000000000000000000000000000000000000000000000000008783815181106115355761153561552d565b60200260200101516080015161154b919061561c565b905060604363ffffffff168263ffffffff1610156115935761158c89858a868151811061157a5761157a61552d565b602002602001015160a0015185613366565b90506115be565b6115bb89858a86815181106115aa576115aa61552d565b602002602001015160a001516128a0565b90505b5f5b8884815181106115d2576115d261552d565b602002602001015160a001515181101561167d5761163f8985815181106115fb576115fb61552d565b602002602001015160c0015182815181106116185761161861552d565b60200260200101518383815181106116325761163261552d565b6020026020010151613494565b8885815181106116515761165161552d565b6020026020010151828151811061166a5761166a61552d565b60209081029190910101526001016115c0565b505050806001019050611331565b50505050915091565b336001600160a01b037f000000000000000000000000000000000000000000000000000000000000000016146116dd576040516323d871a560e01b815260040160405180910390fd5b6001600160a01b038085165f90815260986020908152604080832093871683529290529081205461171b906001600160401b0380861690851661349f565b90505f61172a868686866134b7565b90505f6117378284615638565b9050611745875f8886613574565b5f61174f876135ee565b60405163debe1eab60e01b81526001600160a01b038981166004830152602482018590529192509082169063debe1eab906044015f604051808303815f87803b15801561179a575f5ffd5b505af11580156117ac573d5f5f3e3d5ffd5b505050505050505050505050565b336001600160a01b037f0000000000000000000000000000000000000000000000000000000000000000161461180357604051633213a66160e21b815260040160405180910390fd5b61180c83610fea565b15611060576001600160a01b038381165f908152609a602052604080822054905163152667d960e31b81529083166004820181905273beac0eeeeeeeeeeeeeeeeeeeeeeeeeeeeeebeac06024830152927f0000000000000000000000000000000000000000000000000000000000000000169063a9333ec890604401602060405180830381865afa1580156118a3573d5f5f3e3d5ffd5b505050506040513d601f19601f820116820180604052508101906118c791906155ed565b6001600160a01b0386165f90815260a26020908152604080832073beac0eeeeeeeeeeeeeeeeeeeeeeeeeeeeeebeac084528252808320815192830190915254815291925061192d866119256001600160401b03808716908916613660565b849190613674565b9050610fe1848873beac0eeeeeeeeeeeeeeeeeeeeeeeeeeeeeebeac084613574565b6040516394f649dd60e01b81526001600160a01b03828116600483015260609182915f9182917f000000000000000000000000000000000000000000000000000000000000000016906394f649dd906024015f60405180830381865afa1580156119bb573d5f5f3e3d5ffd5b505050506040513d5f823e601f3d908101601f191682016040526119e291908101906156a6565b60405163fe243a1760e01b81526001600160a01b03888116600483015273beac0eeeeeeeeeeeeeeeeeeeeeeeeeeeeeebeac060248301529294509092505f917f0000000000000000000000000000000000000000000000000000000000000000169063fe243a1790604401602060405180830381865afa158015611a68573d5f5f3e3d5ffd5b505050506040513d601f19601f82011682018060405250810190611a8c9190615761565b9050805f03611aa057509094909350915050565b5f83516001611aaf9190615638565b6001600160401b03811115611ac657611ac6614ab1565b604051908082528060200260200182016040528015611aef578160200160208202803683370190505b5090505f84516001611b019190615638565b6001600160401b03811115611b1857611b18614ab1565b604051908082528060200260200182016040528015611b41578160200160208202803683370190505b50905073beac0eeeeeeeeeeeeeeeeeeeeeeeeeeeeeebeac082865181518110611b6c57611b6c61552d565b60200260200101906001600160a01b031690816001600160a01b0316815250508281865181518110611ba057611ba061552d565b60209081029190910101525f5b8551811015611c4157858181518110611bc857611bc861552d565b6020026020010151838281518110611be257611be261552d565b60200260200101906001600160a01b031690816001600160a01b031681525050848181518110611c1457611c1461552d565b6020026020010151828281518110611c2e57611c2e61552d565b6020908102919091010152600101611bad565b509097909650945050505050565b5f6001600160a01b03821615801590611c8157506001600160a01b038083165f818152609a6020526040902054909116145b92915050565b60405163152667d960e31b81526001600160a01b03838116600483015282811660248301525f9182917f0000000000000000000000000000000000000000000000000000000000000000169063a9333ec890604401602060405180830381865afa158015611cf7573d5f5f3e3d5ffd5b505050506040513d601f19601f82011682018060405250810190611d1b91906155ed565b9050611d298484835f6134b7565b949350505050565b611d39613692565b6111125f6136ec565b82611d4c816132bc565b611d695760405163932d94f760e01b815260040160405180910390fd5b611d7284611c4f565b611d8f576040516325ec6c1f60e01b815260040160405180910390fd5b836001600160a01b03167f02a919ed0e2acad1dd90f17ef2fa4ae5462ee1339170034a8531cca4b67080908484604051610e959291906155bf565b60605f82516001600160401b03811115611de657611de6614ab1565b604051908082528060200260200182016040528015611e0f578160200160208202803683370190505b5090505f5b8351811015611e98576001600160a01b0385165f9081526098602052604081208551909190869084908110611e4b57611e4b61552d565b60200260200101516001600160a01b03166001600160a01b031681526020019081526020015f2054828281518110611e8557611e8561552d565b6020908102919091010152600101611e14565b509392505050565b606654600290600490811603611ec95760405163840a48d560e01b815260040160405180910390fd5b611ed161373d565b855f5b81811015611f6457611f5c898983818110611ef157611ef161552d565b9050602002810190611f039190615778565b611f0c9061578c565b888884818110611f1e57611f1e61552d565b9050602002810190611f30919061555f565b888886818110611f4257611f4261552d565b9050602002016020810190611f579190615797565b613796565b600101611ed4565b5050610fe1600160c955565b6060611f7b3361236c565b9050610d5a8484846124d2565b6001600160a01b038083165f90815260a260209081526040808320938516835292815282822083519182019093529154825290610d5a90613c0f565b60608082516001600160401b03811115611fe057611fe0614ab1565b604051908082528060200260200182016040528015612009578160200160208202803683370190505b50915082516001600160401b0381111561202557612025614ab1565b60405190808252806020026020018201604052801561204e578160200160208202803683370190505b506001600160a01b038086165f908152609a60205260408120549293509116906120798683876128a0565b90505f5b8551811015612246575f6120a987838151811061209c5761209c61552d565b60200260200101516135ee565b9050806001600160a01b031663fe243a17898985815181106120cd576120cd61552d565b60200260200101516040518363ffffffff1660e01b81526004016121079291906001600160a01b0392831681529116602082015260400190565b602060405180830381865afa158015612122573d5f5f3e3d5ffd5b505050506040513d601f19601f820116820180604052508101906121469190615761565b8583815181106121585761215861552d565b6020026020010181815250505f60a25f8a6001600160a01b03166001600160a01b031681526020019081526020015f205f89858151811061219b5761219b61552d565b60200260200101516001600160a01b03166001600160a01b031681526020019081526020015f206040518060200160405290815f82015481525050905061221f8684815181106121ed576121ed61552d565b60200260200101518585815181106122075761220761552d565b6020026020010151836136749092919063ffffffff16565b8784815181106122315761223161552d565b6020908102919091010152505060010161207d565b5050505b9250929050565b5f54610100900460ff161580801561226f57505f54600160ff909116105b806122885750303b15801561228857505f5460ff166001145b6122f05760405162461bcd60e51b815260206004820152602e60248201527f496e697469616c697a61626c653a20636f6e747261637420697320616c72656160448201526d191e481a5b9a5d1a585b1a5e995960921b60648201526084015b60405180910390fd5b5f805460ff191660011790558015612311575f805461ff0019166101001790555b61231a82612edc565b612323836136ec565b8015611060575f805461ff0019169055604051600181527f7f26b83ff96e1f2b6a682f133852f6798a09c465da95921460cefb38474024989060200160405180910390a1505050565b606061237782610fea565b6123945760405163a5c7c44560e01b815260040160405180910390fd5b61239d82611c4f565b156123bb576040516311ca333560e31b815260040160405180910390fd5b336001600160a01b03831614612473576001600160a01b038083165f908152609a6020526040902054166123ee816132bc565b8061241457506001600160a01b038181165f908152609960205260409020600101541633145b61243157604051631e499a2360e11b815260040160405180910390fd5b806001600160a01b0316836001600160a01b03167ff0eddf07e6ea14f388b47e1e94a0f464ecbd9eed4171130e0fc0e99fb4030a8a60405160405180910390a3505b611c8182613c2e565b6066546002906004908116036124a55760405163840a48d560e01b815260040160405180910390fd5b6124ad61373d565b6124c16124b98661578c565b858585613796565b6124cb600160c955565b5050505050565b6124db33610fea565b156124f957604051633bf2b50360e11b815260040160405180910390fd5b61250283611c4f565b61251f576040516325ec6c1f60e01b815260040160405180910390fd5b61252b33848484613e8d565b6110603384612f99565b60605f83516001600160401b0381111561255157612551614ab1565b60405190808252806020026020018201604052801561258457816020015b606081526020019060019003908161256f5790505b5090505f5b8451811015611e98576125b58582815181106125a7576125a761552d565b602002602001015185611dca565b8282815181106125c7576125c761552d565b6020908102919091010152600101612589565b6125e2613692565b6001600160a01b0381166126475760405162461bcd60e51b815260206004820152602660248201527f4f776e61626c653a206e6577206f776e657220697320746865207a65726f206160448201526564647265737360d01b60648201526084016122e7565b612650816136ec565b50565b5f7f000000000000000000000000000000000000000000000000000000000000000046146127135750604080518082018252600a81526922b4b3b2b72630bcb2b960b11b60209182015281517f8cad95687ba82c2ce50e74f7b754645e5117c3a5bec8151c0726d5857980a866818301527f71b625cfad44bac63b13dba07f2e1d6084ee04b6f8752101ece6126d584ee6ea81840152466060820152306080808301919091528351808303909101815260a0909101909252815191012090565b507f000000000000000000000000000000000000000000000000000000000000000090565b7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b031663eab66d7a6040518163ffffffff1660e01b8152600401602060405180830381865afa158015612794573d5f5f3e3d5ffd5b505050506040513d601f19601f820116820180604052508101906127b891906157b2565b6001600160a01b0316336001600160a01b0316146127e95760405163794821ff60e01b815260040160405180910390fd5b606654801982198116146128105760405163c61dca5d60e01b815260040160405180910390fd5b606682905560405182815233907f3582d1828e26bf56bd801502bc021ac0bc8afb57c826e4986b45593c8fad389c906020015b60405180910390a25050565b6001600160a01b0381165f90815260a360205260409020606090611c8190613f52565b5f61287b612653565b60405161190160f01b6020820152602281019190915260428101839052606201611126565b60605f82516001600160401b038111156128bc576128bc614ab1565b6040519080825280602002602001820160405280156128e5578160200160208202803683370190505b5090505f7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b031663547afb8786866040518363ffffffff1660e01b81526004016129379291906157cd565b5f60405180830381865afa158015612951573d5f5f3e3d5ffd5b505050506040513d5f823e601f3d908101601f1916820160405261297891908101906157f0565b90505f5b8451811015610b21576129c28786838151811061299b5761299b61552d565b60200260200101518484815181106129b5576129b561552d565b602002602001015161309c565b8382815181106129d4576129d461552d565b602090810291909101015260010161297c565b5f6001600160a01b038616612a0f576040516339b190bb60e11b815260040160405180910390fd5b83515f03612a305760405163796cc52560e01b815260040160405180910390fd5b5f84516001600160401b03811115612a4a57612a4a614ab1565b604051908082528060200260200182016040528015612a73578160200160208202803683370190505b5090505f85516001600160401b03811115612a9057612a90614ab1565b604051908082528060200260200182016040528015612ab9578160200160208202803683370190505b5090505f5b8651811015612d0f575f612add88838151811061209c5761209c61552d565b90505f60a25f8c6001600160a01b03166001600160a01b031681526020019081526020015f205f8a8581518110612b1657612b1661552d565b60200260200101516001600160a01b03166001600160a01b031681526020019081526020015f206040518060200160405290815f820154815250509050612b82888481518110612b6857612b6861552d565b60200260200101518885815181106122075761220761552d565b848481518110612b9457612b9461552d565b602002602001018181525050612bcc888481518110612bb557612bb561552d565b602002602001015182613f5e90919063ffffffff16565b858481518110612bde57612bde61552d565b60209081029190910101526001600160a01b038a1615612c7357612c358a8a8581518110612c0e57612c0e61552d565b6020026020010151878681518110612c2857612c2861552d565b6020026020010151613f72565b612c738a8c8b8681518110612c4c57612c4c61552d565b6020026020010151878781518110612c6657612c6661552d565b6020026020010151613574565b816001600160a01b031663724af4238c8b8681518110612c9557612c9561552d565b60200260200101518b8781518110612caf57612caf61552d565b60200260200101516040518463ffffffff1660e01b8152600401612cd59392919061587f565b5f604051808303815f87803b158015612cec575f5ffd5b505af1158015612cfe573d5f5f3e3d5ffd5b505050505050806001019050612abe565b506001600160a01b0388165f908152609f60205260408120805491829190612d36836158a3565b91905055505f6040518060e001604052808b6001600160a01b031681526020018a6001600160a01b031681526020018b6001600160a01b031681526020018381526020014363ffffffff1681526020018981526020018581525090505f612d9c82611114565b5f818152609e602090815260408083208054600160ff19909116811790915560a4835292819020865181546001600160a01b03199081166001600160a01b039283161783558885015195830180548216968316969096179095559187015160028201805490951692169190911790925560608501516003830155608085015160048301805463ffffffff191663ffffffff90921691909117905560a085015180519394508593612e5292600585019201906148a3565b5060c08201518051612e6e916006840191602090910190614906565b5050506001600160a01b038b165f90815260a360205260409020612e929082614000565b507f26b2aae26516e8719ef50ea2f6831a2efbd4e37dccdf0f6936b27bc08e793e30818386604051612ec6939291906158bb565b60405180910390a19a9950505050505050505050565b606681905560405181815233907fab40a374bc51de372200a8bc981af8c9ecdc08dfdaef0bb6e09f88f3c616ef3d9060200160405180910390a250565b5f611d2982612f31612f2a87613c0f565b869061400b565b9061400b565b6001600160a01b038281165f8181526099602090815260409182902060010180546001600160a01b0319169486169485179055905192835290917f773b54c04d756fcc5e678111f7d730de3be98192000799eee3d63716055a87c69101612843565b6066545f90600190811603612fc15760405163840a48d560e01b815260040160405180910390fd5b6001600160a01b038381165f818152609a602052604080822080546001600160a01b0319169487169485179055517fc3ee9f2e5fda98e8066a1f745b2df9285f416fe98cf2559cd21484b3d87433049190a35f5f61301e8561194f565b915091505f61302e8686856128a0565b90505f5b8351811015610fe15761309486888684815181106130525761305261552d565b60200260200101515f87868151811061306d5761306d61552d565b60200260200101518787815181106130875761308761552d565b602002602001015161317e565b600101613032565b5f73beac0eeeeeeeeeeeeeeeeeeeeeeeeeeeeeebeabf196001600160a01b0384160161316e5760405163a3d75e0960e01b81526001600160a01b0385811660048301525f917f00000000000000000000000000000000000000000000000000000000000000009091169063a3d75e0990602401602060405180830381865afa15801561312a573d5f5f3e3d5ffd5b505050506040513d601f19601f8201168201806040525081019061314e91906155ed565b90506131666001600160401b03848116908316613660565b915050610d5a565b506001600160401b031692915050565b805f0361319e57604051630a33bc6960e21b815260040160405180910390fd5b6001600160a01b038086165f90815260a2602090815260408083209388168352929052206131ce8185858561401f565b6040805160208101909152815481527f8be932bac54561f27260f95463d9b8ab37e06b2842e5ee2404157cc13df6eb8f908790879061320c90613c0f565b60405161321b9392919061587f565b60405180910390a161322c86610fea565b15610fe1576001600160a01b038088165f90815260986020908152604080832093891683529290529081208054859290613267908490615638565b92505081905550866001600160a01b03167f1ec042c965e2edd7107b51188ee0f383e22e76179041ab3a9d18ff151405166c8787866040516132ab9392919061587f565b60405180910390a250505050505050565b604051631beb2b9760e31b81526001600160a01b0382811660048301523360248301523060448301525f80356001600160e01b0319166064840152917f00000000000000000000000000000000000000000000000000000000000000009091169063df595cb8906084016020604051808303815f875af1158015613342573d5f5f3e3d5ffd5b505050506040513d601f19601f82011682018060405250810190611c8191906155a4565b60605f83516001600160401b0381111561338257613382614ab1565b6040519080825280602002602001820160405280156133ab578160200160208202803683370190505b5090505f7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b03166394d7d00c8787876040518463ffffffff1660e01b81526004016133ff939291906158e5565b5f60405180830381865afa158015613419573d5f5f3e3d5ffd5b505050506040513d5f823e601f3d908101601f1916820160405261344091908101906157f0565b90505f5b8551811015613488576134638887838151811061299b5761299b61552d565b8382815181106134755761347561552d565b6020908102919091010152600101613444565b50909695505050505050565b5f610d5a8383613660565b5f6134ad848385600161408e565b611d29908561591e565b6001600160a01b038085165f90815260a560209081526040808320938716835292905290812081906134e8906140e9565b90505f61354e600161351a7f000000000000000000000000000000000000000000000000000000000000000043615931565b6135249190615931565b6001600160a01b03808a165f90815260a560209081526040808320938c1683529290522090614103565b90505f61355b828461591e565b905061356881878761411f565b98975050505050505050565b6001600160a01b038085165f908152609860209081526040808320938616835292905290812080548392906135aa90849061591e565b92505081905550836001600160a01b03167f6909600037b75d7b4733aedd815442b5ec018a827751c832aaff64eba5d6d2dd848484604051610e959392919061587f565b5f6001600160a01b03821673beac0eeeeeeeeeeeeeeeeeeeeeeeeeeeeeebeac014613639577f0000000000000000000000000000000000000000000000000000000000000000611c81565b7f000000000000000000000000000000000000000000000000000000000000000092915050565b5f610d5a8383670de0b6b3a764000061413d565b5f611d298261368c61368587613c0f565b8690613660565b90613660565b6033546001600160a01b031633146111125760405162461bcd60e51b815260206004820181905260248201527f4f776e61626c653a2063616c6c6572206973206e6f7420746865206f776e657260448201526064016122e7565b603380546001600160a01b038381166001600160a01b0319831681179093556040519116919082907f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0905f90a35050565b600260c9540361378f5760405162461bcd60e51b815260206004820152601f60248201527f5265656e7472616e637947756172643a207265656e7472616e742063616c6c0060448201526064016122e7565b600260c955565b60a08401515182146137bb576040516343714afd60e01b815260040160405180910390fd5b83604001516001600160a01b0316336001600160a01b0316146137f1576040516316110d3560e21b815260040160405180910390fd5b5f6137fb85611114565b5f818152609e602052604090205490915060ff1661382c576040516387c9d21960e01b815260040160405180910390fd5b60605f7f0000000000000000000000000000000000000000000000000000000000000000876080015161385f919061561c565b90508063ffffffff164363ffffffff161161388d576040516378f67ae160e11b815260040160405180910390fd5b6138a4875f015188602001518960a0015184613366565b87516001600160a01b03165f90815260a3602052604090209092506138ca915083614222565b505f82815260a46020526040812080546001600160a01b031990811682556001820180548216905560028201805490911690556003810182905560048101805463ffffffff1916905590613921600583018261493f565b61392e600683015f61493f565b50505f828152609e602052604090819020805460ff19169055517f1f40400889274ed07b24845e5054a87a0cab969eb1277aafe61ae352e7c32a00906139779084815260200190565b60405180910390a185516001600160a01b039081165f908152609a6020526040812054885160a08a015191909316926139b19184906128a0565b90505f5b8860a0015151811015613c04575f6139dc8a60a00151838151811061209c5761209c61552d565b90505f613a128b60c0015184815181106139f8576139f861552d565b60200260200101518785815181106116325761163261552d565b90508715613ae257816001600160a01b0316632eae418c8c5f01518d60a001518681518110613a4357613a4361552d565b60200260200101518d8d88818110613a5d57613a5d61552d565b9050602002016020810190613a729190614de0565b60405160e085901b6001600160e01b03191681526001600160a01b03938416600482015291831660248301529091166044820152606481018490526084015f604051808303815f87803b158015613ac7575f5ffd5b505af1158015613ad9573d5f5f3e3d5ffd5b50505050613bfa565b5f5f836001600160a01b031663c4623ea18e5f01518f60a001518881518110613b0d57613b0d61552d565b60200260200101518f8f8a818110613b2757613b2761552d565b9050602002016020810190613b3c9190614de0565b60405160e085901b6001600160e01b03191681526001600160a01b039384166004820152918316602483015290911660448201526064810186905260840160408051808303815f875af1158015613b95573d5f5f3e3d5ffd5b505050506040513d601f19601f82011682018060405250810190613bb9919061594d565b91509150613bf7878e5f01518f60a001518881518110613bdb57613bdb61552d565b602002602001015185858b8b815181106130875761308761552d565b50505b50506001016139b5565b505050505050505050565b80515f9015613c1f578151611c81565b670de0b6b3a764000092915050565b606654606090600190600290811603613c5a5760405163840a48d560e01b815260040160405180910390fd5b6001600160a01b038084165f818152609a602052604080822080546001600160a01b0319811690915590519316928392917ffee30966a256b71e14bc0ebfc94315e28ef4a97a7131a9e2b7a310a73af4467691a35f5f613cb98661194f565b9150915081515f03613ccd57505050613e87565b81516001600160401b03811115613ce657613ce6614ab1565b604051908082528060200260200182016040528015613d0f578160200160208202803683370190505b5094505f613d1e8785856128a0565b90505f5b8351811015613e81576040805160018082528183019092525f916020808301908036833750506040805160018082528183019092529293505f9291506020808301908036833750506040805160018082528183019092529293505f92915060208083019080368337019050509050868481518110613da257613da261552d565b6020026020010151835f81518110613dbc57613dbc61552d565b60200260200101906001600160a01b031690816001600160a01b031681525050858481518110613dee57613dee61552d565b6020026020010151825f81518110613e0857613e0861552d565b602002602001018181525050848481518110613e2657613e2661552d565b6020026020010151815f81518110613e4057613e4061552d565b602002602001018181525050613e598b898585856129e7565b8a8581518110613e6b57613e6b61552d565b6020908102919091010152505050600101613d22565b50505050505b50919050565b6001600160a01b038084165f908152609960205260409020600101541680613eb55750613f4c565b6001600160a01b0381165f908152609c6020908152604080832085845290915290205460ff1615613ef957604051630d4c4c9160e21b815260040160405180910390fd5b6001600160a01b0381165f908152609c602090815260408083208584528252909120805460ff191660011790558301516124cb908290613f4090889088908490889061081f565b8551602087015161422d565b50505050565b60605f610d5a8361427f565b5f610d5a613f6b84613c0f565b8390613660565b6001600160a01b03821673beac0eeeeeeeeeeeeeeeeeeeeeeeeeeeeeebeac014611060576001600160a01b038084165f90815260a5602090815260408083209386168352929052908120613fc5906140e9565b9050613f4c43613fd58484615638565b6001600160a01b038088165f90815260a560209081526040808320938a1683529290522091906142d8565b5f610d5a83836142e3565b5f610d5a83670de0b6b3a76400008461413d565b825f0361403f57614038670de0b6b3a76400008261400b565b8455613f4c565b6040805160208101909152845481525f9061405b908584613674565b90505f6140688483615638565b90505f61408384612f3161407c888a615638565b859061400b565b875550505050505050565b5f5f61409b86868661413d565b905060018360028111156140b1576140b161596f565b1480156140cd57505f84806140c8576140c8615983565b868809115b156140e0576140dd600182615638565b90505b95945050505050565b5f6140f4828261432f565b6001600160e01b031692915050565b5f61410f838383614374565b6001600160e01b03169392505050565b5f611d2961412d8385615997565b85906001600160401b0316613660565b5f80805f19858709858702925082811083820303915050805f036141745783828161416a5761416a615983565b0492505050610d5a565b8084116141bb5760405162461bcd60e51b81526020600482015260156024820152744d6174683a206d756c446976206f766572666c6f7760581b60448201526064016122e7565b5f8486880960026001871981018816978890046003810283188082028403028082028403028082028403028082028403028082028403029081029092039091025f889003889004909101858311909403939093029303949094049190911702949350505050565b5f610d5a83836143bd565b4281101561424e57604051630819bdcd60e01b815260040160405180910390fd5b6142626001600160a01b03851684846144a0565b613f4c57604051638baa579f60e01b815260040160405180910390fd5b6060815f018054806020026020016040519081016040528092919081815260200182805480156142cc57602002820191905f5260205f20905b8154815260200190600101908083116142b8575b50505050509050919050565b6110608383836144f4565b5f81815260018301602052604081205461432857508154600181810184555f848152602080822090930184905584548482528286019093526040902091909155611c81565b505f611c81565b81545f90801561436c576143558461434860018461591e565b5f91825260209091200190565b5464010000000090046001600160e01b0316611d29565b509092915050565b82545f9081614385868683856145fa565b905080156143b35761439c8661434860018461591e565b5464010000000090046001600160e01b031661089d565b5091949350505050565b5f8181526001830160205260408120548015614497575f6143df60018361591e565b85549091505f906143f29060019061591e565b9050818114614451575f865f0182815481106144105761441061552d565b905f5260205f200154905080875f0184815481106144305761443061552d565b5f918252602080832090910192909255918252600188019052604090208390555b8554869080614462576144626159b6565b600190038181905f5260205f20015f90559055856001015f8681526020019081526020015f205f905560019350505050611c81565b5f915050611c81565b5f5f5f6144ad858561464d565b90925090505f8160048111156144c5576144c561596f565b1480156144e35750856001600160a01b0316826001600160a01b0316145b8061089d575061089d86868661468c565b825480156145ac575f61450c8561434860018561591e565b60408051808201909152905463ffffffff8082168084526401000000009092046001600160e01b03166020840152919250908516101561455f5760405163151b8e3f60e11b815260040160405180910390fd5b805163ffffffff8086169116036145aa57826145808661434860018661591e565b80546001600160e01b03929092166401000000000263ffffffff9092169190911790555050505050565b505b506040805180820190915263ffffffff92831681526001600160e01b03918216602080830191825285546001810187555f968752952091519051909216640100000000029190921617910155565b5f5b81831015611e98575f61460f8484614773565b5f8781526020902090915063ffffffff86169082015463ffffffff16111561463957809250614647565b614644816001615638565b93505b506145fc565b5f5f8251604103614681576020830151604084015160608501515f1a6146758782858561478d565b9450945050505061224a565b505f9050600261224a565b5f5f5f856001600160a01b0316631626ba7e60e01b86866040516024016146b49291906159ca565b60408051601f198184030181529181526020820180516001600160e01b03166001600160e01b03199094169390931790925290516146f29190615a06565b5f60405180830381855afa9150503d805f811461472a576040519150601f19603f3d011682016040523d82523d5f602084013e61472f565b606091505b509150915081801561474357506020815110155b801561089d57508051630b135d3f60e11b906147689083016020908101908401615761565b149695505050505050565b5f6147816002848418615a1c565b610d5a90848416615638565b5f807f7fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a08311156147c257505f90506003614841565b604080515f8082526020820180845289905260ff881692820192909252606081018690526080810185905260019060a0016020604051602081039080840390855afa158015614813573d5f5f3e3d5ffd5b5050604051601f1901519150506001600160a01b03811661483b575f60019250925050614841565b91505f90505b94509492505050565b6040518060e001604052805f6001600160a01b031681526020015f6001600160a01b031681526020015f6001600160a01b031681526020015f81526020015f63ffffffff16815260200160608152602001606081525090565b828054828255905f5260205f209081019282156148f6579160200282015b828111156148f657825182546001600160a01b0319166001600160a01b039091161782556020909201916001909101906148c1565b50614902929150614956565b5090565b828054828255905f5260205f209081019282156148f6579160200282015b828111156148f6578251825591602001919060010190614924565b5080545f8255905f5260205f209081019061265091905b5b80821115614902575f8155600101614957565b6001600160a01b0381168114612650575f5ffd5b80356149898161496a565b919050565b5f5f5f5f5f60a086880312156149a2575f5ffd5b85356149ad8161496a565b945060208601356149bd8161496a565b935060408601356149cd8161496a565b94979396509394606081013594506080013592915050565b5f5f83601f8401126149f5575f5ffd5b5081356001600160401b03811115614a0b575f5ffd5b6020830191508360208260051b850101111561224a575f5ffd5b5f5f60208385031215614a36575f5ffd5b82356001600160401b03811115614a4b575f5ffd5b614a57858286016149e5565b90969095509350505050565b602080825282518282018190525f918401906040840190835b81811015610b21578351835260209384019390920191600101614a7c565b5f60208284031215614aaa575f5ffd5b5035919050565b634e487b7160e01b5f52604160045260245ffd5b60405160e081016001600160401b0381118282101715614ae757614ae7614ab1565b60405290565b604080519081016001600160401b0381118282101715614ae757614ae7614ab1565b604051601f8201601f191681016001600160401b0381118282101715614b3757614b37614ab1565b604052919050565b5f6001600160401b03821115614b5757614b57614ab1565b5060051b60200190565b5f82601f830112614b70575f5ffd5b8135614b83614b7e82614b3f565b614b0f565b8082825260208201915060208360051b860101925085831115614ba4575f5ffd5b602085015b83811015614bca578035614bbc8161496a565b835260209283019201614ba9565b5095945050505050565b5f82601f830112614be3575f5ffd5b8135614bf1614b7e82614b3f565b8082825260208201915060208360051b860101925085831115614c12575f5ffd5b602085015b83811015614bca578035835260209283019201614c17565b5f5f5f60608486031215614c41575f5ffd5b8335614c4c8161496a565b925060208401356001600160401b03811115614c66575f5ffd5b614c7286828701614b61565b92505060408401356001600160401b03811115614c8d575f5ffd5b614c9986828701614bd4565b9150509250925092565b5f8151808452602084019350602083015f5b82811015614cd3578151865260209586019590910190600101614cb5565b5093949350505050565b602081525f610d5a6020830184614ca3565b803563ffffffff81168114614989575f5ffd5b5f5f83601f840112614d12575f5ffd5b5081356001600160401b03811115614d28575f5ffd5b60208301915083602082850101111561224a575f5ffd5b5f5f5f5f60608587031215614d52575f5ffd5b8435614d5d8161496a565b9350614d6b60208601614cef565b925060408501356001600160401b03811115614d85575f5ffd5b614d9187828801614d02565b95989497509550505050565b5f5f5f5f60808587031215614db0575f5ffd5b8435614dbb8161496a565b93506020850135614dcb8161496a565b93969395505050506040820135916060013590565b5f60208284031215614df0575f5ffd5b8135610d5a8161496a565b5f5f60408385031215614e0c575f5ffd5b8235614e178161496a565b91506020830135614e278161496a565b809150509250929050565b5f60e08284031215614e42575f5ffd5b614e4a614ac5565b9050614e558261497e565b8152614e636020830161497e565b6020820152614e746040830161497e565b604082015260608281013590820152614e8f60808301614cef565b608082015260a08201356001600160401b03811115614eac575f5ffd5b614eb884828501614b61565b60a08301525060c08201356001600160401b03811115614ed6575f5ffd5b614ee284828501614bd4565b60c08301525092915050565b5f60208284031215614efe575f5ffd5b81356001600160401b03811115614f13575f5ffd5b611d2984828501614e32565b5f60208284031215614f2f575f5ffd5b813560ff81168114610d5a575f5ffd5b5f8151808452602084019350602083015f5b82811015614cd35781516001600160a01b0316865260209586019590910190600101614f51565b80516001600160a01b03908116835260208083015182169084015260408083015190911690830152606080820151908301526080808201515f91614fc39085018263ffffffff169052565b5060a082015160e060a0850152614fdd60e0850182614f3f565b905060c083015184820360c08601526140e08282614ca3565b602081525f610d5a6020830184614f78565b5f82825180855260208501945060208160051b830101602085015f5b8381101561348857601f19858403018852615040838351614ca3565b6020988901989093509190910190600101615024565b5f604082016040835280855180835260608501915060608160051b8601019250602087015f5b828110156150ad57605f19878603018452615098858351614f78565b9450602093840193919091019060010161507c565b5050505082810360208401526140e08185615008565b6001600160401b0381168114612650575f5ffd5b5f5f5f5f608085870312156150ea575f5ffd5b84356150f58161496a565b935060208501356151058161496a565b92506040850135615115816150c3565b91506060850135615125816150c3565b939692955090935050565b5f5f5f60608486031215615142575f5ffd5b833561514d8161496a565b9250602084013591506040840135615164816150c3565b809150509250925092565b604081525f6151816040830185614f3f565b82810360208401526140e08185614ca3565b5f5f5f604084860312156151a5575f5ffd5b83356151b08161496a565b925060208401356001600160401b038111156151ca575f5ffd5b6151d686828701614d02565b9497909650939450505050565b5f5f604083850312156151f4575f5ffd5b82356151ff8161496a565b915060208301356001600160401b03811115615219575f5ffd5b61522585828601614b61565b9150509250929050565b5f5f5f5f5f5f60608789031215615244575f5ffd5b86356001600160401b03811115615259575f5ffd5b61526589828a016149e5565b90975095505060208701356001600160401b03811115615283575f5ffd5b61528f89828a016149e5565b90955093505060408701356001600160401b038111156152ad575f5ffd5b6152b989828a016149e5565b979a9699509497509295939492505050565b5f5f5f606084860312156152dd575f5ffd5b83356152e88161496a565b925060208401356001600160401b03811115615302575f5ffd5b840160408187031215615313575f5ffd5b61531b614aed565b81356001600160401b03811115615330575f5ffd5b8201601f81018813615340575f5ffd5b80356001600160401b0381111561535957615359614ab1565b61536c601f8201601f1916602001614b0f565b818152896020838501011115615380575f5ffd5b816020840160208301375f60209282018301528352928301359282019290925293969395505050506040919091013590565b5f5f604083850312156153c3575f5ffd5b82356153ce8161496a565b946020939093013593505050565b604081525f6151816040830185614ca3565b8015158114612650575f5ffd5b5f5f5f5f6060858703121561540e575f5ffd5b84356001600160401b03811115615423575f5ffd5b850160e08188031215615434575f5ffd5b935060208501356001600160401b0381111561544e575f5ffd5b61545a878288016149e5565b9094509250506040850135615125816153ee565b5f5f6040838503121561547f575f5ffd5b82356001600160401b03811115615494575f5ffd5b8301601f810185136154a4575f5ffd5b80356154b2614b7e82614b3f565b8082825260208201915060208360051b8501019250878311156154d3575f5ffd5b6020840193505b828410156154fe5783356154ed8161496a565b8252602093840193909101906154da565b945050505060208301356001600160401b03811115615219575f5ffd5b602081525f610d5a6020830184615008565b634e487b7160e01b5f52603260045260245ffd5b5f8235605e19833603018112615555575f5ffd5b9190910192915050565b5f5f8335601e19843603018112615574575f5ffd5b8301803591506001600160401b0382111561558d575f5ffd5b6020019150600581901b360382131561224a575f5ffd5b5f602082840312156155b4575f5ffd5b8151610d5a816153ee565b60208152816020820152818360408301375f818301604090810191909152601f909201601f19160101919050565b5f602082840312156155fd575f5ffd5b8151610d5a816150c3565b634e487b7160e01b5f52601160045260245ffd5b63ffffffff8181168382160190811115611c8157611c81615608565b80820180821115611c8157611c81615608565b5f82601f83011261565a575f5ffd5b8151615668614b7e82614b3f565b8082825260208201915060208360051b860101925085831115615689575f5ffd5b602085015b83811015614bca57805183526020928301920161568e565b5f5f604083850312156156b7575f5ffd5b82516001600160401b038111156156cc575f5ffd5b8301601f810185136156dc575f5ffd5b80516156ea614b7e82614b3f565b8082825260208201915060208360051b85010192508783111561570b575f5ffd5b6020840193505b828410156157365783516157258161496a565b825260209384019390910190615712565b8095505050505060208301516001600160401b03811115615755575f5ffd5b6152258582860161564b565b5f60208284031215615771575f5ffd5b5051919050565b5f823560de19833603018112615555575f5ffd5b5f611c813683614e32565b5f602082840312156157a7575f5ffd5b8135610d5a816153ee565b5f602082840312156157c2575f5ffd5b8151610d5a8161496a565b6001600160a01b03831681526040602082018190525f90611d2990830184614f3f565b5f60208284031215615800575f5ffd5b81516001600160401b03811115615815575f5ffd5b8201601f81018413615825575f5ffd5b8051615833614b7e82614b3f565b8082825260208201915060208360051b850101925086831115615854575f5ffd5b6020840193505b8284101561089d57835161586e816150c3565b82526020938401939091019061585b565b6001600160a01b039384168152919092166020820152604081019190915260600190565b5f600182016158b4576158b4615608565b5060010190565b838152606060208201525f6158d36060830185614f78565b828103604084015261089d8185614ca3565b6001600160a01b03841681526060602082018190525f9061590890830185614f3f565b905063ffffffff83166040830152949350505050565b81810381811115611c8157611c81615608565b63ffffffff8281168282160390811115611c8157611c81615608565b5f5f6040838503121561595e575f5ffd5b505080516020909101519092909150565b634e487b7160e01b5f52602160045260245ffd5b634e487b7160e01b5f52601260045260245ffd5b6001600160401b038281168282160390811115611c8157611c81615608565b634e487b7160e01b5f52603160045260245ffd5b828152604060208201525f82518060408401528060208501606085015e5f606082850101526060601f19601f8301168401019150509392505050565b5f82518060208501845e5f920191825250919050565b5f82615a3657634e487b7160e01b5f52601260045260245ffd5b50049056fea264697066735822122055093765f9948da363ceb53207d7c0ab3b6d54d91f2d33812a8a1c2ff24584ee64736f6c634300081b0033",
 }
 
 // DelegationManagerABI is the input ABI used to generate the binding from.
@@ -75,7 +68,7 @@ var DelegationManagerABI = DelegationManagerMetaData.ABI
 var DelegationManagerBin = DelegationManagerMetaData.Bin
 
 // DeployDelegationManager deploys a new Ethereum contract, binding an instance of DelegationManager to it.
-func DeployDelegationManager(auth *bind.TransactOpts, backend bind.ContractBackend, _strategyManager common.Address, _slasher common.Address, _eigenPodManager common.Address) (common.Address, *types.Transaction, *DelegationManager, error) {
+func DeployDelegationManager(auth *bind.TransactOpts, backend bind.ContractBackend, _strategyManager common.Address, _eigenPodManager common.Address, _allocationManager common.Address, _pauserRegistry common.Address, _permissionController common.Address, _MIN_WITHDRAWAL_DELAY uint32) (common.Address, *types.Transaction, *DelegationManager, error) {
 	parsed, err := DelegationManagerMetaData.GetAbi()
 	if err != nil {
 		return common.Address{}, nil, nil, err
@@ -84,7 +77,7 @@ func DeployDelegationManager(auth *bind.TransactOpts, backend bind.ContractBacke
 		return common.Address{}, nil, nil, errors.New("GetABI returned nil")
 	}
 
-	address, tx, contract, err := bind.DeployContract(auth, *parsed, common.FromHex(DelegationManagerBin), backend, _strategyManager, _slasher, _eigenPodManager)
+	address, tx, contract, err := bind.DeployContract(auth, *parsed, common.FromHex(DelegationManagerBin), backend, _strategyManager, _eigenPodManager, _allocationManager, _pauserRegistry, _permissionController, _MIN_WITHDRAWAL_DELAY)
 	if err != nil {
 		return common.Address{}, nil, nil, err
 	}
@@ -264,128 +257,35 @@ func (_DelegationManager *DelegationManagerCallerSession) DELEGATIONAPPROVALTYPE
 	return _DelegationManager.Contract.DELEGATIONAPPROVALTYPEHASH(&_DelegationManager.CallOpts)
 }
 
-// DOMAINTYPEHASH is a free data retrieval call binding the contract method 0x20606b70.
+// AllocationManager is a free data retrieval call binding the contract method 0xca8aa7c7.
 //
-// Solidity: function DOMAIN_TYPEHASH() view returns(bytes32)
-func (_DelegationManager *DelegationManagerCaller) DOMAINTYPEHASH(opts *bind.CallOpts) ([32]byte, error) {
+// Solidity: function allocationManager() view returns(address)
+func (_DelegationManager *DelegationManagerCaller) AllocationManager(opts *bind.CallOpts) (common.Address, error) {
 	var out []interface{}
-	err := _DelegationManager.contract.Call(opts, &out, "DOMAIN_TYPEHASH")
+	err := _DelegationManager.contract.Call(opts, &out, "allocationManager")
 
 	if err != nil {
-		return *new([32]byte), err
+		return *new(common.Address), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
 
 	return out0, err
 
 }
 
-// DOMAINTYPEHASH is a free data retrieval call binding the contract method 0x20606b70.
+// AllocationManager is a free data retrieval call binding the contract method 0xca8aa7c7.
 //
-// Solidity: function DOMAIN_TYPEHASH() view returns(bytes32)
-func (_DelegationManager *DelegationManagerSession) DOMAINTYPEHASH() ([32]byte, error) {
-	return _DelegationManager.Contract.DOMAINTYPEHASH(&_DelegationManager.CallOpts)
+// Solidity: function allocationManager() view returns(address)
+func (_DelegationManager *DelegationManagerSession) AllocationManager() (common.Address, error) {
+	return _DelegationManager.Contract.AllocationManager(&_DelegationManager.CallOpts)
 }
 
-// DOMAINTYPEHASH is a free data retrieval call binding the contract method 0x20606b70.
+// AllocationManager is a free data retrieval call binding the contract method 0xca8aa7c7.
 //
-// Solidity: function DOMAIN_TYPEHASH() view returns(bytes32)
-func (_DelegationManager *DelegationManagerCallerSession) DOMAINTYPEHASH() ([32]byte, error) {
-	return _DelegationManager.Contract.DOMAINTYPEHASH(&_DelegationManager.CallOpts)
-}
-
-// MAXSTAKEROPTOUTWINDOWBLOCKS is a free data retrieval call binding the contract method 0x4fc40b61.
-//
-// Solidity: function MAX_STAKER_OPT_OUT_WINDOW_BLOCKS() view returns(uint256)
-func (_DelegationManager *DelegationManagerCaller) MAXSTAKEROPTOUTWINDOWBLOCKS(opts *bind.CallOpts) (*big.Int, error) {
-	var out []interface{}
-	err := _DelegationManager.contract.Call(opts, &out, "MAX_STAKER_OPT_OUT_WINDOW_BLOCKS")
-
-	if err != nil {
-		return *new(*big.Int), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
-
-	return out0, err
-
-}
-
-// MAXSTAKEROPTOUTWINDOWBLOCKS is a free data retrieval call binding the contract method 0x4fc40b61.
-//
-// Solidity: function MAX_STAKER_OPT_OUT_WINDOW_BLOCKS() view returns(uint256)
-func (_DelegationManager *DelegationManagerSession) MAXSTAKEROPTOUTWINDOWBLOCKS() (*big.Int, error) {
-	return _DelegationManager.Contract.MAXSTAKEROPTOUTWINDOWBLOCKS(&_DelegationManager.CallOpts)
-}
-
-// MAXSTAKEROPTOUTWINDOWBLOCKS is a free data retrieval call binding the contract method 0x4fc40b61.
-//
-// Solidity: function MAX_STAKER_OPT_OUT_WINDOW_BLOCKS() view returns(uint256)
-func (_DelegationManager *DelegationManagerCallerSession) MAXSTAKEROPTOUTWINDOWBLOCKS() (*big.Int, error) {
-	return _DelegationManager.Contract.MAXSTAKEROPTOUTWINDOWBLOCKS(&_DelegationManager.CallOpts)
-}
-
-// MAXWITHDRAWALDELAYBLOCKS is a free data retrieval call binding the contract method 0xca661c04.
-//
-// Solidity: function MAX_WITHDRAWAL_DELAY_BLOCKS() view returns(uint256)
-func (_DelegationManager *DelegationManagerCaller) MAXWITHDRAWALDELAYBLOCKS(opts *bind.CallOpts) (*big.Int, error) {
-	var out []interface{}
-	err := _DelegationManager.contract.Call(opts, &out, "MAX_WITHDRAWAL_DELAY_BLOCKS")
-
-	if err != nil {
-		return *new(*big.Int), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
-
-	return out0, err
-
-}
-
-// MAXWITHDRAWALDELAYBLOCKS is a free data retrieval call binding the contract method 0xca661c04.
-//
-// Solidity: function MAX_WITHDRAWAL_DELAY_BLOCKS() view returns(uint256)
-func (_DelegationManager *DelegationManagerSession) MAXWITHDRAWALDELAYBLOCKS() (*big.Int, error) {
-	return _DelegationManager.Contract.MAXWITHDRAWALDELAYBLOCKS(&_DelegationManager.CallOpts)
-}
-
-// MAXWITHDRAWALDELAYBLOCKS is a free data retrieval call binding the contract method 0xca661c04.
-//
-// Solidity: function MAX_WITHDRAWAL_DELAY_BLOCKS() view returns(uint256)
-func (_DelegationManager *DelegationManagerCallerSession) MAXWITHDRAWALDELAYBLOCKS() (*big.Int, error) {
-	return _DelegationManager.Contract.MAXWITHDRAWALDELAYBLOCKS(&_DelegationManager.CallOpts)
-}
-
-// STAKERDELEGATIONTYPEHASH is a free data retrieval call binding the contract method 0x43377382.
-//
-// Solidity: function STAKER_DELEGATION_TYPEHASH() view returns(bytes32)
-func (_DelegationManager *DelegationManagerCaller) STAKERDELEGATIONTYPEHASH(opts *bind.CallOpts) ([32]byte, error) {
-	var out []interface{}
-	err := _DelegationManager.contract.Call(opts, &out, "STAKER_DELEGATION_TYPEHASH")
-
-	if err != nil {
-		return *new([32]byte), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
-
-	return out0, err
-
-}
-
-// STAKERDELEGATIONTYPEHASH is a free data retrieval call binding the contract method 0x43377382.
-//
-// Solidity: function STAKER_DELEGATION_TYPEHASH() view returns(bytes32)
-func (_DelegationManager *DelegationManagerSession) STAKERDELEGATIONTYPEHASH() ([32]byte, error) {
-	return _DelegationManager.Contract.STAKERDELEGATIONTYPEHASH(&_DelegationManager.CallOpts)
-}
-
-// STAKERDELEGATIONTYPEHASH is a free data retrieval call binding the contract method 0x43377382.
-//
-// Solidity: function STAKER_DELEGATION_TYPEHASH() view returns(bytes32)
-func (_DelegationManager *DelegationManagerCallerSession) STAKERDELEGATIONTYPEHASH() ([32]byte, error) {
-	return _DelegationManager.Contract.STAKERDELEGATIONTYPEHASH(&_DelegationManager.CallOpts)
+// Solidity: function allocationManager() view returns(address)
+func (_DelegationManager *DelegationManagerCallerSession) AllocationManager() (common.Address, error) {
+	return _DelegationManager.Contract.AllocationManager(&_DelegationManager.CallOpts)
 }
 
 // BeaconChainETHStrategy is a free data retrieval call binding the contract method 0x9104c319.
@@ -419,43 +319,12 @@ func (_DelegationManager *DelegationManagerCallerSession) BeaconChainETHStrategy
 	return _DelegationManager.Contract.BeaconChainETHStrategy(&_DelegationManager.CallOpts)
 }
 
-// CalculateCurrentStakerDelegationDigestHash is a free data retrieval call binding the contract method 0x1bbce091.
-//
-// Solidity: function calculateCurrentStakerDelegationDigestHash(address staker, address operator, uint256 expiry) view returns(bytes32)
-func (_DelegationManager *DelegationManagerCaller) CalculateCurrentStakerDelegationDigestHash(opts *bind.CallOpts, staker common.Address, operator common.Address, expiry *big.Int) ([32]byte, error) {
-	var out []interface{}
-	err := _DelegationManager.contract.Call(opts, &out, "calculateCurrentStakerDelegationDigestHash", staker, operator, expiry)
-
-	if err != nil {
-		return *new([32]byte), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
-
-	return out0, err
-
-}
-
-// CalculateCurrentStakerDelegationDigestHash is a free data retrieval call binding the contract method 0x1bbce091.
-//
-// Solidity: function calculateCurrentStakerDelegationDigestHash(address staker, address operator, uint256 expiry) view returns(bytes32)
-func (_DelegationManager *DelegationManagerSession) CalculateCurrentStakerDelegationDigestHash(staker common.Address, operator common.Address, expiry *big.Int) ([32]byte, error) {
-	return _DelegationManager.Contract.CalculateCurrentStakerDelegationDigestHash(&_DelegationManager.CallOpts, staker, operator, expiry)
-}
-
-// CalculateCurrentStakerDelegationDigestHash is a free data retrieval call binding the contract method 0x1bbce091.
-//
-// Solidity: function calculateCurrentStakerDelegationDigestHash(address staker, address operator, uint256 expiry) view returns(bytes32)
-func (_DelegationManager *DelegationManagerCallerSession) CalculateCurrentStakerDelegationDigestHash(staker common.Address, operator common.Address, expiry *big.Int) ([32]byte, error) {
-	return _DelegationManager.Contract.CalculateCurrentStakerDelegationDigestHash(&_DelegationManager.CallOpts, staker, operator, expiry)
-}
-
 // CalculateDelegationApprovalDigestHash is a free data retrieval call binding the contract method 0x0b9f487a.
 //
-// Solidity: function calculateDelegationApprovalDigestHash(address staker, address operator, address _delegationApprover, bytes32 approverSalt, uint256 expiry) view returns(bytes32)
-func (_DelegationManager *DelegationManagerCaller) CalculateDelegationApprovalDigestHash(opts *bind.CallOpts, staker common.Address, operator common.Address, _delegationApprover common.Address, approverSalt [32]byte, expiry *big.Int) ([32]byte, error) {
+// Solidity: function calculateDelegationApprovalDigestHash(address staker, address operator, address approver, bytes32 approverSalt, uint256 expiry) view returns(bytes32)
+func (_DelegationManager *DelegationManagerCaller) CalculateDelegationApprovalDigestHash(opts *bind.CallOpts, staker common.Address, operator common.Address, approver common.Address, approverSalt [32]byte, expiry *big.Int) ([32]byte, error) {
 	var out []interface{}
-	err := _DelegationManager.contract.Call(opts, &out, "calculateDelegationApprovalDigestHash", staker, operator, _delegationApprover, approverSalt, expiry)
+	err := _DelegationManager.contract.Call(opts, &out, "calculateDelegationApprovalDigestHash", staker, operator, approver, approverSalt, expiry)
 
 	if err != nil {
 		return *new([32]byte), err
@@ -469,53 +338,22 @@ func (_DelegationManager *DelegationManagerCaller) CalculateDelegationApprovalDi
 
 // CalculateDelegationApprovalDigestHash is a free data retrieval call binding the contract method 0x0b9f487a.
 //
-// Solidity: function calculateDelegationApprovalDigestHash(address staker, address operator, address _delegationApprover, bytes32 approverSalt, uint256 expiry) view returns(bytes32)
-func (_DelegationManager *DelegationManagerSession) CalculateDelegationApprovalDigestHash(staker common.Address, operator common.Address, _delegationApprover common.Address, approverSalt [32]byte, expiry *big.Int) ([32]byte, error) {
-	return _DelegationManager.Contract.CalculateDelegationApprovalDigestHash(&_DelegationManager.CallOpts, staker, operator, _delegationApprover, approverSalt, expiry)
+// Solidity: function calculateDelegationApprovalDigestHash(address staker, address operator, address approver, bytes32 approverSalt, uint256 expiry) view returns(bytes32)
+func (_DelegationManager *DelegationManagerSession) CalculateDelegationApprovalDigestHash(staker common.Address, operator common.Address, approver common.Address, approverSalt [32]byte, expiry *big.Int) ([32]byte, error) {
+	return _DelegationManager.Contract.CalculateDelegationApprovalDigestHash(&_DelegationManager.CallOpts, staker, operator, approver, approverSalt, expiry)
 }
 
 // CalculateDelegationApprovalDigestHash is a free data retrieval call binding the contract method 0x0b9f487a.
 //
-// Solidity: function calculateDelegationApprovalDigestHash(address staker, address operator, address _delegationApprover, bytes32 approverSalt, uint256 expiry) view returns(bytes32)
-func (_DelegationManager *DelegationManagerCallerSession) CalculateDelegationApprovalDigestHash(staker common.Address, operator common.Address, _delegationApprover common.Address, approverSalt [32]byte, expiry *big.Int) ([32]byte, error) {
-	return _DelegationManager.Contract.CalculateDelegationApprovalDigestHash(&_DelegationManager.CallOpts, staker, operator, _delegationApprover, approverSalt, expiry)
-}
-
-// CalculateStakerDelegationDigestHash is a free data retrieval call binding the contract method 0xc94b5111.
-//
-// Solidity: function calculateStakerDelegationDigestHash(address staker, uint256 _stakerNonce, address operator, uint256 expiry) view returns(bytes32)
-func (_DelegationManager *DelegationManagerCaller) CalculateStakerDelegationDigestHash(opts *bind.CallOpts, staker common.Address, _stakerNonce *big.Int, operator common.Address, expiry *big.Int) ([32]byte, error) {
-	var out []interface{}
-	err := _DelegationManager.contract.Call(opts, &out, "calculateStakerDelegationDigestHash", staker, _stakerNonce, operator, expiry)
-
-	if err != nil {
-		return *new([32]byte), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
-
-	return out0, err
-
-}
-
-// CalculateStakerDelegationDigestHash is a free data retrieval call binding the contract method 0xc94b5111.
-//
-// Solidity: function calculateStakerDelegationDigestHash(address staker, uint256 _stakerNonce, address operator, uint256 expiry) view returns(bytes32)
-func (_DelegationManager *DelegationManagerSession) CalculateStakerDelegationDigestHash(staker common.Address, _stakerNonce *big.Int, operator common.Address, expiry *big.Int) ([32]byte, error) {
-	return _DelegationManager.Contract.CalculateStakerDelegationDigestHash(&_DelegationManager.CallOpts, staker, _stakerNonce, operator, expiry)
-}
-
-// CalculateStakerDelegationDigestHash is a free data retrieval call binding the contract method 0xc94b5111.
-//
-// Solidity: function calculateStakerDelegationDigestHash(address staker, uint256 _stakerNonce, address operator, uint256 expiry) view returns(bytes32)
-func (_DelegationManager *DelegationManagerCallerSession) CalculateStakerDelegationDigestHash(staker common.Address, _stakerNonce *big.Int, operator common.Address, expiry *big.Int) ([32]byte, error) {
-	return _DelegationManager.Contract.CalculateStakerDelegationDigestHash(&_DelegationManager.CallOpts, staker, _stakerNonce, operator, expiry)
+// Solidity: function calculateDelegationApprovalDigestHash(address staker, address operator, address approver, bytes32 approverSalt, uint256 expiry) view returns(bytes32)
+func (_DelegationManager *DelegationManagerCallerSession) CalculateDelegationApprovalDigestHash(staker common.Address, operator common.Address, approver common.Address, approverSalt [32]byte, expiry *big.Int) ([32]byte, error) {
+	return _DelegationManager.Contract.CalculateDelegationApprovalDigestHash(&_DelegationManager.CallOpts, staker, operator, approver, approverSalt, expiry)
 }
 
 // CalculateWithdrawalRoot is a free data retrieval call binding the contract method 0x597b36da.
 //
 // Solidity: function calculateWithdrawalRoot((address,address,address,uint256,uint32,address[],uint256[]) withdrawal) pure returns(bytes32)
-func (_DelegationManager *DelegationManagerCaller) CalculateWithdrawalRoot(opts *bind.CallOpts, withdrawal IDelegationManagerWithdrawal) ([32]byte, error) {
+func (_DelegationManager *DelegationManagerCaller) CalculateWithdrawalRoot(opts *bind.CallOpts, withdrawal IDelegationManagerTypesWithdrawal) ([32]byte, error) {
 	var out []interface{}
 	err := _DelegationManager.contract.Call(opts, &out, "calculateWithdrawalRoot", withdrawal)
 
@@ -532,23 +370,54 @@ func (_DelegationManager *DelegationManagerCaller) CalculateWithdrawalRoot(opts 
 // CalculateWithdrawalRoot is a free data retrieval call binding the contract method 0x597b36da.
 //
 // Solidity: function calculateWithdrawalRoot((address,address,address,uint256,uint32,address[],uint256[]) withdrawal) pure returns(bytes32)
-func (_DelegationManager *DelegationManagerSession) CalculateWithdrawalRoot(withdrawal IDelegationManagerWithdrawal) ([32]byte, error) {
+func (_DelegationManager *DelegationManagerSession) CalculateWithdrawalRoot(withdrawal IDelegationManagerTypesWithdrawal) ([32]byte, error) {
 	return _DelegationManager.Contract.CalculateWithdrawalRoot(&_DelegationManager.CallOpts, withdrawal)
 }
 
 // CalculateWithdrawalRoot is a free data retrieval call binding the contract method 0x597b36da.
 //
 // Solidity: function calculateWithdrawalRoot((address,address,address,uint256,uint32,address[],uint256[]) withdrawal) pure returns(bytes32)
-func (_DelegationManager *DelegationManagerCallerSession) CalculateWithdrawalRoot(withdrawal IDelegationManagerWithdrawal) ([32]byte, error) {
+func (_DelegationManager *DelegationManagerCallerSession) CalculateWithdrawalRoot(withdrawal IDelegationManagerTypesWithdrawal) ([32]byte, error) {
 	return _DelegationManager.Contract.CalculateWithdrawalRoot(&_DelegationManager.CallOpts, withdrawal)
+}
+
+// ConvertToDepositShares is a free data retrieval call binding the contract method 0x25df922e.
+//
+// Solidity: function convertToDepositShares(address staker, address[] strategies, uint256[] withdrawableShares) view returns(uint256[])
+func (_DelegationManager *DelegationManagerCaller) ConvertToDepositShares(opts *bind.CallOpts, staker common.Address, strategies []common.Address, withdrawableShares []*big.Int) ([]*big.Int, error) {
+	var out []interface{}
+	err := _DelegationManager.contract.Call(opts, &out, "convertToDepositShares", staker, strategies, withdrawableShares)
+
+	if err != nil {
+		return *new([]*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([]*big.Int)).(*[]*big.Int)
+
+	return out0, err
+
+}
+
+// ConvertToDepositShares is a free data retrieval call binding the contract method 0x25df922e.
+//
+// Solidity: function convertToDepositShares(address staker, address[] strategies, uint256[] withdrawableShares) view returns(uint256[])
+func (_DelegationManager *DelegationManagerSession) ConvertToDepositShares(staker common.Address, strategies []common.Address, withdrawableShares []*big.Int) ([]*big.Int, error) {
+	return _DelegationManager.Contract.ConvertToDepositShares(&_DelegationManager.CallOpts, staker, strategies, withdrawableShares)
+}
+
+// ConvertToDepositShares is a free data retrieval call binding the contract method 0x25df922e.
+//
+// Solidity: function convertToDepositShares(address staker, address[] strategies, uint256[] withdrawableShares) view returns(uint256[])
+func (_DelegationManager *DelegationManagerCallerSession) ConvertToDepositShares(staker common.Address, strategies []common.Address, withdrawableShares []*big.Int) ([]*big.Int, error) {
+	return _DelegationManager.Contract.ConvertToDepositShares(&_DelegationManager.CallOpts, staker, strategies, withdrawableShares)
 }
 
 // CumulativeWithdrawalsQueued is a free data retrieval call binding the contract method 0xa1788484.
 //
-// Solidity: function cumulativeWithdrawalsQueued(address ) view returns(uint256)
-func (_DelegationManager *DelegationManagerCaller) CumulativeWithdrawalsQueued(opts *bind.CallOpts, arg0 common.Address) (*big.Int, error) {
+// Solidity: function cumulativeWithdrawalsQueued(address staker) view returns(uint256 totalQueued)
+func (_DelegationManager *DelegationManagerCaller) CumulativeWithdrawalsQueued(opts *bind.CallOpts, staker common.Address) (*big.Int, error) {
 	var out []interface{}
-	err := _DelegationManager.contract.Call(opts, &out, "cumulativeWithdrawalsQueued", arg0)
+	err := _DelegationManager.contract.Call(opts, &out, "cumulativeWithdrawalsQueued", staker)
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -562,24 +431,24 @@ func (_DelegationManager *DelegationManagerCaller) CumulativeWithdrawalsQueued(o
 
 // CumulativeWithdrawalsQueued is a free data retrieval call binding the contract method 0xa1788484.
 //
-// Solidity: function cumulativeWithdrawalsQueued(address ) view returns(uint256)
-func (_DelegationManager *DelegationManagerSession) CumulativeWithdrawalsQueued(arg0 common.Address) (*big.Int, error) {
-	return _DelegationManager.Contract.CumulativeWithdrawalsQueued(&_DelegationManager.CallOpts, arg0)
+// Solidity: function cumulativeWithdrawalsQueued(address staker) view returns(uint256 totalQueued)
+func (_DelegationManager *DelegationManagerSession) CumulativeWithdrawalsQueued(staker common.Address) (*big.Int, error) {
+	return _DelegationManager.Contract.CumulativeWithdrawalsQueued(&_DelegationManager.CallOpts, staker)
 }
 
 // CumulativeWithdrawalsQueued is a free data retrieval call binding the contract method 0xa1788484.
 //
-// Solidity: function cumulativeWithdrawalsQueued(address ) view returns(uint256)
-func (_DelegationManager *DelegationManagerCallerSession) CumulativeWithdrawalsQueued(arg0 common.Address) (*big.Int, error) {
-	return _DelegationManager.Contract.CumulativeWithdrawalsQueued(&_DelegationManager.CallOpts, arg0)
+// Solidity: function cumulativeWithdrawalsQueued(address staker) view returns(uint256 totalQueued)
+func (_DelegationManager *DelegationManagerCallerSession) CumulativeWithdrawalsQueued(staker common.Address) (*big.Int, error) {
+	return _DelegationManager.Contract.CumulativeWithdrawalsQueued(&_DelegationManager.CallOpts, staker)
 }
 
 // DelegatedTo is a free data retrieval call binding the contract method 0x65da1264.
 //
-// Solidity: function delegatedTo(address ) view returns(address)
-func (_DelegationManager *DelegationManagerCaller) DelegatedTo(opts *bind.CallOpts, arg0 common.Address) (common.Address, error) {
+// Solidity: function delegatedTo(address staker) view returns(address operator)
+func (_DelegationManager *DelegationManagerCaller) DelegatedTo(opts *bind.CallOpts, staker common.Address) (common.Address, error) {
 	var out []interface{}
-	err := _DelegationManager.contract.Call(opts, &out, "delegatedTo", arg0)
+	err := _DelegationManager.contract.Call(opts, &out, "delegatedTo", staker)
 
 	if err != nil {
 		return *new(common.Address), err
@@ -593,16 +462,16 @@ func (_DelegationManager *DelegationManagerCaller) DelegatedTo(opts *bind.CallOp
 
 // DelegatedTo is a free data retrieval call binding the contract method 0x65da1264.
 //
-// Solidity: function delegatedTo(address ) view returns(address)
-func (_DelegationManager *DelegationManagerSession) DelegatedTo(arg0 common.Address) (common.Address, error) {
-	return _DelegationManager.Contract.DelegatedTo(&_DelegationManager.CallOpts, arg0)
+// Solidity: function delegatedTo(address staker) view returns(address operator)
+func (_DelegationManager *DelegationManagerSession) DelegatedTo(staker common.Address) (common.Address, error) {
+	return _DelegationManager.Contract.DelegatedTo(&_DelegationManager.CallOpts, staker)
 }
 
 // DelegatedTo is a free data retrieval call binding the contract method 0x65da1264.
 //
-// Solidity: function delegatedTo(address ) view returns(address)
-func (_DelegationManager *DelegationManagerCallerSession) DelegatedTo(arg0 common.Address) (common.Address, error) {
-	return _DelegationManager.Contract.DelegatedTo(&_DelegationManager.CallOpts, arg0)
+// Solidity: function delegatedTo(address staker) view returns(address operator)
+func (_DelegationManager *DelegationManagerCallerSession) DelegatedTo(staker common.Address) (common.Address, error) {
+	return _DelegationManager.Contract.DelegatedTo(&_DelegationManager.CallOpts, staker)
 }
 
 // DelegationApprover is a free data retrieval call binding the contract method 0x3cdeb5e0.
@@ -638,10 +507,10 @@ func (_DelegationManager *DelegationManagerCallerSession) DelegationApprover(ope
 
 // DelegationApproverSaltIsSpent is a free data retrieval call binding the contract method 0xbb45fef2.
 //
-// Solidity: function delegationApproverSaltIsSpent(address , bytes32 ) view returns(bool)
-func (_DelegationManager *DelegationManagerCaller) DelegationApproverSaltIsSpent(opts *bind.CallOpts, arg0 common.Address, arg1 [32]byte) (bool, error) {
+// Solidity: function delegationApproverSaltIsSpent(address delegationApprover, bytes32 salt) view returns(bool spent)
+func (_DelegationManager *DelegationManagerCaller) DelegationApproverSaltIsSpent(opts *bind.CallOpts, delegationApprover common.Address, salt [32]byte) (bool, error) {
 	var out []interface{}
-	err := _DelegationManager.contract.Call(opts, &out, "delegationApproverSaltIsSpent", arg0, arg1)
+	err := _DelegationManager.contract.Call(opts, &out, "delegationApproverSaltIsSpent", delegationApprover, salt)
 
 	if err != nil {
 		return *new(bool), err
@@ -655,16 +524,47 @@ func (_DelegationManager *DelegationManagerCaller) DelegationApproverSaltIsSpent
 
 // DelegationApproverSaltIsSpent is a free data retrieval call binding the contract method 0xbb45fef2.
 //
-// Solidity: function delegationApproverSaltIsSpent(address , bytes32 ) view returns(bool)
-func (_DelegationManager *DelegationManagerSession) DelegationApproverSaltIsSpent(arg0 common.Address, arg1 [32]byte) (bool, error) {
-	return _DelegationManager.Contract.DelegationApproverSaltIsSpent(&_DelegationManager.CallOpts, arg0, arg1)
+// Solidity: function delegationApproverSaltIsSpent(address delegationApprover, bytes32 salt) view returns(bool spent)
+func (_DelegationManager *DelegationManagerSession) DelegationApproverSaltIsSpent(delegationApprover common.Address, salt [32]byte) (bool, error) {
+	return _DelegationManager.Contract.DelegationApproverSaltIsSpent(&_DelegationManager.CallOpts, delegationApprover, salt)
 }
 
 // DelegationApproverSaltIsSpent is a free data retrieval call binding the contract method 0xbb45fef2.
 //
-// Solidity: function delegationApproverSaltIsSpent(address , bytes32 ) view returns(bool)
-func (_DelegationManager *DelegationManagerCallerSession) DelegationApproverSaltIsSpent(arg0 common.Address, arg1 [32]byte) (bool, error) {
-	return _DelegationManager.Contract.DelegationApproverSaltIsSpent(&_DelegationManager.CallOpts, arg0, arg1)
+// Solidity: function delegationApproverSaltIsSpent(address delegationApprover, bytes32 salt) view returns(bool spent)
+func (_DelegationManager *DelegationManagerCallerSession) DelegationApproverSaltIsSpent(delegationApprover common.Address, salt [32]byte) (bool, error) {
+	return _DelegationManager.Contract.DelegationApproverSaltIsSpent(&_DelegationManager.CallOpts, delegationApprover, salt)
+}
+
+// DepositScalingFactor is a free data retrieval call binding the contract method 0xbfae3fd2.
+//
+// Solidity: function depositScalingFactor(address staker, address strategy) view returns(uint256)
+func (_DelegationManager *DelegationManagerCaller) DepositScalingFactor(opts *bind.CallOpts, staker common.Address, strategy common.Address) (*big.Int, error) {
+	var out []interface{}
+	err := _DelegationManager.contract.Call(opts, &out, "depositScalingFactor", staker, strategy)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// DepositScalingFactor is a free data retrieval call binding the contract method 0xbfae3fd2.
+//
+// Solidity: function depositScalingFactor(address staker, address strategy) view returns(uint256)
+func (_DelegationManager *DelegationManagerSession) DepositScalingFactor(staker common.Address, strategy common.Address) (*big.Int, error) {
+	return _DelegationManager.Contract.DepositScalingFactor(&_DelegationManager.CallOpts, staker, strategy)
+}
+
+// DepositScalingFactor is a free data retrieval call binding the contract method 0xbfae3fd2.
+//
+// Solidity: function depositScalingFactor(address staker, address strategy) view returns(uint256)
+func (_DelegationManager *DelegationManagerCallerSession) DepositScalingFactor(staker common.Address, strategy common.Address) (*big.Int, error) {
+	return _DelegationManager.Contract.DepositScalingFactor(&_DelegationManager.CallOpts, staker, strategy)
 }
 
 // DomainSeparator is a free data retrieval call binding the contract method 0xf698da25.
@@ -729,12 +629,12 @@ func (_DelegationManager *DelegationManagerCallerSession) EigenPodManager() (com
 	return _DelegationManager.Contract.EigenPodManager(&_DelegationManager.CallOpts)
 }
 
-// GetDelegatableShares is a free data retrieval call binding the contract method 0xcf80873e.
+// GetDepositedShares is a free data retrieval call binding the contract method 0x66d5ba93.
 //
-// Solidity: function getDelegatableShares(address staker) view returns(address[], uint256[])
-func (_DelegationManager *DelegationManagerCaller) GetDelegatableShares(opts *bind.CallOpts, staker common.Address) ([]common.Address, []*big.Int, error) {
+// Solidity: function getDepositedShares(address staker) view returns(address[], uint256[])
+func (_DelegationManager *DelegationManagerCaller) GetDepositedShares(opts *bind.CallOpts, staker common.Address) ([]common.Address, []*big.Int, error) {
 	var out []interface{}
-	err := _DelegationManager.contract.Call(opts, &out, "getDelegatableShares", staker)
+	err := _DelegationManager.contract.Call(opts, &out, "getDepositedShares", staker)
 
 	if err != nil {
 		return *new([]common.Address), *new([]*big.Int), err
@@ -747,18 +647,18 @@ func (_DelegationManager *DelegationManagerCaller) GetDelegatableShares(opts *bi
 
 }
 
-// GetDelegatableShares is a free data retrieval call binding the contract method 0xcf80873e.
+// GetDepositedShares is a free data retrieval call binding the contract method 0x66d5ba93.
 //
-// Solidity: function getDelegatableShares(address staker) view returns(address[], uint256[])
-func (_DelegationManager *DelegationManagerSession) GetDelegatableShares(staker common.Address) ([]common.Address, []*big.Int, error) {
-	return _DelegationManager.Contract.GetDelegatableShares(&_DelegationManager.CallOpts, staker)
+// Solidity: function getDepositedShares(address staker) view returns(address[], uint256[])
+func (_DelegationManager *DelegationManagerSession) GetDepositedShares(staker common.Address) ([]common.Address, []*big.Int, error) {
+	return _DelegationManager.Contract.GetDepositedShares(&_DelegationManager.CallOpts, staker)
 }
 
-// GetDelegatableShares is a free data retrieval call binding the contract method 0xcf80873e.
+// GetDepositedShares is a free data retrieval call binding the contract method 0x66d5ba93.
 //
-// Solidity: function getDelegatableShares(address staker) view returns(address[], uint256[])
-func (_DelegationManager *DelegationManagerCallerSession) GetDelegatableShares(staker common.Address) ([]common.Address, []*big.Int, error) {
-	return _DelegationManager.Contract.GetDelegatableShares(&_DelegationManager.CallOpts, staker)
+// Solidity: function getDepositedShares(address staker) view returns(address[], uint256[])
+func (_DelegationManager *DelegationManagerCallerSession) GetDepositedShares(staker common.Address) ([]common.Address, []*big.Int, error) {
+	return _DelegationManager.Contract.GetDepositedShares(&_DelegationManager.CallOpts, staker)
 }
 
 // GetOperatorShares is a free data retrieval call binding the contract method 0x90041347.
@@ -792,12 +692,150 @@ func (_DelegationManager *DelegationManagerCallerSession) GetOperatorShares(oper
 	return _DelegationManager.Contract.GetOperatorShares(&_DelegationManager.CallOpts, operator, strategies)
 }
 
-// GetWithdrawalDelay is a free data retrieval call binding the contract method 0x0449ca39.
+// GetOperatorsShares is a free data retrieval call binding the contract method 0xf0e0e676.
 //
-// Solidity: function getWithdrawalDelay(address[] strategies) view returns(uint256)
-func (_DelegationManager *DelegationManagerCaller) GetWithdrawalDelay(opts *bind.CallOpts, strategies []common.Address) (*big.Int, error) {
+// Solidity: function getOperatorsShares(address[] operators, address[] strategies) view returns(uint256[][])
+func (_DelegationManager *DelegationManagerCaller) GetOperatorsShares(opts *bind.CallOpts, operators []common.Address, strategies []common.Address) ([][]*big.Int, error) {
 	var out []interface{}
-	err := _DelegationManager.contract.Call(opts, &out, "getWithdrawalDelay", strategies)
+	err := _DelegationManager.contract.Call(opts, &out, "getOperatorsShares", operators, strategies)
+
+	if err != nil {
+		return *new([][]*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([][]*big.Int)).(*[][]*big.Int)
+
+	return out0, err
+
+}
+
+// GetOperatorsShares is a free data retrieval call binding the contract method 0xf0e0e676.
+//
+// Solidity: function getOperatorsShares(address[] operators, address[] strategies) view returns(uint256[][])
+func (_DelegationManager *DelegationManagerSession) GetOperatorsShares(operators []common.Address, strategies []common.Address) ([][]*big.Int, error) {
+	return _DelegationManager.Contract.GetOperatorsShares(&_DelegationManager.CallOpts, operators, strategies)
+}
+
+// GetOperatorsShares is a free data retrieval call binding the contract method 0xf0e0e676.
+//
+// Solidity: function getOperatorsShares(address[] operators, address[] strategies) view returns(uint256[][])
+func (_DelegationManager *DelegationManagerCallerSession) GetOperatorsShares(operators []common.Address, strategies []common.Address) ([][]*big.Int, error) {
+	return _DelegationManager.Contract.GetOperatorsShares(&_DelegationManager.CallOpts, operators, strategies)
+}
+
+// GetQueuedWithdrawal is a free data retrieval call binding the contract method 0x5d975e88.
+//
+// Solidity: function getQueuedWithdrawal(bytes32 withdrawalRoot) view returns((address,address,address,uint256,uint32,address[],uint256[]))
+func (_DelegationManager *DelegationManagerCaller) GetQueuedWithdrawal(opts *bind.CallOpts, withdrawalRoot [32]byte) (IDelegationManagerTypesWithdrawal, error) {
+	var out []interface{}
+	err := _DelegationManager.contract.Call(opts, &out, "getQueuedWithdrawal", withdrawalRoot)
+
+	if err != nil {
+		return *new(IDelegationManagerTypesWithdrawal), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(IDelegationManagerTypesWithdrawal)).(*IDelegationManagerTypesWithdrawal)
+
+	return out0, err
+
+}
+
+// GetQueuedWithdrawal is a free data retrieval call binding the contract method 0x5d975e88.
+//
+// Solidity: function getQueuedWithdrawal(bytes32 withdrawalRoot) view returns((address,address,address,uint256,uint32,address[],uint256[]))
+func (_DelegationManager *DelegationManagerSession) GetQueuedWithdrawal(withdrawalRoot [32]byte) (IDelegationManagerTypesWithdrawal, error) {
+	return _DelegationManager.Contract.GetQueuedWithdrawal(&_DelegationManager.CallOpts, withdrawalRoot)
+}
+
+// GetQueuedWithdrawal is a free data retrieval call binding the contract method 0x5d975e88.
+//
+// Solidity: function getQueuedWithdrawal(bytes32 withdrawalRoot) view returns((address,address,address,uint256,uint32,address[],uint256[]))
+func (_DelegationManager *DelegationManagerCallerSession) GetQueuedWithdrawal(withdrawalRoot [32]byte) (IDelegationManagerTypesWithdrawal, error) {
+	return _DelegationManager.Contract.GetQueuedWithdrawal(&_DelegationManager.CallOpts, withdrawalRoot)
+}
+
+// GetQueuedWithdrawalRoots is a free data retrieval call binding the contract method 0xfd8aa88d.
+//
+// Solidity: function getQueuedWithdrawalRoots(address staker) view returns(bytes32[])
+func (_DelegationManager *DelegationManagerCaller) GetQueuedWithdrawalRoots(opts *bind.CallOpts, staker common.Address) ([][32]byte, error) {
+	var out []interface{}
+	err := _DelegationManager.contract.Call(opts, &out, "getQueuedWithdrawalRoots", staker)
+
+	if err != nil {
+		return *new([][32]byte), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([][32]byte)).(*[][32]byte)
+
+	return out0, err
+
+}
+
+// GetQueuedWithdrawalRoots is a free data retrieval call binding the contract method 0xfd8aa88d.
+//
+// Solidity: function getQueuedWithdrawalRoots(address staker) view returns(bytes32[])
+func (_DelegationManager *DelegationManagerSession) GetQueuedWithdrawalRoots(staker common.Address) ([][32]byte, error) {
+	return _DelegationManager.Contract.GetQueuedWithdrawalRoots(&_DelegationManager.CallOpts, staker)
+}
+
+// GetQueuedWithdrawalRoots is a free data retrieval call binding the contract method 0xfd8aa88d.
+//
+// Solidity: function getQueuedWithdrawalRoots(address staker) view returns(bytes32[])
+func (_DelegationManager *DelegationManagerCallerSession) GetQueuedWithdrawalRoots(staker common.Address) ([][32]byte, error) {
+	return _DelegationManager.Contract.GetQueuedWithdrawalRoots(&_DelegationManager.CallOpts, staker)
+}
+
+// GetQueuedWithdrawals is a free data retrieval call binding the contract method 0x5dd68579.
+//
+// Solidity: function getQueuedWithdrawals(address staker) view returns((address,address,address,uint256,uint32,address[],uint256[])[] withdrawals, uint256[][] shares)
+func (_DelegationManager *DelegationManagerCaller) GetQueuedWithdrawals(opts *bind.CallOpts, staker common.Address) (struct {
+	Withdrawals []IDelegationManagerTypesWithdrawal
+	Shares      [][]*big.Int
+}, error) {
+	var out []interface{}
+	err := _DelegationManager.contract.Call(opts, &out, "getQueuedWithdrawals", staker)
+
+	outstruct := new(struct {
+		Withdrawals []IDelegationManagerTypesWithdrawal
+		Shares      [][]*big.Int
+	})
+	if err != nil {
+		return *outstruct, err
+	}
+
+	outstruct.Withdrawals = *abi.ConvertType(out[0], new([]IDelegationManagerTypesWithdrawal)).(*[]IDelegationManagerTypesWithdrawal)
+	outstruct.Shares = *abi.ConvertType(out[1], new([][]*big.Int)).(*[][]*big.Int)
+
+	return *outstruct, err
+
+}
+
+// GetQueuedWithdrawals is a free data retrieval call binding the contract method 0x5dd68579.
+//
+// Solidity: function getQueuedWithdrawals(address staker) view returns((address,address,address,uint256,uint32,address[],uint256[])[] withdrawals, uint256[][] shares)
+func (_DelegationManager *DelegationManagerSession) GetQueuedWithdrawals(staker common.Address) (struct {
+	Withdrawals []IDelegationManagerTypesWithdrawal
+	Shares      [][]*big.Int
+}, error) {
+	return _DelegationManager.Contract.GetQueuedWithdrawals(&_DelegationManager.CallOpts, staker)
+}
+
+// GetQueuedWithdrawals is a free data retrieval call binding the contract method 0x5dd68579.
+//
+// Solidity: function getQueuedWithdrawals(address staker) view returns((address,address,address,uint256,uint32,address[],uint256[])[] withdrawals, uint256[][] shares)
+func (_DelegationManager *DelegationManagerCallerSession) GetQueuedWithdrawals(staker common.Address) (struct {
+	Withdrawals []IDelegationManagerTypesWithdrawal
+	Shares      [][]*big.Int
+}, error) {
+	return _DelegationManager.Contract.GetQueuedWithdrawals(&_DelegationManager.CallOpts, staker)
+}
+
+// GetSlashableSharesInQueue is a free data retrieval call binding the contract method 0x6e174448.
+//
+// Solidity: function getSlashableSharesInQueue(address operator, address strategy) view returns(uint256)
+func (_DelegationManager *DelegationManagerCaller) GetSlashableSharesInQueue(opts *bind.CallOpts, operator common.Address, strategy common.Address) (*big.Int, error) {
+	var out []interface{}
+	err := _DelegationManager.contract.Call(opts, &out, "getSlashableSharesInQueue", operator, strategy)
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -809,18 +847,63 @@ func (_DelegationManager *DelegationManagerCaller) GetWithdrawalDelay(opts *bind
 
 }
 
-// GetWithdrawalDelay is a free data retrieval call binding the contract method 0x0449ca39.
+// GetSlashableSharesInQueue is a free data retrieval call binding the contract method 0x6e174448.
 //
-// Solidity: function getWithdrawalDelay(address[] strategies) view returns(uint256)
-func (_DelegationManager *DelegationManagerSession) GetWithdrawalDelay(strategies []common.Address) (*big.Int, error) {
-	return _DelegationManager.Contract.GetWithdrawalDelay(&_DelegationManager.CallOpts, strategies)
+// Solidity: function getSlashableSharesInQueue(address operator, address strategy) view returns(uint256)
+func (_DelegationManager *DelegationManagerSession) GetSlashableSharesInQueue(operator common.Address, strategy common.Address) (*big.Int, error) {
+	return _DelegationManager.Contract.GetSlashableSharesInQueue(&_DelegationManager.CallOpts, operator, strategy)
 }
 
-// GetWithdrawalDelay is a free data retrieval call binding the contract method 0x0449ca39.
+// GetSlashableSharesInQueue is a free data retrieval call binding the contract method 0x6e174448.
 //
-// Solidity: function getWithdrawalDelay(address[] strategies) view returns(uint256)
-func (_DelegationManager *DelegationManagerCallerSession) GetWithdrawalDelay(strategies []common.Address) (*big.Int, error) {
-	return _DelegationManager.Contract.GetWithdrawalDelay(&_DelegationManager.CallOpts, strategies)
+// Solidity: function getSlashableSharesInQueue(address operator, address strategy) view returns(uint256)
+func (_DelegationManager *DelegationManagerCallerSession) GetSlashableSharesInQueue(operator common.Address, strategy common.Address) (*big.Int, error) {
+	return _DelegationManager.Contract.GetSlashableSharesInQueue(&_DelegationManager.CallOpts, operator, strategy)
+}
+
+// GetWithdrawableShares is a free data retrieval call binding the contract method 0xc978f7ac.
+//
+// Solidity: function getWithdrawableShares(address staker, address[] strategies) view returns(uint256[] withdrawableShares, uint256[] depositShares)
+func (_DelegationManager *DelegationManagerCaller) GetWithdrawableShares(opts *bind.CallOpts, staker common.Address, strategies []common.Address) (struct {
+	WithdrawableShares []*big.Int
+	DepositShares      []*big.Int
+}, error) {
+	var out []interface{}
+	err := _DelegationManager.contract.Call(opts, &out, "getWithdrawableShares", staker, strategies)
+
+	outstruct := new(struct {
+		WithdrawableShares []*big.Int
+		DepositShares      []*big.Int
+	})
+	if err != nil {
+		return *outstruct, err
+	}
+
+	outstruct.WithdrawableShares = *abi.ConvertType(out[0], new([]*big.Int)).(*[]*big.Int)
+	outstruct.DepositShares = *abi.ConvertType(out[1], new([]*big.Int)).(*[]*big.Int)
+
+	return *outstruct, err
+
+}
+
+// GetWithdrawableShares is a free data retrieval call binding the contract method 0xc978f7ac.
+//
+// Solidity: function getWithdrawableShares(address staker, address[] strategies) view returns(uint256[] withdrawableShares, uint256[] depositShares)
+func (_DelegationManager *DelegationManagerSession) GetWithdrawableShares(staker common.Address, strategies []common.Address) (struct {
+	WithdrawableShares []*big.Int
+	DepositShares      []*big.Int
+}, error) {
+	return _DelegationManager.Contract.GetWithdrawableShares(&_DelegationManager.CallOpts, staker, strategies)
+}
+
+// GetWithdrawableShares is a free data retrieval call binding the contract method 0xc978f7ac.
+//
+// Solidity: function getWithdrawableShares(address staker, address[] strategies) view returns(uint256[] withdrawableShares, uint256[] depositShares)
+func (_DelegationManager *DelegationManagerCallerSession) GetWithdrawableShares(staker common.Address, strategies []common.Address) (struct {
+	WithdrawableShares []*big.Int
+	DepositShares      []*big.Int
+}, error) {
+	return _DelegationManager.Contract.GetWithdrawableShares(&_DelegationManager.CallOpts, staker, strategies)
 }
 
 // IsDelegated is a free data retrieval call binding the contract method 0x3e28391d.
@@ -887,16 +970,16 @@ func (_DelegationManager *DelegationManagerCallerSession) IsOperator(operator co
 
 // MinWithdrawalDelayBlocks is a free data retrieval call binding the contract method 0xc448feb8.
 //
-// Solidity: function minWithdrawalDelayBlocks() view returns(uint256)
-func (_DelegationManager *DelegationManagerCaller) MinWithdrawalDelayBlocks(opts *bind.CallOpts) (*big.Int, error) {
+// Solidity: function minWithdrawalDelayBlocks() view returns(uint32)
+func (_DelegationManager *DelegationManagerCaller) MinWithdrawalDelayBlocks(opts *bind.CallOpts) (uint32, error) {
 	var out []interface{}
 	err := _DelegationManager.contract.Call(opts, &out, "minWithdrawalDelayBlocks")
 
 	if err != nil {
-		return *new(*big.Int), err
+		return *new(uint32), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+	out0 := *abi.ConvertType(out[0], new(uint32)).(*uint32)
 
 	return out0, err
 
@@ -904,55 +987,24 @@ func (_DelegationManager *DelegationManagerCaller) MinWithdrawalDelayBlocks(opts
 
 // MinWithdrawalDelayBlocks is a free data retrieval call binding the contract method 0xc448feb8.
 //
-// Solidity: function minWithdrawalDelayBlocks() view returns(uint256)
-func (_DelegationManager *DelegationManagerSession) MinWithdrawalDelayBlocks() (*big.Int, error) {
+// Solidity: function minWithdrawalDelayBlocks() view returns(uint32)
+func (_DelegationManager *DelegationManagerSession) MinWithdrawalDelayBlocks() (uint32, error) {
 	return _DelegationManager.Contract.MinWithdrawalDelayBlocks(&_DelegationManager.CallOpts)
 }
 
 // MinWithdrawalDelayBlocks is a free data retrieval call binding the contract method 0xc448feb8.
 //
-// Solidity: function minWithdrawalDelayBlocks() view returns(uint256)
-func (_DelegationManager *DelegationManagerCallerSession) MinWithdrawalDelayBlocks() (*big.Int, error) {
+// Solidity: function minWithdrawalDelayBlocks() view returns(uint32)
+func (_DelegationManager *DelegationManagerCallerSession) MinWithdrawalDelayBlocks() (uint32, error) {
 	return _DelegationManager.Contract.MinWithdrawalDelayBlocks(&_DelegationManager.CallOpts)
-}
-
-// OperatorDetails is a free data retrieval call binding the contract method 0xc5e480db.
-//
-// Solidity: function operatorDetails(address operator) view returns((address,address,uint32))
-func (_DelegationManager *DelegationManagerCaller) OperatorDetails(opts *bind.CallOpts, operator common.Address) (IDelegationManagerOperatorDetails, error) {
-	var out []interface{}
-	err := _DelegationManager.contract.Call(opts, &out, "operatorDetails", operator)
-
-	if err != nil {
-		return *new(IDelegationManagerOperatorDetails), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(IDelegationManagerOperatorDetails)).(*IDelegationManagerOperatorDetails)
-
-	return out0, err
-
-}
-
-// OperatorDetails is a free data retrieval call binding the contract method 0xc5e480db.
-//
-// Solidity: function operatorDetails(address operator) view returns((address,address,uint32))
-func (_DelegationManager *DelegationManagerSession) OperatorDetails(operator common.Address) (IDelegationManagerOperatorDetails, error) {
-	return _DelegationManager.Contract.OperatorDetails(&_DelegationManager.CallOpts, operator)
-}
-
-// OperatorDetails is a free data retrieval call binding the contract method 0xc5e480db.
-//
-// Solidity: function operatorDetails(address operator) view returns((address,address,uint32))
-func (_DelegationManager *DelegationManagerCallerSession) OperatorDetails(operator common.Address) (IDelegationManagerOperatorDetails, error) {
-	return _DelegationManager.Contract.OperatorDetails(&_DelegationManager.CallOpts, operator)
 }
 
 // OperatorShares is a free data retrieval call binding the contract method 0x778e55f3.
 //
-// Solidity: function operatorShares(address , address ) view returns(uint256)
-func (_DelegationManager *DelegationManagerCaller) OperatorShares(opts *bind.CallOpts, arg0 common.Address, arg1 common.Address) (*big.Int, error) {
+// Solidity: function operatorShares(address operator, address strategy) view returns(uint256 shares)
+func (_DelegationManager *DelegationManagerCaller) OperatorShares(opts *bind.CallOpts, operator common.Address, strategy common.Address) (*big.Int, error) {
 	var out []interface{}
-	err := _DelegationManager.contract.Call(opts, &out, "operatorShares", arg0, arg1)
+	err := _DelegationManager.contract.Call(opts, &out, "operatorShares", operator, strategy)
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -966,16 +1018,16 @@ func (_DelegationManager *DelegationManagerCaller) OperatorShares(opts *bind.Cal
 
 // OperatorShares is a free data retrieval call binding the contract method 0x778e55f3.
 //
-// Solidity: function operatorShares(address , address ) view returns(uint256)
-func (_DelegationManager *DelegationManagerSession) OperatorShares(arg0 common.Address, arg1 common.Address) (*big.Int, error) {
-	return _DelegationManager.Contract.OperatorShares(&_DelegationManager.CallOpts, arg0, arg1)
+// Solidity: function operatorShares(address operator, address strategy) view returns(uint256 shares)
+func (_DelegationManager *DelegationManagerSession) OperatorShares(operator common.Address, strategy common.Address) (*big.Int, error) {
+	return _DelegationManager.Contract.OperatorShares(&_DelegationManager.CallOpts, operator, strategy)
 }
 
 // OperatorShares is a free data retrieval call binding the contract method 0x778e55f3.
 //
-// Solidity: function operatorShares(address , address ) view returns(uint256)
-func (_DelegationManager *DelegationManagerCallerSession) OperatorShares(arg0 common.Address, arg1 common.Address) (*big.Int, error) {
-	return _DelegationManager.Contract.OperatorShares(&_DelegationManager.CallOpts, arg0, arg1)
+// Solidity: function operatorShares(address operator, address strategy) view returns(uint256 shares)
+func (_DelegationManager *DelegationManagerCallerSession) OperatorShares(operator common.Address, strategy common.Address) (*big.Int, error) {
+	return _DelegationManager.Contract.OperatorShares(&_DelegationManager.CallOpts, operator, strategy)
 }
 
 // Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
@@ -1104,10 +1156,10 @@ func (_DelegationManager *DelegationManagerCallerSession) PauserRegistry() (comm
 
 // PendingWithdrawals is a free data retrieval call binding the contract method 0xb7f06ebe.
 //
-// Solidity: function pendingWithdrawals(bytes32 ) view returns(bool)
-func (_DelegationManager *DelegationManagerCaller) PendingWithdrawals(opts *bind.CallOpts, arg0 [32]byte) (bool, error) {
+// Solidity: function pendingWithdrawals(bytes32 withdrawalRoot) view returns(bool pending)
+func (_DelegationManager *DelegationManagerCaller) PendingWithdrawals(opts *bind.CallOpts, withdrawalRoot [32]byte) (bool, error) {
 	var out []interface{}
-	err := _DelegationManager.contract.Call(opts, &out, "pendingWithdrawals", arg0)
+	err := _DelegationManager.contract.Call(opts, &out, "pendingWithdrawals", withdrawalRoot)
 
 	if err != nil {
 		return *new(bool), err
@@ -1121,24 +1173,24 @@ func (_DelegationManager *DelegationManagerCaller) PendingWithdrawals(opts *bind
 
 // PendingWithdrawals is a free data retrieval call binding the contract method 0xb7f06ebe.
 //
-// Solidity: function pendingWithdrawals(bytes32 ) view returns(bool)
-func (_DelegationManager *DelegationManagerSession) PendingWithdrawals(arg0 [32]byte) (bool, error) {
-	return _DelegationManager.Contract.PendingWithdrawals(&_DelegationManager.CallOpts, arg0)
+// Solidity: function pendingWithdrawals(bytes32 withdrawalRoot) view returns(bool pending)
+func (_DelegationManager *DelegationManagerSession) PendingWithdrawals(withdrawalRoot [32]byte) (bool, error) {
+	return _DelegationManager.Contract.PendingWithdrawals(&_DelegationManager.CallOpts, withdrawalRoot)
 }
 
 // PendingWithdrawals is a free data retrieval call binding the contract method 0xb7f06ebe.
 //
-// Solidity: function pendingWithdrawals(bytes32 ) view returns(bool)
-func (_DelegationManager *DelegationManagerCallerSession) PendingWithdrawals(arg0 [32]byte) (bool, error) {
-	return _DelegationManager.Contract.PendingWithdrawals(&_DelegationManager.CallOpts, arg0)
+// Solidity: function pendingWithdrawals(bytes32 withdrawalRoot) view returns(bool pending)
+func (_DelegationManager *DelegationManagerCallerSession) PendingWithdrawals(withdrawalRoot [32]byte) (bool, error) {
+	return _DelegationManager.Contract.PendingWithdrawals(&_DelegationManager.CallOpts, withdrawalRoot)
 }
 
-// Slasher is a free data retrieval call binding the contract method 0xb1344271.
+// PermissionController is a free data retrieval call binding the contract method 0x4657e26a.
 //
-// Solidity: function slasher() view returns(address)
-func (_DelegationManager *DelegationManagerCaller) Slasher(opts *bind.CallOpts) (common.Address, error) {
+// Solidity: function permissionController() view returns(address)
+func (_DelegationManager *DelegationManagerCaller) PermissionController(opts *bind.CallOpts) (common.Address, error) {
 	var out []interface{}
-	err := _DelegationManager.contract.Call(opts, &out, "slasher")
+	err := _DelegationManager.contract.Call(opts, &out, "permissionController")
 
 	if err != nil {
 		return *new(common.Address), err
@@ -1150,80 +1202,18 @@ func (_DelegationManager *DelegationManagerCaller) Slasher(opts *bind.CallOpts) 
 
 }
 
-// Slasher is a free data retrieval call binding the contract method 0xb1344271.
+// PermissionController is a free data retrieval call binding the contract method 0x4657e26a.
 //
-// Solidity: function slasher() view returns(address)
-func (_DelegationManager *DelegationManagerSession) Slasher() (common.Address, error) {
-	return _DelegationManager.Contract.Slasher(&_DelegationManager.CallOpts)
+// Solidity: function permissionController() view returns(address)
+func (_DelegationManager *DelegationManagerSession) PermissionController() (common.Address, error) {
+	return _DelegationManager.Contract.PermissionController(&_DelegationManager.CallOpts)
 }
 
-// Slasher is a free data retrieval call binding the contract method 0xb1344271.
+// PermissionController is a free data retrieval call binding the contract method 0x4657e26a.
 //
-// Solidity: function slasher() view returns(address)
-func (_DelegationManager *DelegationManagerCallerSession) Slasher() (common.Address, error) {
-	return _DelegationManager.Contract.Slasher(&_DelegationManager.CallOpts)
-}
-
-// StakerNonce is a free data retrieval call binding the contract method 0x29c77d4f.
-//
-// Solidity: function stakerNonce(address ) view returns(uint256)
-func (_DelegationManager *DelegationManagerCaller) StakerNonce(opts *bind.CallOpts, arg0 common.Address) (*big.Int, error) {
-	var out []interface{}
-	err := _DelegationManager.contract.Call(opts, &out, "stakerNonce", arg0)
-
-	if err != nil {
-		return *new(*big.Int), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
-
-	return out0, err
-
-}
-
-// StakerNonce is a free data retrieval call binding the contract method 0x29c77d4f.
-//
-// Solidity: function stakerNonce(address ) view returns(uint256)
-func (_DelegationManager *DelegationManagerSession) StakerNonce(arg0 common.Address) (*big.Int, error) {
-	return _DelegationManager.Contract.StakerNonce(&_DelegationManager.CallOpts, arg0)
-}
-
-// StakerNonce is a free data retrieval call binding the contract method 0x29c77d4f.
-//
-// Solidity: function stakerNonce(address ) view returns(uint256)
-func (_DelegationManager *DelegationManagerCallerSession) StakerNonce(arg0 common.Address) (*big.Int, error) {
-	return _DelegationManager.Contract.StakerNonce(&_DelegationManager.CallOpts, arg0)
-}
-
-// StakerOptOutWindowBlocks is a free data retrieval call binding the contract method 0x16928365.
-//
-// Solidity: function stakerOptOutWindowBlocks(address operator) view returns(uint256)
-func (_DelegationManager *DelegationManagerCaller) StakerOptOutWindowBlocks(opts *bind.CallOpts, operator common.Address) (*big.Int, error) {
-	var out []interface{}
-	err := _DelegationManager.contract.Call(opts, &out, "stakerOptOutWindowBlocks", operator)
-
-	if err != nil {
-		return *new(*big.Int), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
-
-	return out0, err
-
-}
-
-// StakerOptOutWindowBlocks is a free data retrieval call binding the contract method 0x16928365.
-//
-// Solidity: function stakerOptOutWindowBlocks(address operator) view returns(uint256)
-func (_DelegationManager *DelegationManagerSession) StakerOptOutWindowBlocks(operator common.Address) (*big.Int, error) {
-	return _DelegationManager.Contract.StakerOptOutWindowBlocks(&_DelegationManager.CallOpts, operator)
-}
-
-// StakerOptOutWindowBlocks is a free data retrieval call binding the contract method 0x16928365.
-//
-// Solidity: function stakerOptOutWindowBlocks(address operator) view returns(uint256)
-func (_DelegationManager *DelegationManagerCallerSession) StakerOptOutWindowBlocks(operator common.Address) (*big.Int, error) {
-	return _DelegationManager.Contract.StakerOptOutWindowBlocks(&_DelegationManager.CallOpts, operator)
+// Solidity: function permissionController() view returns(address)
+func (_DelegationManager *DelegationManagerCallerSession) PermissionController() (common.Address, error) {
+	return _DelegationManager.Contract.PermissionController(&_DelegationManager.CallOpts)
 }
 
 // StrategyManager is a free data retrieval call binding the contract method 0x39b70e38.
@@ -1257,98 +1247,67 @@ func (_DelegationManager *DelegationManagerCallerSession) StrategyManager() (com
 	return _DelegationManager.Contract.StrategyManager(&_DelegationManager.CallOpts)
 }
 
-// StrategyWithdrawalDelayBlocks is a free data retrieval call binding the contract method 0xc488375a.
+// CompleteQueuedWithdrawal is a paid mutator transaction binding the contract method 0xe4cc3f90.
 //
-// Solidity: function strategyWithdrawalDelayBlocks(address ) view returns(uint256)
-func (_DelegationManager *DelegationManagerCaller) StrategyWithdrawalDelayBlocks(opts *bind.CallOpts, arg0 common.Address) (*big.Int, error) {
-	var out []interface{}
-	err := _DelegationManager.contract.Call(opts, &out, "strategyWithdrawalDelayBlocks", arg0)
-
-	if err != nil {
-		return *new(*big.Int), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
-
-	return out0, err
-
+// Solidity: function completeQueuedWithdrawal((address,address,address,uint256,uint32,address[],uint256[]) withdrawal, address[] tokens, bool receiveAsTokens) returns()
+func (_DelegationManager *DelegationManagerTransactor) CompleteQueuedWithdrawal(opts *bind.TransactOpts, withdrawal IDelegationManagerTypesWithdrawal, tokens []common.Address, receiveAsTokens bool) (*types.Transaction, error) {
+	return _DelegationManager.contract.Transact(opts, "completeQueuedWithdrawal", withdrawal, tokens, receiveAsTokens)
 }
 
-// StrategyWithdrawalDelayBlocks is a free data retrieval call binding the contract method 0xc488375a.
+// CompleteQueuedWithdrawal is a paid mutator transaction binding the contract method 0xe4cc3f90.
 //
-// Solidity: function strategyWithdrawalDelayBlocks(address ) view returns(uint256)
-func (_DelegationManager *DelegationManagerSession) StrategyWithdrawalDelayBlocks(arg0 common.Address) (*big.Int, error) {
-	return _DelegationManager.Contract.StrategyWithdrawalDelayBlocks(&_DelegationManager.CallOpts, arg0)
+// Solidity: function completeQueuedWithdrawal((address,address,address,uint256,uint32,address[],uint256[]) withdrawal, address[] tokens, bool receiveAsTokens) returns()
+func (_DelegationManager *DelegationManagerSession) CompleteQueuedWithdrawal(withdrawal IDelegationManagerTypesWithdrawal, tokens []common.Address, receiveAsTokens bool) (*types.Transaction, error) {
+	return _DelegationManager.Contract.CompleteQueuedWithdrawal(&_DelegationManager.TransactOpts, withdrawal, tokens, receiveAsTokens)
 }
 
-// StrategyWithdrawalDelayBlocks is a free data retrieval call binding the contract method 0xc488375a.
+// CompleteQueuedWithdrawal is a paid mutator transaction binding the contract method 0xe4cc3f90.
 //
-// Solidity: function strategyWithdrawalDelayBlocks(address ) view returns(uint256)
-func (_DelegationManager *DelegationManagerCallerSession) StrategyWithdrawalDelayBlocks(arg0 common.Address) (*big.Int, error) {
-	return _DelegationManager.Contract.StrategyWithdrawalDelayBlocks(&_DelegationManager.CallOpts, arg0)
+// Solidity: function completeQueuedWithdrawal((address,address,address,uint256,uint32,address[],uint256[]) withdrawal, address[] tokens, bool receiveAsTokens) returns()
+func (_DelegationManager *DelegationManagerTransactorSession) CompleteQueuedWithdrawal(withdrawal IDelegationManagerTypesWithdrawal, tokens []common.Address, receiveAsTokens bool) (*types.Transaction, error) {
+	return _DelegationManager.Contract.CompleteQueuedWithdrawal(&_DelegationManager.TransactOpts, withdrawal, tokens, receiveAsTokens)
 }
 
-// CompleteQueuedWithdrawal is a paid mutator transaction binding the contract method 0x60d7faed.
+// CompleteQueuedWithdrawals is a paid mutator transaction binding the contract method 0x9435bb43.
 //
-// Solidity: function completeQueuedWithdrawal((address,address,address,uint256,uint32,address[],uint256[]) withdrawal, address[] tokens, uint256 middlewareTimesIndex, bool receiveAsTokens) returns()
-func (_DelegationManager *DelegationManagerTransactor) CompleteQueuedWithdrawal(opts *bind.TransactOpts, withdrawal IDelegationManagerWithdrawal, tokens []common.Address, middlewareTimesIndex *big.Int, receiveAsTokens bool) (*types.Transaction, error) {
-	return _DelegationManager.contract.Transact(opts, "completeQueuedWithdrawal", withdrawal, tokens, middlewareTimesIndex, receiveAsTokens)
+// Solidity: function completeQueuedWithdrawals((address,address,address,uint256,uint32,address[],uint256[])[] withdrawals, address[][] tokens, bool[] receiveAsTokens) returns()
+func (_DelegationManager *DelegationManagerTransactor) CompleteQueuedWithdrawals(opts *bind.TransactOpts, withdrawals []IDelegationManagerTypesWithdrawal, tokens [][]common.Address, receiveAsTokens []bool) (*types.Transaction, error) {
+	return _DelegationManager.contract.Transact(opts, "completeQueuedWithdrawals", withdrawals, tokens, receiveAsTokens)
 }
 
-// CompleteQueuedWithdrawal is a paid mutator transaction binding the contract method 0x60d7faed.
+// CompleteQueuedWithdrawals is a paid mutator transaction binding the contract method 0x9435bb43.
 //
-// Solidity: function completeQueuedWithdrawal((address,address,address,uint256,uint32,address[],uint256[]) withdrawal, address[] tokens, uint256 middlewareTimesIndex, bool receiveAsTokens) returns()
-func (_DelegationManager *DelegationManagerSession) CompleteQueuedWithdrawal(withdrawal IDelegationManagerWithdrawal, tokens []common.Address, middlewareTimesIndex *big.Int, receiveAsTokens bool) (*types.Transaction, error) {
-	return _DelegationManager.Contract.CompleteQueuedWithdrawal(&_DelegationManager.TransactOpts, withdrawal, tokens, middlewareTimesIndex, receiveAsTokens)
+// Solidity: function completeQueuedWithdrawals((address,address,address,uint256,uint32,address[],uint256[])[] withdrawals, address[][] tokens, bool[] receiveAsTokens) returns()
+func (_DelegationManager *DelegationManagerSession) CompleteQueuedWithdrawals(withdrawals []IDelegationManagerTypesWithdrawal, tokens [][]common.Address, receiveAsTokens []bool) (*types.Transaction, error) {
+	return _DelegationManager.Contract.CompleteQueuedWithdrawals(&_DelegationManager.TransactOpts, withdrawals, tokens, receiveAsTokens)
 }
 
-// CompleteQueuedWithdrawal is a paid mutator transaction binding the contract method 0x60d7faed.
+// CompleteQueuedWithdrawals is a paid mutator transaction binding the contract method 0x9435bb43.
 //
-// Solidity: function completeQueuedWithdrawal((address,address,address,uint256,uint32,address[],uint256[]) withdrawal, address[] tokens, uint256 middlewareTimesIndex, bool receiveAsTokens) returns()
-func (_DelegationManager *DelegationManagerTransactorSession) CompleteQueuedWithdrawal(withdrawal IDelegationManagerWithdrawal, tokens []common.Address, middlewareTimesIndex *big.Int, receiveAsTokens bool) (*types.Transaction, error) {
-	return _DelegationManager.Contract.CompleteQueuedWithdrawal(&_DelegationManager.TransactOpts, withdrawal, tokens, middlewareTimesIndex, receiveAsTokens)
+// Solidity: function completeQueuedWithdrawals((address,address,address,uint256,uint32,address[],uint256[])[] withdrawals, address[][] tokens, bool[] receiveAsTokens) returns()
+func (_DelegationManager *DelegationManagerTransactorSession) CompleteQueuedWithdrawals(withdrawals []IDelegationManagerTypesWithdrawal, tokens [][]common.Address, receiveAsTokens []bool) (*types.Transaction, error) {
+	return _DelegationManager.Contract.CompleteQueuedWithdrawals(&_DelegationManager.TransactOpts, withdrawals, tokens, receiveAsTokens)
 }
 
-// CompleteQueuedWithdrawals is a paid mutator transaction binding the contract method 0x33404396.
+// DecreaseDelegatedShares is a paid mutator transaction binding the contract method 0x60a0d1ce.
 //
-// Solidity: function completeQueuedWithdrawals((address,address,address,uint256,uint32,address[],uint256[])[] withdrawals, address[][] tokens, uint256[] middlewareTimesIndexes, bool[] receiveAsTokens) returns()
-func (_DelegationManager *DelegationManagerTransactor) CompleteQueuedWithdrawals(opts *bind.TransactOpts, withdrawals []IDelegationManagerWithdrawal, tokens [][]common.Address, middlewareTimesIndexes []*big.Int, receiveAsTokens []bool) (*types.Transaction, error) {
-	return _DelegationManager.contract.Transact(opts, "completeQueuedWithdrawals", withdrawals, tokens, middlewareTimesIndexes, receiveAsTokens)
+// Solidity: function decreaseDelegatedShares(address staker, uint256 curDepositShares, uint64 beaconChainSlashingFactorDecrease) returns()
+func (_DelegationManager *DelegationManagerTransactor) DecreaseDelegatedShares(opts *bind.TransactOpts, staker common.Address, curDepositShares *big.Int, beaconChainSlashingFactorDecrease uint64) (*types.Transaction, error) {
+	return _DelegationManager.contract.Transact(opts, "decreaseDelegatedShares", staker, curDepositShares, beaconChainSlashingFactorDecrease)
 }
 
-// CompleteQueuedWithdrawals is a paid mutator transaction binding the contract method 0x33404396.
+// DecreaseDelegatedShares is a paid mutator transaction binding the contract method 0x60a0d1ce.
 //
-// Solidity: function completeQueuedWithdrawals((address,address,address,uint256,uint32,address[],uint256[])[] withdrawals, address[][] tokens, uint256[] middlewareTimesIndexes, bool[] receiveAsTokens) returns()
-func (_DelegationManager *DelegationManagerSession) CompleteQueuedWithdrawals(withdrawals []IDelegationManagerWithdrawal, tokens [][]common.Address, middlewareTimesIndexes []*big.Int, receiveAsTokens []bool) (*types.Transaction, error) {
-	return _DelegationManager.Contract.CompleteQueuedWithdrawals(&_DelegationManager.TransactOpts, withdrawals, tokens, middlewareTimesIndexes, receiveAsTokens)
+// Solidity: function decreaseDelegatedShares(address staker, uint256 curDepositShares, uint64 beaconChainSlashingFactorDecrease) returns()
+func (_DelegationManager *DelegationManagerSession) DecreaseDelegatedShares(staker common.Address, curDepositShares *big.Int, beaconChainSlashingFactorDecrease uint64) (*types.Transaction, error) {
+	return _DelegationManager.Contract.DecreaseDelegatedShares(&_DelegationManager.TransactOpts, staker, curDepositShares, beaconChainSlashingFactorDecrease)
 }
 
-// CompleteQueuedWithdrawals is a paid mutator transaction binding the contract method 0x33404396.
+// DecreaseDelegatedShares is a paid mutator transaction binding the contract method 0x60a0d1ce.
 //
-// Solidity: function completeQueuedWithdrawals((address,address,address,uint256,uint32,address[],uint256[])[] withdrawals, address[][] tokens, uint256[] middlewareTimesIndexes, bool[] receiveAsTokens) returns()
-func (_DelegationManager *DelegationManagerTransactorSession) CompleteQueuedWithdrawals(withdrawals []IDelegationManagerWithdrawal, tokens [][]common.Address, middlewareTimesIndexes []*big.Int, receiveAsTokens []bool) (*types.Transaction, error) {
-	return _DelegationManager.Contract.CompleteQueuedWithdrawals(&_DelegationManager.TransactOpts, withdrawals, tokens, middlewareTimesIndexes, receiveAsTokens)
-}
-
-// DecreaseDelegatedShares is a paid mutator transaction binding the contract method 0x132d4967.
-//
-// Solidity: function decreaseDelegatedShares(address staker, address strategy, uint256 shares) returns()
-func (_DelegationManager *DelegationManagerTransactor) DecreaseDelegatedShares(opts *bind.TransactOpts, staker common.Address, strategy common.Address, shares *big.Int) (*types.Transaction, error) {
-	return _DelegationManager.contract.Transact(opts, "decreaseDelegatedShares", staker, strategy, shares)
-}
-
-// DecreaseDelegatedShares is a paid mutator transaction binding the contract method 0x132d4967.
-//
-// Solidity: function decreaseDelegatedShares(address staker, address strategy, uint256 shares) returns()
-func (_DelegationManager *DelegationManagerSession) DecreaseDelegatedShares(staker common.Address, strategy common.Address, shares *big.Int) (*types.Transaction, error) {
-	return _DelegationManager.Contract.DecreaseDelegatedShares(&_DelegationManager.TransactOpts, staker, strategy, shares)
-}
-
-// DecreaseDelegatedShares is a paid mutator transaction binding the contract method 0x132d4967.
-//
-// Solidity: function decreaseDelegatedShares(address staker, address strategy, uint256 shares) returns()
-func (_DelegationManager *DelegationManagerTransactorSession) DecreaseDelegatedShares(staker common.Address, strategy common.Address, shares *big.Int) (*types.Transaction, error) {
-	return _DelegationManager.Contract.DecreaseDelegatedShares(&_DelegationManager.TransactOpts, staker, strategy, shares)
+// Solidity: function decreaseDelegatedShares(address staker, uint256 curDepositShares, uint64 beaconChainSlashingFactorDecrease) returns()
+func (_DelegationManager *DelegationManagerTransactorSession) DecreaseDelegatedShares(staker common.Address, curDepositShares *big.Int, beaconChainSlashingFactorDecrease uint64) (*types.Transaction, error) {
+	return _DelegationManager.Contract.DecreaseDelegatedShares(&_DelegationManager.TransactOpts, staker, curDepositShares, beaconChainSlashingFactorDecrease)
 }
 
 // DelegateTo is a paid mutator transaction binding the contract method 0xeea9064b.
@@ -1372,88 +1331,67 @@ func (_DelegationManager *DelegationManagerTransactorSession) DelegateTo(operato
 	return _DelegationManager.Contract.DelegateTo(&_DelegationManager.TransactOpts, operator, approverSignatureAndExpiry, approverSalt)
 }
 
-// DelegateToBySignature is a paid mutator transaction binding the contract method 0x7f548071.
+// IncreaseDelegatedShares is a paid mutator transaction binding the contract method 0x3c651cf2.
 //
-// Solidity: function delegateToBySignature(address staker, address operator, (bytes,uint256) stakerSignatureAndExpiry, (bytes,uint256) approverSignatureAndExpiry, bytes32 approverSalt) returns()
-func (_DelegationManager *DelegationManagerTransactor) DelegateToBySignature(opts *bind.TransactOpts, staker common.Address, operator common.Address, stakerSignatureAndExpiry ISignatureUtilsSignatureWithExpiry, approverSignatureAndExpiry ISignatureUtilsSignatureWithExpiry, approverSalt [32]byte) (*types.Transaction, error) {
-	return _DelegationManager.contract.Transact(opts, "delegateToBySignature", staker, operator, stakerSignatureAndExpiry, approverSignatureAndExpiry, approverSalt)
+// Solidity: function increaseDelegatedShares(address staker, address strategy, uint256 prevDepositShares, uint256 addedShares) returns()
+func (_DelegationManager *DelegationManagerTransactor) IncreaseDelegatedShares(opts *bind.TransactOpts, staker common.Address, strategy common.Address, prevDepositShares *big.Int, addedShares *big.Int) (*types.Transaction, error) {
+	return _DelegationManager.contract.Transact(opts, "increaseDelegatedShares", staker, strategy, prevDepositShares, addedShares)
 }
 
-// DelegateToBySignature is a paid mutator transaction binding the contract method 0x7f548071.
+// IncreaseDelegatedShares is a paid mutator transaction binding the contract method 0x3c651cf2.
 //
-// Solidity: function delegateToBySignature(address staker, address operator, (bytes,uint256) stakerSignatureAndExpiry, (bytes,uint256) approverSignatureAndExpiry, bytes32 approverSalt) returns()
-func (_DelegationManager *DelegationManagerSession) DelegateToBySignature(staker common.Address, operator common.Address, stakerSignatureAndExpiry ISignatureUtilsSignatureWithExpiry, approverSignatureAndExpiry ISignatureUtilsSignatureWithExpiry, approverSalt [32]byte) (*types.Transaction, error) {
-	return _DelegationManager.Contract.DelegateToBySignature(&_DelegationManager.TransactOpts, staker, operator, stakerSignatureAndExpiry, approverSignatureAndExpiry, approverSalt)
+// Solidity: function increaseDelegatedShares(address staker, address strategy, uint256 prevDepositShares, uint256 addedShares) returns()
+func (_DelegationManager *DelegationManagerSession) IncreaseDelegatedShares(staker common.Address, strategy common.Address, prevDepositShares *big.Int, addedShares *big.Int) (*types.Transaction, error) {
+	return _DelegationManager.Contract.IncreaseDelegatedShares(&_DelegationManager.TransactOpts, staker, strategy, prevDepositShares, addedShares)
 }
 
-// DelegateToBySignature is a paid mutator transaction binding the contract method 0x7f548071.
+// IncreaseDelegatedShares is a paid mutator transaction binding the contract method 0x3c651cf2.
 //
-// Solidity: function delegateToBySignature(address staker, address operator, (bytes,uint256) stakerSignatureAndExpiry, (bytes,uint256) approverSignatureAndExpiry, bytes32 approverSalt) returns()
-func (_DelegationManager *DelegationManagerTransactorSession) DelegateToBySignature(staker common.Address, operator common.Address, stakerSignatureAndExpiry ISignatureUtilsSignatureWithExpiry, approverSignatureAndExpiry ISignatureUtilsSignatureWithExpiry, approverSalt [32]byte) (*types.Transaction, error) {
-	return _DelegationManager.Contract.DelegateToBySignature(&_DelegationManager.TransactOpts, staker, operator, stakerSignatureAndExpiry, approverSignatureAndExpiry, approverSalt)
+// Solidity: function increaseDelegatedShares(address staker, address strategy, uint256 prevDepositShares, uint256 addedShares) returns()
+func (_DelegationManager *DelegationManagerTransactorSession) IncreaseDelegatedShares(staker common.Address, strategy common.Address, prevDepositShares *big.Int, addedShares *big.Int) (*types.Transaction, error) {
+	return _DelegationManager.Contract.IncreaseDelegatedShares(&_DelegationManager.TransactOpts, staker, strategy, prevDepositShares, addedShares)
 }
 
-// IncreaseDelegatedShares is a paid mutator transaction binding the contract method 0x28a573ae.
+// Initialize is a paid mutator transaction binding the contract method 0xcd6dc687.
 //
-// Solidity: function increaseDelegatedShares(address staker, address strategy, uint256 shares) returns()
-func (_DelegationManager *DelegationManagerTransactor) IncreaseDelegatedShares(opts *bind.TransactOpts, staker common.Address, strategy common.Address, shares *big.Int) (*types.Transaction, error) {
-	return _DelegationManager.contract.Transact(opts, "increaseDelegatedShares", staker, strategy, shares)
+// Solidity: function initialize(address initialOwner, uint256 initialPausedStatus) returns()
+func (_DelegationManager *DelegationManagerTransactor) Initialize(opts *bind.TransactOpts, initialOwner common.Address, initialPausedStatus *big.Int) (*types.Transaction, error) {
+	return _DelegationManager.contract.Transact(opts, "initialize", initialOwner, initialPausedStatus)
 }
 
-// IncreaseDelegatedShares is a paid mutator transaction binding the contract method 0x28a573ae.
+// Initialize is a paid mutator transaction binding the contract method 0xcd6dc687.
 //
-// Solidity: function increaseDelegatedShares(address staker, address strategy, uint256 shares) returns()
-func (_DelegationManager *DelegationManagerSession) IncreaseDelegatedShares(staker common.Address, strategy common.Address, shares *big.Int) (*types.Transaction, error) {
-	return _DelegationManager.Contract.IncreaseDelegatedShares(&_DelegationManager.TransactOpts, staker, strategy, shares)
+// Solidity: function initialize(address initialOwner, uint256 initialPausedStatus) returns()
+func (_DelegationManager *DelegationManagerSession) Initialize(initialOwner common.Address, initialPausedStatus *big.Int) (*types.Transaction, error) {
+	return _DelegationManager.Contract.Initialize(&_DelegationManager.TransactOpts, initialOwner, initialPausedStatus)
 }
 
-// IncreaseDelegatedShares is a paid mutator transaction binding the contract method 0x28a573ae.
+// Initialize is a paid mutator transaction binding the contract method 0xcd6dc687.
 //
-// Solidity: function increaseDelegatedShares(address staker, address strategy, uint256 shares) returns()
-func (_DelegationManager *DelegationManagerTransactorSession) IncreaseDelegatedShares(staker common.Address, strategy common.Address, shares *big.Int) (*types.Transaction, error) {
-	return _DelegationManager.Contract.IncreaseDelegatedShares(&_DelegationManager.TransactOpts, staker, strategy, shares)
+// Solidity: function initialize(address initialOwner, uint256 initialPausedStatus) returns()
+func (_DelegationManager *DelegationManagerTransactorSession) Initialize(initialOwner common.Address, initialPausedStatus *big.Int) (*types.Transaction, error) {
+	return _DelegationManager.Contract.Initialize(&_DelegationManager.TransactOpts, initialOwner, initialPausedStatus)
 }
 
-// Initialize is a paid mutator transaction binding the contract method 0x22bf40e4.
+// ModifyOperatorDetails is a paid mutator transaction binding the contract method 0x54b7c96c.
 //
-// Solidity: function initialize(address initialOwner, address _pauserRegistry, uint256 initialPausedStatus, uint256 _minWithdrawalDelayBlocks, address[] _strategies, uint256[] _withdrawalDelayBlocks) returns()
-func (_DelegationManager *DelegationManagerTransactor) Initialize(opts *bind.TransactOpts, initialOwner common.Address, _pauserRegistry common.Address, initialPausedStatus *big.Int, _minWithdrawalDelayBlocks *big.Int, _strategies []common.Address, _withdrawalDelayBlocks []*big.Int) (*types.Transaction, error) {
-	return _DelegationManager.contract.Transact(opts, "initialize", initialOwner, _pauserRegistry, initialPausedStatus, _minWithdrawalDelayBlocks, _strategies, _withdrawalDelayBlocks)
+// Solidity: function modifyOperatorDetails(address operator, address newDelegationApprover) returns()
+func (_DelegationManager *DelegationManagerTransactor) ModifyOperatorDetails(opts *bind.TransactOpts, operator common.Address, newDelegationApprover common.Address) (*types.Transaction, error) {
+	return _DelegationManager.contract.Transact(opts, "modifyOperatorDetails", operator, newDelegationApprover)
 }
 
-// Initialize is a paid mutator transaction binding the contract method 0x22bf40e4.
+// ModifyOperatorDetails is a paid mutator transaction binding the contract method 0x54b7c96c.
 //
-// Solidity: function initialize(address initialOwner, address _pauserRegistry, uint256 initialPausedStatus, uint256 _minWithdrawalDelayBlocks, address[] _strategies, uint256[] _withdrawalDelayBlocks) returns()
-func (_DelegationManager *DelegationManagerSession) Initialize(initialOwner common.Address, _pauserRegistry common.Address, initialPausedStatus *big.Int, _minWithdrawalDelayBlocks *big.Int, _strategies []common.Address, _withdrawalDelayBlocks []*big.Int) (*types.Transaction, error) {
-	return _DelegationManager.Contract.Initialize(&_DelegationManager.TransactOpts, initialOwner, _pauserRegistry, initialPausedStatus, _minWithdrawalDelayBlocks, _strategies, _withdrawalDelayBlocks)
+// Solidity: function modifyOperatorDetails(address operator, address newDelegationApprover) returns()
+func (_DelegationManager *DelegationManagerSession) ModifyOperatorDetails(operator common.Address, newDelegationApprover common.Address) (*types.Transaction, error) {
+	return _DelegationManager.Contract.ModifyOperatorDetails(&_DelegationManager.TransactOpts, operator, newDelegationApprover)
 }
 
-// Initialize is a paid mutator transaction binding the contract method 0x22bf40e4.
+// ModifyOperatorDetails is a paid mutator transaction binding the contract method 0x54b7c96c.
 //
-// Solidity: function initialize(address initialOwner, address _pauserRegistry, uint256 initialPausedStatus, uint256 _minWithdrawalDelayBlocks, address[] _strategies, uint256[] _withdrawalDelayBlocks) returns()
-func (_DelegationManager *DelegationManagerTransactorSession) Initialize(initialOwner common.Address, _pauserRegistry common.Address, initialPausedStatus *big.Int, _minWithdrawalDelayBlocks *big.Int, _strategies []common.Address, _withdrawalDelayBlocks []*big.Int) (*types.Transaction, error) {
-	return _DelegationManager.Contract.Initialize(&_DelegationManager.TransactOpts, initialOwner, _pauserRegistry, initialPausedStatus, _minWithdrawalDelayBlocks, _strategies, _withdrawalDelayBlocks)
-}
-
-// ModifyOperatorDetails is a paid mutator transaction binding the contract method 0xf16172b0.
-//
-// Solidity: function modifyOperatorDetails((address,address,uint32) newOperatorDetails) returns()
-func (_DelegationManager *DelegationManagerTransactor) ModifyOperatorDetails(opts *bind.TransactOpts, newOperatorDetails IDelegationManagerOperatorDetails) (*types.Transaction, error) {
-	return _DelegationManager.contract.Transact(opts, "modifyOperatorDetails", newOperatorDetails)
-}
-
-// ModifyOperatorDetails is a paid mutator transaction binding the contract method 0xf16172b0.
-//
-// Solidity: function modifyOperatorDetails((address,address,uint32) newOperatorDetails) returns()
-func (_DelegationManager *DelegationManagerSession) ModifyOperatorDetails(newOperatorDetails IDelegationManagerOperatorDetails) (*types.Transaction, error) {
-	return _DelegationManager.Contract.ModifyOperatorDetails(&_DelegationManager.TransactOpts, newOperatorDetails)
-}
-
-// ModifyOperatorDetails is a paid mutator transaction binding the contract method 0xf16172b0.
-//
-// Solidity: function modifyOperatorDetails((address,address,uint32) newOperatorDetails) returns()
-func (_DelegationManager *DelegationManagerTransactorSession) ModifyOperatorDetails(newOperatorDetails IDelegationManagerOperatorDetails) (*types.Transaction, error) {
-	return _DelegationManager.Contract.ModifyOperatorDetails(&_DelegationManager.TransactOpts, newOperatorDetails)
+// Solidity: function modifyOperatorDetails(address operator, address newDelegationApprover) returns()
+func (_DelegationManager *DelegationManagerTransactorSession) ModifyOperatorDetails(operator common.Address, newDelegationApprover common.Address) (*types.Transaction, error) {
+	return _DelegationManager.Contract.ModifyOperatorDetails(&_DelegationManager.TransactOpts, operator, newDelegationApprover)
 }
 
 // Pause is a paid mutator transaction binding the contract method 0x136439dd.
@@ -1500,44 +1438,65 @@ func (_DelegationManager *DelegationManagerTransactorSession) PauseAll() (*types
 
 // QueueWithdrawals is a paid mutator transaction binding the contract method 0x0dd8dd02.
 //
-// Solidity: function queueWithdrawals((address[],uint256[],address)[] queuedWithdrawalParams) returns(bytes32[])
-func (_DelegationManager *DelegationManagerTransactor) QueueWithdrawals(opts *bind.TransactOpts, queuedWithdrawalParams []IDelegationManagerQueuedWithdrawalParams) (*types.Transaction, error) {
-	return _DelegationManager.contract.Transact(opts, "queueWithdrawals", queuedWithdrawalParams)
+// Solidity: function queueWithdrawals((address[],uint256[],address)[] params) returns(bytes32[])
+func (_DelegationManager *DelegationManagerTransactor) QueueWithdrawals(opts *bind.TransactOpts, params []IDelegationManagerTypesQueuedWithdrawalParams) (*types.Transaction, error) {
+	return _DelegationManager.contract.Transact(opts, "queueWithdrawals", params)
 }
 
 // QueueWithdrawals is a paid mutator transaction binding the contract method 0x0dd8dd02.
 //
-// Solidity: function queueWithdrawals((address[],uint256[],address)[] queuedWithdrawalParams) returns(bytes32[])
-func (_DelegationManager *DelegationManagerSession) QueueWithdrawals(queuedWithdrawalParams []IDelegationManagerQueuedWithdrawalParams) (*types.Transaction, error) {
-	return _DelegationManager.Contract.QueueWithdrawals(&_DelegationManager.TransactOpts, queuedWithdrawalParams)
+// Solidity: function queueWithdrawals((address[],uint256[],address)[] params) returns(bytes32[])
+func (_DelegationManager *DelegationManagerSession) QueueWithdrawals(params []IDelegationManagerTypesQueuedWithdrawalParams) (*types.Transaction, error) {
+	return _DelegationManager.Contract.QueueWithdrawals(&_DelegationManager.TransactOpts, params)
 }
 
 // QueueWithdrawals is a paid mutator transaction binding the contract method 0x0dd8dd02.
 //
-// Solidity: function queueWithdrawals((address[],uint256[],address)[] queuedWithdrawalParams) returns(bytes32[])
-func (_DelegationManager *DelegationManagerTransactorSession) QueueWithdrawals(queuedWithdrawalParams []IDelegationManagerQueuedWithdrawalParams) (*types.Transaction, error) {
-	return _DelegationManager.Contract.QueueWithdrawals(&_DelegationManager.TransactOpts, queuedWithdrawalParams)
+// Solidity: function queueWithdrawals((address[],uint256[],address)[] params) returns(bytes32[])
+func (_DelegationManager *DelegationManagerTransactorSession) QueueWithdrawals(params []IDelegationManagerTypesQueuedWithdrawalParams) (*types.Transaction, error) {
+	return _DelegationManager.Contract.QueueWithdrawals(&_DelegationManager.TransactOpts, params)
 }
 
-// RegisterAsOperator is a paid mutator transaction binding the contract method 0x0f589e59.
+// Redelegate is a paid mutator transaction binding the contract method 0xa33a3433.
 //
-// Solidity: function registerAsOperator((address,address,uint32) registeringOperatorDetails, string metadataURI) returns()
-func (_DelegationManager *DelegationManagerTransactor) RegisterAsOperator(opts *bind.TransactOpts, registeringOperatorDetails IDelegationManagerOperatorDetails, metadataURI string) (*types.Transaction, error) {
-	return _DelegationManager.contract.Transact(opts, "registerAsOperator", registeringOperatorDetails, metadataURI)
+// Solidity: function redelegate(address newOperator, (bytes,uint256) newOperatorApproverSig, bytes32 approverSalt) returns(bytes32[] withdrawalRoots)
+func (_DelegationManager *DelegationManagerTransactor) Redelegate(opts *bind.TransactOpts, newOperator common.Address, newOperatorApproverSig ISignatureUtilsSignatureWithExpiry, approverSalt [32]byte) (*types.Transaction, error) {
+	return _DelegationManager.contract.Transact(opts, "redelegate", newOperator, newOperatorApproverSig, approverSalt)
 }
 
-// RegisterAsOperator is a paid mutator transaction binding the contract method 0x0f589e59.
+// Redelegate is a paid mutator transaction binding the contract method 0xa33a3433.
 //
-// Solidity: function registerAsOperator((address,address,uint32) registeringOperatorDetails, string metadataURI) returns()
-func (_DelegationManager *DelegationManagerSession) RegisterAsOperator(registeringOperatorDetails IDelegationManagerOperatorDetails, metadataURI string) (*types.Transaction, error) {
-	return _DelegationManager.Contract.RegisterAsOperator(&_DelegationManager.TransactOpts, registeringOperatorDetails, metadataURI)
+// Solidity: function redelegate(address newOperator, (bytes,uint256) newOperatorApproverSig, bytes32 approverSalt) returns(bytes32[] withdrawalRoots)
+func (_DelegationManager *DelegationManagerSession) Redelegate(newOperator common.Address, newOperatorApproverSig ISignatureUtilsSignatureWithExpiry, approverSalt [32]byte) (*types.Transaction, error) {
+	return _DelegationManager.Contract.Redelegate(&_DelegationManager.TransactOpts, newOperator, newOperatorApproverSig, approverSalt)
 }
 
-// RegisterAsOperator is a paid mutator transaction binding the contract method 0x0f589e59.
+// Redelegate is a paid mutator transaction binding the contract method 0xa33a3433.
 //
-// Solidity: function registerAsOperator((address,address,uint32) registeringOperatorDetails, string metadataURI) returns()
-func (_DelegationManager *DelegationManagerTransactorSession) RegisterAsOperator(registeringOperatorDetails IDelegationManagerOperatorDetails, metadataURI string) (*types.Transaction, error) {
-	return _DelegationManager.Contract.RegisterAsOperator(&_DelegationManager.TransactOpts, registeringOperatorDetails, metadataURI)
+// Solidity: function redelegate(address newOperator, (bytes,uint256) newOperatorApproverSig, bytes32 approverSalt) returns(bytes32[] withdrawalRoots)
+func (_DelegationManager *DelegationManagerTransactorSession) Redelegate(newOperator common.Address, newOperatorApproverSig ISignatureUtilsSignatureWithExpiry, approverSalt [32]byte) (*types.Transaction, error) {
+	return _DelegationManager.Contract.Redelegate(&_DelegationManager.TransactOpts, newOperator, newOperatorApproverSig, approverSalt)
+}
+
+// RegisterAsOperator is a paid mutator transaction binding the contract method 0x2aa6d888.
+//
+// Solidity: function registerAsOperator(address initDelegationApprover, uint32 allocationDelay, string metadataURI) returns()
+func (_DelegationManager *DelegationManagerTransactor) RegisterAsOperator(opts *bind.TransactOpts, initDelegationApprover common.Address, allocationDelay uint32, metadataURI string) (*types.Transaction, error) {
+	return _DelegationManager.contract.Transact(opts, "registerAsOperator", initDelegationApprover, allocationDelay, metadataURI)
+}
+
+// RegisterAsOperator is a paid mutator transaction binding the contract method 0x2aa6d888.
+//
+// Solidity: function registerAsOperator(address initDelegationApprover, uint32 allocationDelay, string metadataURI) returns()
+func (_DelegationManager *DelegationManagerSession) RegisterAsOperator(initDelegationApprover common.Address, allocationDelay uint32, metadataURI string) (*types.Transaction, error) {
+	return _DelegationManager.Contract.RegisterAsOperator(&_DelegationManager.TransactOpts, initDelegationApprover, allocationDelay, metadataURI)
+}
+
+// RegisterAsOperator is a paid mutator transaction binding the contract method 0x2aa6d888.
+//
+// Solidity: function registerAsOperator(address initDelegationApprover, uint32 allocationDelay, string metadataURI) returns()
+func (_DelegationManager *DelegationManagerTransactorSession) RegisterAsOperator(initDelegationApprover common.Address, allocationDelay uint32, metadataURI string) (*types.Transaction, error) {
+	return _DelegationManager.Contract.RegisterAsOperator(&_DelegationManager.TransactOpts, initDelegationApprover, allocationDelay, metadataURI)
 }
 
 // RenounceOwnership is a paid mutator transaction binding the contract method 0x715018a6.
@@ -1561,67 +1520,25 @@ func (_DelegationManager *DelegationManagerTransactorSession) RenounceOwnership(
 	return _DelegationManager.Contract.RenounceOwnership(&_DelegationManager.TransactOpts)
 }
 
-// SetMinWithdrawalDelayBlocks is a paid mutator transaction binding the contract method 0x635bbd10.
+// SlashOperatorShares is a paid mutator transaction binding the contract method 0x601bb36f.
 //
-// Solidity: function setMinWithdrawalDelayBlocks(uint256 newMinWithdrawalDelayBlocks) returns()
-func (_DelegationManager *DelegationManagerTransactor) SetMinWithdrawalDelayBlocks(opts *bind.TransactOpts, newMinWithdrawalDelayBlocks *big.Int) (*types.Transaction, error) {
-	return _DelegationManager.contract.Transact(opts, "setMinWithdrawalDelayBlocks", newMinWithdrawalDelayBlocks)
+// Solidity: function slashOperatorShares(address operator, address strategy, uint64 prevMaxMagnitude, uint64 newMaxMagnitude) returns()
+func (_DelegationManager *DelegationManagerTransactor) SlashOperatorShares(opts *bind.TransactOpts, operator common.Address, strategy common.Address, prevMaxMagnitude uint64, newMaxMagnitude uint64) (*types.Transaction, error) {
+	return _DelegationManager.contract.Transact(opts, "slashOperatorShares", operator, strategy, prevMaxMagnitude, newMaxMagnitude)
 }
 
-// SetMinWithdrawalDelayBlocks is a paid mutator transaction binding the contract method 0x635bbd10.
+// SlashOperatorShares is a paid mutator transaction binding the contract method 0x601bb36f.
 //
-// Solidity: function setMinWithdrawalDelayBlocks(uint256 newMinWithdrawalDelayBlocks) returns()
-func (_DelegationManager *DelegationManagerSession) SetMinWithdrawalDelayBlocks(newMinWithdrawalDelayBlocks *big.Int) (*types.Transaction, error) {
-	return _DelegationManager.Contract.SetMinWithdrawalDelayBlocks(&_DelegationManager.TransactOpts, newMinWithdrawalDelayBlocks)
+// Solidity: function slashOperatorShares(address operator, address strategy, uint64 prevMaxMagnitude, uint64 newMaxMagnitude) returns()
+func (_DelegationManager *DelegationManagerSession) SlashOperatorShares(operator common.Address, strategy common.Address, prevMaxMagnitude uint64, newMaxMagnitude uint64) (*types.Transaction, error) {
+	return _DelegationManager.Contract.SlashOperatorShares(&_DelegationManager.TransactOpts, operator, strategy, prevMaxMagnitude, newMaxMagnitude)
 }
 
-// SetMinWithdrawalDelayBlocks is a paid mutator transaction binding the contract method 0x635bbd10.
+// SlashOperatorShares is a paid mutator transaction binding the contract method 0x601bb36f.
 //
-// Solidity: function setMinWithdrawalDelayBlocks(uint256 newMinWithdrawalDelayBlocks) returns()
-func (_DelegationManager *DelegationManagerTransactorSession) SetMinWithdrawalDelayBlocks(newMinWithdrawalDelayBlocks *big.Int) (*types.Transaction, error) {
-	return _DelegationManager.Contract.SetMinWithdrawalDelayBlocks(&_DelegationManager.TransactOpts, newMinWithdrawalDelayBlocks)
-}
-
-// SetPauserRegistry is a paid mutator transaction binding the contract method 0x10d67a2f.
-//
-// Solidity: function setPauserRegistry(address newPauserRegistry) returns()
-func (_DelegationManager *DelegationManagerTransactor) SetPauserRegistry(opts *bind.TransactOpts, newPauserRegistry common.Address) (*types.Transaction, error) {
-	return _DelegationManager.contract.Transact(opts, "setPauserRegistry", newPauserRegistry)
-}
-
-// SetPauserRegistry is a paid mutator transaction binding the contract method 0x10d67a2f.
-//
-// Solidity: function setPauserRegistry(address newPauserRegistry) returns()
-func (_DelegationManager *DelegationManagerSession) SetPauserRegistry(newPauserRegistry common.Address) (*types.Transaction, error) {
-	return _DelegationManager.Contract.SetPauserRegistry(&_DelegationManager.TransactOpts, newPauserRegistry)
-}
-
-// SetPauserRegistry is a paid mutator transaction binding the contract method 0x10d67a2f.
-//
-// Solidity: function setPauserRegistry(address newPauserRegistry) returns()
-func (_DelegationManager *DelegationManagerTransactorSession) SetPauserRegistry(newPauserRegistry common.Address) (*types.Transaction, error) {
-	return _DelegationManager.Contract.SetPauserRegistry(&_DelegationManager.TransactOpts, newPauserRegistry)
-}
-
-// SetStrategyWithdrawalDelayBlocks is a paid mutator transaction binding the contract method 0x1522bf02.
-//
-// Solidity: function setStrategyWithdrawalDelayBlocks(address[] strategies, uint256[] withdrawalDelayBlocks) returns()
-func (_DelegationManager *DelegationManagerTransactor) SetStrategyWithdrawalDelayBlocks(opts *bind.TransactOpts, strategies []common.Address, withdrawalDelayBlocks []*big.Int) (*types.Transaction, error) {
-	return _DelegationManager.contract.Transact(opts, "setStrategyWithdrawalDelayBlocks", strategies, withdrawalDelayBlocks)
-}
-
-// SetStrategyWithdrawalDelayBlocks is a paid mutator transaction binding the contract method 0x1522bf02.
-//
-// Solidity: function setStrategyWithdrawalDelayBlocks(address[] strategies, uint256[] withdrawalDelayBlocks) returns()
-func (_DelegationManager *DelegationManagerSession) SetStrategyWithdrawalDelayBlocks(strategies []common.Address, withdrawalDelayBlocks []*big.Int) (*types.Transaction, error) {
-	return _DelegationManager.Contract.SetStrategyWithdrawalDelayBlocks(&_DelegationManager.TransactOpts, strategies, withdrawalDelayBlocks)
-}
-
-// SetStrategyWithdrawalDelayBlocks is a paid mutator transaction binding the contract method 0x1522bf02.
-//
-// Solidity: function setStrategyWithdrawalDelayBlocks(address[] strategies, uint256[] withdrawalDelayBlocks) returns()
-func (_DelegationManager *DelegationManagerTransactorSession) SetStrategyWithdrawalDelayBlocks(strategies []common.Address, withdrawalDelayBlocks []*big.Int) (*types.Transaction, error) {
-	return _DelegationManager.Contract.SetStrategyWithdrawalDelayBlocks(&_DelegationManager.TransactOpts, strategies, withdrawalDelayBlocks)
+// Solidity: function slashOperatorShares(address operator, address strategy, uint64 prevMaxMagnitude, uint64 newMaxMagnitude) returns()
+func (_DelegationManager *DelegationManagerTransactorSession) SlashOperatorShares(operator common.Address, strategy common.Address, prevMaxMagnitude uint64, newMaxMagnitude uint64) (*types.Transaction, error) {
+	return _DelegationManager.Contract.SlashOperatorShares(&_DelegationManager.TransactOpts, operator, strategy, prevMaxMagnitude, newMaxMagnitude)
 }
 
 // TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.
@@ -1687,25 +1604,306 @@ func (_DelegationManager *DelegationManagerTransactorSession) Unpause(newPausedS
 	return _DelegationManager.Contract.Unpause(&_DelegationManager.TransactOpts, newPausedStatus)
 }
 
-// UpdateOperatorMetadataURI is a paid mutator transaction binding the contract method 0x99be81c8.
+// UpdateOperatorMetadataURI is a paid mutator transaction binding the contract method 0x78296ec5.
 //
-// Solidity: function updateOperatorMetadataURI(string metadataURI) returns()
-func (_DelegationManager *DelegationManagerTransactor) UpdateOperatorMetadataURI(opts *bind.TransactOpts, metadataURI string) (*types.Transaction, error) {
-	return _DelegationManager.contract.Transact(opts, "updateOperatorMetadataURI", metadataURI)
+// Solidity: function updateOperatorMetadataURI(address operator, string metadataURI) returns()
+func (_DelegationManager *DelegationManagerTransactor) UpdateOperatorMetadataURI(opts *bind.TransactOpts, operator common.Address, metadataURI string) (*types.Transaction, error) {
+	return _DelegationManager.contract.Transact(opts, "updateOperatorMetadataURI", operator, metadataURI)
 }
 
-// UpdateOperatorMetadataURI is a paid mutator transaction binding the contract method 0x99be81c8.
+// UpdateOperatorMetadataURI is a paid mutator transaction binding the contract method 0x78296ec5.
 //
-// Solidity: function updateOperatorMetadataURI(string metadataURI) returns()
-func (_DelegationManager *DelegationManagerSession) UpdateOperatorMetadataURI(metadataURI string) (*types.Transaction, error) {
-	return _DelegationManager.Contract.UpdateOperatorMetadataURI(&_DelegationManager.TransactOpts, metadataURI)
+// Solidity: function updateOperatorMetadataURI(address operator, string metadataURI) returns()
+func (_DelegationManager *DelegationManagerSession) UpdateOperatorMetadataURI(operator common.Address, metadataURI string) (*types.Transaction, error) {
+	return _DelegationManager.Contract.UpdateOperatorMetadataURI(&_DelegationManager.TransactOpts, operator, metadataURI)
 }
 
-// UpdateOperatorMetadataURI is a paid mutator transaction binding the contract method 0x99be81c8.
+// UpdateOperatorMetadataURI is a paid mutator transaction binding the contract method 0x78296ec5.
 //
-// Solidity: function updateOperatorMetadataURI(string metadataURI) returns()
-func (_DelegationManager *DelegationManagerTransactorSession) UpdateOperatorMetadataURI(metadataURI string) (*types.Transaction, error) {
-	return _DelegationManager.Contract.UpdateOperatorMetadataURI(&_DelegationManager.TransactOpts, metadataURI)
+// Solidity: function updateOperatorMetadataURI(address operator, string metadataURI) returns()
+func (_DelegationManager *DelegationManagerTransactorSession) UpdateOperatorMetadataURI(operator common.Address, metadataURI string) (*types.Transaction, error) {
+	return _DelegationManager.Contract.UpdateOperatorMetadataURI(&_DelegationManager.TransactOpts, operator, metadataURI)
+}
+
+// DelegationManagerDelegationApproverUpdatedIterator is returned from FilterDelegationApproverUpdated and is used to iterate over the raw logs and unpacked data for DelegationApproverUpdated events raised by the DelegationManager contract.
+type DelegationManagerDelegationApproverUpdatedIterator struct {
+	Event *DelegationManagerDelegationApproverUpdated // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *DelegationManagerDelegationApproverUpdatedIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(DelegationManagerDelegationApproverUpdated)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(DelegationManagerDelegationApproverUpdated)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *DelegationManagerDelegationApproverUpdatedIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *DelegationManagerDelegationApproverUpdatedIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// DelegationManagerDelegationApproverUpdated represents a DelegationApproverUpdated event raised by the DelegationManager contract.
+type DelegationManagerDelegationApproverUpdated struct {
+	Operator              common.Address
+	NewDelegationApprover common.Address
+	Raw                   types.Log // Blockchain specific contextual infos
+}
+
+// FilterDelegationApproverUpdated is a free log retrieval operation binding the contract event 0x773b54c04d756fcc5e678111f7d730de3be98192000799eee3d63716055a87c6.
+//
+// Solidity: event DelegationApproverUpdated(address indexed operator, address newDelegationApprover)
+func (_DelegationManager *DelegationManagerFilterer) FilterDelegationApproverUpdated(opts *bind.FilterOpts, operator []common.Address) (*DelegationManagerDelegationApproverUpdatedIterator, error) {
+
+	var operatorRule []interface{}
+	for _, operatorItem := range operator {
+		operatorRule = append(operatorRule, operatorItem)
+	}
+
+	logs, sub, err := _DelegationManager.contract.FilterLogs(opts, "DelegationApproverUpdated", operatorRule)
+	if err != nil {
+		return nil, err
+	}
+	return &DelegationManagerDelegationApproverUpdatedIterator{contract: _DelegationManager.contract, event: "DelegationApproverUpdated", logs: logs, sub: sub}, nil
+}
+
+// WatchDelegationApproverUpdated is a free log subscription operation binding the contract event 0x773b54c04d756fcc5e678111f7d730de3be98192000799eee3d63716055a87c6.
+//
+// Solidity: event DelegationApproverUpdated(address indexed operator, address newDelegationApprover)
+func (_DelegationManager *DelegationManagerFilterer) WatchDelegationApproverUpdated(opts *bind.WatchOpts, sink chan<- *DelegationManagerDelegationApproverUpdated, operator []common.Address) (event.Subscription, error) {
+
+	var operatorRule []interface{}
+	for _, operatorItem := range operator {
+		operatorRule = append(operatorRule, operatorItem)
+	}
+
+	logs, sub, err := _DelegationManager.contract.WatchLogs(opts, "DelegationApproverUpdated", operatorRule)
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(DelegationManagerDelegationApproverUpdated)
+				if err := _DelegationManager.contract.UnpackLog(event, "DelegationApproverUpdated", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseDelegationApproverUpdated is a log parse operation binding the contract event 0x773b54c04d756fcc5e678111f7d730de3be98192000799eee3d63716055a87c6.
+//
+// Solidity: event DelegationApproverUpdated(address indexed operator, address newDelegationApprover)
+func (_DelegationManager *DelegationManagerFilterer) ParseDelegationApproverUpdated(log types.Log) (*DelegationManagerDelegationApproverUpdated, error) {
+	event := new(DelegationManagerDelegationApproverUpdated)
+	if err := _DelegationManager.contract.UnpackLog(event, "DelegationApproverUpdated", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// DelegationManagerDepositScalingFactorUpdatedIterator is returned from FilterDepositScalingFactorUpdated and is used to iterate over the raw logs and unpacked data for DepositScalingFactorUpdated events raised by the DelegationManager contract.
+type DelegationManagerDepositScalingFactorUpdatedIterator struct {
+	Event *DelegationManagerDepositScalingFactorUpdated // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *DelegationManagerDepositScalingFactorUpdatedIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(DelegationManagerDepositScalingFactorUpdated)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(DelegationManagerDepositScalingFactorUpdated)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *DelegationManagerDepositScalingFactorUpdatedIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *DelegationManagerDepositScalingFactorUpdatedIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// DelegationManagerDepositScalingFactorUpdated represents a DepositScalingFactorUpdated event raised by the DelegationManager contract.
+type DelegationManagerDepositScalingFactorUpdated struct {
+	Staker                  common.Address
+	Strategy                common.Address
+	NewDepositScalingFactor *big.Int
+	Raw                     types.Log // Blockchain specific contextual infos
+}
+
+// FilterDepositScalingFactorUpdated is a free log retrieval operation binding the contract event 0x8be932bac54561f27260f95463d9b8ab37e06b2842e5ee2404157cc13df6eb8f.
+//
+// Solidity: event DepositScalingFactorUpdated(address staker, address strategy, uint256 newDepositScalingFactor)
+func (_DelegationManager *DelegationManagerFilterer) FilterDepositScalingFactorUpdated(opts *bind.FilterOpts) (*DelegationManagerDepositScalingFactorUpdatedIterator, error) {
+
+	logs, sub, err := _DelegationManager.contract.FilterLogs(opts, "DepositScalingFactorUpdated")
+	if err != nil {
+		return nil, err
+	}
+	return &DelegationManagerDepositScalingFactorUpdatedIterator{contract: _DelegationManager.contract, event: "DepositScalingFactorUpdated", logs: logs, sub: sub}, nil
+}
+
+// WatchDepositScalingFactorUpdated is a free log subscription operation binding the contract event 0x8be932bac54561f27260f95463d9b8ab37e06b2842e5ee2404157cc13df6eb8f.
+//
+// Solidity: event DepositScalingFactorUpdated(address staker, address strategy, uint256 newDepositScalingFactor)
+func (_DelegationManager *DelegationManagerFilterer) WatchDepositScalingFactorUpdated(opts *bind.WatchOpts, sink chan<- *DelegationManagerDepositScalingFactorUpdated) (event.Subscription, error) {
+
+	logs, sub, err := _DelegationManager.contract.WatchLogs(opts, "DepositScalingFactorUpdated")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(DelegationManagerDepositScalingFactorUpdated)
+				if err := _DelegationManager.contract.UnpackLog(event, "DepositScalingFactorUpdated", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseDepositScalingFactorUpdated is a log parse operation binding the contract event 0x8be932bac54561f27260f95463d9b8ab37e06b2842e5ee2404157cc13df6eb8f.
+//
+// Solidity: event DepositScalingFactorUpdated(address staker, address strategy, uint256 newDepositScalingFactor)
+func (_DelegationManager *DelegationManagerFilterer) ParseDepositScalingFactorUpdated(log types.Log) (*DelegationManagerDepositScalingFactorUpdated, error) {
+	event := new(DelegationManagerDepositScalingFactorUpdated)
+	if err := _DelegationManager.contract.UnpackLog(event, "DepositScalingFactorUpdated", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
 }
 
 // DelegationManagerInitializedIterator is returned from FilterInitialized and is used to iterate over the raw logs and unpacked data for Initialized events raised by the DelegationManager contract.
@@ -1836,286 +2034,6 @@ func (_DelegationManager *DelegationManagerFilterer) WatchInitialized(opts *bind
 func (_DelegationManager *DelegationManagerFilterer) ParseInitialized(log types.Log) (*DelegationManagerInitialized, error) {
 	event := new(DelegationManagerInitialized)
 	if err := _DelegationManager.contract.UnpackLog(event, "Initialized", log); err != nil {
-		return nil, err
-	}
-	event.Raw = log
-	return event, nil
-}
-
-// DelegationManagerMinWithdrawalDelayBlocksSetIterator is returned from FilterMinWithdrawalDelayBlocksSet and is used to iterate over the raw logs and unpacked data for MinWithdrawalDelayBlocksSet events raised by the DelegationManager contract.
-type DelegationManagerMinWithdrawalDelayBlocksSetIterator struct {
-	Event *DelegationManagerMinWithdrawalDelayBlocksSet // Event containing the contract specifics and raw log
-
-	contract *bind.BoundContract // Generic contract to use for unpacking event data
-	event    string              // Event name to use for unpacking event data
-
-	logs chan types.Log        // Log channel receiving the found contract events
-	sub  ethereum.Subscription // Subscription for errors, completion and termination
-	done bool                  // Whether the subscription completed delivering logs
-	fail error                 // Occurred error to stop iteration
-}
-
-// Next advances the iterator to the subsequent event, returning whether there
-// are any more events found. In case of a retrieval or parsing error, false is
-// returned and Error() can be queried for the exact failure.
-func (it *DelegationManagerMinWithdrawalDelayBlocksSetIterator) Next() bool {
-	// If the iterator failed, stop iterating
-	if it.fail != nil {
-		return false
-	}
-	// If the iterator completed, deliver directly whatever's available
-	if it.done {
-		select {
-		case log := <-it.logs:
-			it.Event = new(DelegationManagerMinWithdrawalDelayBlocksSet)
-			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-				it.fail = err
-				return false
-			}
-			it.Event.Raw = log
-			return true
-
-		default:
-			return false
-		}
-	}
-	// Iterator still in progress, wait for either a data or an error event
-	select {
-	case log := <-it.logs:
-		it.Event = new(DelegationManagerMinWithdrawalDelayBlocksSet)
-		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-			it.fail = err
-			return false
-		}
-		it.Event.Raw = log
-		return true
-
-	case err := <-it.sub.Err():
-		it.done = true
-		it.fail = err
-		return it.Next()
-	}
-}
-
-// Error returns any retrieval or parsing error occurred during filtering.
-func (it *DelegationManagerMinWithdrawalDelayBlocksSetIterator) Error() error {
-	return it.fail
-}
-
-// Close terminates the iteration process, releasing any pending underlying
-// resources.
-func (it *DelegationManagerMinWithdrawalDelayBlocksSetIterator) Close() error {
-	it.sub.Unsubscribe()
-	return nil
-}
-
-// DelegationManagerMinWithdrawalDelayBlocksSet represents a MinWithdrawalDelayBlocksSet event raised by the DelegationManager contract.
-type DelegationManagerMinWithdrawalDelayBlocksSet struct {
-	PreviousValue *big.Int
-	NewValue      *big.Int
-	Raw           types.Log // Blockchain specific contextual infos
-}
-
-// FilterMinWithdrawalDelayBlocksSet is a free log retrieval operation binding the contract event 0xafa003cd76f87ff9d62b35beea889920f33c0c42b8d45b74954d61d50f4b6b69.
-//
-// Solidity: event MinWithdrawalDelayBlocksSet(uint256 previousValue, uint256 newValue)
-func (_DelegationManager *DelegationManagerFilterer) FilterMinWithdrawalDelayBlocksSet(opts *bind.FilterOpts) (*DelegationManagerMinWithdrawalDelayBlocksSetIterator, error) {
-
-	logs, sub, err := _DelegationManager.contract.FilterLogs(opts, "MinWithdrawalDelayBlocksSet")
-	if err != nil {
-		return nil, err
-	}
-	return &DelegationManagerMinWithdrawalDelayBlocksSetIterator{contract: _DelegationManager.contract, event: "MinWithdrawalDelayBlocksSet", logs: logs, sub: sub}, nil
-}
-
-// WatchMinWithdrawalDelayBlocksSet is a free log subscription operation binding the contract event 0xafa003cd76f87ff9d62b35beea889920f33c0c42b8d45b74954d61d50f4b6b69.
-//
-// Solidity: event MinWithdrawalDelayBlocksSet(uint256 previousValue, uint256 newValue)
-func (_DelegationManager *DelegationManagerFilterer) WatchMinWithdrawalDelayBlocksSet(opts *bind.WatchOpts, sink chan<- *DelegationManagerMinWithdrawalDelayBlocksSet) (event.Subscription, error) {
-
-	logs, sub, err := _DelegationManager.contract.WatchLogs(opts, "MinWithdrawalDelayBlocksSet")
-	if err != nil {
-		return nil, err
-	}
-	return event.NewSubscription(func(quit <-chan struct{}) error {
-		defer sub.Unsubscribe()
-		for {
-			select {
-			case log := <-logs:
-				// New log arrived, parse the event and forward to the user
-				event := new(DelegationManagerMinWithdrawalDelayBlocksSet)
-				if err := _DelegationManager.contract.UnpackLog(event, "MinWithdrawalDelayBlocksSet", log); err != nil {
-					return err
-				}
-				event.Raw = log
-
-				select {
-				case sink <- event:
-				case err := <-sub.Err():
-					return err
-				case <-quit:
-					return nil
-				}
-			case err := <-sub.Err():
-				return err
-			case <-quit:
-				return nil
-			}
-		}
-	}), nil
-}
-
-// ParseMinWithdrawalDelayBlocksSet is a log parse operation binding the contract event 0xafa003cd76f87ff9d62b35beea889920f33c0c42b8d45b74954d61d50f4b6b69.
-//
-// Solidity: event MinWithdrawalDelayBlocksSet(uint256 previousValue, uint256 newValue)
-func (_DelegationManager *DelegationManagerFilterer) ParseMinWithdrawalDelayBlocksSet(log types.Log) (*DelegationManagerMinWithdrawalDelayBlocksSet, error) {
-	event := new(DelegationManagerMinWithdrawalDelayBlocksSet)
-	if err := _DelegationManager.contract.UnpackLog(event, "MinWithdrawalDelayBlocksSet", log); err != nil {
-		return nil, err
-	}
-	event.Raw = log
-	return event, nil
-}
-
-// DelegationManagerOperatorDetailsModifiedIterator is returned from FilterOperatorDetailsModified and is used to iterate over the raw logs and unpacked data for OperatorDetailsModified events raised by the DelegationManager contract.
-type DelegationManagerOperatorDetailsModifiedIterator struct {
-	Event *DelegationManagerOperatorDetailsModified // Event containing the contract specifics and raw log
-
-	contract *bind.BoundContract // Generic contract to use for unpacking event data
-	event    string              // Event name to use for unpacking event data
-
-	logs chan types.Log        // Log channel receiving the found contract events
-	sub  ethereum.Subscription // Subscription for errors, completion and termination
-	done bool                  // Whether the subscription completed delivering logs
-	fail error                 // Occurred error to stop iteration
-}
-
-// Next advances the iterator to the subsequent event, returning whether there
-// are any more events found. In case of a retrieval or parsing error, false is
-// returned and Error() can be queried for the exact failure.
-func (it *DelegationManagerOperatorDetailsModifiedIterator) Next() bool {
-	// If the iterator failed, stop iterating
-	if it.fail != nil {
-		return false
-	}
-	// If the iterator completed, deliver directly whatever's available
-	if it.done {
-		select {
-		case log := <-it.logs:
-			it.Event = new(DelegationManagerOperatorDetailsModified)
-			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-				it.fail = err
-				return false
-			}
-			it.Event.Raw = log
-			return true
-
-		default:
-			return false
-		}
-	}
-	// Iterator still in progress, wait for either a data or an error event
-	select {
-	case log := <-it.logs:
-		it.Event = new(DelegationManagerOperatorDetailsModified)
-		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-			it.fail = err
-			return false
-		}
-		it.Event.Raw = log
-		return true
-
-	case err := <-it.sub.Err():
-		it.done = true
-		it.fail = err
-		return it.Next()
-	}
-}
-
-// Error returns any retrieval or parsing error occurred during filtering.
-func (it *DelegationManagerOperatorDetailsModifiedIterator) Error() error {
-	return it.fail
-}
-
-// Close terminates the iteration process, releasing any pending underlying
-// resources.
-func (it *DelegationManagerOperatorDetailsModifiedIterator) Close() error {
-	it.sub.Unsubscribe()
-	return nil
-}
-
-// DelegationManagerOperatorDetailsModified represents a OperatorDetailsModified event raised by the DelegationManager contract.
-type DelegationManagerOperatorDetailsModified struct {
-	Operator           common.Address
-	NewOperatorDetails IDelegationManagerOperatorDetails
-	Raw                types.Log // Blockchain specific contextual infos
-}
-
-// FilterOperatorDetailsModified is a free log retrieval operation binding the contract event 0xfebe5cd24b2cbc7b065b9d0fdeb904461e4afcff57dd57acda1e7832031ba7ac.
-//
-// Solidity: event OperatorDetailsModified(address indexed operator, (address,address,uint32) newOperatorDetails)
-func (_DelegationManager *DelegationManagerFilterer) FilterOperatorDetailsModified(opts *bind.FilterOpts, operator []common.Address) (*DelegationManagerOperatorDetailsModifiedIterator, error) {
-
-	var operatorRule []interface{}
-	for _, operatorItem := range operator {
-		operatorRule = append(operatorRule, operatorItem)
-	}
-
-	logs, sub, err := _DelegationManager.contract.FilterLogs(opts, "OperatorDetailsModified", operatorRule)
-	if err != nil {
-		return nil, err
-	}
-	return &DelegationManagerOperatorDetailsModifiedIterator{contract: _DelegationManager.contract, event: "OperatorDetailsModified", logs: logs, sub: sub}, nil
-}
-
-// WatchOperatorDetailsModified is a free log subscription operation binding the contract event 0xfebe5cd24b2cbc7b065b9d0fdeb904461e4afcff57dd57acda1e7832031ba7ac.
-//
-// Solidity: event OperatorDetailsModified(address indexed operator, (address,address,uint32) newOperatorDetails)
-func (_DelegationManager *DelegationManagerFilterer) WatchOperatorDetailsModified(opts *bind.WatchOpts, sink chan<- *DelegationManagerOperatorDetailsModified, operator []common.Address) (event.Subscription, error) {
-
-	var operatorRule []interface{}
-	for _, operatorItem := range operator {
-		operatorRule = append(operatorRule, operatorItem)
-	}
-
-	logs, sub, err := _DelegationManager.contract.WatchLogs(opts, "OperatorDetailsModified", operatorRule)
-	if err != nil {
-		return nil, err
-	}
-	return event.NewSubscription(func(quit <-chan struct{}) error {
-		defer sub.Unsubscribe()
-		for {
-			select {
-			case log := <-logs:
-				// New log arrived, parse the event and forward to the user
-				event := new(DelegationManagerOperatorDetailsModified)
-				if err := _DelegationManager.contract.UnpackLog(event, "OperatorDetailsModified", log); err != nil {
-					return err
-				}
-				event.Raw = log
-
-				select {
-				case sink <- event:
-				case err := <-sub.Err():
-					return err
-				case <-quit:
-					return nil
-				}
-			case err := <-sub.Err():
-				return err
-			case <-quit:
-				return nil
-			}
-		}
-	}), nil
-}
-
-// ParseOperatorDetailsModified is a log parse operation binding the contract event 0xfebe5cd24b2cbc7b065b9d0fdeb904461e4afcff57dd57acda1e7832031ba7ac.
-//
-// Solidity: event OperatorDetailsModified(address indexed operator, (address,address,uint32) newOperatorDetails)
-func (_DelegationManager *DelegationManagerFilterer) ParseOperatorDetailsModified(log types.Log) (*DelegationManagerOperatorDetailsModified, error) {
-	event := new(DelegationManagerOperatorDetailsModified)
-	if err := _DelegationManager.contract.UnpackLog(event, "OperatorDetailsModified", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
@@ -2336,14 +2254,14 @@ func (it *DelegationManagerOperatorRegisteredIterator) Close() error {
 
 // DelegationManagerOperatorRegistered represents a OperatorRegistered event raised by the DelegationManager contract.
 type DelegationManagerOperatorRegistered struct {
-	Operator        common.Address
-	OperatorDetails IDelegationManagerOperatorDetails
-	Raw             types.Log // Blockchain specific contextual infos
+	Operator           common.Address
+	DelegationApprover common.Address
+	Raw                types.Log // Blockchain specific contextual infos
 }
 
-// FilterOperatorRegistered is a free log retrieval operation binding the contract event 0x8e8485583a2310d41f7c82b9427d0bd49bad74bb9cff9d3402a29d8f9b28a0e2.
+// FilterOperatorRegistered is a free log retrieval operation binding the contract event 0xa453db612af59e5521d6ab9284dc3e2d06af286eb1b1b7b771fce4716c19f2c1.
 //
-// Solidity: event OperatorRegistered(address indexed operator, (address,address,uint32) operatorDetails)
+// Solidity: event OperatorRegistered(address indexed operator, address delegationApprover)
 func (_DelegationManager *DelegationManagerFilterer) FilterOperatorRegistered(opts *bind.FilterOpts, operator []common.Address) (*DelegationManagerOperatorRegisteredIterator, error) {
 
 	var operatorRule []interface{}
@@ -2358,9 +2276,9 @@ func (_DelegationManager *DelegationManagerFilterer) FilterOperatorRegistered(op
 	return &DelegationManagerOperatorRegisteredIterator{contract: _DelegationManager.contract, event: "OperatorRegistered", logs: logs, sub: sub}, nil
 }
 
-// WatchOperatorRegistered is a free log subscription operation binding the contract event 0x8e8485583a2310d41f7c82b9427d0bd49bad74bb9cff9d3402a29d8f9b28a0e2.
+// WatchOperatorRegistered is a free log subscription operation binding the contract event 0xa453db612af59e5521d6ab9284dc3e2d06af286eb1b1b7b771fce4716c19f2c1.
 //
-// Solidity: event OperatorRegistered(address indexed operator, (address,address,uint32) operatorDetails)
+// Solidity: event OperatorRegistered(address indexed operator, address delegationApprover)
 func (_DelegationManager *DelegationManagerFilterer) WatchOperatorRegistered(opts *bind.WatchOpts, sink chan<- *DelegationManagerOperatorRegistered, operator []common.Address) (event.Subscription, error) {
 
 	var operatorRule []interface{}
@@ -2400,9 +2318,9 @@ func (_DelegationManager *DelegationManagerFilterer) WatchOperatorRegistered(opt
 	}), nil
 }
 
-// ParseOperatorRegistered is a log parse operation binding the contract event 0x8e8485583a2310d41f7c82b9427d0bd49bad74bb9cff9d3402a29d8f9b28a0e2.
+// ParseOperatorRegistered is a log parse operation binding the contract event 0xa453db612af59e5521d6ab9284dc3e2d06af286eb1b1b7b771fce4716c19f2c1.
 //
-// Solidity: event OperatorRegistered(address indexed operator, (address,address,uint32) operatorDetails)
+// Solidity: event OperatorRegistered(address indexed operator, address delegationApprover)
 func (_DelegationManager *DelegationManagerFilterer) ParseOperatorRegistered(log types.Log) (*DelegationManagerOperatorRegistered, error) {
 	event := new(DelegationManagerOperatorRegistered)
 	if err := _DelegationManager.contract.UnpackLog(event, "OperatorRegistered", log); err != nil {
@@ -3004,9 +2922,9 @@ func (_DelegationManager *DelegationManagerFilterer) ParsePaused(log types.Log) 
 	return event, nil
 }
 
-// DelegationManagerPauserRegistrySetIterator is returned from FilterPauserRegistrySet and is used to iterate over the raw logs and unpacked data for PauserRegistrySet events raised by the DelegationManager contract.
-type DelegationManagerPauserRegistrySetIterator struct {
-	Event *DelegationManagerPauserRegistrySet // Event containing the contract specifics and raw log
+// DelegationManagerSlashingWithdrawalCompletedIterator is returned from FilterSlashingWithdrawalCompleted and is used to iterate over the raw logs and unpacked data for SlashingWithdrawalCompleted events raised by the DelegationManager contract.
+type DelegationManagerSlashingWithdrawalCompletedIterator struct {
+	Event *DelegationManagerSlashingWithdrawalCompleted // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -3020,7 +2938,7 @@ type DelegationManagerPauserRegistrySetIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *DelegationManagerPauserRegistrySetIterator) Next() bool {
+func (it *DelegationManagerSlashingWithdrawalCompletedIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -3029,7 +2947,7 @@ func (it *DelegationManagerPauserRegistrySetIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(DelegationManagerPauserRegistrySet)
+			it.Event = new(DelegationManagerSlashingWithdrawalCompleted)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -3044,7 +2962,7 @@ func (it *DelegationManagerPauserRegistrySetIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(DelegationManagerPauserRegistrySet)
+		it.Event = new(DelegationManagerSlashingWithdrawalCompleted)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -3060,42 +2978,41 @@ func (it *DelegationManagerPauserRegistrySetIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *DelegationManagerPauserRegistrySetIterator) Error() error {
+func (it *DelegationManagerSlashingWithdrawalCompletedIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *DelegationManagerPauserRegistrySetIterator) Close() error {
+func (it *DelegationManagerSlashingWithdrawalCompletedIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// DelegationManagerPauserRegistrySet represents a PauserRegistrySet event raised by the DelegationManager contract.
-type DelegationManagerPauserRegistrySet struct {
-	PauserRegistry    common.Address
-	NewPauserRegistry common.Address
-	Raw               types.Log // Blockchain specific contextual infos
+// DelegationManagerSlashingWithdrawalCompleted represents a SlashingWithdrawalCompleted event raised by the DelegationManager contract.
+type DelegationManagerSlashingWithdrawalCompleted struct {
+	WithdrawalRoot [32]byte
+	Raw            types.Log // Blockchain specific contextual infos
 }
 
-// FilterPauserRegistrySet is a free log retrieval operation binding the contract event 0x6e9fcd539896fca60e8b0f01dd580233e48a6b0f7df013b89ba7f565869acdb6.
+// FilterSlashingWithdrawalCompleted is a free log retrieval operation binding the contract event 0x1f40400889274ed07b24845e5054a87a0cab969eb1277aafe61ae352e7c32a00.
 //
-// Solidity: event PauserRegistrySet(address pauserRegistry, address newPauserRegistry)
-func (_DelegationManager *DelegationManagerFilterer) FilterPauserRegistrySet(opts *bind.FilterOpts) (*DelegationManagerPauserRegistrySetIterator, error) {
+// Solidity: event SlashingWithdrawalCompleted(bytes32 withdrawalRoot)
+func (_DelegationManager *DelegationManagerFilterer) FilterSlashingWithdrawalCompleted(opts *bind.FilterOpts) (*DelegationManagerSlashingWithdrawalCompletedIterator, error) {
 
-	logs, sub, err := _DelegationManager.contract.FilterLogs(opts, "PauserRegistrySet")
+	logs, sub, err := _DelegationManager.contract.FilterLogs(opts, "SlashingWithdrawalCompleted")
 	if err != nil {
 		return nil, err
 	}
-	return &DelegationManagerPauserRegistrySetIterator{contract: _DelegationManager.contract, event: "PauserRegistrySet", logs: logs, sub: sub}, nil
+	return &DelegationManagerSlashingWithdrawalCompletedIterator{contract: _DelegationManager.contract, event: "SlashingWithdrawalCompleted", logs: logs, sub: sub}, nil
 }
 
-// WatchPauserRegistrySet is a free log subscription operation binding the contract event 0x6e9fcd539896fca60e8b0f01dd580233e48a6b0f7df013b89ba7f565869acdb6.
+// WatchSlashingWithdrawalCompleted is a free log subscription operation binding the contract event 0x1f40400889274ed07b24845e5054a87a0cab969eb1277aafe61ae352e7c32a00.
 //
-// Solidity: event PauserRegistrySet(address pauserRegistry, address newPauserRegistry)
-func (_DelegationManager *DelegationManagerFilterer) WatchPauserRegistrySet(opts *bind.WatchOpts, sink chan<- *DelegationManagerPauserRegistrySet) (event.Subscription, error) {
+// Solidity: event SlashingWithdrawalCompleted(bytes32 withdrawalRoot)
+func (_DelegationManager *DelegationManagerFilterer) WatchSlashingWithdrawalCompleted(opts *bind.WatchOpts, sink chan<- *DelegationManagerSlashingWithdrawalCompleted) (event.Subscription, error) {
 
-	logs, sub, err := _DelegationManager.contract.WatchLogs(opts, "PauserRegistrySet")
+	logs, sub, err := _DelegationManager.contract.WatchLogs(opts, "SlashingWithdrawalCompleted")
 	if err != nil {
 		return nil, err
 	}
@@ -3105,8 +3022,8 @@ func (_DelegationManager *DelegationManagerFilterer) WatchPauserRegistrySet(opts
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(DelegationManagerPauserRegistrySet)
-				if err := _DelegationManager.contract.UnpackLog(event, "PauserRegistrySet", log); err != nil {
+				event := new(DelegationManagerSlashingWithdrawalCompleted)
+				if err := _DelegationManager.contract.UnpackLog(event, "SlashingWithdrawalCompleted", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -3127,12 +3044,148 @@ func (_DelegationManager *DelegationManagerFilterer) WatchPauserRegistrySet(opts
 	}), nil
 }
 
-// ParsePauserRegistrySet is a log parse operation binding the contract event 0x6e9fcd539896fca60e8b0f01dd580233e48a6b0f7df013b89ba7f565869acdb6.
+// ParseSlashingWithdrawalCompleted is a log parse operation binding the contract event 0x1f40400889274ed07b24845e5054a87a0cab969eb1277aafe61ae352e7c32a00.
 //
-// Solidity: event PauserRegistrySet(address pauserRegistry, address newPauserRegistry)
-func (_DelegationManager *DelegationManagerFilterer) ParsePauserRegistrySet(log types.Log) (*DelegationManagerPauserRegistrySet, error) {
-	event := new(DelegationManagerPauserRegistrySet)
-	if err := _DelegationManager.contract.UnpackLog(event, "PauserRegistrySet", log); err != nil {
+// Solidity: event SlashingWithdrawalCompleted(bytes32 withdrawalRoot)
+func (_DelegationManager *DelegationManagerFilterer) ParseSlashingWithdrawalCompleted(log types.Log) (*DelegationManagerSlashingWithdrawalCompleted, error) {
+	event := new(DelegationManagerSlashingWithdrawalCompleted)
+	if err := _DelegationManager.contract.UnpackLog(event, "SlashingWithdrawalCompleted", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// DelegationManagerSlashingWithdrawalQueuedIterator is returned from FilterSlashingWithdrawalQueued and is used to iterate over the raw logs and unpacked data for SlashingWithdrawalQueued events raised by the DelegationManager contract.
+type DelegationManagerSlashingWithdrawalQueuedIterator struct {
+	Event *DelegationManagerSlashingWithdrawalQueued // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *DelegationManagerSlashingWithdrawalQueuedIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(DelegationManagerSlashingWithdrawalQueued)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(DelegationManagerSlashingWithdrawalQueued)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *DelegationManagerSlashingWithdrawalQueuedIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *DelegationManagerSlashingWithdrawalQueuedIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// DelegationManagerSlashingWithdrawalQueued represents a SlashingWithdrawalQueued event raised by the DelegationManager contract.
+type DelegationManagerSlashingWithdrawalQueued struct {
+	WithdrawalRoot   [32]byte
+	Withdrawal       IDelegationManagerTypesWithdrawal
+	SharesToWithdraw []*big.Int
+	Raw              types.Log // Blockchain specific contextual infos
+}
+
+// FilterSlashingWithdrawalQueued is a free log retrieval operation binding the contract event 0x26b2aae26516e8719ef50ea2f6831a2efbd4e37dccdf0f6936b27bc08e793e30.
+//
+// Solidity: event SlashingWithdrawalQueued(bytes32 withdrawalRoot, (address,address,address,uint256,uint32,address[],uint256[]) withdrawal, uint256[] sharesToWithdraw)
+func (_DelegationManager *DelegationManagerFilterer) FilterSlashingWithdrawalQueued(opts *bind.FilterOpts) (*DelegationManagerSlashingWithdrawalQueuedIterator, error) {
+
+	logs, sub, err := _DelegationManager.contract.FilterLogs(opts, "SlashingWithdrawalQueued")
+	if err != nil {
+		return nil, err
+	}
+	return &DelegationManagerSlashingWithdrawalQueuedIterator{contract: _DelegationManager.contract, event: "SlashingWithdrawalQueued", logs: logs, sub: sub}, nil
+}
+
+// WatchSlashingWithdrawalQueued is a free log subscription operation binding the contract event 0x26b2aae26516e8719ef50ea2f6831a2efbd4e37dccdf0f6936b27bc08e793e30.
+//
+// Solidity: event SlashingWithdrawalQueued(bytes32 withdrawalRoot, (address,address,address,uint256,uint32,address[],uint256[]) withdrawal, uint256[] sharesToWithdraw)
+func (_DelegationManager *DelegationManagerFilterer) WatchSlashingWithdrawalQueued(opts *bind.WatchOpts, sink chan<- *DelegationManagerSlashingWithdrawalQueued) (event.Subscription, error) {
+
+	logs, sub, err := _DelegationManager.contract.WatchLogs(opts, "SlashingWithdrawalQueued")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(DelegationManagerSlashingWithdrawalQueued)
+				if err := _DelegationManager.contract.UnpackLog(event, "SlashingWithdrawalQueued", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseSlashingWithdrawalQueued is a log parse operation binding the contract event 0x26b2aae26516e8719ef50ea2f6831a2efbd4e37dccdf0f6936b27bc08e793e30.
+//
+// Solidity: event SlashingWithdrawalQueued(bytes32 withdrawalRoot, (address,address,address,uint256,uint32,address[],uint256[]) withdrawal, uint256[] sharesToWithdraw)
+func (_DelegationManager *DelegationManagerFilterer) ParseSlashingWithdrawalQueued(log types.Log) (*DelegationManagerSlashingWithdrawalQueued, error) {
+	event := new(DelegationManagerSlashingWithdrawalQueued)
+	if err := _DelegationManager.contract.UnpackLog(event, "SlashingWithdrawalQueued", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
@@ -3598,142 +3651,6 @@ func (_DelegationManager *DelegationManagerFilterer) ParseStakerUndelegated(log 
 	return event, nil
 }
 
-// DelegationManagerStrategyWithdrawalDelayBlocksSetIterator is returned from FilterStrategyWithdrawalDelayBlocksSet and is used to iterate over the raw logs and unpacked data for StrategyWithdrawalDelayBlocksSet events raised by the DelegationManager contract.
-type DelegationManagerStrategyWithdrawalDelayBlocksSetIterator struct {
-	Event *DelegationManagerStrategyWithdrawalDelayBlocksSet // Event containing the contract specifics and raw log
-
-	contract *bind.BoundContract // Generic contract to use for unpacking event data
-	event    string              // Event name to use for unpacking event data
-
-	logs chan types.Log        // Log channel receiving the found contract events
-	sub  ethereum.Subscription // Subscription for errors, completion and termination
-	done bool                  // Whether the subscription completed delivering logs
-	fail error                 // Occurred error to stop iteration
-}
-
-// Next advances the iterator to the subsequent event, returning whether there
-// are any more events found. In case of a retrieval or parsing error, false is
-// returned and Error() can be queried for the exact failure.
-func (it *DelegationManagerStrategyWithdrawalDelayBlocksSetIterator) Next() bool {
-	// If the iterator failed, stop iterating
-	if it.fail != nil {
-		return false
-	}
-	// If the iterator completed, deliver directly whatever's available
-	if it.done {
-		select {
-		case log := <-it.logs:
-			it.Event = new(DelegationManagerStrategyWithdrawalDelayBlocksSet)
-			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-				it.fail = err
-				return false
-			}
-			it.Event.Raw = log
-			return true
-
-		default:
-			return false
-		}
-	}
-	// Iterator still in progress, wait for either a data or an error event
-	select {
-	case log := <-it.logs:
-		it.Event = new(DelegationManagerStrategyWithdrawalDelayBlocksSet)
-		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-			it.fail = err
-			return false
-		}
-		it.Event.Raw = log
-		return true
-
-	case err := <-it.sub.Err():
-		it.done = true
-		it.fail = err
-		return it.Next()
-	}
-}
-
-// Error returns any retrieval or parsing error occurred during filtering.
-func (it *DelegationManagerStrategyWithdrawalDelayBlocksSetIterator) Error() error {
-	return it.fail
-}
-
-// Close terminates the iteration process, releasing any pending underlying
-// resources.
-func (it *DelegationManagerStrategyWithdrawalDelayBlocksSetIterator) Close() error {
-	it.sub.Unsubscribe()
-	return nil
-}
-
-// DelegationManagerStrategyWithdrawalDelayBlocksSet represents a StrategyWithdrawalDelayBlocksSet event raised by the DelegationManager contract.
-type DelegationManagerStrategyWithdrawalDelayBlocksSet struct {
-	Strategy      common.Address
-	PreviousValue *big.Int
-	NewValue      *big.Int
-	Raw           types.Log // Blockchain specific contextual infos
-}
-
-// FilterStrategyWithdrawalDelayBlocksSet is a free log retrieval operation binding the contract event 0x0e7efa738e8b0ce6376a0c1af471655540d2e9a81647d7b09ed823018426576d.
-//
-// Solidity: event StrategyWithdrawalDelayBlocksSet(address strategy, uint256 previousValue, uint256 newValue)
-func (_DelegationManager *DelegationManagerFilterer) FilterStrategyWithdrawalDelayBlocksSet(opts *bind.FilterOpts) (*DelegationManagerStrategyWithdrawalDelayBlocksSetIterator, error) {
-
-	logs, sub, err := _DelegationManager.contract.FilterLogs(opts, "StrategyWithdrawalDelayBlocksSet")
-	if err != nil {
-		return nil, err
-	}
-	return &DelegationManagerStrategyWithdrawalDelayBlocksSetIterator{contract: _DelegationManager.contract, event: "StrategyWithdrawalDelayBlocksSet", logs: logs, sub: sub}, nil
-}
-
-// WatchStrategyWithdrawalDelayBlocksSet is a free log subscription operation binding the contract event 0x0e7efa738e8b0ce6376a0c1af471655540d2e9a81647d7b09ed823018426576d.
-//
-// Solidity: event StrategyWithdrawalDelayBlocksSet(address strategy, uint256 previousValue, uint256 newValue)
-func (_DelegationManager *DelegationManagerFilterer) WatchStrategyWithdrawalDelayBlocksSet(opts *bind.WatchOpts, sink chan<- *DelegationManagerStrategyWithdrawalDelayBlocksSet) (event.Subscription, error) {
-
-	logs, sub, err := _DelegationManager.contract.WatchLogs(opts, "StrategyWithdrawalDelayBlocksSet")
-	if err != nil {
-		return nil, err
-	}
-	return event.NewSubscription(func(quit <-chan struct{}) error {
-		defer sub.Unsubscribe()
-		for {
-			select {
-			case log := <-logs:
-				// New log arrived, parse the event and forward to the user
-				event := new(DelegationManagerStrategyWithdrawalDelayBlocksSet)
-				if err := _DelegationManager.contract.UnpackLog(event, "StrategyWithdrawalDelayBlocksSet", log); err != nil {
-					return err
-				}
-				event.Raw = log
-
-				select {
-				case sink <- event:
-				case err := <-sub.Err():
-					return err
-				case <-quit:
-					return nil
-				}
-			case err := <-sub.Err():
-				return err
-			case <-quit:
-				return nil
-			}
-		}
-	}), nil
-}
-
-// ParseStrategyWithdrawalDelayBlocksSet is a log parse operation binding the contract event 0x0e7efa738e8b0ce6376a0c1af471655540d2e9a81647d7b09ed823018426576d.
-//
-// Solidity: event StrategyWithdrawalDelayBlocksSet(address strategy, uint256 previousValue, uint256 newValue)
-func (_DelegationManager *DelegationManagerFilterer) ParseStrategyWithdrawalDelayBlocksSet(log types.Log) (*DelegationManagerStrategyWithdrawalDelayBlocksSet, error) {
-	event := new(DelegationManagerStrategyWithdrawalDelayBlocksSet)
-	if err := _DelegationManager.contract.UnpackLog(event, "StrategyWithdrawalDelayBlocksSet", log); err != nil {
-		return nil, err
-	}
-	event.Raw = log
-	return event, nil
-}
-
 // DelegationManagerUnpausedIterator is returned from FilterUnpaused and is used to iterate over the raw logs and unpacked data for Unpaused events raised by the DelegationManager contract.
 type DelegationManagerUnpausedIterator struct {
 	Event *DelegationManagerUnpaused // Event containing the contract specifics and raw log
@@ -3873,275 +3790,6 @@ func (_DelegationManager *DelegationManagerFilterer) WatchUnpaused(opts *bind.Wa
 func (_DelegationManager *DelegationManagerFilterer) ParseUnpaused(log types.Log) (*DelegationManagerUnpaused, error) {
 	event := new(DelegationManagerUnpaused)
 	if err := _DelegationManager.contract.UnpackLog(event, "Unpaused", log); err != nil {
-		return nil, err
-	}
-	event.Raw = log
-	return event, nil
-}
-
-// DelegationManagerWithdrawalCompletedIterator is returned from FilterWithdrawalCompleted and is used to iterate over the raw logs and unpacked data for WithdrawalCompleted events raised by the DelegationManager contract.
-type DelegationManagerWithdrawalCompletedIterator struct {
-	Event *DelegationManagerWithdrawalCompleted // Event containing the contract specifics and raw log
-
-	contract *bind.BoundContract // Generic contract to use for unpacking event data
-	event    string              // Event name to use for unpacking event data
-
-	logs chan types.Log        // Log channel receiving the found contract events
-	sub  ethereum.Subscription // Subscription for errors, completion and termination
-	done bool                  // Whether the subscription completed delivering logs
-	fail error                 // Occurred error to stop iteration
-}
-
-// Next advances the iterator to the subsequent event, returning whether there
-// are any more events found. In case of a retrieval or parsing error, false is
-// returned and Error() can be queried for the exact failure.
-func (it *DelegationManagerWithdrawalCompletedIterator) Next() bool {
-	// If the iterator failed, stop iterating
-	if it.fail != nil {
-		return false
-	}
-	// If the iterator completed, deliver directly whatever's available
-	if it.done {
-		select {
-		case log := <-it.logs:
-			it.Event = new(DelegationManagerWithdrawalCompleted)
-			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-				it.fail = err
-				return false
-			}
-			it.Event.Raw = log
-			return true
-
-		default:
-			return false
-		}
-	}
-	// Iterator still in progress, wait for either a data or an error event
-	select {
-	case log := <-it.logs:
-		it.Event = new(DelegationManagerWithdrawalCompleted)
-		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-			it.fail = err
-			return false
-		}
-		it.Event.Raw = log
-		return true
-
-	case err := <-it.sub.Err():
-		it.done = true
-		it.fail = err
-		return it.Next()
-	}
-}
-
-// Error returns any retrieval or parsing error occurred during filtering.
-func (it *DelegationManagerWithdrawalCompletedIterator) Error() error {
-	return it.fail
-}
-
-// Close terminates the iteration process, releasing any pending underlying
-// resources.
-func (it *DelegationManagerWithdrawalCompletedIterator) Close() error {
-	it.sub.Unsubscribe()
-	return nil
-}
-
-// DelegationManagerWithdrawalCompleted represents a WithdrawalCompleted event raised by the DelegationManager contract.
-type DelegationManagerWithdrawalCompleted struct {
-	WithdrawalRoot [32]byte
-	Raw            types.Log // Blockchain specific contextual infos
-}
-
-// FilterWithdrawalCompleted is a free log retrieval operation binding the contract event 0xc97098c2f658800b4df29001527f7324bcdffcf6e8751a699ab920a1eced5b1d.
-//
-// Solidity: event WithdrawalCompleted(bytes32 withdrawalRoot)
-func (_DelegationManager *DelegationManagerFilterer) FilterWithdrawalCompleted(opts *bind.FilterOpts) (*DelegationManagerWithdrawalCompletedIterator, error) {
-
-	logs, sub, err := _DelegationManager.contract.FilterLogs(opts, "WithdrawalCompleted")
-	if err != nil {
-		return nil, err
-	}
-	return &DelegationManagerWithdrawalCompletedIterator{contract: _DelegationManager.contract, event: "WithdrawalCompleted", logs: logs, sub: sub}, nil
-}
-
-// WatchWithdrawalCompleted is a free log subscription operation binding the contract event 0xc97098c2f658800b4df29001527f7324bcdffcf6e8751a699ab920a1eced5b1d.
-//
-// Solidity: event WithdrawalCompleted(bytes32 withdrawalRoot)
-func (_DelegationManager *DelegationManagerFilterer) WatchWithdrawalCompleted(opts *bind.WatchOpts, sink chan<- *DelegationManagerWithdrawalCompleted) (event.Subscription, error) {
-
-	logs, sub, err := _DelegationManager.contract.WatchLogs(opts, "WithdrawalCompleted")
-	if err != nil {
-		return nil, err
-	}
-	return event.NewSubscription(func(quit <-chan struct{}) error {
-		defer sub.Unsubscribe()
-		for {
-			select {
-			case log := <-logs:
-				// New log arrived, parse the event and forward to the user
-				event := new(DelegationManagerWithdrawalCompleted)
-				if err := _DelegationManager.contract.UnpackLog(event, "WithdrawalCompleted", log); err != nil {
-					return err
-				}
-				event.Raw = log
-
-				select {
-				case sink <- event:
-				case err := <-sub.Err():
-					return err
-				case <-quit:
-					return nil
-				}
-			case err := <-sub.Err():
-				return err
-			case <-quit:
-				return nil
-			}
-		}
-	}), nil
-}
-
-// ParseWithdrawalCompleted is a log parse operation binding the contract event 0xc97098c2f658800b4df29001527f7324bcdffcf6e8751a699ab920a1eced5b1d.
-//
-// Solidity: event WithdrawalCompleted(bytes32 withdrawalRoot)
-func (_DelegationManager *DelegationManagerFilterer) ParseWithdrawalCompleted(log types.Log) (*DelegationManagerWithdrawalCompleted, error) {
-	event := new(DelegationManagerWithdrawalCompleted)
-	if err := _DelegationManager.contract.UnpackLog(event, "WithdrawalCompleted", log); err != nil {
-		return nil, err
-	}
-	event.Raw = log
-	return event, nil
-}
-
-// DelegationManagerWithdrawalQueuedIterator is returned from FilterWithdrawalQueued and is used to iterate over the raw logs and unpacked data for WithdrawalQueued events raised by the DelegationManager contract.
-type DelegationManagerWithdrawalQueuedIterator struct {
-	Event *DelegationManagerWithdrawalQueued // Event containing the contract specifics and raw log
-
-	contract *bind.BoundContract // Generic contract to use for unpacking event data
-	event    string              // Event name to use for unpacking event data
-
-	logs chan types.Log        // Log channel receiving the found contract events
-	sub  ethereum.Subscription // Subscription for errors, completion and termination
-	done bool                  // Whether the subscription completed delivering logs
-	fail error                 // Occurred error to stop iteration
-}
-
-// Next advances the iterator to the subsequent event, returning whether there
-// are any more events found. In case of a retrieval or parsing error, false is
-// returned and Error() can be queried for the exact failure.
-func (it *DelegationManagerWithdrawalQueuedIterator) Next() bool {
-	// If the iterator failed, stop iterating
-	if it.fail != nil {
-		return false
-	}
-	// If the iterator completed, deliver directly whatever's available
-	if it.done {
-		select {
-		case log := <-it.logs:
-			it.Event = new(DelegationManagerWithdrawalQueued)
-			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-				it.fail = err
-				return false
-			}
-			it.Event.Raw = log
-			return true
-
-		default:
-			return false
-		}
-	}
-	// Iterator still in progress, wait for either a data or an error event
-	select {
-	case log := <-it.logs:
-		it.Event = new(DelegationManagerWithdrawalQueued)
-		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-			it.fail = err
-			return false
-		}
-		it.Event.Raw = log
-		return true
-
-	case err := <-it.sub.Err():
-		it.done = true
-		it.fail = err
-		return it.Next()
-	}
-}
-
-// Error returns any retrieval or parsing error occurred during filtering.
-func (it *DelegationManagerWithdrawalQueuedIterator) Error() error {
-	return it.fail
-}
-
-// Close terminates the iteration process, releasing any pending underlying
-// resources.
-func (it *DelegationManagerWithdrawalQueuedIterator) Close() error {
-	it.sub.Unsubscribe()
-	return nil
-}
-
-// DelegationManagerWithdrawalQueued represents a WithdrawalQueued event raised by the DelegationManager contract.
-type DelegationManagerWithdrawalQueued struct {
-	WithdrawalRoot [32]byte
-	Withdrawal     IDelegationManagerWithdrawal
-	Raw            types.Log // Blockchain specific contextual infos
-}
-
-// FilterWithdrawalQueued is a free log retrieval operation binding the contract event 0x9009ab153e8014fbfb02f2217f5cde7aa7f9ad734ae85ca3ee3f4ca2fdd499f9.
-//
-// Solidity: event WithdrawalQueued(bytes32 withdrawalRoot, (address,address,address,uint256,uint32,address[],uint256[]) withdrawal)
-func (_DelegationManager *DelegationManagerFilterer) FilterWithdrawalQueued(opts *bind.FilterOpts) (*DelegationManagerWithdrawalQueuedIterator, error) {
-
-	logs, sub, err := _DelegationManager.contract.FilterLogs(opts, "WithdrawalQueued")
-	if err != nil {
-		return nil, err
-	}
-	return &DelegationManagerWithdrawalQueuedIterator{contract: _DelegationManager.contract, event: "WithdrawalQueued", logs: logs, sub: sub}, nil
-}
-
-// WatchWithdrawalQueued is a free log subscription operation binding the contract event 0x9009ab153e8014fbfb02f2217f5cde7aa7f9ad734ae85ca3ee3f4ca2fdd499f9.
-//
-// Solidity: event WithdrawalQueued(bytes32 withdrawalRoot, (address,address,address,uint256,uint32,address[],uint256[]) withdrawal)
-func (_DelegationManager *DelegationManagerFilterer) WatchWithdrawalQueued(opts *bind.WatchOpts, sink chan<- *DelegationManagerWithdrawalQueued) (event.Subscription, error) {
-
-	logs, sub, err := _DelegationManager.contract.WatchLogs(opts, "WithdrawalQueued")
-	if err != nil {
-		return nil, err
-	}
-	return event.NewSubscription(func(quit <-chan struct{}) error {
-		defer sub.Unsubscribe()
-		for {
-			select {
-			case log := <-logs:
-				// New log arrived, parse the event and forward to the user
-				event := new(DelegationManagerWithdrawalQueued)
-				if err := _DelegationManager.contract.UnpackLog(event, "WithdrawalQueued", log); err != nil {
-					return err
-				}
-				event.Raw = log
-
-				select {
-				case sink <- event:
-				case err := <-sub.Err():
-					return err
-				case <-quit:
-					return nil
-				}
-			case err := <-sub.Err():
-				return err
-			case <-quit:
-				return nil
-			}
-		}
-	}), nil
-}
-
-// ParseWithdrawalQueued is a log parse operation binding the contract event 0x9009ab153e8014fbfb02f2217f5cde7aa7f9ad734ae85ca3ee3f4ca2fdd499f9.
-//
-// Solidity: event WithdrawalQueued(bytes32 withdrawalRoot, (address,address,address,uint256,uint32,address[],uint256[]) withdrawal)
-func (_DelegationManager *DelegationManagerFilterer) ParseWithdrawalQueued(log types.Log) (*DelegationManagerWithdrawalQueued, error) {
-	event := new(DelegationManagerWithdrawalQueued)
-	if err := _DelegationManager.contract.UnpackLog(event, "WithdrawalQueued", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log

@@ -1,36 +1,47 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
 
+import "src/contracts/core/AllocationManager.sol";
 import "src/contracts/core/DelegationManager.sol";
+import "src/contracts/permissions/PermissionController.sol";
 import "src/contracts/core/StrategyManager.sol";
 import "src/contracts/pods/EigenPodManager.sol";
 import "src/contracts/pods/EigenPod.sol";
 
-import "src/contracts/interfaces/IDelegationManager.sol";
-import "src/contracts/interfaces/IStrategy.sol";
-
 import "src/test/integration/TimeMachine.t.sol";
 import "src/test/integration/mocks/BeaconChainMock.t.sol";
-import "src/test/integration/utils/PrintUtils.t.sol";
+import "src/test/utils/Logger.t.sol";
+import "src/test/utils/ArrayLib.sol";
 
 struct Validator {
     uint40 index;
 }
 
 interface IUserDeployer {
+    function allocationManager() external view returns (AllocationManager);
     function delegationManager() external view returns (DelegationManager);
+    function permissionController() external view returns (PermissionController);
     function strategyManager() external view returns (StrategyManager);
     function eigenPodManager() external view returns (EigenPodManager);
     function timeMachine() external view returns (TimeMachine);
     function beaconChain() external view returns (BeaconChainMock);
 }
 
-contract User is PrintUtils {
+contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
+    using StdStyle for *;
+    using SlashingLib for *;
+    using ArrayLib for *;
+    using print for *;
 
-    Vm cheats = Vm(VM_ADDRESS);
+    IStrategy constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 
+    // TODO: fix this and view function getters. These are newly added contracts so these are initially
+    // 0 addresses for fork tests. To work around this, we read these addresses directly off the delegationManager
+    // from its immutable addresses. This is a temporary solution until we can figure out a better way to handle this.
+    // AllocationManager allocationManager; 
+    // PermissionController permissionController;
     DelegationManager delegationManager;
     StrategyManager strategyManager;
     EigenPodManager eigenPodManager;
@@ -43,22 +54,24 @@ contract User is PrintUtils {
     EigenPod public pod;
     uint40[] validators;
 
-    IStrategy constant BEACONCHAIN_ETH_STRAT = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
-    IERC20 constant NATIVE_ETH = IERC20(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
-    uint constant GWEI_TO_WEI = 1e9;
-
-    constructor(string memory name) {
+    constructor(
+        string memory name
+    ) {
         IUserDeployer deployer = IUserDeployer(msg.sender);
 
+        // TODO uncommented for reason above
+        // allocationManager = deployer.allocationManager();
+        // permissionController = deployer.permissionController();
         delegationManager = deployer.delegationManager();
         strategyManager = deployer.strategyManager();
         eigenPodManager = deployer.eigenPodManager();
+        
         timeMachine = deployer.timeMachine();
-                
         beaconChain = deployer.beaconChain();
-        _createPod();
 
+        _createPod();
         _NAME = name;
+        cheats.label(address(this), NAME_COLORED());
     }
 
     modifier createSnapshot() virtual {
@@ -72,88 +85,210 @@ contract User is PrintUtils {
         return _NAME;
     }
 
-    /*******************************************************************************
-                            DELEGATIONMANAGER METHODS
-    *******************************************************************************/
+    /// -----------------------------------------------------------------------
+    /// Allocation Manager Methods
+    /// -----------------------------------------------------------------------
 
-    function registerAsOperator() public createSnapshot virtual {
-        _logM("registerAsOperator");
+    /// @dev Allocates randomly accross the operator set's strategies with a sum of `magnitudeSum`.
+    /// NOTE: Calling more than once will lead to deallocations...
+    function modifyAllocations(
+        OperatorSet memory operatorSet, 
+        uint64[] memory magnitudes
+    ) public virtual createSnapshot returns (AllocateParams memory) {
+        print.method(
+            "modifyAllocations",
+            string.concat(
+                "{avs: ",
+                Logger(operatorSet.avs).NAME_COLORED(),
+                ", operatorSetId: ",
+                cheats.toString(operatorSet.id),
+                "}"
+            )
+        );
 
-        IDelegationManager.OperatorDetails memory details = IDelegationManager.OperatorDetails({
-            __deprecated_earningsReceiver: address(this),
-            delegationApprover: address(0),
-            stakerOptOutWindowBlocks: 0
-        });
+        IStrategy[] memory strategies = allocationManager().getStrategiesInOperatorSet(operatorSet);
 
-        delegationManager.registerAsOperator(details, "metadata");
+        require(strategies.length == magnitudes.length, "User.modifyAllocations: length mismatch");
+
+        AllocateParams[] memory allocateParams = AllocateParams({
+            operatorSet: operatorSet,
+            strategies: strategies,
+            newMagnitudes: magnitudes
+        }).toArray();
+
+        _tryPrankAppointee_AllocationManager(IAllocationManager.modifyAllocations.selector);
+        allocationManager().modifyAllocations(address(this), allocateParams);
+        print.gasUsed();
+
+        return allocateParams[0];
+    }
+    
+    function deallocateAll(
+        OperatorSet memory operatorSet
+    ) public virtual returns (AllocateParams memory) {
+        return modifyAllocations(
+            operatorSet, 
+            new uint64[](allocationManager().getStrategiesInOperatorSet(operatorSet).length)
+        );
+    }
+
+    function registerForOperatorSets(
+        OperatorSet[] memory operatorSets
+    ) public virtual createSnapshot {
+        for (uint256 i; i < operatorSets.length; ++i) {
+            registerForOperatorSet(operatorSets[i]);
+        }
+    }
+
+    function registerForOperatorSet(
+        OperatorSet memory operatorSet
+    ) public virtual createSnapshot {
+        print.method(
+            "registerForOperatorSet",
+            string.concat(
+                "{avs: ",
+                Logger(operatorSet.avs).NAME_COLORED(),
+                ", operatorSetId: ",
+                cheats.toString(operatorSet.id),
+                "}"
+            )
+        );
+        
+        _tryPrankAppointee_AllocationManager(IAllocationManager.registerForOperatorSets.selector);
+        allocationManager().registerForOperatorSets(
+            address(this),
+            RegisterParams({avs: operatorSet.avs, operatorSetIds: operatorSet.id.toArrayU32(), data: ""})
+        );
+        print.gasUsed();
+    }
+
+    function deregisterFromOperatorSet(
+        OperatorSet memory operatorSet
+    ) public virtual createSnapshot {
+        print.method(
+            "deregisterFromOperatorSet",
+            string.concat(
+                "{avs: ",
+                Logger(operatorSet.avs).NAME_COLORED(),
+                ", operatorSetId: ",
+                cheats.toString(operatorSet.id),
+                "}"
+            )
+        );
+        
+        _tryPrankAppointee_AllocationManager(IAllocationManager.deregisterFromOperatorSets.selector);
+        allocationManager().deregisterFromOperatorSets(
+            DeregisterParams({
+                operator: address(this),
+                avs: operatorSet.avs,
+                operatorSetIds: operatorSet.id.toArrayU32()
+            })
+        );
+        print.gasUsed();
+    }
+
+    function setAllocationDelay(uint32 delay) public virtual createSnapshot {
+        print.method("setAllocationDelay");
+        _tryPrankAppointee_AllocationManager(IAllocationManager.setAllocationDelay.selector);
+        allocationManager().setAllocationDelay(address(this), delay);
+        print.gasUsed();
+    }
+
+    /// -----------------------------------------------------------------------
+    /// Delegation Manager Methods
+    /// -----------------------------------------------------------------------
+
+    uint32 withdrawalDelay = 1;
+
+    function registerAsOperator() public virtual createSnapshot {
+        print.method("registerAsOperator");
+        delegationManager.registerAsOperator(address(0), withdrawalDelay, "metadata");
+        print.gasUsed();
     }
 
     /// @dev Delegate to the operator without a signature
-    function delegateTo(User operator) public createSnapshot virtual {
-        _logM("delegateTo", operator.NAME());
+    function delegateTo(
+        User operator
+    ) public virtual createSnapshot {
+        print.method("delegateTo", operator.NAME_COLORED());
 
         ISignatureUtils.SignatureWithExpiry memory emptySig;
         delegationManager.delegateTo(address(operator), emptySig, bytes32(0));
+        print.gasUsed();
     }
 
     /// @dev Undelegate from operator
-    function undelegate() public createSnapshot virtual returns(IDelegationManager.Withdrawal[] memory){
-        _logM("undelegate");
+    function undelegate() public virtual createSnapshot returns (Withdrawal[] memory) {
+        print.method("undelegate");
 
-        IDelegationManager.Withdrawal[] memory expectedWithdrawals = _getExpectedWithdrawalStructsForStaker(address(this));
+        Withdrawal[] memory expectedWithdrawals = _getExpectedWithdrawalStructsForStaker(address(this));
+        _tryPrankAppointee_DelegationManager(IDelegationManager.undelegate.selector);
         delegationManager.undelegate(address(this));
+        print.gasUsed();
 
-        for (uint i = 0; i < expectedWithdrawals.length; i++) {
-            emit log("expecting withdrawal:");
-            emit log_named_uint("nonce: ", expectedWithdrawals[i].nonce);
-            emit log_named_address("strat: ", address(expectedWithdrawals[i].strategies[0]));
-            emit log_named_uint("shares: ", expectedWithdrawals[i].shares[0]);
+        for (uint256 i = 0; i < expectedWithdrawals.length; i++) {
+            IStrategy strat = expectedWithdrawals[i].strategies[0];
+
+            string memory name = strat == beaconChainETHStrategy 
+                ? "Native ETH" 
+                : IERC20Metadata(address(strat.underlyingToken())).name();
+            
+            console.log(
+                "   Expecting withdrawal with nonce %s of %s for %s scaled shares.", 
+                expectedWithdrawals[i].nonce,
+                name,
+                expectedWithdrawals[i].scaledShares[0]
+            );
         }
-        
+
         return expectedWithdrawals;
     }
 
     /// @dev Force undelegate staker
-    function forceUndelegate(User staker) public createSnapshot virtual returns(IDelegationManager.Withdrawal[] memory){
-        _logM("forceUndelegate", staker.NAME());
+    function forceUndelegate(
+        User staker
+    ) public virtual createSnapshot returns (Withdrawal[] memory) {
+        print.method("forceUndelegate", staker.NAME());
 
-        IDelegationManager.Withdrawal[] memory expectedWithdrawals = _getExpectedWithdrawalStructsForStaker(address(staker));
+        Withdrawal[] memory expectedWithdrawals = _getExpectedWithdrawalStructsForStaker(address(staker));
         delegationManager.undelegate(address(staker));
+        print.gasUsed();
+
         return expectedWithdrawals;
     }
 
     /// @dev Queues a single withdrawal for every share and strategy pair
     function queueWithdrawals(
-        IStrategy[] memory strategies, 
-        uint[] memory shares
-    ) public createSnapshot virtual returns (IDelegationManager.Withdrawal[] memory) {
-        _logM("queueWithdrawals");
+        IStrategy[] memory strategies,
+        uint256[] memory depositShares
+    ) public virtual createSnapshot returns (Withdrawal[] memory) {
+        print.method("queueWithdrawals");
 
         address operator = delegationManager.delegatedTo(address(this));
-        address withdrawer = address(this);
-        uint nonce = delegationManager.cumulativeWithdrawalsQueued(address(this));
+        uint256 nonce = delegationManager.cumulativeWithdrawalsQueued(address(this));
 
         // Create queueWithdrawals params
-        IDelegationManager.QueuedWithdrawalParams[] memory params = new IDelegationManager.QueuedWithdrawalParams[](1);
-        params[0] = IDelegationManager.QueuedWithdrawalParams({
-            strategies: strategies,
-            shares: shares,
-            withdrawer: withdrawer
+        QueuedWithdrawalParams[] memory params = new QueuedWithdrawalParams[](1);
+        params[0] = QueuedWithdrawalParams({
+            strategies: strategies, 
+            depositShares: depositShares, 
+            __deprecated_withdrawer: address(0)
         });
 
         // Create Withdrawal struct using same info
-        IDelegationManager.Withdrawal[] memory withdrawals = new IDelegationManager.Withdrawal[](1);
-        withdrawals[0] = IDelegationManager.Withdrawal({
+        Withdrawal[] memory withdrawals = new Withdrawal[](1);
+        withdrawals[0] = Withdrawal({
             staker: address(this),
             delegatedTo: operator,
-            withdrawer: withdrawer,
+            withdrawer: address(this),
             nonce: nonce,
             startBlock: uint32(block.number),
             strategies: strategies,
-            shares: shares
+            scaledShares: depositShares // TODO: convert depositShares to shares and then scale in withdrawal
         });
 
         bytes32[] memory withdrawalRoots = delegationManager.queueWithdrawals(params);
+        print.gasUsed();
 
         // Basic sanity check - we do all other checks outside this file
         assertEq(withdrawals.length, withdrawalRoots.length, "User.queueWithdrawals: length mismatch");
@@ -161,45 +296,43 @@ contract User is PrintUtils {
         return (withdrawals);
     }
 
-    function completeWithdrawalsAsTokens(IDelegationManager.Withdrawal[] memory withdrawals) public createSnapshot virtual returns (IERC20[][] memory) {
-        _logM("completeWithdrawalsAsTokens");
-
-        IERC20[][] memory tokens = new IERC20[][](withdrawals.length);
-
-        for (uint i = 0; i < withdrawals.length; i++) {
+    function completeWithdrawalsAsTokens(
+        Withdrawal[] memory withdrawals
+    ) public virtual createSnapshot returns (IERC20[][] memory tokens) {
+        print.method("completeWithdrawalsAsTokens");
+        tokens = new IERC20[][](withdrawals.length);
+        for (uint256 i = 0; i < withdrawals.length; i++) {
             tokens[i] = _completeQueuedWithdrawal(withdrawals[i], true);
         }
-
-        return tokens;
     }
-    
-    function completeWithdrawalAsTokens(IDelegationManager.Withdrawal memory withdrawal) public createSnapshot virtual returns (IERC20[] memory) {
-        _logM("completeWithdrawalsAsTokens");
 
+    function completeWithdrawalAsTokens(
+        Withdrawal memory withdrawal
+    ) public virtual createSnapshot returns (IERC20[] memory) {
+        print.method("completeWithdrawalsAsTokens");
         return _completeQueuedWithdrawal(withdrawal, true);
     }
 
-    function completeWithdrawalsAsShares(IDelegationManager.Withdrawal[] memory withdrawals) public createSnapshot virtual returns (IERC20[][] memory) {
-        _logM("completeWithdrawalAsShares");
-        
-        IERC20[][] memory tokens = new IERC20[][](withdrawals.length);
-
-        for (uint i = 0; i < withdrawals.length; i++) {
+    function completeWithdrawalsAsShares(
+        Withdrawal[] memory withdrawals
+    ) public virtual createSnapshot returns (IERC20[][] memory tokens) {
+        print.method("completeWithdrawalAsShares");
+        tokens = new IERC20[][](withdrawals.length);
+        for (uint256 i = 0; i < withdrawals.length; i++) {
             tokens[i] = _completeQueuedWithdrawal(withdrawals[i], false);
         }
-
-        return tokens;
     }
 
-    function completeWithdrawalAsShares(IDelegationManager.Withdrawal memory withdrawal) public createSnapshot virtual returns (IERC20[] memory) {
-        _logM("completeWithdrawalAsShares");
-
+    function completeWithdrawalAsShares(
+        Withdrawal memory withdrawal
+    ) public virtual createSnapshot returns (IERC20[] memory) {
+        print.method("completeWithdrawalAsShares");
         return _completeQueuedWithdrawal(withdrawal, false);
     }
 
-    /*******************************************************************************
-                                BEACON CHAIN METHODS
-    *******************************************************************************/
+    /// -----------------------------------------------------------------------
+    /// Beacon Chain Methods
+    /// -----------------------------------------------------------------------
 
     /// @dev Uses any ETH held by the User to start validators on the beacon chain
     /// @return A list of created validator indices
@@ -207,44 +340,43 @@ contract User is PrintUtils {
     /// Note: If the user does not have enough ETH to start a validator, this method reverts
     /// Note: This method also advances one epoch forward on the beacon chain, so that
     /// withdrawal credential proofs are generated for each validator.
-    function startValidators() public createSnapshot virtual returns (uint40[] memory, uint64) {
-        _logM("startValidators");
-
+    function startValidators() public virtual createSnapshot returns (uint40[] memory, uint64) {
+        print.method("startValidators");
         return _startValidators();
     }
 
-    function exitValidators(uint40[] memory _validators) public createSnapshot virtual returns (uint64 exitedBalanceGwei) {
-        _logM("exitValidators");
-
+    function exitValidators(
+        uint40[] memory _validators
+    ) public virtual createSnapshot returns (uint64 exitedBalanceGwei) {
+        print.method("exitValidators");
         return _exitValidators(_validators);
     }
 
-    /*******************************************************************************
-                                 EIGENPOD METHODS
-    *******************************************************************************/
+    /// -----------------------------------------------------------------------
+    /// Eigenpod Methods
+    /// -----------------------------------------------------------------------
 
     function verifyWithdrawalCredentials(
         uint40[] memory _validators
-    ) public createSnapshot virtual {
-        _logM("verifyWithdrawalCredentials");
-
+    ) public virtual createSnapshot {
+        print.method("verifyWithdrawalCredentials");
         _verifyWithdrawalCredentials(_validators);
     }
 
-    function startCheckpoint() public createSnapshot virtual {
-        _logM("startCheckpoint");
-
+    function startCheckpoint() public virtual createSnapshot {
+        print.method("startCheckpoint");
         _startCheckpoint();
     }
 
-    function completeCheckpoint() public createSnapshot virtual {
-        _logM("completeCheckpoint");
-
+    function completeCheckpoint() public virtual createSnapshot {
+        print.method("completeCheckpoint");
         _completeCheckpoint();
     }
 
-    function verifyStaleBalance(uint40 validatorIndex) public createSnapshot virtual {
-        _logM("verifyStaleBalance");
+    function verifyStaleBalance(
+        uint40 validatorIndex
+    ) public virtual createSnapshot {
+        print.method("verifyStaleBalance");
 
         StaleBalanceProofs memory proof = beaconChain.getStaleBalanceProofs(validatorIndex);
 
@@ -252,25 +384,28 @@ contract User is PrintUtils {
             beaconTimestamp: proof.beaconTimestamp,
             stateRootProof: proof.stateRootProof,
             proof: proof.validatorProof
-        }) { } catch (bytes memory err) {
+        }) {} catch (bytes memory err) {
             _revert(err);
         }
     }
 
-    /*******************************************************************************
-                                STRATEGY METHODS
-    *******************************************************************************/
+    /// -----------------------------------------------------------------------
+    /// Strategy Methods
+    /// -----------------------------------------------------------------------
 
     /// @dev For each strategy/token balance, call the relevant deposit method
-    function depositIntoEigenlayer(IStrategy[] memory strategies, uint[] memory tokenBalances) public createSnapshot virtual {
-        _logM("depositIntoEigenlayer");
+    function depositIntoEigenlayer(
+        IStrategy[] memory strategies,
+        uint256[] memory tokenBalances
+    ) public virtual createSnapshot {
+        print.method("depositIntoEigenlayer");
 
-        for (uint i = 0; i < strategies.length; i++) {
+        for (uint256 i = 0; i < strategies.length; i++) {
             IStrategy strat = strategies[i];
-            uint tokenBalance = tokenBalances[i];
+            uint256 tokenBalance = tokenBalances[i];
 
             if (strat == BEACONCHAIN_ETH_STRAT) {
-                (uint40[] memory newValidators, ) = _startValidators();
+                (uint40[] memory newValidators,) = _startValidators();
                 // Advance forward one epoch and generate credential and balance proofs for each validator
                 beaconChain.advanceEpoch_NoRewards();
                 _verifyWithdrawalCredentials(newValidators);
@@ -278,16 +413,17 @@ contract User is PrintUtils {
                 IERC20 underlyingToken = strat.underlyingToken();
                 underlyingToken.approve(address(strategyManager), tokenBalance);
                 strategyManager.depositIntoStrategy(strat, underlyingToken, tokenBalance);
+                print.gasUsed();
             }
         }
     }
 
-    function updateBalances(IStrategy[] memory strategies, int[] memory tokenDeltas) public createSnapshot virtual {
-        _logM("updateBalances");
+    function updateBalances(IStrategy[] memory strategies, int256[] memory tokenDeltas) public virtual createSnapshot {
+        print.method("updateBalances");
 
-        for (uint i = 0; i < strategies.length; i++) {
+        for (uint256 i = 0; i < strategies.length; i++) {
             IStrategy strat = strategies[i];
-            int delta = tokenDeltas[i];
+            int256 delta = tokenDeltas[i];
 
             if (strat == BEACONCHAIN_ETH_STRAT) {
                 // If any balance update has occured, a checkpoint will pick it up
@@ -296,25 +432,34 @@ contract User is PrintUtils {
                     _completeCheckpoint();
                 }
             } else {
-                uint tokens = uint(delta);
+                uint256 tokens = uint256(delta);
                 IERC20 underlyingToken = strat.underlyingToken();
                 underlyingToken.approve(address(strategyManager), tokens);
                 strategyManager.depositIntoStrategy(strat, underlyingToken, tokens);
+                print.gasUsed();
             }
         }
     }
 
-    /*******************************************************************************
-                                INTERNAL METHODS
-    *******************************************************************************/
+    /// -----------------------------------------------------------------------
+    /// Internal Methods
+    /// -----------------------------------------------------------------------
+
+    function allocationManager() public view returns (AllocationManager) {
+        return AllocationManager(address(delegationManager.allocationManager()));
+    }
+
+    function permissionController() public view returns (PermissionController) {
+        return PermissionController(address(delegationManager.permissionController()));
+    }
 
     function _completeQueuedWithdrawal(
-        IDelegationManager.Withdrawal memory withdrawal, 
+        Withdrawal memory withdrawal,
         bool receiveAsTokens
     ) internal virtual returns (IERC20[] memory) {
         IERC20[] memory tokens = new IERC20[](withdrawal.strategies.length);
 
-        for (uint i = 0; i < tokens.length; i++) {
+        for (uint256 i = 0; i < tokens.length; i++) {
             IStrategy strat = withdrawal.strategies[i];
 
             if (strat == BEACONCHAIN_ETH_STRAT) {
@@ -323,8 +468,7 @@ contract User is PrintUtils {
                 // If we're withdrawing native ETH as tokens, stop ALL validators
                 // and complete a checkpoint
                 if (receiveAsTokens) {
-                    
-                    _log("- exiting all validators and completing checkpoint");
+                    console.log("- exiting all validators and completing checkpoint");
                     _exitValidators(getActiveValidators());
 
                     beaconChain.advanceEpoch_NoRewards();
@@ -339,7 +483,8 @@ contract User is PrintUtils {
             }
         }
 
-        delegationManager.completeQueuedWithdrawal(withdrawal, tokens, 0, receiveAsTokens);
+        delegationManager.completeQueuedWithdrawal(withdrawal, tokens, receiveAsTokens);
+        print.gasUsed();
 
         return tokens;
     }
@@ -355,17 +500,17 @@ contract User is PrintUtils {
     /// Note: This method also advances one epoch forward on the beacon chain, so that
     /// withdrawal credential proofs are generated for each validator.
     function _startValidators() internal returns (uint40[] memory, uint64) {
-        uint balanceWei = address(this).balance;
+        uint256 balanceWei = address(this).balance;
 
         // Number of full validators: balance / 32 ETH
-        uint numValidators = balanceWei / 32 ether;
+        uint256 numValidators = balanceWei / 32 ether;
         balanceWei -= (numValidators * 32 ether);
 
         // If we still have at least 1 ETH left over, we can create another (non-full) validator
         // Note that in the mock beacon chain this validator will generate rewards like any other.
         // The main point is to ensure pods are able to handle validators that have less than 32 ETH
-        uint lastValidatorBalance;
-        uint totalValidators = numValidators;
+        uint256 lastValidatorBalance;
+        uint256 totalValidators = numValidators;
         if (balanceWei >= 1 ether) {
             lastValidatorBalance = balanceWei - (balanceWei % 1 gwei);
             balanceWei -= lastValidatorBalance;
@@ -376,14 +521,12 @@ contract User is PrintUtils {
         uint40[] memory newValidators = new uint40[](totalValidators);
         uint64 totalBeaconBalanceGwei = uint64((address(this).balance - balanceWei) / GWEI_TO_WEI);
 
-        _log("- creating new validators", newValidators.length);
-        _log("- depositing balance to beacon chain (gwei)", totalBeaconBalanceGwei);
+        console.log("- creating new validators", newValidators.length);
+        console.log("- depositing balance to beacon chain (gwei)", totalBeaconBalanceGwei);
 
         // Create each of the full validators
-        for (uint i = 0; i < numValidators; i++) {
-            uint40 validatorIndex = beaconChain.newValidator{ 
-                value: 32 ether 
-            }(_podWithdrawalCredentials());
+        for (uint256 i = 0; i < numValidators; i++) {
+            uint40 validatorIndex = beaconChain.newValidator{value: 32 ether}(_podWithdrawalCredentials());
 
             newValidators[i] = validatorIndex;
             validators.push(validatorIndex);
@@ -391,9 +534,7 @@ contract User is PrintUtils {
 
         // If we had a remainder, create the final, non-full validator
         if (totalValidators == numValidators + 1) {
-            uint40 validatorIndex = beaconChain.newValidator{ 
-                value: lastValidatorBalance 
-            }(_podWithdrawalCredentials());
+            uint40 validatorIndex = beaconChain.newValidator{value: lastValidatorBalance}(_podWithdrawalCredentials());
 
             newValidators[newValidators.length - 1] = validatorIndex;
             validators.push(validatorIndex);
@@ -402,27 +543,31 @@ contract User is PrintUtils {
         return (newValidators, totalBeaconBalanceGwei);
     }
 
-    function _exitValidators(uint40[] memory _validators) internal returns (uint64 exitedBalanceGwei) {
-        _log("- exiting num validators", _validators.length);
+    function _exitValidators(
+        uint40[] memory _validators
+    ) internal returns (uint64 exitedBalanceGwei) {
+        console.log("- exiting num validators", _validators.length);
 
-        for (uint i = 0; i < _validators.length; i++) {
+        for (uint256 i = 0; i < _validators.length; i++) {
             exitedBalanceGwei += beaconChain.exitValidator(_validators[i]);
         }
 
-        _log("- exited balance to pod (gwei)", exitedBalanceGwei);
+        console.log("- exited balance to pod (gwei)", exitedBalanceGwei);
 
         return exitedBalanceGwei;
     }
 
     function _startCheckpoint() internal {
-        try pod.startCheckpoint(false) {} catch (bytes memory err) {
+        try pod.startCheckpoint(false) {}
+        catch (bytes memory err) {
             _revert(err);
         }
     }
 
     function _completeCheckpoint() internal {
-        _log("- active validator count", pod.activeValidatorCount());
-        _log("- proofs remaining", pod.currentCheckpoint().proofsRemaining);
+        cheats.pauseTracing();
+        console.log("- active validator count", pod.activeValidatorCount());
+        console.log("- proofs remaining", pod.currentCheckpoint().proofsRemaining);
 
         uint64 checkpointTimestamp = pod.currentCheckpointTimestamp();
         if (checkpointTimestamp == 0) {
@@ -430,15 +575,16 @@ contract User is PrintUtils {
         }
 
         CheckpointProofs memory proofs = beaconChain.getCheckpointProofs(validators, checkpointTimestamp);
-        _log("- submitting num checkpoint proofs", proofs.balanceProofs.length);
+        console.log("- submitting num checkpoint proofs", proofs.balanceProofs.length);
 
-        pod.verifyCheckpointProofs({
-            balanceContainerProof: proofs.balanceContainerProof,
-            proofs: proofs.balanceProofs
-        });
+        pod.verifyCheckpointProofs({balanceContainerProof: proofs.balanceContainerProof, proofs: proofs.balanceProofs});
+        cheats.resumeTracing();
     }
 
-    function _verifyWithdrawalCredentials(uint40[] memory _validators) internal {
+    function _verifyWithdrawalCredentials(
+        uint40[] memory _validators
+    ) internal {
+        cheats.pauseTracing();
         CredentialProofs memory proofs = beaconChain.getCredentialProofs(_validators);
 
         try pod.verifyWithdrawalCredentials({
@@ -447,15 +593,20 @@ contract User is PrintUtils {
             validatorIndices: _validators,
             validatorFieldsProofs: proofs.validatorFieldsProofs,
             validatorFields: proofs.validatorFields
-        }) { } catch (bytes memory err) {
-            _revert(err);            
+        }) {} catch (bytes memory err) {
+            _revert(err);
         }
+        cheats.resumeTracing();
     }
 
     /// @dev Revert, passing through an error message
-    function _revert(bytes memory err) internal pure {
+    function _revert(
+        bytes memory err
+    ) internal pure {
         if (err.length != 0) {
-            assembly { revert(add(32, err), mload(err)) }
+            assembly {
+                revert(add(32, err), mload(err))
+            }
         }
         revert("reverted with unknown error");
     }
@@ -464,41 +615,63 @@ contract User is PrintUtils {
         return abi.encodePacked(bytes1(uint8(1)), bytes11(0), address(pod));
     }
 
+    function _getSlashingFactor(
+        address staker,
+        IStrategy strategy
+    ) internal view returns (uint256) {
+        address operator = delegationManager.delegatedTo(staker);
+        uint64 maxMagnitude = allocationManager().getMaxMagnitudes(operator, strategy.toArray())[0];
+        if (strategy == beaconChainETHStrategy) {
+            return maxMagnitude.mulWad(eigenPodManager.beaconChainSlashingFactor(staker));
+        }
+        return maxMagnitude;
+    }
+
     /// @notice Gets the expected withdrawals to be created when the staker is undelegated via a call to `DelegationManager.undelegate()`
     /// @notice Assumes staker and withdrawer are the same and that all strategies and shares are withdrawn
-    function _getExpectedWithdrawalStructsForStaker(address staker) internal view returns (IDelegationManager.Withdrawal[] memory) {
-        (IStrategy[] memory strategies, uint256[] memory shares)
-            = delegationManager.getDelegatableShares(staker);
+    function _getExpectedWithdrawalStructsForStaker(
+        address staker
+    ) internal view returns (Withdrawal[] memory expectedWithdrawals) {
+        (IStrategy[] memory strategies, )
+             = delegationManager.getDepositedShares(staker);
 
-        IDelegationManager.Withdrawal[] memory expectedWithdrawals = new IDelegationManager.Withdrawal[](strategies.length);
+        expectedWithdrawals = new Withdrawal[](strategies.length);
+
+        (, uint256[] memory depositShares)
+             = delegationManager.getWithdrawableShares(staker, strategies);
+
         address delegatedTo = delegationManager.delegatedTo(staker);
         uint256 nonce = delegationManager.cumulativeWithdrawalsQueued(staker);
         
         for (uint256 i = 0; i < strategies.length; ++i) {
-            IStrategy[] memory singleStrategy = new IStrategy[](1);
-            uint256[] memory singleShares = new uint256[](1);
-            singleStrategy[0] = strategies[i];
-            singleShares[0] = shares[i];
-            expectedWithdrawals[i] = IDelegationManager.Withdrawal({
+            DepositScalingFactor memory dsf = DepositScalingFactor(
+                delegationManager.depositScalingFactor(staker, strategies[i])
+            );
+
+            uint256 scaledShares = dsf.scaleForQueueWithdrawal(depositShares[i]);
+
+            if (strategies[i] == beaconChainETHStrategy) {
+                scaledShares -= scaledShares % 1 gwei;
+            }
+
+            expectedWithdrawals[i] = Withdrawal({
                 staker: staker,
                 delegatedTo: delegatedTo,
                 withdrawer: staker,
                 nonce: (nonce + i),
                 startBlock: uint32(block.number),
-                strategies: singleStrategy,
-                shares: singleShares
+                strategies: strategies[i].toArray(),
+                scaledShares: scaledShares.toArrayU256()
             });
         }
-
-        return expectedWithdrawals;
     }
 
     function getActiveValidators() public view returns (uint40[] memory) {
         uint40[] memory activeValidators = new uint40[](validators.length);
 
-        uint numActive;
-        uint pos;
-        for(uint i = 0; i < validators.length; i++) {
+        uint256 numActive;
+        uint256 pos;
+        for (uint256 i = 0; i < validators.length; i++) {
             if (beaconChain.isActive(validators[i])) {
                 activeValidators[pos] = validators[i];
                 numActive++;
@@ -507,52 +680,55 @@ contract User is PrintUtils {
         }
 
         // Manually update length
-        assembly { mstore(activeValidators, numActive) }
+        assembly {
+            mstore(activeValidators, numActive)
+        }
 
         return activeValidators;
+    }
+
+    function _tryPrankAppointee(
+        address target,
+        bytes4 selector
+    ) internal {
+        address[] memory appointees = permissionController().getAppointees(address(this), target, selector);
+        if (appointees.length != 0) cheats.prank(appointees[0]);
+    }
+
+    function _tryPrankAppointee_AllocationManager(
+        bytes4 selector
+    ) internal {
+        return _tryPrankAppointee(address(allocationManager()), selector);
+    }
+
+    function _tryPrankAppointee_DelegationManager(
+        bytes4 selector
+    ) internal {
+        return _tryPrankAppointee(address(delegationManager), selector);
     }
 }
 
 /// @notice A user contract that calls nonstandard methods (like xBySignature methods)
 contract User_AltMethods is User {
-
     mapping(bytes32 => bool) public signedHashes;
 
-    constructor(string memory name) User(name) {}
+    constructor(
+        string memory name
+    ) User(name) {}
 
-    function delegateTo(User operator) public createSnapshot override {
-        _logM("delegateTo_ALT", operator.NAME());
+    function depositIntoEigenlayer(
+        IStrategy[] memory strategies,
+        uint256[] memory tokenBalances
+    ) public override createSnapshot {
+        print.method("depositIntoEigenlayer_ALT");
 
-        // Create empty data
-        ISignatureUtils.SignatureWithExpiry memory emptySig;
         uint256 expiry = type(uint256).max;
-
-        // Get signature
-        ISignatureUtils.SignatureWithExpiry memory stakerSignatureAndExpiry;
-        stakerSignatureAndExpiry.expiry = expiry;
-        bytes32 digestHash = delegationManager.calculateCurrentStakerDelegationDigestHash(address(this), address(operator), expiry);
-        stakerSignatureAndExpiry.signature = bytes(abi.encodePacked(digestHash)); // dummy sig data
-
-        // Mark hash as signed
-        signedHashes[digestHash] = true;
-
-        // Delegate
-        delegationManager.delegateToBySignature(address(this), address(operator), stakerSignatureAndExpiry, emptySig, bytes32(0));
-
-        // Mark hash as used
-        signedHashes[digestHash] = false;
-    }
-
-    function depositIntoEigenlayer(IStrategy[] memory strategies, uint[] memory tokenBalances) public createSnapshot override {
-        _logM("depositIntoEigenlayer_ALT");
-        
-        uint256 expiry = type(uint256).max;
-        for (uint i = 0; i < strategies.length; i++) {
+        for (uint256 i = 0; i < strategies.length; i++) {
             IStrategy strat = strategies[i];
-            uint tokenBalance = tokenBalances[i];
+            uint256 tokenBalance = tokenBalances[i];
 
             if (strat == BEACONCHAIN_ETH_STRAT) {
-                (uint40[] memory newValidators, ) = _startValidators();
+                (uint40[] memory newValidators,) = _startValidators();
                 // Advance forward one epoch and generate credential and balance proofs for each validator
                 beaconChain.advanceEpoch_NoRewards();
                 _verifyWithdrawalCredentials(newValidators);
@@ -564,9 +740,18 @@ contract User_AltMethods is User {
                 // Get signature
                 uint256 nonceBefore = strategyManager.nonces(address(this));
                 bytes32 structHash = keccak256(
-                    abi.encode(strategyManager.DEPOSIT_TYPEHASH(), address(this), strat, underlyingToken, tokenBalance, nonceBefore, expiry)
+                    abi.encode(
+                        strategyManager.DEPOSIT_TYPEHASH(),
+                        address(this),
+                        strat,
+                        underlyingToken,
+                        tokenBalance,
+                        nonceBefore,
+                        expiry
+                    )
                 );
-                bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", strategyManager.domainSeparator(), structHash));
+                bytes32 digestHash =
+                    keccak256(abi.encodePacked("\x19\x01", strategyManager.domainSeparator(), structHash));
                 bytes memory signature = bytes(abi.encodePacked(digestHash)); // dummy sig data
 
                 // Mark hash as signed
@@ -574,12 +759,7 @@ contract User_AltMethods is User {
 
                 // Deposit
                 strategyManager.depositIntoStrategyWithSignature(
-                    strat,
-                    underlyingToken,
-                    tokenBalance,
-                    address(this),
-                    expiry,
-                    signature
+                    strat, underlyingToken, tokenBalance, address(this), expiry, signature
                 );
 
                 // Mark hash as used
@@ -587,13 +767,14 @@ contract User_AltMethods is User {
             }
         }
     }
- 
+
     bytes4 internal constant MAGIC_VALUE = 0x1626ba7e;
+
     function isValidSignature(bytes32 hash, bytes memory) external view returns (bytes4) {
-        if(signedHashes[hash]){
+        if (signedHashes[hash]) {
             return MAGIC_VALUE;
         } else {
             return 0xffffffff;
         }
-    } 
+    }
 }

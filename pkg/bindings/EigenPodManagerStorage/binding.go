@@ -31,7 +31,7 @@ var (
 
 // EigenPodManagerStorageMetaData contains all meta data concerning the EigenPodManagerStorage contract.
 var EigenPodManagerStorageMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"addShares\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"beaconChainETHStrategy\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"createPod\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"delegationManager\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIDelegationManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"eigenPodBeacon\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIBeacon\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"ethPOS\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIETHPOSDeposit\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getPod\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIEigenPod\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"hasPod\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"numPods\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"ownerToPod\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIEigenPod\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"pause\",\"inputs\":[{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"pauseAll\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"paused\",\"inputs\":[{\"name\":\"index\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"paused\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"pauserRegistry\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIPauserRegistry\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"podOwnerShares\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"int256\",\"internalType\":\"int256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"recordBeaconChainETHBalanceUpdate\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"sharesDelta\",\"type\":\"int256\",\"internalType\":\"int256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeShares\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setPauserRegistry\",\"inputs\":[{\"name\":\"newPauserRegistry\",\"type\":\"address\",\"internalType\":\"contractIPauserRegistry\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"slasher\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractISlasher\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"stake\",\"inputs\":[{\"name\":\"pubkey\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"depositDataRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"strategyManager\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIStrategyManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"unpause\",\"inputs\":[{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"withdrawSharesAsTokens\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"destination\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"BeaconChainETHDeposited\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"BeaconChainETHWithdrawalCompleted\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"shares\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"nonce\",\"type\":\"uint96\",\"indexed\":false,\"internalType\":\"uint96\"},{\"name\":\"delegatedAddress\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"withdrawer\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"withdrawalRoot\",\"type\":\"bytes32\",\"indexed\":false,\"internalType\":\"bytes32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"NewTotalShares\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newTotalShares\",\"type\":\"int256\",\"indexed\":false,\"internalType\":\"int256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Paused\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"PauserRegistrySet\",\"inputs\":[{\"name\":\"pauserRegistry\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIPauserRegistry\"},{\"name\":\"newPauserRegistry\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIPauserRegistry\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"PodDeployed\",\"inputs\":[{\"name\":\"eigenPod\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"podOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"PodSharesUpdated\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"sharesDelta\",\"type\":\"int256\",\"indexed\":false,\"internalType\":\"int256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Unpaused\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false}]",
+	ABI: "[{\"type\":\"function\",\"name\":\"addShares\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"beaconChainETHStrategy\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"beaconChainSlashingFactor\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"burnableETHShares\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"createPod\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"delegationManager\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIDelegationManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"eigenPodBeacon\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIBeacon\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"ethPOS\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIETHPOSDeposit\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getPod\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIEigenPod\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"hasPod\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"increaseBurnableShares\",\"inputs\":[{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"addedSharesToBurn\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"numPods\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"ownerToPod\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIEigenPod\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"pause\",\"inputs\":[{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"pauseAll\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"paused\",\"inputs\":[{\"name\":\"index\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"paused\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"pauserRegistry\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIPauserRegistry\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"podOwnerDepositShares\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"shares\",\"type\":\"int256\",\"internalType\":\"int256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"recordBeaconChainETHBalanceUpdate\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"prevRestakedBalanceWei\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"balanceDeltaWei\",\"type\":\"int256\",\"internalType\":\"int256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeDepositShares\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"depositSharesToRemove\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"stake\",\"inputs\":[{\"name\":\"pubkey\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"depositDataRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"stakerDepositShares\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"}],\"outputs\":[{\"name\":\"depositShares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"unpause\",\"inputs\":[{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"withdrawSharesAsTokens\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"BeaconChainETHDeposited\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"BeaconChainETHWithdrawalCompleted\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"shares\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"nonce\",\"type\":\"uint96\",\"indexed\":false,\"internalType\":\"uint96\"},{\"name\":\"delegatedAddress\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"withdrawer\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"withdrawalRoot\",\"type\":\"bytes32\",\"indexed\":false,\"internalType\":\"bytes32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"BeaconChainSlashingFactorDecreased\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"prevBeaconChainSlashingFactor\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"},{\"name\":\"newBeaconChainSlashingFactor\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"BurnableETHSharesIncreased\",\"inputs\":[{\"name\":\"shares\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"NewTotalShares\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newTotalShares\",\"type\":\"int256\",\"indexed\":false,\"internalType\":\"int256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Paused\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"PodDeployed\",\"inputs\":[{\"name\":\"eigenPod\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"podOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"PodSharesUpdated\",\"inputs\":[{\"name\":\"podOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"sharesDelta\",\"type\":\"int256\",\"indexed\":false,\"internalType\":\"int256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Unpaused\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newPausedStatus\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"CurrentlyPaused\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"EigenPodAlreadyExists\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InputAddressZero\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidNewPausedStatus\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidStrategy\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"LegacyWithdrawalsNotCompleted\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OnlyDelegationManager\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OnlyEigenPod\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OnlyPauser\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OnlyUnpauser\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"SharesNegative\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"SharesNotMultipleOfGwei\",\"inputs\":[]}]",
 }
 
 // EigenPodManagerStorageABI is the input ABI used to generate the binding from.
@@ -209,6 +209,68 @@ func (_EigenPodManagerStorage *EigenPodManagerStorageSession) BeaconChainETHStra
 // Solidity: function beaconChainETHStrategy() view returns(address)
 func (_EigenPodManagerStorage *EigenPodManagerStorageCallerSession) BeaconChainETHStrategy() (common.Address, error) {
 	return _EigenPodManagerStorage.Contract.BeaconChainETHStrategy(&_EigenPodManagerStorage.CallOpts)
+}
+
+// BeaconChainSlashingFactor is a free data retrieval call binding the contract method 0xa3d75e09.
+//
+// Solidity: function beaconChainSlashingFactor(address staker) view returns(uint64)
+func (_EigenPodManagerStorage *EigenPodManagerStorageCaller) BeaconChainSlashingFactor(opts *bind.CallOpts, staker common.Address) (uint64, error) {
+	var out []interface{}
+	err := _EigenPodManagerStorage.contract.Call(opts, &out, "beaconChainSlashingFactor", staker)
+
+	if err != nil {
+		return *new(uint64), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(uint64)).(*uint64)
+
+	return out0, err
+
+}
+
+// BeaconChainSlashingFactor is a free data retrieval call binding the contract method 0xa3d75e09.
+//
+// Solidity: function beaconChainSlashingFactor(address staker) view returns(uint64)
+func (_EigenPodManagerStorage *EigenPodManagerStorageSession) BeaconChainSlashingFactor(staker common.Address) (uint64, error) {
+	return _EigenPodManagerStorage.Contract.BeaconChainSlashingFactor(&_EigenPodManagerStorage.CallOpts, staker)
+}
+
+// BeaconChainSlashingFactor is a free data retrieval call binding the contract method 0xa3d75e09.
+//
+// Solidity: function beaconChainSlashingFactor(address staker) view returns(uint64)
+func (_EigenPodManagerStorage *EigenPodManagerStorageCallerSession) BeaconChainSlashingFactor(staker common.Address) (uint64, error) {
+	return _EigenPodManagerStorage.Contract.BeaconChainSlashingFactor(&_EigenPodManagerStorage.CallOpts, staker)
+}
+
+// BurnableETHShares is a free data retrieval call binding the contract method 0xf5d4fed3.
+//
+// Solidity: function burnableETHShares() view returns(uint256)
+func (_EigenPodManagerStorage *EigenPodManagerStorageCaller) BurnableETHShares(opts *bind.CallOpts) (*big.Int, error) {
+	var out []interface{}
+	err := _EigenPodManagerStorage.contract.Call(opts, &out, "burnableETHShares")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// BurnableETHShares is a free data retrieval call binding the contract method 0xf5d4fed3.
+//
+// Solidity: function burnableETHShares() view returns(uint256)
+func (_EigenPodManagerStorage *EigenPodManagerStorageSession) BurnableETHShares() (*big.Int, error) {
+	return _EigenPodManagerStorage.Contract.BurnableETHShares(&_EigenPodManagerStorage.CallOpts)
+}
+
+// BurnableETHShares is a free data retrieval call binding the contract method 0xf5d4fed3.
+//
+// Solidity: function burnableETHShares() view returns(uint256)
+func (_EigenPodManagerStorage *EigenPodManagerStorageCallerSession) BurnableETHShares() (*big.Int, error) {
+	return _EigenPodManagerStorage.Contract.BurnableETHShares(&_EigenPodManagerStorage.CallOpts)
 }
 
 // DelegationManager is a free data retrieval call binding the contract method 0xea4d3c9b.
@@ -399,10 +461,10 @@ func (_EigenPodManagerStorage *EigenPodManagerStorageCallerSession) NumPods() (*
 
 // OwnerToPod is a free data retrieval call binding the contract method 0x9ba06275.
 //
-// Solidity: function ownerToPod(address ) view returns(address)
-func (_EigenPodManagerStorage *EigenPodManagerStorageCaller) OwnerToPod(opts *bind.CallOpts, arg0 common.Address) (common.Address, error) {
+// Solidity: function ownerToPod(address podOwner) view returns(address)
+func (_EigenPodManagerStorage *EigenPodManagerStorageCaller) OwnerToPod(opts *bind.CallOpts, podOwner common.Address) (common.Address, error) {
 	var out []interface{}
-	err := _EigenPodManagerStorage.contract.Call(opts, &out, "ownerToPod", arg0)
+	err := _EigenPodManagerStorage.contract.Call(opts, &out, "ownerToPod", podOwner)
 
 	if err != nil {
 		return *new(common.Address), err
@@ -416,16 +478,16 @@ func (_EigenPodManagerStorage *EigenPodManagerStorageCaller) OwnerToPod(opts *bi
 
 // OwnerToPod is a free data retrieval call binding the contract method 0x9ba06275.
 //
-// Solidity: function ownerToPod(address ) view returns(address)
-func (_EigenPodManagerStorage *EigenPodManagerStorageSession) OwnerToPod(arg0 common.Address) (common.Address, error) {
-	return _EigenPodManagerStorage.Contract.OwnerToPod(&_EigenPodManagerStorage.CallOpts, arg0)
+// Solidity: function ownerToPod(address podOwner) view returns(address)
+func (_EigenPodManagerStorage *EigenPodManagerStorageSession) OwnerToPod(podOwner common.Address) (common.Address, error) {
+	return _EigenPodManagerStorage.Contract.OwnerToPod(&_EigenPodManagerStorage.CallOpts, podOwner)
 }
 
 // OwnerToPod is a free data retrieval call binding the contract method 0x9ba06275.
 //
-// Solidity: function ownerToPod(address ) view returns(address)
-func (_EigenPodManagerStorage *EigenPodManagerStorageCallerSession) OwnerToPod(arg0 common.Address) (common.Address, error) {
-	return _EigenPodManagerStorage.Contract.OwnerToPod(&_EigenPodManagerStorage.CallOpts, arg0)
+// Solidity: function ownerToPod(address podOwner) view returns(address)
+func (_EigenPodManagerStorage *EigenPodManagerStorageCallerSession) OwnerToPod(podOwner common.Address) (common.Address, error) {
+	return _EigenPodManagerStorage.Contract.OwnerToPod(&_EigenPodManagerStorage.CallOpts, podOwner)
 }
 
 // Paused is a free data retrieval call binding the contract method 0x5ac86ab7.
@@ -521,12 +583,12 @@ func (_EigenPodManagerStorage *EigenPodManagerStorageCallerSession) PauserRegist
 	return _EigenPodManagerStorage.Contract.PauserRegistry(&_EigenPodManagerStorage.CallOpts)
 }
 
-// PodOwnerShares is a free data retrieval call binding the contract method 0x60f4062b.
+// PodOwnerDepositShares is a free data retrieval call binding the contract method 0xd48e8894.
 //
-// Solidity: function podOwnerShares(address ) view returns(int256)
-func (_EigenPodManagerStorage *EigenPodManagerStorageCaller) PodOwnerShares(opts *bind.CallOpts, arg0 common.Address) (*big.Int, error) {
+// Solidity: function podOwnerDepositShares(address podOwner) view returns(int256 shares)
+func (_EigenPodManagerStorage *EigenPodManagerStorageCaller) PodOwnerDepositShares(opts *bind.CallOpts, podOwner common.Address) (*big.Int, error) {
 	var out []interface{}
-	err := _EigenPodManagerStorage.contract.Call(opts, &out, "podOwnerShares", arg0)
+	err := _EigenPodManagerStorage.contract.Call(opts, &out, "podOwnerDepositShares", podOwner)
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -538,101 +600,70 @@ func (_EigenPodManagerStorage *EigenPodManagerStorageCaller) PodOwnerShares(opts
 
 }
 
-// PodOwnerShares is a free data retrieval call binding the contract method 0x60f4062b.
+// PodOwnerDepositShares is a free data retrieval call binding the contract method 0xd48e8894.
 //
-// Solidity: function podOwnerShares(address ) view returns(int256)
-func (_EigenPodManagerStorage *EigenPodManagerStorageSession) PodOwnerShares(arg0 common.Address) (*big.Int, error) {
-	return _EigenPodManagerStorage.Contract.PodOwnerShares(&_EigenPodManagerStorage.CallOpts, arg0)
+// Solidity: function podOwnerDepositShares(address podOwner) view returns(int256 shares)
+func (_EigenPodManagerStorage *EigenPodManagerStorageSession) PodOwnerDepositShares(podOwner common.Address) (*big.Int, error) {
+	return _EigenPodManagerStorage.Contract.PodOwnerDepositShares(&_EigenPodManagerStorage.CallOpts, podOwner)
 }
 
-// PodOwnerShares is a free data retrieval call binding the contract method 0x60f4062b.
+// PodOwnerDepositShares is a free data retrieval call binding the contract method 0xd48e8894.
 //
-// Solidity: function podOwnerShares(address ) view returns(int256)
-func (_EigenPodManagerStorage *EigenPodManagerStorageCallerSession) PodOwnerShares(arg0 common.Address) (*big.Int, error) {
-	return _EigenPodManagerStorage.Contract.PodOwnerShares(&_EigenPodManagerStorage.CallOpts, arg0)
+// Solidity: function podOwnerDepositShares(address podOwner) view returns(int256 shares)
+func (_EigenPodManagerStorage *EigenPodManagerStorageCallerSession) PodOwnerDepositShares(podOwner common.Address) (*big.Int, error) {
+	return _EigenPodManagerStorage.Contract.PodOwnerDepositShares(&_EigenPodManagerStorage.CallOpts, podOwner)
 }
 
-// Slasher is a free data retrieval call binding the contract method 0xb1344271.
+// StakerDepositShares is a free data retrieval call binding the contract method 0xfe243a17.
 //
-// Solidity: function slasher() view returns(address)
-func (_EigenPodManagerStorage *EigenPodManagerStorageCaller) Slasher(opts *bind.CallOpts) (common.Address, error) {
+// Solidity: function stakerDepositShares(address user, address strategy) view returns(uint256 depositShares)
+func (_EigenPodManagerStorage *EigenPodManagerStorageCaller) StakerDepositShares(opts *bind.CallOpts, user common.Address, strategy common.Address) (*big.Int, error) {
 	var out []interface{}
-	err := _EigenPodManagerStorage.contract.Call(opts, &out, "slasher")
+	err := _EigenPodManagerStorage.contract.Call(opts, &out, "stakerDepositShares", user, strategy)
 
 	if err != nil {
-		return *new(common.Address), err
+		return *new(*big.Int), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
 
 }
 
-// Slasher is a free data retrieval call binding the contract method 0xb1344271.
+// StakerDepositShares is a free data retrieval call binding the contract method 0xfe243a17.
 //
-// Solidity: function slasher() view returns(address)
-func (_EigenPodManagerStorage *EigenPodManagerStorageSession) Slasher() (common.Address, error) {
-	return _EigenPodManagerStorage.Contract.Slasher(&_EigenPodManagerStorage.CallOpts)
+// Solidity: function stakerDepositShares(address user, address strategy) view returns(uint256 depositShares)
+func (_EigenPodManagerStorage *EigenPodManagerStorageSession) StakerDepositShares(user common.Address, strategy common.Address) (*big.Int, error) {
+	return _EigenPodManagerStorage.Contract.StakerDepositShares(&_EigenPodManagerStorage.CallOpts, user, strategy)
 }
 
-// Slasher is a free data retrieval call binding the contract method 0xb1344271.
+// StakerDepositShares is a free data retrieval call binding the contract method 0xfe243a17.
 //
-// Solidity: function slasher() view returns(address)
-func (_EigenPodManagerStorage *EigenPodManagerStorageCallerSession) Slasher() (common.Address, error) {
-	return _EigenPodManagerStorage.Contract.Slasher(&_EigenPodManagerStorage.CallOpts)
+// Solidity: function stakerDepositShares(address user, address strategy) view returns(uint256 depositShares)
+func (_EigenPodManagerStorage *EigenPodManagerStorageCallerSession) StakerDepositShares(user common.Address, strategy common.Address) (*big.Int, error) {
+	return _EigenPodManagerStorage.Contract.StakerDepositShares(&_EigenPodManagerStorage.CallOpts, user, strategy)
 }
 
-// StrategyManager is a free data retrieval call binding the contract method 0x39b70e38.
+// AddShares is a paid mutator transaction binding the contract method 0xc4623ea1.
 //
-// Solidity: function strategyManager() view returns(address)
-func (_EigenPodManagerStorage *EigenPodManagerStorageCaller) StrategyManager(opts *bind.CallOpts) (common.Address, error) {
-	var out []interface{}
-	err := _EigenPodManagerStorage.contract.Call(opts, &out, "strategyManager")
-
-	if err != nil {
-		return *new(common.Address), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
-
-	return out0, err
-
+// Solidity: function addShares(address staker, address strategy, address token, uint256 shares) returns(uint256, uint256)
+func (_EigenPodManagerStorage *EigenPodManagerStorageTransactor) AddShares(opts *bind.TransactOpts, staker common.Address, strategy common.Address, token common.Address, shares *big.Int) (*types.Transaction, error) {
+	return _EigenPodManagerStorage.contract.Transact(opts, "addShares", staker, strategy, token, shares)
 }
 
-// StrategyManager is a free data retrieval call binding the contract method 0x39b70e38.
+// AddShares is a paid mutator transaction binding the contract method 0xc4623ea1.
 //
-// Solidity: function strategyManager() view returns(address)
-func (_EigenPodManagerStorage *EigenPodManagerStorageSession) StrategyManager() (common.Address, error) {
-	return _EigenPodManagerStorage.Contract.StrategyManager(&_EigenPodManagerStorage.CallOpts)
+// Solidity: function addShares(address staker, address strategy, address token, uint256 shares) returns(uint256, uint256)
+func (_EigenPodManagerStorage *EigenPodManagerStorageSession) AddShares(staker common.Address, strategy common.Address, token common.Address, shares *big.Int) (*types.Transaction, error) {
+	return _EigenPodManagerStorage.Contract.AddShares(&_EigenPodManagerStorage.TransactOpts, staker, strategy, token, shares)
 }
 
-// StrategyManager is a free data retrieval call binding the contract method 0x39b70e38.
+// AddShares is a paid mutator transaction binding the contract method 0xc4623ea1.
 //
-// Solidity: function strategyManager() view returns(address)
-func (_EigenPodManagerStorage *EigenPodManagerStorageCallerSession) StrategyManager() (common.Address, error) {
-	return _EigenPodManagerStorage.Contract.StrategyManager(&_EigenPodManagerStorage.CallOpts)
-}
-
-// AddShares is a paid mutator transaction binding the contract method 0x0e81073c.
-//
-// Solidity: function addShares(address podOwner, uint256 shares) returns(uint256)
-func (_EigenPodManagerStorage *EigenPodManagerStorageTransactor) AddShares(opts *bind.TransactOpts, podOwner common.Address, shares *big.Int) (*types.Transaction, error) {
-	return _EigenPodManagerStorage.contract.Transact(opts, "addShares", podOwner, shares)
-}
-
-// AddShares is a paid mutator transaction binding the contract method 0x0e81073c.
-//
-// Solidity: function addShares(address podOwner, uint256 shares) returns(uint256)
-func (_EigenPodManagerStorage *EigenPodManagerStorageSession) AddShares(podOwner common.Address, shares *big.Int) (*types.Transaction, error) {
-	return _EigenPodManagerStorage.Contract.AddShares(&_EigenPodManagerStorage.TransactOpts, podOwner, shares)
-}
-
-// AddShares is a paid mutator transaction binding the contract method 0x0e81073c.
-//
-// Solidity: function addShares(address podOwner, uint256 shares) returns(uint256)
-func (_EigenPodManagerStorage *EigenPodManagerStorageTransactorSession) AddShares(podOwner common.Address, shares *big.Int) (*types.Transaction, error) {
-	return _EigenPodManagerStorage.Contract.AddShares(&_EigenPodManagerStorage.TransactOpts, podOwner, shares)
+// Solidity: function addShares(address staker, address strategy, address token, uint256 shares) returns(uint256, uint256)
+func (_EigenPodManagerStorage *EigenPodManagerStorageTransactorSession) AddShares(staker common.Address, strategy common.Address, token common.Address, shares *big.Int) (*types.Transaction, error) {
+	return _EigenPodManagerStorage.Contract.AddShares(&_EigenPodManagerStorage.TransactOpts, staker, strategy, token, shares)
 }
 
 // CreatePod is a paid mutator transaction binding the contract method 0x84d81062.
@@ -654,6 +685,27 @@ func (_EigenPodManagerStorage *EigenPodManagerStorageSession) CreatePod() (*type
 // Solidity: function createPod() returns(address)
 func (_EigenPodManagerStorage *EigenPodManagerStorageTransactorSession) CreatePod() (*types.Transaction, error) {
 	return _EigenPodManagerStorage.Contract.CreatePod(&_EigenPodManagerStorage.TransactOpts)
+}
+
+// IncreaseBurnableShares is a paid mutator transaction binding the contract method 0xdebe1eab.
+//
+// Solidity: function increaseBurnableShares(address strategy, uint256 addedSharesToBurn) returns()
+func (_EigenPodManagerStorage *EigenPodManagerStorageTransactor) IncreaseBurnableShares(opts *bind.TransactOpts, strategy common.Address, addedSharesToBurn *big.Int) (*types.Transaction, error) {
+	return _EigenPodManagerStorage.contract.Transact(opts, "increaseBurnableShares", strategy, addedSharesToBurn)
+}
+
+// IncreaseBurnableShares is a paid mutator transaction binding the contract method 0xdebe1eab.
+//
+// Solidity: function increaseBurnableShares(address strategy, uint256 addedSharesToBurn) returns()
+func (_EigenPodManagerStorage *EigenPodManagerStorageSession) IncreaseBurnableShares(strategy common.Address, addedSharesToBurn *big.Int) (*types.Transaction, error) {
+	return _EigenPodManagerStorage.Contract.IncreaseBurnableShares(&_EigenPodManagerStorage.TransactOpts, strategy, addedSharesToBurn)
+}
+
+// IncreaseBurnableShares is a paid mutator transaction binding the contract method 0xdebe1eab.
+//
+// Solidity: function increaseBurnableShares(address strategy, uint256 addedSharesToBurn) returns()
+func (_EigenPodManagerStorage *EigenPodManagerStorageTransactorSession) IncreaseBurnableShares(strategy common.Address, addedSharesToBurn *big.Int) (*types.Transaction, error) {
+	return _EigenPodManagerStorage.Contract.IncreaseBurnableShares(&_EigenPodManagerStorage.TransactOpts, strategy, addedSharesToBurn)
 }
 
 // Pause is a paid mutator transaction binding the contract method 0x136439dd.
@@ -698,67 +750,46 @@ func (_EigenPodManagerStorage *EigenPodManagerStorageTransactorSession) PauseAll
 	return _EigenPodManagerStorage.Contract.PauseAll(&_EigenPodManagerStorage.TransactOpts)
 }
 
-// RecordBeaconChainETHBalanceUpdate is a paid mutator transaction binding the contract method 0xc2c51c40.
+// RecordBeaconChainETHBalanceUpdate is a paid mutator transaction binding the contract method 0xa1ca780b.
 //
-// Solidity: function recordBeaconChainETHBalanceUpdate(address podOwner, int256 sharesDelta) returns()
-func (_EigenPodManagerStorage *EigenPodManagerStorageTransactor) RecordBeaconChainETHBalanceUpdate(opts *bind.TransactOpts, podOwner common.Address, sharesDelta *big.Int) (*types.Transaction, error) {
-	return _EigenPodManagerStorage.contract.Transact(opts, "recordBeaconChainETHBalanceUpdate", podOwner, sharesDelta)
+// Solidity: function recordBeaconChainETHBalanceUpdate(address podOwner, uint256 prevRestakedBalanceWei, int256 balanceDeltaWei) returns()
+func (_EigenPodManagerStorage *EigenPodManagerStorageTransactor) RecordBeaconChainETHBalanceUpdate(opts *bind.TransactOpts, podOwner common.Address, prevRestakedBalanceWei *big.Int, balanceDeltaWei *big.Int) (*types.Transaction, error) {
+	return _EigenPodManagerStorage.contract.Transact(opts, "recordBeaconChainETHBalanceUpdate", podOwner, prevRestakedBalanceWei, balanceDeltaWei)
 }
 
-// RecordBeaconChainETHBalanceUpdate is a paid mutator transaction binding the contract method 0xc2c51c40.
+// RecordBeaconChainETHBalanceUpdate is a paid mutator transaction binding the contract method 0xa1ca780b.
 //
-// Solidity: function recordBeaconChainETHBalanceUpdate(address podOwner, int256 sharesDelta) returns()
-func (_EigenPodManagerStorage *EigenPodManagerStorageSession) RecordBeaconChainETHBalanceUpdate(podOwner common.Address, sharesDelta *big.Int) (*types.Transaction, error) {
-	return _EigenPodManagerStorage.Contract.RecordBeaconChainETHBalanceUpdate(&_EigenPodManagerStorage.TransactOpts, podOwner, sharesDelta)
+// Solidity: function recordBeaconChainETHBalanceUpdate(address podOwner, uint256 prevRestakedBalanceWei, int256 balanceDeltaWei) returns()
+func (_EigenPodManagerStorage *EigenPodManagerStorageSession) RecordBeaconChainETHBalanceUpdate(podOwner common.Address, prevRestakedBalanceWei *big.Int, balanceDeltaWei *big.Int) (*types.Transaction, error) {
+	return _EigenPodManagerStorage.Contract.RecordBeaconChainETHBalanceUpdate(&_EigenPodManagerStorage.TransactOpts, podOwner, prevRestakedBalanceWei, balanceDeltaWei)
 }
 
-// RecordBeaconChainETHBalanceUpdate is a paid mutator transaction binding the contract method 0xc2c51c40.
+// RecordBeaconChainETHBalanceUpdate is a paid mutator transaction binding the contract method 0xa1ca780b.
 //
-// Solidity: function recordBeaconChainETHBalanceUpdate(address podOwner, int256 sharesDelta) returns()
-func (_EigenPodManagerStorage *EigenPodManagerStorageTransactorSession) RecordBeaconChainETHBalanceUpdate(podOwner common.Address, sharesDelta *big.Int) (*types.Transaction, error) {
-	return _EigenPodManagerStorage.Contract.RecordBeaconChainETHBalanceUpdate(&_EigenPodManagerStorage.TransactOpts, podOwner, sharesDelta)
+// Solidity: function recordBeaconChainETHBalanceUpdate(address podOwner, uint256 prevRestakedBalanceWei, int256 balanceDeltaWei) returns()
+func (_EigenPodManagerStorage *EigenPodManagerStorageTransactorSession) RecordBeaconChainETHBalanceUpdate(podOwner common.Address, prevRestakedBalanceWei *big.Int, balanceDeltaWei *big.Int) (*types.Transaction, error) {
+	return _EigenPodManagerStorage.Contract.RecordBeaconChainETHBalanceUpdate(&_EigenPodManagerStorage.TransactOpts, podOwner, prevRestakedBalanceWei, balanceDeltaWei)
 }
 
-// RemoveShares is a paid mutator transaction binding the contract method 0xbeffbb89.
+// RemoveDepositShares is a paid mutator transaction binding the contract method 0x724af423.
 //
-// Solidity: function removeShares(address podOwner, uint256 shares) returns()
-func (_EigenPodManagerStorage *EigenPodManagerStorageTransactor) RemoveShares(opts *bind.TransactOpts, podOwner common.Address, shares *big.Int) (*types.Transaction, error) {
-	return _EigenPodManagerStorage.contract.Transact(opts, "removeShares", podOwner, shares)
+// Solidity: function removeDepositShares(address staker, address strategy, uint256 depositSharesToRemove) returns()
+func (_EigenPodManagerStorage *EigenPodManagerStorageTransactor) RemoveDepositShares(opts *bind.TransactOpts, staker common.Address, strategy common.Address, depositSharesToRemove *big.Int) (*types.Transaction, error) {
+	return _EigenPodManagerStorage.contract.Transact(opts, "removeDepositShares", staker, strategy, depositSharesToRemove)
 }
 
-// RemoveShares is a paid mutator transaction binding the contract method 0xbeffbb89.
+// RemoveDepositShares is a paid mutator transaction binding the contract method 0x724af423.
 //
-// Solidity: function removeShares(address podOwner, uint256 shares) returns()
-func (_EigenPodManagerStorage *EigenPodManagerStorageSession) RemoveShares(podOwner common.Address, shares *big.Int) (*types.Transaction, error) {
-	return _EigenPodManagerStorage.Contract.RemoveShares(&_EigenPodManagerStorage.TransactOpts, podOwner, shares)
+// Solidity: function removeDepositShares(address staker, address strategy, uint256 depositSharesToRemove) returns()
+func (_EigenPodManagerStorage *EigenPodManagerStorageSession) RemoveDepositShares(staker common.Address, strategy common.Address, depositSharesToRemove *big.Int) (*types.Transaction, error) {
+	return _EigenPodManagerStorage.Contract.RemoveDepositShares(&_EigenPodManagerStorage.TransactOpts, staker, strategy, depositSharesToRemove)
 }
 
-// RemoveShares is a paid mutator transaction binding the contract method 0xbeffbb89.
+// RemoveDepositShares is a paid mutator transaction binding the contract method 0x724af423.
 //
-// Solidity: function removeShares(address podOwner, uint256 shares) returns()
-func (_EigenPodManagerStorage *EigenPodManagerStorageTransactorSession) RemoveShares(podOwner common.Address, shares *big.Int) (*types.Transaction, error) {
-	return _EigenPodManagerStorage.Contract.RemoveShares(&_EigenPodManagerStorage.TransactOpts, podOwner, shares)
-}
-
-// SetPauserRegistry is a paid mutator transaction binding the contract method 0x10d67a2f.
-//
-// Solidity: function setPauserRegistry(address newPauserRegistry) returns()
-func (_EigenPodManagerStorage *EigenPodManagerStorageTransactor) SetPauserRegistry(opts *bind.TransactOpts, newPauserRegistry common.Address) (*types.Transaction, error) {
-	return _EigenPodManagerStorage.contract.Transact(opts, "setPauserRegistry", newPauserRegistry)
-}
-
-// SetPauserRegistry is a paid mutator transaction binding the contract method 0x10d67a2f.
-//
-// Solidity: function setPauserRegistry(address newPauserRegistry) returns()
-func (_EigenPodManagerStorage *EigenPodManagerStorageSession) SetPauserRegistry(newPauserRegistry common.Address) (*types.Transaction, error) {
-	return _EigenPodManagerStorage.Contract.SetPauserRegistry(&_EigenPodManagerStorage.TransactOpts, newPauserRegistry)
-}
-
-// SetPauserRegistry is a paid mutator transaction binding the contract method 0x10d67a2f.
-//
-// Solidity: function setPauserRegistry(address newPauserRegistry) returns()
-func (_EigenPodManagerStorage *EigenPodManagerStorageTransactorSession) SetPauserRegistry(newPauserRegistry common.Address) (*types.Transaction, error) {
-	return _EigenPodManagerStorage.Contract.SetPauserRegistry(&_EigenPodManagerStorage.TransactOpts, newPauserRegistry)
+// Solidity: function removeDepositShares(address staker, address strategy, uint256 depositSharesToRemove) returns()
+func (_EigenPodManagerStorage *EigenPodManagerStorageTransactorSession) RemoveDepositShares(staker common.Address, strategy common.Address, depositSharesToRemove *big.Int) (*types.Transaction, error) {
+	return _EigenPodManagerStorage.Contract.RemoveDepositShares(&_EigenPodManagerStorage.TransactOpts, staker, strategy, depositSharesToRemove)
 }
 
 // Stake is a paid mutator transaction binding the contract method 0x9b4e4634.
@@ -803,25 +834,25 @@ func (_EigenPodManagerStorage *EigenPodManagerStorageTransactorSession) Unpause(
 	return _EigenPodManagerStorage.Contract.Unpause(&_EigenPodManagerStorage.TransactOpts, newPausedStatus)
 }
 
-// WithdrawSharesAsTokens is a paid mutator transaction binding the contract method 0x387b1300.
+// WithdrawSharesAsTokens is a paid mutator transaction binding the contract method 0x2eae418c.
 //
-// Solidity: function withdrawSharesAsTokens(address podOwner, address destination, uint256 shares) returns()
-func (_EigenPodManagerStorage *EigenPodManagerStorageTransactor) WithdrawSharesAsTokens(opts *bind.TransactOpts, podOwner common.Address, destination common.Address, shares *big.Int) (*types.Transaction, error) {
-	return _EigenPodManagerStorage.contract.Transact(opts, "withdrawSharesAsTokens", podOwner, destination, shares)
+// Solidity: function withdrawSharesAsTokens(address staker, address strategy, address token, uint256 shares) returns()
+func (_EigenPodManagerStorage *EigenPodManagerStorageTransactor) WithdrawSharesAsTokens(opts *bind.TransactOpts, staker common.Address, strategy common.Address, token common.Address, shares *big.Int) (*types.Transaction, error) {
+	return _EigenPodManagerStorage.contract.Transact(opts, "withdrawSharesAsTokens", staker, strategy, token, shares)
 }
 
-// WithdrawSharesAsTokens is a paid mutator transaction binding the contract method 0x387b1300.
+// WithdrawSharesAsTokens is a paid mutator transaction binding the contract method 0x2eae418c.
 //
-// Solidity: function withdrawSharesAsTokens(address podOwner, address destination, uint256 shares) returns()
-func (_EigenPodManagerStorage *EigenPodManagerStorageSession) WithdrawSharesAsTokens(podOwner common.Address, destination common.Address, shares *big.Int) (*types.Transaction, error) {
-	return _EigenPodManagerStorage.Contract.WithdrawSharesAsTokens(&_EigenPodManagerStorage.TransactOpts, podOwner, destination, shares)
+// Solidity: function withdrawSharesAsTokens(address staker, address strategy, address token, uint256 shares) returns()
+func (_EigenPodManagerStorage *EigenPodManagerStorageSession) WithdrawSharesAsTokens(staker common.Address, strategy common.Address, token common.Address, shares *big.Int) (*types.Transaction, error) {
+	return _EigenPodManagerStorage.Contract.WithdrawSharesAsTokens(&_EigenPodManagerStorage.TransactOpts, staker, strategy, token, shares)
 }
 
-// WithdrawSharesAsTokens is a paid mutator transaction binding the contract method 0x387b1300.
+// WithdrawSharesAsTokens is a paid mutator transaction binding the contract method 0x2eae418c.
 //
-// Solidity: function withdrawSharesAsTokens(address podOwner, address destination, uint256 shares) returns()
-func (_EigenPodManagerStorage *EigenPodManagerStorageTransactorSession) WithdrawSharesAsTokens(podOwner common.Address, destination common.Address, shares *big.Int) (*types.Transaction, error) {
-	return _EigenPodManagerStorage.Contract.WithdrawSharesAsTokens(&_EigenPodManagerStorage.TransactOpts, podOwner, destination, shares)
+// Solidity: function withdrawSharesAsTokens(address staker, address strategy, address token, uint256 shares) returns()
+func (_EigenPodManagerStorage *EigenPodManagerStorageTransactorSession) WithdrawSharesAsTokens(staker common.Address, strategy common.Address, token common.Address, shares *big.Int) (*types.Transaction, error) {
+	return _EigenPodManagerStorage.Contract.WithdrawSharesAsTokens(&_EigenPodManagerStorage.TransactOpts, staker, strategy, token, shares)
 }
 
 // EigenPodManagerStorageBeaconChainETHDepositedIterator is returned from FilterBeaconChainETHDeposited and is used to iterate over the raw logs and unpacked data for BeaconChainETHDeposited events raised by the EigenPodManagerStorage contract.
@@ -1118,6 +1149,276 @@ func (_EigenPodManagerStorage *EigenPodManagerStorageFilterer) ParseBeaconChainE
 	return event, nil
 }
 
+// EigenPodManagerStorageBeaconChainSlashingFactorDecreasedIterator is returned from FilterBeaconChainSlashingFactorDecreased and is used to iterate over the raw logs and unpacked data for BeaconChainSlashingFactorDecreased events raised by the EigenPodManagerStorage contract.
+type EigenPodManagerStorageBeaconChainSlashingFactorDecreasedIterator struct {
+	Event *EigenPodManagerStorageBeaconChainSlashingFactorDecreased // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *EigenPodManagerStorageBeaconChainSlashingFactorDecreasedIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(EigenPodManagerStorageBeaconChainSlashingFactorDecreased)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(EigenPodManagerStorageBeaconChainSlashingFactorDecreased)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *EigenPodManagerStorageBeaconChainSlashingFactorDecreasedIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *EigenPodManagerStorageBeaconChainSlashingFactorDecreasedIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// EigenPodManagerStorageBeaconChainSlashingFactorDecreased represents a BeaconChainSlashingFactorDecreased event raised by the EigenPodManagerStorage contract.
+type EigenPodManagerStorageBeaconChainSlashingFactorDecreased struct {
+	Staker                        common.Address
+	PrevBeaconChainSlashingFactor uint64
+	NewBeaconChainSlashingFactor  uint64
+	Raw                           types.Log // Blockchain specific contextual infos
+}
+
+// FilterBeaconChainSlashingFactorDecreased is a free log retrieval operation binding the contract event 0xb160ab8589bf47dc04ea11b50d46678d21590cea2ed3e454e7bd3e41510f98cf.
+//
+// Solidity: event BeaconChainSlashingFactorDecreased(address staker, uint64 prevBeaconChainSlashingFactor, uint64 newBeaconChainSlashingFactor)
+func (_EigenPodManagerStorage *EigenPodManagerStorageFilterer) FilterBeaconChainSlashingFactorDecreased(opts *bind.FilterOpts) (*EigenPodManagerStorageBeaconChainSlashingFactorDecreasedIterator, error) {
+
+	logs, sub, err := _EigenPodManagerStorage.contract.FilterLogs(opts, "BeaconChainSlashingFactorDecreased")
+	if err != nil {
+		return nil, err
+	}
+	return &EigenPodManagerStorageBeaconChainSlashingFactorDecreasedIterator{contract: _EigenPodManagerStorage.contract, event: "BeaconChainSlashingFactorDecreased", logs: logs, sub: sub}, nil
+}
+
+// WatchBeaconChainSlashingFactorDecreased is a free log subscription operation binding the contract event 0xb160ab8589bf47dc04ea11b50d46678d21590cea2ed3e454e7bd3e41510f98cf.
+//
+// Solidity: event BeaconChainSlashingFactorDecreased(address staker, uint64 prevBeaconChainSlashingFactor, uint64 newBeaconChainSlashingFactor)
+func (_EigenPodManagerStorage *EigenPodManagerStorageFilterer) WatchBeaconChainSlashingFactorDecreased(opts *bind.WatchOpts, sink chan<- *EigenPodManagerStorageBeaconChainSlashingFactorDecreased) (event.Subscription, error) {
+
+	logs, sub, err := _EigenPodManagerStorage.contract.WatchLogs(opts, "BeaconChainSlashingFactorDecreased")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(EigenPodManagerStorageBeaconChainSlashingFactorDecreased)
+				if err := _EigenPodManagerStorage.contract.UnpackLog(event, "BeaconChainSlashingFactorDecreased", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseBeaconChainSlashingFactorDecreased is a log parse operation binding the contract event 0xb160ab8589bf47dc04ea11b50d46678d21590cea2ed3e454e7bd3e41510f98cf.
+//
+// Solidity: event BeaconChainSlashingFactorDecreased(address staker, uint64 prevBeaconChainSlashingFactor, uint64 newBeaconChainSlashingFactor)
+func (_EigenPodManagerStorage *EigenPodManagerStorageFilterer) ParseBeaconChainSlashingFactorDecreased(log types.Log) (*EigenPodManagerStorageBeaconChainSlashingFactorDecreased, error) {
+	event := new(EigenPodManagerStorageBeaconChainSlashingFactorDecreased)
+	if err := _EigenPodManagerStorage.contract.UnpackLog(event, "BeaconChainSlashingFactorDecreased", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// EigenPodManagerStorageBurnableETHSharesIncreasedIterator is returned from FilterBurnableETHSharesIncreased and is used to iterate over the raw logs and unpacked data for BurnableETHSharesIncreased events raised by the EigenPodManagerStorage contract.
+type EigenPodManagerStorageBurnableETHSharesIncreasedIterator struct {
+	Event *EigenPodManagerStorageBurnableETHSharesIncreased // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *EigenPodManagerStorageBurnableETHSharesIncreasedIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(EigenPodManagerStorageBurnableETHSharesIncreased)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(EigenPodManagerStorageBurnableETHSharesIncreased)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *EigenPodManagerStorageBurnableETHSharesIncreasedIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *EigenPodManagerStorageBurnableETHSharesIncreasedIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// EigenPodManagerStorageBurnableETHSharesIncreased represents a BurnableETHSharesIncreased event raised by the EigenPodManagerStorage contract.
+type EigenPodManagerStorageBurnableETHSharesIncreased struct {
+	Shares *big.Int
+	Raw    types.Log // Blockchain specific contextual infos
+}
+
+// FilterBurnableETHSharesIncreased is a free log retrieval operation binding the contract event 0x1ed04b7fd262c0d9e50fa02957f32a81a151f03baaa367faeedc7521b001c4a4.
+//
+// Solidity: event BurnableETHSharesIncreased(uint256 shares)
+func (_EigenPodManagerStorage *EigenPodManagerStorageFilterer) FilterBurnableETHSharesIncreased(opts *bind.FilterOpts) (*EigenPodManagerStorageBurnableETHSharesIncreasedIterator, error) {
+
+	logs, sub, err := _EigenPodManagerStorage.contract.FilterLogs(opts, "BurnableETHSharesIncreased")
+	if err != nil {
+		return nil, err
+	}
+	return &EigenPodManagerStorageBurnableETHSharesIncreasedIterator{contract: _EigenPodManagerStorage.contract, event: "BurnableETHSharesIncreased", logs: logs, sub: sub}, nil
+}
+
+// WatchBurnableETHSharesIncreased is a free log subscription operation binding the contract event 0x1ed04b7fd262c0d9e50fa02957f32a81a151f03baaa367faeedc7521b001c4a4.
+//
+// Solidity: event BurnableETHSharesIncreased(uint256 shares)
+func (_EigenPodManagerStorage *EigenPodManagerStorageFilterer) WatchBurnableETHSharesIncreased(opts *bind.WatchOpts, sink chan<- *EigenPodManagerStorageBurnableETHSharesIncreased) (event.Subscription, error) {
+
+	logs, sub, err := _EigenPodManagerStorage.contract.WatchLogs(opts, "BurnableETHSharesIncreased")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(EigenPodManagerStorageBurnableETHSharesIncreased)
+				if err := _EigenPodManagerStorage.contract.UnpackLog(event, "BurnableETHSharesIncreased", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseBurnableETHSharesIncreased is a log parse operation binding the contract event 0x1ed04b7fd262c0d9e50fa02957f32a81a151f03baaa367faeedc7521b001c4a4.
+//
+// Solidity: event BurnableETHSharesIncreased(uint256 shares)
+func (_EigenPodManagerStorage *EigenPodManagerStorageFilterer) ParseBurnableETHSharesIncreased(log types.Log) (*EigenPodManagerStorageBurnableETHSharesIncreased, error) {
+	event := new(EigenPodManagerStorageBurnableETHSharesIncreased)
+	if err := _EigenPodManagerStorage.contract.UnpackLog(event, "BurnableETHSharesIncreased", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
 // EigenPodManagerStorageNewTotalSharesIterator is returned from FilterNewTotalShares and is used to iterate over the raw logs and unpacked data for NewTotalShares events raised by the EigenPodManagerStorage contract.
 type EigenPodManagerStorageNewTotalSharesIterator struct {
 	Event *EigenPodManagerStorageNewTotalShares // Event containing the contract specifics and raw log
@@ -1402,141 +1703,6 @@ func (_EigenPodManagerStorage *EigenPodManagerStorageFilterer) WatchPaused(opts 
 func (_EigenPodManagerStorage *EigenPodManagerStorageFilterer) ParsePaused(log types.Log) (*EigenPodManagerStoragePaused, error) {
 	event := new(EigenPodManagerStoragePaused)
 	if err := _EigenPodManagerStorage.contract.UnpackLog(event, "Paused", log); err != nil {
-		return nil, err
-	}
-	event.Raw = log
-	return event, nil
-}
-
-// EigenPodManagerStoragePauserRegistrySetIterator is returned from FilterPauserRegistrySet and is used to iterate over the raw logs and unpacked data for PauserRegistrySet events raised by the EigenPodManagerStorage contract.
-type EigenPodManagerStoragePauserRegistrySetIterator struct {
-	Event *EigenPodManagerStoragePauserRegistrySet // Event containing the contract specifics and raw log
-
-	contract *bind.BoundContract // Generic contract to use for unpacking event data
-	event    string              // Event name to use for unpacking event data
-
-	logs chan types.Log        // Log channel receiving the found contract events
-	sub  ethereum.Subscription // Subscription for errors, completion and termination
-	done bool                  // Whether the subscription completed delivering logs
-	fail error                 // Occurred error to stop iteration
-}
-
-// Next advances the iterator to the subsequent event, returning whether there
-// are any more events found. In case of a retrieval or parsing error, false is
-// returned and Error() can be queried for the exact failure.
-func (it *EigenPodManagerStoragePauserRegistrySetIterator) Next() bool {
-	// If the iterator failed, stop iterating
-	if it.fail != nil {
-		return false
-	}
-	// If the iterator completed, deliver directly whatever's available
-	if it.done {
-		select {
-		case log := <-it.logs:
-			it.Event = new(EigenPodManagerStoragePauserRegistrySet)
-			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-				it.fail = err
-				return false
-			}
-			it.Event.Raw = log
-			return true
-
-		default:
-			return false
-		}
-	}
-	// Iterator still in progress, wait for either a data or an error event
-	select {
-	case log := <-it.logs:
-		it.Event = new(EigenPodManagerStoragePauserRegistrySet)
-		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-			it.fail = err
-			return false
-		}
-		it.Event.Raw = log
-		return true
-
-	case err := <-it.sub.Err():
-		it.done = true
-		it.fail = err
-		return it.Next()
-	}
-}
-
-// Error returns any retrieval or parsing error occurred during filtering.
-func (it *EigenPodManagerStoragePauserRegistrySetIterator) Error() error {
-	return it.fail
-}
-
-// Close terminates the iteration process, releasing any pending underlying
-// resources.
-func (it *EigenPodManagerStoragePauserRegistrySetIterator) Close() error {
-	it.sub.Unsubscribe()
-	return nil
-}
-
-// EigenPodManagerStoragePauserRegistrySet represents a PauserRegistrySet event raised by the EigenPodManagerStorage contract.
-type EigenPodManagerStoragePauserRegistrySet struct {
-	PauserRegistry    common.Address
-	NewPauserRegistry common.Address
-	Raw               types.Log // Blockchain specific contextual infos
-}
-
-// FilterPauserRegistrySet is a free log retrieval operation binding the contract event 0x6e9fcd539896fca60e8b0f01dd580233e48a6b0f7df013b89ba7f565869acdb6.
-//
-// Solidity: event PauserRegistrySet(address pauserRegistry, address newPauserRegistry)
-func (_EigenPodManagerStorage *EigenPodManagerStorageFilterer) FilterPauserRegistrySet(opts *bind.FilterOpts) (*EigenPodManagerStoragePauserRegistrySetIterator, error) {
-
-	logs, sub, err := _EigenPodManagerStorage.contract.FilterLogs(opts, "PauserRegistrySet")
-	if err != nil {
-		return nil, err
-	}
-	return &EigenPodManagerStoragePauserRegistrySetIterator{contract: _EigenPodManagerStorage.contract, event: "PauserRegistrySet", logs: logs, sub: sub}, nil
-}
-
-// WatchPauserRegistrySet is a free log subscription operation binding the contract event 0x6e9fcd539896fca60e8b0f01dd580233e48a6b0f7df013b89ba7f565869acdb6.
-//
-// Solidity: event PauserRegistrySet(address pauserRegistry, address newPauserRegistry)
-func (_EigenPodManagerStorage *EigenPodManagerStorageFilterer) WatchPauserRegistrySet(opts *bind.WatchOpts, sink chan<- *EigenPodManagerStoragePauserRegistrySet) (event.Subscription, error) {
-
-	logs, sub, err := _EigenPodManagerStorage.contract.WatchLogs(opts, "PauserRegistrySet")
-	if err != nil {
-		return nil, err
-	}
-	return event.NewSubscription(func(quit <-chan struct{}) error {
-		defer sub.Unsubscribe()
-		for {
-			select {
-			case log := <-logs:
-				// New log arrived, parse the event and forward to the user
-				event := new(EigenPodManagerStoragePauserRegistrySet)
-				if err := _EigenPodManagerStorage.contract.UnpackLog(event, "PauserRegistrySet", log); err != nil {
-					return err
-				}
-				event.Raw = log
-
-				select {
-				case sink <- event:
-				case err := <-sub.Err():
-					return err
-				case <-quit:
-					return nil
-				}
-			case err := <-sub.Err():
-				return err
-			case <-quit:
-				return nil
-			}
-		}
-	}), nil
-}
-
-// ParsePauserRegistrySet is a log parse operation binding the contract event 0x6e9fcd539896fca60e8b0f01dd580233e48a6b0f7df013b89ba7f565869acdb6.
-//
-// Solidity: event PauserRegistrySet(address pauserRegistry, address newPauserRegistry)
-func (_EigenPodManagerStorage *EigenPodManagerStorageFilterer) ParsePauserRegistrySet(log types.Log) (*EigenPodManagerStoragePauserRegistrySet, error) {
-	event := new(EigenPodManagerStoragePauserRegistrySet)
-	if err := _EigenPodManagerStorage.contract.UnpackLog(event, "PauserRegistrySet", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log

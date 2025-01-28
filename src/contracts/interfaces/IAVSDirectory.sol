@@ -2,9 +2,25 @@
 pragma solidity >=0.5.0;
 
 import "./ISignatureUtils.sol";
+import "./IPauserRegistry.sol";
+import "./IStrategy.sol";
 
-interface IAVSDirectory is ISignatureUtils {
-    /// @notice Enum representing the status of an operator's registration with an AVS
+interface IAVSDirectoryErrors {
+    /// Operator Status
+
+    /// @dev Thrown when an operator does not exist in the DelegationManager
+    error OperatorNotRegisteredToEigenLayer();
+    /// @dev Thrown when an operator is already registered to an AVS.
+    error OperatorNotRegisteredToAVS();
+    /// @dev Thrown when `operator` is already registered to the AVS.
+    error OperatorAlreadyRegisteredToAVS();
+    /// @dev Thrown when attempting to spend a spent eip-712 salt.
+    error SaltSpent();
+}
+
+interface IAVSDirectoryTypes {
+    /// @notice Enum representing the registration status of an operator with an AVS.
+    /// @notice Only used by legacy M2 AVSs that have not integrated with operatorSets.
     enum OperatorAVSRegistrationStatus {
         UNREGISTERED, // Operator not registered to AVS
         REGISTERED // Operator registered to AVS
@@ -12,20 +28,73 @@ interface IAVSDirectory is ISignatureUtils {
     }
 
     /**
-     * @notice Emitted when @param avs indicates that they are updating their MetadataURI string
-     * @dev Note that these strings are *never stored in storage* and are instead purely emitted in events for off-chain indexing
+     * @notice Struct representing the registration status of an operator with an operator set.
+     * Keeps track of last deregistered timestamp for slashability concerns.
+     * @param registered whether the operator is registered with the operator set
+     * @param lastDeregisteredTimestamp the timestamp at which the operator was last deregistered
      */
-    event AVSMetadataURIUpdated(address indexed avs, string metadataURI);
+    struct OperatorSetRegistrationStatus {
+        bool registered;
+        uint32 lastDeregisteredTimestamp;
+    }
+}
 
-    /// @notice Emitted when an operator's registration status for an AVS is updated
+interface IAVSDirectoryEvents is IAVSDirectoryTypes {
+    /**
+     *  @notice Emitted when an operator's registration status with an AVS id udpated
+     *  @notice Only used by legacy M2 AVSs that have not integrated with operatorSets.
+     */
     event OperatorAVSRegistrationStatusUpdated(
         address indexed operator, address indexed avs, OperatorAVSRegistrationStatus status
     );
 
+    /// @notice Emitted when an AVS updates their metadata URI (Uniform Resource Identifier).
+    /// @dev The URI is never stored; it is simply emitted through an event for off-chain indexing.
+    event AVSMetadataURIUpdated(address indexed avs, string metadataURI);
+}
+
+interface IAVSDirectory is IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureUtils {
     /**
-     * @notice Called by the AVS's service manager contract to register an operator with the avs.
-     * @param operator The address of the operator to register.
-     * @param operatorSignature The signature, salt, and expiry of the operator's signature.
+     *
+     *                         EXTERNAL FUNCTIONS
+     *
+     */
+
+    /**
+     * @dev Initializes the addresses of the initial owner and paused status.
+     */
+    function initialize(address initialOwner, uint256 initialPausedStatus) external;
+
+    /**
+     *  @notice Called by an AVS to emit an `AVSMetadataURIUpdated` event indicating the information has updated.
+     *
+     *  @param metadataURI The URI for metadata associated with an AVS.
+     *
+     *  @dev Note that the `metadataURI` is *never stored* and is only emitted in the `AVSMetadataURIUpdated` event.
+     */
+    function updateAVSMetadataURI(
+        string calldata metadataURI
+    ) external;
+
+    /**
+     * @notice Called by an operator to cancel a salt that has been used to register with an AVS.
+     *
+     * @param salt A unique and single use value associated with the approver signature.
+     */
+    function cancelSalt(
+        bytes32 salt
+    ) external;
+
+    /**
+     *  @notice Legacy function called by the AVS's service manager contract
+     * to register an operator with the AVS. NOTE: this function will be deprecated in a future release
+     * after the slashing release. New AVSs should use `registerForOperatorSets` instead.
+     *
+     *  @param operator The address of the operator to register.
+     *  @param operatorSignature The signature, salt, and expiry of the operator's signature.
+     *
+     *  @dev msg.sender must be the AVS.
+     *  @dev Only used by legacy M2 AVSs that have not integrated with operator sets.
      */
     function registerOperatorToAVS(
         address operator,
@@ -33,30 +102,32 @@ interface IAVSDirectory is ISignatureUtils {
     ) external;
 
     /**
-     * @notice Called by an avs to deregister an operator with the avs.
-     * @param operator The address of the operator to deregister.
+     *  @notice Legacy function called by an AVS to deregister an operator from the AVS.
+     * NOTE: this function will be deprecated in a future release after the slashing release.
+     * New AVSs integrating should use `deregisterOperatorFromOperatorSets` instead.
+     *
+     *  @param operator The address of the operator to deregister.
+     *
+     *  @dev Only used by legacy M2 AVSs that have not integrated with operator sets.
      */
-    function deregisterOperatorFromAVS(address operator) external;
+    function deregisterOperatorFromAVS(
+        address operator
+    ) external;
 
     /**
-     * @notice Called by an AVS to emit an `AVSMetadataURIUpdated` event indicating the information has updated.
-     * @param metadataURI The URI for metadata associated with an AVS
-     * @dev Note that the `metadataURI` is *never stored * and is only emitted in the `AVSMetadataURIUpdated` event
-     */
-    function updateAVSMetadataURI(string calldata metadataURI) external;
-
-    /**
-     * @notice Returns whether or not the salt has already been used by the operator.
-     * @dev Salts is used in the `registerOperatorToAVS` function.
+     *
+     *                         VIEW FUNCTIONS
+     *
      */
     function operatorSaltIsSpent(address operator, bytes32 salt) external view returns (bool);
 
     /**
-     * @notice Calculates the digest hash to be signed by an operator to register with an AVS
-     * @param operator The account registering as an operator
-     * @param avs The address of the service manager contract for the AVS that the operator is registering to
-     * @param salt A unique and single use value associated with the approver signature.
-     * @param expiry Time after which the approver's signature becomes invalid
+     *  @notice Calculates the digest hash to be signed by an operator to register with an AVS.
+     *
+     *  @param operator The account registering as an operator.
+     *  @param avs The AVS the operator is registering with.
+     *  @param salt A unique and single-use value associated with the approver's signature.
+     *  @param expiry The time after which the approver's signature becomes invalid.
      */
     function calculateOperatorAVSRegistrationDigestHash(
         address operator,
@@ -65,21 +136,9 @@ interface IAVSDirectory is ISignatureUtils {
         uint256 expiry
     ) external view returns (bytes32);
 
-    /// @notice The EIP-712 typehash for the Registration struct used by the contract
+    /// @notice The EIP-712 typehash for the Registration struct used by the contract.
     function OPERATOR_AVS_REGISTRATION_TYPEHASH() external view returns (bytes32);
 
-    /**
-     * @notice Called by an operator to cancel a salt that has been used to register with an AVS.
-     * @param salt A unique and single use value associated with the approver signature.
-     */
-    function cancelSalt(bytes32 salt) external;
-
-    /**
-     * @notice Getter function for the current EIP-712 domain separator for this contract.
-     *
-     * @dev The domain separator will change in the event of a fork that changes the ChainID.
-     * @dev By introducing a domain separator the DApp developers are guaranteed that there can be no signature collision.
-     * for more detailed information please read EIP-712.
-     */
-    function domainSeparator() external view returns (bytes32);
+    /// @notice The EIP-712 typehash for the OperatorSetRegistration struct used by the contract.
+    function OPERATOR_SET_REGISTRATION_TYPEHASH() external view returns (bytes32);
 }

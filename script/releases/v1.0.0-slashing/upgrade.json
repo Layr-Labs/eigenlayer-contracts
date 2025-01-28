@@ -1,0 +1,32 @@
+{
+    "name": "slashing",
+    "from": "~0.5.3",
+    "to": "1.0.0",
+    "phases": [
+        {
+            "type": "eoa",
+            "filename": "1-deployContracts.s.sol"
+        },
+        {
+            "type": "multisig",
+            "filename": "2-queueUpgradeAndUnpause.s.sol"
+        },
+        {
+            "type": "multisig",
+            "filename": "3-pause.s.sol"
+        },
+        {
+            "type": "script",
+            "filename": "cleanup/start.sh",
+            "arguments": [
+                {"type": "url", "passBy": "env", "inputType": "text", "name": "RPC_URL", "prompt": "Enter an ETH RPC URL"},
+                {"type": "url", "passBy": "env", "inputType": "text", "name": "BEACON_URL", "prompt": "Enter an ETH2 Beacon RPC URL"},
+                {"type": "privateKey", "passBy": "env", "inputType": "password", "name": "SENDER_PK", "prompt": "Enter an ETH wallet private key to complete checkpoints from:"}
+            ]
+        },
+        {
+            "type": "multisig",
+            "filename": "5-executeUpgradeAndUnpause.s.sol"
+        }
+    ]
+}

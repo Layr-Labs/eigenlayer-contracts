@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
+import "../mixins/SignatureUtils.sol";
 import "../interfaces/IEigenPodManager.sol";
 import "../permissions/Pausable.sol";
 import "./StrategyManagerStorage.sol";
-import "../libraries/EIP1271SignatureUtils.sol";
 
 /**
  * @title The primary entry- and exit-point for funds into and out of EigenLayer.
@@ -24,48 +25,37 @@ contract StrategyManager is
     OwnableUpgradeable,
     ReentrancyGuardUpgradeable,
     Pausable,
-    StrategyManagerStorage
+    StrategyManagerStorage,
+    SignatureUtils
 {
+    using SlashingLib for *;
     using SafeERC20 for IERC20;
 
-    // index for flag that pauses deposits when set
-    uint8 internal constant PAUSED_DEPOSITS = 0;
-
-    // chain id at the time of contract deployment
-    uint256 internal immutable ORIGINAL_CHAIN_ID;
-
     modifier onlyStrategyWhitelister() {
-        require(
-            msg.sender == strategyWhitelister, "StrategyManager.onlyStrategyWhitelister: not the strategyWhitelister"
-        );
+        require(msg.sender == strategyWhitelister, OnlyStrategyWhitelister());
         _;
     }
 
-    modifier onlyStrategiesWhitelistedForDeposit(IStrategy strategy) {
-        require(
-            strategyIsWhitelistedForDeposit[strategy],
-            "StrategyManager.onlyStrategiesWhitelistedForDeposit: strategy not whitelisted"
-        );
+    modifier onlyStrategiesWhitelistedForDeposit(
+        IStrategy strategy
+    ) {
+        require(strategyIsWhitelistedForDeposit[strategy], StrategyNotWhitelisted());
         _;
     }
 
     modifier onlyDelegationManager() {
-        require(msg.sender == address(delegation), "StrategyManager.onlyDelegationManager: not the DelegationManager");
+        require(msg.sender == address(delegation), OnlyDelegationManager());
         _;
     }
 
     /**
      * @param _delegation The delegation contract of EigenLayer.
-     * @param _slasher The primary slashing contract of EigenLayer.
-     * @param _eigenPodManager The contract that keeps track of EigenPod stakes for restaking beacon chain ether.
      */
     constructor(
         IDelegationManager _delegation,
-        IEigenPodManager _eigenPodManager,
-        ISlasher _slasher
-    ) StrategyManagerStorage(_delegation, _eigenPodManager, _slasher) {
+        IPauserRegistry _pauserRegistry
+    ) StrategyManagerStorage(_delegation) Pausable(_pauserRegistry) {
         _disableInitializers();
-        ORIGINAL_CHAIN_ID = block.chainid;
     }
 
     // EXTERNAL FUNCTIONS
@@ -73,19 +63,15 @@ contract StrategyManager is
     /**
      * @notice Initializes the strategy manager contract. Sets the `pauserRegistry` (currently **not** modifiable after being set),
      * and transfers contract ownership to the specified `initialOwner`.
-     * @param _pauserRegistry Used for access control of pausing.
      * @param initialOwner Ownership of this contract is transferred to this address.
      * @param initialStrategyWhitelister The initial value of `strategyWhitelister` to set.
-     * @param  initialPausedStatus The initial value of `_paused` to set.
      */
     function initialize(
         address initialOwner,
         address initialStrategyWhitelister,
-        IPauserRegistry _pauserRegistry,
         uint256 initialPausedStatus
     ) external initializer {
-        _DOMAIN_SEPARATOR = _calculateDomainSeparator();
-        _initializePauser(_pauserRegistry, initialPausedStatus);
+        _setPausedStatus(initialPausedStatus);
         _transferOwnership(initialOwner);
         _setStrategyWhitelister(initialStrategyWhitelister);
     }
@@ -95,8 +81,8 @@ contract StrategyManager is
         IStrategy strategy,
         IERC20 token,
         uint256 amount
-    ) external onlyWhenNotPaused(PAUSED_DEPOSITS) nonReentrant returns (uint256 shares) {
-        shares = _depositIntoStrategy(msg.sender, strategy, token, amount);
+    ) external onlyWhenNotPaused(PAUSED_DEPOSITS) nonReentrant returns (uint256 depositShares) {
+        depositShares = _depositIntoStrategy(msg.sender, strategy, token, amount);
     }
 
     /// @inheritdoc IStrategyManager
@@ -107,108 +93,101 @@ contract StrategyManager is
         address staker,
         uint256 expiry,
         bytes memory signature
-    ) external onlyWhenNotPaused(PAUSED_DEPOSITS) nonReentrant returns (uint256 shares) {
-        require(
-            !thirdPartyTransfersForbidden[strategy],
-            "StrategyManager.depositIntoStrategyWithSignature: third transfers disabled"
-        );
-        require(expiry >= block.timestamp, "StrategyManager.depositIntoStrategyWithSignature: signature expired");
-        // calculate struct hash, then increment `staker`'s nonce
+    ) external onlyWhenNotPaused(PAUSED_DEPOSITS) nonReentrant returns (uint256 depositShares) {
+        // Cache staker's nonce to avoid sloads.
         uint256 nonce = nonces[staker];
-        bytes32 structHash = keccak256(abi.encode(DEPOSIT_TYPEHASH, staker, strategy, token, amount, nonce, expiry));
+        // Assert that the signature is valid.
+        _checkIsValidSignatureNow({
+            signer: staker,
+            signableDigest: calculateStrategyDepositDigestHash(staker, strategy, token, amount, nonce, expiry),
+            signature: signature,
+            expiry: expiry
+        });
+        // Increment the nonce for the staker.
         unchecked {
             nonces[staker] = nonce + 1;
         }
-
-        // calculate the digest hash
-        bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), structHash));
-
-        /**
-         * check validity of signature:
-         * 1) if `staker` is an EOA, then `signature` must be a valid ECDSA signature from `staker`,
-         * indicating their intention for this action
-         * 2) if `staker` is a contract, then `signature` will be checked according to EIP-1271
-         */
-        EIP1271SignatureUtils.checkSignature_EIP1271(staker, digestHash, signature);
-
         // deposit the tokens (from the `msg.sender`) and credit the new shares to the `staker`
-        shares = _depositIntoStrategy(staker, strategy, token, amount);
+        depositShares = _depositIntoStrategy(staker, strategy, token, amount);
     }
 
-    /// @inheritdoc IStrategyManager
-    function removeShares(address staker, IStrategy strategy, uint256 shares) external onlyDelegationManager {
-        _removeShares(staker, strategy, shares);
+    /// @inheritdoc IShareManager
+    function removeDepositShares(
+        address staker,
+        IStrategy strategy,
+        uint256 depositSharesToRemove
+    ) external onlyDelegationManager {
+        _removeDepositShares(staker, strategy, depositSharesToRemove);
     }
 
-    /// @inheritdoc IStrategyManager
+    /// @inheritdoc IShareManager
     function addShares(
         address staker,
-        IERC20 token,
         IStrategy strategy,
+        IERC20 token,
+        uint256 shares
+    ) external onlyDelegationManager returns (uint256, uint256) {
+        return _addShares(staker, token, strategy, shares);
+    }
+
+    /// @inheritdoc IShareManager
+    function withdrawSharesAsTokens(
+        address staker,
+        IStrategy strategy,
+        IERC20 token,
         uint256 shares
     ) external onlyDelegationManager {
-        _addShares(staker, token, strategy, shares);
+        strategy.withdraw(staker, token, shares);
+    }
+
+    /// @inheritdoc IShareManager
+    function increaseBurnableShares(IStrategy strategy, uint256 addedSharesToBurn) external onlyDelegationManager {
+        burnableShares[strategy] += addedSharesToBurn;
+        emit BurnableSharesIncreased(strategy, addedSharesToBurn);
     }
 
     /// @inheritdoc IStrategyManager
-    function withdrawSharesAsTokens(
-        address recipient,
-        IStrategy strategy,
-        uint256 shares,
-        IERC20 token
-    ) external onlyDelegationManager {
-        strategy.withdraw(recipient, token, shares);
+    function burnShares(
+        IStrategy strategy
+    ) external nonReentrant {
+        uint256 sharesToBurn = burnableShares[strategy];
+        burnableShares[strategy] = 0;
+        emit BurnableSharesDecreased(strategy, sharesToBurn);
+        // burning shares is functionally the same as withdrawing but with different destination address
+        strategy.withdraw(DEFAULT_BURN_ADDRESS, strategy.underlyingToken(), sharesToBurn);
     }
 
     /// @inheritdoc IStrategyManager
-    function setThirdPartyTransfersForbidden(IStrategy strategy, bool value) external onlyStrategyWhitelister {
-        _setThirdPartyTransfersForbidden(strategy, value);
-    }
-
-    /// @inheritdoc IStrategyManager
-    function setStrategyWhitelister(address newStrategyWhitelister) external onlyOwner {
+    function setStrategyWhitelister(
+        address newStrategyWhitelister
+    ) external onlyOwner {
         _setStrategyWhitelister(newStrategyWhitelister);
     }
 
     /// @inheritdoc IStrategyManager
     function addStrategiesToDepositWhitelist(
-        IStrategy[] calldata strategiesToWhitelist,
-        bool[] calldata thirdPartyTransfersForbiddenValues
+        IStrategy[] calldata strategiesToWhitelist
     ) external onlyStrategyWhitelister {
-        require(
-            strategiesToWhitelist.length == thirdPartyTransfersForbiddenValues.length,
-            "StrategyManager.addStrategiesToDepositWhitelist: array lengths do not match"
-        );
         uint256 strategiesToWhitelistLength = strategiesToWhitelist.length;
-        for (uint256 i = 0; i < strategiesToWhitelistLength;) {
+        for (uint256 i = 0; i < strategiesToWhitelistLength; ++i) {
             // change storage and emit event only if strategy is not already in whitelist
             if (!strategyIsWhitelistedForDeposit[strategiesToWhitelist[i]]) {
                 strategyIsWhitelistedForDeposit[strategiesToWhitelist[i]] = true;
                 emit StrategyAddedToDepositWhitelist(strategiesToWhitelist[i]);
-                _setThirdPartyTransfersForbidden(strategiesToWhitelist[i], thirdPartyTransfersForbiddenValues[i]);
-            }
-            unchecked {
-                ++i;
             }
         }
     }
 
     /// @inheritdoc IStrategyManager
-    function removeStrategiesFromDepositWhitelist(IStrategy[] calldata strategiesToRemoveFromWhitelist)
-        external
-        onlyStrategyWhitelister
-    {
+    function removeStrategiesFromDepositWhitelist(
+        IStrategy[] calldata strategiesToRemoveFromWhitelist
+    ) external onlyStrategyWhitelister {
         uint256 strategiesToRemoveFromWhitelistLength = strategiesToRemoveFromWhitelist.length;
-        for (uint256 i = 0; i < strategiesToRemoveFromWhitelistLength;) {
+        for (uint256 i = 0; i < strategiesToRemoveFromWhitelistLength; ++i) {
             // change storage and emit event only if strategy is already in whitelist
             if (strategyIsWhitelistedForDeposit[strategiesToRemoveFromWhitelist[i]]) {
                 strategyIsWhitelistedForDeposit[strategiesToRemoveFromWhitelist[i]] = false;
                 emit StrategyRemovedFromDepositWhitelist(strategiesToRemoveFromWhitelist[i]);
-                // Set mapping value to default false value
-                _setThirdPartyTransfersForbidden(strategiesToRemoveFromWhitelist[i], false);
-            }
-            unchecked {
-                ++i;
             }
         }
     }
@@ -222,27 +201,32 @@ contract StrategyManager is
      * @param strategy The Strategy in which the `staker` is receiving shares
      * @param shares The amount of shares to grant to the `staker`
      * @dev In particular, this function calls `delegation.increaseDelegatedShares(staker, strategy, shares)` to ensure that all
-     * delegated shares are tracked, increases the stored share amount in `stakerStrategyShares[staker][strategy]`, and adds `strategy`
+     * delegated shares are tracked, increases the stored share amount in `stakerDepositShares[staker][strategy]`, and adds `strategy`
      * to the `staker`'s list of strategies, if it is not in the list already.
      */
-    function _addShares(address staker, IERC20 token, IStrategy strategy, uint256 shares) internal {
+    function _addShares(
+        address staker,
+        IERC20 token,
+        IStrategy strategy,
+        uint256 shares
+    ) internal returns (uint256, uint256) {
         // sanity checks on inputs
-        require(staker != address(0), "StrategyManager._addShares: staker cannot be zero address");
-        require(shares != 0, "StrategyManager._addShares: shares should not be zero!");
+        require(staker != address(0), StakerAddressZero());
+        require(shares != 0, SharesAmountZero());
 
-        // if they dont have existing shares of this strategy, add it to their strats
-        if (stakerStrategyShares[staker][strategy] == 0) {
-            require(
-                stakerStrategyList[staker].length < MAX_STAKER_STRATEGY_LIST_LENGTH,
-                "StrategyManager._addShares: deposit would exceed MAX_STAKER_STRATEGY_LIST_LENGTH"
-            );
+        uint256 prevDepositShares = stakerDepositShares[staker][strategy];
+
+        // if they dont have prevDepositShares of this strategy, add it to their strats
+        if (prevDepositShares == 0) {
+            require(stakerStrategyList[staker].length < MAX_STAKER_STRATEGY_LIST_LENGTH, MaxStrategiesExceeded());
             stakerStrategyList[staker].push(strategy);
         }
 
-        // add the returned shares to their existing shares for this strategy
-        stakerStrategyShares[staker][strategy] += shares;
+        // add the returned depositedShares to their existing shares for this strategy
+        stakerDepositShares[staker][strategy] = prevDepositShares + shares;
 
         emit Deposit(staker, token, strategy, shares);
+        return (prevDepositShares, shares);
     }
 
     /**
@@ -267,40 +251,48 @@ contract StrategyManager is
         shares = strategy.deposit(token, amount);
 
         // add the returned shares to the staker's existing shares for this strategy
-        _addShares(staker, token, strategy, shares);
+        (uint256 prevDepositShares, uint256 addedShares) = _addShares(staker, token, strategy, shares);
 
-        // Increase shares delegated to operator, if needed
-        delegation.increaseDelegatedShares(staker, strategy, shares);
+        // Increase shares delegated to operator
+        delegation.increaseDelegatedShares({
+            staker: staker,
+            strategy: strategy,
+            prevDepositShares: prevDepositShares,
+            addedShares: addedShares
+        });
 
         return shares;
     }
 
     /**
-     * @notice Decreases the shares that `staker` holds in `strategy` by `shareAmount`.
+     * @notice Decreases the shares that `staker` holds in `strategy` by `depositSharesToRemove`.
      * @param staker The address to decrement shares from
      * @param strategy The strategy for which the `staker`'s shares are being decremented
-     * @param shareAmount The amount of shares to decrement
+     * @param depositSharesToRemove The amount of deposit shares to decrement
      * @dev If the amount of shares represents all of the staker`s shares in said strategy,
      * then the strategy is removed from stakerStrategyList[staker] and 'true' is returned. Otherwise 'false' is returned.
      */
-    function _removeShares(address staker, IStrategy strategy, uint256 shareAmount) internal returns (bool) {
+    function _removeDepositShares(
+        address staker,
+        IStrategy strategy,
+        uint256 depositSharesToRemove
+    ) internal returns (bool) {
         // sanity checks on inputs
-        require(shareAmount != 0, "StrategyManager._removeShares: shareAmount should not be zero!");
+        require(depositSharesToRemove != 0, SharesAmountZero());
 
         //check that the user has sufficient shares
-        uint256 userShares = stakerStrategyShares[staker][strategy];
+        uint256 userDepositShares = stakerDepositShares[staker][strategy];
 
-        require(shareAmount <= userShares, "StrategyManager._removeShares: shareAmount too high");
-        //unchecked arithmetic since we just checked this above
-        unchecked {
-            userShares = userShares - shareAmount;
-        }
+        // This check technically shouldn't actually ever revert because depositSharesToRemove is already
+        // checked to not exceed max amount of shares when the withdrawal was queued in the DelegationManager
+        require(depositSharesToRemove <= userDepositShares, SharesAmountTooHigh());
+        userDepositShares = userDepositShares - depositSharesToRemove;
 
         // subtract the shares from the staker's existing shares for this strategy
-        stakerStrategyShares[staker][strategy] = userShares;
+        stakerDepositShares[staker][strategy] = userDepositShares;
 
         // if no existing shares, remove the strategy from the staker's dynamic array of strategies
-        if (userShares == 0) {
+        if (userDepositShares == 0) {
             _removeStrategyFromStakerStrategyList(staker, strategy);
 
             // return true in the event that the strategy was removed from stakerStrategyList[staker]
@@ -319,38 +311,26 @@ contract StrategyManager is
         //loop through all of the strategies, find the right one, then replace
         uint256 stratsLength = stakerStrategyList[staker].length;
         uint256 j = 0;
-        for (; j < stratsLength;) {
+        for (; j < stratsLength; ++j) {
             if (stakerStrategyList[staker][j] == strategy) {
                 //replace the strategy with the last strategy in the list
                 stakerStrategyList[staker][j] = stakerStrategyList[staker][stakerStrategyList[staker].length - 1];
                 break;
             }
-            unchecked {
-                ++j;
-            }
         }
         // if we didn't find the strategy, revert
-        require(j != stratsLength, "StrategyManager._removeStrategyFromStakerStrategyList: strategy not found");
+        require(j != stratsLength, StrategyNotFound());
         // pop off the last entry in the list of strategies
         stakerStrategyList[staker].pop();
-    }
-
-    /**
-     * @notice Internal function for modifying `thirdPartyTransfersForbidden`.
-     * Used inside of the `setThirdPartyTransfersForbidden` and `addStrategiesToDepositWhitelist` functions.
-     * @param strategy The strategy to set `thirdPartyTransfersForbidden` value to
-     * @param value bool value to set `thirdPartyTransfersForbidden` to
-     */
-    function _setThirdPartyTransfersForbidden(IStrategy strategy, bool value) internal {
-        emit UpdatedThirdPartyTransfersForbidden(strategy, value);
-        thirdPartyTransfersForbidden[strategy] = value;
     }
 
     /**
      * @notice Internal function for modifying the `strategyWhitelister`. Used inside of the `setStrategyWhitelister` and `initialize` functions.
      * @param newStrategyWhitelister The new address for the `strategyWhitelister` to take.
      */
-    function _setStrategyWhitelister(address newStrategyWhitelister) internal {
+    function _setStrategyWhitelister(
+        address newStrategyWhitelister
+    ) internal {
         emit StrategyWhitelisterChanged(strategyWhitelister, newStrategyWhitelister);
         strategyWhitelister = newStrategyWhitelister;
     }
@@ -358,35 +338,53 @@ contract StrategyManager is
     // VIEW FUNCTIONS
 
     /// @inheritdoc IStrategyManager
-    function getDeposits(address staker) external view returns (IStrategy[] memory, uint256[] memory) {
+    function getDeposits(
+        address staker
+    ) external view returns (IStrategy[] memory, uint256[] memory) {
         uint256 strategiesLength = stakerStrategyList[staker].length;
-        uint256[] memory shares = new uint256[](strategiesLength);
+        uint256[] memory depositedShares = new uint256[](strategiesLength);
 
-        for (uint256 i = 0; i < strategiesLength;) {
-            shares[i] = stakerStrategyShares[staker][stakerStrategyList[staker][i]];
-            unchecked {
-                ++i;
-            }
+        for (uint256 i = 0; i < strategiesLength; ++i) {
+            depositedShares[i] = stakerDepositShares[staker][stakerStrategyList[staker][i]];
         }
-        return (stakerStrategyList[staker], shares);
+        return (stakerStrategyList[staker], depositedShares);
     }
 
-    /// @notice Simple getter function that returns `stakerStrategyList[staker].length`.
-    function stakerStrategyListLength(address staker) external view returns (uint256) {
+    function getStakerStrategyList(
+        address staker
+    ) external view returns (IStrategy[] memory) {
+        return stakerStrategyList[staker];
+    }
+
+    /// @inheritdoc IStrategyManager
+    function stakerStrategyListLength(
+        address staker
+    ) external view returns (uint256) {
         return stakerStrategyList[staker].length;
     }
 
     /// @inheritdoc IStrategyManager
-    function domainSeparator() public view returns (bytes32) {
-        if (block.chainid == ORIGINAL_CHAIN_ID) {
-            return _DOMAIN_SEPARATOR;
-        } else {
-            return _calculateDomainSeparator();
-        }
-    }
-
-    // @notice Internal function for calculating the current domain separator of this contract
-    function _calculateDomainSeparator() internal view returns (bytes32) {
-        return keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("EigenLayer")), block.chainid, address(this)));
+    function calculateStrategyDepositDigestHash(
+        address staker,
+        IStrategy strategy,
+        IERC20 token,
+        uint256 amount,
+        uint256 nonce,
+        uint256 expiry
+    ) public view returns (bytes32) {
+        /// forgefmt: disable-next-item
+        return _calculateSignableDigest(
+            keccak256(
+                abi.encode(
+                    DEPOSIT_TYPEHASH, 
+                    staker, 
+                    strategy, 
+                    token, 
+                    amount, 
+                    nonce, 
+                    expiry
+                )
+            )
+        );
     }
 }

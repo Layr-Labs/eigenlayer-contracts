@@ -2,7 +2,7 @@
     "config": {
         "environment": {
             "chainid": 1,
-            "lastUpdated": "v0.4.2-mainnet-pepe",
+            "lastUpdated": "slashing-integration-testing",
             "name": "mainnet"
         },
         "params": {
@@ -15,7 +15,9 @@
             "GENESIS_REWARDS_TIMESTAMP": 1710979200,
             "REWARDS_UPDATER_ADDRESS": "0x8f94F55fD8c9E090296283137C303fE97d32A9e2",
             "ACTIVATION_DELAY": 604800,
-            "GLOBAL_OPERATOR_COMMISSION_BIPS": 1000
+            "GLOBAL_OPERATOR_COMMISSION_BIPS": 1000,
+            "MIN_WITHDRAWAL_DELAY_BLOCKS": 100800,
+            "ALLOCATION_CONFIGURATION_DELAY": 126000
         }
     },
     "deployment": {

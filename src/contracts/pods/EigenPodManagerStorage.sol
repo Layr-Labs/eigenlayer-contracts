@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
 
@@ -22,12 +22,6 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
 
     /// @notice Beacon proxy to which the EigenPods point
     IBeacon public immutable eigenPodBeacon;
-
-    /// @notice EigenLayer's StrategyManager contract
-    IStrategyManager public immutable strategyManager;
-
-    /// @notice EigenLayer's Slasher contract
-    ISlasher public immutable slasher;
 
     /// @notice EigenLayer's DelegationManager contract
     IDelegationManager public immutable delegationManager;
@@ -56,7 +50,7 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
     address internal __deprecated_beaconChainOracle;
 
     /// @notice Pod owner to deployed EigenPod address
-    mapping(address => IEigenPod) public ownerToPod;
+    mapping(address podOwner => IEigenPod) public ownerToPod;
 
     // BEGIN STORAGE VARIABLES ADDED AFTER FIRST TESTNET DEPLOYMENT -- DO NOT SUGGEST REORDERING TO CONVENTIONAL ORDER
     /// @notice The number of EigenPods that have been deployed
@@ -68,28 +62,38 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
 
     // BEGIN STORAGE VARIABLES ADDED AFTER MAINNET DEPLOYMENT -- DO NOT SUGGEST REORDERING TO CONVENTIONAL ORDER
     /**
-     * @notice Mapping from Pod owner owner to the number of shares they have in the virtual beacon chain ETH strategy.
-     * @dev The share amount can become negative. This is necessary to accommodate the fact that a pod owner's virtual beacon chain ETH shares can
-     * decrease between the pod owner queuing and completing a withdrawal.
-     * When the pod owner's shares would otherwise increase, this "deficit" is decreased first _instead_.
-     * Likewise, when a withdrawal is completed, this "deficit" is decreased and the withdrawal amount is decreased; We can think of this
-     * as the withdrawal "paying off the deficit".
+     * @notice mapping from pod owner to the deposit shares they have in the virtual beacon chain ETH strategy
+     *
+     * @dev When an EigenPod registers a balance increase, deposit shares are increased. When registering a balance
+     * decrease, however, deposit shares are NOT decreased. Instead, the pod owner's beacon chain slashing factor
+     * is decreased proportional to the balance decrease. This impacts the number of shares that will be withdrawn
+     * when the deposit shares are queued for withdrawal in the DelegationManager.
+     *
+     * Note that prior to the slashing release, deposit shares were decreased when balance decreases occurred.
+     * In certain cases, a combination of queueing a withdrawal plus registering a balance decrease could result
+     * in a staker having negative deposit shares in this mapping. This negative value would be corrected when the
+     * staker completes a withdrawal (as tokens or as shares).
+     *
+     * With the slashing release, negative shares are no longer possible. However, a staker can still have negative
+     * shares if they met the conditions for them before the slashing release. If this is the case, that staker
+     * should complete any outstanding queued withdrawal in the DelegationManager ("as shares"). This will correct
+     * the negative share count and allow the staker to continue using their pod as normal.
      */
-    mapping(address => int256) public podOwnerShares;
+    mapping(address podOwner => int256 shares) public podOwnerDepositShares;
 
     uint64 internal __deprecated_denebForkTimestamp;
 
-    constructor(
-        IETHPOSDeposit _ethPOS,
-        IBeacon _eigenPodBeacon,
-        IStrategyManager _strategyManager,
-        ISlasher _slasher,
-        IDelegationManager _delegationManager
-    ) {
+    /// @notice Returns the slashing factor applied to the `staker` for the `beaconChainETHStrategy`
+    /// Note: this value starts at 1 WAD (1e18) for all stakers, and is updated when a staker's pod registers
+    /// a balance decrease.
+    mapping(address staker => BeaconChainSlashingFactor) internal _beaconChainSlashingFactor;
+
+    /// @notice Returns the amount of `shares` that have been slashed on EigenLayer but not burned yet.
+    uint256 public burnableETHShares;
+
+    constructor(IETHPOSDeposit _ethPOS, IBeacon _eigenPodBeacon, IDelegationManager _delegationManager) {
         ethPOS = _ethPOS;
         eigenPodBeacon = _eigenPodBeacon;
-        strategyManager = _strategyManager;
-        slasher = _slasher;
         delegationManager = _delegationManager;
     }
 
@@ -98,5 +102,5 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[44] private __gap;
+    uint256[42] private __gap;
 }

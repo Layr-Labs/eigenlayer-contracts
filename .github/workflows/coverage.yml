@@ -26,19 +26,20 @@ jobs:
       id: get_issue_number
       with:
         script: |
-          if (context.issue && context.issue.number) {
-            // Return issue number if present
-            return context.issue.number;
+          let issue_number;
+          // Attempt to find a pull request associated with the commit
+          const pullRequests = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+            commit_sha: context.sha,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+          });
+
+          if (pullRequests.data.length > 0) {
+            issue_number = pullRequests.data[0].number;
           } else {
-            // Otherwise return issue number from commit
-            return (
-              await github.rest.repos.listPullRequestsAssociatedWithCommit({
-                commit_sha: context.sha,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-              })
-            ).data[0].number;
+            throw new Error('No associated issue or pull request found.');
           }
+          return issue_number;
         result-encoding: string
     - name: Checkout code
       uses: actions/checkout@v2
@@ -49,9 +50,12 @@ jobs:
     - name: Install Foundry
       uses: foundry-rs/foundry-toolchain@v1
       with:
-        version: nightly
+        version: stable
     - name: Run coverage
       run: forge coverage --report lcov
+      env:
+        RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
+        RPC_HOLESKY: ${{ secrets.RPC_HOLESKY }}
     - name: Prune coverage report
       run: lcov --remove ./lcov.info -o ./lcov.info.pruned 'src/test/*' 'script/*' '*Storage.sol' --ignore-errors inconsistent
     - name: Generate reports

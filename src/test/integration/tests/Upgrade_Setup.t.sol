@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.27;
 
 import "src/test/integration/IntegrationChecks.t.sol";
 
@@ -11,15 +11,14 @@ contract IntegrationMainnetFork_UpgradeSetup is IntegrationCheckUtils {
     //     _configRand({
     //         _randomSeed: _random,
     //         _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
-    //         _userTypes: DEFAULT | ALT_METHODS,
-    //         _forkTypes: MAINNET
+    //         _userTypes: DEFAULT | ALT_METHODS
     //     });
 
-    //     // // 1. Check proper state pre-upgrade
-    //     // _verifyContractPointers();
-    //     // _verifyImplementations();
-    //     // _verifyContractsInitialized(true);
-    //     // _verifyInitializationParams();
+    //     // 1. Check proper state pre-upgrade
+    //     _verifyContractPointers();
+    //     _verifyImplementations();
+    //     _verifyContractsInitialized(false);
+    //     _verifyInitializationParams();
 
     //     // 2. Upgrade mainnet contracts
     //     _upgradeEigenLayerContracts();
@@ -28,7 +27,7 @@ contract IntegrationMainnetFork_UpgradeSetup is IntegrationCheckUtils {
     //     // 2. Verify upgrade setup
     //     _verifyContractPointers();
     //     _verifyImplementations();
-    //     _verifyContractsInitialized(true);
+    //     _verifyContractsInitialized(false);
     //     _verifyInitializationParams();
     // }
 
@@ -68,7 +67,6 @@ contract IntegrationMainnetFork_UpgradeSetup is IntegrationCheckUtils {
             "avsDirectory: delegationManager address not set correctly"
         );
         // DelegationManager
-        require(delegationManager.slasher() == slasher, "delegationManager: slasher address not set correctly");
         require(
             delegationManager.strategyManager() == strategyManager,
             "delegationManager: strategyManager address not set correctly"
@@ -78,25 +76,15 @@ contract IntegrationMainnetFork_UpgradeSetup is IntegrationCheckUtils {
             "delegationManager: eigenPodManager address not set correctly"
         );
         // StrategyManager
-        require(strategyManager.slasher() == slasher, "strategyManager: slasher address not set correctly");
         require(
             strategyManager.delegation() == delegationManager,
             "strategyManager: delegationManager address not set correctly"
-        );
-        require(
-            strategyManager.eigenPodManager() == eigenPodManager,
-            "strategyManager: eigenPodManager address not set correctly"
         );
         // EPM
         require(
             eigenPodManager.eigenPodBeacon() == eigenPodBeacon,
             "eigenPodManager: eigenPodBeacon contract address not set correctly"
         );
-        require(
-            eigenPodManager.strategyManager() == strategyManager,
-            "eigenPodManager: strategyManager contract address not set correctly"
-        );
-        require(eigenPodManager.slasher() == slasher, "eigenPodManager: slasher contract address not set correctly");
         require(
             eigenPodManager.delegationManager() == delegationManager,
             "eigenPodManager: delegationManager contract address not set correctly"
