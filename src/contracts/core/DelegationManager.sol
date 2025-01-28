@@ -1038,5 +1038,4 @@ contract DelegationManager is
             )
         );
     }
-    
 }
