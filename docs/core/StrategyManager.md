@@ -195,6 +195,7 @@ Note that the amount of deposit shares removed while in the withdrawal queue may
 function addShares(
     address staker,
     IStrategy strategy,
+    IERC20 token,
     uint256 shares
 )
     external

@@ -2,6 +2,9 @@
 pragma solidity ^0.8.27;
 
 import "../interfaces/IRewardsCoordinator.sol";
+import "../interfaces/IDelegationManager.sol";
+import "../interfaces/IStrategyManager.sol";
+import "../interfaces/IAllocationManager.sol";
 
 /**
  * @title Storage variables for the `RewardsCoordinator` contract.
