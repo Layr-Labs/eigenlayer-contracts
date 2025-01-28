@@ -159,6 +159,7 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
 
         // Verify `balanceContainerProof` against `beaconBlockRoot`
         BeaconChainProofs.verifyBalanceContainer({
+            proofTimestamp: checkpointTimestamp,
             beaconBlockRoot: checkpoint.beaconBlockRoot,
             proof: balanceContainerProof
         });
@@ -254,6 +255,7 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
         for (uint256 i = 0; i < validatorIndices.length; i++) {
             // forgefmt: disable-next-item
             totalAmountToBeRestakedWei += _verifyWithdrawalCredentials(
+                beaconTimestamp,
                 stateRootProof.beaconStateRoot,
                 validatorIndices[i],
                 validatorFieldsProofs[i],
@@ -341,6 +343,7 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
 
         // Verify Validator container proof against `beaconStateRoot`
         BeaconChainProofs.verifyValidatorFields({
+            proofTimestamp: beaconTimestamp,
             beaconStateRoot: stateRootProof.beaconStateRoot,
             validatorFields: proof.validatorFields,
             validatorFieldsProof: proof.proof,
@@ -419,6 +422,7 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
      * @param validatorFields are the fields of the "Validator Container", refer to consensus specs
      */
     function _verifyWithdrawalCredentials(
+        uint64 beaconTimestamp,
         bytes32 beaconStateRoot,
         uint40 validatorIndex,
         bytes calldata validatorFieldsProof,
@@ -484,6 +488,7 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
 
         // Verify passed-in validatorFields against verified beaconStateRoot:
         BeaconChainProofs.verifyValidatorFields({
+            proofTimestamp: beaconTimestamp,
             beaconStateRoot: beaconStateRoot,
             validatorFields: validatorFields,
             validatorFieldsProof: validatorFieldsProof,

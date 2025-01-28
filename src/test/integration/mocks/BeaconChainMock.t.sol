@@ -69,10 +69,10 @@ contract BeaconChainMock is Logger {
 
     uint immutable BLOCKROOT_PROOF_LEN = 32 * BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT;
     uint immutable VAL_FIELDS_PROOF_LEN = 32 * (
-        (BeaconChainProofs.VALIDATOR_TREE_HEIGHT + 1) + BeaconChainProofs.BEACON_STATE_TREE_HEIGHT
+        (BeaconChainProofs.VALIDATOR_TREE_HEIGHT + 1) + BeaconChainProofs.DENEB_BEACON_STATE_TREE_HEIGHT
     );
     uint immutable BALANCE_CONTAINER_PROOF_LEN = 32 * (
-        BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT + BeaconChainProofs.BEACON_STATE_TREE_HEIGHT
+        BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT + BeaconChainProofs.DENEB_BEACON_STATE_TREE_HEIGHT
     );
     uint immutable BALANCE_PROOF_LEN = 32 * (BeaconChainProofs.BALANCE_TREE_HEIGHT + 1);
     
@@ -409,7 +409,7 @@ contract BeaconChainMock is Logger {
         // Build merkle tree for BeaconState
         bytes32 beaconStateRoot = _buildMerkleTree({
             leaves: _getBeaconStateLeaves(validatorsRoot, balanceContainerRoot),
-            treeHeight: BeaconChainProofs.BEACON_STATE_TREE_HEIGHT,
+            treeHeight: BeaconChainProofs.DENEB_BEACON_STATE_TREE_HEIGHT,
             tree: trees[curTimestamp].stateTree
         });
         // console.log("-- beacon state root", beaconStateRoot);
@@ -595,7 +595,7 @@ contract BeaconChainMock is Logger {
 
         uint totalHeight = BALANCE_CONTAINER_PROOF_LEN / 32;
         uint depth = 0;
-        for (uint i = 0; i < BeaconChainProofs.BEACON_STATE_TREE_HEIGHT; i++) {
+        for (uint i = 0; i < BeaconChainProofs.DENEB_BEACON_STATE_TREE_HEIGHT; i++) {
             bytes32 sibling = trees[curTimestamp].stateTree.siblings[curNode];
 
             // proof[j] = sibling;
@@ -661,7 +661,7 @@ contract BeaconChainMock is Logger {
             // Validator container root -> beacon state root
             for (
                 uint j = depth; 
-                j < 1 + BeaconChainProofs.VALIDATOR_TREE_HEIGHT + BeaconChainProofs.BEACON_STATE_TREE_HEIGHT; 
+                j < 1 + BeaconChainProofs.VALIDATOR_TREE_HEIGHT + BeaconChainProofs.DENEB_BEACON_STATE_TREE_HEIGHT; 
                 j++
             ) {
                 bytes32 sibling = trees[curTimestamp].stateTree.siblings[curNode];
