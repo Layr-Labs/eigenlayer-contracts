@@ -1785,6 +1785,7 @@ contract EigenPodUnitTests_proofParsingTests is EigenPodHarnessSetup, ProofParsi
         oracleTimestamp = uint64(block.timestamp);
 
         eigenPodHarness.verifyWithdrawalCredentials(
+            oracleTimestamp,
             beaconStateRoot,
             validatorIndex,
             validatorFieldsProof,
