@@ -136,6 +136,11 @@ library SlashingLib {
         dsf._scalingFactor = newDepositScalingFactor;
     }
 
+    function updateNewDelegation(DepositScalingFactor storage dsf, uint256 slashingFactor) internal {
+        //On delegation, we use the old deposit scaling factor in case that it is non-WAD
+        dsf._scalingFactor = dsf.scalingFactor().divWad(slashingFactor);
+    }
+
     // CONVERSION
 
     function calcWithdrawable(
