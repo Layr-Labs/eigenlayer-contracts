@@ -264,7 +264,7 @@ contract EigenPodManager is
         }
         // If we have gone from negative to positive shares, return (0, positive delta)
         else if (prevDepositShares < 0) {
-            return (0, uint256(prevDepositShares + sharesToAdd));
+            return (0, uint256(updatedDepositShares));
         }
         // Else, return true previous shares and added shares
         else {
