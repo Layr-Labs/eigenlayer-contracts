@@ -127,11 +127,11 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     mapping(address operator => OperatorSplit split) internal _operatorPISplitBips;
 
     /// @notice Returns the `split` an `operator` takes for a given operator set.
-    mapping(address operator => mapping(bytes32 operatorSetKey => OperatorSplit split)) internal
-        _operatorSetSplitBips;
+    mapping(address operator => mapping(bytes32 operatorSetKey => OperatorSplit split)) internal _operatorSetSplitBips;
 
     /// @notice Returns whether a `hash` is a `valid` operator set performance rewards submission hash for a given `avs`.
-    mapping(address avs => mapping(bytes32 hash => bool valid)) public isOperatorDirectedOperatorSetRewardsSubmissionHash;
+    mapping(address avs => mapping(bytes32 hash => bool valid)) public
+        isOperatorDirectedOperatorSetRewardsSubmissionHash;
 
     // Construction
 

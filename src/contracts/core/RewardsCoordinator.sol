@@ -198,7 +198,8 @@ contract RewardsCoordinator is
 
             uint256 totalAmount = _validateOperatorDirectedRewardsSubmission(operatorDirectedRewardsSubmission);
 
-            isOperatorDirectedOperatorSetRewardsSubmissionHash[operatorSet.avs][operatorDirectedRewardsSubmissionHash] = true;
+            isOperatorDirectedOperatorSetRewardsSubmissionHash[operatorSet.avs][operatorDirectedRewardsSubmissionHash] =
+                true;
             submissionNonce[operatorSet.avs] = nonce + 1;
 
             emit OperatorDirectedOperatorSetRewardsSubmissionCreated(
