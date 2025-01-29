@@ -327,7 +327,7 @@ contract RewardsCoordinator is
         uint16 oldSplit = _getOperatorSplit(_operatorOperatorSetSplitBips[operator][operatorSet.key()]);
         _setOperatorSplit(_operatorOperatorSetSplitBips[operator][operatorSet.key()], split, activatedAt);
 
-        emit OperatorOperatorSetSplitBipsSet(msg.sender, operator, operatorSet, activatedAt, oldSplit, split);
+        emit OperatorSetSplitBipsSet(msg.sender, operator, operatorSet, activatedAt, oldSplit, split);
     }
 
     /// @inheritdoc IRewardsCoordinator

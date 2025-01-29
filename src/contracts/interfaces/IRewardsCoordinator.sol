@@ -284,16 +284,16 @@ interface IRewardsCoordinatorEvents is IRewardsCoordinatorTypes {
      * @notice Emitted when an AVS creates a valid performance based `OperatorDirectedRewardsSubmission` for an operator set.
      * @param caller The address calling `createOperatorDirectedOperatorSetRewardsSubmission`.
      * @param operatorSet The operatorSet on behalf of which the performance rewards are being submitted.
-     * @param performanceRewardsSubmissionHash Keccak256 hash of (`avs`, `submissionNonce` and `performanceRewardsSubmission`).
+     * @param operatorDirectedRewardsSubmissionHash Keccak256 hash of (`avs`, `submissionNonce` and `operatorDirectedRewardsSubmission`).
      * @param submissionNonce Current nonce of the avs. Used to generate a unique submission hash.
-     * @param performanceRewardsSubmission The Performance Rewards Submission. Contains the token, start timestamp, duration, description and, strategy and multipliers.
+     * @param operatorDirectedRewardsSubmission The Performance Rewards Submission. Contains the token, start timestamp, duration, description and, strategy and multipliers.
      */
     event OperatorDirectedOperatorSetRewardsSubmissionCreated(
         address indexed caller,
         OperatorSet indexed operatorSet,
-        bytes32 indexed performanceRewardsSubmissionHash,
+        bytes32 indexed operatorDirectedRewardsSubmissionHash,
         uint256 submissionNonce,
-        OperatorDirectedRewardsSubmission performanceRewardsSubmission
+        OperatorDirectedRewardsSubmission operatorDirectedRewardsSubmission
     );
 
     /// @notice rewardsUpdater is responsible for submiting DistributionRoots, only owner can set rewardsUpdater
@@ -349,7 +349,7 @@ interface IRewardsCoordinatorEvents is IRewardsCoordinatorTypes {
      * @param oldOperatorSetSplitBips The old split for the operator for the operatorSet.
      * @param newOperatorSetSplitBips The new split for the operator for the operatorSet.
      */
-    event OperatorOperatorSetSplitBipsSet(
+    event OperatorSetSplitBipsSet(
         address indexed caller,
         address indexed operator,
         OperatorSet indexed operatorSet,

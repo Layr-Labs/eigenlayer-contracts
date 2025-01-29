@@ -836,7 +836,7 @@ contract RewardsCoordinatorUnitsTests_setOperatorSetSplit is RewardsCoordinatorU
         uint16 oldSplit = rewardsCoordinator.getOperatorSetSplit(operator, operatorSet);
 
         cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
-        emit OperatorOperatorSetSplitBipsSet(operator, operator, operatorSet, activatedAt, oldSplit, split);
+        emit OperatorSetSplitBipsSet(operator, operator, operatorSet, activatedAt, oldSplit, split);
         cheats.prank(operator);
         rewardsCoordinator.setOperatorSetSplit(operator, operatorSet, split);
 
@@ -862,7 +862,7 @@ contract RewardsCoordinatorUnitsTests_setOperatorSetSplit is RewardsCoordinatorU
         uint16 oldSplit = rewardsCoordinator.getOperatorSetSplit(operator, operatorSet);
 
         cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
-        emit OperatorOperatorSetSplitBipsSet(defaultAppointee, operator, operatorSet, activatedAt, oldSplit, split);
+        emit OperatorSetSplitBipsSet(defaultAppointee, operator, operatorSet, activatedAt, oldSplit, split);
         cheats.prank(defaultAppointee);
         rewardsCoordinator.setOperatorSetSplit(operator, operatorSet, split);
 
@@ -883,7 +883,7 @@ contract RewardsCoordinatorUnitsTests_setOperatorSetSplit is RewardsCoordinatorU
         assertEq(oldSplit, defaultSplitBips, "Operator split is not Default split before Initialization");
 
         cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
-        emit OperatorOperatorSetSplitBipsSet(operator, operator, operatorSet, activatedAt, oldSplit, split);
+        emit OperatorSetSplitBipsSet(operator, operator, operatorSet, activatedAt, oldSplit, split);
         cheats.prank(operator);
         rewardsCoordinator.setOperatorSetSplit(operator, operatorSet, split);
 
@@ -939,7 +939,7 @@ contract RewardsCoordinatorUnitsTests_setOperatorSetSplit is RewardsCoordinatorU
 
         // Setting Second Split
         cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
-        emit OperatorOperatorSetSplitBipsSet(operator, operator, operatorSet, activatedAt, firstSplit, secondSplit);
+        emit OperatorSetSplitBipsSet(operator, operator, operatorSet, activatedAt, firstSplit, secondSplit);
         cheats.prank(operator);
         rewardsCoordinator.setOperatorSetSplit(operator, operatorSet, secondSplit);
 
