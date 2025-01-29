@@ -89,6 +89,12 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
     /// @dev Index for flag that pauses calling setOperatorPISplit
     uint8 internal constant PAUSED_OPERATOR_PI_SPLIT = 7;
 
+    /// @dev Index for flag that pauses calling setOperatorSetSplit
+    uint8 internal constant PAUSED_OPERATOR_SET_SPLIT = 8;
+
+    /// @dev Index for flag that pauses calling setOperatorSetPerformanceRewardsSubmission
+    uint8 internal constant PAUSED_OPERATOR_DIRECTED_OPERATOR_SET_REWARDS_SUBMISSION = 9;
+
     // RewardsCoordinator entities
     address rewardsUpdater = address(1000);
     address defaultAVS = address(1001);
@@ -777,6 +783,169 @@ contract RewardsCoordinatorUnitTests_setOperatorPISplit is RewardsCoordinatorUni
         assertEq(firstSplit, rewardsCoordinator.getOperatorPISplit(operator), "Incorrect Operator split");
         cheats.warp(activatedAt);
         assertEq(secondSplit, rewardsCoordinator.getOperatorPISplit(operator), "Incorrect Operator split");
+    }
+}
+
+contract RewardsCoordinatorUnitsTests_setOperatorSetSplit is RewardsCoordinatorUnitTests {
+    OperatorSet operatorSet;
+
+    function setUp() public virtual override {
+        RewardsCoordinatorUnitTests.setUp();
+        operatorSet = OperatorSet(address(this), 1);
+        allocationManagerMock.setIsOperatorSet(operatorSet, true);
+    }
+
+    // Revert when paused
+    function testFuzz_Revert_WhenPaused(address operator, uint16 split) public filterFuzzedAddressInputs(operator) {
+        cheats.assume(operator != address(0));
+        split = uint16(bound(split, 0, ONE_HUNDRED_IN_BIPS));
+        cheats.prank(pauser);
+        rewardsCoordinator.pause(2 ** PAUSED_OPERATOR_SET_SPLIT);
+
+        cheats.prank(operator);
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
+        rewardsCoordinator.setOperatorSetSplit(operator, operatorSet, split);
+    }
+
+    // Revert when split is greater than 100%
+    function testFuzz_Revert_WhenSplitGreaterThan100(
+        address operator,
+        uint16 split
+    ) public filterFuzzedAddressInputs(operator) {
+        cheats.assume(operator != address(0));
+        split = uint16(bound(split, ONE_HUNDRED_IN_BIPS + 1, type(uint16).max));
+
+        cheats.prank(operator);
+        cheats.expectRevert(SplitExceedsMax.selector);
+        rewardsCoordinator.setOperatorSetSplit(operator, operatorSet, split);
+    }
+
+    function testFuzz_Revert_InvalidOperatorSet(address operator, uint16 split) public filterFuzzedAddressInputs(operator) {
+        cheats.assume(operator != address(0));
+        operatorSet.id = 2; // Invalid operator set id
+        cheats.prank(operator);
+        cheats.expectRevert(InvalidOperatorSet.selector);
+        rewardsCoordinator.setOperatorSetSplit(operator, operatorSet, split);
+    }
+
+    function testFuzz_setOperatorSetSplit(address operator, uint16 split) public filterFuzzedAddressInputs(operator) {
+        cheats.assume(operator != address(0));
+
+        split = uint16(bound(split, 0, ONE_HUNDRED_IN_BIPS));
+        uint32 activatedAt = uint32(block.timestamp) + activationDelay;
+        uint16 oldSplit = rewardsCoordinator.getOperatorSetSplit(operator, operatorSet);
+
+        cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
+        emit OperatorSetSplitBipsSet(operator, operator, operatorSet, activatedAt, oldSplit, split);
+        cheats.prank(operator);
+        rewardsCoordinator.setOperatorSetSplit(operator, operatorSet, split);
+
+        assertEq(oldSplit, rewardsCoordinator.getOperatorSetSplit(operator, operatorSet), "Incorrect Operator split");
+        cheats.warp(activatedAt);
+        assertEq(split, rewardsCoordinator.getOperatorSetSplit(operator, operatorSet), "Incorrect Operator split");
+    }
+
+    function testFuzz_setOperatorSetSplit_UAM(address operator, uint16 split) public filterFuzzedAddressInputs(operator) {
+        cheats.assume(operator != address(0));
+
+        // Set UAM
+        cheats.prank(operator);
+        permissionController.setAppointee(
+            operator, 
+            defaultAppointee, 
+            address(rewardsCoordinator), 
+            IRewardsCoordinator.setOperatorSetSplit.selector
+        );
+
+        split = uint16(bound(split, 0, ONE_HUNDRED_IN_BIPS));
+        uint32 activatedAt = uint32(block.timestamp) + activationDelay;
+        uint16 oldSplit = rewardsCoordinator.getOperatorSetSplit(operator, operatorSet);
+
+        cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
+        emit OperatorSetSplitBipsSet(defaultAppointee, operator, operatorSet, activatedAt, oldSplit, split);
+        cheats.prank(defaultAppointee);
+        rewardsCoordinator.setOperatorSetSplit(operator, operatorSet, split);
+
+        assertEq(oldSplit, rewardsCoordinator.getOperatorSetSplit(operator, operatorSet), "Incorrect Operator split");
+        cheats.warp(activatedAt);
+        assertEq(split, rewardsCoordinator.getOperatorSetSplit(operator, operatorSet), "Incorrect Operator split");
+    }
+
+    // Testing that the split has been initialized for the first time.
+    function testFuzz_setOperatorSetSplitFirstTime(
+        address operator,
+        uint16 split
+    ) public filterFuzzedAddressInputs(operator) {
+        cheats.assume(operator != address(0));
+        split = uint16(bound(split, 0, ONE_HUNDRED_IN_BIPS));
+        uint32 activatedAt = uint32(block.timestamp) + activationDelay;
+        uint16 oldSplit = rewardsCoordinator.getOperatorSetSplit(operator, operatorSet);
+        assertEq(oldSplit, defaultSplitBips, "Operator split is not Default split before Initialization");
+
+        cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
+        emit OperatorSetSplitBipsSet(operator, operator, operatorSet, activatedAt, oldSplit, split);
+        cheats.prank(operator);
+        rewardsCoordinator.setOperatorSetSplit(operator, operatorSet, split);
+
+        assertEq(oldSplit, rewardsCoordinator.getOperatorSetSplit(operator, operatorSet), "Incorrect Operator split");
+        cheats.warp(activatedAt);
+        assertEq(split, rewardsCoordinator.getOperatorSetSplit(operator, operatorSet), "Incorrect Operator split");
+    }
+
+    // Testing the split setting for a second time prior to the earlier activation.
+    function testFuzz_Revert_setOperatorSetSplitSecondTimeBeforePriorActivation(
+        address operator,
+        uint16 firstSplit,
+        uint16 secondSplit,
+        uint32 warpTime
+    ) public filterFuzzedAddressInputs(operator) {
+        cheats.assume(operator != address(0));
+        firstSplit = uint16(bound(firstSplit, 0, ONE_HUNDRED_IN_BIPS));
+        secondSplit = uint16(bound(secondSplit, 0, ONE_HUNDRED_IN_BIPS));
+        warpTime = uint32(bound(warpTime, uint32(block.timestamp), uint32(block.timestamp) + activationDelay));
+
+        // Setting First Split
+        cheats.prank(operator);
+        rewardsCoordinator.setOperatorSetSplit(operator, operatorSet, firstSplit);
+        // Warping to time before activation of First split
+        cheats.warp(warpTime);
+
+        // Trying to set Second Split
+        cheats.prank(operator);
+        cheats.expectRevert(PreviousSplitPending.selector);
+        rewardsCoordinator.setOperatorSetSplit(operator, operatorSet, secondSplit);
+    }
+
+    // Testing the split setting for a second time after earlier activation.
+    function testFuzz_setOperatorSetSplitSecondTimeAfterPriorActivation(
+        address operator,
+        uint16 firstSplit,
+        uint16 secondSplit,
+        uint32 warpTime
+    ) public filterFuzzedAddressInputs(operator) {
+        cheats.assume(operator != address(0));
+        firstSplit = uint16(bound(firstSplit, 0, ONE_HUNDRED_IN_BIPS));
+        secondSplit = uint16(bound(secondSplit, 0, ONE_HUNDRED_IN_BIPS));
+        warpTime = uint32(
+            bound(warpTime, uint32(block.timestamp) + activationDelay + 1, type(uint32).max - activationDelay)
+        );
+
+        // Setting First Split
+        cheats.prank(operator);
+        rewardsCoordinator.setOperatorSetSplit(operator, operatorSet, firstSplit);
+        // Warping to time after activation of First split
+        cheats.warp(warpTime);
+        uint32 activatedAt = uint32(block.timestamp) + activationDelay;
+
+        // Setting Second Split
+        cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
+        emit OperatorSetSplitBipsSet(operator, operator, operatorSet, activatedAt, firstSplit, secondSplit);
+        cheats.prank(operator);
+        rewardsCoordinator.setOperatorSetSplit(operator, operatorSet, secondSplit);
+
+        assertEq(firstSplit, rewardsCoordinator.getOperatorSetSplit(operator, operatorSet), "Incorrect Operator split");
+        cheats.warp(activatedAt);
+        assertEq(secondSplit, rewardsCoordinator.getOperatorSetSplit(operator, operatorSet), "Incorrect Operator split");
     }
 }
 
@@ -2471,7 +2640,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
             avs,
             avs,
             rewardsSubmissionHash,
-            currSubmissionNonce,
+            currSubmissionNonce, 
             operatorDirectedRewardsSubmissions[0]
         );
         rewardsCoordinator.createOperatorDirectedAVSRewardsSubmission(avs, operatorDirectedRewardsSubmissions);
@@ -2675,6 +2844,964 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
         for (uint256 i = 0; i < numSubmissions; ++i) {
             assertTrue(
                 rewardsCoordinator.isOperatorDirectedAVSRewardsSubmissionHash(param.avs, rewardsSubmissionHashes[i]),
+                "rewards submission hash not submitted"
+            );
+            assertEq(
+                avsBalancesBefore[i] - amounts[i],
+                rewardTokens[i].balanceOf(param.avs),
+                "AVS balance not decremented by amount of rewards submission"
+            );
+            assertEq(
+                rewardsCoordinatorBalancesBefore[i] + amounts[i],
+                rewardTokens[i].balanceOf(address(rewardsCoordinator)),
+                "RewardsCoordinator balance not incremented by amount of rewards submission"
+            );
+        }
+    }
+}
+
+contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSubmission is RewardsCoordinatorUnitTests {
+    OperatorSet operatorSet;
+    // used for stack too deep
+
+    struct FuzzOperatorDirectedAVSRewardsSubmission {
+        address avs;
+        uint256 startTimestamp;
+        uint256 duration;
+    }
+
+    OperatorReward[] defaultOperatorRewards;
+
+    function setUp() public virtual override {
+        RewardsCoordinatorUnitTests.setUp();
+
+        address[] memory operators = new address[](3);
+        operators[0] = makeAddr("operator1");
+        operators[1] = makeAddr("operator2");
+        operators[2] = makeAddr("operator3");
+        operators = _sortAddressArrayAsc(operators);
+
+        defaultOperatorRewards.push(OperatorReward(operators[0], 1e18));
+        defaultOperatorRewards.push(OperatorReward(operators[1], 2e18));
+        defaultOperatorRewards.push(OperatorReward(operators[2], 3e18));
+
+        // Set the timestamp to when Rewards v2 will realisticly go out (i.e 6 months)
+        cheats.warp(GENESIS_REWARDS_TIMESTAMP + 168 days);
+        operatorSet = OperatorSet(address(this), 1);
+        allocationManagerMock.setIsOperatorSet(operatorSet, true);
+    }
+
+    /// @dev Sort to ensure that the array is in ascending order for addresses
+    function _sortAddressArrayAsc(
+        address[] memory arr
+    ) internal pure returns (address[] memory) {
+        uint256 l = arr.length;
+        for (uint256 i = 0; i < l; i++) {
+            for (uint256 j = i + 1; j < l; j++) {
+                if (arr[i] > arr[j]) {
+                    address temp = arr[i];
+                    arr[i] = arr[j];
+                    arr[j] = temp;
+                }
+            }
+        }
+        return arr;
+    }
+
+    function _getTotalRewardsAmount(
+        OperatorReward[] memory operatorRewards
+    ) internal pure returns (uint256) {
+        uint256 totalAmount = 0;
+        for (uint256 i = 0; i < operatorRewards.length; ++i) {
+            totalAmount += operatorRewards[i].amount;
+        }
+        return totalAmount;
+    }
+
+    // Revert when paused
+    function test_Revert_WhenPaused() public {
+        cheats.prank(pauser);
+        rewardsCoordinator.pause(2 ** PAUSED_OPERATOR_DIRECTED_OPERATOR_SET_REWARDS_SUBMISSION);
+
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
+        OperatorDirectedRewardsSubmission[] memory operatorDirectedRewardsSubmissions;
+        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, operatorDirectedRewardsSubmissions);
+    }
+
+    function testFuzz_Revert_InvalidOperatorSet(uint32 id) public  {
+        cheats.assume(id != 1);
+        operatorSet.id = id;
+        OperatorDirectedRewardsSubmission[] memory operatorDirectedRewardsSubmissions;
+        cheats.prank(operatorSet.avs);
+        cheats.expectRevert(InvalidOperatorSet.selector);
+        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, operatorDirectedRewardsSubmissions);
+    }
+
+    // Revert from reentrancy
+    function testFuzz_Revert_WhenReentrancy(uint256 startTimestamp, uint256 duration) public {
+        // 1. Bound fuzz inputs to valid ranges and amounts
+        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
+        startTimestamp = bound(
+            startTimestamp,
+            uint256(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) +
+                CALCULATION_INTERVAL_SECONDS -
+                1,
+            block.timestamp - duration - 1
+        );
+        startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
+
+        // 2. Deploy Reenterer
+        Reenterer reenterer = new Reenterer();
+
+        // 2. Create operator directed rewards submission input param
+        OperatorDirectedRewardsSubmission[]
+            memory operatorDirectedRewardsSubmissions = new OperatorDirectedRewardsSubmission[](1);
+        operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
+            strategiesAndMultipliers: defaultStrategyAndMultipliers,
+            token: IERC20(address(reenterer)),
+            operatorRewards: defaultOperatorRewards,
+            startTimestamp: uint32(startTimestamp),
+            duration: uint32(duration),
+            description: ""
+        });
+
+        operatorSet = OperatorSet(address(reenterer), 1);
+        allocationManagerMock.setIsOperatorSet(operatorSet, true);
+        address targetToUse = address(rewardsCoordinator);
+        uint256 msgValueToUse = 0;
+        bytes memory calldataToUse = abi.encodeWithSelector(
+            RewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission.selector,
+            operatorSet,
+            operatorDirectedRewardsSubmissions
+        );
+        reenterer.prepare(targetToUse, msgValueToUse, calldataToUse);
+
+        cheats.prank(address(reenterer));
+        cheats.expectRevert("ReentrancyGuard: reentrant call");
+        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(
+            operatorSet,
+            operatorDirectedRewardsSubmissions
+        );
+    }
+
+    // Revert with 0 length strats and multipliers
+    function testFuzz_Revert_WhenEmptyStratsAndMultipliers(
+        address avs,
+        uint256 startTimestamp,
+        uint256 duration
+    ) public filterFuzzedAddressInputs(avs) {
+        cheats.assume(avs != address(0));
+
+        operatorSet = OperatorSet(avs, 1);
+        allocationManagerMock.setIsOperatorSet(operatorSet, true);
+
+        cheats.prank(rewardsCoordinator.owner());
+
+        // 1. Bound fuzz inputs to valid ranges and amounts
+        IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
+        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
+        startTimestamp = bound(
+            startTimestamp,
+            uint256(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH))
+                + CALCULATION_INTERVAL_SECONDS - 1,
+            block.timestamp - duration - 1
+        );
+        startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
+
+        // 2. Create operator directed rewards submission input param
+        OperatorDirectedRewardsSubmission[] memory operatorDirectedRewardsSubmissions =
+            new OperatorDirectedRewardsSubmission[](1);
+        StrategyAndMultiplier[] memory emptyStratsAndMultipliers;
+        operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
+            strategiesAndMultipliers: emptyStratsAndMultipliers,
+            token: rewardToken,
+            operatorRewards: defaultOperatorRewards,
+            startTimestamp: uint32(startTimestamp),
+            duration: uint32(duration),
+            description: ""
+        });
+
+        // 3. call createOperatorDirectedOperatorSetRewardsSubmission() with expected revert
+        cheats.prank(avs);
+        cheats.expectRevert(InputArrayLengthZero.selector);
+        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, operatorDirectedRewardsSubmissions);
+    }
+
+    // Revert with 0 length operator rewards
+    function testFuzz_Revert_WhenEmptyOperatorRewards(
+        address avs,
+        uint256 startTimestamp,
+        uint256 duration
+    ) public filterFuzzedAddressInputs(avs) {
+        cheats.assume(avs != address(0));
+
+        operatorSet = OperatorSet(avs, 1);
+        allocationManagerMock.setIsOperatorSet(operatorSet, true);
+
+        cheats.prank(rewardsCoordinator.owner());
+
+        // 1. Bound fuzz inputs to valid ranges and amounts
+        IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
+        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
+        startTimestamp = bound(
+            startTimestamp,
+            uint256(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH))
+                + CALCULATION_INTERVAL_SECONDS - 1,
+            block.timestamp - duration - 1
+        );
+        startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
+
+        // 2. Create operator directed rewards submission input param
+        OperatorDirectedRewardsSubmission[] memory operatorDirectedRewardsSubmissions =
+            new OperatorDirectedRewardsSubmission[](1);
+        OperatorReward[] memory emptyOperatorRewards;
+        operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
+            strategiesAndMultipliers: defaultStrategyAndMultipliers,
+            token: rewardToken,
+            operatorRewards: emptyOperatorRewards,
+            startTimestamp: uint32(startTimestamp),
+            duration: uint32(duration),
+            description: ""
+        });
+
+        // 3. call createOperatorDirectedOperatorSetRewardsSubmission() with expected revert
+        cheats.prank(avs);
+        cheats.expectRevert(InputArrayLengthZero.selector);
+        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, operatorDirectedRewardsSubmissions);
+    }
+
+    // Revert when operator is zero address
+    function testFuzz_Revert_WhenOperatorIsZeroAddress(
+        address avs,
+        uint256 startTimestamp,
+        uint256 duration
+    ) public filterFuzzedAddressInputs(avs) {
+        cheats.assume(avs != address(0));
+
+        operatorSet = OperatorSet(avs, 1);
+        allocationManagerMock.setIsOperatorSet(operatorSet, true);
+
+        cheats.prank(rewardsCoordinator.owner());
+
+        // 1. Bound fuzz inputs to valid ranges and amounts
+        IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
+        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
+        startTimestamp = bound(
+            startTimestamp,
+            uint256(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH))
+                + CALCULATION_INTERVAL_SECONDS - 1,
+            block.timestamp - duration - 1
+        );
+        startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
+
+        // 2. Create operator directed rewards submission input param
+        OperatorDirectedRewardsSubmission[] memory operatorDirectedRewardsSubmissions =
+            new OperatorDirectedRewardsSubmission[](1);
+        defaultOperatorRewards[0].operator = address(0);
+        operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
+            strategiesAndMultipliers: defaultStrategyAndMultipliers,
+            token: rewardToken,
+            operatorRewards: defaultOperatorRewards,
+            startTimestamp: uint32(startTimestamp),
+            duration: uint32(duration),
+            description: ""
+        });
+
+        // 3. call createOperatorDirectedOperatorSetRewardsSubmission() with expected revert
+        cheats.prank(avs);
+        cheats.expectRevert(InvalidAddressZero.selector);
+        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, operatorDirectedRewardsSubmissions);
+    }
+
+    // Revert when duplicate operators
+    function testFuzz_Revert_WhenDuplicateOperators(
+        address avs,
+        uint256 startTimestamp,
+        uint256 duration
+    ) public filterFuzzedAddressInputs(avs) {
+        cheats.assume(avs != address(0));
+
+        operatorSet = OperatorSet(avs, 1);
+        allocationManagerMock.setIsOperatorSet(operatorSet, true);
+
+        cheats.prank(rewardsCoordinator.owner());
+
+        // 1. Bound fuzz inputs to valid ranges and amounts
+        IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
+        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
+        startTimestamp = bound(
+            startTimestamp,
+            uint256(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH))
+                + CALCULATION_INTERVAL_SECONDS - 1,
+            block.timestamp - duration - 1
+        );
+        startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
+
+        // 2. Create operator directed rewards submission input param
+        OperatorDirectedRewardsSubmission[] memory operatorDirectedRewardsSubmissions =
+            new OperatorDirectedRewardsSubmission[](1);
+        OperatorReward[] memory dupOperatorRewards = new OperatorReward[](2);
+        dupOperatorRewards[0] = defaultOperatorRewards[0];
+        dupOperatorRewards[1] = defaultOperatorRewards[0];
+        operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
+            strategiesAndMultipliers: defaultStrategyAndMultipliers,
+            token: rewardToken,
+            operatorRewards: dupOperatorRewards,
+            startTimestamp: uint32(startTimestamp),
+            duration: uint32(duration),
+            description: ""
+        });
+
+        // 3. call createOperatorDirectedOperatorSetRewardsSubmission() with expected revert
+        cheats.prank(avs);
+        cheats.expectRevert(OperatorsNotInAscendingOrder.selector);
+        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, operatorDirectedRewardsSubmissions);
+    }
+
+    // Revert when operator amount is zero
+    function testFuzz_Revert_WhenOperatorAmountIsZero(
+        address avs,
+        uint256 startTimestamp,
+        uint256 duration
+    ) public filterFuzzedAddressInputs(avs) {
+        cheats.assume(avs != address(0));
+
+        operatorSet = OperatorSet(avs, 1);
+        allocationManagerMock.setIsOperatorSet(operatorSet, true);
+
+        cheats.prank(rewardsCoordinator.owner());
+
+        // 1. Bound fuzz inputs to valid ranges and amounts
+        IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
+        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
+        startTimestamp = bound(
+            startTimestamp,
+            uint256(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH))
+                + CALCULATION_INTERVAL_SECONDS - 1,
+            block.timestamp - duration - 1
+        );
+        startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
+
+        // 2. Create operator directed rewards submission input param
+        OperatorDirectedRewardsSubmission[] memory operatorDirectedRewardsSubmissions =
+            new OperatorDirectedRewardsSubmission[](1);
+        defaultOperatorRewards[0].amount = 0;
+        operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
+            strategiesAndMultipliers: defaultStrategyAndMultipliers,
+            token: rewardToken,
+            operatorRewards: defaultOperatorRewards,
+            startTimestamp: uint32(startTimestamp),
+            duration: uint32(duration),
+            description: ""
+        });
+
+        // 3. call createOperatorDirectedOperatorSetRewardsSubmission() with expected revert
+        cheats.prank(avs);
+        cheats.expectRevert(AmountIsZero.selector);
+        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, operatorDirectedRewardsSubmissions);
+    }
+
+    // Revert when operator amount is zero
+    function testFuzz_Revert_TotalAmountTooLarge(
+        address avs,
+        uint256 startTimestamp,
+        uint256 duration,
+        uint256 amount
+    ) public filterFuzzedAddressInputs(avs) {
+        cheats.assume(avs != address(0));
+
+        operatorSet = OperatorSet(avs, 1);
+        allocationManagerMock.setIsOperatorSet(operatorSet, true);
+
+        cheats.prank(rewardsCoordinator.owner());
+
+        // 1. Bound fuzz inputs to valid ranges and amounts
+        amount = bound(amount, 1e38, type(uint256).max - 5e18);
+        IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
+        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
+        startTimestamp = bound(
+            startTimestamp,
+            uint256(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH))
+                + CALCULATION_INTERVAL_SECONDS - 1,
+            block.timestamp - duration - 1
+        );
+        startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
+
+        // 2. Create operator directed rewards submission input param
+        OperatorDirectedRewardsSubmission[] memory operatorDirectedRewardsSubmissions =
+            new OperatorDirectedRewardsSubmission[](1);
+        defaultOperatorRewards[0].amount = amount;
+        operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
+            strategiesAndMultipliers: defaultStrategyAndMultipliers,
+            token: rewardToken,
+            operatorRewards: defaultOperatorRewards,
+            startTimestamp: uint32(startTimestamp),
+            duration: uint32(duration),
+            description: ""
+        });
+
+        // 3. call createOperatorDirectedOperatorSetRewardsSubmission() with expected revert
+        cheats.prank(avs);
+        cheats.expectRevert(AmountExceedsMax.selector);
+        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, operatorDirectedRewardsSubmissions);
+    }
+
+    // Revert with exceeding max duration
+    function testFuzz_Revert_WhenExceedingMaxDuration(
+        address avs,
+        uint256 startTimestamp,
+        uint256 duration
+    ) public filterFuzzedAddressInputs(avs) {
+        cheats.assume(avs != address(0));
+
+        operatorSet = OperatorSet(avs, 1);
+        allocationManagerMock.setIsOperatorSet(operatorSet, true);
+
+        cheats.prank(rewardsCoordinator.owner());
+
+        // 1. Bound fuzz inputs to valid ranges and amounts
+        IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
+        duration = bound(duration, MAX_REWARDS_DURATION + 1, type(uint32).max);
+        startTimestamp = bound(
+            startTimestamp,
+            uint256(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH))
+                + CALCULATION_INTERVAL_SECONDS - 1,
+            block.timestamp
+        );
+        startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
+
+        // 2. Create operator directed rewards submission input param
+        OperatorDirectedRewardsSubmission[] memory operatorDirectedRewardsSubmissions =
+            new OperatorDirectedRewardsSubmission[](1);
+        operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
+            strategiesAndMultipliers: defaultStrategyAndMultipliers,
+            token: rewardToken,
+            operatorRewards: defaultOperatorRewards,
+            startTimestamp: uint32(startTimestamp),
+            duration: uint32(duration),
+            description: ""
+        });
+
+        // 3. call createOperatorDirectedOperatorSetRewardsSubmission() with expected revert
+        cheats.prank(avs);
+        cheats.expectRevert(DurationExceedsMax.selector);
+        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, operatorDirectedRewardsSubmissions);
+    }
+
+    // Revert with invalid interval seconds
+    function testFuzz_Revert_WhenInvalidIntervalSeconds(
+        address avs,
+        uint256 startTimestamp,
+        uint256 duration
+    ) public filterFuzzedAddressInputs(avs) {
+        cheats.assume(avs != address(0));
+    
+        operatorSet = OperatorSet(avs, 1);
+        allocationManagerMock.setIsOperatorSet(operatorSet, true);
+        
+        cheats.prank(rewardsCoordinator.owner());
+
+        // 1. Bound fuzz inputs to valid ranges and amounts
+        IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
+        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        cheats.assume(duration % CALCULATION_INTERVAL_SECONDS != 0);
+        startTimestamp = bound(
+            startTimestamp,
+            uint256(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH))
+                + CALCULATION_INTERVAL_SECONDS - 1,
+            block.timestamp - duration - 1
+        );
+        startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
+
+        // 2. Create operator directed rewards submission input param
+        OperatorDirectedRewardsSubmission[] memory operatorDirectedRewardsSubmissions =
+            new OperatorDirectedRewardsSubmission[](1);
+        operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
+            strategiesAndMultipliers: defaultStrategyAndMultipliers,
+            token: rewardToken,
+            operatorRewards: defaultOperatorRewards,
+            startTimestamp: uint32(startTimestamp),
+            duration: uint32(duration),
+            description: ""
+        });
+
+        // 3. call createOperatorDirectedOperatorSetRewardsSubmission() with expected revert
+        cheats.prank(avs);
+        cheats.expectRevert(InvalidDurationRemainder.selector);
+        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, operatorDirectedRewardsSubmissions);
+    }
+
+    // Revert with invalid interval start timestamp
+    function testFuzz_Revert_WhenInvalidIntervalStartTimestamp(
+        address avs,
+        uint256 startTimestamp,
+        uint256 duration
+    ) public filterFuzzedAddressInputs(avs) {
+        cheats.assume(avs != address(0));
+
+        operatorSet = OperatorSet(avs, 1);
+        allocationManagerMock.setIsOperatorSet(operatorSet, true);
+
+        cheats.prank(rewardsCoordinator.owner());
+
+        // 1. Bound fuzz inputs to valid ranges and amounts
+        IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
+        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
+        startTimestamp = bound(
+            startTimestamp,
+            uint256(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH))
+                + CALCULATION_INTERVAL_SECONDS - 1,
+            block.timestamp - duration - 1
+        );
+        cheats.assume(startTimestamp % CALCULATION_INTERVAL_SECONDS != 0);
+
+        // 2. Create operator directed rewards submission input param
+        OperatorDirectedRewardsSubmission[] memory operatorDirectedRewardsSubmissions =
+            new OperatorDirectedRewardsSubmission[](1);
+        operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
+            strategiesAndMultipliers: defaultStrategyAndMultipliers,
+            token: rewardToken,
+            operatorRewards: defaultOperatorRewards,
+            startTimestamp: uint32(startTimestamp),
+            duration: uint32(duration),
+            description: ""
+        });
+
+        // 3. call createOperatorDirectedOperatorSetRewardsSubmission() with expected revert
+        cheats.prank(avs);
+        cheats.expectRevert(InvalidStartTimestampRemainder.selector);
+        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, operatorDirectedRewardsSubmissions);
+    }
+
+    // Revert with retroactive rewards enabled and set too far in past
+    // - either before genesis rewards timestamp
+    // - before max retroactive length
+    function testFuzz_Revert_WhenRewardsSubmissionTooStale(
+        address avs,
+        uint256 startTimestamp,
+        uint256 duration
+    ) public filterFuzzedAddressInputs(avs) {
+        cheats.assume(avs != address(0));
+
+        operatorSet = OperatorSet(avs, 1);
+        allocationManagerMock.setIsOperatorSet(operatorSet, true);
+
+        cheats.prank(rewardsCoordinator.owner());
+
+        // 1. Bound fuzz inputs to valid ranges and amounts
+        IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
+        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
+        startTimestamp = bound(startTimestamp, 0, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH - 1);
+        startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
+
+        // 2. Create operator directed rewards submission input param
+        OperatorDirectedRewardsSubmission[] memory operatorDirectedRewardsSubmissions =
+            new OperatorDirectedRewardsSubmission[](1);
+        operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
+            strategiesAndMultipliers: defaultStrategyAndMultipliers,
+            token: rewardToken,
+            operatorRewards: defaultOperatorRewards,
+            startTimestamp: uint32(startTimestamp),
+            duration: uint32(duration),
+            description: ""
+        });
+
+        // 3. call createOperatorDirectedOperatorSetRewardsSubmission() with expected revert
+        cheats.prank(avs);
+        cheats.expectRevert(StartTimestampTooFarInPast.selector);
+        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, operatorDirectedRewardsSubmissions);
+    }
+
+    // Revert when not retroactive
+    function testFuzz_Revert_WhenRewardsSubmissionNotRetroactive(
+        address avs,
+        uint256 startTimestamp,
+        uint256 duration
+    ) public filterFuzzedAddressInputs(avs) {
+        cheats.assume(avs != address(0));
+
+        operatorSet = OperatorSet(avs, 1);
+        allocationManagerMock.setIsOperatorSet(operatorSet, true);
+
+        cheats.prank(rewardsCoordinator.owner());
+
+        // 1. Bound fuzz inputs to valid ranges and amounts
+        IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
+        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
+        startTimestamp = bound(
+            startTimestamp, block.timestamp - duration + CALCULATION_INTERVAL_SECONDS, type(uint32).max - duration
+        );
+        startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
+
+        // 2. Create operator directed rewards submission input param
+        OperatorDirectedRewardsSubmission[] memory operatorDirectedRewardsSubmissions =
+            new OperatorDirectedRewardsSubmission[](1);
+        operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
+            strategiesAndMultipliers: defaultStrategyAndMultipliers,
+            token: rewardToken,
+            operatorRewards: defaultOperatorRewards,
+            startTimestamp: uint32(startTimestamp),
+            duration: uint32(duration),
+            description: ""
+        });
+
+        // 3. call createOperatorDirectedOperatorSetRewardsSubmission() with expected revert
+        cheats.prank(avs);
+        cheats.expectRevert(SubmissionNotRetroactive.selector);
+        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, operatorDirectedRewardsSubmissions);
+    }
+
+    // Revert with non whitelisted strategy
+    function testFuzz_Revert_WhenInvalidStrategy(
+        address avs,
+        uint256 startTimestamp,
+        uint256 duration
+    ) public filterFuzzedAddressInputs(avs) {
+        cheats.assume(avs != address(0));
+
+        operatorSet = OperatorSet(avs, 1);
+        allocationManagerMock.setIsOperatorSet(operatorSet, true);
+
+        cheats.prank(rewardsCoordinator.owner());
+
+        // 1. Bound fuzz inputs to valid ranges and amounts
+        IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
+        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
+        startTimestamp = bound(
+            startTimestamp,
+            uint256(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH))
+                + CALCULATION_INTERVAL_SECONDS - 1,
+            block.timestamp - duration - 1
+        );
+        startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
+
+        // 2. Create operator directed rewards submission input param
+        OperatorDirectedRewardsSubmission[] memory operatorDirectedRewardsSubmissions =
+            new OperatorDirectedRewardsSubmission[](1);
+        defaultStrategyAndMultipliers[0].strategy = IStrategy(address(999));
+        operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
+            strategiesAndMultipliers: defaultStrategyAndMultipliers,
+            token: rewardToken,
+            operatorRewards: defaultOperatorRewards,
+            startTimestamp: uint32(startTimestamp),
+            duration: uint32(duration),
+            description: ""
+        });
+
+        // 3. call createOperatorDirectedOperatorSetRewardsSubmission() with expected revert
+        cheats.prank(avs);
+        cheats.expectRevert(StrategyNotWhitelisted.selector);
+        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, operatorDirectedRewardsSubmissions);
+    }
+
+    // Revert when duplicate strategies
+    function testFuzz_Revert_WhenDuplicateStrategies(
+        address avs,
+        uint256 startTimestamp,
+        uint256 duration
+    ) public filterFuzzedAddressInputs(avs) {
+        cheats.assume(avs != address(0));
+
+        operatorSet = OperatorSet(avs, 1);
+        allocationManagerMock.setIsOperatorSet(operatorSet, true);
+
+        cheats.prank(rewardsCoordinator.owner());
+
+        // 1. Bound fuzz inputs to valid ranges and amounts
+        IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
+        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
+        startTimestamp = bound(
+            startTimestamp,
+            uint256(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH))
+                + CALCULATION_INTERVAL_SECONDS - 1,
+            block.timestamp - duration - 1
+        );
+        startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
+
+        // 2. Create operator directed rewards submission input param
+        OperatorDirectedRewardsSubmission[] memory operatorDirectedRewardsSubmissions =
+            new OperatorDirectedRewardsSubmission[](1);
+        StrategyAndMultiplier[] memory dupStratsAndMultipliers = new StrategyAndMultiplier[](2);
+        dupStratsAndMultipliers[0] = defaultStrategyAndMultipliers[0];
+        dupStratsAndMultipliers[1] = defaultStrategyAndMultipliers[0];
+        operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
+            strategiesAndMultipliers: dupStratsAndMultipliers,
+            token: rewardToken,
+            operatorRewards: defaultOperatorRewards,
+            startTimestamp: uint32(startTimestamp),
+            duration: uint32(duration),
+            description: ""
+        });
+
+        // 3. call createOperatorDirectedOperatorSetRewardsSubmission() with expected revert
+        cheats.prank(avs);
+        cheats.expectRevert(StrategiesNotInAscendingOrder.selector);
+        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, operatorDirectedRewardsSubmissions);
+    }
+
+    /**
+     * @notice test a single rewards submission asserting for the following
+     * - correct event emitted
+     * - submission nonce incrementation by 1, and rewards submission hash being set in storage.
+     * - rewards submission hash being set in storage
+     * - token balance before and after of avs and rewardsCoordinator
+     */
+    function testFuzz_createOperatorDirectedOperatorSetRewardsSubmission_SingleSubmission(
+        address avs,
+        uint256 startTimestamp,
+        uint256 duration
+    ) public filterFuzzedAddressInputs(avs) {
+        cheats.assume(avs != address(0));
+
+        operatorSet = OperatorSet(avs, 1);
+        allocationManagerMock.setIsOperatorSet(operatorSet, true);
+        
+        cheats.prank(rewardsCoordinator.owner());
+
+        // 1. Bound fuzz inputs to valid ranges and amounts
+        IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
+        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
+        startTimestamp = bound(
+            startTimestamp,
+            uint256(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH))
+                + CALCULATION_INTERVAL_SECONDS - 1,
+            block.timestamp - duration - 1
+        );
+        startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
+
+        // 2. Create operator directed rewards submission input param
+        OperatorDirectedRewardsSubmission[] memory operatorDirectedRewardsSubmissions =
+            new OperatorDirectedRewardsSubmission[](1);
+        operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
+            strategiesAndMultipliers: defaultStrategyAndMultipliers,
+            token: rewardToken,
+            operatorRewards: defaultOperatorRewards,
+            startTimestamp: uint32(startTimestamp),
+            duration: uint32(duration),
+            description: ""
+        });
+
+        // 3. call createOperatorDirectedOperatorSetRewardsSubmission() with expected event emitted
+        uint256 avsBalanceBefore = rewardToken.balanceOf(avs);
+        uint256 rewardsCoordinatorBalanceBefore = rewardToken.balanceOf(address(rewardsCoordinator));
+
+        cheats.startPrank(avs);
+        uint256 amount = _getTotalRewardsAmount(defaultOperatorRewards);
+        rewardToken.approve(address(rewardsCoordinator), amount);
+        uint256 currSubmissionNonce = rewardsCoordinator.submissionNonce(avs);
+        bytes32 rewardsSubmissionHash =
+            keccak256(abi.encode(avs, currSubmissionNonce, operatorDirectedRewardsSubmissions[0]));
+        cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
+        emit OperatorDirectedOperatorSetRewardsSubmissionCreated(
+            avs, rewardsSubmissionHash, operatorSet, currSubmissionNonce, operatorDirectedRewardsSubmissions[0]
+        );
+        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, operatorDirectedRewardsSubmissions);
+        cheats.stopPrank();
+
+        assertTrue(
+            rewardsCoordinator.isOperatorDirectedOperatorSetRewardsSubmissionHash(avs, rewardsSubmissionHash),
+            "rewards submission hash not submitted"
+        );
+        assertEq(currSubmissionNonce + 1, rewardsCoordinator.submissionNonce(avs), "submission nonce not incremented");
+        assertEq(
+            avsBalanceBefore - amount,
+            rewardToken.balanceOf(avs),
+            "AVS balance not decremented by amount of rewards submission"
+        );
+        assertEq(
+            rewardsCoordinatorBalanceBefore + amount,
+            rewardToken.balanceOf(address(rewardsCoordinator)),
+            "RewardsCoordinator balance not incremented by amount of rewards submission"
+        );
+    }
+
+    /**
+     * @notice Same test as above, uses UAM
+     * - correct event emitted
+     * - submission nonce incrementation by 1, and rewards submission hash being set in storage.
+     * - rewards submission hash being set in storage
+     * - token balance before and after of avs and rewardsCoordinator
+     */
+    function testFuzz_createOperatorDirectedOperatorSetRewardsSubmission_SingleSubmission_UAM(
+        address avs,
+        uint256 startTimestamp,
+        uint256 duration
+    ) public filterFuzzedAddressInputs(avs) {
+        cheats.assume(avs != address(0));
+
+        operatorSet = OperatorSet(avs, 1);
+        allocationManagerMock.setIsOperatorSet(operatorSet, true);
+
+        // Set UAM
+        cheats.prank(avs);
+        permissionController.setAppointee(
+            avs,
+            defaultAppointee,
+            address(rewardsCoordinator),
+            IRewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission.selector
+        );
+
+        // 1. Bound fuzz inputs to valid ranges and amounts
+        IERC20 rewardToken =
+            new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, defaultAppointee);
+        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
+        startTimestamp = bound(
+            startTimestamp,
+            uint256(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH))
+                + CALCULATION_INTERVAL_SECONDS - 1,
+            block.timestamp - duration - 1
+        );
+        startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
+
+        // 2. Create operator directed rewards submission input param
+        IRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission[] memory operatorDirectedRewardsSubmissions =
+            new IRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission[](1);
+        operatorDirectedRewardsSubmissions[0] = IRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission({
+            strategiesAndMultipliers: defaultStrategyAndMultipliers,
+            token: rewardToken,
+            operatorRewards: defaultOperatorRewards,
+            startTimestamp: uint32(startTimestamp),
+            duration: uint32(duration),
+            description: ""
+        });
+
+        // 3. call createOperatorDirectedOperatorSetRewardsSubmission() with expected event emitted
+        uint256 submitterBalanceBefore = rewardToken.balanceOf(defaultAppointee);
+        uint256 rewardsCoordinatorBalanceBefore = rewardToken.balanceOf(address(rewardsCoordinator));
+
+        cheats.startPrank(defaultAppointee);
+        uint256 amount = _getTotalRewardsAmount(defaultOperatorRewards);
+        rewardToken.approve(address(rewardsCoordinator), amount);
+        uint256 currSubmissionNonce = rewardsCoordinator.submissionNonce(avs);
+        bytes32 rewardsSubmissionHash =
+            keccak256(abi.encode(avs, currSubmissionNonce, operatorDirectedRewardsSubmissions[0]));
+        cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
+        emit OperatorDirectedOperatorSetRewardsSubmissionCreated(
+            defaultAppointee, rewardsSubmissionHash, operatorSet, currSubmissionNonce, operatorDirectedRewardsSubmissions[0]
+        );
+        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, operatorDirectedRewardsSubmissions);
+        cheats.stopPrank();
+
+        assertTrue(
+            rewardsCoordinator.isOperatorDirectedOperatorSetRewardsSubmissionHash(avs, rewardsSubmissionHash),
+            "rewards submission hash not submitted"
+        );
+        assertEq(currSubmissionNonce + 1, rewardsCoordinator.submissionNonce(avs), "submission nonce not incremented");
+        assertEq(
+            submitterBalanceBefore - amount,
+            rewardToken.balanceOf(defaultAppointee),
+            "Submitter balance not decremented by amount of rewards submission"
+        );
+        assertEq(
+            rewardsCoordinatorBalanceBefore + amount,
+            rewardToken.balanceOf(address(rewardsCoordinator)),
+            "RewardsCoordinator balance not incremented by amount of rewards submission"
+        );
+    }
+
+    /**
+     * @notice test a multiple rewards submission asserting for the following
+     * - correct event emitted
+     * - submission nonce incrementation by 1, and rewards submission hash being set in storage.
+     * - rewards submission hash being set in storage
+     * - token balance before and after of avs and rewardsCoordinator
+     */
+    function testFuzz_createOperatorDirectedOperatorSetRewardsSubmission_MultipleSubmissions(
+        FuzzOperatorDirectedAVSRewardsSubmission memory param,
+        uint256 numSubmissions
+    ) public filterFuzzedAddressInputs(param.avs) {
+        cheats.assume(2 <= numSubmissions && numSubmissions <= 10);
+        cheats.assume(param.avs != address(0));
+
+        operatorSet = OperatorSet(param.avs, 2);
+        allocationManagerMock.setIsOperatorSet(operatorSet, true);
+
+        cheats.prank(rewardsCoordinator.owner());
+
+        OperatorDirectedRewardsSubmission[] memory rewardsSubmissions =
+            new OperatorDirectedRewardsSubmission[](numSubmissions);
+        bytes32[] memory rewardsSubmissionHashes = new bytes32[](numSubmissions);
+        uint256 startSubmissionNonce = rewardsCoordinator.submissionNonce(param.avs);
+        _deployMockRewardTokens(param.avs, numSubmissions);
+
+        uint256[] memory avsBalancesBefore = _getBalanceForTokens(rewardTokens, param.avs);
+        uint256[] memory rewardsCoordinatorBalancesBefore =
+            _getBalanceForTokens(rewardTokens, address(rewardsCoordinator));
+        uint256[] memory amounts = new uint256[](numSubmissions);
+
+        // Create multiple rewards submissions and their expected event
+        for (uint256 i = 0; i < numSubmissions; ++i) {
+            // 1. Bound fuzz inputs to valid ranges and amounts using randSeed for each
+            amounts[i] = _getTotalRewardsAmount(defaultOperatorRewards);
+            param.duration = bound(param.duration, 0, MAX_REWARDS_DURATION);
+            param.duration = param.duration - (param.duration % CALCULATION_INTERVAL_SECONDS);
+            param.startTimestamp = bound(
+                param.startTimestamp + i,
+                uint256(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH))
+                    + CALCULATION_INTERVAL_SECONDS - 1,
+                block.timestamp + uint256(MAX_FUTURE_LENGTH)
+            );
+            param.startTimestamp = param.startTimestamp - (param.startTimestamp % CALCULATION_INTERVAL_SECONDS);
+
+            param.duration = bound(param.duration, 0, MAX_REWARDS_DURATION);
+            param.duration = param.duration - (param.duration % CALCULATION_INTERVAL_SECONDS);
+            param.startTimestamp = bound(
+                param.startTimestamp,
+                uint256(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH))
+                    + CALCULATION_INTERVAL_SECONDS - 1,
+                block.timestamp - param.duration - 1
+            );
+            param.startTimestamp = param.startTimestamp - (param.startTimestamp % CALCULATION_INTERVAL_SECONDS);
+
+            // 2. Create rewards submission input param
+            OperatorDirectedRewardsSubmission memory rewardsSubmission = IRewardsCoordinatorTypes
+                .OperatorDirectedRewardsSubmission({
+                strategiesAndMultipliers: defaultStrategyAndMultipliers,
+                token: rewardTokens[i],
+                operatorRewards: defaultOperatorRewards,
+                startTimestamp: uint32(param.startTimestamp),
+                duration: uint32(param.duration),
+                description: ""
+            });
+            rewardsSubmissions[i] = rewardsSubmission;
+
+            // 3. expected event emitted for this rewardsSubmission
+            rewardsSubmissionHashes[i] =
+                keccak256(abi.encode(param.avs, startSubmissionNonce + i, rewardsSubmissions[i]));
+            cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
+            emit OperatorDirectedOperatorSetRewardsSubmissionCreated(
+                param.avs, rewardsSubmissionHashes[i], operatorSet, startSubmissionNonce + i, rewardsSubmissions[i]
+            );
+        }
+
+        // 4. call createAVSRewardsSubmission()
+        cheats.prank(param.avs);
+        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, rewardsSubmissions);
+
+        // 5. Check for submissionNonce() and rewardsSubmissionHashes being set
+        assertEq(
+            startSubmissionNonce + numSubmissions,
+            rewardsCoordinator.submissionNonce(param.avs),
+            "submission nonce not incremented properly"
+        );
+
+        for (uint256 i = 0; i < numSubmissions; ++i) {
+            assertTrue(
+                rewardsCoordinator.isOperatorDirectedOperatorSetRewardsSubmissionHash(param.avs, rewardsSubmissionHashes[i]),
                 "rewards submission hash not submitted"
             );
             assertEq(

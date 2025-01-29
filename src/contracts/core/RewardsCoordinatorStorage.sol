@@ -31,6 +31,10 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     uint8 internal constant PAUSED_OPERATOR_AVS_SPLIT = 6;
     /// @dev Index for flag that pauses calling setOperatorPISplit
     uint8 internal constant PAUSED_OPERATOR_PI_SPLIT = 7;
+    /// @dev Index for flag that pauses calling setOperatorSetSplit
+    uint8 internal constant PAUSED_OPERATOR_SET_SPLIT = 8;
+    /// @dev Index for flag that pauses calling setOperatorSetPerformanceRewardsSubmission
+    uint8 internal constant PAUSED_OPERATOR_DIRECTED_OPERATOR_SET_REWARDS_SUBMISSION = 9;
 
     /// @dev Salt for the earner leaf, meant to distinguish from tokenLeaf since they have the same sized data
     uint8 internal constant EARNER_LEAF_SALT = 0;
@@ -113,16 +117,23 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     /// @notice Returns whether a `hash` is a `valid` rewards submission for all earners hash for a given `avs`.
     mapping(address avs => mapping(bytes32 hash => bool valid)) public isRewardsSubmissionForAllEarnersHash;
 
+    /// @notice Returns whether a `hash` is a `valid` operator set performance rewards submission hash for a given `avs`.
+    mapping(address avs => mapping(bytes32 hash => bool valid)) public isOperatorDirectedAVSRewardsSubmissionHash;
+
+    /// @notice Returns the `split` an `operator` takes for an `avs`.
+    mapping(address operator => mapping(address avs => OperatorSplit split)) internal _operatorAVSSplitBips;
+
+    /// @notice Returns the `split` an `operator` takes for Programmatic Incentives.
+    mapping(address operator => OperatorSplit split) internal _operatorPISplitBips;
+
+    /// @notice Returns the `split` an `operator` takes for a given operator set.
+    mapping(address operator => mapping(bytes32 operatorSetKey => OperatorSplit split)) internal _operatorSetSplitBips;
+
+    /// @notice Returns whether a `hash` is a `valid` operator set performance rewards submission hash for a given `avs`.
+    mapping(address avs => mapping(bytes32 hash => bool valid)) public
+        isOperatorDirectedOperatorSetRewardsSubmissionHash;
+
     // Construction
-
-    /// @notice Mapping: avs => operatorDirectedAVSRewardsSubmissionHash => bool to check if operator-directed rewards submission hash has been submitted
-    mapping(address => mapping(bytes32 => bool)) public isOperatorDirectedAVSRewardsSubmissionHash;
-
-    /// @notice Mapping: operator => avs => OperatorSplit. The split an operator takes for a specific AVS.
-    mapping(address => mapping(address => OperatorSplit)) internal operatorAVSSplitBips;
-
-    /// @notice Mapping: operator => OperatorPISplit. The split an operator takes for Programmatic Incentives.
-    mapping(address => OperatorSplit) internal operatorPISplitBips;
 
     constructor(
         IDelegationManager _delegationManager,
@@ -153,5 +164,5 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[37] private __gap;
+    uint256[35] private __gap;
 }
