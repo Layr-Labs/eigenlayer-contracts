@@ -3,7 +3,7 @@
 # Default values
 RPC_URL="https://eth.llamarpc.com"
 ETHERSCAN_API_KEY=""
-INPUT_FILE="solari.json"
+INPUT_FILE="contracts.json"
 QUIET=false
 TOTAL_ISSUES=0
 
