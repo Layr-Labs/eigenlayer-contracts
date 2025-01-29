@@ -2,7 +2,7 @@
 
 # Default values
 RPC_URL="https://eth.llamarpc.com"
-ETHERSCAN_API_KEY=""
+ETHERSCAN_API_KEY="1234567890123456789012345678901234567890"
 INPUT_FILE="contracts.json"
 QUIET=false
 TOTAL_ISSUES=0
@@ -10,19 +10,19 @@ TOTAL_ISSUES=0
 # Help message
 usage() {
     cat << EOF
-Usage: bash $0 --rpc-url=$RPC_URL --etherscan-key=$ETHERSCAN_API_KEY [--input=$INPUT_FILE] [--quiet] [--help]
+Usage: bash $0 --rpc-url $RPC_URL --etherscan-key $ETHERSCAN_API_KEY [--input $INPUT_FILE] [--quiet] [--help]
 
 Detects storage layout incompatibilities that could cause issues during upgrades.
 
 Required:
-    -r, --rpc-url <url>         RPC endpoint URL for the target network (e.g. https://eth.llamarpc.com)
-    -e, --etherscan-key <key>   API key for Etherscan to fetch contract data
+    -r, --rpc-url <url>         RPC endpoint URL for the target network (default: https://eth.llamarpc.com).
+    -e, --etherscan-key <key>   API key for Etherscan to fetch contract data.
 
 Options:
-    -i, --input <file>          JSON file containing contract details (see format below)
-                                If not provided, reads from stdin
-    -q, --quiet                 Suppress informational output
-    -h, --help                  Show this help message
+    -i, --input <file>          JSON file containing contract details, see format below (default: contracts.json).
+                                If not provided, reads from stdin.
+    -q, --quiet                 Suppress informational output.
+    -h, --help                  Show this help message.
 
 
 Input JSON format:
