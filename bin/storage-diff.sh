@@ -5,7 +5,6 @@ RPC_URL="https://eth.llamarpc.com"
 ETHERSCAN_API_KEY=""
 INPUT_FILE="solari.json"
 QUIET=false
-KEEP_FILES=false
 TOTAL_ISSUES=0
 
 # Help message
@@ -23,7 +22,6 @@ Options:
     -i, --input <file>          JSON file containing contract details (see format below)
                                 If not provided, reads from stdin
     -q, --quiet                 Suppress informational output
-    -k, --keep-files           Keep temporary JSON files instead of deleting them
     -h, --help                  Show this help message
 
 
@@ -31,12 +29,12 @@ Input JSON format:
 {
   "contracts": [
     {
-      "name": "AVSDirectory", 
+      "name": "AVSDirectory",
       "address": "0x135dda560e946695d6f155dacafc6f1f25c1f5af"
     },
     {
       "name": "DelegationManager",
-      "address": "0x39053D51B77DC0d36036Fc1fCc8Cb819df8Ef37A" 
+      "address": "0x39053D51B77DC0d36036Fc1fCc8Cb819df8Ef37A"
     }
   ]
 }
@@ -61,10 +59,6 @@ while [[ $# -gt 0 ]]; do
             ;;
         -q|--quiet)
             QUIET=true
-            shift
-            ;;
-        -k|--keep-files)
-            KEEP_FILES=true
             shift
             ;;
         -h|--help)
@@ -106,7 +100,7 @@ fi
 # Function to calculate number of slots a variable type occupies
 calculate_slots() {
     local var_type=$1
-    
+
     # Handle basic types
     case $var_type in
         *"uint256"*|*"int256"*|*"bytes32"*|*"address"*)
@@ -138,7 +132,7 @@ analyze_storage_changes() {
     # Get the storage layouts as arrays
     local onchain_slots=$(jq -r '.storage[] | "\(.slot)|\(.label)|\(.offset)|\(.type)"' "$onchain_file")
     local local_slots=$(jq -r '.storage[] | "\(.slot)|\(.label)|\(.offset)|\(.type)"' "$local_file")
-    
+
     echo "Storage Layout Analysis for $contract_name:"
     echo "----------------------------------------"
 
@@ -165,12 +159,12 @@ analyze_storage_changes() {
     # First pass: Check for renames (same slot, same type, different name)
     while IFS='|' read -r slot local_label local_offset local_type; do
         if [[ -z "$slot" ]]; then continue; fi
-        
+
         # Look for matching slot in onchain
         onchain_line=$(grep "^${slot}|" "$onchain_map_file")
         if [[ -n "$onchain_line" ]]; then
             IFS='|' read -r _ onchain_label onchain_offset onchain_type <<< "$onchain_line"
-            
+
             if [[ "$local_label" != "$onchain_label" && "$local_type" == "$onchain_type" && "$local_offset" == "$onchain_offset" ]]; then
                 echo "${slot}|${onchain_label}|${local_label}|${local_type}" >> "$renamed_vars_file"
                 echo "$slot" >> "$processed_slots_file"
@@ -190,12 +184,12 @@ analyze_storage_changes() {
     # Analyze other differences
     while IFS='|' read -r slot local_label local_offset local_type; do
         if [[ -z "$slot" ]]; then continue; fi
-        
+
         # Skip if this slot was processed as a rename
         if grep -q "^${slot}$" "$processed_slots_file"; then
             continue
         fi
-        
+
         # Look for matching slot in onchain
         onchain_line=$(grep "^${slot}|" "$onchain_map_file")
         if [[ -z "$onchain_line" ]]; then
@@ -208,18 +202,18 @@ analyze_storage_changes() {
             fi
         else
             IFS='|' read -r _ onchain_label onchain_offset onchain_type <<< "$onchain_line"
-            
+
             if [[ "$local_label" != "$onchain_label" ]]; then
                 echo -e "\033[31m🚨 Storage slot override detected at slot $slot:\033[0m"
                 echo -e "\033[31m   Previous: $onchain_label ($onchain_type)\033[0m"
                 echo -e "\033[32m   New: $local_label ($local_type)\033[0m"
                 issues_found=$((issues_found + 1))
-                
+
                 # Calculate potential impact
                 old_slots=$(calculate_slots "$onchain_type")
                 new_slots=$(calculate_slots "$local_type")
                 slot_diff=$((new_slots - old_slots))
-                
+
                 if [ "$slot_diff" -gt 0 ]; then
                     echo -e "\033[33m   ⚠️ This change will shift subsequent storage slots by +$slot_diff positions\033[0m"
                 elif [ "$slot_diff" -lt 0 ]; then
@@ -238,12 +232,12 @@ analyze_storage_changes() {
     # Check for removed variables
     while IFS='|' read -r slot onchain_label onchain_offset onchain_type; do
         if [[ -z "$slot" ]]; then continue; fi
-        
+
         # Skip if this slot was processed as a rename or already handled
         if grep -q "^${slot}$" "$processed_slots_file"; then
             continue
         fi
-        
+
         # Look for matching slot in local
         if ! grep -q "^${slot}|" "$local_map_file"; then
             echo -e "\033[31m➖ Variable removed: $onchain_label ($onchain_type) from slot $slot\033[0m"
@@ -263,34 +257,21 @@ process_contract() {
     local contract_name=$1
     local contract_address=$2
     local issues_found=0
-    
-    # Create a directory for temporary files if keeping them
-    local temp_dir
-    if [ "$KEEP_FILES" ]; then
-        temp_dir="storage_diff_${contract_name}"
-        mkdir -p "$temp_dir"
-        local local_file="$temp_dir/${contract_name}_local.json"
-        local onchain_file="$temp_dir/${contract_name}_onchain.json"
-    else
-        # Temporary files
-        local local_file=$(mktemp)
-        local onchain_file=$(mktemp)
-    fi
+
+    # Create directories for storing layouts and diffs
+    mkdir -p "storage-report/layouts" "storage-report/diffs"
+    local local_file="storage-report/layouts/${contract_name}_local.json"
+    local onchain_file="storage-report/layouts/${contract_name}_onchain.json"
+    local diff_file="storage-report/diffs/${contract_name}.diff"
 
     # Generate storage layouts
     if ! forge inspect "$contract_name" storage --json > "$local_file" 2>/dev/null; then
         echo "Error: forge inspect failed for contract: $contract_name"
-        if [ ! "$KEEP_FILES" ]; then
-            rm -f "$local_file" "$onchain_file"
-        fi
         return 1
     fi
 
     if ! cast storage "$contract_address" --rpc-url "$RPC_URL" --etherscan-api-key "$ETHERSCAN_API_KEY" --json > "$onchain_file" 2>/dev/null; then
         echo "Error: cast storage failed for address: $contract_address"
-        if [ ! "$KEEP_FILES" ]; then
-            rm -f "$local_file" "$onchain_file"
-        fi
         return 1
     fi
 
@@ -304,22 +285,19 @@ process_contract() {
     if [ "$QUIET" = false ]; then
         echo "----------------------------------------"
         echo "Local contract:  $contract_name"
-        echo "Chain address:   $contract_address" 
+        echo "Chain address:   $contract_address"
         echo "Network RPC:     $RPC_URL"
-        if [ "$KEEP_FILES" ]; then
-            echo "JSON files stored in: $temp_dir/"
-        fi
+        echo "JSON files stored in: storage-report/layouts/"
+        echo "Diffs stored in: storage-report/diffs/"
         echo "----------------------------------------"
     fi
+
+    # Generate and store diff
+    diff -u "$onchain_file" "$local_file" > "$diff_file" 2>/dev/null || true
 
     # Analyze storage changes
     analyze_storage_changes "$onchain_file" "$local_file" "$contract_name"
     issues_found=$?
-
-    # Cleanup if not keeping files
-    if [ ! "$KEEP_FILES" ]; then
-        rm -f "$local_file" "$onchain_file"
-    fi
 
     return $issues_found
 }
@@ -328,7 +306,7 @@ process_contract() {
 while IFS= read -r contract; do
     contract_name=$(echo "$contract" | jq -r '.name')
     contract_address=$(echo "$contract" | jq -r '.address')
-    
+
     if [ -z "$contract_name" ] || [ -z "$contract_address" ]; then
         echo "Error: Each contract must specify both name and address"
         continue
