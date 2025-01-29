@@ -281,17 +281,17 @@ interface IRewardsCoordinatorEvents is IRewardsCoordinatorTypes {
     );
 
     /**
-     * @notice Emitted when an AVS creates a valid performance based `OperatorDirectedRewardsSubmission` for an operator set.
+     * @notice Emitted when an AVS creates a valid `OperatorDirectedRewardsSubmission` for an operator set.
      * @param caller The address calling `createOperatorDirectedOperatorSetRewardsSubmission`.
-     * @param operatorSet The operatorSet on behalf of which the performance rewards are being submitted.
      * @param operatorDirectedRewardsSubmissionHash Keccak256 hash of (`avs`, `submissionNonce` and `operatorDirectedRewardsSubmission`).
+     * @param operatorSet The operatorSet on behalf of which the operator-directed rewards are being submitted.
      * @param submissionNonce Current nonce of the avs. Used to generate a unique submission hash.
-     * @param operatorDirectedRewardsSubmission The Performance Rewards Submission. Contains the token, start timestamp, duration, description and, strategy and multipliers.
+     * @param operatorDirectedRewardsSubmission The Operator-Directed Rewards Submission. Contains the token, start timestamp, duration, operator rewards, description and, strategy and multipliers.
      */
     event OperatorDirectedOperatorSetRewardsSubmissionCreated(
         address indexed caller,
-        OperatorSet indexed operatorSet,
         bytes32 indexed operatorDirectedRewardsSubmissionHash,
+        OperatorSet operatorSet,
         uint256 submissionNonce,
         OperatorDirectedRewardsSubmission operatorDirectedRewardsSubmission
     );
@@ -352,7 +352,7 @@ interface IRewardsCoordinatorEvents is IRewardsCoordinatorTypes {
     event OperatorSetSplitBipsSet(
         address indexed caller,
         address indexed operator,
-        OperatorSet indexed operatorSet,
+        OperatorSet operatorSet,
         uint32 activatedAt,
         uint16 oldOperatorSetSplitBips,
         uint16 newOperatorSetSplitBips

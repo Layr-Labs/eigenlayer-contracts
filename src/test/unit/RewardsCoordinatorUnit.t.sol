@@ -90,7 +90,7 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
     uint8 internal constant PAUSED_OPERATOR_PI_SPLIT = 7;
 
     /// @dev Index for flag that pauses calling setOperatorSetSplit
-    uint8 internal constant PAUSED_OPERATOR_SET_OPERATOR_SPLIT = 8;
+    uint8 internal constant PAUSED_OPERATOR_SET_SPLIT = 8;
 
     /// @dev Index for flag that pauses calling setOperatorSetPerformanceRewardsSubmission
     uint8 internal constant PAUSED_OPERATOR_DIRECTED_OPERATOR_SET_REWARDS_SUBMISSION = 9;
@@ -800,7 +800,7 @@ contract RewardsCoordinatorUnitsTests_setOperatorSetSplit is RewardsCoordinatorU
         cheats.assume(operator != address(0));
         split = uint16(bound(split, 0, ONE_HUNDRED_IN_BIPS));
         cheats.prank(pauser);
-        rewardsCoordinator.pause(2 ** PAUSED_OPERATOR_SET_OPERATOR_SPLIT);
+        rewardsCoordinator.pause(2 ** PAUSED_OPERATOR_SET_SPLIT);
 
         cheats.prank(operator);
         cheats.expectRevert(IPausable.CurrentlyPaused.selector);
@@ -3606,13 +3606,13 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
             keccak256(abi.encode(avs, currSubmissionNonce, operatorDirectedRewardsSubmissions[0]));
         cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
         emit OperatorDirectedOperatorSetRewardsSubmissionCreated(
-            avs, operatorSet, rewardsSubmissionHash, currSubmissionNonce, operatorDirectedRewardsSubmissions[0]
+            avs, rewardsSubmissionHash, operatorSet, currSubmissionNonce, operatorDirectedRewardsSubmissions[0]
         );
         rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, operatorDirectedRewardsSubmissions);
         cheats.stopPrank();
 
         assertTrue(
-            rewardsCoordinator.isOperatorSetPerformanceRewardsSubmissionHash(avs, rewardsSubmissionHash),
+            rewardsCoordinator.isOperatorDirectedOperatorSetRewardsSubmissionHash(avs, rewardsSubmissionHash),
             "rewards submission hash not submitted"
         );
         assertEq(currSubmissionNonce + 1, rewardsCoordinator.submissionNonce(avs), "submission nonce not incremented");
@@ -3691,13 +3691,13 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
             keccak256(abi.encode(avs, currSubmissionNonce, operatorDirectedRewardsSubmissions[0]));
         cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
         emit OperatorDirectedOperatorSetRewardsSubmissionCreated(
-            defaultAppointee, operatorSet, rewardsSubmissionHash, currSubmissionNonce, operatorDirectedRewardsSubmissions[0]
+            defaultAppointee, rewardsSubmissionHash, operatorSet, currSubmissionNonce, operatorDirectedRewardsSubmissions[0]
         );
         rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, operatorDirectedRewardsSubmissions);
         cheats.stopPrank();
 
         assertTrue(
-            rewardsCoordinator.isOperatorSetPerformanceRewardsSubmissionHash(avs, rewardsSubmissionHash),
+            rewardsCoordinator.isOperatorDirectedOperatorSetRewardsSubmissionHash(avs, rewardsSubmissionHash),
             "rewards submission hash not submitted"
         );
         assertEq(currSubmissionNonce + 1, rewardsCoordinator.submissionNonce(avs), "submission nonce not incremented");
@@ -3784,7 +3784,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
                 keccak256(abi.encode(param.avs, startSubmissionNonce + i, rewardsSubmissions[i]));
             cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
             emit OperatorDirectedOperatorSetRewardsSubmissionCreated(
-                param.avs, operatorSet, rewardsSubmissionHashes[i], startSubmissionNonce + i, rewardsSubmissions[i]
+                param.avs, rewardsSubmissionHashes[i], operatorSet, startSubmissionNonce + i, rewardsSubmissions[i]
             );
         }
 
@@ -3801,7 +3801,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
 
         for (uint256 i = 0; i < numSubmissions; ++i) {
             assertTrue(
-                rewardsCoordinator.isOperatorSetPerformanceRewardsSubmissionHash(param.avs, rewardsSubmissionHashes[i]),
+                rewardsCoordinator.isOperatorDirectedOperatorSetRewardsSubmissionHash(param.avs, rewardsSubmissionHashes[i]),
                 "rewards submission hash not submitted"
             );
             assertEq(

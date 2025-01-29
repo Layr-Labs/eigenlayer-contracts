@@ -32,7 +32,7 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     /// @dev Index for flag that pauses calling setOperatorPISplit
     uint8 internal constant PAUSED_OPERATOR_PI_SPLIT = 7;
     /// @dev Index for flag that pauses calling setOperatorSetSplit
-    uint8 internal constant PAUSED_OPERATOR_SET_OPERATOR_SPLIT = 8;
+    uint8 internal constant PAUSED_OPERATOR_SET_SPLIT = 8;
     /// @dev Index for flag that pauses calling setOperatorSetPerformanceRewardsSubmission
     uint8 internal constant PAUSED_OPERATOR_DIRECTED_OPERATOR_SET_REWARDS_SUBMISSION = 9;
 
@@ -128,10 +128,10 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
 
     /// @notice Returns the `split` an `operator` takes for a given operator set.
     mapping(address operator => mapping(bytes32 operatorSetKey => OperatorSplit split)) internal
-        _operatorOperatorSetSplitBips;
+        _operatorSetSplitBips;
 
     /// @notice Returns whether a `hash` is a `valid` operator set performance rewards submission hash for a given `avs`.
-    mapping(address avs => mapping(bytes32 hash => bool valid)) public isOperatorSetPerformanceRewardsSubmissionHash;
+    mapping(address avs => mapping(bytes32 hash => bool valid)) public isOperatorDirectedOperatorSetRewardsSubmissionHash;
 
     // Construction
 
