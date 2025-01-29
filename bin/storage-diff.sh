@@ -10,7 +10,7 @@ TOTAL_ISSUES=0
 # Help message
 usage() {
     cat << EOF
-Usage: bash $0 --rpc-url $RPC_URL --etherscan-key $ETHERSCAN_API_KEY [--input $INPUT_FILE] [--quiet] [--help]
+Usage: bash $0 --rpc-url $RPC_URL --etherscan-key $ETHERSCAN_API_KEY --input $INPUT_FILE [--quiet] [--help]
 
 Detects storage layout incompatibilities that could cause issues during upgrades.
 
