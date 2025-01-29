@@ -159,6 +159,22 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
         return result;
     }
+
+    /// @dev Choose a random subset of validators (selects AT LEAST ONE but NOT ALL)
+    function _chooseSubset(uint40[] memory validators) internal returns (uint40[] memory) {
+        require(validators.length >= 2, "Need at least 2 validators to choose subset"); 
+
+        uint40[] memory result = new uint40[](validators.length);
+        uint newLen;
+
+        uint rand = _randUint({ min: 1, max: validators.length ** 2 });
+        for (uint i = 0; i < validators.length; i++) {
+            if (rand >> i & 1 == 1) {
+                result[newLen] = validators[i];
+                newLen++;
+            }
+        }
+    }
     
     function _getTokenName(IERC20 token) internal view returns (string memory) {
         if (token == NATIVE_ETH) {
