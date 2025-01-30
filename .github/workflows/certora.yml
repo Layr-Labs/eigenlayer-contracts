@@ -16,6 +16,8 @@ on:
 
 jobs:
   certora:
+    name: Test
+
     runs-on: ubuntu-latest
     steps:
 
