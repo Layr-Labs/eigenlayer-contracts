@@ -21,21 +21,20 @@ contract Integration_Upgrade_Deposit_Delegate_Allocate is UpgradeTest {
 
         // 3. Set allocation delay for operator
         operator.setAllocationDelay(1);
-        rollForward({blocks: ALLOCATION_CONFIGURATION_DELAY});
+        rollForward({blocks: ALLOCATION_CONFIGURATION_DELAY + 1});
 
         // 4. Create an operator set and register an operator.
         OperatorSet memory operatorSet = avs.createOperatorSet(strategies);
         operator.registerForOperatorSet(operatorSet);
+        check_Registration_State_NoAllocation(operator, operatorSet, allStrats);
 
         // 5. Allocate to operator set.
-        IAllocationManagerTypes.AllocateParams memory allocateParams =
-            operator.modifyAllocations(operatorSet, _randMagnitudes({sum: 1 ether, len: strategies.length}));
-        assert_Snap_Allocations_Modified(
-            operator, allocateParams, false, "operator allocations should be updated before delay"
-        );
-        _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
-        assert_Snap_Allocations_Modified(
-            operator, allocateParams, true, "operator allocations should be updated after delay"
-        );
+        AllocateParams memory allocateParams = AllocateParams({
+            operatorSet: operatorSet,
+            strategies: strategies,
+            newMagnitudes: _randMagnitudes({sum: 1 ether, len: strategies.length})
+        });
+        operator.modifyAllocations(allocateParams);
+        check_IncrAlloc_State_Slashable(operator, allocateParams);
     }
 }

@@ -15,7 +15,7 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal is UpgradeTest {
 
         staker.depositIntoEigenlayer(strategies, tokenBalances);
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
-        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
+        Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
     
         /// Upgrade to slashing contracts
         _upgradeEigenLayerContracts();
@@ -40,7 +40,7 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal is UpgradeTest {
         staker.delegateTo(operator);
         staker.depositIntoEigenlayer(strategies, tokenBalances);
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
-        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
+        Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
 
         /// Upgrade to slashing contracts
         _upgradeEigenLayerContracts();
@@ -64,7 +64,7 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal is UpgradeTest {
         staker.depositIntoEigenlayer(strategies, tokenBalances);
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
         uint[] memory expectedTokens = _calculateExpectedTokens(strategies, shares);
-        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
+        Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
     
         /// Upgrade to slashing contracts
         _upgradeEigenLayerContracts();
@@ -90,7 +90,7 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal is UpgradeTest {
         staker.depositIntoEigenlayer(strategies, tokenBalances);
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
         uint[] memory expectedTokens = _calculateExpectedTokens(strategies, shares);
-        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
+        Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
 
         /// Upgrade to slashing contracts
         _upgradeEigenLayerContracts();
