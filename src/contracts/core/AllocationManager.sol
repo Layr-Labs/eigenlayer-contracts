@@ -184,7 +184,7 @@ contract AllocationManager is
 
                 (StrategyInfo memory info, Allocation memory allocation) =
                     _getUpdatedAllocation(operator, operatorSet.key(), strategy);
-                require(allocation.pendingDiff == 0, ModificationAlreadyPending());
+                require(allocation.effectBlock == 0, ModificationAlreadyPending());
 
                 // 2. Check whether the operator's allocation is slashable. If not, we allow instant
                 // deallocation.
