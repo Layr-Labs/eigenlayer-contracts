@@ -53,7 +53,7 @@ jobs:
       - name: "Solhint"
         run: bun run hint
 
-      # Build the project and display contract sizes, then add summary.
+      # Build the project and display contract sizes.
       - name: "Forge Build"
         run: |
           forge --version
@@ -91,7 +91,7 @@ jobs:
         with:
           version: stable
 
-      # Build the project and display contract sizes, then add summary.
+      # Build the project and display contract sizes.
       - name: "Forge Build"
         run: |
           forge --version
@@ -131,7 +131,7 @@ jobs:
           sudo apt-get install lcov
         id: lcov
 
-      # Build the project and display contract sizes, then add summary.
+      # Build the project and display contract sizes.
       - name: "Forge Build"
         run: |
           forge --version
@@ -157,11 +157,7 @@ jobs:
       - name: Check Coverage Threshold
         run: |
           LINES_PCT=$(lcov --summary lcov.info | grep "lines" | cut -d ':' -f 2 | cut -d '%' -f 1 | tr -d '[:space:]')
-          FUNCTIONS_PCT=$(lcov --summary lcov.info | grep "functions" | cut -d ':' -f 2 | cut -d '%' -f 1 | tr -d '[:space:]')
-          
-          echo -e "\033[1;36mLines coverage: $LINES_PCT%\033[0m"
-          echo -e "\033[1;36mFunctions coverage: $FUNCTIONS_PCT%\033[0m"
-          
+          FUNCTIONS_PCT=$(lcov --summary lcov.info | grep "functions" | cut -d ':' -f 2 | cut -d '%' -f 1 | tr -d '[:space:]')          
           FAILED=0
           
           if (( $(echo "$LINES_PCT < 90" | bc -l) )); then
@@ -187,7 +183,7 @@ jobs:
   # -----------------------------------------------------------------------
 
   storage-diff:
-    name: Preview (Upgrade)
+    name: Test (Upgrade)
     runs-on: ubuntu-latest
     steps:
       # Check out repository with all submodules for complete codebase access.
@@ -200,6 +196,15 @@ jobs:
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: stable
+
+      # Build the project and display contract sizes.
+      - name: "Forge Build"
+        run: |
+          forge --version
+          forge build --sizes
+          echo "## Build result"
+          echo "✅ Passed"
+        id: build
 
       # Run storage diff check to detect storage layout incompatibilities.
       - name: "Mainnet Storage Diff"
