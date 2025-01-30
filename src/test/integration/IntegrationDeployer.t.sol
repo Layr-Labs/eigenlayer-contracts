@@ -58,6 +58,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     IStrategy[] ethStrats; // only has one strat tbh
     IStrategy[] allStrats; // just a combination of the above 2 lists
     IERC20[] allTokens; // `allStrats`, but contains all of the underlying tokens instead
+    uint maxUniqueAssetsHeld;
 
     // If a token is in this mapping, then we will ignore this LST as it causes issues with reading balanceOf
     mapping(address => bool) public tokensNotTested;
@@ -159,7 +160,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     }
 
     /// Deploy EigenLayer locally
-    function _setUpLocal() public virtual {
+    function _setUpLocal() public noTracing virtual {
         console.log("Setting up `%s` integration tests:", "LOCAL".yellow().bold());
 
         // Deploy ProxyAdmin
@@ -201,6 +202,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         ethStrats.push(BEACONCHAIN_ETH_STRAT);
         allStrats.push(BEACONCHAIN_ETH_STRAT);
         allTokens.push(NATIVE_ETH);
+        maxUniqueAssetsHeld = allStrats.length;
 
         // Create time machine and beacon chain. Set block time to beacon chain genesis time
         BEACON_GENESIS_TIME = GENESIS_TIME_LOCAL;
@@ -210,7 +212,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     }
 
     /// Parse existing contracts from mainnet
-    function _setUpMainnet() public virtual {
+    function _setUpMainnet() public noTracing virtual {
         console.log("Setting up `%s` integration tests:", "MAINNET_FORK".green().bold());
         console.log("RPC:", cheats.rpcUrl("mainnet"));
         console.log("Block:", mainnetForkBlock);
@@ -235,6 +237,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             allStrats.push(strategy);
             allTokens.push(strategy.underlyingToken());
         }
+
+        maxUniqueAssetsHeld = allStrats.length;
         
         // Create time machine and mock beacon chain
         BEACON_GENESIS_TIME = GENESIS_TIME_MAINNET;
@@ -279,6 +283,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         ethStrats.push(BEACONCHAIN_ETH_STRAT);
         allStrats.push(BEACONCHAIN_ETH_STRAT);
         allTokens.push(NATIVE_ETH);
+        maxUniqueAssetsHeld = allStrats.length;
     }
 
     function _deployProxies() public {
@@ -311,7 +316,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     }
 
     /// Deploy an implementation contract for each contract in the system
-    function _deployImplementations() public {
+    function _deployImplementations() public noTracing {
         allocationManagerImplementation = new AllocationManager(delegationManager, eigenLayerPauserReg, permissionController, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
         permissionControllerImplementation = new PermissionController();
         delegationManagerImplementation = new DelegationManager(strategyManager, eigenPodManager, allocationManager, eigenLayerPauserReg, permissionController, DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS);
@@ -345,7 +350,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         // TODO - need to update ExistingDeploymentParser
     }
 
-    function _upgradeProxies() public {
+    function _upgradeProxies() public noTracing {
         // DelegationManager
         eigenLayerProxyAdmin.upgrade(
             ITransparentUpgradeableProxy(payable(address(delegationManager))),
@@ -410,7 +415,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         }
     }
 
-    function _initializeProxies() public {
+    function _initializeProxies() public noTracing {
         delegationManager.initialize({
             initialOwner: executorMultisig,
             initialPausedStatus: 0
@@ -452,7 +457,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         uint initialSupply,
         address owner,
         bool useFactory
-    ) internal {
+    ) internal noTracing {
         IERC20 underlyingToken = new ERC20PresetFixedSupply(tokenName, tokenSymbol, initialSupply, owner);
 
         StrategyBase strategy;
@@ -484,7 +489,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         allTokens.push(underlyingToken);
     }
 
-    function _configRand(uint24 _randomSeed, uint _assetTypes, uint _userTypes) private {
+    function _configRand(uint24 _randomSeed, uint _assetTypes, uint _userTypes) private noTracing {
         // Using uint24 for the seed type so that if a test fails, it's easier
         // to manually use the seed to replay the same test.
         random = _hash(_randomSeed);
@@ -499,6 +504,15 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         assertTrue(assetTypes.length != 0, "_configRand: no asset types selected");
     }
 
+    function _configAssetAmounts(uint _maxUniqueAssetsHeld) internal {
+        if (_maxUniqueAssetsHeld > allStrats.length) {
+            _maxUniqueAssetsHeld = allStrats.length;
+        }
+
+        maxUniqueAssetsHeld = _maxUniqueAssetsHeld;
+        require(maxUniqueAssetsHeld != 0, "_configAssetAmounts: invalid 0");
+    }
+
     function _configUserTypes(uint _userTypes) internal {
         userTypes = _bitmapToBytes(_userTypes);
         assertTrue(userTypes.length != 0, "_configRand: no user types selected");
@@ -511,7 +525,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
      */
     function _randUser(
         string memory name
-    ) internal returns (User, IStrategy[] memory, uint[] memory) {
+    ) internal noTracing returns (User, IStrategy[] memory, uint[] memory) {
         // For the new user, select what type of assets they'll have and whether
         // they'll use `xWithSignature` methods.
         //
@@ -533,7 +547,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     /// @dev Create a new user without native ETH. See _randUser above for standard usage
     function _randUser_NoETH(
         string memory name
-    ) internal returns (User, IStrategy[] memory, uint[] memory) {
+    ) internal noTracing returns (User, IStrategy[] memory, uint[] memory) {
         // For the new user, select what type of assets they'll have and whether
         // they'll use `xWithSignature` methods.
         //
@@ -558,6 +572,23 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
         print.user(name, assetType, userType, strategies, tokenBalances);
         return (user, strategies, tokenBalances);
+    }
+
+    /// @dev Creates a new user without any assets
+    function _randUser_NoAssets(
+        string memory name
+    ) internal noTracing returns (User) {
+        // For the new user, select what type of assets they'll have and whether
+        // they'll use `xWithSignature` methods.
+        //
+        // The values selected here are in the ranges configured via `_configRand`
+        uint userType = _randUserType();
+
+        // Deploy new User contract
+        User user = _genRandUser(name, userType);
+
+        print.user(name, NO_ASSETS, userType, new IStrategy[](0), new uint[](0));
+        return user;
     }
 
     function _genRandUser(string memory name, uint userType) internal returns (User user) {
@@ -607,7 +638,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     ///             `tokenBalances` will contain the user's eth balance
     /// HOLDS_ALL - `strategies` will contain ALL initialized strategies AND BEACONCHAIN_ETH_STRAT, and
     ///             `tokenBalances` will contain random token/eth balances accordingly
-    function _dealRandAssets(User user, uint assetType) internal returns (IStrategy[] memory, uint[] memory) {
+    function _dealRandAssets(User user, uint assetType) internal noTracing returns (IStrategy[] memory, uint[] memory) {
         IStrategy[] memory strategies;
         uint[] memory tokenBalances;
         if (assetType == NO_ASSETS) {
@@ -616,7 +647,12 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         } else if (assetType == HOLDS_LST) {
             assetType = HOLDS_LST;
             // Select a random number of assets
-            uint numAssets = _randUint({min: 1, max: lstStrats.length});
+            uint max = lstStrats.length;
+            if (max > maxUniqueAssetsHeld) {
+                max = maxUniqueAssetsHeld;
+            }
+            uint numAssets = _randUint({min: 1, max: max});
+
             strategies = new IStrategy[](numAssets);
             tokenBalances = new uint[](numAssets);
 
@@ -642,7 +678,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             strategies[0] = BEACONCHAIN_ETH_STRAT;
             tokenBalances[0] = amount;
         } else if (assetType == HOLDS_ALL || assetType == HOLDS_MAX) {
-            uint numLSTs = assetType == HOLDS_MAX ? lstStrats.length : 5;
+            uint randHeld = _randUint({min: 1, max: maxUniqueAssetsHeld-1});
+            uint numLSTs = assetType == HOLDS_MAX ? lstStrats.length : randHeld;
             strategies = new IStrategy[](numLSTs + 1);
             tokenBalances = new uint[](numLSTs + 1);
 
@@ -739,8 +776,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         
         for (uint i; i < numOpSets; ++i) {
             IStrategy[] memory randomStrategies = _shuffle(allStrats);
-
-            uint numStrategies = _randUint({ min: 1, max: allStrats.length });
+            uint numStrategies = _randUint({ min: 1, max: maxUniqueAssetsHeld });
 
             // Modify the length of the array in memory (thus ignoring remaining elements).
             assembly {
