@@ -343,19 +343,7 @@ contract DelegationManager is
     function _delegate(address staker, address operator) internal onlyWhenNotPaused(PAUSED_NEW_DELEGATION) {
         // read staker's withdrawable shares and strategies to add to operator's shares
         // also update the staker depositScalingFactor for each strategy
-        (IStrategy[] memory strategies,) = strategyManager.getDeposits(staker);
-        uint256 podOwnerShares = eigenPodManager.stakerDepositShares(staker, beaconChainETHStrategy);
-        if (podOwnerShares != 0) {
-            // Allocate extra space for beaconChainETHStrategy and shares
-            IStrategy[] memory newStrategies = new IStrategy[](strategies.length + 1);
-            newStrategies[strategies.length] = beaconChainETHStrategy;
-
-            // Copy any strategy manager shares to complete array
-            for (uint256 i = 0; i < strategies.length; i++) {
-                newStrategies[i] = strategies[i];
-            }
-            strategies = newStrategies;
-        }
+        (IStrategy[] memory strategies,) = getDepositedShares(staker);
         (uint256[] memory withdrawableShares,) = getWithdrawableShares(staker, strategies);
         //Ignoring beaconChainSlashingFactor here because Beacon Chain ETH DSF already reflects BCSF
         uint64[] memory slashingFactors = allocationManager.getMaxMagnitudes(operator, strategies);
