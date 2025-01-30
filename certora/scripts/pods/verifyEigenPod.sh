@@ -10,8 +10,8 @@ fi
 #     src/contracts/permissions/PauserRegistry.sol \
 #     src/contracts/core/StrategyManager.sol \
 #     src/contracts/strategies/StrategyBase.sol \
-#     lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol \
-#     lib/openzeppelin-contracts/contracts/mocks/ERC1271WalletMock.sol \
+#     lib/openzeppelin-contracts-v4.9.0/contracts/token/ERC20/ERC20.sol \
+#     lib/openzeppelin-contracts-v4.9.0/contracts/mocks/ERC1271WalletMock.sol \
 #     --verify EigenPodHarness:certora/specs/pods/EigenPod.spec \
 #     --optimistic_loop \
 #     --prover_args '-recursionEntryLimit 3' \
