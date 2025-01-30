@@ -150,7 +150,7 @@ jobs:
           echo "Coverage: $COVERAGE_PCT%"
           
           # Generate HTML reports from LCOV data before potential failure
-          genhtml -o report ./lcov.info
+          genhtml -o -q report ./lcov.info
 
       # Upload coverage report as artifact before potential failure
       - name: Upload Coverage Report
@@ -164,8 +164,8 @@ jobs:
         run: |
           COVERAGE_PCT=$(lcov --summary lcov.info | grep "lines" | cut -d ':' -f 2 | cut -d '%' -f 1 | tr -d '[:space:]')
           if (( $(echo "$COVERAGE_PCT < 90" | bc -l) )); then
-            echo "❌ Code coverage ($COVERAGE_PCT%) is below minimum threshold of 90%" >> $GITHUB_STEP_SUMMARY
+            echo "❌ Code coverage ($COVERAGE_PCT%) is below minimum threshold of 90%"
             exit 1
           else
-            echo "✅ Code coverage ($COVERAGE_PCT%) meets minimum threshold of 90%" >> $GITHUB_STEP_SUMMARY
+            echo "✅ Code coverage ($COVERAGE_PCT%) meets minimum threshold of 90%"
           fi
