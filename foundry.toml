@@ -63,10 +63,6 @@
     multiline_func_header = "params_first"  # Options: "attributes_first", "params_first", "all"
     # Sort import statements alphabetically
     sort_imports = false  
-    # Add empty lines before and after contract definitions
-    contract_new_lines = false  
-    # Space between 'override' keyword and parent contracts
-    override_spacing = true  
     # Maximum line length where formatter will wrap the line
     line_length = 120  # Default: 120
     # Number of spaces per indentation level
@@ -97,11 +93,11 @@
 
 [profile.ci.fuzz]
     optimizer = false
-    runs = 32
+    runs = 128
 
 [profile.intense.fuzz]
     optimizer = false
-    runs = 15000
+    runs = 5000
 
 [profile.forktest.fuzz]
     runs = 16
