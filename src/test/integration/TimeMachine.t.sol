@@ -25,7 +25,7 @@ contract TimeMachine is Test, Logger {
         // to warp so we don't accidentally prevent our own births.
         assertTrue(pastExists(), "Global.warpToPast: invalid usage, past does not exist");
         uint256 last = lastSnapshot();
-        print.method("travelToLast", cheats.toString(last));
+        // print.method("travelToLast", cheats.toString(last));
         currentSnapshot = createSnapshot();
         cheats.revertToState(last);
     }
@@ -33,7 +33,7 @@ contract TimeMachine is Test, Logger {
     function travel(
         uint256 snapshot
     ) public {
-        print.method("travel", cheats.toString(snapshot));
+        // print.method("travel", cheats.toString(snapshot));
         cheats.revertToState(snapshot);
     }
 
