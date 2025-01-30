@@ -15,11 +15,6 @@ contract Integration_Upgrade_Pectra is UpgradeTest {
         _upgradeEigenLayerContracts();
         _hardForkToPectra();
 
-        // Randomly advance timestamp to be just after the hard fork timestamp
-        if (_randBool()) {
-            cheats.warp(block.timestamp + 1);
-        }
-
         // 2. Initialize Staker
         (User staker, ,) = _newRandomStaker();
         (uint40[] memory validators, uint64 beaconBalanceGwei) = staker.startValidators();
@@ -74,11 +69,6 @@ contract Integration_Upgrade_Pectra is UpgradeTest {
         _upgradeEigenLayerContracts();
         _hardForkToPectra();
 
-        // Randomly advance timestamp to be just after the hard fork timestamp
-        if (_randBool()) {
-            cheats.warp(block.timestamp + 1);
-        }
-
         // 3. Advance epoch, generating consensus rewards and withdrawing anything over 32 ETH
         beaconChain.advanceEpoch();
         uint64 expectedWithdrawnGwei = uint64(validators.length) * beaconChain.CONSENSUS_REWARD_AMOUNT_GWEI();
@@ -94,6 +84,10 @@ contract Integration_Upgrade_Pectra is UpgradeTest {
 
     function _hardForkToPectra() internal {
         beaconChain.forkToPectra();
-    }
 
+        // Randomly advance timestamp to be just after the hard fork timestamp
+        if (_randBool()) {
+            cheats.warp(block.timestamp + 1);
+        }
+    }
 }
