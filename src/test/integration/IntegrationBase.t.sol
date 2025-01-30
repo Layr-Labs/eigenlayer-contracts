@@ -713,7 +713,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         }
     }
 
-    /// @dev Check that the staker's withdrawable shares have decreased by `removedShares`
+    /// @dev Check that the staker's withdrawable shares have increased by `addedShares`
     function assert_Snap_Added_Staker_WithdrawableShares(
         User staker, 
         IStrategy[] memory strategies, 

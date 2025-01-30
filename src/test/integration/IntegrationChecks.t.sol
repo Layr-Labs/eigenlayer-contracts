@@ -230,10 +230,39 @@ contract IntegrationCheckUtils is IntegrationBase {
     ) internal {
         /// Undelegate from an operator
         //
-        // ... check that the staker is undelegated, all strategies from which the staker is deposited are unqeuued,
+        // ... check that the staker is undelegated, all strategies from which the staker is deposited are unqueued,
         //     that the returned root matches the hashes for each strategy and share amounts, and that the staker
         //     and operator have reduced shares
         assertFalse(delegationManager.isDelegated(address(staker)),
+            "check_Undelegate_State: staker should not be delegated");
+        assert_ValidWithdrawalHashes(withdrawals, withdrawalRoots,
+            "check_Undelegate_State: calculated withdrawl should match returned root");
+        assert_AllWithdrawalsPending(withdrawalRoots,
+            "check_Undelegate_State: stakers withdrawal should now be pending");
+        assert_Snap_Added_QueuedWithdrawals(staker, withdrawals,
+            "check_Undelegate_State: staker should have increased nonce by withdrawals.length");
+        assert_Snap_Removed_OperatorShares(operator, strategies, shares,
+            "check_Undelegate_State: failed to remove operator shares");
+        assert_Snap_Removed_Staker_DepositShares(staker, strategies, shares,
+            "check_Undelegate_State: failed to remove staker shares");
+        assert_Snap_Removed_Staker_WithdrawableShares(staker, strategies, shares,
+            "check_QueuedWithdrawal_State: failed to remove staker withdrawable shares");
+    }
+
+    function check_Redelegate_State(
+        User staker, 
+        User operator,
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals,
+        bytes32[] memory withdrawalRoots,
+        IStrategy[] memory strategies,
+        uint[] memory shares 
+    ) internal {
+        /// Redelegate to a new operator
+        //
+        // ... check that the staker is delegated to new operator, all strategies from which the staker is deposited are unqueued,
+        //     that the returned root matches the hashes for each strategy and share amounts, and that the staker
+        //     and operator have reduced shares
+        assertTrue(delegationManager.isDelegated(address(staker)),
             "check_Undelegate_State: staker should not be delegated");
         assert_ValidWithdrawalHashes(withdrawals, withdrawalRoots,
             "check_Undelegate_State: calculated withdrawl should match returned root");
@@ -310,6 +339,28 @@ contract IntegrationCheckUtils is IntegrationBase {
     function check_Withdrawal_AsShares_Undelegated_State(
         User staker,
         User operator,
+        IDelegationManagerTypes.Withdrawal memory withdrawal,
+        IStrategy[] memory strategies,
+        uint[] memory shares
+    ) internal {
+        /// Complete withdrawal(s):
+        // The staker will complete the withdrawal as shares
+        // 
+        // ... check that the withdrawal is not pending, that the token balances of the staker and operator are unchanged,
+        //     that the withdrawer received the expected shares, and that that the total shares of each o
+        //     strategy withdrawn remains unchanged 
+        assert_WithdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
+        assert_Snap_Unchanged_TokenBalances(staker, "staker should not have any change in underlying token balances");
+        assert_Snap_Unchanged_TokenBalances(operator, "operator should not have any change in underlying token balances");
+        assert_Snap_Added_Staker_DepositShares(staker, strategies, shares, "staker should have received expected shares");
+        assert_Snap_Unchanged_OperatorShares(operator, "operator should have shares unchanged");
+        assert_Snap_Unchanged_StrategyShares(strategies, "strategies should have total shares unchanged");
+    }
+
+    function check_Withdrawal_AsShares_Redelegated_State(
+        User staker,
+        User operator,
+        User newOperator,
         IDelegationManagerTypes.Withdrawal memory withdrawal,
         IStrategy[] memory strategies,
         uint[] memory shares
