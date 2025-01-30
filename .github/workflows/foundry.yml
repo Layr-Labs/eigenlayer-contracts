@@ -148,7 +148,6 @@ jobs:
 
           echo "Minimum Coverage: 90%"
           echo "Coverage: $COVERAGE_PCT%"
-          echo "Coverage: $COVERAGE_PCT%" >> $GITHUB_STEP_SUMMARY
           
           # Generate HTML reports from LCOV data before potential failure
           genhtml -o report ./lcov.info
