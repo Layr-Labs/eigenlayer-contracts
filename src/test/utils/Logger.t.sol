@@ -46,10 +46,30 @@ abstract contract Logger is Test {
     /// Modifiers
     /// -----------------------------------------------------------------------
 
+    // Address used to store a trace counter to allow us to use noTracing
+    // across any contract that inherits Logger
+    address constant LOG_STATE_ADDR = address(0xDEADBEEF);
+    bytes32 constant LOG_STATE_SLOT = bytes32(0);
+
     modifier noTracing() {
-        cheats.pauseTracing();
+        uint traceCounter = _getTraceCounter();
+        if (traceCounter == 0) {
+            cheats.pauseTracing();
+        }
+
+        traceCounter++;
+        _setTraceCounter(traceCounter);
+
         _;
-        cheats.resumeTracing();
+
+        traceCounter = _getTraceCounter();
+        traceCounter--;
+        _setTraceCounter(traceCounter);
+
+        if (traceCounter == 0) {
+            cheats.resumeTracing();
+        }
+        
     }
 
     modifier noLogging() {
@@ -77,7 +97,7 @@ abstract contract Logger is Test {
     /// @dev Returns `name` colored based logging its role.
     function colorByRole(
         string memory name
-    ) public view noTracing returns (string memory colored) {
+    ) public view returns (string memory colored) {
         bool isOperator = _contains(name, "operator");
         bool isStaker = _contains(name, "staker");
         bool isAVS = _contains(name, "avs");
@@ -105,8 +125,15 @@ abstract contract Logger is Test {
     function rollForward(
         uint256 blocks
     ) internal {
-        cheats.roll(block.timestamp + blocks);
-        console.log("%s.roll(%d)", colorByRole("cheats"), block.timestamp);
+        cheats.roll(block.number + blocks);
+        console.log("%s.roll(+ %d blocks)", colorByRole("cheats"), blocks);
+    }
+
+    function rollBackward(
+        uint256 blocks
+    ) internal {
+        cheats.roll(block.number - blocks);
+        console.log("%s.roll(- %d blocks)", colorByRole("cheats"), blocks);
     }
 
     /// -----------------------------------------------------------------------
@@ -116,6 +143,18 @@ abstract contract Logger is Test {
     function _toggleLog() internal {
         logging = !logging;
         console.log("\n%s logging %s...", NAME_COLORED(), logging ? "enabled" : "disabled");
+    }
+
+    /// -----------------------------------------------------------------------
+    /// Trace Counter get/set
+    /// -----------------------------------------------------------------------
+
+    function _getTraceCounter() internal view returns (uint) {
+        return uint(cheats.load(LOG_STATE_ADDR, LOG_STATE_SLOT));
+    }
+
+    function _setTraceCounter(uint _newValue) internal {
+        cheats.store(LOG_STATE_ADDR, LOG_STATE_SLOT, bytes32(_newValue));
     }
 }
 
