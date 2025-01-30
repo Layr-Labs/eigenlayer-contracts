@@ -21,6 +21,7 @@ contract AllocationManager is
 {
     using DoubleEndedQueue for DoubleEndedQueue.Bytes32Deque;
     using EnumerableSet for *;
+    using SafeCast for *;
 
     using Snapshots for Snapshots.DefaultWadHistory;
     using OperatorSetLib for OperatorSet;
@@ -588,8 +589,9 @@ contract AllocationManager is
         return int128(uint128(newMagnitude)) - int128(uint128(currentMagnitude));
     }
 
+    /// @dev Use safe casting when downcasting to uint64
     function _addInt128(uint64 a, int128 b) internal pure returns (uint64) {
-        return uint64(uint128(int128(uint128(a)) + b));
+        return uint256(int256(int128(uint128(a)) + b)).toUint64();
     }
 
     /**
