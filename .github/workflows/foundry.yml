@@ -145,6 +145,8 @@ jobs:
   run-coverage:
     name: Coverage
     runs-on: ubuntu-latest
+    # Only run coverage checks on dev, testnet-holesky, and mainnet branches
+    if: github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/testnet-holesky' || github.ref == 'refs/heads/mainnet'
     strategy:
       fail-fast: true
     steps:
