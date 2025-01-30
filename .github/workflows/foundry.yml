@@ -143,13 +143,7 @@ jobs:
       # Run Forge coverage with LCOV report format, excluding test and script files
       - name: Forge Coverage
         run: |
-          FOUNDRY_PROFILE=ci forge coverage --report lcov --no-match-coverage "src/test/*","script/*","*Storage" >> $GITHUB_STEP_SUMMARY
-          COVERAGE_PCT=$(lcov --summary lcov.info | grep "lines" | cut -d ':' -f 2 | cut -d '%' -f 1 | tr -d '[:space:]')
-
-          echo "Minimum Coverage: 90%"
-          echo "Coverage: $COVERAGE_PCT%"
-          
-          # Generate HTML reports from LCOV data before potential failure
+          FOUNDRY_PROFILE=ci forge coverage --report lcov --no-match-coverage "src/test/*","script/*","*Storage" >> $GITHUB_STEP_SUMMARY          
           genhtml -q -o report ./lcov.info
 
       # Upload coverage report as artifact before potential failure
@@ -162,10 +156,28 @@ jobs:
       # Check coverage threshold after uploading report
       - name: Check Coverage Threshold
         run: |
-          COVERAGE_PCT=$(lcov --summary lcov.info | grep "lines" | cut -d ':' -f 2 | cut -d '%' -f 1 | tr -d '[:space:]')
-          if (( $(echo "$COVERAGE_PCT < 90" | bc -l) )); then
-            echo "❌ Code coverage ($COVERAGE_PCT%) is below minimum threshold of 90%"
-            exit 1
+          LINES_PCT=$(lcov --summary lcov.info | grep "lines" | cut -d ':' -f 2 | cut -d '%' -f 1 | tr -d '[:space:]')
+          FUNCTIONS_PCT=$(lcov --summary lcov.info | grep "functions" | cut -d ':' -f 2 | cut -d '%' -f 1 | tr -d '[:space:]')
+          
+          echo -e "\033[1;36mLines coverage: $LINES_PCT%\033[0m"
+          echo -e "\033[1;36mFunctions coverage: $FUNCTIONS_PCT%\033[0m"
+          
+          FAILED=0
+          
+          if (( $(echo "$LINES_PCT < 90" | bc -l) )); then
+            echo -e "\033[1;31m❌ Lines coverage ($LINES_PCT%) is below minimum threshold of 90%\033[0m"
+            FAILED=1
           else
-            echo "✅ Code coverage ($COVERAGE_PCT%) meets minimum threshold of 90%"
+            echo -e "\033[1;32m✅ Lines coverage ($LINES_PCT%) meets minimum threshold of 90%\033[0m"
+          fi
+          
+          if (( $(echo "$FUNCTIONS_PCT < 90" | bc -l) )); then
+            echo -e "\033[1;31m❌ Functions coverage ($FUNCTIONS_PCT%) is below minimum threshold of 90%\033[0m"
+            FAILED=1
+          else
+            echo -e "\033[1;32m✅ Functions coverage ($FUNCTIONS_PCT%) meets minimum threshold of 90%\033[0m"
+          fi
+          
+          if [ $FAILED -eq 1 ]; then
+            exit 1
           fi
