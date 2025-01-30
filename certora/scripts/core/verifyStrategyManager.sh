@@ -19,5 +19,5 @@ certoraRun certora/harnesses/StrategyManagerHarness.sol \
     --parametric_contracts StrategyManagerHarness \
     $RULE \
     --loop_iter 2 \
-    --packages @openzeppelin=lib/openzeppelin-contracts @openzeppelin-upgrades=lib/openzeppelin-contracts-upgradeable \
+    --packages @openzeppelin=lib/openzeppelin-contracts-v4.9.0 @openzeppelin-upgrades=lib/openzeppelin-contracts-upgradeable-v4.9.0 \
     --msg "StrategyManager $1 $2" \
