@@ -185,7 +185,7 @@ contract ExistingDeploymentParser is Script, Logger {
     /// @notice use for parsing already deployed EigenLayer contracts
     function _parseDeployedContracts(
         string memory existingDeploymentInfoPath
-    ) internal virtual {
+    ) internal noTracing virtual {
         // read and log the chainID
         uint256 currentChainId = block.chainid;
         console.log("You are parsing on ChainID", currentChainId);
@@ -663,7 +663,7 @@ contract ExistingDeploymentParser is Script, Logger {
     /// @notice used for parsing parameters used in the integration test upgrade
     function _parseParamsForIntegrationUpgrade(
         string memory initialDeploymentParamsPath
-    ) internal virtual {
+    ) internal noTracing virtual {
         // read and log the chainID
         uint256 currentChainId = block.chainid;
         console.log("You are parsing on ChainID", currentChainId);
