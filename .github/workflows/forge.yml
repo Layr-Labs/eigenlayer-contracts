@@ -1,5 +1,5 @@
 # This workflow runs the complete Forge suite of tools for code quality and testing.
-name: Forge Suite
+name: Foundry Suite
 
 # Trigger workflow on manual dispatch, pull requests, or pushes to dev branch.
 on:
@@ -48,6 +48,10 @@ jobs:
       # Install Bun package manager for JavaScript dependencies (faster than npm).
       - name: "Install Bun"
         uses: "oven-sh/setup-bun@v1"
+
+      # Install NPM packages.
+      - name: "Install NPM Packages"
+        run: bun install
 
       # Run Solhint linter to check for Solidity code quality issues.
       - name: "Solhint"
