@@ -1,0 +1,73 @@
+# This workflow runs the complete Forge suite of tools for code quality and testing.
+name: Forge Suite
+
+# Trigger workflow on manual dispatch, pull requests, or pushes to dev branch.
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - "dev"
+    
+# Set environment variables for Foundry configuration and RPC endpoints.
+env:
+  FOUNDRY_PROFILE: ci
+  RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
+  RPC_HOLESKY: ${{ secrets.RPC_HOLESKY }}
+  CHAIN_ID: ${{ secrets.CHAIN_ID }}
+
+jobs:
+  forge-suite:
+    name: CI
+
+    # Stop all jobs if one fails to prevent cascading failures.
+    strategy:
+      fail-fast: true
+
+    # Use latest Ubuntu runner.
+    runs-on: ubuntu-latest
+
+    steps:
+      # Check out repository with all submodules for complete codebase access.
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # Install the Foundry toolchain.
+      - name: "Install Foundry"
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      # Run Forge's formatting checker to ensure consistent code style.
+      - name: "Forge Fmt"
+        run: |
+          forge fmt --check
+        id: fmt
+
+      # Install Bun package manager for JavaScript dependencies (faster than npm).
+      - name: "Install Bun"
+        uses: "oven-sh/setup-bun@v1"
+
+      # Run Solhint linter to check for Solidity code quality issues.
+      - name: "Solhint"
+        run: bun run hint
+
+      # Build the project and display contract sizes, then add summary.
+      - name: "Forge Build"
+        run: |
+          forge --version
+          forge build --sizes
+          echo "## Build result" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
+        id: build
+
+      # Run local tests (unit and integration).
+      - name: "Forge Test (Local)"
+        run: forge test
+
+      # Run integration tests using a mainnet fork.
+      - name: "Forge Test Integration (Fork)"
+        run: forge test --match-contract Integration
+        env:
+          FOUNDRY_PROFILE: "forktest"
