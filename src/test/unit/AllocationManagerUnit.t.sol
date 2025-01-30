@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "src/contracts/core/AllocationManager.sol";
+import "src/test/harnesses/AllocationManagerHarness.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
 import "src/test/mocks/MockAVSRegistrar.sol";
 
@@ -33,7 +33,7 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
     /// Mocks
     /// -----------------------------------------------------------------------
 
-    AllocationManager allocationManager;
+    AllocationManagerHarness allocationManager;
     ERC20PresetFixedSupply tokenMock;
     StrategyBase strategyMock;
 
@@ -86,12 +86,12 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
         address _initialOwner,
         IPauserRegistry _pauserRegistry,
         uint256 _initialPausedStatus
-    ) internal returns (AllocationManager) {
-        return allocationManager = AllocationManager(
+    ) internal returns (AllocationManagerHarness) {
+        return allocationManager = AllocationManagerHarness(
             address(
                 new TransparentUpgradeableProxy(
                     address(
-                        new AllocationManager(
+                        new AllocationManagerHarness(
                             IDelegationManager(address(delegationManagerMock)),
                             _pauserRegistry,
                             IPermissionController(address(permissionController)),
@@ -252,6 +252,23 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
         assertEq(expectedAllocation.effectBlock, getAllocations.effectBlock, "effectBlock != expected");
 
         console.log("Success!".green().bold());
+    }
+
+    /// @dev Check that the deallocation queue is in ascending order of effectBlocks
+    function _checkDeallocationQueueOrder(address operator, IStrategy strategy, uint256 numDeallocations) internal view {
+        uint32 lastEffectBlock = 0;
+
+        for (uint256 i = 0; i < numDeallocations; ++i) {
+            bytes32 operatorSetKey = allocationManager.deallocationQueueAtIndex(operator, strategy, i);
+            Allocation memory allocation = allocationManager.getAllocation(operator, OperatorSetLib.decode(operatorSetKey), strategy);
+
+            assertTrue(
+                lastEffectBlock <= allocation.effectBlock,
+                "Deallocation queue is not in ascending order of effectBlocks"
+            );
+
+            lastEffectBlock = allocation.effectBlock;
+        }
     }
 
     function _checkSlashableStake(
@@ -1916,6 +1933,194 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         cheats.expectRevert(ModificationAlreadyPending.selector);
         cheats.prank(defaultOperator);
         allocationManager.modifyAllocations(defaultOperator, allocateParams);
+    }
+
+    /**
+     * @notice Regression tests for the bugfix where pending modifications were checked by
+     * require(allocation.pendingDiff == 0, ModificationAlreadyPending()); 
+     * which would overwrite the effectBlock, pendingDiff if a pendingDiff
+     * of a deallocation was slashed to become 0.
+     *
+     * This test checks that the effectBlock, pendingDiff are not overwritten even if the pendingDiff is 0
+     * when attempting to modify allocations again
+     */
+    function test_modifyAllocations_PendingDiffZero() public {
+        // Step 1: Allocate to the operator set
+        AllocateParams[] memory allocateParams = _newAllocateParams(defaultOperatorSet, 501);
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(defaultOperator, allocateParams);
+
+        // Step 2: Roll blocks forward until the allocation effectBlock
+        cheats.roll(block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY);
+
+        // Step 3: Deallocate from the operator set
+        AllocateParams[] memory deallocateParams = _newAllocateParams(defaultOperatorSet, 500);
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(defaultOperator, deallocateParams);
+
+        Allocation memory allocation = allocationManager.getAllocation(defaultOperator, defaultOperatorSet, strategyMock);
+        uint32 originalEffectBlock = allocation.effectBlock;
+
+        // Step 4: Slash the operator to adjust pendingDiff to 0, slashing rounds up the amount of magnitude to slash
+        // so with an existing deallocation/pendingDiff of 1, it should result in a pendingDiff of 0
+        SlashingParams memory slashingParams = SlashingParams({
+            operator: defaultOperator,
+            operatorSetId: defaultOperatorSet.id,
+            strategies: defaultStrategies,
+            wadsToSlash: 5e17.toArrayU256(),
+            description: "Test slashing"
+        });
+        cheats.prank(defaultAVS);
+        allocationManager.slashOperator(defaultAVS, slashingParams);
+        allocation = allocationManager.getAllocation(defaultOperator, defaultOperatorSet, strategyMock);
+        assertEq(allocation.pendingDiff, 0, "Pending diff should be 0");
+        assertEq(allocation.effectBlock, originalEffectBlock, "Effect block should not have changed");
+
+        // Step 5: Modify allocations again (Should not be called)
+        AllocateParams[] memory newAllocateParams = _newAllocateParams(defaultOperatorSet, 1000);
+        cheats.prank(defaultOperator);
+        cheats.expectRevert(ModificationAlreadyPending.selector);
+        allocationManager.modifyAllocations(defaultOperator, newAllocateParams);
+
+        // Assert that the allocation was modified without reverting
+        allocation = allocationManager.getAllocation(defaultOperator, defaultOperatorSet, strategyMock);
+        assertEq(allocation.currentMagnitude, 250, "Allocation should be updated to 250 after slashing 50%");
+
+        // Note: These 2 assertions fail prior to the bugfix and if we kept the same
+        // require(allocation.pendingDiff == 0, ModificationAlreadyPending()); 
+        // in the code. The effectBlock, pendingDiff would get overwritten with the new modification
+        // but the deallocationQueue would now be unordered(in terms of effectBlocks) with this overwrite.
+        assertEq(allocation.effectBlock, originalEffectBlock, "Effect block should not have changed");
+        assertEq(allocation.pendingDiff, 0, "Pending diff should still be 0");
+    }
+
+    /**
+     * @notice Regression tests for the bugfix where pending modifications were checked by
+     * require(allocation.pendingDiff == 0, ModificationAlreadyPending()); 
+     * which would overwrite the effectBlock, pendingDiff if a pendingDiff
+     * of a deallocation was slashed to become 0.
+     *
+     * This test checks that the deallocationQueue is ascending ordered by effectBlocks
+     */
+    function test_modifyAllocations_PendingDiffZero_CheckOrderedDeallocationQueue() public {
+        // Step 1: Register the operator to multiple operator sets
+        OperatorSet memory operatorSet1 = OperatorSet(defaultAVS, 1);
+        OperatorSet memory operatorSet2 = OperatorSet(defaultAVS, 2);
+        _createOperatorSet(operatorSet1, defaultStrategies);
+        _createOperatorSet(operatorSet2, defaultStrategies);
+        _registerForOperatorSet(defaultOperator, operatorSet1);
+        _registerForOperatorSet(defaultOperator, operatorSet2);
+
+        // Step 2: Allocate to both operator sets
+        AllocateParams[] memory allocateParams1 = _newAllocateParams(operatorSet1, 1001);
+        AllocateParams[] memory allocateParams2 = _newAllocateParams(operatorSet2, 1000);
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(defaultOperator, allocateParams1);
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(defaultOperator, allocateParams2);
+
+        // Step 3: Roll blocks forward until the allocation effectBlock
+        cheats.roll(block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY);
+
+        // Step 4: Deallocate from both operator sets
+        AllocateParams[] memory deallocateParams1 = _newAllocateParams(operatorSet1, 1000);
+        AllocateParams[] memory deallocateParams2 = _newAllocateParams(operatorSet2, 0);
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(defaultOperator, deallocateParams1);
+        // roll blocks forward so that deallocations have different effectBlocks
+        cheats.roll(block.number + 100);
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(defaultOperator, deallocateParams2);
+
+        // Step 5: Slash the first deallocation to adjust pendingDiff to 0
+        SlashingParams memory slashingParams1 = SlashingParams({
+            operator: defaultOperator,
+            operatorSetId: operatorSet1.id,
+            strategies: defaultStrategies,
+            wadsToSlash: 5e17.toArrayU256(),
+            description: "Test slashing"
+        });
+        cheats.prank(defaultAVS);
+        allocationManager.slashOperator(defaultAVS, slashingParams1);
+
+        // Step 6: Modify allocations again for operatorSet1 making another deallocation and
+        // overwriting/increasing the effectBlock
+        // roll blocks forward so that deallocations have different effectBlocks
+        cheats.roll(block.number + 100);
+        // Note: this should revert but previously it would not prior to the bugfix
+        AllocateParams[] memory newAllocateParams1 = _newAllocateParams(operatorSet1, 400);
+        cheats.prank(defaultOperator);
+        cheats.expectRevert(ModificationAlreadyPending.selector);
+        allocationManager.modifyAllocations(defaultOperator, newAllocateParams1);
+
+        // Assert that the deallocationQueue is unordered for the 2 deallocations in queue
+        _checkDeallocationQueueOrder(defaultOperator, defaultStrategies[0], 2);
+    }
+
+    /**
+     * @notice Regression tests for the bugfix where pending modifications were checked by
+     * require(allocation.pendingDiff == 0, ModificationAlreadyPending()); 
+     * which would overwrite the effectBlock, pendingDiff if a pendingDiff
+     * of a deallocation was slashed to become 0.
+     *
+     * This test checks that the deallocationQueue is ascending ordered by effectBlocks
+     * In this case the new modifyAllocations call is an allocation
+     * where the effectBlock is increased and the deallocationQueue is unordered as well because the operator
+     * allocationDelay configured to be long enough.
+     */
+    function test_modifyAllocations_PendingDiffZero_Allocation() public {
+        // Step 1: Register the operator to multiple operator sets
+        OperatorSet memory operatorSet1 = OperatorSet(defaultAVS, 1);
+        OperatorSet memory operatorSet2 = OperatorSet(defaultAVS, 2);
+        _createOperatorSet(operatorSet1, defaultStrategies);
+        _createOperatorSet(operatorSet2, defaultStrategies);
+        _registerForOperatorSet(defaultOperator, operatorSet1);
+        _registerForOperatorSet(defaultOperator, operatorSet2);
+
+        // Step 2: Allocate to both operator sets
+        AllocateParams[] memory allocateParams1 = _newAllocateParams(operatorSet1, 1001);
+        AllocateParams[] memory allocateParams2 = _newAllocateParams(operatorSet2, 1000);
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(defaultOperator, allocateParams1);
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(defaultOperator, allocateParams2);
+
+        // Step 3: Update operator allocation delay
+        cheats.prank(defaultOperator);
+        allocationManager.setAllocationDelay(defaultOperator, DEALLOCATION_DELAY + 10 days);
+        cheats.roll(block.number + ALLOCATION_CONFIGURATION_DELAY);
+
+        // Step 4: Deallocate from both operator sets
+        AllocateParams[] memory deallocateParams1 = _newAllocateParams(operatorSet1, 1000);
+        AllocateParams[] memory deallocateParams2 = _newAllocateParams(operatorSet2, 0);
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(defaultOperator, deallocateParams1);
+        // roll blocks forward so that deallocations have different effectBlocks
+        cheats.roll(block.number + 100);
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(defaultOperator, deallocateParams2);
+
+        // Step 5: Slash the first deallocation to adjust pendingDiff to 0
+        SlashingParams memory slashingParams1 = SlashingParams({
+            operator: defaultOperator,
+            operatorSetId: operatorSet1.id,
+            strategies: defaultStrategies,
+            wadsToSlash: 5e17.toArrayU256(),
+            description: "Test slashing"
+        });
+        cheats.prank(defaultAVS);
+        allocationManager.slashOperator(defaultAVS, slashingParams1);
+
+        // Step 6: Modify allocations again for operatorSet1 making an allocation and
+        // overwriting/increasing the effectBlock
+        // Note: this should revert but previously it would not prior to the bugfix
+        AllocateParams[] memory newAllocateParams1 = _newAllocateParams(operatorSet1, 5000);
+        cheats.prank(defaultOperator);
+        cheats.expectRevert(ModificationAlreadyPending.selector);
+        allocationManager.modifyAllocations(defaultOperator, newAllocateParams1);
+
+        // Assert that the deallocationQueue is unordered for the 2 deallocations in queue
+        _checkDeallocationQueueOrder(defaultOperator, defaultStrategies[0], 2);
     }
 
     function test_revert_allocateZeroMagnitude() public {
