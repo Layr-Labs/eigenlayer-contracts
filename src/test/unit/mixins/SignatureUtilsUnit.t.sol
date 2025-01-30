@@ -81,6 +81,7 @@ contract SignatureUtilsUnit is Test {
         );
     }
 
+    /// forge-config: default.allow_internal_expect_revert = true
     function test_checkIsValidSignatureNow_Expired() public {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPk, digest);
 

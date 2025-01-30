@@ -48,6 +48,8 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     TimeMachine timeMachine;
     BeaconChainMock beaconChain;
 
+    uint32 public allocationDelay = 1;
+
     string _NAME;
 
     // User's EigenPod and each of their validator indices within that pod
@@ -92,44 +94,35 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     /// @dev Allocates randomly across the operator set's strategies with a sum of `magnitudeSum`.
     /// NOTE: Calling more than once will lead to deallocations...
     function modifyAllocations(
-        OperatorSet memory operatorSet, 
-        uint64[] memory magnitudes
-    ) public virtual createSnapshot returns (AllocateParams memory) {
+        AllocateParams memory params
+    ) public virtual createSnapshot {
         print.method(
             "modifyAllocations",
             string.concat(
                 "{avs: ",
-                Logger(operatorSet.avs).NAME_COLORED(),
+                Logger(params.operatorSet.avs).NAME_COLORED(),
                 ", operatorSetId: ",
-                cheats.toString(operatorSet.id),
+                cheats.toString(params.operatorSet.id),
                 "}"
             )
         );
 
-        IStrategy[] memory strategies = allocationManager().getStrategiesInOperatorSet(operatorSet);
-
-        require(strategies.length == magnitudes.length, "User.modifyAllocations: length mismatch");
-
-        AllocateParams[] memory allocateParams = AllocateParams({
-            operatorSet: operatorSet,
-            strategies: strategies,
-            newMagnitudes: magnitudes
-        }).toArray();
-
         _tryPrankAppointee_AllocationManager(IAllocationManager.modifyAllocations.selector);
-        allocationManager().modifyAllocations(address(this), allocateParams);
+        allocationManager().modifyAllocations(address(this), params.toArray());
         print.gasUsed();
-
-        return allocateParams[0];
     }
     
     function deallocateAll(
         OperatorSet memory operatorSet
     ) public virtual returns (AllocateParams memory) {
-        return modifyAllocations(
-            operatorSet, 
-            new uint64[](allocationManager().getStrategiesInOperatorSet(operatorSet).length)
-        );
+        AllocateParams memory params;
+        params.operatorSet = operatorSet;
+        params.strategies = allocationManager().getStrategiesInOperatorSet(operatorSet);
+        params.newMagnitudes = new uint64[](params.strategies.length);
+        
+        modifyAllocations(params);
+
+        return params;
     }
 
     function registerForOperatorSets(
@@ -192,17 +185,17 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         _tryPrankAppointee_AllocationManager(IAllocationManager.setAllocationDelay.selector);
         allocationManager().setAllocationDelay(address(this), delay);
         print.gasUsed();
+
+        allocationDelay = delay;
     }
 
     /// -----------------------------------------------------------------------
     /// Delegation Manager Methods
     /// -----------------------------------------------------------------------
 
-    uint32 withdrawalDelay = 1;
-
     function registerAsOperator() public virtual createSnapshot {
         print.method("registerAsOperator");
-        delegationManager.registerAsOperator(address(0), withdrawalDelay, "metadata");
+        delegationManager.registerAsOperator(address(0), allocationDelay, "metadata");
         print.gasUsed();
     }
 
@@ -316,7 +309,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     function completeWithdrawalsAsShares(
         Withdrawal[] memory withdrawals
     ) public virtual createSnapshot returns (IERC20[][] memory tokens) {
-        print.method("completeWithdrawalAsShares");
+        print.method("completeWithdrawalsAsShares");
         tokens = new IERC20[][](withdrawals.length);
         for (uint256 i = 0; i < withdrawals.length; i++) {
             tokens[i] = _completeQueuedWithdrawal(withdrawals[i], false);
