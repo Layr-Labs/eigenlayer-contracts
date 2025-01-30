@@ -6,7 +6,7 @@ fi
 solc-select use 0.8.27
 
 certoraRun src/contracts/strategies/StrategyBase.sol \
-    lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol \
+    lib/openzeppelin-contracts-v4.9.0/contracts/token/ERC20/ERC20.sol \
     src/contracts/core/StrategyManager.sol \
     src/contracts/permissions/PauserRegistry.sol \
     --verify StrategyBase:certora/specs/strategies/StrategyBase.spec \

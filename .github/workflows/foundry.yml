@@ -109,7 +109,7 @@ jobs:
   # -----------------------------------------------------------------------
 
   storage-diff:
-    name: Test (Upgrade)
+    name: Test (Storage)
     runs-on: ubuntu-latest
     steps:
       # Check out repository with all submodules for complete codebase access.

@@ -6,7 +6,7 @@ fi
 solc-select use 0.8.27
 
 certoraRun certora/harnesses/StrategyManagerHarness.sol \
-    lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol lib/openzeppelin-contracts/contracts/mocks/ERC1271WalletMock.sol \
+    lib/openzeppelin-contracts-v4.9.0/contracts/token/ERC20/ERC20.sol lib/openzeppelin-contracts-v4.9.0/contracts/mocks/ERC1271WalletMock.sol \
     src/contracts/pods/EigenPodManager.sol src/contracts/pods/EigenPod.sol \
     src/contracts/strategies/StrategyBase.sol src/contracts/core/DelegationManager.sol \
     src/contracts/permissions/PauserRegistry.sol \
