@@ -1,64 +1,60 @@
 name: Certora
 
 on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - dev
   push:
     branches:
+      - dev
       - master
       - release-v*
       - formal-verification
       - m2-mainnet
       - testnet-holesky
-  pull_request:
-    branches:
-      - dev
-  workflow_dispatch: {}
 
 jobs:
-  list-scripts:
+  certora:
     runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
-      - uses: actions/checkout@v2
-      - id: set-matrix
-        run: echo ::set-output name=matrix::$(ls certora/scripts/{,**}/*.sh | grep -v '\WnoCI\W' | jq -Rsc 'split("\n")[:-1]')
-  verify:
-    runs-on: ubuntu-latest
-    needs: list-scripts
-    steps:
+
       - uses: actions/checkout@v3
         with:
           submodules: recursive
+    
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: stable
+    
       - name: Install forge dependencies
         run: forge install
-      - name: Install python
+    
+      - name: Install Python
         uses: actions/setup-python@v2
         with:
           python-version: '3.10'
           cache: 'pip'
-      - name: Install java
+    
+      - name: Install Java
         uses: actions/setup-java@v2
         with:
           distribution: temurin
           java-version: '17'
-      - name: Install certora
+    
+      - name: Install Certora CLI
         run: pip install certora-cli
-      - name: Install solc
+    
+      - name: Install Solidity Compiler
         run: |
           pip install solc-select
           solc-select use 0.8.27 --always-install
-      - name: Verify rule ${{ matrix.params }}
+    
+      - name: Run Certora Verification
         run: |
-          bash ${{ matrix.params }}
+          for script in $(ls certora/scripts/{,**}/*.sh | grep -v '\WnoCI\W'); do
+            bash "$script"
+          done
         env:
           CERTORAKEY: ${{ secrets.CERTORAKEY }}
-
-    strategy:
-      fail-fast: false
-      max-parallel: 4
-      matrix:
-        params: ${{ fromJson(needs.list-scripts.outputs.matrix) }}
