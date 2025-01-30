@@ -136,6 +136,10 @@ library SlashingLib {
         dsf._scalingFactor = newDepositScalingFactor;
     }
 
+    /**
+     * @notice In the case of a new delegation, slashingFactor is just maxMagnitude, because the
+     * BCSF is accounted for in _delegate by adjusting the shares added to the operator
+     */
     function updateNewDelegation(DepositScalingFactor storage dsf, uint256 slashingFactor) internal {
         //On delegation, we use the old deposit scaling factor in case that it is non-WAD
         dsf._scalingFactor = dsf.scalingFactor().divWad(slashingFactor);
