@@ -8,6 +8,34 @@ contract Integration_Upgrade_Pectra is UpgradeTest {
     function _init() internal override {
         _configAssetTypes(HOLDS_ETH);
         _configUserTypes(DEFAULT);
+    }
+
+    function test_Fork_VerifyWC_StartCP_CompleteCP(uint24 _rand) public rand(_rand) {
+        // 1. Upgrade for Pectra
+        _upgradeEigenLayerContracts();
+        _hardForkToPectra();
+
+        // Randomly advance timestamp to be just after the hard fork timestamp
+        if (_randBool()) {
+            cheats.warp(block.timestamp + 1);
+        }
+
+        // 2. Initialize Staker
+        (User staker, ,) = _newRandomStaker();
+        (uint40[] memory validators, uint64 beaconBalanceGwei) = staker.startValidators();
+        beaconChain.advanceEpoch_NoRewards();
+
+        // 3. Verify Withdrawal Credentials
+        staker.verifyWithdrawalCredentials(validators);
+        check_VerifyWC_State(staker, validators, beaconBalanceGwei);
+
+        // 4. Start Checkpoint
+        staker.startCheckpoint();
+        check_StartCheckpoint_State(staker);
+
+        // 5. Complete Checkpoint
+        staker.completeCheckpoint();
+        check_CompleteCheckpoint_State(staker);
     }        
 
     function test_VerifyWC_StartCP_Fork_CompleteCP(uint24 _rand) public rand(_rand) {
