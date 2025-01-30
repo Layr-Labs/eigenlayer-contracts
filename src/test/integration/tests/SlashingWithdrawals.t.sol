@@ -3,61 +3,81 @@ pragma solidity ^0.8.27;
 
 import "src/test/integration/IntegrationChecks.t.sol";
 
-contract SlashingWithdrawals is IntegrationCheckUtils {
+contract Integration_SlashingWithdrawals is IntegrationCheckUtils {
     
     AVS avs;
     OperatorSet operatorSet;
 
     User operator;
-    IAllocationManagerTypes.AllocateParams allocateParams;
+    AllocateParams allocateParams;
 
     User staker;
     IStrategy[] strategies;
     uint[] initTokenBalances;
+    uint[] initDepositShares;
+
+    /**
+     * Current test setup uses a single operator set and multiple strategies. Slashes
+     * are simple, done on that single operator set.
+     * -- good for testing full slashes where 100% of a strategy's magnitude is impacted
+     * -- could have a separate setup with multiple operator sets and one strategy
+     *    to test "full slashes" that don't hit 100% of a strategy's magnitude (but are
+     *    100% of allocated magnitude for that operator set)
+     */
 
     /// Shared setup:
     /// 
     /// 1. Generate staker, operator, and AVS
     /// 2. Staker deposits and delegates to operator
     /// 3. AVS creates an operator set containing the strategies held by the staker
-    /// 4. Operator registers for operator set (default allocation delay)
-    /// 5. Operator allocates to operator set
+    /// 4. Operator allocates to operator set
+    /// 5. Operator registers for operator set
+    /// NOTE: Steps 4 and 5 are done in random order, as these should not have an outcome on the test
     function _init() internal override {
         (staker, strategies, initTokenBalances) = _newRandomStaker();
-        (operator,,) = _newRandomOperator();
+        operator = _newRandomOperator_NoAssets();
         (avs,) = _newRandomAVS();
 
         // 1. Deposit Into Strategies
         staker.depositIntoEigenlayer(strategies, initTokenBalances);
-        uint[] memory shares = _calculateExpectedShares(strategies, initTokenBalances);
-        check_Deposit_State(staker, strategies, shares);
+        initDepositShares = _calculateExpectedShares(strategies, initTokenBalances);
+        check_Deposit_State(staker, strategies, initDepositShares);
 
         // 2. Delegate to an operator
         staker.delegateTo(operator);
-        check_Delegation_State(staker, operator, strategies, shares);
+        check_Delegation_State(staker, operator, strategies, initDepositShares);
 
         // 3. Create an operator set and register an operator.
         operatorSet = avs.createOperatorSet(strategies);
-        // TODO invariant checks here
-        operator.registerForOperatorSet(operatorSet);
-        // TODO invariant checks here
-        
-        // 4. Allocate to operator set
-        allocateParams = operator.modifyAllocations(operatorSet, _randMagnitudes({sum: 1 ether, len: strategies.length}));
-        assert_Snap_Allocations_Modified(
-            operator, allocateParams, false, "operator allocations should be updated before delay"
-        );
+
+        // randomly choose between:
+        // register -> allocate / allocate -> register
+        if (_randBool()) {
+            // register -> allocate
+            operator.registerForOperatorSet(operatorSet);
+            check_Registration_State_NoAllocation(operator, operatorSet, allStrats);
+
+            allocateParams = _genAllocation_AllAvailable(operator, operatorSet);
+            operator.modifyAllocations(allocateParams);
+            check_IncrAlloc_State_Slashable(operator, allocateParams);
+        } else {
+            // allocate -> register
+            allocateParams = _genAllocation_AllAvailable(operator, operatorSet);
+            operator.modifyAllocations(allocateParams);
+            check_IncrAlloc_State_NotSlashable(operator, allocateParams);
+
+            operator.registerForOperatorSet(operatorSet);
+            check_Registration_State_PendingAllocation(operator, allocateParams);
+        }
+   
         _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
-        assert_Snap_Allocations_Modified(
-            operator, allocateParams, true, "operator allocations should be updated after delay"
-        );
     }
 
     function testFuzz_slash_undelegate_completeAsTokens(
         uint24 _random
     ) public rand(_random) {
         // 4. Slash operator
-        IAllocationManagerTypes.SlashingParams memory slashingParams;
+        SlashingParams memory slashingParams;
         {
             (IStrategy[] memory strategiesToSlash, uint256[] memory wadsToSlash) =
                 _randStrategiesAndWadsToSlash(operatorSet);
@@ -68,7 +88,7 @@ contract SlashingWithdrawals is IntegrationCheckUtils {
         }
 
         // 5. Undelegate from an operator
-        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.undelegate();
+        Withdrawal[] memory withdrawals = staker.undelegate();
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
 
         // 6. Complete withdrawal
@@ -96,7 +116,7 @@ contract SlashingWithdrawals is IntegrationCheckUtils {
         uint24 _random
     ) public rand(_random) {
         // 4. Slash operator
-        IAllocationManagerTypes.SlashingParams memory slashingParams;
+        SlashingParams memory slashingParams;
         {
             (IStrategy[] memory strategiesToSlash, uint256[] memory wadsToSlash) =
                 _randStrategiesAndWadsToSlash(operatorSet);
@@ -107,7 +127,7 @@ contract SlashingWithdrawals is IntegrationCheckUtils {
         }
 
         // 5. Undelegate from an operator
-        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.undelegate();
+        Withdrawal[] memory withdrawals = staker.undelegate();
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
 
         // 4. Complete withdrawal
@@ -128,12 +148,12 @@ contract SlashingWithdrawals is IntegrationCheckUtils {
         uint24 _random
     ) public rand(_random) {
         // 4. Queue withdrawal
-        IDelegationManagerTypes.Withdrawal[] memory withdrawals =
+        Withdrawal[] memory withdrawals =
             staker.queueWithdrawals(strategies, _calculateExpectedShares(strategies, initTokenBalances));
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
 
         // 5. Slash operator
-        IAllocationManagerTypes.SlashingParams memory slashingParams;
+        SlashingParams memory slashingParams;
         {
             (IStrategy[] memory strategiesToSlash, uint256[] memory wadsToSlash) =
                 _randStrategiesAndWadsToSlash(operatorSet);
@@ -170,12 +190,12 @@ contract SlashingWithdrawals is IntegrationCheckUtils {
         uint24 _random
     ) public rand(_random) {
         // 4. Queue withdrawal
-        IDelegationManagerTypes.Withdrawal[] memory withdrawals =
+        Withdrawal[] memory withdrawals =
             staker.queueWithdrawals(strategies, _calculateExpectedShares(strategies, initTokenBalances));
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
 
         // 5. Slash operator
-        IAllocationManagerTypes.SlashingParams memory slashingParams;
+        SlashingParams memory slashingParams;
         {
             (IStrategy[] memory strategiesToSlash, uint256[] memory wadsToSlash) =
                 _randStrategiesAndWadsToSlash(operatorSet);
@@ -203,11 +223,14 @@ contract SlashingWithdrawals is IntegrationCheckUtils {
         uint24 _random
     ) public rand(_random) {
         // 4. Deallocate all.
-        IAllocationManagerTypes.AllocateParams memory deallocateParams = operator.deallocateAll(operatorSet);
-        _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
+        AllocateParams memory deallocateParams = _genDeallocation_Full(operator, operatorSet);
+        operator.modifyAllocations(deallocateParams);
+        check_DecrAlloc_State_Slashable(operator, deallocateParams);
+
+        _rollForward_DeallocationDelay();
 
         // 5. Slash operator
-        IAllocationManagerTypes.SlashingParams memory slashingParams;
+        SlashingParams memory slashingParams;
         {
             (IStrategy[] memory strategiesToSlash, uint256[] memory wadsToSlash) =
                 _randStrategiesAndWadsToSlash(operatorSet);
@@ -218,7 +241,7 @@ contract SlashingWithdrawals is IntegrationCheckUtils {
         }
         
         // 6. Queue withdrawals
-        IDelegationManagerTypes.Withdrawal[] memory withdrawals =
+        Withdrawal[] memory withdrawals =
             staker.queueWithdrawals(strategies, _calculateExpectedShares(strategies, initTokenBalances));
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
 
@@ -248,9 +271,10 @@ contract SlashingWithdrawals is IntegrationCheckUtils {
     ) public rand(_random) {
         // 4. Deregister.
         operator.deregisterFromOperatorSet(operatorSet);
+        check_Deregistration_State_PendingAllocation(operator, operatorSet);
 
         // 5. Slash operator
-        IAllocationManagerTypes.SlashingParams memory slashingParams;
+        SlashingParams memory slashingParams;
         {
             (IStrategy[] memory strategiesToSlash, uint256[] memory wadsToSlash) =
                 _randStrategiesAndWadsToSlash(operatorSet);
