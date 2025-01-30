@@ -2018,7 +2018,7 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
             "Allocatable magnitude should be 0"
         );
         assertEq(
-            allocationManager.encumberedMagnitude(defaultOperator, strategyMock),
+            allocationManager.getEncumberedMagnitude(defaultOperator, strategyMock),
             WAD,
             "Encumbered magnitude should be WAD"
         );
@@ -2033,6 +2033,13 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         // 3. after resetting encumberedMagnitude, attempt to allocate to opSet2 with WAD
         allocateParams[0].operatorSet = opSet2;
         allocateParams[0].newMagnitudes[0] = WAD;
+        cheats.prank(defaultOperator);
+        cheats.expectRevert(InsufficientMagnitude.selector);
+        allocationManager.modifyAllocations(defaultOperator, allocateParams);
+
+        // 4. after resetting encumberedMagnitude, attempt to allocate to opSet2 with 1
+        allocateParams[0].operatorSet = opSet2;
+        allocateParams[0].newMagnitudes[0] = 1;
         cheats.prank(defaultOperator);
         cheats.expectRevert(InsufficientMagnitude.selector);
         allocationManager.modifyAllocations(defaultOperator, allocateParams);
