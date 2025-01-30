@@ -58,8 +58,8 @@ jobs:
         run: |
           forge --version
           forge build --sizes
-          echo "## Build result" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
+          echo "## Build result"
+          echo "✅ Passed"
         id: build
 
       # Run local tests (unit and integration).
@@ -96,8 +96,8 @@ jobs:
         run: |
           forge --version
           forge build --sizes
-          echo "## Build result" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
+          echo "## Build result"
+          echo "✅ Passed"
         id: build
 
       # Run Forge Test (Intense)
@@ -136,14 +136,14 @@ jobs:
         run: |
           forge --version
           forge build --sizes
-          echo "## Build result" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
+          echo "## Build result"
+          echo "✅ Passed"
         id: build
 
       # Run Forge coverage with LCOV report format, excluding test and script files
       - name: Forge Coverage
         run: |
-          FOUNDRY_PROFILE=ci forge coverage --report lcov --no-match-coverage "src/test/*","script/*","*Storage" >> $GITHUB_STEP_SUMMARY          
+          FOUNDRY_PROFILE=ci forge coverage --report lcov --no-match-coverage "src/test/*","script/*","*Storage" 
           genhtml -q -o report ./lcov.info
 
       # Upload coverage report as artifact before potential failure
