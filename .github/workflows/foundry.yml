@@ -1,7 +1,5 @@
-# This workflow runs the complete Forge suite of tools for code quality and testing.
 name: Foundry
 
-# Trigger workflow on manual dispatch, pull requests, or pushes to dev branch.
 on:
   workflow_dispatch:
   pull_request:
@@ -9,7 +7,6 @@ on:
     branches:
       - "dev"
 
-# Set environment variables for Foundry configuration and RPC endpoints.
 env:
   FOUNDRY_PROFILE: ci
   RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
@@ -17,16 +14,15 @@ env:
   CHAIN_ID: ${{ secrets.CHAIN_ID }}
 
 jobs:
+  # -----------------------------------------------------------------------
+  # Forge Test
+  # -----------------------------------------------------------------------
+
   test:
     name: Test
-
-    # Stop all jobs if one fails to prevent cascading failures.
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: true
-
-    # Use latest Ubuntu runner.
-    runs-on: ubuntu-latest
-
     steps:
       # Check out repository with all submodules for complete codebase access.
       - uses: actions/checkout@v4
@@ -72,22 +68,51 @@ jobs:
 
       # Run integration tests using a mainnet fork.
       - name: "Forge Test Integration (Fork)"
-        run: forge test --match-contract Integration
-        env:
-          FOUNDRY_PROFILE: "forktest"
+        run: FOUNDRY_PROFILE=forktest forge test --match-contract Integration
 
+  # -----------------------------------------------------------------------
+  # Forge Test (Intense)
+  # -----------------------------------------------------------------------
 
-  
-  run-coverage:
-    name: Coverage
-
-    # Stop all jobs if one fails to prevent cascading failures.
+  continuous-fuzzing:
+    name: Test (Intense)
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: true
+    steps:
+      # Check out repository with all submodules for complete codebase access.
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
-    # Use latest Ubuntu runner.
+      # Install the Foundry toolchain.
+      - name: "Install Foundry"
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      # Build the project and display contract sizes, then add summary.
+      - name: "Forge Build"
+        run: |
+          forge --version
+          forge build --sizes
+          echo "## Build result" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
+        id: build
+
+      # Run Forge Test (Intense)
+      - name: Forge Test (Intense)
+        run: FOUNDRY_PROFILE=intense forge test
+  
+  # -----------------------------------------------------------------------
+  # Forge Coverage
+  # -----------------------------------------------------------------------
+
+  run-coverage:
+    name: Coverage
     runs-on: ubuntu-latest
-
+    strategy:
+      fail-fast: true
     steps:
       # Check out repository with all submodules for complete codebase access.
       - uses: actions/checkout@v4
@@ -106,22 +131,29 @@ jobs:
           sudo apt-get install lcov
         id: lcov
 
+      # Build the project and display contract sizes, then add summary.
+      - name: "Forge Build"
+        run: |
+          forge --version
+          forge build --sizes
+          echo "## Build result" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Passed" >> $GITHUB_STEP_SUMMARY
+        id: build
+
       # Run Forge coverage with LCOV report format, excluding test and script files
       - name: Forge Coverage
         run: |
           FOUNDRY_PROFILE=ci forge coverage --report lcov --no-match-coverage "src/test/*","script/*","*Storage" >> $GITHUB_STEP_SUMMARY
-          
-          # Extract coverage percentage and check if it meets minimum threshold
           COVERAGE_PCT=$(lcov --summary lcov.info | grep "lines" | cut -d ':' -f 2 | cut -d '%' -f 1 | tr -d '[:space:]')
+
           echo "Coverage: $COVERAGE_PCT%"
           echo "Coverage: $COVERAGE_PCT%" >> $GITHUB_STEP_SUMMARY
           
-          # Fail if coverage is below 25%
-          if (( $(echo "$COVERAGE_PCT < 25" | bc -l) )); then
-            echo "❌ Code coverage ($COVERAGE_PCT%) is below minimum threshold of 25%" >> $GITHUB_STEP_SUMMARY
+          if (( $(echo "$COVERAGE_PCT < 90" | bc -l) )); then
+            echo "❌ Code coverage ($COVERAGE_PCT%) is below minimum threshold of 90%" >> $GITHUB_STEP_SUMMARY
             exit 1
           else
-            echo "✅ Code coverage ($COVERAGE_PCT%) meets minimum threshold of 25%" >> $GITHUB_STEP_SUMMARY
+            echo "✅ Code coverage ($COVERAGE_PCT%) meets minimum threshold of 90%" >> $GITHUB_STEP_SUMMARY
           fi
 
       # Generate HTML reports from LCOV data.
