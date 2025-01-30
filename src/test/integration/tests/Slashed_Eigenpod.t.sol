@@ -46,32 +46,27 @@ contract SlashedEigenpod is IntegrationCheckUtils {
 
         uint256[] memory initDepositShares = _getStakerDepositShares(staker, strategies);
 
-        // 1. Delegate to an operator
+        // Delegate to an operator
         staker.delegateTo(operator);
         check_Delegation_State(staker, operator, strategies, initDepositShares);
 
-        // 2. Create an operator set and register an operator.
+        // Create an operator set and register an operator.
         operatorSet = avs.createOperatorSet(strategies);
-        // TODO invariant checks here
         operator.registerForOperatorSet(operatorSet);
-        // TODO invariant checks here
+        check_Registration_State_NoAllocation(operator, operatorSet, strategies);
         
-        // 3. Allocate to operator set
-        allocateParams = operator.modifyAllocations(operatorSet, _randMagnitudes({sum: 1 ether, len: strategies.length}));
-        assert_Snap_Allocations_Modified(
-            operator, allocateParams, false, "operator allocations should be updated before delay"
-        );
+        // Allocate to operator set
+        allocateParams = _genAllocation_AllAvailable(operator, operatorSet, strategies);
+        operator.modifyAllocations(allocateParams);
+        check_IncrAlloc_State_Slashable(operator, allocateParams);
         _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
-        assert_Snap_Allocations_Modified(
-            operator, allocateParams, true, "operator allocations should be updated after delay"
-        );
 
-        // 4. Undelegate from an operator
+        // Undelegate from an operator
         IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.undelegate();
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, initDepositShares);
 
-        // 5.. Complete withdrawal as shares
+        // Complete withdrawal as shares
         // Fast forward to when we can complete the withdrawal
         _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint256 i = 0; i < withdrawals.length; ++i) {
@@ -101,20 +96,14 @@ contract SlashedEigenpod is IntegrationCheckUtils {
 
         // Create an operator set and register an operator.
         operatorSet = avs.createOperatorSet(strategies);
-        // TODO invariant checks here
         operator.registerForOperatorSet(operatorSet);
-        // TODO invariant checks here
+        check_Registration_State_NoAllocation(operator, operatorSet, strategies);
         
         // Allocate to operator set
-        allocateParams = operator.modifyAllocations(operatorSet, _randMagnitudes({sum: 1 ether, len: strategies.length}));
-        assert_Snap_Allocations_Modified(
-            operator, allocateParams, false, "operator allocations should be updated before delay"
-        );
+        allocateParams = _genAllocation_AllAvailable(operator, operatorSet, strategies);
+        operator.modifyAllocations(allocateParams);
+        check_IncrAlloc_State_Slashable(operator, allocateParams);
         _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
-        assert_Snap_Allocations_Modified(
-            operator, allocateParams, true, "operator allocations should be updated after delay"
-        );
-
         // Undelegate from an operator
         IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.undelegate();
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
@@ -144,9 +133,8 @@ contract SlashedEigenpod is IntegrationCheckUtils {
 
         // Create an operator set and register an operator.
         operatorSet = avs.createOperatorSet(strategies);
-        // TODO invariant checks here
         operator.registerForOperatorSet(operatorSet);
-        // TODO invariant checks here
+        check_Registration_State_NoAllocation(operator, operatorSet, strategies);
 
         //Slash operator before delegation
         IAllocationManagerTypes.SlashingParams memory slashingParams;
@@ -161,15 +149,10 @@ contract SlashedEigenpod is IntegrationCheckUtils {
         check_Delegation_State(staker, operator, strategies, initDepositShares);
         
         // Allocate to operator set
-        allocateParams = operator.modifyAllocations(operatorSet, _randMagnitudes({sum: 1 ether, len: strategies.length}));
-        assert_Snap_Allocations_Modified(
-            operator, allocateParams, false, "operator allocations should be updated before delay"
-        );
+        allocateParams = _genAllocation_AllAvailable(operator, operatorSet, strategies);
+        operator.modifyAllocations(allocateParams);
+        check_IncrAlloc_State_Slashable(operator, allocateParams);
         _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
-        assert_Snap_Allocations_Modified(
-            operator, allocateParams, true, "operator allocations should be updated after delay"
-        );
-
         // Undelegate from an operator
         IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.undelegate();
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
@@ -207,19 +190,14 @@ contract SlashedEigenpod is IntegrationCheckUtils {
 
         // Create an operator set and register an operator.
         operatorSet = avs.createOperatorSet(strategies);
-        // TODO invariant checks here
         operator.registerForOperatorSet(operatorSet);
-        // TODO invariant checks here
+        check_Registration_State_NoAllocation(operator, operatorSet, strategies);
         
         // Allocate to operator set
-        allocateParams = operator.modifyAllocations(operatorSet, _randMagnitudes({sum: 1 ether, len: strategies.length}));
-        assert_Snap_Allocations_Modified(
-            operator, allocateParams, false, "operator allocations should be updated before delay"
-        );
+        allocateParams = _genAllocation_AllAvailable(operator, operatorSet, strategies);
+        operator.modifyAllocations(allocateParams);
+        check_IncrAlloc_State_Slashable(operator, allocateParams);
         _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
-        assert_Snap_Allocations_Modified(
-            operator, allocateParams, true, "operator allocations should be updated after delay"
-        );
 
         // Undelegate from an operator
         IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.redelegate(operator2);
