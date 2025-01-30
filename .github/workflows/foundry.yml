@@ -1,5 +1,5 @@
 # This workflow runs the complete Forge suite of tools for code quality and testing.
-name: Foundry Suite
+name: Foundry
 
 # Trigger workflow on manual dispatch, pull requests, or pushes to dev branch.
 on:
@@ -8,7 +8,7 @@ on:
   push:
     branches:
       - "dev"
-    
+
 # Set environment variables for Foundry configuration and RPC endpoints.
 env:
   FOUNDRY_PROFILE: ci
@@ -17,8 +17,8 @@ env:
   CHAIN_ID: ${{ secrets.CHAIN_ID }}
 
 jobs:
-  forge-suite:
-    name: CI
+  test:
+    name: Test
 
     # Stop all jobs if one fails to prevent cascading failures.
     strategy:
@@ -75,3 +75,61 @@ jobs:
         run: forge test --match-contract Integration
         env:
           FOUNDRY_PROFILE: "forktest"
+
+  run-coverage:
+    name: Coverage
+
+    # Stop all jobs if one fails to prevent cascading failures.
+    strategy:
+      fail-fast: true
+
+    # Use latest Ubuntu runner.
+    runs-on: ubuntu-latest
+
+    steps:
+      # Check out repository with all submodules for complete codebase access.
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # Install the Foundry toolchain.
+      - name: "Install Foundry"
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      # Install LCOV for coverage report generation.
+      - name: Install LCOV
+        run: |
+          sudo apt-get install lcov
+        id: lcov
+
+      # Run Forge coverage with LCOV report format, excluding test and script files
+      - name: Forge Coverage
+        run: |
+          forge coverage --report lcov --no-match-coverage "src/test/*","script/*","*Storage" >> $GITHUB_STEP_SUMMARY
+          cp lcov.info lcov.info.pruned
+          
+          # Extract coverage percentage and check if it meets minimum threshold
+          COVERAGE_PCT=$(lcov --summary lcov.info.pruned | grep "lines" | cut -d ':' -f 2 | cut -d '%' -f 1 | tr -d '[:space:]')
+          echo "Coverage: $COVERAGE_PCT%"
+          echo "Coverage: $COVERAGE_PCT%" >> $GITHUB_STEP_SUMMARY
+          
+          # Fail if coverage is below 80%
+          if (( $(echo "$COVERAGE_PCT < 80" | bc -l) )); then
+            echo "❌ Code coverage ($COVERAGE_PCT%) is below minimum threshold of 80%" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          else
+            echo "✅ Code coverage ($COVERAGE_PCT%) meets minimum threshold of 80%" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      # Generate HTML reports from LCOV data.
+      - name: Generate HTML Report
+        run: genhtml -o report ./lcov.info.pruned
+
+      # Upload coverage report as artifact.
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-coverage-report
+          path: report/*
