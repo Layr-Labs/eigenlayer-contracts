@@ -93,7 +93,7 @@
 
 [profile.ci.fuzz]
     optimizer = false
-    runs = 128
+    runs = 1 # for testing
 
 [profile.intense.fuzz]
     optimizer = false

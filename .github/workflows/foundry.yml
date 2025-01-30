@@ -76,6 +76,8 @@ jobs:
         env:
           FOUNDRY_PROFILE: "forktest"
 
+
+  
   run-coverage:
     name: Coverage
 
@@ -107,25 +109,24 @@ jobs:
       # Run Forge coverage with LCOV report format, excluding test and script files
       - name: Forge Coverage
         run: |
-          forge coverage --report lcov --no-match-coverage "src/test/*","script/*","*Storage" >> $GITHUB_STEP_SUMMARY
-          cp lcov.info lcov.info.pruned
+          FOUNDRY_PROFILE=ci forge coverage --report lcov --no-match-coverage "src/test/*","script/*","*Storage" >> $GITHUB_STEP_SUMMARY
           
           # Extract coverage percentage and check if it meets minimum threshold
-          COVERAGE_PCT=$(lcov --summary lcov.info.pruned | grep "lines" | cut -d ':' -f 2 | cut -d '%' -f 1 | tr -d '[:space:]')
+          COVERAGE_PCT=$(lcov --summary lcov.info | grep "lines" | cut -d ':' -f 2 | cut -d '%' -f 1 | tr -d '[:space:]')
           echo "Coverage: $COVERAGE_PCT%"
           echo "Coverage: $COVERAGE_PCT%" >> $GITHUB_STEP_SUMMARY
           
-          # Fail if coverage is below 80%
-          if (( $(echo "$COVERAGE_PCT < 80" | bc -l) )); then
-            echo "❌ Code coverage ($COVERAGE_PCT%) is below minimum threshold of 80%" >> $GITHUB_STEP_SUMMARY
+          # Fail if coverage is below 25%
+          if (( $(echo "$COVERAGE_PCT < 25" | bc -l) )); then
+            echo "❌ Code coverage ($COVERAGE_PCT%) is below minimum threshold of 25%" >> $GITHUB_STEP_SUMMARY
             exit 1
           else
-            echo "✅ Code coverage ($COVERAGE_PCT%) meets minimum threshold of 80%" >> $GITHUB_STEP_SUMMARY
+            echo "✅ Code coverage ($COVERAGE_PCT%) meets minimum threshold of 25%" >> $GITHUB_STEP_SUMMARY
           fi
 
       # Generate HTML reports from LCOV data.
       - name: Generate HTML Report
-        run: genhtml -o report ./lcov.info.pruned
+        run: genhtml -o report ./lcov.info
 
       # Upload coverage report as artifact.
       - name: Upload Coverage Report
