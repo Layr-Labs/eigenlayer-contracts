@@ -146,6 +146,7 @@ jobs:
           FOUNDRY_PROFILE=ci forge coverage --report lcov --no-match-coverage "src/test/*","script/*","*Storage" >> $GITHUB_STEP_SUMMARY
           COVERAGE_PCT=$(lcov --summary lcov.info | grep "lines" | cut -d ':' -f 2 | cut -d '%' -f 1 | tr -d '[:space:]')
 
+          echo "Minimum Coverage: 90%"
           echo "Coverage: $COVERAGE_PCT%"
           echo "Coverage: $COVERAGE_PCT%" >> $GITHUB_STEP_SUMMARY
           
