@@ -150,20 +150,23 @@ jobs:
           echo "Coverage: $COVERAGE_PCT%"
           echo "Coverage: $COVERAGE_PCT%" >> $GITHUB_STEP_SUMMARY
           
+          # Generate HTML reports from LCOV data before potential failure
+          genhtml -o report ./lcov.info
+
+      # Upload coverage report as artifact before potential failure
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-coverage-report
+          path: report/*
+
+      # Check coverage threshold after uploading report
+      - name: Check Coverage Threshold
+        run: |
+          COVERAGE_PCT=$(lcov --summary lcov.info | grep "lines" | cut -d ':' -f 2 | cut -d '%' -f 1 | tr -d '[:space:]')
           if (( $(echo "$COVERAGE_PCT < 90" | bc -l) )); then
             echo "❌ Code coverage ($COVERAGE_PCT%) is below minimum threshold of 90%" >> $GITHUB_STEP_SUMMARY
             exit 1
           else
             echo "✅ Code coverage ($COVERAGE_PCT%) meets minimum threshold of 90%" >> $GITHUB_STEP_SUMMARY
           fi
-
-      # Generate HTML reports from LCOV data.
-      - name: Generate HTML Report
-        run: genhtml -o report ./lcov.info
-
-      # Upload coverage report as artifact.
-      - name: Upload Coverage Report
-        uses: actions/upload-artifact@v4
-        with:
-          name: code-coverage-report
-          path: report/*
