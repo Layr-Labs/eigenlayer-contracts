@@ -30,15 +30,15 @@ contract SnapshotsUnitTests is Test {
         assertEq(history.length(), 1);
     }
 
-    function test_UpperLookup_InitiallyWad(uint32 r) public {
+    function test_UpperLookup_InitiallyWad(uint32 r) public view {
         assertEq(history.upperLookup(r), 1e18);
     }
 
-    function test_Latest_InitiallyWad() public {
+    function test_Latest_InitiallyWad() public view {
         assertEq(history.latest(), 1e18);
     }
 
-    function test_Length_InitiallyZero() public {
+    function test_Length_InitiallyZero() public view {
         assertEq(history.length(), 0);
     }
 }
