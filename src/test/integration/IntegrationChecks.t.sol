@@ -394,7 +394,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         User staker,
         User operator,
         IDelegationManagerTypes.Withdrawal memory withdrawal,
-        IAllocationManagerTypes.AllocateParams memory allocateParams, // TODO - was this needed?
+        IAllocationManagerTypes.AllocateParams memory, // TODO - was this needed?
         IAllocationManagerTypes.SlashingParams memory slashingParams
     ) internal {
         IERC20[] memory tokens = new IERC20[](withdrawal.strategies.length);

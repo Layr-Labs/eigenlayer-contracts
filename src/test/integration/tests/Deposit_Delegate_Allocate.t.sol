@@ -166,7 +166,6 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
 
         // 1. Deposit Into Strategies
         staker.depositIntoEigenlayer(strategies, tokenBalances);
-        uint256[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
         // TODO - post-deposit and post-delegate checks?
 
         // 2. Delegate to an operator
