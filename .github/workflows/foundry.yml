@@ -64,11 +64,11 @@ jobs:
 
       # Run local tests (unit and integration).
       - name: "Forge Test (Local)"
-        run: forge test
+        run: forge test -vvv
 
       # Run integration tests using a mainnet fork.
       - name: "Forge Test Integration (Fork)"
-        run: FOUNDRY_PROFILE=forktest forge test --match-contract Integration
+        run: FOUNDRY_PROFILE=forktest forge test --match-contract Integration -vvv
 
   # -----------------------------------------------------------------------
   # Forge Test (Intense)
@@ -102,7 +102,7 @@ jobs:
 
       # Run Forge Test (Intense)
       - name: Forge Test (Intense)
-        run: FOUNDRY_PROFILE=intense forge test
+        run: FOUNDRY_PROFILE=intense forge test -vvv
   
   # -----------------------------------------------------------------------
   # Forge Storage Diff
