@@ -15,46 +15,59 @@ env:
 
 jobs:
   # -----------------------------------------------------------------------
-  # Forge Test
+  # Prepare Environment and Cache
   # -----------------------------------------------------------------------
-
-  test:
-    name: Test
+  prepare:
+    name: Prepare
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: true
     steps:
-      # Check out repository with all submodules for complete codebase access.
       - uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      # Install the Foundry toolchain.
-      - name: "Install Foundry"
+      # Cache Foundry dependencies
+      - name: Cache Foundry dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.foundry
+            ~/.cache/forge
+            out/
+            cache/
+          key: foundry-${{ runner.os }}-${{ hashFiles('foundry.toml') }}-${{ hashFiles('lib/') }}
+          restore-keys: |
+            foundry-${{ runner.os }}-
+      
+      # Install the Foundry toolchain with caching
+      - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: stable
+          cache: true
+          cache-key: foundry-${{ github.job }}-${{ github.sha }}
+          cache-restore-keys: |
+            foundry-${{ github.job }}-
+            foundry-
 
-      # Run Forge's formatting checker to ensure consistent code style.
-      - name: "Forge Fmt"
-        run: |
-          forge fmt --check
-        id: fmt
+      # Cache NPM dependencies
+      - name: Cache NPM dependencies
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: npm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            npm-${{ runner.os }}-
 
-      # Install Bun package manager for JavaScript dependencies (faster than npm).
-      - name: "Install Bun"
-        uses: "oven-sh/setup-bun@v1"
+      # Install Bun
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v1
 
-      # Install NPM packages.
-      - name: "Install NPM Packages"
+      # Install NPM packages
+      - name: Install NPM Packages
         run: bun install
 
-      # Run Solhint linter to check for Solidity code quality issues.
-      - name: "Solhint"
-        run: bun run hint
-
-      # Build the project and display contract sizes.
-      - name: "Forge Build"
+      # Build the project
+      - name: Forge Build
         run: |
           forge --version
           forge build --sizes
@@ -62,78 +75,144 @@ jobs:
           echo "✅ Passed"
         id: build
 
-      # Run local tests (unit and integration).
-      - name: "Forge Test (Local)"
+      # Cache the build artifacts
+      - name: Cache Build Artifacts
+        uses: actions/cache@v3
+        with:
+          path: |
+            out/
+            cache/
+          key: build-${{ github.sha }}
+
+  # -----------------------------------------------------------------------
+  # Forge Test
+  # -----------------------------------------------------------------------
+  test:
+    name: Test
+    needs: prepare
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # Restore cached dependencies and build
+      - name: Restore Cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.foundry
+            ~/.cache/forge
+            out/
+            cache/
+            node_modules
+          key: foundry-${{ runner.os }}-${{ hashFiles('foundry.toml') }}-${{ hashFiles('lib/') }}
+
+      # Install Foundry with caching
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+          cache: true
+          cache-key: foundry-${{ github.job }}-${{ github.sha }}
+          cache-restore-keys: |
+            foundry-${{ github.job }}-
+            foundry-
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v1
+
+      # Run Forge's formatting checker
+      - name: Forge Fmt
+        run: forge fmt --check
+        id: fmt
+
+      # Run Solhint linter
+      - name: Solhint
+        run: bun run hint
+
+      # Run local tests
+      - name: Forge Test (Local)
         run: forge test
 
-      # Run integration tests using a mainnet fork.
-      - name: "Forge Test Integration (Fork)"
+      # Run integration tests using mainnet fork
+      - name: Forge Test Integration (Fork)
         run: FOUNDRY_PROFILE=forktest forge test --match-contract Integration
 
   # -----------------------------------------------------------------------
   # Forge Test (Intense)
   # -----------------------------------------------------------------------
-
   continuous-fuzzing:
     name: Test (Intense)
+    needs: prepare
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: true
     steps:
-      # Check out repository with all submodules for complete codebase access.
       - uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      # Install the Foundry toolchain.
-      - name: "Install Foundry"
+      # Restore cached dependencies and build
+      - name: Restore Cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.foundry
+            ~/.cache/forge
+            out/
+            cache/
+          key: foundry-${{ runner.os }}-${{ hashFiles('foundry.toml') }}-${{ hashFiles('lib/') }}
+
+      # Install Foundry with caching
+      - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: stable
-
-      # Build the project and display contract sizes.
-      - name: "Forge Build"
-        run: |
-          forge --version
-          forge build --sizes
-          echo "## Build result"
-          echo "✅ Passed"
-        id: build
+          cache: true
+          cache-key: foundry-${{ github.job }}-${{ github.sha }}
+          cache-restore-keys: |
+            foundry-${{ github.job }}-
+            foundry-
 
       # Run Forge Test (Intense)
       - name: Forge Test (Intense)
         run: FOUNDRY_PROFILE=intense forge test
-  
+
   # -----------------------------------------------------------------------
   # Forge Storage Diff
   # -----------------------------------------------------------------------
-
   storage-diff:
     name: Test (Storage)
+    needs: prepare
     runs-on: ubuntu-latest
     steps:
-      # Check out repository with all submodules for complete codebase access.
       - uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      # Install the Foundry toolchain.
-      - name: "Install Foundry"
+      # Restore cached dependencies and build
+      - name: Restore Cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.foundry
+            ~/.cache/forge
+            out/
+            cache/
+          key: foundry-${{ runner.os }}-${{ hashFiles('foundry.toml') }}-${{ hashFiles('lib/') }}
+
+      # Install Foundry with caching
+      - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: stable
+          cache: true
+          cache-key: foundry-${{ github.job }}-${{ github.sha }}
+          cache-restore-keys: |
+            foundry-${{ github.job }}-
+            foundry-
 
-      # Build the project and display contract sizes.
-      - name: "Forge Build"
-        run: |
-          forge --version
-          forge build --sizes
-          echo "## Build result"
-          echo "✅ Passed"
-        id: build
-
-      # Run storage diff check to detect storage layout incompatibilities.
-      - name: "Mainnet Storage Diff"
+      # Run storage diff check
+      - name: Mainnet Storage Diff
         run: |
           bash bin/storage-diff.sh --rpc-url ${{ secrets.RPC_MAINNET }} --etherscan-key ${{ secrets.ETHERSCAN_API_KEY }} --input .github//storage-diff.json
         id: storage-diff
@@ -141,11 +220,10 @@ jobs:
   # -----------------------------------------------------------------------
   # Forge Coverage
   # -----------------------------------------------------------------------
-
   run-coverage:
     name: Coverage
+    needs: prepare
     runs-on: ubuntu-latest
-    # Only run coverage checks on dev, testnet-holesky, and mainnet branches, or PRs targeting these branches
     if: |
       github.ref == 'refs/heads/dev' ||
       github.ref == 'refs/heads/testnet-holesky' ||
@@ -153,49 +231,52 @@ jobs:
       github.base_ref == 'dev' ||
       github.base_ref == 'testnet-holesky' ||
       github.base_ref == 'mainnet'
-    strategy:
-      fail-fast: true
     steps:
-      # Check out repository with all submodules for complete codebase access.
       - uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      # Install the Foundry toolchain.
-      - name: "Install Foundry"
+      # Restore cached dependencies and build
+      - name: Restore Cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.foundry
+            ~/.cache/forge
+            out/
+            cache/
+          key: foundry-${{ runner.os }}-${{ hashFiles('foundry.toml') }}-${{ hashFiles('lib/') }}
+
+      # Install Foundry with caching
+      - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: stable
+          cache: true
+          cache-key: foundry-${{ github.job }}-${{ github.sha }}
+          cache-restore-keys: |
+            foundry-${{ github.job }}-
+            foundry-
 
-      # Install LCOV for coverage report generation.
+      # Install LCOV
       - name: Install LCOV
-        run: |
-          sudo apt-get install lcov
+        run: sudo apt-get install lcov
         id: lcov
 
-      # Build the project and display contract sizes.
-      - name: "Forge Build"
-        run: |
-          forge --version
-          forge build --sizes
-          echo "## Build result"
-          echo "✅ Passed"
-        id: build
-
-      # Run Forge coverage with LCOV report format, excluding test and script files
+      # Run Forge coverage
       - name: Forge Coverage
         run: |
           FOUNDRY_PROFILE=ci forge coverage --report lcov --no-match-coverage "src/test/*","script/*","*Storage" 
           genhtml -q -o report ./lcov.info
 
-      # Upload coverage report as artifact before potential failure
+      # Upload coverage report
       - name: Upload Coverage Report
         uses: actions/upload-artifact@v4
         with:
           name: code-coverage-report
           path: report/*
 
-      # Check coverage threshold after uploading report
+      # Check coverage threshold
       - name: Check Coverage Threshold
         run: |
           LINES_PCT=$(lcov --summary lcov.info | grep "lines" | cut -d ':' -f 2 | cut -d '%' -f 1 | tr -d '[:space:]')
