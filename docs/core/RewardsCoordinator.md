@@ -7,7 +7,7 @@
 
 <!-- The primary functions of the `RewardsCoordinator` contract are to (i) accept ERC20 rewards from AVSs (Actively Validated Services) to their Operators and delegated Stakers for a given time range; (ii) enable the protocol to provide ERC20 tokens to all stakers over a specified time range; and (iii) allow stakers and operators to claim their accumulated earnings. -->
 
-The `RewardsCoordinator` accepts ERC20s from AVSs alongside rewards submission requests made out to Operators who, during a specified time range, were registered to the AVS in the core [`AVSDirectory`](./AVSDirectory.md) contract.
+The `RewardsCoordinator` accepts ERC20s from AVSs alongside rewards submission requests made out to Operators who, during a specified time range, were registered to the AVS in the core [`AllocationManager`](./AllocationManager.md) contract.
 
 There are two forms of rewards:
 * Rewards v1, also known as rewards submissions.
@@ -46,21 +46,25 @@ This document is organized according to the following themes (click each to be t
     * Mapping for earners(Stakers/Operators) to track their total claimed earnings per reward token. This mapping is used to calculate the difference between the cumulativeEarnings stored in the merkle tree and the previous total claimed amount. This difference is then transfered to the specified destination address.
 * `uint16 public defaultOperatorSplitBips`: *Used off-chain* by the rewards updater to calculate an Operator's split for a specific reward.
     * This is expected to be a flat 10% rate for the initial rewards release. Expressed in basis points, this is `1000`.
-* `mapping(address => mapping(address => OperatorSplit)) internal operatorAVSSplitBips`: operator => AVS => `OperatorSplit`
+* `mapping(address => mapping(address => OperatorSplit)) internal _operatorAVSSplitBips`: operator => AVS => `OperatorSplit`
   * Operators specify their custom split for a given AVS for each `OperatorDirectedRewardsSubmission`, where Stakers receive a relative proportion (by stake weight) of the remaining amount.
-* `mapping(address => OperatorSplit) internal operatorPISplitBips`: operator => `OperatorSplit`
+* `mapping(address => OperatorSplit) internal _operatorPISplitBips`: operator => `OperatorSplit`
   * Operators may also specify their custom split for [programmatic incentives](https://www.blog.eigenlayer.xyz/introducing-programmatic-incentives-v1/), where Stakers similarly receive a relative proportion (by stake weight) of the remaining amount.
+* `mapping(address operator => mapping(bytes32 operatorSetKey => OperatorSplit split)) internal _operatorSetSplitBips`: operator => Operator Set Key => `OperatorSplit`
+  * Operators may specify their custom split for a given Operator Set, which is more granular than an overarching AVS split
 
 #### Helpful definitions
 
-* `_checkClaim(RewardsMerkleClaim calldata claim, DistributionRoot memory root)`
-    * Checks the merkle inclusion of a claim against a `DistributionRoot`
-    * Reverts if any of the following are true:
+* **AVS** (Autonomous Verifiable Service) refers to the contract entity that is submitting rewards to the `RewardsCoordinator`.
+  * This is assumed to be a customized `ServiceManager` contract of some kind that is interfacing with the EigenLayer protocol. See the `ServiceManagerBase` docs here: [`eigenlayer-middleware/docs/ServiceManagerBase.md`](https://github.com/Layr-Labs/eigenlayer-middleware/blob/dev/docs/ServiceManagerBase.md).
+* An **Operator Set** refers to a collection of registered operators and strategies. See [ELIP-002](https://github.com/eigenfoundation/ELIPs/blob/main/ELIPs/ELIP-002.md#operator-sets) for more details.
+* An **Operator Set Key** descibes the tuple of an AVS address and an ID that uniquely identifies an Operator Set. See the [AllocationManager](./AllocationManager.md#operator-sets) for details.
+* A **rewards submission** includes, unless specified otherwise, both the v1 `RewardsSubmission` and the v2 `OperatorDirectedRewardsSubmission` types.
+* The internal function `_checkClaim(RewardsMerkleClaim calldata claim, DistributionRoot memory root)` checks the merkle inclusion of a claim against a `DistributionRoot`
+    * It reverts if any of the following are true:
         * mismatch input param lengths: tokenIndices, tokenTreeProofs, tokenLeaves
         * earner proof reverting from calling `_verifyEarnerClaimProof`
         * any of the token proofs reverting from calling `_verifyTokenClaimProof`
-* Wherever AVS (Actively Validated Service) is mentioned, it refers to the contract entity that is submitting rewards to the `RewardsCoordinator`. This is assumed to be a customized `ServiceManager` contract of some kind that is interfacing with the EigenLayer protocol. See the `ServiceManagerBase` docs here: [`eigenlayer-middleware/docs/ServiceManagerBase.md`](https://github.com/Layr-Labs/eigenlayer-middleware/blob/dev/docs/ServiceManagerBase.md).
-* A rewards submission includes, unless specified otherwise, both the v1 `RewardsSubmission` and the v2 `OperatorDirectedRewardsSubmission` types.
 
 ---
 
@@ -71,7 +75,8 @@ Rewards are initially submitted to the contract to be distributed to Operators a
 * [`RewardsCoordinator.createAVSRewardsSubmission`](#createavsrewardssubmission)
 * [`RewardsCoordinator.createRewardsForAllSubmission`](#createrewardsforallsubmission)
 * [`RewardsCoordinator.createRewardsForAllEarners`](#createrewardsforallearners)
-* [`RewardsCoordinator.createOperatorDirectedAVSRewardsSubmission`](#createOperatorDirectedAVSRewardsSubmission)
+* [`RewardsCoordinator.createOperatorDirectedAVSRewardsSubmission`](#createoperatordirectedavsrewardssubmission)
+* [`RewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission`](#createoperatordirectedoperatorsetrewardssubmission)
 
 #### `createAVSRewardsSubmission`
 
@@ -169,7 +174,7 @@ This method is identical in function to [`createAVSRewardsSubmission`](#createav
 *Effects*:
 * See [`createAVSRewardsSubmission`](#createavsrewardssubmission) above. The only differences are that:
     * Each rewards submission hash is stored in the `isRewardsSubmissionForAllHash` mapping
-    * Emits a `RewardsSubmissionForAllCreated` event
+    * A `RewardsSubmissionForAllCreated` event is emitted
 
 *Requirements*:
 * See [`createAVSRewardsSubmission`](#createavsrewardssubmission) above. The only difference is that each calculated rewards submission hash MUST NOT already exist in the `isRewardsSubmissionForAllHash` mapping.
@@ -207,6 +212,7 @@ function createOperatorDirectedAVSRewardsSubmission(
 )
     external
     onlyWhenNotPaused(PAUSED_OPERATOR_DIRECTED_AVS_REWARDS_SUBMISSION)
+    checkCanCall(avs)
     nonReentrant
 ```
 
@@ -214,14 +220,14 @@ AVS may make Rewards v2 submissions by calling `createOperatorDirectedAVSRewards
 
 *Effects*:
 * For each `OperatorDirectedRewardsSubmission` element
-  * Transfers `amount` of `token` from the `msg.sender` (`AVS`) to the `RewardsCoordinator`
-  * Hashes `msg.sender` (`AVS`), `nonce`, and `OperatorDirectedRewardsSubmission` struct to create a unique rewards hash and sets this value to `true` in the `isOperatorDirectedAVSRewardsSubmissionHash` mapping
-  * Increments `submissionNonce[msg.sender]`
+  * Transfers `amount` of `token` from `msg.sender` to the `RewardsCoordinator`
+  * Hashes `AVS`, `nonce`, and `OperatorDirectedRewardsSubmission` struct to create a unique rewards hash and sets this value to `true` in the `isOperatorDirectedAVSRewardsSubmissionHash` mapping
+  * Increments `submissionNonce[avs]`
   * Emits an `OperatorDirectedAVSRewardsSubmissionCreated` event
 
 *Requirements*:
 * Pause status MUST NOT be set: `PAUSED_OPERATOR_DIRECTED_AVS_REWARDS_SUBMISSION`
-* Caller MUST BE the AVS
+* Caller MUST be authorized, either as the AVS itself or an admin/appointee (see [`PermissionController.md`](../permissions/PermissionController.md))
 * Function call is not reentered
 * For each `OperatorDirectedRewardsSubmission` element:
   * Requirements from calling internal function `_validateOperatorDirectedRewardsSubmission()`
@@ -242,6 +248,33 @@ AVS may make Rewards v2 submissions by calling `createOperatorDirectedAVSRewards
     * `totalAmount <= MAX_REWARDS_AMOUNT`, where `totalAmount` is the sum of every `operatorReward.amount`
     * `operatorDirectedRewardsSubmission.startTimestamp + operatorDirectedRewardsSubmission.duration < block.timestamp`, enforcing strictly retoractive rewards submissions
   * `transferFrom` MUST succeed in transferring `amount` of `token` from `msg.sender` to the `RewardsCoordinator`
+
+#### `createOperatorDirectedOperatorSetRewardsSubmission`
+
+```solidity
+function createOperatorDirectedOperatorSetRewardsSubmission(
+    OperatorSet calldata operatorSet,
+    OperatorDirectedRewardsSubmission[] calldata operatorDirectedRewardsSubmissions
+)
+    external
+    onlyWhenNotPaused(PAUSED_OPERATOR_DIRECTED_OPERATOR_SET_REWARDS_SUBMISSION)
+    checkCanCall(operatorSet.avs)
+    nonReentrant
+```
+
+This function allows AVSs to make rewards submissions to specific operator sets, allowing for more granularly targeted rewards based on tasks assigned to a specific operator set, or any other custom AVS logic. Its functionality is almost identical to [`createOperatorDirectedAVSRewardsSubmission`](#createoperatordirectedavsrewardssubmission), save for some operator-set specific requirements, state variables, and events.
+
+Note that an AVS must specify an operator set registered to the AVS; in other words, an operator set belonging to a different AVS, or an unregistered operator set, will cause this function to revert.
+
+*Effects*:
+* See [`createOperatorDirectedAVSRewardsSubmission`](#createoperatordirectedavsrewardssubmission) above. The only differences are that:
+  * Each rewards submission is stored in the `isOperatorDirectedOperatorSetRewardsSubmissionHash` mapping
+  * An `OperatorDirectedOperatorSetRewardsSubmissionCreated` event is emitted
+
+*Requirements*:
+* See [`createOperatorDirectedAVSRewardsSubmission`](#createoperatordirectedavsrewardssubmission) above. The only differences are that:
+  * `operatorSet` MUST be a [registered operator set](./AllocationManager.md#createoperatorsets) for the given AVS as according to `allocationManager.isOperatorSet()`
+  * Pause status is instead: `PAUSED_OPERATOR_DIRECTED_OPERATOR_SET_REWARDS_SUBMISSION`
 
 ---
 
@@ -409,11 +442,12 @@ function processClaims(
 ### System Configuration
 
 * [`RewardsCoordinator.setActivationDelay`](#setactivationdelay)
-* [`RewardsCoordinator.setDefaultOperatorSplit`](#setDefaultOperatorSplit)
+* [`RewardsCoordinator.setDefaultOperatorSplit`](#setdefaultoperatorsplit)
 * [`RewardsCoordinator.setRewardsUpdater`](#setrewardsupdater)
 * [`RewardsCoordinator.setRewardsForAllSubmitter`](#setrewardsforallsubmitter)
-* [`RewardsCoordinator.setOperatorAVSsplit`](#setOperatorAVSsplit)
-* [`RewardsCoordinator.setOperatorPIsplit`](#setOperatorPIsplit)
+* [`RewardsCoordinator.setOperatorAVSSplit`](#setoperatoravssplit)
+* [`RewardsCoordinator.setOperatorPISplit`](#setoperatorpisplit)
+* [`RewardsCoordinator.setOperatorSetSplit`](#setoperatorsetsplit)
 
 #### `setActivationDelay`
 
@@ -487,6 +521,7 @@ function setOperatorAVSSplit(
 )
     external
     onlyWhenNotPaused(PAUSED_OPERATOR_AVS_SPLIT)
+    checkCanCall(operator)
 ```
 
 An Operator may, for a given AVS, set a split which will determine what percent of their attributed rewards are allocated to themselves. The remaining percentage will go to Stakers.
@@ -500,7 +535,7 @@ The split will take effect after an `activationDelay` set by the contract owner.
 * Emits an `OperatorAVSSplitBipsSet` event
 
 *Requirements*:
-* Caller MUST BE the operator
+* Caller MUST be authorized, either as the operator itself or an admin/appointee (see [`PermissionController.md`](../permissions/PermissionController.md))
 * Split MUST BE <= 10,000 bips (100%)
 * Current `block.timestamp` MUST BE greater than current `operatorSplit.activatedAt`.
   * Any pending split must have already completed prior to setting a new split.
@@ -514,15 +549,42 @@ function setOperatorPISplit(
 )
     external
     onlyWhenNotPaused(PAUSED_OPERATOR_PI_SPLIT)
+    checkCanCall(operator)
 ```
 
 Similar to [`setOperatorAVSSplit`](#setoperatoravssplit), Operators may set their split for [programmatic incentives](https://www.blog.eigenlayer.xyz/introducing-programmatic-incentives-v1/), allowing them to specify what percent of these rewards they will maintain and what percent will go to their Stakers. The `allocationDelay` also applies here, as well as the inability to reinitiate a split update before the delay passes.
 
 *Effects*:
-* Same as [`setOperatorAVSSplit`](#setoperatoravssplit), but with `operatorPISplitBips` instead of `operatorAVSSplitBips`.
+* See [`setOperatorAVSSplit`](#setoperatoravssplit) above. The only differences are that:
+  * The split is stored within `_operatorPISplitBips` instead of `_operatorAVSSplitBips`.
+  * An `OperatorPISplitBipsSet` event is emitted
 
 *Requirements*:
-* See [`setOperatorAVSSplit`](#setoperatoravssplit).
+* See [`setOperatorAVSSplit`](#setoperatoravssplit) above. The only difference is that:
+  * Pause status is instead: `PAUSED_OPERATOR_PI_SPLIT`
+
+#### `setOperatorSetSplit`
+
+```solidity
+function setOperatorSetSplit(
+    address operator,
+    OperatorSet calldata operatorSet,
+    uint16 split
+) 
+    external 
+    onlyWhenNotPaused(PAUSED_OPERATOR_SET_SPLIT) 
+    checkCanCall(operator)
+```
+
+*Effects*:
+* See [`setOperatorAVSSplit`](#setoperatoravssplit) above. The only difference is that:
+  * The split is stored within `_operatorSetSplitBips` instead of `_operatorAVSSplitBips`
+  * An `OperatorSetSplitBipsSet` event is emitted 
+
+*Requirements*:
+* See [`setOperatorAVSSplit`](#setoperatoravssplit) above. The only differences are that:
+  * `operatorSet` MUST be a [registered operator set](./AllocationManager.md#createoperatorsets) for the given AVS as according to `allocationManager.isOperatorSet()`
+  * Pause status is instead: `PAUSED_OPERATOR_SET_SPLIT`
 
 ---
 
