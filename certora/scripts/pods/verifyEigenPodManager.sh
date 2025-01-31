@@ -15,5 +15,5 @@ fi
 #     --parametric_contracts EigenPodManagerHarness \
 #     $RULE \
 #     --loop_iter 3 \
-#     --packages @openzeppelin=lib/openzeppelin-contracts @openzeppelin-upgrades=lib/openzeppelin-contracts-upgradeable \
+#     --packages @openzeppelin=lib/openzeppelin-contracts-v4.9.0 @openzeppelin-upgrades=lib/openzeppelin-contracts-upgradeable-v4.9.0 \
 #     --msg "EigenPodManager $1 $2" \

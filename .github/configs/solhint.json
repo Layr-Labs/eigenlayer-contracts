@@ -18,6 +18,5 @@
     "no-global-import": "off",
     "immutable-vars-naming": "off",
     "no-console": "off"
-
   }
 }

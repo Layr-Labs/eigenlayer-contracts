@@ -1,0 +1,214 @@
+name: Foundry
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - "dev"
+
+env:
+  FOUNDRY_PROFILE: ci
+  RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
+  RPC_HOLESKY: ${{ secrets.RPC_HOLESKY }}
+  CHAIN_ID: ${{ secrets.CHAIN_ID }}
+
+jobs:
+  # -----------------------------------------------------------------------
+  # Forge Test
+  # -----------------------------------------------------------------------
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+    steps:
+      # Check out repository with all submodules for complete codebase access.
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # Install the Foundry toolchain.
+      - name: "Install Foundry"
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      # Run Forge's formatting checker to ensure consistent code style.
+      - name: "Forge Fmt"
+        run: |
+          forge fmt --check
+        id: fmt
+
+      # Install Bun package manager for JavaScript dependencies (faster than npm).
+      - name: "Install Bun"
+        uses: "oven-sh/setup-bun@v1"
+
+      # Install NPM packages.
+      - name: "Install NPM Packages"
+        run: bun install
+
+      # Run Solhint linter to check for Solidity code quality issues.
+      - name: "Solhint"
+        run: bun run hint
+
+      # Build the project and display contract sizes.
+      - name: "Forge Build"
+        run: |
+          forge --version
+          forge build --sizes
+        id: build
+
+      # Run local tests (unit and integration).
+      - name: "Forge Test (Local)"
+        run: forge test -vvv
+
+      # Run integration tests using a mainnet fork.
+      - name: "Forge Test Integration (Fork)"
+        run: FOUNDRY_PROFILE=forktest forge test --match-contract Integration -vvv
+
+  # -----------------------------------------------------------------------
+  # Forge Test (Intense)
+  # -----------------------------------------------------------------------
+
+  continuous-fuzzing:
+    name: Test (Intense)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+    steps:
+      # Check out repository with all submodules for complete codebase access.
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # Install the Foundry toolchain.
+      - name: "Install Foundry"
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      # Build the project and display contract sizes.
+      - name: "Forge Build"
+        run: |
+          forge --version
+          forge build --sizes
+        id: build
+
+      # Run Forge Test (Intense)
+      - name: Forge Test (Intense)
+        run: |
+          echo -e "\033[1;33mWarning: This workflow may take several hours to complete.\033[0m"
+          echo -e "\033[1;33mThis intense fuzzing workflow is optional but helps catch edge cases through extended testing.\033[0m"
+          FOUNDRY_PROFILE=intense forge test -vvv
+  
+  # -----------------------------------------------------------------------
+  # Forge Storage Diff
+  # -----------------------------------------------------------------------
+
+  storage-diff:
+    name: Test (Storage)
+    runs-on: ubuntu-latest
+    steps:
+      # Check out repository with all submodules for complete codebase access.
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # Install the Foundry toolchain.
+      - name: "Install Foundry"
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      # Build the project and display contract sizes.
+      - name: "Forge Build"
+        run: |
+          forge --version
+          forge build --sizes
+        id: build
+
+      # Run storage diff check to detect storage layout incompatibilities.
+      - name: "Mainnet Storage Diff"
+        run: |
+          bash bin/storage-diff.sh --rpc-url ${{ secrets.RPC_MAINNET }} --etherscan-key ${{ secrets.ETHERSCAN_API_KEY }} --input .github/configs/storage-diff.json
+        id: storage-diff
+
+  # -----------------------------------------------------------------------
+  # Forge Coverage
+  # -----------------------------------------------------------------------
+
+  run-coverage:
+    name: Coverage
+    runs-on: ubuntu-latest
+    # Only run coverage checks on dev, testnet-holesky, and mainnet branches, or PRs targeting these branches
+    if: |
+      github.ref == 'refs/heads/dev' ||
+      github.ref == 'refs/heads/testnet-holesky' ||
+      github.ref == 'refs/heads/mainnet' ||
+      github.base_ref == 'dev' ||
+      github.base_ref == 'testnet-holesky' ||
+      github.base_ref == 'mainnet'
+    strategy:
+      fail-fast: true
+    steps:
+      # Check out repository with all submodules for complete codebase access.
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # Install the Foundry toolchain.
+      - name: "Install Foundry"
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      # Install LCOV for coverage report generation.
+      - name: Install LCOV
+        run: |
+          sudo apt-get install lcov
+        id: lcov
+
+      # Build the project and display contract sizes.
+      - name: "Forge Build"
+        run: |
+          forge --version
+          forge build --sizes
+        id: build
+
+      # Run Forge coverage with LCOV report format, excluding test and script files
+      - name: Forge Coverage
+        run: |
+          FOUNDRY_PROFILE=ci forge coverage --report lcov --no-match-coverage "src/test/*","script/*","*Storage" 
+          genhtml -q -o report ./lcov.info
+
+      # Upload coverage report as artifact before potential failure
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-coverage-report
+          path: report/*
+
+      # Check coverage threshold after uploading report
+      - name: Check Coverage Threshold
+        run: |
+          LINES_PCT=$(lcov --summary lcov.info | grep "lines" | cut -d ':' -f 2 | cut -d '%' -f 1 | tr -d '[:space:]')
+          FUNCTIONS_PCT=$(lcov --summary lcov.info | grep "functions" | cut -d ':' -f 2 | cut -d '%' -f 1 | tr -d '[:space:]')          
+          FAILED=0
+          
+          if (( $(echo "$LINES_PCT < 90" | bc -l) )); then
+            echo -e "\033[1;31m❌ Lines coverage ($LINES_PCT%) is below minimum threshold of 90%\033[0m"
+            FAILED=1
+          else
+            echo -e "\033[1;32m✅ Lines coverage ($LINES_PCT%) meets minimum threshold of 90%\033[0m"
+          fi
+          
+          if (( $(echo "$FUNCTIONS_PCT < 90" | bc -l) )); then
+            echo -e "\033[1;31m❌ Functions coverage ($FUNCTIONS_PCT%) is below minimum threshold of 90%\033[0m"
+            FAILED=1
+          else
+            echo -e "\033[1;32m✅ Functions coverage ($FUNCTIONS_PCT%) meets minimum threshold of 90%\033[0m"
+          fi
+          
+          [ $FAILED -eq 1 ] && exit 1
