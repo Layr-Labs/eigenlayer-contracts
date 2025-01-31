@@ -631,11 +631,7 @@ contract DelegationManager is
         // if the slashing factor has changed for this strategy. Dsf update formula
         // is different in the on delegation case.
         DepositScalingFactor storage dsf = _depositScalingFactor[staker][strategy];
-        if (newDelegation) {
-            dsf.updateNewDelegation(slashingFactor);
-        } else {
-            dsf.update(prevDepositShares, addedShares, slashingFactor);
-        }
+        dsf.update(prevDepositShares, addedShares, slashingFactor, newDelegation);
         emit DepositScalingFactorUpdated(staker, strategy, dsf.scalingFactor());
 
         // If the staker is delegated to an operator, update the operator's shares

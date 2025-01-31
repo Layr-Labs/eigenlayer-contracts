@@ -3538,7 +3538,7 @@ contract DelegationManagerUnitTests_increaseDelegatedShares is DelegationManager
         // deposit and increaseDelegatedShares
         strategyManagerMock.addDeposit(staker, strategy, shares);
         uint256 slashingFactor = _getSlashingFactor(staker, strategy, magnitude);
-        dsf.update(0, shares, slashingFactor);
+        dsf.update(0, shares, slashingFactor, false);
         _increaseDelegatedShares_expectEmit(
             IncreaseDelegatedSharesEmitStruct({
                 staker: staker,
