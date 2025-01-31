@@ -412,6 +412,10 @@ contract DelegationManager is
                 depositSharesToWithdraw: singleDepositShares,
                 slashingFactors: singleSlashingFactor
             });
+
+            //Reset DepositScalingFactor
+            DepositScalingFactor storage dsf = _depositScalingFactor[staker][strategies[i]];
+            dsf.reset();
         }
 
         return withdrawalRoots;

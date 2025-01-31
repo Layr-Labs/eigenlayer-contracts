@@ -145,6 +145,10 @@ library SlashingLib {
         dsf._scalingFactor = newDepositScalingFactor;
     }
 
+    function reset(DepositScalingFactor storage dsf) internal {
+        dsf._scalingFactor = uint256(WAD);
+    }
+
     // CONVERSION
 
     function calcWithdrawable(
