@@ -62,11 +62,11 @@ jobs:
 
       # Run local tests (unit and integration).
       - name: "Forge Test (Local)"
-        run: forge test -vvv
+        run: forge test -vvv --color always
 
       # Run integration tests using a mainnet fork.
       - name: "Forge Test Integration (Fork)"
-        run: FOUNDRY_PROFILE=forktest forge test --match-contract Integration -vvv
+        run: FOUNDRY_PROFILE=forktest forge test --match-contract Integration -vvv --color always
 
   # -----------------------------------------------------------------------
   # Forge Test (Intense)
@@ -101,7 +101,7 @@ jobs:
         run: |
           echo -e "\033[1;33mWarning: This workflow may take several hours to complete.\033[0m"
           echo -e "\033[1;33mThis intense fuzzing workflow is optional but helps catch edge cases through extended testing.\033[0m"
-          FOUNDRY_PROFILE=intense forge test -vvv
+          FOUNDRY_PROFILE=intense forge test -vvv --color always
   
   # -----------------------------------------------------------------------
   # Forge Storage Diff
