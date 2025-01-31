@@ -58,8 +58,6 @@ jobs:
         run: |
           forge --version
           forge build --sizes
-          echo "## Build result"
-          echo "✅ Passed"
         id: build
 
       # Run local tests (unit and integration).
@@ -94,10 +92,10 @@ jobs:
       # Build the project and display contract sizes.
       - name: "Forge Build"
         run: |
+          echo -e "\033[1;33mWarning: This workflow may take several hours to complete.\033[0m"
+          echo -e "\033[0;32mThis intense fuzzing workflow is optional but helps catch edge cases through extended testing.\033[0m"
           forge --version
           forge build --sizes
-          echo "## Build result"
-          echo "✅ Passed"
         id: build
 
       # Run Forge Test (Intense)
@@ -128,8 +126,6 @@ jobs:
         run: |
           forge --version
           forge build --sizes
-          echo "## Build result"
-          echo "✅ Passed"
         id: build
 
       # Run storage diff check to detect storage layout incompatibilities.
@@ -178,8 +174,6 @@ jobs:
         run: |
           forge --version
           forge build --sizes
-          echo "## Build result"
-          echo "✅ Passed"
         id: build
 
       # Run Forge coverage with LCOV report format, excluding test and script files
