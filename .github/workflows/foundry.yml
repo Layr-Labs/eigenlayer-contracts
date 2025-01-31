@@ -132,7 +132,7 @@ jobs:
       # Run storage diff check to detect storage layout incompatibilities.
       - name: "Mainnet Storage Diff"
         run: |
-          bash bin/storage-diff.sh --rpc-url ${{ secrets.RPC_MAINNET }} --etherscan-key ${{ secrets.ETHERSCAN_API_KEY }} --input .github//storage-diff.json
+          bash bin/storage-diff.sh --rpc-url ${{ secrets.RPC_MAINNET }} --etherscan-key ${{ secrets.ETHERSCAN_API_KEY }} --input .github/configs/storage-diff.json
         id: storage-diff
 
   # -----------------------------------------------------------------------
