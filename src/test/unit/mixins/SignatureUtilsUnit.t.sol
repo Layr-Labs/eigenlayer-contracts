@@ -43,7 +43,8 @@ contract SignatureUtilsMixinUnit is Test, SignatureUtilsMixin("v0.0.0") {
         );
     }
 
-    function test_domainSeparator_NonZero() public {
+    function test_domainSeparator_NonZero() public view {
+        assertTrue(_INITIAL_DOMAIN_SEPARATOR != 0, "The initial domain separator should be non-zero");
         assertTrue(domainSeparator() != 0, "The domain separator should be non-zero");
         assertTrue(domainSeparator() == expectedDomainSeparator, "The domain separator should be as expected");
     }
@@ -71,7 +72,7 @@ contract SignatureUtilsMixinUnit is Test, SignatureUtilsMixin("v0.0.0") {
         _checkIsValidSignatureNow(signer, digest, abi.encode(r, s, v), block.timestamp - 1);
     }
 
-    // function testFail_checkIsValidSignatureNow_InvalidSignature() public {
-    //     _checkIsValidSignatureNow(signer, digest, "", block.timestamp);
-    // }
+    function testFail_checkIsValidSignatureNow_InvalidSignature() public view {
+        _checkIsValidSignatureNow(signer, digest, "", block.timestamp);
+    }
 }

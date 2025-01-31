@@ -180,7 +180,7 @@ jobs:
       # Run Forge coverage with LCOV report format, excluding test and script files
       - name: Forge Coverage
         run: |
-          FOUNDRY_PROFILE=ci forge coverage --report lcov --no-match-coverage "src/test/*","script/*","*Storage" 
+          FOUNDRY_DENY_WARNINGS=false FOUNDRY_PROFILE=ci forge coverage --report lcov --no-match-coverage "src/test/*","script/*","*Storage" 
           genhtml -q -o report ./lcov.info
 
       # Upload coverage report as artifact before potential failure
