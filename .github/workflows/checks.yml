@@ -1,0 +1,31 @@
+name: Check
+
+on:
+  push:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  commitlint:
+    name: Commit Linting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: wagoid/commitlint-github-action@v6
+
+  go-bindings:
+    name: Bindings
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Build and validate
+        if: github.event_name == 'push'
+        run: |
+          make docker
+          docker run -v `pwd`:/build -w /build --rm -i eigenlayer-contracts:latest bash -c "make gha"
+          if [ ! -z "$(git status --porcelain)" ]; then git diff; git status; exit 1; fi

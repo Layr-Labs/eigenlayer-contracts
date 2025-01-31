@@ -1,0 +1,62 @@
+# name: Certora
+
+# on:
+#   workflow_dispatch:
+#   pull_request:
+#     branches:
+#       - dev
+#   push:
+#     branches:
+#       - dev
+#       - master
+#       - release-v*
+#       - formal-verification
+#       - m2-mainnet
+#       - testnet-holesky
+
+# jobs:
+#   certora:
+#     name: Test
+
+#     runs-on: ubuntu-latest
+#     steps:
+
+#       - uses: actions/checkout@v3
+#         with:
+#           submodules: recursive
+    
+#       - name: Install Foundry
+#         uses: foundry-rs/foundry-toolchain@v1
+#         with:
+#           version: stable
+    
+#       - name: Install forge dependencies
+#         run: forge install
+    
+#       - name: Install Python
+#         uses: actions/setup-python@v2
+#         with:
+#           python-version: '3.10'
+#           cache: 'pip'
+    
+#       - name: Install Java
+#         uses: actions/setup-java@v2
+#         with:
+#           distribution: temurin
+#           java-version: '17'
+    
+#       - name: Install Certora CLI
+#         run: pip install certora-cli
+    
+#       - name: Install Solidity Compiler
+#         run: |
+#           pip install solc-select
+#           solc-select use 0.8.27 --always-install
+    
+#       - name: Run Certora Verification
+#         run: |
+#           for script in $(ls certora/scripts/{,**}/*.sh | grep -v '\WnoCI\W'); do
+#             bash "$script"
+#           done
+#         env:
+#           CERTORAKEY: ${{ secrets.CERTORAKEY }}

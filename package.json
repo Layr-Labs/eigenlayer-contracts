@@ -11,7 +11,7 @@
     "test": "forge test -v",
     "fmt:check": "forge fmt --check",
     "fmt:fix": "forge fmt",
-    "hint": "solhint 'contracts/**/*.sol' 'script/**/*.sol'"
+    "hint": "solhint -c .github/configs/solhint.json 'contracts/**/*.sol' 'script/**/*.sol'"
   },
   "repository": {
     "type": "git",
