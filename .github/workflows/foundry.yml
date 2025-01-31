@@ -92,15 +92,16 @@ jobs:
       # Build the project and display contract sizes.
       - name: "Forge Build"
         run: |
-          echo -e "\033[1;33mWarning: This workflow may take several hours to complete.\033[0m"
-          echo -e "\033[0;32mThis intense fuzzing workflow is optional but helps catch edge cases through extended testing.\033[0m"
           forge --version
           forge build --sizes
         id: build
 
       # Run Forge Test (Intense)
       - name: Forge Test (Intense)
-        run: FOUNDRY_PROFILE=intense forge test -vvv
+        run: |
+          echo -e "\033[1;33mWarning: This workflow may take several hours to complete.\033[0m"
+          echo -e "\033[1;33mThis intense fuzzing workflow is optional but helps catch edge cases through extended testing.\033[0m"
+          FOUNDRY_PROFILE=intense forge test -vvv
   
   # -----------------------------------------------------------------------
   # Forge Storage Diff
