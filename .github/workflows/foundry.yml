@@ -181,7 +181,9 @@ jobs:
       - name: Forge Coverage
         run: |
           FOUNDRY_DENY_WARNINGS=false FOUNDRY_PROFILE=ci forge coverage --report lcov --no-match-coverage "src/test/*","script/*","*Storage" 
-          genhtml -q -o report ./lcov.info
+          # Filter lcov to only include src/contracts files
+          lcov --extract lcov.info "*/src/contracts/*" -o filtered.lcov.info
+          genhtml -q -o report ./filtered.lcov.info
 
       # Upload coverage report as artifact before potential failure
       - name: Upload Coverage Report
@@ -193,8 +195,8 @@ jobs:
       # Check coverage threshold after uploading report
       - name: Check Coverage Threshold
         run: |
-          LINES_PCT=$(lcov --summary lcov.info | grep "lines" | cut -d ':' -f 2 | cut -d '%' -f 1 | tr -d '[:space:]')
-          FUNCTIONS_PCT=$(lcov --summary lcov.info | grep "functions" | cut -d ':' -f 2 | cut -d '%' -f 1 | tr -d '[:space:]')          
+          LINES_PCT=$(lcov --summary filtered.lcov.info | grep "lines" | cut -d ':' -f 2 | cut -d '%' -f 1 | tr -d '[:space:]')
+          FUNCTIONS_PCT=$(lcov --summary filtered.lcov.info | grep "functions" | cut -d ':' -f 2 | cut -d '%' -f 1 | tr -d '[:space:]')          
           FAILED=0
           
           if (( $(echo "$LINES_PCT < 90" | bc -l) )); then
