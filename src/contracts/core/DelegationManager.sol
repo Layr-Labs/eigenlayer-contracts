@@ -424,8 +424,7 @@ contract DelegationManager is
             });
 
             //Reset DepositScalingFactor since deposit shares are equal to withdrawable shares after undelegation queued full withdrawal
-            DepositScalingFactor storage dsf = _depositScalingFactor[staker][strategies[i]];
-            dsf.reset();
+            _depositScalingFactor[staker][strategies[i]].reset();
         }
 
         return withdrawalRoots;
@@ -496,8 +495,7 @@ contract DelegationManager is
 
             //Reset DepositScalingFactor since deposit shares are equal to withdrawable shares after full withdrawal
             if (depositSharesToWithdraw[i] == shareManager.stakerDepositShares(staker, strategies[i])) {
-                DepositScalingFactor storage dsf = _depositScalingFactor[staker][strategies[i]];
-                dsf.reset();
+                _depositScalingFactor[staker][strategies[i]].reset();
             }
 
             // Remove deposit shares from EigenPodManager/StrategyManager
