@@ -358,7 +358,7 @@ $$
 
 Note that when a withdrawal is queued, a `Withdrawal` struct is created with _scaled shares_ defined as $q_t = x_t k_t$ where $t$ is the time of the queuing. The reason we define and store scaled shares like this will be clearer in [Complete Withdrawal](#complete-withdrawal) below.
 
-Additionally, we reset the depositScalingFactor when a user queues a withdrawal for all their shares, either through un/redelegation or directly. This is because the DSF at the time of withdrawal is stored in the scaled shares, and any "new" deposits or delegations by the staker should be considered as new.
+Additionally, we reset the depositScalingFactor when a user queues a withdrawal for all their shares, either through un/redelegation or directly. This is because the DSF at the time of withdrawal is stored in the scaled shares, and any "new" deposits or delegations by the staker should be considered as new. Note that withdrawal completion is treated as a kind of deposit when done as shares, which again will be clearer below.
 
 See implementation in:
 * `DelegationManager.queueWithdrawals`
