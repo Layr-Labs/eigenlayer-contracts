@@ -262,8 +262,14 @@ contract EigenPodManager is
         if (updatedDepositShares <= 0) {
             return (0, 0);
         }
-
-        return (prevDepositShares < 0 ? 0 : uint256(prevDepositShares), shares);
+        // If we have gone from negative to positive shares, return (0, positive delta)
+        else if (prevDepositShares < 0) {
+            return (0, uint256(updatedDepositShares));
+        }
+        // Else, return true previous shares and added shares
+        else {
+            return (uint256(prevDepositShares), shares);
+        }
     }
 
     /// @dev Calculates the proportion a pod owner's restaked balance has decreased, and
