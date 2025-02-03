@@ -6,6 +6,7 @@ ETHERSCAN_API_KEY="1234567890123456789012345678901234567890"
 INPUT_FILE="contracts.json"
 QUIET=false
 TOTAL_ISSUES=0
+TOTAL_ERRORS=0
 
 # Help message
 usage() {
@@ -127,7 +128,7 @@ analyze_storage_changes() {
     local onchain_file=$1
     local local_file=$2
     local contract_name=$3
-    local errors_found=0  # Changed from issues_found to errors_found
+    local TOTAL_ERRORS=0  # Changed from issues_found to TOTAL_ERRORS
     local warnings_found=0  # New counter for non-critical changes
 
     # Get the storage layouts as arrays
@@ -208,7 +209,7 @@ analyze_storage_changes() {
                     echo -e "\033[31m🚨 CRITICAL: Storage slot override detected at slot $slot:\033[0m"
                     echo -e "\033[31m   Previous: $onchain_label ($onchain_type)\033[0m"
                     echo -e "\033[32m   New: $local_label ($local_type)\033[0m"
-                    errors_found=$((errors_found + 1))
+                    TOTAL_ERRORS=$((TOTAL_ERRORS + 1))
 
                     old_slots=$(calculate_slots "$onchain_type")
                     new_slots=$(calculate_slots "$local_type")
@@ -231,7 +232,7 @@ analyze_storage_changes() {
                 echo -e "\033[31m🔄 CRITICAL: Type change detected for $local_label at slot $slot:\033[0m"
                 echo -e "\033[31m   Previous: $onchain_type\033[0m"
                 echo -e "\033[31m   New: $local_type\033[0m"
-                errors_found=$((errors_found + 1))
+                TOTAL_ERRORS=$((TOTAL_ERRORS + 1))
             fi
         fi
         echo "$slot" >> "$processed_slots_file"
@@ -248,15 +249,15 @@ analyze_storage_changes() {
         if ! grep -q "^${slot}|" "$local_map_file"; then
             # Variable removal is a critical error
             echo -e "\033[31m➖ CRITICAL: Variable removed: $onchain_label ($onchain_type) from slot $slot\033[0m"
-            errors_found=$((errors_found + 1))
+            TOTAL_ERRORS=$((TOTAL_ERRORS + 1))
         fi
     done < "$onchain_map_file"
 
     # Cleanup temporary files
     rm -f "$onchain_map_file" "$local_map_file" "$processed_slots_file" "$renamed_vars_file"
 
-    if [ "$errors_found" -gt 0 ]; then
-        echo -e "\033[31mCritical storage layout errors found in $contract_name: $errors_found\033[0m"
+    if [ "$TOTAL_ERRORS" -gt 0 ]; then
+        echo -e "\033[31mCritical storage layout errors found in $contract_name: $TOTAL_ERRORS\033[0m"
     else
         echo -e "\033[32mNo critical storage layout errors in $contract_name\033[0m"
     fi
@@ -264,7 +265,7 @@ analyze_storage_changes() {
         echo "Non-critical changes found: $warnings_found"
     fi
     
-    return $errors_found  # Only return critical errors
+    return $TOTAL_ERRORS  # Only return critical errors
 }
 
 # Function to process a single contract
@@ -313,6 +314,7 @@ process_contract() {
     # Analyze storage changes
     analyze_storage_changes "$onchain_file" "$local_file" "$contract_name"
     issues_found=$?
+    TOTAL_ERRORS=$((TOTAL_ERRORS + issues_found))
 
     return $issues_found
 }
@@ -334,10 +336,11 @@ while IFS= read -r contract; do
     TOTAL_ISSUES=$((TOTAL_ISSUES + $?))
 done <<< "$CONTRACTS"
 
-if [ "$TOTAL_ISSUES" -gt 0 ]; then
-    echo -e "\n\033[31m🚨 Total storage layout issues found: $TOTAL_ISSUES\033[0m"
+if [ "$TOTAL_ERRORS" -gt 0 ]; then
+    echo -e "\n\033[31m🚨 Total critical storage layout errors found: $TOTAL_ERRORS\033[0m"
+    exit 1
 else
-    echo -e "\n\033[32m✅ No storage layout issues found\033[0m"
+    echo -e "\n\033[32m✅ No critical storage layout errors found\033[0m"
 fi
 
 exit 0
