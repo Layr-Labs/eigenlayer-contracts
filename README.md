@@ -23,7 +23,7 @@ The main branches we use are:
 ### Basics
 
 To get a basic understanding of EigenLayer, check out [You Could've Invented EigenLayer](https://www.blog.eigenlayer.xyz/ycie/). Note that some of the document's content describes features that do not exist yet (like the Slasher). To understand more about how restakers and operators interact with EigenLayer, check out these guides:
-* [Restaking User Guide](https://docs.eigenlayer.xyz/restaking-guides/restaking-user-guide)
+* [Restaking User Guide](https://docs.eigenlayer.xyz/eigenlayer/restaking-guides/overview)
 * [Operator Guide](https://docs.eigenlayer.xyz/operator-guides/operator-introduction)
 
 ### Deep Dive
