@@ -122,13 +122,6 @@ jobs:
         with:
           version: stable
 
-      # Build the project and display contract sizes.
-      - name: "Forge Build"
-        run: |
-          forge --version
-          forge build --sizes
-        id: build
-
       # Run storage diff check to detect storage layout incompatibilities.
       - name: "Mainnet Storage Diff"
         run: |
