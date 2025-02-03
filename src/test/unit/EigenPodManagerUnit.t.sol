@@ -185,6 +185,22 @@ contract EigenPodManagerUnitTests_StakeTests is EigenPodManagerUnitTests {
 
 contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
 
+    // Wrapper contract that exposes the internal `_calculateChangeInDelegatableShares` function
+    EigenPodManagerWrapper public eigenPodManagerWrapper;
+
+    function setUp() virtual override public {
+        super.setUp();
+
+        // Upgrade eigenPodManager to wrapper
+        eigenPodManagerWrapper = new EigenPodManagerWrapper(
+            ethPOSMock,
+            eigenPodBeacon,
+            IDelegationManager(address(delegationManagerMock)),
+            pauserRegistry
+        );
+        eigenLayerProxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(eigenPodManager))), address(eigenPodManagerWrapper));
+    }
+
     /*******************************************************************************
                                 Add Shares Tests
     *******************************************************************************/
@@ -221,6 +237,54 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
 
         // Check storage update
         assertEq(eigenPodManager.podOwnerDepositShares(defaultStaker), int256(shares), "Incorrect number of shares added");
+    }
+
+    function test_addShares_negativeInitial() public {
+        _initializePodWithShares(defaultStaker, -1);
+
+        cheats.prank(address(delegationManagerMock));
+
+        (uint256 prevDepositShares, uint256 addedShares) = eigenPodManager.addShares(
+            defaultStaker,
+            beaconChainETHStrategy,
+            5
+        );
+
+        assertEq(prevDepositShares, 0);
+        assertEq(addedShares, 4);
+    }
+
+    function testFuzz_addShares_negativeSharesInitial(int256 sharesToStart, int256 sharesToAdd) public {
+        cheats.assume(sharesToStart < 0);
+        cheats.assume(sharesToAdd >= 0);
+
+        _initializePodWithShares(defaultStaker, sharesToStart);
+        int256 expectedDepositShares = sharesToStart + sharesToAdd;
+
+        cheats.prank(address(delegationManagerMock));
+
+        cheats.expectEmit(true, true, true, true, address(eigenPodManager));
+        emit PodSharesUpdated(defaultStaker, sharesToAdd);
+        cheats.expectEmit(true, true, true, true, address(eigenPodManager));
+        emit NewTotalShares(defaultStaker, expectedDepositShares);
+
+        (uint256 prevDepositShares, uint256 addedShares) = eigenPodManager.addShares(
+            defaultStaker,
+            beaconChainETHStrategy,
+            uint256(sharesToAdd)
+        );
+
+        // validate that prev shares return 0 since we started from a negative balance
+        assertEq(prevDepositShares, 0);
+
+        // If we now have positive shares, expect return
+        if (expectedDepositShares > 0) {
+            assertEq(addedShares, uint256(expectedDepositShares));
+        } 
+        // We still have negative shares, return 0 
+        else {
+            assertEq(addedShares, 0);
+        }
     }
 
     /*******************************************************************************

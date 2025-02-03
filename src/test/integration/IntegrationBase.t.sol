@@ -2017,7 +2017,13 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     }
 
     function _calcNativeETHOperatorShareDelta(User staker, int shareDelta) internal view returns (int) {
-        int curPodOwnerShares = eigenPodManager.podOwnerDepositShares(address(staker));
+        // TODO: Maybe we update parent method to have an M2 and Slashing version?
+        int curPodOwnerShares;
+        if (!isUpgraded) {
+            curPodOwnerShares = IEigenPodManager_DeprecatedM2(address(eigenPodManager)).podOwnerShares(address(staker));
+        } else {
+            curPodOwnerShares = eigenPodManager.podOwnerDepositShares(address(staker));
+        }
         int newPodOwnerShares = curPodOwnerShares + shareDelta;
 
         if (curPodOwnerShares <= 0) {
