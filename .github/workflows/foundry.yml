@@ -180,7 +180,7 @@ jobs:
       # Run Forge coverage with LCOV report format, excluding test and script files
       - name: Forge Coverage
         run: |
-          FOUNDRY_DENY_WARNINGS=false FOUNDRY_PROFILE=ci forge coverage --report lcov --no-match-coverage "src/test/*","script/*","*Storage" 
+          FOUNDRY_DENY_WARNINGS=false FOUNDRY_PROFILE=ci forge coverage --report lcov --report summary --no-match-coverage "script|test"
           genhtml -q -o report ./lcov.info
 
       # Upload coverage report as artifact before potential failure
@@ -211,4 +211,6 @@ jobs:
             echo -e "\033[1;32m✅ Functions coverage ($FUNCTIONS_PCT%) meets minimum threshold of 90%\033[0m"
           fi
           
-          [ $FAILED -eq 1 ] && exit 1
+          if [ $FAILED -eq 1 ]; then
+            exit 1
+          fi
