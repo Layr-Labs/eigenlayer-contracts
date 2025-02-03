@@ -140,7 +140,7 @@ library SlashingLib {
     function reset(
         DepositScalingFactor storage dsf
     ) internal {
-        dsf._scalingFactor = uint256(WAD);
+        dsf._scalingFactor = 0;
     }
 
     // CONVERSION
