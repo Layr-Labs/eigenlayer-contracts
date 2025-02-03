@@ -216,4 +216,52 @@ contract SlashedEigenpod is IntegrationCheckUtils {
         assertEq(depositSharesAfter[0], initDepositShares[0] - slashedGwei, "Deposit shares should reset to reflect slash(es)");
         assertEq(withdrawableSharesAfter[0], depositSharesAfter[0], "Withdrawable shares should equal deposit shares after withdrawal");
     }
+
+    function testFuzz_delegateSlashedStaker_slashedOperator_withdrawAllShares_complete(uint24 _random) public rand(_random){ 
+        //Generate rewards on beacon chain so dsf is nonWad
+        beaconChain.advanceEpoch();
+        
+        staker.startCheckpoint();
+        staker.completeCheckpoint();
+
+
+        uint256[] memory initDepositShares = _getStakerDepositShares(staker, strategies);
+
+        // Create an operator set and register an operator.
+        operatorSet = avs.createOperatorSet(strategies);
+        operator.registerForOperatorSet(operatorSet);
+        check_Registration_State_NoAllocation(operator, operatorSet, strategies);
+
+        //Slash operator before delegation
+        IAllocationManagerTypes.SlashingParams memory slashingParams;
+        uint wadToSlash = _randWadToSlash();
+        slashingParams = avs.slashOperator(operator, operatorSet.id, strategies, wadToSlash.toArrayU256());
+        assert_Snap_Allocations_Slashed(slashingParams, operatorSet, true, "operator allocations should be slashed");
+
+        // Delegate to an operator
+        staker.delegateTo(operator);
+        check_Delegation_State(staker, operator, strategies, initDepositShares);
+        
+        // Allocate to operator set
+        allocateParams = _genAllocation_AllAvailable(operator, operatorSet, strategies);
+        operator.modifyAllocations(allocateParams);
+        check_IncrAlloc_State_Slashable(operator, allocateParams);
+        _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
+
+        //Withdraw all shares
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, initDepositShares);
+        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+
+        // Complete withdrawal as shares
+        // Fast forward to when we can complete the withdrawal
+        _rollBlocksForCompleteWithdrawals(withdrawals);
+        for (uint256 i = 0; i < withdrawals.length; ++i) {
+            staker.completeWithdrawalAsShares(withdrawals[i]);
+            check_Withdrawal_AsShares_State_AfterSlash(staker, operator, withdrawals[i], allocateParams, slashingParams);
+        }
+
+        (uint256[] memory withdrawableSharesAfter, uint256[] memory depositSharesAfter) = delegationManager.getWithdrawableShares(address(staker), strategies);
+        assertEq(depositSharesAfter[0], initDepositShares[0] - slashedGwei, "Deposit shares should reset to reflect slash(es)");
+        assertEq(withdrawableSharesAfter[0], depositSharesAfter[0], "Withdrawable shares should equal deposit shares after withdrawal");
+    }
 }
