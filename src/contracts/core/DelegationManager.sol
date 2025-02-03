@@ -422,9 +422,6 @@ contract DelegationManager is
                 depositSharesToWithdraw: singleDepositShares,
                 slashingFactors: singleSlashingFactor
             });
-
-            //Reset DepositScalingFactor since deposit shares are equal to withdrawable shares after undelegation queued full withdrawal
-            _depositScalingFactor[staker][strategies[i]].reset();
         }
 
         return withdrawalRoots;
