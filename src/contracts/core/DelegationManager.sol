@@ -423,7 +423,7 @@ contract DelegationManager is
                 slashingFactors: singleSlashingFactor
             });
 
-            //Reset DepositScalingFactor
+            //Reset DepositScalingFactor since deposit shares are equal to withdrawable shares after undelegation queued full withdrawal
             DepositScalingFactor storage dsf = _depositScalingFactor[staker][strategies[i]];
             dsf.reset();
         }
@@ -494,8 +494,8 @@ contract DelegationManager is
                 });
             }
 
+            //Reset DepositScalingFactor since deposit shares are equal to withdrawable shares after full withdrawal
             if (depositSharesToWithdraw[i] == shareManager.stakerDepositShares(staker, strategies[i])) {
-                //Reset DepositScalingFactor
                 DepositScalingFactor storage dsf = _depositScalingFactor[staker][strategies[i]];
                 dsf.reset();
             }
