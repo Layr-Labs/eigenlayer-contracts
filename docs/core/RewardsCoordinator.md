@@ -266,6 +266,8 @@ This function allows AVSs to make rewards submissions to specific operator sets,
 
 Note that an AVS must specify an operator set registered to the AVS; in other words, an operator set belonging to a different AVS, or an unregistered operator set, will cause this function to revert.
 
+Also note that making this reward submission with a duration extending prior to the slashing release will result in those reward snapshots, prior to the slashing release, being refunded to the AVS (This is handled in the Sidecar rewards calculation logic).
+
 *Effects*:
 * See [`createOperatorDirectedAVSRewardsSubmission`](#createoperatordirectedavsrewardssubmission) above. The only differences are that:
   * Each rewards submission is stored in the `isOperatorDirectedOperatorSetRewardsSubmissionHash` mapping
