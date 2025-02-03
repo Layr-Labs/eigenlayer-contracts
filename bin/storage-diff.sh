@@ -6,6 +6,7 @@ ETHERSCAN_API_KEY="1234567890123456789012345678901234567890"
 INPUT_FILE="contracts.json"
 QUIET=false
 TOTAL_ISSUES=0
+TOTAL_ERRORS=0
 
 # Help message
 usage() {
@@ -127,7 +128,8 @@ analyze_storage_changes() {
     local onchain_file=$1
     local local_file=$2
     local contract_name=$3
-    local issues_found=0
+    local TOTAL_ERRORS=0  # Changed from issues_found to TOTAL_ERRORS
+    local warnings_found=0  # New counter for non-critical changes
 
     # Get the storage layouts as arrays
     local onchain_slots=$(jq -r '.storage[] | "\(.slot)|\(.label)|\(.offset)|\(.type)"' "$onchain_file")
@@ -160,7 +162,6 @@ analyze_storage_changes() {
     while IFS='|' read -r slot local_label local_offset local_type; do
         if [[ -z "$slot" ]]; then continue; fi
 
-        # Look for matching slot in onchain
         onchain_line=$(grep "^${slot}|" "$onchain_map_file")
         if [[ -n "$onchain_line" ]]; then
             IFS='|' read -r _ onchain_label onchain_offset onchain_type <<< "$onchain_line"
@@ -168,7 +169,7 @@ analyze_storage_changes() {
             if [[ "$local_label" != "$onchain_label" && "$local_type" == "$onchain_type" && "$local_offset" == "$onchain_offset" ]]; then
                 echo "${slot}|${onchain_label}|${local_label}|${local_type}" >> "$renamed_vars_file"
                 echo "$slot" >> "$processed_slots_file"
-                issues_found=$((issues_found + 1))
+                warnings_found=$((warnings_found + 1))  # Renames are just warnings
             fi
         fi
     done < "$local_map_file"
@@ -185,18 +186,16 @@ analyze_storage_changes() {
     while IFS='|' read -r slot local_label local_offset local_type; do
         if [[ -z "$slot" ]]; then continue; fi
 
-        # Skip if this slot was processed as a rename
         if grep -q "^${slot}$" "$processed_slots_file"; then
             continue
         fi
 
-        # Look for matching slot in onchain
         onchain_line=$(grep "^${slot}|" "$onchain_map_file")
         if [[ -z "$onchain_line" ]]; then
-            # New variable added
+            # New variable added - just a warning
             slots_needed=$(calculate_slots "$local_type")
             echo -e "\033[32m✨ New variable added: $local_label ($local_type) at slot $slot\033[0m"
-            issues_found=$((issues_found + 1))
+            warnings_found=$((warnings_found + 1))
             if [ "$slots_needed" -gt 1 ]; then
                 echo -e "\033[33m   📦 This variable occupies $slots_needed slots\033[0m"
             fi
@@ -204,26 +203,36 @@ analyze_storage_changes() {
             IFS='|' read -r _ onchain_label onchain_offset onchain_type <<< "$onchain_line"
 
             if [[ "$local_label" != "$onchain_label" ]]; then
-                echo -e "\033[31m🚨 Storage slot override detected at slot $slot:\033[0m"
-                echo -e "\033[31m   Previous: $onchain_label ($onchain_type)\033[0m"
-                echo -e "\033[32m   New: $local_label ($local_type)\033[0m"
-                issues_found=$((issues_found + 1))
+                # Only treat as critical error if we're not overriding a gap variable
+                if [[ "$onchain_label" != "__gap" ]]; then
+                    # Storage slot override is a critical error
+                    echo -e "\033[31m🚨 CRITICAL: Storage slot override detected at slot $slot:\033[0m"
+                    echo -e "\033[31m   Previous: $onchain_label ($onchain_type)\033[0m"
+                    echo -e "\033[32m   New: $local_label ($local_type)\033[0m"
+                    TOTAL_ERRORS=$((TOTAL_ERRORS + 1))
 
-                # Calculate potential impact
-                old_slots=$(calculate_slots "$onchain_type")
-                new_slots=$(calculate_slots "$local_type")
-                slot_diff=$((new_slots - old_slots))
+                    old_slots=$(calculate_slots "$onchain_type")
+                    new_slots=$(calculate_slots "$local_type")
+                    slot_diff=$((new_slots - old_slots))
 
-                if [ "$slot_diff" -gt 0 ]; then
-                    echo -e "\033[33m   ⚠️ This change will shift subsequent storage slots by +$slot_diff positions\033[0m"
-                elif [ "$slot_diff" -lt 0 ]; then
-                    echo -e "\033[33m   💡 This change will reduce storage usage by $((slot_diff * -1)) slots\033[0m"
+                    if [ "$slot_diff" -gt 0 ]; then
+                        echo -e "\033[31m   ⚠️ CRITICAL: This change will shift subsequent storage slots by +$slot_diff positions\033[0m"
+                    elif [ "$slot_diff" -lt 0 ]; then
+                        echo -e "\033[31m   ⚠️ CRITICAL: This change will shift subsequent storage slots by $slot_diff positions\033[0m"
+                    fi
+                else
+                    # Just a warning for gap overrides
+                    echo -e "\033[33m📝 Gap variable override at slot $slot:\033[0m"
+                    echo -e "\033[33m   Previous: $onchain_label ($onchain_type)\033[0m"
+                    echo -e "\033[33m   New: $local_label ($local_type)\033[0m"
+                    warnings_found=$((warnings_found + 1))
                 fi
             elif [[ "$local_type" != "$onchain_type" ]]; then
-                echo -e "\033[33m🔄 Type change detected for $local_label at slot $slot:\033[0m"
+                # Type changes are critical errors
+                echo -e "\033[31m🔄 CRITICAL: Type change detected for $local_label at slot $slot:\033[0m"
                 echo -e "\033[31m   Previous: $onchain_type\033[0m"
-                echo -e "\033[32m   New: $local_type\033[0m"
-                issues_found=$((issues_found + 1))
+                echo -e "\033[31m   New: $local_type\033[0m"
+                TOTAL_ERRORS=$((TOTAL_ERRORS + 1))
             fi
         fi
         echo "$slot" >> "$processed_slots_file"
@@ -233,23 +242,30 @@ analyze_storage_changes() {
     while IFS='|' read -r slot onchain_label onchain_offset onchain_type; do
         if [[ -z "$slot" ]]; then continue; fi
 
-        # Skip if this slot was processed as a rename or already handled
         if grep -q "^${slot}$" "$processed_slots_file"; then
             continue
         fi
 
-        # Look for matching slot in local
         if ! grep -q "^${slot}|" "$local_map_file"; then
-            echo -e "\033[31m➖ Variable removed: $onchain_label ($onchain_type) from slot $slot\033[0m"
-            issues_found=$((issues_found + 1))
+            # Variable removal is a critical error
+            echo -e "\033[31m➖ CRITICAL: Variable removed: $onchain_label ($onchain_type) from slot $slot\033[0m"
+            TOTAL_ERRORS=$((TOTAL_ERRORS + 1))
         fi
     done < "$onchain_map_file"
 
     # Cleanup temporary files
     rm -f "$onchain_map_file" "$local_map_file" "$processed_slots_file" "$renamed_vars_file"
 
-    echo "Issues found in $contract_name: $issues_found"
-    return $issues_found
+    if [ "$TOTAL_ERRORS" -gt 0 ]; then
+        echo -e "\033[31mCritical storage layout errors found in $contract_name: $TOTAL_ERRORS\033[0m"
+    else
+        echo -e "\033[32mNo critical storage layout errors in $contract_name\033[0m"
+    fi
+    if [ "$warnings_found" -gt 0 ]; then
+        echo "Non-critical changes found: $warnings_found"
+    fi
+    
+    return $TOTAL_ERRORS  # Only return critical errors
 }
 
 # Function to process a single contract
@@ -298,6 +314,7 @@ process_contract() {
     # Analyze storage changes
     analyze_storage_changes "$onchain_file" "$local_file" "$contract_name"
     issues_found=$?
+    TOTAL_ERRORS=$((TOTAL_ERRORS + issues_found))
 
     return $issues_found
 }
@@ -319,10 +336,11 @@ while IFS= read -r contract; do
     TOTAL_ISSUES=$((TOTAL_ISSUES + $?))
 done <<< "$CONTRACTS"
 
-if [ "$TOTAL_ISSUES" -gt 0 ]; then
-    echo -e "\n\033[31m🚨 Total storage layout issues found: $TOTAL_ISSUES\033[0m"
+if [ "$TOTAL_ERRORS" -gt 0 ]; then
+    echo -e "\n\033[31m🚨 Total critical storage layout errors found: $TOTAL_ERRORS\033[0m"
     exit 1
 else
-    echo -e "\n\033[32m✅ No storage layout issues found\033[0m"
-    exit 0
+    echo -e "\n\033[32m✅ No critical storage layout errors found\033[0m"
 fi
+
+exit 0
