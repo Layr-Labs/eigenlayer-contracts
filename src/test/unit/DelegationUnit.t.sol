@@ -7558,6 +7558,10 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
             newOperatorMagnitude -= slashMagnitude;
             _setOperatorMagnitude(defaultOperator, strategyMock, newOperatorMagnitude);
 
+            // Assert OperatorSharesSlashed event was emitted with correct params
+            cheats.expectEmit(true, true, true, true, address(delegationManager));
+            emit OperatorSharesSlashed(defaultOperator, strategyMock, 44440000449046438731194137360795695);
+
             cheats.prank(address(allocationManagerMock));
             delegationManager.slashOperatorShares(
                 defaultOperator,
