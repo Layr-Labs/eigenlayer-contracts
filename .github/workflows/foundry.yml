@@ -211,4 +211,6 @@ jobs:
             echo -e "\033[1;32m✅ Functions coverage ($FUNCTIONS_PCT%) meets minimum threshold of 90%\033[0m"
           fi
           
-          [ $FAILED -eq 1 ] && exit 1
+          if [ $FAILED -eq 1 ]; then
+            exit 1
+          fi
