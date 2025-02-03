@@ -241,8 +241,7 @@ contract DelegationManager is
             strategy: strategy,
             prevDepositShares: prevDepositShares,
             addedShares: addedShares,
-            slashingFactor: slashingFactor,
-            newDelegation: false
+            slashingFactor: slashingFactor
         });
     }
 
@@ -359,8 +358,7 @@ contract DelegationManager is
                 strategy: strategies[i],
                 prevDepositShares: uint256(0),
                 addedShares: withdrawableShares[i],
-                slashingFactor: slashingFactors[i],
-                newDelegation: true
+                slashingFactor: slashingFactors[i]
             });
         }
     }
@@ -486,6 +484,11 @@ contract DelegationManager is
 
             // Remove deposit shares from EigenPodManager/StrategyManager
             shareManager.removeDepositShares(staker, strategies[i], depositSharesToWithdraw[i]);
+            if(depositSharesToWithdraw[i] == shareManager.stakerDepositShares(staker, strategies[i])){
+                //Reset DepositScalingFactor
+                DepositScalingFactor storage dsf = _depositScalingFactor[staker][strategies[i]];
+                dsf.reset();
+            }
         }
 
         // Create queue entry and increment withdrawal nonce
@@ -599,8 +602,7 @@ contract DelegationManager is
                     strategy: withdrawal.strategies[i],
                     prevDepositShares: prevDepositShares,
                     addedShares: addedShares,
-                    slashingFactor: newSlashingFactors[i],
-                    newDelegation: false
+                    slashingFactor: newSlashingFactors[i]
                 });
             }
         }
@@ -615,7 +617,6 @@ contract DelegationManager is
      * @param prevDepositShares The number of delegated deposit shares the staker had in the strategy prior to the increase
      * @param addedShares The shares added to the staker in the StrategyManager/EigenPodManager
      * @param slashingFactor The current slashing factor for the staker/operator/strategy
-     * @param newDelegation Boolean flag which signifies whether this is a new delegation
      */
     function _increaseDelegation(
         address operator,
@@ -623,8 +624,7 @@ contract DelegationManager is
         IStrategy strategy,
         uint256 prevDepositShares,
         uint256 addedShares,
-        uint256 slashingFactor,
-        bool newDelegation
+        uint256 slashingFactor
     ) internal {
         // Ensure that the operator has not been fully slashed for a strategy
         // and that the staker has not been fully slashed if it is the beaconChainStrategy
@@ -635,7 +635,7 @@ contract DelegationManager is
         // if the slashing factor has changed for this strategy. Dsf update formula
         // is different in the on delegation case.
         DepositScalingFactor storage dsf = _depositScalingFactor[staker][strategy];
-        dsf.update(prevDepositShares, addedShares, slashingFactor, newDelegation);
+        dsf.update(prevDepositShares, addedShares, slashingFactor);
         emit DepositScalingFactorUpdated(staker, strategy, dsf.scalingFactor());
 
         // If the staker is delegated to an operator, update the operator's shares

@@ -92,21 +92,13 @@ library SlashingLib {
         DepositScalingFactor storage dsf,
         uint256 prevDepositShares,
         uint256 addedShares,
-        uint256 slashingFactor,
-        bool newDelegation
+        uint256 slashingFactor
     ) internal {
-        if (newDelegation) {
-            // In the case of a new delegation, slashingFactor is just maxMagnitude, because the
-            // BCSF is accounted for in _delegate by adjusting the shares added to the operator
-            //
-            // We preserve the old DSF in case it is non-WAD, as (for the beaconChainETH strategy)
-            // the DSF can be updated if the staker is slashed on the beacon chain.
+        if (prevDepositShares == 0) {
+            // If this is the staker's first deposit or is delegating to an operator, set the scaling factor to
+            // the inverse of slashingFactor. In the case of delegation slashingFactor is just
+            // maxMagnitude because BCSF is already accounted for in the dsf
             dsf._scalingFactor = dsf.scalingFactor().divWad(slashingFactor);
-            return;
-        } else if (prevDepositShares == 0) {
-            // If this is the staker's first deposit, set the scaling factor to
-            // the inverse of slashingFactor
-            dsf._scalingFactor = uint256(WAD).divWad(slashingFactor);
             return;
         }
 
