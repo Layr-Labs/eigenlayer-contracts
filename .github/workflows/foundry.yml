@@ -193,8 +193,8 @@ jobs:
       # Check coverage threshold after uploading report
       - name: Check Coverage Threshold
         run: |
-          LINES_PCT=$(lcov --summary filtered.lcov.info | grep "lines" | cut -d ':' -f 2 | cut -d '%' -f 1 | tr -d '[:space:]')
-          FUNCTIONS_PCT=$(lcov --summary filtered.lcov.info | grep "functions" | cut -d ':' -f 2 | cut -d '%' -f 1 | tr -d '[:space:]')          
+          LINES_PCT=$(lcov --summary lcov.info | grep "lines" | cut -d ':' -f 2 | cut -d '%' -f 1 | tr -d '[:space:]')
+          FUNCTIONS_PCT=$(lcov --summary lcov.info | grep "functions" | cut -d ':' -f 2 | cut -d '%' -f 1 | tr -d '[:space:]')          
           FAILED=0
           
           if (( $(echo "$LINES_PCT < 90" | bc -l) )); then
