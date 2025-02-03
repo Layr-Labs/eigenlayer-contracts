@@ -458,9 +458,9 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
             if (strat == BEACONCHAIN_ETH_STRAT) {
                 tokens[i] = NATIVE_ETH;
 
-                // If we're withdrawing native ETH as tokens, stop ALL validators
-                // and complete a checkpoint
-                if (receiveAsTokens) {
+                // If we're withdrawing native ETH as tokens && do not have negative shares
+                // stop ALL validators and complete a checkpoint
+                if (receiveAsTokens && eigenPodManager.podOwnerDepositShares(address(this)) >= 0) {
                     console.log("- exiting all validators and completing checkpoint");
                     _exitValidators(getActiveValidators());
 
