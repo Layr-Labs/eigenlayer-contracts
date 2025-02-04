@@ -368,8 +368,11 @@ struct Substream {
     uint256 rewardDebt;
 }
 
-// @dev non-normalization refers to the fact that totalWeight (the divisor for substream size) is floating, not fixed
-// i.e. substreams are a fraction of the total stream size, with the fraction defined by (substreams[address] / totalWeight)
+/**
+ * @notice Defines a token stream, which may contain any number of substreams, each accumulating a fraction of the `rate`
+ * @dev Non-normalization refers to the fact that totalWeight (the divisor for substream size) is floating, not fixed
+ * i.e. substreams are a fraction of the total stream size, with the fraction defined by (substreams[address] / totalWeight)
+ */
 struct NonNormalizedStream {
     // @dev note that this is in terms of TIMESCALE
     uint256 rate;
@@ -381,11 +384,29 @@ struct NonNormalizedStream {
     mapping(address => Substream) substreams;
 }
 
+uint256 constant NORMALIZED_STREAM_TOTAL_WEIGHT = 1e18;
+
+/**
+ * @notice Defines a token stream, which may contain any number of substreams, each accumulating a fraction of the `rate`
+ * @dev This is identified as normalized because the totalWeight is designed to be fixed at NORMALIZED_STREAM_TOTAL_WEIGHT.
+ * Each substream is a fraction of the total stream size, with the fraction defined by (substreams[address] / NORMALIZED_STREAM_TOTAL_WEIGHT)
+ */
+struct NormalizedStream {
+    // @dev note that this is in terms of TIMESCALE
+    uint256 rate;
+    // @dev note that this is in terms of TIMESCALE
+    uint256 lastUpdated;
+    uint256 unassignedWeight;
+    uint256 scaledCumulativeRewardDebtPerWeight;
+    mapping(address => Substream) substreams;
+}
+
 
 // TODO: deal with totalWeight of zero!
 // TODO: events
 library StreamMath {
 
+// functions for NonNormalizedStream
     function substreamRate(
         NonNormalizedStream storage stream,
         address substreamRecipient
@@ -476,6 +497,96 @@ library StreamMath {
         substream.rewardDebt = cumulativeAmount;
     }
 
+
+
+
+
+// functions for NormalizedStream
+
+    function substreamRate(
+        NormalizedStream storage stream,
+        address substreamRecipient
+    ) internal view returns (uint256) {
+        Substream storage substream = stream.substreams[substreamRecipient];
+
+        return stream.rate * substream.weight / NORMALIZED_STREAM_TOTAL_WEIGHT;
+    }
+
+    function pendingAmountToClaim(
+        NormalizedStream storage stream,
+        address substreamRecipient
+    ) internal view returns (uint256) {
+        Substream storage substream = stream.substreams[substreamRecipient];
+
+        // calculate pending increase to scaled cumulative reward debt per weight
+        uint256 _scaledCumulativeRewardDebtPerWeight = stream.scaledCumulativeRewardDebtPerWeight;
+        _scaledCumulativeRewardDebtPerWeight = _scaledCumulativeRewardDebtPerWeight + 
+            ((1e18 * ((block.timestamp / TIMESCALE) - stream.lastUpdated) * stream.rate) / NORMALIZED_STREAM_TOTAL_WEIGHT);
+        uint256 cumulativeAmount = (substream.weight * _scaledCumulativeRewardDebtPerWeight) / 1e18;
+        uint256 _rewardDebt = substream.rewardDebt;
+        // TODO: consider rounding and the possibility of underflows
+        // TODO: will making cumulativeAmount and rewardDebt also scaled up help solve this?
+        if (cumulativeAmount > _rewardDebt) {
+            return (cumulativeAmount - _rewardDebt);
+        } else {
+            return 0;
+        }
+    }
+
+    // @dev returns updated value of scaledCumulativeRewardDebtPerWeight
+    function updateStream(NormalizedStream storage stream) internal returns (uint256) {
+        // increase scaled cumulative reward debt per weight
+        uint256 _scaledCumulativeRewardDebtPerWeight = stream.scaledCumulativeRewardDebtPerWeight;
+        // TODO: event
+        _scaledCumulativeRewardDebtPerWeight = _scaledCumulativeRewardDebtPerWeight + 
+            ((1e18 * ((block.timestamp / TIMESCALE) - stream.lastUpdated) * stream.rate) / NORMALIZED_STREAM_TOTAL_WEIGHT);
+        stream.scaledCumulativeRewardDebtPerWeight = _scaledCumulativeRewardDebtPerWeight;
+        stream.lastUpdated = block.timestamp / TIMESCALE;
+        return _scaledCumulativeRewardDebtPerWeight;
+    }
+
+
+    function claimForSubstream(
+        NormalizedStream storage stream,
+        address substreamRecipient,
+        address streamToken
+    ) internal {
+        Substream storage substream = stream.substreams[substreamRecipient];
+
+        // increase scaled cumulative reward debt per weight
+        uint256 _scaledCumulativeRewardDebtPerWeight = updateStream(stream);
+
+        uint256 cumulativeAmount = (substream.weight * _scaledCumulativeRewardDebtPerWeight) / 1e18;
+        uint256 _rewardDebt = substream.rewardDebt;
+        // TODO: consider rounding and the possibility of underflows
+        if (cumulativeAmount > _rewardDebt) {
+            uint256 amountToMint = cumulativeAmount - _rewardDebt;
+            IMintableToken(streamToken).mint(substreamRecipient, amountToMint);
+            substream.rewardDebt = cumulativeAmount;
+            // TODO: more on this interface?
+            IRecipient(substreamRecipient).onMint(streamToken, amountToMint);
+        }
+    }
+
+    function updateSubstreamWeight(
+        NormalizedStream storage stream,
+        address substreamRecipient,
+        uint256 newWeight,
+        address streamToken
+    ) internal {
+        Substream storage substream = stream.substreams[substreamRecipient];
+
+        claimForSubstream(stream, substreamRecipient, streamToken);
+        // TODO: event
+        uint256 _unassignedWeight = stream.unassignedWeight + substream.weight - newWeight;
+        stream.unassignedWeight = _unassignedWeight;
+
+        // TODO: event
+        substream.weight = newWeight;
+        // adjust rewardDebt to make pending rewards correct
+        uint256 cumulativeAmount = (newWeight * stream.scaledCumulativeRewardDebtPerWeight) / 1e18;
+        substream.rewardDebt = cumulativeAmount;
+    }
 }
 
 // TODO: improved access control, or else make the maxInflationRate fixed
@@ -494,12 +605,22 @@ contract TokenInflationNexus is OwnableUpgradeable {
 
     error MaxRateLessThanCurrentRate();
     error TotalRateGreaterThanMax();
+    error ZeroAddressForbidden();
+    error OnlyStreamCreator();
+    error NoSubstreamEditAccess();
 
     event MaxInflationRateSet(uint256 newMaxInflationRate);
     event TotalInflationRateSet(uint256 newTotalInflationRate);
     event StreamRateUpdated(uint256 indexed streamID, uint256 newStreamRate);
 
+    event StreamCreatorSet(address indexed newStreamCreator);
+
     address public bEIGEN;
+    /**
+     * @notice Can create new streams and edit existing streams and/or substreams.
+     * @dev Cannot edit streams to exceed the `maxInflationRate` set by the contract owner.
+     */
+    address public streamCreator;
 
     uint256 public nextStreamID;
     // @dev the implicit TIMESCALE for this is TIMESCALE
@@ -509,12 +630,38 @@ contract TokenInflationNexus is OwnableUpgradeable {
     // mapping: streamID => Stream
     mapping(uint256 streamID => NonNormalizedStream stream) public streams;
     // mapping: address => streamID => access to edit substreams?
-    mapping(address editor => mapping(uint256 streamID => bool hasAccess)) public hasSubstreamEditAccess;
+    mapping(address editor => mapping(uint256 streamID => bool hasAccess)) internal _substreamEditAccessGranted;
+
+    // @notice Getter function; `streamCreator` has access to edit all substreams
+    function hasSubstreamEditAccess(address editor, uint256 streamID) public view returns (bool) {
+        return (_substreamEditAccessGranted[editor][streamID] || editor == streamCreator);
+    }
+
+
+    modifier onlyStreamCreator() {
+        require(msg.sender == streamCreator, OnlyStreamCreator());
+        _;
+    }
+
+    function initialize(address _streamCreator) external initializer {
+        _setStreamCreator(_streamCreator);
+    }
+
+    function _setStreamCreator(address _streamCreator) internal {
+        require(_streamCreator != address(0), ZeroAddressForbidden());
+        emit StreamCreatorSet(_streamCreator);
+        streamCreator = _streamCreator;
+    }
+
+    function setStreamCreator(address _streamCreator) external onlyOwner {
+        _setStreamCreator(_streamCreator);
+    }
+
 
     function createNewStream(
         // @dev note that this is in terms of the TIMESCALE
         uint256 rate
-    ) external onlyOwner {
+    ) external onlyStreamCreator {
         uint256 streamID = nextStreamID;
         ++nextStreamID;
         streams[streamID].rate = rate;
@@ -522,9 +669,7 @@ contract TokenInflationNexus is OwnableUpgradeable {
         // TODO: initiate substreams?
     }
 
-// TODO: fix issue -- problem is that updating a stream with a long timespan may make the stream *about to mint a bunch of tokens*
-// Ex: create new stream with 1 day duration right before turn of day, mint, then zero out that stream and create a new stream with (1 day + 1 minute) duration
-    function _setStreamRate(uint256 streamID, uint256 newStreamRate) external onlyOwner {
+    function setStreamRate(uint256 streamID, uint256 newStreamRate) external onlyStreamCreator {
         NonNormalizedStream storage stream = streams[streamID];
 
         // update stream, ignoring return value (we do not care about the new value of scaledCumulativeRewardDebtPerWeight)
@@ -563,7 +708,7 @@ contract TokenInflationNexus is OwnableUpgradeable {
         address substreamRecipient,
         uint256 newWeight
     ) external {
-        // TODO: check auth!
+        require(hasSubstreamEditAccess(msg.sender, streamID), NoSubstreamEditAccess());
         streams[streamID].updateSubstreamWeight(substreamRecipient, newWeight, bEIGEN);
     }
 
