@@ -1,1 +1,0 @@
-# TODO(justin): run a binary which completes all checkpoints on the network.
