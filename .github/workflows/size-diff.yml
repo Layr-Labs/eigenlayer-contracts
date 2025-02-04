@@ -1,0 +1,59 @@
+name: Foundry
+
+on:
+  workflow_dispatch:
+
+jobs:
+  compare-contract-sizes:
+    name: Size Diff
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+
+      - name: Install Foundry
+        run: |
+          curl -L https://foundry.paradigm.xyz | bash
+          foundryup
+
+      - name: Build contracts on PR branch
+        run: |
+          forge build --json --sizes | jq '.' > pr_sizes.json
+
+      - name: Checkout target branch
+        run: |
+          git fetch origin ${{ github.base_ref }}
+          git checkout ${{ github.base_ref }}
+
+      - name: Build contracts on target branch
+        run: |
+          forge build --json --sizes | jq '.' > target_sizes.json
+
+      - name: Compare contract sizes using Bash
+        run: |
+          # Extract contract names
+          contracts=$(jq -r 'keys[]' pr_sizes.json)
+
+          # Track if there are any differences
+          has_differences=0
+
+          # Iterate through contracts and compare sizes
+          for contract in $contracts; do
+            pr_runtime=$(jq -r --arg contract "$contract" '.[$contract].runtime_size // 0' pr_sizes.json)
+            pr_init=$(jq -r --arg contract "$contract" '.[$contract].init_size // 0' pr_sizes.json)
+
+            target_runtime=$(jq -r --arg contract "$contract" '.[$contract].runtime_size // 0' target_sizes.json)
+            target_init=$(jq -r --arg contract "$contract" '.[$contract].init_size // 0' target_sizes.json)
+
+            runtime_diff=$((pr_runtime - target_runtime))
+            init_diff=$((pr_init - target_init))
+
+            if [ "$runtime_diff" -ne 0 ] || [ "$init_diff" -ne 0 ]; then
+              echo "$contract: runtime ${runtime_diff:+$runtime_diff bytes}, init ${init_diff:+$init_diff bytes}"
+              has_differences=1
+            fi
+          done
+
+          if [ "$has_differences" -eq 0 ]; then
+            echo "No contract size changes detected."
+          fi
