@@ -60,49 +60,6 @@ library LinearVectorOps {
     }
 }
 
-abstract contract SingleLinearVectorUser {
-    using LinearVectorOps for *;
-
-    error InputLengthMismatch();
-
-    LinearVector internal _vectorStorage;
-
-    function vector() external view returns (VectorEntry[] memory) {
-        return _vectorStorage.vector;
-    }
-
-    function isInVector(address key) external view returns (bool) {
-        return _vectorStorage.isInVector[key];
-    }
-
-    function keyIndex(address key) external view returns (uint256) {
-        return _vectorStorage.findKeyIndex(key);
-    }
-
-    function _addEntries(VectorEntry[] memory newEntries) internal {
-        for (uint256 i = 0; i < newEntries.length; ++i) {
-            _vectorStorage.addEntry(newEntries[i]);
-        }
-    }
-
-    function _removeKeys(address[] memory keysToRemove, uint256[] memory keyIndices) internal {
-        require(keysToRemove.length == keyIndices.length, InputLengthMismatch());
-        for (uint256 i = 0; i < keysToRemove.length; ++i) {
-            _vectorStorage.removeKey(keysToRemove[i], keyIndices[i]);
-        }
-    }
-}
-
-contract OwnableLinearVector is SingleLinearVectorUser,  Ownable {
-    function addEntries(VectorEntry[] memory newEntries) external onlyOwner {
-        _addEntries(newEntries);
-    }
-
-    function removeKeys(address[] memory keysToRemove, uint256[] memory keyIndices) external onlyOwner {
-        _removeKeys(keysToRemove, keyIndices);
-    }
-}
-
 interface IProgrammaticIncentivesConfig {
     function vector(uint256 vectorIndex) external view returns (VectorEntry[] memory);
 }
@@ -280,75 +237,6 @@ contract RewardAllStakersDistributor is IIncentivesDistributor {
         IRewardsCoordinator_VectorModification(rewardsCoordinator).createRewardsForAllEarners(rewardsSubmission);
 
         emit IncentivesDistributed(tokenAmount);
-    }
-}
-
-
-// module for managing EIGEN token inflation
-interface IEIGENInflationModule {
-    // TODO: events
-
-    // TODO: import IERC20
-    // @notice the eigen token, which is minted by this module
-    function EIGEN() external view returns (IERC20);
-
-    // TBD: decide what timespan inflation rates are defined over. natural choices are one second or one year
-    function maxInflationRate() external view returns (uint256);
-
-    // @notice current total inflation rate
-    function totalInflationRate() external view returns (uint256);
-
-    // @notice the inflation rate going to the `recipient`
-    function inflationRate(address recipient) external view returns (uint256);
-
-    // @notice adjust the inflation rate going to the `recipient` to the `newInflationRate`
-    function setInflationRate(address recipient, uint256 newInflationRate) external;
-
-    // @notice the latest UTC timestamp at whichn `recipient` claimed their inflationary tokens
-    function lastClaimedTimestamp(address recipient) external view returns (uint256);
-
-    // @notice amount of tokens that will be minted to `recipient` when tokens are claimed for them
-    function tokensToClaim(address recipient) external view returns (uint256);
-
-    // TBD: access control
-    // returns the amount of tokens claimed
-    function claimTokens(address recipient) external returns (uint256);
-}
-
-// TODO: decide about substreams + how to manage
-abstract contract EIGENInflationModule is IEIGENInflationModule, Initializable, OwnableUpgradeable {
-
-    error MaxRateLessThanCurrentRate();
-    error TotalRateGreaterThanMax();
-
-    event MaxInflationRateSet(uint256 newMaxInflationRate);
-    event TotalInflationRateSet(uint256 newTotalInflationRate);
-    event InflationRateSet(address indexed recipient, uint256 newInflationRate);
-
-    uint256 public maxInflationRate;
-    uint256 public totalInflationRate;
-    mapping(address => uint256) public inflationRate;
-    mapping(address => uint256) public lastClaimedTimestamp;
-
-    function setInflationRate(address recipient, uint256 newInflationRate) external {
-        uint256 currentInflationRate = inflationRate[recipient];
-        // TODO: store interim amount to mint
-        uint256 newTotalInflationRate = totalInflationRate + newInflationRate - currentInflationRate;
-        require(newTotalInflationRate <= maxInflationRate, TotalRateGreaterThanMax());
-        emit InflationRateSet(recipient, newInflationRate);
-        emit TotalInflationRateSet(newTotalInflationRate);
-        inflationRate[recipient] = newInflationRate;
-        totalInflationRate = newTotalInflationRate;
-    }
-
-    function setMaxInflationRate(uint256 newMaxInflationRate) external onlyOwner {
-        _setMaxInflationRate(newMaxInflationRate);
-    }
-
-    function _setMaxInflationRate(uint256 newMaxInflationRate) internal {
-        require(newMaxInflationRate >= totalInflationRate, MaxRateLessThanCurrentRate());
-        emit MaxInflationRateSet(newMaxInflationRate);
-        maxInflationRate = newMaxInflationRate;
     }
 }
 
@@ -589,19 +477,9 @@ library StreamMath {
     }
 }
 
-// TODO: improved access control, or else make the maxInflationRate fixed
-/**
- * @notice A module for managing bEIGEN token inflation. The contract owner can create and modify streams,
- * each having a monthly inflation rate, with the sum of all inflation rates not allowed to exceed the maxInflationRate.
- * Within each stream, substreams can be defined which determine the fraction of the stream going to a recipient address,
- * and do accounting to track pending mintable amounts for each substream.
- * @dev The fraction of minting rights that a substream is given is equal to (substream weight / stream totalWeight)
- * @dev This system has a "heartbeat" equal to the defined constant TIMESCALE; Changes to streams and substreams can be
- * _made_ at any time, but effectively become _live_ at the end of the current TIMESCALE. The beginning of TIMESCALE-unit
- * time is defined as the Unix Epoch (i.e. 00:00:00 UTC on 1 January 1970).
- */
-contract TokenInflationNexus is OwnableUpgradeable {
-    using StreamMath for *;
+
+// @notice Module for managing EIGEN token inflation
+interface ITokenInflationNexus {
 
     error MaxRateLessThanCurrentRate();
     error TotalRateGreaterThanMax();
@@ -614,6 +492,36 @@ contract TokenInflationNexus is OwnableUpgradeable {
     event StreamRateUpdated(uint256 indexed streamID, uint256 newStreamRate);
 
     event StreamCreatorSet(address indexed newStreamCreator);
+
+    // @notice the bEIGEN token, which is minted by this module
+    function bEIGEN() external view returns (address);
+
+    function maxInflationRate() external view returns (uint256);
+
+    // @notice current total inflation rate
+    function totalInflationRate() external view returns (uint256);
+
+    // @notice the inflation rate going to the `recipient`
+    // TODO: write this function or equivalent
+    // function inflationRate(address recipient) external view returns (uint256);
+
+    // TODO: add more functions
+}
+
+
+// TODO: improved access control, or else make the maxInflationRate fixed
+/**
+ * @notice A module for managing bEIGEN token inflation. The contract owner can create and modify streams,
+ * each having a monthly inflation rate, with the sum of all inflation rates not allowed to exceed the maxInflationRate.
+ * Within each stream, substreams can be defined which determine the fraction of the stream going to a recipient address,
+ * and do accounting to track pending mintable amounts for each substream.
+ * @dev The fraction of minting rights that a substream is given is equal to (substream weight / stream totalWeight)
+ * @dev This system has a "heartbeat" equal to the defined constant TIMESCALE; Changes to streams and substreams can be
+ * _made_ at any time, but effectively become _live_ at the end of the current TIMESCALE. The beginning of TIMESCALE-unit
+ * time is defined as the Unix Epoch (i.e. 00:00:00 UTC on 1 January 1970).
+ */
+contract TokenInflationNexus is OwnableUpgradeable, ITokenInflationNexus {
+    using StreamMath for *;
 
     address public bEIGEN;
     /**
