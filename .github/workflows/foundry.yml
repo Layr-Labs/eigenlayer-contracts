@@ -207,3 +207,80 @@ jobs:
           if [ $FAILED -eq 1 ]; then
             exit 1
           fi
+
+  # -----------------------------------------------------------------------
+  # Forge Size Diff
+  # -----------------------------------------------------------------------
+
+  compare-contract-sizes:
+    name: Size Diff
+    runs-on: ubuntu-latest
+    steps:
+      # Check out repository with all submodules for complete codebase access.
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # Install the Foundry toolchain.
+      - name: "Install Foundry"
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - name: Build contracts on PR branch
+        run: |
+          forge build --json --sizes | jq '.' > pr_sizes.json
+
+      - name: Checkout target branch
+        run: |
+          git fetch origin ${{ github.base_ref }}
+          git checkout ${{ github.base_ref }}
+
+      - name: Build contracts on target branch
+        run: |
+          forge build --json --sizes | jq '.' > target_sizes.json
+
+      - name: Compare contract sizes using Bash
+        run: |
+          # Extract contract names
+          contracts=$(jq -r 'keys[]' pr_sizes.json)
+
+          # Track if there are any differences
+          has_differences=0
+
+          echo -e "\n📊 \033[1;34mContract Size Comparison Report\033[0m 📊\n"
+
+          # Iterate through contracts and compare sizes
+          for contract in $contracts; do
+            pr_runtime=$(jq -r --arg contract "$contract" '.[$contract].runtime_size // 0' pr_sizes.json)
+            pr_init=$(jq -r --arg contract "$contract" '.[$contract].init_size // 0' pr_sizes.json)
+
+            target_runtime=$(jq -r --arg contract "$contract" '.[$contract].runtime_size // 0' target_sizes.json)
+            target_init=$(jq -r --arg contract "$contract" '.[$contract].init_size // 0' target_sizes.json)
+
+            runtime_diff=$((pr_runtime - target_runtime))
+            init_diff=$((pr_init - target_init))
+
+            if [ "$runtime_diff" -ne 0 ] || [ "$init_diff" -ne 0 ]; then
+              echo -e "\033[1;36m📝 $contract:\033[0m"
+              if [ "$runtime_diff" -ne 0 ]; then
+                if [ "$runtime_diff" -gt 0 ]; then
+                  echo -e "   Runtime: \033[1;31m+$runtime_diff bytes\033[0m 📈"
+                else
+                  echo -e "   Runtime: \033[1;32m$runtime_diff bytes\033[0m 📉"
+                fi
+              fi
+              if [ "$init_diff" -ne 0 ]; then
+                if [ "$init_diff" -gt 0 ]; then
+                  echo -e "   Init:    \033[1;31m+$init_diff bytes\033[0m 📈"
+                else
+                  echo -e "   Init:    \033[1;32m$init_diff bytes\033[0m 📉"
+                fi
+              fi
+              has_differences=1
+            fi
+          done
+
+          if [ "$has_differences" -eq 0 ]; then
+            echo -e "\033[1;32m✨ No contract size changes detected ✨\033[0m"
+          fi
