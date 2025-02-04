@@ -307,6 +307,9 @@ contract DelegationManager is
             sharesToDecrease: operatorSharesSlashed
         });
 
+        // Emit event for operator shares being slashed
+        emit OperatorSharesSlashed(operator, strategy, totalDepositSharesToBurn);
+
         IShareManager shareManager = _getShareManager(strategy);
         // NOTE: for beaconChainETHStrategy, increased burnable shares currently have no mechanism for burning
         shareManager.increaseBurnableShares(strategy, totalDepositSharesToBurn);
