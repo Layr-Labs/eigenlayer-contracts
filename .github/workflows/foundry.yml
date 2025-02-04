@@ -216,13 +216,16 @@ jobs:
     name: Size Diff
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout PR branch
-        uses: actions/checkout@v4
+      # Check out repository with all submodules for complete codebase access.
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
-      - name: Install Foundry
-        run: |
-          curl -L https://foundry.paradigm.xyz | bash
-          foundryup
+      # Install the Foundry toolchain.
+      - name: "Install Foundry"
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
 
       - name: Build contracts on PR branch
         run: |
