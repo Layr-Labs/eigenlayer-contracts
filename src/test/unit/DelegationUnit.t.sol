@@ -7028,6 +7028,11 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
                 sharesToBurn: sharesToBurn
             })
         );
+        
+        // Assert OperatorSharesSlashed event was emitted with correct params
+        cheats.expectEmit(true, true, true, true, address(delegationManager));
+        emit OperatorSharesSlashed(operator, strategyMock, sharesToBurn);
+
         cheats.prank(address(allocationManagerMock));
         delegationManager.slashOperatorShares({
             operator: operator,
@@ -7112,6 +7117,11 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
                 sharesToBurn: sharesToBurn
             })
         );
+
+        // Assert OperatorSharesSlashed event was emitted with correct params
+        cheats.expectEmit(true, true, true, true, address(delegationManager));
+        emit OperatorSharesSlashed(operator, strategyMock, sharesToBurn);
+
         cheats.prank(address(allocationManagerMock));
         delegationManager.slashOperatorShares({
             operator: operator,
@@ -7190,6 +7200,11 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
                 sharesToBurn: sharesToBurn
             })
         );
+
+        // Assert OperatorSharesSlashed event was emitted with correct params
+        cheats.expectEmit(true, true, true, true, address(delegationManager));
+        emit OperatorSharesSlashed(operator, strategyMock, sharesToBurn);
+
         cheats.prank(address(allocationManagerMock));
         delegationManager.slashOperatorShares({
             operator: operator,
@@ -7281,6 +7296,11 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
                 sharesToBurn: sharesToBurn
             })
         );
+
+        // Assert OperatorSharesSlashed event was emitted with correct params
+        cheats.expectEmit(true, true, true, true, address(delegationManager));
+        emit OperatorSharesSlashed(operator, strategyMock, sharesToBurn);
+
         cheats.prank(address(allocationManagerMock));
         delegationManager.slashOperatorShares({
             operator: operator,
@@ -7355,6 +7375,11 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
                     sharesToBurn: sharesToBurn
                 })
             );
+
+            // Assert OperatorSharesSlashed event was emitted with correct params
+            cheats.expectEmit(true, true, true, true, address(delegationManager));
+            emit OperatorSharesSlashed(operator, strategyMock, sharesToBurn);
+
             cheats.prank(address(allocationManagerMock));
             delegationManager.slashOperatorShares({
                 operator: operator,
@@ -7412,6 +7437,11 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
                     sharesToBurn: sharesToBurn
                 })
             );
+
+            // Assert OperatorSharesSlashed event was emitted with correct params
+            cheats.expectEmit(true, true, true, true, address(delegationManager));
+            emit OperatorSharesSlashed(operator, strategyMock, sharesToBurn);
+
             cheats.prank(address(allocationManagerMock));
             delegationManager.slashOperatorShares({
                 operator: operator,
@@ -7517,6 +7547,11 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
                 sharesToBurn: 0
             })
         );
+
+        // Assert OperatorSharesSlashed event was emitted with correct params
+        cheats.expectEmit(true, true, true, true, address(delegationManager));
+        emit OperatorSharesSlashed(operator, strategyMock, 0);
+
         cheats.prank(address(allocationManagerMock));
         delegationManager.slashOperatorShares({
             operator: operator,
@@ -7592,6 +7627,11 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
         _setOperatorMagnitude(operator, beaconChainETHStrategy, newMagnitude);
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit OperatorSharesDecreased(operator, address(0), beaconChainETHStrategy, sharesToDecrease);
+
+        // Assert OperatorSharesSlashed event was emitted with correct params
+        cheats.expectEmit(true, true, true, true, address(delegationManager));
+        emit OperatorSharesSlashed(operator, beaconChainETHStrategy, sharesToDecrease);
+
         cheats.prank(address(allocationManagerMock));
         delegationManager.slashOperatorShares({
             operator: operator,
@@ -7635,6 +7675,10 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
             uint64 slashMagnitude = 100;
             newOperatorMagnitude -= slashMagnitude;
             _setOperatorMagnitude(defaultOperator, strategyMock, newOperatorMagnitude);
+
+            // Assert OperatorSharesSlashed event was emitted with correct params
+            cheats.expectEmit(true, true, true, true, address(delegationManager));
+            emit OperatorSharesSlashed(defaultOperator, strategyMock, 44440000449046438731194137360795695);
 
             cheats.prank(address(allocationManagerMock));
             delegationManager.slashOperatorShares(

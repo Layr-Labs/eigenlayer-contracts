@@ -170,6 +170,9 @@ interface IDelegationManagerEvents is IDelegationManagerTypes {
 
     /// @notice Emitted when a queued withdrawal is completed
     event SlashingWithdrawalCompleted(bytes32 withdrawalRoot);
+
+    /// @notice Emitted whenever an operator's shares are slashed for a given strategy
+    event OperatorSharesSlashed(address indexed operator, IStrategy strategy, uint256 totalSlashedShares);
 }
 
 /**
