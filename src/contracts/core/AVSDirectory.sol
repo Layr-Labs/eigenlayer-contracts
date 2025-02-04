@@ -17,6 +17,12 @@ contract AVSDirectory is
     ReentrancyGuardUpgradeable,
     SignatureUtils
 {
+
+    bytes32 public constant __PLACEHOLDER0 = keccak256("0");
+    bytes32 public constant __PLACEHOLDER1 = keccak256("1");
+    bytes32 public constant __PLACEHOLDER2 = keccak256("2");
+    bytes32 public constant __PLACEHOLDER3 = keccak256("3");
+
     /**
      *
      *                         INITIALIZING FUNCTIONS
