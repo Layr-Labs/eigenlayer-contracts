@@ -260,6 +260,8 @@ contract AllocationManager is
     ) external onlyWhenNotPaused(PAUSED_OPERATOR_SET_REGISTRATION_AND_DEREGISTRATION) checkCanCall(operator) {
         // Check that the operator exists
         require(delegation.isOperator(operator), InvalidOperator());
+        // Check that the AVS exists and has registered metadata
+        require(_avsRegisteredMetadata[params.avs], InvalidAVSWithNoMetadataRegistered());
 
         for (uint256 i = 0; i < params.operatorSetIds.length; i++) {
             // Check the operator set exists and the operator is not currently registered to it
@@ -286,6 +288,8 @@ contract AllocationManager is
     ) external onlyWhenNotPaused(PAUSED_OPERATOR_SET_REGISTRATION_AND_DEREGISTRATION) {
         // Check that the caller is either authorized on behalf of the operator or AVS
         require(_checkCanCall(params.operator) || _checkCanCall(params.avs), InvalidCaller());
+        // Check that the AVS exists and has registered metadata
+        require(_avsRegisteredMetadata[params.avs], InvalidAVSWithNoMetadataRegistered());
 
         for (uint256 i = 0; i < params.operatorSetIds.length; i++) {
             // Check the operator set exists and the operator is registered to it
@@ -328,6 +332,10 @@ contract AllocationManager is
 
     /// @inheritdoc IAllocationManager
     function updateAVSMetadataURI(address avs, string calldata metadataURI) external checkCanCall(avs) {
+        if (!_avsRegisteredMetadata[avs]) {
+            _avsRegisteredMetadata[avs] = true;
+        }
+
         emit AVSMetadataURIUpdated(avs, metadataURI);
     }
 
