@@ -394,6 +394,7 @@ contract EigenPod is
     }
 
     /// @notice Called by EigenPodManager when the owner wants to create another ETH validator.
+    /// @dev This function only supports staking to a 0x01 validator. For compounding validators, please interact directly with the deposit contract.
     function stake(
         bytes calldata pubkey,
         bytes calldata signature,
@@ -490,7 +491,8 @@ contract EigenPod is
 
         // Ensure the validator's withdrawal credentials are pointed at this pod
         require(
-            validatorFields.getWithdrawalCredentials() == bytes32(_podWithdrawalCredentials()),
+            validatorFields.getWithdrawalCredentials() == bytes32(_podWithdrawalCredentials()) ||
+                validatorFields.getWithdrawalCredentials() == bytes32(_podCompoundingWithdrawalCredentials()),
             WithdrawalCredentialsNotForEigenPod()
         );
 
@@ -681,6 +683,10 @@ contract EigenPod is
 
     function _podWithdrawalCredentials() internal view returns (bytes memory) {
         return abi.encodePacked(bytes1(uint8(1)), bytes11(0), address(this));
+    }
+
+    function _podCompoundingWithdrawalCredentials() internal view returns (bytes memory) {
+        return abi.encodePacked(bytes1(uint8(2)), bytes11(0), address(this));
     }
 
     ///@notice Calculates the pubkey hash of a validator's pubkey as per SSZ spec

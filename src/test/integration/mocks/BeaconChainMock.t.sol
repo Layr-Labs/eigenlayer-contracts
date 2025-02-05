@@ -39,7 +39,7 @@ struct StaleBalanceProofs {
     BeaconChainProofs.ValidatorProof validatorProof;
 }
 
-/// @notice A forward-compatible Beacon Chain Mock that updates containers & proofs for the Pectra upgrade
+/// @notice A Pectra Beacon Chain Mock Contract. For testing upgrades, use BeaconChainMock_Upgradeable
 contract BeaconChainMock is Logger {
     using StdStyle for *;
     using print for *;

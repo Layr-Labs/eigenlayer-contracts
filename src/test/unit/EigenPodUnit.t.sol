@@ -55,6 +55,9 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
         timeMachine = new TimeMachine();
         beaconChain = new BeaconChainMock(EigenPodManager(address(eigenPodManagerMock)), GENESIS_TIME_LOCAL);
 
+        // TODO: Remove this once we have a forward-compatible beacon chain mock
+        beaconChain.forkToPectra();
+
         // Deploy EigenPod
         podImplementation = new EigenPod(
             ethPOSDepositMock,

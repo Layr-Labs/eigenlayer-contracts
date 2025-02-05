@@ -126,45 +126,31 @@ contract EigenPodUser is Logger {
     function _startValidators() internal returns (uint40[] memory, uint) {
         uint balanceWei = address(this).balance;
 
-        // Number of full validators: balance / 32 ETH
-        uint numValidators = balanceWei / 32 ether;
-        balanceWei -= (numValidators * 32 ether);
+        // Maximum number of validators possible (each needs at least 32 ETH)
+        uint maxValidators = balanceWei / 32 ether;
+        require(maxValidators != 0, "startValidators: not enough ETH to start a validator");
 
-        // If we still have at least 1 ETH left over, we can create another (non-full) validator
-        // Note that in the mock beacon chain this validator will generate rewards like any other.
-        // The main point is to ensure pods are able to handle validators that have less than 32 ETH
-        uint lastValidatorBalance;
-        uint totalValidators = numValidators;
-        if (balanceWei >= 1 ether) {
-            lastValidatorBalance = balanceWei - (balanceWei % 1 gwei);
-            balanceWei -= lastValidatorBalance;
-            totalValidators++;
-        }
+        // Get a random number of validators between 1 and maxValidators
+        uint totalValidators = uint(keccak256(abi.encodePacked(block.timestamp, block.prevrandao))) % maxValidators + 1;
+        
+        // Calculate how much ETH each validator will get (distributing evenly)
+        uint ethPerValidator = (balanceWei / totalValidators) / 1 ether * 1 ether; // Round down to nearest ETH
+        require(ethPerValidator >= 32 ether, "startValidators: insufficient ETH per validator");
 
-        require(totalValidators != 0, "startValidators: not enough ETH to start a validator");
         uint40[] memory newValidators = new uint40[](totalValidators);
-        uint totalBeaconBalance = address(this).balance - balanceWei;
+        uint totalBeaconBalance = ethPerValidator * totalValidators;
 
         console.log("- creating new validators", newValidators.length);
         console.log("- depositing balance to beacon chain (wei)", totalBeaconBalance);
+        console.log("- ETH per validator", ethPerValidator / 1 ether);
 
-        // Create each of the full validators
-        for (uint i = 0; i < numValidators; i++) {
+        // Create each validator with the calculated ETH amount
+        for (uint i = 0; i < totalValidators; i++) {
             uint40 validatorIndex = beaconChain.newValidator{ 
-                value: 32 ether 
+                value: ethPerValidator 
             }(_podWithdrawalCredentials());
 
             newValidators[i] = validatorIndex;
-            validators.push(validatorIndex);
-        }
-
-        // If we had a remainder, create the final, non-full validator
-        if (totalValidators == numValidators + 1) {
-            uint40 validatorIndex = beaconChain.newValidator{ 
-                value: lastValidatorBalance 
-            }(_podWithdrawalCredentials());
-
-            newValidators[newValidators.length - 1] = validatorIndex;
             validators.push(validatorIndex);
         }
 
