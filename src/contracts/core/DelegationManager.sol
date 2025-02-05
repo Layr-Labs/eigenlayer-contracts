@@ -490,13 +490,13 @@ contract DelegationManager is
                 });
             }
 
+            // Remove deposit shares from EigenPodManager/StrategyManager
+            uint256 sharesAfter = shareManager.removeDepositShares(staker, strategies[i], depositSharesToWithdraw[i]);
+
             //Reset DepositScalingFactor since deposit shares are equal to withdrawable shares after full withdrawal
-            if (depositSharesToWithdraw[i] == shareManager.stakerDepositShares(staker, strategies[i])) {
+            if (depositSharesToWithdraw[i] == sharesAfter) {
                 _depositScalingFactor[staker][strategies[i]].reset();
             }
-
-            // Remove deposit shares from EigenPodManager/StrategyManager
-            shareManager.removeDepositShares(staker, strategies[i], depositSharesToWithdraw[i]);
         }
 
         // Create queue entry and increment withdrawal nonce
