@@ -145,6 +145,7 @@ interface IEigenPod is IEigenPodErrors, IEigenPodEvents {
     ) external;
 
     /// @notice Called by EigenPodManager when the owner wants to create another ETH validator.
+    /// @dev This function only supports staking to a 0x01 validator. For compounding validators, please interact directly with the deposit contract.
     function stake(bytes calldata pubkey, bytes calldata signature, bytes32 depositDataRoot) external payable;
 
     /**
