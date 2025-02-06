@@ -40,6 +40,13 @@ struct StaleBalanceProofs {
 }
 
 /// @notice A Pectra Beacon Chain Mock Contract. For testing upgrades, use BeaconChainMock_Upgradeable
+/// @notice This mock assumed the following
+/**
+ * @notice A Semi-Compatible Pectra Beacon Chain Mock Contract. For Testing Upgrades to Pectra use BeaconChainMock_Upgradeable
+ * @dev This mock assumes the following:
+ * - Ceiling is 64 ETH, at which sweeps will be triggered
+ * - No support for consolidations or any execution layer triggerable actions (exits, partial withdrawals)
+ */
 contract BeaconChainMock is Logger {
     using StdStyle for *;
     using print for *;
@@ -145,6 +152,8 @@ contract BeaconChainMock is Logger {
             zeroNodes[i] = sha256(abi.encodePacked(curNode, curNode));
             curNode = zeroNodes[i];
         }
+
+        forkToPectra();
     }
 
     function NAME() public pure override returns (string memory) {
@@ -250,7 +259,7 @@ contract BeaconChainMock is Logger {
 
     /// @dev Move forward one epoch on the beacon chain, taking care of important epoch processing:
     /// - Award ALL validators CONSENSUS_REWARD_AMOUNT
-    /// - Withdraw any balance over 32 ETH
+    /// - Withdraw any balance over 64 ETH
     /// - Withdraw any balance for exited validators
     /// - Effective balances updated (NOTE: we do not use hysteresis!)
     /// - Move time forward one epoch
@@ -259,7 +268,7 @@ contract BeaconChainMock is Logger {
     ///
     /// Note: 
     /// - DOES generate consensus rewards for ALL non-exited validators
-    /// - DOES withdraw in excess of 32 ETH / if validator is exited
+    /// - DOES withdraw in excess of 64 ETH / if validator is exited
     function advanceEpoch() public {
         print.method("advanceEpoch");
         _generateRewards();
@@ -273,7 +282,7 @@ contract BeaconChainMock is Logger {
     ///
     /// Note:
     /// - does NOT generate consensus rewards
-    /// - DOES withdraw in excess of 32 ETH / if validator is exited
+    /// - DOES withdraw in excess of 64 ETH / if validator is exited
     function advanceEpoch_NoRewards() public {
         print.method("advanceEpoch_NoRewards");
         _withdrawExcess();
@@ -281,12 +290,12 @@ contract BeaconChainMock is Logger {
     }
 
     /// @dev Like `advanceEpoch`, but explicitly does NOT withdraw if balances
-    /// are over 32 ETH. This exists to support tests that check share increases solely
+    /// are over 64 ETH. This exists to support tests that check share increases solely
     /// due to beacon chain balance changes.
     ///
     /// Note: 
     /// - DOES generate consensus rewards for ALL non-exited validators
-    /// - does NOT withdraw in excess of 32 ETH
+    /// - does NOT withdraw in excess of 64 ETH
     /// - does NOT withdraw if validator is exited
     function advanceEpoch_NoWithdraw() public {
         print.method("advanceEpoch_NoWithdraw");
@@ -320,7 +329,7 @@ contract BeaconChainMock is Logger {
         console.log("   - Generated rewards for %s of %s validators.", totalRewarded, validators.length);
     }
 
-    /// @dev Iterate over all validators. If the validator has > 32 ETH current balance
+    /// @dev Iterate over all validators. If the validator has > 64 ETH current balance
     /// OR is exited, withdraw the excess to the validator's withdrawal address.
     function _withdrawExcess() internal {
         uint totalExcessWei;
@@ -335,15 +344,15 @@ contract BeaconChainMock is Logger {
 
             // If the validator has exited, withdraw any existing balance
             //
-            // If the validator has > 32 ether, withdraw anything over that
+            // If the validator has > 64 ether, withdraw anything over that
             if (v.exitEpoch != BeaconChainProofs.FAR_FUTURE_EPOCH) {
                 if (balanceWei == 0) continue;
 
                 excessBalanceWei = balanceWei;
                 newBalanceGwei = 0;
-            } else if (balanceWei > 32 ether) {
-                excessBalanceWei = balanceWei - 32 ether;
-                newBalanceGwei = 32 gwei;
+            } else if (balanceWei > 64 ether) {
+                excessBalanceWei = balanceWei - 64 ether;
+                newBalanceGwei = 64 gwei;
             }
 
             // Send ETH to withdrawal address
@@ -366,10 +375,10 @@ contract BeaconChainMock is Logger {
             Validator storage v = validators[i];
             if (v.isDummy) continue; // don't process dummy validators
 
-            // Get current balance and trim anything over 32 ether
+            // Get current balance and trim anything over 64 ether
             uint64 balanceGwei = _currentBalanceGwei(uint40(i));
-            if (balanceGwei > 32 gwei) {
-                balanceGwei = 32 gwei;
+            if (balanceGwei > 64 gwei) {
+                balanceGwei = 64 gwei;
             }
 
             v.effectiveBalanceGwei = balanceGwei;
