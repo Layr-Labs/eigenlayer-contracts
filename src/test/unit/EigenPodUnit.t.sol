@@ -55,9 +55,6 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
         timeMachine = new TimeMachine();
         beaconChain = new BeaconChainMock(EigenPodManager(address(eigenPodManagerMock)), GENESIS_TIME_LOCAL);
 
-        // TODO: Remove this once we have a forward-compatible beacon chain mock
-        beaconChain.forkToPectra();
-
         // Deploy EigenPod
         podImplementation = new EigenPod(
             ethPOSDepositMock,
@@ -690,12 +687,12 @@ contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, Pro
         firstValidator[0] = validators[0];
         staker.verifyWithdrawalCredentials(firstValidator);
 
-        // // Start a checkpoint so `currentCheckpointTimestamp` is nonzero
-        // staker.startCheckpoint();
+        // Start a checkpoint so `currentCheckpointTimestamp` is nonzero
+        staker.startCheckpoint();
 
-        // // Try to verify withdrawal credentials at the current block
-        // cheats.expectRevert(IEigenPodErrors.BeaconTimestampTooFarInPast.selector);
-        // staker.verifyWithdrawalCredentials(validators);
+        // Try to verify withdrawal credentials at the current block
+        cheats.expectRevert(IEigenPodErrors.BeaconTimestampTooFarInPast.selector);
+        staker.verifyWithdrawalCredentials(validators);
     }
 
     /// @notice Check for revert on input array mismatch lengths

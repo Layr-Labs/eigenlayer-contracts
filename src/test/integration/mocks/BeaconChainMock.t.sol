@@ -71,17 +71,17 @@ contract BeaconChainMock is Logger {
     /// PROOF CONSTANTS (PROOF LENGTHS, FIELD SIZES):
     /// @dev Non-constant values will change with the Pectra hard fork
 
-    // see https://eth2book.info/capella/part3/containers/state/#beaconstate
-    uint BEACON_STATE_FIELDS = 32;
+    // see https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#beaconstate
+    uint constant BEACON_STATE_FIELDS = 37;
     // see https://eth2book.info/capella/part3/containers/blocks/#beaconblock
     uint constant BEACON_BLOCK_FIELDS = 5;
 
     uint immutable BLOCKROOT_PROOF_LEN = 32 * BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT;
-    uint VAL_FIELDS_PROOF_LEN = 32 * (
-        (BeaconChainProofs.VALIDATOR_TREE_HEIGHT + 1) + BeaconChainProofs.DENEB_BEACON_STATE_TREE_HEIGHT
+    uint immutable VAL_FIELDS_PROOF_LEN = 32 * (
+        (BeaconChainProofs.VALIDATOR_TREE_HEIGHT + 1) + BeaconChainProofs.PECTRA_BEACON_STATE_TREE_HEIGHT
     );
-    uint BALANCE_CONTAINER_PROOF_LEN = 32 * (
-        BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT + BeaconChainProofs.DENEB_BEACON_STATE_TREE_HEIGHT
+    uint immutable BALANCE_CONTAINER_PROOF_LEN = 32 * (
+        BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT + BeaconChainProofs.PECTRA_BEACON_STATE_TREE_HEIGHT
     );
     uint immutable BALANCE_PROOF_LEN = 32 * (BeaconChainProofs.BALANCE_TREE_HEIGHT + 1);
     
@@ -152,8 +152,6 @@ contract BeaconChainMock is Logger {
             zeroNodes[i] = sha256(abi.encodePacked(curNode, curNode));
             curNode = zeroNodes[i];
         }
-
-        forkToPectra();
     }
 
     function NAME() public pure override returns (string memory) {
@@ -428,7 +426,7 @@ contract BeaconChainMock is Logger {
         // Build merkle tree for BeaconState
         bytes32 beaconStateRoot = _buildMerkleTree({
             leaves: _getBeaconStateLeaves(validatorsRoot, balanceContainerRoot),
-            treeHeight: getBeaconStateTreeHeight(),
+            treeHeight: BeaconChainProofs.PECTRA_BEACON_STATE_TREE_HEIGHT,
             tree: trees[curTimestamp].stateTree
         });
         // console.log("-- beacon state root", beaconStateRoot);
@@ -614,7 +612,7 @@ contract BeaconChainMock is Logger {
 
         uint totalHeight = BALANCE_CONTAINER_PROOF_LEN / 32;
         uint depth = 0;
-        for (uint i = 0; i < getBeaconStateTreeHeight(); i++) {
+        for (uint i = 0; i < BeaconChainProofs.PECTRA_BEACON_STATE_TREE_HEIGHT; i++) {
             bytes32 sibling = trees[curTimestamp].stateTree.siblings[curNode];
 
             // proof[j] = sibling;
@@ -680,7 +678,7 @@ contract BeaconChainMock is Logger {
             // Validator container root -> beacon state root
             for (
                 uint j = depth; 
-                j < 1 + BeaconChainProofs.VALIDATOR_TREE_HEIGHT + getBeaconStateTreeHeight(); 
+                j < 1 + BeaconChainProofs.VALIDATOR_TREE_HEIGHT + BeaconChainProofs.PECTRA_BEACON_STATE_TREE_HEIGHT; 
                 j++
             ) {
                 bytes32 sibling = trees[curTimestamp].stateTree.siblings[curNode];
@@ -765,7 +763,7 @@ contract BeaconChainMock is Logger {
             0 : ((validators.length - 1) / 4) + 1;
     }
 
-    function _getBeaconStateLeaves(bytes32 validatorsRoot, bytes32 balancesRoot) internal view returns (bytes32[] memory) {
+    function _getBeaconStateLeaves(bytes32 validatorsRoot, bytes32 balancesRoot) internal pure returns (bytes32[] memory) {
         bytes32[] memory leaves = new bytes32[](BEACON_STATE_FIELDS);
 
         // Pre-populate leaves with dummy values so sibling/parent tracking is correct
@@ -1026,26 +1024,5 @@ contract BeaconChainMock is Logger {
 
     function isActive(uint40 validatorIndex) public view returns (bool) {
         return validators[validatorIndex].exitEpoch == BeaconChainProofs.FAR_FUTURE_EPOCH;
-    }
-
-    function forkToPectra() public {
-        // https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#beaconstate
-        BEACON_STATE_FIELDS = 37;
-        
-        VAL_FIELDS_PROOF_LEN = 32 * (
-            (BeaconChainProofs.VALIDATOR_TREE_HEIGHT + 1) + BeaconChainProofs.PECTRA_BEACON_STATE_TREE_HEIGHT
-        );
-        BALANCE_CONTAINER_PROOF_LEN = 32 * (
-            BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT + BeaconChainProofs.PECTRA_BEACON_STATE_TREE_HEIGHT
-        );
-
-        isPectra = true;
-
-        // Warp to the hard fork timestamp
-        cheats.warp(BeaconChainProofs.PECTRA_FORK_TIMESTAMP);
-    }
-
-    function getBeaconStateTreeHeight() public view returns (uint) {
-        return isPectra ? BeaconChainProofs.PECTRA_BEACON_STATE_TREE_HEIGHT : BeaconChainProofs.DENEB_BEACON_STATE_TREE_HEIGHT;
     }
 }

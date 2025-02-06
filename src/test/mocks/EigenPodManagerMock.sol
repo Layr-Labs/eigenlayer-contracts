@@ -75,4 +75,8 @@ contract EigenPodManagerMock is Test, Pausable {
         BeaconChainSlashingFactor memory bsf = _beaconChainSlashingFactor[staker];
         return bsf.isSet ? bsf.slashingFactor : WAD;
     }
+
+    function pectraForkTimestamp() external pure returns (uint64) {
+        return 0;
+    }
 }

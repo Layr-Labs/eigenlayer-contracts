@@ -136,6 +136,7 @@ library BeaconChainProofs {
     /// @param validatorIndex the validator's unique index
     function verifyValidatorFields(
         uint64 proofTimestamp,
+        uint64 pectraForkTimestamp,
         bytes32 beaconStateRoot,
         bytes32[] calldata validatorFields,
         bytes calldata validatorFieldsProof,
@@ -143,7 +144,7 @@ library BeaconChainProofs {
     ) internal view {
         require(validatorFields.length == VALIDATOR_FIELDS_LENGTH, InvalidValidatorFieldsLength());
 
-        uint256 beaconStateTreeHeight = getBeaconStateTreeHeight(proofTimestamp);
+        uint256 beaconStateTreeHeight = getBeaconStateTreeHeight(proofTimestamp, pectraForkTimestamp);
 
         /// Note: the reason we use `VALIDATOR_TREE_HEIGHT + 1` here is because the merklization process for
         /// this container includes hashing the root of the validator tree with the length of the validator list
@@ -191,10 +192,11 @@ library BeaconChainProofs {
     /// @param proof a beacon balance container root and merkle proof of its inclusion under `beaconBlockRoot`
     function verifyBalanceContainer(
         uint64 proofTimestamp,
+        uint64 pectraForkTimestamp,
         bytes32 beaconBlockRoot,
         BalanceContainerProof calldata proof
     ) internal view {
-        uint256 beaconStateTreeHeight = getBeaconStateTreeHeight(proofTimestamp);
+        uint256 beaconStateTreeHeight = getBeaconStateTreeHeight(proofTimestamp, pectraForkTimestamp);
 
         require(
             proof.proof.length == 32 * (BEACON_BLOCK_HEADER_TREE_HEIGHT + beaconStateTreeHeight), InvalidProofLength()
@@ -322,15 +324,13 @@ library BeaconChainProofs {
         return Endian.fromLittleEndianUint64(validatorFields[VALIDATOR_EXIT_EPOCH_INDEX]);
     }
 
-    /// @notice The timestamp of the Pectra hard fork - this is updated on a per-network basis
-    uint64 public constant PECTRA_FORK_TIMESTAMP = 1_739_352_768;
-
     /// @dev We check if the proofTimestamp is <= pectraForkTimestamp because a `proofTimestamp` at the `pectraForkTimestamp`
     ///      is considered to be Pre-Pectra given the EIP-4788 oracle returns the parent block.
     function getBeaconStateTreeHeight(
-        uint64 proofTimestamp
+        uint64 proofTimestamp,
+        uint64 pectraForkTimestamp
     ) internal pure returns (uint256) {
         return
-            proofTimestamp <= PECTRA_FORK_TIMESTAMP ? DENEB_BEACON_STATE_TREE_HEIGHT : PECTRA_BEACON_STATE_TREE_HEIGHT;
+            proofTimestamp <= pectraForkTimestamp ? DENEB_BEACON_STATE_TREE_HEIGHT : PECTRA_BEACON_STATE_TREE_HEIGHT;
     }
 }
