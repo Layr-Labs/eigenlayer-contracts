@@ -3841,6 +3841,9 @@ contract AllocationManagerUnitTests_createOperatorSets is AllocationManagerUnitT
         uint256 numOpSets = r.Uint256(1, FUZZ_MAX_OP_SETS);
         uint256 numStrategies = r.Uint256(1, FUZZ_MAX_STRATS);
 
+        cheats.prank(avs);
+        allocationManager.updateAVSMetadataURI(avs, "https://example.com");
+
         CreateSetParams[] memory createSetParams = new CreateSetParams[](numOpSets);
 
         for (uint256 i; i < numOpSets; ++i) {
