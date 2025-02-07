@@ -330,7 +330,6 @@ library BeaconChainProofs {
         uint64 proofTimestamp,
         uint64 pectraForkTimestamp
     ) internal pure returns (uint256) {
-        return
-            proofTimestamp <= pectraForkTimestamp ? DENEB_BEACON_STATE_TREE_HEIGHT : PECTRA_BEACON_STATE_TREE_HEIGHT;
+        return proofTimestamp <= pectraForkTimestamp ? DENEB_BEACON_STATE_TREE_HEIGHT : PECTRA_BEACON_STATE_TREE_HEIGHT;
     }
 }

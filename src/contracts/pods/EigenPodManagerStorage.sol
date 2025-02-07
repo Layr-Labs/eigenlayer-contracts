@@ -90,7 +90,7 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
 
     /// @notice Returns the amount of `shares` that have been slashed on EigenLayer but not burned yet.
     uint256 public burnableETHShares;
-    
+
     /// @notice The address that can set proof timestamps
     address public proofTimestampSetter;
 

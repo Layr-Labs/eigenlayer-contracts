@@ -131,10 +131,14 @@ interface IEigenPodManager is
     ) external;
 
     /// @notice Sets the address that can set proof timestamps
-    function setProofTimestampSetter(address newProofTimestampSetter) external;
+    function setProofTimestampSetter(
+        address newProofTimestampSetter
+    ) external;
 
     /// @notice Sets the Pectra fork timestamp, only callable by `proofTimestampSetter`
-    function setPectraForkTimestamp(uint64 timestamp) external;
+    function setPectraForkTimestamp(
+        uint64 timestamp
+    ) external;
 
     /// @notice Returns the address of the `podOwner`'s EigenPod if it has been deployed.
     function ownerToPod(

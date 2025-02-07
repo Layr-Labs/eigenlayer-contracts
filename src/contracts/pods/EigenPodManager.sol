@@ -237,13 +237,17 @@ contract EigenPodManager is
     }
 
     /// @notice Sets the address that can set proof timestamps
-    function setProofTimestampSetter(address newProofTimestampSetter) external onlyOwner {
+    function setProofTimestampSetter(
+        address newProofTimestampSetter
+    ) external onlyOwner {
         proofTimestampSetter = newProofTimestampSetter;
         emit ProofTimestampSetterSet(newProofTimestampSetter);
     }
 
     /// @notice Sets the pectra fork timestamp
-    function setPectraForkTimestamp(uint64 timestamp) external onlyProofTimestampSetter {
+    function setPectraForkTimestamp(
+        uint64 timestamp
+    ) external onlyProofTimestampSetter {
         pectraForkTimestamp = timestamp;
         emit PectraForkTimestampSet(timestamp);
     }

@@ -492,8 +492,8 @@ contract EigenPod is
 
         // Ensure the validator's withdrawal credentials are pointed at this pod
         require(
-            validatorFields.getWithdrawalCredentials() == bytes32(_podWithdrawalCredentials()) ||
-                validatorFields.getWithdrawalCredentials() == bytes32(_podCompoundingWithdrawalCredentials()),
+            validatorFields.getWithdrawalCredentials() == bytes32(_podWithdrawalCredentials())
+                || validatorFields.getWithdrawalCredentials() == bytes32(_podCompoundingWithdrawalCredentials()),
             WithdrawalCredentialsNotForEigenPod()
         );
 
@@ -756,7 +756,7 @@ contract EigenPod is
 
         require(success && result.length > 0, InvalidEIP4788Response());
         return abi.decode(result, (bytes32));
-    }   
+    }
 
     /// @notice Returns the timestamp of the Pectra fork, read from the `EigenPodManager` contract
     /// @dev Specifically, this returns the timestamp of the first non-missed slot at or after the Pectra hard fork
