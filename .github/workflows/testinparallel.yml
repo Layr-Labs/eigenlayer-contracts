@@ -1,91 +1,41 @@
-name: Run Parallel
+name: Run Parallel Tests
 
 on:
   push:
   pull_request:
     types: [opened, reopened]
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
-  prepare:
+  test-suite:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/foundry-rs/foundry:stable
-    outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
-
-    - name: Get list of .t.sol files in src/test
-      run: |
-        FILES=$(find src/test -type f -name '*.t.sol' | sed 's#src/test/##' | jq -R -s -c 'split("\n")[:-1]')
-        echo "::set-output name=matrix::$FILES"
-      id: set-matrix
-
-  unit-tests:
-    needs: prepare
-    runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/foundry-rs/foundry:stable
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+    strategy:
+      matrix:
+        suite: [unit, integration, fork]
     
-    - name: Run Forge build
-      run: |
-        forge --version
-        forge build
-      id: build
-
-    - name: Run unit tests
-      run: forge test --no-match-contract Integration
-      env:
-        RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
-        RPC_HOLESKY: ${{ secrets.RPC_HOLESKY }}
-        CHAIN_ID: ${{ secrets.CHAIN_ID }}
-
-  integration-tests:
-    needs: prepare
-    runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/foundry-rs/foundry:stable
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
-    
-    - name: Run Forge build
-      run: |
-        forge --version
-        forge build
-      id: build
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-    - name: Run integration tests
-      run: forge test --match-contract Integration
-      env:
-        RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
-        RPC_HOLESKY: ${{ secrets.RPC_HOLESKY }}
-        CHAIN_ID: ${{ secrets.CHAIN_ID }}
+      - name: Forge build
+        run: |
+          forge --version
+          forge build
 
-  fork-tests:
-    needs: prepare
-    runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/foundry-rs/foundry:stable
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
-    
-    - name: Run Forge build
-      run: |
-        forge --version
-        forge build
-      id: build
-
-    - name: Run integration mainnet fork tests
-      run: forge test --match-contract Integration 
-      env:
-        FOUNDRY_PROFILE: "forktest"
-        RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
-        RPC_HOLESKY: ${{ secrets.RPC_HOLESKY }}
-        CHAIN_ID: ${{ secrets.CHAIN_ID }}
+      - name: Run ${{ matrix.suite }} tests
+        run: |
+          case "${{ matrix.suite }}" in
+            unit) forge test --no-match-contract Integration ;;
+            integration) forge test --match-contract Integration ;;
+            fork) forge test --match-contract Integration ;;
+          esac
+        env:
+          FOUNDRY_PROFILE: ${{ matrix.suite == 'fork' && 'forktest' || '' }}
+          RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
+          RPC_HOLESKY: ${{ secrets.RPC_HOLESKY }}
+          CHAIN_ID: ${{ secrets.CHAIN_ID }}
