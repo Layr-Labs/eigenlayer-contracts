@@ -43,10 +43,6 @@ abstract contract AllocationManagerStorage is IAllocationManager {
     /// Note: if set to 0, defaults to the AVS's address
     mapping(address avs => IAVSRegistrar) internal _avsRegistrar;
 
-    /// @dev Lists the AVSs who has registered metadata and claimed itself as an AVS
-    /// @notice bool is not used and if always true if the avs has registered metadata
-    mapping(address avs => bool) internal _avsRegisteredMetadata;
-
     /// @dev Lists the operator set ids an AVS has created
     mapping(address avs => EnumerableSet.UintSet) internal _operatorSets;
 
@@ -92,6 +88,10 @@ abstract contract AllocationManagerStorage is IAllocationManager {
     /// @dev For a strategy, keeps an ordered queue of operator sets that have pending deallocations
     /// These must be completed in order to free up magnitude for future allocation
     mapping(address operator => mapping(IStrategy strategy => DoubleEndedQueue.Bytes32Deque)) internal deallocationQueue;
+
+    /// @dev Lists the AVSs who has registered metadata and claimed itself as an AVS
+    /// @notice bool is not used and is always true if the avs has registered metadata
+    mapping(address avs => bool) internal _avsRegisteredMetadata;
 
     // Construction
 
