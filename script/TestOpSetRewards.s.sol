@@ -103,7 +103,7 @@ contract TestOpSetRewards is Script {
     // }
 
     // Test Operator Directed Operator Set Rewards Submission:
-    // forge script script/TestRewardsV2.s.sol:TestRewardsV2 --rpc-url '<HOLESKY_RPC_URL>' --sig 'tx_5()' --private-key '<0xDA29BB71669f46F2a779b4b62f03644A84eE3479_PRIV_KEY>' -vvvv --broadcast
+    // forge script script/TestOpSetRewards.s.sol:TestOpSetRewards --rpc-url '<HOLESKY_RPC_URL>' --sig 'tx_1()' --private-key '<0x8D8A8D3f88f6a6DA2083D865062bFBE3f1cfc293_PRIV_KEY>' -vvvv --broadcast
     function tx_1() public {
         IRewardsCoordinatorTypes.StrategyAndMultiplier[] memory strategyAndMultipliers = _setupStrategyAndMultiplier();
 
@@ -124,8 +124,8 @@ contract TestOpSetRewards is Script {
             strategiesAndMultipliers: strategyAndMultipliers,
             token: STETH,
             operatorRewards: operatorRewards,
-            startTimestamp: uint32(1_734_220_800), // 2024-12-15 00:00:00 UTC
-            duration: uint32(86_400), // 1 day
+            startTimestamp: uint32(1_734_048_000), // 2024-12-13 00:00:00 UTC
+            duration: uint32(432_000), // 5 days
             description: "test opset rewards"
         });
 
