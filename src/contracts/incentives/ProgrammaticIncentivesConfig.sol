@@ -7,8 +7,22 @@ import "./Vectors.sol";
 import "./Streams.sol";
 
 interface IProgrammaticIncentivesConfig {
+    event AVSAddedToWhitelist(address indexed avs);
+    event AVSRemovedFromWhitelist(address indexed avs);
+    error InputLengthMismatch();
+
     function vector(uint256 vectorIndex) external view returns (VectorEntry[] memory);
+    function isInVector(uint256 vectorIndex, address key) external view returns (bool);
+    function numberOfWeightingVectors() external view returns (uint256);
+
     function claimForSubstream(address substreamRecipient) external;
+    function keyIndex(uint256 vectorIndex, address key) external view returns (uint256);
+
+    function editAVSWhitelistStatus(address avs, bool newWhitelistStatus) external;
+    function updateSubstreamWeight(address substreamRecipient, uint256 newWeight) external;
+    function createNewVector(VectorEntry[] memory initialVectorEntries) external;
+    function addEntries(uint256 vectorIndex, VectorEntry[] memory newEntries) external;
+    function removeKeys(uint256 vectorIndex, address[] memory keysToRemove, uint256[] memory keyIndices) external;
 }
 
 /**
@@ -18,10 +32,6 @@ interface IProgrammaticIncentivesConfig {
 contract ProgrammaticIncentivesConfig is Initializable, OwnableUpgradeable, IProgrammaticIncentivesConfig {
     using LinearVectorOps for *;
     using StreamMath for *;
-
-    event AVSAddedToWhitelist(address indexed avs);
-    event AVSRemovedFromWhitelist(address indexed avs);
-    error InputLengthMismatch();
 
         // calculate EIGEN from bipsPerStream and total rate
     function rewardsCoordinator_distributeProgrammaticIncentives(uint8 streamNumber, uint256 amountEIGEN) external {

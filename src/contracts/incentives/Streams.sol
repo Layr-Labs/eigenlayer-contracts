@@ -12,6 +12,7 @@ interface IRecipient {
 
 uint256 constant TIMESCALE = 4 weeks;
 
+// @notice Determines the relative size of a substream within a token stream, and accounts for the tokens already minted by the substream
 struct Substream {
     uint256 weight;
     uint256 rewardDebt;
