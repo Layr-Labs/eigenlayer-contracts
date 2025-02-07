@@ -12,6 +12,7 @@ contract TestOpSetRewards is Script {
     IRewardsCoordinator rewardsCoordinator = IRewardsCoordinator(0xb22Ef643e1E067c994019A4C19e403253C05c2B0);
 
     IERC20 STETH = IERC20(0x3F1c547b21f65e10480dE3ad8E19fAAC46C95034);
+    IERC20 WETH = IERC20(0x94373a4919B3240D86eA41593D5eBa789FEF3848);
 
     // admin
     address ADMIN = 0x8D8A8D3f88f6a6DA2083D865062bFBE3f1cfc293;
@@ -55,52 +56,6 @@ contract TestOpSetRewards is Script {
         }
         return totalAmount;
     }
-
-    // // Test PI v1 submission: 1. Operator-avs split left unset,  2. Operator-avs split activated before startTimestamp
-    // // forge script script/TestRewardsV2.s.sol:TestRewardsV2 --rpc-url '<HOLESKY_RPC_URL>' --sig 'tx_3()' --private-key '<0xDA29BB71669f46F2a779b4b62f03644A84eE3479_PRIV_KEY>' -vvvv --broadcast
-    // function tx_3() public {
-    //     IRewardsCoordinatorTypes.StrategyAndMultiplier[] memory strategyAndMultipliers = _setupStrategyAndMultiplier();
-
-    //     uint256 amount = 1e18; // 1 WETH
-
-    //     IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions =
-    //         new IRewardsCoordinator.RewardsSubmission[](1);
-    //     rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
-    //         strategiesAndMultipliers: strategyAndMultipliers,
-    //         token: WETH,
-    //         amount: amount,
-    //         startTimestamp: uint32(1_734_220_800), // 2024-12-15 00:00:00 UTC
-    //         duration: uint32(86_400) // 1 day
-    //     });
-
-    //     vm.startBroadcast();
-    //     WETH.approve(address(rewardsCoordinator), amount);
-    //     rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
-    //     vm.stopBroadcast();
-    // }
-
-    // // Test PI v1 submission: 1. Operator-avs split left unset,  2. Operator-avs split activated before startTimestamp
-    // // forge script script/TestRewardsV2.s.sol:TestRewardsV2 --rpc-url '<HOLESKY_RPC_URL>' --sig 'tx_4()' --private-key '<0xDA29BB71669f46F2a779b4b62f03644A84eE3479_PRIV_KEY>' -vvvv --broadcast
-    // function tx_4() public {
-    //     IRewardsCoordinatorTypes.StrategyAndMultiplier[] memory strategyAndMultipliers = _setupStrategyAndMultiplier();
-
-    //     uint256 amount = 1.2e18; // 1.2 WETH
-
-    //     IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions =
-    //         new IRewardsCoordinator.RewardsSubmission[](1);
-    //     rewardsSubmissions[0] = IRewardsCoordinator.RewardsSubmission({
-    //         strategiesAndMultipliers: strategyAndMultipliers,
-    //         token: WETH,
-    //         amount: amount,
-    //         startTimestamp: uint32(1_733_788_800), // 2024-12-10 00:00:00 UTC
-    //         duration: uint32(518_400) // 6 days
-    //     });
-
-    //     vm.startBroadcast();
-    //     WETH.approve(address(rewardsCoordinator), amount);
-    //     rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
-    //     vm.stopBroadcast();
-    // }
 
     // Test Operator Directed Operator Set Rewards Submission
     // forge script script/TestOpSetRewards.s.sol:TestOpSetRewards --rpc-url '<HOLESKY_RPC_URL>' --sig 'tx_1()' --private-key '<0x8D8A8D3f88f6a6DA2083D865062bFBE3f1cfc293_PRIV_KEY>' -vvvv --broadcast
@@ -165,6 +120,29 @@ contract TestOpSetRewards is Script {
         vm.startBroadcast();
         STETH.approve(address(rewardsCoordinator), totalAmount);
         rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, rewardsSubmissions);
+        vm.stopBroadcast();
+    }
+
+    // Test PI Rewards Submission:
+    // forge script script/TestOpSetRewards.s.sol:TestOpSetRewards --rpc-url '<HOLESKY_RPC_URL>' --sig 'tx_3()' --private-key '<0x8D8A8D3f88f6a6DA2083D865062bFBE3f1cfc293_PRIV_KEY>' -vvvv --broadcast
+    function tx_3() public {
+        IRewardsCoordinatorTypes.StrategyAndMultiplier[] memory strategyAndMultipliers = _setupStrategyAndMultiplier();
+
+        uint256 amount = 1e17; // 0.1 WETH
+
+        IRewardsCoordinatorTypes.RewardsSubmission[] memory rewardsSubmissions =
+            new IRewardsCoordinatorTypes.RewardsSubmission[](1);
+        rewardsSubmissions[0] = IRewardsCoordinatorTypes.RewardsSubmission({
+            strategiesAndMultipliers: strategyAndMultipliers,
+            token: WETH,
+            amount: amount,
+            startTimestamp: uint32(1_734_048_000), // 2024-12-13 00:00:00 UTC
+            duration: uint32(432_000) // 5 days
+        });
+
+        vm.startBroadcast();
+        WETH.approve(address(rewardsCoordinator), amount);
+        rewardsCoordinator.createRewardsForAllEarners(rewardsSubmissions);
         vm.stopBroadcast();
     }
 
