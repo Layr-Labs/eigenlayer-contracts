@@ -111,7 +111,7 @@ contract TestOpSetRewards is Script {
             new IRewardsCoordinatorTypes.OperatorReward[](1);
         operatorRewards[0] = IRewardsCoordinatorTypes.OperatorReward({
             operator: OPERATOR_3,
-            amount: 1e17 // 0.1 stETH
+            amount: 9e16 // 0.09 stETH
         });
 
         uint256 totalAmount = _calculateTotalAmount(operatorRewards);
