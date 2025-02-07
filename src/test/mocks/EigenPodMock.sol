@@ -104,4 +104,6 @@ contract EigenPodMock is IEigenPod, SemVerMixin, Test {
     /// to an existing slot within the last 24 hours. If the slot at `timestamp` was skipped, this method
     /// will revert.
     function getParentBlockRoot(uint64 timestamp) external view returns (bytes32) {}
+
+    function getPectraForkTimestamp() external view returns (uint64) {}
 }

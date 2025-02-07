@@ -756,8 +756,9 @@ contract EigenPod is
 
         require(success && result.length > 0, InvalidEIP4788Response());
         return abi.decode(result, (bytes32));
-    }
+    }   
 
+    /// @notice Returns the timestamp of the Pectra fork, read from the `EigenPodManager` contract
     function getPectraForkTimestamp() public view returns (uint64) {
         return eigenPodManager.pectraForkTimestamp();
     }

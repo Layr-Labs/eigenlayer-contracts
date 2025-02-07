@@ -72,15 +72,15 @@ contract BeaconChainMock is Logger {
     /// @dev Non-constant values will change with the Pectra hard fork
 
     // see https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#beaconstate
-    uint constant BEACON_STATE_FIELDS = 37;
+    uint BEACON_STATE_FIELDS = 37;
     // see https://eth2book.info/capella/part3/containers/blocks/#beaconblock
     uint constant BEACON_BLOCK_FIELDS = 5;
 
     uint immutable BLOCKROOT_PROOF_LEN = 32 * BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT;
-    uint immutable VAL_FIELDS_PROOF_LEN = 32 * (
+    uint VAL_FIELDS_PROOF_LEN = 32 * (
         (BeaconChainProofs.VALIDATOR_TREE_HEIGHT + 1) + BeaconChainProofs.PECTRA_BEACON_STATE_TREE_HEIGHT
     );
-    uint immutable BALANCE_CONTAINER_PROOF_LEN = 32 * (
+    uint BALANCE_CONTAINER_PROOF_LEN = 32 * (
         BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT + BeaconChainProofs.PECTRA_BEACON_STATE_TREE_HEIGHT
     );
     uint immutable BALANCE_PROOF_LEN = 32 * (BeaconChainProofs.BALANCE_TREE_HEIGHT + 1);
@@ -129,9 +129,6 @@ contract BeaconChainMock is Logger {
 
     // Maps block.timestamp -> balanceRootIndex -> balance proof for that timestamp
     mapping(uint64 => mapping(uint40 => BalanceRootProof)) balanceRootProofs;
-
-    // Denotes whether the beacon chain has been forked to Pectra
-    bool isPectra;
     
     bytes32[] zeroNodes;
     
@@ -154,7 +151,7 @@ contract BeaconChainMock is Logger {
         }
     }
 
-    function NAME() public pure override returns (string memory) {
+    function NAME() public pure virtual override returns (string memory) {
         return "BeaconChain";
     }
 
@@ -365,7 +362,7 @@ contract BeaconChainMock is Logger {
             console.log("- Withdrew excess balance:", totalExcessWei.asGwei());
     }
 
-    function _advanceEpoch() public {
+    function _advanceEpoch() public virtual {
         cheats.pauseTracing();
 
         // Update effective balances for each validator
@@ -606,7 +603,7 @@ contract BeaconChainMock is Logger {
         });
     }
 
-    function _genBalanceContainerProof(bytes32 balanceContainerRoot) internal {
+    function _genBalanceContainerProof(bytes32 balanceContainerRoot) internal virtual {
         bytes memory proof = new bytes(BALANCE_CONTAINER_PROOF_LEN);
         bytes32 curNode = balanceContainerRoot;
 
@@ -648,7 +645,7 @@ contract BeaconChainMock is Logger {
         });
     }
 
-    function _genCredentialProofs() internal {
+    function _genCredentialProofs() internal virtual {
         mapping(uint40 => ValidatorFieldsProof) storage vfProofs = validatorFieldsProofs[curTimestamp];
 
         // Calculate credential proofs for each validator
@@ -763,7 +760,7 @@ contract BeaconChainMock is Logger {
             0 : ((validators.length - 1) / 4) + 1;
     }
 
-    function _getBeaconStateLeaves(bytes32 validatorsRoot, bytes32 balancesRoot) internal pure returns (bytes32[] memory) {
+    function _getBeaconStateLeaves(bytes32 validatorsRoot, bytes32 balancesRoot) internal virtual view returns (bytes32[] memory) {
         bytes32[] memory leaves = new bytes32[](BEACON_STATE_FIELDS);
 
         // Pre-populate leaves with dummy values so sibling/parent tracking is correct
