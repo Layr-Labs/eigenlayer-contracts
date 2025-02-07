@@ -102,7 +102,7 @@ contract TestOpSetRewards is Script {
     //     vm.stopBroadcast();
     // }
 
-    // Test Operator Directed Operator Set Rewards Submission:
+    // Test Operator Directed Operator Set Rewards Submission
     // forge script script/TestOpSetRewards.s.sol:TestOpSetRewards --rpc-url '<HOLESKY_RPC_URL>' --sig 'tx_1()' --private-key '<0x8D8A8D3f88f6a6DA2083D865062bFBE3f1cfc293_PRIV_KEY>' -vvvv --broadcast
     function tx_1() public {
         IRewardsCoordinatorTypes.StrategyAndMultiplier[] memory strategyAndMultipliers = _setupStrategyAndMultiplier();
@@ -126,6 +126,39 @@ contract TestOpSetRewards is Script {
             operatorRewards: operatorRewards,
             startTimestamp: uint32(1_734_048_000), // 2024-12-13 00:00:00 UTC
             duration: uint32(432_000), // 5 days
+            description: "test opset rewards"
+        });
+
+        vm.startBroadcast();
+        STETH.approve(address(rewardsCoordinator), totalAmount);
+        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, rewardsSubmissions);
+        vm.stopBroadcast();
+    }
+
+    // Test Operator Directed Operator Set Rewards Submission: AVS refund
+    // forge script script/TestOpSetRewards.s.sol:TestOpSetRewards --rpc-url '<HOLESKY_RPC_URL>' --sig 'tx_2()' --private-key '<0x8D8A8D3f88f6a6DA2083D865062bFBE3f1cfc293_PRIV_KEY>' -vvvv --broadcast
+    function tx_2() public {
+        IRewardsCoordinatorTypes.StrategyAndMultiplier[] memory strategyAndMultipliers = _setupStrategyAndMultiplier();
+
+        IRewardsCoordinatorTypes.OperatorReward[] memory operatorRewards =
+            new IRewardsCoordinatorTypes.OperatorReward[](1);
+        operatorRewards[0] = IRewardsCoordinatorTypes.OperatorReward({
+            operator: OPERATOR_3,
+            amount: 1e17 // 0.1 stETH
+        });
+
+        uint256 totalAmount = _calculateTotalAmount(operatorRewards);
+
+        OperatorSet memory operatorSet = OperatorSet({avs: AVS_A, id: OPERATOR_SET_ID_0});
+
+        IRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission[] memory rewardsSubmissions =
+            new IRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission[](1);
+        rewardsSubmissions[0] = IRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission({
+            strategiesAndMultipliers: strategyAndMultipliers,
+            token: STETH,
+            operatorRewards: operatorRewards,
+            startTimestamp: uint32(1_733_788_800), // 2024-12-10 00:00:00 UTC
+            duration: uint32(172_800), // 2 days
             description: "test opset rewards"
         });
 
