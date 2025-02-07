@@ -52,6 +52,9 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         staker.delegateTo(operator);
         check_Delegation_State(staker, operator, strategies, shares);
 
+        // update AVS metadata URI
+        avs.updateAVSMetadataURI("https://example.com");
+
         // Create operator set and register operator
         operatorSet = avs.createOperatorSet(strategies);
         operator.registerForOperatorSet(operatorSet);
