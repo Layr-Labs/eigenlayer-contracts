@@ -21,12 +21,9 @@ jobs:
         echo "::set-output name=matrix::$FILES"
       id: set-matrix
 
-  run-tests:
+  unit-tests:
     needs: prepare
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
@@ -49,12 +46,48 @@ jobs:
         RPC_HOLESKY: ${{ secrets.RPC_HOLESKY }}
         CHAIN_ID: ${{ secrets.CHAIN_ID }}
 
+  integration-tests:
+    needs: prepare
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+    
+    - name: Install Foundry
+      uses: foundry-rs/foundry-toolchain@v1
+      with:
+        version: stable
+
+    - name: Run Forge build
+      run: |
+        forge --version
+        forge build
+      id: build
+
     - name: Run integration tests
       run: forge test --match-contract Integration
       env:
         RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
         RPC_HOLESKY: ${{ secrets.RPC_HOLESKY }}
         CHAIN_ID: ${{ secrets.CHAIN_ID }}
+
+  fork-tests:
+    needs: prepare
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+    
+    - name: Install Foundry
+      uses: foundry-rs/foundry-toolchain@v1
+      with:
+        version: stable
+
+    - name: Run Forge build
+      run: |
+        forge --version
+        forge build
+      id: build
 
     - name: Run integration mainnet fork tests
       run: forge test --match-contract Integration 
