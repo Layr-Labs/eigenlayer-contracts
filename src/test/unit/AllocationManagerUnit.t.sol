@@ -3562,6 +3562,13 @@ contract AllocationManagerUnitTests_createOperatorSets is AllocationManagerUnitT
         allocationManager.createOperatorSets(defaultAVS, CreateSetParams(defaultOperatorSet.id, defaultStrategies).toArray());
     }
 
+    function testRevert_createOperatorSets_InvalidAVSWithNoMetadataRegistered(Randomness r) public rand(r) {
+        address avs = r.Address();
+        cheats.expectRevert(InvalidAVSWithNoMetadataRegistered.selector);
+        cheats.prank(avs);
+        allocationManager.createOperatorSets(avs, CreateSetParams(defaultOperatorSet.id, defaultStrategies).toArray());
+    }
+
     function testFuzz_createOperatorSets_Correctness(
         Randomness r
     ) public rand(r) {
