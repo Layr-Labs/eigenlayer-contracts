@@ -108,7 +108,7 @@ contract TestOpSetRewards is Script {
         IRewardsCoordinatorTypes.StrategyAndMultiplier[] memory strategyAndMultipliers = _setupStrategyAndMultiplier();
 
         IRewardsCoordinatorTypes.OperatorReward[] memory operatorRewards =
-            new IRewardsCoordinatorTypes.OperatorReward[](2);
+            new IRewardsCoordinatorTypes.OperatorReward[](1);
         operatorRewards[0] = IRewardsCoordinatorTypes.OperatorReward({
             operator: OPERATOR_3,
             amount: 1e17 // 0.1 stETH
