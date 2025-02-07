@@ -327,7 +327,7 @@ contract RewardsCoordinator is
         require(allocationManager.isOperatorSet(operatorSet), InvalidOperatorSet());
 
         uint32 activatedAt = uint32(block.timestamp) + activationDelay;
-        uint16 oldSplit = _getOperatorSplit(_operatorSetSplitBips[operator][operatorSet.key()]);
+        uint16 oldSplit = _getOperatorSetSplit(operator, operatorSet);
         _setOperatorSplit(_operatorSetSplitBips[operator][operatorSet.key()], split, activatedAt);
 
         emit OperatorSetSplitBipsSet(msg.sender, operator, operatorSet, activatedAt, oldSplit, split);
@@ -620,6 +620,33 @@ contract RewardsCoordinator is
     }
 
     /**
+     * @notice Internal helper to get the operator set split in basis points.
+     * @dev It takes the fallback split and activation delay into account while calculating the split.
+     * Fallback split is in the following order:
+     * 1. operator avs split
+     * 2. default operator split
+     * @param operator The operator address.
+     * @param operatorSet The operator set.
+     * @return The split in basis points.
+     */
+    function _getOperatorSetSplit(address operator, OperatorSet calldata operatorSet) internal view returns (uint16) {
+        OperatorSplit memory operatorSplit = _operatorSetSplitBips[operator][operatorSet.key()];
+
+        if (
+            (operatorSplit.activatedAt == 0)
+                || (operatorSplit.oldSplitBips == type(uint16).max && block.timestamp < operatorSplit.activatedAt)
+        ) {
+            // Return the fallback split if the operator split has not been initialized.
+            // Also return the fallback split if the operator split has been initialized but not activated yet. (i.e the first initialization)
+            return _getOperatorSplit(_operatorAVSSplitBips[operator][operatorSet.avs]);
+        } else {
+            // Return the new split if the new split has been activated, else return the old split.
+            return
+                (block.timestamp >= operatorSplit.activatedAt) ? operatorSplit.newSplitBips : operatorSplit.oldSplitBips;
+        }
+    }
+
+    /**
      *
      *                         VIEW FUNCTIONS
      *
@@ -661,7 +688,7 @@ contract RewardsCoordinator is
 
     /// @inheritdoc IRewardsCoordinator
     function getOperatorSetSplit(address operator, OperatorSet calldata operatorSet) external view returns (uint16) {
-        return _getOperatorSplit(_operatorSetSplitBips[operator][operatorSet.key()]);
+        return _getOperatorSetSplit(operator, operatorSet);
     }
 
     /// @inheritdoc IRewardsCoordinator
