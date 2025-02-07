@@ -2,8 +2,8 @@
 pragma solidity ^0.8.12;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "../interfaces/IEigen.sol";
 import "./ProgrammaticIncentivesConfig.sol";
-import "./TokenInflationNexus.sol";
 
 /**
  * @notice Version of the IRewardsCoordinator interface with struct names/definitions
@@ -38,33 +38,28 @@ contract RewardAllStakersDistributor is IIncentivesDistributor {
     event IncentivesDistributed(uint256 amountEIGEN);
 
     IProgrammaticIncentivesConfig public immutable programmaticIncentivesConfig;
-    TokenInflationNexus public immutable tokenInflationNexus;
     address public immutable rewardsCoordinator;
     IERC20 public immutable bEIGEN;
     IERC20 public immutable EIGEN;
     uint256 public immutable vectorIndex;
-    uint256 public immutable streamID;
+
     constructor(
         IProgrammaticIncentivesConfig _programmaticIncentivesConfig,
-        TokenInflationNexus _tokenInflationNexus,
         address _rewardsCoordinator,
         IERC20 _bEIGEN,
         IERC20 _EIGEN,
-        uint256 _vectorIndex,
-        uint256 _streamID
+        uint256 _vectorIndex
     ) {
         programmaticIncentivesConfig = _programmaticIncentivesConfig;
-        tokenInflationNexus = _tokenInflationNexus;
         rewardsCoordinator = _rewardsCoordinator;
         bEIGEN = _bEIGEN;
         EIGEN = _EIGEN;
         vectorIndex = _vectorIndex;
-        streamID = _streamID;
     }
 
     function distributeIncentives() external {
         // 0) mint new tokens
-        tokenInflationNexus.claimForSubstream({streamID: streamID, substreamRecipient: address(this)});
+        programmaticIncentivesConfig.claimForSubstream({substreamRecipient: address(this)});
 
         // 1) check how many tokens were minted (also accounts for transfers in)
         uint256 tokenAmount = bEIGEN.balanceOf(address(this));

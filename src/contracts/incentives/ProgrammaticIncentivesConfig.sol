@@ -4,9 +4,11 @@ pragma solidity ^0.8.12;
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "./Vectors.sol";
+import "./Streams.sol";
 
 interface IProgrammaticIncentivesConfig {
     function vector(uint256 vectorIndex) external view returns (VectorEntry[] memory);
+    function claimForSubstream(address substreamRecipient) external;
 }
 
 /**
@@ -15,9 +17,11 @@ interface IProgrammaticIncentivesConfig {
  */
 contract ProgrammaticIncentivesConfig is Initializable, OwnableUpgradeable, IProgrammaticIncentivesConfig {
     using LinearVectorOps for *;
+    using StreamMath for *;
 
     event AVSAddedToWhitelist(address indexed avs);
     event AVSRemovedFromWhitelist(address indexed avs);
+    error InputLengthMismatch();
 
         // calculate EIGEN from bipsPerStream and total rate
     function rewardsCoordinator_distributeProgrammaticIncentives(uint8 streamNumber, uint256 amountEIGEN) external {
@@ -34,7 +38,30 @@ contract ProgrammaticIncentivesConfig is Initializable, OwnableUpgradeable, IPro
     }
     // also exclude any AVSs from stream which do not value any of the strategies
 
+    // 4% of initial supply of EIGEN
+    uint256 constant internal CURRENT_YEARLY_INFLATION = 66945866731386400000000160;
+
     mapping(address => bool) public avsIsWhitelisted;
+
+    LinearVector[] internal _weightingVectors;
+
+    // @notice single inflationary stream of EIGEN tokens
+    // TODO: figure out what automatic getter(s) for this look like!
+    NonNormalizedStream public stream;
+
+    address public bEIGEN;
+
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize(address initialOwner, address _bEIGEN) external initializer {
+        _transferOwnership(initialOwner);
+        bEIGEN = _bEIGEN;
+        stream.rate = CURRENT_YEARLY_INFLATION * TIMESCALE / 365 days;
+        stream.lastUpdated = block.timestamp / TIMESCALE;
+        // TODO: initiate substreams?
+    }
 
     function editAVSWhitelistStatus(address avs, bool newWhitelistStatus) external onlyOwner {
         if (avsIsWhitelisted[avs] && !newWhitelistStatus) {
@@ -46,9 +73,14 @@ contract ProgrammaticIncentivesConfig is Initializable, OwnableUpgradeable, IPro
         }
     }
 
-    error InputLengthMismatch();
+    function claimForSubstream(address substreamRecipient) external {
+        // TODO: access control? could just use msg.sender instead of having `substreamRecipient` input
+        stream.claimForSubstream(substreamRecipient, bEIGEN);
+    }
 
-    LinearVector[] internal _weightingVectors;
+    function updateSubstreamWeight(address substreamRecipient, uint256 newWeight) external onlyOwner {
+        stream.updateSubstreamWeight(substreamRecipient, newWeight, bEIGEN);
+    }
 
     function createNewVector(VectorEntry[] memory initialVectorEntries) external onlyOwner {
         _weightingVectors.push();
