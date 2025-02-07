@@ -256,8 +256,6 @@ contract AllocationManager is
     ) external onlyWhenNotPaused(PAUSED_OPERATOR_SET_REGISTRATION_AND_DEREGISTRATION) checkCanCall(operator) {
         // Check that the operator exists
         require(delegation.isOperator(operator), InvalidOperator());
-        // Check that the AVS exists and has registered metadata
-        require(_avsRegisteredMetadata[params.avs], InvalidAVSWithNoMetadataRegistered());
 
         for (uint256 i = 0; i < params.operatorSetIds.length; i++) {
             // Check the operator set exists and the operator is not currently registered to it
@@ -334,6 +332,9 @@ contract AllocationManager is
 
     /// @inheritdoc IAllocationManager
     function createOperatorSets(address avs, CreateSetParams[] calldata params) external checkCanCall(avs) {
+        // Check that the AVS exists and has registered metadata
+        require(_avsRegisteredMetadata[params.avs], InvalidAVSWithNoMetadataRegistered());
+
         for (uint256 i = 0; i < params.length; i++) {
             OperatorSet memory operatorSet = OperatorSet(avs, params[i].operatorSetId);
 
