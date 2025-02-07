@@ -71,7 +71,10 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
         defaultStrategies = strategyMock.toArray();
         defaultOperatorSet = OperatorSet(defaultAVS, 0);
 
+        cheats.prank(defaultAVS);
         allocationManager.updateAVSMetadataURI(defaultAVS, "https://example.com");
+
+
         _createOperatorSet(defaultOperatorSet, defaultStrategies);
         _registerOperator(defaultOperator);
         _setAllocationDelay(defaultOperator, DEFAULT_OPERATOR_ALLOCATION_DELAY);
