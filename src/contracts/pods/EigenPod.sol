@@ -759,6 +759,7 @@ contract EigenPod is
     }   
 
     /// @notice Returns the timestamp of the Pectra fork, read from the `EigenPodManager` contract
+    /// @dev Specifically, this returns the timestamp of the first non-missed slot at or after the Pectra hard fork
     function getPectraForkTimestamp() public view returns (uint64) {
         return eigenPodManager.pectraForkTimestamp();
     }
