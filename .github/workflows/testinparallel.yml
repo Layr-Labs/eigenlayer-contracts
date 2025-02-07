@@ -5,15 +5,9 @@ on:
   pull_request:
     types: [opened, reopened]
 
-defaults:
-  run:
-    shell: sh
-
 jobs:
   test-suite:
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/foundry-rs/foundry:stable
     strategy:
       matrix:
         suite: [unit, integration, fork]
@@ -22,8 +16,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Install Forge dependencies
-        run: forge install
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
 
       - name: Forge build
         run: |
