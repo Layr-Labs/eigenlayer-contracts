@@ -892,6 +892,37 @@ contract RewardsCoordinatorUnitsTests_setOperatorSetSplit is RewardsCoordinatorU
         assertEq(split, rewardsCoordinator.getOperatorSetSplit(operator, operatorSet), "Incorrect Operator split");
     }
 
+    // Testing that the split has been initialized for the first time.
+    function testFuzz_setOperatorSetSplitFirstTimeWithFallbackSplit(
+        address operator,
+        uint16 operatorAvsSplit,
+        uint16 operatorSetSplit
+    ) public filterFuzzedAddressInputs(operator) {
+        cheats.assume(operator != address(0));
+        operatorAvsSplit = uint16(bound(operatorAvsSplit, 0, ONE_HUNDRED_IN_BIPS));
+        operatorSetSplit = uint16(bound(operatorSetSplit, 0, ONE_HUNDRED_IN_BIPS));
+
+        // Set Operator AVS split
+        cheats.prank(operator);
+        rewardsCoordinator.setOperatorAVSSplit(operator, operatorSet.avs, operatorAvsSplit);
+        uint32 activatedAt = uint32(block.timestamp) + activationDelay;
+        cheats.warp(activatedAt);
+
+        // Set Operator Set split
+        activatedAt = uint32(block.timestamp) + activationDelay;
+        uint16 oldSplit = rewardsCoordinator.getOperatorSetSplit(operator, operatorSet);
+        assertEq(oldSplit, operatorAvsSplit, "Operator split is not fall back split before Initialization");
+
+        cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
+        emit OperatorSetSplitBipsSet(operator, operator, operatorSet, activatedAt, oldSplit, operatorSetSplit);
+        cheats.prank(operator);
+        rewardsCoordinator.setOperatorSetSplit(operator, operatorSet, operatorSetSplit);
+
+        assertEq(oldSplit, rewardsCoordinator.getOperatorSetSplit(operator, operatorSet), "Incorrect Operator split");
+        cheats.warp(activatedAt);
+        assertEq(operatorSetSplit, rewardsCoordinator.getOperatorSetSplit(operator, operatorSet), "Incorrect Operator split");
+    }
+
     // Testing the split setting for a second time prior to the earlier activation.
     function testFuzz_Revert_setOperatorSetSplitSecondTimeBeforePriorActivation(
         address operator,
