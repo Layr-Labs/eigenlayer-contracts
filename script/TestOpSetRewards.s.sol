@@ -155,4 +155,37 @@ contract TestOpSetRewards is Script {
         rewardsCoordinator.setOperatorSetSplit(OPERATOR_3, operatorSet, 3000);
         vm.stopBroadcast();
     }
+
+    // Test Operator Directed Operator Set Rewards Submission: Test Operator Set Split
+    // forge script script/TestOpSetRewards.s.sol:TestOpSetRewards --rpc-url '<HOLESKY_RPC_URL>' --sig 'tx_5()' --private-key '<0x8D8A8D3f88f6a6DA2083D865062bFBE3f1cfc293_PRIV_KEY>' -vvvv --broadcast
+    function tx_5() public {
+        IRewardsCoordinatorTypes.StrategyAndMultiplier[] memory strategyAndMultipliers = _setupStrategyAndMultiplier();
+
+        IRewardsCoordinatorTypes.OperatorReward[] memory operatorRewards =
+            new IRewardsCoordinatorTypes.OperatorReward[](1);
+        operatorRewards[0] = IRewardsCoordinatorTypes.OperatorReward({
+            operator: OPERATOR_3,
+            amount: 1e17 // 0.1 stETH
+        });
+
+        uint256 totalAmount = _calculateTotalAmount(operatorRewards);
+
+        OperatorSet memory operatorSet = OperatorSet({avs: AVS_A, id: OPERATOR_SET_ID_0});
+
+        IRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission[] memory rewardsSubmissions =
+            new IRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission[](1);
+        rewardsSubmissions[0] = IRewardsCoordinatorTypes.OperatorDirectedRewardsSubmission({
+            strategiesAndMultipliers: strategyAndMultipliers,
+            token: STETH,
+            operatorRewards: operatorRewards,
+            startTimestamp: uint32(1_738_627_200), // 2025-02-04 00:00:00 UTC
+            duration: uint32(432_000), // 5 days
+            description: "test opset rewards"
+        });
+
+        vm.startBroadcast();
+        STETH.approve(address(rewardsCoordinator), totalAmount);
+        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, rewardsSubmissions);
+        vm.stopBroadcast();
+    }
 }
