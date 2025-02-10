@@ -7,22 +7,63 @@ import "./Vectors.sol";
 import "./Streams.sol";
 
 interface IProgrammaticIncentivesConfig {
+    // events for rewards-boost whitelist
     event AVSAddedToWhitelist(address indexed avs);
     event AVSRemovedFromWhitelist(address indexed avs);
+    event TokenAddedToWhitelist(address indexed token);
+    event TokenRemovedFromWhitelist(address indexed token);
+
     error InputLengthMismatch();
 
+    // @notice Returns the weighting vector at `vectorIndex` (currently used to compare Strategy shares)
     function vector(uint256 vectorIndex) external view returns (VectorEntry[] memory);
+
+    /**
+     * @notice Getter function for querying whether a `key` is in the `vectorIndex`-th vector
+     * @dev Will not revert even in the event that the `vectorIndex`-th vector does not exist
+     */
     function isInVector(uint256 vectorIndex, address key) external view returns (bool);
+
+    // @notice Returns the total number of existing vectors
     function numberOfWeightingVectors() external view returns (uint256);
 
-    function claimForSubstream(address substreamRecipient) external;
+    /**
+     * @notice Getter function for fetching the index of a `key` within the `vectorIndex`-th vector
+     * @dev Reverts if the key is not in the vector
+     */
     function keyIndex(uint256 vectorIndex, address key) external view returns (uint256);
 
+    // TODO: determine if this function should be called by the recipient itself or can be called on behalf of them
+    // @notice Claims all pending inflationary tokens for the `substreamRecipient`
+    function claimForSubstream(address substreamRecipient) external;
+
+    // contract owner-only functions
+    // @notice mapping avs => whether or not the avs is considered for incentives types that are filtered by the AVS whitelist
+    function avsIsWhitelisted(address avs) external view returns (bool);
+
+    // @notice Called by the contract owner modify the whitelist status of an AVS
     function editAVSWhitelistStatus(address avs, bool newWhitelistStatus) external;
+
+    // @notice mapping token => whether or not the token is considered for incentives types that are filtered by the token whitelist
+    function tokenIsWhitelisted(address avs) external view returns (bool);
+
+    // TODO: there may be additional inputs required, especially if e.g. this function is supposed to deploy a token oracle contract
+    // @notice Called by the contract owner modify the whitelist status of a token
+    function editTokenWhitelistStatus(address avs, bool newWhitelistStatus) external;
+
+    // @notice Called by the contract owner to change the relative amount of inflation going to the `substreamRecipient`
     function updateSubstreamWeight(address substreamRecipient, uint256 newWeight) external;
+
+    // @notice Called by the contract owner to create a new vector indicating how different tokens are weighted relative to one another
     function createNewVector(VectorEntry[] memory initialVectorEntries) external;
+
+    // @notice Called by the contract owner to add additional entries to an existing vector
     function addEntries(uint256 vectorIndex, VectorEntry[] memory newEntries) external;
+
+    // @notice Called by the contract owner to remove entries from an existing vector
     function removeKeys(uint256 vectorIndex, address[] memory keysToRemove, uint256[] memory keyIndices) external;
+
+
 }
 
 /**
@@ -33,25 +74,14 @@ contract ProgrammaticIncentivesConfig is Initializable, OwnableUpgradeable, IPro
     using LinearVectorOps for *;
     using StreamMath for *;
 
-        // calculate EIGEN from bipsPerStream and total rate
-    function rewardsCoordinator_distributeProgrammaticIncentives(uint8 streamNumber, uint256 amountEIGEN) external {
-        // read list of whitelisted AVSs
-        // pull list of strategies and multipliers
-        // get distributions from all AVSs (including ghost distributions)
-        // filter distributions for stream inclusion (some difficulty with partial inclusion)
-        // calculate total distributions in stream for each AVS (using price oracles to convert distributed tokens into common basis)
-        // sum AVS distributions to get grand total
-        // use grand total to get an EIGEN/($ or ETH, whatever unit of account is) for the stream
-        // multiply rate by AVS sum to get EIGEN for the AVS
-        // distribute EIGEN to Stakers and Operators of the AVS based on Strategy Weights in stream (a la RewardsV1)
-        // TODO: figure out if this is for the same period or "trailing" -- EIGEN incentives distribution is for stakers in _this period_ based on distributions in last period
-    }
-    // also exclude any AVSs from stream which do not value any of the strategies
-
     // 4% of initial supply of EIGEN
     uint256 constant internal CURRENT_YEARLY_INFLATION = 66945866731386400000000160;
 
+    // @inheritdoc IProgrammaticIncentivesConfig
     mapping(address => bool) public avsIsWhitelisted;
+
+    // @inheritdoc IProgrammaticIncentivesConfig
+    mapping(address => bool) public tokenIsWhitelisted;
 
     LinearVector[] internal _weightingVectors;
 
@@ -73,6 +103,7 @@ contract ProgrammaticIncentivesConfig is Initializable, OwnableUpgradeable, IPro
         // TODO: initiate substreams?
     }
 
+    // @inheritdoc IProgrammaticIncentivesConfig
     function editAVSWhitelistStatus(address avs, bool newWhitelistStatus) external onlyOwner {
         if (avsIsWhitelisted[avs] && !newWhitelistStatus) {
             avsIsWhitelisted[avs] = false;
@@ -83,15 +114,29 @@ contract ProgrammaticIncentivesConfig is Initializable, OwnableUpgradeable, IPro
         }
     }
 
+    // @inheritdoc IProgrammaticIncentivesConfig
+    function editTokenWhitelistStatus(address token, bool newWhitelistStatus) external onlyOwner {
+        if (tokenIsWhitelisted[token] && !newWhitelistStatus) {
+            tokenIsWhitelisted[token] = false;
+            emit TokenRemovedFromWhitelist(token);
+        } else if (!tokenIsWhitelisted[token] && newWhitelistStatus) {
+            tokenIsWhitelisted[token] = true;
+            emit TokenAddedToWhitelist(token);
+        }
+    }
+
+    // @inheritdoc IProgrammaticIncentivesConfig
     function claimForSubstream(address substreamRecipient) external {
         // TODO: access control? could just use msg.sender instead of having `substreamRecipient` input
         stream.claimForSubstream(substreamRecipient, bEIGEN);
     }
 
+    // @inheritdoc IProgrammaticIncentivesConfig
     function updateSubstreamWeight(address substreamRecipient, uint256 newWeight) external onlyOwner {
         stream.updateSubstreamWeight(substreamRecipient, newWeight, bEIGEN);
     }
 
+    // @inheritdoc IProgrammaticIncentivesConfig
     function createNewVector(VectorEntry[] memory initialVectorEntries) external onlyOwner {
         _weightingVectors.push();
         _addEntries({
@@ -100,18 +145,22 @@ contract ProgrammaticIncentivesConfig is Initializable, OwnableUpgradeable, IPro
         });
     }
 
+    // @inheritdoc IProgrammaticIncentivesConfig
     function numberOfWeightingVectors() external view returns (uint256) {
         return _weightingVectors.length;
     }
 
+    // @inheritdoc IProgrammaticIncentivesConfig
     function vector(uint256 vectorIndex) external view returns (VectorEntry[] memory) {
         return _weightingVectors[vectorIndex].vector;
     }
 
+    // @inheritdoc IProgrammaticIncentivesConfig
     function isInVector(uint256 vectorIndex, address key) external view returns (bool) {
         return _weightingVectors[vectorIndex].isInVector[key];
     }
 
+    // @inheritdoc IProgrammaticIncentivesConfig
     function keyIndex(uint256 vectorIndex, address key) external view returns (uint256) {
         return _weightingVectors[vectorIndex].findKeyIndex(key);
     }
@@ -129,6 +178,7 @@ contract ProgrammaticIncentivesConfig is Initializable, OwnableUpgradeable, IPro
         }
     }
 
+    // @inheritdoc IProgrammaticIncentivesConfig
     function addEntries(uint256 vectorIndex, VectorEntry[] memory newEntries) external onlyOwner {
         _addEntries(vectorIndex, newEntries);
     }

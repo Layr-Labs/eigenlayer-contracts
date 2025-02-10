@@ -25,6 +25,7 @@ interface IRewardsCoordinator_VectorModification {
 
 interface IIncentivesDistributor {
     function distributeIncentives() external;
+    event IncentivesDistributed(uint256 amountEIGEN);
 }
 
 /**
@@ -35,7 +36,6 @@ interface IIncentivesDistributor {
  */
 contract RewardAllStakersDistributor is IIncentivesDistributor {
     using SafeERC20 for IERC20;
-    event IncentivesDistributed(uint256 amountEIGEN);
 
     IProgrammaticIncentivesConfig public immutable programmaticIncentivesConfig;
     address public immutable rewardsCoordinator;
