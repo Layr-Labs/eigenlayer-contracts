@@ -8814,3 +8814,37 @@ contract DelegationManagerUnitTests_getQueuedWithdrawals is DelegationManagerUni
         );
     }
 }
+
+contract DelegationManagerUnitTests_getWithdrawableShares is DelegationManagerUnitTests {
+    using ArrayLib for *;
+    using SlashingLib for *;
+
+    function test_getWithdrawableShares_Correctness(Randomness r) public {
+        uint256 numStrategies = r.Uint256(2, 8);
+        uint256[] memory depositShares = r.Uint256Array({len: numStrategies, min: 2, max: 100 ether});
+
+        IStrategy[] memory strategies = _deployAndDepositIntoStrategies(defaultStaker, depositShares, false);
+        _registerOperatorWithBaseDetails(defaultOperator);
+        _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
+
+        // Queue withdrawals.
+        (QueuedWithdrawalParams[] memory queuedWithdrawalParams, Withdrawal memory withdrawal, bytes32 withdrawalRoot) =
+        _setUpQueueWithdrawals({staker: defaultStaker, strategies: strategies, depositWithdrawalAmounts: depositShares});
+
+        _queueWithdrawals(defaultStaker, queuedWithdrawalParams, withdrawal);
+
+        (uint256[] memory withdrawableSharesA, uint256[] memory depositSharesA) =
+            delegationManager.getWithdrawableShares(defaultStaker, strategies);
+
+        (uint256[] memory withdrawableSharesB, uint256[] memory depositSharesB) =
+            delegationManager.getWithdrawableShares(withdrawalRoot);
+
+        assertEq(withdrawableSharesA.length, withdrawableSharesB.length, "withdrawableSharesA.length != withdrawableSharesB.length");
+        assertEq(depositSharesA.length, depositSharesB.length, "depositSharesA.length != depositSharesB.length");
+
+        for (uint256 i; i < withdrawableSharesA.length; ++i) {
+            assertEq(withdrawableSharesA[i], withdrawableSharesB[i], "withdrawableSharesA[i] != withdrawableSharesB[i]");
+            assertEq(depositSharesA[i], depositSharesB[i], "depositSharesA[i] != depositSharesB[i]");
+        }
+    }
+}

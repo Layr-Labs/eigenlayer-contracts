@@ -776,6 +776,30 @@ contract DelegationManager is
         }
     }
 
+    /// @dev Given a staker and a set of strategies, return the shares they can queue for withdrawal and the  corresponding deposit shares.
+    function _getWithdrawableShares(
+        address staker,
+        IStrategy[] memory strategies
+    ) internal view returns (uint256[] memory withdrawableShares, uint256[] memory depositShares) {
+        withdrawableShares = new uint256[](strategies.length);
+        depositShares = new uint256[](strategies.length);
+
+        // Get the slashing factors for the staker/operator/strategies
+        address operator = delegatedTo[staker];
+        uint256[] memory slashingFactors = _getSlashingFactors(staker, operator, strategies);
+
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            IShareManager shareManager = _getShareManager(strategies[i]);
+            depositShares[i] = shareManager.stakerDepositShares(staker, strategies[i]);
+
+            // Calculate the withdrawable shares based on the slashing factor
+            DepositScalingFactor memory dsf = _depositScalingFactor[staker][strategies[i]];
+            withdrawableShares[i] = dsf.calcWithdrawable(depositShares[i], slashingFactors[i]);
+        }
+
+        return (withdrawableShares, depositShares);
+    }
+
     /// @dev Depending on the strategy used, determine which ShareManager contract to make external calls to
     function _getShareManager(
         IStrategy strategy
@@ -859,23 +883,15 @@ contract DelegationManager is
         address staker,
         IStrategy[] memory strategies
     ) public view returns (uint256[] memory withdrawableShares, uint256[] memory depositShares) {
-        withdrawableShares = new uint256[](strategies.length);
-        depositShares = new uint256[](strategies.length);
+        return _getWithdrawableShares(staker, strategies);
+    }
 
-        // Get the slashing factors for the staker/operator/strategies
-        address operator = delegatedTo[staker];
-        uint256[] memory slashingFactors = _getSlashingFactors(staker, operator, strategies);
-
-        for (uint256 i = 0; i < strategies.length; ++i) {
-            IShareManager shareManager = _getShareManager(strategies[i]);
-            depositShares[i] = shareManager.stakerDepositShares(staker, strategies[i]);
-
-            // Calculate the withdrawable shares based on the slashing factor
-            DepositScalingFactor memory dsf = _depositScalingFactor[staker][strategies[i]];
-            withdrawableShares[i] = dsf.calcWithdrawable(depositShares[i], slashingFactors[i]);
-        }
-
-        return (withdrawableShares, depositShares);
+    /// @inheritdoc IDelegationManager
+    function getWithdrawableShares(
+        bytes32 withdrawalRoot
+    ) public view returns (uint256[] memory withdrawableShares, uint256[] memory depositShares) {
+        Withdrawal memory withdrawal = queuedWithdrawals[withdrawalRoot];
+        return _getWithdrawableShares(withdrawal.staker, withdrawal.strategies);
     }
 
     /// @inheritdoc IDelegationManager

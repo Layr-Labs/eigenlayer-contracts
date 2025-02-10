@@ -460,6 +460,16 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
     ) external view returns (uint256[] memory withdrawableShares, uint256[] memory depositShares);
 
     /**
+     * @notice Given a queued withdrawal, return the shares that can be withdrawn and the corresponding deposit shares.
+     * @param withdrawalRoot The root of the queued withdrawal
+     * @return withdrawableShares The shares that can be withdrawn
+     * @return depositShares The corresponding deposit shares
+     */
+    function getWithdrawableShares(
+        bytes32 withdrawalRoot
+    ) external view returns (uint256[] memory withdrawableShares, uint256[] memory depositShares);
+
+    /**
      * @notice Returns the number of shares in storage for a staker and all their strategies
      */
     function getDepositedShares(
