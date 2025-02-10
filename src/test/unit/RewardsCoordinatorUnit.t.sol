@@ -1393,7 +1393,7 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
         FuzzAVSRewardsSubmission memory param,
         uint256 numSubmissions
     ) public filterFuzzedAddressInputs(param.avs) {
-        cheats.assume(2 <= numSubmissions && numSubmissions <= 10);
+        numSubmissions = bound(numSubmissions, 2, 10);
         cheats.assume(param.avs != address(0));
         cheats.prank(rewardsCoordinator.owner());
 
@@ -1626,7 +1626,7 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllSubmission is RewardsCoo
         FuzzAVSRewardsSubmission memory param,
         uint256 numSubmissions
     ) public {
-        cheats.assume(2 <= numSubmissions && numSubmissions <= 10);
+        numSubmissions = bound(numSubmissions, 2, 10);
         cheats.prank(rewardsCoordinator.owner());
 
         RewardsSubmission[] memory rewardsSubmissions = new RewardsSubmission[](numSubmissions);
@@ -1858,7 +1858,7 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllEarners is RewardsCoordi
         FuzzAVSRewardsSubmission memory param,
         uint256 numSubmissions
     ) public {
-        cheats.assume(2 <= numSubmissions && numSubmissions <= 10);
+        numSubmissions = bound(numSubmissions, 2, 10);
         cheats.prank(rewardsCoordinator.owner());
 
         RewardsSubmission[] memory rewardsSubmissions = new RewardsSubmission[](numSubmissions);
@@ -2761,7 +2761,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
         FuzzOperatorDirectedAVSRewardsSubmission memory param,
         uint256 numSubmissions
     ) public filterFuzzedAddressInputs(param.avs) {
-        cheats.assume(2 <= numSubmissions && numSubmissions <= 10);
+        numSubmissions = bound(numSubmissions, 2, 10);
         cheats.assume(param.avs != address(0));
         cheats.prank(rewardsCoordinator.owner());
 
@@ -3724,7 +3724,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
         FuzzOperatorDirectedAVSRewardsSubmission memory param,
         uint256 numSubmissions
     ) public filterFuzzedAddressInputs(param.avs) {
-        cheats.assume(2 <= numSubmissions && numSubmissions <= 10);
+        numSubmissions = bound(numSubmissions, 2, 10);
         cheats.assume(param.avs != address(0));
 
         operatorSet = OperatorSet(param.avs, 2);
