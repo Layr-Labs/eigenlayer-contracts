@@ -967,7 +967,7 @@ contract DelegationManager is
         shares = new uint256[][](totalQueued);
 
         for (uint256 i; i < totalQueued; ++i) {
-            (withdrawals[i], shares[i]) = _getQueuedWithdrawal(staker, withdrawalRoots[i]);
+            (withdrawals[i], shares[i]) = _getSharesFromQueuedWithdrawal(withdrawalRoots[i]);
         }
     }
 

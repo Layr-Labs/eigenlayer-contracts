@@ -477,8 +477,13 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
         bytes32 withdrawalRoot
     ) external view returns (Withdrawal memory);
 
-    /// @notice Returns a list of pending queued withdrawals for a `staker`, and the `shares` to be withdrawn.
-    function getQueuedWithdrawals(
+    /// @notice Returns the shares from a queued withdrawal.
+    function getSharesFromQueuedWithdrawal(
+        bytes32 withdrawalRoot
+    ) external view returns (Withdrawal memory withdrawal, uint256[] memory shares);
+
+    /// @notice Returns a list of shares from a list of queued withdrawals.
+    function getSharesFromQueuedWithdrawals(
         address staker
     ) external view returns (Withdrawal[] memory withdrawals, uint256[][] memory shares);
 
