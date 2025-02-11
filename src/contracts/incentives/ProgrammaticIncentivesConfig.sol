@@ -183,6 +183,7 @@ contract ProgrammaticIncentivesConfig is Initializable, OwnableUpgradeable, IPro
         _addEntries(vectorIndex, newEntries);
     }
 
+    // @inheritdoc IProgrammaticIncentivesConfig
     function removeKeys(uint256 vectorIndex, address[] memory keysToRemove, uint256[] memory keyIndices) external onlyOwner {
         _removeKeys(vectorIndex, keysToRemove, keyIndices);
     }

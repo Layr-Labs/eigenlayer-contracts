@@ -146,8 +146,15 @@ library StreamMath {
         substream.rewardDebt = cumulativeAmount;
     }
 
-
-
+    function updateStreamRate(
+        NonNormalizedStream storage stream,
+        uint256 newRate
+    ) internal {
+        // perform an update using the old rate
+        updateStream(stream);
+        // TODO: emit event
+        stream.rate = newRate;
+    }
 
 
 // functions for NormalizedStream
@@ -235,6 +242,16 @@ library StreamMath {
         // adjust rewardDebt to make pending rewards correct
         uint256 cumulativeAmount = (newWeight * stream.scaledCumulativeRewardDebtPerWeight) / 1e18;
         substream.rewardDebt = cumulativeAmount;
+    }
+
+    function updateStreamRate(
+        NormalizedStream storage stream,
+        uint256 newRate
+    ) internal {
+        // perform an update using the old rate
+        updateStream(stream);
+        // TODO: emit event
+        stream.rate = newRate;
     }
 }
 
