@@ -8939,4 +8939,12 @@ contract DelegationManagerUnitTests_getSharesFromQueuedWithdrawal is DelegationM
             assertEq(shares[i], depositShares[i], "incorrect shares amount for strategy");
         }
     }
+
+    function test_getSharesFromQueuedWithdrawal_EmptyWithdrawal() public {
+        (
+            Withdrawal memory withdrawal, 
+            uint256[] memory shares
+        ) = delegationManager.getSharesFromQueuedWithdrawal(bytes32(0));
+        assertEq(shares.length, 0, "sanity check");
+    }
 }
