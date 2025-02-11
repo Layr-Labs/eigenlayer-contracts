@@ -63,11 +63,7 @@ contract Integration_SlashedEigenpod is IntegrationCheckUtils {
         check_IncrAlloc_State_Slashable(operator, allocateParams);
         _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
 
-        console.log(_getBeaconChainSlashingFactor(staker));
-        console.log(delegationManager.depositScalingFactor(address(staker), strategies[0]));
         (uint256[] memory withdrawableSharesBefore, ) = delegationManager.getWithdrawableShares(address(staker), strategies);
-        console.log("withdrawable shares before");
-        console.log(withdrawableSharesBefore[0]);
 
         // Undelegate from an operator
         IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.undelegate();
@@ -81,9 +77,6 @@ contract Integration_SlashedEigenpod is IntegrationCheckUtils {
             staker.completeWithdrawalAsShares(withdrawals[i]);
             check_Withdrawal_AsShares_Undelegated_State(staker, operator, withdrawals[i], withdrawals[i].strategies, initDelegatableShares);
         }
-
-        console.log(_getBeaconChainSlashingFactor(staker));
-        console.log(delegationManager.depositScalingFactor(address(staker), strategies[0]));
 
         (uint256[] memory withdrawableSharesAfter, uint256[] memory depositSharesAfter) = delegationManager.getWithdrawableShares(address(staker), strategies);
         assertEq(depositSharesAfter[0], initDelegatableShares[0], "Deposit shares should reset to reflect slash(es)");
@@ -103,19 +96,11 @@ contract Integration_SlashedEigenpod is IntegrationCheckUtils {
 
         uint256[] memory initDelegatableShares = _getWithdrawableShares(staker, strategies);
         uint256[] memory initDepositShares = _getStakerDepositShares(staker, strategies);
-        console.log("deposit scaling factor in test");
-        console.log(delegationManager.depositScalingFactor(address(staker), strategies[0]));
-        console.log("init delegatable shares");
-        console.log(initDelegatableShares[0]);
-        console.log("init deposit shares");
-        console.log(initDepositShares[0]);
         // Delegate to an operator
         staker.delegateTo(operator);
         check_Delegation_State(staker, operator, strategies, initDepositShares);
 
         uint256[] memory withdrawableSharesAfterDelegation = _getWithdrawableShares(staker, strategies);
-        console.log("withdrawable shares after delegation");
-        console.log(withdrawableSharesAfterDelegation[0]);
 
         // Create an operator set and register an operator.
         operatorSet = avs.createOperatorSet(strategies);
@@ -129,8 +114,6 @@ contract Integration_SlashedEigenpod is IntegrationCheckUtils {
         _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
 
         (uint256[] memory withdrawableSharesBefore, ) = delegationManager.getWithdrawableShares(address(staker), strategies);
-        console.log("withdrawable shares before");
-        console.log(withdrawableSharesBefore[0]);
         // Undelegate from an operator
         IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.undelegate();
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
@@ -187,22 +170,13 @@ contract Integration_SlashedEigenpod is IntegrationCheckUtils {
         uint wadToSlash = _randWadToSlash();
         slashingParams = avs.slashOperator(operator, operatorSet.id, strategies, wadToSlash.toArrayU256());
         assert_Snap_Allocations_Slashed(slashingParams, operatorSet, true, "operator allocations should be slashed");
-        console.log(allocationManager.getMaxMagnitude(address(operator), strategies[0]));
 
         uint256[] memory initDelegatableShares = _getWithdrawableShares(staker, strategies);
         uint256[] memory initDepositShares = _getStakerDepositShares(staker, strategies);
-        console.log(initDelegatableShares[0]);
-        console.log(initDepositShares[0]);
-        console.log(_getBeaconChainSlashingFactor(staker));
-        console.log(delegationManager.depositScalingFactor(address(staker), strategies[0]));
 
         // Delegate to an operator
         staker.delegateTo(operator);
         (uint256[] memory delegatedShares, ) = delegationManager.getWithdrawableShares(address(staker), strategies);
-        console.log("withdrawable shares after delegation");
-        console.log(delegatedShares[0]);
-        console.log("depositscalingfactor after delegation");
-        console.log(delegationManager.depositScalingFactor(address(staker), strategies[0]));
         check_Delegation_State(staker, operator, strategies, initDepositShares);
         
         // Undelegate from an operator
