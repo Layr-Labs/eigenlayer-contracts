@@ -191,7 +191,7 @@ contract DelegationManager is
         for (uint256 i = 0; i < params.length; i++) {
             require(params[i].strategies.length == params[i].depositShares.length, InputArrayLengthMismatch());
 
-            uint256[] memory slashingFactors = _getSlashingFactors(msg.sender, operator, params[i].strategies);
+            uint256[] memory slashingFactors = _getSlashingFactors(msg.sender, operator, params[i].strategies, 0);
 
             // Remove shares from staker's strategies and place strategies/shares in queue.
             // If the staker is delegated to an operator, the operator's delegated shares are also reduced
@@ -360,7 +360,7 @@ contract DelegationManager is
         // read staker's deposited shares and strategies to add to operator's shares
         // and also update the staker depositScalingFactor for each strategy
         (IStrategy[] memory strategies, uint256[] memory depositedShares) = getDepositedShares(staker);
-        uint256[] memory slashingFactors = _getSlashingFactors(staker, operator, strategies);
+        uint256[] memory slashingFactors = _getSlashingFactors(staker, operator, strategies, 0);
 
         for (uint256 i = 0; i < strategies.length; ++i) {
             // forgefmt: disable-next-item
@@ -402,7 +402,7 @@ contract DelegationManager is
         // For the operator and each of the staker's strategies, get the slashing factors to apply
         // when queueing for withdrawal
         withdrawalRoots = new bytes32[](strategies.length);
-        uint256[] memory slashingFactors = _getSlashingFactors(staker, operator, strategies);
+        uint256[] memory slashingFactors = _getSlashingFactors(staker, operator, strategies, 0);
 
         // Queue a withdrawal for each strategy independently. This is done for UX reasons.
         for (uint256 i = 0; i < strategies.length; i++) {
@@ -546,12 +546,7 @@ contract DelegationManager is
 
             // Given the max magnitudes of the operator the staker was originally delegated to, calculate
             // the slashing factors for each of the withdrawal's strategies.
-            prevSlashingFactors = _getSlashingFactorsAtBlock({
-                staker: withdrawal.staker,
-                operator: withdrawal.delegatedTo,
-                strategies: withdrawal.strategies,
-                blockNumber: slashableUntil
-            });
+            prevSlashingFactors = _getSlashingFactors(withdrawal.staker, withdrawal.delegatedTo, withdrawal.strategies, slashableUntil);
         }
 
         // Remove the withdrawal from the queue. Note that for legacy withdrawals, the removals
@@ -564,7 +559,7 @@ contract DelegationManager is
         // Given the max magnitudes of the operator the staker is now delegated to, calculate the current
         // slashing factors to apply to each withdrawal if it is received as shares.
         address newOperator = delegatedTo[withdrawal.staker];
-        uint256[] memory newSlashingFactors = _getSlashingFactors(withdrawal.staker, newOperator, withdrawal.strategies);
+        uint256[] memory newSlashingFactors = _getSlashingFactors(withdrawal.staker, newOperator, withdrawal.strategies, 0);
 
         for (uint256 i = 0; i < withdrawal.strategies.length; i++) {
             IShareManager shareManager = _getShareManager(withdrawal.strategies[i]);
@@ -679,36 +674,26 @@ contract DelegationManager is
         return operatorMaxMagnitude;
     }
 
-    /// @dev Calculate the amount of slashing to apply to the staker's shares across multiple strategies
+    /**
+     * @notice Calculates the slashing factors to apply to a staker's shares across multiple strategies
+     * @param staker The address of the staker whose shares are being slashed
+     * @param operator The operator the staker is delegated to
+     * @param strategies Array of strategies to calculate slashing factors for
+     * @param blockNumber Block number to calculate slashing factors at. If 0, uses current block
+     * @return Array of slashing factors corresponding to each strategy
+     * @dev For each strategy, combines the operator's maxMagnitude with any beacon chain slashing
+     * @dev If blockNumber is 0, uses current maxMagnitudes, otherwise uses historical values
+     */
     function _getSlashingFactors(
-        address staker,
-        address operator,
-        IStrategy[] memory strategies
-    ) internal view returns (uint256[] memory) {
-        uint256[] memory slashingFactors = new uint256[](strategies.length);
-        uint64[] memory maxMagnitudes = allocationManager.getMaxMagnitudes(operator, strategies);
-
-        for (uint256 i = 0; i < strategies.length; i++) {
-            slashingFactors[i] = _getSlashingFactor(staker, strategies[i], maxMagnitudes[i]);
-        }
-
-        return slashingFactors;
-    }
-
-    /// @dev Calculate the amount of slashing to apply to the staker's shares across multiple strategies
-    /// Note: specifically checks the operator's magnitude at a prior block, used for completing withdrawals
-    function _getSlashingFactorsAtBlock(
         address staker,
         address operator,
         IStrategy[] memory strategies,
         uint32 blockNumber
     ) internal view returns (uint256[] memory) {
         uint256[] memory slashingFactors = new uint256[](strategies.length);
-        uint64[] memory maxMagnitudes = allocationManager.getMaxMagnitudesAtBlock({
-            operator: operator,
-            strategies: strategies,
-            blockNumber: blockNumber
-        });
+        uint64[] memory maxMagnitudes = (blockNumber == 0) 
+            ? allocationManager.getMaxMagnitudes(operator, strategies)
+            : allocationManager.getMaxMagnitudesAtBlock(operator, strategies, blockNumber);
 
         for (uint256 i = 0; i < strategies.length; i++) {
             slashingFactors[i] = _getSlashingFactor(staker, strategies[i], maxMagnitudes[i]);
@@ -848,7 +833,7 @@ contract DelegationManager is
 
         // Get the slashing factors for the staker/operator/strategies
         address operator = delegatedTo[staker];
-        uint256[] memory slashingFactors = _getSlashingFactors(staker, operator, strategies);
+        uint256[] memory slashingFactors = _getSlashingFactors(staker, operator, strategies, 0);
 
         for (uint256 i = 0; i < strategies.length; ++i) {
             IShareManager shareManager = _getShareManager(strategies[i]);
@@ -916,22 +901,16 @@ contract DelegationManager is
 
             uint32 slashableUntil = withdrawals[i].startBlock + MIN_WITHDRAWAL_DELAY_BLOCKS;
 
-            uint256[] memory slashingFactors;
             // If slashableUntil block is in the past, read the slashing factors at that block
             // Otherwise read the current slashing factors. Note that if the slashableUntil block is the current block
             // or in the future then the slashing factors are still subject to change before the withdrawal is completable
             // and the shares withdrawn to be less
-            if (slashableUntil < uint32(block.number)) {
-                slashingFactors = _getSlashingFactorsAtBlock({
-                    staker: staker,
-                    operator: operator,
-                    strategies: withdrawals[i].strategies,
-                    blockNumber: slashableUntil
-                });
-            } else {
-                slashingFactors =
-                    _getSlashingFactors({staker: staker, operator: operator, strategies: withdrawals[i].strategies});
-            }
+            uint256[] memory slashingFactors = _getSlashingFactors({
+                staker: staker,
+                operator: operator,
+                strategies: withdrawals[i].strategies,
+                blockNumber: slashableUntil < uint32(block.number) ? slashableUntil : 0
+            });
 
             for (uint256 j; j < withdrawals[i].strategies.length; ++j) {
                 shares[i][j] = SlashingLib.scaleForCompleteWithdrawal({
@@ -957,7 +936,7 @@ contract DelegationManager is
     ) external view returns (uint256[] memory) {
         // Get the slashing factors for the staker/operator/strategies
         address operator = delegatedTo[staker];
-        uint256[] memory slashingFactors = _getSlashingFactors(staker, operator, strategies);
+        uint256[] memory slashingFactors = _getSlashingFactors(staker, operator, strategies, 0);
 
         // Calculate the deposit shares based on the slashing factor
         uint256[] memory depositShares = new uint256[](strategies.length);

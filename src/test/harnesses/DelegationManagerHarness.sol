@@ -37,7 +37,7 @@ contract DelegationManagerHarness is DelegationManager {
         address operator,
         IStrategy[] memory strategies
     ) external view returns (uint256[] memory) {
-        return _getSlashingFactors(staker, operator, strategies);
+        return _getSlashingFactors(staker, operator, strategies, 0);
     }
 
     function getSlashingFactorsAtBlock(
@@ -46,6 +46,6 @@ contract DelegationManagerHarness is DelegationManager {
         IStrategy[] memory strategies,
         uint32 blockNumber
     ) external view returns (uint256[] memory) {
-        return _getSlashingFactorsAtBlock(staker, operator, strategies, blockNumber);
+        return _getSlashingFactors(staker, operator, strategies, blockNumber);
     }
 }
