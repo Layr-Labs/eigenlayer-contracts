@@ -8814,3 +8814,129 @@ contract DelegationManagerUnitTests_getQueuedWithdrawals is DelegationManagerUni
         );
     }
 }
+
+contract DelegationManagerUnitTests_getSharesFromQueuedWithdrawal is DelegationManagerUnitTests {
+    using ArrayLib for *;
+    using SlashingLib for *;
+
+    function test_getSharesFromQueuedWithdrawal_Correctness(Randomness r) public rand(r) {
+        // Set up initial deposit
+        uint256 depositAmount = r.Uint256(1 ether, 100 ether);
+        _depositIntoStrategies(defaultStaker, strategyMock.toArray(), depositAmount.toArrayU256());
+
+        // Register operator and delegate
+        _registerOperatorWithBaseDetails(defaultOperator);
+        _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
+
+        // Queue withdrawal
+        (
+            QueuedWithdrawalParams[] memory queuedWithdrawalParams,
+            Withdrawal memory withdrawal,
+            bytes32 withdrawalRoot
+        ) = _setUpQueueWithdrawalsSingleStrat({
+            staker: defaultStaker,
+            strategy: strategyMock,
+            depositSharesToWithdraw: depositAmount
+        });
+
+        cheats.prank(defaultStaker);
+        delegationManager.queueWithdrawals(queuedWithdrawalParams);
+
+        // Get shares from queued withdrawal
+        (Withdrawal memory returnedWithdrawal, uint256[] memory shares) = delegationManager.getSharesFromQueuedWithdrawal(withdrawalRoot);
+
+        // Verify withdrawal details match
+        assertEq(keccak256(abi.encode(returnedWithdrawal)), withdrawalRoot, "returned withdrawal root mismatch");
+        assertEq(shares.length, 1, "incorrect shares array length");
+        assertEq(shares[0], depositAmount, "incorrect shares amount");
+    }
+
+    function test_getSharesFromQueuedWithdrawal_AfterSlashing(Randomness r) public rand(r) {
+        // Set up initial deposit
+        uint256 depositAmount = r.Uint256(1 ether, 100 ether);
+        _depositIntoStrategies(defaultStaker, strategyMock.toArray(), depositAmount.toArrayU256());
+
+        // Register operator and delegate
+        _registerOperatorWithBaseDetails(defaultOperator);
+        _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
+
+        // Queue withdrawal
+        (
+            QueuedWithdrawalParams[] memory queuedWithdrawalParams,
+            Withdrawal memory withdrawal,
+            bytes32 withdrawalRoot
+        ) = _setUpQueueWithdrawalsSingleStrat({
+            staker: defaultStaker,
+            strategy: strategyMock,
+            depositSharesToWithdraw: depositAmount
+        });
+
+        cheats.prank(defaultStaker);
+        delegationManager.queueWithdrawals(queuedWithdrawalParams);
+
+        // Slash operator by 50%
+        _setOperatorMagnitude(defaultOperator, strategyMock, 0.5 ether);
+        cheats.prank(address(allocationManagerMock));
+        delegationManager.slashOperatorShares(defaultOperator, strategyMock, WAD, 0.5 ether);
+
+        // Get shares from queued withdrawal
+        (Withdrawal memory returnedWithdrawal, uint256[] memory shares) = delegationManager.getSharesFromQueuedWithdrawal(withdrawalRoot);
+
+        // Verify withdrawal details match and shares are slashed
+        assertEq(keccak256(abi.encode(returnedWithdrawal)), withdrawalRoot, "returned withdrawal root mismatch");
+        assertEq(shares.length, 1, "incorrect shares array length");
+        assertEq(shares[0], depositAmount / 2, "shares not properly slashed");
+    }
+
+    function test_getSharesFromQueuedWithdrawal_NonexistentWithdrawal() public {
+        bytes32 nonexistentRoot = bytes32(uint256(1));
+        
+        (Withdrawal memory withdrawal, uint256[] memory shares) = delegationManager.getSharesFromQueuedWithdrawal(nonexistentRoot);
+        
+        // For a nonexistent withdrawal, we expect empty arrays and default values
+        assertEq(withdrawal.staker, address(0), "withdrawal staker should be zero address");
+        assertEq(withdrawal.strategies.length, 0, "withdrawal strategies should be empty");
+        assertEq(withdrawal.scaledShares.length, 0, "withdrawal scaledShares should be empty");
+        assertEq(shares.length, 0, "shares array should be empty");
+    }
+
+    function test_getSharesFromQueuedWithdrawal_MultipleStrategies(Randomness r) public rand(r) {
+        // Set up multiple strategies with deposits
+        uint256 numStrategies = r.Uint256(2, 5);
+        uint256[] memory depositShares = r.Uint256Array({
+            len: numStrategies,
+            min: 1 ether,
+            max: 100 ether
+        });
+
+        IStrategy[] memory strategies = _deployAndDepositIntoStrategies(defaultStaker, depositShares, false);
+        
+        // Register operator and delegate
+        _registerOperatorWithBaseDetails(defaultOperator);
+        _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
+
+        // Queue withdrawals for multiple strategies
+        (
+            QueuedWithdrawalParams[] memory queuedWithdrawalParams,
+            Withdrawal memory withdrawal,
+            bytes32 withdrawalRoot
+        ) = _setUpQueueWithdrawals({
+            staker: defaultStaker,
+            strategies: strategies,
+            depositWithdrawalAmounts: depositShares
+        });
+
+        cheats.prank(defaultStaker);
+        delegationManager.queueWithdrawals(queuedWithdrawalParams);
+
+        // Get shares from queued withdrawal
+        (Withdrawal memory returnedWithdrawal, uint256[] memory shares) = delegationManager.getSharesFromQueuedWithdrawal(withdrawalRoot);
+
+        // Verify withdrawal details and shares for each strategy
+        assertEq(keccak256(abi.encode(returnedWithdrawal)), withdrawalRoot, "returned withdrawal root mismatch");
+        assertEq(shares.length, numStrategies, "incorrect shares array length");
+        for (uint256 i = 0; i < numStrategies; i++) {
+            assertEq(shares[i], depositShares[i], "incorrect shares amount for strategy");
+        }
+    }
+}
