@@ -777,7 +777,7 @@ contract DelegationManager is
     }
 
     /// @dev Get the shares from a queued withdrawal.
-    function _getSharesFromQueuedWithdrawal(
+    function _getSharesByWithdrawalRoot(
         bytes32 withdrawalRoot
     ) internal view returns (Withdrawal memory withdrawal, uint256[] memory shares) {
         withdrawal = queuedWithdrawals[withdrawalRoot];
@@ -953,11 +953,11 @@ contract DelegationManager is
     function getSharesFromQueuedWithdrawal(
         bytes32 withdrawalRoot
     ) external view returns (Withdrawal memory withdrawal, uint256[] memory shares) {
-        (withdrawal, shares) = _getSharesFromQueuedWithdrawal(withdrawalRoot);
+        (withdrawal, shares) = _getSharesByWithdrawalRoot(withdrawalRoot);
     }
 
     /// @inheritdoc IDelegationManager
-    function getSharesFromQueuedWithdrawals(
+    function getQueuedWithdrawals(
         address staker
     ) external view returns (Withdrawal[] memory withdrawals, uint256[][] memory shares) {
         bytes32[] memory withdrawalRoots = getQueuedWithdrawalRoots(staker);
@@ -967,7 +967,7 @@ contract DelegationManager is
         shares = new uint256[][](totalQueued);
 
         for (uint256 i; i < totalQueued; ++i) {
-            (withdrawals[i], shares[i]) = _getSharesFromQueuedWithdrawal(withdrawalRoots[i]);
+            (withdrawals[i], shares[i]) = _getSharesByWithdrawalRoot(withdrawalRoots[i]);
         }
     }
 
