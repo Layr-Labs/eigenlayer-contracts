@@ -8940,11 +8940,11 @@ contract DelegationManagerUnitTests_getSharesFromQueuedWithdrawal is DelegationM
         }
     }
 
-    function test_getSharesFromQueuedWithdrawal_EmptyWithdrawal() public {
+    function testFuzz_getSharesFromQueuedWithdrawal_EmptyWithdrawal(bytes32 withdrawalRoot) public {
         (
             Withdrawal memory withdrawal, 
             uint256[] memory shares
-        ) = delegationManager.getSharesFromQueuedWithdrawal(bytes32(0));
+        ) = delegationManager.getSharesFromQueuedWithdrawal(withdrawalRoot);
         assertEq(shares.length, 0, "sanity check");
     }
 }
