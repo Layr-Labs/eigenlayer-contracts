@@ -122,19 +122,29 @@ contract DelegationManager is
     /// @inheritdoc IDelegationManager
     function delegateTo(
         address operator,
-        SignatureWithExpiry memory approverSignatureAndExpiry,
+        SignatureWithExpiry calldata approverSignatureAndExpiry,
         bytes32 approverSalt
     ) public {
         require(!isDelegated(msg.sender), ActivelyDelegated());
         require(isOperator(operator), OperatorNotRegistered());
 
-        // If the operator has a `delegationApprover`, check the provided signature
-        _checkApproverSignature({
-            staker: msg.sender,
-            operator: operator,
-            signature: approverSignatureAndExpiry,
-            salt: approverSalt
-        });
+        // Check if operator has a delegationApprover configured
+        address approver = _operatorDetails[operator].delegationApprover;
+        if (approver != address(0)) {
+            // Check that the salt hasn't been used previously, then mark the salt as spent
+            require(!delegationApproverSaltIsSpent[approver][approverSalt], SaltSpent());
+            delegationApproverSaltIsSpent[approver][approverSalt] = true;
+
+            // Validate the signature
+            _checkIsValidSignatureNow({
+                signer: approver,
+                signableDigest: calculateDelegationApprovalDigestHash(
+                    msg.sender, operator, approver, approverSalt, approverSignatureAndExpiry.expiry
+                ),
+                signature: approverSignatureAndExpiry.signature,
+                expiry: approverSignatureAndExpiry.expiry
+            });
+        }
 
         // Delegate msg.sender to the operator
         _delegate(msg.sender, operator);
@@ -163,7 +173,7 @@ contract DelegationManager is
     /// @inheritdoc IDelegationManager
     function redelegate(
         address newOperator,
-        SignatureWithExpiry memory newOperatorApproverSig,
+        SignatureWithExpiry calldata newOperatorApproverSig,
         bytes32 approverSalt
     ) external returns (bytes32[] memory withdrawalRoots) {
         withdrawalRoots = undelegate(msg.sender);
@@ -653,32 +663,6 @@ contract DelegationManager is
         // Decrement operator shares
         operatorShares[operator][strategy] -= sharesToDecrease;
         emit OperatorSharesDecreased(operator, staker, strategy, sharesToDecrease);
-    }
-
-    /// @dev If `operator` has configured a `delegationApprover`, check that `signature` and `salt`
-    /// are a valid approval for `staker` delegating to `operator`.
-    function _checkApproverSignature(
-        address staker,
-        address operator,
-        SignatureWithExpiry memory signature,
-        bytes32 salt
-    ) internal {
-        address approver = _operatorDetails[operator].delegationApprover;
-        if (approver == address(0)) {
-            return;
-        }
-
-        // Check that the salt hasn't been used previously, then mark the salt as spent
-        require(!delegationApproverSaltIsSpent[approver][salt], SaltSpent());
-        delegationApproverSaltIsSpent[approver][salt] = true;
-
-        // Validate the signature
-        _checkIsValidSignatureNow({
-            signer: approver,
-            signableDigest: calculateDelegationApprovalDigestHash(staker, operator, approver, salt, signature.expiry),
-            signature: signature.signature,
-            expiry: signature.expiry
-        });
     }
 
     /// @dev Calculate the amount of slashing to apply to the staker's shares
