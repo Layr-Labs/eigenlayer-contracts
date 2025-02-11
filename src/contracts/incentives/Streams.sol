@@ -26,8 +26,7 @@ struct Substream {
 struct NonNormalizedStream {
     // @dev note that this is in terms of TIMESCALE
     uint256 rate;
-    // @dev note that this is in terms of TIMESCALE
-    uint256 lastUpdated;
+    uint256 lastUpdatedTimestamp;
     // TODO: enforce some max total weight?
     uint256 totalWeight;
     uint256 scaledCumulativeRewardDebtPerWeight;
@@ -45,7 +44,7 @@ struct NormalizedStream {
     // @dev note that this is in terms of TIMESCALE
     uint256 rate;
     // @dev note that this is in terms of TIMESCALE
-    uint256 lastUpdated;
+    uint256 lastUpdatedTimestamp;
     uint256 unassignedWeight;
     uint256 scaledCumulativeRewardDebtPerWeight;
     mapping(address => Substream) substreams;
@@ -77,7 +76,7 @@ library StreamMath {
         uint256 _totalWeight = stream.totalWeight;
         if (_totalWeight !=0 ) {
             _scaledCumulativeRewardDebtPerWeight = _scaledCumulativeRewardDebtPerWeight + 
-                ((1e18 * ((block.timestamp / TIMESCALE) - stream.lastUpdated) * stream.rate) / _totalWeight);
+                ((1e18 * ((block.timestamp  - stream.lastUpdatedTimestamp) / TIMESCALE) * stream.rate) / _totalWeight);
         }   
         uint256 cumulativeAmount = (substream.weight * _scaledCumulativeRewardDebtPerWeight) / 1e18;
         uint256 _rewardDebt = substream.rewardDebt;
@@ -98,9 +97,9 @@ library StreamMath {
         if (_totalWeight !=0 ) {
             // TODO: event
             _scaledCumulativeRewardDebtPerWeight = _scaledCumulativeRewardDebtPerWeight + 
-                ((1e18 * ((block.timestamp / TIMESCALE) - stream.lastUpdated) * stream.rate) / _totalWeight);
+                ((1e18 * ((block.timestamp  - stream.lastUpdatedTimestamp) / TIMESCALE) * stream.rate) / _totalWeight);
             stream.scaledCumulativeRewardDebtPerWeight = _scaledCumulativeRewardDebtPerWeight;
-            stream.lastUpdated = block.timestamp / TIMESCALE;
+            stream.lastUpdatedTimestamp = block.timestamp;
         }   
         return _scaledCumulativeRewardDebtPerWeight;
     }
@@ -171,7 +170,7 @@ library StreamMath {
         // calculate pending increase to scaled cumulative reward debt per weight
         uint256 _scaledCumulativeRewardDebtPerWeight = stream.scaledCumulativeRewardDebtPerWeight;
         _scaledCumulativeRewardDebtPerWeight = _scaledCumulativeRewardDebtPerWeight + 
-            ((1e18 * ((block.timestamp / TIMESCALE) - stream.lastUpdated) * stream.rate) / NORMALIZED_STREAM_TOTAL_WEIGHT);
+            ((1e18 * ((block.timestamp - stream.lastUpdatedTimestamp) / TIMESCALE) * stream.rate) / NORMALIZED_STREAM_TOTAL_WEIGHT);
         uint256 cumulativeAmount = (substream.weight * _scaledCumulativeRewardDebtPerWeight) / 1e18;
         uint256 _rewardDebt = substream.rewardDebt;
         // TODO: consider rounding and the possibility of underflows
@@ -189,9 +188,9 @@ library StreamMath {
         uint256 _scaledCumulativeRewardDebtPerWeight = stream.scaledCumulativeRewardDebtPerWeight;
         // TODO: event
         _scaledCumulativeRewardDebtPerWeight = _scaledCumulativeRewardDebtPerWeight + 
-            ((1e18 * ((block.timestamp / TIMESCALE) - stream.lastUpdated) * stream.rate) / NORMALIZED_STREAM_TOTAL_WEIGHT);
+            ((1e18 * ((block.timestamp - stream.lastUpdatedTimestamp) / TIMESCALE) * stream.rate) / NORMALIZED_STREAM_TOTAL_WEIGHT);
         stream.scaledCumulativeRewardDebtPerWeight = _scaledCumulativeRewardDebtPerWeight;
-        stream.lastUpdated = block.timestamp / TIMESCALE;
+        stream.lastUpdatedTimestamp = block.timestamp;
         return _scaledCumulativeRewardDebtPerWeight;
     }
 

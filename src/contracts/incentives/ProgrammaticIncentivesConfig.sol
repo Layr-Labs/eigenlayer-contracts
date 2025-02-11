@@ -99,7 +99,7 @@ contract ProgrammaticIncentivesConfig is Initializable, OwnableUpgradeable, IPro
         _transferOwnership(initialOwner);
         bEIGEN = _bEIGEN;
         stream.rate = CURRENT_YEARLY_INFLATION * TIMESCALE / 365 days;
-        stream.lastUpdated = block.timestamp / TIMESCALE;
+        stream.lastUpdatedTimestamp = block.timestamp;
         // TODO: initiate substreams?
     }
 
