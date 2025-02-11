@@ -4205,7 +4205,7 @@ contract AllocationManagerUnitTests_isOperatorSlashable is AllocationManagerUnit
     using SlashingLib for *;
     using ArrayLib for *;
 
-    function test_registeredOperator() public {
+    function test_registeredOperator() public view {
         assertEq(
             allocationManager.isOperatorSlashable(defaultOperator, defaultOperatorSet),
             true,

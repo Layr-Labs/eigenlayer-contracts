@@ -1775,7 +1775,6 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         Magnitudes[] memory magnitudes = _getMagnitudes(operator, strategies);
 
         for (uint i = 0; i < params.strategies.length; i++) {
-            IStrategy strategy = params.strategies[i];
             uint64 halfAvailable = uint64(magnitudes[i].allocatable) / 2;
             params.newMagnitudes[i] = allocations[i].currentMagnitude + halfAvailable;
         }
@@ -1811,11 +1810,9 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
 
     /// @dev Generates params for a full deallocation from all strategies the operator is allocated to in the operator set
     function _genDeallocation_Full(
-        User operator,
         OperatorSet memory operatorSet
     ) internal view returns (AllocateParams memory params) {
-        return _genDeallocation_Full({
-            operator: operator, 
+        return _genDeallocation_Full({ 
             operatorSet: operatorSet, 
             strategies: allocationManager.getStrategiesInOperatorSet(operatorSet)
         });
@@ -1823,10 +1820,9 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
 
     /// @dev Generates params for a full deallocation from all strategies the operator is allocated to in the operator set
     function _genDeallocation_Full(
-        User operator,
         OperatorSet memory operatorSet,
         IStrategy[] memory strategies
-    ) internal view returns (AllocateParams memory params) {
+    ) internal pure returns (AllocateParams memory params) {
         params.operatorSet = operatorSet;
         params.strategies = strategies;
         params.newMagnitudes = new uint64[](params.strategies.length);

@@ -64,7 +64,7 @@ contract Integration_InitRegistered is Integration_ALMBase {
         _rollForward_AllocationDelay(operator);
 
         // 3. Deallocate fully from the operator set
-        AllocateParams memory deallocateParams = _genDeallocation_Full(operator, operatorSet);
+        AllocateParams memory deallocateParams = _genDeallocation_Full(operatorSet);
         operator.modifyAllocations(deallocateParams);
         check_DecrAlloc_State_Slashable(operator, deallocateParams);
 
@@ -89,7 +89,7 @@ contract Integration_InitRegistered is Integration_ALMBase {
         _rollForward_AllocationDelay(operator);
 
         // 3. Deallocate fully from the operator set
-        AllocateParams memory deallocateParams = _genDeallocation_Full(operator, operatorSet);
+        AllocateParams memory deallocateParams = _genDeallocation_Full(operatorSet);
         operator.modifyAllocations(deallocateParams);
         check_DecrAlloc_State_Slashable(operator, deallocateParams);
 
@@ -119,7 +119,7 @@ contract Integration_InitRegistered is Integration_ALMBase {
         _rollForward_AllocationDelay(operator);
 
         // 4. Deallocate operator from operator set
-        AllocateParams memory deallocateParams = _genDeallocation_Full(operator, operatorSet);
+        AllocateParams memory deallocateParams = _genDeallocation_Full(operatorSet);
         operator.modifyAllocations(deallocateParams);
         check_DecrAlloc_State_NotSlashable(operator, deallocateParams);
         check_FullyDeallocated_State(operator, allocateParams, deallocateParams);
@@ -140,7 +140,7 @@ contract Integration_InitRegistered is Integration_ALMBase {
         _rollForward_AllocationDelay(operator);
 
         // 4. Deallocate operator from operator set
-        AllocateParams memory deallocateParams = _genDeallocation_Full(operator, operatorSet);
+        AllocateParams memory deallocateParams = _genDeallocation_Full(operatorSet);
         operator.modifyAllocations(deallocateParams);
         check_DecrAlloc_State_Slashable(operator, deallocateParams);
 
@@ -164,7 +164,7 @@ contract Integration_InitRegistered is Integration_ALMBase {
         _rollForward_DeallocationDelay();
 
         // 4. Instant-deallocate operator from operator set
-        AllocateParams memory deallocateParams = _genDeallocation_Full(operator, operatorSet);
+        AllocateParams memory deallocateParams = _genDeallocation_Full(operatorSet);
         operator.modifyAllocations(deallocateParams);
         check_DecrAlloc_State_NotSlashable(operator, deallocateParams);
         check_FullyDeallocated_State(operator, allocateParams, deallocateParams);
@@ -195,7 +195,7 @@ contract Integration_InitAllocated is Integration_ALMBase {
         _rollForward_AllocationDelay(operator);
 
         // 3. Deallocate fully from the operator set
-        AllocateParams memory deallocateParams = _genDeallocation_Full(operator, operatorSet);
+        AllocateParams memory deallocateParams = _genDeallocation_Full(operatorSet);
         operator.modifyAllocations(deallocateParams);
         check_DecrAlloc_State_Slashable(operator, deallocateParams);
 
@@ -218,7 +218,7 @@ contract Integration_InitAllocated is Integration_ALMBase {
         check_Registration_State_ActiveAllocation(operator, allocateParams);
 
         // 2. Deallocate fully from the operator set
-        AllocateParams memory deallocateParams = _genDeallocation_Full(operator, operatorSet);
+        AllocateParams memory deallocateParams = _genDeallocation_Full(operatorSet);
         operator.modifyAllocations(deallocateParams);
         check_DecrAlloc_State_Slashable(operator, deallocateParams);
 
