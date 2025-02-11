@@ -296,6 +296,15 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
             __deprecated_withdrawer: address(0)
         });
 
+        uint256[] memory scaledSharesForWithdrawal = new uint256[](strategies.length);
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            DepositScalingFactor memory dsf = DepositScalingFactor(
+                delegationManager.depositScalingFactor(address(this), strategies[i])
+            );
+
+            scaledSharesForWithdrawal[i] = dsf.scaleForQueueWithdrawal(depositShares[i]);
+        }
+
         // Create Withdrawal struct using same info
         Withdrawal[] memory withdrawals = new Withdrawal[](1);
         withdrawals[0] = Withdrawal({
@@ -305,7 +314,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
             nonce: nonce,
             startBlock: uint32(block.number),
             strategies: strategies,
-            scaledShares: depositShares // TODO: convert depositShares to shares and then scale in withdrawal
+            scaledShares: scaledSharesForWithdrawal
         });
 
         bytes32[] memory withdrawalRoots = delegationManager.queueWithdrawals(params);
@@ -671,9 +680,12 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
 
             uint256 scaledShares = dsf.scaleForQueueWithdrawal(depositShares[i]);
 
+            //TODO: find out why this was here in the first place
+            /*
             if (strategies[i] == beaconChainETHStrategy) {
                 scaledShares -= scaledShares % 1 gwei;
             }
+            */
 
             expectedWithdrawals[i] = Withdrawal({
                 staker: staker,

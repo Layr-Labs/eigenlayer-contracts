@@ -496,8 +496,7 @@ contract DelegationManager is
             // Remove deposit shares from EigenPodManager/StrategyManager
             uint256 sharesAfter = shareManager.removeDepositShares(staker, strategies[i], depositSharesToWithdraw[i]);
 
-            //Reset DepositScalingFactor since deposit shares are equal to withdrawable shares after full withdrawal
-            if (depositSharesToWithdraw[i] == sharesAfter) {
+            if (sharesAfter == 0) {
                 _depositScalingFactor[staker][strategies[i]].reset();
             }
         }

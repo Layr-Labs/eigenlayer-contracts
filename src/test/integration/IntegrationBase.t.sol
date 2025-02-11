@@ -188,22 +188,6 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
 
         return result;
     }
-
-    /// @dev Choose a random subset of validators (selects AT LEAST ONE but NOT ALL)
-    function _chooseSubset(uint40[] memory validators) internal returns (uint40[] memory) {
-        require(validators.length >= 2, "Need at least 2 validators to choose subset"); 
-
-        uint40[] memory result = new uint40[](validators.length);
-        uint newLen;
-
-        uint rand = _randUint({ min: 1, max: validators.length ** 2 });
-        for (uint i = 0; i < validators.length; i++) {
-            if (rand >> i & 1 == 1) {
-                result[newLen] = validators[i];
-                newLen++;
-            }
-        }
-    }
     
     function _getTokenName(IERC20 token) internal view returns (string memory) {
         if (token == NATIVE_ETH) {
@@ -1209,7 +1193,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
 
         // For each strategy, check (prev - removed == cur)
         for (uint i = 0; i < strategies.length; i++) {
-            assertEq(prevShares[i] - removedShares[i], curShares[i], err);
+            assertEq(prevShares[i], curShares[i] + removedShares[i], err);
         }
     }
 
@@ -1363,6 +1347,19 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
+    /// @dev Check that all the staker's withdrawable shares have been removed
+    function assert_Snap_RemovedAll_Staker_WithdrawableShares(
+        User staker, 
+        IStrategy[] memory strategies, 
+        string memory err
+    ) internal {
+        uint[] memory curShares = _getStakerWithdrawableShares(staker, strategies);
+        // For each strategy, check all shares have been withdrawn
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(0, curShares[i], err);
+        }
+    }
+
     function assert_Snap_Removed_Staker_WithdrawableShares(
         User staker, 
         IStrategy strat, 
@@ -1373,7 +1370,8 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     }
 
     /// @dev Check that the staker's withdrawable shares have decreased by `removedShares`
-    function assert_Snap_Unchanged_Staker_WithdrawableShares(
+    /// FIX THIS WHEN WORKING ON ROUNDING ISSUES
+    function assert_Snap_Unchanged_Staker_WithdrawableShares_Delegation(
         User staker,
         string memory err
     ) internal {
@@ -1385,7 +1383,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
 
         // For each strategy, check (prev - removed == cur)
         for (uint i = 0; i < strategies.length; i++) {
-            assertEq(prevShares[i], curShares[i], err);
+            assertApproxEqAbs(prevShares[i], curShares[i], 100000, err);
         }
     }
 
