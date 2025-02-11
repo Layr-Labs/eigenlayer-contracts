@@ -97,7 +97,7 @@ abstract contract Logger is Test {
     /// @dev Returns `name` colored based logging its role.
     function colorByRole(
         string memory name
-    ) public view returns (string memory colored) {
+    ) public pure returns (string memory colored) {
         bool isOperator = _contains(name, "operator");
         bool isStaker = _contains(name, "staker");
         bool isAVS = _contains(name, "avs");

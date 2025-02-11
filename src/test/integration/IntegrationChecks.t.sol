@@ -368,7 +368,7 @@ contract IntegrationCheckUtils is IntegrationBase {
     /// @dev Check global max magnitude invariants - these should ALWAYS hold
     function check_MaxMag_Invariants(
         User operator
-    ) internal {
+    ) internal view {
         assert_MaxMagsEqualMaxMagsAtCurrentBlock(operator, allStrats, "max magnitudes should equal upperlookup at current block");
         assert_MaxEqualsAllocatablePlusEncumbered(operator, "max magnitude should equal encumbered plus allocatable");
     }
@@ -377,7 +377,7 @@ contract IntegrationCheckUtils is IntegrationBase {
     function check_ActiveModification_State(
         User operator,
         AllocateParams memory params
-    ) internal {
+    ) internal view {
         OperatorSet memory operatorSet = params.operatorSet;
         IStrategy[] memory strategies = params.strategies;
 
@@ -389,7 +389,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         User operator,
         OperatorSet memory operatorSet,
         IStrategy[] memory strategies
-    ) internal {
+    ) internal view {
         assert_IsSlashable(operator, operatorSet, "operator should be slashable for operator set");
         assert_CurMinSlashableEqualsMinAllocated(operator, operatorSet, strategies, "minimum slashable stake should equal allocated stake at current block");
     }
@@ -397,7 +397,7 @@ contract IntegrationCheckUtils is IntegrationBase {
     function check_NotSlashable_State(
         User operator,
         OperatorSet memory operatorSet
-    ) internal {
+    ) internal view {
         assert_NotSlashable(operator, operatorSet, "operator should not be slashable for operator set");
         assert_NoSlashableStake(operator, operatorSet, "operator should not have any slashable stake");
     }
@@ -588,7 +588,6 @@ contract IntegrationCheckUtils is IntegrationBase {
 
         OperatorSet memory operatorSet = params.operatorSet;
         IStrategy[] memory strategies = params.strategies;
-        uint64[] memory newMagnitudes = params.newMagnitudes;
 
         // Increasing Allocation should NOT change operator set registration, max magnitude
         assert_Snap_Unchanged_Registration(operator, operatorSet, "operator registration status should be unchanged");
@@ -724,8 +723,6 @@ contract IntegrationCheckUtils is IntegrationBase {
         check_MaxMag_Invariants(operator);
 
         OperatorSet memory operatorSet = params.operatorSet;
-        IStrategy[] memory strategies = params.strategies;
-        uint64[] memory newMagnitudes = params.newMagnitudes;
 
         // Decreasing Allocation should NOT change operator set registration, max magnitude
         assert_Snap_Unchanged_Registration(operator, operatorSet, "operator registration status should be unchanged");

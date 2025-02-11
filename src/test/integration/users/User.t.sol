@@ -627,7 +627,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     ) internal view returns (Withdrawal[] memory expectedWithdrawals) {
         (IStrategy[] memory strategies, )
              = delegationManager.getDepositedShares(staker);
-ß
+
         expectedWithdrawals = new Withdrawal[](strategies.length);
 
         (, uint256[] memory depositShares)

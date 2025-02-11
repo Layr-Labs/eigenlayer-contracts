@@ -248,7 +248,7 @@ contract Integration_ALM_Multi is IntegrationCheckUtils {
                 lastModifyParams[operator] = params;
                 operators[iter][State.ALLOCATED].push(operator);
             } else if (action == Action.DECR_ALLOC_FULL) {
-                AllocateParams memory params = _genDeallocation_Full(operator, operatorSet, _strats);
+                AllocateParams memory params = _genDeallocation_Full(operatorSet, _strats);
                 operator.modifyAllocations(params);
                 check_DecrAlloc_State_NotSlashable(operator, params);
                 // check_FullyDeallocated_State(operator); TODO
@@ -299,7 +299,7 @@ contract Integration_ALM_Multi is IntegrationCheckUtils {
                 lastModifyParams[operator] = params;
                 operators[iter][State.ALLOCATED].push(operator);
             } else if (action == Action.DECR_ALLOC_FULL) {
-                AllocateParams memory params = _genDeallocation_Full(operator, operatorSet, _strats);
+                AllocateParams memory params = _genDeallocation_Full(operatorSet, _strats);
                 operator.modifyAllocations(params);
                 check_DecrAlloc_State_NotSlashable(operator, params);
                 // check_FullyDeallocated_State(operator); TODO
@@ -367,7 +367,7 @@ contract Integration_ALM_Multi is IntegrationCheckUtils {
                 lastModifyParams[operator] = params;
                 operators[iter][State.REG_ALLOC].push(operator);
             } else if (action == Action.DECR_ALLOC_FULL) {
-                AllocateParams memory params = _genDeallocation_Full(operator, operatorSet, _strats);
+                AllocateParams memory params = _genDeallocation_Full(operatorSet, _strats);
                 operator.modifyAllocations(params);
                 check_DecrAlloc_State_Slashable(operator, params);
                 // check_FullyDeallocated_State(operator); TODO
@@ -418,7 +418,7 @@ contract Integration_ALM_Multi is IntegrationCheckUtils {
                 lastModifyParams[operator] = params;
                 operators[iter][State.REG_ALLOC].push(operator);
             } else if (action == Action.DECR_ALLOC_FULL) {
-                AllocateParams memory params = _genDeallocation_Full(operator, operatorSet, _strats);
+                AllocateParams memory params = _genDeallocation_Full(operatorSet, _strats);
                 operator.modifyAllocations(params);
                 check_DecrAlloc_State_Slashable(operator, params);
                 // check_FullyDeallocated_State(operator); TODO
