@@ -13,6 +13,9 @@ interface IAllocationManagerErrors {
     error InvalidWadToSlash();
     /// @dev Thrown when two array parameters have mismatching lengths.
     error InputArrayLengthMismatch();
+    /// @dev Thrown when the AVSRegistrar is not correctly configured to prevent an AVSRegistrar contract
+    /// from being used with the wrong AVS
+    error InvalidAVSRegistrar();
 
     /// Caller
 

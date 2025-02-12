@@ -13,6 +13,7 @@ import "forge-std/Test.sol";
 contract AVSRegistrar is IAVSRegistrar {
     function registerOperator(address operator, uint32[] calldata operatorSetIds, bytes calldata data) external {}
     function deregisterOperator(address operator, uint32[] calldata operatorSetIds) external {}
+    function avs() external view returns (address) {}
     fallback () external {}
 }
 

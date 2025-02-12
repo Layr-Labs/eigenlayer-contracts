@@ -19,4 +19,11 @@ interface IAVSRegistrar {
      * @param operatorSetIds the list of operator set ids being deregistered from
      */
     function deregisterOperator(address operator, uint32[] calldata operatorSetIds) external;
+
+    /**
+     * @notice Returns the account identifier address of the AVS. This should be the
+     * the same address as the AVS's UAM account identifier address.
+     * @return address of the AVS
+     */
+    function avs() external view returns (address);
 }
