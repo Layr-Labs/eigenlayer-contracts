@@ -81,16 +81,6 @@ contract User_M2 is User {
         params[0] =
             IDelegationManager_DeprecatedM2.QueuedWithdrawalParams({strategies: strategies, shares: shares, withdrawer: withdrawer});
 
-        uint256[] memory scaledSharesForWithdrawal = new uint256[](strategies.length);
-        for (uint256 i = 0; i < strategies.length; ++i) {
-            DepositScalingFactor memory dsf = DepositScalingFactor(
-                delegationManager.depositScalingFactor(address(this), strategies[i])
-            );
-
-            scaledSharesForWithdrawal[i] = dsf.scaleForQueueWithdrawal(shares[i]);
-        }
-
-
         // Create Withdrawal struct using same info
         IDelegationManager_DeprecatedM2.Withdrawal[] memory withdrawals = new IDelegationManager_DeprecatedM2.Withdrawal[](1);
         withdrawals[0] = IDelegationManager_DeprecatedM2.Withdrawal({
@@ -116,7 +106,7 @@ contract User_M2 is User {
             nonce: nonce,
             startBlock: uint32(block.number),
             strategies: strategies,
-            scaledShares: scaledSharesForWithdrawal
+            scaledShares: shares
         });
 
         return (withdrawalsToReturn);
