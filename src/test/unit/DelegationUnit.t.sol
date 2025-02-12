@@ -8813,6 +8813,42 @@ contract DelegationManagerUnitTests_getQueuedWithdrawals is DelegationManagerUni
             "block.number should be the completableBlock"
         );
     }
+
+    function test_getQueuedWithdrawals_UsesCorrectOperatorMagnitude() public {
+        // Alice deposits 100 shares into strategy
+        uint256 depositAmount = 100e18;
+        _depositIntoStrategies(defaultStaker, strategyMock.toArray(), depositAmount.toArrayU256());
+
+        // Register operator with magnitude of 0.5 and delegate Alice to them
+        _registerOperatorWithBaseDetails(defaultOperator);
+        _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
+        _setOperatorMagnitude(defaultOperator, strategyMock, 0.5 ether);
+
+        // Alice queues withdrawal of all 100 shares while operator magnitude is 0.5
+        // This means she should get back 50 shares (100 * 0.5)
+        (
+            QueuedWithdrawalParams[] memory queuedWithdrawalParams,
+            Withdrawal memory withdrawal,
+            bytes32 withdrawalRoot
+        ) = _setUpQueueWithdrawalsSingleStrat({
+            staker: defaultStaker,
+            strategy: strategyMock,
+            depositSharesToWithdraw: depositAmount
+        });
+
+        cheats.prank(defaultStaker);
+        delegationManager.queueWithdrawals(queuedWithdrawalParams);
+
+        // Alice undelegates, which would normally update operator's magnitude to 1.0
+        // This tests that the withdrawal still uses the original 0.5 magnitude from when it was queued
+        cheats.prank(defaultStaker);
+        delegationManager.undelegate(defaultStaker);
+
+        // Get shares from withdrawal - should return 50 shares (100 * 0.5) using original magnitude
+        // rather than incorrectly returning 100 shares (100 * 1.0) using new magnitude
+        uint256[] memory shares = delegationManager.getSharesFromQueuedWithdrawal(withdrawalRoot);
+        assertEq(shares[0], 50e18, "shares should be 50e18 (100e18 * 0.5) using original magnitude");
+    }
 }
 
 contract DelegationManagerUnitTests_getSharesFromQueuedWithdrawal is DelegationManagerUnitTests {
