@@ -593,7 +593,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
     function _genRandUser(string memory name, uint userType) internal returns (User user) {
         // Create User contract based on userType:
-        if (forkType == LOCAL) {
+        if (forkType == LOCAL || (forkType == MAINNET && isUpgraded)) {
             user = new User(name);
 
             if (userType == DEFAULT) {
@@ -604,7 +604,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             } else {
                 revert("_randUser: unimplemented userType");
             }
-        } else if (forkType == MAINNET) {
+        } else if (forkType == MAINNET && !isUpgraded) {
             if (userType == DEFAULT) {
                 user = User(new User_M2(name));
             } else if (userType == ALT_METHODS) {
