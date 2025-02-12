@@ -8843,10 +8843,9 @@ contract DelegationManagerUnitTests_getSharesFromQueuedWithdrawal is DelegationM
         delegationManager.queueWithdrawals(queuedWithdrawalParams);
 
         // Get shares from queued withdrawal
-        (Withdrawal memory returnedWithdrawal, uint256[] memory shares) = delegationManager.getSharesFromQueuedWithdrawal(withdrawalRoot);
+        uint256[] memory shares = delegationManager.getSharesFromQueuedWithdrawal(withdrawalRoot);
 
         // Verify withdrawal details match
-        assertEq(keccak256(abi.encode(returnedWithdrawal)), withdrawalRoot, "returned withdrawal root mismatch");
         assertEq(shares.length, 1, "incorrect shares array length");
         assertEq(shares[0], depositAmount, "incorrect shares amount");
     }
@@ -8880,23 +8879,16 @@ contract DelegationManagerUnitTests_getSharesFromQueuedWithdrawal is DelegationM
         delegationManager.slashOperatorShares(defaultOperator, strategyMock, WAD, 0.5 ether);
 
         // Get shares from queued withdrawal
-        (Withdrawal memory returnedWithdrawal, uint256[] memory shares) = delegationManager.getSharesFromQueuedWithdrawal(withdrawalRoot);
+        uint256[] memory shares = delegationManager.getSharesFromQueuedWithdrawal(withdrawalRoot);
 
         // Verify withdrawal details match and shares are slashed
-        assertEq(keccak256(abi.encode(returnedWithdrawal)), withdrawalRoot, "returned withdrawal root mismatch");
         assertEq(shares.length, 1, "incorrect shares array length");
         assertEq(shares[0], depositAmount / 2, "shares not properly slashed");
     }
 
     function test_getSharesFromQueuedWithdrawal_NonexistentWithdrawal() public {
         bytes32 nonexistentRoot = bytes32(uint256(1));
-        
-        (Withdrawal memory withdrawal, uint256[] memory shares) = delegationManager.getSharesFromQueuedWithdrawal(nonexistentRoot);
-        
-        // For a nonexistent withdrawal, we expect empty arrays and default values
-        assertEq(withdrawal.staker, address(0), "withdrawal staker should be zero address");
-        assertEq(withdrawal.strategies.length, 0, "withdrawal strategies should be empty");
-        assertEq(withdrawal.scaledShares.length, 0, "withdrawal scaledShares should be empty");
+        uint256[] memory shares = delegationManager.getSharesFromQueuedWithdrawal(nonexistentRoot);
         assertEq(shares.length, 0, "shares array should be empty");
     }
 
@@ -8930,10 +8922,9 @@ contract DelegationManagerUnitTests_getSharesFromQueuedWithdrawal is DelegationM
         delegationManager.queueWithdrawals(queuedWithdrawalParams);
 
         // Get shares from queued withdrawal
-        (Withdrawal memory returnedWithdrawal, uint256[] memory shares) = delegationManager.getSharesFromQueuedWithdrawal(withdrawalRoot);
+        uint256[] memory shares = delegationManager.getSharesFromQueuedWithdrawal(withdrawalRoot);
 
         // Verify withdrawal details and shares for each strategy
-        assertEq(keccak256(abi.encode(returnedWithdrawal)), withdrawalRoot, "returned withdrawal root mismatch");
         assertEq(shares.length, numStrategies, "incorrect shares array length");
         for (uint256 i = 0; i < numStrategies; i++) {
             assertEq(shares[i], depositShares[i], "incorrect shares amount for strategy");
@@ -8941,10 +8932,7 @@ contract DelegationManagerUnitTests_getSharesFromQueuedWithdrawal is DelegationM
     }
 
     function testFuzz_getSharesFromQueuedWithdrawal_EmptyWithdrawal(bytes32 withdrawalRoot) public {
-        (
-            Withdrawal memory withdrawal, 
-            uint256[] memory shares
-        ) = delegationManager.getSharesFromQueuedWithdrawal(withdrawalRoot);
+        uint256[] memory shares = delegationManager.getSharesFromQueuedWithdrawal(withdrawalRoot);
         assertEq(shares.length, 0, "sanity check");
     }
 }
