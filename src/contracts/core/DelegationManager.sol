@@ -784,7 +784,7 @@ contract DelegationManager is
         shares = new uint256[](withdrawal.strategies.length);
 
         uint32 slashableUntil = withdrawal.startBlock + MIN_WITHDRAWAL_DELAY_BLOCKS;
-        
+
         // If the slashableUntil block is in the past, read the slashing factors at that block.
         // Otherwise, read the current slashing factors. Note that if the slashableUntil block is the current block
         // or in the future, then the slashing factors are still subject to change before the withdrawal is completable,
