@@ -85,7 +85,9 @@ contract Integration_SlashedEigenpod is IntegrationCheckUtils {
 
     function testFuzz_delegateSlashedStaker_dsfNonWad(uint24 _random) public rand(_random) {
 
-        cheats.deal(address(staker), 64 ether);
+        //Additional deposit on beacon chain so dsf is nonwad
+        uint amount = 32 ether * _randUint({min: 1, max: 5});
+        cheats.deal(address(staker), amount);
         (uint40[] memory validators,) = staker.startValidators();
         beaconChain.advanceEpoch_NoWithdrawNoRewards();
         staker.verifyWithdrawalCredentials(validators);
@@ -145,7 +147,8 @@ contract Integration_SlashedEigenpod is IntegrationCheckUtils {
 
         //randomize additional deposit to eigenpod
         if(_randBool()){
-            cheats.deal(address(staker), 64 ether);
+            uint amount = 32 ether * _randUint({min: 1, max: 5});
+            cheats.deal(address(staker), amount);
             (uint40[] memory validators,) = staker.startValidators();
             beaconChain.advanceEpoch_NoWithdrawNoRewards();
             staker.verifyWithdrawalCredentials(validators);
@@ -202,7 +205,8 @@ contract Integration_SlashedEigenpod is IntegrationCheckUtils {
         (User operator2, ,) = _newRandomOperator();
 
         //Additional deposit on beacon chain so dsf is nonwad
-        cheats.deal(address(staker), 64 ether);
+        uint amount = 32 ether * _randUint({min: 1, max: 5});
+        cheats.deal(address(staker), amount);
         (uint40[] memory validators,) = staker.startValidators();
         beaconChain.advanceEpoch_NoWithdrawNoRewards();
         staker.verifyWithdrawalCredentials(validators);
@@ -249,10 +253,9 @@ contract Integration_SlashedEigenpod is IntegrationCheckUtils {
 
     
     function testFuzz_delegateSlashedStaker_slashedOperator_withdrawAllShares_complete(uint24 _random) public rand(_random){ 
-        //Generate rewards on beacon chain so dsf is nonWad
-        //uint amount = 32 ether * _randUint({min: 1, max: 5});
         //Additional deposit on beacon chain so dsf is nonwad
-        cheats.deal(address(staker), 64 ether);
+        uint amount = 32 ether * _randUint({min: 1, max: 5});
+        cheats.deal(address(staker), amount);
         (uint40[] memory validators,) = staker.startValidators();
         beaconChain.advanceEpoch_NoWithdrawNoRewards();
         staker.verifyWithdrawalCredentials(validators);
