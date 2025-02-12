@@ -783,25 +783,24 @@ contract DelegationManager is
         withdrawal = queuedWithdrawals[withdrawalRoot];
         shares = new uint256[](withdrawal.strategies.length);
 
-        address operator = delegatedTo[withdrawal.staker];
         uint32 slashableUntil = withdrawal.startBlock + MIN_WITHDRAWAL_DELAY_BLOCKS;
-
-        uint256[] memory slashingFactors;
-        // If slashableUntil block is in the past, read the slashing factors at that block
-        // Otherwise read the current slashing factors. Note that if the slashableUntil block is the current block
-        // or in the future then the slashing factors are still subject to change before the withdrawal is completable
-        // and the shares withdrawn to be less
-        if (slashableUntil < uint32(block.number)) {
-            slashingFactors = _getSlashingFactorsAtBlock({
+        
+        // If the slashableUntil block is in the past, read the slashing factors at that block.
+        // Otherwise, read the current slashing factors. Note that if the slashableUntil block is the current block
+        // or in the future, then the slashing factors are still subject to change before the withdrawal is completable,
+        // which may result in fewer shares being withdrawn.
+        uint256[] memory slashingFactors = slashableUntil < uint32(block.number)
+            ? _getSlashingFactorsAtBlock({
                 staker: withdrawal.staker,
-                operator: operator,
+                operator: withdrawal.delegatedTo,
                 strategies: withdrawal.strategies,
                 blockNumber: slashableUntil
+            })
+            : _getSlashingFactors({
+                staker: withdrawal.staker,
+                operator: withdrawal.delegatedTo,
+                strategies: withdrawal.strategies
             });
-        } else {
-            slashingFactors =
-                _getSlashingFactors({staker: withdrawal.staker, operator: operator, strategies: withdrawal.strategies});
-        }
 
         for (uint256 j; j < withdrawal.strategies.length; ++j) {
             shares[j] = SlashingLib.scaleForCompleteWithdrawal({
