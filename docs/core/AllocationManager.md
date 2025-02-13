@@ -585,7 +585,26 @@ struct SlashingParams {
 }
 
 /**
- * @notice Called by an AVS to slash an operator in a given operator set
+ * @notice Called by an AVS to slash an operator in a given operator set. The operator must be registered
+ * and have slashable stake allocated to the operator set.
+ *
+ * @param avs The AVS address initiating the slash.
+ * @param params The slashing parameters, containing:
+ *  - operator: The operator to slash.
+ *  - operatorSetId: The ID of the operator set the operator is being slashed from.
+ *  - strategies: Array of strategies to slash allocations from (must be in ascending order).
+ *  - wadsToSlash: Array of proportions to slash from each strategy (must be between 0 and 1e18).
+ *  - description: Description of why the operator was slashed.
+ *
+ * @dev For each strategy:
+ *      1. Reduces the operator's current allocation magnitude by wadToSlash proportion.
+ *      2. Reduces the strategy's max and encumbered magnitudes proportionally.
+ *      3. If there is a pending deallocation, reduces it proportionally.
+ *      4. Updates the operator's shares in the DelegationManager.
+ *
+ * @dev Small slashing amounts may not result in actual token burns due to
+ *      rounding, which will result in small amounts of tokens locked in the contract
+ *      rather than fully burning through the burn mechanism.
  */
 function slashOperator(
     address avs,
