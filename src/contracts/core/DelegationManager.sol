@@ -681,7 +681,10 @@ contract DelegationManager is
         });
     }
 
-    /// @dev Calculate the amount of slashing to apply to the staker's shares
+    /// @dev Calculate the amount of slashing to apply to the staker's shares.
+    /// @dev Be mindful of rounding in `mulWad()`, it's possible for the slashing factor to round down to 0
+    /// even when both operatorMaxMagnitude and beaconChainSlashingFactor are non-zero. This is only possible
+    /// in an edge case where the operator has a very low maxMagnitude.
     function _getSlashingFactor(
         address staker,
         IStrategy strategy,
