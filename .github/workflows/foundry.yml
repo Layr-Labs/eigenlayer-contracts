@@ -44,7 +44,7 @@ jobs:
         id: fmt
 
       # Build the project and display contract sizes.
-      - name: Forge build
+      - name: Forge Build
         run: |
           forge --version
           forge build --sizes
