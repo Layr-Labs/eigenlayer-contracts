@@ -27,8 +27,9 @@ jobs:
     
     steps:
       # Check out repository with all submodules for complete codebase access.
-      - name: Checkout code
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       # Install the Foundry toolchain.
       - name: Install Foundry
