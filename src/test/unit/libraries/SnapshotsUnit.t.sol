@@ -4,76 +4,116 @@ pragma solidity ^0.8.27;
 import "forge-std/Test.sol";
 import "src/contracts/libraries/Snapshots.sol";
 
-contract SnapshotsUnitTests is Test {
+contract SnapshotsHarness {
     using Snapshots for Snapshots.DefaultWadHistory;
     using Snapshots for Snapshots.DefaultZeroHistory;
 
-    Snapshots.DefaultWadHistory history;
-    Snapshots.DefaultZeroHistory zeroHistory;
+    Snapshots.DefaultWadHistory internal wadHistory;
+    Snapshots.DefaultZeroHistory internal zeroHistory;
+
+    function pushWad(uint32 key, uint64 value) public {
+        wadHistory.push(key, value);
+    }
+
+    function upperLookupWad(uint32 key) public view returns (uint64) {
+        return wadHistory.upperLookup(key);
+    }
+
+    function latestWad() public view returns (uint64) {
+        return wadHistory.latest();
+    }
+
+    function lengthWad() public view returns (uint256) {
+        return wadHistory.length();
+    }
+
+    function pushZero(uint32 key, uint256 value) public {
+        zeroHistory.push(key, value);
+    }
+
+    function upperLookupZero(uint32 key) public view returns (uint256) {
+        return zeroHistory.upperLookup(key);
+    }
+
+    function latestZero() public view returns (uint256) {
+        return zeroHistory.latest();
+    }
+
+    function lengthZero() public view returns (uint256) {
+        return zeroHistory.length();
+    }
+}
+
+contract SnapshotsUnitTests is Test {
+    SnapshotsHarness harness;
+
+    function setUp() public {
+        harness = new SnapshotsHarness();
+    }
 
     function test_Revert_InvalidSnapshotOrdering(uint256 r) public {
         uint32 key = uint32(bound(r, 1, type(uint32).max));
         uint32 smallerKey = uint32(bound(r, 0, key - 1));
 
-        history.push(key, 1);
+        harness.pushWad(key, 1);
 
         vm.expectRevert(Snapshots.InvalidSnapshotOrdering.selector);
-        history.push(smallerKey, 2);
+        harness.pushWad(smallerKey, 2);
     }
 
     function test_Push_Correctness(uint256 r) public {
         uint32 key = uint32(bound(r, 0, type(uint32).max));
         uint64 value = uint32(bound(r, 0, type(uint64).max));
 
-        history.push(key, value);
+        harness.pushWad(key, value);
 
-        assertEq(history.upperLookup(key), value);
-        assertEq(history.latest(), value);
-        assertEq(history.length(), 1);
+        assertEq(harness.upperLookupWad(key), value);
+        assertEq(harness.latestWad(), value);
+        assertEq(harness.lengthWad(), 1);
     }
 
     function test_UpperLookup_InitiallyWad(uint32 r) public view {
-        assertEq(history.upperLookup(r), 1e18);
+        assertEq(harness.upperLookupWad(r), 1e18);
     }
 
     function test_Latest_InitiallyWad() public view {
-        assertEq(history.latest(), 1e18);
+        assertEq(harness.latestWad(), 1e18);
     }
 
     function test_Length_InitiallyZero() public view {
-        assertEq(history.length(), 0);
+        assertEq(harness.lengthWad(), 0);
     }
 
     function test_Revert_InvalidSnapshotOrdering_ZeroHistory(uint256 r) public {
         uint32 key = uint32(bound(r, 1, type(uint32).max));
         uint32 smallerKey = uint32(bound(r, 0, key - 1));
 
-        zeroHistory.push(key, 1);
+        harness.pushZero(key, 1);
 
         vm.expectRevert(Snapshots.InvalidSnapshotOrdering.selector);
-        zeroHistory.push(smallerKey, 2);
+        harness.pushZero(smallerKey, 2);
     }
 
     function test_Push_Correctness_ZeroHistory(uint256 r) public {
         uint32 key = uint32(bound(r, 0, type(uint32).max));
         uint256 value = bound(r, 0, type(uint224).max);
 
-        zeroHistory.push(key, value);
+        harness.pushZero(key, value);
 
-        assertEq(zeroHistory.upperLookup(key), value);
-        assertEq(zeroHistory.latest(), value);
-        assertEq(zeroHistory.length(), 1);
+        assertEq(harness.upperLookupZero(key), value);
+        assertEq(harness.latestZero(), value);
+        assertEq(harness.lengthZero(), 1);
     }
 
     function test_UpperLookup_InitiallyZero(uint32 r) public view {
-        assertEq(zeroHistory.upperLookup(r), 0);
+        assertEq(harness.upperLookupZero(r), 0);
     }
 
     function test_Latest_InitiallyZero() public view {
-        assertEq(zeroHistory.latest(), 0);
+        assertEq(harness.latestZero(), 0);
     }
 
     function test_Length_InitiallyZero_ZeroHistory() public view {
-        assertEq(zeroHistory.length(), 0);
+        assertEq(harness.lengthZero(), 0);
     }
 }
