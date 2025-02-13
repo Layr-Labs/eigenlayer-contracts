@@ -116,8 +116,9 @@ contract StrategyManager is
         address staker,
         IStrategy strategy,
         uint256 depositSharesToRemove
-    ) external onlyDelegationManager {
-        _removeDepositShares(staker, strategy, depositSharesToRemove);
+    ) external onlyDelegationManager returns (uint256) {
+        (, uint256 sharesAfter) = _removeDepositShares(staker, strategy, depositSharesToRemove);
+        return sharesAfter;
     }
 
     /// @inheritdoc IShareManager
@@ -265,12 +266,13 @@ contract StrategyManager is
      * @param depositSharesToRemove The amount of deposit shares to decrement
      * @dev If the amount of shares represents all of the staker`s shares in said strategy,
      * then the strategy is removed from stakerStrategyList[staker] and 'true' is returned. Otherwise 'false' is returned.
+     * Also returns the user's udpated deposit shares after decrement.
      */
     function _removeDepositShares(
         address staker,
         IStrategy strategy,
         uint256 depositSharesToRemove
-    ) internal returns (bool) {
+    ) internal returns (bool, uint256) {
         // sanity checks on inputs
         require(depositSharesToRemove != 0, SharesAmountZero());
 
@@ -290,10 +292,10 @@ contract StrategyManager is
             _removeStrategyFromStakerStrategyList(staker, strategy);
 
             // return true in the event that the strategy was removed from stakerStrategyList[staker]
-            return true;
+            return (true, userDepositShares);
         }
         // return false in the event that the strategy was *not* removed from stakerStrategyList[staker]
-        return false;
+        return (false, userDepositShares);
     }
 
     /**

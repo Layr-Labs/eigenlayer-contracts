@@ -94,10 +94,11 @@ library SlashingLib {
         uint256 addedShares,
         uint256 slashingFactor
     ) internal {
-        // If this is the staker's first deposit, set the scaling factor to
-        // the inverse of slashingFactor
         if (prevDepositShares == 0) {
-            dsf._scalingFactor = uint256(WAD).divWad(slashingFactor);
+            // If this is the staker's first deposit or they are delegating to an operator,
+            // the slashing factor is inverted and applied to the existing DSF. This has the
+            // effect of "forgiving" prior slashing for any subsequent deposits.
+            dsf._scalingFactor = dsf.scalingFactor().divWad(slashingFactor);
             return;
         }
 
@@ -134,6 +135,18 @@ library SlashingLib {
             .divWad(slashingFactor);
 
         dsf._scalingFactor = newDepositScalingFactor;
+    }
+
+    /// @dev Reset the staker's DSF for a strategy by setting it to 0. This is the same
+    /// as setting it to WAD (see the `scalingFactor` getter above).
+    ///
+    /// A DSF is reset when a staker reduces their deposit shares to 0, either by queueing
+    /// a withdrawal, or undelegating from their operator. This ensures that subsequent
+    /// delegations/deposits do not use a stale DSF (e.g. from a prior operator).
+    function reset(
+        DepositScalingFactor storage dsf
+    ) internal {
+        dsf._scalingFactor = 0;
     }
 
     // CONVERSION

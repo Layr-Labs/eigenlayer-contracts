@@ -343,24 +343,37 @@ contract DelegationManager is
      *          1) new delegations are not paused (PAUSED_NEW_DELEGATION)
      */
     function _delegate(address staker, address operator) internal onlyWhenNotPaused(PAUSED_NEW_DELEGATION) {
-        // record the delegation relation between the staker and operator, and emit an event
+        // When a staker is not delegated to an operator, their deposit shares are equal to their
+        // withdrawable shares -- except for the beaconChainETH strategy, which is handled below
+        (IStrategy[] memory strategies, uint256[] memory withdrawableShares) = getDepositedShares(staker);
+
+        // Retrieve the amount of slashing experienced by the operator in each strategy so far.
+        // When delegating, we "forgive" the staker for this slashing by adjusting their
+        // deposit scaling factor.
+        uint256[] memory operatorSlashingFactors = _getSlashingFactors(address(0), operator, strategies);
+
+        // Delegate to the operator
         delegatedTo[staker] = operator;
         emit StakerDelegated(staker, operator);
 
-        // read staker's deposited shares and strategies to add to operator's shares
-        // and also update the staker depositScalingFactor for each strategy
-        (IStrategy[] memory strategies, uint256[] memory depositedShares) = getDepositedShares(staker);
-        uint256[] memory slashingFactors = _getSlashingFactors(staker, operator, strategies);
-
         for (uint256 i = 0; i < strategies.length; ++i) {
+            // Special case for beacon chain slashing - ensure the staker's beacon chain slashing is
+            // reflected in the number of shares they delegate.
+            if (strategies[i] == beaconChainETHStrategy) {
+                uint64 stakerBeaconChainSlashing = eigenPodManager.beaconChainSlashingFactor(staker);
+
+                DepositScalingFactor memory dsf = _depositScalingFactor[staker][strategies[i]];
+                withdrawableShares[i] = dsf.calcWithdrawable(withdrawableShares[i], stakerBeaconChainSlashing);
+            }
+
             // forgefmt: disable-next-item
             _increaseDelegation({
                 operator: operator, 
                 staker: staker, 
                 strategy: strategies[i],
                 prevDepositShares: uint256(0),
-                addedShares: depositedShares[i],
-                slashingFactor: slashingFactors[i]
+                addedShares: withdrawableShares[i],
+                slashingFactor: operatorSlashingFactors[i]
             });
         }
     }
@@ -481,7 +494,11 @@ contract DelegationManager is
             }
 
             // Remove deposit shares from EigenPodManager/StrategyManager
-            shareManager.removeDepositShares(staker, strategies[i], depositSharesToWithdraw[i]);
+            uint256 sharesAfter = shareManager.removeDepositShares(staker, strategies[i], depositSharesToWithdraw[i]);
+
+            if (sharesAfter == 0) {
+                _depositScalingFactor[staker][strategies[i]].reset();
+            }
         }
 
         // Create queue entry and increment withdrawal nonce
