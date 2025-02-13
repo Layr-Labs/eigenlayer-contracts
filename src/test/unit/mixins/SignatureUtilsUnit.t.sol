@@ -16,7 +16,24 @@ contract MockSigner {
     }
 }
 
-contract SignatureUtilsUnit is Test, SignatureUtils {
+contract SignatureUtilsHarness is SignatureUtils {
+    function calculateSignableDigest(bytes32 hash) public view returns (bytes32) {
+        return _calculateSignableDigest(hash);
+    }
+
+    function checkIsValidSignatureNow(
+        address signer,
+        bytes32 digest,
+        bytes memory signature,
+        uint256 expiry
+    ) public view {
+        _checkIsValidSignatureNow(signer, digest, signature, expiry);
+    }
+}
+
+contract SignatureUtilsUnit is Test {
+    SignatureUtilsHarness harness;
+    MockSigner mockSigner;
     uint256 signerPk;
     address signer;
     bytes32 hash;
@@ -26,35 +43,36 @@ contract SignatureUtilsUnit is Test, SignatureUtils {
     function setUp() public {
         vm.chainId(1);
 
+        harness = new SignatureUtilsHarness();
+        mockSigner = new MockSigner();
         signerPk = 1;
         signer = vm.addr(signerPk);
         
         hash = keccak256("");
-        digest = _calculateSignableDigest(hash);
+        digest = harness.calculateSignableDigest(hash);
 
         expectedDomainSeparator = keccak256(
             abi.encode(
                 keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)"),
                 keccak256(bytes("EigenLayer")), 
                 block.chainid, 
-                address(this)
+                address(harness)
             )
         );
     }
 
     function test_domainSeparator_NonZero() public view {
-        assertTrue(_INITIAL_DOMAIN_SEPARATOR != 0, "The initial domain separator should be non-zero");
-        assertTrue(domainSeparator() != 0, "The domain separator should be non-zero");
-        assertTrue(domainSeparator() == expectedDomainSeparator, "The domain separator should be as expected");
+        assertTrue(harness.domainSeparator() != 0, "The domain separator should be non-zero");
+        assertTrue(harness.domainSeparator() == expectedDomainSeparator, "The domain separator should be as expected");
     }
 
     function test_domainSeparator_NewChainId() public {
-        bytes32 initialDomainSeparator = domainSeparator();
+        bytes32 initialDomainSeparator = harness.domainSeparator();
 
         // Change the chain ID
         vm.chainId(9999);
 
-        bytes32 newDomainSeparator = domainSeparator();
+        bytes32 newDomainSeparator = harness.domainSeparator();
 
         assertTrue(newDomainSeparator != 0, "The new domain separator should be non-zero");
         assertTrue(
@@ -67,10 +85,11 @@ contract SignatureUtilsUnit is Test, SignatureUtils {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPk, digest);
 
         vm.expectRevert(ISignatureUtils.SignatureExpired.selector);
-        _checkIsValidSignatureNow(signer, digest, abi.encode(r, s, v), block.timestamp - 1);
+        harness.checkIsValidSignatureNow(signer, digest, abi.encode(r, s, v), block.timestamp - 1);
     }
 
-    function testFail_checkIsValidSignatureNow_InvalidSignature() public view {
-        _checkIsValidSignatureNow(signer, digest, "", block.timestamp);
+    function test_Revert_checkIsValidSignatureNow_InvalidSignature() public {
+        vm.expectRevert(ISignatureUtils.InvalidSignature.selector);
+        harness.checkIsValidSignatureNow(signer, digest, "", block.timestamp);
     }
 }
