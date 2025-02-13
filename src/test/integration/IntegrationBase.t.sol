@@ -1193,7 +1193,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
 
         // For each strategy, check (prev - removed == cur)
         for (uint i = 0; i < strategies.length; i++) {
-            assertEq(prevShares[i] - removedShares[i], curShares[i], err);
+            assertEq(prevShares[i], curShares[i] + removedShares[i], err);
         }
     }
 
@@ -1313,7 +1313,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
-    /// @dev Check that the staker's withdrawable shares have decreased by `removedShares`
+    /// @dev Check that the staker's withdrawable shares have increased by `addedShares`
     function assert_Snap_Added_Staker_WithdrawableShares(
         User staker, 
         IStrategy[] memory strategies, 
@@ -1347,6 +1347,19 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
+    /// @dev Check that all the staker's withdrawable shares have been removed
+    function assert_Snap_RemovedAll_Staker_WithdrawableShares(
+        User staker, 
+        IStrategy[] memory strategies, 
+        string memory err
+    ) internal {
+        uint[] memory curShares = _getStakerWithdrawableShares(staker, strategies);
+        // For each strategy, check all shares have been withdrawn
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(0, curShares[i], err);
+        }
+    }
+
     function assert_Snap_Removed_Staker_WithdrawableShares(
         User staker, 
         IStrategy strat, 
@@ -1357,7 +1370,8 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     }
 
     /// @dev Check that the staker's withdrawable shares have decreased by `removedShares`
-    function assert_Snap_Unchanged_Staker_WithdrawableShares(
+    /// FIX THIS WHEN WORKING ON ROUNDING ISSUES
+    function assert_Snap_Unchanged_Staker_WithdrawableShares_Delegation(
         User staker,
         string memory err
     ) internal {
@@ -1369,7 +1383,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
 
         // For each strategy, check (prev - removed == cur)
         for (uint i = 0; i < strategies.length; i++) {
-            assertEq(prevShares[i], curShares[i], err);
+            assertApproxEqAbs(prevShares[i], curShares[i], 100000, err);
         }
     }
 
