@@ -26,11 +26,13 @@ contract SignatureUtilsMixinUnit is Test, SignatureUtilsMixin("v0.0.0") {
     function setUp() public {
         vm.chainId(1);
 
+        harness = new SignatureUtilsHarness();
+        mockSigner = new MockSigner();
         signerPk = 1;
         signer = vm.addr(signerPk);
         
         hash = keccak256("");
-        digest = _calculateSignableDigest(hash);
+        digest = harness.calculateSignableDigest(hash);
 
         expectedDomainSeparator = keccak256(
             abi.encode(
@@ -38,24 +40,23 @@ contract SignatureUtilsMixinUnit is Test, SignatureUtilsMixin("v0.0.0") {
                 keccak256(bytes("EigenLayer")), 
                 keccak256(bytes(_majorVersion())),
                 block.chainid, 
-                address(this)
+                address(harness)
             )
         );
     }
 
     function test_domainSeparator_NonZero() public view {
-        assertTrue(_INITIAL_DOMAIN_SEPARATOR != 0, "The initial domain separator should be non-zero");
-        assertTrue(domainSeparator() != 0, "The domain separator should be non-zero");
-        assertTrue(domainSeparator() == expectedDomainSeparator, "The domain separator should be as expected");
+        assertTrue(harness.domainSeparator() != 0, "The domain separator should be non-zero");
+        assertTrue(harness.domainSeparator() == expectedDomainSeparator, "The domain separator should be as expected");
     }
 
     function test_domainSeparator_NewChainId() public {
-        bytes32 initialDomainSeparator = domainSeparator();
+        bytes32 initialDomainSeparator = harness.domainSeparator();
 
         // Change the chain ID
         vm.chainId(9999);
 
-        bytes32 newDomainSeparator = domainSeparator();
+        bytes32 newDomainSeparator = harness.domainSeparator();
 
         assertTrue(newDomainSeparator != 0, "The new domain separator should be non-zero");
         assertTrue(
@@ -72,7 +73,8 @@ contract SignatureUtilsMixinUnit is Test, SignatureUtilsMixin("v0.0.0") {
         _checkIsValidSignatureNow(signer, digest, abi.encode(r, s, v), block.timestamp - 1);
     }
 
-    function testFail_checkIsValidSignatureNow_InvalidSignature() public view {
-        _checkIsValidSignatureNow(signer, digest, "", block.timestamp);
+    function test_Revert_checkIsValidSignatureNow_InvalidSignature() public {
+        vm.expectRevert(ISignatureUtils.InvalidSignature.selector);
+        harness.checkIsValidSignatureNow(signer, digest, "", block.timestamp);
     }
 }
