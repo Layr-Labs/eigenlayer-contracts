@@ -770,13 +770,11 @@ contract DelegationManager is
 
     /// @dev Add to the cumulative withdrawn scaled shares from an operator for a given strategy
     function _addQueuedSlashableShares(address operator, IStrategy strategy, uint256 scaledShares) internal {
-        if (strategy != beaconChainETHStrategy) {
-            uint256 currCumulativeScaledShares = _cumulativeScaledSharesHistory[operator][strategy].latest();
-            _cumulativeScaledSharesHistory[operator][strategy].push({
-                key: uint32(block.number),
-                value: currCumulativeScaledShares + scaledShares
-            });
-        }
+        uint256 currCumulativeScaledShares = _cumulativeScaledSharesHistory[operator][strategy].latest();
+        _cumulativeScaledSharesHistory[operator][strategy].push({
+            key: uint32(block.number),
+            value: currCumulativeScaledShares + scaledShares
+        });
     }
 
     /// @dev Get the shares from a queued withdrawal.

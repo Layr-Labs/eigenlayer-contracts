@@ -7491,8 +7491,8 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
             delegationManager.queueWithdrawals(queuedWithdrawalParams);
             assertEq(
                 delegationManager.getSlashableSharesInQueue(operator, beaconChainETHStrategy),
-                0,
-                "there should be 0 withdrawAmount slashable shares in queue since this is beaconChainETHStrategy"
+                withdrawAmount,
+                "there should be withdrawAmount slashable shares in queue"
             );
         }
 
@@ -7504,6 +7504,7 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
         // Therefore amount of shares to burn should be what the staker still has remaining + staker1 shares and then
         // divided by 2 since the operator was slashed 50%
         uint256 sharesToDecrease = (shares + depositAmount - withdrawAmount) * 3 / 4;
+        uint256 sharesToBurn = sharesToDecrease + (delegationManager.getSlashableSharesInQueue(operator, beaconChainETHStrategy) * 3 / 4);
 
         // 4. Burn shares
         _setOperatorMagnitude(operator, beaconChainETHStrategy, newMagnitude);
@@ -7512,7 +7513,7 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
 
         // Assert OperatorSharesSlashed event was emitted with correct params
         cheats.expectEmit(true, true, true, true, address(delegationManager));
-        emit OperatorSharesSlashed(operator, beaconChainETHStrategy, sharesToDecrease);
+        emit OperatorSharesSlashed(operator, beaconChainETHStrategy, sharesToBurn);
 
         cheats.prank(address(allocationManagerMock));
         delegationManager.slashOperatorShares({
@@ -7525,8 +7526,8 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
         // 5. Assert expected values
         uint256 queuedSlashableSharesAfter = delegationManager.getSlashableSharesInQueue(operator, beaconChainETHStrategy);
         uint256 operatorSharesAfter = delegationManager.operatorShares(operator, beaconChainETHStrategy);
-        assertEq(queuedSlashableSharesBefore, 0, "Slashable shares in queue should be 0 for beaconChainStrategy");
-        assertEq(queuedSlashableSharesAfter, 0, "Slashable shares in queue should be 0 for beaconChainStrategy");
+        assertEq(queuedSlashableSharesBefore, withdrawAmount, "Slashable shares in queue should be full withdraw amount");
+        assertEq(queuedSlashableSharesAfter, withdrawAmount / 4, "Slashable shares in queue should be 1/4 withdraw amount after slashing");
         assertEq(operatorSharesAfter, operatorSharesBefore - sharesToDecrease, "operator shares should be decreased by sharesToDecrease");
     }
 
