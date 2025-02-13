@@ -227,7 +227,7 @@ contract AllocationManager is
                 // 6. Emit an event for the updated allocation
                 emit AllocationUpdated(
                     operator,
-                    OperatorSetLib.decode(operatorSet.key()),
+                    operatorSet,
                     strategy,
                     _addInt128(allocation.currentMagnitude, allocation.pendingDiff),
                     allocation.effectBlock
