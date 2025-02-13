@@ -22,31 +22,41 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        suite: [unit, integration, fork]
+        suite: [Unit, Integration, Fork]
     
     steps:
+      # Check out repository with all submodules for complete codebase access.
       - name: Checkout code
         uses: actions/checkout@v2
 
+      # Install the Foundry toolchain.
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: stable
 
+      # Run Forge's formatting checker to ensure consistent code style.
+      - name: "Forge Fmt"
+        run: |
+          forge fmt --check
+        id: fmt
+
+      # Build the project and display contract sizes.
       - name: Forge build
         run: |
           forge --version
-          forge build
+          forge build --sizes
 
+      # Run the test suite in parallel based on the matrix configuration.
       - name: Run ${{ matrix.suite }} tests
         run: |
           case "${{ matrix.suite }}" in
-            unit) forge test --no-match-contract Integration ;;
-            integration) forge test --match-contract Integration ;;
-            fork) forge test --match-contract Integration ;;
+            Unit) forge test --no-match-contract Integration ;;
+            Integration) forge test --match-contract Integration ;;
+            Fork) forge test --match-contract Integration ;;
           esac
         env:
-          FOUNDRY_PROFILE: ${{ matrix.suite == 'fork' && 'forktest' || 'ci' }}
+          FOUNDRY_PROFILE: ${{ matrix.suite == 'Fork' && 'forktest' || 'ci' }}
 
   # -----------------------------------------------------------------------
   # Forge Test (Intense)
