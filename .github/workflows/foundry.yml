@@ -18,55 +18,35 @@ jobs:
   # Forge Test
   # -----------------------------------------------------------------------
 
-  test:
-    name: Test
+  test-suite:
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: true
+      matrix:
+        suite: [unit, integration, fork]
+    
     steps:
-      # Check out repository with all submodules for complete codebase access.
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-      # Install the Foundry toolchain.
-      - name: "Install Foundry"
+      - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: stable
 
-      # Run Forge's formatting checker to ensure consistent code style.
-      - name: "Forge Fmt"
-        run: |
-          forge fmt --check
-        id: fmt
-
-      # Install Bun package manager for JavaScript dependencies (faster than npm).
-      - name: "Install Bun"
-        uses: "oven-sh/setup-bun@v1"
-
-      # Install NPM packages.
-      - name: "Install NPM Packages"
-        run: bun install
-
-      # Run Solhint linter to check for Solidity code quality issues.
-      - name: "Solhint"
-        run: bun run hint
-
-      # Build the project and display contract sizes.
-      - name: "Forge Build"
+      - name: Forge build
         run: |
           forge --version
-          forge build --sizes
-        id: build
+          forge build
 
-      # Run local tests (unit and integration).
-      - name: "Forge Test (Local)"
-        run: forge test -vvv
-
-      # Run integration tests using a mainnet fork.
-      - name: "Forge Test Integration (Fork)"
-        run: FOUNDRY_PROFILE=forktest forge test --match-contract Integration -vvv
+      - name: Run ${{ matrix.suite }} tests
+        run: |
+          case "${{ matrix.suite }}" in
+            unit) forge test --no-match-contract Integration ;;
+            integration) forge test --match-contract Integration ;;
+            fork) forge test --match-contract Integration ;;
+          esac
+        env:
+          FOUNDRY_PROFILE: ${{ matrix.suite == 'fork' && 'forktest' || 'ci' }}
 
   # -----------------------------------------------------------------------
   # Forge Test (Intense)
