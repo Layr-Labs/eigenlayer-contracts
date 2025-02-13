@@ -776,6 +776,40 @@ contract DelegationManager is
         }
     }
 
+    /// @dev Get the shares from a queued withdrawal.
+    function _getSharesByWithdrawalRoot(
+        bytes32 withdrawalRoot
+    ) internal view returns (Withdrawal memory withdrawal, uint256[] memory shares) {
+        withdrawal = queuedWithdrawals[withdrawalRoot];
+        shares = new uint256[](withdrawal.strategies.length);
+
+        uint32 slashableUntil = withdrawal.startBlock + MIN_WITHDRAWAL_DELAY_BLOCKS;
+
+        // If the slashableUntil block is in the past, read the slashing factors at that block.
+        // Otherwise, read the current slashing factors. Note that if the slashableUntil block is the current block
+        // or in the future, then the slashing factors are still subject to change before the withdrawal is completable,
+        // which may result in fewer shares being withdrawn.
+        uint256[] memory slashingFactors = slashableUntil < uint32(block.number)
+            ? _getSlashingFactorsAtBlock({
+                staker: withdrawal.staker,
+                operator: withdrawal.delegatedTo,
+                strategies: withdrawal.strategies,
+                blockNumber: slashableUntil
+            })
+            : _getSlashingFactors({
+                staker: withdrawal.staker,
+                operator: withdrawal.delegatedTo,
+                strategies: withdrawal.strategies
+            });
+
+        for (uint256 j; j < withdrawal.strategies.length; ++j) {
+            shares[j] = SlashingLib.scaleForCompleteWithdrawal({
+                scaledShares: withdrawal.scaledShares[j],
+                slashingFactor: slashingFactors[j]
+            });
+        }
+    }
+
     /// @dev Depending on the strategy used, determine which ShareManager contract to make external calls to
     function _getShareManager(
         IStrategy strategy
@@ -915,6 +949,13 @@ contract DelegationManager is
     }
 
     /// @inheritdoc IDelegationManager
+    function getSharesFromQueuedWithdrawal(
+        bytes32 withdrawalRoot
+    ) external view returns (uint256[] memory shares) {
+        (, shares) = _getSharesByWithdrawalRoot(withdrawalRoot);
+    }
+
+    /// @inheritdoc IDelegationManager
     function getQueuedWithdrawals(
         address staker
     ) external view returns (Withdrawal[] memory withdrawals, uint256[][] memory shares) {
@@ -924,37 +965,8 @@ contract DelegationManager is
         withdrawals = new Withdrawal[](totalQueued);
         shares = new uint256[][](totalQueued);
 
-        address operator = delegatedTo[staker];
-
         for (uint256 i; i < totalQueued; ++i) {
-            withdrawals[i] = queuedWithdrawals[withdrawalRoots[i]];
-            shares[i] = new uint256[](withdrawals[i].strategies.length);
-
-            uint32 slashableUntil = withdrawals[i].startBlock + MIN_WITHDRAWAL_DELAY_BLOCKS;
-
-            uint256[] memory slashingFactors;
-            // If slashableUntil block is in the past, read the slashing factors at that block
-            // Otherwise read the current slashing factors. Note that if the slashableUntil block is the current block
-            // or in the future then the slashing factors are still subject to change before the withdrawal is completable
-            // and the shares withdrawn to be less
-            if (slashableUntil < uint32(block.number)) {
-                slashingFactors = _getSlashingFactorsAtBlock({
-                    staker: staker,
-                    operator: operator,
-                    strategies: withdrawals[i].strategies,
-                    blockNumber: slashableUntil
-                });
-            } else {
-                slashingFactors =
-                    _getSlashingFactors({staker: staker, operator: operator, strategies: withdrawals[i].strategies});
-            }
-
-            for (uint256 j; j < withdrawals[i].strategies.length; ++j) {
-                shares[i][j] = SlashingLib.scaleForCompleteWithdrawal({
-                    scaledShares: withdrawals[i].scaledShares[j],
-                    slashingFactor: slashingFactors[j]
-                });
-            }
+            (withdrawals[i], shares[i]) = _getSharesByWithdrawalRoot(withdrawalRoots[i]);
         }
     }
 
