@@ -289,6 +289,11 @@ contract BeaconChainMock is Logger {
         _advanceEpoch();
     }
 
+    function advanceEpoch_NoWithdrawNoRewards() public {
+        print.method("advanceEpoch_NoWithdrawNoRewards");
+        _advanceEpoch();
+    }
+
     /// @dev Iterate over all validators. If the validator is still active,
     /// add CONSENSUS_REWARD_AMOUNT_GWEI to its current balance
     function _generateRewards() internal {
