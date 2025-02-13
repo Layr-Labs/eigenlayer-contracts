@@ -1,0 +1,50 @@
+name: Deploy Tenderly Testnet
+
+on:
+  workflow_dispatch:
+    inputs:
+      upgrade_name:
+        description: "Enter the upgrade name (subdirectory in script/releases)"
+        required: true
+        type: string
+      environment:
+        description: "Select the environment"
+        required: true
+        type: choice
+        options:
+          - preprod
+          - testnet
+          - mainnet
+
+# Ensures only those with write access can trigger this workflow.
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Verify upgrade_name directory exists
+        id: check_dir
+        run: |
+          if [ ! -d "script/releases/${{ github.event.inputs.upgrade_name }}" ]; then
+            echo "Error: The upgrade_name directory 'script/releases/${{ github.event.inputs.upgrade_name }}' does not exist!"
+            exit 1
+          fi
+
+      - name: Install Zeus CLI
+        run: npm install -g @layr-labs/zeus
+
+      - name: Run Zeus Deployment
+        env:
+          TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
+          TENDERLY_ACCOUNT_SLUG: ${{ secrets.TENDERLY_ACCOUNT_SLUG }}
+          TENDERLY_PROJECT_SLUG: ${{ secrets.TENDERLY_PROJECT_SLUG }}
+        run: |
+          zeus run deploy \
+            --env "${{ github.event.inputs.environment }}" \
+            --upgrade "${{ github.event.inputs.upgrade_name }}" \
+            --fork tenderly
