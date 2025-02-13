@@ -104,8 +104,9 @@ contract IntegrationCheckUtils is IntegrationBase {
 
         assert_Snap_Unchanged_Staker_DepositShares(staker, "staker shares should not have decreased");
         assert_Snap_Removed_Staker_WithdrawableShares_AtLeast(staker, BEACONCHAIN_ETH_STRAT, slashedAmountGwei * GWEI_TO_WEI, "should have decreased withdrawable shares by at least slashed amount");
-        //assert_Snap_Removed_ActiveValidatorCount(staker, slashedValidators.length, "should have decreased active validator count");
-        //assert_Snap_Removed_ActiveValidators(staker, slashedValidators, "exited validators should each be WITHDRAWN");
+        // TODO - currently only used after a `NoWithdrawNoRewards` action. Investigate re-adding in future.
+        // assert_Snap_Removed_ActiveValidatorCount(staker, slashedValidators.length, "should have decreased active validator count");
+        // assert_Snap_Removed_ActiveValidators(staker, slashedValidators, "exited validators should each be WITHDRAWN");
     }
 
     function check_CompleteCheckpoint_WithCLSlashing_HandleRoundDown_State(
@@ -189,7 +190,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         assertEq(address(operator), delegationManager.delegatedTo(address(staker)), "staker should be delegated to operator");
         assert_HasExpectedShares(staker, strategies, shares, "staker should still have expected shares after delegating");
         assert_Snap_Unchanged_Staker_DepositShares(staker, "staker shares should be unchanged after delegating");
-        //assert_Snap_Unchanged_Staker_WithdrawableShares_Delegation(staker, "withdrawable shares should be unchanged after delegating");
+        assert_Snap_Unchanged_Staker_WithdrawableShares_Delegation(staker, "withdrawable shares should be unchanged after delegating");
         uint256[] memory delegatableShares = _getPrevStakerWithdrawableShares(staker, strategies);
         assert_Snap_Added_OperatorShares(operator, strategies, delegatableShares, "operator should have received shares");
     }

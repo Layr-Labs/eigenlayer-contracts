@@ -680,13 +680,6 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
 
             uint256 scaledShares = dsf.scaleForQueueWithdrawal(depositShares[i]);
 
-            //TODO: find out why this was here in the first place
-            /*
-            if (strategies[i] == beaconChainETHStrategy) {
-                scaledShares -= scaledShares % 1 gwei;
-            }
-            */
-
             expectedWithdrawals[i] = Withdrawal({
                 staker: staker,
                 delegatedTo: delegatedTo,
