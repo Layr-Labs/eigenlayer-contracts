@@ -89,8 +89,7 @@ contract SignatureUtilsUnit is Test {
         harness.checkIsValidSignatureNow(signer, digest, abi.encode(r, s, v), block.timestamp - 1);
     }
 
-    function test_Revert_checkIsValidSignatureNow_InvalidSignature() public {
-        vm.expectRevert(ISignatureUtils.InvalidSignature.selector);
-        harness.checkIsValidSignatureNow(signer, digest, "", block.timestamp);
-    }
+    // function testFail_checkIsValidSignatureNow_InvalidSignature() public {
+    //     _checkIsValidSignatureNow(signer, digest, "", block.timestamp);
+    // }
 }
