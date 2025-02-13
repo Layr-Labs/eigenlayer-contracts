@@ -237,6 +237,34 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         return expectedWithdrawals;
     }
 
+    /// @dev Redelegate to a new operator
+    function redelegate(
+        User newOperator
+    ) public virtual createSnapshot returns (Withdrawal[] memory) {
+        print.method("redelegate", newOperator.NAME_COLORED());
+        Withdrawal[] memory expectedWithdrawals = _getExpectedWithdrawalStructsForStaker(address(this));
+        ISignatureUtils.SignatureWithExpiry memory emptySig;
+        _tryPrankAppointee_DelegationManager(IDelegationManager.redelegate.selector);
+        delegationManager.redelegate(address(newOperator), emptySig, bytes32(0));
+        print.gasUsed();
+
+        for (uint256 i = 0; i < expectedWithdrawals.length; i++) {
+            IStrategy strat = expectedWithdrawals[i].strategies[0];
+
+            string memory name = strat == beaconChainETHStrategy 
+                ? "Native ETH" 
+                : IERC20Metadata(address(strat.underlyingToken())).name();
+            
+            console.log(
+                "   Expecting withdrawal with nonce %s of %s for %s scaled shares.", 
+                expectedWithdrawals[i].nonce,
+                name,
+                expectedWithdrawals[i].scaledShares[0]
+            );
+        }
+        return expectedWithdrawals;
+    }
+
     /// @dev Force undelegate staker
     function forceUndelegate(
         User staker
@@ -268,6 +296,15 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
             __deprecated_withdrawer: address(0)
         });
 
+        uint256[] memory scaledSharesForWithdrawal = new uint256[](strategies.length);
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            DepositScalingFactor memory dsf = DepositScalingFactor(
+                delegationManager.depositScalingFactor(address(this), strategies[i])
+            );
+
+            scaledSharesForWithdrawal[i] = dsf.scaleForQueueWithdrawal(depositShares[i]);
+        }
+
         // Create Withdrawal struct using same info
         Withdrawal[] memory withdrawals = new Withdrawal[](1);
         withdrawals[0] = Withdrawal({
@@ -277,7 +314,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
             nonce: nonce,
             startBlock: uint32(block.number),
             strategies: strategies,
-            scaledShares: depositShares // TODO: convert depositShares to shares and then scale in withdrawal
+            scaledShares: scaledSharesForWithdrawal
         });
 
         bytes32[] memory withdrawalRoots = delegationManager.queueWithdrawals(params);
@@ -642,10 +679,6 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
             );
 
             uint256 scaledShares = dsf.scaleForQueueWithdrawal(depositShares[i]);
-
-            if (strategies[i] == beaconChainETHStrategy) {
-                scaledShares -= scaledShares % 1 gwei;
-            }
 
             expectedWithdrawals[i] = Withdrawal({
                 staker: staker,

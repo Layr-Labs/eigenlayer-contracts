@@ -135,18 +135,20 @@ contract EigenPodManager is
      * result in the `podOwner` incurring a "share deficit". This behavior prevents a Staker from queuing a withdrawal which improperly removes excessive
      * shares from the operator to whom the staker is delegated.
      * @dev The delegation manager validates that the podOwner is not address(0)
+     * @return updatedShares the staker's deposit shares after decrement
      */
     function removeDepositShares(
         address staker,
         IStrategy strategy,
         uint256 depositSharesToRemove
-    ) external onlyDelegationManager {
+    ) external onlyDelegationManager returns (uint256) {
         require(strategy == beaconChainETHStrategy, InvalidStrategy());
         int256 updatedShares = podOwnerDepositShares[staker] - int256(depositSharesToRemove);
         require(updatedShares >= 0, SharesNegative());
         podOwnerDepositShares[staker] = updatedShares;
 
         emit NewTotalShares(staker, updatedShares);
+        return uint256(updatedShares);
     }
 
     /**
