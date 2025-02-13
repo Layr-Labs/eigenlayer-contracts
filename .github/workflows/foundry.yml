@@ -19,6 +19,7 @@ jobs:
   # -----------------------------------------------------------------------
 
   test-suite:
+    name: Test
     runs-on: ubuntu-latest
     strategy:
       matrix:
