@@ -2,141 +2,152 @@
 pragma solidity ^0.8.27;
 
 interface IPermissionControllerErrors {
-    /// @notice Thrown when the caller is not the admin
+    /// @notice Thrown when the caller is not an admin of the account.
     error NotAdmin();
-    /// @notice Thrown when the admin to remove is not an admin
+    /// @notice Thrown when attempting to remove an admin that is not set.
     error AdminNotSet();
-    /// @notice Thrown when an appointee is already set for the account's function
+    /// @notice Thrown when attempting to set an appointee that is already set for the account's function.
     error AppointeeAlreadySet();
-    /// @notice Thrown when an appointee is not set for the account's function
+    /// @notice Thrown when attempting to remove an appointee that is not set for the account's function.
     error AppointeeNotSet();
-    /// @notice Thrown when the account attempts to remove the only admin
+    /// @notice Thrown when attempting to remove the last admin from an account.
     error CannotHaveZeroAdmins();
-    /// @notice Thrown when an admin is already set
+    /// @notice Thrown when attempting to add an admin that is already set.
     error AdminAlreadySet();
-    /// @notice Thrown when an admin is not pending
+    /// @notice Thrown when attempting to accept admin role without being a pending admin.
     error AdminNotPending();
-    /// @notice Thrown when an admin is already pending
+    /// @notice Thrown when attempting to add a pending admin that is already pending.
     error AdminAlreadyPending();
 }
 
 interface IPermissionControllerEvents {
-    /// @notice Emitted when an appointee is set
+    /// @notice Emitted when an appointee is granted permission to call a function for an account.
     event AppointeeSet(address indexed account, address indexed appointee, address target, bytes4 selector);
 
-    /// @notice Emitted when an appointee is revoked
+    /// @notice Emitted when an appointee's permission to call a function is revoked for an account.
     event AppointeeRemoved(address indexed account, address indexed appointee, address target, bytes4 selector);
 
-    /// @notice Emitted when an admin is set as pending for an account
+    /// @notice Emitted when an address is added as a pending admin for an account.
     event PendingAdminAdded(address indexed account, address admin);
 
-    /// @notice Emitted when an admin is removed as pending for an account
+    /// @notice Emitted when an address is removed from pending admins for an account.
     event PendingAdminRemoved(address indexed account, address admin);
 
-    /// @notice Emitted when an admin is set for a given account
+    /// @notice Emitted when a pending admin accepts their role and becomes an admin for an account.
     event AdminSet(address indexed account, address admin);
 
-    /// @notice Emitted when an admin is removed for a given account
+    /// @notice Emitted when an admin is removed from an account.
     event AdminRemoved(address indexed account, address admin);
 }
 
 interface IPermissionController is IPermissionControllerErrors, IPermissionControllerEvents {
     /**
-     * @notice Sets a pending admin of an account
-     * @param account to set pending admin for
-     * @param admin to set
-     * @dev Multiple admins can be set for an account
+     * @notice Sets a pending admin for an account.
+     * @param account The account to set the pending admin for.
+     * @param admin The address to set as pending admin.
+     * @dev Multiple admins can be set for an account.
      */
     function addPendingAdmin(address account, address admin) external;
 
     /**
-     * @notice Removes a pending admin of an account
-     * @param account to remove pending admin for
-     * @param admin to remove
-     * @dev Only the admin of the account can remove a pending admin
+     * @notice Removes a pending admin from an account.
+     * @param account The account to remove the pending admin from.
+     * @param admin The pending admin address to remove.
+     * @dev Only the admin of the account can remove a pending admin.
      */
     function removePendingAdmin(address account, address admin) external;
 
     /**
-     * @notice Accepts the admin role of an account
-     * @param account to accept admin for
-     * @dev Only a pending admin for the account can become an admin
+     * @notice Accepts the admin role for an account.
+     * @param account The account to accept the admin role for.
+     * @dev Only a pending admin for the account can become an admin.
      */
     function acceptAdmin(
         address account
     ) external;
 
     /**
-     * @notice Remove an admin of an account
-     * @param account to remove admin for
-     * @param admin to remove
-     * @dev Only the admin of the account can remove an admin
-     * @dev Reverts when an admin is removed such that no admins are remaining
+     * @notice Removes an admin from an account.
+     * @param account The account to remove the admin from.
+     * @param admin The admin address to remove.
+     * @dev Only the admin of the account can remove another admin.
+     * @dev Reverts if removing this admin would leave the account with no admins.
      */
     function removeAdmin(address account, address admin) external;
 
     /**
-     * @notice Set an appointee for a given account
-     * @param account to set appointee for
-     * @param appointee to set
-     * @param target to set appointee for
-     * @param selector to set appointee for
-     * @dev Only the admin of the account can set an appointee
+     * @notice Sets an appointee's permission to call a specific function for an account.
+     * @param account The account to set the appointee for.
+     * @param appointee The address to grant permission to.
+     * @param target The contract address containing the function.
+     * @param selector The function selector to grant permission for.
+     * @dev Only the admin of the account can set an appointee.
      */
     function setAppointee(address account, address appointee, address target, bytes4 selector) external;
 
     /**
-     * Removes an appointee for a given account
-     * @param account to remove appointee for
-     * @param appointee to remove
-     * @param target to remove appointee for
-     * @param selector to remove appointee for
-     * @dev Only the admin of the account can remove an appointee
+     * @notice Removes an appointee's permission to call a specific function for an account.
+     * @param account The account to remove the appointee from.
+     * @param appointee The address to remove permission from.
+     * @param target The contract address containing the function.
+     * @param selector The function selector to remove permission for.
+     * @dev Only the admin of the account can remove an appointee.
      */
     function removeAppointee(address account, address appointee, address target, bytes4 selector) external;
 
     /**
-     * @notice Checks if the given caller is an admin of the account
-     * @dev If the account has no admin, the caller is checked to be the account itself
+     * @notice Checks if a given caller is an admin of the account.
+     * @param account The account to check admin status for.
+     * @param caller The address to check admin status of.
+     * @return Returns true if the caller is an admin, false otherwise.
+     * @dev If the account has no admin, the caller must be the account itself.
      */
     function isAdmin(address account, address caller) external view returns (bool);
 
     /**
-     * @notice Checks if the `pendingAdmin` is a pending admin of the `account`
+     * @notice Checks if an address is a pending admin for an account.
+     * @param account The account to check pending admin status for.
+     * @param pendingAdmin The address to check pending admin status of.
+     * @return Returns true if the address is a pending admin, false otherwise.
      */
     function isPendingAdmin(address account, address pendingAdmin) external view returns (bool);
 
     /**
-     * @notice Get the admins of an account
-     * @param account The account to get the admin of
-     * @dev If the account has no admin, the account itself is returned
+     * @notice Gets the list of admins for an account.
+     * @param account The account to get the admins for.
+     * @return Returns an array of admin addresses.
+     * @dev If the account has no admin, returns an array containing only the account address.
      */
     function getAdmins(
         address account
     ) external view returns (address[] memory);
 
     /**
-     * @notice Get the pending admins of an account
-     * @param account The account to get the pending admin of
+     * @notice Gets the list of pending admins for an account.
+     * @param account The account to get the pending admins for.
+     * @return Returns an array of pending admin addresses.
      */
     function getPendingAdmins(
         address account
     ) external view returns (address[] memory);
 
     /**
-     * @notice Checks if the given caller has permissions to call the fucntion
-     * @param account to check
-     * @param caller to check permission for
-     * @param target to check permission for
-     * @param selector to check permission for
-     * @dev Returns `true` if the admin OR the appointee is the caller
+     * @notice Checks if a caller has permission to call a specific function for an account.
+     * @param account The account to check permissions for.
+     * @param caller The address to check permissions of.
+     * @param target The contract address containing the function.
+     * @param selector The function selector to check permissions for.
+     * @return Returns true if the caller has permission, false otherwise.
+     * @dev Returns true if the caller is either an admin or an appointed caller for the function.
+     * @dev Function upgrades that modify parameters will invalidate existing permissions.
      */
     function canCall(address account, address caller, address target, bytes4 selector) external returns (bool);
 
     /**
-     * @notice Gets the list of permissions of an appointee for a given account
-     * @param account to get appointee permissions for
-     * @param appointee to get permissions
+     * @notice Gets the list of functions an appointee has permission to call for an account.
+     * @param account The account to get appointee permissions for.
+     * @param appointee The appointee address to get permissions for.
+     * @return Returns two arrays: target contract addresses and their corresponding function selectors.
      */
     function getAppointeePermissions(
         address account,
@@ -144,11 +155,12 @@ interface IPermissionController is IPermissionControllerErrors, IPermissionContr
     ) external returns (address[] memory, bytes4[] memory);
 
     /**
-     * @notice Returns the list of appointees for a given account and function
-     * @param account to get appointees for
-     * @param target to get appointees for
-     * @param selector to get appointees for
-     * @dev Does NOT include admin as an appointee, even though it can call
+     * @notice Gets the list of appointees that can call a specific function for an account.
+     * @param account The account to get appointees for.
+     * @param target The contract address containing the function.
+     * @param selector The function selector to get appointees for.
+     * @return Returns an array of appointee addresses.
+     * @dev Does not include admins in the returned list, even though they have permission to call the function.
      */
     function getAppointees(address account, address target, bytes4 selector) external returns (address[] memory);
 }
