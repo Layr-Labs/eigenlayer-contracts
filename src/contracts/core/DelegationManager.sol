@@ -544,46 +544,49 @@ contract DelegationManager is
         bytes32 withdrawalRoot = calculateWithdrawalRoot(withdrawal);
         require(pendingWithdrawals[withdrawalRoot], WithdrawalNotQueued());
 
-        uint256[] memory prevSlashingFactors;
+        uint256[] memory sharesToWithdraw = new uint256[](withdrawal.strategies.length);
         {
             // slashableUntil is block inclusive so we need to check if the current block is strictly greater than the slashableUntil block
             // meaning the withdrawal can be completed.
             uint32 slashableUntil = withdrawal.startBlock + MIN_WITHDRAWAL_DELAY_BLOCKS;
             require(uint32(block.number) > slashableUntil, WithdrawalDelayNotElapsed());
 
-            // Given the max magnitudes of the operator the staker was originally delegated to, calculate
-            // the slashing factors for each of the withdrawal's strategies.
-            prevSlashingFactors = _getSlashingFactorsAtBlock({
+            // Calculate the amount of slashing to apply to each strategy. For max magnitude lookups,
+            // use `slashableUntil` as a cutoff block after which the withdrawal is not slashable.
+            uint256[] memory prevSlashingFactors = _getSlashingFactorsAtBlock({
                 staker: withdrawal.staker,
                 operator: withdrawal.delegatedTo,
                 strategies: withdrawal.strategies,
                 blockNumber: slashableUntil
             });
-        }
 
-        // Remove the withdrawal from the queue. Note that for legacy withdrawals, the removals
-        // from `_stakerQueuedWithdrawalRoots` and `queuedWithdrawals` will no-op.
-        _stakerQueuedWithdrawalRoots[withdrawal.staker].remove(withdrawalRoot);
-        delete queuedWithdrawals[withdrawalRoot];
-        delete pendingWithdrawals[withdrawalRoot];
-        emit SlashingWithdrawalCompleted(withdrawalRoot);
+            // Remove the withdrawal from the queue. Note that for legacy withdrawals, the removals
+            // from `_stakerQueuedWithdrawalRoots` and `queuedWithdrawals` will no-op.
+            _stakerQueuedWithdrawalRoots[withdrawal.staker].remove(withdrawalRoot);
+            delete queuedWithdrawals[withdrawalRoot];
+            delete pendingWithdrawals[withdrawalRoot];
+            emit SlashingWithdrawalCompleted(withdrawalRoot);
+
+            // Calculate how many shares can be withdrawn after applying slashing
+            for (uint256 i = 0; i < withdrawal.strategies.length; i++) {
+                sharesToWithdraw[i] = SlashingLib.scaleForCompleteWithdrawal({
+                    scaledShares: withdrawal.scaledShares[i],
+                    slashingFactor: prevSlashingFactors[i]
+                });
+            }
+        }
 
         // Given the max magnitudes of the operator the staker is now delegated to, calculate the current
         // slashing factors to apply to each withdrawal if it is received as shares.
         address newOperator = delegatedTo[withdrawal.staker];
         uint256[] memory newSlashingFactors = _getSlashingFactors(withdrawal.staker, newOperator, withdrawal.strategies);
 
+        // Complete withdrawal by awarding shares or withdrawing tokens
         for (uint256 i = 0; i < withdrawal.strategies.length; i++) {
             IShareManager shareManager = _getShareManager(withdrawal.strategies[i]);
 
-            // Calculate how much slashing to apply, as well as shares to withdraw
-            uint256 sharesToWithdraw = SlashingLib.scaleForCompleteWithdrawal({
-                scaledShares: withdrawal.scaledShares[i],
-                slashingFactor: prevSlashingFactors[i]
-            });
-
-            //Do nothing if 0 shares to withdraw
-            if (sharesToWithdraw == 0) {
+            // Do nothing if 0 shares to withdraw
+            if (sharesToWithdraw[i] == 0) {
                 continue;
             }
 
@@ -595,14 +598,14 @@ contract DelegationManager is
                     staker: withdrawal.staker,
                     strategy: withdrawal.strategies[i],
                     token: tokens[i],
-                    shares: sharesToWithdraw
+                    shares: sharesToWithdraw[i]
                 });
             } else {
                 // Award shares back in StrategyManager/EigenPodManager.
                 (uint256 prevDepositShares, uint256 addedShares) = shareManager.addShares({
                     staker: withdrawal.staker,
                     strategy: withdrawal.strategies[i],
-                    shares: sharesToWithdraw
+                    shares: sharesToWithdraw[i]
                 });
 
                 // Update the staker's deposit scaling factor and delegate shares to their operator
