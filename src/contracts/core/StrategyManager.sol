@@ -158,8 +158,12 @@ contract StrategyManager is
         (, uint256 sharesToBurn) = EnumerableMap.tryGet(burnableShares, address(strategy));
         EnumerableMap.remove(burnableShares, address(strategy));
         emit BurnableSharesDecreased(strategy, sharesToBurn);
-        // burning shares is functionally the same as withdrawing but with different destination address
-        strategy.withdraw(DEFAULT_BURN_ADDRESS, strategy.underlyingToken(), sharesToBurn);
+
+        // Burning acts like withdrawing, except that the destination is to the burn address.
+        // If we have no shares to burn, we don't need to call the strategy.
+        if (sharesToBurn != 0) {
+            strategy.withdraw(DEFAULT_BURN_ADDRESS, strategy.underlyingToken(), sharesToBurn);
+        }
     }
 
     /// @inheritdoc IStrategyManager
