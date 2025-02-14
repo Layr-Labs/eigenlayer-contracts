@@ -20,10 +20,10 @@ contract Deploy is EOADeployer {
             name: type(AllocationManager).name,
             deployedTo: address(
                 new AllocationManager({
-                    _delegationManager: Env.proxy.delegationManager(),
+                    _delegation: Env.proxy.delegationManager(),
                     _pauserRegistry: Env.impl.pauserRegistry(),
                     _permissionController: Env.proxy.permissionController(),
-                    _DEALLOCATION_DELAY: Env.DEALLOCATION_DELAY(),
+                    _DEALLOCATION_DELAY: Env.MIN_WITHDRAWAL_DELAY(),
                     _ALLOCATION_CONFIGURATION_DELAY: Env.ALLOCATION_CONFIGURATION_DELAY()
                 })
             )
@@ -61,10 +61,10 @@ contract Deploy is EOADeployer {
     /// @dev Validate the immutables set in the new implementation constructors
     function _validateImplConstructors() internal view {
         AllocationManager allocationManager = Env.impl.allocationManager();
-        assertTrue(allocationManager.delegationManager() == Env.proxy.delegationManager(), "dm invalid");
+        assertTrue(allocationManager.delegation() == Env.proxy.delegationManager(), "dm invalid");
         assertTrue(allocationManager.pauserRegistry() == Env.impl.pauserRegistry(), "pR invalid");
         assertTrue(allocationManager.permissionController() == Env.proxy.permissionController(), "pc invalid");
-        assertTrue(allocationManager.DEALLOCATION_DELAY() == Env.DEALLOCATION_DELAY(), "deallocationDelay invalid");
+        assertTrue(allocationManager.DEALLOCATION_DELAY() == Env.MIN_WITHDRAWAL_DELAY(), "deallocationDelay invalid");
         assertTrue(
             allocationManager.ALLOCATION_CONFIGURATION_DELAY() == Env.ALLOCATION_CONFIGURATION_DELAY(),
             "allocationConfigurationDelay invalid"

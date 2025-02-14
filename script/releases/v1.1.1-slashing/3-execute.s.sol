@@ -59,10 +59,12 @@ contract Execute is Queue {
 
     function _validateProxyConstructors() internal view {
         AllocationManager allocationManager = Env.proxy.allocationManager();
-        assertTrue(allocationManager.delegationManager() == Env.proxy.delegationManager(), "alm.dm invalid");
+        assertTrue(allocationManager.delegation() == Env.proxy.delegationManager(), "alm.dm invalid");
         assertTrue(allocationManager.pauserRegistry() == Env.impl.pauserRegistry(), "alm.pR invalid");
         assertTrue(allocationManager.permissionController() == Env.proxy.permissionController(), "alm.pc invalid");
-        assertTrue(allocationManager.DEALLOCATION_DELAY() == Env.DEALLOCATION_DELAY(), "alm.deallocationDelay invalid");
+        assertTrue(
+            allocationManager.DEALLOCATION_DELAY() == Env.MIN_WITHDRAWAL_DELAY(), "alm.deallocationDelay invalid"
+        );
         assertTrue(
             allocationManager.ALLOCATION_CONFIGURATION_DELAY() == Env.ALLOCATION_CONFIGURATION_DELAY(),
             "alm.allocationConfigurationDelay invalid"
