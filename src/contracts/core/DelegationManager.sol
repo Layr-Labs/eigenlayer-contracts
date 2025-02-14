@@ -170,7 +170,7 @@ contract DelegationManager is
         address newOperator,
         SignatureWithExpiry memory newOperatorApproverSig,
         bytes32 approverSalt
-    ) external nonReentrant returns (bytes32[] memory withdrawalRoots) {
+    ) external returns (bytes32[] memory withdrawalRoots) {
         withdrawalRoots = undelegate(msg.sender);
         // delegateTo uses msg.sender as staker
         delegateTo(newOperator, newOperatorApproverSig, approverSalt);
