@@ -31,7 +31,7 @@ var (
 
 // IAVSRegistrarMetaData contains all meta data concerning the IAVSRegistrar contract.
 var IAVSRegistrarMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"deregisterOperator\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetIds\",\"type\":\"uint32[]\",\"internalType\":\"uint32[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"registerOperator\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetIds\",\"type\":\"uint32[]\",\"internalType\":\"uint32[]\"},{\"name\":\"data\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"}]",
+	ABI: "[{\"type\":\"function\",\"name\":\"avs\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"deregisterOperator\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"avsIdentifier\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetIds\",\"type\":\"uint32[]\",\"internalType\":\"uint32[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"registerOperator\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"avsIdentifier\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetIds\",\"type\":\"uint32[]\",\"internalType\":\"uint32[]\"},{\"name\":\"data\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"}]",
 }
 
 // IAVSRegistrarABI is the input ABI used to generate the binding from.
@@ -180,44 +180,75 @@ func (_IAVSRegistrar *IAVSRegistrarTransactorRaw) Transact(opts *bind.TransactOp
 	return _IAVSRegistrar.Contract.contract.Transact(opts, method, params...)
 }
 
-// DeregisterOperator is a paid mutator transaction binding the contract method 0x9d8e0c23.
+// Avs is a free data retrieval call binding the contract method 0xde1164bb.
 //
-// Solidity: function deregisterOperator(address operator, uint32[] operatorSetIds) returns()
-func (_IAVSRegistrar *IAVSRegistrarTransactor) DeregisterOperator(opts *bind.TransactOpts, operator common.Address, operatorSetIds []uint32) (*types.Transaction, error) {
-	return _IAVSRegistrar.contract.Transact(opts, "deregisterOperator", operator, operatorSetIds)
+// Solidity: function avs() view returns(address)
+func (_IAVSRegistrar *IAVSRegistrarCaller) Avs(opts *bind.CallOpts) (common.Address, error) {
+	var out []interface{}
+	err := _IAVSRegistrar.contract.Call(opts, &out, "avs")
+
+	if err != nil {
+		return *new(common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+
+	return out0, err
+
 }
 
-// DeregisterOperator is a paid mutator transaction binding the contract method 0x9d8e0c23.
+// Avs is a free data retrieval call binding the contract method 0xde1164bb.
 //
-// Solidity: function deregisterOperator(address operator, uint32[] operatorSetIds) returns()
-func (_IAVSRegistrar *IAVSRegistrarSession) DeregisterOperator(operator common.Address, operatorSetIds []uint32) (*types.Transaction, error) {
-	return _IAVSRegistrar.Contract.DeregisterOperator(&_IAVSRegistrar.TransactOpts, operator, operatorSetIds)
+// Solidity: function avs() view returns(address)
+func (_IAVSRegistrar *IAVSRegistrarSession) Avs() (common.Address, error) {
+	return _IAVSRegistrar.Contract.Avs(&_IAVSRegistrar.CallOpts)
 }
 
-// DeregisterOperator is a paid mutator transaction binding the contract method 0x9d8e0c23.
+// Avs is a free data retrieval call binding the contract method 0xde1164bb.
 //
-// Solidity: function deregisterOperator(address operator, uint32[] operatorSetIds) returns()
-func (_IAVSRegistrar *IAVSRegistrarTransactorSession) DeregisterOperator(operator common.Address, operatorSetIds []uint32) (*types.Transaction, error) {
-	return _IAVSRegistrar.Contract.DeregisterOperator(&_IAVSRegistrar.TransactOpts, operator, operatorSetIds)
+// Solidity: function avs() view returns(address)
+func (_IAVSRegistrar *IAVSRegistrarCallerSession) Avs() (common.Address, error) {
+	return _IAVSRegistrar.Contract.Avs(&_IAVSRegistrar.CallOpts)
 }
 
-// RegisterOperator is a paid mutator transaction binding the contract method 0xadcf73f7.
+// DeregisterOperator is a paid mutator transaction binding the contract method 0x303ca956.
 //
-// Solidity: function registerOperator(address operator, uint32[] operatorSetIds, bytes data) returns()
-func (_IAVSRegistrar *IAVSRegistrarTransactor) RegisterOperator(opts *bind.TransactOpts, operator common.Address, operatorSetIds []uint32, data []byte) (*types.Transaction, error) {
-	return _IAVSRegistrar.contract.Transact(opts, "registerOperator", operator, operatorSetIds, data)
+// Solidity: function deregisterOperator(address operator, address avsIdentifier, uint32[] operatorSetIds) returns()
+func (_IAVSRegistrar *IAVSRegistrarTransactor) DeregisterOperator(opts *bind.TransactOpts, operator common.Address, avsIdentifier common.Address, operatorSetIds []uint32) (*types.Transaction, error) {
+	return _IAVSRegistrar.contract.Transact(opts, "deregisterOperator", operator, avsIdentifier, operatorSetIds)
 }
 
-// RegisterOperator is a paid mutator transaction binding the contract method 0xadcf73f7.
+// DeregisterOperator is a paid mutator transaction binding the contract method 0x303ca956.
 //
-// Solidity: function registerOperator(address operator, uint32[] operatorSetIds, bytes data) returns()
-func (_IAVSRegistrar *IAVSRegistrarSession) RegisterOperator(operator common.Address, operatorSetIds []uint32, data []byte) (*types.Transaction, error) {
-	return _IAVSRegistrar.Contract.RegisterOperator(&_IAVSRegistrar.TransactOpts, operator, operatorSetIds, data)
+// Solidity: function deregisterOperator(address operator, address avsIdentifier, uint32[] operatorSetIds) returns()
+func (_IAVSRegistrar *IAVSRegistrarSession) DeregisterOperator(operator common.Address, avsIdentifier common.Address, operatorSetIds []uint32) (*types.Transaction, error) {
+	return _IAVSRegistrar.Contract.DeregisterOperator(&_IAVSRegistrar.TransactOpts, operator, avsIdentifier, operatorSetIds)
 }
 
-// RegisterOperator is a paid mutator transaction binding the contract method 0xadcf73f7.
+// DeregisterOperator is a paid mutator transaction binding the contract method 0x303ca956.
 //
-// Solidity: function registerOperator(address operator, uint32[] operatorSetIds, bytes data) returns()
-func (_IAVSRegistrar *IAVSRegistrarTransactorSession) RegisterOperator(operator common.Address, operatorSetIds []uint32, data []byte) (*types.Transaction, error) {
-	return _IAVSRegistrar.Contract.RegisterOperator(&_IAVSRegistrar.TransactOpts, operator, operatorSetIds, data)
+// Solidity: function deregisterOperator(address operator, address avsIdentifier, uint32[] operatorSetIds) returns()
+func (_IAVSRegistrar *IAVSRegistrarTransactorSession) DeregisterOperator(operator common.Address, avsIdentifier common.Address, operatorSetIds []uint32) (*types.Transaction, error) {
+	return _IAVSRegistrar.Contract.DeregisterOperator(&_IAVSRegistrar.TransactOpts, operator, avsIdentifier, operatorSetIds)
+}
+
+// RegisterOperator is a paid mutator transaction binding the contract method 0xc63fd502.
+//
+// Solidity: function registerOperator(address operator, address avsIdentifier, uint32[] operatorSetIds, bytes data) returns()
+func (_IAVSRegistrar *IAVSRegistrarTransactor) RegisterOperator(opts *bind.TransactOpts, operator common.Address, avsIdentifier common.Address, operatorSetIds []uint32, data []byte) (*types.Transaction, error) {
+	return _IAVSRegistrar.contract.Transact(opts, "registerOperator", operator, avsIdentifier, operatorSetIds, data)
+}
+
+// RegisterOperator is a paid mutator transaction binding the contract method 0xc63fd502.
+//
+// Solidity: function registerOperator(address operator, address avsIdentifier, uint32[] operatorSetIds, bytes data) returns()
+func (_IAVSRegistrar *IAVSRegistrarSession) RegisterOperator(operator common.Address, avsIdentifier common.Address, operatorSetIds []uint32, data []byte) (*types.Transaction, error) {
+	return _IAVSRegistrar.Contract.RegisterOperator(&_IAVSRegistrar.TransactOpts, operator, avsIdentifier, operatorSetIds, data)
+}
+
+// RegisterOperator is a paid mutator transaction binding the contract method 0xc63fd502.
+//
+// Solidity: function registerOperator(address operator, address avsIdentifier, uint32[] operatorSetIds, bytes data) returns()
+func (_IAVSRegistrar *IAVSRegistrarTransactorSession) RegisterOperator(operator common.Address, avsIdentifier common.Address, operatorSetIds []uint32, data []byte) (*types.Transaction, error) {
+	return _IAVSRegistrar.Contract.RegisterOperator(&_IAVSRegistrar.TransactOpts, operator, avsIdentifier, operatorSetIds, data)
 }
