@@ -57,5 +57,6 @@
           "DEALLOCATION_DELAY": 900,
           "ALLOCATION_CONFIGURATION_DELAY": 1200
      },
-     "ethPOSDepositAddress": "0x00000000219ab540356cBB839Cbe05303d7705Fa"
+     "ethPOSDepositAddress": "0x00000000219ab540356cBB839Cbe05303d7705Fa",
+     "semver": "v0.0.0"
 }

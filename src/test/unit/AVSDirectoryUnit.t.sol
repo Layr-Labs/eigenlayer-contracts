@@ -4,7 +4,7 @@ pragma solidity ^0.8.27;
 import "src/contracts/core/AVSDirectory.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
 
-contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureUtils {
+contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureUtilsMixinTypes {
     uint8 constant PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS = 0;
 
     AVSDirectory avsDirectory;
@@ -39,7 +39,7 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, 
         avsd = AVSDirectory(
             address(
                 new TransparentUpgradeableProxy(
-                    address(new AVSDirectory(IDelegationManager(delegationManager), pauserRegistry)),
+                    address(new AVSDirectory(IDelegationManager(delegationManager), pauserRegistry, "v9.9.9")),
                     address(eigenLayerProxyAdmin),
                     abi.encodeWithSelector(
                         AVSDirectory.initialize.selector,
@@ -51,7 +51,18 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, 
         );
         isExcludedFuzzAddress[address(avsd)] = true;
 
-        assertTrue(avsd.domainSeparator() != bytes32(0), "sanity check");
+        bytes memory v = bytes(avsd.version());
+        bytes32 expectedDomainSeparator = keccak256(
+                abi.encode(
+                    EIP712_DOMAIN_TYPEHASH, 
+                    keccak256(bytes("EigenLayer")),
+                    keccak256(bytes.concat(v[0], v[1])),
+                    block.chainid, 
+                    address(avsd)
+                )
+            );
+
+        assertEq(avsd.domainSeparator(), expectedDomainSeparator, "sanity check");
     }
 
     function _newOperatorRegistrationSignature(
@@ -110,7 +121,7 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, 
 
     function test_registerOperatorToAVS_SignatureExpired() public {
         defaultOperatorSignature.expiry = block.timestamp - 1;
-        cheats.expectRevert(SignatureExpired.selector);
+        cheats.expectRevert(ISignatureUtilsMixinErrors.SignatureExpired.selector);
         avsDirectory.registerOperatorToAVS(defaultOperator, defaultOperatorSignature);
     }
 

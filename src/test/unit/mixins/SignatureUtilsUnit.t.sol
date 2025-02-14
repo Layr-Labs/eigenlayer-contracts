@@ -2,7 +2,7 @@
 pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
-import "src/contracts/mixins/SignatureUtils.sol";
+import "src/contracts/mixins/SignatureUtilsMixin.sol";
 
 contract MockSigner {
     mapping(bytes32 => mapping(bytes => bool)) public validSignatures;
@@ -16,7 +16,7 @@ contract MockSigner {
     }
 }
 
-contract SignatureUtilsUnit is Test, SignatureUtils {
+contract SignatureUtilsMixinUnit is Test, SignatureUtilsMixin("v0.0.0") {
     uint256 signerPk;
     address signer;
     bytes32 hash;
@@ -34,8 +34,9 @@ contract SignatureUtilsUnit is Test, SignatureUtils {
 
         expectedDomainSeparator = keccak256(
             abi.encode(
-                keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)"),
+                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
                 keccak256(bytes("EigenLayer")), 
+                keccak256(bytes(_majorVersion())),
                 block.chainid, 
                 address(this)
             )
@@ -43,7 +44,6 @@ contract SignatureUtilsUnit is Test, SignatureUtils {
     }
 
     function test_domainSeparator_NonZero() public {
-        assertTrue(_INITIAL_DOMAIN_SEPARATOR != 0, "The initial domain separator should be non-zero");
         assertTrue(domainSeparator() != 0, "The domain separator should be non-zero");
         assertTrue(domainSeparator() == expectedDomainSeparator, "The domain separator should be as expected");
     }
@@ -67,7 +67,7 @@ contract SignatureUtilsUnit is Test, SignatureUtils {
     function test_checkIsValidSignatureNow_Expired() public {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPk, digest);
 
-        vm.expectRevert(ISignatureUtils.SignatureExpired.selector);
+        vm.expectRevert(ISignatureUtilsMixinErrors.SignatureExpired.selector);
         _checkIsValidSignatureNow(signer, digest, abi.encode(r, s, v), block.timestamp - 1);
     }
 

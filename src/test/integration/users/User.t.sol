@@ -205,7 +205,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     ) public virtual createSnapshot {
         print.method("delegateTo", operator.NAME_COLORED());
 
-        ISignatureUtils.SignatureWithExpiry memory emptySig;
+        ISignatureUtilsMixinTypes.SignatureWithExpiry memory emptySig;
         delegationManager.delegateTo(address(operator), emptySig, bytes32(0));
         print.gasUsed();
     }
@@ -243,7 +243,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     ) public virtual createSnapshot returns (Withdrawal[] memory) {
         print.method("redelegate", newOperator.NAME_COLORED());
         Withdrawal[] memory expectedWithdrawals = _getExpectedWithdrawalStructsForStaker(address(this));
-        ISignatureUtils.SignatureWithExpiry memory emptySig;
+        ISignatureUtilsMixinTypes.SignatureWithExpiry memory emptySig;
         _tryPrankAppointee_DelegationManager(IDelegationManager.redelegate.selector);
         delegationManager.redelegate(address(newOperator), emptySig, bytes32(0));
         print.gasUsed();
