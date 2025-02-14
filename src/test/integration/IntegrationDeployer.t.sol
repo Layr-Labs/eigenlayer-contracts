@@ -40,6 +40,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     bool isUpgraded;
     uint mainnetForkBlock = 21_616_692; // Post Protocol Council upgrade
 
+    string version = "v9.9.9";
+
     // Beacon chain genesis time when running locally
     // Multiple of 12 for sanity's sake
     uint64 constant GENESIS_TIME_LOCAL = 1 hours * 12;
@@ -316,35 +318,54 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     }
 
     /// Deploy an implementation contract for each contract in the system
-    function _deployImplementations() public noTracing {
-        allocationManagerImplementation = new AllocationManager(delegationManager, eigenLayerPauserReg, permissionController, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
-        permissionControllerImplementation = new PermissionController();
-        delegationManagerImplementation = new DelegationManager(strategyManager, eigenPodManager, allocationManager, eigenLayerPauserReg, permissionController, DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS);
-        strategyManagerImplementation = new StrategyManager(delegationManager, eigenLayerPauserReg);
-        rewardsCoordinatorImplementation = new RewardsCoordinator(
-            delegationManager,
-            strategyManager,
-            allocationManager,
-            eigenLayerPauserReg,
-            permissionController,
-            REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
-            REWARDS_COORDINATOR_MAX_REWARDS_DURATION,
-            REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH,
-            REWARDS_COORDINATOR_MAX_FUTURE_LENGTH,
-            REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP
+    function _deployImplementations() public {
+        allocationManagerImplementation = new AllocationManager(
+            delegationManager, 
+            eigenLayerPauserReg, 
+            permissionController, 
+            DEALLOCATION_DELAY, 
+            ALLOCATION_CONFIGURATION_DELAY,
+            version
         );
-        avsDirectoryImplementation = new AVSDirectory(delegationManager, eigenLayerPauserReg);
+        permissionControllerImplementation = new PermissionController(version);
+        delegationManagerImplementation = new DelegationManager(
+            strategyManager, 
+            eigenPodManager, 
+            allocationManager, 
+            eigenLayerPauserReg, 
+            permissionController, 
+            DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS,
+            version
+        );
+        strategyManagerImplementation = new StrategyManager(delegationManager, eigenLayerPauserReg, version);
+        rewardsCoordinatorImplementation = new RewardsCoordinator(
+            IRewardsCoordinatorTypes.RewardsCoordinatorConstructorParams({
+                delegationManager: delegationManager,
+                strategyManager: strategyManager,
+                allocationManager: allocationManager,
+                pauserRegistry: eigenLayerPauserReg,
+                permissionController: permissionController,
+                CALCULATION_INTERVAL_SECONDS: REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
+                MAX_REWARDS_DURATION: REWARDS_COORDINATOR_MAX_REWARDS_DURATION,
+                MAX_RETROACTIVE_LENGTH: REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH,
+                MAX_FUTURE_LENGTH: REWARDS_COORDINATOR_MAX_FUTURE_LENGTH,
+                GENESIS_REWARDS_TIMESTAMP: REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP,
+                version: version
+            })
+        );
+        avsDirectoryImplementation = new AVSDirectory(delegationManager, eigenLayerPauserReg, version);
         eigenPodManagerImplementation = new EigenPodManager(
             DEPOSIT_CONTRACT,
             eigenPodBeacon,
             delegationManager,
-            eigenLayerPauserReg
+            eigenLayerPauserReg,
+            "v9.9.9"
         );
-        strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg);
+        strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg, "v9.9.9");
 
         // Beacon implementations
-        eigenPodImplementation = new EigenPod(DEPOSIT_CONTRACT, eigenPodManager, BEACON_GENESIS_TIME);
-        baseStrategyImplementation = new StrategyBase(strategyManager, eigenLayerPauserReg);
+        eigenPodImplementation = new EigenPod(DEPOSIT_CONTRACT, eigenPodManager, BEACON_GENESIS_TIME, "v9.9.9");
+        baseStrategyImplementation = new StrategyBase(strategyManager, eigenLayerPauserReg, "v9.9.9");
 
         // Pre-longtail StrategyBaseTVLLimits implementation
         // TODO - need to update ExistingDeploymentParser

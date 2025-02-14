@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
+import "./ISemVerMixin.sol";
+
 interface IPermissionControllerErrors {
     /// @notice Thrown when a non-admin caller attempts to perform an admin-only action.
     error NotAdmin();
@@ -40,7 +42,7 @@ interface IPermissionControllerEvents {
     event AdminRemoved(address indexed account, address admin);
 }
 
-interface IPermissionController is IPermissionControllerErrors, IPermissionControllerEvents {
+interface IPermissionController is IPermissionControllerErrors, IPermissionControllerEvents, ISemVerMixin {
     /**
      * @notice Sets a pending admin for an account.
      * @param account The account to set the pending admin for.
