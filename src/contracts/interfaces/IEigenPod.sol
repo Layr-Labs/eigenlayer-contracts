@@ -4,6 +4,7 @@ pragma solidity >=0.5.0;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "../libraries/BeaconChainProofs.sol";
+import "./ISemVerMixin.sol";
 import "./IEigenPodManager.sol";
 
 interface IEigenPodErrors {
@@ -138,7 +139,7 @@ interface IEigenPodEvents is IEigenPodTypes {
  * @dev Note that all beacon chain balances are stored as gwei within the beacon chain datastructures. We choose
  *   to account balances in terms of gwei in the EigenPod contract and convert to wei when making calls to other contracts
  */
-interface IEigenPod is IEigenPodErrors, IEigenPodEvents {
+interface IEigenPod is IEigenPodErrors, IEigenPodEvents, ISemVerMixin {
     /// @notice Used to initialize the pointers to contracts crucial to the pod's functionality, in beacon proxy construction from EigenPodManager
     function initialize(
         address owner
