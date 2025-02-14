@@ -117,7 +117,7 @@ contract StrategyManager is
         address staker,
         IStrategy strategy,
         uint256 depositSharesToRemove
-    ) external onlyDelegationManager returns (uint256) {
+    ) external onlyDelegationManager nonReentrant returns (uint256) {
         (, uint256 sharesAfter) = _removeDepositShares(staker, strategy, depositSharesToRemove);
         return sharesAfter;
     }
@@ -127,7 +127,7 @@ contract StrategyManager is
         address staker,
         IStrategy strategy,
         uint256 shares
-    ) external onlyDelegationManager returns (uint256, uint256) {
+    ) external onlyDelegationManager nonReentrant returns (uint256, uint256) {
         return _addShares(staker, strategy, shares);
     }
 
@@ -137,12 +137,15 @@ contract StrategyManager is
         IStrategy strategy,
         IERC20 token,
         uint256 shares
-    ) external onlyDelegationManager {
+    ) external onlyDelegationManager nonReentrant {
         strategy.withdraw(staker, token, shares);
     }
 
     /// @inheritdoc IShareManager
-    function increaseBurnableShares(IStrategy strategy, uint256 addedSharesToBurn) external onlyDelegationManager {
+    function increaseBurnableShares(
+        IStrategy strategy,
+        uint256 addedSharesToBurn
+    ) external onlyDelegationManager nonReentrant {
         (, uint256 currentShares) = EnumerableMap.tryGet(burnableShares, address(strategy));
         EnumerableMap.set(burnableShares, address(strategy), currentShares + addedSharesToBurn);
         emit BurnableSharesIncreased(strategy, addedSharesToBurn);
@@ -162,14 +165,14 @@ contract StrategyManager is
     /// @inheritdoc IStrategyManager
     function setStrategyWhitelister(
         address newStrategyWhitelister
-    ) external onlyOwner {
+    ) external onlyOwner nonReentrant {
         _setStrategyWhitelister(newStrategyWhitelister);
     }
 
     /// @inheritdoc IStrategyManager
     function addStrategiesToDepositWhitelist(
         IStrategy[] calldata strategiesToWhitelist
-    ) external onlyStrategyWhitelister {
+    ) external onlyStrategyWhitelister nonReentrant {
         uint256 strategiesToWhitelistLength = strategiesToWhitelist.length;
         for (uint256 i = 0; i < strategiesToWhitelistLength; ++i) {
             // change storage and emit event only if strategy is not already in whitelist
@@ -183,7 +186,7 @@ contract StrategyManager is
     /// @inheritdoc IStrategyManager
     function removeStrategiesFromDepositWhitelist(
         IStrategy[] calldata strategiesToRemoveFromWhitelist
-    ) external onlyStrategyWhitelister {
+    ) external onlyStrategyWhitelister nonReentrant {
         uint256 strategiesToRemoveFromWhitelistLength = strategiesToRemoveFromWhitelist.length;
         for (uint256 i = 0; i < strategiesToRemoveFromWhitelistLength; ++i) {
             // change storage and emit event only if strategy is already in whitelist
