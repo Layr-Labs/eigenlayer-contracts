@@ -18,7 +18,8 @@ contract AllocationManagerHarness is AllocationManager {
             _pauserRegistry,
             _permissionController,
             _DEALLOCATION_DELAY,
-            _ALLOCATION_CONFIGURATION_DELAY
+            _ALLOCATION_CONFIGURATION_DELAY,
+            "v9.9.9"
         )
     {}
 

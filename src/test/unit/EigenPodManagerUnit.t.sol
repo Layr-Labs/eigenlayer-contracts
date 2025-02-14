@@ -44,7 +44,8 @@ contract EigenPodManagerUnitTests is EigenLayerUnitTestSetup, IEigenPodManagerEv
             ethPOSMock,
             eigenPodBeacon,
             IDelegationManager(address(delegationManagerMock)),
-            pauserRegistry
+            pauserRegistry,
+            "v9.9.9"
         );
         eigenPodManager = EigenPodManager(
             address(
@@ -196,7 +197,8 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
             ethPOSMock,
             eigenPodBeacon,
             IDelegationManager(address(delegationManagerMock)),
-            pauserRegistry
+            pauserRegistry,
+            "v9.9.9"
         );
         eigenLayerProxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(eigenPodManager))), address(eigenPodManagerWrapper));
     }
@@ -368,7 +370,8 @@ contract EigenPodManagerUnitTests_WithdrawSharesAsTokensTests is EigenPodManager
             ethPOSMock,
             eigenPodBeacon,
             IDelegationManager(address(delegationManagerMock)),
-            pauserRegistry
+            pauserRegistry,
+            "v9.9.9"
         );
         eigenLayerProxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(eigenPodManager))), address(eigenPodManagerWrapper));
     }
@@ -490,7 +493,8 @@ contract EigenPodManagerUnitTests_BeaconChainETHBalanceUpdateTests is EigenPodMa
             ethPOSMock,
             eigenPodBeacon,
             IDelegationManager(address(delegationManagerMock)),
-            pauserRegistry
+            pauserRegistry,
+            "v9.9.9"
         );
         eigenLayerProxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(eigenPodManager))), address(eigenPodManagerWrapper));
     }
