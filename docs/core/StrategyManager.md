@@ -298,6 +298,8 @@ function burnShares(
 
 Anyone can call this method to burn slashed shares previously added by the `DelegationManager` via `increaseBurnableShares`. This method resets the strategy's burnable shares to 0, and directs the corresponding `strategy` to convert the shares to tokens and transfer them to `DEFAULT_BURN_ADDRESS`, rendering them unrecoverable.
 
+The `strategy` is not called if the strategy had no burnable shares.
+
 *Effects*:
 * Resets the strategy's burnable shares to 0
 * Calls `withdraw` on the `strategy`, withdrawing shares and sending a corresponding amount of tokens to the `DEFAULT_BURN_ADDRESS`
