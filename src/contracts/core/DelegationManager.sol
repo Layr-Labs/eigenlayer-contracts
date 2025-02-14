@@ -5,7 +5,7 @@ import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 
-import "../mixins/SignatureUtils.sol";
+import "../mixins/SignatureUtilsMixin.sol";
 import "../mixins/PermissionControllerMixin.sol";
 import "../permissions/Pausable.sol";
 import "../libraries/SlashingLib.sol";
@@ -28,8 +28,8 @@ contract DelegationManager is
     Pausable,
     DelegationManagerStorage,
     ReentrancyGuardUpgradeable,
-    SignatureUtils,
-    PermissionControllerMixin
+    PermissionControllerMixin,
+    SignatureUtilsMixin
 {
     using SlashingLib for *;
     using Snapshots for Snapshots.DefaultZeroHistory;
@@ -69,11 +69,13 @@ contract DelegationManager is
         IAllocationManager _allocationManager,
         IPauserRegistry _pauserRegistry,
         IPermissionController _permissionController,
-        uint32 _MIN_WITHDRAWAL_DELAY
+        uint32 _MIN_WITHDRAWAL_DELAY,
+        string memory _version
     )
         DelegationManagerStorage(_strategyManager, _eigenPodManager, _allocationManager, _MIN_WITHDRAWAL_DELAY)
         Pausable(_pauserRegistry)
         PermissionControllerMixin(_permissionController)
+        SignatureUtilsMixin(_version)
     {
         _disableInitializers();
     }

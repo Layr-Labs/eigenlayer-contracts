@@ -38,7 +38,7 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEv
     function setUp() public override {
         EigenLayerUnitTestSetup.setUp();
         strategyManagerImplementation = new StrategyManager(
-            IDelegationManager(address(delegationManagerMock)), pauserRegistry
+            IDelegationManager(address(delegationManagerMock)), pauserRegistry, "v9.9.9"
         );
         strategyManager = StrategyManager(
             address(
@@ -88,7 +88,7 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEv
         IPauserRegistry _pauserRegistry,
         address admin
     ) public returns (StrategyBase) {
-        StrategyBase newStrategyImplementation = new StrategyBase(_strategyManager, _pauserRegistry);
+        StrategyBase newStrategyImplementation = new StrategyBase(_strategyManager, _pauserRegistry, "v9.9.9");
         StrategyBase newStrategy = StrategyBase(address(new TransparentUpgradeableProxy(address(newStrategyImplementation), address(admin), "")));
         newStrategy.initialize(_token);
         return newStrategy;
@@ -177,7 +177,7 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEv
         if (!expectedRevertMessageIsempty) {
             cheats.expectRevert(expectedRevertMessage);
         } else if (expiry < block.timestamp) {
-            cheats.expectRevert(ISignatureUtils.SignatureExpired.selector);
+            cheats.expectRevert(ISignatureUtilsMixinErrors.SignatureExpired.selector);
         } else {
             // needed for expecting an event with the right parameters
             uint256 expectedDepositShares = amount;
@@ -263,6 +263,20 @@ contract StrategyManagerUnitTests_initialize is StrategyManagerUnitTests {
             address(pauserRegistry),
             "strategyManager.pauserRegistry() != pauserRegistry"
         );
+
+        bytes memory v = bytes(strategyManager.version());
+
+        bytes32 expectedDomainSeparator = keccak256(
+                abi.encode(
+                    EIP712_DOMAIN_TYPEHASH, 
+                    keccak256(bytes("EigenLayer")), 
+                    keccak256(bytes(bytes.concat(v[0], v[1]))),
+                    block.chainid, 
+                    address(strategyManager)
+                )
+            );
+
+        assertEq(strategyManager.domainSeparator(), expectedDomainSeparator, "sanity check");
     }
 }
 
@@ -836,7 +850,7 @@ contract StrategyManagerUnitTests_depositIntoStrategyWithSignature is StrategyMa
 
         uint256 depositSharesBefore = strategyManager.stakerDepositShares(staker, strategy);
 
-        cheats.expectRevert(ISignatureUtils.InvalidSignature.selector);
+        cheats.expectRevert(ISignatureUtilsMixinErrors.InvalidSignature.selector);
         // call with `notStaker` as input instead of `staker` address
         address notStaker = address(3333);
         strategyManager.depositIntoStrategyWithSignature(strategy, token, amount, notStaker, expiry, signature);
@@ -866,7 +880,7 @@ contract StrategyManagerUnitTests_depositIntoStrategyWithSignature is StrategyMa
         // not expecting a revert, so input an empty string
         bytes memory signature = _depositIntoStrategyWithSignature(staker, amount, expiry, "");
 
-        cheats.expectRevert(ISignatureUtils.InvalidSignature.selector);
+        cheats.expectRevert(ISignatureUtilsMixinErrors.InvalidSignature.selector);
         strategyManager.depositIntoStrategyWithSignature(dummyStrat, dummyToken, amount, staker, expiry, signature);
     }
 
@@ -906,7 +920,7 @@ contract StrategyManagerUnitTests_depositIntoStrategyWithSignature is StrategyMa
             signature = abi.encodePacked(r, s, v);
         }
 
-        cheats.expectRevert(ISignatureUtils.InvalidSignature.selector);
+        cheats.expectRevert(ISignatureUtilsMixinErrors.InvalidSignature.selector);
         strategyManager.depositIntoStrategyWithSignature(strategy, token, amount, staker, expiry, signature);
     }
 
@@ -1074,7 +1088,7 @@ contract StrategyManagerUnitTests_depositIntoStrategyWithSignature is StrategyMa
 
         uint256 depositSharesBefore = strategyManager.stakerDepositShares(staker, strategy);
 
-        cheats.expectRevert(ISignatureUtils.SignatureExpired.selector);
+        cheats.expectRevert(ISignatureUtilsMixinErrors.SignatureExpired.selector);
         strategyManager.depositIntoStrategyWithSignature(strategy, token, amount, staker, expiry, signature);
 
         uint256 depositSharesAfter = strategyManager.stakerDepositShares(staker, strategy);

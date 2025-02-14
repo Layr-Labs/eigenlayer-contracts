@@ -3,7 +3,7 @@ pragma solidity >=0.5.0;
 
 import "./IStrategy.sol";
 import "./IPauserRegistry.sol";
-import "./ISignatureUtils.sol";
+import "./ISignatureUtilsMixin.sol";
 import "../libraries/SlashingLib.sol";
 
 interface IDelegationManagerErrors {
@@ -185,7 +185,7 @@ interface IDelegationManagerEvents is IDelegationManagerTypes {
  * - enabling any staker to delegate its stake to the operator of its choice (a given staker can only delegate to a single operator at a time)
  * - enabling a staker to undelegate its assets from the operator it is delegated to (performed as part of the withdrawal process, initiated through the StrategyManager)
  */
-interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDelegationManagerEvents {
+interface IDelegationManager is ISignatureUtilsMixin, IDelegationManagerErrors, IDelegationManagerEvents {
     /**
      * @dev Initializes the initial owner and paused status.
      */

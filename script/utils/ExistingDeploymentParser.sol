@@ -50,6 +50,7 @@ contract ExistingDeploymentParser is Script, Logger {
     /// EigenLayer Contract Parameters
     /// -----------------------------------------------------------------------
 
+    string public SEMVER;
     /// @dev AllocationManager
     uint256 ALLOCATION_MANAGER_INIT_PAUSED_STATUS;
     uint32 DEALLOCATION_DELAY;
@@ -193,6 +194,8 @@ contract ExistingDeploymentParser is Script, Logger {
         // READ JSON CONFIG DATA
         string memory json = cheats.readFile(existingDeploymentInfoPath);
 
+        SEMVER = stdJson.readString(json, ".parameters.semver");
+
         // check that the chainID matches the one in the config
         uint256 configChainId = json.readUint(".chainInfo.chainId");
         assertEq(configChainId, currentChainId, "You are on the wrong chain for this config");
@@ -211,7 +214,7 @@ contract ExistingDeploymentParser is Script, Logger {
         eigenLayerPauserReg = PauserRegistry(json.readAddress(".addresses.eigenLayerPauserReg"));
         
         // FIXME: hotfix - remove later...
-        permissionControllerImplementation = new PermissionController();
+        permissionControllerImplementation = new PermissionController(SEMVER);
         permissionController = PermissionController(
             address(new TransparentUpgradeableProxy(address(permissionControllerImplementation), address(eigenLayerProxyAdmin), ""))
         );
@@ -221,7 +224,8 @@ contract ExistingDeploymentParser is Script, Logger {
             eigenLayerPauserReg, 
             permissionController, 
             DEALLOCATION_DELAY, 
-            ALLOCATION_CONFIGURATION_DELAY
+            ALLOCATION_CONFIGURATION_DELAY,
+            SEMVER
         );
         allocationManager = AllocationManager(
             address(new TransparentUpgradeableProxy(address(allocationManagerImplementation), address(eigenLayerProxyAdmin), ""))
