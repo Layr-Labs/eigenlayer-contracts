@@ -3,7 +3,7 @@ pragma solidity ^0.8.27;
 
 import "src/contracts/interfaces/IStrategy.sol";
 import "src/contracts/interfaces/IPausable.sol";
-import "src/contracts/interfaces/ISignatureUtils.sol";
+import "src/contracts/interfaces/ISignatureUtilsMixin.sol";
 
 /**
  * @notice M2 DEPRECATED INTERFACE at commit hash https://github.com/Layr-Labs/eigenlayer-contracts/tree/426f461c59b4f0e16f8becdffd747075edcaded8
@@ -11,7 +11,7 @@ import "src/contracts/interfaces/ISignatureUtils.sol";
  * @author Layr Labs, Inc.
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
-interface IDelegationManager_DeprecatedM2 is IPausable, ISignatureUtils {
+interface IDelegationManager_DeprecatedM2 is IPausable, ISignatureUtilsMixin {
      // @notice Struct used for storing information about a single operator who has registered with EigenLayer
     struct OperatorDetails {
         /// @notice DEPRECATED -- this field is no longer used, payments are handled in PaymentCoordinator.sol

@@ -119,7 +119,7 @@ contract Devnet_Lifecycle_Test is Test, IAllocationManagerTypes {
 
     function _delegateToOperator() internal {
         // Delegate to operator
-        ISignatureUtils.SignatureWithExpiry memory signatureWithExpiry;
+        ISignatureUtilsMixinTypes.SignatureWithExpiry memory signatureWithExpiry;
         cheats.prank(staker);
         delegationManager.delegateTo(operator, signatureWithExpiry, bytes32(0));
 
