@@ -302,10 +302,8 @@ contract AllocationManager is
             });
         }
 
-        // Call the AVS to complete deregistration. Even if the AVS reverts, the operator is
-        // considered deregistered
-        try getAVSRegistrar(params.avs).deregisterOperator(params.operator, params.avs, params.operatorSetIds) {}
-            catch {}
+        // Call the AVS to complete deregistration
+        getAVSRegistrar(params.avs).deregisterOperator(params.operator, params.avs, params.operatorSetIds);
     }
 
     /// @inheritdoc IAllocationManager

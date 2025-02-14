@@ -265,8 +265,8 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
      * If the operator has any slashable stake allocated to the AVS, it remains slashable until the
      * DEALLOCATION_DELAY has passed.
      * @dev After deregistering within the ALM, this method calls the AVS Registrar's `IAVSRegistrar.
-     * deregisterOperator` method to complete deregistration. Unlike when registering, this call MAY FAIL.
-     * Failure is permitted to prevent AVSs from being able to maliciously prevent operators from deregistering.
+     * deregisterOperator` method to complete deregistration. This call MUST succeed in order for
+     * deregistration to be successful.
      */
     function deregisterFromOperatorSets(
         DeregisterParams calldata params

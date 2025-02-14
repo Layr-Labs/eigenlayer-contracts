@@ -32,5 +32,7 @@ interface IAVSRegistrar {
      * @param avs the AVS to check
      * @return true if the AVS is supported, false otherwise
      */
-    function supportsAVS(address avs) external view returns (bool);
+    function supportsAVS(
+        address avs
+    ) external view returns (bool);
 }
