@@ -52,7 +52,7 @@ contract DelegationManagerMock is Test {
         }
     }
 
-    function delegateTo(address operator, ISignatureUtils.SignatureWithExpiry memory /*approverSignatureAndExpiry*/, bytes32 /*approverSalt*/) external {
+    function delegateTo(address operator, ISignatureUtilsMixinTypes.SignatureWithExpiry memory /*approverSignatureAndExpiry*/, bytes32 /*approverSalt*/) external {
         delegatedTo[msg.sender] = operator;
     }
 

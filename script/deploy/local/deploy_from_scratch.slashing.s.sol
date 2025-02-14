@@ -73,6 +73,8 @@ contract DeployFromScratch is Script, Test {
     address operationsMultisig;
     address pauserMultisig;
 
+    string SEMVER;
+
     // the ETH2 deposit contract -- if not on mainnet, we deploy a mock as stand-in
     IETHPOSDeposit public ethPOSDeposit;
 
@@ -123,6 +125,8 @@ contract DeployFromScratch is Script, Test {
         deployConfigPath = string(bytes(string.concat("script/configs/", configFileName)));
         string memory config_data = vm.readFile(deployConfigPath);
         // bytes memory parsedData = vm.parseJson(config_data);
+
+        SEMVER = stdJson.readString(config_data, ".semver");
 
         MIN_WITHDRAWAL_DELAY = uint32(stdJson.readUint(config_data, ".delegation.withdrawal_delay_blocks"));
         STRATEGY_MANAGER_INIT_PAUSED_STATUS = stdJson.readUint(config_data, ".strategyManager.init_paused_status");
@@ -234,36 +238,56 @@ contract DeployFromScratch is Script, Test {
         eigenPodImplementation = new EigenPod(
             ethPOSDeposit,
             eigenPodManager,
-            GOERLI_GENESIS_TIME
+            GOERLI_GENESIS_TIME,
+            SEMVER
         );
 
         eigenPodBeacon = new UpgradeableBeacon(address(eigenPodImplementation));
 
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
 
-        delegationImplementation = new DelegationManager(strategyManager, eigenPodManager, allocationManager, eigenLayerPauserReg, permissionController, MIN_WITHDRAWAL_DELAY);
-        strategyManagerImplementation = new StrategyManager(delegation, eigenLayerPauserReg);
-        avsDirectoryImplementation = new AVSDirectory(delegation, eigenLayerPauserReg);
+        delegationImplementation = new DelegationManager(
+            strategyManager, 
+            eigenPodManager, 
+            allocationManager, 
+            eigenLayerPauserReg, 
+            permissionController, 
+            MIN_WITHDRAWAL_DELAY,
+            SEMVER
+        );
+        strategyManagerImplementation = new StrategyManager(delegation, eigenLayerPauserReg, SEMVER);
+        avsDirectoryImplementation = new AVSDirectory(delegation, eigenLayerPauserReg, SEMVER);
         eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit,
             eigenPodBeacon,
             delegation,
-            eigenLayerPauserReg
+            eigenLayerPauserReg,
+            SEMVER
         );
         rewardsCoordinatorImplementation = new RewardsCoordinator(
-            delegation,
-            strategyManager,
-            allocationManager,
-            eigenLayerPauserReg,
-            permissionController,
-            REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
-            REWARDS_COORDINATOR_MAX_REWARDS_DURATION,
-            REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH,
-            REWARDS_COORDINATOR_MAX_FUTURE_LENGTH,
-            REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP
+            IRewardsCoordinatorTypes.RewardsCoordinatorConstructorParams(
+                delegation,
+                strategyManager,
+                allocationManager,
+                eigenLayerPauserReg,
+                permissionController,
+                REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
+                REWARDS_COORDINATOR_MAX_REWARDS_DURATION,
+                REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH,
+                REWARDS_COORDINATOR_MAX_FUTURE_LENGTH,
+                REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP,
+                SEMVER
+            )
         );
-        allocationManagerImplementation = new AllocationManager(delegation, eigenLayerPauserReg, permissionController, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
-        permissionControllerImplementation = new PermissionController();
+        allocationManagerImplementation = new AllocationManager(
+            delegation, 
+            eigenLayerPauserReg, 
+            permissionController, 
+            DEALLOCATION_DELAY, 
+            ALLOCATION_CONFIGURATION_DELAY,
+            SEMVER
+        );
+        permissionControllerImplementation = new PermissionController(SEMVER);
 
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
         {
@@ -335,7 +359,7 @@ contract DeployFromScratch is Script, Test {
         );
 
         // deploy StrategyBaseTVLLimits contract implementation
-        baseStrategyImplementation = new StrategyBaseTVLLimits(strategyManager, eigenLayerPauserReg);
+        baseStrategyImplementation = new StrategyBaseTVLLimits(strategyManager, eigenLayerPauserReg, SEMVER);
         // create upgradeable proxies that each point to the implementation and initialize them
         for (uint256 i = 0; i < strategyConfigs.length; ++i) {
             if (strategyConfigs[i].tokenAddress == address(0)) {

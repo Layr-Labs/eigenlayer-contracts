@@ -5,7 +5,7 @@ import "src/test/integration/deprecatedInterfaces/mainnet/IEigenPod.sol";
 import "src/test/integration/deprecatedInterfaces/mainnet/IEigenPodManager.sol";
 import "src/test/integration/deprecatedInterfaces/mainnet/IStrategyManager.sol";
 import "src/test/integration/users/User.t.sol";
-import "src/contracts/mixins/SignatureUtils.sol";
+import "src/contracts/mixins/SignatureUtilsMixin.sol";
 
 interface IUserM1MainnetForkDeployer {
     function delegationManager() external view returns (DelegationManager);
@@ -70,11 +70,6 @@ contract User_M1 is User {
 }
 
 contract User_M1_AltMethods is User_M1 {
-    /// @notice The EIP-712 typehash for the contract's domain.
-    bytes32 internal constant EIP712_DOMAIN_TYPEHASH =
-        keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
-
-
     mapping(bytes32 => bool) public signedHashes;
 
     constructor(string memory name) User_M1(name) {}
