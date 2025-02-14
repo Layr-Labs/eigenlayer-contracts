@@ -66,7 +66,7 @@ contract EigenPodManager is
     }
 
     /// @inheritdoc IEigenPodManager
-    function createPod() external onlyWhenNotPaused(PAUSED_NEW_EIGENPODS) returns (address) {
+    function createPod() external onlyWhenNotPaused(PAUSED_NEW_EIGENPODS) nonReentrant returns (address) {
         require(!hasPod(msg.sender), EigenPodAlreadyExists());
         // deploy a pod if the sender doesn't have one already
         IEigenPod pod = _deployPod();
@@ -79,7 +79,7 @@ contract EigenPodManager is
         bytes calldata pubkey,
         bytes calldata signature,
         bytes32 depositDataRoot
-    ) external payable onlyWhenNotPaused(PAUSED_NEW_EIGENPODS) {
+    ) external payable onlyWhenNotPaused(PAUSED_NEW_EIGENPODS) nonReentrant {
         IEigenPod pod = ownerToPod[msg.sender];
         if (address(pod) == address(0)) {
             //deploy a pod if the sender doesn't have one already
@@ -148,7 +148,7 @@ contract EigenPodManager is
         address staker,
         IStrategy strategy,
         uint256 depositSharesToRemove
-    ) external onlyDelegationManager returns (uint256) {
+    ) external onlyDelegationManager nonReentrant returns (uint256) {
         require(strategy == beaconChainETHStrategy, InvalidStrategy());
         int256 updatedShares = podOwnerDepositShares[staker] - int256(depositSharesToRemove);
         require(updatedShares >= 0, SharesNegative());
@@ -169,7 +169,7 @@ contract EigenPodManager is
         address staker,
         IStrategy strategy,
         uint256 shares
-    ) external onlyDelegationManager returns (uint256, uint256) {
+    ) external onlyDelegationManager nonReentrant returns (uint256, uint256) {
         require(strategy == beaconChainETHStrategy, InvalidStrategy());
         return _addShares(staker, shares);
     }
@@ -185,7 +185,7 @@ contract EigenPodManager is
         IStrategy strategy,
         IERC20,
         uint256 shares
-    ) external onlyDelegationManager {
+    ) external onlyDelegationManager nonReentrant {
         require(strategy == beaconChainETHStrategy, InvalidStrategy());
         require(staker != address(0), InputAddressZero());
         require(int256(shares) > 0, SharesNegative());
@@ -226,7 +226,7 @@ contract EigenPodManager is
     }
 
     /// @inheritdoc IShareManager
-    function increaseBurnableShares(IStrategy, uint256 addedSharesToBurn) external onlyDelegationManager {
+    function increaseBurnableShares(IStrategy, uint256 addedSharesToBurn) external onlyDelegationManager nonReentrant {
         burnableETHShares += addedSharesToBurn;
         emit BurnableETHSharesIncreased(addedSharesToBurn);
     }
