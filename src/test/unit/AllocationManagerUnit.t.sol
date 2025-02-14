@@ -3663,7 +3663,6 @@ contract AllocationManagerUnitTests_setAVSRegistrar is AllocationManagerUnitTest
         Randomness r
     ) public rand(r) {
         address avs = r.Address();
-        MockAVSRegistrar(defaultAVS).setAvs(avs);
         IAVSRegistrar avsRegistrar = IAVSRegistrar(defaultAVS);
 
         cheats.expectEmit(true, true, true, true, address(allocationManager));

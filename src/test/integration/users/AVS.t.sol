@@ -63,8 +63,8 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
         return _NAME;
     }
 
-    function avs() external view override returns (address) {
-        return address(this);
+    function supportsAVS(address) external pure override returns (bool) {
+        return true;
     }
 
     /// -----------------------------------------------------------------------

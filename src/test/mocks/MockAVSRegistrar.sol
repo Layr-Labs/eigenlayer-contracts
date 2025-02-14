@@ -2,16 +2,10 @@
 pragma solidity ^0.8.27;
 
 contract MockAVSRegistrar {
-    address _avs;
-
-    function avs() external view returns (address) {
-        return _avs;
-    }
-
-    function setAvs(
-        address newAvs
-    ) external {
-        _avs = newAvs;
+    function supportsAVS(
+        address /*avs*/
+    ) external pure returns (bool) {
+        return true;
     }
 
     fallback() external {}

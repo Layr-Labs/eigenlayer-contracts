@@ -321,7 +321,7 @@ contract AllocationManager is
     function setAVSRegistrar(address avs, IAVSRegistrar registrar) external checkCanCall(avs) {
         // Check that the registrar is correctly configured to prevent an AVSRegistrar contract
         // from being used with the wrong AVS
-        require(registrar.avs() == avs, InvalidAVSRegistrar());
+        require(registrar.supportsAVS(avs), InvalidAVSRegistrar());
         _avsRegistrar[avs] = registrar;
         emit AVSRegistrarSet(avs, getAVSRegistrar(avs));
     }

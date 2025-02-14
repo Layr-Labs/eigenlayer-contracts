@@ -18,7 +18,9 @@ contract AVSRegistrar is IAVSRegistrar {
         bytes calldata data
     ) external {}
     function deregisterOperator(address operator, address avsIdentifier, uint32[] calldata operatorSetIds) external {}
-    function avs() external view returns (address) {}
+    function supportsAVS(address /*avs*/) external pure returns (bool) {
+        return true;
+    }
     fallback() external {}
 }
 
