@@ -273,7 +273,7 @@ contract AllocationManager is
         }
 
         // Call the AVS to complete registration. If the AVS reverts, registration will fail.
-        getAVSRegistrar(params.avs).registerOperator(operator, params.operatorSetIds, params.data);
+        getAVSRegistrar(params.avs).registerOperator(operator, params.avs, params.operatorSetIds, params.data);
     }
 
     /// @inheritdoc IAllocationManager
@@ -302,9 +302,8 @@ contract AllocationManager is
             });
         }
 
-        // Call the AVS to complete deregistration. Even if the AVS reverts, the operator is
-        // considered deregistered
-        try getAVSRegistrar(params.avs).deregisterOperator(params.operator, params.operatorSetIds) {} catch {}
+        // Call the AVS to complete deregistration
+        getAVSRegistrar(params.avs).deregisterOperator(params.operator, params.avs, params.operatorSetIds);
     }
 
     /// @inheritdoc IAllocationManager
@@ -318,6 +317,9 @@ contract AllocationManager is
 
     /// @inheritdoc IAllocationManager
     function setAVSRegistrar(address avs, IAVSRegistrar registrar) external checkCanCall(avs) {
+        // Check that the registrar is correctly configured to prevent an AVSRegistrar contract
+        // from being used with the wrong AVS
+        require(registrar.supportsAVS(avs), InvalidAVSRegistrar());
         _avsRegistrar[avs] = registrar;
         emit AVSRegistrarSet(avs, getAVSRegistrar(avs));
     }
