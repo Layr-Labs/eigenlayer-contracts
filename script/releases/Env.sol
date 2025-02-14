@@ -301,10 +301,6 @@ library Env {
         return ZEnvHelpers.state().deployedImpl(name);
     }
 
-    function _envString(string memory key) private view returns (string memory) {
-        return ZEnvHelpers.state().envString(key);
-    }
-
     function _envAddress(string memory key) private view returns (address) {
         return ZEnvHelpers.state().envAddress(key);
     }
