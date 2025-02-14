@@ -2,9 +2,10 @@
 pragma solidity ^0.8.27;
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
+import "../mixins/SemVerMixin.sol";
 import "./PermissionControllerStorage.sol";
 
-contract PermissionController is Initializable, PermissionControllerStorage {
+contract PermissionController is Initializable, SemVerMixin, PermissionControllerStorage {
     using EnumerableSet for *;
 
     modifier onlyAdmin(
@@ -19,7 +20,9 @@ contract PermissionController is Initializable, PermissionControllerStorage {
      *                         INITIALIZING FUNCTIONS
      *
      */
-    constructor() {
+    constructor(
+        string memory _version
+    ) SemVerMixin(_version) {
         _disableInitializers();
     }
 

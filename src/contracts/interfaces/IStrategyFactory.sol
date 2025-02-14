@@ -4,6 +4,7 @@ pragma solidity ^0.8.27;
 import "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./IStrategy.sol";
+import "./ISemVerMixin.sol";
 
 /**
  * @title Interface for the `StrategyFactory` contract.
@@ -11,7 +12,7 @@ import "./IStrategy.sol";
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @dev This may not be compatible with non-standard ERC20 tokens. Caution is warranted.
  */
-interface IStrategyFactory {
+interface IStrategyFactory is ISemVerMixin {
     /// @dev Thrown when attempting to deploy a strategy for a blacklisted token.
     error BlacklistedToken();
     /// @dev Thrown when attempting to deploy a strategy that already exists.
