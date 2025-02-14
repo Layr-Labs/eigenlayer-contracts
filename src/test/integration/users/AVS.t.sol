@@ -63,6 +63,10 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
         return _NAME;
     }
 
+    function supportsAVS(address) external pure override returns (bool) {
+        return true;
+    }
+
     /// -----------------------------------------------------------------------
     /// AllocationManager
     /// -----------------------------------------------------------------------
@@ -83,9 +87,9 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
         }
 
         print.createOperatorSets(p);
-        
+
         allocationManager.createOperatorSets(address(this), p);
-        
+
         print.gasUsed();
     }
 
@@ -104,9 +108,9 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
     }
 
     function slashOperator(
-        User operator, 
-        uint32 operatorSetId, 
-        IStrategy[] memory strategies, 
+        User operator,
+        uint32 operatorSetId,
+        IStrategy[] memory strategies,
         uint256[] memory wadsToSlash
     ) public createSnapshot returns (SlashingParams memory p) {
         p = SlashingParams({
@@ -118,9 +122,9 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
         });
 
         for (uint256 i; i < strategies.length; ++i) {
-            string memory strategyName = strategies[i] == beaconChainETHStrategy ? 
-                "Native ETH" : 
-                IERC20Metadata(address(strategies[i].underlyingToken())).name();
+            string memory strategyName = strategies[i] == beaconChainETHStrategy
+                ? "Native ETH"
+                : IERC20Metadata(address(strategies[i].underlyingToken())).name();
 
             print.method(
                 "slashOperator",
@@ -200,11 +204,16 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
 
     function registerOperator(
         address operator,
+        address avsIdentifier,
         uint32[] calldata operatorSetIds,
         bytes calldata data
     ) external override {}
 
-    function deregisterOperator(address operator, uint32[] calldata operatorSetIds) external override {}
+    function deregisterOperator(
+        address operator,
+        address avsIdentifier,
+        uint32[] calldata operatorSetIds
+    ) external override {}
 
     /// -----------------------------------------------------------------------
     /// Internal Helpers
@@ -218,10 +227,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
     //     return PermissionController(address(delegationManager.permissionController));
     // }
 
-    function _tryPrankAppointee(
-        address target,
-        bytes4 selector
-    ) internal {
+    function _tryPrankAppointee(address target, bytes4 selector) internal {
         address[] memory appointees = permissionController.getAppointees(address(this), target, selector);
         if (appointees.length != 0) cheats.prank(appointees[0]);
     }
