@@ -96,7 +96,7 @@ contract DelegationManager is
         address initDelegationApprover,
         uint32 allocationDelay,
         string calldata metadataURI
-    ) external {
+    ) external nonReentrant {
         require(!isDelegated(msg.sender), ActivelyDelegated());
 
         allocationManager.setAllocationDelay(msg.sender, allocationDelay);
@@ -110,7 +110,10 @@ contract DelegationManager is
     }
 
     /// @inheritdoc IDelegationManager
-    function modifyOperatorDetails(address operator, address newDelegationApprover) external checkCanCall(operator) {
+    function modifyOperatorDetails(
+        address operator,
+        address newDelegationApprover
+    ) external checkCanCall(operator) nonReentrant {
         require(isOperator(operator), OperatorNotRegistered());
         _setDelegationApprover(operator, newDelegationApprover);
     }
@@ -126,7 +129,7 @@ contract DelegationManager is
         address operator,
         SignatureWithExpiry memory approverSignatureAndExpiry,
         bytes32 approverSalt
-    ) public {
+    ) public nonReentrant {
         require(!isDelegated(msg.sender), ActivelyDelegated());
         require(isOperator(operator), OperatorNotRegistered());
 
@@ -145,7 +148,7 @@ contract DelegationManager is
     /// @inheritdoc IDelegationManager
     function undelegate(
         address staker
-    ) public returns (bytes32[] memory withdrawalRoots) {
+    ) public nonReentrant returns (bytes32[] memory withdrawalRoots) {
         // Check that the `staker` can undelegate
         require(isDelegated(staker), NotActivelyDelegated());
         require(!isOperator(staker), OperatorsCannotUndelegate());
@@ -176,7 +179,7 @@ contract DelegationManager is
     /// @inheritdoc IDelegationManager
     function queueWithdrawals(
         QueuedWithdrawalParams[] calldata params
-    ) external onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE) returns (bytes32[] memory) {
+    ) external onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE) nonReentrant returns (bytes32[] memory) {
         bytes32[] memory withdrawalRoots = new bytes32[](params.length);
         address operator = delegatedTo[msg.sender];
 
@@ -228,7 +231,7 @@ contract DelegationManager is
         IStrategy strategy,
         uint256 prevDepositShares,
         uint256 addedShares
-    ) external onlyStrategyManagerOrEigenPodManager {
+    ) external onlyStrategyManagerOrEigenPodManager nonReentrant {
         /// Note: Unlike `decreaseDelegatedShares`, we don't return early if the staker has no operator.
         /// This is because `_increaseDelegation` updates the staker's deposit scaling factor, which we
         /// need to do even if not delegated.
@@ -252,7 +255,7 @@ contract DelegationManager is
         address staker,
         uint256 curDepositShares,
         uint64 beaconChainSlashingFactorDecrease
-    ) external onlyEigenPodManager {
+    ) external onlyEigenPodManager nonReentrant {
         if (!isDelegated(staker)) {
             return;
         }
@@ -282,7 +285,7 @@ contract DelegationManager is
         IStrategy strategy,
         uint64 prevMaxMagnitude,
         uint64 newMaxMagnitude
-    ) external onlyAllocationManager {
+    ) external onlyAllocationManager nonReentrant {
         /// forgefmt: disable-next-item
         uint256 operatorSharesSlashed = SlashingLib.calcSlashedAmount({
             operatorShares: operatorShares[operator][strategy],
