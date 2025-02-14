@@ -94,3 +94,72 @@ Use the following types for your commit messages:
 
 By following these guidelines, you help maintain the quality and readability of the EigenLayer codebase. We appreciate your contributions and look forward to collaborating with you!
 
+## Building and Running Tests
+
+This repository uses Foundry. See the [Foundry docs](https://book.getfoundry.sh/) for more info on installation and usage. If you already have foundry, you can build this project and run tests with these commands:
+
+```
+foundryup
+
+forge build
+forge test
+```
+
+### Contributor Setup
+
+To set up this repo for the first time, run:
+
+```bash
+make deps
+```
+
+This will:
+* Install the pre-commit hook
+* Install foundry and its tools
+* Install abigen
+
+### Running Fork Tests
+
+We have a few fork tests against ETH mainnet. Passing these requires the environment variable `RPC_MAINNET` to be set. See `.env.example` for an example. Once you've set up your environment, `forge test` should show these fork tests passing.
+
+Additionally, to run all tests in a forked environment, [install yq](https://mikefarah.gitbook.io/yq/v/v3.x/). Then, set up your environment by running the following command.
+
+`source bin/source-env.sh [goerli|local]`
+
+Then run the tests:
+
+`forge test --fork-url [RPC_URL]`
+
+### Running Static Analysis
+
+1. Install [solhint](https://github.com/protofire/solhint), then run:
+
+`solhint 'src/contracts/**/*.sol'`
+
+2. Install [slither](https://github.com/crytic/slither), then run:
+
+`slither .`
+
+### Generate Inheritance and Control-Flow Graphs
+
+1. Install [surya](https://github.com/ConsenSys/surya/) and graphviz:
+
+```
+npm i -g surya
+
+apt install graphviz
+```
+
+2. Then, run:
+
+```
+surya inheritance ./src/contracts/**/*.sol | dot -Tpng > InheritanceGraph.png
+
+surya mdreport surya_report.md ./src/contracts/**/*.sol
+```
+
+### Generate Go bindings
+
+```bash
+make bindings
+```
