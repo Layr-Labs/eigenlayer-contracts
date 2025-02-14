@@ -53,10 +53,6 @@ library Env {
      * env
      */
 
-    function version() internal view returns (string memory) {
-        return _envString("version");
-    }
-
     function executorMultisig() internal view returns (address) {
         return _envAddress("executorMultisig");
     }

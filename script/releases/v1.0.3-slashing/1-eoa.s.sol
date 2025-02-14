@@ -13,6 +13,8 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 contract Deploy is EOADeployer {
     using Env for *;
 
+    string internal constant VERSION = "v1.0.3-slashing";
+
     function _runAsEOA() internal override {
         vm.startBroadcast();
 
@@ -26,7 +28,7 @@ contract Deploy is EOADeployer {
                 _pauserRegistry: Env.impl.pauserRegistry(),
                 _permissionController: Env.proxy.permissionController(),
                 _MIN_WITHDRAWAL_DELAY: Env.MIN_WITHDRAWAL_DELAY(),
-                _version: Env.version()
+                _version: VERSION
             }))
         });
 
@@ -36,7 +38,7 @@ contract Deploy is EOADeployer {
             deployedTo: address(new AVSDirectory({
                 _delegation: Env.proxy.delegationManager(),
                 _pauserRegistry: Env.impl.pauserRegistry(),
-                _version: Env.version()
+                _version: VERSION
             }))
         });
 
@@ -46,7 +48,7 @@ contract Deploy is EOADeployer {
             deployedTo: address(new StrategyManager({
                 _delegation: Env.proxy.delegationManager(),
                 _pauserRegistry: Env.impl.pauserRegistry(),
-                _version: Env.version()
+                _version: VERSION
             }))
         });
 
@@ -65,7 +67,7 @@ contract Deploy is EOADeployer {
                     MAX_RETROACTIVE_LENGTH: Env.MAX_RETROACTIVE_LENGTH(),
                     MAX_FUTURE_LENGTH: Env.MAX_FUTURE_LENGTH(),
                     GENESIS_REWARDS_TIMESTAMP: Env.GENESIS_REWARDS_TIMESTAMP(),
-                    version: Env.version()
+                    version: VERSION
                 })
             ))
         });
