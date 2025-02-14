@@ -11,9 +11,15 @@ import "forge-std/Test.sol";
 
 // Define dummy AVSRegistrar contract to prevent revert
 contract AVSRegistrar is IAVSRegistrar {
-    function registerOperator(address operator, uint32[] calldata operatorSetIds, bytes calldata data) external {}
-    function deregisterOperator(address operator, uint32[] calldata operatorSetIds) external {}
-    fallback () external {}
+    function registerOperator(
+        address operator,
+        address avsIdentifier,
+        uint32[] calldata operatorSetIds,
+        bytes calldata data
+    ) external {}
+    function deregisterOperator(address operator, address avsIdentifier, uint32[] calldata operatorSetIds) external {}
+    function avs() external view returns (address) {}
+    fallback() external {}
 }
 
 // use forge:
@@ -22,7 +28,9 @@ contract AVSRegistrar is IAVSRegistrar {
 contract RegisterOperatorToOperatorSets is Script, Test {
     Vm cheats = Vm(VM_ADDRESS);
 
-    function run(string memory configFile) public {
+    function run(
+        string memory configFile
+    ) public {
         // Load config
         string memory deployConfigPath = string(bytes(string.concat("script/output/", configFile)));
         string memory config_data = vm.readFile(deployConfigPath);
@@ -47,7 +55,8 @@ contract RegisterOperatorToOperatorSets is Script, Test {
 
         // Sign as Operator
         (uint8 v, bytes32 r, bytes32 s) = cheats.sign(
-            operator, avsDirectory.calculateOperatorAVSRegistrationDigestHash(operator, operator, bytes32(uint256(0) + 1), expiry)
+            operator,
+            avsDirectory.calculateOperatorAVSRegistrationDigestHash(operator, operator, bytes32(uint256(0) + 1), expiry)
         );
 
         // Add strategies to array
@@ -56,26 +65,21 @@ contract RegisterOperatorToOperatorSets is Script, Test {
 
         // Create OperatorSet(s)
         IAllocationManagerTypes.CreateSetParams[] memory sets = new IAllocationManagerTypes.CreateSetParams[](1);
-        sets[0] = IAllocationManagerTypes.CreateSetParams({
-            operatorSetId: 1,
-            strategies: strategies
-        });
+        sets[0] = IAllocationManagerTypes.CreateSetParams({operatorSetId: 1, strategies: strategies});
         allocationManager.createOperatorSets(msg.sender, sets);
 
         // Register the Operator to the AVS
         avsDirectory.registerOperatorToAVS(
-            operator, ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), bytes32(uint256(0) + 1), expiry)
+            operator,
+            ISignatureUtils.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), bytes32(uint256(0) + 1), expiry)
         );
 
         // Deploy and set registrar.
         allocationManager.setAVSRegistrar(msg.sender, new AVSRegistrar());
 
         // Register OperatorSet(s)
-        IAllocationManagerTypes.RegisterParams memory register = IAllocationManagerTypes.RegisterParams({
-            avs: operator,
-            operatorSetIds: oids,
-            data: ""
-        });
+        IAllocationManagerTypes.RegisterParams memory register =
+            IAllocationManagerTypes.RegisterParams({avs: operator, operatorSetIds: oids, data: ""});
         allocationManager.registerForOperatorSets(operator, register);
 
         // STOP RECORDING TRANSACTIONS FOR DEPLOYMENT
