@@ -20,7 +20,7 @@ jobs:
 
   test-suite:
     name: Test
-    runs-on: ubuntu-latest
+    runs-on: protocol-x64-32core
     strategy:
       matrix:
         suite: [Unit, Integration, Fork]
