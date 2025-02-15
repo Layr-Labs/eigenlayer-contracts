@@ -21,6 +21,8 @@ jobs:
   test-suite:
     name: Test
     runs-on: protocol-x64-16core
+    container:
+      image: ghcr.io/foundry-rs/foundry:stable
     strategy:
       matrix:
         suite: [Unit, Integration, Fork]
@@ -30,12 +32,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-
-      # Install the Foundry toolchain.
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: stable
 
       # Run Forge's formatting checker to ensure consistent code style.
       - name: "Forge Fmt"
@@ -67,6 +63,8 @@ jobs:
   continuous-fuzzing:
     name: Test (Intense)
     runs-on: protocol-x64-16core
+    container:
+      image: ghcr.io/foundry-rs/foundry:stable
     # Only run on push events to dev branch, not on PR events
     if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
     strategy:
@@ -76,12 +74,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-
-      # Install the Foundry toolchain.
-      - name: "Install Foundry"
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: stable
 
       # Build the project and display contract sizes.
       - name: "Forge Build"
@@ -104,17 +96,13 @@ jobs:
   storage-diff:
     name: Test (Storage)
     runs-on: protocol-x64-16core
+    container:
+      image: ghcr.io/foundry-rs/foundry:stable
     steps:
       # Check out repository with all submodules for complete codebase access.
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-
-      # Install the Foundry toolchain.
-      - name: "Install Foundry"
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: stable
 
       # Run storage diff check to detect storage layout incompatibilities.
       - name: "Mainnet Storage Diff"
@@ -129,6 +117,8 @@ jobs:
   run-coverage:
     name: Coverage
     runs-on: protocol-x64-16core
+    container:
+      image: ghcr.io/foundry-rs/foundry:stable
     # Only run coverage checks on dev, testnet-holesky, and mainnet branches, or PRs targeting these branches
     if: |
       github.ref == 'refs/heads/dev' ||
@@ -144,12 +134,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-
-      # Install the Foundry toolchain.
-      - name: "Install Foundry"
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: stable
 
       # Install LCOV for coverage report generation.
       - name: Install LCOV
@@ -209,17 +193,13 @@ jobs:
   compare-contract-sizes:
     name: Size Diff
     runs-on: protocol-x64-16core
+    container:
+      image: ghcr.io/foundry-rs/foundry:stable
     steps:
       # Check out repository with all submodules for complete codebase access.
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-
-      # Install the Foundry toolchain.
-      - name: "Install Foundry"
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: stable
 
       - name: Build contracts on PR branch
         run: |
