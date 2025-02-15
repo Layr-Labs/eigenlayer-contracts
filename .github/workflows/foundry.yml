@@ -39,17 +39,17 @@ jobs:
       # Run Forge's formatting checker to ensure consistent code style.
       - name: "Forge Fmt"
         run: |
-          docker run --rm -v $(pwd):/mnt -w /mnt ghcr.io/foundry-rs/foundry:stable bash -c "forge fmt --check"
+          docker run --rm -v $(pwd):/mnt -w /mnt ghcr.io/foundry-rs/foundry:stable bash -c "forge fmt --check | tee /dev/stderr"
 
       # Build the project and display contract sizes.
       - name: Forge Version
         run: |
-          docker run --rm -v $(pwd):/mnt -w /mnt ghcr.io/foundry-rs/foundry:stable bash -c "forge --version"
+          docker run --rm -v $(pwd):/mnt -w /mnt ghcr.io/foundry-rs/foundry:stable bash -c "forge --version | tee /dev/stderr"
 
       # Build the project and display contract sizes.
       - name: Forge Build
         run: |
-          docker run --rm -v $(pwd):/mnt -w /mnt ghcr.io/foundry-rs/foundry:stable bash -c "forge build --sizes"
+          docker run --rm -v $(pwd):/mnt -w /mnt ghcr.io/foundry-rs/foundry:stable bash -c "forge build --sizes | tee /dev/stderr"
 
       # Run the test suite in parallel based on the matrix configuration.
       - name: Run ${{ matrix.suite }} tests
