@@ -21,43 +21,45 @@ jobs:
   test-suite:
     name: Test
     runs-on: protocol-x64-16core
-    container:
-      image: ghcr.io/foundry-rs/foundry:stable
     strategy:
       matrix:
         suite: [Unit, Integration, Fork]
     
     steps:
-      # 🔧 Install Git (Needed for actions/checkout)
-      - name: Install Git
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y git
-
       # Check out repository with all submodules for complete codebase access.
       - uses: actions/checkout@v4
         with:
           submodules: recursive
 
+      # Pull the Foundry Docker image (if not already pulled)    
+      - name: pull foundry docker
+        run: |
+          docker pull ghcr.io/foundry-rs/foundry:stable
+
       # Run Forge's formatting checker to ensure consistent code style.
       - name: "Forge Fmt"
         run: |
-          forge fmt --check
+          docker run --rm -v $(pwd):/mnt ghcr.io/foundry-rs/foundry:stable \
+            bash -c "forge fmt --check"
         id: fmt
 
       # Build the project and display contract sizes.
       - name: Forge Build
         run: |
-          forge --version
-          forge build --sizes
+          docker run --rm -v $(pwd):/mnt ghcr.io/foundry-rs/foundry:stable \
+            bash -c "forge --version && forge build --sizes"
+        id: build
 
       # Run the test suite in parallel based on the matrix configuration.
       - name: Run ${{ matrix.suite }} tests
         run: |
           case "${{ matrix.suite }}" in
-            Unit) forge test --no-match-contract Integration ;;
-            Integration) forge test --match-contract Integration ;;
-            Fork) forge test --match-contract Integration ;;
+            Unit) docker run --rm -v $(pwd):/mnt ghcr.io/foundry-rs/foundry:stable \
+              bash -c "forge test --no-match-contract Integration" ;;
+            Integration) docker run --rm -v $(pwd):/mnt ghcr.io/foundry-rs/foundry:stable \
+              bash -c "forge test --match-contract Integration" ;;
+            Fork) docker run --rm -v $(pwd):/mnt ghcr.io/foundry-rs/foundry:stable \
+              bash -c "forge test --match-contract Integration" ;;
           esac
         env:
           FOUNDRY_PROFILE: ${{ matrix.suite == 'Fork' && 'forktest' || 'ci' }}
