@@ -3,9 +3,21 @@ name: Foundry
 on:
   workflow_dispatch:
   pull_request:
+    paths:
+      - '.github/**'
+      - 'src/**'
+      - 'lib/**'
+      - 'certora/**'
+      - 'foundry.toml'
   push:
     branches:
       - "dev"
+    paths:
+      - '.github/**'
+      - 'src/**'
+      - 'lib/**'
+      - 'certora/**'
+      - 'foundry.toml'
 
 env:
   FOUNDRY_PROFILE: ci
