@@ -28,6 +28,12 @@ jobs:
         suite: [Unit, Integration, Fork]
     
     steps:
+      # 🔧 Install Git (Needed for actions/checkout)
+      - name: Install Git
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git
+
       # Check out repository with all submodules for complete codebase access.
       - uses: actions/checkout@v4
         with:
