@@ -39,27 +39,27 @@ jobs:
       # Run Forge's formatting checker to ensure consistent code style.
       - name: "Forge Fmt"
         run: |
-          docker run --rm -v $(pwd):/mnt -w /mnt ghcr.io/foundry-rs/foundry:stable bash -c "forge fmt --check | tee /dev/stderr"
+          docker run -v $(pwd):/mnt -w /mnt ghcr.io/foundry-rs/foundry:stable bash -c "forge fmt --check | tee /dev/stderr"
 
       # Build the project and display contract sizes.
       - name: Forge Version
         run: |
-          docker run --rm -v $(pwd):/mnt -w /mnt ghcr.io/foundry-rs/foundry:stable bash -c "forge --version | tee /dev/stderr"
+          docker run -v $(pwd):/mnt -w /mnt ghcr.io/foundry-rs/foundry:stable bash -c "forge --version | tee /dev/stderr"
 
       # Build the project and display contract sizes.
       - name: Forge Build
         run: |
-          docker run --rm -v $(pwd):/mnt -w /mnt ghcr.io/foundry-rs/foundry:stable bash -c "forge build --sizes | tee /dev/stderr"
+          docker run -v $(pwd):/mnt -w /mnt ghcr.io/foundry-rs/foundry:stable bash -c "forge build --sizes | tee /dev/stderr"
 
       # Run the test suite in parallel based on the matrix configuration.
       - name: Run ${{ matrix.suite }} tests
         run: |
           case "${{ matrix.suite }}" in
-            Unit) docker run --rm -v $(pwd):/mnt -w /mnt ghcr.io/foundry-rs/foundry:stable \
+            Unit) docker run -v $(pwd):/mnt -w /mnt ghcr.io/foundry-rs/foundry:stable \
               bash -c "forge test --no-match-contract Integration" ;;
-            Integration) docker run --rm -v $(pwd):/mnt -w /mnt ghcr.io/foundry-rs/foundry:stable \
+            Integration) docker run -v $(pwd):/mnt -w /mnt ghcr.io/foundry-rs/foundry:stable \
               bash -c "forge test --match-contract Integration" ;;
-            Fork) docker run --rm -v $(pwd):/mnt -w /mnt ghcr.io/foundry-rs/foundry:stable \
+            Fork) docker run -v $(pwd):/mnt -w /mnt ghcr.io/foundry-rs/foundry:stable \
               bash -c "forge test --match-contract Integration" ;;
           esac
         env:
