@@ -14,10 +14,6 @@ env:
   CHAIN_ID: ${{ secrets.CHAIN_ID }}
 
 jobs:
-  # -----------------------------------------------------------------------
-  # Forge Test
-  # -----------------------------------------------------------------------
-
   test-suite:
     name: Test
     runs-on: protocol-x64-16core
@@ -26,39 +22,36 @@ jobs:
         suite: [Unit, Integration, Fork]
     
     steps:
-      # Check out repository with all submodules for complete codebase access.
       - uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      # Install the Foundry toolchain.
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: stable
-
-      # Run Forge's formatting checker to ensure consistent code style.
+      # Run Forge's formatting checker
       - name: "Forge Fmt"
-        run: |
-          forge fmt --check
-        id: fmt
+        uses: docker://ghcr.io/foundry-rs/foundry:stable
+        with:
+          entrypoint: forge
+          args: fmt --check
 
-      # Build the project and display contract sizes.
+      # Build the project
       - name: Forge Build
-        run: |
-          forge --version
-          forge build --sizes
+        uses: docker://ghcr.io/foundry-rs/foundry:stable
+        with:
+          entrypoint: forge
+          args: build --sizes
 
-      # Run the test suite in parallel based on the matrix configuration.
+      # Run the test suite
       - name: Run ${{ matrix.suite }} tests
-        run: |
-          case "${{ matrix.suite }}" in
-            Unit) forge test --no-match-contract Integration ;;
-            Integration) forge test --match-contract Integration ;;
-            Fork) forge test --match-contract Integration ;;
-          esac
+        uses: docker://ghcr.io/foundry-rs/foundry:stable
         env:
           FOUNDRY_PROFILE: ${{ matrix.suite == 'Fork' && 'forktest' || 'ci' }}
+        with:
+          entrypoint: forge
+          args: >-
+            test
+            ${{ matrix.suite == 'Unit' && '--no-match-contract Integration' || '' }}
+            ${{ matrix.suite == 'Integration' && '--match-contract Integration' || '' }}
+            ${{ matrix.suite == 'Fork' && '--match-contract Integration' || '' }}
 
   # -----------------------------------------------------------------------
   # Forge Test (Intense)
