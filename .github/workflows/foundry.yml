@@ -5,6 +5,7 @@ on:
   pull_request:
     paths:
       - '.github/**'
+      - 'bin/**'
       - 'src/**'
       - 'lib/**'
       - 'certora/**'
@@ -14,6 +15,7 @@ on:
       - "dev"
     paths:
       - '.github/**'
+      - 'bin/**'
       - 'src/**'
       - 'lib/**'
       - 'certora/**'
