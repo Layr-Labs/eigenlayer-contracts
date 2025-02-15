@@ -44,23 +44,23 @@ jobs:
       # Build the project and display contract sizes.
       - name: Forge Version
         run: |
-          docker run --rm -v $(pwd):/mnt -w /mnt ghcr.io/foundry-rs/foundry:stable forge --version
+          docker run --rm -v $(pwd):/mnt -w /mnt ghcr.io/foundry-rs/foundry:stable bash -c "forge --version"
 
       # Build the project and display contract sizes.
       - name: Forge Build
         run: |
-          docker run --rm -v $(pwd):/mnt -w /mnt ghcr.io/foundry-rs/foundry:stable forge build --sizes
+          docker run --rm -v $(pwd):/mnt -w /mnt ghcr.io/foundry-rs/foundry:stable bash -c "forge build --sizes"
 
       # Run the test suite in parallel based on the matrix configuration.
       - name: Run ${{ matrix.suite }} tests
         run: |
           case "${{ matrix.suite }}" in
             Unit) docker run --rm -v $(pwd):/mnt -w /mnt ghcr.io/foundry-rs/foundry:stable \
-              forge test --no-match-contract Integration ;;
+              bash -c "forge test --no-match-contract Integration" ;;
             Integration) docker run --rm -v $(pwd):/mnt -w /mnt ghcr.io/foundry-rs/foundry:stable \
-              forge test --match-contract Integration ;;
+              bash -c "forge test --match-contract Integration" ;;
             Fork) docker run --rm -v $(pwd):/mnt -w /mnt ghcr.io/foundry-rs/foundry:stable \
-              forge test --match-contract Integration ;;
+              bash -c "forge test --match-contract Integration" ;;
           esac
         env:
           FOUNDRY_PROFILE: ${{ matrix.suite == 'Fork' && 'forktest' || 'ci' }}
