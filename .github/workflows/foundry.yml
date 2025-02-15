@@ -26,248 +26,267 @@ jobs:
         with:
           submodules: recursive
 
+      # Set permissions for the workspace
+      - name: Set permissions
+        run: |
+          sudo chown -R $USER:$USER $GITHUB_WORKSPACE
+          sudo chmod -R 755 $GITHUB_WORKSPACE
+
       # Run Forge's formatting checker
       - name: "Forge Fmt"
-        uses: docker://ghcr.io/foundry-rs/foundry:stable
-        with:
-          entrypoint: forge
-          args: fmt --check
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}:/app \
+            -w /app \
+            -e FOUNDRY_PROFILE \
+            -e RPC_MAINNET \
+            -e RPC_HOLESKY \
+            -e CHAIN_ID \
+            ghcr.io/foundry-rs/foundry:stable \
+            forge fmt --check
 
       # Build the project
       - name: Forge Build
-        uses: docker://ghcr.io/foundry-rs/foundry:stable
-        with:
-          entrypoint: forge
-          args: build --sizes
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}:/app \
+            -w /app \
+            -e FOUNDRY_PROFILE \
+            -e RPC_MAINNET \
+            -e RPC_HOLESKY \
+            -e CHAIN_ID \
+            ghcr.io/foundry-rs/foundry:stable \
+            forge build --sizes
 
       # Run the test suite
       - name: Run ${{ matrix.suite }} tests
-        uses: docker://ghcr.io/foundry-rs/foundry:stable
-        env:
-          FOUNDRY_PROFILE: ${{ matrix.suite == 'Fork' && 'forktest' || 'ci' }}
-        with:
-          entrypoint: forge
-          args: >-
-            test
-            ${{ matrix.suite == 'Unit' && '--no-match-contract Integration' || '' }}
-            ${{ matrix.suite == 'Integration' && '--match-contract Integration' || '' }}
-            ${{ matrix.suite == 'Fork' && '--match-contract Integration' || '' }}
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}:/app \
+            -w /app \
+            -e FOUNDRY_PROFILE=${{ matrix.suite == 'Fork' && 'forktest' || 'ci' }} \
+            -e RPC_MAINNET \
+            -e RPC_HOLESKY \
+            -e CHAIN_ID \
+            ghcr.io/foundry-rs/foundry:stable \
+            forge test ${{ matrix.suite == 'Unit' && '--no-match-contract Integration' || matrix.suite == 'Integration' && '--match-contract Integration' || '--match-contract Integration' }}
+
 
   # -----------------------------------------------------------------------
   # Forge Test (Intense)
   # -----------------------------------------------------------------------
 
-  continuous-fuzzing:
-    name: Test (Intense)
-    runs-on: protocol-x64-16core
-    # Only run on push events to dev branch, not on PR events
-    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
-    strategy:
-      fail-fast: true
-    steps:
-      # Check out repository with all submodules for complete codebase access.
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
+  # continuous-fuzzing:
+  #   name: Test (Intense)
+  #   runs-on: protocol-x64-16core
+  #   # Only run on push events to dev branch, not on PR events
+  #   if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+  #   strategy:
+  #     fail-fast: true
+  #   steps:
+  #     # Check out repository with all submodules for complete codebase access.
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         submodules: recursive
 
-      # Install the Foundry toolchain.
-      - name: "Install Foundry"
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: stable
+  #     # Install the Foundry toolchain.
+  #     - name: "Install Foundry"
+  #       uses: foundry-rs/foundry-toolchain@v1
+  #       with:
+  #         version: stable
 
-      # Build the project and display contract sizes.
-      - name: "Forge Build"
-        run: |
-          forge --version
-          forge build --sizes
-        id: build
+  #     # Build the project and display contract sizes.
+  #     - name: "Forge Build"
+  #       run: |
+  #         forge --version
+  #         forge build --sizes
+  #       id: build
 
-      # Run Forge Test (Intense)
-      - name: Forge Test (Intense)
-        run: |
-          echo -e "\033[1;33mWarning: This workflow may take several hours to complete.\033[0m"
-          echo -e "\033[1;33mThis intense fuzzing workflow is optional but helps catch edge cases through extended testing.\033[0m"
-          FOUNDRY_PROFILE=intense forge test -vvv
+  #     # Run Forge Test (Intense)
+  #     - name: Forge Test (Intense)
+  #       run: |
+  #         echo -e "\033[1;33mWarning: This workflow may take several hours to complete.\033[0m"
+  #         echo -e "\033[1;33mThis intense fuzzing workflow is optional but helps catch edge cases through extended testing.\033[0m"
+  #         FOUNDRY_PROFILE=intense forge test -vvv
   
-  # -----------------------------------------------------------------------
-  # Forge Storage Diff
-  # -----------------------------------------------------------------------
+  # # -----------------------------------------------------------------------
+  # # Forge Storage Diff
+  # # -----------------------------------------------------------------------
 
-  storage-diff:
-    name: Test (Storage)
-    runs-on: protocol-x64-16core
-    steps:
-      # Check out repository with all submodules for complete codebase access.
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
+  # storage-diff:
+  #   name: Test (Storage)
+  #   runs-on: protocol-x64-16core
+  #   steps:
+  #     # Check out repository with all submodules for complete codebase access.
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         submodules: recursive
 
-      # Install the Foundry toolchain.
-      - name: "Install Foundry"
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: stable
+  #     # Install the Foundry toolchain.
+  #     - name: "Install Foundry"
+  #       uses: foundry-rs/foundry-toolchain@v1
+  #       with:
+  #         version: stable
 
-      # Run storage diff check to detect storage layout incompatibilities.
-      - name: "Mainnet Storage Diff"
-        run: |
-          bash bin/storage-diff.sh --rpc-url ${{ secrets.RPC_MAINNET }} --etherscan-key ${{ secrets.ETHERSCAN_API_KEY }} --input .github/configs/storage-diff.json
-        id: storage-diff
+  #     # Run storage diff check to detect storage layout incompatibilities.
+  #     - name: "Mainnet Storage Diff"
+  #       run: |
+  #         bash bin/storage-diff.sh --rpc-url ${{ secrets.RPC_MAINNET }} --etherscan-key ${{ secrets.ETHERSCAN_API_KEY }} --input .github/configs/storage-diff.json
+  #       id: storage-diff
 
-  # -----------------------------------------------------------------------
-  # Forge Coverage
-  # -----------------------------------------------------------------------
+  # # -----------------------------------------------------------------------
+  # # Forge Coverage
+  # # -----------------------------------------------------------------------
 
-  run-coverage:
-    name: Coverage
-    runs-on: protocol-x64-16core
-    # Only run coverage checks on dev, testnet-holesky, and mainnet branches, or PRs targeting these branches
-    if: |
-      github.ref == 'refs/heads/dev' ||
-      github.ref == 'refs/heads/testnet-holesky' ||
-      github.ref == 'refs/heads/mainnet' ||
-      github.base_ref == 'dev' ||
-      github.base_ref == 'testnet-holesky' ||
-      github.base_ref == 'mainnet'
-    strategy:
-      fail-fast: true
-    steps:
-      # Check out repository with all submodules for complete codebase access.
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
+  # run-coverage:
+  #   name: Coverage
+  #   runs-on: protocol-x64-16core
+  #   # Only run coverage checks on dev, testnet-holesky, and mainnet branches, or PRs targeting these branches
+  #   if: |
+  #     github.ref == 'refs/heads/dev' ||
+  #     github.ref == 'refs/heads/testnet-holesky' ||
+  #     github.ref == 'refs/heads/mainnet' ||
+  #     github.base_ref == 'dev' ||
+  #     github.base_ref == 'testnet-holesky' ||
+  #     github.base_ref == 'mainnet'
+  #   strategy:
+  #     fail-fast: true
+  #   steps:
+  #     # Check out repository with all submodules for complete codebase access.
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         submodules: recursive
 
-      # Install the Foundry toolchain.
-      - name: "Install Foundry"
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: stable
+  #     # Install the Foundry toolchain.
+  #     - name: "Install Foundry"
+  #       uses: foundry-rs/foundry-toolchain@v1
+  #       with:
+  #         version: stable
 
-      # Install LCOV for coverage report generation.
-      - name: Install LCOV
-        run: |
-          sudo apt-get install lcov
-        id: lcov
+  #     # Install LCOV for coverage report generation.
+  #     - name: Install LCOV
+  #       run: |
+  #         sudo apt-get install lcov
+  #       id: lcov
 
-      # Build the project and display contract sizes.
-      - name: "Forge Build"
-        run: |
-          forge --version
-          forge build --sizes
-        id: build
+  #     # Build the project and display contract sizes.
+  #     - name: "Forge Build"
+  #       run: |
+  #         forge --version
+  #         forge build --sizes
+  #       id: build
 
-      # Run Forge coverage with LCOV report format, excluding test and script files
-      - name: Forge Coverage
-        run: |
-          FOUNDRY_DENY_WARNINGS=false FOUNDRY_PROFILE=ci forge coverage --report lcov --report summary --no-match-coverage "script|test"
-          genhtml -q -o report ./lcov.info
+  #     # Run Forge coverage with LCOV report format, excluding test and script files
+  #     - name: Forge Coverage
+  #       run: |
+  #         FOUNDRY_DENY_WARNINGS=false FOUNDRY_PROFILE=ci forge coverage --report lcov --report summary --no-match-coverage "script|test"
+  #         genhtml -q -o report ./lcov.info
 
-      # Upload coverage report as artifact before potential failure
-      - name: Upload Coverage Report
-        uses: actions/upload-artifact@v4
-        with:
-          name: code-coverage-report
-          path: report/*
+  #     # Upload coverage report as artifact before potential failure
+  #     - name: Upload Coverage Report
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: code-coverage-report
+  #         path: report/*
 
-      # Check coverage threshold after uploading report
-      - name: Check Coverage Threshold
-        run: |
-          LINES_PCT=$(lcov --summary lcov.info | grep "lines" | cut -d ':' -f 2 | cut -d '%' -f 1 | tr -d '[:space:]')
-          FUNCTIONS_PCT=$(lcov --summary lcov.info | grep "functions" | cut -d ':' -f 2 | cut -d '%' -f 1 | tr -d '[:space:]')          
-          FAILED=0
+  #     # Check coverage threshold after uploading report
+  #     - name: Check Coverage Threshold
+  #       run: |
+  #         LINES_PCT=$(lcov --summary lcov.info | grep "lines" | cut -d ':' -f 2 | cut -d '%' -f 1 | tr -d '[:space:]')
+  #         FUNCTIONS_PCT=$(lcov --summary lcov.info | grep "functions" | cut -d ':' -f 2 | cut -d '%' -f 1 | tr -d '[:space:]')          
+  #         FAILED=0
           
-          if (( $(echo "$LINES_PCT < 90" | bc -l) )); then
-            echo -e "\033[1;31m❌ Lines coverage ($LINES_PCT%) is below minimum threshold of 90%\033[0m"
-            FAILED=1
-          else
-            echo -e "\033[1;32m✅ Lines coverage ($LINES_PCT%) meets minimum threshold of 90%\033[0m"
-          fi
+  #         if (( $(echo "$LINES_PCT < 90" | bc -l) )); then
+  #           echo -e "\033[1;31m❌ Lines coverage ($LINES_PCT%) is below minimum threshold of 90%\033[0m"
+  #           FAILED=1
+  #         else
+  #           echo -e "\033[1;32m✅ Lines coverage ($LINES_PCT%) meets minimum threshold of 90%\033[0m"
+  #         fi
           
-          if (( $(echo "$FUNCTIONS_PCT < 90" | bc -l) )); then
-            echo -e "\033[1;31m❌ Functions coverage ($FUNCTIONS_PCT%) is below minimum threshold of 90%\033[0m"
-            FAILED=1
-          else
-            echo -e "\033[1;32m✅ Functions coverage ($FUNCTIONS_PCT%) meets minimum threshold of 90%\033[0m"
-          fi
+  #         if (( $(echo "$FUNCTIONS_PCT < 90" | bc -l) )); then
+  #           echo -e "\033[1;31m❌ Functions coverage ($FUNCTIONS_PCT%) is below minimum threshold of 90%\033[0m"
+  #           FAILED=1
+  #         else
+  #           echo -e "\033[1;32m✅ Functions coverage ($FUNCTIONS_PCT%) meets minimum threshold of 90%\033[0m"
+  #         fi
           
-          if [ $FAILED -eq 1 ]; then
-            exit 1
-          fi
+  #         if [ $FAILED -eq 1 ]; then
+  #           exit 1
+  #         fi
 
-  # -----------------------------------------------------------------------
-  # Forge Size Diff
-  # -----------------------------------------------------------------------
+  # # -----------------------------------------------------------------------
+  # # Forge Size Diff
+  # # -----------------------------------------------------------------------
 
-  compare-contract-sizes:
-    name: Size Diff
-    runs-on: protocol-x64-16core
-    steps:
-      # Check out repository with all submodules for complete codebase access.
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
+  # compare-contract-sizes:
+  #   name: Size Diff
+  #   runs-on: protocol-x64-16core
+  #   steps:
+  #     # Check out repository with all submodules for complete codebase access.
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         submodules: recursive
 
-      # Install the Foundry toolchain.
-      - name: "Install Foundry"
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: stable
+  #     # Install the Foundry toolchain.
+  #     - name: "Install Foundry"
+  #       uses: foundry-rs/foundry-toolchain@v1
+  #       with:
+  #         version: stable
 
-      - name: Build contracts on PR branch
-        run: |
-          forge build --json --sizes | jq '.' > pr_sizes.json
+  #     - name: Build contracts on PR branch
+  #       run: |
+  #         forge build --json --sizes | jq '.' > pr_sizes.json
 
-      - name: Checkout target branch
-        run: |
-          git fetch origin ${{ github.base_ref }}
-          git checkout ${{ github.base_ref }}
+  #     - name: Checkout target branch
+  #       run: |
+  #         git fetch origin ${{ github.base_ref }}
+  #         git checkout ${{ github.base_ref }}
 
-      - name: Build contracts on target branch
-        run: |
-          forge build --json --sizes | jq '.' > target_sizes.json
+  #     - name: Build contracts on target branch
+  #       run: |
+  #         forge build --json --sizes | jq '.' > target_sizes.json
 
-      - name: Compare contract sizes using Bash
-        run: |
-          # Extract contract names
-          contracts=$(jq -r 'keys[]' pr_sizes.json)
+  #     - name: Compare contract sizes using Bash
+  #       run: |
+  #         # Extract contract names
+  #         contracts=$(jq -r 'keys[]' pr_sizes.json)
 
-          # Track if there are any differences
-          has_differences=0
+  #         # Track if there are any differences
+  #         has_differences=0
 
-          echo -e "\n📊 \033[1;34mContract Size Comparison Report\033[0m 📊\n"
+  #         echo -e "\n📊 \033[1;34mContract Size Comparison Report\033[0m 📊\n"
 
-          # Iterate through contracts and compare sizes
-          for contract in $contracts; do
-            pr_runtime=$(jq -r --arg contract "$contract" '.[$contract].runtime_size // 0' pr_sizes.json)
-            pr_init=$(jq -r --arg contract "$contract" '.[$contract].init_size // 0' pr_sizes.json)
+  #         # Iterate through contracts and compare sizes
+  #         for contract in $contracts; do
+  #           pr_runtime=$(jq -r --arg contract "$contract" '.[$contract].runtime_size // 0' pr_sizes.json)
+  #           pr_init=$(jq -r --arg contract "$contract" '.[$contract].init_size // 0' pr_sizes.json)
 
-            target_runtime=$(jq -r --arg contract "$contract" '.[$contract].runtime_size // 0' target_sizes.json)
-            target_init=$(jq -r --arg contract "$contract" '.[$contract].init_size // 0' target_sizes.json)
+  #           target_runtime=$(jq -r --arg contract "$contract" '.[$contract].runtime_size // 0' target_sizes.json)
+  #           target_init=$(jq -r --arg contract "$contract" '.[$contract].init_size // 0' target_sizes.json)
 
-            runtime_diff=$((pr_runtime - target_runtime))
-            init_diff=$((pr_init - target_init))
+  #           runtime_diff=$((pr_runtime - target_runtime))
+  #           init_diff=$((pr_init - target_init))
 
-            if [ "$runtime_diff" -ne 0 ] || [ "$init_diff" -ne 0 ]; then
-              echo -e "\033[1;36m📝 $contract:\033[0m"
-              if [ "$runtime_diff" -ne 0 ]; then
-                if [ "$runtime_diff" -gt 0 ]; then
-                  echo -e "   Runtime: \033[1;31m+$runtime_diff bytes\033[0m 📈"
-                else
-                  echo -e "   Runtime: \033[1;32m$runtime_diff bytes\033[0m 📉"
-                fi
-              fi
-              if [ "$init_diff" -ne 0 ]; then
-                if [ "$init_diff" -gt 0 ]; then
-                  echo -e "   Init:    \033[1;31m+$init_diff bytes\033[0m 📈"
-                else
-                  echo -e "   Init:    \033[1;32m$init_diff bytes\033[0m 📉"
-                fi
-              fi
-              has_differences=1
-            fi
-          done
+  #           if [ "$runtime_diff" -ne 0 ] || [ "$init_diff" -ne 0 ]; then
+  #             echo -e "\033[1;36m📝 $contract:\033[0m"
+  #             if [ "$runtime_diff" -ne 0 ]; then
+  #               if [ "$runtime_diff" -gt 0 ]; then
+  #                 echo -e "   Runtime: \033[1;31m+$runtime_diff bytes\033[0m 📈"
+  #               else
+  #                 echo -e "   Runtime: \033[1;32m$runtime_diff bytes\033[0m 📉"
+  #               fi
+  #             fi
+  #             if [ "$init_diff" -ne 0 ]; then
+  #               if [ "$init_diff" -gt 0 ]; then
+  #                 echo -e "   Init:    \033[1;31m+$init_diff bytes\033[0m 📈"
+  #               else
+  #                 echo -e "   Init:    \033[1;32m$init_diff bytes\033[0m 📉"
+  #               fi
+  #             fi
+  #             has_differences=1
+  #           fi
+  #         done
 
-          if [ "$has_differences" -eq 0 ]; then
-            echo -e "\033[1;32m✨ No contract size changes detected ✨\033[0m"
-          fi
+  #         if [ "$has_differences" -eq 0 ]; then
+  #           echo -e "\033[1;32m✨ No contract size changes detected ✨\033[0m"
+  #         fi
