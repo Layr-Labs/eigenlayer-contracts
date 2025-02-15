@@ -20,7 +20,7 @@ jobs:
 
   test-suite:
     name: Test
-    runs-on: ubuntu-latest
+    runs-on: protocol-x64-16core
     strategy:
       matrix:
         suite: [Unit, Integration, Fork]
@@ -66,7 +66,7 @@ jobs:
 
   continuous-fuzzing:
     name: Test (Intense)
-    runs-on: ubuntu-latest
+    runs-on: protocol-x64-16core
     # Only run on push events to dev branch, not on PR events
     if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
     strategy:
@@ -103,7 +103,7 @@ jobs:
 
   storage-diff:
     name: Test (Storage)
-    runs-on: ubuntu-latest
+    runs-on: protocol-x64-16core
     steps:
       # Check out repository with all submodules for complete codebase access.
       - uses: actions/checkout@v4
@@ -128,7 +128,7 @@ jobs:
 
   run-coverage:
     name: Coverage
-    runs-on: ubuntu-latest
+    runs-on: protocol-x64-16core
     # Only run coverage checks on dev, testnet-holesky, and mainnet branches, or PRs targeting these branches
     if: |
       github.ref == 'refs/heads/dev' ||
@@ -208,7 +208,7 @@ jobs:
 
   compare-contract-sizes:
     name: Size Diff
-    runs-on: ubuntu-latest
+    runs-on: protocol-x64-16core
     steps:
       # Check out repository with all submodules for complete codebase access.
       - uses: actions/checkout@v4
