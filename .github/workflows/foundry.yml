@@ -39,7 +39,7 @@ jobs:
       # Run Forge's formatting checker to ensure consistent code style.
       - name: "Forge Fmt"
         run: |
-          docker run --rm -v $(pwd):/mnt -w /mnt ghcr.io/foundry-rs/foundry:stable forge fmt --check
+          docker run --rm -v $(pwd):/mnt -w /mnt ghcr.io/foundry-rs/foundry:stable bash -c "forge fmt --check"
 
       # Build the project and display contract sizes.
       - name: Forge Version
