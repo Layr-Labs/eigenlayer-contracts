@@ -463,7 +463,7 @@ _Note: this method can be called directly by an operator, or by a caller authori
 
 This function is called by an operator to EITHER increase OR decrease the slashable magnitude allocated from a strategy to an operator set. As input, the operator provides an operator set as the target, and a list of strategies and corresponding `newMagnitudes` to allocate. The `newMagnitude` value is compared against the operator's current `Allocation` for that operator set/strategy:
 * If `newMagnitude` is _greater than_ `Allocation.currentMagnitude`, this is an allocation
-* If `newMagnitude` is _less than_ `Allocation.currentMagnitude`, this is a dellocation
+* If `newMagnitude` is _less than_ `Allocation.currentMagnitude`, this is a deallocation
 * If `newMagnitude` is _equal to_ `Allocation.currentMagnitude`, this is invalid (revert)
 
 Allocation modifications play by different rules depending on a few factors. Recall that at all times, the `encumberedMagnitude` for a strategy may not exceed that strategy's `maxMagnitude`. Additionally, note that _before processing a modification for a strategy,_ the `deallocationQueue` for that strategy is first cleared. This ensures any completable deallocations are processed first, freeing up magnitude for allocation. This process is further explained in [`clearDeallocationQueue`](#cleardeallocationqueue). 
