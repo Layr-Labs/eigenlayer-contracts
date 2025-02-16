@@ -7,7 +7,7 @@
 
 <!-- The primary functions of the `RewardsCoordinator` contract are to (i) accept ERC20 rewards from AVSs (Actively Validated Services) to their Operators and delegated Stakers for a given time range; (ii) enable the protocol to provide ERC20 tokens to all stakers over a specified time range; and (iii) allow stakers and operators to claim their accumulated earnings. -->
 
-The `RewardsCoordinator` accepts ERC20s from AVSs alongside rewards submission requests made out to Operators who, during a specified time range, were registered to the AVS in the core [`AllocationManager`](./AllocationManager.md) contract.
+The `RewardsCoordinator` accepts ERC20s from AVSs alongside rewards submission requests made out to Operators who, during a specified time range, were registered to the AVS in the core [`AVSDirectory`](./AVSDirectory.md) contract or OperatorSets in the core [`AllocationManager`](./AllocationManager.md) contract.
 
 There are two forms of rewards:
 * Rewards v1, also known as rewards submissions.

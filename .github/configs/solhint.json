@@ -3,10 +3,26 @@
   "rules": {
     "max-line-length": "off",
     "no-inline-assembly": "off",
-    "reason-string": ["warn",{"maxLength":160}],
-    "func-visibility": ["warn",{"ignoreConstructors":true}],
-    "explicit-types": ["warn","explicit"],
-    "quotes": ["warn","double"],
+    "reason-string": [
+      "warn",
+      {
+        "maxLength": 160
+      }
+    ],
+    "func-visibility": [
+      "warn",
+      {
+        "ignoreConstructors": true
+      }
+    ],
+    "explicit-types": [
+      "warn",
+      "explicit"
+    ],
+    "quotes": [
+      "warn",
+      "double"
+    ],
     "const-name-snakecase": "off",
     "not-rely-on-time": "off",
     "avoid-low-level-calls": "off",
