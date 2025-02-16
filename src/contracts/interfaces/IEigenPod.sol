@@ -353,7 +353,4 @@ interface IEigenPod is IEigenPodErrors, IEigenPodEvents, ISemVerMixin {
     function getParentBlockRoot(
         uint64 timestamp
     ) external view returns (bytes32);
-
-    /// @notice Returns the timestamp of the Pectra fork, read from the `EigenPodManager` contract
-    function getPectraForkTimestamp() external view returns (uint64);
 }
