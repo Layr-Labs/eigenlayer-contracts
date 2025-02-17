@@ -10,6 +10,7 @@ on:
       - 'lib/**'
       - 'certora/**'
       - 'foundry.toml'
+      - '**/*.sol'
   push:
     branches:
       - "dev"
@@ -20,6 +21,7 @@ on:
       - 'lib/**'
       - 'certora/**'
       - 'foundry.toml'
+      - '**/*.sol'
 
 env:
   FOUNDRY_PROFILE: ci
