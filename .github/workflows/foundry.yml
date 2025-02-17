@@ -24,7 +24,7 @@ on:
       - '**/*.sol'
 
 env:
-  FOUNDRY_PROFILE: ci
+  FOUNDRY_PROFILE: medium
   RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
   RPC_HOLESKY: ${{ secrets.RPC_HOLESKY }}
   CHAIN_ID: ${{ secrets.CHAIN_ID }}
@@ -74,7 +74,7 @@ jobs:
             Fork) forge test --match-contract Integration ;;
           esac
         env:
-          FOUNDRY_PROFILE: ${{ matrix.suite == 'Fork' && 'forktest' || 'ci' }}
+          FOUNDRY_PROFILE: ${{ matrix.suite == 'Fork' && 'forktest' || 'medium' }}
 
   # -----------------------------------------------------------------------
   # Forge Test (Intense)
@@ -160,6 +160,19 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+      
+      # Cache Foundry dependencies
+      - name: Cache Foundry dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo
+            ~/.foundry
+            out/
+            cache/
+          key: ${{ runner.os }}-foundry-${{ hashFiles('**/foundry.toml', '**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-foundry-
 
       # Install the Foundry toolchain.
       - name: "Install Foundry"
@@ -170,7 +183,7 @@ jobs:
       # Install LCOV for coverage report generation.
       - name: Install LCOV
         run: |
-          sudo apt-get install lcov
+          sudo apt-get install -y lcov
         id: lcov
 
       # Build the project and display contract sizes.
@@ -183,7 +196,11 @@ jobs:
       # Run Forge coverage with LCOV report format, excluding test and script files
       - name: Forge Coverage
         run: |
-          FOUNDRY_DENY_WARNINGS=false FOUNDRY_PROFILE=ci forge coverage --report lcov --report summary --no-match-coverage "script|test"
+          FOUNDRY_DENY_WARNINGS=false \
+          FOUNDRY_PROFILE=coverage \
+          FOUNDRY_CACHE=true \
+          FOUNDRY_CACHE_PATH=cache \
+          forge coverage --report lcov --report summary --no-match-coverage "script|test" -j $(nproc)
           genhtml -q -o report ./lcov.info
 
       # Upload coverage report as artifact before potential failure
@@ -192,6 +209,7 @@ jobs:
         with:
           name: code-coverage-report
           path: report/*
+          if-no-files-found: error
 
       # Check coverage threshold after uploading report
       - name: Check Coverage Threshold
