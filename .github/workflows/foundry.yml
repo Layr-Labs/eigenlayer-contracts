@@ -204,11 +204,6 @@ jobs:
           FOUNDRY_CACHE_PATH=cache \
           forge coverage --report lcov --report summary --no-match-coverage "script|test" -j $(nproc)
           genhtml -q -o report ./lcov.info
-        env:
-          FOUNDRY_FUZZ_RUNS: 1  # Reduce fuzz runs for coverage
-          FOUNDRY_MATCH_TEST: ""  # Don't filter tests
-          FOUNDRY_INVARIANT_RUNS: 1  # Reduce invariant test runs
-          FOUNDRY_FUZZ_MAX_TEST_REJECTS: 65536
 
       # Upload coverage report as artifact before potential failure
       - name: Upload Coverage Report
