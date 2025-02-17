@@ -197,7 +197,7 @@ jobs:
       - name: Forge Coverage
         run: |
           FOUNDRY_DENY_WARNINGS=false \
-          FOUNDRY_PROFILE=medium \
+          FOUNDRY_PROFILE=coverage \
           FOUNDRY_CACHE=true \
           FOUNDRY_CACHE_PATH=cache \
           forge coverage --report lcov --report summary --no-match-coverage "script|test" -j $(nproc)
