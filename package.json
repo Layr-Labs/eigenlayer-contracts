@@ -1,7 +1,7 @@
 {
   "name": "eigenlayer-contracts",
   "version": "1.0.0",
-  "description": "<a name=\"introduction\"/></a> # EigenLayer EigenLayer (formerly 'EigenLayr') is a set of smart contracts deployed on Ethereum that enable restaking of assets to secure new services. At present, this repository contains *both* the contracts for EigenLayer *and* a set of general \"middleware\" contracts, designed to be reuseable across different applications built on top of EigenLayer.",
+  "description": "<a name=\"introduction\"/></a> # EigenLayer EigenLayer (formerly 'EigenLayr') is a set of smart contracts deployed on Ethereum that enable restaking of assets to secure new services. At present, this repository contains *both* the contracts for EigenLayer *and* a set of general \"middleware\" contracts, designed to be reusable across different applications built on top of EigenLayer.",
   "main": "index.js",
   "directories": {
     "doc": "docs",

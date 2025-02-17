@@ -142,7 +142,7 @@ invariant listHeadHasSmallestValueOfLatestUpdateBlock(address operator, uint256 
 TODO: rule doesn't pass. We've got separate rules for checking the LinkedList lib properties.
 key properties seem to be that
 1) `StructuredLinkedList._createLink` creates only two-way links
-2) `StructuredLinkedList.remove` removes both links from a node, and stiches together its existing links (which it breaks)
+2) `StructuredLinkedList.remove` removes both links from a node, and stitches together its existing links (which it breaks)
 3) `StructuredLinkedList._insert` similarly inserts a new node 'between' nodes, ensuring that the new node is well-linked
 invariant consistentListStructure(address operator, uint256 node1)
 	(

@@ -19,7 +19,7 @@ import "../interfaces/IEigen.sol";
  * To mitigate against the common "inflation attack" vector, we have chosen to use the 'virtual shares' mitigation route,
  * similar to [OpenZeppelin](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/extensions/ERC4626.sol).
  * We acknowledge that this mitigation has the known downside of the virtual shares causing some losses to users, which are pronounced
- * particularly in the case of the share exchange rate changing signficantly, either positively or negatively.
+ * particularly in the case of the share exchange rate changing significantly, either positively or negatively.
  * For a fairly thorough discussion of this issue and our chosen mitigation strategy, we recommend reading through
  * [this thread](https://github.com/OpenZeppelin/openzeppelin-contracts/issues/3706) on the OpenZeppelin repo.
  * We specifically use a share offset of `SHARES_OFFSET` and a balance offset of `BALANCE_OFFSET`.
@@ -66,7 +66,7 @@ contract EigenStrategy is StrategyBase {
     /**
      * @notice This function hook is called in EigenStrategy.withdraw() before withdrawn shares are calculated and is
      * overridden here to allow for withdrawing shares either into EIGEN or bEIGEN tokens. If wrapping bEIGEN into EIGEN is needed,
-     * it is performed in _afterWithdrawal(). This hook just checks the token paramater is either EIGEN or bEIGEN.
+     * it is performed in _afterWithdrawal(). This hook just checks the token parameter is either EIGEN or bEIGEN.
      * @param token token to be withdrawn, can be either EIGEN or bEIGEN. If EIGEN, then bEIGEN is wrapped into EIGEN
      */
     function _beforeWithdrawal(

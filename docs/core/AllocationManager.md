@@ -463,7 +463,7 @@ _Note: this method can be called directly by an operator, or by a caller authori
 
 This function is called by an operator to EITHER increase OR decrease the slashable magnitude allocated from a strategy to an operator set. As input, the operator provides an operator set as the target, and a list of strategies and corresponding `newMagnitudes` to allocate. The `newMagnitude` value is compared against the operator's current `Allocation` for that operator set/strategy:
 * If `newMagnitude` is _greater than_ `Allocation.currentMagnitude`, this is an allocation
-* If `newMagnitude` is _less than_ `Allocation.currentMagnitude`, this is a dellocation
+* If `newMagnitude` is _less than_ `Allocation.currentMagnitude`, this is a deallocation
 * If `newMagnitude` is _equal to_ `Allocation.currentMagnitude`, this is invalid (revert)
 
 Allocation modifications play by different rules depending on a few factors. Recall that at all times, the `encumberedMagnitude` for a strategy may not exceed that strategy's `maxMagnitude`. Additionally, note that _before processing a modification for a strategy,_ the `deallocationQueue` for that strategy is first cleared. This ensures any completable deallocations are processed first, freeing up magnitude for allocation. This process is further explained in [`clearDeallocationQueue`](#cleardeallocationqueue). 
@@ -550,7 +550,7 @@ This queue contains a per-strategy ordered list of operator sets that, due to pr
 This method stops iterating when: the queue is empty, a deallocation is reached that cannot be completed yet, or when it has cleared `numToClear` entries from the queue.
 
 *Effects*:
-* For each `strategy` and _completeable_ deallocation in `deallocationQueue[operator][strategy]`:
+* For each `strategy` and _completable_ deallocation in `deallocationQueue[operator][strategy]`:
     * Pops the corresponding operator set from the `deallocationQueue`
     * Reduces `allocation.currentMagnitude` by the deallocated amount
     * Sets `allocation.pendingDiff` and `allocation.effectBlock` to 0
@@ -602,7 +602,7 @@ AVSs use slashing as a punitive disincentive for misbehavior. For details and ex
 
 In order to slash an eligible operator, the AVS specifies which operator set the operator belongs to, the `strategies` the operator should be slashed for, and for each strategy, the _proportion of the operator's allocated magnitude_ that should be slashed (given by `wadsToSlash`). An optional `description` string allows the AVS to add context to the slash.
 
-Once triggered in the `AllocationManager`, slashing is instant and irreversable. For each slashed strategy, the operator's `maxMagnitude` and `encumberedMagnitude` are decreased, and the allocation made to the given operator set has its `currentMagnitude` reduced. See [TODO - Accounting Doc]() for details on how slashed amounts are calculated.
+Once triggered in the `AllocationManager`, slashing is instant and irreversible. For each slashed strategy, the operator's `maxMagnitude` and `encumberedMagnitude` are decreased, and the allocation made to the given operator set has its `currentMagnitude` reduced. See [TODO - Accounting Doc]() for details on how slashed amounts are calculated.
 
 There are two edge cases to note for this method:
 1. In the process of slashing an `operator` for a given `strategy`, if the `Allocation` being slashed has a `currentMagnitude` of 0, the call will NOT revert. Instead, the `strategy` is skipped and slashing continues with the next `strategy` listed. This is to prevent an edge case where slashing occurs on or around a deallocation's `effectBlock` -- if the call reverted, the entire slash would fail. Skipping allows any valid slashes to be processed without requiring resubmission.

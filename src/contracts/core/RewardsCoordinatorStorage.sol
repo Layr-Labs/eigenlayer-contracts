@@ -80,7 +80,7 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     bytes32 internal __deprecated_DOMAIN_SEPARATOR;
 
     /**
-     * @notice List of roots submited by the rewardsUpdater
+     * @notice List of roots submitted by the rewardsUpdater
      * @dev Array is internal with an external getter so we can return a `DistributionRoot[] memory` object
      */
     DistributionRoot[] internal _distributionRoots;
