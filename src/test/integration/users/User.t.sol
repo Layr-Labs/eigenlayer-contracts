@@ -524,51 +524,80 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     }
 
     /// @dev Uses any ETH held by the User to start validators on the beacon chain
+    /// @dev Creates validators with either: 32 or 64 ETH
     /// @return A list of created validator indices
     /// @return The amount of wei sent to the beacon chain
     /// Note: If the user does not have enough ETH to start a validator, this method reverts
     /// Note: This method also advances one epoch forward on the beacon chain, so that
     /// withdrawal credential proofs are generated for each validator.
     function _startValidators() internal returns (uint40[] memory, uint64) {
-        uint256 balanceWei = address(this).balance;
+        uint originalBalance = address(this).balance;
+        uint balanceWei = address(this).balance;
+        uint numValidators = 0;
 
-        // Number of full validators: balance / 32 ETH
-        uint256 numValidators = balanceWei / 32 ether;
-        balanceWei -= (numValidators * 32 ether);
+        // Get maximum possible number of validators. Add 1 to account for a validator with < 32 ETH
+        uint maxValidators = balanceWei / 32 ether;
+        uint40[] memory newValidators = new uint40[](maxValidators + 1);
+
+        // Create validators with 32 or 64 ETH until we can't create more
+        while (balanceWei >= 32 ether) {
+            uint validatorEth = uint(keccak256(abi.encodePacked(
+                block.timestamp,
+                balanceWei,
+                numValidators
+            ))) % 2 == 0 ? 32 ether : 64 ether;
+
+            // If we don't have enough ETH for 64, use 32
+            if (balanceWei < 64 ether) {
+                validatorEth = 32 ether;
+            }
+
+            // Create the validator
+            bytes memory withdrawalCredentials = validatorEth == 32 ether ? 
+                _podWithdrawalCredentials() : _podCompoundingWithdrawalCredentials();
+            
+            uint40 validatorIndex = beaconChain.newValidator{
+                value: validatorEth
+            }(withdrawalCredentials);
+
+
+            newValidators[numValidators] = validatorIndex;
+            validators.push(validatorIndex);
+
+            balanceWei -= validatorEth;
+            numValidators++;
+        }
 
         // If we still have at least 1 ETH left over, we can create another (non-full) validator
         // Note that in the mock beacon chain this validator will generate rewards like any other.
         // The main point is to ensure pods are able to handle validators that have less than 32 ETH
-        uint256 lastValidatorBalance;
-        uint256 totalValidators = numValidators;
         if (balanceWei >= 1 ether) {
-            lastValidatorBalance = balanceWei - (balanceWei % 1 gwei);
+            uint lastValidatorBalance = balanceWei - (balanceWei % 1 gwei);
+
+            uint40 validatorIndex = beaconChain.newValidator{ 
+                value: lastValidatorBalance 
+            }(_podWithdrawalCredentials());
+
+            newValidators[numValidators] = validatorIndex;
+            validators.push(validatorIndex);
+
             balanceWei -= lastValidatorBalance;
-            totalValidators++;
+            numValidators++;
         }
 
-        require(totalValidators != 0, "startValidators: not enough ETH to start a validator");
-        uint40[] memory newValidators = new uint40[](totalValidators);
-        uint64 totalBeaconBalanceGwei = uint64((address(this).balance - balanceWei) / GWEI_TO_WEI);
-
-        console.log("- creating new validators", newValidators.length);
-        console.log("- depositing balance to beacon chain (gwei)", totalBeaconBalanceGwei);
-
-        // Create each of the full validators
-        for (uint256 i = 0; i < numValidators; i++) {
-            uint40 validatorIndex = beaconChain.newValidator{value: 32 ether}(_podWithdrawalCredentials());
-
-            newValidators[i] = validatorIndex;
-            validators.push(validatorIndex);
+        // Resize the array to actual number of validators created
+        assembly {
+            mstore(newValidators, numValidators)
         }
 
-        // If we had a remainder, create the final, non-full validator
-        if (totalValidators == numValidators + 1) {
-            uint40 validatorIndex = beaconChain.newValidator{value: lastValidatorBalance}(_podWithdrawalCredentials());
+        require(numValidators != 0, "startValidators: not enough ETH to start a validator");
 
-            newValidators[newValidators.length - 1] = validatorIndex;
-            validators.push(validatorIndex);
-        }
+        uint64 totalBeaconBalanceGwei = uint64((originalBalance - balanceWei) / GWEI_TO_WEI);
+        console.log("- created new validators", newValidators.length);
+        console.log("- deposited balance to beacon chain (gwei)", totalBeaconBalanceGwei);
+
+        // Advance forward one epoch and generate withdrawal and balance proofs for each validator
+        beaconChain.advanceEpoch_NoRewards();
 
         return (newValidators, totalBeaconBalanceGwei);
     }
@@ -643,6 +672,10 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
 
     function _podWithdrawalCredentials() internal view returns (bytes memory) {
         return abi.encodePacked(bytes1(uint8(1)), bytes11(0), address(pod));
+    }
+
+    function _podCompoundingWithdrawalCredentials() internal view returns (bytes memory) {
+        return abi.encodePacked(bytes1(uint8(2)), bytes11(0), address(pod));
     }
 
     function _getSlashingFactor(

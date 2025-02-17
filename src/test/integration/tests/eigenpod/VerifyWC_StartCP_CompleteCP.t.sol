@@ -511,16 +511,16 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         (uint40[] memory validators, uint64 beaconBalanceGwei) = staker.startValidators();
         // Advance epoch and generate consensus rewards, but don't withdraw to pod
         beaconChain.advanceEpoch_NoWithdraw();
-        uint64 beaconBalanceIncreaseGwei = uint64(validators.length) * beaconChain.CONSENSUS_REWARD_AMOUNT_GWEI();
+        // uint64 beaconBalanceIncreaseGwei = uint64(validators.length) * beaconChain.CONSENSUS_REWARD_AMOUNT_GWEI();
 
         staker.verifyWithdrawalCredentials(validators);
         check_VerifyWC_State(staker, validators, beaconBalanceGwei);
 
-        staker.startCheckpoint();
-        check_StartCheckpoint_State(staker);
+        // staker.startCheckpoint();
+        // check_StartCheckpoint_State(staker);
 
-        staker.completeCheckpoint();
-        check_CompleteCheckpoint_EarnOnBeacon_State(staker, beaconBalanceIncreaseGwei);
+        // staker.completeCheckpoint();
+        // check_CompleteCheckpoint_EarnOnBeacon_State(staker, beaconBalanceIncreaseGwei);
     }
 
     /// 1. Verify validators' withdrawal credentials

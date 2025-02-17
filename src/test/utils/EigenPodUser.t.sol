@@ -77,7 +77,7 @@ contract EigenPodUser is Logger {
     /// Note: If the user does not have enough ETH to start a validator, this method reverts
     /// Note: This method also advances one epoch forward on the beacon chain, so that
     /// withdrawal credential proofs are generated for each validator.
-    function startValidators() public createSnapshot virtual returns (uint40[] memory, uint) {
+    function startValidators() public createSnapshot virtual returns (uint40[] memory, uint64) {
         print.method("startValidators");
 
         return _startValidators();
@@ -117,14 +117,15 @@ contract EigenPodUser is Logger {
                                 INTERNAL METHODS
     *******************************************************************************/
 
-    /// @dev Uses any ETH held by the User to start validators on the beacon chain
+       /// @dev Uses any ETH held by the User to start validators on the beacon chain
     /// @dev Creates validators with either: 32 or 64 ETH
     /// @return A list of created validator indices
     /// @return The amount of wei sent to the beacon chain
     /// Note: If the user does not have enough ETH to start a validator, this method reverts
     /// Note: This method also advances one epoch forward on the beacon chain, so that
     /// withdrawal credential proofs are generated for each validator.
-    function _startValidators() internal returns (uint40[] memory, uint) {
+    function _startValidators() internal returns (uint40[] memory, uint64) {
+        uint originalBalance = address(this).balance;
         uint balanceWei = address(this).balance;
         uint numValidators = 0;
 
@@ -166,7 +167,6 @@ contract EigenPodUser is Logger {
         // The main point is to ensure pods are able to handle validators that have less than 32 ETH
         if (balanceWei >= 1 ether) {
             uint lastValidatorBalance = balanceWei - (balanceWei % 1 gwei);
-            balanceWei -= lastValidatorBalance;
 
             uint40 validatorIndex = beaconChain.newValidator{ 
                 value: lastValidatorBalance 
@@ -175,6 +175,7 @@ contract EigenPodUser is Logger {
             newValidators[numValidators] = validatorIndex;
             validators.push(validatorIndex);
 
+            balanceWei -= lastValidatorBalance;
             numValidators++;
         }
 
@@ -184,17 +185,17 @@ contract EigenPodUser is Logger {
         }
 
         require(numValidators != 0, "startValidators: not enough ETH to start a validator");
-        uint totalBeaconBalance = address(this).balance - balanceWei;
-        
+
+        uint64 totalBeaconBalanceGwei = uint64((originalBalance - balanceWei) / GWEI_TO_WEI);
         console.log("- created new validators", newValidators.length);
-        console.log("- deposited balance to beacon chain (wei)", totalBeaconBalance);
+        console.log("- deposited balance to beacon chain (gwei)", totalBeaconBalanceGwei);
 
         // Advance forward one epoch and generate withdrawal and balance proofs for each validator
         beaconChain.advanceEpoch_NoRewards();
 
-        return (newValidators, totalBeaconBalance);
+        return (newValidators, totalBeaconBalanceGwei);
     }
-
+    
     function _exitValidators(uint40[] memory _validators) internal returns (uint64 exitedBalanceGwei) {
         console.log("- exiting num validators", _validators.length);
 
