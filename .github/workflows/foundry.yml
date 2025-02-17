@@ -24,7 +24,7 @@ on:
       - '**/*.sol'
 
 env:
-  FOUNDRY_PROFILE: ci
+  FOUNDRY_PROFILE: medium
   RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
   RPC_HOLESKY: ${{ secrets.RPC_HOLESKY }}
   CHAIN_ID: ${{ secrets.CHAIN_ID }}
@@ -74,7 +74,7 @@ jobs:
             Fork) forge test --match-contract Integration ;;
           esac
         env:
-          FOUNDRY_PROFILE: ${{ matrix.suite == 'Fork' && 'forktest' || 'ci' }}
+          FOUNDRY_PROFILE: ${{ matrix.suite == 'Fork' && 'forktest' || 'medium' }}
 
   # -----------------------------------------------------------------------
   # Forge Test (Intense)
@@ -197,9 +197,7 @@ jobs:
       - name: Forge Coverage
         run: |
           FOUNDRY_DENY_WARNINGS=false \
-          FOUNDRY_PROFILE=ci \
-          FOUNDRY_OPTIMIZER=true \
-          FOUNDRY_OPTIMIZER_RUNS=1000000 \
+          FOUNDRY_PROFILE=medium \
           FOUNDRY_CACHE=true \
           FOUNDRY_CACHE_PATH=cache \
           forge coverage --report lcov --report summary --no-match-coverage "script|test" -j $(nproc)
