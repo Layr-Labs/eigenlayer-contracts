@@ -1,4 +1,4 @@
-<a name="introduction"/></a>
+<a name="introduction"></a>
 
 # 🔄 EigenLayer
 
@@ -26,15 +26,15 @@ EigenLayer is a set of smart contracts deployed on Ethereum that enable restakin
 
 ## 📋 Table of Contents
 
-- [📚 Background](#background)
-- [🚀 Getting Started](#getting-started)
-  - [🌳 Branching Strategy](#branching-strategy) 
-  - [🌐 Deployments](#deployments)
-- [📖 Documentation](#documentation)
-  - [💡 Basic Concepts](#basic-concepts)
-  - [⚙️ Technical Details](#technical-details)
-- [🤝 Contributing](#contributing)
-- [⚖️ License](#license)
+- [📚 Background](#-background)
+- [🚀 Getting Started](#-getting-started)
+  - [🌳 Branching Strategy](#-branching-strategy)
+  - [🌐 Deployments](#-deployments)
+- [📖 Documentation](#-documentation)
+  - [💡 Basic Concepts](#-basic-concepts)
+  - [⚙️ Technical Details](#️-technical-details)
+- [🤝 Contributing](#-contributing)
+- [⚖️ License](#️-license)
 
 ## 🚀 Getting Started
 
