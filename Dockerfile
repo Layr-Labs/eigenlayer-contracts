@@ -1,6 +1,6 @@
 FROM ubuntu:24.04
 
-COPY bin /build-bin
+COPY .github/bin /build-bin
 
 RUN apt-get update \
     && apt-get install -y \
