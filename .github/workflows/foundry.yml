@@ -173,16 +173,10 @@ jobs:
           sudo apt-get install -y gcovr
         id: gcovr
 
-      # Build the project and display contract sizes.
-      - name: "Forge Build"
-        run: |
-          forge --version
-          forge build --sizes
-        id: build
-
       # Run Forge coverage with LCOV report format, excluding test and script files
       - name: Forge Coverage
         run: |
+          mkdir -p report
           FOUNDRY_DENY_WARNINGS=false FOUNDRY_PROFILE=ci forge coverage --report lcov --report summary --no-match-coverage "script|test"
           gcovr --html-details report/index.html -r . --exclude "script/.*" --exclude "test/.*" --fail-under-line 90 --fail-under-function 90 lcov.info
 
