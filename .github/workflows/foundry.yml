@@ -167,11 +167,11 @@ jobs:
         with:
           version: stable
 
-      # Install LCOV for coverage report generation.
-      - name: Install LCOV
+      # Install gcovr for coverage report generation
+      - name: Install gcovr
         run: |
-          sudo apt-get install lcov
-        id: lcov
+          sudo apt-get install -y gcovr
+        id: gcovr
 
       # Build the project and display contract sizes.
       - name: "Forge Build"
@@ -184,7 +184,7 @@ jobs:
       - name: Forge Coverage
         run: |
           FOUNDRY_DENY_WARNINGS=false FOUNDRY_PROFILE=ci forge coverage --report lcov --report summary --no-match-coverage "script|test"
-          genhtml -q -o report ./lcov.info
+          gcovr --html-details report/index.html -r . --exclude "script/.*" --exclude "test/.*" --fail-under-line 90 --fail-under-function 90 lcov.info
 
       # Upload coverage report as artifact before potential failure
       - name: Upload Coverage Report
@@ -196,8 +196,8 @@ jobs:
       # Check coverage threshold after uploading report
       - name: Check Coverage Threshold
         run: |
-          LINES_PCT=$(lcov --summary lcov.info | grep "lines" | cut -d ':' -f 2 | cut -d '%' -f 1 | tr -d '[:space:]')
-          FUNCTIONS_PCT=$(lcov --summary lcov.info | grep "functions" | cut -d ':' -f 2 | cut -d '%' -f 1 | tr -d '[:space:]')          
+          LINES_PCT=$(gcovr --print-summary lcov.info | grep "lines" | awk '{print $2}' | tr -d '%')
+          FUNCTIONS_PCT=$(gcovr --print-summary lcov.info | grep "functions" | awk '{print $2}' | tr -d '%')
           FAILED=0
           
           if (( $(echo "$LINES_PCT < 90" | bc -l) )); then
