@@ -547,7 +547,7 @@ contract AllocationManagerUnitTests_Initialization_Setters is AllocationManagerU
         assertEq(alm.DEALLOCATION_DELAY(), DEALLOCATION_DELAY);
         assertEq(alm.ALLOCATION_CONFIGURATION_DELAY(), ALLOCATION_CONFIGURATION_DELAY);
 
-        // Assert initialiation state
+        // Assert initialization state
         assertEq(alm.owner(), expectedInitialOwner);
         assertEq(alm.paused(), initialPausedStatus);
     }
@@ -3592,7 +3592,7 @@ contract AllocationManagerUnitTests_removeStrategiesFromOperatorSet is Allocatio
         cheats.prank(defaultAVS);
         allocationManager.removeStrategiesFromOperatorSet(defaultAVS, defaultOperatorSet.id, strategies);
 
-        // The orginal strategy should still be in the operator set.
+        // The original strategy should still be in the operator set.
         assertEq(
             allocationManager.getStrategiesInOperatorSet(defaultOperatorSet).length, 1, "should not be strat of set"
         );

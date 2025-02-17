@@ -61,7 +61,7 @@
 │           ├── given that the pendingDiff is less than 0 (this is a deallocation)
 │           │   └── it should update the effect block in memory to be the operator deallocation delay
 │           ├── given that the pendingDiff is greater than 0 (this is an allocation)
-│           │   ├── it should update the effect timestmap in memory to be the operator allocation delay
+│           │   ├── it should update the effect timestamp in memory to be the operator allocation delay
 │           │   └── it should increase the encumberedMagnitude in memory by the pendingDiff
 │           ├── it should push to the modification queue
 │           ├── it should update the magnitude info, encumbered magnitude, emit an event for encumbered magnitude
@@ -79,7 +79,7 @@
         ├── it should slash the current magnitude by wads to slash
         ├── given that there is a pending deallocation
         │   ├── it should slash the pending diff
-        │   └── it should emit an event for AllocationUpdated with the orginial deallocation's effect timestamp
+        │   └── it should emit an event for AllocationUpdated with the original deallocation's effect timestamp
         ├── it should update the magnitude info, encumbered magnitude, emit an event for encumbered magnitude
         ├── it should decrease the operator's max magnitude
         ├── it should decrease the operators shares in the delegation manager

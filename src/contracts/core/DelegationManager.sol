@@ -61,7 +61,7 @@ contract DelegationManager is
      */
 
     /**
-     * @dev Initializes the immutable addresses of the strategy mananger, eigenpod manager, and allocation manager.
+     * @dev Initializes the immutable addresses of the strategy manager, eigenpod manager, and allocation manager.
      */
     constructor(
         IStrategyManager _strategyManager,

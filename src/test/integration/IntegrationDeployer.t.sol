@@ -280,7 +280,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         // Create a proxy beacon for base strategy implementation
         strategyBeacon = new UpgradeableBeacon(address(baseStrategyImplementation));
 
-        // Strategy Factory, upgrade and initalized
+        // Strategy Factory, upgrade and initialized
         eigenLayerProxyAdmin.upgradeAndCall(
             ITransparentUpgradeableProxy(payable(address(strategyFactory))),
             address(strategyFactoryImplementation),
@@ -475,7 +475,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         eigenLayerProxyAdmin.upgrade(
             ITransparentUpgradeableProxy(payable(address(eigenPodManager))), address(eigenPodManagerImplementation)
         );
-        // AVSDirectory, upgrade and initalized
+        // AVSDirectory, upgrade and initialized
         eigenLayerProxyAdmin.upgradeAndCall(
             ITransparentUpgradeableProxy(payable(address(avsDirectory))),
             address(avsDirectoryImplementation),
@@ -574,7 +574,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
      * Depending on the forkType, either deploy contracts locally or parse existing contracts
      * from network.
      *
-     * Note: for non-LOCAL forktypes, upgrade of contracts will be peformed after user initialization.
+     * Note: for non-LOCAL forktypes, upgrade of contracts will be performed after user initialization.
      */
     function _deployOrFetchContracts() internal {
         if (forkType == LOCAL) {

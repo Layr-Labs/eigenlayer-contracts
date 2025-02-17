@@ -330,7 +330,7 @@ contract DeployFromScratch is Script, Test {
         // Create a proxy beacon for base strategy implementation
         strategyBeacon = new UpgradeableBeacon(address(baseStrategyImplementation));
 
-        // Strategy Factory, upgrade and initalized
+        // Strategy Factory, upgrade and initialized
         eigenLayerProxyAdmin.upgradeAndCall(
             ITransparentUpgradeableProxy(payable(address(strategyFactory))),
             address(strategyFactoryImplementation),

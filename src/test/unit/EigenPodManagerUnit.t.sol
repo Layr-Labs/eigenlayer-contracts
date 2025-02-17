@@ -362,7 +362,7 @@ contract EigenPodManagerUnitTests_WithdrawSharesAsTokensTests is EigenPodManager
         assertEq(eigenPodManager.podOwnerDepositShares(defaultStaker), int256(0), "Shares not reduced to 0");
     }
 
-    function test_withdrawSharesAsTokens_m2NegativeShares_partialDefecitReduction() public {
+    function test_withdrawSharesAsTokens_m2NegativeShares_partialDeficitReduction() public {
         // Shares to initialize & withdraw
         int256 sharesBeginning = -100e18;
         uint256 sharesToWithdraw = 50e18;

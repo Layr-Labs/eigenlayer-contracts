@@ -47,7 +47,7 @@ The `DelegationManager's` responsibilities can be broken down into the following
 The `DelegationManager` tracks operator-related state in the following mappings:
 
 ```solidity
-/// @notice Returns the `operator` a `staker` is delgated to, or address(0) if not delegated.
+/// @notice Returns the `operator` a `staker` is delegated to, or address(0) if not delegated.
 /// Note: operators are delegated to themselves
 mapping(address staker => address operator) public delegatedTo;
 
@@ -192,7 +192,7 @@ The `DelegationManager` tracks withdrawal-related state in the following mapping
  *
  * @param staker The address that queued the withdrawal
  * @param delegatedTo The address that the staker was delegated to at the time the withdrawal was queued. Used to determine if additional slashing occurred before
- * this withdrawal became completeable.
+ * this withdrawal became completable.
  * @param withdrawer The address that will call the contract to complete the withdrawal. Note that this will always equal `staker`; alternate withdrawers are not
  * supported at this time.
  * @param nonce The staker's `cumulativeWithdrawalsQueued` at time of queuing. Used to ensure withdrawals have unique hashes.
@@ -464,7 +464,7 @@ struct QueuedWithdrawalParams {
  * to slashing. If any slashing has occurred, the shares received may be less than the queued deposit shares.
  *
  * @dev To view all the staker's strategies/deposit shares that can be queued for withdrawal, see `getDepositedShares`
- * @dev To view the current coversion between a staker's deposit shares and withdrawable shares, see `getWithdrawableShares`
+ * @dev To view the current conversion between a staker's deposit shares and withdrawable shares, see `getWithdrawableShares`
  */
 function queueWithdrawals(
     QueuedWithdrawalParams[] calldata queuedWithdrawalParams
@@ -518,7 +518,7 @@ Note that the `QueuedWithdrawalParams.__deprecated_withdrawer` field is ignored.
  *
  * @param staker The address that queued the withdrawal
  * @param delegatedTo The address that the staker was delegated to at the time the withdrawal was queued. Used to determine if additional slashing occurred before
- * this withdrawal became completeable.
+ * this withdrawal became completable.
  * @param withdrawer The address that will call the contract to complete the withdrawal. Note that this will always equal `staker`; alternate withdrawers are not
  * supported at this time.
  * @param nonce The staker's `cumulativeWithdrawalsQueued` at time of queuing. Used to ensure withdrawals have unique hashes.
@@ -661,7 +661,7 @@ This method is called by the `AllocationManager` when processing an AVS's slash 
 
 Additionally, any _slashable shares_ in the withdrawal queue are marked for burning according to the same slashing proportion (shares in the withdrawal queue remain slashable for `MIN_WITHDRAWAL_DELAY_BLOCKS`). For the slashed strategy, the corresponding share manager (`EigenPodManager/StrateyManager`) is called, increasing the burnable shares for that strategy.
 
-**Note**: native ETH does not currently posess a burning mechanism, as this requires Pectra to be able to force exit validators. Currently, slashing for the `beaconChainETHStrategy` is realized by modifying the amount stakers are able to withdraw.
+**Note**: native ETH does not currently possess a burning mechanism, as this requires Pectra to be able to force exit validators. Currently, slashing for the `beaconChainETHStrategy` is realized by modifying the amount stakers are able to withdraw.
 
 *Effects*:
 * The `operator's` `operatorShares` are reduced for the given `strategy`, according to the proportion given by `prevMaxMagnitude` and `newMaxMagnitude`
