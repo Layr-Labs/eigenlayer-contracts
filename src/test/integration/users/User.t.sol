@@ -605,7 +605,8 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         // Advance forward one epoch and generate withdrawal and balance proofs for each validator
         beaconChain.advanceEpoch_NoRewards();
 
-        return (newValidators, totalBeaconBalanceGwei, maxEBValidators);
+        // TODO: update this to return the number of validators with Max EB when we create 2048 ETH validators  
+        return (newValidators, totalBeaconBalanceGwei, 0);
     }
 
     function _exitValidators(

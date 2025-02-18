@@ -3,6 +3,7 @@ pragma solidity ^0.8.27;
 
 import "src/test/integration/IntegrationDeployer.t.sol";
 import "src/test/integration/IntegrationChecks.t.sol";
+import "src/test/integration/mocks/BeaconChainMock_Pectra.t.sol";
 
 abstract contract UpgradeTest is IntegrationCheckUtils {
 
@@ -34,5 +35,23 @@ abstract contract UpgradeTest is IntegrationCheckUtils {
 
         isUpgraded = true;
         emit log("_upgradeEigenLayerContracts: slashing upgrade complete");
+    }
+
+    uint64 constant PECTRA_FORK_TIMESTAMP = 1739352768;
+
+    function _handlePectraFork() internal {
+        // 0. Fork to Pectra
+        BeaconChainMock_PectraForkable(address(beaconChain)).forkToPectra(PECTRA_FORK_TIMESTAMP);
+
+        // 1. Set proof timestamp setter to operations multisig
+        cheats.prank(eigenPodManager.owner());
+        eigenPodManager.setProofTimestampSetter(address(operationsMultisig));
+
+        // 2. Set Proof timestamp
+        cheats.startPrank(eigenPodManager.proofTimestampSetter());
+        eigenPodManager.setPectraForkTimestamp(
+            BeaconChainMock_PectraForkable(address(beaconChain)).pectraForkTimestamp()
+        );
+        cheats.stopPrank();
     }
 }

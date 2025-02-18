@@ -5,6 +5,13 @@ import "src/test/integration/UpgradeTest.t.sol";
 
 contract Integration_Upgrade_Deposit_Delegate_Allocate is UpgradeTest {
 
+    function _init() internal override {
+        // Set beacon chain mock
+        beaconChain = BeaconChainMock(
+            new BeaconChainMock_PectraForkable(eigenPodManager, BEACON_GENESIS_TIME)
+        );
+    }
+
     function testFuzz_deposit_delegate_upgrade_allocate(uint24 _random) public rand(_random) {
         (User staker, IStrategy[] memory strategies, uint256[] memory tokenBalances) = _newRandomStaker();
         (User operator,,) = _newRandomOperator();

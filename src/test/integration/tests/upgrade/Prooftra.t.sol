@@ -2,12 +2,7 @@
 pragma solidity ^0.8.27;
 
 import "src/test/integration/UpgradeTest.t.sol";
-import "src/test/integration/mocks/BeaconChainMock_Pectra.t.sol";
 contract Integration_Upgrade_Pectra is UpgradeTest, EigenPodPausingConstants {
-
-    // Using Holeksy's Fork Timestamp for Testing Purposes
-    uint64 constant PECTRA_FORK_TIMESTAMP = 1739352768;
-
     function _init() internal override {
         _configAssetTypes(HOLDS_ETH);
         _configUserTypes(DEFAULT);

@@ -7,10 +7,16 @@ contract Integration_Upgrade_EigenPod_Slashing_Migration is UpgradeTest, EigenPo
     
     function _init() internal override {
         _configAssetTypes(HOLDS_ETH);
-        _configUserTypes(DEFAULT);
+        _configUserTypes(DEFAULT);   
+
+        // Set beacon chain mock
+        beaconChain = BeaconChainMock(
+            new BeaconChainMock_PectraForkable(eigenPodManager, BEACON_GENESIS_TIME)
+        );     
     }
 
     /**
+     * @dev Assumes that the Prooftra and slashing upgrade occur at the same time
      * 1. Verify validators' withdrawal credentials
      *    -- earn rewards on beacon chain (withdrawn to pod)
      * 2. Start a checkpoint
@@ -44,8 +50,9 @@ contract Integration_Upgrade_EigenPod_Slashing_Migration is UpgradeTest, EigenPo
         // 4. Complete in progress checkpoint
         staker.completeCheckpoint();
 
-        // 5. Upgrade Contracts for slashing
+        // 5. Upgrade Contracts for slashing      
         _upgradeEigenLayerContracts();
+        _handlePectraFork();
 
         // Unpause EigenPodManager
         cheats.prank(eigenLayerPauserReg.unpauser());
