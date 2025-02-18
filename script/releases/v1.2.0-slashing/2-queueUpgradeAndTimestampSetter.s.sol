@@ -14,7 +14,7 @@ import {TimelockController} from "@openzeppelin/contracts/governance/TimelockCon
  * Purpose: Queues an ugprade to EP/EPM
  * and sets the timestamp submitter to the ops multisig
  */
-contract QueueUpgradeAndSetTimestampSubmitter is MultisigBuilder, Deploy {
+contract QueueUpgradeAndTimestampSetter is MultisigBuilder, Deploy {
     using Env for *;
     using Encode for *;
 

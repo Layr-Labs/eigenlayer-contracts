@@ -2,7 +2,7 @@
 pragma solidity ^0.8.12;
 
 import {QueueUnpause} from "./3-queueUnpause.s.sol";
-import {QueueUpgradeAndSetTimestampSubmitter} from "./2-queueUpgradeAndSetTimestampSubmitter.s.sol";
+import {QueueUpgradeAndTimestampSetter} from "./2-queueUpgradeAndTimestampSetter.s.sol";
 import {Pause} from "./4-pause.s.sol";
 import "../Env.sol";
 import "forge-std/console.sol";
@@ -26,7 +26,7 @@ contract Unpause is QueueUnpause, Pause {
         override(QueueUnpause, Pause)
         prank(Env.protocolCouncilMultisig())
     {
-        bytes memory calldata_to_executor = QueueUpgradeAndSetTimestampSubmitter._getCalldataToExecutor_queueUpgrade();
+        bytes memory calldata_to_executor = QueueUpgradeAndTimestampSetter._getCalldataToExecutor_queueUpgrade();
 
         TimelockController timelock = Env.timelockController();
         timelock.execute({
@@ -42,7 +42,7 @@ contract Unpause is QueueUnpause, Pause {
         // 0. Get Queue Transactions
         TimelockController timelock = Env.timelockController();
 
-        assertFalse(timelock.isOperationPending(QueueUpgradeAndSetTimestampSubmitter.getTimelockId()), "Transaction should not be queued.");
+        assertFalse(timelock.isOperationPending(QueueUpgradeAndTimestampSetter.getTimelockId()), "Transaction should not be queued.");
         assertFalse(timelock.isOperationReady(QueueUnpause.getTimelockId()), "Transaction should not be ready for execution.");
 
 
@@ -50,12 +50,12 @@ contract Unpause is QueueUnpause, Pause {
         runAsEOA();
 
         // 2. Queue Upgrade and Set Timestamp Submitter
-        QueueUpgradeAndSetTimestampSubmitter._runAsMultisig();
+        QueueUpgradeAndTimestampSetter._runAsMultisig();
         _unsafeResetHasPranked(); // reset hasPranked so we can use it again
 
-        assertTrue(timelock.isOperationPending(QueueUpgradeAndSetTimestampSubmitter.getTimelockId()), "Transaction should be queued.");
-        assertFalse(timelock.isOperationReady(QueueUpgradeAndSetTimestampSubmitter.getTimelockId()), "Transaction should NOT be ready for execution.");
-        assertFalse(timelock.isOperationDone(QueueUpgradeAndSetTimestampSubmitter.getTimelockId()), "Transaction should NOT be complete.");
+        assertTrue(timelock.isOperationPending(QueueUpgradeAndTimestampSetter.getTimelockId()), "Transaction should be queued.");
+        assertFalse(timelock.isOperationReady(QueueUpgradeAndTimestampSetter.getTimelockId()), "Transaction should NOT be ready for execution.");
+        assertFalse(timelock.isOperationDone(QueueUpgradeAndTimestampSetter.getTimelockId()), "Transaction should NOT be complete.");
 
         // 3. Queue Unpause
         QueueUnpause._runAsMultisig();
@@ -74,11 +74,11 @@ contract Unpause is QueueUnpause, Pause {
 
         // Warp past delay
         vm.warp(block.timestamp + timelock.getMinDelay()); // 1 tick after ETA
-        assertEq(timelock.isOperationReady(QueueUpgradeAndSetTimestampSubmitter.getTimelockId()), true, "Transaction should be executable.");
+        assertEq(timelock.isOperationReady(QueueUpgradeAndTimestampSetter.getTimelockId()), true, "Transaction should be executable.");
 
         // 5. Execute
         execute();
-        assertTrue(timelock.isOperationDone(QueueUpgradeAndSetTimestampSubmitter.getTimelockId()), "Transaction should be complete.");
+        assertTrue(timelock.isOperationDone(QueueUpgradeAndTimestampSetter.getTimelockId()), "Transaction should be complete.");
 
         // Validate that the operations multisig is the timestamp submitter
         assertEq(Env.proxy.eigenPodManager().proofTimestampSetter(), Env.opsMultisig(), "Timestamp submitter is not the operations multisig");

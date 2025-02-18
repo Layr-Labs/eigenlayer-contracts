@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
-import {QueueUpgradeAndSetTimestampSubmitter} from "./2-queueUpgradeAndSetTimestampSubmitter.s.sol";
+import {QueueUpgradeAndTimestampSetter} from "./2-queueUpgradeAndTimestampSetter.s.sol";
 import "../Env.sol";
 import "forge-std/console.sol";
 import {MultisigBuilder} from "zeus-templates/templates/MultisigBuilder.sol";
@@ -14,14 +14,14 @@ import {TimelockController} from "@openzeppelin/contracts/governance/TimelockCon
  * This needs to be done separately from the upgrade, since we must do actions between
  * the upgrade and unpause. 
  */
-contract QueueUnpause is QueueUpgradeAndSetTimestampSubmitter {
+contract QueueUnpause is QueueUpgradeAndTimestampSetter {
     using Env for *;
     using Encode for *;
 
     function _runAsMultisig()
         internal
         virtual
-        override(QueueUpgradeAndSetTimestampSubmitter)
+        override(QueueUpgradeAndTimestampSetter)
         prank(Env.opsMultisig())
     {
         bytes memory calldata_to_executor = _getCalldataToExecutor_queueUnpause();
@@ -31,7 +31,7 @@ contract QueueUnpause is QueueUpgradeAndSetTimestampSubmitter {
             target: Env.executorMultisig(),
             value: 0,
             data: calldata_to_executor,
-            predecessor: QueueUpgradeAndSetTimestampSubmitter.getTimelockId(),
+            predecessor: QueueUpgradeAndTimestampSetter.getTimelockId(),
             salt: 0,
             delay: timelock.getMinDelay()
         });
@@ -55,11 +55,11 @@ contract QueueUnpause is QueueUpgradeAndSetTimestampSubmitter {
             });
     }
 
-    function testScript() public virtual override(QueueUpgradeAndSetTimestampSubmitter) {
+    function testScript() public virtual override(QueueUpgradeAndTimestampSetter) {
         runAsEOA();
 
         // 1. Run queue upgrade logic
-        QueueUpgradeAndSetTimestampSubmitter._runAsMultisig();
+        QueueUpgradeAndTimestampSetter._runAsMultisig();
         _unsafeResetHasPranked(); // reset hasPranked so we can use it again
 
         // 2. Run queue unpause logic
@@ -71,7 +71,7 @@ contract QueueUnpause is QueueUpgradeAndSetTimestampSubmitter {
             target: Env.executorMultisig(),
             value: 0,
             data: calldata_to_executor,
-            predecessor: QueueUpgradeAndSetTimestampSubmitter.getTimelockId(),
+            predecessor: QueueUpgradeAndTimestampSetter.getTimelockId(),
             salt: 0
         });
 
@@ -97,7 +97,7 @@ contract QueueUnpause is QueueUpgradeAndSetTimestampSubmitter {
             target: Env.executorMultisig(),
             value: 0,
             data: calldata_to_executor,
-            predecessor: QueueUpgradeAndSetTimestampSubmitter.getTimelockId(),
+            predecessor: QueueUpgradeAndTimestampSetter.getTimelockId(),
             salt: 0
         });
     }
