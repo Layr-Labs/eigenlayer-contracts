@@ -385,7 +385,7 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         check_StartCheckpoint_WithPodBalance_State(staker, beaconBalanceGwei - slashedBalanceGwei);
 
         // Start a new validator & verify withdrawal credentials
-        cheats.deal(address(staker), 64 ether);
+        cheats.deal(address(staker), 32 ether);
         (uint40[] memory newValidators, uint64 addedBeaconBalanceGwei, ) = staker.startValidators();
         beaconChain.advanceEpoch_NoRewards();
         staker.verifyWithdrawalCredentials(newValidators);
@@ -625,7 +625,7 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         staker.verifyWithdrawalCredentials(validators);
         check_VerifyWC_State(staker, validators, beaconBalanceGwei);
 
-        // Advance epoch, generating consensus rewards and withdrawing anything over 64 ETH
+        // Advance epoch, generating consensus rewards and withdrawing anything over Max EB (2048 ETH)
         beaconChain.advanceEpoch();
         uint64 expectedWithdrawnGwei = uint64(maxEBValidators) * beaconChain.CONSENSUS_REWARD_AMOUNT_GWEI();
 
@@ -655,7 +655,7 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         staker.startCheckpoint();
         check_StartCheckpoint_WithPodBalance_State(staker, 0);
 
-        // Advance epoch, generating consensus rewards and withdrawing anything over 64 ETH
+        // Advance epoch, generating consensus rewards and withdrawing anything over 2048 ETH
         beaconChain.advanceEpoch();
         uint64 expectedWithdrawnGwei = uint64(maxEBValidators) * beaconChain.CONSENSUS_REWARD_AMOUNT_GWEI();
 

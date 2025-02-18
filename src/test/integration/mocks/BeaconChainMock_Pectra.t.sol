@@ -26,6 +26,9 @@ contract BeaconChainMock_PectraForkable is BeaconChainMock {
         BALANCE_CONTAINER_PROOF_LEN = 32 * (
             BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT + BeaconChainProofs.DENEB_BEACON_STATE_TREE_HEIGHT
         );
+
+        MAX_EFFECTIVE_BALANCE_GWEI = 32 gwei;
+        MAX_EFFECTIVE_BALANCE_WEI = 32 ether;
     }
 
     function NAME() public pure override returns (string memory) {
@@ -44,10 +47,10 @@ contract BeaconChainMock_PectraForkable is BeaconChainMock {
             Validator storage v = validators[i];
             if (v.isDummy) continue; // don't process dummy validators
 
-            // Get current balance and trim anything over 64 ether
+            // Get current balance and trim anything over MaxEB
             uint64 balanceGwei = _currentBalanceGwei(uint40(i));
-            if (balanceGwei > 64 gwei) {
-                balanceGwei = 64 gwei;
+            if (balanceGwei > MAX_EFFECTIVE_BALANCE_GWEI) {
+                balanceGwei = MAX_EFFECTIVE_BALANCE_GWEI;
             }
 
             v.effectiveBalanceGwei = balanceGwei;
@@ -244,6 +247,9 @@ contract BeaconChainMock_PectraForkable is BeaconChainMock {
         BALANCE_CONTAINER_PROOF_LEN = 32 * (
             BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT + BeaconChainProofs.PECTRA_BEACON_STATE_TREE_HEIGHT
         );
+
+        MAX_EFFECTIVE_BALANCE_GWEI = 32 gwei;
+        MAX_EFFECTIVE_BALANCE_WEI = 32 ether;
 
         isPectra = true;
 

@@ -81,7 +81,7 @@ contract Integration_Upgrade_Pectra is UpgradeTest, EigenPodPausingConstants {
         // 3. Upgrade EigenPodManager & EigenPod
         _upgradeEigenLayerContracts();
 
-        // 4. Advance epoch, generating consensus rewards and withdrawing anything over 64 ETH
+        // 4. Advance epoch, generating consensus rewards and withdrawing anything over Max EB
         // Not: Nothing is withdrawn because all validators were created with 32 ETH
         beaconChain.advanceEpoch();
         uint64 expectedEarnedGwei = uint64(validators.length) * beaconChain.CONSENSUS_REWARD_AMOUNT_GWEI();
