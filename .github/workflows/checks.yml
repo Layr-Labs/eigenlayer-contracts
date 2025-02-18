@@ -8,6 +8,9 @@ permissions:
   contents: read
   pull-requests: read
 
+env:
+  CLICOLOR: 1
+
 jobs:
   typos:
     name: Typo Linting
