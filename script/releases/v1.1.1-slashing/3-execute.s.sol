@@ -7,6 +7,8 @@ import {Queue} from "./2-multisig.s.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
+import {MockAVSRegistrarAlt} from "src/test/mocks/MockAVSRegistrar.sol";
+
 contract Execute is Queue {
     using Env for *;
 
@@ -55,6 +57,12 @@ contract Execute is Queue {
         _validateNewImplAddresses(true);
         _validateProxyConstructors();
         _validateProxyInitialized();
+
+        // 5. Validate that the AllocationManager has been correctly upgraded with the following changes:
+        // - setRegistrar (should revert if the registrar does not support the AVS)
+        // - registerOperator/deregisterOperator (should correctly call with updated interfaces)
+        // - createOperatorSets (should revert if the AVS has no registered metadata)
+        _validateUpgrade111();
     }
 
     function _validateProxyConstructors() internal view {
@@ -78,5 +86,66 @@ contract Execute is Queue {
         AllocationManager allocationManager = Env.proxy.allocationManager();
         vm.expectRevert(errInit);
         allocationManager.initialize(address(0), 0);
+    }
+
+    /**
+     * @dev Using MockAVSRegistrarAlt which doesn't have fallback so invalid callbacks will revert
+     * Tests the following:
+     * - setAVSRegistrar (should revert if the registrar does not support the AVS)
+     * - createOperatorSets (should revert if the AVS has no registered metadata)
+     * - registerOperator/deregisterOperator (should correctly call with updated interfaces)
+     */
+    function _validateUpgrade111() internal {
+        AllocationManager allocationManager = Env.proxy.allocationManager();
+        // Deploy mockAVSRegistrar
+        MockAVSRegistrarAlt mockAVSRegistrar = new MockAVSRegistrarAlt();
+        address avs = address(0x09);
+        // 1. setRegistrar (should revert if the registrar does not support the AVS)
+        vm.startPrank(avs);
+        vm.expectRevert(IAllocationManagerErrors.InvalidAVSRegistrar.selector);
+        allocationManager.setAVSRegistrar(avs, IAVSRegistrar(address(mockAVSRegistrar)));
+
+        // set all AVSs to be supported on the mockAVSRegistrar to enable the following call
+        mockAVSRegistrar.setSupportsAVS(true);
+        allocationManager.setAVSRegistrar(avs, IAVSRegistrar(address(mockAVSRegistrar)));
+
+        // 2. createOperatorSets (should revert if the AVS has no registered metadata)
+        // create input data for createOperatorSets
+        IStrategy[] memory strategies = new IStrategy[](1);
+        strategies[0] = Env.instance.strategyBaseTVLLimits(0);
+        IAllocationManagerTypes.CreateSetParams[] memory createSetParams =
+            new IAllocationManagerTypes.CreateSetParams[](1);
+        createSetParams[0] = IAllocationManagerTypes.CreateSetParams({operatorSetId: 0, strategies: strategies});
+
+        vm.expectRevert(IAllocationManagerErrors.InvalidAVSWithNoMetadataRegistered.selector);
+        allocationManager.createOperatorSets(avs, createSetParams);
+
+        allocationManager.updateAVSMetadataURI(avs, "test");
+        allocationManager.createOperatorSets(avs, createSetParams);
+
+        vm.stopPrank();
+
+        // 3. registerOperator/deregisterOperator (should correctly call with updated interfaces)
+        address operator = address(0x0A);
+        vm.startPrank(operator);
+
+        // register operator on DM
+        DelegationManager delegationManager = Env.proxy.delegationManager();
+        delegationManager.registerAsOperator(address(0), 0, "");
+
+        // register operator to OpSet
+        uint32[] memory operatorSetIds = new uint32[](1);
+        operatorSetIds[0] = 0;
+        bytes memory emptyData;
+        IAllocationManagerTypes.RegisterParams memory registerParams =
+            IAllocationManagerTypes.RegisterParams({avs: avs, operatorSetIds: operatorSetIds, data: emptyData});
+        allocationManager.registerForOperatorSets(operator, registerParams);
+
+        // deregister operator from OpSet
+        IAllocationManagerTypes.DeregisterParams memory deregisterParams =
+            IAllocationManagerTypes.DeregisterParams({operator: operator, avs: avs, operatorSetIds: operatorSetIds});
+        allocationManager.deregisterFromOperatorSets(deregisterParams);
+
+        vm.stopPrank();
     }
 }
