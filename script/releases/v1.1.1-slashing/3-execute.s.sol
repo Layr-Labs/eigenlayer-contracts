@@ -140,12 +140,17 @@ contract Execute is Queue {
         IAllocationManagerTypes.RegisterParams memory registerParams =
             IAllocationManagerTypes.RegisterParams({avs: avs, operatorSetIds: operatorSetIds, data: emptyData});
         allocationManager.registerForOperatorSets(operator, registerParams);
+        // check that the operator is registered to the OpSet
+        OperatorSet memory operatorSet = OperatorSet(avs, 0);
+        assertTrue(allocationManager.isMemberOfOperatorSet(operator, operatorSet), "operator not registered to OpSet");
 
         // deregister operator from OpSet
         IAllocationManagerTypes.DeregisterParams memory deregisterParams =
             IAllocationManagerTypes.DeregisterParams({operator: operator, avs: avs, operatorSetIds: operatorSetIds});
         allocationManager.deregisterFromOperatorSets(deregisterParams);
-
+        // check that the operator is not registered to the OpSet
+        assertFalse(allocationManager.isMemberOfOperatorSet(operator, operatorSet), "operator still registered to OpSet");
+        
         vm.stopPrank();
     }
 }
