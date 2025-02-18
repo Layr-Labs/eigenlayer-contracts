@@ -1,3 +1,5 @@
+[![License](https://img.shields.io/badge/License-Business%20Source-green.svg)](https://img.shields.io/badge/License-Business%20Source-green.svg)
+
 <a name="introduction"/></a>
 
 # EigenLayer
