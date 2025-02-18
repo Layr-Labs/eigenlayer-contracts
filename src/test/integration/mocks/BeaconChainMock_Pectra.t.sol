@@ -248,8 +248,8 @@ contract BeaconChainMock_PectraForkable is BeaconChainMock {
             BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT + BeaconChainProofs.PECTRA_BEACON_STATE_TREE_HEIGHT
         );
 
-        MAX_EFFECTIVE_BALANCE_GWEI = 32 gwei;
-        MAX_EFFECTIVE_BALANCE_WEI = 32 ether;
+        MAX_EFFECTIVE_BALANCE_GWEI = 2048 gwei;
+        MAX_EFFECTIVE_BALANCE_WEI = 2048 ether;
 
         isPectra = true;
 
