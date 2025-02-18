@@ -367,10 +367,11 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     /// @dev Uses any ETH held by the User to start validators on the beacon chain
     /// @return A list of created validator indices
     /// @return The amount of wei sent to the beacon chain
+    /// @return The number of validators that have the MaxEB
     /// Note: If the user does not have enough ETH to start a validator, this method reverts
     /// Note: This method also advances one epoch forward on the beacon chain, so that
     /// withdrawal credential proofs are generated for each validator.
-    function startValidators() public virtual createSnapshot returns (uint40[] memory, uint64) {
+    function startValidators() public virtual createSnapshot returns (uint40[] memory, uint64, uint) {
         print.method("startValidators");
         return _startValidators();
     }
@@ -435,7 +436,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
             uint256 tokenBalance = tokenBalances[i];
 
             if (strat == BEACONCHAIN_ETH_STRAT) {
-                (uint40[] memory newValidators,) = _startValidators();
+                (uint40[] memory newValidators, ,) = _startValidators();
                 // Advance forward one epoch and generate credential and balance proofs for each validator
                 beaconChain.advanceEpoch_NoRewards();
                 _verifyWithdrawalCredentials(newValidators);
@@ -527,14 +528,15 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     /// @dev Creates validators with either: 32 or 64 ETH
     /// @return A list of created validator indices
     /// @return The amount of wei sent to the beacon chain
+    /// @return The number of validators that have the MaxEB
     /// Note: If the user does not have enough ETH to start a validator, this method reverts
     /// Note: This method also advances one epoch forward on the beacon chain, so that
     /// withdrawal credential proofs are generated for each validator.
-    function _startValidators() internal returns (uint40[] memory, uint64) {
+    function _startValidators() internal returns (uint40[] memory, uint64, uint) {
         uint originalBalance = address(this).balance;
         uint balanceWei = address(this).balance;
         uint numValidators = 0;
-
+        uint maxEBValidators = 0;
         // Get maximum possible number of validators. Add 1 to account for a validator with < 32 ETH
         uint maxValidators = balanceWei / 32 ether;
         uint40[] memory newValidators = new uint40[](maxValidators + 1);
@@ -550,6 +552,10 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
             // If we don't have enough ETH for 64, use 32
             if (balanceWei < 64 ether) {
                 validatorEth = 32 ether;
+            }
+
+            if (validatorEth == 64 ether) {
+                maxEBValidators++;
             }
 
             // Create the validator
@@ -599,7 +605,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         // Advance forward one epoch and generate withdrawal and balance proofs for each validator
         beaconChain.advanceEpoch_NoRewards();
 
-        return (newValidators, totalBeaconBalanceGwei);
+        return (newValidators, totalBeaconBalanceGwei, maxEBValidators);
     }
 
     function _exitValidators(
@@ -787,7 +793,7 @@ contract User_AltMethods is User {
             uint256 tokenBalance = tokenBalances[i];
 
             if (strat == BEACONCHAIN_ETH_STRAT) {
-                (uint40[] memory newValidators,) = _startValidators();
+                (uint40[] memory newValidators, ,) = _startValidators();
                 // Advance forward one epoch and generate credential and balance proofs for each validator
                 beaconChain.advanceEpoch_NoRewards();
                 _verifyWithdrawalCredentials(newValidators);

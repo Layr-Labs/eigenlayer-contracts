@@ -23,7 +23,7 @@ contract Integration_Upgrade_EigenPod_Slashing_Migration is UpgradeTest, EigenPo
         // Initialize state
         (User staker, ,) = _newRandomStaker();    
 
-        (uint40[] memory validators, ) = staker.startValidators();
+        (uint40[] memory validators, ,) = staker.startValidators();
         beaconChain.advanceEpoch_NoRewards(); 
 
         // 1. Verify validators' withdrawal credentials

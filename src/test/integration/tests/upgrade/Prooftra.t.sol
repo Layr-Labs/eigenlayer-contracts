@@ -27,7 +27,7 @@ contract Integration_Upgrade_Pectra is UpgradeTest, EigenPodPausingConstants {
 
         // 3. Initialize Staker
         (User staker, ,) = _newRandomStaker();
-        (uint40[] memory validators, uint64 beaconBalanceGwei) = staker.startValidators();
+        (uint40[] memory validators, uint64 beaconBalanceGwei, ) = staker.startValidators();
         beaconChain.advanceEpoch_NoRewards();
 
         // 4. Verify Withdrawal Credentials
@@ -46,7 +46,7 @@ contract Integration_Upgrade_Pectra is UpgradeTest, EigenPodPausingConstants {
     function test_VerifyWC_StartCP_Fork_CompleteCP(uint24 _rand) public rand(_rand) {
         // Initialize state
         (User staker, ,) = _newRandomStaker();    
-        (uint40[] memory validators, ) = staker.startValidators();
+        (uint40[] memory validators, ,) = staker.startValidators();
         beaconChain.advanceEpoch_NoRewards(); 
 
         // 1. Verify validators' withdrawal credentials
@@ -69,7 +69,7 @@ contract Integration_Upgrade_Pectra is UpgradeTest, EigenPodPausingConstants {
     function test_VerifyWC_Fork_EarnToPod_StartCP_CompleteCP(uint24 _rand) public rand(_rand) {
         // Initialize state
         (User staker, ,) = _newRandomStaker();    
-        (uint40[] memory validators, ) = staker.startValidators();
+        (uint40[] memory validators, ,) = staker.startValidators();
         beaconChain.advanceEpoch_NoRewards(); 
 
         // 1. Verify validators' withdrawal credentials
