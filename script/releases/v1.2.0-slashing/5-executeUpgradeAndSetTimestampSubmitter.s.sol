@@ -16,7 +16,7 @@ import {TimelockController} from "@openzeppelin/contracts/governance/TimelockCon
  * Purpose: Executes the upgrade from step 2, which
  * upgrades the EPM/EP and sets the timestamp submitter to the ops multisig.
  */
-contract Unpause is QueueUnpause, Pause {
+contract ExecuteUpgradeAndSetTimestampSubmitter is QueueUnpause, Pause {
     using Env for *;
     using Encode for *;
 
@@ -75,6 +75,7 @@ contract Unpause is QueueUnpause, Pause {
         // Warp past delay
         vm.warp(block.timestamp + timelock.getMinDelay()); // 1 tick after ETA
         assertEq(timelock.isOperationReady(QueueUpgradeAndTimestampSetter.getTimelockId()), true, "Transaction should be executable.");
+
 
         // 5. Execute
         execute();
