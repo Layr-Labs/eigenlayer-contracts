@@ -1,5 +1,8 @@
 [files]
-extend-exclude = []
+extend-exclude = [
+    "**/lib/**",
+    "**/docs/images/**"
+]
 ignore-hidden = true
 ignore-files = true
 ignore-dot = true
