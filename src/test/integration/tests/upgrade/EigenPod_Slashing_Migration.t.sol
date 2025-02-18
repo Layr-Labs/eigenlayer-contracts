@@ -52,7 +52,6 @@ contract Integration_Upgrade_EigenPod_Slashing_Migration is UpgradeTest, EigenPo
 
         // 5. Upgrade Contracts for slashing      
         _upgradeEigenLayerContracts();
-        _handlePectraFork();
 
         // Unpause EigenPodManager
         cheats.prank(eigenLayerPauserReg.unpauser());

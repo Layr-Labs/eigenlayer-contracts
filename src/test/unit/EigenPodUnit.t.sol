@@ -114,7 +114,7 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
         stakerName = string.concat("Staker", cheats.toString(numStakers));
         staker = new EigenPodUser(stakerName);
 
-        uint256 amount = bound(rand, 1 ether, 640 ether);
+        uint256 amount = bound(rand, 1 ether, 4096 ether);
         cheats.deal(address(staker), amount);
 
         numStakers++;

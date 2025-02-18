@@ -25,6 +25,7 @@ abstract contract UpgradeTest is IntegrationCheckUtils {
         emit log("_upgradeEigenLayerContracts: upgrading mainnet to slashing");
 
         _upgradeMainnetContracts();
+        _handlePectraFork();
 
         // Bump block.timestamp forward to allow verifyWC proofs for migrated pods
         emit log("advancing block time to start of next epoch:");

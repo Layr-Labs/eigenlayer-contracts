@@ -525,7 +525,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     }
 
     /// @dev Uses any ETH held by the User to start validators on the beacon chain
-    /// @dev Creates validators with either: 32 or 64 ETH
+    /// @dev Creates validators between 32 and 2048 ETH
     /// @return A list of created validator indices
     /// @return The amount of wei sent to the beacon chain
     /// @return The number of validators that have the MaxEB
@@ -541,20 +541,28 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         uint maxValidators = balanceWei / 32 ether;
         uint40[] memory newValidators = new uint40[](maxValidators + 1);
 
-        // Create validators with 32 or 64 ETH until we can't create more
+        // Create validators between 32 and 2048 ETH until we can't create more
         while (balanceWei >= 32 ether) {
+            // Generate random validator balance between 32 and 2048 ETH
             uint validatorEth = uint(keccak256(abi.encodePacked(
                 block.timestamp,
                 balanceWei,
                 numValidators
-            ))) % 2 == 0 ? 32 ether : 64 ether;
+            ))) % 64 + 1; // 1-64 multiplier
+            validatorEth *= 32 ether; // Results in 32-2048 ETH
 
-            // If we don't have enough ETH for 64, use 32
-            if (balanceWei < 64 ether) {
-                validatorEth = 32 ether;
+            // If we don't have enough ETH for the random amount, use remaining balance 
+            // as long as it's >= 32 ETH
+            if (balanceWei < validatorEth) {
+                if (balanceWei >= 32 ether) {
+                    validatorEth = balanceWei - (balanceWei % 32 ether);
+                } else {
+                    break;
+                }
             }
 
-            if (validatorEth == 64 ether) {
+            // Track validators with maximum effective balance 
+            if (validatorEth == 2048 ether) {
                 maxEBValidators++;
             }
 
@@ -565,7 +573,6 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
             uint40 validatorIndex = beaconChain.newValidator{
                 value: validatorEth
             }(withdrawalCredentials);
-
 
             newValidators[numValidators] = validatorIndex;
             validators.push(validatorIndex);
@@ -605,8 +612,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         // Advance forward one epoch and generate withdrawal and balance proofs for each validator
         beaconChain.advanceEpoch_NoRewards();
 
-        // TODO: update this to return the number of validators with Max EB when we create 2048 ETH validators  
-        return (newValidators, totalBeaconBalanceGwei, 0);
+        return (newValidators, totalBeaconBalanceGwei, maxEBValidators);
     }
 
     function _exitValidators(

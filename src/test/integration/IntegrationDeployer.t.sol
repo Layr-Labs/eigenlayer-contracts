@@ -692,8 +692,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             tokenBalances = new uint[](1);
 
             // Award the user with a random amount of ETH
-            // This guarantees a multiple of 32 ETH (at least 1, up to/incl 5)
-            uint amount = 32 ether * _randUint({min: 1, max: 5});
+            // This guarantees a multiple of 32 ETH (at least 1, up to/incl 4096)
+            uint amount = 32 ether * _randUint({min: 1, max: 128});
             cheats.deal(address(user), amount);
 
             strategies[0] = BEACONCHAIN_ETH_STRAT;
@@ -716,8 +716,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             }
 
             // Award the user with a random amount of ETH
-            // This guarantees a multiple of 32 ETH (at least 1, up to/incl 5)
-            uint amount = 32 ether * _randUint({min: 1, max: 5});
+            // This guarantees a multiple of 32 ETH (at least 1, up to/incl 4096)
+            uint amount = 32 ether * _randUint({min: 1, max: 128});
             cheats.deal(address(user), amount);
 
             // Add BEACONCHAIN_ETH_STRAT and eth balance
