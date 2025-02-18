@@ -13,6 +13,9 @@ interface IAllocationManagerErrors {
     error InvalidWadToSlash();
     /// @dev Thrown when two array parameters have mismatching lengths.
     error InputArrayLengthMismatch();
+    /// @dev Thrown when the AVSRegistrar is not correctly configured to prevent an AVSRegistrar contract
+    /// from being used with the wrong AVS
+    error InvalidAVSRegistrar();
 
     /// Caller
 
@@ -23,6 +26,8 @@ interface IAllocationManagerErrors {
 
     /// @dev Thrown when an invalid operator is provided.
     error InvalidOperator();
+    /// @dev Thrown when an invalid avs whose metadata is not registered is provided.
+    error InvalidAVSWithNoMetadataRegistered();
     /// @dev Thrown when an operator's allocation delay has yet to be set.
     error UninitializedAllocationDelay();
     /// @dev Thrown when attempting to slash an operator when they are not slashable.
@@ -262,8 +267,8 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
      * If the operator has any slashable stake allocated to the AVS, it remains slashable until the
      * DEALLOCATION_DELAY has passed.
      * @dev After deregistering within the ALM, this method calls the AVS Registrar's `IAVSRegistrar.
-     * deregisterOperator` method to complete deregistration. Unlike when registering, this call MAY FAIL.
-     * Failure is permitted to prevent AVSs from being able to maliciously prevent operators from deregistering.
+     * deregisterOperator` method to complete deregistration. This call MUST succeed in order for
+     * deregistration to be successful.
      */
     function deregisterFromOperatorSets(
         DeregisterParams calldata params
@@ -281,7 +286,7 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
     /**
      * @notice Called by an AVS to configure the address that is called when an operator registers
      * or is deregistered from the AVS's operator sets. If not set (or set to 0), defaults
-     * to the AVS's address.
+     * to the AVS's address. The registrar address must support the avs via checking `supportsAVS`
      * @param registrar the new registrar address
      */
     function setAVSRegistrar(address avs, IAVSRegistrar registrar) external;

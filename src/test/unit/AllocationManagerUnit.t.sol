@@ -71,6 +71,10 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
         defaultStrategies = strategyMock.toArray();
         defaultOperatorSet = OperatorSet(defaultAVS, 0);
 
+        cheats.prank(defaultAVS);
+        allocationManager.updateAVSMetadataURI(defaultAVS, "https://example.com");
+
+
         _createOperatorSet(defaultOperatorSet, defaultStrategies);
         _registerOperator(defaultOperator);
         _setAllocationDelay(defaultOperator, DEFAULT_OPERATOR_ALLOCATION_DELAY);
@@ -3337,7 +3341,7 @@ contract AllocationManagerUnitTests_registerForOperatorSets is AllocationManager
         }
 
         cheats.expectCall(
-            defaultAVS, abi.encodeWithSelector(IAVSRegistrar.registerOperator.selector, operator, operatorSetIds, "")
+            defaultAVS, abi.encodeWithSelector(IAVSRegistrar.registerOperator.selector, operator, defaultAVS, operatorSetIds, "")
         );
 
         cheats.prank(operator);
@@ -3438,7 +3442,7 @@ contract AllocationManagerUnitTests_deregisterFromOperatorSets is AllocationMana
         }
 
         cheats.expectCall(
-            defaultAVS, abi.encodeWithSelector(IAVSRegistrar.deregisterOperator.selector, operator, operatorSetIds)
+            defaultAVS, abi.encodeWithSelector(IAVSRegistrar.deregisterOperator.selector, operator, defaultAVS, operatorSetIds)
         );
 
         bool callFromAVS = r.Boolean();
@@ -3558,12 +3562,22 @@ contract AllocationManagerUnitTests_createOperatorSets is AllocationManagerUnitT
         allocationManager.createOperatorSets(defaultAVS, CreateSetParams(defaultOperatorSet.id, defaultStrategies).toArray());
     }
 
+    function testRevert_createOperatorSets_InvalidAVSWithNoMetadataRegistered(Randomness r) public rand(r) {
+        address avs = r.Address();
+        cheats.expectRevert(InvalidAVSWithNoMetadataRegistered.selector);
+        cheats.prank(avs);
+        allocationManager.createOperatorSets(avs, CreateSetParams(defaultOperatorSet.id, defaultStrategies).toArray());
+    }
+
     function testFuzz_createOperatorSets_Correctness(
         Randomness r
     ) public rand(r) {
         address avs = r.Address();
         uint256 numOpSets = r.Uint256(1, FUZZ_MAX_OP_SETS);
         uint256 numStrategies = r.Uint256(1, FUZZ_MAX_STRATS);
+
+        cheats.prank(avs);
+        allocationManager.updateAVSMetadataURI(avs, "https://example.com");
 
         CreateSetParams[] memory createSetParams = new CreateSetParams[](numOpSets);
 
@@ -3612,7 +3626,7 @@ contract AllocationManagerUnitTests_setAVSRegistrar is AllocationManagerUnitTest
         Randomness r
     ) public rand(r) {
         address avs = r.Address();
-        IAVSRegistrar avsRegistrar = IAVSRegistrar(r.Address());
+        IAVSRegistrar avsRegistrar = IAVSRegistrar(defaultAVS);
 
         cheats.expectEmit(true, true, true, true, address(allocationManager));
         emit AVSRegistrarSet(avs, avsRegistrar);

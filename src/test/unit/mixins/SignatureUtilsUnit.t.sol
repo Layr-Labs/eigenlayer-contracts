@@ -64,13 +64,30 @@ contract SignatureUtilsUnit is Test, SignatureUtils {
     }
 
     function test_checkIsValidSignatureNow_Expired() public {
+        SignatureUtilsUnit sigUtils = SignatureUtilsUnit(address(this));
+
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPk, digest);
 
         vm.expectRevert(ISignatureUtils.SignatureExpired.selector);
-        _checkIsValidSignatureNow(signer, digest, abi.encode(r, s, v), block.timestamp - 1);
+        vm.prank(address(1));
+        sigUtils.checkIsValidSignatureNow(signer, digest, abi.encode(r, s, v), block.timestamp - 1);
     }
 
-    function testFail_checkIsValidSignatureNow_InvalidSignature() public {
-        _checkIsValidSignatureNow(signer, digest, "", block.timestamp);
+    function test_Revert_checkIsValidSignatureNow_InvalidSignature() public {
+        SignatureUtilsUnit sigUtils = SignatureUtilsUnit(address(this));
+
+        vm.prank(address(1));
+        vm.expectRevert(ISignatureUtils.InvalidSignature.selector);
+        sigUtils.checkIsValidSignatureNow(signer, digest, "", block.timestamp);
+    }
+
+    /// @dev Helper for checking if a signature is valid, reverts if not valid.
+    function checkIsValidSignatureNow(
+        address _signer,
+        bytes32 _signableDigest,
+        bytes memory _signature,
+        uint256 _expiry
+    ) external view {
+        _checkIsValidSignatureNow(_signer, _signableDigest, _signature, _expiry);
     }
 }

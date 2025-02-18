@@ -11,8 +11,9 @@ import "forge-std/Test.sol";
 
 // Define dummy AVSRegistrar contract to prevent revert
 contract AVSRegistrar is IAVSRegistrar {
-    function registerOperator(address operator, uint32[] calldata operatorSetIds, bytes calldata data) external {}
-    function deregisterOperator(address operator, uint32[] calldata operatorSetIds) external {}
+    function registerOperator(address operator, address avs, uint32[] calldata operatorSetIds, bytes calldata data) external {}
+    function deregisterOperator(address operator, address avs, uint32[] calldata operatorSetIds) external {}
+    function supportsAVS(address avs) external view returns (bool) {}
     fallback () external {}
 }
 
