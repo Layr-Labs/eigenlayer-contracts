@@ -92,19 +92,15 @@
 #     ]
 
 [profile.forktest]    
-    optimizer = false
     fuzz.runs = 16
 
 [profile.coverage]
-    optimizer = false
     fuzz.runs = 1
 
 [profile.medium]
-    optimizer = false
     fuzz.runs = 256
 
 [profile.intense]
-    optimizer = false
     fuzz.runs = 5000
 
 [rpc_endpoints]
