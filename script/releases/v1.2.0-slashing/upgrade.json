@@ -1,6 +1,6 @@
 {
     "name": "slashing-prooftra",
-    "from": "1.1.0",
+    "from": "1.1.1",
     "to": "1.2.0",
     "phases": [
         {
@@ -9,11 +9,47 @@
         },
         {
             "type": "multisig",
-            "filename": "2-multisig.s.sol"
+            "filename": "2-queueAndSettimestampSetter.s.sol"
         },
         {
             "type": "multisig",
-            "filename": "3-execute.s.sol"
+            "filename": "3-unpause.s.sol"
+        },
+        {
+            "type": "multisig",
+            "filename": "4-pause.s.sol"
+        },
+        {
+            "type": "multisig",
+            "filename": "5-executeUpgradeAndSettimestampSetter.s.sol"
+        }
+        {
+            "type": "script",
+            "filename": "6-script/start.sh",
+            "arguments": [
+                {
+                    "type": "url",
+                    "passBy": "env",
+                    "inputType": "text",
+                    "name": "RPC_URL",
+                    "prompt": "Enter an ETH RPC URL"
+                },
+                {
+                    "type": "url",
+                    "passBy": "env",
+                    "inputType": "text",
+                    "name": "BEACON_URL",
+                    "prompt": "Enter an ETH2 Beacon RPC URL"
+                }
+            ]
+        },
+        {
+            "type": "multisig",
+            "filename": "6-setProofTimestamp.s.sol"
+        },
+        {
+            "type": "multisig",
+            "filename": "7-unpause.s.sol"
         }
     ]
 }

@@ -3,13 +3,18 @@ pragma solidity ^0.8.12;
 
 import {Deploy} from "./1-eoa.s.sol";
 import "../Env.sol";
+import "forge-std/console.sol";
 
 import {MultisigBuilder} from "zeus-templates/templates/MultisigBuilder.sol";
 import "zeus-templates/utils/Encode.sol";
 
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 
-contract Queue is MultisigBuilder, Deploy {
+/**
+ * Purpose: Queues an ugprade to EP/EPM
+ * and sets the timestamp submitter to the ops multisig
+ */
+contract QueueUpgradeAndSetTimestampSubmitter is MultisigBuilder, Deploy {
     using Env for *;
     using Encode for *;
 
@@ -19,7 +24,7 @@ contract Queue is MultisigBuilder, Deploy {
         override
         prank(Env.opsMultisig())
     {
-        bytes memory calldata_to_executor = _getCalldataToExecutor();
+        bytes memory calldata_to_executor = _getCalldataToExecutor_queueUpgrade();
 
         TimelockController timelock = Env.timelockController();
         timelock.schedule({
@@ -33,7 +38,7 @@ contract Queue is MultisigBuilder, Deploy {
     }
 
     /// @dev Get the calldata to be sent from the timelock to the executor
-    function _getCalldataToExecutor() internal returns (bytes memory) {
+    function _getCalldataToExecutor_queueUpgrade() internal virtual returns (bytes memory) {
         MultisigCall[] storage executorCalls = Encode
             .newMultisigCalls()
             .append({
@@ -41,8 +46,21 @@ contract Queue is MultisigBuilder, Deploy {
                 data: Encode.upgradeableBeacon.upgradeTo({
                     newImpl: address(Env.impl.eigenPod())
                 })
+            })
+            .append({
+                to: Env.proxyAdmin(),
+                data: Encode.proxyAdmin.upgrade({
+                    proxy: address(Env.proxy.eigenPodManager()),
+                    impl: address(Env.impl.eigenPodManager())
+                })
             });
 
+        // Set the timestamp submitter to the ops multisig
+        executorCalls.append({
+            to: address(Env.proxy.eigenPodManager()),
+            data: abi.encodeCall(EigenPodManager.setProofTimestampSetter, (address(Env.opsMultisig())))
+        });
+            
         return
             Encode.gnosisSafe.execTransaction({
                 from: address(Env.timelockController()),
@@ -56,7 +74,7 @@ contract Queue is MultisigBuilder, Deploy {
         runAsEOA();
 
         TimelockController timelock = Env.timelockController();
-        bytes memory calldata_to_executor = _getCalldataToExecutor();
+        bytes memory calldata_to_executor = _getCalldataToExecutor_queueUpgrade();
         bytes32 txHash = timelock.hashOperation({
             target: Env.executorMultisig(),
             value: 0,
@@ -78,5 +96,17 @@ contract Queue is MultisigBuilder, Deploy {
             timelock.isOperationPending(txHash),
             "Transaction should be queued."
         );
+    }
+
+    function getTimelockId() public virtual returns (bytes32) {
+        TimelockController timelock = Env.timelockController();
+        bytes memory calldata_to_executor = _getCalldataToExecutor_queueUpgrade();
+        return timelock.hashOperation({
+            target: Env.executorMultisig(),
+            value: 0,
+            data: calldata_to_executor,
+            predecessor: 0,
+            salt: 0
+        });
     }
 }

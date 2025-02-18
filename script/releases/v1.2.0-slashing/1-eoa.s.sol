@@ -16,6 +16,17 @@ contract Deploy is EOADeployer {
     function _runAsEOA() internal override {
         vm.startBroadcast();
 
+        // Deploy EigenPodManager Impl
+        deployImpl({
+            name: type(EigenPodManager).name,
+            deployedTo: address(new EigenPodManager({
+                _ethPOS: Env.ethPOS(),
+                _eigenPodBeacon: Env.beacon.eigenPod(),
+                _delegationManager: Env.proxy.delegationManager(),
+                _pauserRegistry: Env.impl.pauserRegistry()
+            }))
+        });
+
         // Deploy EigenPodBeacon Impl
         deployImpl({
             name: type(EigenPod).name,
@@ -32,7 +43,9 @@ contract Deploy is EOADeployer {
     function testDeploy() public virtual {
         _runAsEOA();
         _validateNewImplAddresses(false);
+        _validateProxyAdmins();
         _validateImplConstructors();
+        _validateImplsInitialized();
     }
 
     /// @dev Validate that the `Env.impl` addresses are updated to be distinct from what the proxy
@@ -50,6 +63,25 @@ contract Deploy is EOADeployer {
             address(Env.impl.eigenPod()),
             "eigenPod impl failed"
         );
+
+        assertion(
+            _getProxyImpl(address(Env.proxy.eigenPodManager())),
+            address(Env.impl.eigenPodManager()),
+            "eigenPodManager impl failed"
+        );
+    }
+
+    /// @dev Ensure each deployed TUP/beacon is owned by the proxyAdmin/executorMultisig
+    function _validateProxyAdmins() internal view {
+        assertTrue(
+            Env.beacon.eigenPod().owner() == Env.executorMultisig(),
+            "eigenPod beacon owner incorrect"
+        );
+
+        assertTrue(
+            _getProxyAdmin(address(Env.proxy.eigenPodManager())) == Env.proxyAdmin(),
+            "eigenPodManager proxyAdmin incorrect"
+        );
     }
 
     /// @dev Validate the immutables set in the new implementation constructors
@@ -59,14 +91,25 @@ contract Deploy is EOADeployer {
         assertTrue(eigenPod.ethPOS() == Env.ethPOS(), "ep.ethPOS invalid");
         assertTrue(eigenPod.eigenPodManager() == Env.proxy.eigenPodManager(), "ep.epm invalid");
         assertTrue(eigenPod.GENESIS_TIME() == Env.EIGENPOD_GENESIS_TIME(), "ep.genesis invalid");
-        if (block.chainid == 5) {
-            assertEq(BeaconChainProofs.PECTRA_FORK_TIMESTAMP, 1_739_352_768);
-        } 
-        
-        // TODO: set this to 0 for mainnet, till the fork timestamp is provided
-        if (block.chainid == 1) {
-            assertEq(BeaconChainProofs.PECTRA_FORK_TIMESTAMP, 0);
-        }
+
+        /// manager/
+        EigenPodManager eigenPodManager = Env.impl.eigenPodManager();
+        assertTrue(eigenPodManager.ethPOS() == Env.ethPOS(), "epm.ethPOS invalid");
+        assertTrue(eigenPodManager.eigenPodBeacon() == Env.beacon.eigenPod(), "epm.epBeacon invalid");
+        assertTrue(eigenPodManager.delegationManager() == Env.proxy.delegationManager(), "epm.dm invalid");
+        assertTrue(eigenPodManager.pauserRegistry() == Env.impl.pauserRegistry(), "epm.pR invalid");
+    }
+
+    function _validateImplsInitialized() internal {
+        bytes memory errInit = "Initializable: contract is already initialized";
+
+        EigenPod eigenPod = Env.impl.eigenPod();
+        vm.expectRevert(errInit);
+        eigenPod.initialize(address(0));
+
+        EigenPodManager eigenPodManager = Env.impl.eigenPodManager();
+        vm.expectRevert(errInit);
+        eigenPodManager.initialize(address(0), 0);
     }
 
     /// @dev Query and return `proxyAdmin.getProxyImplementation(proxy)`
