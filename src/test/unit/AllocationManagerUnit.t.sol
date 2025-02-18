@@ -3337,7 +3337,7 @@ contract AllocationManagerUnitTests_registerForOperatorSets is AllocationManager
         }
 
         cheats.expectCall(
-            defaultAVS, abi.encodeWithSelector(IAVSRegistrar.registerOperator.selector, operator, operatorSetIds, "")
+            defaultAVS, abi.encodeWithSelector(IAVSRegistrar.registerOperator.selector, operator, defaultAVS, operatorSetIds, "")
         );
 
         cheats.prank(operator);
@@ -3438,7 +3438,7 @@ contract AllocationManagerUnitTests_deregisterFromOperatorSets is AllocationMana
         }
 
         cheats.expectCall(
-            defaultAVS, abi.encodeWithSelector(IAVSRegistrar.deregisterOperator.selector, operator, operatorSetIds)
+            defaultAVS, abi.encodeWithSelector(IAVSRegistrar.deregisterOperator.selector, operator, defaultAVS, operatorSetIds)
         );
 
         bool callFromAVS = r.Boolean();

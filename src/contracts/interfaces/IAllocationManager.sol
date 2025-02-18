@@ -262,8 +262,8 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
      * If the operator has any slashable stake allocated to the AVS, it remains slashable until the
      * DEALLOCATION_DELAY has passed.
      * @dev After deregistering within the ALM, this method calls the AVS Registrar's `IAVSRegistrar.
-     * deregisterOperator` method to complete deregistration. Unlike when registering, this call MAY FAIL.
-     * Failure is permitted to prevent AVSs from being able to maliciously prevent operators from deregistering.
+     * deregisterOperator` method to complete deregistration. This call MUST succeed in order for
+     * deregistration to be successful.
      */
     function deregisterFromOperatorSets(
         DeregisterParams calldata params
@@ -281,7 +281,7 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
     /**
      * @notice Called by an AVS to configure the address that is called when an operator registers
      * or is deregistered from the AVS's operator sets. If not set (or set to 0), defaults
-     * to the AVS's address.
+     * to the AVS's address. The registrar address must support the avs via checking `supportsAVS`
      * @param registrar the new registrar address
      */
     function setAVSRegistrar(address avs, IAVSRegistrar registrar) external;

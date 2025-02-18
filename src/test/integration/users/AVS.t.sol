@@ -63,6 +63,10 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
         return _NAME;
     }
 
+    function supportsAVS(address avs) public view override returns (bool) {
+        return avs == address(this);
+    }
+
     /// -----------------------------------------------------------------------
     /// AllocationManager
     /// -----------------------------------------------------------------------
@@ -200,11 +204,12 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
 
     function registerOperator(
         address operator,
+        address avs,
         uint32[] calldata operatorSetIds,
         bytes calldata data
     ) external override {}
 
-    function deregisterOperator(address operator, uint32[] calldata operatorSetIds) external override {}
+    function deregisterOperator(address operator, address avs, uint32[] calldata operatorSetIds) external override {}
 
     /// -----------------------------------------------------------------------
     /// Internal Helpers

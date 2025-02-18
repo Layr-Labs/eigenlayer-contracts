@@ -301,8 +301,8 @@ struct DeregisterParams {
  * If the operator has any slashable stake allocated to the AVS, it remains slashable until the
  * DEALLOCATION_DELAY has passed.
  * @dev After deregistering within the ALM, this method calls the AVS Registrar's `IAVSRegistrar.
- * deregisterOperator` method to complete deregistration. Unlike when registering, this call MAY FAIL.
- * Failure is permitted to prevent AVSs from being able to maliciously prevent operators from deregistering.
+ * deregisterOperator` method to complete deregistration. This call MUST succeed in order for
+ * deregistration to be successful.
  */
 function deregisterFromOperatorSets(
     DeregisterParams calldata params
@@ -313,9 +313,7 @@ function deregisterFromOperatorSets(
 
 _Note: this method can be called directly by an operator/AVS, or by a caller authorized by the operator/AVS. See [`PermissionController.md`](../permissions/PermissionController.md) for details._
 
-This method may be called by EITHER an operator OR an AVS to which an operator is registered; it is intended to allow deregistration to be triggered by EITHER party. This method generally inverts the effects of `registerForOperatorSets`, with two specific exceptions:
-1. As part of deregistration, each operator set is removed from the operator's `registeredSets`. HOWEVER, **any stake allocations to that operator set will remain slashable for `DEALLOCATION_DELAY` blocks.**
-2. Once all sets have been removed, the AVS's configured `IAVSRegistrar` is called to complete deregistration on the AVS side. **Unlike registration, if this call reverts it will be ignored.** This is to stop an AVS from maliciously preventing operators from deregistering.
+This method may be called by EITHER an operator OR an AVS to which an operator is registered; it is intended to allow deregistration to be triggered by EITHER party. This method generally inverts the effects of `registerForOperatorSets` and as part of deregistration, each operator set is removed from the operator's `registeredSets`. HOWEVER, **any stake allocations to that operator set will remain slashable for `DEALLOCATION_DELAY` blocks.**
 
 This method makes an external call to the `IAVSRegistrar.deregisterOperator` method, passing in the deregistering `operator` and the `operatorSetIds` being deregistered from. From [`IAVSRegistrar.sol`](../../src/contracts/interfaces/IAVSRegistrar.sol):
 
@@ -337,7 +335,7 @@ function deregisterOperator(address operator, uint32[] calldata operatorSetIds) 
     * `slashableUntil: block.number + DEALLOCATION_DELAY`
         * As mentioned above, this allows for AVSs to slash deregistered operators until `block.number == slashableUntil`
 * Emits an `OperatorRemovedFromOperatorSet` event for each operator
-* Passes the `operator` and `operatorSetIds` to the AVS's `AVSRegistrar`, which can arbitrarily handle the deregistration request
+* Passes the `operator`, `avs`, and `operatorSetIds` to the AVS's `AVSRegistrar`, which can arbitrarily handle the deregistration request
 
 *Requirements*:
 <!-- * Address MUST be registered as an operator -->
@@ -345,7 +343,7 @@ function deregisterOperator(address operator, uint32[] calldata operatorSetIds) 
 * Caller MUST be authorized, either the operator/AVS themselves, or an admin/appointee (see [`PermissionController.md`](../permissions/PermissionController.md))
 * Each operator set ID MUST exist for the given AVS
 * Operator MUST be registered for the given operator sets
-* Note that, unlike `registerForOperatorSets`, the AVS's `AVSRegistrar` MAY revert and the deregistration will still succeed
+* The call to the AVS's configured `IAVSRegistrar` MUST NOT revert
 
 ---
 
@@ -690,7 +688,7 @@ The allocation delay's primary purpose is to give stakers delegated to an operat
 /**
  * @notice Called by an AVS to configure the address that is called when an operator registers
  * or is deregistered from the AVS's operator sets. If not set (or set to 0), defaults
- * to the AVS's address.
+ * to the AVS's address. The registrar address must support the avs via checking `supportsAVS`
  * @param registrar the new registrar address
  */
 function setAVSRegistrar(
@@ -704,8 +702,11 @@ function setAVSRegistrar(
 _Note: this method can be called directly by an AVS, or by a caller authorized by the AVS. See [`PermissionController.md`](../permissions/PermissionController.md) for details._
 
 Sets the `registrar` for a given `avs`. Note that if the registrar is set to 0, `getAVSRegistrar` will return the AVS's address.
+To prevent AVSRegistrar contracts from being configured for different AVSs without consent, we include an additional check `registrar.supportsAVS` that must pass in order for a registrar to be configured. 
+It is also recommended for AVSs to validate the input data in the `registerOperator`,`deregisterOperator` callback functions, validating the correct `operator`, `avs`, `operatorSetIds` are being passed into the AVS contracts.
 
-The avs registrar is called when operators register to or deregister from an operator set. From [`IAVSRegistrar.sol`](../../src/contracts/interfaces/IAVSRegistrar.sol), the avs registrar should use the following interface:
+The AVS registrar is called when operators register to or deregister from an operator set. From [`IAVSRegistrar.sol`](../../src/contracts/interfaces/IAVSRegistrar.sol), the AVS registrar should use the following interface:
+
 
 ```solidity
 interface IAVSRegistrar {
@@ -714,22 +715,39 @@ interface IAVSRegistrar {
      * for one or more operator sets. This method should revert if registration
      * is unsuccessful.
      * @param operator the registering operator
+     * @param avs the address identifier of the AVS
      * @param operatorSetIds the list of operator set ids being registered for
      * @param data arbitrary data the operator can provide as part of registration
      */
-    function registerOperator(address operator, uint32[] calldata operatorSetIds, bytes calldata data) external;
+    function registerOperator(
+        address operator,
+        address avs,
+        uint32[] calldata operatorSetIds,
+        bytes calldata data
+    ) external;
 
     /**
      * @notice Called by the AllocationManager when an operator is deregistered from
      * one or more operator sets. If this method reverts, it is ignored.
      * @param operator the deregistering operator
+     * @param avs the address identifier of the AVS
      * @param operatorSetIds the list of operator set ids being deregistered from
      */
-    function deregisterOperator(address operator, uint32[] calldata operatorSetIds) external;
+    function deregisterOperator(address operator, address avs, uint32[] calldata operatorSetIds) external;
+
+    /**
+     * @notice Called by the AllocationManager to ensure the AVSRegistrar being configured
+     * supports the AVS.
+     * @param avs the address identifier of the AVS
+     * @return bool if the avs is supported by the registrar
+     */
+    function supportsAVS(
+        address avs
+    ) external view returns (bool);
 }
 ```
 
-Note that when an operator registers, registration will FAIL if the call to `IAVSRegistrar` reverts. However, when an operator deregisters, a revert in `deregisterOperator` is ignored.
+Note that when an operator registration and deregistration will FAIL if the call to `IAVSRegistrar` reverts. An operator is trusting the AVS's contracts upon registration that they also have the ability to deregister from their AVS. The operator can always reduce their slashable allocation to an AVS if they wish to remove slashable risk.
 
 *Effects*:
 * Sets `_avsRegistrar[avs]` to `registrar`
@@ -737,6 +755,7 @@ Note that when an operator registers, registration will FAIL if the call to `IAV
 
 *Requirements*:
 * Caller MUST be authorized, either as the AVS itself or an admin/appointee (see [`PermissionController.md`](../permissions/PermissionController.md))
+* Registrar must be supported by the AVS checked by calling `registrar.supportsAVS(avs)`
 
 #### `updateAVSMetadataURI`
 
