@@ -195,7 +195,7 @@ jobs:
           submodules: recursive
 
       # Restore Foundry and Forge cache
-      - name: Cache Foundry dependencies
+      - name: Cache Foundry Dependencies
         uses: actions/cache@v3
         with:
           path: |
