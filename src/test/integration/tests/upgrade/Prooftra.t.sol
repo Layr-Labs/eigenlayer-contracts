@@ -82,16 +82,17 @@ contract Integration_Upgrade_Pectra is UpgradeTest, EigenPodPausingConstants {
         _upgradeEigenLayerContracts();
 
         // 4. Advance epoch, generating consensus rewards and withdrawing anything over 64 ETH
+        // Not: Nothing is withdrawn because all validators were created with 32 ETH
         beaconChain.advanceEpoch();
-        uint64 expectedWithdrawnGwei = uint64(validators.length) * beaconChain.CONSENSUS_REWARD_AMOUNT_GWEI();
+        uint64 expectedEarnedGwei = uint64(validators.length) * beaconChain.CONSENSUS_REWARD_AMOUNT_GWEI();
 
         // 5. Start a checkpoint
         staker.startCheckpoint();
-        check_StartCheckpoint_WithPodBalance_State(staker, expectedWithdrawnGwei);
+        check_StartCheckpoint_State(staker);
 
         // 6. Complete in progress checkpoint
         staker.completeCheckpoint();
-        check_CompleteCheckpoint_WithPodBalance_State(staker, expectedWithdrawnGwei);
+        check_CompleteCheckpoint_EarnOnBeacon_State(staker, expectedEarnedGwei);
     }
 
     function _pauseForkAndUpgrade(uint64 pectraForkTimestamp) internal {

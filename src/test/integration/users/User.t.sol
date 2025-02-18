@@ -532,7 +532,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     /// Note: If the user does not have enough ETH to start a validator, this method reverts
     /// Note: This method also advances one epoch forward on the beacon chain, so that
     /// withdrawal credential proofs are generated for each validator.
-    function _startValidators() internal returns (uint40[] memory, uint64, uint) {
+    function _startValidators() internal virtual returns (uint40[] memory, uint64, uint) {
         uint originalBalance = address(this).balance;
         uint balanceWei = address(this).balance;
         uint numValidators = 0;
