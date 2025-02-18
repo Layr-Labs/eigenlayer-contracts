@@ -24,7 +24,7 @@ jobs:
           sudo mv typos /usr/local/bin/
 
       - name: Run typos check
-        run:  typos --exclude "**/lib/**" --exclude "**/docs/images/**" --config .github/configs/typos-cli.toml --diff
+        run:  typos --config .github/configs/typos-cli.toml
 
   commitlint:
     name: Commit Linting
