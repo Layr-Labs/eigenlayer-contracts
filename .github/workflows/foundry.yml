@@ -181,10 +181,11 @@ jobs:
           version: stable
 
       # Install LCOV for coverage report generation.
-      - name: Install LCOV
+      - name: Install LCOV (Prebuilt)
         run: |
-          sudo apt-get install -y lcov
-        id: lcov
+          curl -L https://github.com/linux-test-project/lcov/releases/download/v1.16/lcov-1.16.tar.gz | tar xz
+          sudo cp lcov-1.16/bin/* /usr/local/bin/
+          sudo cp -r lcov-1.16/man/* /usr/share/man/
 
       # Build the project and display contract sizes.
       - name: "Forge Build"
