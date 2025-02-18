@@ -245,6 +245,7 @@ Optionally, the `avs` can provide a list of `strategies`, specifying which strat
 
 *Requirements*:
 * Caller MUST be authorized, either as the AVS itself or an admin/appointee (see [`PermissionController.md`](../permissions/PermissionController.md))
+* AVS MUST have registered metadata
 * For each `CreateSetParams` element:
     * Each `params.operatorSetId` MUST NOT already exist in `_operatorSets[avs]`
     
