@@ -244,7 +244,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         assertFalse(delegationManager.isDelegated(address(staker)),
             "check_Undelegate_State: staker should not be delegated");
         assert_ValidWithdrawalHashes(withdrawals, withdrawalRoots,
-            "check_Undelegate_State: calculated withdrawl should match returned root");
+            "check_Undelegate_State: calculated withdrawals should match returned roots");
         assert_AllWithdrawalsPending(withdrawalRoots,
             "check_Undelegate_State: stakers withdrawal should now be pending");
         assert_Snap_Added_QueuedWithdrawals(staker, withdrawals,
