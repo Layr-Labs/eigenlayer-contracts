@@ -68,7 +68,20 @@ function updateAVSMetadataURI(
 
 _Note: this method can be called directly by an AVS, or by a caller authorized by the AVS. See [`PermissionController.md`](../permissions/PermissionController.md) for details._
 
-Below is the format AVSs should use when updating their metadata URI. This is not validated onchain.
+Below is the format AVSs should use when updating their metadata URI initially. This is not validated onchain.
+
+```json
+{
+    "name": "AVS",
+    "website": "https.avs.xyz/",
+    "description": "Some description about",
+    "logo": "http://github.com/logo.png",
+    "twitter": "https://twitter.com/avs",
+}
+```
+
+
+Later on, once AVSs have created operator sets, content in their metadata URI can be updated subsequently.
 
 ```json
 {
