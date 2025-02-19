@@ -52,7 +52,7 @@ contract SetProofTimestamp is ExecuteUpgradeAndSetTimestampSubmitter {
         _unsafeResetHasPranked();
 
         // Set the proof timestamp
-        proofTimestamp = 1713561600; // Using holesky pectra fork timestamp for testing
+        proofTimestamp = 1740434112; // Using holesky pectra fork timestamp for testing
         execute();   
 
         // Validate that the proof timestamp is set

@@ -54,7 +54,7 @@ contract ExecuteUnpause is SetProofTimestamp {
         _unsafeResetHasPranked();
 
         // Set the proof timestamp
-        SetProofTimestamp.setTimestamp(1713561600); // Using holesky pectra fork timestamp for testing
+        SetProofTimestamp.setTimestamp(1740434112); // Using holesky pectra fork timestamp for testing
         SetProofTimestamp._runAsMultisig();
         _unsafeResetHasPranked();
 

@@ -26,27 +26,16 @@ type SignedBeaconBlockResponse struct {
 }
 
 type TArgs struct {
-	ChainId    string
 	BeaconNode string
-}
-
-type ChainForkData struct {
-	ForkSlot uint64
-}
-
-var chainForkData = map[string]ChainForkData{
-	"1": { // mainnet
-		ForkSlot: 0,
-	},
-	"17000": { // holesky
-		ForkSlot: 3710976,
-	},
+	ForkSlot   uint64
 }
 
 func main() {
+	forkSlot, _ := strconv.ParseUint(os.Getenv("ZEUS_ENV_pectraForkSlot"), 10, 64)
+
 	err := runScript(TArgs{
-		ChainId:    os.Getenv("CHAIN_ID"),
 		BeaconNode: os.Getenv("BEACON_URL"),
+		ForkSlot:   forkSlot,
 	})
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
@@ -64,13 +53,6 @@ func panicOnError(msg string, err error) {
 func runScript(args TArgs) error {
 	ctx := context.Background()
 
-	// Validate chain ID
-	if args.ChainId != "1" && args.ChainId != "17000" {
-		return fmt.Errorf("invalid chain ID: %s. Must be either '1' (mainnet) or '17000' (holesky)", args.ChainId)
-	}
-
-	forkData := chainForkData[args.ChainId]
-
 	beaconClient, err := attestantio.New(ctx,
 		attestantio.WithAddress(args.BeaconNode),
 	)
@@ -78,7 +60,7 @@ func runScript(args TArgs) error {
 
 	httpClient := beaconClient.(*attestantio.Service)
 	// Start checking from fork slot
-	slotNum := forkData.ForkSlot
+	slotNum := args.ForkSlot
 
 	for {
 		opts := &api.BeaconBlockHeaderOpts{Block: strconv.FormatUint(slotNum, 10)}

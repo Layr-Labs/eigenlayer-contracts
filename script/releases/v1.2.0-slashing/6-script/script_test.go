@@ -22,13 +22,7 @@ func runTestWithForkSlot(t *testing.T, forkSlot uint64, expectedOutput string) {
 		t.Fatalf("Error loading .env file: %v", err)
 	}
 
-	// Override chainForkData for testing
-	chainForkData["17000"] = ChainForkData{
-		ForkSlot: forkSlot,
-	}
-
 	// Get environment variables
-	chainId := "17000" // Force Holesky testnet
 	beaconNode := os.Getenv("BEACON_URL")
 
 	if beaconNode == "" {
@@ -37,8 +31,8 @@ func runTestWithForkSlot(t *testing.T, forkSlot uint64, expectedOutput string) {
 
 	// Run the script
 	err = runScript(TArgs{
-		ChainId:    chainId,
 		BeaconNode: beaconNode,
+		ForkSlot:   forkSlot,
 	})
 
 	// Restore stdout
