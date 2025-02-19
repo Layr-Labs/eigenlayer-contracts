@@ -3,11 +3,11 @@ CONTAINER_NAME = eigenlayer-contracts
 
 .PHONY: install-hooks
 install-hooks:
-	cp bin/pre-commit.sh .git/hooks/pre-commit
+	cp .github/bin/pre-commit.sh .git/hooks/pre-commit
 
 .PHONY: install-deps
 install-deps:
-	./bin/install-deps.sh
+	./.github/bin/install-deps.sh
 
 .PHONY: deps
 deps: install-hooks install-deps
@@ -18,7 +18,7 @@ compile:
 
 .PHONY: bindings
 bindings: compile
-	./bin/compile-bindings.sh
+	./.github/bin/compile-bindings.sh
 
 .PHONY: all
 all: compile bindings
@@ -27,7 +27,7 @@ gha:
 	git config --global --add safe.directory "*"
 	forge install
 	forge b
-	./bin/compile-bindings.sh
+	./.github/bin/compile-bindings.sh
 
 docker:
 	docker build --progress=plain -t ${CONTAINER_NAME}:latest .
@@ -45,4 +45,4 @@ gha-docker:
 	docker run -v $(PWD):/build -w /build --rm -i ${CONTAINER_NAME}:latest bash -c "make gha"
 
 storage-report:
-	bash "bin/storage-report.sh" "docs/storage-report/"
+	bash ".github/bin/storage-report.sh" "docs/storage-report/"
