@@ -15,6 +15,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
 
     User staker;
     IStrategy[] strategies;
+    IERC20[] tokens;
     uint[] initTokenBalances;
     uint[] initDepositShares;
 
@@ -29,6 +30,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         (staker, strategies, initTokenBalances) = _newRandomStaker();
         (operator,,) = _newRandomOperator();
         (avs,) = _newRandomAVS();
+        tokens = _getUnderlyingTokens(strategies);
 
         uint256[] memory tokensToDeposit = new uint256[](initTokenBalances.length);
         numTokensRemaining = new uint256[](initTokenBalances.length);
@@ -65,32 +67,26 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
     }
   
-    function testFuzz_fullSlash_queue_complete_redeposit(
+    function testFuzz_fullSlash_undelegate_complete_redeposit(
         uint24 _random
     ) public rand(_random) {
         // 4. Fully slash operator
-        SlashingParams memory slashingParams;
-        {
-            (IStrategy[] memory strategiesToSlash, uint256[] memory wadsToSlash) =
-                _strategiesAndWadsForFullSlash(operatorSet);
-
-            slashingParams = avs.slashOperator(operator, operatorSet.id, strategiesToSlash, wadsToSlash);
-            assert_Snap_Allocations_Slashed(slashingParams, operatorSet, true, "operator allocations should be slashed");
-            assert_Snap_Unchanged_Staker_DepositShares(staker, "staker deposit shares should be unchanged after slashing");
-            assert_Snap_StakerWithdrawableShares_AfterSlash(staker, allocateParams, slashingParams, "staker deposit shares should be slashed");
-        }
+        SlashingParams memory slashParams = _genSlashing_Full(operator, operatorSet);
+        avs.slashOperator(slashParams);
+        check_FullySlashed_State(operator, allocateParams, slashParams);
 
         // 5. Undelegate from an operator
         Withdrawal[] memory withdrawals = staker.undelegate();
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
 
-        // 6. Complete withdrawal
+        // 6. Complete withdrawal. Staker should receive 0 shares/tokens after a full slash
         _rollBlocksForCompleteWithdrawals(withdrawals);
+        uint[] memory expectedShares = new uint[](strategies.length);
+        uint[] memory expectedTokens = new uint[](strategies.length);
+
         for (uint256 i = 0; i < withdrawals.length; ++i) {
-            uint256[] memory expectedTokens =
-                _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].scaledShares);
             staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State_AfterSlash(staker, operator, withdrawals[i], allocateParams, slashingParams, expectedTokens);
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], strategies, expectedShares, tokens, expectedTokens);
         }
 
         // 7. Redeposit
@@ -111,24 +107,18 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
 
         // 5. Fully slash operator
-        SlashingParams memory slashingParams;
-        {
-            (IStrategy[] memory strategiesToSlash, uint256[] memory wadsToSlash) =
-                _strategiesAndWadsForFullSlash(operatorSet);
+        SlashingParams memory slashParams = _genSlashing_Full(operator, operatorSet);
+        avs.slashOperator(slashParams);
+        check_FullySlashed_State(operator, allocateParams, slashParams);
 
-            slashingParams = avs.slashOperator(operator, operatorSet.id, strategiesToSlash, wadsToSlash);
-            assert_Snap_Allocations_Slashed(slashingParams, operatorSet, true, "operator allocations should be slashed");
-            assert_Snap_Unchanged_Staker_DepositShares(staker, "staker deposit shares should be unchanged after slashing");
-            assert_Snap_StakerWithdrawableShares_AfterSlash(staker, allocateParams, slashingParams, "staker deposit shares should be slashed");
-        }
-
-        // 6. Complete withdrawal
+        // 6. Complete withdrawal. Staker should receive 0 shares/tokens after a full slash
         _rollBlocksForCompleteWithdrawals(withdrawals);
+        uint[] memory expectedShares = new uint[](strategies.length);
+        uint[] memory expectedTokens = new uint[](strategies.length);
+
         for (uint256 i = 0; i < withdrawals.length; ++i) {
-            uint256[] memory expectedTokens =
-                _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].scaledShares);
             staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State_AfterSlash(staker, operator, withdrawals[i], allocateParams, slashingParams, expectedTokens);
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], strategies, expectedShares, tokens, expectedTokens);
         }
 
         // 7. Redeposit
@@ -168,8 +158,9 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         _rollBlocksForCompleteWithdrawals(withdrawals);
 
         for (uint256 i = 0; i < withdrawals.length; ++i) {
+            uint[] memory expectedShares = _calculateExpectedShares(withdrawals[i]);
             staker.completeWithdrawalAsShares(withdrawals[i]);
-            check_Withdrawal_AsShares_State_AfterSlash(staker, operator, withdrawals[i], allocateParams, slashingParams);
+            check_Withdrawal_AsShares_Undelegated_State(staker, operator, withdrawals[i], withdrawals[i].strategies, expectedShares);
         }
 
         // Check final state:
