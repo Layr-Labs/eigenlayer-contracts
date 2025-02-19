@@ -71,6 +71,10 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
         defaultStrategies = strategyMock.toArray();
         defaultOperatorSet = OperatorSet(defaultAVS, 0);
 
+        cheats.prank(defaultAVS);
+        allocationManager.updateAVSMetadataURI(defaultAVS, "https://example.com");
+
+
         _createOperatorSet(defaultOperatorSet, defaultStrategies);
         _registerOperator(defaultOperator);
         _setAllocationDelay(defaultOperator, DEFAULT_OPERATOR_ALLOCATION_DELAY);
@@ -3856,12 +3860,22 @@ contract AllocationManagerUnitTests_createOperatorSets is AllocationManagerUnitT
         );
     }
 
+    function testRevert_createOperatorSets_NonexistentAVSMetadata(Randomness r) public rand(r) {
+        address avs = r.Address();
+        cheats.expectRevert(NonexistentAVSMetadata.selector);
+        cheats.prank(avs);
+        allocationManager.createOperatorSets(avs, CreateSetParams(defaultOperatorSet.id, defaultStrategies).toArray());
+    }
+
     function testFuzz_createOperatorSets_Correctness(
         Randomness r
     ) public rand(r) {
         address avs = r.Address();
         uint256 numOpSets = r.Uint256(1, FUZZ_MAX_OP_SETS);
         uint256 numStrategies = r.Uint256(1, FUZZ_MAX_STRATS);
+
+        cheats.prank(avs);
+        allocationManager.updateAVSMetadataURI(avs, "https://example.com");
 
         CreateSetParams[] memory createSetParams = new CreateSetParams[](numOpSets);
 

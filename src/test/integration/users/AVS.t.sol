@@ -71,6 +71,18 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
     /// AllocationManager
     /// -----------------------------------------------------------------------
 
+    function updateAVSMetadataURI(
+        string memory uri
+    ) public createSnapshot {
+        print.method("updateAVSMetadataURI");
+        
+        console.log("Setting AVS metadata URI to: %s", uri);
+        _tryPrankAppointee_AllocationManager(IAllocationManager.updateAVSMetadataURI.selector);
+        allocationManager.updateAVSMetadataURI(address(this), uri);
+        
+        print.gasUsed();
+    }
+
     function createOperatorSets(
         IStrategy[][] memory strategies
     ) public createSnapshot returns (OperatorSet[] memory operatorSets) {

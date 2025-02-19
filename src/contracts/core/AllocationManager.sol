@@ -330,11 +330,18 @@ contract AllocationManager is
 
     /// @inheritdoc IAllocationManager
     function updateAVSMetadataURI(address avs, string calldata metadataURI) external checkCanCall(avs) {
+        if (!_avsRegisteredMetadata[avs]) {
+            _avsRegisteredMetadata[avs] = true;
+        }
+
         emit AVSMetadataURIUpdated(avs, metadataURI);
     }
 
     /// @inheritdoc IAllocationManager
     function createOperatorSets(address avs, CreateSetParams[] calldata params) external checkCanCall(avs) {
+        // Check that the AVS exists and has registered metadata
+        require(_avsRegisteredMetadata[avs], NonexistentAVSMetadata());
+
         for (uint256 i = 0; i < params.length; i++) {
             OperatorSet memory operatorSet = OperatorSet(avs, params[i].operatorSetId);
 
