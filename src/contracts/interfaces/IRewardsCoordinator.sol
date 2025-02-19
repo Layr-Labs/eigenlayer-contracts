@@ -244,7 +244,6 @@ interface IRewardsCoordinatorTypes {
         bytes[] tokenTreeProofs;
         TokenTreeMerkleLeaf[] tokenLeaves;
     }
-}
 
     /**
      * @notice Parameters for the RewardsCoordinator constructor
