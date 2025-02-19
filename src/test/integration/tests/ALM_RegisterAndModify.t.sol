@@ -52,11 +52,9 @@ contract Integration_InitRegistered is Integration_ALMBase {
         check_Registration_State_NoAllocation(operator, operatorSet, allStrats);
     }
 
-    function testFuzz_allocate_deallocate_deregister(
-        uint24 _random
-    ) public rand(_random) {
+    function testFuzz_allocate_deallocate_deregister(uint24 _r) public rand(_r) {
         // 1. Allocate to the operator set
-        allocateParams = _genAllocation_AllAvailable(operator, operatorSet);
+        allocateParams = _genAllocation_Rand(operator, operatorSet);
         operator.modifyAllocations(allocateParams);
         check_IncrAlloc_State_Slashable(operator, allocateParams);
 
@@ -77,11 +75,9 @@ contract Integration_InitRegistered is Integration_ALMBase {
         check_FullyDeallocated_State(operator, allocateParams, deallocateParams);
     }
 
-    function testFuzz_allocate_deallocate_waitDeallocate_deregister(
-        uint24 _random
-    ) public rand(_random) {
+    function testFuzz_allocate_deallocate_waitDeallocate_deregister(uint24 _r) public rand(_r) {
         // 1. Allocate to the operator set
-        allocateParams = _genAllocation_AllAvailable(operator, operatorSet);
+        allocateParams = _genAllocation_Rand(operator, operatorSet);
         operator.modifyAllocations(allocateParams);
         check_IncrAlloc_State_Slashable(operator, allocateParams);
 
@@ -111,7 +107,7 @@ contract Integration_InitRegistered is Integration_ALMBase {
         _rollForward_DeallocationDelay();
 
         // 3. Allocate to operator set
-        allocateParams = _genAllocation_AllAvailable(operator, operatorSet);
+        allocateParams = _genAllocation_Rand(operator, operatorSet);
         operator.modifyAllocations(allocateParams);
         check_IncrAlloc_State_NotSlashable(operator, allocateParams);
 
@@ -132,7 +128,7 @@ contract Integration_InitRegistered is Integration_ALMBase {
 
         // 2. Before deregistration is complete, allocate to operator set
         // The operator should be slashable after the allocation delay
-        allocateParams = _genAllocation_AllAvailable(operator, operatorSet);
+        allocateParams = _genAllocation_Rand(operator, operatorSet);
         operator.modifyAllocations(allocateParams);
         check_IncrAlloc_State_Slashable(operator, allocateParams);
 
@@ -156,7 +152,7 @@ contract Integration_InitRegistered is Integration_ALMBase {
 
         // 2. Before deregistration is complete, allocate to operator set
         // The operator should be slashable after the allocation delay
-        allocateParams = _genAllocation_AllAvailable(operator, operatorSet);
+        allocateParams = _genAllocation_Rand(operator, operatorSet);
         operator.modifyAllocations(allocateParams);
         check_IncrAlloc_State_Slashable(operator, allocateParams);
 
@@ -184,9 +180,7 @@ contract Integration_InitAllocated is Integration_ALMBase {
         check_IncrAlloc_State_NotSlashable(operator, allocateParams);
     }
 
-    function testFuzz_register_deallocate_deregister(
-        uint24 _random
-    ) public rand(_random) {
+    function testFuzz_register_deallocate_deregister(uint24 _r) public rand(_r) {
         // 1. Register for the operator set
         operator.registerForOperatorSet(operatorSet);
         check_Registration_State_PendingAllocation(operator, allocateParams);
@@ -208,9 +202,7 @@ contract Integration_InitAllocated is Integration_ALMBase {
         check_FullyDeallocated_State(operator, allocateParams, deallocateParams);
     }
 
-    function testFuzz_waitAllocation_register_deallocate(
-        uint24 _random
-    ) public rand(_random) {
+    function testFuzz_waitAllocation_register_deallocate(uint24 _r) public rand(_r) {
         _rollForward_AllocationDelay(operator);
 
         // 1. Register for the operator set. The allocation immediately becomes slashable
