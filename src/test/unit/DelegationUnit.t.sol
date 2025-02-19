@@ -4846,7 +4846,7 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
         cheats.prank(defaultStaker);
         bytes32 withdrawalRoot = delegationManager.queueWithdrawals(queuedWithdrawalParams)[0];
 
-        Withdrawal memory withdrawal = delegationManager.getQueuedWithdrawal(withdrawalRoot);
+        (Withdrawal memory withdrawal, ) = delegationManager.getQueuedWithdrawal(withdrawalRoot);
         assertEq(withdrawal.staker, defaultStaker, "staker should be msg.sender");
         assertEq(withdrawal.withdrawer, defaultStaker, "withdrawer should be msg.sender");
     }
@@ -8670,16 +8670,16 @@ contract DelegationManagerUnitTests_getQueuedWithdrawals is DelegationManagerUni
 
         // Get shares from withdrawal - should return 50 shares (100 * 0.5) using original magnitude
         // rather than incorrectly returning 100 shares (100 * 1.0) using new magnitude
-        (, uint256[] memory shares) = delegationManager.getQueuedWithdrawalFromRoot(withdrawalRoot);
+        (, uint256[] memory shares) = delegationManager.getQueuedWithdrawal(withdrawalRoot);
         assertEq(shares[0], 50e18, "shares should be 50e18 (100e18 * 0.5) using original magnitude");
     }
 }
 
-contract DelegationManagerUnitTests_getQueuedWithdrawalFromRoot is DelegationManagerUnitTests {
+contract DelegationManagerUnitTests_getQueuedWithdrawal is DelegationManagerUnitTests {
     using ArrayLib for *;
     using SlashingLib for *;
 
-    function test_getQueuedWithdrawalFromRoot_Correctness(Randomness r) public rand(r) {
+    function test_getQueuedWithdrawal_Correctness(Randomness r) public rand(r) {
         // Set up initial deposit
         uint256 depositAmount = r.Uint256(1 ether, 100 ether);
         _depositIntoStrategies(defaultStaker, strategyMock.toArray(), depositAmount.toArrayU256());
@@ -8703,14 +8703,14 @@ contract DelegationManagerUnitTests_getQueuedWithdrawalFromRoot is DelegationMan
         delegationManager.queueWithdrawals(queuedWithdrawalParams);
 
         // Get shares from queued withdrawal
-        (, uint256[] memory shares) = delegationManager.getQueuedWithdrawalFromRoot(withdrawalRoot);
+        (, uint256[] memory shares) = delegationManager.getQueuedWithdrawal(withdrawalRoot);
 
         // Verify withdrawal details match
         assertEq(shares.length, 1, "incorrect shares array length");
         assertEq(shares[0], depositAmount, "incorrect shares amount");
     }
 
-    function test_getQueuedWithdrawalFromRoot_AfterSlashing(Randomness r) public rand(r) {
+    function test_getQueuedWithdrawal_AfterSlashing(Randomness r) public rand(r) {
         // Set up initial deposit
         uint256 depositAmount = r.Uint256(1 ether, 100 ether);
         _depositIntoStrategies(defaultStaker, strategyMock.toArray(), depositAmount.toArrayU256());
@@ -8739,20 +8739,20 @@ contract DelegationManagerUnitTests_getQueuedWithdrawalFromRoot is DelegationMan
         delegationManager.slashOperatorShares(defaultOperator, strategyMock, WAD, 0.5 ether);
 
         // Get shares from queued withdrawal
-        (, uint256[] memory shares) = delegationManager.getQueuedWithdrawalFromRoot(withdrawalRoot);
+        (, uint256[] memory shares) = delegationManager.getQueuedWithdrawal(withdrawalRoot);
 
         // Verify withdrawal details match and shares are slashed
         assertEq(shares.length, 1, "incorrect shares array length");
         assertEq(shares[0], depositAmount / 2, "shares not properly slashed");
     }
 
-    function test_getQueuedWithdrawalFromRoot_NonexistentWithdrawal() public {
+    function test_getQueuedWithdrawal_NonexistentWithdrawal() public {
         bytes32 nonexistentRoot = bytes32(uint256(1));
-        (, uint256[] memory shares) = delegationManager.getQueuedWithdrawalFromRoot(nonexistentRoot);
+        (, uint256[] memory shares) = delegationManager.getQueuedWithdrawal(nonexistentRoot);
         assertEq(shares.length, 0, "shares array should be empty");
     }
 
-    function test_getQueuedWithdrawalFromRoot_MultipleStrategies(Randomness r) public rand(r) {
+    function test_getQueuedWithdrawal_MultipleStrategies(Randomness r) public rand(r) {
         // Set up multiple strategies with deposits
         uint256 numStrategies = r.Uint256(2, 5);
         uint256[] memory depositShares = r.Uint256Array({
@@ -8782,7 +8782,7 @@ contract DelegationManagerUnitTests_getQueuedWithdrawalFromRoot is DelegationMan
         delegationManager.queueWithdrawals(queuedWithdrawalParams);
 
         // Get shares from queued withdrawal
-        (, uint256[] memory shares) = delegationManager.getQueuedWithdrawalFromRoot(withdrawalRoot);
+        (, uint256[] memory shares) = delegationManager.getQueuedWithdrawal(withdrawalRoot);
 
         // Verify withdrawal details and shares for each strategy
         assertEq(shares.length, numStrategies, "incorrect shares array length");
@@ -8791,8 +8791,8 @@ contract DelegationManagerUnitTests_getQueuedWithdrawalFromRoot is DelegationMan
         }
     }
 
-    function testFuzz_getQueuedWithdrawalFromRoot_EmptyWithdrawal(bytes32 withdrawalRoot) public {
-        (, uint256[] memory shares) = delegationManager.getQueuedWithdrawalFromRoot(withdrawalRoot);
+    function testFuzz_getQueuedWithdrawal_EmptyWithdrawal(bytes32 withdrawalRoot) public {
+        (, uint256[] memory shares) = delegationManager.getQueuedWithdrawal(withdrawalRoot);
         assertEq(shares.length, 0, "sanity check");
     }
 }
