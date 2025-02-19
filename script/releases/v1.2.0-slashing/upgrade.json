@@ -31,13 +31,6 @@
                     "type": "url",
                     "passBy": "env",
                     "inputType": "text",
-                    "name": "CHAIN_ID",
-                    "prompt": "Enter the chain id"
-                },
-                {
-                    "type": "url",
-                    "passBy": "env",
-                    "inputType": "text",
                     "name": "BEACON_URL",
                     "prompt": "Enter an ETH2 Beacon RPC URL"
                 }
