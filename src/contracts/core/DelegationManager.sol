@@ -972,10 +972,10 @@ contract DelegationManager is
     }
 
     /// @inheritdoc IDelegationManager
-    function getSharesFromQueuedWithdrawal(
+    function getQueuedWithdrawalFromRoot(
         bytes32 withdrawalRoot
-    ) external view returns (uint256[] memory shares) {
-        (, shares) = _getSharesByWithdrawalRoot(withdrawalRoot);
+    ) external view returns (Withdrawal memory withdrawal, uint256[] memory shares) {
+        (withdrawal, shares) = _getSharesByWithdrawalRoot(withdrawalRoot);
     }
 
     /// @inheritdoc IDelegationManager
