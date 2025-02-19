@@ -1602,6 +1602,19 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
+    function assert_Snap_Unchanged_DSF(
+        User staker,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal {
+        uint[] memory curDSFs = _getDepositScalingFactors(staker, strategies);
+        uint[] memory prevDSFs = _getPrevDepositScalingFactors(staker, strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(prevDSFs[i], curDSFs[i], err);
+        }
+    }
+
     /*******************************************************************************
                         SNAPSHOT ASSERTIONS: STRATEGY SHARES
     *******************************************************************************/
@@ -2769,6 +2782,10 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
 
         return shares;
+    }
+
+    function _getPrevDepositScalingFactors(User staker, IStrategy[] memory strategies) internal timewarp() returns (uint[] memory) {
+        return _getDepositScalingFactors(staker, strategies);
     }
 
     function _getDepositScalingFactors(User staker, IStrategy[] memory strategies) internal view returns (uint[] memory) {

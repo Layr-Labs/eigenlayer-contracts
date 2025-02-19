@@ -9,6 +9,7 @@ import "src/test/integration/users/User_M2.t.sol";
 /// @notice Contract that provides utility functions to reuse common test blocks & checks
 contract IntegrationCheckUtils is IntegrationBase {
     using ArrayLib for IStrategy[];
+    using ArrayLib for IStrategy;
     using SlashingLib for *;
     using StdStyle for *;
 
@@ -232,6 +233,20 @@ contract IntegrationCheckUtils is IntegrationBase {
             "check_QueuedWithdrawal_State: failed to remove staker shares");
         assert_Snap_Removed_Staker_WithdrawableShares(staker, strategies, shares,
             "check_QueuedWithdrawal_State: failed to remove staker withdrawable shares");
+
+        // Check that the dsf is either reset to wad or unchanged
+        for (uint i = 0; i < strategies.length; i++) {
+            // For a full withdrawal, the dsf should be reset to wad
+            if (_getStakerDepositShares(staker, strategies[i].toArray())[0] == 0) {
+                assert_DSF_Reset(staker, strategies[i].toArray(), 
+                    "check_QueuedWithdrawal_State: dsf should be reset to wad");
+            }
+            // For a partial withdrawal, the dsf should not be changed 
+            else {
+                assert_Snap_Unchanged_DSF(staker, strategies[i].toArray(), 
+                    "check_QueuedWithdrawal_State: dsf should not be changed");
+            }
+        }
     }
 
     function check_Undelegate_State(
@@ -268,7 +283,8 @@ contract IntegrationCheckUtils is IntegrationBase {
 
     function check_Redelegate_State(
         User staker, 
-        User operator,
+        User oldOperator,
+        User newOperator,
         IDelegationManagerTypes.Withdrawal[] memory withdrawals,
         bytes32[] memory withdrawalRoots,
         IStrategy[] memory strategies,
@@ -288,12 +304,14 @@ contract IntegrationCheckUtils is IntegrationBase {
             "check_Redelegate_State: stakers withdrawal should now be pending");
         assert_Snap_Added_QueuedWithdrawals(staker, withdrawals,
             "check_Redelegate_State: staker should have increased nonce by withdrawals.length");
-        assert_Snap_Removed_OperatorShares(operator, strategies, stakerDelegatedShares,
+        assert_Snap_Removed_OperatorShares(oldOperator, strategies, stakerDelegatedShares,
             "check_Redelegate_State: failed to remove operator shares");
         assert_Snap_Removed_Staker_DepositShares(staker, strategies, stakerDepositShares,
             "check_Redelegate_State: failed to remove staker shares");
         assert_Snap_RemovedAll_Staker_WithdrawableShares(staker, strategies,
             "check_QueuedWithdrawal_State: failed to remove staker withdrawable shares");
+        assert_Snap_Unchanged_OperatorShares(newOperator,
+            "check_Redelegate_State: new operator shares should not have changed");
     }
 
     /**
@@ -320,6 +338,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         
         assert_Snap_Added_TokenBalances(staker, tokens, expectedTokens, "staker should have received expected tokens");
         assert_Snap_Unchanged_Staker_DepositShares(staker, "staker shares should not have changed");
+        assert_Snap_Unchanged_DSF(staker, strategies, "dsf should not be changed");
         assert_Snap_Removed_StrategyShares(strategies, shares, "strategies should have total shares decremented");
 
         // Checks specific to an operator that the Staker has delegated to
@@ -342,6 +361,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_WithdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
         assert_Snap_Unchanged_TokenBalances(staker, "staker should not have any change in underlying token balances");
         assert_Snap_Added_Staker_DepositShares(staker, strategies, shares, "staker should have received expected shares");
+        assert_Snap_Added_Staker_WithdrawableShares(staker, strategies, shares, "staker should have received expected withdrawable shares");
         assert_Snap_Unchanged_StrategyShares(strategies, "strategies should have total shares unchanged");
 
         // Additional checks or handling for the non-user operator scenario
