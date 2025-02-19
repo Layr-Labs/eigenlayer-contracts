@@ -3,7 +3,7 @@ pragma solidity ^0.8.27;
 
 import "src/test/integration/IntegrationChecks.t.sol";
 
-contract Integration_SlashingWithdrawals is IntegrationCheckUtils {
+contract Integration_ALMSlashBase is IntegrationCheckUtils {
     
     AVS avs;
     OperatorSet operatorSet;
@@ -16,15 +16,6 @@ contract Integration_SlashingWithdrawals is IntegrationCheckUtils {
     uint[] initTokenBalances;
     uint[] initDepositShares;
 
-    /**
-     * Current test setup uses a single operator set and multiple strategies. Slashes
-     * are simple, done on that single operator set.
-     * -- good for testing full slashes where 100% of a strategy's magnitude is impacted
-     * -- could have a separate setup with multiple operator sets and one strategy
-     *    to test "full slashes" that don't hit 100% of a strategy's magnitude (but are
-     *    100% of allocated magnitude for that operator set)
-     */
-
     /// Shared setup:
     /// 
     /// 1. Generate staker, operator, and AVS
@@ -33,8 +24,13 @@ contract Integration_SlashingWithdrawals is IntegrationCheckUtils {
     /// 4. Operator allocates to operator set
     /// 5. Operator registers for operator set
     /// NOTE: Steps 4 and 5 are done in random order, as these should not have an outcome on the test
-    function _init() internal override {
-        (staker, strategies, initTokenBalances) = _newRandomStaker();
+    function _init() internal virtual override {
+        _configAssetTypes(HOLDS_LST);
+        // (staker, strategies, initTokenBalances) = _newRandomStaker();
+        // operator = _newRandomOperator_NoAssets();
+        // (avs,) = _newRandomAVS();
+
+        (staker, strategies, initTokenBalances) = _newBasicStaker();
         operator = _newRandomOperator_NoAssets();
         (avs,) = _newRandomAVS();
 
@@ -72,6 +68,67 @@ contract Integration_SlashingWithdrawals is IntegrationCheckUtils {
    
         _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
     }
+}
+
+contract Integration_InitSlash is Integration_ALMSlashBase {
+
+    SlashingParams slashParams;
+
+    function testFuzz_slashSingle(uint24 _r) public rand(_r) {
+        slashParams = _genSlashing_Rand(operator, operatorSet);
+        avs.slashOperator(slashParams);
+        check_Base_Slashing_State(operator, allocateParams, slashParams);
+    } 
+
+    function testFuzz_slashMulti_WithdrawTokens(uint24 _r) public rand(_r) {
+        for (uint i = 0; i < 25; i++) {
+            slashParams = _genSlashing_Rand(operator, operatorSet);
+            avs.slashOperator(slashParams);
+            check_Base_Slashing_State(operator, allocateParams, slashParams);
+        }
+
+        // undelegate
+        uint[] memory shares = _getStakerWithdrawableShares(staker, strategies);
+        Withdrawal[] memory withdrawals = staker.undelegate();
+        bytes32[] memory roots = _getWithdrawalHashes(withdrawals);
+        check_Undelegate_State(staker, operator, withdrawals, roots, strategies, initDepositShares, shares);
+
+        _rollBlocksForCompleteWithdrawals(withdrawals);
+
+        // try withdrawing as tokens:
+        IERC20[] memory tokens = _getUnderlyingTokens(strategies);
+        uint[] memory expectedTokens = _calculateExpectedTokens(strategies, shares);
+
+        staker.completeWithdrawalsAsTokens(withdrawals);
+        for (uint i = 0; i < withdrawals.length; i++) {
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], strategies, shares, tokens, expectedTokens);
+        }
+    }
+
+    function testFuzz_slashMulti_WithdrawShares(uint24 _r) public rand(_r) {
+        for (uint i = 0; i < 25; i++) {
+            slashParams = _genSlashing_Rand(operator, operatorSet);
+            avs.slashOperator(slashParams);
+            check_Base_Slashing_State(operator, allocateParams, slashParams);
+        }
+
+        // undelegate
+        uint[] memory shares = _getStakerWithdrawableShares(staker, strategies);
+        Withdrawal[] memory withdrawals = staker.undelegate();
+        bytes32[] memory roots = _getWithdrawalHashes(withdrawals);
+        check_Undelegate_State(staker, operator, withdrawals, roots, strategies, initDepositShares, shares);
+
+        _rollBlocksForCompleteWithdrawals(withdrawals);
+
+        // try withdrawing as shares
+        staker.completeWithdrawalsAsShares(withdrawals);
+        for (uint i = 0; i < withdrawals.length; i++) {
+            check_Withdrawal_AsShares_Undelegated_State(staker, operator, withdrawals[i], strategies, shares);
+        }
+    }
+}
+
+contract Integration_SlashingWithdrawals is Integration_ALMSlashBase {
 
     function testFuzz_slash_undelegate_completeAsTokens(
         uint24 _random
