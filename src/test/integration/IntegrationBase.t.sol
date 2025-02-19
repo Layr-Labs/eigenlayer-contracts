@@ -69,6 +69,31 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         return (staker, strategies, tokenBalances);
     }
 
+    /// Given a list of strategies, creates a new user with random token balances in each underlying token
+    function _newStaker(IStrategy[] memory strategies) internal returns (User, uint[] memory) {
+        string memory stakerName;
+
+        User staker;
+        uint[] memory tokenBalances;
+
+        if (!isUpgraded) {
+            stakerName = string.concat("M2Staker", cheats.toString(numStakers));
+
+            (staker, tokenBalances) = _randUser(stakerName, strategies);
+
+            stakersToMigrate.push(staker);
+        } else {
+            stakerName = string.concat("staker", cheats.toString(numStakers));
+
+            (staker, tokenBalances) = _randUser(stakerName, strategies);
+        }
+
+        assert_HasUnderlyingTokenBalances(staker, strategies, tokenBalances, "_newRandomStaker: failed to award token balances");
+
+        numStakers++;
+        return (staker, tokenBalances);
+    }
+
     function _newBasicStaker() internal returns (User, IStrategy[] memory, uint[] memory) {
         string memory stakerName;
 
@@ -671,6 +696,22 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
+    function assert_Snap_Removed_AllocatedStrats(
+        User operator,
+        OperatorSet memory operatorSet,
+        IStrategy[] memory removedStrats,
+        string memory err
+    ) internal {
+        IStrategy[] memory curAllocatedStrats = _getAllocatedStrats(operator, operatorSet);
+        IStrategy[] memory prevAllocatedStrats = _getPrevAllocatedStrats(operator, operatorSet);
+
+        assertEq(curAllocatedStrats.length + removedStrats.length, prevAllocatedStrats.length, err);
+
+        for (uint i = 0; i < removedStrats.length; i++) {
+            assertFalse(curAllocatedStrats.contains(removedStrats[i]), err);
+        }
+    }
+
     function assert_Snap_Unchanged_StrategyAllocations(
         User operator,
         OperatorSet memory operatorSet,
@@ -890,7 +931,9 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, params.strategies);
 
         for (uint i = 0; i < params.strategies.length; i++) {
-            uint expectedSlashed = SlashingLib.calcSlashedAmount({
+            // Slashing doesn't occur if the operator has no slashable magnitude
+            // This prevents a div by 0 when calculating expected slashed
+            uint expectedSlashed = prevMagnitudes[i].max == 0 ? 0 : SlashingLib.calcSlashedAmount({
                 operatorShares: prevSlashableStake[i],
                 prevMaxMagnitude: prevMagnitudes[i].max,
                 newMaxMagnitude: curMagnitudes[i].max
@@ -955,7 +998,9 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, params.strategies);
 
         for (uint i = 0; i < curAllocatedStake.length; i++) {
-            uint expectedSlashed = SlashingLib.calcSlashedAmount({
+            // Slashing doesn't occur if the operator has no slashable magnitude
+            // This prevents a div by 0 when calculating expected slashed
+            uint expectedSlashed = prevMagnitudes[i].max == 0 ? 0 : SlashingLib.calcSlashedAmount({
                 operatorShares: prevAllocatedStake[i],
                 prevMaxMagnitude: prevMagnitudes[i].max,
                 newMaxMagnitude: curMagnitudes[i].max
@@ -1141,14 +1186,17 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
 
     function assert_Snap_Slashed_MaxMagnitude(
         User operator,
+        OperatorSet memory operatorSet,
         SlashingParams memory params,
         string memory err
     ) internal {
+        Allocation[] memory prevAllocations = _getPrevAllocations(operator, operatorSet, params.strategies);
+
         Magnitudes[] memory curMagnitudes = _getMagnitudes(operator, params.strategies);
         Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, params.strategies);
 
         for (uint i = 0; i < params.strategies.length; i++) {
-            uint expectedSlashed = prevMagnitudes[i].max.mulWadRoundUp(params.wadsToSlash[i]);
+            uint expectedSlashed = prevAllocations[i].currentMagnitude.mulWadRoundUp(params.wadsToSlash[i]);
             assertEq(curMagnitudes[i].max, prevMagnitudes[i].max - expectedSlashed, err);
         }
     }
@@ -1233,33 +1281,6 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
                 prevMagnitude.max - slashedMagnitude, 
                 string.concat(err, " (max magnitude)")
             );
-        }
-    }
-
-    function assert_HasUnderlyingTokenBalances_AfterSlash(
-        User staker,
-        AllocateParams memory allocateParams,
-        SlashingParams memory slashingParams,
-        uint[] memory expectedBalances,
-        string memory err
-    ) internal view {
-        for (uint i; i < allocateParams.strategies.length; ++i) {
-            IStrategy strat = allocateParams.strategies[i];
-            
-            uint balance = strat == BEACONCHAIN_ETH_STRAT 
-                ? address(staker).balance 
-                : strat.underlyingToken().balanceOf(address(staker));
-
-            uint256 maxDelta = strat == BEACONCHAIN_ETH_STRAT ? 1 gwei : 3;
-
-            if (slashingParams.strategies.contains(strat)) {
-                uint256 wadToSlash = slashingParams.wadsToSlash[slashingParams.strategies.indexOf(strat)];
-
-                expectedBalances[i] -= expectedBalances[i]
-                    .mulWadRoundUp(allocateParams.newMagnitudes[i].mulWadRoundUp(wadToSlash));
-            } 
-
-            assertApproxEqAbs(expectedBalances[i], balance, maxDelta, err);
         }
     }
 
@@ -1380,7 +1401,9 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, params.strategies);
 
         for (uint i = 0; i < params.strategies.length; i++) {
-            uint expectedSlashed = SlashingLib.calcSlashedAmount({
+            // Slashing doesn't occur if the operator has no slashable magnitude
+            // This prevents a div by 0 when calculating expected slashed
+            uint expectedSlashed = prevMagnitudes[i].max == 0 ? 0 : SlashingLib.calcSlashedAmount({
                 operatorShares: prevShares[i],
                 prevMaxMagnitude: prevMagnitudes[i].max,
                 newMaxMagnitude: curMagnitudes[i].max
@@ -2045,7 +2068,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     ) internal returns (SlashingParams memory params) {
         params.operator = address(operator);
         params.operatorSetId = operatorSet.id;
-        params.description = "genSlashing_Half";
+        params.description = "genSlashing_Rand";
         params.strategies = allocationManager.getStrategiesInOperatorSet(operatorSet).sort();
         params.wadsToSlash = new uint[](params.strategies.length);
 
@@ -2067,37 +2090,30 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         params.strategies = allocationManager.getStrategiesInOperatorSet(operatorSet).sort();
         params.wadsToSlash = new uint[](params.strategies.length);
 
+        // slash 50%
         for (uint i = 0; i < params.wadsToSlash.length; i++) {
-            params.wadsToSlash[i] = 1e17;
+            params.wadsToSlash[i] = 5e17;
+        }
+    }
+
+    function _genSlashing_Full(
+        User operator,
+        OperatorSet memory operatorSet
+    ) internal view returns (SlashingParams memory params) {
+        params.operator = address(operator);
+        params.operatorSetId = operatorSet.id;
+        params.description = "_genSlashing_Full";
+        params.strategies = allocationManager.getStrategiesInOperatorSet(operatorSet).sort();
+        params.wadsToSlash = new uint[](params.strategies.length);
+
+        // slash 100%
+        for (uint i = 0; i < params.wadsToSlash.length; i++) {
+            params.wadsToSlash[i] = 1e18;
         }
     }
 
     function _randWadToSlash() internal returns (uint) {
         return _randUint({ min: 0.01 ether, max: 1 ether });
-    }
-
-    function _randStrategiesAndWadsToSlash(
-        OperatorSet memory operatorSet
-    ) internal returns (IStrategy[] memory strategies, uint[] memory wadsToSlash) {
-        // Get list of all strategies in an operator set.
-        strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
-
-        // Randomly select a subset of strategies to slash.
-        uint len = _randUint({ min: 1, max: strategies.length });
-
-        // Update length of strategies array.
-        assembly {
-            mstore(strategies, len)
-        }
-        
-        wadsToSlash = new uint[](len);
-        
-        // Randomly select a `wadToSlash` for each strategy.
-        for (uint i; i < len; ++i) {
-            wadsToSlash[i] = _randWadToSlash();
-        }
-
-        return (strategies.sort(), wadsToSlash);
     }
 
     function _strategiesAndWadsForFullSlash(
@@ -2286,6 +2302,13 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
                 return (newPodOwnerShares - curPodOwnerShares);
             }
         }
+    }
+
+    function _calculateExpectedShares(Withdrawal memory withdrawal) internal returns (uint[] memory) {
+        bytes32 root = delegationManager.calculateWithdrawalRoot(withdrawal);
+
+        (, uint[] memory shares) = delegationManager.getQueuedWithdrawalFromRoot(root);
+        return shares;
     }
 
     /// @dev For some strategies/underlying token balances, calculate the expected shares received
