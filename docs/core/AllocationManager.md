@@ -40,6 +40,7 @@ The `AllocationManager` manages AVS metadata registration, registration and dere
 
 ---
 
+<<<<<<< HEAD
 ## AVS Metadata
 
 AVSs must register their metadata to declare themselves who they are as the first step, before they can create operator sets or register operators into operator sets. `AllocationManager` keeps track of AVSs that have registered metadata.
@@ -138,6 +139,8 @@ Later on, once AVSs have created operator sets, content in their metadata URI ca
 * Caller MUST be authorized, either as the AVS itself or an admin/appointee (see [`PermissionController.md`](../permissions/PermissionController.md))
 
 
+=======
+>>>>>>> dev
 ## Operator Sets
 
 Operator sets, as described in [ELIP-002](https://github.com/eigenfoundation/ELIPs/blob/main/ELIPs/ELIP-002.md#operator-sets), are useful for AVSs to configure operator groupings which can be assigned different tasks, rewarded based on their strategy allocations, and slashed according to different rules. Operator sets are defined in [`libraries/OperatorSetLib.sol`](../../src/contracts/libraries/OperatorSetLib.sol):
@@ -245,7 +248,10 @@ Optionally, the `avs` can provide a list of `strategies`, specifying which strat
 
 *Requirements*:
 * Caller MUST be authorized, either as the AVS itself or an admin/appointee (see [`PermissionController.md`](../permissions/PermissionController.md))
+<<<<<<< HEAD
 * AVS MUST have registered metadata
+=======
+>>>>>>> dev
 * For each `CreateSetParams` element:
     * Each `params.operatorSetId` MUST NOT already exist in `_operatorSets[avs]`
     
@@ -564,7 +570,11 @@ _Note: this method can be called directly by an operator, or by a caller authori
 
 This function is called by an operator to EITHER increase OR decrease the slashable magnitude allocated from a strategy to an operator set. As input, the operator provides an operator set as the target, and a list of strategies and corresponding `newMagnitudes` to allocate. The `newMagnitude` value is compared against the operator's current `Allocation` for that operator set/strategy:
 * If `newMagnitude` is _greater than_ `Allocation.currentMagnitude`, this is an allocation
+<<<<<<< HEAD
 * If `newMagnitude` is _less than_ `Allocation.currentMagnitude`, this is a dellocation
+=======
+* If `newMagnitude` is _less than_ `Allocation.currentMagnitude`, this is a deallocation
+>>>>>>> dev
 * If `newMagnitude` is _equal to_ `Allocation.currentMagnitude`, this is invalid (revert)
 
 Allocation modifications play by different rules depending on a few factors. Recall that at all times, the `encumberedMagnitude` for a strategy may not exceed that strategy's `maxMagnitude`. Additionally, note that _before processing a modification for a strategy,_ the `deallocationQueue` for that strategy is first cleared. This ensures any completable deallocations are processed first, freeing up magnitude for allocation. This process is further explained in [`clearDeallocationQueue`](#cleardeallocationqueue). 
@@ -651,7 +661,11 @@ This queue contains a per-strategy ordered list of operator sets that, due to pr
 This method stops iterating when: the queue is empty, a deallocation is reached that cannot be completed yet, or when it has cleared `numToClear` entries from the queue.
 
 *Effects*:
+<<<<<<< HEAD
 * For each `strategy` and _completeable_ deallocation in `deallocationQueue[operator][strategy]`:
+=======
+* For each `strategy` and _completable_ deallocation in `deallocationQueue[operator][strategy]`:
+>>>>>>> dev
     * Pops the corresponding operator set from the `deallocationQueue`
     * Reduces `allocation.currentMagnitude` by the deallocated amount
     * Sets `allocation.pendingDiff` and `allocation.effectBlock` to 0
@@ -686,6 +700,7 @@ struct SlashingParams {
 }
 
 /**
+<<<<<<< HEAD
  * @notice Called by an AVS to slash an operator in a given operator set. The operator must be registered
  * and have slashable stake allocated to the operator set.
  *
@@ -706,6 +721,9 @@ struct SlashingParams {
  * @dev Small slashing amounts may not result in actual token burns due to
  *      rounding, which will result in small amounts of tokens locked in the contract
  *      rather than fully burning through the burn mechanism.
+=======
+ * @notice Called by an AVS to slash an operator in a given operator set
+>>>>>>> dev
  */
 function slashOperator(
     address avs,
@@ -722,7 +740,11 @@ AVSs use slashing as a punitive disincentive for misbehavior. For details and ex
 
 In order to slash an eligible operator, the AVS specifies which operator set the operator belongs to, the `strategies` the operator should be slashed for, and for each strategy, the _proportion of the operator's allocated magnitude_ that should be slashed (given by `wadsToSlash`). An optional `description` string allows the AVS to add context to the slash.
 
+<<<<<<< HEAD
 Once triggered in the `AllocationManager`, slashing is instant and irreversable. For each slashed strategy, the operator's `maxMagnitude` and `encumberedMagnitude` are decreased, and the allocation made to the given operator set has its `currentMagnitude` reduced. See [TODO - Accounting Doc]() for details on how slashed amounts are calculated.
+=======
+Once triggered in the `AllocationManager`, slashing is instant and irreversible. For each slashed strategy, the operator's `maxMagnitude` and `encumberedMagnitude` are decreased, and the allocation made to the given operator set has its `currentMagnitude` reduced. See [TODO - Accounting Doc]() for details on how slashed amounts are calculated.
+>>>>>>> dev
 
 There are two edge cases to note for this method:
 1. In the process of slashing an `operator` for a given `strategy`, if the `Allocation` being slashed has a `currentMagnitude` of 0, the call will NOT revert. Instead, the `strategy` is skipped and slashing continues with the next `strategy` listed. This is to prevent an edge case where slashing occurs on or around a deallocation's `effectBlock` -- if the call reverted, the entire slash would fail. Skipping allows any valid slashes to be processed without requiring resubmission.
@@ -766,6 +788,10 @@ Once slashing is processed for a strategy, [slashed stake is burned via the `Del
 **Methods:**
 * [`setAllocationDelay`](#setallocationdelay)
 * [`setAVSRegistrar`](#setavsregistrar)
+<<<<<<< HEAD
+=======
+* [`updateAVSMetadataURI`](#updateavsmetadatauri)
+>>>>>>> dev
 
 #### `setAllocationDelay`
 
@@ -856,3 +882,82 @@ Note that when an operator registers, registration will FAIL if the call to `IAV
 
 *Requirements*:
 * Caller MUST be authorized, either as the AVS itself or an admin/appointee (see [`PermissionController.md`](../permissions/PermissionController.md))
+<<<<<<< HEAD
+=======
+
+#### `updateAVSMetadataURI`
+
+```solidity
+/**
+ *  @notice Called by an AVS to emit an `AVSMetadataURIUpdated` event indicating the information has updated.
+ *
+ *  @param metadataURI The URI for metadata associated with an AVS.
+ *
+ *  @dev Note that the `metadataURI` is *never stored* and is only emitted in the `AVSMetadataURIUpdated` event.
+ */
+function updateAVSMetadataURI(
+    address avs, 
+    string calldata metadataURI
+) 
+    external
+    checkCanCall(avs)
+```
+
+_Note: this method can be called directly by an AVS, or by a caller authorized by the AVS. See [`PermissionController.md`](../permissions/PermissionController.md) for details._
+
+Below is the format AVSs should use when updating their metadata URI. This is not validated onchain.
+
+```json
+{
+    "name": "AVS",
+    "website": "https.avs.xyz/",
+    "description": "Some description about",
+    "logo": "http://github.com/logo.png",
+    "twitter": "https://twitter.com/avs",
+    "operatorSets": [
+        {
+            "name": "ETH Set",
+            "id": "1", // Note: we use this param to match the opSet id in the Allocation Manager
+            "description": "The ETH operatorSet for AVS",
+            "software": [
+                {
+                    "name": "NetworkMonitor",
+                    "description": "",
+                    "url": "https://link-to-binary-or-github.com"
+                },
+                {
+                    "name": "ValidatorClient",
+                    "description": "",
+                    "url": "https://link-to-binary-or-github.com"
+                }
+            ],
+            "slashingConditions": ["Condition A", "Condition B"]
+        },
+        {
+            "name": "EIGEN Set",
+            "id": "2", // Note: we use this param to match the opSet id in the Allocation Manager
+            "description": "The EIGEN operatorSet for AVS",
+            "software": [
+                {
+                    "name": "NetworkMonitor",
+                    "description": "",
+                    "url": "https://link-to-binary-or-github.com"
+                },
+                {
+                    "name": "ValidatorClient",
+                    "description": "",
+                    "url": "https://link-to-binary-or-github.com"
+                }
+            ],
+            "slashingConditions": ["Condition A", "Condition B"]
+        }
+    ]
+}
+```
+
+*Effects*:
+* Emits an `AVSMetadataURIUpdated` event for use in offchain services
+
+*Requirements*:
+* Caller MUST be authorized, either as the AVS itself or an admin/appointee (see [`PermissionController.md`](../permissions/PermissionController.md))
+>>>>>>> dev

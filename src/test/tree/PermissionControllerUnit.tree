@@ -5,7 +5,7 @@
     │   │   └── given that the caller is not the account
     │   │       └── it should revert
     │   ├── given that the current admin is set
-    │   │   └── given taht the msg.sender is not the current admin
+    │   │   └── given that the msg.sender is not the current admin
     │   │       └── it should revert
     │   ├── given that the new admin is the zero address
     │   │   └── it should revert

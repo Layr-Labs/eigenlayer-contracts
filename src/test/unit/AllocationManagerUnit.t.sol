@@ -573,7 +573,7 @@ contract AllocationManagerUnitTests_Initialization_Setters is AllocationManagerU
         assertEq(alm.DEALLOCATION_DELAY(), DEALLOCATION_DELAY);
         assertEq(alm.ALLOCATION_CONFIGURATION_DELAY(), ALLOCATION_CONFIGURATION_DELAY);
 
-        // Assert initialiation state
+        // Assert initialization state
         assertEq(alm.owner(), expectedInitialOwner);
         assertEq(alm.paused(), initialPausedStatus);
     }
@@ -1032,7 +1032,6 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
                 allocatable: maxMagnitudeAfterSlash - expectedEncumberedMagnitude
             })
         });
-
 
         // 2. Slash operator again for 99.99% in opSet 0 bringing their magnitude to 1e14
         slashingParams = SlashingParams({
@@ -2363,7 +2362,6 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
             }),
             expectedMagnitudes: Magnitudes({encumbered: magnitude, max: WAD, allocatable: WAD - magnitude})
         });
-
 
         // 3. Check allocation and info after roll to completion
         cheats.roll(effectBlock);
@@ -3887,7 +3885,6 @@ contract AllocationManagerUnitTests_createOperatorSets is AllocationManagerUnitT
 }
 
 contract AllocationManagerUnitTests_setAVSRegistrar is AllocationManagerUnitTests {
-
     function test_getAVSRegistrar() public {
         address randomAVS = random().Address();
         IAVSRegistrar avsRegistrar = allocationManager.getAVSRegistrar(randomAVS);

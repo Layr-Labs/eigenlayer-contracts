@@ -6,7 +6,7 @@ fi
 solc-select use 0.8.27
 
 certoraRun certora/harnesses/DelegationManagerHarness.sol \
-    lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol lib/openzeppelin-contracts/contracts/mocks/ERC1271WalletMock.sol \
+    lib/openzeppelin-contracts-v4.9.0/contracts/token/ERC20/ERC20.sol lib/openzeppelin-contracts-v4.9.0/contracts/mocks/ERC1271WalletMock.sol \
     src/contracts/pods/EigenPodManager.sol src/contracts/pods/EigenPod.sol src/contracts/strategies/StrategyBase.sol src/contracts/core/StrategyManager.sol \
     src/contracts/permissions/PauserRegistry.sol \
     --verify DelegationManagerHarness:certora/specs/core/DelegationManager.spec \
@@ -18,5 +18,5 @@ certoraRun certora/harnesses/DelegationManagerHarness.sol \
     --parametric_contracts DelegationManagerHarness \
     $RULE \
     --loop_iter 2 \
-    --packages @openzeppelin=lib/openzeppelin-contracts @openzeppelin-upgrades=lib/openzeppelin-contracts-upgradeable \
+    --packages @openzeppelin=lib/openzeppelin-contracts-v4.9.0 @openzeppelin-upgrades=lib/openzeppelin-contracts-upgradeable-v4.9.0 \
     --msg "DelegationManager $1 $2" \

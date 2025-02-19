@@ -73,7 +73,11 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     /// is `OperatorDetails.delegationApprover`.
     mapping(address operator => OperatorDetails) internal _operatorDetails;
 
+<<<<<<< HEAD
     /// @notice Returns the `operator` a `staker` is delgated to, or address(0) if not delegated.
+=======
+    /// @notice Returns the `operator` a `staker` is delegated to, or address(0) if not delegated.
+>>>>>>> dev
     /// Note: operators are delegated to themselves
     mapping(address staker => address operator) public delegatedTo;
 
@@ -111,7 +115,11 @@ abstract contract DelegationManagerStorage is IDelegationManager {
 
     /// @notice Returns the details of a queued withdrawal given by `withdrawalRoot`.
     /// @dev This variable only reflects withdrawals that were made after the slashing release.
+<<<<<<< HEAD
     mapping(bytes32 withdrawalRoot => Withdrawal withdrawal) internal _queuedWithdrawals;
+=======
+    mapping(bytes32 withdrawalRoot => Withdrawal withdrawal) internal queuedWithdrawals;
+>>>>>>> dev
 
     /// @notice Contains history of the total cumulative staker withdrawals for an operator and a given strategy.
     /// Used to calculate burned StrategyManager shares when an operator is slashed.

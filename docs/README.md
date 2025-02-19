@@ -92,7 +92,7 @@ See full documentation in [`/core/RewardsCoordinator.md`](./core/RewardsCoordina
 | -------- | -------- | -------- |
 | [`AVSDirectory.sol`](../src/contracts/core/AVSDirectory.sol) | Singleton | Transparent proxy |
 
-##### Note: This contract is left unchanged for backwards compatability. Operator<>AVS Registrations are to be replaced entirely with the `AllocationManager` and this contract will be deprecated in a future release.
+##### Note: This contract is left unchanged for backwards compatibility. Operator<>AVS Registrations are to be replaced entirely with the `AllocationManager` and this contract will be deprecated in a future release.
 
 Previously, the `AVSDirectory` handled interactions between AVSs and the EigenLayer core contracts. Once registered as an operator in EigenLayer core (via the `DelegationManager`), operators could register with one or more AVSs (via the AVS's contracts) to begin providing services to them offchain. As a part of registering with an AVS, the AVS would record this registration in the core contracts by calling into the `AVSDirectory`. As of the slashing release, this process is now managed by the [`AllocationManager`](#allocationmanager).
 

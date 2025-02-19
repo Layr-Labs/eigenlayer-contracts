@@ -14,6 +14,9 @@ interface IAllocationManagerErrors {
     error InvalidWadToSlash();
     /// @dev Thrown when two array parameters have mismatching lengths.
     error InputArrayLengthMismatch();
+    /// @dev Thrown when the AVSRegistrar is not correctly configured to prevent an AVSRegistrar contract
+    /// from being used with the wrong AVS
+    error InvalidAVSRegistrar();
 
     /// Caller
 
@@ -284,8 +287,8 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
      * If the operator has any slashable stake allocated to the AVS, it remains slashable until the
      * DEALLOCATION_DELAY has passed.
      * @dev After deregistering within the ALM, this method calls the AVS Registrar's `IAVSRegistrar.
-     * deregisterOperator` method to complete deregistration. Unlike when registering, this call MAY FAIL.
-     * Failure is permitted to prevent AVSs from being able to maliciously prevent operators from deregistering.
+     * deregisterOperator` method to complete deregistration. This call MUST succeed in order for
+     * deregistration to be successful.
      */
     function deregisterFromOperatorSets(
         DeregisterParams calldata params
@@ -569,6 +572,7 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
      * @param operators the list of operators whose slashable stakes will be returned
      * @param strategies the strategies that each slashable stake corresponds to
      * @param futureBlock the block at which to get allocation information. Should be a future block.
+     * @return slashableStake a list of slashable stakes, indexed by [operator][strategy]
      */
     function getMinimumSlashableStake(
         OperatorSet memory operatorSet,

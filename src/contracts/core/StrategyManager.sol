@@ -126,9 +126,10 @@ contract StrategyManager is
     function addShares(
         address staker,
         IStrategy strategy,
+        IERC20 token,
         uint256 shares
-    ) external onlyDelegationManager nonReentrant returns (uint256, uint256) {
-        return _addShares(staker, strategy, shares);
+    ) external onlyDelegationManager returns (uint256, uint256) {
+        return _addShares(staker, token, strategy, shares);
     }
 
     /// @inheritdoc IShareManager

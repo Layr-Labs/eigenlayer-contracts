@@ -11,6 +11,8 @@ import "./IPermissionController.sol";
 import "./IStrategy.sol";
 import "./ISemVerMixin.sol";
 
+import "../libraries/OperatorSetLib.sol";
+
 interface IRewardsCoordinatorErrors {
     /// @dev Thrown when msg.sender is not allowed to call a function
     error UnauthorizedCaller();
@@ -33,6 +35,8 @@ interface IRewardsCoordinatorErrors {
     error NewRootMustBeForNewCalculatedPeriod();
     /// @dev Thrown when rewards end timestamp has not elapsed.
     error RewardsEndTimestampNotElapsed();
+    /// @dev Thrown when an invalid operator set is provided.
+    error InvalidOperatorSet();
 
     /// Rewards Submissions
 
@@ -75,7 +79,7 @@ interface IRewardsCoordinatorErrors {
     error InvalidTokenLeafIndex();
     /// @dev Thrown when an invalid earner leaf index is provided.
     error InvalidEarnerLeafIndex();
-    /// @dev Thrown when cummulative earnings are not greater than cummulative claimed.
+    /// @dev Thrown when cumulative earnings are not greater than cumulative claimed.
     error EarningsNotGreaterThanClaimed();
 
     /// Reward Root Checks
@@ -240,6 +244,7 @@ interface IRewardsCoordinatorTypes {
         bytes[] tokenTreeProofs;
         TokenTreeMerkleLeaf[] tokenLeaves;
     }
+}
 
     /**
      * @notice Parameters for the RewardsCoordinator constructor
@@ -312,7 +317,23 @@ interface IRewardsCoordinatorEvents is IRewardsCoordinatorTypes {
         OperatorDirectedRewardsSubmission operatorDirectedRewardsSubmission
     );
 
-    /// @notice rewardsUpdater is responsible for submiting DistributionRoots, only owner can set rewardsUpdater
+    /**
+     * @notice Emitted when an AVS creates a valid `OperatorDirectedRewardsSubmission` for an operator set.
+     * @param caller The address calling `createOperatorDirectedOperatorSetRewardsSubmission`.
+     * @param operatorDirectedRewardsSubmissionHash Keccak256 hash of (`avs`, `submissionNonce` and `operatorDirectedRewardsSubmission`).
+     * @param operatorSet The operatorSet on behalf of which the operator-directed rewards are being submitted.
+     * @param submissionNonce Current nonce of the avs. Used to generate a unique submission hash.
+     * @param operatorDirectedRewardsSubmission The Operator-Directed Rewards Submission. Contains the token, start timestamp, duration, operator rewards, description and, strategy and multipliers.
+     */
+    event OperatorDirectedOperatorSetRewardsSubmissionCreated(
+        address indexed caller,
+        bytes32 indexed operatorDirectedRewardsSubmissionHash,
+        OperatorSet operatorSet,
+        uint256 submissionNonce,
+        OperatorDirectedRewardsSubmission operatorDirectedRewardsSubmission
+    );
+
+    /// @notice rewardsUpdater is responsible for submitting DistributionRoots, only owner can set rewardsUpdater
     event RewardsUpdaterSet(address indexed oldRewardsUpdater, address indexed newRewardsUpdater);
 
     event RewardsForAllSubmitterSet(
@@ -354,6 +375,24 @@ interface IRewardsCoordinatorEvents is IRewardsCoordinatorTypes {
         uint32 activatedAt,
         uint16 oldOperatorPISplitBips,
         uint16 newOperatorPISplitBips
+    );
+
+    /**
+     * @notice Emitted when the operator split for a given operatorSet is set.
+     * @param caller The address calling `setOperatorSetSplit`.
+     * @param operator The operator on behalf of which the split is being set.
+     * @param operatorSet The operatorSet for which the split is being set.
+     * @param activatedAt The timestamp at which the split will be activated.
+     * @param oldOperatorSetSplitBips The old split for the operator for the operatorSet.
+     * @param newOperatorSetSplitBips The new split for the operator for the operatorSet.
+     */
+    event OperatorSetSplitBipsSet(
+        address indexed caller,
+        address indexed operator,
+        OperatorSet operatorSet,
+        uint32 activatedAt,
+        uint16 oldOperatorSetSplitBips,
+        uint16 newOperatorSetSplitBips
     );
 
     event ClaimerForSet(address indexed earner, address indexed oldClaimer, address indexed claimer);
@@ -452,6 +491,24 @@ interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorE
      */
     function createOperatorDirectedAVSRewardsSubmission(
         address avs,
+        OperatorDirectedRewardsSubmission[] calldata operatorDirectedRewardsSubmissions
+    ) external;
+
+    /**
+     * @notice Creates a new operator-directed rewards submission for an operator set, to be split amongst the operators and
+     * set of stakers delegated to operators who are part of the operator set.
+     * @param operatorSet The operator set for which the rewards are being submitted
+     * @param operatorDirectedRewardsSubmissions The operator-directed rewards submissions being created
+     * @dev Expected to be called by the AVS that created the operator set
+     * @dev The duration of the `rewardsSubmission` cannot exceed `MAX_REWARDS_DURATION`
+     * @dev The tokens are sent to the `RewardsCoordinator` contract
+     * @dev The `RewardsCoordinator` contract needs a token approval of sum of all `operatorRewards` in the `operatorDirectedRewardsSubmissions`, before calling this function
+     * @dev Strategies must be in ascending order of addresses to check for duplicates
+     * @dev Operators must be in ascending order of addresses to check for duplicates
+     * @dev This function will revert if the `operatorDirectedRewardsSubmissions` is malformed
+     */
+    function createOperatorDirectedOperatorSetRewardsSubmission(
+        OperatorSet calldata operatorSet,
         OperatorDirectedRewardsSubmission[] calldata operatorDirectedRewardsSubmissions
     ) external;
 
@@ -558,6 +615,17 @@ interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorE
     function setOperatorPISplit(address operator, uint16 split) external;
 
     /**
+     * @notice Sets the split for a specific operator for a specific operatorSet.
+     * @param operator The operator who is setting the split.
+     * @param operatorSet The operatorSet for which the split is being set by the operator.
+     * @param split The split for the operator for the specific operatorSet in bips.
+     * @dev Only callable by the operator
+     * @dev Split has to be between 0 and 10000 bips (inclusive)
+     * @dev The split will be activated after the activation delay
+     */
+    function setOperatorSetSplit(address operator, OperatorSet calldata operatorSet, uint16 split) external;
+
+    /**
      * @notice Sets the permissioned `rewardsUpdater` address which can post new roots
      * @dev Only callable by the contract owner
      * @param _rewardsUpdater The address of the new rewardsUpdater
@@ -594,7 +662,7 @@ interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorE
     /// @notice Mapping: claimer => token => total amount claimed
     function cumulativeClaimed(address claimer, IERC20 token) external view returns (uint256);
 
-    /// @notice the defautl split for all operators across all avss
+    /// @notice the default split for all operators across all avss
     function defaultOperatorSplitBips() external view returns (uint16);
 
     /// @notice the split for a specific `operator` for a specific `avs`
@@ -604,6 +672,9 @@ interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorE
     function getOperatorPISplit(
         address operator
     ) external view returns (uint16);
+
+    /// @notice Returns the split for a specific `operator` for a given `operatorSet`
+    function getOperatorSetSplit(address operator, OperatorSet calldata operatorSet) external view returns (uint16);
 
     /// @notice return the hash of the earner's leaf
     function calculateEarnerLeafHash(

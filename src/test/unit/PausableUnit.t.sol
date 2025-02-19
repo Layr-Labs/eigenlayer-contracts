@@ -34,8 +34,7 @@ contract PausableUnitTests is Test {
     }
     
     function testPause(uint256 previousPausedStatus, uint256 newPausedStatus) public {
-        // filter out any fuzzed inputs which would (improperly) flip any bits to '0'.
-        cheats.assume(previousPausedStatus & newPausedStatus == previousPausedStatus);
+        newPausedStatus = previousPausedStatus | newPausedStatus;
 
         cheats.startPrank(pauser);
         cheats.expectEmit(true, true, true, true, address(pausable));
@@ -115,8 +114,9 @@ contract PausableUnitTests is Test {
     }
 
     function testUnpause(uint256 previousPausedStatus, uint256 newPausedStatus) public {
-        // filter out any fuzzed inputs which would (improperly) flip any bits to '1'.
-        cheats.assume(~previousPausedStatus & ~newPausedStatus == ~previousPausedStatus);
+        // ensure newPausedStatus is a subset of previousPausedStatus (i.e. only unpause)
+        previousPausedStatus = type(uint256).max; // all bits set to 1
+        newPausedStatus = previousPausedStatus & (type(uint256).max - 1); // clear lowest bit
 
         cheats.startPrank(pauser);
         cheats.expectEmit(true, true, true, true, address(pausable));

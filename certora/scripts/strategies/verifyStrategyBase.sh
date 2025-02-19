@@ -6,7 +6,7 @@ fi
 solc-select use 0.8.27
 
 certoraRun src/contracts/strategies/StrategyBase.sol \
-    lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol \
+    lib/openzeppelin-contracts-v4.9.0/contracts/token/ERC20/ERC20.sol \
     src/contracts/core/StrategyManager.sol \
     src/contracts/permissions/PauserRegistry.sol \
     --verify StrategyBase:certora/specs/strategies/StrategyBase.spec \
@@ -16,7 +16,7 @@ certoraRun src/contracts/strategies/StrategyBase.sol \
     --optimistic_fallback \
     --prover_args '-recursionErrorAsAssert false -recursionEntryLimit 3' \
     --loop_iter 3 \
-    --packages @openzeppelin=lib/openzeppelin-contracts @openzeppelin-upgrades=lib/openzeppelin-contracts-upgradeable \
+    --packages @openzeppelin=lib/openzeppelin-contracts-v4.9.0 @openzeppelin-upgrades=lib/openzeppelin-contracts-upgradeable-v4.9.0 \
     --link StrategyBase:strategyManager=StrategyManager \
     --parametric_contracts StrategyBase \
     $RULE \
