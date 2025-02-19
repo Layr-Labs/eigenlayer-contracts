@@ -963,7 +963,7 @@ contract DelegationManager is
 
         return (strategies, shares);
     }
-    
+
     /// @inheritdoc IDelegationManager
     function getQueuedWithdrawal(
         bytes32 withdrawalRoot
