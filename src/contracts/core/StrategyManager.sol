@@ -127,7 +127,7 @@ contract StrategyManager is
         address staker,
         IStrategy strategy,
         uint256 shares
-    ) external onlyDelegationManager returns (uint256, uint256) {
+    ) external onlyDelegationManager nonReentrant returns (uint256, uint256) {
         return _addShares(staker, strategy, shares);
     }
 
