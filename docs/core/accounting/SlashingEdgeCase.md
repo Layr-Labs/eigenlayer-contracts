@@ -53,7 +53,7 @@ Note that the portion that is marked as BC Slash and BC + AVS Slash has priority
 
 The behavior of BC and AVS slashings for Native ETH mimics the behavior of slashings for an LST in isolation (see below for an additional edge case). This ensures that Native ETH security is not disadvantaged compared to LST security. ELIP-004 explains this in [more detail](https://github.com/eigenfoundation/ELIPs/blob/main/ELIPs/ELIP-004.md#why-do-eigenpods-need-to-upgrade).
 
-## Asynchronous Proofs
+## Ordering of EigenPod Actions
 
 **When an AVS slashes, its attributable slashed amount is between 0 and the originally slashed amount. The attributable slashed amount decreases in the event of BC slashes.** We see this behavior in the above example, where the 12 ETH that was attributed to the AVS is less than the original 24 ETH that was slashed. 
 
@@ -114,6 +114,4 @@ Scenario B:
 
 In scenario B, 50% of Alice’s currently proven assets are slashed, along with a commensurate decrease in the AVSs attributable slashed amount. In both cases Alice’s withdrawable shares and the AVSs attributable slashed amount decrease by the same percentage.
 
-We acknowledge this edge case. A benefit of this system is that stakers are incentivized to immediatley prove BC slashed. Eigen Labs runs an off-chain process (EigenPod Health Checker) that monitors BC slashings and starts checkpoints as needed. 
-
-Conversely, when Native-ETH burning is implemented, AVSs are incentivized to immediately exit stakers from the BC to recoup the maximum possible attributable slashed amount.  
+We acknowledge this edge case. A benefit of this system is that stakers are incentivized to immediatley prove BC slashed. Eigen Labs runs an off-chain process (EigenPod Health Checker) that monitors BC slashings and starts checkpoints as needed. Conversely, when Native-ETH burning is implemented, AVSs are incentivized to immediately exit stakers from the BC to recoup the maximum possible attributable slashed amount.  
