@@ -69,6 +69,23 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         return (staker, strategies, tokenBalances);
     }
 
+    /// @dev creates `numNewStakers` new stakers with random strategies and token balances
+    function _newRandomStakers(uint numNewStakers) internal returns (User[] memory, IStrategy[][] memory, uint[][] memory) {
+        User[] memory stakers = new User[](numNewStakers);
+        IStrategy[][] memory strategies = new IStrategy[][](numNewStakers);
+        uint[][] memory tokenBalances = new uint[][](numNewStakers);
+
+        for (uint i = 0; i < numNewStakers; i++) {
+            (stakers[i], strategies[i], tokenBalances[i]) = _newRandomStaker();
+        }
+
+        numStakers += numNewStakers;
+    
+        return (stakers, strategies, tokenBalances);
+    }
+
+    /// @dev Exactly like _newRandomStaker above but sets strategies and tokenBalances arrays to length 1
+    /// to use a single strategy and balance
     function _newBasicStaker() internal returns (User, IStrategy[] memory, uint[] memory) {
         string memory stakerName;
 
@@ -2302,6 +2319,21 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
             } else {
                 expectedShares[i] = strat.underlyingToShares(tokenBalance);
             }
+        }
+
+        return expectedShares;
+    }
+
+    /// @dev For some strategies/underlying token balances, calculate the expected shares received
+    /// Exact same as _calculateExpectedShares but for multiple stakers
+    function _calculateExpectedShares(
+        IStrategy[][] memory strategies,
+        uint[][] memory tokenBalances
+    ) internal returns (uint[][] memory) {
+        uint[][] memory expectedShares = new uint[][](strategies.length);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            expectedShares[i] = _calculateExpectedShares(strategies[i], tokenBalances[i]);
         }
 
         return expectedShares;
