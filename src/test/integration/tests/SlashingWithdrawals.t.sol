@@ -15,7 +15,6 @@ contract Integration_ALMSlashBase is IntegrationCheckUtils {
     uint[] initTokenBalances;
     uint[] initDepositShares;
 
-
     /// Shared setup:
     /// 
     /// 1. Generate staker, operator, and AVS
@@ -129,6 +128,7 @@ contract Integration_InitSlash is Integration_ALMSlashBase {
 }
 
 contract Integration_SlashingWithdrawals is Integration_ALMSlashBase {
+<<<<<<< HEAD
 
     function testFuzz_slash_undelegate_completeAsTokens(
         uint24 _random
@@ -244,6 +244,8 @@ contract Integration_SlashingWithdrawals is Integration_ALMSlashBase {
         assert_Snap_Allocations_Modified(
             operator, allocateParams, true, "operator allocations should be updated after delay"
         );
+=======
+>>>>>>> b6c49a95 (test: slash invariants (#1083))
 
     function testFuzz_slash_undelegate_completeAsTokens(
         uint24 _random
