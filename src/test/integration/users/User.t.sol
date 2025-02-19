@@ -34,6 +34,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     using SlashingLib for *;
     using ArrayLib for *;
     using print for *;
+    using EnumerableSet for EnumerableSet.AddressSet;
 
     IStrategy constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 
@@ -51,6 +52,10 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     uint32 public allocationDelay = 1;
 
     string _NAME;
+
+    // User's delegated stakers if they are an operator
+    // create an enumerableSet of stakers that have delegated to this user
+    EnumerableSet.AddressSet internal delegatedStakers;
 
     // User's EigenPod and each of their validator indices within that pod
     EigenPod public pod;
@@ -208,11 +213,16 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         ISignatureUtilsMixinTypes.SignatureWithExpiry memory emptySig;
         delegationManager.delegateTo(address(operator), emptySig, bytes32(0));
         print.gasUsed();
+
+        // handle the delegating staker on the operator User contract
+        // to manage the delegatedStakers enum set
+        operator.handleDelegatingStakers(address(this));
     }
 
     /// @dev Undelegate from operator
     function undelegate() public virtual createSnapshot returns (Withdrawal[] memory) {
         print.method("undelegate");
+        User operator = User(payable(delegationManager.delegatedTo(address(this))));
 
         Withdrawal[] memory expectedWithdrawals = _getExpectedWithdrawalStructsForStaker(address(this));
         _tryPrankAppointee_DelegationManager(IDelegationManager.undelegate.selector);
@@ -234,6 +244,10 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
             );
         }
 
+        // handle the undelegating staker on the operator User contract
+        // to manage the delegatedStakers enum set
+        operator.handleUndelegatingStaker(address(this));
+
         return expectedWithdrawals;
     }
 
@@ -242,6 +256,8 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         User newOperator
     ) public virtual createSnapshot returns (Withdrawal[] memory) {
         print.method("redelegate", newOperator.NAME_COLORED());
+        User oldOperator = User(payable(delegationManager.delegatedTo(payable(address(this)))));
+
         Withdrawal[] memory expectedWithdrawals = _getExpectedWithdrawalStructsForStaker(address(this));
         ISignatureUtilsMixinTypes.SignatureWithExpiry memory emptySig;
         _tryPrankAppointee_DelegationManager(IDelegationManager.redelegate.selector);
@@ -262,6 +278,12 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
                 expectedWithdrawals[i].scaledShares[0]
             );
         }
+
+        // handle the redelegating staker on the operator User contract
+        // to manage the delegatedStakers enum set
+        oldOperator.handleUndelegatingStaker(address(this));
+        newOperator.handleDelegatingStakers(address(this));
+
         return expectedWithdrawals;
     }
 
@@ -275,7 +297,33 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         delegationManager.undelegate(address(staker));
         print.gasUsed();
 
+        // Operator is calling this function themselves
+        // handle the undelegating staker on this contract to manage the delegatedStakers enum set
+        handleUndelegatingStaker(address(staker));
+
         return expectedWithdrawals;
+    }
+
+    /// @dev NOTE: do NOT call this function directly. This is simply implemented to manage the
+    /// delegatedStakers enum set. This function is only meant to be called on the Operator User contract.
+    function handleDelegatingStakers(address staker) public virtual {
+        // check that the current User is an operator
+        require(
+            delegationManager.isOperator(address(this)),
+            "User is not an operator"
+        );
+        delegatedStakers.add(staker);
+    }
+
+    /// @dev NOTE: do NOT call this function directly. This is simply implemented to manage the
+    /// delegatedStakers enum set. This function is only meant to be called on the Operator User contract.
+    function handleUndelegatingStaker(address staker) public virtual {
+        // check that the current User is an operator
+        require(
+            delegationManager.isOperator(address(this)),
+            "User is not an operator"
+        );
+        delegatedStakers.remove(staker);
     }
 
     /// @dev Queues a single withdrawal for every share and strategy pair
@@ -711,6 +759,15 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         }
 
         return activeValidators;
+    }
+
+    function getDelegatedStakers() public view returns (User[] memory) {
+        address[] memory stakers = delegatedStakers.values();
+        User[] memory users = new User[](stakers.length);
+        for (uint256 i = 0; i < stakers.length; i++) {
+            users[i] = User(payable(stakers[i]));
+        }
+        return users;
     }
 
     function _tryPrankAppointee(
