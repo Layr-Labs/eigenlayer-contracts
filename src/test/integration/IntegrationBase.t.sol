@@ -1545,17 +1545,18 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     /// FIX THIS WHEN WORKING ON ROUNDING ISSUES
     function assert_Snap_Unchanged_Staker_WithdrawableShares_Delegation(
         User staker,
+        User operator,
+        IStrategy[] memory strategies,
+        uint[] memory depositShares,
         string memory err
     ) internal {
-        IStrategy[] memory strategies = allStrats;
-
         uint[] memory curShares = _getStakerWithdrawableShares(staker, strategies);
         // Use timewarp to get previous staker shares
-        uint[] memory prevShares = _getPrevStakerWithdrawableShares(staker, strategies);
+        uint[] memory expectedShares = _getExpectedWithdrawableSharesDelegate(staker, operator, strategies, depositShares);
 
         // For each strategy, check (prev - removed == cur)
         for (uint i = 0; i < strategies.length; i++) {
-            assertApproxEqAbs(prevShares[i], curShares[i], 100000, err);
+            assertEq(expectedShares[i], curShares[i], err);
         }
     }
 
@@ -2783,11 +2784,15 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         return delegationManager.depositScalingFactor(address(staker), strategy);
     }
 
+    function _getPrevDepositScalingFactors(User staker, IStrategy[] memory strategies) internal timewarp() returns (uint[] memory) {
+        return _getDepositScalingFactors(staker, strategies);
+    }
+
     function _getExpectedDSFUndelegate(User staker) internal view returns (uint expectedDepositScalingFactor) {
         return WAD.divWad(_getBeaconChainSlashingFactor(staker));
     }
 
-    function _getExpectedWithdrawableSharesUndelegate(User staker, IStrategy[] memory strategies, uint[] memory shares) internal view returns (uint[] memory){
+    function _getExpectedWithdrawableSharesUndelegate(User staker, IStrategy[] memory strategies, uint[] memory shares) internal returns (uint[] memory){
         uint[] memory expectedWithdrawableShares = new uint[](strategies.length);
         for (uint i = 0; i < strategies.length; i++) {
             if (strategies[i] == BEACONCHAIN_ETH_STRAT) {
@@ -2795,6 +2800,30 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
             } else {
                 expectedWithdrawableShares[i] = shares[i];
              }
+        }
+        return expectedWithdrawableShares;
+    }
+
+    function _getExpectedDSFsDelegate(User staker, User operator, IStrategy[] memory strategies) internal returns (uint[] memory expectedDepositScalingFactors) {
+        uint[] memory expectedDepositScalingFactors = new uint[](strategies.length);
+        uint[] memory oldDepositScalingFactors = _getPrevDepositScalingFactors(staker, strategies);
+        uint64[] memory maxMagnitudes = _getMaxMagnitudes(operator, strategies);
+        for (uint i = 0; i < strategies.length; i++) {
+            expectedDepositScalingFactors[i] = oldDepositScalingFactors[i].divWad(maxMagnitudes[i]);
+        }
+        return expectedDepositScalingFactors;
+    }
+
+    function _getExpectedWithdrawableSharesDelegate(User staker, User operator, IStrategy[] memory strategies, uint[] memory depositShares) internal returns (uint[] memory){
+        uint[] memory expectedWithdrawableShares = new uint[](strategies.length);
+        uint[] memory expectedDSFs = _getExpectedDSFsDelegate(staker, operator, strategies);
+        uint64[] memory maxMagnitudes = _getMaxMagnitudes(operator, strategies);
+        for (uint i = 0; i < strategies.length; i++) {
+            if (strategies[i] == BEACONCHAIN_ETH_STRAT) {
+                expectedWithdrawableShares[i] = depositShares[i].mulWad(expectedDSFs[i]).mulWad(maxMagnitudes[i].mulWad(_getBeaconChainSlashingFactor(staker)));
+            } else {
+                expectedWithdrawableShares[i] = depositShares[i].mulWad(expectedDSFs[i]).mulWad(maxMagnitudes[i]);
+            }
         }
         return expectedWithdrawableShares;
     }
