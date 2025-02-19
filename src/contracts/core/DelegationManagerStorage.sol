@@ -111,7 +111,7 @@ abstract contract DelegationManagerStorage is IDelegationManager {
 
     /// @notice Returns the details of a queued withdrawal given by `withdrawalRoot`.
     /// @dev This variable only reflects withdrawals that were made after the slashing release.
-    mapping(bytes32 withdrawalRoot => Withdrawal withdrawal) internal queuedWithdrawals;
+    mapping(bytes32 withdrawalRoot => Withdrawal withdrawal) internal _queuedWithdrawals;
 
     /// @notice Contains history of the total cumulative staker withdrawals for an operator and a given strategy.
     /// Used to calculate burned StrategyManager shares when an operator is slashed.

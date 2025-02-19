@@ -523,7 +523,7 @@ contract DelegationManager is
         bytes32 withdrawalRoot = calculateWithdrawalRoot(withdrawal);
 
         pendingWithdrawals[withdrawalRoot] = true;
-        queuedWithdrawals[withdrawalRoot] = withdrawal;
+        _queuedWithdrawals[withdrawalRoot] = withdrawal;
         _stakerQueuedWithdrawalRoots[staker].add(withdrawalRoot);
 
         emit SlashingWithdrawalQueued(withdrawalRoot, withdrawal, withdrawableShares);
@@ -569,7 +569,7 @@ contract DelegationManager is
         // Remove the withdrawal from the queue. Note that for legacy withdrawals, the removals
         // from `_stakerQueuedWithdrawalRoots` and `queuedWithdrawals` will no-op.
         _stakerQueuedWithdrawalRoots[withdrawal.staker].remove(withdrawalRoot);
-        delete queuedWithdrawals[withdrawalRoot];
+        delete _queuedWithdrawals[withdrawalRoot];
         delete pendingWithdrawals[withdrawalRoot];
         emit SlashingWithdrawalCompleted(withdrawalRoot);
 
@@ -803,7 +803,7 @@ contract DelegationManager is
     function _getSharesByWithdrawalRoot(
         bytes32 withdrawalRoot
     ) internal view returns (Withdrawal memory withdrawal, uint256[] memory shares) {
-        withdrawal = queuedWithdrawals[withdrawalRoot];
+        withdrawal = _queuedWithdrawals[withdrawalRoot];
         shares = new uint256[](withdrawal.strategies.length);
 
         uint32 slashableUntil = withdrawal.startBlock + MIN_WITHDRAWAL_DELAY_BLOCKS;
@@ -964,15 +964,14 @@ contract DelegationManager is
         return (strategies, shares);
     }
 
-    /// @inheritdoc IDelegationManager
-    function getQueuedWithdrawal(
+    function queuedWithdrawals(
         bytes32 withdrawalRoot
-    ) external view returns (Withdrawal memory) {
-        return queuedWithdrawals[withdrawalRoot];
+    ) external view returns (Withdrawal memory withdrawal) {
+        return _queuedWithdrawals[withdrawalRoot];
     }
 
     /// @inheritdoc IDelegationManager
-    function getQueuedWithdrawalFromRoot(
+    function getQueuedWithdrawal(
         bytes32 withdrawalRoot
     ) external view returns (Withdrawal memory withdrawal, uint256[] memory shares) {
         (withdrawal, shares) = _getSharesByWithdrawalRoot(withdrawalRoot);

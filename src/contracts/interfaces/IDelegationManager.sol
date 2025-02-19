@@ -471,11 +471,17 @@ interface IDelegationManager is ISignatureUtilsMixin, IDelegationManagerErrors, 
      */
     function depositScalingFactor(address staker, IStrategy strategy) external view returns (uint256);
 
-    /// @notice Returns the Withdrawal associated with a `withdrawalRoot`, if it exists. NOTE that
-    /// withdrawals queued before the slashing release can NOT be queried with this method.
+    /**
+     * @notice Returns the Withdrawal and corresponding shares associated with a `withdrawalRoot`
+     * @param withdrawalRoot The hash identifying the queued withdrawal
+     * @return withdrawal The withdrawal details
+     * @return shares Array of shares corresponding to each strategy in the withdrawal
+     * @dev The shares are what a user would receive from completing a queued withdrawal, assuming all slashings are applied
+     * @dev Withdrawals queued before the slashing release cannot be queried with this method
+     */
     function getQueuedWithdrawal(
         bytes32 withdrawalRoot
-    ) external view returns (Withdrawal memory);
+    ) external view returns (Withdrawal memory withdrawal, uint256[] memory shares);
 
     /**
      * @notice Returns all queued withdrawals and their corresponding shares for a staker.
@@ -487,17 +493,6 @@ interface IDelegationManager is ISignatureUtilsMixin, IDelegationManagerErrors, 
     function getQueuedWithdrawals(
         address staker
     ) external view returns (Withdrawal[] memory withdrawals, uint256[][] memory shares);
-
-    /**
-     * @notice Returns the withdrawal details and corresponding shares for a specific queued withdrawal.
-     * @param withdrawalRoot The hash identifying the queued withdrawal.
-     * @return withdrawal The withdrawal details.
-     * @return shares Array of shares corresponding to each strategy in the withdrawal.
-     * @dev The shares are what a user would receive from completing a queued withdrawal, assuming all slashings are applied.
-     */
-    function getQueuedWithdrawalFromRoot(
-        bytes32 withdrawalRoot
-    ) external view returns (Withdrawal memory withdrawal, uint256[] memory shares);
 
     /// @notice Returns a list of queued withdrawal roots for the `staker`.
     /// NOTE that this only returns withdrawals queued AFTER the slashing release.
