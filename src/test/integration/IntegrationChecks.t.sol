@@ -243,6 +243,8 @@ contract IntegrationCheckUtils is IntegrationBase {
             "check_Undelegate_State: calculated withdrawal should match returned root");
         assert_AllWithdrawalsPending(withdrawalRoots,
             "check_Undelegate_State: stakers withdrawal should now be pending");
+        assert_DSF_Reset(staker, strategies,
+            "check_Undelegate_State: staker dsfs should be reset to wad");
         assert_Snap_Added_QueuedWithdrawals(staker, withdrawals,
             "check_Undelegate_State: staker should have increased nonce by withdrawals.length");
         assert_Snap_Removed_OperatorShares(operator, strategies, stakerDelegatedShares,

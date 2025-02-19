@@ -565,6 +565,17 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
             assertEq(slashableStake[i], 0, err);
         }
     }
+
+    function assert_DSF_Reset(
+        User staker,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal {
+        uint[] memory depositScalingFactors = _getDepositScalingFactors(staker, strategies);
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(depositScalingFactors[i], WAD, err);
+        }
+    }
     
     /*******************************************************************************
                                 SNAPSHOT ASSERTIONS
@@ -2758,6 +2769,18 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
 
         return shares;
+    }
+
+    function _getDepositScalingFactors(User staker, IStrategy[] memory strategies) internal view returns (uint[] memory) {
+        uint[] memory depositScalingFactors = new uint[](strategies.length);
+        for (uint i=0; i < strategies.length; i++) {
+            depositScalingFactors[i] = _getDepositScalingFactor(staker, strategies[i]);
+        }
+        return depositScalingFactors;
+    }
+
+    function _getDepositScalingFactor(User staker, IStrategy strategy) internal view returns (uint) {
+        return delegationManager.depositScalingFactor(address(staker), strategy);
     }
 
     function _getExpectedDSFUndelegate(User staker) internal view returns (uint expectedDepositScalingFactor) {
