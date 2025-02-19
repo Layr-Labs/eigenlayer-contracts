@@ -31,7 +31,7 @@ type TArgs struct {
 }
 
 func main() {
-	forkSlot, _ := strconv.ParseUint(os.Getenv("ZEUS_ENV_pectraForkSlot"), 10, 64)
+	forkSlot, _ := strconv.ParseUint(os.Getenv("ZEUS_ENV_PECTRA_FORK_SLOT"), 10, 64)
 
 	err := runScript(TArgs{
 		BeaconNode: os.Getenv("BEACON_URL"),
