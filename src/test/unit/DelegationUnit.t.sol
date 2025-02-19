@@ -90,7 +90,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         // Redeploy StrategyManagerMock with DM
         strategyManagerMock = StrategyManagerMock(payable(address(new StrategyManagerMock(delegationManager))));
 
-        // Deploy DelegationManager implmentation and upgrade proxy
+        // Deploy DelegationManager implementation and upgrade proxy
         delegationManagerImplementation = new DelegationManagerHarness(
             IStrategyManager(address(strategyManagerMock)),
             IEigenPodManager(address(eigenPodManagerMock)),
@@ -1330,7 +1330,7 @@ contract DelegationManagerUnitTests_Initialization_Setters is DelegationManagerU
         assertEq(delegationManager.domainSeparator(), expectedDomainSeparator, "sanity check");
     }
 
-    /// @notice Verifies that the DelegationManager cannot be iniitalized multiple times
+    /// @notice Verifies that the DelegationManager cannot be initialized multiple times
     function test_initialize_revert_reinitialization() public {
         cheats.expectRevert("Initializable: contract is already initialized");
         delegationManager.initialize(address(this), 0);
@@ -2124,7 +2124,7 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
             delegationManager.delegationApproverSaltIsSpent(delegationManager.delegationApprover(defaultOperator), salt),
             "salt somehow spent too early?"
         );
-        // Set staker shares in BeaconChainStrategy and StrategyMananger
+        // Set staker shares in BeaconChainStrategy and StrategyManager
         strategyManagerMock.addDeposit(staker, strategyMock, shares);
         eigenPodManagerMock.setPodOwnerShares(staker, beaconShares);
         (IStrategy[] memory strategiesToReturn, uint256[] memory sharesToReturn) =
@@ -2214,7 +2214,7 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
         _setOperatorMagnitude(defaultOperator, beaconChainETHStrategy, maxMagnitudeBeacon);
         _setOperatorMagnitude(defaultOperator, strategyMock, maxMagnitudeStrategy);
 
-        // 2. Set staker shares in BeaconChainStrategy and StrategyMananger
+        // 2. Set staker shares in BeaconChainStrategy and StrategyManager
         strategyManagerMock.addDeposit(defaultStaker, strategyMock, shares);
         eigenPodManagerMock.setPodOwnerShares(defaultStaker, beaconShares);
         (IStrategy[] memory strategiesToReturn, uint256[] memory sharesToReturn) =
@@ -2700,7 +2700,7 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
             expiry
         );
 
-        // Set staker shares in BeaconChainStrategy and StrategyMananger
+        // Set staker shares in BeaconChainStrategy and StrategyManager
         uint256[] memory depositScalingFactors = new uint256[](2);
         depositScalingFactors[0] = uint256(WAD);
         depositScalingFactors[1] = uint256(WAD);
@@ -6485,7 +6485,7 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
         cheats.prank(address(allocationManagerMock));
         delegationManager.slashOperatorShares(defaultOperator, strategyMock, WAD, 0);
 
-        // Complete withdrawal as tokens and assert that we call back into teh SM with 100 tokens
+        // Complete withdrawal as tokens and assert that we call back into the SM with 100 tokens
         IERC20[] memory tokens = strategyMock.underlyingToken().toArray();
         cheats.expectCall(
             address(strategyManagerMock),

@@ -3816,7 +3816,7 @@ contract AllocationManagerUnitTests_removeStrategiesFromOperatorSet is Allocatio
         cheats.prank(defaultAVS);
         allocationManager.removeStrategiesFromOperatorSet(defaultAVS, defaultOperatorSet.id, strategies);
 
-        // The orginal strategy should still be in the operator set.
+        // The original strategy should still be in the operator set.
         assertEq(
             allocationManager.getStrategiesInOperatorSet(defaultOperatorSet).length, 1, "should not be strat of set"
         );

@@ -274,7 +274,7 @@ contract StrategyManager is
      * @param depositSharesToRemove The amount of deposit shares to decrement
      * @dev If the amount of shares represents all of the staker`s shares in said strategy,
      * then the strategy is removed from stakerStrategyList[staker] and 'true' is returned. Otherwise 'false' is returned.
-     * Also returns the user's udpated deposit shares after decrement.
+     * Also returns the user's updated deposit shares after decrement.
      */
     function _removeDepositShares(
         address staker,
