@@ -1541,9 +1541,8 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         assert_Snap_Removed_Staker_WithdrawableShares(staker, strat.toArray(), removedShares.toArrayU256(), err);
     }
 
-    /// @dev Check that the staker's withdrawable shares have decreased by `removedShares`
-    /// FIX THIS WHEN WORKING ON ROUNDING ISSUES
-    function assert_Snap_Unchanged_Staker_WithdrawableShares_Delegation(
+    /// @dev Check that the staker's withdrawable shares have changed by the expected amount
+    function assert_Snap_Expected_Staker_WithdrawableShares_Delegation(
         User staker,
         User operator,
         IStrategy[] memory strategies,
@@ -1554,7 +1553,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         // Use timewarp to get previous staker shares
         uint[] memory expectedShares = _getExpectedWithdrawableSharesDelegate(staker, operator, strategies, depositShares);
 
-        // For each strategy, check (prev - removed == cur)
+        // For each strategy, check expected == current
         for (uint i = 0; i < strategies.length; i++) {
             assertEq(expectedShares[i], curShares[i], err);
         }
@@ -2804,7 +2803,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         return expectedWithdrawableShares;
     }
 
-    function _getExpectedDSFsDelegate(User staker, User operator, IStrategy[] memory strategies) internal returns (uint[] memory expectedDepositScalingFactors) {
+    function _getExpectedDSFsDelegate(User staker, User operator, IStrategy[] memory strategies) internal returns (uint[] memory) {
         uint[] memory expectedDepositScalingFactors = new uint[](strategies.length);
         uint[] memory oldDepositScalingFactors = _getPrevDepositScalingFactors(staker, strategies);
         uint64[] memory maxMagnitudes = _getMaxMagnitudes(operator, strategies);

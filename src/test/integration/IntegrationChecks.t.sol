@@ -190,7 +190,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         assertEq(address(operator), delegationManager.delegatedTo(address(staker)), "staker should be delegated to operator");
         assert_HasExpectedShares(staker, strategies, shares, "staker should still have expected shares after delegating");
         assert_Snap_Unchanged_Staker_DepositShares(staker, "staker shares should be unchanged after delegating");
-        assert_Snap_Unchanged_Staker_WithdrawableShares_Delegation(staker, operator, strategies, shares, "withdrawable shares should be unchanged within rounding error after delegating");
+        assert_Snap_Expected_Staker_WithdrawableShares_Delegation(staker, operator, strategies, shares, "withdrawable shares should be unchanged within rounding error after delegating");
         uint256[] memory delegatableShares = _getPrevStakerWithdrawableShares(staker, strategies);
         assert_Snap_Added_OperatorShares(operator, strategies, delegatableShares, "operator should have received shares");
     }
