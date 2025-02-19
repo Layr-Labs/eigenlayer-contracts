@@ -8,7 +8,19 @@ permissions:
   contents: read
   pull-requests: read
 
+env:
+  CLICOLOR: 1
+
 jobs:
+  typos:
+    name: Typo Linting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: crate-ci/typos@v1.29.7
+        with:
+          config: .github/configs/typos-cli.toml
+
   commitlint:
     name: Commit Linting
     runs-on: ubuntu-latest

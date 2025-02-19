@@ -257,7 +257,7 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
     }
 
     function testFuzz_removeShares(uint224 sharesToAdd, uint224 sharesToRemove) public {
-        // Constain inputs
+        // Constrain inputs
         cheats.assume(sharesToRemove <= sharesToAdd);
         uint256 sharesAdded = sharesToAdd * GWEI_TO_WEI;
         uint256 sharesRemoved = sharesToRemove * GWEI_TO_WEI;

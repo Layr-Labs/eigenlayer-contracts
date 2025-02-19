@@ -1,0 +1,68 @@
+[files]
+extend-exclude = [
+    "**/lib/**",
+    "**/docs/images/**",
+    # Not present locally, but is in remote (github).
+    "**/doc/**"
+]
+ignore-hidden = true
+ignore-files = true
+ignore-dot = true
+ignore-vcs = true
+ignore-global = true
+ignore-parent = true
+
+[default]
+binary = false
+check-filename = true
+check-file = true
+unicode = true
+ignore-hex = true
+identifier-leading-digits = false
+locale = "en"
+extend-ignore-identifiers-re = []
+extend-ignore-words-re = []
+extend-ignore-re = []
+
+[default.extend-identifiers]
+
+# Weird syntax, but this how you ignore corrections for certain words.
+[default.extend-words]
+strat = "strat"
+froms = "froms"
+
+[type.go]
+extend-glob = []
+extend-ignore-identifiers-re = []
+extend-ignore-words-re = []
+extend-ignore-re = []
+
+[type.go.extend-identifiers]
+flate = "flate"
+
+[type.go.extend-words]
+
+[type.sh]
+extend-glob = []
+extend-ignore-identifiers-re = []
+extend-ignore-words-re = []
+extend-ignore-re = []
+
+[type.sh.extend-identifiers]
+ot = "ot"
+stap = "stap"
+
+[type.sh.extend-words]
+
+[type.py]
+extend-glob = []
+extend-ignore-identifiers-re = []
+extend-ignore-words-re = []
+extend-ignore-re = []
+
+[type.py.extend-identifiers]
+NDArray = "NDArray"
+arange = "arange"
+EOFError = "EOFError"
+
+[type.py.extend-words]
