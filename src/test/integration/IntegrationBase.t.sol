@@ -2760,6 +2760,22 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         return shares;
     }
 
+    function _getExpectedDSFUndelegate(User staker) internal view returns (uint expectedDepositScalingFactor) {
+        return WAD.divWad(_getBeaconChainSlashingFactor(staker));
+    }
+
+    function _getExpectedWithdrawableSharesUndelegate(User staker, IStrategy[] memory strategies, uint[] memory shares) internal view returns (uint[] memory){
+        uint[] memory expectedWithdrawableShares = new uint[](strategies.length);
+        for (uint i = 0; i < strategies.length; i++) {
+            if (strategies[i] == BEACONCHAIN_ETH_STRAT) {
+                expectedWithdrawableShares[i] = shares[i].mulWad(_getExpectedDSFUndelegate(staker)).mulWad(_getBeaconChainSlashingFactor(staker));
+            } else {
+                expectedWithdrawableShares[i] = shares[i];
+             }
+        }
+        return expectedWithdrawableShares;
+    }
+
     function _getPrevWithdrawableShares(User staker, IStrategy[] memory strategies) internal timewarp() returns (uint[] memory) {
         return _getWithdrawableShares(staker, strategies);
     }
