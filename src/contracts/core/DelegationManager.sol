@@ -963,16 +963,9 @@ contract DelegationManager is
 
         return (strategies, shares);
     }
-
+    
     /// @inheritdoc IDelegationManager
     function getQueuedWithdrawal(
-        bytes32 withdrawalRoot
-    ) external view returns (Withdrawal memory) {
-        return queuedWithdrawals[withdrawalRoot];
-    }
-
-    /// @inheritdoc IDelegationManager
-    function getQueuedWithdrawalFromRoot(
         bytes32 withdrawalRoot
     ) external view returns (Withdrawal memory withdrawal, uint256[] memory shares) {
         (withdrawal, shares) = _getSharesByWithdrawalRoot(withdrawalRoot);
