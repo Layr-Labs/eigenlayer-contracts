@@ -22,7 +22,9 @@ Libraries and Mixins:
 
 ## Overview
 
-The `AllocationManager` manages registration and deregistration of operators to operator sets, handles allocation and slashing of operators' slashable stake, and is the entry point an AVS uses to slash an operator. The `AllocationManager's` responsibilities are broken down into the following concepts:
+The `AllocationManager` manages AVS metadata registration, registration and deregistration of operators to operator sets, handles allocation and slashing of operators' slashable stake, and is the entry point an AVS uses to slash an operator. The `AllocationManager's` responsibilities are broken down into the following concepts:
+
+* [AVS Metadata](#avs-metadata)
 * [Operator Sets](#operator-sets)
 * [Allocations and Slashing](#allocations-and-slashing)
 * [Config](#config)
@@ -37,6 +39,104 @@ The `AllocationManager` manages registration and deregistration of operators to 
     * Testnet: `50 blocks` (10 minutes).
 
 ---
+
+## AVS Metadata
+
+AVSs must register their metadata to declare themselves who they are as the first step, before they can create operator sets or register operators into operator sets. `AllocationManager` keeps track of AVSs that have registered metadata.
+
+**Methods:**
+* [`updateAVSMetadataURI`](#updateavsmetadatauri)
+
+
+#### `updateAVSMetadataURI`
+
+```solidity
+/**
+ *  @notice Called by an AVS to emit an `AVSMetadataURIUpdated` event indicating the information has updated.
+ *
+ *  @param metadataURI The URI for metadata associated with an AVS.
+ *
+ *  @dev Note that the `metadataURI` is *never stored* and is only emitted in the `AVSMetadataURIUpdated` event.
+ */
+function updateAVSMetadataURI(
+    address avs, 
+    string calldata metadataURI
+) 
+    external
+    checkCanCall(avs)
+```
+
+_Note: this method can be called directly by an AVS, or by a caller authorized by the AVS. See [`PermissionController.md`](../permissions/PermissionController.md) for details._
+
+Below is the format AVSs should use when updating their metadata URI initially. This is not validated onchain.
+
+```json
+{
+    "name": "AVS",
+    "website": "https.avs.xyz/",
+    "description": "Some description about",
+    "logo": "http://github.com/logo.png",
+    "twitter": "https://twitter.com/avs",
+}
+```
+
+
+Later on, once AVSs have created operator sets, content in their metadata URI can be updated subsequently.
+
+```json
+{
+    "name": "AVS",
+    "website": "https.avs.xyz/",
+    "description": "Some description about",
+    "logo": "http://github.com/logo.png",
+    "twitter": "https://twitter.com/avs",
+    "operatorSets": [
+        {
+            "name": "ETH Set",
+            "id": "1", // Note: we use this param to match the opSet id in the Allocation Manager
+            "description": "The ETH operatorSet for AVS",
+            "software": [
+                {
+                    "name": "NetworkMonitor",
+                    "description": "",
+                    "url": "https://link-to-binary-or-github.com"
+                },
+                {
+                    "name": "ValidatorClient",
+                    "description": "",
+                    "url": "https://link-to-binary-or-github.com"
+                }
+            ],
+            "slashingConditions": ["Condition A", "Condition B"]
+        },
+        {
+            "name": "EIGEN Set",
+            "id": "2", // Note: we use this param to match the opSet id in the Allocation Manager
+            "description": "The EIGEN operatorSet for AVS",
+            "software": [
+                {
+                    "name": "NetworkMonitor",
+                    "description": "",
+                    "url": "https://link-to-binary-or-github.com"
+                },
+                {
+                    "name": "ValidatorClient",
+                    "description": "",
+                    "url": "https://link-to-binary-or-github.com"
+                }
+            ],
+            "slashingConditions": ["Condition A", "Condition B"]
+        }
+    ]
+}
+```
+
+*Effects*:
+* Emits an `AVSMetadataURIUpdated` event for use in offchain services
+
+*Requirements*:
+* Caller MUST be authorized, either as the AVS itself or an admin/appointee (see [`PermissionController.md`](../permissions/PermissionController.md))
+
 
 ## Operator Sets
 
@@ -145,6 +245,7 @@ Optionally, the `avs` can provide a list of `strategies`, specifying which strat
 
 *Requirements*:
 * Caller MUST be authorized, either as the AVS itself or an admin/appointee (see [`PermissionController.md`](../permissions/PermissionController.md))
+* AVS MUST have registered metadata
 * For each `CreateSetParams` element:
     * Each `params.operatorSetId` MUST NOT already exist in `_operatorSets[avs]`
     
@@ -665,7 +766,6 @@ Once slashing is processed for a strategy, [slashed stake is burned via the `Del
 **Methods:**
 * [`setAllocationDelay`](#setallocationdelay)
 * [`setAVSRegistrar`](#setavsregistrar)
-* [`updateAVSMetadataURI`](#updateavsmetadatauri)
 
 #### `setAllocationDelay`
 
@@ -753,82 +853,6 @@ Note that when an operator registers, registration will FAIL if the call to `IAV
 *Effects*:
 * Sets `_avsRegistrar[avs]` to `registrar`
 * Emits an `AVSRegistrarSet` event
-
-*Requirements*:
-* Caller MUST be authorized, either as the AVS itself or an admin/appointee (see [`PermissionController.md`](../permissions/PermissionController.md))
-
-#### `updateAVSMetadataURI`
-
-```solidity
-/**
- *  @notice Called by an AVS to emit an `AVSMetadataURIUpdated` event indicating the information has updated.
- *
- *  @param metadataURI The URI for metadata associated with an AVS.
- *
- *  @dev Note that the `metadataURI` is *never stored* and is only emitted in the `AVSMetadataURIUpdated` event.
- */
-function updateAVSMetadataURI(
-    address avs, 
-    string calldata metadataURI
-) 
-    external
-    checkCanCall(avs)
-```
-
-_Note: this method can be called directly by an AVS, or by a caller authorized by the AVS. See [`PermissionController.md`](../permissions/PermissionController.md) for details._
-
-Below is the format AVSs should use when updating their metadata URI. This is not validated onchain.
-
-```json
-{
-    "name": "AVS",
-    "website": "https.avs.xyz/",
-    "description": "Some description about",
-    "logo": "http://github.com/logo.png",
-    "twitter": "https://twitter.com/avs",
-    "operatorSets": [
-        {
-            "name": "ETH Set",
-            "id": "1", // Note: we use this param to match the opSet id in the Allocation Manager
-            "description": "The ETH operatorSet for AVS",
-            "software": [
-                {
-                    "name": "NetworkMonitor",
-                    "description": "",
-                    "url": "https://link-to-binary-or-github.com"
-                },
-                {
-                    "name": "ValidatorClient",
-                    "description": "",
-                    "url": "https://link-to-binary-or-github.com"
-                }
-            ],
-            "slashingConditions": ["Condition A", "Condition B"]
-        },
-        {
-            "name": "EIGEN Set",
-            "id": "2", // Note: we use this param to match the opSet id in the Allocation Manager
-            "description": "The EIGEN operatorSet for AVS",
-            "software": [
-                {
-                    "name": "NetworkMonitor",
-                    "description": "",
-                    "url": "https://link-to-binary-or-github.com"
-                },
-                {
-                    "name": "ValidatorClient",
-                    "description": "",
-                    "url": "https://link-to-binary-or-github.com"
-                }
-            ],
-            "slashingConditions": ["Condition A", "Condition B"]
-        }
-    ]
-}
-```
-
-*Effects*:
-* Emits an `AVSMetadataURIUpdated` event for use in offchain services
 
 *Requirements*:
 * Caller MUST be authorized, either as the AVS itself or an admin/appointee (see [`PermissionController.md`](../permissions/PermissionController.md))

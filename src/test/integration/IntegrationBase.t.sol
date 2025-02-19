@@ -147,6 +147,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     function _newRandomAVS() internal returns (AVS avs, OperatorSet[] memory operatorSets) {
         string memory avsName = string.concat("avs", numAVSs.toString());
         avs = _genRandAVS(avsName);
+        avs.updateAVSMetadataURI("https://example.com");
         operatorSets = avs.createOperatorSets(_randomStrategies());
         ++numAVSs;
     }
