@@ -2584,6 +2584,13 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         })[0];
     }
 
+    function _getStrategyAllocations(
+        User operator,
+        IStrategy strategy
+    ) internal view returns (OperatorSet[] memory operatorSets, Allocation[] memory allocations) {
+        (operatorSets, allocations) = allocationManager.getStrategyAllocations(address(operator), strategy);
+    }
+
     function _getPrevIsSlashable(
         User operator,
         OperatorSet memory operatorSet

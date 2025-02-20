@@ -194,7 +194,22 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Expected_Staker_WithdrawableShares_Delegation(staker, operator, strategies, shares, "withdrawable shares should be unchanged within rounding error after delegating");
         uint256[] memory delegatableShares = _getPrevStakerWithdrawableShares(staker, strategies);
         assert_Snap_Added_OperatorShares(operator, strategies, delegatableShares, "operator should have received shares");
-        //assert_Snap_Added_SlashableStake(operator, operatorSet, strategies, delegatableShares, "operator slashable stake should increase");
+        check_Added_SlashableStake_Delegation(operator, strategies, delegatableShares);
+    }
+
+    function check_Added_SlashableStake_Delegation(
+        User operator,
+        IStrategy[] memory strategies,
+        uint[] memory shares
+    ) internal {
+        for (uint i = 0; i < strategies.length; i++) {
+            (OperatorSet[] memory operatorSets, Allocation[] memory allocations) = _getStrategyAllocations(operator, strategies[i]);
+            for (uint j = 0; j < operatorSets.length; j++) {
+                if (allocations[j].currentMagnitude < 0) {
+                    assert_Snap_StakeBecameSlashable(operator, operatorSets[j], strategies[i].toArray(), "allocated strategies should have minSlashableStake increased");
+                }
+            }
+        }
     }
 
     function check_QueuedWithdrawal_State(
