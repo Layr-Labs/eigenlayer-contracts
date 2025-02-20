@@ -83,13 +83,15 @@ abstract contract AllocationManagerStorage is IAllocationManager {
         _maxMagnitudeHistory;
 
     /// @dev For a strategy, contains the amount of magnitude an operator has allocated to operator sets
-    /// @dev This value should be read with caution, as deallocations that are completable but not
-    ///      popped off the queue are still included in the encumbered magnitude
-    mapping(address operator => mapping(IStrategy strategy => uint64)) public encumberedMagnitude;
+    mapping(address operator => mapping(IStrategy strategy => uint64)) internal encumberedMagnitude;
 
     /// @dev For a strategy, keeps an ordered queue of operator sets that have pending deallocations
     /// These must be completed in order to free up magnitude for future allocation
     mapping(address operator => mapping(IStrategy strategy => DoubleEndedQueue.Bytes32Deque)) internal deallocationQueue;
+
+    /// @dev Lists the AVSs who has registered metadata and claimed itself as an AVS
+    /// @notice bool is not used and is always true if the avs has registered metadata
+    mapping(address avs => bool) internal _avsRegisteredMetadata;
 
     // Construction
 
@@ -104,5 +106,5 @@ abstract contract AllocationManagerStorage is IAllocationManager {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[37] private __gap;
+    uint256[36] private __gap;
 }

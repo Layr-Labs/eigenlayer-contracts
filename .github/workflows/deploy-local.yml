@@ -30,7 +30,7 @@ jobs:
     - name: Install Foundry
       uses: foundry-rs/foundry-toolchain@v1
       with:
-        version: nightly
+        version: stable
     - name: Run forge install
       run: forge install
     - name: Start anvil and deploy

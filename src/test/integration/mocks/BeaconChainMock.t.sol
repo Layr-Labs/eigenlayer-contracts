@@ -7,6 +7,7 @@ import "src/contracts/libraries/BeaconChainProofs.sol";
 import "src/contracts/libraries/Merkle.sol";
 import "src/contracts/pods/EigenPodManager.sol";
 
+import "src/test/mocks/ETHDepositMock.sol";
 import "src/test/integration/mocks/EIP_4788_Oracle_Mock.t.sol";
 import "src/test/utils/Logger.t.sol";
 
@@ -79,6 +80,7 @@ contract BeaconChainMock is Logger {
     uint64 public nextTimestamp;
 
     EigenPodManager eigenPodManager;
+    IETHPOSDeposit constant DEPOSIT_CONTRACT = IETHPOSDeposit(0x00000000219ab540356cBB839Cbe05303d7705Fa);
     EIP_4788_Oracle_Mock constant EIP_4788_ORACLE = EIP_4788_Oracle_Mock(0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02);
     
     /**
@@ -126,6 +128,7 @@ contract BeaconChainMock is Logger {
         eigenPodManager = _eigenPodManager;
 
         // Create mock 4788 oracle
+        cheats.etch(address(DEPOSIT_CONTRACT), type(ETHPOSDepositMock).runtimeCode);
         cheats.etch(address(EIP_4788_ORACLE), type(EIP_4788_Oracle_Mock).runtimeCode);
 
         // Calculate nodes of empty merkle tree
@@ -283,6 +286,11 @@ contract BeaconChainMock is Logger {
     function advanceEpoch_NoWithdraw() public {
         print.method("advanceEpoch_NoWithdraw");
         _generateRewards();
+        _advanceEpoch();
+    }
+
+    function advanceEpoch_NoWithdrawNoRewards() public {
+        print.method("advanceEpoch_NoWithdrawNoRewards");
         _advanceEpoch();
     }
 
