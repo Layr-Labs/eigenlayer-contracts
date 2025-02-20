@@ -45,11 +45,7 @@ gha-docker:
 	docker run -v $(PWD):/build -w /build --rm -i ${CONTAINER_NAME}:latest bash -c "make gha"
 
 storage-report:
-<<<<<<< HEAD
 	bash "bin/storage-report.sh" "docs/storage-report/"
 
 fix-typos:
 	typos --config .github/configs/typos-cli.toml --write-changes
-=======
-	bash "bin/storage-report.sh" "docs/storage-report/"
->>>>>>> dd27b022 (fix: signature utils (#1015))
