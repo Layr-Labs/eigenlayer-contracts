@@ -132,5 +132,30 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal is UpgradeTest {
         }
     }
 
-    /// TODO - complete pre-upgrade withdrawal after earliest possible operator slashing
+    function testFuzz_delegate_deposit_queue_completeBeforeUpgrade_asTokens(uint24 _random) public rand(_random) {
+        /// Pre-upgrade:
+        /// 1. Create staker and operator with some asset amounts
+        /// 2. Staker delegates to operator
+        /// 3. Staker deposits into EigenLayer
+        /// 4. Staker queues a withdrawal
+        (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
+        (User operator, ,) = _newRandomOperator();
+
+        staker.delegateTo(operator);
+        staker.depositIntoEigenlayer(strategies, tokenBalances);
+        uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
+        uint[] memory expectedTokens = _calculateExpectedTokens(strategies, shares);
+        Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
+
+        _rollBlocksForCompleteWithdrawals(withdrawals);
+
+        /// Upgrade to slashing contracts
+        _upgradeEigenLayerContracts();
+
+        // Complete pre-slashing withdrawals as tokens
+        for (uint i = 0; i < withdrawals.length; i++) {
+            IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], strategies, shares, tokens, expectedTokens);
+        }
+    }
 }
