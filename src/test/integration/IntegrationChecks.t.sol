@@ -238,6 +238,7 @@ contract IntegrationCheckUtils is IntegrationBase {
             "check_QueuedWithdrawal_State: failed to remove staker shares");
         assert_Snap_Removed_Staker_WithdrawableShares(staker, strategies, shares,
             "check_QueuedWithdrawal_State: failed to remove staker withdrawable shares");
+        check_Decreased_SlashableStake(operator, strategies);
         // Check that the dsf is either reset to wad or unchanged
         for (uint i = 0; i < strategies.length; i++) {
             // For a full withdrawal, the dsf should be reset to wad
@@ -249,6 +250,20 @@ contract IntegrationCheckUtils is IntegrationBase {
             else {
                 assert_Snap_Unchanged_DSF(staker, strategies[i].toArray(), 
                     "check_QueuedWithdrawal_State: dsf should not be changed");
+            }
+        }
+    }
+
+    function check_Decreased_SlashableStake(
+        User operator,
+        IStrategy[] memory strategies
+    ) internal {
+        for (uint i = 0; i < strategies.length; i++) {
+            (OperatorSet[] memory operatorSets, Allocation[] memory allocations) = _getStrategyAllocations(operator, strategies[i]);
+            for (uint j = 0; j < operatorSets.length; j++) {
+                if (allocations[j].currentMagnitude > 0) {
+                    assert_Snap_StakeBecomeUnslashable(operator, operatorSets[j], strategies[i].toArray(), "allocated strategies should have minSlashableStake increased");
+                }
             }
         }
     }
