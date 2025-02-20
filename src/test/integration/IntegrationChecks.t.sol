@@ -205,7 +205,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         for (uint i = 0; i < strategies.length; i++) {
             (OperatorSet[] memory operatorSets, Allocation[] memory allocations) = _getStrategyAllocations(operator, strategies[i]);
             for (uint j = 0; j < operatorSets.length; j++) {
-                if (allocations[j].currentMagnitude < 0) {
+                if (allocations[j].currentMagnitude > 0) {
                     assert_Snap_StakeBecameSlashable(operator, operatorSets[j], strategies[i].toArray(), "allocated strategies should have minSlashableStake increased");
                 }
             }
