@@ -8,6 +8,7 @@ import "./IEigenPod.sol";
 import "./IShareManager.sol";
 import "./IPausable.sol";
 import "./IStrategy.sol";
+import "./ISemVerMixin.sol";
 
 interface IEigenPodManagerErrors {
     /// @dev Thrown when caller is not a EigenPod.
@@ -85,7 +86,8 @@ interface IEigenPodManager is
     IEigenPodManagerEvents,
     IEigenPodManagerTypes,
     IShareManager,
-    IPausable
+    IPausable,
+    ISemVerMixin
 {
     /**
      * @notice Creates an EigenPod for the sender.
@@ -104,10 +106,12 @@ interface IEigenPodManager is
     function stake(bytes calldata pubkey, bytes calldata signature, bytes32 depositDataRoot) external payable;
 
     /**
-     * @notice Changes the `podOwner`'s shares by `sharesDelta` and performs a call to the DelegationManager
-     * to ensure that delegated shares are also tracked correctly
+     * @notice Adds any positive share delta to the pod owner's deposit shares, and delegates them to the pod
+     * owner's operator (if applicable). A negative share delta does NOT impact the pod owner's deposit shares,
+     * but will reduce their beacon chain slashing factor and delegated shares accordingly.
      * @param podOwner is the pod owner whose balance is being updated.
-     * @param prevRestakedBalanceWei is the total amount restaked through the pod before the balance update
+     * @param prevRestakedBalanceWei is the total amount restaked through the pod before the balance update, including
+     * any amount currently in the withdrawal queue.
      * @param balanceDeltaWei is the amount the balance changed
      * @dev Callable only by the podOwner's EigenPod contract.
      * @dev Reverts if `sharesDelta` is not a whole Gwei amount

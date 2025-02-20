@@ -43,7 +43,7 @@ contract Integration_Deposit_Delegate_UpdateBalance is IntegrationCheckUtils {
     //     check_Delegation_State(staker, operator, strategies, shares);
 
     //     /// 3. Queue withdrawals for ALL shares
-    //     IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
+    //     Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
     //     bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
     //     check_QueuedWithdrawal_State(staker, operator, strategies, shares, withdrawals, withdrawalRoots);
 

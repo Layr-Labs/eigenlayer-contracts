@@ -145,6 +145,28 @@ Since the operatorShares are simply incrementing by the exact depositShares, the
 Granted the initial deposit amount was `4.418e28` which is magnitudes larger than the discrepancy here but this its important to note the side effects of the redesigned accounting model.
 Instead of purely incremented/decremented amounts, we have introduced magnitudes and scaling factor variables which now result in small amounts of rounding error from division in several places. We deem this rounding behavior to be tolerable given the costs associated for the number of transactions to emulate this and the proportional error is very small.
 
+### Slashing and Rounding Up Operator Shares and Rounding down on Staker Withdrawable Shares
+
+As can be observed in the `SlashingLib.sol` library, we round up on the operatorShares when slashing and round down on the staker's withdrawableShares. If we look at a core invariant of the shares accounting model, we ideally want to preserve the following:
+
+$$
+op_n = \sum_{i=1}^{k} a_{n,i}
+$$
+
+where $op_n$ is the operatorShares at time $n$ and $a_{n,i}$ is the staker's withdrawableShares at time $n$ for the $i^{th}$ staker.
+
+However due to rounding limitations, there will be some error introduced in calculating the amount of operator shares to slash above and also in calculating the staker's withdrawableShares. To prevent a situation where all stakers were to attempt to withdraw and the operatorShares underflows, we round up on the operatorShares when slashing and round down on the staker's withdrawableShares.
+
+So in practice, the above invariant becomes.
+
+$$
+op_n \geq \sum_{i=1}^{k} a_{n,i}
+$$
+
+Upwards rounding on calculating the amount of operatorShares to give to an operator after slashing is intentionally performed in `SlashingLib.calcSlashedAmount`.
+For calculating a staker's withdrawableShares, there are many different factors to consider such as calculating their depositScalingFactor, their slashingFactor, and calculating the amount of withdrawable shares altogether with their depositShares. These variables are all by default rounded down in calculation and is expected behavior for stakers.
+
+
 ## Upper bound on Residual Operator Shares
 
 Related to the above rounding error on deposits, we want to calculate what is the worst case rounding error for a staker depositing shares into EigenLayer.

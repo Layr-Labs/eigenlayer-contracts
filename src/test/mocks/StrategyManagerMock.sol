@@ -83,9 +83,11 @@ contract StrategyManagerMock is Test {
 
     function removeDepositShares(
         address staker, IStrategy strategy, uint256 sharesToRemove
-    ) external {
+    ) external returns (uint256) {
         uint256 strategyIndex = _getStrategyIndex(staker, strategy);
-        sharesToReturn[staker][strategyIndex] -= sharesToRemove;
+        uint256 updatedShares = sharesToReturn[staker][strategyIndex] - sharesToRemove;
+        sharesToReturn[staker][strategyIndex] = updatedShares;
+        return updatedShares;
     }
 
     function removeStrategiesFromDepositWhitelist(IStrategy[] calldata /*strategiesToRemoveFromWhitelist*/) external pure {}
@@ -102,8 +104,7 @@ contract StrategyManagerMock is Test {
 
     function addShares(
         address staker, 
-        IStrategy strategy, 
-        IERC20, // token 
+        IStrategy strategy,
         uint256 addedShares
     ) external returns (uint, uint) {
         // Increase the staker's shares
