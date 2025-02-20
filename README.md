@@ -23,7 +23,7 @@ The main branches we use are:
 ### Basics
 
 To get a basic understanding of EigenLayer, check out [You Could've Invented EigenLayer](https://www.blog.eigenlayer.xyz/ycie/). Note that some of the document's content describes features that do not exist yet (like the Slasher). To understand more about how restakers and operators interact with EigenLayer, check out these guides:
-* [Restaking User Guide](https://docs.eigenlayer.xyz/restaking-guides/restaking-user-guide)
+* [Restaking User Guide](https://docs.eigenlayer.xyz/eigenlayer/restaking-guides/overview)
 * [Operator Guide](https://docs.eigenlayer.xyz/operator-guides/operator-introduction)
 
 ### Deep Dive
@@ -60,9 +60,9 @@ This will:
 
 We have a few fork tests against ETH mainnet. Passing these requires the environment variable `RPC_MAINNET` to be set. See `.env.example` for an example. Once you've set up your environment, `forge test` should show these fork tests passing.
 
-Additionally, to run all tests in a forked environment, [install yq](https://mikefarah.gitbook.io/yq/v/v3.x/). Then, set up your environment using this script to read from `config.yml`:
+Additionally, to run all tests in a forked environment, [install yq](https://mikefarah.gitbook.io/yq/v/v3.x/). Then, set up your environment by running the following command.
 
-`source source-env.sh [goerli|local]`
+`source bin/source-env.sh [goerli|local]`
 
 Then run the tests:
 

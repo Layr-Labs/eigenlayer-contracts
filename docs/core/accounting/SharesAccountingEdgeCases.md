@@ -32,7 +32,7 @@ Note that in the first case, it _is_ possible for the staker to undelegate, queu
 
 Additionally, if $l_n = 0$ for a given staker in the beacon chain ETH strategy, then **any further deposits of ETH or restaking of validators will not yield shares in EigenLayer.** This should only occur in extraordinary circumstances, as a beacon chain slashing factor of 0 means that a staker both has ~0 assets in their `EigenPod`, and ALL of their validators have been ~100% slashed on the beacon chain - something that happens only when coordinated groups of validators are slashed. If this case occurs, an `EigenPod` is essentially bricked - the pod owner should NOT send ETH to the pod, and should NOT point additional validators at the pod.
 
-These are all expected edge cases and their occurances and side effects are within acceptable tolerances.
+These are all expected edge cases and their occurrences and side effects are within acceptable tolerances.
 
 ## Upper Bound on Deposit Scaling Factor $k_n$
 

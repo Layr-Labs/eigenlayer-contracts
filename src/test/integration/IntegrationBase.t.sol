@@ -2859,8 +2859,13 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     }
 
     function _getCheckpointPodBalanceGwei(User staker) internal view returns (uint64) {
-        EigenPod pod = staker.pod();
-        return uint64(pod.currentCheckpoint().podBalanceGwei);
+        if (forkType != LOCAL && !isUpgraded) {
+            IEigenPod_DeprecatedM2 pod = IEigenPod_DeprecatedM2(address(staker.pod()));
+            return uint64(pod.currentCheckpoint().podBalanceGwei);
+        } else {
+            EigenPod pod = staker.pod();
+            return uint64(pod.currentCheckpoint().podBalanceGwei);
+        }
     }
 
     function _getPrevCheckpointPodBalanceGwei(User staker) internal timewarp() returns (uint64) {

@@ -323,7 +323,7 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
     }
 
     function testFuzz_removeShares(uint224 sharesToAdd, uint224 sharesToRemove) public {
-        // Constain inputs
+        // Constrain inputs
         cheats.assume(sharesToRemove <= sharesToAdd);
         uint256 sharesAdded = sharesToAdd * GWEI_TO_WEI;
         uint256 sharesRemoved = sharesToRemove * GWEI_TO_WEI;
@@ -429,7 +429,7 @@ contract EigenPodManagerUnitTests_WithdrawSharesAsTokensTests is EigenPodManager
         assertEq(eigenPodManager.podOwnerDepositShares(defaultStaker), int256(0), "Shares not reduced to 0");
     }
 
-    function test_withdrawSharesAsTokens_m2NegativeShares_partialDefecitReduction() public {
+    function test_withdrawSharesAsTokens_m2NegativeShares_partialDeficitReduction() public {
         // Shares to initialize & withdraw
         int256 sharesBeginning = -100e18;
         uint256 sharesToWithdraw = 50e18;

@@ -134,7 +134,7 @@ invariant headInList(uint256 node)
 
 /*
 1) `StructuredLinkedList._createLink` creates only two-way links
-2) `StructuredLinkedList.remove` removes both links from a node, and stiches together its existing links (which it breaks)
+2) `StructuredLinkedList.remove` removes both links from a node, and stitches together its existing links (which it breaks)
 3) `StructuredLinkedList._insert` similarly inserts a new node 'between' nodes, ensuring that the new node is well-linked
 */
 /*

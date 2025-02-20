@@ -1,30 +1,20 @@
 #!/bin/bash
 
-# Check if yq is installed
-if ! command -v yq &> /dev/null
-then
-    echo "yq is not installed. Please install it and try again."
-    return 1
-fi
-
 # Check for arguments
 if [ "$#" -ne 1 ]; then
     echo "Usage: $0 [goerli|local]"
     return 1
 fi
 
-# Read the YAML file
-CONFIG_FILE="config.yml"
-
 case $1 in
     goerli)
-        CHAIN_ID=$(yq e '.goerli.CHAIN_ID' $CONFIG_FILE)
-        EXECUTOR_MULTISIG=$(yq e '.goerli.EXECUTOR_MULTISIG' $CONFIG_FILE)
-        FOUNDRY_FUZZ_RUNS=$(yq e '.goerli.FOUNDRY_FUZZ_RUNS' $CONFIG_FILE)
+        CHAIN_ID=5
+        EXECUTOR_MULTISIG="0x3d9C2c2B40d890ad53E27947402e977155CD2808"
+        FOUNDRY_FUZZ_RUNS=1
         ;;
     local)
-        CHAIN_ID=$(yq e '.local.CHAIN_ID' $CONFIG_FILE)
-        FOUNDRY_FUZZ_RUNS=$(yq e '.local.FOUNDRY_FUZZ_RUNS' $CONFIG_FILE)
+        CHAIN_ID=31337
+        FOUNDRY_FUZZ_RUNS=256
         ;;
     *)
         echo "Invalid argument. Usage: $0 [goerli|local]"

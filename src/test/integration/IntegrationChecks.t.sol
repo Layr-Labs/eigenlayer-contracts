@@ -17,6 +17,17 @@ contract IntegrationCheckUtils is IntegrationBase {
     *******************************************************************************/
 
     function check_VerifyWC_State(
+        User_M2 staker,
+        uint40[] memory validators,
+        uint64 beaconBalanceGwei
+    ) internal {
+        uint beaconBalanceWei = beaconBalanceGwei * GWEI_TO_WEI;
+        assert_Snap_Added_Staker_DepositShares(staker, BEACONCHAIN_ETH_STRAT, beaconBalanceWei, "staker should have added deposit shares to beacon chain strat");
+        assert_Snap_Added_ActiveValidatorCount(staker, validators.length, "staker should have increased active validator count");
+        assert_Snap_Added_ActiveValidators(staker, validators, "validators should each be active");
+    }
+
+    function check_VerifyWC_State(
         User staker,
         uint40[] memory validators,
         uint64 beaconBalanceGwei
@@ -272,7 +283,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         assertTrue(delegationManager.isDelegated(address(staker)),
             "check_Redelegate_State: staker should not be delegated");
         assert_ValidWithdrawalHashes(withdrawals, withdrawalRoots,
-            "check_Redelegate_State: calculated withdrawl should match returned root");
+            "check_Redelegate_State: calculated withdrawal should match returned root");
         assert_AllWithdrawalsPending(withdrawalRoots,
             "check_Redelegate_State: stakers withdrawal should now be pending");
         assert_Snap_Added_QueuedWithdrawals(staker, withdrawals,

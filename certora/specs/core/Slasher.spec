@@ -42,8 +42,8 @@ methods {
 	function get_previous_node_exists(address, uint256) external returns (bool) envfree;
 	function get_previous_node(address, uint256) external returns (uint256) envfree;
 	function get_list_head(address) external returns (uint256) envfree;
-	function get_lastest_update_block_at_node(address, uint256) external returns (uint256) envfree;
-	function get_lastest_update_block_at_head(address) external returns (uint256) envfree;
+	function get_latest_update_block_at_node(address, uint256) external returns (uint256) envfree;
+	function get_latest_update_block_at_head(address) external returns (uint256) envfree;
 	function get_linked_list_entry(address operator, uint256 node, bool direction) external returns (uint256) envfree;
 
 	// nodeDoesExist(address operator, uint256 node) returns (bool) envfree
@@ -134,7 +134,7 @@ is always at the 'HEAD' position in the linked list
 invariant listHeadHasSmallestValueOfLatestUpdateBlock(address operator, uint256 node)
 	(
 	get_list_exists(operator) && get_next_node_exists(operator, get_list_head(operator)) => 
-		get_lastest_update_block_at_head(operator) <= get_lastest_update_block_at_node(operator, get_next_node(operator, get_list_head(operator)))
+		get_latest_update_block_at_head(operator) <= get_latest_update_block_at_node(operator, get_next_node(operator, get_list_head(operator)))
 	)
 */
 
@@ -142,7 +142,7 @@ invariant listHeadHasSmallestValueOfLatestUpdateBlock(address operator, uint256 
 TODO: rule doesn't pass. We've got separate rules for checking the LinkedList lib properties.
 key properties seem to be that
 1) `StructuredLinkedList._createLink` creates only two-way links
-2) `StructuredLinkedList.remove` removes both links from a node, and stiches together its existing links (which it breaks)
+2) `StructuredLinkedList.remove` removes both links from a node, and stitches together its existing links (which it breaks)
 3) `StructuredLinkedList._insert` similarly inserts a new node 'between' nodes, ensuring that the new node is well-linked
 invariant consistentListStructure(address operator, uint256 node1)
 	(

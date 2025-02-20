@@ -573,7 +573,7 @@ contract AllocationManagerUnitTests_Initialization_Setters is AllocationManagerU
         assertEq(alm.DEALLOCATION_DELAY(), DEALLOCATION_DELAY);
         assertEq(alm.ALLOCATION_CONFIGURATION_DELAY(), ALLOCATION_CONFIGURATION_DELAY);
 
-        // Assert initialiation state
+        // Assert initialization state
         assertEq(alm.owner(), expectedInitialOwner);
         assertEq(alm.paused(), initialPausedStatus);
     }
@@ -1032,7 +1032,6 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
                 allocatable: maxMagnitudeAfterSlash - expectedEncumberedMagnitude
             })
         });
-
 
         // 2. Slash operator again for 99.99% in opSet 0 bringing their magnitude to 1e14
         slashingParams = SlashingParams({
@@ -2364,7 +2363,6 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
             expectedMagnitudes: Magnitudes({encumbered: magnitude, max: WAD, allocatable: WAD - magnitude})
         });
 
-
         // 3. Check allocation and info after roll to completion
         cheats.roll(effectBlock);
         _checkAllocationStorage({
@@ -3613,7 +3611,7 @@ contract AllocationManagerUnitTests_registerForOperatorSets is AllocationManager
         }
 
         cheats.expectCall(
-            defaultAVS, abi.encodeWithSelector(IAVSRegistrar.registerOperator.selector, operator, operatorSetIds, "")
+            defaultAVS, abi.encodeWithSelector(IAVSRegistrar.registerOperator.selector, operator, defaultAVS, operatorSetIds, "")
         );
 
         cheats.prank(operator);
@@ -3714,7 +3712,7 @@ contract AllocationManagerUnitTests_deregisterFromOperatorSets is AllocationMana
         }
 
         cheats.expectCall(
-            defaultAVS, abi.encodeWithSelector(IAVSRegistrar.deregisterOperator.selector, operator, operatorSetIds)
+            defaultAVS, abi.encodeWithSelector(IAVSRegistrar.deregisterOperator.selector, operator, defaultAVS, operatorSetIds)
         );
 
         bool callFromAVS = r.Boolean();
@@ -3818,7 +3816,7 @@ contract AllocationManagerUnitTests_removeStrategiesFromOperatorSet is Allocatio
         cheats.prank(defaultAVS);
         allocationManager.removeStrategiesFromOperatorSet(defaultAVS, defaultOperatorSet.id, strategies);
 
-        // The orginal strategy should still be in the operator set.
+        // The original strategy should still be in the operator set.
         assertEq(
             allocationManager.getStrategiesInOperatorSet(defaultOperatorSet).length, 1, "should not be strat of set"
         );
@@ -3887,7 +3885,6 @@ contract AllocationManagerUnitTests_createOperatorSets is AllocationManagerUnitT
 }
 
 contract AllocationManagerUnitTests_setAVSRegistrar is AllocationManagerUnitTests {
-
     function test_getAVSRegistrar() public {
         address randomAVS = random().Address();
         IAVSRegistrar avsRegistrar = allocationManager.getAVSRegistrar(randomAVS);
@@ -3898,7 +3895,7 @@ contract AllocationManagerUnitTests_setAVSRegistrar is AllocationManagerUnitTest
         Randomness r
     ) public rand(r) {
         address avs = r.Address();
-        IAVSRegistrar avsRegistrar = IAVSRegistrar(r.Address());
+        IAVSRegistrar avsRegistrar = IAVSRegistrar(defaultAVS);
 
         cheats.expectEmit(true, true, true, true, address(allocationManager));
         emit AVSRegistrarSet(avs, avsRegistrar);
