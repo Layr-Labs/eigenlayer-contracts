@@ -34,6 +34,7 @@ contract Integration_SlashedEigenpod is IntegrationCheckUtils {
         check_Deposit_State(staker, strategies, shares);
 
         uint40[] memory slashedValidators = _choose(validators);
+        console.log(slashedValidators.length);
         slashedGwei = beaconChain.slashValidators(slashedValidators);
         console.log(slashedGwei);
         beaconChain.advanceEpoch_NoWithdrawNoRewards();

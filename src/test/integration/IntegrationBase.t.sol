@@ -202,7 +202,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     
     /// @dev Choose a random subset of validators (selects AT LEAST ONE)
     function _choose(uint40[] memory validators) internal returns (uint40[] memory) {
-        uint _rand = _randUint({ min: 1, max: validators.length ** 2 });
+        uint _rand = _randUint({ min: 1, max: (2**validators.length) - 1 });
 
         uint40[] memory result = new uint40[](validators.length);
         uint newLen;
@@ -821,6 +821,20 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
 
     function assert_Snap_StakeBecomeUnslashable(
         User operator,
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal {
+        uint[] memory curSlashableStake = _getMinSlashableStake(operator, operatorSet, strategies);
+        uint[] memory prevSlashableStake = _getPrevMinSlashableStake(operator, operatorSet, strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            assertTrue(prevSlashableStake[i] > curSlashableStake[i], err);
+        }
+    }
+
+    function assert_Snap_StakeBecomeUnslashable(
+        address operator,
         OperatorSet memory operatorSet,
         IStrategy[] memory strategies,
         string memory err
@@ -1658,6 +1672,20 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
+    function assert_SlashableStake_Decrease_BCSlash(
+        User staker
+    ) internal {
+        if (delegationManager.isDelegated(address(staker))) {
+            address operator = delegationManager.delegatedTo(address(staker));
+            (OperatorSet[] memory operatorSets, Allocation[] memory allocations) = _getStrategyAllocations(operator, BEACONCHAIN_ETH_STRAT);
+            for (uint i = 0; i < operatorSets.length; i++) {
+                if (allocations[i].currentMagnitude > 0) {
+                    assert_Snap_StakeBecomeUnslashable(operator, operatorSets[i], BEACONCHAIN_ETH_STRAT.toArray(), "operator should have minSlashableStake decreased");
+                }
+            }
+        }
+    }
+
     /*******************************************************************************
                       SNAPSHOT ASSERTIONS: UNDERLYING TOKEN
     *******************************************************************************/
@@ -1902,6 +1930,16 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         uint64 prevExitedBalanceGwei = _getPrevCheckpointBalanceExited(staker, targetTimestamp);
 
         assertEq(prevExitedBalanceGwei + addedGwei, curExitedBalanceGwei, err);
+    }
+
+    function assert_Snap_BCSF_Decreased(
+        User staker,
+        string memory err
+    ) internal {
+        uint64 curBCSF = _getBeaconChainSlashingFactor(staker);
+        uint64 prevBCSF = _getPrevBeaconChainSlashingFactor(staker);
+
+        assertLt(curBCSF, prevBCSF, err);
     }
 
     /*******************************************************************************
@@ -2551,8 +2589,29 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         return _getMinSlashableStake(operator, operatorSet, strategies);
     }
 
+    function _getPrevMinSlashableStake(
+        address operator,
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies
+    ) internal timewarp() returns (uint[] memory) {
+        return _getMinSlashableStake(operator, operatorSet, strategies);
+    }
+
     function _getMinSlashableStake(
         User operator,
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies
+    ) internal view returns (uint[] memory) {
+        return allocationManager.getMinimumSlashableStake({
+            operatorSet: operatorSet,
+            operators: address(operator).toArray(),
+            strategies: strategies,
+            futureBlock: uint32(block.number)
+        })[0];
+    }
+
+    function _getMinSlashableStake(
+        address operator,
         OperatorSet memory operatorSet,
         IStrategy[] memory strategies
     ) internal view returns (uint[] memory) {
@@ -2590,6 +2649,14 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     ) internal view returns (OperatorSet[] memory operatorSets, Allocation[] memory allocations) {
         (operatorSets, allocations) = allocationManager.getStrategyAllocations(address(operator), strategy);
     }
+
+    function _getStrategyAllocations(
+        address operator,
+        IStrategy strategy
+    ) internal view returns (OperatorSet[] memory operatorSets, Allocation[] memory allocations) {
+        (operatorSets, allocations) = allocationManager.getStrategyAllocations(operator, strategy);
+    }
+
 
     function _getPrevIsSlashable(
         User operator,
