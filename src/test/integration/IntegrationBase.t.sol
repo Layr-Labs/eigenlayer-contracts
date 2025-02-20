@@ -584,15 +584,6 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     ) internal view {
         return assert_withdrawableSharesDecreasedByAtLeast(staker, strategy.toArray(), originalShares.toArrayU256(), expectedDecreases.toArrayU256(), err);
     }
-
-    function assert_withdrawbleShares_bc_AVS_Slash_State(
-        User staker,
-        IStrategy strategy,
-        uint256 expectedDecreases,
-        string memory err
-    ) internal view {
-    }
-    
     
     /*******************************************************************************
                                 SNAPSHOT ASSERTIONS
@@ -1294,6 +1285,30 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         User staker,
         AllocateParams memory allocateParams,
         SlashingParams memory slashingParams,
+        string memory err
+    ) internal {
+        uint[] memory curShares = _getWithdrawableShares(staker, allocateParams.strategies);
+        uint[] memory prevShares = _getPrevWithdrawableShares(staker, allocateParams.strategies);
+
+        for (uint i = 0; i < allocateParams.strategies.length; i++) {
+            IStrategy strat = allocateParams.strategies[i];
+
+            uint256 slashedShares = 0;
+
+            if (slashingParams.strategies.contains(strat)) {
+                uint wadToSlash = slashingParams.wadsToSlash[slashingParams.strategies.indexOf(strat)];
+                slashedShares = prevShares[i].mulWadRoundUp(allocateParams.newMagnitudes[i].mulWadRoundUp(wadToSlash));
+            }
+
+            assertApproxEqAbs(prevShares[i] - slashedShares, curShares[i], 1, err);
+        }
+    }
+
+    function assert_Snap_StakerWithdrawableShares_AfterBCAndAVSSlash(
+        User staker,
+        AllocateParams memory allocateParams,
+        SlashingParams memory slashingParams,
+        uint64 slashedBalanceGwei,
         string memory err
     ) internal {
         uint[] memory curShares = _getWithdrawableShares(staker, allocateParams.strategies);
