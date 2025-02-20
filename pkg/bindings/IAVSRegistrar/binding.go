@@ -31,7 +31,7 @@ var (
 
 // IAVSRegistrarMetaData contains all meta data concerning the IAVSRegistrar contract.
 var IAVSRegistrarMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"avs\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"deregisterOperator\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"avsIdentifier\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetIds\",\"type\":\"uint32[]\",\"internalType\":\"uint32[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"registerOperator\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"avsIdentifier\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetIds\",\"type\":\"uint32[]\",\"internalType\":\"uint32[]\"},{\"name\":\"data\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"}]",
+	ABI: "[{\"type\":\"function\",\"name\":\"deregisterOperator\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetIds\",\"type\":\"uint32[]\",\"internalType\":\"uint32[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"registerOperator\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetIds\",\"type\":\"uint32[]\",\"internalType\":\"uint32[]\"},{\"name\":\"data\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"supportsAVS\",\"inputs\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"}]",
 }
 
 // IAVSRegistrarABI is the input ABI used to generate the binding from.
@@ -180,75 +180,75 @@ func (_IAVSRegistrar *IAVSRegistrarTransactorRaw) Transact(opts *bind.TransactOp
 	return _IAVSRegistrar.Contract.contract.Transact(opts, method, params...)
 }
 
-// Avs is a free data retrieval call binding the contract method 0xde1164bb.
+// SupportsAVS is a free data retrieval call binding the contract method 0xb5265787.
 //
-// Solidity: function avs() view returns(address)
-func (_IAVSRegistrar *IAVSRegistrarCaller) Avs(opts *bind.CallOpts) (common.Address, error) {
+// Solidity: function supportsAVS(address avs) view returns(bool)
+func (_IAVSRegistrar *IAVSRegistrarCaller) SupportsAVS(opts *bind.CallOpts, avs common.Address) (bool, error) {
 	var out []interface{}
-	err := _IAVSRegistrar.contract.Call(opts, &out, "avs")
+	err := _IAVSRegistrar.contract.Call(opts, &out, "supportsAVS", avs)
 
 	if err != nil {
-		return *new(common.Address), err
+		return *new(bool), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
 
 	return out0, err
 
 }
 
-// Avs is a free data retrieval call binding the contract method 0xde1164bb.
+// SupportsAVS is a free data retrieval call binding the contract method 0xb5265787.
 //
-// Solidity: function avs() view returns(address)
-func (_IAVSRegistrar *IAVSRegistrarSession) Avs() (common.Address, error) {
-	return _IAVSRegistrar.Contract.Avs(&_IAVSRegistrar.CallOpts)
+// Solidity: function supportsAVS(address avs) view returns(bool)
+func (_IAVSRegistrar *IAVSRegistrarSession) SupportsAVS(avs common.Address) (bool, error) {
+	return _IAVSRegistrar.Contract.SupportsAVS(&_IAVSRegistrar.CallOpts, avs)
 }
 
-// Avs is a free data retrieval call binding the contract method 0xde1164bb.
+// SupportsAVS is a free data retrieval call binding the contract method 0xb5265787.
 //
-// Solidity: function avs() view returns(address)
-func (_IAVSRegistrar *IAVSRegistrarCallerSession) Avs() (common.Address, error) {
-	return _IAVSRegistrar.Contract.Avs(&_IAVSRegistrar.CallOpts)
-}
-
-// DeregisterOperator is a paid mutator transaction binding the contract method 0x303ca956.
-//
-// Solidity: function deregisterOperator(address operator, address avsIdentifier, uint32[] operatorSetIds) returns()
-func (_IAVSRegistrar *IAVSRegistrarTransactor) DeregisterOperator(opts *bind.TransactOpts, operator common.Address, avsIdentifier common.Address, operatorSetIds []uint32) (*types.Transaction, error) {
-	return _IAVSRegistrar.contract.Transact(opts, "deregisterOperator", operator, avsIdentifier, operatorSetIds)
+// Solidity: function supportsAVS(address avs) view returns(bool)
+func (_IAVSRegistrar *IAVSRegistrarCallerSession) SupportsAVS(avs common.Address) (bool, error) {
+	return _IAVSRegistrar.Contract.SupportsAVS(&_IAVSRegistrar.CallOpts, avs)
 }
 
 // DeregisterOperator is a paid mutator transaction binding the contract method 0x303ca956.
 //
-// Solidity: function deregisterOperator(address operator, address avsIdentifier, uint32[] operatorSetIds) returns()
-func (_IAVSRegistrar *IAVSRegistrarSession) DeregisterOperator(operator common.Address, avsIdentifier common.Address, operatorSetIds []uint32) (*types.Transaction, error) {
-	return _IAVSRegistrar.Contract.DeregisterOperator(&_IAVSRegistrar.TransactOpts, operator, avsIdentifier, operatorSetIds)
+// Solidity: function deregisterOperator(address operator, address avs, uint32[] operatorSetIds) returns()
+func (_IAVSRegistrar *IAVSRegistrarTransactor) DeregisterOperator(opts *bind.TransactOpts, operator common.Address, avs common.Address, operatorSetIds []uint32) (*types.Transaction, error) {
+	return _IAVSRegistrar.contract.Transact(opts, "deregisterOperator", operator, avs, operatorSetIds)
 }
 
 // DeregisterOperator is a paid mutator transaction binding the contract method 0x303ca956.
 //
-// Solidity: function deregisterOperator(address operator, address avsIdentifier, uint32[] operatorSetIds) returns()
-func (_IAVSRegistrar *IAVSRegistrarTransactorSession) DeregisterOperator(operator common.Address, avsIdentifier common.Address, operatorSetIds []uint32) (*types.Transaction, error) {
-	return _IAVSRegistrar.Contract.DeregisterOperator(&_IAVSRegistrar.TransactOpts, operator, avsIdentifier, operatorSetIds)
+// Solidity: function deregisterOperator(address operator, address avs, uint32[] operatorSetIds) returns()
+func (_IAVSRegistrar *IAVSRegistrarSession) DeregisterOperator(operator common.Address, avs common.Address, operatorSetIds []uint32) (*types.Transaction, error) {
+	return _IAVSRegistrar.Contract.DeregisterOperator(&_IAVSRegistrar.TransactOpts, operator, avs, operatorSetIds)
+}
+
+// DeregisterOperator is a paid mutator transaction binding the contract method 0x303ca956.
+//
+// Solidity: function deregisterOperator(address operator, address avs, uint32[] operatorSetIds) returns()
+func (_IAVSRegistrar *IAVSRegistrarTransactorSession) DeregisterOperator(operator common.Address, avs common.Address, operatorSetIds []uint32) (*types.Transaction, error) {
+	return _IAVSRegistrar.Contract.DeregisterOperator(&_IAVSRegistrar.TransactOpts, operator, avs, operatorSetIds)
 }
 
 // RegisterOperator is a paid mutator transaction binding the contract method 0xc63fd502.
 //
-// Solidity: function registerOperator(address operator, address avsIdentifier, uint32[] operatorSetIds, bytes data) returns()
-func (_IAVSRegistrar *IAVSRegistrarTransactor) RegisterOperator(opts *bind.TransactOpts, operator common.Address, avsIdentifier common.Address, operatorSetIds []uint32, data []byte) (*types.Transaction, error) {
-	return _IAVSRegistrar.contract.Transact(opts, "registerOperator", operator, avsIdentifier, operatorSetIds, data)
+// Solidity: function registerOperator(address operator, address avs, uint32[] operatorSetIds, bytes data) returns()
+func (_IAVSRegistrar *IAVSRegistrarTransactor) RegisterOperator(opts *bind.TransactOpts, operator common.Address, avs common.Address, operatorSetIds []uint32, data []byte) (*types.Transaction, error) {
+	return _IAVSRegistrar.contract.Transact(opts, "registerOperator", operator, avs, operatorSetIds, data)
 }
 
 // RegisterOperator is a paid mutator transaction binding the contract method 0xc63fd502.
 //
-// Solidity: function registerOperator(address operator, address avsIdentifier, uint32[] operatorSetIds, bytes data) returns()
-func (_IAVSRegistrar *IAVSRegistrarSession) RegisterOperator(operator common.Address, avsIdentifier common.Address, operatorSetIds []uint32, data []byte) (*types.Transaction, error) {
-	return _IAVSRegistrar.Contract.RegisterOperator(&_IAVSRegistrar.TransactOpts, operator, avsIdentifier, operatorSetIds, data)
+// Solidity: function registerOperator(address operator, address avs, uint32[] operatorSetIds, bytes data) returns()
+func (_IAVSRegistrar *IAVSRegistrarSession) RegisterOperator(operator common.Address, avs common.Address, operatorSetIds []uint32, data []byte) (*types.Transaction, error) {
+	return _IAVSRegistrar.Contract.RegisterOperator(&_IAVSRegistrar.TransactOpts, operator, avs, operatorSetIds, data)
 }
 
 // RegisterOperator is a paid mutator transaction binding the contract method 0xc63fd502.
 //
-// Solidity: function registerOperator(address operator, address avsIdentifier, uint32[] operatorSetIds, bytes data) returns()
-func (_IAVSRegistrar *IAVSRegistrarTransactorSession) RegisterOperator(operator common.Address, avsIdentifier common.Address, operatorSetIds []uint32, data []byte) (*types.Transaction, error) {
-	return _IAVSRegistrar.Contract.RegisterOperator(&_IAVSRegistrar.TransactOpts, operator, avsIdentifier, operatorSetIds, data)
+// Solidity: function registerOperator(address operator, address avs, uint32[] operatorSetIds, bytes data) returns()
+func (_IAVSRegistrar *IAVSRegistrarTransactorSession) RegisterOperator(operator common.Address, avs common.Address, operatorSetIds []uint32, data []byte) (*types.Transaction, error) {
+	return _IAVSRegistrar.Contract.RegisterOperator(&_IAVSRegistrar.TransactOpts, operator, avs, operatorSetIds, data)
 }
