@@ -8,8 +8,7 @@ import "src/test/integration/users/User_M2.t.sol";
 
 /// @notice Contract that provides utility functions to reuse common test blocks & checks
 contract IntegrationCheckUtils is IntegrationBase {
-    using ArrayLib for IStrategy[];
-    using ArrayLib for IStrategy;
+    using ArrayLib for *;
     using SlashingLib for *;
     using StdStyle for *;
 
@@ -1007,5 +1006,27 @@ contract IntegrationCheckUtils is IntegrationBase {
 
         assert_Snap_Removed_AllocatedSet(operator, allocateParams.operatorSet, "should not have updated allocated sets");
         assert_Snap_Removed_AllocatedStrats(operator, allocateParams.operatorSet, slashParams.strategies, "should not have updated allocated strategies");
+    }
+
+    /*******************************************************************************
+                                 BC/AVS SLASHING CHECKS
+    *******************************************************************************/
+
+    function check_CompleteCheckPoint_AVSSLash_BCSLash_HandleRoundDown_State(
+        User staker,
+        uint40[] memory slashedValidators,
+        uint256 originalWithdrawableShares,
+        uint64 slashedBalanceGwei
+    ) internal {
+        // Checkpoint State
+        check_CompleteCheckpoint_State(staker);
+        assert_Snap_Unchanged_Staker_DepositShares(staker, "staker shares should not have decreased");
+        assert_Snap_Removed_ActiveValidatorCount(staker, slashedValidators.length, "should have decreased active validator count");
+        assert_Snap_Removed_ActiveValidators(staker, slashedValidators, "exited validators should each be WITHDRAWN");
+
+        // Between the AVS slash and the BC slash, the shares should have decreased by at least the BC slash amount
+        assert_withdrawableSharesDecreasedByAtLeast(staker, BEACONCHAIN_ETH_STRAT, originalWithdrawableShares, uint256(slashedBalanceGwei * GWEI_TO_WEI), "should have decreased withdrawable shares by at least the BC slash amount");
+
+        assert_withdrawbleShare
     }
 }

@@ -562,6 +562,37 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         uint curActiveValidatorCount = _getActiveValidatorCount(staker);
         assertEq(curActiveValidatorCount, expectedCount, err);
     }
+    function assert_withdrawableSharesDecreasedByAtLeast(
+        User staker,
+        IStrategy[] memory strategies,
+        uint256[] memory originalShares,
+        uint256[] memory expectedDecreases,
+        string memory err
+    ) internal view {
+        uint256[] memory currentShares = _getWithdrawableShares(staker, strategies);
+        for (uint i = 0; i < currentShares.length; i++) {
+            assertLt(currentShares[i], originalShares[i] - expectedDecreases[i], err);
+        }
+    }
+
+    function assert_withdrawableSharesDecreasedByAtLeast(
+        User staker,
+        IStrategy strategy,
+        uint256 originalShares,
+        uint256 expectedDecreases,
+        string memory err
+    ) internal view {
+        return assert_withdrawableSharesDecreasedByAtLeast(staker, strategy.toArray(), originalShares.toArrayU256(), expectedDecreases.toArrayU256(), err);
+    }
+
+    function assert_withdrawbleShares_bc_AVS_Slash_State(
+        User staker,
+        IStrategy strategy,
+        uint256 expectedDecreases,
+        string memory err
+    ) internal view {
+    }
+    
     
     /*******************************************************************************
                                 SNAPSHOT ASSERTIONS
