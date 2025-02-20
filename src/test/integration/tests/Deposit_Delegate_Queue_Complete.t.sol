@@ -16,7 +16,14 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
     /// 2. delegates to an operator
     /// 3. queues a withdrawal for a ALL shares
     /// 4. completes the queued withdrawal as tokens
-    function testFuzz_deposit_delegate_queue_completeAsTokens(uint24 _random) public rand(_random) {   
+    function testFuzz_deposit_delegate_queue_completeAsTokens(uint24 _random) public {   
+        // When new Users are created, they will choose a random configuration from these params: 
+        _configRand({
+            _randomSeed: _random,
+            _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
+            _userTypes: DEFAULT | ALT_METHODS
+        });
+
         /// 0. Create an operator and a staker with:
         // - some nonzero underlying token balances
         // - corresponding to a random subset of valid strategies (StrategyManager and/or EigenPodManager)
@@ -28,6 +35,8 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
             uint[] memory tokenBalances
         ) = _newRandomStaker();
         (User operator, ,) = _newRandomOperator();
+        // Upgrade contracts if forkType is not local
+        _upgradeEigenLayerContracts();
 
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 
@@ -43,7 +52,7 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
         check_Delegation_State(staker, operator, strategies, shares);
 
         // 3. Queue Withdrawals
-        Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(staker, operator, strategies, shares, withdrawals, withdrawalRoots);
 
@@ -69,7 +78,14 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
     /// 2. delegates to an operator
     /// 3. queues a withdrawal for a ALL shares
     /// 4. completes the queued withdrawal as shares
-    function testFuzz_deposit_delegate_queue_completeAsShares(uint24 _random) public rand(_random) {   
+    function testFuzz_deposit_delegate_queue_completeAsShares(uint24 _random) public {   
+        // When new Users are created, they will choose a random configuration from these params: 
+        _configRand({
+            _randomSeed: _random,
+            _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
+            _userTypes: DEFAULT | ALT_METHODS
+        });
+
         /// 0. Create an operator and a staker with:
         // - some nonzero underlying token balances
         // - corresponding to a random subset of valid strategies (StrategyManager and/or EigenPodManager)
@@ -81,6 +97,8 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
             uint[] memory tokenBalances
         ) = _newRandomStaker();
         (User operator, ,) = _newRandomOperator();
+        // Upgrade contracts if forkType is not local
+        _upgradeEigenLayerContracts();
 
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 
@@ -96,7 +114,7 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
         check_Delegation_State(staker, operator, strategies, shares);
 
         // 3. Queue Withdrawals
-        Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(staker, operator, strategies, shares, withdrawals, withdrawalRoots);
 
@@ -125,7 +143,14 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
     /// 2. delegates to an operator
     /// 3. queues a withdrawal for a random subset of shares
     /// 4. completes the queued withdrawal as tokens
-    function testFuzz_deposit_delegate_queueRand_completeAsTokens(uint24 _random) public rand(_random) {
+    function testFuzz_deposit_delegate_queueRand_completeAsTokens(uint24 _random) public {
+        // When new Users are created, they will choose a random configuration from these params: 
+        _configRand({
+            _randomSeed: _random,
+            _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
+            _userTypes: DEFAULT | ALT_METHODS
+        });
+
         /// 0. Create an operator and a staker with:
         // - some nonzero underlying token balances
         // - corresponding to a random subset of valid strategies (StrategyManager and/or EigenPodManager)
@@ -137,6 +162,8 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
             uint[] memory tokenBalances
         ) = _newRandomStaker();
         (User operator, ,) = _newRandomOperator();
+        // Upgrade contracts if forkType is not local
+        _upgradeEigenLayerContracts();
 
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 
@@ -158,7 +185,7 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
             uint[] memory withdrawShares
         ) = _randWithdrawal(strategies, shares);
 
-        Withdrawal[] memory withdrawals = staker.queueWithdrawals(withdrawStrats, withdrawShares);
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.queueWithdrawals(withdrawStrats, withdrawShares);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(staker, operator, withdrawStrats, withdrawShares, withdrawals, withdrawalRoots);
 
@@ -181,7 +208,14 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
     /// 2. delegates to an operator
     /// 3. queues a withdrawal for a random subset of shares
     /// 4. completes the queued withdrawal as shares
-    function testFuzz_deposit_delegate_queueRand_completeAsShares(uint24 _random) public rand(_random) {
+    function testFuzz_deposit_delegate_queueRand_completeAsShares(uint24 _random) public {
+               // When new Users are created, they will choose a random configuration from these params: 
+        _configRand({
+            _randomSeed: _random,
+            _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
+            _userTypes: DEFAULT | ALT_METHODS
+        });
+
         /// 0. Create an operator and a staker with:
         // - some nonzero underlying token balances
         // - corresponding to a random subset of valid strategies (StrategyManager and/or EigenPodManager)
@@ -193,6 +227,8 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
             uint[] memory tokenBalances
         ) = _newRandomStaker();
         (User operator, ,) = _newRandomOperator();
+        // Upgrade contracts if forkType is not local
+        _upgradeEigenLayerContracts();
 
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 
@@ -214,7 +250,7 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
             uint[] memory withdrawShares
         ) = _randWithdrawal(strategies, shares);
 
-        Withdrawal[] memory withdrawals = staker.queueWithdrawals(withdrawStrats, withdrawShares);
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.queueWithdrawals(withdrawStrats, withdrawShares);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(staker, operator, withdrawStrats, withdrawShares, withdrawals, withdrawalRoots);
 
@@ -244,8 +280,12 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
     /// 2. delegates to an operator
     ///
     /// ... we check that the final step fails
-    function testFuzz_deposit_delegate_revert_alreadyDelegated(uint24 _random) public rand(_random) {
-        _configAssetTypes(NO_ASSETS | HOLDS_LST | HOLDS_ETH | HOLDS_ALL);
+    function testFuzz_deposit_delegate_revert_alreadyDelegated(uint24 _random) public {
+        _configRand({
+            _randomSeed: _random,
+            _assetTypes: NO_ASSETS | HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
+            _userTypes: DEFAULT | ALT_METHODS
+        });
 
         /// 0. Create a staker and operator
         (
@@ -254,6 +294,8 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
             uint[] memory tokenBalances
         ) = _newRandomStaker();
         (User operator, ,) = _newRandomOperator();
+        // Upgrade contracts if forkType is not local
+        _upgradeEigenLayerContracts();
 
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 

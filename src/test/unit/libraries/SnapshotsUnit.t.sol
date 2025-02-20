@@ -9,7 +9,6 @@ contract SnapshotsUnitTests is Test {
 
     Snapshots.DefaultWadHistory history;
 
-    /// forge-config: default.allow_internal_expect_revert = true
     function test_Revert_InvalidSnapshotOrdering(uint256 r) public {
         uint32 key = uint32(bound(r, 1, type(uint32).max));
         uint32 smallerKey = uint32(bound(r, 0, key - 1));

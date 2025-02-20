@@ -44,8 +44,8 @@
 |----------------------------------------------------------+------------------------------------------------------------+------+--------+-------+--------------------------------------------------------|
 | __deprecated_thirdPartyTransfersForbidden                | mapping(contract IStrategy => bool)                        | 211  | 0      | 32    | src/contracts/core/StrategyManager.sol:StrategyManager |
 |----------------------------------------------------------+------------------------------------------------------------+------+--------+-------+--------------------------------------------------------|
-| burnableShares                                           | struct EnumerableMap.AddressToUintMap                      | 212  | 0      | 96    | src/contracts/core/StrategyManager.sol:StrategyManager |
+| burnableShares                                           | mapping(contract IStrategy => uint256)                     | 212  | 0      | 32    | src/contracts/core/StrategyManager.sol:StrategyManager |
 |----------------------------------------------------------+------------------------------------------------------------+------+--------+-------+--------------------------------------------------------|
-| __gap                                                    | uint256[36]                                                | 215  | 0      | 1152  | src/contracts/core/StrategyManager.sol:StrategyManager |
+| __gap                                                    | uint256[38]                                                | 213  | 0      | 1216  | src/contracts/core/StrategyManager.sol:StrategyManager |
 ╰----------------------------------------------------------+------------------------------------------------------------+------+--------+-------+--------------------------------------------------------╯
 

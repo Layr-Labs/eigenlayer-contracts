@@ -15,7 +15,6 @@ remappings = [
     "forge-std/=lib/forge-std/src/"
 ]
 sparse_mode = true
-internal_expect_revert = true
 
 # A list of ignored solc error codes
 

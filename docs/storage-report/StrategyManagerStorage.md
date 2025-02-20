@@ -24,8 +24,8 @@
 |----------------------------------------------------------+------------------------------------------------------------+------+--------+-------+----------------------------------------------------------------------|
 | __deprecated_thirdPartyTransfersForbidden                | mapping(contract IStrategy => bool)                        | 10   | 0      | 32    | src/contracts/core/StrategyManagerStorage.sol:StrategyManagerStorage |
 |----------------------------------------------------------+------------------------------------------------------------+------+--------+-------+----------------------------------------------------------------------|
-| burnableShares                                           | struct EnumerableMap.AddressToUintMap                      | 11   | 0      | 96    | src/contracts/core/StrategyManagerStorage.sol:StrategyManagerStorage |
+| burnableShares                                           | mapping(contract IStrategy => uint256)                     | 11   | 0      | 32    | src/contracts/core/StrategyManagerStorage.sol:StrategyManagerStorage |
 |----------------------------------------------------------+------------------------------------------------------------+------+--------+-------+----------------------------------------------------------------------|
-| __gap                                                    | uint256[36]                                                | 14   | 0      | 1152  | src/contracts/core/StrategyManagerStorage.sol:StrategyManagerStorage |
+| __gap                                                    | uint256[38]                                                | 12   | 0      | 1216  | src/contracts/core/StrategyManagerStorage.sol:StrategyManagerStorage |
 ╰----------------------------------------------------------+------------------------------------------------------------+------+--------+-------+----------------------------------------------------------------------╯
 

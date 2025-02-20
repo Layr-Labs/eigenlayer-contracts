@@ -9,9 +9,18 @@ contract Integration_Deposit_QueueWithdrawal_Complete is IntegrationCheckUtils {
     /// 1. deposit into strategy
     /// 2. queueWithdrawal
     /// 3. completeQueuedWithdrawal"
-    function testFuzz_deposit_queueWithdrawal_completeAsTokens(uint24 _random) public rand(_random) {
+    function testFuzz_deposit_queueWithdrawal_completeAsTokens(uint24 _random) public {
+        // Configure the random parameters for the test
+        _configRand({
+            _randomSeed: _random,
+            _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
+            _userTypes: DEFAULT | ALT_METHODS
+        });
+
         // Create a staker with a nonzero balance and corresponding strategies
         (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
+        // Upgrade contracts if forkType is not local
+        _upgradeEigenLayerContracts();
 
         // 1. Deposit into strategy
         staker.depositIntoEigenlayer(strategies, tokenBalances);
@@ -22,7 +31,7 @@ contract Integration_Deposit_QueueWithdrawal_Complete is IntegrationCheckUtils {
         assertFalse(delegationManager.isDelegated(address(staker)), "Staker should not be delegated after deposit");
 
         // 2. Queue Withdrawal
-        Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
 
         // 3. Complete Queued Withdrawal
         _rollBlocksForCompleteWithdrawals(withdrawals);
@@ -36,9 +45,18 @@ contract Integration_Deposit_QueueWithdrawal_Complete is IntegrationCheckUtils {
         assertFalse(delegationManager.isDelegated(address(staker)), "Staker should still not be delegated after withdrawal");
     }
 
-    function testFuzz_deposit_queueWithdrawal_completeAsShares(uint24 _random) public rand(_random) {
+    function testFuzz_deposit_queueWithdrawal_completeAsShares(uint24 _random) public {
+        // Configure the random parameters for the test
+        _configRand({
+            _randomSeed: _random,
+            _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
+            _userTypes: DEFAULT | ALT_METHODS
+        });
+
         // Create a staker with a nonzero balance and corresponding strategies
         (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
+        // Upgrade contracts if forkType is not local
+        _upgradeEigenLayerContracts();
 
         // 1. Deposit into strategy
         staker.depositIntoEigenlayer(strategies, tokenBalances);
@@ -49,7 +67,7 @@ contract Integration_Deposit_QueueWithdrawal_Complete is IntegrationCheckUtils {
         assertFalse(delegationManager.isDelegated(address(staker)), "Staker should not be delegated after deposit");
 
         // 2. Queue Withdrawal
-        Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
 
         // 3. Complete Queued Withdrawal
         _rollBlocksForCompleteWithdrawals(withdrawals);

@@ -79,8 +79,6 @@ contract DeployFromScratch is Script, Test {
     // strategies deployed
     StrategyBaseTVLLimits[] public deployedStrategyArray;
 
-    string SEMVER;
-
     // IMMUTABLES TO SET
     uint64 GOERLI_GENESIS_TIME = 1616508000;
 
@@ -125,8 +123,6 @@ contract DeployFromScratch is Script, Test {
         deployConfigPath = string(bytes(string.concat("script/configs/", configFileName)));
         string memory config_data = vm.readFile(deployConfigPath);
         // bytes memory parsedData = vm.parseJson(config_data);
-
-        SEMVER = stdJson.readString(config_data, ".semver");
 
         STRATEGY_MANAGER_INIT_PAUSED_STATUS = stdJson.readUint(config_data, ".strategyManager.init_paused_status");
         DELEGATION_INIT_PAUSED_STATUS = stdJson.readUint(config_data, ".delegation.init_paused_status");
@@ -244,54 +240,35 @@ contract DeployFromScratch is Script, Test {
         } else {
             ethPOSDeposit = IETHPOSDeposit(stdJson.readAddress(config_data, ".ethPOSDepositAddress"));
         }
-        eigenPodImplementation = new EigenPod(ethPOSDeposit, eigenPodManager, GOERLI_GENESIS_TIME, SEMVER);
+        eigenPodImplementation = new EigenPod(ethPOSDeposit, eigenPodManager, GOERLI_GENESIS_TIME);
 
         eigenPodBeacon = new UpgradeableBeacon(address(eigenPodImplementation));
 
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
 
-        delegationImplementation = new DelegationManager(
-            strategyManager, 
-            eigenPodManager, 
-            allocationManager, 
-            eigenLayerPauserReg, 
-            permissionController, 
-            MIN_WITHDRAWAL_DELAY,
-            SEMVER
-        );
-        strategyManagerImplementation = new StrategyManager(delegation, eigenLayerPauserReg, SEMVER);
-        avsDirectoryImplementation = new AVSDirectory(delegation, eigenLayerPauserReg, SEMVER);
+        delegationImplementation = new DelegationManager(strategyManager, eigenPodManager, allocationManager, eigenLayerPauserReg, permissionController, MIN_WITHDRAWAL_DELAY);
+        strategyManagerImplementation = new StrategyManager(delegation, eigenLayerPauserReg);
+        avsDirectoryImplementation = new AVSDirectory(delegation, eigenLayerPauserReg);
         eigenPodManagerImplementation = new EigenPodManager(
             ethPOSDeposit,
             eigenPodBeacon,
             delegation,
-            eigenLayerPauserReg,
-            SEMVER
+            eigenLayerPauserReg
         );
         rewardsCoordinatorImplementation = new RewardsCoordinator(
-            IRewardsCoordinatorTypes.RewardsCoordinatorConstructorParams(
-                delegation,
-                strategyManager,
-                allocationManager,
-                eigenLayerPauserReg,
-                permissionController,
-                REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
-                REWARDS_COORDINATOR_MAX_REWARDS_DURATION,
-                REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH,
-                REWARDS_COORDINATOR_MAX_FUTURE_LENGTH,
-                REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP,
-                SEMVER
-            )
+            delegation,
+            strategyManager,
+            allocationManager,
+            eigenLayerPauserReg,
+            permissionController,
+            REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
+            REWARDS_COORDINATOR_MAX_REWARDS_DURATION,
+            REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH,
+            REWARDS_COORDINATOR_MAX_FUTURE_LENGTH,
+            REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP
         );
-        allocationManagerImplementation = new AllocationManager(
-            delegation, 
-            eigenLayerPauserReg, 
-            permissionController, 
-            DEALLOCATION_DELAY, 
-            ALLOCATION_CONFIGURATION_DELAY,
-            SEMVER
-        );
-        permissionControllerImplementation = new PermissionController(SEMVER);
+        allocationManagerImplementation = new AllocationManager(delegation, eigenLayerPauserReg, permissionController, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
+        permissionControllerImplementation = new PermissionController();
 
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
         {
@@ -363,7 +340,7 @@ contract DeployFromScratch is Script, Test {
         );
 
         // deploy StrategyBaseTVLLimits contract implementation
-        baseStrategyImplementation = new StrategyBaseTVLLimits(strategyManager, eigenLayerPauserReg, SEMVER);
+        baseStrategyImplementation = new StrategyBaseTVLLimits(strategyManager, eigenLayerPauserReg);
         // create upgradeable proxies that each point to the implementation and initialize them
         for (uint256 i = 0; i < strategyConfigs.length; ++i) {
             if (strategyConfigs[i].tokenAddress == address(0)) {

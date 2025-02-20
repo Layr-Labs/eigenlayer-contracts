@@ -59,8 +59,7 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
         podImplementation = new EigenPod(
             ethPOSDepositMock,
             IEigenPodManager(address(eigenPodManagerMock)),
-            GENESIS_TIME_LOCAL,
-            "v9.9.9"
+            GENESIS_TIME_LOCAL
         );
 
         // Deploy Beacon
@@ -325,7 +324,7 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
 contract EigenPodUnitTests_Initialization is EigenPodUnitTests {
 
     function test_constructor() public {
-        EigenPod pod = new EigenPod(ethPOSDepositMock, IEigenPodManager(address(eigenPodManagerMock)), GENESIS_TIME_LOCAL, "v9.9.9");
+        EigenPod pod = new EigenPod(ethPOSDepositMock, IEigenPodManager(address(eigenPodManagerMock)), GENESIS_TIME_LOCAL);
 
         assertTrue(pod.ethPOS() == ethPOSDepositMock, "should have set ethPOS correctly");
         assertTrue(address(pod.eigenPodManager()) == address(eigenPodManagerMock), "should have set eigenpodmanager correctly");
@@ -353,7 +352,7 @@ contract EigenPodUnitTests_Initialization is EigenPodUnitTests {
     }
 
     function test_initialize_revert_emptyPodOwner() public {
-        EigenPod pod = new EigenPod(ethPOSDepositMock, IEigenPodManager(address(eigenPodManagerMock)), GENESIS_TIME_LOCAL, "v9.9.9");
+        EigenPod pod = new EigenPod(ethPOSDepositMock, IEigenPodManager(address(eigenPodManagerMock)), GENESIS_TIME_LOCAL);
         // un-initialize pod
         cheats.store(address(pod), 0, 0);
 
@@ -1727,8 +1726,7 @@ contract EigenPodHarnessSetup is EigenPodUnitTests {
         eigenPodHarnessImplementation = new EigenPodHarness(
             ethPOSDepositMock,
             IEigenPodManager(address(eigenPodManagerMock)),
-            GENESIS_TIME_LOCAL,
-            "v9.9.9"
+            GENESIS_TIME_LOCAL
         );
 
         // Upgrade eigenPod to harness

@@ -9,13 +9,11 @@ contract EigenPodHarness is EigenPod {
     constructor(
         IETHPOSDeposit _ethPOS,
         IEigenPodManager _eigenPodManager,
-        uint64 _GENESIS_TIME,
-        string memory _version
+        uint64 _GENESIS_TIME
     ) EigenPod(
         _ethPOS,
         _eigenPodManager,
-        _GENESIS_TIME,
-        _version
+        _GENESIS_TIME
     ) {}
 
     function getActiveValidatorCount() public view returns (uint256) {

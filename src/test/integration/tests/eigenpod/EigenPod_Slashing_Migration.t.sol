@@ -1,13 +1,18 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "src/test/integration/UpgradeTest.t.sol";
+import "src/test/integration/IntegrationChecks.t.sol";
+import "src/test/integration/users/User.t.sol";
 
-contract Integration_Upgrade_EigenPod_Slashing_Migration is UpgradeTest, EigenPodPausingConstants {
-    
-    function _init() internal override {
-        _configAssetTypes(HOLDS_ETH);
-        _configUserTypes(DEFAULT);
+contract Integration_EigenPod_Slashing_Migration is IntegrationCheckUtils, EigenPodPausingConstants {
+    modifier r(uint24 _rand) {
+        _configRand({
+            _randomSeed: _rand,
+            _assetTypes: HOLDS_ETH,
+            _userTypes: DEFAULT
+        });
+
+        _;
     }
 
     /**
@@ -19,7 +24,12 @@ contract Integration_Upgrade_EigenPod_Slashing_Migration is UpgradeTest, EigenPo
      * 5. Upgrade EigenPod contracts
      * 6. Exit subset of Validators 
      */
-    function test_upgrade_eigenpod_migration(uint24 _rand) public rand(_rand) {
+    function test_upgrade_eigenpod_migration(uint24 _rand) public r(_rand) {
+        // Only run this test as a fork test
+        if (forkType == LOCAL) {
+            return;
+        }
+
         // Initialize state
         (User staker, ,) = _newRandomStaker();    
 
@@ -31,6 +41,7 @@ contract Integration_Upgrade_EigenPod_Slashing_Migration is UpgradeTest, EigenPo
 
         // Advance epoch, generating consensus rewards and withdrawing anything over 32 ETH
         beaconChain.advanceEpoch();
+        uint64 expectedWithdrawnGwei = uint64(validators.length) * beaconChain.CONSENSUS_REWARD_AMOUNT_GWEI();
 
         // 2. Start a checkpoint
         staker.startCheckpoint();
@@ -38,18 +49,16 @@ contract Integration_Upgrade_EigenPod_Slashing_Migration is UpgradeTest, EigenPo
         // 3. Pause checkpoint starting
         cheats.prank(pauserMultisig);
         eigenPodManager.pause(2 ** PAUSED_START_CHECKPOINT);
+
         cheats.expectRevert("EigenPod.onlyWhenNotPaused: index is paused in EigenPodManager");
         staker.startCheckpoint();
 
         // 4. Complete in progress checkpoint
         staker.completeCheckpoint();
+        check_CompleteCheckpoint_WithPodBalance_State(staker, expectedWithdrawnGwei);
 
         // 5. Upgrade Contracts for slashing
         _upgradeEigenLayerContracts();
-
-        // Unpause EigenPodManager
-        cheats.prank(eigenLayerPauserReg.unpauser());
-        eigenPodManager.unpause(0);
 
         // 6. Exit validators
         // Fully exit one or more validators and advance epoch without generating rewards

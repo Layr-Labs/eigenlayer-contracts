@@ -48,8 +48,6 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     TimeMachine timeMachine;
     BeaconChainMock beaconChain;
 
-    uint32 public allocationDelay = 1;
-
     string _NAME;
 
     // User's EigenPod and each of their validator indices within that pod
@@ -94,35 +92,44 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     /// @dev Allocates randomly accross the operator set's strategies with a sum of `magnitudeSum`.
     /// NOTE: Calling more than once will lead to deallocations...
     function modifyAllocations(
-        AllocateParams memory params
-    ) public virtual createSnapshot {
+        OperatorSet memory operatorSet, 
+        uint64[] memory magnitudes
+    ) public virtual createSnapshot returns (AllocateParams memory) {
         print.method(
             "modifyAllocations",
             string.concat(
                 "{avs: ",
-                Logger(params.operatorSet.avs).NAME_COLORED(),
+                Logger(operatorSet.avs).NAME_COLORED(),
                 ", operatorSetId: ",
-                cheats.toString(params.operatorSet.id),
+                cheats.toString(operatorSet.id),
                 "}"
             )
         );
 
+        IStrategy[] memory strategies = allocationManager().getStrategiesInOperatorSet(operatorSet);
+
+        require(strategies.length == magnitudes.length, "User.modifyAllocations: length mismatch");
+
+        AllocateParams[] memory allocateParams = AllocateParams({
+            operatorSet: operatorSet,
+            strategies: strategies,
+            newMagnitudes: magnitudes
+        }).toArray();
+
         _tryPrankAppointee_AllocationManager(IAllocationManager.modifyAllocations.selector);
-        allocationManager().modifyAllocations(address(this), params.toArray());
+        allocationManager().modifyAllocations(address(this), allocateParams);
         print.gasUsed();
+
+        return allocateParams[0];
     }
     
     function deallocateAll(
         OperatorSet memory operatorSet
     ) public virtual returns (AllocateParams memory) {
-        AllocateParams memory params;
-        params.operatorSet = operatorSet;
-        params.strategies = allocationManager().getStrategiesInOperatorSet(operatorSet);
-        params.newMagnitudes = new uint64[](params.strategies.length);
-        
-        modifyAllocations(params);
-
-        return params;
+        return modifyAllocations(
+            operatorSet, 
+            new uint64[](allocationManager().getStrategiesInOperatorSet(operatorSet).length)
+        );
     }
 
     function registerForOperatorSets(
@@ -185,17 +192,17 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         _tryPrankAppointee_AllocationManager(IAllocationManager.setAllocationDelay.selector);
         allocationManager().setAllocationDelay(address(this), delay);
         print.gasUsed();
-
-        allocationDelay = delay;
     }
 
     /// -----------------------------------------------------------------------
     /// Delegation Manager Methods
     /// -----------------------------------------------------------------------
 
+    uint32 withdrawalDelay = 1;
+
     function registerAsOperator() public virtual createSnapshot {
         print.method("registerAsOperator");
-        delegationManager.registerAsOperator(address(0), allocationDelay, "metadata");
+        delegationManager.registerAsOperator(address(0), withdrawalDelay, "metadata");
         print.gasUsed();
     }
 
@@ -205,7 +212,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     ) public virtual createSnapshot {
         print.method("delegateTo", operator.NAME_COLORED());
 
-        ISignatureUtilsMixinTypes.SignatureWithExpiry memory emptySig;
+        ISignatureUtils.SignatureWithExpiry memory emptySig;
         delegationManager.delegateTo(address(operator), emptySig, bytes32(0));
         print.gasUsed();
     }
@@ -234,34 +241,6 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
             );
         }
 
-        return expectedWithdrawals;
-    }
-
-    /// @dev Redelegate to a new operator
-    function redelegate(
-        User newOperator
-    ) public virtual createSnapshot returns (Withdrawal[] memory) {
-        print.method("redelegate", newOperator.NAME_COLORED());
-        Withdrawal[] memory expectedWithdrawals = _getExpectedWithdrawalStructsForStaker(address(this));
-        ISignatureUtilsMixinTypes.SignatureWithExpiry memory emptySig;
-        _tryPrankAppointee_DelegationManager(IDelegationManager.redelegate.selector);
-        delegationManager.redelegate(address(newOperator), emptySig, bytes32(0));
-        print.gasUsed();
-
-        for (uint256 i = 0; i < expectedWithdrawals.length; i++) {
-            IStrategy strat = expectedWithdrawals[i].strategies[0];
-
-            string memory name = strat == beaconChainETHStrategy 
-                ? "Native ETH" 
-                : IERC20Metadata(address(strat.underlyingToken())).name();
-            
-            console.log(
-                "   Expecting withdrawal with nonce %s of %s for %s scaled shares.", 
-                expectedWithdrawals[i].nonce,
-                name,
-                expectedWithdrawals[i].scaledShares[0]
-            );
-        }
         return expectedWithdrawals;
     }
 
@@ -296,15 +275,6 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
             __deprecated_withdrawer: address(0)
         });
 
-        uint256[] memory scaledSharesForWithdrawal = new uint256[](strategies.length);
-        for (uint256 i = 0; i < strategies.length; ++i) {
-            DepositScalingFactor memory dsf = DepositScalingFactor(
-                delegationManager.depositScalingFactor(address(this), strategies[i])
-            );
-
-            scaledSharesForWithdrawal[i] = dsf.scaleForQueueWithdrawal(depositShares[i]);
-        }
-
         // Create Withdrawal struct using same info
         Withdrawal[] memory withdrawals = new Withdrawal[](1);
         withdrawals[0] = Withdrawal({
@@ -314,7 +284,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
             nonce: nonce,
             startBlock: uint32(block.number),
             strategies: strategies,
-            scaledShares: scaledSharesForWithdrawal
+            scaledShares: depositShares // TODO: convert depositShares to shares and then scale in withdrawal
         });
 
         bytes32[] memory withdrawalRoots = delegationManager.queueWithdrawals(params);
@@ -346,7 +316,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     function completeWithdrawalsAsShares(
         Withdrawal[] memory withdrawals
     ) public virtual createSnapshot returns (IERC20[][] memory tokens) {
-        print.method("completeWithdrawalsAsShares");
+        print.method("completeWithdrawalAsShares");
         tokens = new IERC20[][](withdrawals.length);
         for (uint256 i = 0; i < withdrawals.length; i++) {
             tokens[i] = _completeQueuedWithdrawal(withdrawals[i], false);
@@ -495,9 +465,9 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
             if (strat == BEACONCHAIN_ETH_STRAT) {
                 tokens[i] = NATIVE_ETH;
 
-                // If we're withdrawing native ETH as tokens && do not have negative shares
-                // stop ALL validators and complete a checkpoint
-                if (receiveAsTokens && eigenPodManager.podOwnerDepositShares(address(this)) >= 0) {
+                // If we're withdrawing native ETH as tokens, stop ALL validators
+                // and complete a checkpoint
+                if (receiveAsTokens) {
                     console.log("- exiting all validators and completing checkpoint");
                     _exitValidators(getActiveValidators());
 
@@ -679,6 +649,10 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
             );
 
             uint256 scaledShares = dsf.scaleForQueueWithdrawal(depositShares[i]);
+
+            if (strategies[i] == beaconChainETHStrategy) {
+                scaledShares -= scaledShares % 1 gwei;
+            }
 
             expectedWithdrawals[i] = Withdrawal({
                 staker: staker,

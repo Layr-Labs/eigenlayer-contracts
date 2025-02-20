@@ -50,7 +50,7 @@ jobs:
     - name: Install Foundry
       uses: foundry-rs/foundry-toolchain@v1
       with:
-        version: stable
+        version: nightly
     - name: Run coverage
       run: forge coverage --report lcov
       env:

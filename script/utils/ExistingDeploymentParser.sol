@@ -50,7 +50,6 @@ contract ExistingDeploymentParser is Script, Logger {
     /// EigenLayer Contract Parameters
     /// -----------------------------------------------------------------------
 
-    string public SEMVER;
     /// @dev AllocationManager
     uint256 ALLOCATION_MANAGER_INIT_PAUSED_STATUS;
     uint32 DEALLOCATION_DELAY;
@@ -186,15 +185,13 @@ contract ExistingDeploymentParser is Script, Logger {
     /// @notice use for parsing already deployed EigenLayer contracts
     function _parseDeployedContracts(
         string memory existingDeploymentInfoPath
-    ) internal noTracing virtual {
+    ) internal virtual {
         // read and log the chainID
         uint256 currentChainId = block.chainid;
         console.log("You are parsing on ChainID", currentChainId);
 
         // READ JSON CONFIG DATA
         string memory json = cheats.readFile(existingDeploymentInfoPath);
-
-        SEMVER = stdJson.readString(json, ".parameters.semver");
 
         // check that the chainID matches the one in the config
         uint256 configChainId = json.readUint(".chainInfo.chainId");
@@ -214,7 +211,7 @@ contract ExistingDeploymentParser is Script, Logger {
         eigenLayerPauserReg = PauserRegistry(json.readAddress(".addresses.eigenLayerPauserReg"));
         
         // FIXME: hotfix - remove later...
-        permissionControllerImplementation = new PermissionController(SEMVER);
+        permissionControllerImplementation = new PermissionController();
         permissionController = PermissionController(
             address(new TransparentUpgradeableProxy(address(permissionControllerImplementation), address(eigenLayerProxyAdmin), ""))
         );
@@ -224,8 +221,7 @@ contract ExistingDeploymentParser is Script, Logger {
             eigenLayerPauserReg, 
             permissionController, 
             DEALLOCATION_DELAY, 
-            ALLOCATION_CONFIGURATION_DELAY,
-            SEMVER
+            ALLOCATION_CONFIGURATION_DELAY
         );
         allocationManager = AllocationManager(
             address(new TransparentUpgradeableProxy(address(allocationManagerImplementation), address(eigenLayerProxyAdmin), ""))
@@ -667,7 +663,7 @@ contract ExistingDeploymentParser is Script, Logger {
     /// @notice used for parsing parameters used in the integration test upgrade
     function _parseParamsForIntegrationUpgrade(
         string memory initialDeploymentParamsPath
-    ) internal noTracing virtual {
+    ) internal virtual {
         // read and log the chainID
         uint256 currentChainId = block.chainid;
         console.log("You are parsing on ChainID", currentChainId);

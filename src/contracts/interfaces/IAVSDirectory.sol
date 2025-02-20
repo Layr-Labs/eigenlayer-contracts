@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.5.0;
 
-import "./ISignatureUtilsMixin.sol";
+import "./ISignatureUtils.sol";
 import "./IPauserRegistry.sol";
 import "./IStrategy.sol";
 
@@ -53,7 +53,7 @@ interface IAVSDirectoryEvents is IAVSDirectoryTypes {
     event AVSMetadataURIUpdated(address indexed avs, string metadataURI);
 }
 
-interface IAVSDirectory is IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureUtilsMixin {
+interface IAVSDirectory is IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureUtils {
     /**
      *
      *                         EXTERNAL FUNCTIONS
@@ -98,7 +98,7 @@ interface IAVSDirectory is IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureU
      */
     function registerOperatorToAVS(
         address operator,
-        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory operatorSignature
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external;
 
     /**

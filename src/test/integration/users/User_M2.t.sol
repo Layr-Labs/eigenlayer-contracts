@@ -137,7 +137,7 @@ contract User_M2 is User {
                 // If any balance update has occured, a checkpoint will pick it up
                 _startCheckpoint();
                 if (pod.activeValidatorCount() != 0) {
-                    _completeCheckpoint_M2();
+                    _completeCheckpoint();
                 }
             } else {
                 uint256 tokens = uint256(delta);

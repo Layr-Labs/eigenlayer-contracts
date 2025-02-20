@@ -31,7 +31,7 @@ var (
 
 // IStrategyManagerMetaData contains all meta data concerning the IStrategyManager contract.
 var IStrategyManagerMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"addShares\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"addStrategiesToDepositWhitelist\",\"inputs\":[{\"name\":\"strategiesToWhitelist\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"burnShares\",\"inputs\":[{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"calculateStrategyDepositDigestHash\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"nonce\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"delegation\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIDelegationManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"depositIntoStrategy\",\"inputs\":[{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"depositShares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"depositIntoStrategyWithSignature\",\"inputs\":[{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"depositShares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"getBurnableShares\",\"inputs\":[{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getDeposits\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"},{\"name\":\"\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getStakerStrategyList\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getStrategiesWithBurnableShares\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address[]\",\"internalType\":\"address[]\"},{\"name\":\"\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"increaseBurnableShares\",\"inputs\":[{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"addedSharesToBurn\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"initialize\",\"inputs\":[{\"name\":\"initialOwner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"initialStrategyWhitelister\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"initialPausedStatus\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeDepositShares\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"depositSharesToRemove\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeStrategiesFromDepositWhitelist\",\"inputs\":[{\"name\":\"strategiesToRemoveFromWhitelist\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setStrategyWhitelister\",\"inputs\":[{\"name\":\"newStrategyWhitelister\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"stakerDepositShares\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"}],\"outputs\":[{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"stakerStrategyListLength\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"strategyIsWhitelistedForDeposit\",\"inputs\":[{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"strategyWhitelister\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"withdrawSharesAsTokens\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"BurnableSharesDecreased\",\"inputs\":[{\"name\":\"strategy\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIStrategy\"},{\"name\":\"shares\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"BurnableSharesIncreased\",\"inputs\":[{\"name\":\"strategy\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIStrategy\"},{\"name\":\"shares\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Deposit\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIStrategy\"},{\"name\":\"shares\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"StrategyAddedToDepositWhitelist\",\"inputs\":[{\"name\":\"strategy\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIStrategy\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"StrategyRemovedFromDepositWhitelist\",\"inputs\":[{\"name\":\"strategy\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIStrategy\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"StrategyWhitelisterChanged\",\"inputs\":[{\"name\":\"previousAddress\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"newAddress\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"MaxStrategiesExceeded\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OnlyDelegationManager\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OnlyStrategyWhitelister\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"SharesAmountTooHigh\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"SharesAmountZero\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"StakerAddressZero\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"StrategyNotFound\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"StrategyNotWhitelisted\",\"inputs\":[]}]",
+	ABI: "[{\"type\":\"function\",\"name\":\"addShares\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"addStrategiesToDepositWhitelist\",\"inputs\":[{\"name\":\"strategiesToWhitelist\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"burnShares\",\"inputs\":[{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"sharesToBurn\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"calculateStrategyDepositDigestHash\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"nonce\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"delegation\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIDelegationManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"depositIntoStrategy\",\"inputs\":[{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"depositIntoStrategyWithSignature\",\"inputs\":[{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"expiry\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"getDeposits\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"},{\"name\":\"\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getStakerStrategyList\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"initialize\",\"inputs\":[{\"name\":\"initialOwner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"initialStrategyWhitelister\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"initialPausedStatus\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeDepositShares\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"depositSharesToRemove\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeStrategiesFromDepositWhitelist\",\"inputs\":[{\"name\":\"strategiesToRemoveFromWhitelist\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setStrategyWhitelister\",\"inputs\":[{\"name\":\"newStrategyWhitelister\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"stakerDepositShares\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"}],\"outputs\":[{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"stakerStrategyListLength\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"strategyIsWhitelistedForDeposit\",\"inputs\":[{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"strategyWhitelister\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"withdrawSharesAsTokens\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"Deposit\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"token\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIERC20\"},{\"name\":\"strategy\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIStrategy\"},{\"name\":\"shares\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"StrategyAddedToDepositWhitelist\",\"inputs\":[{\"name\":\"strategy\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIStrategy\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"StrategyRemovedFromDepositWhitelist\",\"inputs\":[{\"name\":\"strategy\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIStrategy\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"StrategyWhitelisterChanged\",\"inputs\":[{\"name\":\"previousAddress\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"newAddress\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"MaxStrategiesExceeded\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OnlyDelegationManager\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OnlyStrategyWhitelister\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"SharesAmountTooHigh\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"SharesAmountZero\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"StakerAddressZero\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"StrategyNotFound\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"StrategyNotWhitelisted\",\"inputs\":[]}]",
 }
 
 // IStrategyManagerABI is the input ABI used to generate the binding from.
@@ -242,37 +242,6 @@ func (_IStrategyManager *IStrategyManagerCallerSession) Delegation() (common.Add
 	return _IStrategyManager.Contract.Delegation(&_IStrategyManager.CallOpts)
 }
 
-// GetBurnableShares is a free data retrieval call binding the contract method 0xfd980423.
-//
-// Solidity: function getBurnableShares(address strategy) view returns(uint256)
-func (_IStrategyManager *IStrategyManagerCaller) GetBurnableShares(opts *bind.CallOpts, strategy common.Address) (*big.Int, error) {
-	var out []interface{}
-	err := _IStrategyManager.contract.Call(opts, &out, "getBurnableShares", strategy)
-
-	if err != nil {
-		return *new(*big.Int), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
-
-	return out0, err
-
-}
-
-// GetBurnableShares is a free data retrieval call binding the contract method 0xfd980423.
-//
-// Solidity: function getBurnableShares(address strategy) view returns(uint256)
-func (_IStrategyManager *IStrategyManagerSession) GetBurnableShares(strategy common.Address) (*big.Int, error) {
-	return _IStrategyManager.Contract.GetBurnableShares(&_IStrategyManager.CallOpts, strategy)
-}
-
-// GetBurnableShares is a free data retrieval call binding the contract method 0xfd980423.
-//
-// Solidity: function getBurnableShares(address strategy) view returns(uint256)
-func (_IStrategyManager *IStrategyManagerCallerSession) GetBurnableShares(strategy common.Address) (*big.Int, error) {
-	return _IStrategyManager.Contract.GetBurnableShares(&_IStrategyManager.CallOpts, strategy)
-}
-
 // GetDeposits is a free data retrieval call binding the contract method 0x94f649dd.
 //
 // Solidity: function getDeposits(address staker) view returns(address[], uint256[])
@@ -334,38 +303,6 @@ func (_IStrategyManager *IStrategyManagerSession) GetStakerStrategyList(staker c
 // Solidity: function getStakerStrategyList(address staker) view returns(address[])
 func (_IStrategyManager *IStrategyManagerCallerSession) GetStakerStrategyList(staker common.Address) ([]common.Address, error) {
 	return _IStrategyManager.Contract.GetStakerStrategyList(&_IStrategyManager.CallOpts, staker)
-}
-
-// GetStrategiesWithBurnableShares is a free data retrieval call binding the contract method 0x36a8c500.
-//
-// Solidity: function getStrategiesWithBurnableShares() view returns(address[], uint256[])
-func (_IStrategyManager *IStrategyManagerCaller) GetStrategiesWithBurnableShares(opts *bind.CallOpts) ([]common.Address, []*big.Int, error) {
-	var out []interface{}
-	err := _IStrategyManager.contract.Call(opts, &out, "getStrategiesWithBurnableShares")
-
-	if err != nil {
-		return *new([]common.Address), *new([]*big.Int), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new([]common.Address)).(*[]common.Address)
-	out1 := *abi.ConvertType(out[1], new([]*big.Int)).(*[]*big.Int)
-
-	return out0, out1, err
-
-}
-
-// GetStrategiesWithBurnableShares is a free data retrieval call binding the contract method 0x36a8c500.
-//
-// Solidity: function getStrategiesWithBurnableShares() view returns(address[], uint256[])
-func (_IStrategyManager *IStrategyManagerSession) GetStrategiesWithBurnableShares() ([]common.Address, []*big.Int, error) {
-	return _IStrategyManager.Contract.GetStrategiesWithBurnableShares(&_IStrategyManager.CallOpts)
-}
-
-// GetStrategiesWithBurnableShares is a free data retrieval call binding the contract method 0x36a8c500.
-//
-// Solidity: function getStrategiesWithBurnableShares() view returns(address[], uint256[])
-func (_IStrategyManager *IStrategyManagerCallerSession) GetStrategiesWithBurnableShares() ([]common.Address, []*big.Int, error) {
-	return _IStrategyManager.Contract.GetStrategiesWithBurnableShares(&_IStrategyManager.CallOpts)
 }
 
 // StakerDepositShares is a free data retrieval call binding the contract method 0xfe243a17.
@@ -492,25 +429,25 @@ func (_IStrategyManager *IStrategyManagerCallerSession) StrategyWhitelister() (c
 	return _IStrategyManager.Contract.StrategyWhitelister(&_IStrategyManager.CallOpts)
 }
 
-// AddShares is a paid mutator transaction binding the contract method 0x50ff7225.
+// AddShares is a paid mutator transaction binding the contract method 0xc4623ea1.
 //
-// Solidity: function addShares(address staker, address strategy, uint256 shares) returns(uint256, uint256)
-func (_IStrategyManager *IStrategyManagerTransactor) AddShares(opts *bind.TransactOpts, staker common.Address, strategy common.Address, shares *big.Int) (*types.Transaction, error) {
-	return _IStrategyManager.contract.Transact(opts, "addShares", staker, strategy, shares)
+// Solidity: function addShares(address staker, address strategy, address token, uint256 shares) returns(uint256, uint256)
+func (_IStrategyManager *IStrategyManagerTransactor) AddShares(opts *bind.TransactOpts, staker common.Address, strategy common.Address, token common.Address, shares *big.Int) (*types.Transaction, error) {
+	return _IStrategyManager.contract.Transact(opts, "addShares", staker, strategy, token, shares)
 }
 
-// AddShares is a paid mutator transaction binding the contract method 0x50ff7225.
+// AddShares is a paid mutator transaction binding the contract method 0xc4623ea1.
 //
-// Solidity: function addShares(address staker, address strategy, uint256 shares) returns(uint256, uint256)
-func (_IStrategyManager *IStrategyManagerSession) AddShares(staker common.Address, strategy common.Address, shares *big.Int) (*types.Transaction, error) {
-	return _IStrategyManager.Contract.AddShares(&_IStrategyManager.TransactOpts, staker, strategy, shares)
+// Solidity: function addShares(address staker, address strategy, address token, uint256 shares) returns(uint256, uint256)
+func (_IStrategyManager *IStrategyManagerSession) AddShares(staker common.Address, strategy common.Address, token common.Address, shares *big.Int) (*types.Transaction, error) {
+	return _IStrategyManager.Contract.AddShares(&_IStrategyManager.TransactOpts, staker, strategy, token, shares)
 }
 
-// AddShares is a paid mutator transaction binding the contract method 0x50ff7225.
+// AddShares is a paid mutator transaction binding the contract method 0xc4623ea1.
 //
-// Solidity: function addShares(address staker, address strategy, uint256 shares) returns(uint256, uint256)
-func (_IStrategyManager *IStrategyManagerTransactorSession) AddShares(staker common.Address, strategy common.Address, shares *big.Int) (*types.Transaction, error) {
-	return _IStrategyManager.Contract.AddShares(&_IStrategyManager.TransactOpts, staker, strategy, shares)
+// Solidity: function addShares(address staker, address strategy, address token, uint256 shares) returns(uint256, uint256)
+func (_IStrategyManager *IStrategyManagerTransactorSession) AddShares(staker common.Address, strategy common.Address, token common.Address, shares *big.Int) (*types.Transaction, error) {
+	return _IStrategyManager.Contract.AddShares(&_IStrategyManager.TransactOpts, staker, strategy, token, shares)
 }
 
 // AddStrategiesToDepositWhitelist is a paid mutator transaction binding the contract method 0x5de08ff2.
@@ -534,88 +471,67 @@ func (_IStrategyManager *IStrategyManagerTransactorSession) AddStrategiesToDepos
 	return _IStrategyManager.Contract.AddStrategiesToDepositWhitelist(&_IStrategyManager.TransactOpts, strategiesToWhitelist)
 }
 
-// BurnShares is a paid mutator transaction binding the contract method 0x4b6d5d6e.
+// BurnShares is a paid mutator transaction binding the contract method 0xee7a7c04.
 //
-// Solidity: function burnShares(address strategy) returns()
-func (_IStrategyManager *IStrategyManagerTransactor) BurnShares(opts *bind.TransactOpts, strategy common.Address) (*types.Transaction, error) {
-	return _IStrategyManager.contract.Transact(opts, "burnShares", strategy)
+// Solidity: function burnShares(address strategy, uint256 sharesToBurn) returns()
+func (_IStrategyManager *IStrategyManagerTransactor) BurnShares(opts *bind.TransactOpts, strategy common.Address, sharesToBurn *big.Int) (*types.Transaction, error) {
+	return _IStrategyManager.contract.Transact(opts, "burnShares", strategy, sharesToBurn)
 }
 
-// BurnShares is a paid mutator transaction binding the contract method 0x4b6d5d6e.
+// BurnShares is a paid mutator transaction binding the contract method 0xee7a7c04.
 //
-// Solidity: function burnShares(address strategy) returns()
-func (_IStrategyManager *IStrategyManagerSession) BurnShares(strategy common.Address) (*types.Transaction, error) {
-	return _IStrategyManager.Contract.BurnShares(&_IStrategyManager.TransactOpts, strategy)
+// Solidity: function burnShares(address strategy, uint256 sharesToBurn) returns()
+func (_IStrategyManager *IStrategyManagerSession) BurnShares(strategy common.Address, sharesToBurn *big.Int) (*types.Transaction, error) {
+	return _IStrategyManager.Contract.BurnShares(&_IStrategyManager.TransactOpts, strategy, sharesToBurn)
 }
 
-// BurnShares is a paid mutator transaction binding the contract method 0x4b6d5d6e.
+// BurnShares is a paid mutator transaction binding the contract method 0xee7a7c04.
 //
-// Solidity: function burnShares(address strategy) returns()
-func (_IStrategyManager *IStrategyManagerTransactorSession) BurnShares(strategy common.Address) (*types.Transaction, error) {
-	return _IStrategyManager.Contract.BurnShares(&_IStrategyManager.TransactOpts, strategy)
+// Solidity: function burnShares(address strategy, uint256 sharesToBurn) returns()
+func (_IStrategyManager *IStrategyManagerTransactorSession) BurnShares(strategy common.Address, sharesToBurn *big.Int) (*types.Transaction, error) {
+	return _IStrategyManager.Contract.BurnShares(&_IStrategyManager.TransactOpts, strategy, sharesToBurn)
 }
 
 // DepositIntoStrategy is a paid mutator transaction binding the contract method 0xe7a050aa.
 //
-// Solidity: function depositIntoStrategy(address strategy, address token, uint256 amount) returns(uint256 depositShares)
+// Solidity: function depositIntoStrategy(address strategy, address token, uint256 amount) returns(uint256 shares)
 func (_IStrategyManager *IStrategyManagerTransactor) DepositIntoStrategy(opts *bind.TransactOpts, strategy common.Address, token common.Address, amount *big.Int) (*types.Transaction, error) {
 	return _IStrategyManager.contract.Transact(opts, "depositIntoStrategy", strategy, token, amount)
 }
 
 // DepositIntoStrategy is a paid mutator transaction binding the contract method 0xe7a050aa.
 //
-// Solidity: function depositIntoStrategy(address strategy, address token, uint256 amount) returns(uint256 depositShares)
+// Solidity: function depositIntoStrategy(address strategy, address token, uint256 amount) returns(uint256 shares)
 func (_IStrategyManager *IStrategyManagerSession) DepositIntoStrategy(strategy common.Address, token common.Address, amount *big.Int) (*types.Transaction, error) {
 	return _IStrategyManager.Contract.DepositIntoStrategy(&_IStrategyManager.TransactOpts, strategy, token, amount)
 }
 
 // DepositIntoStrategy is a paid mutator transaction binding the contract method 0xe7a050aa.
 //
-// Solidity: function depositIntoStrategy(address strategy, address token, uint256 amount) returns(uint256 depositShares)
+// Solidity: function depositIntoStrategy(address strategy, address token, uint256 amount) returns(uint256 shares)
 func (_IStrategyManager *IStrategyManagerTransactorSession) DepositIntoStrategy(strategy common.Address, token common.Address, amount *big.Int) (*types.Transaction, error) {
 	return _IStrategyManager.Contract.DepositIntoStrategy(&_IStrategyManager.TransactOpts, strategy, token, amount)
 }
 
 // DepositIntoStrategyWithSignature is a paid mutator transaction binding the contract method 0x32e89ace.
 //
-// Solidity: function depositIntoStrategyWithSignature(address strategy, address token, uint256 amount, address staker, uint256 expiry, bytes signature) returns(uint256 depositShares)
+// Solidity: function depositIntoStrategyWithSignature(address strategy, address token, uint256 amount, address staker, uint256 expiry, bytes signature) returns(uint256 shares)
 func (_IStrategyManager *IStrategyManagerTransactor) DepositIntoStrategyWithSignature(opts *bind.TransactOpts, strategy common.Address, token common.Address, amount *big.Int, staker common.Address, expiry *big.Int, signature []byte) (*types.Transaction, error) {
 	return _IStrategyManager.contract.Transact(opts, "depositIntoStrategyWithSignature", strategy, token, amount, staker, expiry, signature)
 }
 
 // DepositIntoStrategyWithSignature is a paid mutator transaction binding the contract method 0x32e89ace.
 //
-// Solidity: function depositIntoStrategyWithSignature(address strategy, address token, uint256 amount, address staker, uint256 expiry, bytes signature) returns(uint256 depositShares)
+// Solidity: function depositIntoStrategyWithSignature(address strategy, address token, uint256 amount, address staker, uint256 expiry, bytes signature) returns(uint256 shares)
 func (_IStrategyManager *IStrategyManagerSession) DepositIntoStrategyWithSignature(strategy common.Address, token common.Address, amount *big.Int, staker common.Address, expiry *big.Int, signature []byte) (*types.Transaction, error) {
 	return _IStrategyManager.Contract.DepositIntoStrategyWithSignature(&_IStrategyManager.TransactOpts, strategy, token, amount, staker, expiry, signature)
 }
 
 // DepositIntoStrategyWithSignature is a paid mutator transaction binding the contract method 0x32e89ace.
 //
-// Solidity: function depositIntoStrategyWithSignature(address strategy, address token, uint256 amount, address staker, uint256 expiry, bytes signature) returns(uint256 depositShares)
+// Solidity: function depositIntoStrategyWithSignature(address strategy, address token, uint256 amount, address staker, uint256 expiry, bytes signature) returns(uint256 shares)
 func (_IStrategyManager *IStrategyManagerTransactorSession) DepositIntoStrategyWithSignature(strategy common.Address, token common.Address, amount *big.Int, staker common.Address, expiry *big.Int, signature []byte) (*types.Transaction, error) {
 	return _IStrategyManager.Contract.DepositIntoStrategyWithSignature(&_IStrategyManager.TransactOpts, strategy, token, amount, staker, expiry, signature)
-}
-
-// IncreaseBurnableShares is a paid mutator transaction binding the contract method 0xdebe1eab.
-//
-// Solidity: function increaseBurnableShares(address strategy, uint256 addedSharesToBurn) returns()
-func (_IStrategyManager *IStrategyManagerTransactor) IncreaseBurnableShares(opts *bind.TransactOpts, strategy common.Address, addedSharesToBurn *big.Int) (*types.Transaction, error) {
-	return _IStrategyManager.contract.Transact(opts, "increaseBurnableShares", strategy, addedSharesToBurn)
-}
-
-// IncreaseBurnableShares is a paid mutator transaction binding the contract method 0xdebe1eab.
-//
-// Solidity: function increaseBurnableShares(address strategy, uint256 addedSharesToBurn) returns()
-func (_IStrategyManager *IStrategyManagerSession) IncreaseBurnableShares(strategy common.Address, addedSharesToBurn *big.Int) (*types.Transaction, error) {
-	return _IStrategyManager.Contract.IncreaseBurnableShares(&_IStrategyManager.TransactOpts, strategy, addedSharesToBurn)
-}
-
-// IncreaseBurnableShares is a paid mutator transaction binding the contract method 0xdebe1eab.
-//
-// Solidity: function increaseBurnableShares(address strategy, uint256 addedSharesToBurn) returns()
-func (_IStrategyManager *IStrategyManagerTransactorSession) IncreaseBurnableShares(strategy common.Address, addedSharesToBurn *big.Int) (*types.Transaction, error) {
-	return _IStrategyManager.Contract.IncreaseBurnableShares(&_IStrategyManager.TransactOpts, strategy, addedSharesToBurn)
 }
 
 // Initialize is a paid mutator transaction binding the contract method 0x1794bb3c.
@@ -723,276 +639,6 @@ func (_IStrategyManager *IStrategyManagerTransactorSession) WithdrawSharesAsToke
 	return _IStrategyManager.Contract.WithdrawSharesAsTokens(&_IStrategyManager.TransactOpts, staker, strategy, token, shares)
 }
 
-// IStrategyManagerBurnableSharesDecreasedIterator is returned from FilterBurnableSharesDecreased and is used to iterate over the raw logs and unpacked data for BurnableSharesDecreased events raised by the IStrategyManager contract.
-type IStrategyManagerBurnableSharesDecreasedIterator struct {
-	Event *IStrategyManagerBurnableSharesDecreased // Event containing the contract specifics and raw log
-
-	contract *bind.BoundContract // Generic contract to use for unpacking event data
-	event    string              // Event name to use for unpacking event data
-
-	logs chan types.Log        // Log channel receiving the found contract events
-	sub  ethereum.Subscription // Subscription for errors, completion and termination
-	done bool                  // Whether the subscription completed delivering logs
-	fail error                 // Occurred error to stop iteration
-}
-
-// Next advances the iterator to the subsequent event, returning whether there
-// are any more events found. In case of a retrieval or parsing error, false is
-// returned and Error() can be queried for the exact failure.
-func (it *IStrategyManagerBurnableSharesDecreasedIterator) Next() bool {
-	// If the iterator failed, stop iterating
-	if it.fail != nil {
-		return false
-	}
-	// If the iterator completed, deliver directly whatever's available
-	if it.done {
-		select {
-		case log := <-it.logs:
-			it.Event = new(IStrategyManagerBurnableSharesDecreased)
-			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-				it.fail = err
-				return false
-			}
-			it.Event.Raw = log
-			return true
-
-		default:
-			return false
-		}
-	}
-	// Iterator still in progress, wait for either a data or an error event
-	select {
-	case log := <-it.logs:
-		it.Event = new(IStrategyManagerBurnableSharesDecreased)
-		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-			it.fail = err
-			return false
-		}
-		it.Event.Raw = log
-		return true
-
-	case err := <-it.sub.Err():
-		it.done = true
-		it.fail = err
-		return it.Next()
-	}
-}
-
-// Error returns any retrieval or parsing error occurred during filtering.
-func (it *IStrategyManagerBurnableSharesDecreasedIterator) Error() error {
-	return it.fail
-}
-
-// Close terminates the iteration process, releasing any pending underlying
-// resources.
-func (it *IStrategyManagerBurnableSharesDecreasedIterator) Close() error {
-	it.sub.Unsubscribe()
-	return nil
-}
-
-// IStrategyManagerBurnableSharesDecreased represents a BurnableSharesDecreased event raised by the IStrategyManager contract.
-type IStrategyManagerBurnableSharesDecreased struct {
-	Strategy common.Address
-	Shares   *big.Int
-	Raw      types.Log // Blockchain specific contextual infos
-}
-
-// FilterBurnableSharesDecreased is a free log retrieval operation binding the contract event 0xd9d082c3ec4f3a3ffa55c324939a06407f5fbcb87d5e0ce3b9508c92c84ed839.
-//
-// Solidity: event BurnableSharesDecreased(address strategy, uint256 shares)
-func (_IStrategyManager *IStrategyManagerFilterer) FilterBurnableSharesDecreased(opts *bind.FilterOpts) (*IStrategyManagerBurnableSharesDecreasedIterator, error) {
-
-	logs, sub, err := _IStrategyManager.contract.FilterLogs(opts, "BurnableSharesDecreased")
-	if err != nil {
-		return nil, err
-	}
-	return &IStrategyManagerBurnableSharesDecreasedIterator{contract: _IStrategyManager.contract, event: "BurnableSharesDecreased", logs: logs, sub: sub}, nil
-}
-
-// WatchBurnableSharesDecreased is a free log subscription operation binding the contract event 0xd9d082c3ec4f3a3ffa55c324939a06407f5fbcb87d5e0ce3b9508c92c84ed839.
-//
-// Solidity: event BurnableSharesDecreased(address strategy, uint256 shares)
-func (_IStrategyManager *IStrategyManagerFilterer) WatchBurnableSharesDecreased(opts *bind.WatchOpts, sink chan<- *IStrategyManagerBurnableSharesDecreased) (event.Subscription, error) {
-
-	logs, sub, err := _IStrategyManager.contract.WatchLogs(opts, "BurnableSharesDecreased")
-	if err != nil {
-		return nil, err
-	}
-	return event.NewSubscription(func(quit <-chan struct{}) error {
-		defer sub.Unsubscribe()
-		for {
-			select {
-			case log := <-logs:
-				// New log arrived, parse the event and forward to the user
-				event := new(IStrategyManagerBurnableSharesDecreased)
-				if err := _IStrategyManager.contract.UnpackLog(event, "BurnableSharesDecreased", log); err != nil {
-					return err
-				}
-				event.Raw = log
-
-				select {
-				case sink <- event:
-				case err := <-sub.Err():
-					return err
-				case <-quit:
-					return nil
-				}
-			case err := <-sub.Err():
-				return err
-			case <-quit:
-				return nil
-			}
-		}
-	}), nil
-}
-
-// ParseBurnableSharesDecreased is a log parse operation binding the contract event 0xd9d082c3ec4f3a3ffa55c324939a06407f5fbcb87d5e0ce3b9508c92c84ed839.
-//
-// Solidity: event BurnableSharesDecreased(address strategy, uint256 shares)
-func (_IStrategyManager *IStrategyManagerFilterer) ParseBurnableSharesDecreased(log types.Log) (*IStrategyManagerBurnableSharesDecreased, error) {
-	event := new(IStrategyManagerBurnableSharesDecreased)
-	if err := _IStrategyManager.contract.UnpackLog(event, "BurnableSharesDecreased", log); err != nil {
-		return nil, err
-	}
-	event.Raw = log
-	return event, nil
-}
-
-// IStrategyManagerBurnableSharesIncreasedIterator is returned from FilterBurnableSharesIncreased and is used to iterate over the raw logs and unpacked data for BurnableSharesIncreased events raised by the IStrategyManager contract.
-type IStrategyManagerBurnableSharesIncreasedIterator struct {
-	Event *IStrategyManagerBurnableSharesIncreased // Event containing the contract specifics and raw log
-
-	contract *bind.BoundContract // Generic contract to use for unpacking event data
-	event    string              // Event name to use for unpacking event data
-
-	logs chan types.Log        // Log channel receiving the found contract events
-	sub  ethereum.Subscription // Subscription for errors, completion and termination
-	done bool                  // Whether the subscription completed delivering logs
-	fail error                 // Occurred error to stop iteration
-}
-
-// Next advances the iterator to the subsequent event, returning whether there
-// are any more events found. In case of a retrieval or parsing error, false is
-// returned and Error() can be queried for the exact failure.
-func (it *IStrategyManagerBurnableSharesIncreasedIterator) Next() bool {
-	// If the iterator failed, stop iterating
-	if it.fail != nil {
-		return false
-	}
-	// If the iterator completed, deliver directly whatever's available
-	if it.done {
-		select {
-		case log := <-it.logs:
-			it.Event = new(IStrategyManagerBurnableSharesIncreased)
-			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-				it.fail = err
-				return false
-			}
-			it.Event.Raw = log
-			return true
-
-		default:
-			return false
-		}
-	}
-	// Iterator still in progress, wait for either a data or an error event
-	select {
-	case log := <-it.logs:
-		it.Event = new(IStrategyManagerBurnableSharesIncreased)
-		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-			it.fail = err
-			return false
-		}
-		it.Event.Raw = log
-		return true
-
-	case err := <-it.sub.Err():
-		it.done = true
-		it.fail = err
-		return it.Next()
-	}
-}
-
-// Error returns any retrieval or parsing error occurred during filtering.
-func (it *IStrategyManagerBurnableSharesIncreasedIterator) Error() error {
-	return it.fail
-}
-
-// Close terminates the iteration process, releasing any pending underlying
-// resources.
-func (it *IStrategyManagerBurnableSharesIncreasedIterator) Close() error {
-	it.sub.Unsubscribe()
-	return nil
-}
-
-// IStrategyManagerBurnableSharesIncreased represents a BurnableSharesIncreased event raised by the IStrategyManager contract.
-type IStrategyManagerBurnableSharesIncreased struct {
-	Strategy common.Address
-	Shares   *big.Int
-	Raw      types.Log // Blockchain specific contextual infos
-}
-
-// FilterBurnableSharesIncreased is a free log retrieval operation binding the contract event 0xca3e02a4ab7ad3c47a8e36e5a624c30170791726ab720f1babfef21046d953ff.
-//
-// Solidity: event BurnableSharesIncreased(address strategy, uint256 shares)
-func (_IStrategyManager *IStrategyManagerFilterer) FilterBurnableSharesIncreased(opts *bind.FilterOpts) (*IStrategyManagerBurnableSharesIncreasedIterator, error) {
-
-	logs, sub, err := _IStrategyManager.contract.FilterLogs(opts, "BurnableSharesIncreased")
-	if err != nil {
-		return nil, err
-	}
-	return &IStrategyManagerBurnableSharesIncreasedIterator{contract: _IStrategyManager.contract, event: "BurnableSharesIncreased", logs: logs, sub: sub}, nil
-}
-
-// WatchBurnableSharesIncreased is a free log subscription operation binding the contract event 0xca3e02a4ab7ad3c47a8e36e5a624c30170791726ab720f1babfef21046d953ff.
-//
-// Solidity: event BurnableSharesIncreased(address strategy, uint256 shares)
-func (_IStrategyManager *IStrategyManagerFilterer) WatchBurnableSharesIncreased(opts *bind.WatchOpts, sink chan<- *IStrategyManagerBurnableSharesIncreased) (event.Subscription, error) {
-
-	logs, sub, err := _IStrategyManager.contract.WatchLogs(opts, "BurnableSharesIncreased")
-	if err != nil {
-		return nil, err
-	}
-	return event.NewSubscription(func(quit <-chan struct{}) error {
-		defer sub.Unsubscribe()
-		for {
-			select {
-			case log := <-logs:
-				// New log arrived, parse the event and forward to the user
-				event := new(IStrategyManagerBurnableSharesIncreased)
-				if err := _IStrategyManager.contract.UnpackLog(event, "BurnableSharesIncreased", log); err != nil {
-					return err
-				}
-				event.Raw = log
-
-				select {
-				case sink <- event:
-				case err := <-sub.Err():
-					return err
-				case <-quit:
-					return nil
-				}
-			case err := <-sub.Err():
-				return err
-			case <-quit:
-				return nil
-			}
-		}
-	}), nil
-}
-
-// ParseBurnableSharesIncreased is a log parse operation binding the contract event 0xca3e02a4ab7ad3c47a8e36e5a624c30170791726ab720f1babfef21046d953ff.
-//
-// Solidity: event BurnableSharesIncreased(address strategy, uint256 shares)
-func (_IStrategyManager *IStrategyManagerFilterer) ParseBurnableSharesIncreased(log types.Log) (*IStrategyManagerBurnableSharesIncreased, error) {
-	event := new(IStrategyManagerBurnableSharesIncreased)
-	if err := _IStrategyManager.contract.UnpackLog(event, "BurnableSharesIncreased", log); err != nil {
-		return nil, err
-	}
-	event.Raw = log
-	return event, nil
-}
-
 // IStrategyManagerDepositIterator is returned from FilterDeposit and is used to iterate over the raw logs and unpacked data for Deposit events raised by the IStrategyManager contract.
 type IStrategyManagerDepositIterator struct {
 	Event *IStrategyManagerDeposit // Event containing the contract specifics and raw log
@@ -1063,14 +709,15 @@ func (it *IStrategyManagerDepositIterator) Close() error {
 // IStrategyManagerDeposit represents a Deposit event raised by the IStrategyManager contract.
 type IStrategyManagerDeposit struct {
 	Staker   common.Address
+	Token    common.Address
 	Strategy common.Address
 	Shares   *big.Int
 	Raw      types.Log // Blockchain specific contextual infos
 }
 
-// FilterDeposit is a free log retrieval operation binding the contract event 0x5548c837ab068cf56a2c2479df0882a4922fd203edb7517321831d95078c5f62.
+// FilterDeposit is a free log retrieval operation binding the contract event 0x7cfff908a4b583f36430b25d75964c458d8ede8a99bd61be750e97ee1b2f3a96.
 //
-// Solidity: event Deposit(address staker, address strategy, uint256 shares)
+// Solidity: event Deposit(address staker, address token, address strategy, uint256 shares)
 func (_IStrategyManager *IStrategyManagerFilterer) FilterDeposit(opts *bind.FilterOpts) (*IStrategyManagerDepositIterator, error) {
 
 	logs, sub, err := _IStrategyManager.contract.FilterLogs(opts, "Deposit")
@@ -1080,9 +727,9 @@ func (_IStrategyManager *IStrategyManagerFilterer) FilterDeposit(opts *bind.Filt
 	return &IStrategyManagerDepositIterator{contract: _IStrategyManager.contract, event: "Deposit", logs: logs, sub: sub}, nil
 }
 
-// WatchDeposit is a free log subscription operation binding the contract event 0x5548c837ab068cf56a2c2479df0882a4922fd203edb7517321831d95078c5f62.
+// WatchDeposit is a free log subscription operation binding the contract event 0x7cfff908a4b583f36430b25d75964c458d8ede8a99bd61be750e97ee1b2f3a96.
 //
-// Solidity: event Deposit(address staker, address strategy, uint256 shares)
+// Solidity: event Deposit(address staker, address token, address strategy, uint256 shares)
 func (_IStrategyManager *IStrategyManagerFilterer) WatchDeposit(opts *bind.WatchOpts, sink chan<- *IStrategyManagerDeposit) (event.Subscription, error) {
 
 	logs, sub, err := _IStrategyManager.contract.WatchLogs(opts, "Deposit")
@@ -1117,9 +764,9 @@ func (_IStrategyManager *IStrategyManagerFilterer) WatchDeposit(opts *bind.Watch
 	}), nil
 }
 
-// ParseDeposit is a log parse operation binding the contract event 0x5548c837ab068cf56a2c2479df0882a4922fd203edb7517321831d95078c5f62.
+// ParseDeposit is a log parse operation binding the contract event 0x7cfff908a4b583f36430b25d75964c458d8ede8a99bd61be750e97ee1b2f3a96.
 //
-// Solidity: event Deposit(address staker, address strategy, uint256 shares)
+// Solidity: event Deposit(address staker, address token, address strategy, uint256 shares)
 func (_IStrategyManager *IStrategyManagerFilterer) ParseDeposit(log types.Log) (*IStrategyManagerDeposit, error) {
 	event := new(IStrategyManagerDeposit)
 	if err := _IStrategyManager.contract.UnpackLog(event, "Deposit", log); err != nil {

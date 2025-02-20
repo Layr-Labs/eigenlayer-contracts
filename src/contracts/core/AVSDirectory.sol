@@ -5,7 +5,7 @@ import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 
-import "../mixins/SignatureUtilsMixin.sol";
+import "../mixins/SignatureUtils.sol";
 import "../permissions/Pausable.sol";
 import "./AVSDirectoryStorage.sol";
 
@@ -15,7 +15,7 @@ contract AVSDirectory is
     Pausable,
     AVSDirectoryStorage,
     ReentrancyGuardUpgradeable,
-    SignatureUtilsMixin
+    SignatureUtils
 {
     /**
      *
@@ -29,9 +29,8 @@ contract AVSDirectory is
      */
     constructor(
         IDelegationManager _delegation,
-        IPauserRegistry _pauserRegistry,
-        string memory _version
-    ) AVSDirectoryStorage(_delegation) Pausable(_pauserRegistry) SignatureUtilsMixin(_version) {
+        IPauserRegistry _pauserRegistry
+    ) AVSDirectoryStorage(_delegation) Pausable(_pauserRegistry) {
         _disableInitializers();
     }
 
@@ -71,7 +70,7 @@ contract AVSDirectory is
     /// @inheritdoc IAVSDirectory
     function registerOperatorToAVS(
         address operator,
-        ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry memory operatorSignature
+        ISignatureUtils.SignatureWithSaltAndExpiry memory operatorSignature
     ) external override onlyWhenNotPaused(PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS) {
         // Assert that the `operator` is not actively registered to the AVS.
         require(

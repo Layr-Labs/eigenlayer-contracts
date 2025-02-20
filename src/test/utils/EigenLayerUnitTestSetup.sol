@@ -71,7 +71,7 @@ abstract contract EigenLayerUnitTestSetup is Test {
         eigenLayerProxyAdmin = new ProxyAdmin();
 
         // Deploy permission controller
-        permissionControllerImplementation = new PermissionController("v9.9.9");
+        permissionControllerImplementation = new PermissionController();
         permissionController = PermissionController(address(new TransparentUpgradeableProxy(
             address(permissionControllerImplementation),
             address(eigenLayerProxyAdmin),

@@ -10,7 +10,14 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
     /// 2. delegate to an operator
     /// 3. undelegates from the operator
     /// 4. complete their queued withdrawal as tokens
-    function testFuzz_deposit_undelegate_completeAsTokens(uint24 _random) public rand(_random) {   
+    function testFuzz_deposit_undelegate_completeAsTokens(uint24 _random) public {   
+        // When new Users are created, they will choose a random configuration from these params: 
+        _configRand({
+            _randomSeed: _random,
+            _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
+            _userTypes: DEFAULT | ALT_METHODS
+        });
+
         /// 0. Create an operator and a staker with:
         // - some nonzero underlying token balances
         // - corresponding to a random number of strategies
@@ -23,10 +30,10 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
             uint[] memory tokenBalances
         ) = _newRandomStaker();
         (User operator, ,) = _newRandomOperator();
+        // Upgrade contracts if forkType is not local
+        _upgradeEigenLayerContracts();
 
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
-        //delegatable shares equals deposit shares here because no bc slashing
-        uint[] memory delegatableShares = shares;
 
         assert_HasNoDelegatableShares(staker, "staker should not have delegatable shares before depositing");
         assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated");
@@ -40,9 +47,9 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
         check_Delegation_State(staker, operator, strategies, shares);
 
         // 3. Undelegate from an operator
-        Withdrawal[] memory withdrawals = staker.undelegate();
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.undelegate();
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
-        check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, shares, delegatableShares);
+        check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, shares);
 
         // 4. Complete withdrawal
         // Fast forward to when we can complete the withdrawal
@@ -66,7 +73,14 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
     /// 2. delegate to an operator
     /// 3. undelegates from the operator
     /// 4. complete their queued withdrawal as shares
-    function testFuzz_deposit_undelegate_completeAsShares(uint24 _random) public rand(_random) {  
+    function testFuzz_deposit_undelegate_completeAsShares(uint24 _random) public {  
+        // When new Users are created, they will choose a random configuration from these params: 
+        _configRand({
+            _randomSeed: _random,
+            _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
+            _userTypes: DEFAULT | ALT_METHODS
+        });
+
         /// 0. Create an operator and a staker with:
         // - some nonzero underlying token balances
         // - corresponding to a random number of strategies
@@ -79,10 +93,10 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
             uint[] memory tokenBalances
         ) = _newRandomStaker();
         (User operator, ,) = _newRandomOperator();
+        // Upgrade contracts if forkType is not local
+        _upgradeEigenLayerContracts();
 
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
-        //delegatable shares equals deposit shares here because no bc slashing
-        uint[] memory delegatableShares = shares;
 
         assert_HasNoDelegatableShares(staker, "staker should not have delegatable shares before depositing");
         assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated");
@@ -96,9 +110,9 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
         check_Delegation_State(staker, operator, strategies, shares);
 
         // 3. Undelegate from an operator
-        Withdrawal[] memory withdrawals = staker.undelegate();
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.undelegate();
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
-        check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, shares, delegatableShares);
+        check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, shares);
 
         // 4. Complete withdrawal
         // Fast forward to when we can complete the withdrawal
@@ -115,7 +129,14 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
         assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }
 
-    function testFuzz_deposit_delegate_forceUndelegate_completeAsTokens(uint24 _random) public rand(_random) {
+    function testFuzz_deposit_delegate_forceUndelegate_completeAsTokens(uint24 _random) public {
+        // When new Users are created, they will choose a random configuration from these params: 
+        _configRand({
+            _randomSeed: _random,
+            _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
+            _userTypes: DEFAULT | ALT_METHODS
+        });
+
         /// 0. Create an operator and a staker with:
         // - some nonzero underlying token balances
         // - corresponding to a random number of strategies
@@ -128,11 +149,10 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
             uint[] memory tokenBalances
         ) = _newRandomStaker();
         (User operator, ,) = _newRandomOperator();
+        // Upgrade contracts if forkType is not local
+        _upgradeEigenLayerContracts();
 
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
-        //delegatable shares equals deposit shares here because no bc slashing
-        uint[] memory delegatableShares = shares;
-
 
         assert_HasNoDelegatableShares(staker, "staker should not have delegatable shares before depositing");
         assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated");
@@ -146,9 +166,9 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
         check_Delegation_State(staker, operator, strategies, shares);
 
         // 3. Force undelegate
-        Withdrawal[] memory withdrawals = operator.forceUndelegate(staker);
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals = operator.forceUndelegate(staker);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
-        check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, shares, delegatableShares);
+        check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, shares);
 
         // 4. Complete withdrawal
         // Fast forward to when we can complete the withdrawal
@@ -166,7 +186,14 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
         assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }
 
-    function testFuzz_deposit_delegate_forceUndelegate_completeAsShares(uint24 _random) public rand(_random) {
+    function testFuzz_deposit_delegate_forceUndelegate_completeAsShares(uint24 _random) public {
+        // When new Users are created, they will choose a random configuration from these params: 
+        _configRand({
+            _randomSeed: _random,
+            _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
+            _userTypes: DEFAULT | ALT_METHODS
+        });
+
         /// 0. Create an operator and a staker with:
         // - some nonzero underlying token balances
         // - corresponding to a random number of strategies
@@ -179,10 +206,10 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
             uint[] memory tokenBalances
         ) = _newRandomStaker();
         (User operator, ,) = _newRandomOperator();
+        // Upgrade contracts if forkType is not local
+        _upgradeEigenLayerContracts();
 
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
-        //delegatable shares equals deposit shares here because no bc slashing
-        uint[] memory delegatableShares = shares;
 
         assert_HasNoDelegatableShares(staker, "staker should not have delegatable shares before depositing");
         assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated");
@@ -196,9 +223,9 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
         check_Delegation_State(staker, operator, strategies, shares);
 
         // 3. Force undelegate
-        Withdrawal[] memory withdrawals = operator.forceUndelegate(staker);
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals = operator.forceUndelegate(staker);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
-        check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, shares, delegatableShares);
+        check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, shares);
 
         // 4. Complete withdrawal
         // Fast forward to when we can complete the withdrawal
@@ -216,8 +243,9 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
 
     function testFuzz_deposit_delegate_undelegate_completeAsTokens_Max_Strategies(
         uint24 _random
-    ) public rand(_random) {
-        _configAssetTypes(HOLDS_MAX);
+    ) public {
+        _configRand({_randomSeed: _random, _assetTypes: HOLDS_MAX, _userTypes: DEFAULT});
+        _upgradeEigenLayerContracts(); // Upgrade contracts if forkType is not local
 
         (User staker, IStrategy[] memory strategies, uint256[] memory tokenBalances) = _newRandomStaker();
         (User operator,,) = _newRandomOperator();
@@ -225,8 +253,6 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
         if (forkType == LOCAL) assertEq(strategies.length, 33, "sanity");
 
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
-        //delegatable shares equals deposit shares here because no bc slashing
-        uint[] memory delegatableShares = shares;
 
         assert_HasNoDelegatableShares(staker, "staker should not have delegatable shares before depositing");
         assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated");
@@ -240,9 +266,9 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationCheckUti
         check_Delegation_State(staker, operator, strategies, shares);
 
         // 3. Undelegate from an operator
-        Withdrawal[] memory withdrawals = staker.undelegate();
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.undelegate();
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
-        check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, shares, delegatableShares);
+        check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, shares);
 
         // 4. Complete withdrawal
         // Fast forward to when we can complete the withdrawal
