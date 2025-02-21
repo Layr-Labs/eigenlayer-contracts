@@ -1942,6 +1942,16 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         assertLt(curBCSF, prevBCSF, err);
     }
 
+    function assert_Snap_BCSF_Unchanged(
+        User staker,
+        string memory err
+    ) internal {
+        uint64 curBCSF = _getBeaconChainSlashingFactor(staker);
+        uint64 prevBCSF = _getPrevBeaconChainSlashingFactor(staker);
+
+        assertEq(curBCSF, prevBCSF, err);
+    }
+
     /*******************************************************************************
                                 UTILITY METHODS
     *******************************************************************************/
