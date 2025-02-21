@@ -5,7 +5,7 @@ import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 
-import "../mixins/SignatureUtils.sol";
+import "../mixins/SignatureUtilsMixin.sol";
 import "../mixins/PermissionControllerMixin.sol";
 import "../permissions/Pausable.sol";
 import "../libraries/SlashingLib.sol";
@@ -28,8 +28,8 @@ contract DelegationManager is
     Pausable,
     DelegationManagerStorage,
     ReentrancyGuardUpgradeable,
-    SignatureUtils,
-    PermissionControllerMixin
+    PermissionControllerMixin,
+    SignatureUtilsMixin
 {
     using SlashingLib for *;
     using Snapshots for Snapshots.DefaultZeroHistory;
@@ -69,11 +69,13 @@ contract DelegationManager is
         IAllocationManager _allocationManager,
         IPauserRegistry _pauserRegistry,
         IPermissionController _permissionController,
-        uint32 _MIN_WITHDRAWAL_DELAY
+        uint32 _MIN_WITHDRAWAL_DELAY,
+        string memory _version
     )
         DelegationManagerStorage(_strategyManager, _eigenPodManager, _allocationManager, _MIN_WITHDRAWAL_DELAY)
         Pausable(_pauserRegistry)
         PermissionControllerMixin(_permissionController)
+        SignatureUtilsMixin(_version)
     {
         _disableInitializers();
     }
@@ -94,7 +96,7 @@ contract DelegationManager is
         address initDelegationApprover,
         uint32 allocationDelay,
         string calldata metadataURI
-    ) external {
+    ) external nonReentrant {
         require(!isDelegated(msg.sender), ActivelyDelegated());
 
         allocationManager.setAllocationDelay(msg.sender, allocationDelay);
@@ -108,7 +110,10 @@ contract DelegationManager is
     }
 
     /// @inheritdoc IDelegationManager
-    function modifyOperatorDetails(address operator, address newDelegationApprover) external checkCanCall(operator) {
+    function modifyOperatorDetails(
+        address operator,
+        address newDelegationApprover
+    ) external checkCanCall(operator) nonReentrant {
         require(isOperator(operator), OperatorNotRegistered());
         _setDelegationApprover(operator, newDelegationApprover);
     }
@@ -124,7 +129,7 @@ contract DelegationManager is
         address operator,
         SignatureWithExpiry memory approverSignatureAndExpiry,
         bytes32 approverSalt
-    ) public {
+    ) public nonReentrant {
         require(!isDelegated(msg.sender), ActivelyDelegated());
         require(isOperator(operator), OperatorNotRegistered());
 
@@ -143,7 +148,7 @@ contract DelegationManager is
     /// @inheritdoc IDelegationManager
     function undelegate(
         address staker
-    ) public returns (bytes32[] memory withdrawalRoots) {
+    ) public nonReentrant returns (bytes32[] memory withdrawalRoots) {
         // Check that the `staker` can undelegate
         require(isDelegated(staker), NotActivelyDelegated());
         require(!isOperator(staker), OperatorsCannotUndelegate());
@@ -174,7 +179,7 @@ contract DelegationManager is
     /// @inheritdoc IDelegationManager
     function queueWithdrawals(
         QueuedWithdrawalParams[] calldata params
-    ) external onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE) returns (bytes32[] memory) {
+    ) external onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE) nonReentrant returns (bytes32[] memory) {
         bytes32[] memory withdrawalRoots = new bytes32[](params.length);
         address operator = delegatedTo[msg.sender];
 
@@ -226,7 +231,7 @@ contract DelegationManager is
         IStrategy strategy,
         uint256 prevDepositShares,
         uint256 addedShares
-    ) external onlyStrategyManagerOrEigenPodManager {
+    ) external onlyStrategyManagerOrEigenPodManager nonReentrant {
         /// Note: Unlike `decreaseDelegatedShares`, we don't return early if the staker has no operator.
         /// This is because `_increaseDelegation` updates the staker's deposit scaling factor, which we
         /// need to do even if not delegated.
@@ -250,7 +255,7 @@ contract DelegationManager is
         address staker,
         uint256 curDepositShares,
         uint64 beaconChainSlashingFactorDecrease
-    ) external onlyEigenPodManager {
+    ) external onlyEigenPodManager nonReentrant {
         if (!isDelegated(staker)) {
             return;
         }
@@ -280,7 +285,7 @@ contract DelegationManager is
         IStrategy strategy,
         uint64 prevMaxMagnitude,
         uint64 newMaxMagnitude
-    ) external onlyAllocationManager {
+    ) external onlyAllocationManager nonReentrant {
         /// forgefmt: disable-next-item
         uint256 operatorSharesSlashed = SlashingLib.calcSlashedAmount({
             operatorShares: operatorShares[operator][strategy],
@@ -306,6 +311,9 @@ contract DelegationManager is
             strategy: strategy,
             sharesToDecrease: operatorSharesSlashed
         });
+
+        // Emit event for operator shares being slashed
+        emit OperatorSharesSlashed(operator, strategy, totalDepositSharesToBurn);
 
         IShareManager shareManager = _getShareManager(strategy);
         // NOTE: for beaconChainETHStrategy, increased burnable shares currently have no mechanism for burning
@@ -340,24 +348,37 @@ contract DelegationManager is
      *          1) new delegations are not paused (PAUSED_NEW_DELEGATION)
      */
     function _delegate(address staker, address operator) internal onlyWhenNotPaused(PAUSED_NEW_DELEGATION) {
-        // record the delegation relation between the staker and operator, and emit an event
+        // When a staker is not delegated to an operator, their deposit shares are equal to their
+        // withdrawable shares -- except for the beaconChainETH strategy, which is handled below
+        (IStrategy[] memory strategies, uint256[] memory withdrawableShares) = getDepositedShares(staker);
+
+        // Retrieve the amount of slashing experienced by the operator in each strategy so far.
+        // When delegating, we "forgive" the staker for this slashing by adjusting their
+        // deposit scaling factor.
+        uint256[] memory operatorSlashingFactors = _getSlashingFactors(address(0), operator, strategies);
+
+        // Delegate to the operator
         delegatedTo[staker] = operator;
         emit StakerDelegated(staker, operator);
 
-        // read staker's deposited shares and strategies to add to operator's shares
-        // and also update the staker depositScalingFactor for each strategy
-        (IStrategy[] memory strategies, uint256[] memory depositedShares) = getDepositedShares(staker);
-        uint256[] memory slashingFactors = _getSlashingFactors(staker, operator, strategies);
-
         for (uint256 i = 0; i < strategies.length; ++i) {
+            // Special case for beacon chain slashing - ensure the staker's beacon chain slashing is
+            // reflected in the number of shares they delegate.
+            if (strategies[i] == beaconChainETHStrategy) {
+                uint64 stakerBeaconChainSlashing = eigenPodManager.beaconChainSlashingFactor(staker);
+
+                DepositScalingFactor memory dsf = _depositScalingFactor[staker][strategies[i]];
+                withdrawableShares[i] = dsf.calcWithdrawable(withdrawableShares[i], stakerBeaconChainSlashing);
+            }
+
             // forgefmt: disable-next-item
             _increaseDelegation({
                 operator: operator, 
                 staker: staker, 
                 strategy: strategies[i],
                 prevDepositShares: uint256(0),
-                addedShares: depositedShares[i],
-                slashingFactor: slashingFactors[i]
+                addedShares: withdrawableShares[i],
+                slashingFactor: operatorSlashingFactors[i]
             });
         }
     }
@@ -478,7 +499,11 @@ contract DelegationManager is
             }
 
             // Remove deposit shares from EigenPodManager/StrategyManager
-            shareManager.removeDepositShares(staker, strategies[i], depositSharesToWithdraw[i]);
+            uint256 sharesAfter = shareManager.removeDepositShares(staker, strategies[i], depositSharesToWithdraw[i]);
+
+            if (sharesAfter == 0) {
+                _depositScalingFactor[staker][strategies[i]].reset();
+            }
         }
 
         // Create queue entry and increment withdrawal nonce
@@ -498,7 +523,7 @@ contract DelegationManager is
         bytes32 withdrawalRoot = calculateWithdrawalRoot(withdrawal);
 
         pendingWithdrawals[withdrawalRoot] = true;
-        queuedWithdrawals[withdrawalRoot] = withdrawal;
+        _queuedWithdrawals[withdrawalRoot] = withdrawal;
         _stakerQueuedWithdrawalRoots[staker].add(withdrawalRoot);
 
         emit SlashingWithdrawalQueued(withdrawalRoot, withdrawal, withdrawableShares);
@@ -544,7 +569,7 @@ contract DelegationManager is
         // Remove the withdrawal from the queue. Note that for legacy withdrawals, the removals
         // from `_stakerQueuedWithdrawalRoots` and `queuedWithdrawals` will no-op.
         _stakerQueuedWithdrawalRoots[withdrawal.staker].remove(withdrawalRoot);
-        delete queuedWithdrawals[withdrawalRoot];
+        delete _queuedWithdrawals[withdrawalRoot];
         delete pendingWithdrawals[withdrawalRoot];
         emit SlashingWithdrawalCompleted(withdrawalRoot);
 
@@ -562,6 +587,11 @@ contract DelegationManager is
                 slashingFactor: prevSlashingFactors[i]
             });
 
+            //Do nothing if 0 shares to withdraw
+            if (sharesToWithdraw == 0) {
+                continue;
+            }
+
             if (receiveAsTokens) {
                 // Withdraws `shares` in `strategy` to `withdrawer`. If the shares are virtual beaconChainETH shares,
                 // then a call is ultimately forwarded to the `staker`s EigenPod; otherwise a call is ultimately forwarded
@@ -577,7 +607,6 @@ contract DelegationManager is
                 (uint256 prevDepositShares, uint256 addedShares) = shareManager.addShares({
                     staker: withdrawal.staker,
                     strategy: withdrawal.strategies[i],
-                    token: tokens[i],
                     shares: sharesToWithdraw
                 });
 
@@ -674,7 +703,10 @@ contract DelegationManager is
         });
     }
 
-    /// @dev Calculate the amount of slashing to apply to the staker's shares
+    /// @dev Calculate the amount of slashing to apply to the staker's shares.
+    /// @dev Be mindful of rounding in `mulWad()`, it's possible for the slashing factor to round down to 0
+    /// even when both operatorMaxMagnitude and beaconChainSlashingFactor are non-zero. This is only possible
+    /// in an edge case where the operator has a very low maxMagnitude.
     function _getSlashingFactor(
         address staker,
         IStrategy strategy,
@@ -760,11 +792,43 @@ contract DelegationManager is
 
     /// @dev Add to the cumulative withdrawn scaled shares from an operator for a given strategy
     function _addQueuedSlashableShares(address operator, IStrategy strategy, uint256 scaledShares) internal {
-        if (strategy != beaconChainETHStrategy) {
-            uint256 currCumulativeScaledShares = _cumulativeScaledSharesHistory[operator][strategy].latest();
-            _cumulativeScaledSharesHistory[operator][strategy].push({
-                key: uint32(block.number),
-                value: currCumulativeScaledShares + scaledShares
+        uint256 currCumulativeScaledShares = _cumulativeScaledSharesHistory[operator][strategy].latest();
+        _cumulativeScaledSharesHistory[operator][strategy].push({
+            key: uint32(block.number),
+            value: currCumulativeScaledShares + scaledShares
+        });
+    }
+
+    /// @dev Get the shares from a queued withdrawal.
+    function _getSharesByWithdrawalRoot(
+        bytes32 withdrawalRoot
+    ) internal view returns (Withdrawal memory withdrawal, uint256[] memory shares) {
+        withdrawal = _queuedWithdrawals[withdrawalRoot];
+        shares = new uint256[](withdrawal.strategies.length);
+
+        uint32 slashableUntil = withdrawal.startBlock + MIN_WITHDRAWAL_DELAY_BLOCKS;
+
+        // If the slashableUntil block is in the past, read the slashing factors at that block.
+        // Otherwise, read the current slashing factors. Note that if the slashableUntil block is the current block
+        // or in the future, then the slashing factors are still subject to change before the withdrawal is completable,
+        // which may result in fewer shares being withdrawn.
+        uint256[] memory slashingFactors = slashableUntil < uint32(block.number)
+            ? _getSlashingFactorsAtBlock({
+                staker: withdrawal.staker,
+                operator: withdrawal.delegatedTo,
+                strategies: withdrawal.strategies,
+                blockNumber: slashableUntil
+            })
+            : _getSlashingFactors({
+                staker: withdrawal.staker,
+                operator: withdrawal.delegatedTo,
+                strategies: withdrawal.strategies
+            });
+
+        for (uint256 j; j < withdrawal.strategies.length; ++j) {
+            shares[j] = SlashingLib.scaleForCompleteWithdrawal({
+                scaledShares: withdrawal.scaledShares[j],
+                slashingFactor: slashingFactors[j]
             });
         }
     }
@@ -900,11 +964,17 @@ contract DelegationManager is
         return (strategies, shares);
     }
 
+    function queuedWithdrawals(
+        bytes32 withdrawalRoot
+    ) external view returns (Withdrawal memory withdrawal) {
+        return _queuedWithdrawals[withdrawalRoot];
+    }
+
     /// @inheritdoc IDelegationManager
     function getQueuedWithdrawal(
         bytes32 withdrawalRoot
-    ) external view returns (Withdrawal memory) {
-        return queuedWithdrawals[withdrawalRoot];
+    ) external view returns (Withdrawal memory withdrawal, uint256[] memory shares) {
+        (withdrawal, shares) = _getSharesByWithdrawalRoot(withdrawalRoot);
     }
 
     /// @inheritdoc IDelegationManager
@@ -917,37 +987,8 @@ contract DelegationManager is
         withdrawals = new Withdrawal[](totalQueued);
         shares = new uint256[][](totalQueued);
 
-        address operator = delegatedTo[staker];
-
         for (uint256 i; i < totalQueued; ++i) {
-            withdrawals[i] = queuedWithdrawals[withdrawalRoots[i]];
-            shares[i] = new uint256[](withdrawals[i].strategies.length);
-
-            uint32 slashableUntil = withdrawals[i].startBlock + MIN_WITHDRAWAL_DELAY_BLOCKS;
-
-            uint256[] memory slashingFactors;
-            // If slashableUntil block is in the past, read the slashing factors at that block
-            // Otherwise read the current slashing factors. Note that if the slashableUntil block is the current block
-            // or in the future then the slashing factors are still subject to change before the withdrawal is completable
-            // and the shares withdrawn to be less
-            if (slashableUntil < uint32(block.number)) {
-                slashingFactors = _getSlashingFactorsAtBlock({
-                    staker: staker,
-                    operator: operator,
-                    strategies: withdrawals[i].strategies,
-                    blockNumber: slashableUntil
-                });
-            } else {
-                slashingFactors =
-                    _getSlashingFactors({staker: staker, operator: operator, strategies: withdrawals[i].strategies});
-            }
-
-            for (uint256 j; j < withdrawals[i].strategies.length; ++j) {
-                shares[i][j] = SlashingLib.scaleForCompleteWithdrawal({
-                    scaledShares: withdrawals[i].scaledShares[j],
-                    slashingFactor: slashingFactors[j]
-                });
-            }
+            (withdrawals[i], shares[i]) = _getSharesByWithdrawalRoot(withdrawalRoots[i]);
         }
     }
 

@@ -10,6 +10,7 @@ import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import "forge-std/Test.sol";
 
 import "src/contracts/core/DelegationManager.sol";
+import "src/contracts/core/AllocationManager.sol";
 import "src/contracts/core/StrategyManager.sol";
 import "src/contracts/strategies/StrategyFactory.sol";
 import "src/contracts/strategies/StrategyBase.sol";
@@ -30,20 +31,6 @@ import "src/test/integration/users/User_M2.t.sol";
 
 import "script/utils/ExistingDeploymentParser.sol";
 
-// DelegationManager
-uint8 constant PAUSED_NEW_DELEGATION = 0;
-uint8 constant PAUSED_ENTER_WITHDRAWAL_QUEUE = 1;
-uint8 constant PAUSED_EXIT_WITHDRAWAL_QUEUE = 2;
-// StrategyManager
-uint8 constant PAUSED_DEPOSITS = 0;
-// EigenpodManager
-uint8 constant PAUSED_NEW_EIGENPODS = 0;
-uint8 constant PAUSED_WITHDRAW_RESTAKED_ETH = 1;
-uint8 constant PAUSED_EIGENPODS_VERIFY_CREDENTIALS = 2;
-uint8 constant PAUSED_EIGENPODS_VERIFY_BALANCE_UPDATE = 3;
-uint8 constant PAUSED_EIGENPODS_VERIFY_WITHDRAWAL = 4;
-uint8 constant PAUSED_NON_PROOF_WITHDRAWALS = 5;
-
 IStrategy constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 
 abstract contract IntegrationDeployer is ExistingDeploymentParser {
@@ -51,21 +38,20 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
     // Fork ids for specific fork tests
     bool isUpgraded;
-    uint mainnetForkBlock = 20_847_130; // Post PI upgrade
-    uint mainnetForkId;
-    uint holeskyForkBLock = 1_213_950;
-    uint holeskyForkId;
-    uint64 constant DENEB_FORK_TIMESTAMP = 1_705_473_120;
+    uint mainnetForkBlock = 21_616_692; // Post Protocol Council upgrade
+
+    string version = "v9.9.9";
 
     // Beacon chain genesis time when running locally
     // Multiple of 12 for sanity's sake
     uint64 constant GENESIS_TIME_LOCAL = 1 hours * 12;
     uint64 constant GENESIS_TIME_MAINNET = 1_606_824_023;
+    uint64 BEACON_GENESIS_TIME; // set after forkType is decided
+
+    // Beacon chain deposit contract. The BeaconChainMock contract etchs ETHPOSDepositMock code here.
+    IETHPOSDeposit constant DEPOSIT_CONTRACT = IETHPOSDeposit(0x00000000219ab540356cBB839Cbe05303d7705Fa);
 
     uint8 constant NUM_LST_STRATS = 32;
-
-    TimeMachine public timeMachine;
-
     // Lists of strategies used in the system
     //
     // When we select random user assets, we use the `assetType` to determine
@@ -74,16 +60,16 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     IStrategy[] ethStrats; // only has one strat tbh
     IStrategy[] allStrats; // just a combination of the above 2 lists
     IERC20[] allTokens; // `allStrats`, but contains all of the underlying tokens instead
+    uint maxUniqueAssetsHeld;
 
     // If a token is in this mapping, then we will ignore this LST as it causes issues with reading balanceOf
     mapping(address => bool) public tokensNotTested;
 
     // Mock Contracts to deploy
-    ETHPOSDepositMock ethPOSDeposit;
+    TimeMachine public timeMachine;
     BeaconChainMock public beaconChain;
 
     // Admin Addresses
-    address eigenLayerReputedMultisig = address(this); // admin address
     address constant pauser = address(555);
     address constant unpauser = address(556);
 
@@ -96,8 +82,26 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     // Set only once in setUp, if FORK_MAINNET env is set
     uint forkType;
 
-    // Constants
-    uint64 constant MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR = 32e9;
+    /// @dev used to configure randomness and default user/asset types
+    ///
+    /// Tests that want alternate user/asset types can still use this modifier,
+    /// and then configure user/asset types individually using the methods:
+    /// _configAssetTypes(...)
+    /// _configUserTypes(...)
+    ///
+    /// (Alternatively, this modifier can be overwritten)
+    modifier rand(uint24 r) virtual {
+        _configRand({
+            _randomSeed: r,
+            _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
+            _userTypes: DEFAULT | ALT_METHODS
+        });
+
+        // Used to create shared setups between tests
+        _init();
+
+        _;
+    }
 
     constructor() {
         address stETH_Holesky = 0x3F1c547b21f65e10480dE3ad8E19fAAC46C95034;
@@ -112,6 +116,10 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         tokensNotTested[osETH_Holesky] = true;
         tokensNotTested[osETH_Mainnet] = true;
         tokensNotTested[cbETH_Holesky] = true;
+
+        // Use current contracts by default. Upgrade tests are only run with mainnet fork tests
+        // using the `UpgradeTest.t.sol` mixin.
+        isUpgraded = true;
     }
 
     function NAME() public view virtual override returns (string memory) {
@@ -126,33 +134,37 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
      * Note that forkIds are also created so you can make explicit fork tests using cheats.selectFork(forkId)
      */
     function setUp() public virtual {
-        isUpgraded = false;
-
-        /**
-         * env FOUNDRY_PROFILE=forktest forge t --mc Integration
-         *
-         * Running foundry like this will trigger the fork test profile,
-         * lowering fuzz runs and using a remote RPC to test against mainnet state
-         */
-        bool forkMainnet = _hash("forktest") == _hash(cheats.envOr(string("FOUNDRY_PROFILE"), string("default")));
+        bool forkMainnet = isForktest();
 
         if (forkMainnet) {
-            console.log("Setting up `%s` integration tests:", "MAINNET_FORK".green().bold());
-            console.log("RPC:", cheats.rpcUrl("mainnet"));
-            console.log("Block:", mainnetForkBlock);
-
-            cheats.createSelectFork(cheats.rpcUrl("mainnet"), mainnetForkBlock);
             forkType = MAINNET;
+            _setUpMainnet();
         } else {
-            console.log("Setting up `%s` integration tests:", "LOCAL".yellow().bold());
-
             forkType = LOCAL;
+            _setUpLocal();
         }
-
-        _deployOrFetchContracts();
     }
 
-    function _setUpLocal() public virtual {
+    /// @dev Used to create shared setup between tests. This method is called
+    /// when the `rand` modifier is run, before a test starts
+    function _init() internal virtual {
+        return;
+    }
+
+    /**
+     * env FOUNDRY_PROFILE=forktest forge t --mc Integration
+     *
+     * Running foundry like this will trigger the fork test profile,
+     * lowering fuzz runs and using a remote RPC to test against mainnet state
+     */
+    function isForktest() public view returns (bool) {
+        return _hash("forktest") == _hash(cheats.envOr(string("FOUNDRY_PROFILE"), string("default")));
+    }
+
+    /// Deploy EigenLayer locally
+    function _setUpLocal() public noTracing virtual {
+        console.log("Setting up `%s` integration tests:", "LOCAL".yellow().bold());
+
         // Deploy ProxyAdmin
         eigenLayerProxyAdmin = new ProxyAdmin();
         executorMultisig = address(eigenLayerProxyAdmin.owner());
@@ -163,18 +175,120 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         eigenLayerPauserReg = new PauserRegistry(pausers, unpauser);
 
         // Deploy mocks
-        EmptyContract emptyContract = new EmptyContract();
-        ethPOSDeposit = new ETHPOSDepositMock();
+        emptyContract = new EmptyContract();
 
         // Matching parameters to testnet
         DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS = 50;
         DEALLOCATION_DELAY = 50;
         ALLOCATION_CONFIGURATION_DELAY = 75;
 
-        /**
-         * First, deploy upgradeable proxy contracts that **will point** to the implementations. Since the implementation contracts are
-         * not yet deployed, we give these proxies an empty contract as the initial implementation, to act as if they have no code.
-         */
+        REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS = 86400;
+        REWARDS_COORDINATOR_MAX_REWARDS_DURATION = 6048000;
+        REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH = 7776000;
+        REWARDS_COORDINATOR_MAX_FUTURE_LENGTH = 2592000;
+        REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP = 1710979200;
+
+        _deployProxies();
+        _deployImplementations();
+        _upgradeProxies();
+        _initializeProxies();
+
+        // Deploy and configure strategies and tokens
+        for (uint i = 1; i < NUM_LST_STRATS + 1; ++i) {
+            string memory name = string.concat("LST-Strat", cheats.toString(i), " token");
+            string memory symbol = string.concat("lstStrat", cheats.toString(i));
+            // Deploy half of the strategies using the factory.
+            _newStrategyAndToken(name, symbol, 10e50, address(this), i % 2 == 0);
+        }
+
+        ethStrats.push(BEACONCHAIN_ETH_STRAT);
+        allStrats.push(BEACONCHAIN_ETH_STRAT);
+        allTokens.push(NATIVE_ETH);
+        maxUniqueAssetsHeld = allStrats.length;
+
+        // Create time machine and beacon chain. Set block time to beacon chain genesis time
+        BEACON_GENESIS_TIME = GENESIS_TIME_LOCAL;
+        cheats.warp(BEACON_GENESIS_TIME);
+        timeMachine = new TimeMachine();
+        beaconChain = new BeaconChainMock(eigenPodManager, BEACON_GENESIS_TIME);
+    }
+
+    /// Parse existing contracts from mainnet
+    function _setUpMainnet() public noTracing virtual {
+        console.log("Setting up `%s` integration tests:", "MAINNET_FORK".green().bold());
+        console.log("RPC:", cheats.rpcUrl("mainnet"));
+        console.log("Block:", mainnetForkBlock);
+
+        cheats.createSelectFork(cheats.rpcUrl("mainnet"), mainnetForkBlock);
+
+        string memory deploymentInfoPath = "script/configs/mainnet/mainnet-addresses.config.json";
+        _parseDeployedContracts(deploymentInfoPath);
+        string memory existingDeploymentParams = "script/configs/mainnet.json";
+        _parseParamsForIntegrationUpgrade(existingDeploymentParams);
+
+        // Add deployed strategies to lstStrats and allStrats
+        for (uint i; i < deployedStrategyArray.length; i++) {
+            IStrategy strategy = IStrategy(deployedStrategyArray[i]);
+
+            if (tokensNotTested[address(strategy.underlyingToken())]) {
+                continue;
+            }
+
+            // Add to lstStrats and allStrats
+            lstStrats.push(strategy);
+            allStrats.push(strategy);
+            allTokens.push(strategy.underlyingToken());
+        }
+
+        maxUniqueAssetsHeld = allStrats.length;
+        
+        // Create time machine and mock beacon chain
+        BEACON_GENESIS_TIME = GENESIS_TIME_MAINNET;
+        timeMachine = new TimeMachine();
+        beaconChain = new BeaconChainMock(eigenPodManager, BEACON_GENESIS_TIME);
+
+        // Since we haven't done the slashing upgrade on mainnet yet, upgrade mainnet contracts
+        // prior to test. `isUpgraded` is true by default, but is set to false in `UpgradeTest.t.sol`
+        if (isUpgraded) {
+            _upgradeMainnetContracts();
+        }
+    }
+
+    function _upgradeMainnetContracts() public virtual {
+        cheats.startPrank(address(executorMultisig));
+
+        // First, deploy the new contracts as empty contracts
+        emptyContract = new EmptyContract();
+        allocationManager = AllocationManager(
+            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
+        );
+        permissionController = PermissionController(
+            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
+        );
+
+        emit log_named_uint("EPM pause status", eigenPodManager.paused());
+
+        // Deploy new implementation contracts and upgrade all proxies to point to them
+        _deployImplementations();
+        _upgradeProxies();
+
+        emit log_named_uint("EPM pause status", eigenPodManager.paused());
+
+        // Initialize the newly-deployed proxy
+        allocationManager.initialize({
+            initialOwner: executorMultisig,
+            initialPausedStatus: 0
+        });
+
+        cheats.stopPrank();
+
+        ethStrats.push(BEACONCHAIN_ETH_STRAT);
+        allStrats.push(BEACONCHAIN_ETH_STRAT);
+        allTokens.push(NATIVE_ETH);
+        maxUniqueAssetsHeld = allStrats.length;
+    }
+
+    function _deployProxies() public {
         delegationManager = DelegationManager(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
@@ -182,6 +296,9 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
         eigenPodManager = EigenPodManager(
+            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
+        );
+        rewardsCoordinator = RewardsCoordinator(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
         avsDirectory = AVSDirectory(
@@ -196,216 +313,117 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         permissionController = PermissionController(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
-
-        // Deploy EigenPod Contracts
-        eigenPodImplementation = new EigenPod(ethPOSDeposit, eigenPodManager, GENESIS_TIME_LOCAL);
-
-        eigenPodBeacon = new UpgradeableBeacon(address(eigenPodImplementation));
-        // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
-        delegationManagerImplementation = new DelegationManager(strategyManager, eigenPodManager, allocationManager, eigenLayerPauserReg, permissionController, DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS);
-        strategyManagerImplementation = new StrategyManager(delegationManager, eigenLayerPauserReg);
-        eigenPodManagerImplementation = new EigenPodManager(
-            ethPOSDeposit,
-            eigenPodBeacon,
-            delegationManager,
-            eigenLayerPauserReg
-        );
-        strategyManagerImplementation = new StrategyManager(delegationManager, eigenLayerPauserReg);
-        eigenPodManagerImplementation = new EigenPodManager(ethPOSDeposit, eigenPodBeacon, delegationManager, eigenLayerPauserReg);
-        avsDirectoryImplementation = new AVSDirectory(delegationManager, eigenLayerPauserReg);
-        strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg);
-        allocationManagerImplementation = new AllocationManager(delegationManager, eigenLayerPauserReg, permissionController, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
-        permissionControllerImplementation = new PermissionController();
-
-        // Third, upgrade the proxy contracts to point to the implementations
-        // DelegationManager
-        eigenLayerProxyAdmin.upgradeAndCall(
-            ITransparentUpgradeableProxy(payable(address(delegationManager))),
-            address(delegationManagerImplementation),
-            abi.encodeWithSelector(
-                DelegationManager.initialize.selector,
-                eigenLayerReputedMultisig, // initialOwner
-                0 /* initialPausedStatus */
-            )
-        );
-        // StrategyManager
-        eigenLayerProxyAdmin.upgradeAndCall(
-            ITransparentUpgradeableProxy(payable(address(strategyManager))),
-            address(strategyManagerImplementation),
-            abi.encodeWithSelector(
-                StrategyManager.initialize.selector,
-                eigenLayerReputedMultisig, //initialOwner
-                eigenLayerReputedMultisig, //initial whitelister
-                0 // initialPausedStatus
-            )
-        );
-        // EigenPodManager
-        eigenLayerProxyAdmin.upgradeAndCall(
-            ITransparentUpgradeableProxy(payable(address(eigenPodManager))),
-            address(eigenPodManagerImplementation),
-            abi.encodeWithSelector(
-                EigenPodManager.initialize.selector,
-                eigenLayerReputedMultisig, // initialOwner
-                0 // initialPausedStatus
-            )
-        );
-        // AVSDirectory
-        eigenLayerProxyAdmin.upgradeAndCall(
-            ITransparentUpgradeableProxy(payable(address(avsDirectory))),
-            address(avsDirectoryImplementation),
-            abi.encodeWithSelector(
-                AVSDirectory.initialize.selector,
-                eigenLayerReputedMultisig, // initialOwner
-                0 // initialPausedStatus
-            )
-        );
-        // AllocationManager
-        eigenLayerProxyAdmin.upgradeAndCall(
-            ITransparentUpgradeableProxy(payable(address(allocationManager))),
-            address(allocationManagerImplementation),
-            abi.encodeWithSelector(
-                AllocationManager.initialize.selector,
-                eigenLayerReputedMultisig, // initialOwner
-                0 // initialPausedStatus
-            )
-        );
-        //PermissionController
-        eigenLayerProxyAdmin.upgrade(
-            ITransparentUpgradeableProxy(payable(address(permissionController))),
-            address(permissionControllerImplementation)
-        );
-        // Create base strategy implementation and deploy a few strategies
-        baseStrategyImplementation = new StrategyBase(strategyManager, eigenLayerPauserReg);
-
-        // Create a proxy beacon for base strategy implementation
-        strategyBeacon = new UpgradeableBeacon(address(baseStrategyImplementation));
-
-        // Strategy Factory, upgrade and initialized
-        eigenLayerProxyAdmin.upgradeAndCall(
-            ITransparentUpgradeableProxy(payable(address(strategyFactory))),
-            address(strategyFactoryImplementation),
-            abi.encodeWithSelector(
-                StrategyFactory.initialize.selector,
-                eigenLayerReputedMultisig,
-                0, // initial paused status
-                IBeacon(strategyBeacon)
-            )
-        );
-
-        cheats.prank(eigenLayerReputedMultisig);
-        strategyManager.setStrategyWhitelister(address(strategyFactory));
-
-        for (uint i = 1; i < NUM_LST_STRATS + 1; ++i) {
-            string memory name = string.concat("LST-Strat", cheats.toString(i), " token");
-            string memory symbol = string.concat("lstStrat", cheats.toString(i));
-            // Deploy half of the strategies using the factory.
-            _newStrategyAndToken(name, symbol, 10e50, address(this), i % 2 == 0);
-        }
-
-        ethStrats.push(BEACONCHAIN_ETH_STRAT);
-        allStrats.push(BEACONCHAIN_ETH_STRAT);
-        allTokens.push(NATIVE_ETH);
-
-        // Create time machine and beacon chain. Set block time to beacon chain genesis time
-        // TODO: update if needed to sane timestamp
-        cheats.warp(GENESIS_TIME_LOCAL);
-        timeMachine = new TimeMachine();
-        beaconChain = new BeaconChainMock(eigenPodManager, GENESIS_TIME_LOCAL);
+        eigenPodBeacon = new UpgradeableBeacon(address(emptyContract));
+        strategyBeacon = new UpgradeableBeacon(address(emptyContract));
     }
 
-    /**
-     * @notice deploy current implementation contracts and upgrade the existing proxy EigenLayer contracts
-     * on Mainnet. Setup for integration tests on mainnet fork.
-     *
-     * Note that beacon chain oracle and eth deposit contracts are mocked and pointed to different addresses for these tests.
-     */
-    function _upgradeMainnetContracts() public virtual {
-        cheats.startPrank(address(executorMultisig));
-
-        ethPOSDeposit = new ETHPOSDepositMock();
-        ETHPOSDepositAddress = address(ethPOSDeposit); // overwrite for upgrade checks later
-
-        // First, deploy the new contracts as empty contracts
-        emptyContract = new EmptyContract();
-        allocationManager = AllocationManager(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
+    /// Deploy an implementation contract for each contract in the system
+    function _deployImplementations() public {
+        allocationManagerImplementation = new AllocationManager(
+            delegationManager, 
+            eigenLayerPauserReg, 
+            permissionController, 
+            DEALLOCATION_DELAY, 
+            ALLOCATION_CONFIGURATION_DELAY,
+            version
         );
-        permissionController = PermissionController(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
+        permissionControllerImplementation = new PermissionController(version);
+        delegationManagerImplementation = new DelegationManager(
+            strategyManager, 
+            eigenPodManager, 
+            allocationManager, 
+            eigenLayerPauserReg, 
+            permissionController, 
+            DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS,
+            version
         );
-
-        // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
-        allocationManagerImplementation = new AllocationManager(delegationManager, eigenLayerPauserReg, permissionController, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
-        permissionControllerImplementation = new PermissionController();
-        delegationManagerImplementation = new DelegationManager(strategyManager, eigenPodManager, allocationManager, eigenLayerPauserReg, permissionController, DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS);
-        strategyManagerImplementation = new StrategyManager(delegationManager, eigenLayerPauserReg);
+        strategyManagerImplementation = new StrategyManager(delegationManager, eigenLayerPauserReg, version);
         rewardsCoordinatorImplementation = new RewardsCoordinator(
-            delegationManager,
-            strategyManager,
-            allocationManager,
-            eigenLayerPauserReg,
-            permissionController,
-            REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
-            REWARDS_COORDINATOR_MAX_REWARDS_DURATION,
-            REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH,
-            REWARDS_COORDINATOR_MAX_FUTURE_LENGTH,
-            REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP
+            IRewardsCoordinatorTypes.RewardsCoordinatorConstructorParams({
+                delegationManager: delegationManager,
+                strategyManager: strategyManager,
+                allocationManager: allocationManager,
+                pauserRegistry: eigenLayerPauserReg,
+                permissionController: permissionController,
+                CALCULATION_INTERVAL_SECONDS: REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
+                MAX_REWARDS_DURATION: REWARDS_COORDINATOR_MAX_REWARDS_DURATION,
+                MAX_RETROACTIVE_LENGTH: REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH,
+                MAX_FUTURE_LENGTH: REWARDS_COORDINATOR_MAX_FUTURE_LENGTH,
+                GENESIS_REWARDS_TIMESTAMP: REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP,
+                version: version
+            })
         );
-        avsDirectoryImplementation = new AVSDirectory(delegationManager, eigenLayerPauserReg);
+        avsDirectoryImplementation = new AVSDirectory(delegationManager, eigenLayerPauserReg, version);
         eigenPodManagerImplementation = new EigenPodManager(
-            ethPOSDeposit,
+            DEPOSIT_CONTRACT,
             eigenPodBeacon,
             delegationManager,
-            eigenLayerPauserReg
+            eigenLayerPauserReg,
+            "v9.9.9"
         );
-        eigenPodImplementation = new EigenPod(ethPOSDeposit, eigenPodManager, GENESIS_TIME_MAINNET);
-        strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg);
-        baseStrategyImplementation = new StrategyBase(strategyManager, eigenLayerPauserReg);
+        strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg, "v9.9.9");
 
-        // Third, upgrade the proxy contracts to point to the implementations
-        
-        // Initialize the newly deployed contracts
-        eigenLayerProxyAdmin.upgradeAndCall(
-            ITransparentUpgradeableProxy(payable(address(allocationManager))),
-            address(allocationManagerImplementation),
-            abi.encodeWithSelector(
-                AllocationManager.initialize.selector,
-                executorMultisig,
-                0 // initialPausedStatus
-            )
+        // Beacon implementations
+        eigenPodImplementation = new EigenPod(DEPOSIT_CONTRACT, eigenPodManager, BEACON_GENESIS_TIME, "v9.9.9");
+        baseStrategyImplementation = new StrategyBase(strategyManager, eigenLayerPauserReg, "v9.9.9");
+
+        // Pre-longtail StrategyBaseTVLLimits implementation
+        // TODO - need to update ExistingDeploymentParser
+    }
+
+    function _upgradeProxies() public noTracing {
+        // DelegationManager
+        eigenLayerProxyAdmin.upgrade(
+            ITransparentUpgradeableProxy(payable(address(delegationManager))),
+            address(delegationManagerImplementation)
         );
+
+        // StrategyManager
+        eigenLayerProxyAdmin.upgrade(
+            ITransparentUpgradeableProxy(payable(address(strategyManager))),
+            address(strategyManagerImplementation)
+        );
+
+        // EigenPodManager
+        eigenLayerProxyAdmin.upgrade(
+            ITransparentUpgradeableProxy(payable(address(eigenPodManager))),
+            address(eigenPodManagerImplementation)
+        );
+
+        // RewardsCoordinator
+        eigenLayerProxyAdmin.upgrade(
+            ITransparentUpgradeableProxy(payable(address(rewardsCoordinator))), 
+            address(rewardsCoordinatorImplementation)
+        );
+
+        // AVSDirectory
+        eigenLayerProxyAdmin.upgrade(
+            ITransparentUpgradeableProxy(payable(address(avsDirectory))),
+            address(avsDirectoryImplementation)
+        );
+
+        // AllocationManager
+        eigenLayerProxyAdmin.upgrade(
+            ITransparentUpgradeableProxy(payable(address(allocationManager))),
+            address(allocationManagerImplementation)
+        );
+
+        // PermissionController
         eigenLayerProxyAdmin.upgrade(
             ITransparentUpgradeableProxy(payable(address(permissionController))),
             address(permissionControllerImplementation)
         );
 
-        // DelegationManager
-        eigenLayerProxyAdmin.upgrade(
-            ITransparentUpgradeableProxy(payable(address(delegationManager))), address(delegationManagerImplementation)
-        );
-        // StrategyManager
-        eigenLayerProxyAdmin.upgrade(
-            ITransparentUpgradeableProxy(payable(address(strategyManager))), address(strategyManagerImplementation)
-        );
-        // RewardsCoordinator
-        eigenLayerProxyAdmin.upgrade(
-            ITransparentUpgradeableProxy(payable(address(rewardsCoordinator))), address(rewardsCoordinatorImplementation)
-        );
-        // AVSDirectory 
-        eigenLayerProxyAdmin.upgrade(
-            ITransparentUpgradeableProxy(payable(address(avsDirectory))), address(avsDirectoryImplementation)
-        );
-        // EigenPodManager
-        eigenLayerProxyAdmin.upgrade(
-            ITransparentUpgradeableProxy(payable(address(eigenPodManager))), address(eigenPodManagerImplementation)
-        );
-        // EigenPod
-        eigenPodBeacon.upgradeTo(address(eigenPodImplementation));
         // StrategyFactory
         eigenLayerProxyAdmin.upgrade(
-            ITransparentUpgradeableProxy(payable(address(strategyFactory))), address(strategyFactoryImplementation)
+            ITransparentUpgradeableProxy(payable(address(strategyFactory))),
+            address(strategyFactoryImplementation)
         );
-        // Strategy Beacon
+
+        // EigenPod beacon
+        eigenPodBeacon.upgradeTo(address(eigenPodImplementation));
+
+        // StrategyBase Beacon
         strategyBeacon.upgradeTo(address(baseStrategyImplementation));
 
         // Upgrade All deployed strategy contracts to new base strategy
@@ -416,98 +434,40 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
                 address(baseStrategyImplementation)
             );
         }
-
-        // Third, unpause core contracts
-        delegationManager.unpause(0);
-        eigenPodManager.unpause(0);
-        strategyManager.unpause(0);
-
-        cheats.stopPrank();
-
-        ethStrats.push(BEACONCHAIN_ETH_STRAT);
-        allStrats.push(BEACONCHAIN_ETH_STRAT);
-        allTokens.push(NATIVE_ETH);
     }
 
-    /**
-     * @notice deploy current implementation contracts and upgrade the existing proxy EigenLayer contracts
-     * on Holesky. Setup for integration tests on Holesky fork.
-     *
-     * Note that beacon chain oracle and eth deposit contracts are mocked and pointed to different addresses for these tests.
-     */
-    function _upgradeHoleskyContracts() public virtual {
-        cheats.startPrank(address(executorMultisig));
+    function _initializeProxies() public noTracing {
+        delegationManager.initialize({
+            initialOwner: executorMultisig,
+            initialPausedStatus: 0
+        });
 
-        ethPOSDeposit = new ETHPOSDepositMock();
-        ETHPOSDepositAddress = address(ethPOSDeposit); // overwrite for upgrade checks later
+        strategyManager.initialize({
+            initialOwner: executorMultisig,
+            initialStrategyWhitelister: address(strategyFactory),
+            initialPausedStatus: 0
+        });
 
-        // Deploy EigenPod Contracts
-        eigenPodImplementation = new EigenPod(ethPOSDeposit, eigenPodManager, 0);
-        eigenPodBeacon.upgradeTo(address(eigenPodImplementation));
-        // Deploy AVSDirectory, contract has not been deployed on mainnet yet
-        avsDirectory = AVSDirectory(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
-        );
+        eigenPodManager.initialize({
+            initialOwner: executorMultisig,
+            _initPausedStatus: 0
+        });
 
-        // First, deploy the *implementation* contracts, using the *proxy contracts* as inputs
-        delegationManagerImplementation = new DelegationManager(strategyManager, eigenPodManager, allocationManager, eigenLayerPauserReg, permissionController, DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS);
-        strategyManagerImplementation = new StrategyManager(delegationManager, eigenLayerPauserReg);
-        eigenPodManagerImplementation = new EigenPodManager(
-            ethPOSDeposit,
-            eigenPodBeacon,
-            delegationManager,
-            eigenLayerPauserReg
-        );
-        strategyManagerImplementation = new StrategyManager(delegationManager, eigenLayerPauserReg);
-        eigenPodManagerImplementation = new EigenPodManager(ethPOSDeposit, eigenPodBeacon, delegationManager, eigenLayerPauserReg);
-        avsDirectoryImplementation = new AVSDirectory(delegationManager, eigenLayerPauserReg);
+        avsDirectory.initialize({
+            initialOwner: executorMultisig,
+            initialPausedStatus: 0
+        });
 
-        // Second, upgrade the proxy contracts to point to the implementations
-        // DelegationManager
-        eigenLayerProxyAdmin.upgrade(
-            ITransparentUpgradeableProxy(payable(address(delegationManager))), address(delegationManagerImplementation)
-        );
-        // StrategyManager
-        eigenLayerProxyAdmin.upgrade(
-            ITransparentUpgradeableProxy(payable(address(strategyManager))), address(strategyManagerImplementation)
-        );
-        // EigenPodManager
-        eigenLayerProxyAdmin.upgrade(
-            ITransparentUpgradeableProxy(payable(address(eigenPodManager))), address(eigenPodManagerImplementation)
-        );
-        // AVSDirectory, upgrade and initialized
-        eigenLayerProxyAdmin.upgradeAndCall(
-            ITransparentUpgradeableProxy(payable(address(avsDirectory))),
-            address(avsDirectoryImplementation),
-            abi.encodeWithSelector(
-                AVSDirectory.initialize.selector,
-                executorMultisig,
-                0 // initialPausedStatus
-            )
-        );
+        allocationManager.initialize({
+            initialOwner: executorMultisig,
+            initialPausedStatus: 0
+        });
 
-        // Create base strategy implementation and deploy a few strategies
-        baseStrategyImplementation = new StrategyBase(strategyManager, eigenLayerPauserReg);
-
-        // Upgrade All deployed strategy contracts to new base strategy
-        for (uint i = 0; i < numStrategiesDeployed; i++) {
-            // Upgrade existing strategy
-            eigenLayerProxyAdmin.upgrade(
-                ITransparentUpgradeableProxy(payable(address(deployedStrategyArray[i]))),
-                address(baseStrategyImplementation)
-            );
-        }
-
-        // Third, unpause core contracts
-        delegationManager.unpause(0);
-        eigenPodManager.unpause(0);
-        strategyManager.unpause(0);
-
-        cheats.stopPrank();
-
-        ethStrats.push(BEACONCHAIN_ETH_STRAT);
-        allStrats.push(BEACONCHAIN_ETH_STRAT);
-        allTokens.push(NATIVE_ETH);
+        strategyFactory.initialize({
+            _initialOwner: executorMultisig,
+            _initialPausedStatus: 0,
+            _strategyBeacon: strategyBeacon
+        });
     }
 
     /// @dev Deploy a strategy and its underlying token, push to global lists of tokens/strategies, and whitelist
@@ -518,7 +478,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         uint initialSupply,
         address owner,
         bool useFactory
-    ) internal {
+    ) internal noTracing {
         IERC20 underlyingToken = new ERC20PresetFixedSupply(tokenName, tokenSymbol, initialSupply, owner);
 
         StrategyBase strategy;
@@ -541,15 +501,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         IStrategy[] memory strategies = new IStrategy[](1);
         strategies[0] = strategy;
 
-        if (forkType == MAINNET) {
-            cheats.prank(strategyManager.strategyWhitelister());
-            IStrategyManager_DeprecatedM1(address(strategyManager)).addStrategiesToDepositWhitelist(strategies);
-            cheats.prank(eigenLayerPauserReg.unpauser());
-            StrategyBaseTVLLimits(address(strategy)).setTVLLimits(type(uint).max, type(uint).max);
-        } else {
-            cheats.prank(strategyManager.strategyWhitelister());
-            strategyManager.addStrategiesToDepositWhitelist(strategies);
-        }
+        cheats.prank(strategyManager.strategyWhitelister());
+        strategyManager.addStrategiesToDepositWhitelist(strategies);
 
         // Add to lstStrats and allStrats
         lstStrats.push(strategy);
@@ -557,100 +510,33 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         allTokens.push(underlyingToken);
     }
 
-    function _configRand(uint24 _randomSeed, uint _assetTypes, uint _userTypes) internal {
+    function _configRand(uint24 _randomSeed, uint _assetTypes, uint _userTypes) private noTracing {
         // Using uint24 for the seed type so that if a test fails, it's easier
         // to manually use the seed to replay the same test.
         random = _hash(_randomSeed);
         
         // Convert flag bitmaps to bytes of set bits for easy use with _randUint
-        assetTypes = _bitmapToBytes(_assetTypes);
-        userTypes = _bitmapToBytes(_userTypes);
-
-        assertTrue(assetTypes.length != 0, "_configRand: no asset types selected");
-        assertTrue(userTypes.length != 0, "_configRand: no user types selected");
+        _configAssetTypes(_assetTypes);
+        _configUserTypes(_userTypes);
     }
 
-    /**
-     * Depending on the forkType, either deploy contracts locally or parse existing contracts
-     * from network.
-     *
-     * Note: for non-LOCAL forktypes, upgrade of contracts will be performed after user initialization.
-     */
-    function _deployOrFetchContracts() internal {
-        if (forkType == LOCAL) {
-            _setUpLocal();
-            // Set Upgraded as local setup deploys most up to date contracts
-            isUpgraded = true;
-        } else if (forkType == MAINNET) {
-            // cheats.selectFork(mainnetForkId);
-            string memory deploymentInfoPath = "script/configs/mainnet/mainnet-addresses.config.json";
-            _parseDeployedContracts(deploymentInfoPath);
-            string memory existingDeploymentParams = "script/configs/mainnet.json";
-            _parseParamsForIntegrationUpgrade(existingDeploymentParams);
+    function _configAssetTypes(uint _assetTypes) internal {
+        assetTypes = _bitmapToBytes(_assetTypes);
+        assertTrue(assetTypes.length != 0, "_configRand: no asset types selected");
+    }
 
-            // Unpause to enable deposits and withdrawals for initializing random user state
-            cheats.prank(eigenLayerPauserReg.unpauser());
-            strategyManager.unpause(0);
-
-            // Add deployed strategies to lstStrats and allStrats
-            for (uint i; i < deployedStrategyArray.length; i++) {
-                IStrategy strategy = IStrategy(deployedStrategyArray[i]);
-
-                if (tokensNotTested[address(strategy.underlyingToken())]) {
-                    continue;
-                }
-
-                // Add to lstStrats and allStrats
-                lstStrats.push(strategy);
-                allStrats.push(strategy);
-                allTokens.push(strategy.underlyingToken());
-            }
-
-            // Create time machine and mock beacon chain
-            timeMachine = new TimeMachine();
-            beaconChain = new BeaconChainMock(eigenPodManager, GENESIS_TIME_MAINNET);
-        } else if (forkType == HOLESKY) {
-            revert("_deployOrFetchContracts - holesky tests currently broken sorry");
-            // // cheats.selectFork(holeskyForkId);
-            // string memory deploymentInfoPath = "script/configs/holesky/Holesky_current_deployment.config.json";
-            // _parseDeployedContracts(deploymentInfoPath);
-
-            // // Add deployed strategies to lstStrats and allStrats
-            // for (uint i; i < deployedStrategyArray.length; i++) {
-            //     IStrategy strategy = IStrategy(deployedStrategyArray[i]);
-
-            //     if (tokensNotTested[address(strategy.underlyingToken())]) {
-            //         continue;
-            //     }
-
-            //     // Add to lstStrats and allStrats
-            //     lstStrats.push(strategy);
-            //     allStrats.push(strategy);
-            //     allTokens.push(strategy.underlyingToken());
-            // }
-
-            // // Update deposit contract to be a mock
-            // ethPOSDeposit = new ETHPOSDepositMock();
-            // eigenPodImplementation = new EigenPod(
-            //     ethPOSDeposit,
-            //     eigenPodImplementation.delayedWithdrawalRouter(),
-            //     eigenPodImplementation.eigenPodManager(),
-            //     eigenPodImplementation.MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR(),
-            //     0
-            // );
-            // // Create time machine and set block timestamp forward so we can create EigenPod proofs in the past
-            // timeMachine = new TimeMachine();
-            // beaconChainOracle = new BeaconChainOracleMock();
-            // // Create mock beacon chain / proof gen interface
-            // beaconChain = new BeaconChainMock(timeMachine, beaconChainOracle, eigenPodManager);
-
-            // cheats.startPrank(executorMultisig);
-            // eigenPodBeacon.upgradeTo(address(eigenPodImplementation));
-            // eigenPodManager.updateBeaconChainOracle(beaconChainOracle);
-            // cheats.stopPrank();
-        } else {
-            revert("_deployOrFetchContracts: unimplemented forkType");
+    function _configAssetAmounts(uint _maxUniqueAssetsHeld) internal {
+        if (_maxUniqueAssetsHeld > allStrats.length) {
+            _maxUniqueAssetsHeld = allStrats.length;
         }
+
+        maxUniqueAssetsHeld = _maxUniqueAssetsHeld;
+        require(maxUniqueAssetsHeld != 0, "_configAssetAmounts: invalid 0");
+    }
+
+    function _configUserTypes(uint _userTypes) internal {
+        userTypes = _bitmapToBytes(_userTypes);
+        assertTrue(userTypes.length != 0, "_configRand: no user types selected");
     }
 
     /**
@@ -660,7 +546,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
      */
     function _randUser(
         string memory name
-    ) internal returns (User, IStrategy[] memory, uint[] memory) {
+    ) internal noTracing returns (User, IStrategy[] memory, uint[] memory) {
         // For the new user, select what type of assets they'll have and whether
         // they'll use `xWithSignature` methods.
         //
@@ -682,7 +568,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     /// @dev Create a new user without native ETH. See _randUser above for standard usage
     function _randUser_NoETH(
         string memory name
-    ) internal returns (User, IStrategy[] memory, uint[] memory) {
+    ) internal noTracing returns (User, IStrategy[] memory, uint[] memory) {
         // For the new user, select what type of assets they'll have and whether
         // they'll use `xWithSignature` methods.
         //
@@ -709,9 +595,26 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         return (user, strategies, tokenBalances);
     }
 
+    /// @dev Creates a new user without any assets
+    function _randUser_NoAssets(
+        string memory name
+    ) internal noTracing returns (User) {
+        // For the new user, select what type of assets they'll have and whether
+        // they'll use `xWithSignature` methods.
+        //
+        // The values selected here are in the ranges configured via `_configRand`
+        uint userType = _randUserType();
+
+        // Deploy new User contract
+        User user = _genRandUser(name, userType);
+
+        print.user(name, NO_ASSETS, userType, new IStrategy[](0), new uint[](0));
+        return user;
+    }
+
     function _genRandUser(string memory name, uint userType) internal returns (User user) {
         // Create User contract based on userType:
-        if (forkType == LOCAL) {
+        if (forkType == LOCAL || (forkType == MAINNET && isUpgraded)) {
             user = new User(name);
 
             if (userType == DEFAULT) {
@@ -722,26 +625,12 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             } else {
                 revert("_randUser: unimplemented userType");
             }
-        } else if (forkType == MAINNET) {
+        } else if (forkType == MAINNET && !isUpgraded) {
             if (userType == DEFAULT) {
                 user = User(new User_M2(name));
             } else if (userType == ALT_METHODS) {
                 // User will use nonstandard methods like `depositIntoStrategyWithSignature`
                 user = User(new User_M2(name));
-            } else {
-                revert("_randUser: unimplemented userType");
-            }
-        } else if (forkType == HOLESKY) {
-            // User deployment for Holesky is exact same as holesky.
-            // Current Holesky deployment is up to date and no deprecated interfaces have been added.
-
-            user = new User(name);
-
-            if (userType == DEFAULT) {
-                user = new User(name);
-            } else if (userType == ALT_METHODS) {
-                // User will use nonstandard methods like `depositIntoStrategyWithSignature`
-                user = User(new User_AltMethods(name));
             } else {
                 revert("_randUser: unimplemented userType");
             }
@@ -757,8 +646,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             avs = new AVS(name);
         } else if (forkType == MAINNET) {
             avs = new AVS(name);
-        } else if (forkType == HOLESKY) {
-            avs = new AVS(name);
         } else {
             revert("_genRandAVS: unimplemented forkType");
         }
@@ -772,7 +659,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     ///             `tokenBalances` will contain the user's eth balance
     /// HOLDS_ALL - `strategies` will contain ALL initialized strategies AND BEACONCHAIN_ETH_STRAT, and
     ///             `tokenBalances` will contain random token/eth balances accordingly
-    function _dealRandAssets(User user, uint assetType) internal returns (IStrategy[] memory, uint[] memory) {
+    function _dealRandAssets(User user, uint assetType) internal noTracing returns (IStrategy[] memory, uint[] memory) {
         IStrategy[] memory strategies;
         uint[] memory tokenBalances;
         if (assetType == NO_ASSETS) {
@@ -781,7 +668,12 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         } else if (assetType == HOLDS_LST) {
             assetType = HOLDS_LST;
             // Select a random number of assets
-            uint numAssets = _randUint({min: 1, max: lstStrats.length});
+            uint max = lstStrats.length;
+            if (max > maxUniqueAssetsHeld) {
+                max = maxUniqueAssetsHeld;
+            }
+            uint numAssets = _randUint({min: 1, max: max});
+
             strategies = new IStrategy[](numAssets);
             tokenBalances = new uint[](numAssets);
 
@@ -807,7 +699,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             strategies[0] = BEACONCHAIN_ETH_STRAT;
             tokenBalances[0] = amount;
         } else if (assetType == HOLDS_ALL || assetType == HOLDS_MAX) {
-            uint numLSTs = assetType == HOLDS_MAX ? lstStrats.length : 5;
+            uint randHeld = _randUint({min: 1, max: maxUniqueAssetsHeld-1});
+            uint numLSTs = assetType == HOLDS_MAX ? lstStrats.length : randHeld;
             strategies = new IStrategy[](numLSTs + 1);
             tokenBalances = new uint[](numLSTs + 1);
 
@@ -832,30 +725,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             tokenBalances[numLSTs] = amount;
         } else {
             revert("_dealRandAssets: assetType unimplemented");
-        }
-
-        return (strategies, tokenBalances);
-    }
-
-    /// @dev By default will have a assetType of HOLDS_LST
-    function _dealRandAssets_M1(
-        User user
-    ) internal returns (IStrategy[] memory, uint[] memory) {
-        // Select a random number of assets
-        uint numAssets = _randUint({min: 1, max: lstStrats.length});
-
-        IStrategy[] memory strategies = new IStrategy[](numAssets);
-        uint[] memory tokenBalances = new uint[](numAssets);
-
-        // For each asset, award the user a random balance of the underlying token
-        for (uint i = 0; i < numAssets; i++) {
-            IStrategy strat = lstStrats[i];
-            IERC20 underlyingToken = strat.underlyingToken();
-            uint balance = _randUint({min: MIN_BALANCE, max: MAX_BALANCE});
-
-            StdCheats.deal(address(underlyingToken), address(user), balance);
-            tokenBalances[i] = balance;
-            strategies[i] = strat;
         }
 
         return (strategies, tokenBalances);
@@ -928,8 +797,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         
         for (uint i; i < numOpSets; ++i) {
             IStrategy[] memory randomStrategies = _shuffle(allStrats);
-
-            uint numStrategies = _randUint({ min: 1, max: allStrats.length });
+            uint numStrategies = _randUint({ min: 1, max: maxUniqueAssetsHeld });
 
             // Modify the length of the array in memory (thus ignoring remaining elements).
             assembly {

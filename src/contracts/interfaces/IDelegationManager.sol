@@ -3,7 +3,7 @@ pragma solidity >=0.5.0;
 
 import "./IStrategy.sol";
 import "./IPauserRegistry.sol";
-import "./ISignatureUtils.sol";
+import "./ISignatureUtilsMixin.sol";
 import "../libraries/SlashingLib.sol";
 
 interface IDelegationManagerErrors {
@@ -170,6 +170,9 @@ interface IDelegationManagerEvents is IDelegationManagerTypes {
 
     /// @notice Emitted when a queued withdrawal is completed
     event SlashingWithdrawalCompleted(bytes32 withdrawalRoot);
+
+    /// @notice Emitted whenever an operator's shares are slashed for a given strategy
+    event OperatorSharesSlashed(address indexed operator, IStrategy strategy, uint256 totalSlashedShares);
 }
 
 /**
@@ -182,7 +185,7 @@ interface IDelegationManagerEvents is IDelegationManagerTypes {
  * - enabling any staker to delegate its stake to the operator of its choice (a given staker can only delegate to a single operator at a time)
  * - enabling a staker to undelegate its assets from the operator it is delegated to (performed as part of the withdrawal process, initiated through the StrategyManager)
  */
-interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDelegationManagerEvents {
+interface IDelegationManager is ISignatureUtilsMixin, IDelegationManagerErrors, IDelegationManagerEvents {
     /**
      * @dev Initializes the initial owner and paused status.
      */
@@ -468,13 +471,25 @@ interface IDelegationManager is ISignatureUtils, IDelegationManagerErrors, IDele
      */
     function depositScalingFactor(address staker, IStrategy strategy) external view returns (uint256);
 
-    /// @notice Returns the Withdrawal associated with a `withdrawalRoot`, if it exists. NOTE that
-    /// withdrawals queued before the slashing release can NOT be queried with this method.
+    /**
+     * @notice Returns the Withdrawal and corresponding shares associated with a `withdrawalRoot`
+     * @param withdrawalRoot The hash identifying the queued withdrawal
+     * @return withdrawal The withdrawal details
+     * @return shares Array of shares corresponding to each strategy in the withdrawal
+     * @dev The shares are what a user would receive from completing a queued withdrawal, assuming all slashings are applied
+     * @dev Withdrawals queued before the slashing release cannot be queried with this method
+     */
     function getQueuedWithdrawal(
         bytes32 withdrawalRoot
-    ) external view returns (Withdrawal memory);
+    ) external view returns (Withdrawal memory withdrawal, uint256[] memory shares);
 
-    /// @notice Returns a list of pending queued withdrawals for a `staker`, and the `shares` to be withdrawn.
+    /**
+     * @notice Returns all queued withdrawals and their corresponding shares for a staker.
+     * @param staker The address of the staker to query withdrawals for.
+     * @return withdrawals Array of Withdrawal structs containing details about each queued withdrawal.
+     * @return shares 2D array of shares, where each inner array corresponds to the strategies in the withdrawal.
+     * @dev The shares are what a user would receive from completing a queued withdrawal, assuming all slashings are applied.
+     */
     function getQueuedWithdrawals(
         address staker
     ) external view returns (Withdrawal[] memory withdrawals, uint256[][] memory shares);

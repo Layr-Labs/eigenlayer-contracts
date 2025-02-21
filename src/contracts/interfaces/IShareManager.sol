@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../libraries/SlashingLib.sol";
 import "./IStrategy.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
  * @title Interface for a `IShareManager` contract.
@@ -14,19 +14,18 @@ import "./IStrategy.sol";
 interface IShareManager {
     /// @notice Used by the DelegationManager to remove a Staker's shares from a particular strategy when entering the withdrawal queue
     /// @dev strategy must be beaconChainETH when talking to the EigenPodManager
-    function removeDepositShares(address staker, IStrategy strategy, uint256 depositSharesToRemove) external;
+    /// @return updatedShares the staker's deposit shares after decrement
+    function removeDepositShares(
+        address staker,
+        IStrategy strategy,
+        uint256 depositSharesToRemove
+    ) external returns (uint256);
 
     /// @notice Used by the DelegationManager to award a Staker some shares that have passed through the withdrawal queue
     /// @dev strategy must be beaconChainETH when talking to the EigenPodManager
-    /// @dev token is not validated; it is only emitted as an event
     /// @return existingDepositShares the shares the staker had before any were added
     /// @return addedShares the new shares added to the staker's balance
-    function addShares(
-        address staker,
-        IStrategy strategy,
-        IERC20 token,
-        uint256 shares
-    ) external returns (uint256, uint256);
+    function addShares(address staker, IStrategy strategy, uint256 shares) external returns (uint256, uint256);
 
     /// @notice Used by the DelegationManager to convert deposit shares to tokens and send them to a staker
     /// @dev strategy must be beaconChainETH when talking to the EigenPodManager

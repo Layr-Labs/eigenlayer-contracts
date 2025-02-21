@@ -190,13 +190,11 @@ Note that the amount of deposit shares removed while in the withdrawal queue may
 ```solidity
 /// @notice Used by the DelegationManager to award a Staker some shares that have passed through the withdrawal queue
 /// @dev strategy must be beaconChainETH when talking to the EigenPodManager
-/// @dev token is not validated; it is only emitted as an event
 /// @return existingDepositShares the shares the staker had before any were added
 /// @return addedShares the new shares added to the staker's balance
 function addShares(
     address staker,
     IStrategy strategy,
-    IERC20 token,
     uint256 shares
 )
     external
@@ -252,7 +250,7 @@ This method directs the `strategy` to convert the input deposit shares to tokens
 
 ## Burning Slashed Shares
 
-The following methods handle burning of slashed shares:
+Slashed shares are marked as burnable, and anyone can call `burnShares` to transfer them to the default burn address. Burnable shares are stored in `burnableShares`, an [EnumerableMap](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/utils/structs/EnumerableMap.sol) with strategy contract addresses as keys and associated view functions. The following methods handle burning of slashed shares:
 * [`StrategyManager.increaseBurnableShares`](#increaseburnableshares)
 * [`StrategyManager.burnShares`](#burnshares)
 
@@ -296,10 +294,11 @@ function burnShares(
     IStrategy strategy
 )
     external
-    onlyDelegationManager
 ```
 
 Anyone can call this method to burn slashed shares previously added by the `DelegationManager` via `increaseBurnableShares`. This method resets the strategy's burnable shares to 0, and directs the corresponding `strategy` to convert the shares to tokens and transfer them to `DEFAULT_BURN_ADDRESS`, rendering them unrecoverable.
+
+The `strategy` is not called if the strategy had no burnable shares.
 
 *Effects*:
 * Resets the strategy's burnable shares to 0

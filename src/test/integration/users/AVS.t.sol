@@ -71,6 +71,18 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
     /// AllocationManager
     /// -----------------------------------------------------------------------
 
+    function updateAVSMetadataURI(
+        string memory uri
+    ) public createSnapshot {
+        print.method("updateAVSMetadataURI");
+        
+        console.log("Setting AVS metadata URI to: %s", uri);
+        _tryPrankAppointee_AllocationManager(IAllocationManager.updateAVSMetadataURI.selector);
+        allocationManager.updateAVSMetadataURI(address(this), uri);
+        
+        print.gasUsed();
+    }
+
     function createOperatorSets(
         IStrategy[][] memory strategies
     ) public createSnapshot returns (OperatorSet[] memory operatorSets) {
@@ -108,9 +120,40 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
     }
 
     function slashOperator(
-        User operator,
-        uint32 operatorSetId,
-        IStrategy[] memory strategies,
+        SlashingParams memory params
+    ) public createSnapshot {
+
+
+        for (uint256 i; i < params.strategies.length; ++i) {
+            string memory strategyName = params.strategies[i] == beaconChainETHStrategy ? 
+                "Native ETH" : 
+                IERC20Metadata(address(params.strategies[i].underlyingToken())).name();
+
+            print.method(
+                "slashOperator",
+                string.concat(
+                    "{operator: ",
+                    User(payable(params.operator)).NAME_COLORED(),
+                    ", operatorSetId: ",
+                    cheats.toString(params.operatorSetId),
+                    ", strategy: ",
+                    strategyName,
+                    ", wadToSlash: ",
+                    params.wadsToSlash[i].asWad(),
+                    "}"
+                )
+            );
+        }
+
+        _tryPrankAppointee_AllocationManager(IAllocationManager.slashOperator.selector);
+        allocationManager.slashOperator(address(this), params);
+        print.gasUsed();
+    }
+
+    function slashOperator(
+        User operator, 
+        uint32 operatorSetId, 
+        IStrategy[] memory strategies, 
         uint256[] memory wadsToSlash
     ) public createSnapshot returns (SlashingParams memory p) {
         p = SlashingParams({

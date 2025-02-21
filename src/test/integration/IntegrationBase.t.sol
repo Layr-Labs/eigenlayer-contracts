@@ -9,18 +9,20 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "src/contracts/libraries/BeaconChainProofs.sol";
 import "src/contracts/libraries/SlashingLib.sol";
 
+import "src/test/integration/TypeImporter.t.sol";
 import "src/test/integration/IntegrationDeployer.t.sol";
 import "src/test/integration/TimeMachine.t.sol";
 import "src/test/integration/users/User.t.sol";
 import "src/test/integration/users/User_M1.t.sol";
 
-abstract contract IntegrationBase is IntegrationDeployer {
+abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     using StdStyle for *;
     using SlashingLib for *;
+    using Math for uint256;
     using Strings for *;
     using print for *;
 
-    using ArrayLib for IStrategy[];
+    using ArrayLib for *;
 
     uint numStakers = 0;
     uint numOperators = 0;
@@ -49,7 +51,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         IStrategy[] memory strategies;
         uint[] memory tokenBalances;
 
-        if (forkType == MAINNET && !isUpgraded) {
+        if (!isUpgraded) {
             stakerName = string.concat("M2Staker", cheats.toString(numStakers));
 
             (staker, strategies, tokenBalances) = _randUser(stakerName);
@@ -67,6 +69,35 @@ abstract contract IntegrationBase is IntegrationDeployer {
         return (staker, strategies, tokenBalances);
     }
 
+    function _newBasicStaker() internal returns (User, IStrategy[] memory, uint[] memory) {
+        string memory stakerName;
+
+        User staker;
+        IStrategy[] memory strategies;
+        uint[] memory tokenBalances;
+
+        if (!isUpgraded) {
+            stakerName = string.concat("M2Staker", cheats.toString(numStakers));
+
+            (staker, strategies, tokenBalances) = _randUser(stakerName);
+
+            stakersToMigrate.push(staker);
+        } else {
+            stakerName = string.concat("staker", cheats.toString(numStakers));
+
+            (staker, strategies, tokenBalances) = _randUser(stakerName);
+        }
+
+        assert_HasUnderlyingTokenBalances(staker, strategies, tokenBalances, "_newRandomStaker: failed to award token balances");
+
+        numStakers++;
+        assembly { // TODO HACK
+            mstore(strategies, 1)
+            mstore(tokenBalances, 1)
+        }
+        return (staker, strategies, tokenBalances);
+    }
+
     /**
      * @dev Create a new operator according to configured random variants.
      * This user will immediately deposit their randomized assets into eigenlayer.
@@ -79,7 +110,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         uint[] memory tokenBalances;
         uint[] memory addedShares;
 
-        if (forkType == MAINNET && !isUpgraded) {
+        if (!isUpgraded) {
             string memory operatorName = string.concat("M2Operator", numOperators.toString());
 
             // Create an operator for M2.
@@ -102,11 +133,12 @@ abstract contract IntegrationBase is IntegrationDeployer {
             operator.registerAsOperator();
             operator.depositIntoEigenlayer(strategies, tokenBalances);
 
-            // Roll passed the allocation configuration delay
-            rollForward({blocks: ALLOCATION_CONFIGURATION_DELAY});
-        }        
+            // Roll past the allocation configuration delay
+            rollForward({blocks: ALLOCATION_CONFIGURATION_DELAY + 1});
 
-        assert_Snap_Added_Staker_DepositShares(operator, strategies, addedShares, "_newRandomOperator: failed to add delegatable shares");
+            assert_Snap_Added_Staker_DepositShares(operator, strategies, addedShares, "_newRandomOperator: failed to add delegatable shares");
+        }        
+        
         assert_Snap_Added_OperatorShares(operator, strategies, addedShares, "_newRandomOperator: failed to award shares to operator");
         assertTrue(delegationManager.isOperator(address(operator)), "_newRandomOperator: operator should be registered");
 
@@ -114,9 +146,38 @@ abstract contract IntegrationBase is IntegrationDeployer {
         return (operator, strategies, tokenBalances);
     }
 
+    /// @dev Creates a new operator with no assets
+    function _newRandomOperator_NoAssets() internal returns (User) {
+        User operator;
+
+        if (!isUpgraded) {
+            string memory operatorName = string.concat("M2Operator", numOperators.toString());
+
+            // Create an operator for M2.
+            operator = _randUser_NoAssets(operatorName);
+            User_M2(payable(operator)).registerAsOperator_M2();
+
+            operatorsToMigrate.push(operator);
+        } else {
+            string memory operatorName = string.concat("operator", numOperators.toString());
+
+            operator = _randUser_NoAssets(operatorName);
+            operator.registerAsOperator();
+
+            // Roll past the allocation configuration delay
+            rollForward({blocks: ALLOCATION_CONFIGURATION_DELAY + 1});
+        }        
+
+        assertTrue(delegationManager.isOperator(address(operator)), "_newRandomOperator: operator should be registered");
+
+        numOperators++;
+        return operator;
+    }
+
     function _newRandomAVS() internal returns (AVS avs, OperatorSet[] memory operatorSets) {
         string memory avsName = string.concat("avs", numAVSs.toString());
         avs = _genRandAVS(avsName);
+        avs.updateAVSMetadataURI("https://example.com");
         operatorSets = avs.createOperatorSets(_randomStrategies());
         ++numAVSs;
     }
@@ -138,44 +199,16 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
         return (gweiSent, remainderSent);
     }
-
-    /// @dev If we're on mainnet, upgrade contracts to slashing and migrate stakers/operators
-    function _upgradeEigenLayerContracts() internal {
-        if (forkType == MAINNET) {
-            require(!isUpgraded, "_upgradeEigenLayerContracts: already performed slashing upgrade");
-
-            emit log("_upgradeEigenLayerContracts: upgrading mainnet to slashing");
-            _upgradeMainnetContracts();
-
-            // Bump block.timestamp forward to allow verifyWC proofs for migrated pods
-            emit log("advancing block time to start of next epoch:");
-
-            beaconChain.advanceEpoch_NoRewards();
-
-            emit log("======");
-
-            isUpgraded = true;
-            emit log("_upgradeEigenLayerContracts: slashing upgrade complete");
-        } else if (forkType == HOLESKY) {
-            require(!isUpgraded, "_upgradeEigenLayerContracts: already performed slashing upgrade");
-
-            emit log("_upgradeEigenLayerContracts: upgrading holesky to slashing");
-            _upgradeHoleskyContracts();
-
-            isUpgraded = true;
-            emit log("_upgradeEigenLayerContracts: slashing upgrade complete");
-        }
-    }
-
+    
     /// @dev Choose a random subset of validators (selects AT LEAST ONE)
     function _choose(uint40[] memory validators) internal returns (uint40[] memory) {
-        uint rand = _randUint({ min: 1, max: validators.length ** 2 });
+        uint _rand = _randUint({ min: 1, max: validators.length ** 2 });
 
         uint40[] memory result = new uint40[](validators.length);
         uint newLen;
         for (uint i = 0; i < validators.length; i++) {
             // if bit set, add validator
-            if (rand >> i & 1 == 1) {
+            if (_rand >> i & 1 == 1) {
                 result[newLen] = validators[i];
                 newLen++;
             }
@@ -278,7 +311,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
     }
 
     function assert_ValidWithdrawalHashes(
-        IDelegationManagerTypes.Withdrawal[] memory withdrawals,
+        Withdrawal[] memory withdrawals,
         bytes32[] memory withdrawalRoots,
         string memory err
     ) internal view {
@@ -288,7 +321,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
     }
 
     function assert_ValidWithdrawalHash(
-        IDelegationManagerTypes.Withdrawal memory withdrawal,
+        Withdrawal memory withdrawal,
         bytes32 withdrawalRoot,
         string memory err
     ) internal view {
@@ -320,6 +353,229 @@ abstract contract IntegrationBase is IntegrationDeployer {
         EigenPod pod = staker.pod();
         assertEq(pod.currentCheckpoint().podBalanceGwei, expectedPodBalanceGwei, err);
     }
+
+    function assert_MaxEqualsAllocatablePlusEncumbered(
+        User operator,
+        string memory err
+    ) internal view {
+        Magnitudes[] memory mags = _getMagnitudes(operator, allStrats);
+
+        for (uint i = 0; i < allStrats.length; i++) {
+            Magnitudes memory m = mags[i];
+            assertEq(m.max, m.encumbered + m.allocatable, err);
+        }
+    }
+
+    function assert_CurMinSlashableEqualsMinAllocated(
+        User operator,
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal view {
+        uint[] memory minSlashableStake = _getMinSlashableStake(operator, operatorSet, strategies);
+        uint[] memory minAllocatedStake = _getAllocatedStake(operator, operatorSet, strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(minSlashableStake[i], minAllocatedStake[i], err);
+        }
+    }
+
+    function assert_MaxMagsEqualMaxMagsAtCurrentBlock(
+        User operator,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal view {
+        uint64[] memory maxMagnitudes = _getMaxMagnitudes(operator, strategies);
+        uint64[] memory maxAtCurrentBlock = _getMaxMagnitudes(operator, strategies, uint32(block.number));
+
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(maxMagnitudes[i], maxAtCurrentBlock[i], err);
+        }
+    }
+
+    function assert_CurrentMagnitude(
+        User operator,
+        AllocateParams memory params,
+        string memory err
+    ) internal view {
+        Allocation[] memory allocations = _getAllocations(operator, params.operatorSet, params.strategies);
+
+        for (uint i = 0; i < allocations.length; i++) {
+            assertEq(allocations[i].currentMagnitude, params.newMagnitudes[i], err);
+        }
+    }
+
+    function assert_NoPendingModification(
+        User operator,
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal view {
+        Allocation[] memory allocations = _getAllocations(operator, operatorSet, strategies);
+
+        for (uint i = 0; i < allocations.length; i++) {
+            assertEq(0, allocations[i].effectBlock, err);
+        }
+    }
+
+    function assert_HasPendingIncrease(
+        User operator,
+        AllocateParams memory params,
+        string memory err
+    ) internal view {
+        uint32 delay = _getExistingAllocationDelay(operator);
+        Allocation[] memory allocations = _getAllocations(operator, params.operatorSet, params.strategies);
+
+        for (uint i = 0; i < allocations.length; i++) {
+            assertEq(allocations[i].effectBlock, uint32(block.number) + delay, err);
+            assertTrue(allocations[i].currentMagnitude != params.newMagnitudes[i], err);
+            assertGt(allocations[i].pendingDiff, 0, err);
+        }
+    }
+
+    function assert_HasPendingDecrease(
+        User operator,
+        AllocateParams memory params,
+        string memory err
+    ) internal view {
+        uint32 deallocationDelay = allocationManager.DEALLOCATION_DELAY();
+        Allocation[] memory allocations = _getAllocations(operator, params.operatorSet, params.strategies);
+
+        for (uint i = 0; i < allocations.length; i++) {
+            assertEq(allocations[i].effectBlock, uint32(block.number) + deallocationDelay + 1, err);
+            assertTrue(allocations[i].currentMagnitude != params.newMagnitudes[i], err);
+            assertLt(allocations[i].pendingDiff, 0, err);
+        }
+    }
+
+    function assert_IsRegistered(
+        User operator,
+        OperatorSet memory operatorSet,
+        string memory err
+    ) internal view {
+        assertTrue(allocationManager.isMemberOfOperatorSet(address(operator), operatorSet), err);
+    }
+
+    function assert_IsSlashable(
+        User operator,
+        OperatorSet memory operatorSet,
+        string memory err
+    ) internal view {
+        assertTrue(allocationManager.isOperatorSlashable(address(operator), operatorSet), err);
+    }
+
+    function assert_NotSlashable(
+        User operator,
+        OperatorSet memory operatorSet,
+        string memory err
+    ) internal view {
+        assertFalse(allocationManager.isOperatorSlashable(address(operator), operatorSet), err);
+    }
+
+    function assert_IsAllocatedToSet(
+        User operator,
+        OperatorSet memory operatorSet,
+        string memory err
+    ) internal view {
+        assertTrue(allocationManager.getAllocatedSets(address(operator)).contains(operatorSet), err);
+    }
+
+    function assert_IsNotAllocated(
+        User operator,
+        OperatorSet memory operatorSet,
+        string memory err
+    ) internal view {
+        assertEq(allocationManager.getAllocatedStrategies(address(operator), operatorSet).length, 0, err);
+    }
+
+    function assert_IsAllocatedToSetStrats(
+        User operator,
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal view {
+        IStrategy[] memory allocatedStrategies = allocationManager.getAllocatedStrategies(address(operator), operatorSet);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            assertTrue(allocatedStrategies.contains(strategies[i]), err);
+        }
+    }
+
+    function assert_HasAllocatedStake(
+        User operator,
+        AllocateParams memory params,
+        string memory err
+    ) internal view {
+        OperatorSet memory operatorSet = params.operatorSet;
+        IStrategy[] memory strategies = params.strategies;
+        uint64[] memory curMagnitudes = params.newMagnitudes;
+
+        uint64[] memory maxMagnitudes = _getMaxMagnitudes(operator, params.strategies);
+        uint[] memory operatorShares = _getOperatorShares(operator, params.strategies);
+        uint[] memory allocatedStake = _getAllocatedStake(operator, operatorSet, strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            uint expectedAllocated;
+            if (maxMagnitudes[i] == 0) {
+                expectedAllocated = 0;
+            } else {
+                uint slashableProportion = uint(curMagnitudes[i]).divWad(maxMagnitudes[i]);
+                expectedAllocated = operatorShares[i].mulWad(slashableProportion);
+            }
+
+            assertEq(expectedAllocated, allocatedStake[i], err);
+        }
+    }
+
+    function assert_HasSlashableStake(
+        User operator,
+        AllocateParams memory params,
+        string memory err
+    ) internal view {
+        OperatorSet memory operatorSet = params.operatorSet;
+        IStrategy[] memory strategies = params.strategies;
+        uint64[] memory curMagnitudes = params.newMagnitudes;
+
+        uint64[] memory maxMagnitudes = _getMaxMagnitudes(operator, params.strategies);
+        uint[] memory operatorShares = _getOperatorShares(operator, params.strategies);
+        uint[] memory slashableStake = _getMinSlashableStake(operator, operatorSet, strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            uint expectedSlashable;
+            if (maxMagnitudes[i] == 0) {
+                expectedSlashable = 0;
+            } else {
+                uint slashableProportion = uint(curMagnitudes[i]).divWad(maxMagnitudes[i]);
+                expectedSlashable = operatorShares[i].mulWad(slashableProportion);
+            }
+
+            assertEq(expectedSlashable, slashableStake[i], err);
+        }
+    }
+
+    function assert_NoSlashableStake(
+        User operator,
+        OperatorSet memory operatorSet,
+        string memory err
+    ) internal view {
+        IStrategy[] memory strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
+        uint[] memory slashableStake = _getMinSlashableStake(operator, operatorSet, strategies);
+
+        for (uint i = 0; i < slashableStake.length; i++) {
+            assertEq(slashableStake[i], 0, err);
+        }
+    }
+
+    function assert_DSF_Reset(
+        User staker,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal {
+        uint[] memory depositScalingFactors = _getDepositScalingFactors(staker, strategies);
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(depositScalingFactors[i], WAD, err);
+        }
+    }
     
     /*******************************************************************************
                                 SNAPSHOT ASSERTIONS
@@ -330,127 +586,591 @@ abstract contract IntegrationBase is IntegrationDeployer {
                          SNAPSHOT ASSERTIONS: ALLOCATIONS
     *******************************************************************************/
 
-    function assert_Snap_Allocations_Modified(
+    function assert_Snap_Became_Registered(
         User operator,
-        IAllocationManagerTypes.AllocateParams memory allocateParams,
-        bool completed,
+        OperatorSet memory operatorSet,
         string memory err
     ) internal {
-        IAllocationManagerTypes.Allocation[] memory curAllocs = _getAllocations(operator, allocateParams.operatorSet, allocateParams.strategies);
-        IAllocationManagerTypes.Allocation[] memory prevAllocs = _getPrevAllocations(operator, allocateParams.operatorSet, allocateParams.strategies);
-        Magnitudes[] memory curMagnitudes = _getMagnitudes(operator, allocateParams.strategies);
-        Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, allocateParams.strategies);
+        bool curIsMemberOfSet = _getIsMemberOfSet(operator, operatorSet);
+        bool prevIsMemberOfSet = _getPrevIsMemberOfSet(operator, operatorSet);
 
-        for (uint i = 0; i < allocateParams.strategies.length; i++) {
-            IAllocationManagerTypes.Allocation memory curAlloc = curAllocs[i];
-            IAllocationManagerTypes.Allocation memory prevAlloc = prevAllocs[i]; 
-            
-            // Check allocations
-            if (completed) {
-                assertEq(curAlloc.currentMagnitude, allocateParams.newMagnitudes[i], string.concat(err, " (currentMagnitude)"));
-                assertEq(curAlloc.pendingDiff, 0, string.concat(err, " (pendingDiff)"));
-                assertEq(curAlloc.effectBlock, 0, string.concat(err, " (effectBlock)"));
-            } else {
-                assertEq(
-                    curAlloc.currentMagnitude, 
-                    prevAlloc.currentMagnitude, 
-                    string.concat(err, " (currentMagnitude)")
-                );
-                assertEq(
-                    curAlloc.pendingDiff, 
-                    prevAlloc.pendingDiff + int128(int64(allocateParams.newMagnitudes[i])), 
-                    string.concat(err, " (pendingDiff)")
-                );
+        assertFalse(prevIsMemberOfSet, err);
+        assertTrue(curIsMemberOfSet, err);
+    }
 
-                (, uint32 delay) = allocationManager.getAllocationDelay(address(operator));
+    function assert_Snap_Became_Deregistered(
+        User operator,
+        OperatorSet memory operatorSet,
+        string memory err
+    ) internal {
+        bool curIsMemberOfSet = _getIsMemberOfSet(operator, operatorSet);
+        bool prevIsMemberOfSet = _getPrevIsMemberOfSet(operator, operatorSet);
 
-                assertEq(
-                    curAlloc.effectBlock, 
-                    block.number + delay, 
-                    string.concat(err, " (effectBlock)")
-                );
-            }
+        assertTrue(prevIsMemberOfSet, err);
+        assertFalse(curIsMemberOfSet, err);
+    }
 
-            // Check magnitudes
-            Magnitudes memory curMagnitude = curMagnitudes[i];
-            Magnitudes memory prevMagnitude = prevMagnitudes[i];
+    function assert_Snap_Unchanged_Registration(
+        User operator,
+        OperatorSet memory operatorSet,
+        string memory err
+    ) internal {
+        bool curIsMemberOfSet = _getIsMemberOfSet(operator, operatorSet);
+        bool prevIsMemberOfSet = _getPrevIsMemberOfSet(operator, operatorSet);
 
-            // if (isAllocation) ...
-            if (prevAlloc.currentMagnitude < allocateParams.newMagnitudes[i]) {
-                uint256 delta = allocateParams.newMagnitudes[i] - prevAlloc.currentMagnitude;
-                
-                // FIXME: Fails on `testFuzz_deposit_delegate_allocate` when completed == true.
-                if (!completed) {
-                    assertEq(
-                        curMagnitude.encumbered, 
-                        prevMagnitude.encumbered + delta, 
-                        string.concat(err, " (encumbered magnitude)")
-                    );
+        assertEq(prevIsMemberOfSet, curIsMemberOfSet, err);
+    }
+    
+    function assert_Snap_Became_Slashable(
+        User operator,
+        OperatorSet memory operatorSet,
+        string memory err
+    ) internal {
+        bool curIsSlashable = _getIsSlashable(operator, operatorSet);
+        bool prevIsSlashable = _getPrevIsSlashable(operator, operatorSet);
 
-                    assertEq(
-                        curMagnitude.allocatable, 
-                        prevMagnitude.allocatable - delta, 
-                        string.concat(err, " (allocatable magnitude)")
-                    );
-                }
-            } else {
-                uint256 delta = prevAlloc.currentMagnitude - allocateParams.newMagnitudes[i];
+        assertFalse(prevIsSlashable, err);
+        assertTrue(curIsSlashable, err);
+    }
 
-                // if deallocated, and completed
-                if (completed) {
-                    assertEq(
-                        curMagnitude.encumbered - delta, 
-                        prevMagnitude.encumbered, 
-                        string.concat(err, " (encumbered magnitude)")
-                    );
+    function assert_Snap_Remains_Slashable(
+        User operator,
+        OperatorSet memory operatorSet,
+        string memory err
+    ) internal {
+        bool curIsSlashable = _getIsSlashable(operator, operatorSet);
+        bool prevIsSlashable = _getPrevIsSlashable(operator, operatorSet);
 
-                    assertEq(
-                        curMagnitude.allocatable, 
-                        prevMagnitude.allocatable + delta, 
-                        string.concat(err, " (allocatable magnitude)")
-                    );
-                } else {
-                    assertEq(
-                        curMagnitude.encumbered, 
-                        prevMagnitude.encumbered, 
-                        string.concat(err, " (encumbered magnitude)")
-                    );
+        assertTrue(prevIsSlashable, err);
+        assertTrue(curIsSlashable, err);
+    }
 
-                    assertEq(
-                        curMagnitude.allocatable, 
-                        prevMagnitude.allocatable, 
-                        string.concat(err, " (allocatable magnitude)")
-                    );
-                }
-            }
+    function assert_Snap_Unchanged_Slashability(
+        User operator,
+        OperatorSet memory operatorSet,
+        string memory err
+    ) internal {
+        bool curIsSlashable = _getIsSlashable(operator, operatorSet);
+        bool prevIsSlashable = _getPrevIsSlashable(operator, operatorSet);
 
-            // Max magnitude should not have mutated.
-            assertEq(
-                curMagnitude.max, 
-                prevMagnitude.max, 
-                string.concat(err, " (max magnitude)")
-            );
+        assertEq(prevIsSlashable, curIsSlashable, err);
+    }
+
+    function assert_Snap_Unchanged_AllocatedStrats(
+        User operator,
+        OperatorSet memory operatorSet,
+        string memory err
+    ) internal {
+        IStrategy[] memory curAllocatedStrats = _getAllocatedStrats(operator, operatorSet);
+        IStrategy[] memory prevAllocatedStrats = _getPrevAllocatedStrats(operator, operatorSet);
+
+        assertEq(curAllocatedStrats.length, prevAllocatedStrats.length, err);
+
+        for (uint i = 0; i < curAllocatedStrats.length; i++) {
+            assertEq(address(curAllocatedStrats[i]), address(prevAllocatedStrats[i]), err);
+        }
+    }
+
+    function assert_Snap_Unchanged_StrategyAllocations(
+        User operator,
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal {
+        Allocation[] memory curAllocations = _getAllocations(operator, operatorSet, strategies);
+        Allocation[] memory prevAllocations = _getPrevAllocations(operator, operatorSet, strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            Allocation memory curAllocation = curAllocations[i];
+            Allocation memory prevAllocation = prevAllocations[i];
+
+            assertEq(curAllocation.currentMagnitude, prevAllocation.currentMagnitude, err);
+            assertEq(curAllocation.pendingDiff, prevAllocation.pendingDiff, err);
+            assertEq(curAllocation.effectBlock, prevAllocation.effectBlock, err);
+        }
+    }
+
+    function assert_Snap_Added_AllocatedSet(
+        User operator,
+        OperatorSet memory operatorSet,
+        string memory err
+    ) internal {
+        OperatorSet[] memory curAllocatedSets = _getAllocatedSets(operator);
+        OperatorSet[] memory prevAllocatedSets = _getPrevAllocatedSets(operator);
+
+        assertEq(curAllocatedSets.length, prevAllocatedSets.length + 1, err);
+        assertFalse(prevAllocatedSets.contains(operatorSet), err);
+        assertTrue(curAllocatedSets.contains(operatorSet), err);
+    }
+
+    function assert_Snap_Unchanged_AllocatedSets(
+        User operator,
+        string memory err
+    ) internal {
+        OperatorSet[] memory curAllocatedSets = _getAllocatedSets(operator);
+        OperatorSet[] memory prevAllocatedSets = _getPrevAllocatedSets(operator);
+
+        assertEq(curAllocatedSets.length, prevAllocatedSets.length, err);
+    }
+
+    function assert_Snap_Removed_AllocatedSet(
+        User operator,
+        OperatorSet memory operatorSet,
+        string memory err
+    ) internal {
+        OperatorSet[] memory curAllocatedSets = _getAllocatedSets(operator);
+        OperatorSet[] memory prevAllocatedSets = _getPrevAllocatedSets(operator);
+
+        assertEq(curAllocatedSets.length + 1, prevAllocatedSets.length, err);
+        assertTrue(prevAllocatedSets.contains(operatorSet), err);
+        assertFalse(curAllocatedSets.contains(operatorSet), err);
+    }
+
+    function assert_Snap_Added_RegisteredSet(
+        User operator,
+        OperatorSet memory operatorSet,
+        string memory err
+    ) internal {
+        OperatorSet[] memory curRegisteredSets = _getRegisteredSets(operator);
+        OperatorSet[] memory prevRegisteredSets = _getPrevRegisteredSets(operator);
+
+        assertEq(curRegisteredSets.length, prevRegisteredSets.length + 1, err);
+        assertFalse(prevRegisteredSets.contains(operatorSet), err);
+        assertTrue(curRegisteredSets.contains(operatorSet), err);
+    }
+
+    function assert_Snap_Removed_RegisteredSet(
+        User operator,
+        OperatorSet memory operatorSet,
+        string memory err
+    ) internal {
+        OperatorSet[] memory curRegisteredSets = _getRegisteredSets(operator);
+        OperatorSet[] memory prevRegisteredSets = _getPrevRegisteredSets(operator);
+
+        assertEq(curRegisteredSets.length + 1, prevRegisteredSets.length, err);
+        assertTrue(prevRegisteredSets.contains(operatorSet), err);
+        assertFalse(curRegisteredSets.contains(operatorSet), err);
+    }
+
+    function assert_Snap_Unchanged_RegisteredSet(
+        User operator,
+        string memory err
+    ) internal {
+        OperatorSet[] memory curRegisteredSets = _getRegisteredSets(operator);
+        OperatorSet[] memory prevRegisteredSets = _getPrevRegisteredSets(operator);
+
+        assertEq(curRegisteredSets.length, prevRegisteredSets.length, err);
+        for (uint i = 0; i < curRegisteredSets.length; i++) {
+            assertEq(curRegisteredSets[i].avs, prevRegisteredSets[i].avs, err);
+            assertEq(curRegisteredSets[i].id, prevRegisteredSets[i].id, err);
+        }
+    }
+
+    function assert_Snap_Added_MemberOfSet(
+        User operator,
+        OperatorSet memory operatorSet,
+        string memory err
+    ) internal {
+        address[] memory curOperators = _getMembers(operatorSet);
+        address[] memory prevOperators = _getPrevMembers(operatorSet);
+
+        assertEq(curOperators.length, prevOperators.length + 1, err);
+        assertFalse(prevOperators.contains(address(operator)), err);
+        assertTrue(curOperators.contains(address(operator)), err);
+    }
+
+    function assert_Snap_Removed_MemberOfSet(
+        User operator,
+        OperatorSet memory operatorSet,
+        string memory err
+    ) internal {
+        address[] memory curOperators = _getMembers(operatorSet);
+        address[] memory prevOperators = _getPrevMembers(operatorSet);
+
+        assertEq(curOperators.length + 1, prevOperators.length, err);
+        assertTrue(prevOperators.contains(address(operator)), err);
+        assertFalse(curOperators.contains(address(operator)), err);
+    }
+
+    function assert_Snap_Unchanged_MemberOfSet(
+        OperatorSet memory operatorSet,
+        string memory err
+    ) internal {
+        address[] memory curOperators = _getMembers(operatorSet);
+        address[] memory prevOperators = _getPrevMembers(operatorSet);
+
+        assertEq(curOperators.length, prevOperators.length, err);
+        for (uint i = 0; i < curOperators.length; i++) {
+            assertEq(curOperators[i], prevOperators[i], err);
+        }
+    }
+
+    function assert_Snap_StakeBecameSlashable(
+        User operator,
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal {
+        uint[] memory curSlashableStake = _getMinSlashableStake(operator, operatorSet, strategies);
+        uint[] memory prevSlashableStake = _getPrevMinSlashableStake(operator, operatorSet, strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            assertTrue(prevSlashableStake[i] < curSlashableStake[i], err);
+        }
+    }
+
+    function assert_Snap_StakeBecomeUnslashable(
+        User operator,
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal {
+        uint[] memory curSlashableStake = _getMinSlashableStake(operator, operatorSet, strategies);
+        uint[] memory prevSlashableStake = _getPrevMinSlashableStake(operator, operatorSet, strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            assertTrue(prevSlashableStake[i] > curSlashableStake[i], err);
+        }
+    }
+
+    function assert_Snap_Added_SlashableStake(
+        User operator,
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies,
+        uint[] memory slashableShares,
+        string memory err
+    ) internal {
+        uint[] memory curSlashableStake = _getMinSlashableStake(operator, operatorSet, strategies);
+        uint[] memory prevSlashableStake = _getPrevMinSlashableStake(operator, operatorSet, strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(curSlashableStake[i], prevSlashableStake[i] + slashableShares[i], err);
+        }
+    }
+
+    function assert_Snap_Unchanged_SlashableStake(
+        User operator,
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal {
+        uint[] memory curSlashableStake = _getMinSlashableStake(operator, operatorSet, strategies);
+        uint[] memory prevSlashableStake = _getPrevMinSlashableStake(operator, operatorSet, strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(curSlashableStake[i], prevSlashableStake[i], err);
+        }
+    }
+
+    function assert_Snap_Removed_SlashableStake(
+        User operator,
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies,
+        uint[] memory removedSlashableShares,
+        string memory err
+    ) internal {
+        uint[] memory curSlashableStake = _getMinSlashableStake(operator, operatorSet, strategies);
+        uint[] memory prevSlashableStake = _getPrevMinSlashableStake(operator, operatorSet, strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(curSlashableStake[i] + removedSlashableShares[i], prevSlashableStake[i], err);
+        }
+    }
+
+    function assert_Snap_Slashed_SlashableStake(
+        User operator,
+        OperatorSet memory operatorSet,
+        SlashingParams memory params,
+        string memory err
+    ) internal {
+        uint[] memory curSlashableStake = _getMinSlashableStake(operator, operatorSet, params.strategies);
+        uint[] memory prevSlashableStake = _getPrevMinSlashableStake(operator, operatorSet, params.strategies);
+
+        Magnitudes[] memory curMagnitudes = _getMagnitudes(operator, params.strategies);
+        Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, params.strategies);
+
+        for (uint i = 0; i < params.strategies.length; i++) {
+            uint expectedSlashed = SlashingLib.calcSlashedAmount({
+                operatorShares: prevSlashableStake[i],
+                prevMaxMagnitude: prevMagnitudes[i].max,
+                newMaxMagnitude: curMagnitudes[i].max
+            });
+
+            assertEq(curSlashableStake[i], prevSlashableStake[i] - expectedSlashed, err);
+        }
+    }
+
+    function assert_Snap_StakeBecameAllocated(
+        User operator,
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal {
+        uint[] memory curMinAllocatedStake = _getAllocatedStake(operator, operatorSet, strategies);
+        uint[] memory prevMinAllocatedStake = _getPrevAllocatedStake(operator, operatorSet, strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            assertGt(curMinAllocatedStake[i], prevMinAllocatedStake[i], err);
+        }
+    }
+
+    function assert_Snap_StakeBecameDeallocated(
+        User operator,
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal {
+        uint[] memory curMinAllocatedStake = _getAllocatedStake(operator, operatorSet, strategies);
+        uint[] memory prevMinAllocatedStake = _getPrevAllocatedStake(operator, operatorSet, strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            assertLt(curMinAllocatedStake[i], prevMinAllocatedStake[i], err);
+        }
+    }
+
+    function assert_Snap_Unchanged_AllocatedStake(
+        User operator,
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal {
+        uint[] memory curAllocatedStake = _getAllocatedStake(operator, operatorSet, strategies);
+        uint[] memory prevAllocatedStake = _getPrevAllocatedStake(operator, operatorSet, strategies);
+
+        for (uint i = 0; i < curAllocatedStake.length; i++) {
+            assertEq(curAllocatedStake[i], prevAllocatedStake[i], err);
+        }
+    }
+
+    function assert_Snap_Slashed_AllocatedStake(
+        User operator,
+        OperatorSet memory operatorSet,
+        SlashingParams memory params,
+        string memory err
+    ) internal {
+        uint[] memory curAllocatedStake = _getAllocatedStake(operator, operatorSet, params.strategies);
+        uint[] memory prevAllocatedStake = _getPrevAllocatedStake(operator, operatorSet, params.strategies);
+
+        Magnitudes[] memory curMagnitudes = _getMagnitudes(operator, params.strategies);
+        Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, params.strategies);
+
+        for (uint i = 0; i < curAllocatedStake.length; i++) {
+            uint expectedSlashed = SlashingLib.calcSlashedAmount({
+                operatorShares: prevAllocatedStake[i],
+                prevMaxMagnitude: prevMagnitudes[i].max,
+                newMaxMagnitude: curMagnitudes[i].max
+            });
+
+            assertEq(curAllocatedStake[i], prevAllocatedStake[i] - expectedSlashed, err);
+        }
+    }
+
+    function assert_Snap_Added_EncumberedMagnitude(
+        User operator,
+        IStrategy[] memory strategies,
+        uint64[] memory magnitudeAdded,
+        string memory err
+    ) internal {
+        Magnitudes[] memory curMagnitudes = _getMagnitudes(operator, strategies);
+        Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(curMagnitudes[i].encumbered, prevMagnitudes[i].encumbered + magnitudeAdded[i], err);
+        }
+    }
+
+    function assert_Snap_Unchanged_EncumberedMagnitude(
+        User operator,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal {
+        Magnitudes[] memory curMagnitudes = _getMagnitudes(operator, strategies);
+        Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(curMagnitudes[i].encumbered, prevMagnitudes[i].encumbered, err);
+        }
+    }
+
+    function assert_Snap_Removed_EncumberedMagnitude(
+        User operator,
+        IStrategy[] memory strategies,
+        uint64[] memory magnitudeRemoved,
+        string memory err
+    ) internal {
+        Magnitudes[] memory curMagnitudes = _getMagnitudes(operator, strategies);
+        Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(curMagnitudes[i].encumbered + magnitudeRemoved[i], prevMagnitudes[i].encumbered, err);
+        }
+    }
+
+    function assert_Snap_Slashed_EncumberedMagnitude(
+        User operator,
+        SlashingParams memory params,
+        string memory err
+    ) internal {
+        Magnitudes[] memory curMagnitudes = _getMagnitudes(operator, params.strategies);
+        Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, params.strategies);
+
+        for (uint i = 0; i < params.strategies.length; i++) {
+            uint expectedSlashed = prevMagnitudes[i].encumbered.mulWadRoundUp(params.wadsToSlash[i]);
+            assertEq(curMagnitudes[i].encumbered, prevMagnitudes[i].encumbered - expectedSlashed, err);
+        }
+    }
+
+    function assert_Snap_Added_AllocatableMagnitude(
+        User operator,
+        IStrategy[] memory strategies,
+        uint64[] memory magnitudeFreed,
+        string memory err
+    ) internal {
+        Magnitudes[] memory curMagnitudes = _getMagnitudes(operator, strategies);
+        Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(curMagnitudes[i].allocatable, prevMagnitudes[i].allocatable + magnitudeFreed[i], err);
+        }
+    }
+
+    function assert_Snap_Unchanged_AllocatableMagnitude(
+        User operator,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal {
+        Magnitudes[] memory curMagnitudes = _getMagnitudes(operator, strategies);
+        Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(curMagnitudes[i].allocatable, prevMagnitudes[i].allocatable, err);
+        }
+    }
+
+    function assert_Snap_Removed_AllocatableMagnitude(
+        User operator,
+        IStrategy[] memory strategies,
+        uint64[] memory magnitudeRemoved,
+        string memory err
+    ) internal {
+        Magnitudes[] memory curMagnitudes = _getMagnitudes(operator, strategies);
+        Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(curMagnitudes[i].allocatable, prevMagnitudes[i].allocatable - magnitudeRemoved[i], err);
+        }
+    }
+
+    function assert_Snap_Allocated_Magnitude(
+        User operator,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal {
+        Magnitudes[] memory curMagnitudes = _getMagnitudes(operator, strategies);
+        Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, strategies);
+
+        /// Check:
+        /// allocatable increased
+        /// encumbered decreased
+        for (uint i = 0; i < strategies.length; i++) {
+            assertLt(curMagnitudes[i].allocatable, prevMagnitudes[i].allocatable, err);
+            assertGt(curMagnitudes[i].encumbered, prevMagnitudes[i].encumbered, err);
+        }
+    }
+
+    function assert_Snap_Deallocated_Magnitude(
+        User operator,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal {
+        Magnitudes[] memory curMagnitudes = _getMagnitudes(operator, strategies);
+        Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, strategies);
+
+        /// Check:
+        /// allocatable increased
+        /// encumbered decreased
+        for (uint i = 0; i < strategies.length; i++) {
+            assertGt(curMagnitudes[i].allocatable, prevMagnitudes[i].allocatable, err);
+            assertLt(curMagnitudes[i].encumbered, prevMagnitudes[i].encumbered, err);
+        }
+    }
+
+    function assert_Snap_Set_CurrentMagnitude(
+        User operator,
+        AllocateParams memory params,
+        string memory err
+    ) internal {
+        Allocation[] memory curAllocations = _getAllocations(operator, params.operatorSet, params.strategies);
+        Allocation[] memory prevAllocations = _getPrevAllocations(operator, params.operatorSet, params.strategies);
+
+        /// Prev allocation.currentMagnitude should NOT equal newly-set magnitude
+        /// Cur allocation.currentMagnitude SHOULD
+        for (uint i = 0; i < params.strategies.length; i++) {
+            assertTrue(prevAllocations[i].currentMagnitude != params.newMagnitudes[i], err);
+            assertEq(curAllocations[i].currentMagnitude, params.newMagnitudes[i], err);
+        }
+    }
+
+    function assert_Snap_Slashed_Allocation(
+        User operator,
+        OperatorSet memory operatorSet,
+        SlashingParams memory params,
+        string memory err
+    ) internal {
+        Allocation[] memory curAllocations = _getAllocations(operator, operatorSet, params.strategies);
+        Allocation[] memory prevAllocations = _getPrevAllocations(operator, operatorSet, params.strategies);
+
+        for (uint i = 0; i < params.strategies.length; i++) {
+            uint expectedSlashed = prevAllocations[i].currentMagnitude.mulWadRoundUp(params.wadsToSlash[i]);
+            assertEq(curAllocations[i].currentMagnitude, prevAllocations[i].currentMagnitude - expectedSlashed, err);
+        }
+    }
+
+    function assert_Snap_Unchanged_MaxMagnitude(
+        User operator,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal {
+        Magnitudes[] memory curMagnitudes = _getMagnitudes(operator, strategies);
+        Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(curMagnitudes[i].max, prevMagnitudes[i].max, err);
+        }
+    }
+
+    function assert_Snap_Slashed_MaxMagnitude(
+        User operator,
+        SlashingParams memory params,
+        string memory err
+    ) internal {
+        Magnitudes[] memory curMagnitudes = _getMagnitudes(operator, params.strategies);
+        Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, params.strategies);
+
+        for (uint i = 0; i < params.strategies.length; i++) {
+            uint expectedSlashed = prevMagnitudes[i].max.mulWadRoundUp(params.wadsToSlash[i]);
+            assertEq(curMagnitudes[i].max, prevMagnitudes[i].max - expectedSlashed, err);
         }
     }
 
     function assert_Snap_Allocations_Slashed(
-        IAllocationManagerTypes.SlashingParams memory slashingParams,
+        SlashingParams memory slashingParams,
         OperatorSet memory operatorSet,
         bool completed,
         string memory err
     ) internal {
         User op = User(payable(slashingParams.operator));
         
-        IAllocationManagerTypes.Allocation[] memory curAllocs = _getAllocations(op, operatorSet, slashingParams.strategies);
-        IAllocationManagerTypes.Allocation[] memory prevAllocs = _getPrevAllocations(op, operatorSet, slashingParams.strategies);
+        Allocation[] memory curAllocs = _getAllocations(op, operatorSet, slashingParams.strategies);
+        Allocation[] memory prevAllocs = _getPrevAllocations(op, operatorSet, slashingParams.strategies);
         Magnitudes[] memory curMagnitudes = _getMagnitudes(op, slashingParams.strategies);
         Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(op, slashingParams.strategies);
 
-        (, uint32 delay) = allocationManager.getAllocationDelay(slashingParams.operator);
+        uint32 delay = _getExistingAllocationDelay(User(payable(slashingParams.operator)));
 
         for (uint i = 0; i < slashingParams.strategies.length; i++) {
-            IAllocationManagerTypes.Allocation memory curAlloc = curAllocs[i];
-            IAllocationManagerTypes.Allocation memory prevAlloc = prevAllocs[i]; 
+            Allocation memory curAlloc = curAllocs[i];
+            Allocation memory prevAlloc = prevAllocs[i]; 
 
             uint64 slashedMagnitude = uint64(uint256(prevAlloc.currentMagnitude).mulWadRoundUp(slashingParams.wadsToSlash[i]));
             
@@ -518,8 +1238,8 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
     function assert_HasUnderlyingTokenBalances_AfterSlash(
         User staker,
-        IAllocationManagerTypes.AllocateParams memory allocateParams,
-        IAllocationManagerTypes.SlashingParams memory slashingParams,
+        AllocateParams memory allocateParams,
+        SlashingParams memory slashingParams,
         uint[] memory expectedBalances,
         string memory err
     ) internal view {
@@ -545,8 +1265,8 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
     function assert_Snap_StakerWithdrawableShares_AfterSlash(
         User staker,
-        IAllocationManagerTypes.AllocateParams memory allocateParams,
-        IAllocationManagerTypes.SlashingParams memory slashingParams,
+        AllocateParams memory allocateParams,
+        SlashingParams memory slashingParams,
         string memory err
     ) internal {
         uint[] memory curShares = _getWithdrawableShares(staker, allocateParams.strategies);
@@ -604,7 +1324,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
         // For each strategy, check (prev - removed == cur)
         for (uint i = 0; i < strategies.length; i++) {
-            assertEq(prevShares[i] - removedShares[i], curShares[i], err);
+            assertEq(prevShares[i], curShares[i] + removedShares[i], err);
         }
     }
 
@@ -648,6 +1368,47 @@ abstract contract IntegrationBase is IntegrationDeployer {
         }
     }
 
+    function assert_Snap_Slashed_OperatorShares(
+        User operator,
+        SlashingParams memory params,
+        string memory err
+    ) internal {
+        uint[] memory curShares = _getOperatorShares(operator, params.strategies);
+        uint[] memory prevShares = _getPrevOperatorShares(operator, params.strategies);
+
+        Magnitudes[] memory curMagnitudes = _getMagnitudes(operator, params.strategies);
+        Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, params.strategies);
+
+        for (uint i = 0; i < params.strategies.length; i++) {
+            uint expectedSlashed = SlashingLib.calcSlashedAmount({
+                operatorShares: prevShares[i],
+                prevMaxMagnitude: prevMagnitudes[i].max,
+                newMaxMagnitude: curMagnitudes[i].max
+            });
+
+            assertEq(curShares[i], prevShares[i] - expectedSlashed, err);
+        }
+    }
+
+    function assert_Snap_Increased_BurnableShares(
+        User operator,
+        SlashingParams memory params,
+        string memory err
+    ) internal {
+        uint[] memory curBurnable = _getBurnableShares(params.strategies);
+        uint[] memory prevBurnable = _getPrevBurnableShares(params.strategies);
+
+        uint[] memory curShares = _getOperatorShares(operator, params.strategies);
+        uint[] memory prevShares = _getPrevOperatorShares(operator, params.strategies);
+
+        for (uint i = 0; i < params.strategies.length; i++) {
+            uint slashedAtLeast = prevShares[i] - curShares[i];
+
+            // Not factoring in slashable shares in queue here, because that gets more complex (TODO)
+            assertTrue(curBurnable[i] >= (prevBurnable[i] + slashedAtLeast), err);
+        }
+    }
+
     /*******************************************************************************
                             SNAPSHOT ASSERTIONS: STAKER SHARES
     *******************************************************************************/
@@ -673,20 +1434,15 @@ abstract contract IntegrationBase is IntegrationDeployer {
     function assert_Snap_Added_Staker_DepositShares(
         User staker, 
         IStrategy strat, 
-        uint _addedShares,
+        uint addedShares,
         string memory err
     ) internal {
-        IStrategy[] memory strategies = new IStrategy[](1);
-        uint[] memory addedShares = new uint[](1);
-        strategies[0] = strat;
-        addedShares[0] = _addedShares;
-
-        assert_Snap_Added_Staker_DepositShares(staker, strategies, addedShares, err);
+        assert_Snap_Added_Staker_DepositShares(staker, strat.toArray(), addedShares.toArrayU256(), err);
     }
 
     /// @dev Check that the staker has `removedShares` fewer delegatable shares
     /// for each strategy since the last snapshot
-    function assert_Snap_Removed_StakerDepositShares(
+    function assert_Snap_Removed_Staker_DepositShares(
         User staker, 
         IStrategy[] memory strategies, 
         uint[] memory removedShares,
@@ -702,22 +1458,52 @@ abstract contract IntegrationBase is IntegrationDeployer {
         }
     }
 
-    function assert_Snap_Removed_StakerDepositShares(
+    function assert_Snap_Removed_Staker_DepositShares(
         User staker, 
         IStrategy strat, 
-        uint _removedShares,
+        uint removedShares,
         string memory err
     ) internal {
-        IStrategy[] memory strategies = new IStrategy[](1);
-        uint[] memory removedShares = new uint[](1);
-        strategies[0] = strat;
-        removedShares[0] = _removedShares;
+        assert_Snap_Removed_Staker_DepositShares(staker, strat.toArray(), removedShares.toArrayU256(), err);
+    }
 
-        assert_Snap_Removed_StakerDepositShares(staker, strategies, removedShares, err);
+    /// @dev Check that the staker's delegatable shares in ALL strategies have not changed
+    /// since the last snapshot
+    function assert_Snap_Unchanged_Staker_DepositShares(
+        User staker,
+        string memory err
+    ) internal {
+        IStrategy[] memory strategies = allStrats;
+
+        uint[] memory curShares = _getStakerDepositShares(staker, strategies);
+        // Use timewarp to get previous staker shares
+        uint[] memory prevShares = _getPrevStakerDepositShares(staker, strategies);
+
+        // For each strategy, check (prev == cur)
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(prevShares[i], curShares[i], err);
+        }
+    }
+
+    /// @dev Check that the staker's withdrawable shares have increased by `addedShares`
+    function assert_Snap_Added_Staker_WithdrawableShares(
+        User staker, 
+        IStrategy[] memory strategies, 
+        uint[] memory addedShares,
+        string memory err
+    ) internal {
+        uint[] memory curShares = _getStakerWithdrawableShares(staker, strategies);
+        // Use timewarp to get previous staker shares
+        uint[] memory prevShares = _getPrevStakerWithdrawableShares(staker, strategies);
+
+        // For each strategy, check (prev - removed == cur)
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(prevShares[i] + addedShares[i], curShares[i], err);
+        }
     }
 
     /// @dev Check that the staker's withdrawable shares have decreased by `removedShares`
-    function assert_Snap_Removed_StakerWithdrawableShares(
+    function assert_Snap_Removed_Staker_WithdrawableShares(
         User staker, 
         IStrategy[] memory strategies, 
         uint[] memory removedShares,
@@ -733,18 +1519,44 @@ abstract contract IntegrationBase is IntegrationDeployer {
         }
     }
 
-    function assert_Snap_Removed_StakerWithdrawableShares(
+    /// @dev Check that all the staker's withdrawable shares have been removed
+    function assert_Snap_RemovedAll_Staker_WithdrawableShares(
         User staker, 
-        IStrategy strat, 
-        uint _removedShares,
+        IStrategy[] memory strategies, 
         string memory err
     ) internal {
-        IStrategy[] memory strategies = new IStrategy[](1);
-        uint[] memory removedShares = new uint[](1);
-        strategies[0] = strat;
-        removedShares[0] = _removedShares;
+        uint[] memory curShares = _getStakerWithdrawableShares(staker, strategies);
+        // For each strategy, check all shares have been withdrawn
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(0, curShares[i], err);
+        }
+    }
 
-        assert_Snap_Removed_StakerWithdrawableShares(staker, strategies, removedShares, err);
+    function assert_Snap_Removed_Staker_WithdrawableShares(
+        User staker, 
+        IStrategy strat, 
+        uint removedShares,
+        string memory err
+    ) internal {
+        assert_Snap_Removed_Staker_WithdrawableShares(staker, strat.toArray(), removedShares.toArrayU256(), err);
+    }
+
+    /// @dev Check that the staker's withdrawable shares have decreased by `removedShares`
+    /// FIX THIS WHEN WORKING ON ROUNDING ISSUES
+    function assert_Snap_Unchanged_Staker_WithdrawableShares_Delegation(
+        User staker,
+        string memory err
+    ) internal {
+        IStrategy[] memory strategies = allStrats;
+
+        uint[] memory curShares = _getStakerWithdrawableShares(staker, strategies);
+        // Use timewarp to get previous staker shares
+        uint[] memory prevShares = _getPrevStakerWithdrawableShares(staker, strategies);
+
+        // For each strategy, check (prev - removed == cur)
+        for (uint i = 0; i < strategies.length; i++) {
+            assertApproxEqAbs(prevShares[i], curShares[i], 100000, err);
+        }
     }
 
     /// @dev Check that the staker's withdrawable shares have decreased by at least `removedShares`
@@ -771,30 +1583,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         uint removedShares,
         string memory err
     ) internal {
-        IStrategy[] memory strategies = new IStrategy[](1);
-        uint[] memory removedSharesArr = new uint[](1);
-        strategies[0] = strat;
-        removedSharesArr[0] = removedShares;
-
-        assert_Snap_Removed_Staker_WithdrawableShares_AtLeast(staker, strategies, removedSharesArr, err);
-    }
-
-    /// @dev Check that the staker's delegatable shares in ALL strategies have not changed
-    /// since the last snapshot
-    function assert_Snap_Unchanged_StakerDepositShares(
-        User staker,
-        string memory err
-    ) internal {
-        IStrategy[] memory strategies = allStrats;
-
-        uint[] memory curShares = _getStakerDepositShares(staker, strategies);
-        // Use timewarp to get previous staker shares
-        uint[] memory prevShares = _getPrevStakerDepositShares(staker, strategies);
-
-        // For each strategy, check (prev == cur)
-        for (uint i = 0; i < strategies.length; i++) {
-            assertEq(prevShares[i], curShares[i], err);
-        }
+        assert_Snap_Removed_Staker_WithdrawableShares_AtLeast(staker, strat.toArray(), removedShares.toArrayU256(), err);
     }
 
     function assert_Snap_Delta_StakerShares(
@@ -925,7 +1714,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
     function assert_Snap_Added_QueuedWithdrawals(
         User staker, 
-        IDelegationManagerTypes.Withdrawal[] memory withdrawals,
+        Withdrawal[] memory withdrawals,
         string memory err
     ) internal {
         uint curQueuedWithdrawals = _getCumulativeWithdrawals(staker);
@@ -937,7 +1726,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
     function assert_Snap_Added_QueuedWithdrawal(
         User staker, 
-        IDelegationManagerTypes.Withdrawal memory /*withdrawal*/,
+        Withdrawal memory /*withdrawal*/,
         string memory err
     ) internal {
         uint curQueuedWithdrawal = _getCumulativeWithdrawals(staker);
@@ -990,12 +1779,12 @@ abstract contract IntegrationBase is IntegrationDeployer {
     ) internal {
         bytes32[] memory pubkeyHashes = beaconChain.getPubkeyHashes(addedValidators);
 
-        IEigenPodTypes.VALIDATOR_STATUS[] memory curStatuses = _getValidatorStatuses(staker, pubkeyHashes);
-        IEigenPodTypes.VALIDATOR_STATUS[] memory prevStatuses = _getPrevValidatorStatuses(staker, pubkeyHashes);
+        VALIDATOR_STATUS[] memory curStatuses = _getValidatorStatuses(staker, pubkeyHashes);
+        VALIDATOR_STATUS[] memory prevStatuses = _getPrevValidatorStatuses(staker, pubkeyHashes);
 
         for (uint i = 0; i < curStatuses.length; i++) {
-            assertTrue(prevStatuses[i] == IEigenPodTypes.VALIDATOR_STATUS.INACTIVE, err);
-            assertTrue(curStatuses[i] == IEigenPodTypes.VALIDATOR_STATUS.ACTIVE, err);
+            assertTrue(prevStatuses[i] == VALIDATOR_STATUS.INACTIVE, err);
+            assertTrue(curStatuses[i] == VALIDATOR_STATUS.ACTIVE, err);
         }
     }
 
@@ -1006,12 +1795,12 @@ abstract contract IntegrationBase is IntegrationDeployer {
     ) internal {
         bytes32[] memory pubkeyHashes = beaconChain.getPubkeyHashes(exitedValidators);
 
-        IEigenPodTypes.VALIDATOR_STATUS[] memory curStatuses = _getValidatorStatuses(staker, pubkeyHashes);
-        IEigenPodTypes.VALIDATOR_STATUS[] memory prevStatuses = _getPrevValidatorStatuses(staker, pubkeyHashes);
+        VALIDATOR_STATUS[] memory curStatuses = _getValidatorStatuses(staker, pubkeyHashes);
+        VALIDATOR_STATUS[] memory prevStatuses = _getPrevValidatorStatuses(staker, pubkeyHashes);
 
         for (uint i = 0; i < curStatuses.length; i++) {
-            assertTrue(prevStatuses[i] == IEigenPodTypes.VALIDATOR_STATUS.ACTIVE, err);
-            assertTrue(curStatuses[i] == IEigenPodTypes.VALIDATOR_STATUS.WITHDRAWN, err);
+            assertTrue(prevStatuses[i] == VALIDATOR_STATUS.ACTIVE, err);
+            assertTrue(curStatuses[i] == VALIDATOR_STATUS.WITHDRAWN, err);
         }
     }
 
@@ -1106,6 +1895,183 @@ abstract contract IntegrationBase is IntegrationDeployer {
                                 UTILITY METHODS
     *******************************************************************************/
     
+    /// @dev Fetches the opreator's allocation delay; asserts that it is set
+    function _getExistingAllocationDelay(User operator) internal view returns (uint32) {
+        (bool isSet, uint32 delay) = allocationManager.getAllocationDelay(address(operator));
+        assertTrue(isSet, "_getExistingAllocationDelay: expected allocation delay to be set");
+
+        return delay;
+    }
+
+    /// @dev Generate params to allocate all available magnitude to each strategy in the operator set
+    function _genAllocation_AllAvailable(
+        User operator, 
+        OperatorSet memory operatorSet
+    ) internal view returns (AllocateParams memory params) {
+        return _genAllocation_AllAvailable({
+            operator: operator,
+            operatorSet: operatorSet,
+            strategies: allocationManager.getStrategiesInOperatorSet(operatorSet)
+        });
+    }
+
+    /// @dev Generate params to allocate all available magnitude to each strategy in the operator set
+    function _genAllocation_AllAvailable(
+        User operator, 
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies
+    ) internal view returns (AllocateParams memory params) {
+        params.operatorSet = operatorSet;
+        params.strategies = strategies;
+        params.newMagnitudes = new uint64[](params.strategies.length);
+
+        for (uint i = 0; i < params.strategies.length; i++) {
+            IStrategy strategy = params.strategies[i];
+            params.newMagnitudes[i] = allocationManager.getMaxMagnitude(address(operator), strategy);
+        }
+    }
+
+    /// @dev Gen params to allocate half of available magnitude to each strategy in the operator set
+    /// returns the params to complete this allocation
+    function _genAllocation_HalfAvailable(
+        User operator, 
+        OperatorSet memory operatorSet
+    ) internal view returns (AllocateParams memory params) {
+        return _genAllocation_HalfAvailable({
+            operator: operator, 
+            operatorSet: operatorSet, 
+            strategies: allocationManager.getStrategiesInOperatorSet(operatorSet)
+        });
+    }
+
+    /// @dev Gen params to allocate half of available magnitude to each strategy in the operator set
+    /// returns the params to complete this allocation
+    function _genAllocation_HalfAvailable(
+        User operator, 
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies
+    ) internal view returns (AllocateParams memory params) {
+        params.operatorSet = operatorSet;
+        params.strategies = strategies;
+        params.newMagnitudes = new uint64[](params.strategies.length);
+
+        Allocation[] memory allocations = _getAllocations(operator, operatorSet, strategies);
+        Magnitudes[] memory magnitudes = _getMagnitudes(operator, strategies);
+
+        for (uint i = 0; i < params.strategies.length; i++) {
+            uint64 halfAvailable = uint64(magnitudes[i].allocatable) / 2;
+            params.newMagnitudes[i] = allocations[i].currentMagnitude + halfAvailable;
+        }
+    }
+
+    /// @dev Generate params to allocate a random portion of available magnitude to each strategy
+    /// in the operator set. All strategies will have a nonzero allocation, and the minimum allocation
+    /// will be 10% of available magnitude
+    function _genAllocation_Rand(
+        User operator,
+        OperatorSet memory operatorSet
+    ) internal returns (AllocateParams memory params) {
+        params.operatorSet = operatorSet;
+        params.strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
+        params.newMagnitudes = new uint64[](params.strategies.length);
+
+        Allocation[] memory allocations = _getAllocations(operator, operatorSet, params.strategies);
+        Magnitudes[] memory magnitudes = _getMagnitudes(operator, params.strategies);
+
+        for (uint i = 0; i < params.strategies.length; i++) {
+            // minimum of 10%, maximum of 100%. increments of 10%.
+            uint r = _randUint({min: 1, max: 10});
+            uint64 allocation = uint64(magnitudes[i].allocatable) / uint64(r);
+
+            params.newMagnitudes[i] = allocations[i].currentMagnitude + allocation;
+        }
+    }
+
+    /// @dev Generates params for a half deallocation from all strategies the operator is allocated to in the operator set
+    function _genDeallocation_HalfRemaining(
+        User operator,
+        OperatorSet memory operatorSet
+    ) internal view returns (AllocateParams memory params) {
+        return _genDeallocation_HalfRemaining({
+            operator: operator, 
+            operatorSet: operatorSet, 
+            strategies: allocationManager.getStrategiesInOperatorSet(operatorSet)
+        });
+    }
+
+    /// @dev Generates params for a half deallocation from all strategies the operator is allocated to in the operator set
+    function _genDeallocation_HalfRemaining(
+        User operator,
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies
+    ) internal view returns (AllocateParams memory params) {
+        params.operatorSet = operatorSet;
+        params.strategies = strategies;
+        params.newMagnitudes = new uint64[](params.strategies.length);
+
+        for (uint i = 0; i < params.strategies.length; i++) {
+            IStrategy strategy = params.strategies[i];
+            params.newMagnitudes[i] = allocationManager.getEncumberedMagnitude(address(operator), strategy) / 2;
+        }
+    }
+
+    /// @dev Generates params for a full deallocation from all strategies the operator is allocated to in the operator set
+    function _genDeallocation_Full(
+        User operator,
+        OperatorSet memory operatorSet
+    ) internal view returns (AllocateParams memory params) {
+        return _genDeallocation_Full({
+            operator: operator, 
+            operatorSet: operatorSet, 
+            strategies: allocationManager.getStrategiesInOperatorSet(operatorSet)
+        });
+    }
+
+    /// @dev Generates params for a full deallocation from all strategies the operator is allocated to in the operator set
+    function _genDeallocation_Full(
+        User operator,
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies
+    ) internal pure returns (AllocateParams memory params) {
+        params.operatorSet = operatorSet;
+        params.strategies = strategies;
+        params.newMagnitudes = new uint64[](params.strategies.length);
+    }
+
+    /// Generate random slashing between 1 and 99%
+    function _genSlashing_Rand(
+        User operator,
+        OperatorSet memory operatorSet
+    ) internal returns (SlashingParams memory params) {
+        params.operator = address(operator);
+        params.operatorSetId = operatorSet.id;
+        params.description = "genSlashing_Half";
+        params.strategies = allocationManager.getStrategiesInOperatorSet(operatorSet).sort();
+        params.wadsToSlash = new uint[](params.strategies.length);
+
+        /// 1% * rand(1, 99)
+        uint slashWad = 1e16 * _randUint({min: 1, max: 99});
+
+        for (uint i = 0; i < params.wadsToSlash.length; i++) {
+            params.wadsToSlash[i] = slashWad;
+        }
+    }
+
+    function _genSlashing_Half(
+        User operator,
+        OperatorSet memory operatorSet
+    ) internal view returns (SlashingParams memory params) {
+        params.operator = address(operator);
+        params.operatorSetId = operatorSet.id;
+        params.description = "genSlashing_Half";
+        params.strategies = allocationManager.getStrategiesInOperatorSet(operatorSet).sort();
+        params.wadsToSlash = new uint[](params.strategies.length);
+
+        for (uint i = 0; i < params.wadsToSlash.length; i++) {
+            params.wadsToSlash[i] = 1e17;
+        }
+    }
+
     function _randWadToSlash() internal returns (uint) {
         return _randUint({ min: 0.01 ether, max: 1 ether });
     }
@@ -1133,6 +2099,45 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
         return (strategies.sort(), wadsToSlash);
     }
+
+    function _strategiesAndWadsForFullSlash(
+        OperatorSet memory operatorSet
+    ) internal view returns (IStrategy[] memory strategies, uint[] memory wadsToSlash) {
+        // Get list of all strategies in an operator set.
+        strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
+
+        wadsToSlash = new uint[](strategies.length);
+
+        for (uint i; i < strategies.length; ++i) {
+            wadsToSlash[i] = 1 ether;
+        }
+
+        return(strategies.sort(), wadsToSlash);
+    }
+
+    function _strategiesAndWadsForRandFullSlash(
+        OperatorSet memory operatorSet
+    ) internal returns (IStrategy[] memory strategies, uint[] memory wadsToSlash) {
+        // Get list of all strategies in an operator set.
+        strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
+
+        // Randomly select a subset of strategies to slash.
+        uint len = _randUint({ min: 1, max: strategies.length });
+
+        // Update length of strategies array.
+        assembly {
+            mstore(strategies, len)
+        }
+        
+        wadsToSlash = new uint[](len);
+        
+        // Fully slash each selected strategy
+        for (uint i; i < len; ++i) {
+            wadsToSlash[i] = 1 ether;
+        }
+
+        return (strategies.sort(), wadsToSlash);
+    }     
     
     function _randMagnitudes(uint64 sum, uint256 len) internal returns (uint64[] memory magnitudes) {
         magnitudes = new uint64[](len);
@@ -1148,6 +2153,18 @@ abstract contract IntegrationBase is IntegrationDeployer {
                 magnitudes[i] = uint64(_randUint(0, remaining / (len - i)));
                 remaining -= magnitudes[i];
             }
+        }
+    }
+
+    function _maxMagnitudes(OperatorSet memory operatorSet, User operator) internal view returns (uint64[] memory magnitudes) {
+        IStrategy[] memory strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
+        uint256 len = strategies.length;
+        magnitudes = new uint64[](len);
+
+        if (len == 0) return magnitudes;
+
+        for (uint256 i; i < len; ++i) {
+            magnitudes[i] = allocationManager.getMaxMagnitude(address(operator), strategies[i]);
         }
     }
 
@@ -1242,7 +2259,13 @@ abstract contract IntegrationBase is IntegrationDeployer {
     }
 
     function _calcNativeETHOperatorShareDelta(User staker, int shareDelta) internal view returns (int) {
-        int curPodOwnerShares = eigenPodManager.podOwnerDepositShares(address(staker));
+        // TODO: Maybe we update parent method to have an M2 and Slashing version?
+        int curPodOwnerShares;
+        if (!isUpgraded) {
+            curPodOwnerShares = IEigenPodManager_DeprecatedM2(address(eigenPodManager)).podOwnerShares(address(staker));
+        } else {
+            curPodOwnerShares = eigenPodManager.podOwnerDepositShares(address(staker));
+        }
         int newPodOwnerShares = curPodOwnerShares + shareDelta;
 
         if (curPodOwnerShares <= 0) {
@@ -1303,7 +2326,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
     }
 
     function _getWithdrawalHashes(
-        IDelegationManagerTypes.Withdrawal[] memory withdrawals
+        Withdrawal[] memory withdrawals
     ) internal view returns (bytes32[] memory) {
         bytes32[] memory withdrawalRoots = new bytes32[](withdrawals.length);
 
@@ -1338,12 +2361,30 @@ abstract contract IntegrationBase is IntegrationDeployer {
     }
 
     /// @dev Rolls forward by the minimum withdrawal delay blocks.
-    function _rollBlocksForCompleteWithdrawals(IDelegationManagerTypes.Withdrawal[] memory withdrawals) internal {     
+    function _rollBlocksForCompleteWithdrawals(Withdrawal[] memory withdrawals) internal {     
         uint256 latest;
         for (uint i = 0; i < withdrawals.length; ++i) {
             if (withdrawals[i].startBlock > latest) latest = withdrawals[i].startBlock;
         }
         cheats.roll(latest + delegationManager.minWithdrawalDelayBlocks() + 1);
+    }
+
+    function _rollForward_AllocationDelay(User operator) internal {
+        uint32 delay = _getExistingAllocationDelay(operator);
+        rollForward(delay);
+    }
+
+    function _rollBackward_AllocationDelay(User operator) internal {
+        uint32 delay = _getExistingAllocationDelay(operator);
+        rollBackward(delay);
+    }
+
+    function _rollForward_DeallocationDelay() internal {
+        rollForward(allocationManager.DEALLOCATION_DELAY() + 1);
+    }
+
+    function _rollBackward_DeallocationDelay() internal {
+        rollBackward(allocationManager.DEALLOCATION_DELAY() + 1);
     }
 
     /// @dev Rolls forward by the default allocation delay blocks.
@@ -1381,7 +2422,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         User operator,
         OperatorSet memory operatorSet,
         IStrategy[] memory strategies
-    ) internal timewarp() returns (IAllocationManagerTypes.Allocation[] memory) {
+    ) internal timewarp() returns (Allocation[] memory) {
         return _getAllocations(operator, operatorSet, strategies);
     }
 
@@ -1390,11 +2431,61 @@ abstract contract IntegrationBase is IntegrationDeployer {
         User operator,
         OperatorSet memory operatorSet,
         IStrategy[] memory strategies
-    ) internal view returns (IAllocationManagerTypes.Allocation[] memory allocations) {
-        allocations = new IAllocationManagerTypes.Allocation[](strategies.length);
+    ) internal view returns (Allocation[] memory allocations) {
+        allocations = new Allocation[](strategies.length);
         for (uint i = 0; i < strategies.length; ++i) {
             allocations[i] = allocationManager.getAllocation(address(operator), operatorSet, strategies[i]);
         }
+    }
+
+    function _getPrevAllocatedStrats(
+        User operator,
+        OperatorSet memory operatorSet
+    ) internal timewarp() returns (IStrategy[] memory) {
+        return _getAllocatedStrats(operator, operatorSet);
+    }
+
+    function _getAllocatedStrats(
+        User operator,
+        OperatorSet memory operatorSet
+    ) internal view returns (IStrategy[] memory) {
+        return allocationManager.getAllocatedStrategies(address(operator), operatorSet);
+    }
+
+    function _getPrevAllocatedSets(
+        User operator
+    ) internal timewarp() returns (OperatorSet[] memory) {
+        return _getAllocatedSets(operator);
+    }
+
+    function _getAllocatedSets(
+        User operator
+    ) internal view returns (OperatorSet[] memory) {
+        return allocationManager.getAllocatedSets(address(operator));
+    }
+
+    function _getPrevRegisteredSets(
+        User operator
+    ) internal timewarp() returns (OperatorSet[] memory) {
+        return _getRegisteredSets(operator);
+    }
+
+    function _getRegisteredSets(
+        User operator
+    ) internal view returns (OperatorSet[] memory) {
+        return allocationManager.getRegisteredSets(address(operator));
+    }
+
+    function _getPrevMembers(
+        OperatorSet memory operatorSet
+    ) internal timewarp returns (address[] memory) {
+        return _getMembers(operatorSet);
+    }
+
+    function _getMembers(
+        OperatorSet memory operatorSet
+    ) internal view returns (address[] memory) {
+        return allocationManager.getMembers(operatorSet);
     }
 
     struct Magnitudes {
@@ -1417,11 +2508,127 @@ abstract contract IntegrationBase is IntegrationDeployer {
         magnitudes = new Magnitudes[](strategies.length);
         for (uint i = 0; i < strategies.length; ++i) {
             magnitudes[i] = Magnitudes({
-                encumbered: allocationManager.encumberedMagnitude(address(operator), strategies[i]),
+                encumbered: allocationManager.getEncumberedMagnitude(address(operator), strategies[i]),
                 allocatable: allocationManager.getAllocatableMagnitude(address(operator), strategies[i]),
                 max: allocationManager.getMaxMagnitude(address(operator), strategies[i])
             });
         }
+    }
+
+    function _getMaxMagnitudes(
+        User operator,
+        IStrategy[] memory strategies
+    ) internal view returns (uint64[] memory) {
+        return allocationManager.getMaxMagnitudes(address(operator), strategies);
+    }
+
+    function _getMaxMagnitudes(
+        User operator,
+        IStrategy[] memory strategies,
+        uint32 blockNum
+    ) internal view returns (uint64[] memory) {
+        return allocationManager.getMaxMagnitudesAtBlock(address(operator), strategies, blockNum);
+    }
+
+    function _getPrevMinSlashableStake(
+        User operator,
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies
+    ) internal timewarp() returns (uint[] memory) {
+        return _getMinSlashableStake(operator, operatorSet, strategies);
+    }
+
+    function _getMinSlashableStake(
+        User operator,
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies
+    ) internal view returns (uint[] memory) {
+        return allocationManager.getMinimumSlashableStake({
+            operatorSet: operatorSet,
+            operators: address(operator).toArray(),
+            strategies: strategies,
+            futureBlock: uint32(block.number)
+        })[0];
+    }
+
+    function _getPrevAllocatedStake(
+        User operator,
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies
+    ) internal timewarp() returns (uint[] memory) {
+        return _getAllocatedStake(operator, operatorSet, strategies);
+    }
+
+    function _getAllocatedStake(
+        User operator,
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies
+    ) internal view returns (uint[] memory) {
+        return allocationManager.getAllocatedStake({
+            operatorSet: operatorSet,
+            operators: address(operator).toArray(),
+            strategies: strategies
+        })[0];
+    }
+
+    function _getPrevIsSlashable(
+        User operator,
+        OperatorSet memory operatorSet
+    ) internal timewarp() returns (bool) {
+        return _getIsSlashable(operator, operatorSet);
+    }
+
+    function _getIsSlashable(
+        User operator,
+        OperatorSet memory operatorSet
+    ) internal view returns (bool) {
+        return allocationManager.isOperatorSlashable(address(operator), operatorSet);
+    }
+
+    function _getPrevIsMemberOfSet(
+        User operator,
+        OperatorSet memory operatorSet
+    ) internal timewarp() returns (bool) {
+        return _getIsMemberOfSet(operator, operatorSet);
+    }
+
+    function _getIsMemberOfSet(
+        User operator,
+        OperatorSet memory operatorSet
+    ) internal view returns (bool) {
+        return allocationManager.isMemberOfOperatorSet(address(operator), operatorSet);
+    }
+
+    function _getPrevBurnableShares(IStrategy[] memory strategies) internal timewarp() returns (uint[] memory) {
+        return _getBurnableShares(strategies);
+    }
+
+    function _getBurnableShares(IStrategy[] memory strategies) internal view returns (uint[] memory) {
+        uint[] memory burnableShares = new uint[](strategies.length);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            if (strategies[i] == beaconChainETHStrategy) {
+                burnableShares[i] = eigenPodManager.burnableETHShares();
+            } else {
+                burnableShares[i] = strategyManager.getBurnableShares(strategies[i]);
+            }
+        }
+
+        return burnableShares;
+    }
+
+    function _getPrevSlashableSharesInQueue(User operator, IStrategy[] memory strategies) internal timewarp() returns (uint[] memory) {
+        return _getSlashableSharesInQueue(operator, strategies);
+    }
+
+    function _getSlashableSharesInQueue(User operator, IStrategy[] memory strategies) internal view returns (uint[] memory) {
+        uint[] memory slashableShares = new uint[](strategies.length);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            slashableShares[i] = delegationManager.getSlashableSharesInQueue(address(operator), strategies[i]);
+        }
+
+        return slashableShares;
     }
 
     /// @dev Uses timewarp modifier to get operator shares at the last snapshot
@@ -1462,12 +2669,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
                 // This method should only be used for tests that handle positive
                 // balances. Negative balances are an edge case that require
                 // the own tests and helper methods.
-                int shares;
-                if (forkType != LOCAL && !isUpgraded) {
-                    shares = int(IEigenPodManager_DeprecatedM2(address(eigenPodManager)).podOwnerShares(address(staker)));
-                } else {
-                    shares = int(eigenPodManager.podOwnerDepositShares(address(staker)));
-                }
+                int shares = eigenPodManager.podOwnerDepositShares(address(staker));
 
                 if (shares < 0) {
                     revert("_getStakerDepositShares: negative shares");
@@ -1475,11 +2677,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
 
                 curShares[i] = uint(shares);
             } else {
-                if (forkType != LOCAL && !isUpgraded) {
-                    curShares[i] = IStrategyManager_DeprecatedM2(address(strategyManager)).stakerStrategyShares(address(staker), strat);
-                } else {
-                    curShares[i] = strategyManager.stakerDepositShares(address(staker), strat);
-                }
+                curShares[i] = strategyManager.stakerDepositShares(address(staker), strat);
             }
         }
 
@@ -1573,6 +2771,34 @@ abstract contract IntegrationBase is IntegrationDeployer {
         return shares;
     }
 
+    function _getDepositScalingFactors(User staker, IStrategy[] memory strategies) internal view returns (uint[] memory) {
+        uint[] memory depositScalingFactors = new uint[](strategies.length);
+        for (uint i=0; i < strategies.length; i++) {
+            depositScalingFactors[i] = _getDepositScalingFactor(staker, strategies[i]);
+        }
+        return depositScalingFactors;
+    }
+
+    function _getDepositScalingFactor(User staker, IStrategy strategy) internal view returns (uint) {
+        return delegationManager.depositScalingFactor(address(staker), strategy);
+    }
+
+    function _getExpectedDSFUndelegate(User staker) internal view returns (uint expectedDepositScalingFactor) {
+        return WAD.divWad(_getBeaconChainSlashingFactor(staker));
+    }
+
+    function _getExpectedWithdrawableSharesUndelegate(User staker, IStrategy[] memory strategies, uint[] memory shares) internal view returns (uint[] memory){
+        uint[] memory expectedWithdrawableShares = new uint[](strategies.length);
+        for (uint i = 0; i < strategies.length; i++) {
+            if (strategies[i] == BEACONCHAIN_ETH_STRAT) {
+                expectedWithdrawableShares[i] = shares[i].mulWad(_getExpectedDSFUndelegate(staker)).mulWad(_getBeaconChainSlashingFactor(staker));
+            } else {
+                expectedWithdrawableShares[i] = shares[i];
+             }
+        }
+        return expectedWithdrawableShares;
+    }
+
     function _getPrevWithdrawableShares(User staker, IStrategy[] memory strategies) internal timewarp() returns (uint[] memory) {
         return _getWithdrawableShares(staker, strategies);
     }
@@ -1590,9 +2816,9 @@ abstract contract IntegrationBase is IntegrationDeployer {
         return _getActiveValidatorCount(staker);
     }
 
-    function _getValidatorStatuses(User staker, bytes32[] memory pubkeyHashes) internal view returns (IEigenPodTypes.VALIDATOR_STATUS[] memory) {
+    function _getValidatorStatuses(User staker, bytes32[] memory pubkeyHashes) internal view returns (VALIDATOR_STATUS[] memory) {
         EigenPod pod = staker.pod();
-        IEigenPodTypes.VALIDATOR_STATUS[] memory statuses = new IEigenPodTypes.VALIDATOR_STATUS[](pubkeyHashes.length);
+        VALIDATOR_STATUS[] memory statuses = new VALIDATOR_STATUS[](pubkeyHashes.length);
 
         for (uint i = 0; i < statuses.length; i++) {
             statuses[i] = pod.validatorStatus(pubkeyHashes[i]);
@@ -1601,7 +2827,7 @@ abstract contract IntegrationBase is IntegrationDeployer {
         return statuses;
     }
 
-    function _getPrevValidatorStatuses(User staker, bytes32[] memory pubkeyHashes) internal timewarp() returns (IEigenPodTypes.VALIDATOR_STATUS[] memory) {
+    function _getPrevValidatorStatuses(User staker, bytes32[] memory pubkeyHashes) internal timewarp() returns (VALIDATOR_STATUS[] memory) {
         return _getValidatorStatuses(staker, pubkeyHashes);
     }
 
@@ -1633,13 +2859,8 @@ abstract contract IntegrationBase is IntegrationDeployer {
     }
 
     function _getCheckpointPodBalanceGwei(User staker) internal view returns (uint64) {
-        if (forkType != LOCAL && !isUpgraded) {
-            IEigenPod_DeprecatedM2 pod = IEigenPod_DeprecatedM2(address(staker.pod()));
-            return uint64(pod.currentCheckpoint().podBalanceGwei);
-        } else {
-            EigenPod pod = staker.pod();
-            return uint64(pod.currentCheckpoint().podBalanceGwei);
-        }
+        EigenPod pod = staker.pod();
+        return uint64(pod.currentCheckpoint().podBalanceGwei);
     }
 
     function _getPrevCheckpointPodBalanceGwei(User staker) internal timewarp() returns (uint64) {

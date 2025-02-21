@@ -31,7 +31,7 @@ var (
 
 // IShareManagerMetaData contains all meta data concerning the IShareManager contract.
 var IShareManagerMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"addShares\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"increaseBurnableShares\",\"inputs\":[{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"addedSharesToBurn\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeDepositShares\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"depositSharesToRemove\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"stakerDepositShares\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"}],\"outputs\":[{\"name\":\"depositShares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"withdrawSharesAsTokens\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"}]",
+	ABI: "[{\"type\":\"function\",\"name\":\"addShares\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"increaseBurnableShares\",\"inputs\":[{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"addedSharesToBurn\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeDepositShares\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"depositSharesToRemove\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"stakerDepositShares\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"}],\"outputs\":[{\"name\":\"depositShares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"withdrawSharesAsTokens\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"strategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"}]",
 }
 
 // IShareManagerABI is the input ABI used to generate the binding from.
@@ -211,25 +211,25 @@ func (_IShareManager *IShareManagerCallerSession) StakerDepositShares(user commo
 	return _IShareManager.Contract.StakerDepositShares(&_IShareManager.CallOpts, user, strategy)
 }
 
-// AddShares is a paid mutator transaction binding the contract method 0xc4623ea1.
+// AddShares is a paid mutator transaction binding the contract method 0x50ff7225.
 //
-// Solidity: function addShares(address staker, address strategy, address token, uint256 shares) returns(uint256, uint256)
-func (_IShareManager *IShareManagerTransactor) AddShares(opts *bind.TransactOpts, staker common.Address, strategy common.Address, token common.Address, shares *big.Int) (*types.Transaction, error) {
-	return _IShareManager.contract.Transact(opts, "addShares", staker, strategy, token, shares)
+// Solidity: function addShares(address staker, address strategy, uint256 shares) returns(uint256, uint256)
+func (_IShareManager *IShareManagerTransactor) AddShares(opts *bind.TransactOpts, staker common.Address, strategy common.Address, shares *big.Int) (*types.Transaction, error) {
+	return _IShareManager.contract.Transact(opts, "addShares", staker, strategy, shares)
 }
 
-// AddShares is a paid mutator transaction binding the contract method 0xc4623ea1.
+// AddShares is a paid mutator transaction binding the contract method 0x50ff7225.
 //
-// Solidity: function addShares(address staker, address strategy, address token, uint256 shares) returns(uint256, uint256)
-func (_IShareManager *IShareManagerSession) AddShares(staker common.Address, strategy common.Address, token common.Address, shares *big.Int) (*types.Transaction, error) {
-	return _IShareManager.Contract.AddShares(&_IShareManager.TransactOpts, staker, strategy, token, shares)
+// Solidity: function addShares(address staker, address strategy, uint256 shares) returns(uint256, uint256)
+func (_IShareManager *IShareManagerSession) AddShares(staker common.Address, strategy common.Address, shares *big.Int) (*types.Transaction, error) {
+	return _IShareManager.Contract.AddShares(&_IShareManager.TransactOpts, staker, strategy, shares)
 }
 
-// AddShares is a paid mutator transaction binding the contract method 0xc4623ea1.
+// AddShares is a paid mutator transaction binding the contract method 0x50ff7225.
 //
-// Solidity: function addShares(address staker, address strategy, address token, uint256 shares) returns(uint256, uint256)
-func (_IShareManager *IShareManagerTransactorSession) AddShares(staker common.Address, strategy common.Address, token common.Address, shares *big.Int) (*types.Transaction, error) {
-	return _IShareManager.Contract.AddShares(&_IShareManager.TransactOpts, staker, strategy, token, shares)
+// Solidity: function addShares(address staker, address strategy, uint256 shares) returns(uint256, uint256)
+func (_IShareManager *IShareManagerTransactorSession) AddShares(staker common.Address, strategy common.Address, shares *big.Int) (*types.Transaction, error) {
+	return _IShareManager.Contract.AddShares(&_IShareManager.TransactOpts, staker, strategy, shares)
 }
 
 // IncreaseBurnableShares is a paid mutator transaction binding the contract method 0xdebe1eab.
@@ -255,21 +255,21 @@ func (_IShareManager *IShareManagerTransactorSession) IncreaseBurnableShares(str
 
 // RemoveDepositShares is a paid mutator transaction binding the contract method 0x724af423.
 //
-// Solidity: function removeDepositShares(address staker, address strategy, uint256 depositSharesToRemove) returns()
+// Solidity: function removeDepositShares(address staker, address strategy, uint256 depositSharesToRemove) returns(uint256)
 func (_IShareManager *IShareManagerTransactor) RemoveDepositShares(opts *bind.TransactOpts, staker common.Address, strategy common.Address, depositSharesToRemove *big.Int) (*types.Transaction, error) {
 	return _IShareManager.contract.Transact(opts, "removeDepositShares", staker, strategy, depositSharesToRemove)
 }
 
 // RemoveDepositShares is a paid mutator transaction binding the contract method 0x724af423.
 //
-// Solidity: function removeDepositShares(address staker, address strategy, uint256 depositSharesToRemove) returns()
+// Solidity: function removeDepositShares(address staker, address strategy, uint256 depositSharesToRemove) returns(uint256)
 func (_IShareManager *IShareManagerSession) RemoveDepositShares(staker common.Address, strategy common.Address, depositSharesToRemove *big.Int) (*types.Transaction, error) {
 	return _IShareManager.Contract.RemoveDepositShares(&_IShareManager.TransactOpts, staker, strategy, depositSharesToRemove)
 }
 
 // RemoveDepositShares is a paid mutator transaction binding the contract method 0x724af423.
 //
-// Solidity: function removeDepositShares(address staker, address strategy, uint256 depositSharesToRemove) returns()
+// Solidity: function removeDepositShares(address staker, address strategy, uint256 depositSharesToRemove) returns(uint256)
 func (_IShareManager *IShareManagerTransactorSession) RemoveDepositShares(staker common.Address, strategy common.Address, depositSharesToRemove *big.Int) (*types.Transaction, error) {
 	return _IShareManager.Contract.RemoveDepositShares(&_IShareManager.TransactOpts, staker, strategy, depositSharesToRemove)
 }

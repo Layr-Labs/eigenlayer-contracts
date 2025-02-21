@@ -26,8 +26,9 @@ contract StrategyBaseTVLLimits is StrategyBase {
     // solhint-disable-next-line no-empty-blocks
     constructor(
         IStrategyManager _strategyManager,
-        IPauserRegistry _pauserRegistry
-    ) StrategyBase(_strategyManager, _pauserRegistry) {}
+        IPauserRegistry _pauserRegistry,
+        string memory _version
+    ) StrategyBase(_strategyManager, _pauserRegistry, _version) {}
 
     function initialize(
         uint256 _maxPerDeposit,

@@ -39,7 +39,6 @@ contract EigenPodManagerMock is Test, Pausable {
     function addShares(
         address podOwner,
         IStrategy,
-        IERC20,
         uint256 shares
     ) external returns (uint256, uint256) {
         uint256 existingDepositShares = uint256(podOwnerDepositShares[podOwner]);
@@ -51,8 +50,10 @@ contract EigenPodManagerMock is Test, Pausable {
         address podOwner, 
         IStrategy, // strategy 
         uint256 shares
-    ) external {
-        podOwnerDepositShares[podOwner] -= int256(shares);
+    ) external returns (uint256) {
+        int256 updatedShares = podOwnerDepositShares[podOwner] - int256(shares);
+        podOwnerDepositShares[podOwner] = updatedShares;
+        return uint256(updatedShares);
     }
 
     function denebForkTimestamp() external pure returns (uint64) {

@@ -6,7 +6,7 @@ import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "../mixins/SignatureUtils.sol";
+import "../mixins/SignatureUtilsMixin.sol";
 import "../interfaces/IEigenPodManager.sol";
 import "../permissions/Pausable.sol";
 import "./StrategyManagerStorage.sol";
@@ -26,7 +26,7 @@ contract StrategyManager is
     ReentrancyGuardUpgradeable,
     Pausable,
     StrategyManagerStorage,
-    SignatureUtils
+    SignatureUtilsMixin
 {
     using SlashingLib for *;
     using SafeERC20 for IERC20;
@@ -53,8 +53,9 @@ contract StrategyManager is
      */
     constructor(
         IDelegationManager _delegation,
-        IPauserRegistry _pauserRegistry
-    ) StrategyManagerStorage(_delegation) Pausable(_pauserRegistry) {
+        IPauserRegistry _pauserRegistry,
+        string memory _version
+    ) StrategyManagerStorage(_delegation) Pausable(_pauserRegistry) SignatureUtilsMixin(_version) {
         _disableInitializers();
     }
 
@@ -116,18 +117,18 @@ contract StrategyManager is
         address staker,
         IStrategy strategy,
         uint256 depositSharesToRemove
-    ) external onlyDelegationManager {
-        _removeDepositShares(staker, strategy, depositSharesToRemove);
+    ) external onlyDelegationManager nonReentrant returns (uint256) {
+        (, uint256 sharesAfter) = _removeDepositShares(staker, strategy, depositSharesToRemove);
+        return sharesAfter;
     }
 
     /// @inheritdoc IShareManager
     function addShares(
         address staker,
         IStrategy strategy,
-        IERC20 token,
         uint256 shares
-    ) external onlyDelegationManager returns (uint256, uint256) {
-        return _addShares(staker, token, strategy, shares);
+    ) external onlyDelegationManager nonReentrant returns (uint256, uint256) {
+        return _addShares(staker, strategy, shares);
     }
 
     /// @inheritdoc IShareManager
@@ -136,13 +137,17 @@ contract StrategyManager is
         IStrategy strategy,
         IERC20 token,
         uint256 shares
-    ) external onlyDelegationManager {
+    ) external onlyDelegationManager nonReentrant {
         strategy.withdraw(staker, token, shares);
     }
 
     /// @inheritdoc IShareManager
-    function increaseBurnableShares(IStrategy strategy, uint256 addedSharesToBurn) external onlyDelegationManager {
-        burnableShares[strategy] += addedSharesToBurn;
+    function increaseBurnableShares(
+        IStrategy strategy,
+        uint256 addedSharesToBurn
+    ) external onlyDelegationManager nonReentrant {
+        (, uint256 currentShares) = EnumerableMap.tryGet(burnableShares, address(strategy));
+        EnumerableMap.set(burnableShares, address(strategy), currentShares + addedSharesToBurn);
         emit BurnableSharesIncreased(strategy, addedSharesToBurn);
     }
 
@@ -150,24 +155,28 @@ contract StrategyManager is
     function burnShares(
         IStrategy strategy
     ) external nonReentrant {
-        uint256 sharesToBurn = burnableShares[strategy];
-        burnableShares[strategy] = 0;
+        (, uint256 sharesToBurn) = EnumerableMap.tryGet(burnableShares, address(strategy));
+        EnumerableMap.remove(burnableShares, address(strategy));
         emit BurnableSharesDecreased(strategy, sharesToBurn);
-        // burning shares is functionally the same as withdrawing but with different destination address
-        strategy.withdraw(DEFAULT_BURN_ADDRESS, strategy.underlyingToken(), sharesToBurn);
+
+        // Burning acts like withdrawing, except that the destination is to the burn address.
+        // If we have no shares to burn, we don't need to call the strategy.
+        if (sharesToBurn != 0) {
+            strategy.withdraw(DEFAULT_BURN_ADDRESS, strategy.underlyingToken(), sharesToBurn);
+        }
     }
 
     /// @inheritdoc IStrategyManager
     function setStrategyWhitelister(
         address newStrategyWhitelister
-    ) external onlyOwner {
+    ) external onlyOwner nonReentrant {
         _setStrategyWhitelister(newStrategyWhitelister);
     }
 
     /// @inheritdoc IStrategyManager
     function addStrategiesToDepositWhitelist(
         IStrategy[] calldata strategiesToWhitelist
-    ) external onlyStrategyWhitelister {
+    ) external onlyStrategyWhitelister nonReentrant {
         uint256 strategiesToWhitelistLength = strategiesToWhitelist.length;
         for (uint256 i = 0; i < strategiesToWhitelistLength; ++i) {
             // change storage and emit event only if strategy is not already in whitelist
@@ -181,7 +190,7 @@ contract StrategyManager is
     /// @inheritdoc IStrategyManager
     function removeStrategiesFromDepositWhitelist(
         IStrategy[] calldata strategiesToRemoveFromWhitelist
-    ) external onlyStrategyWhitelister {
+    ) external onlyStrategyWhitelister nonReentrant {
         uint256 strategiesToRemoveFromWhitelistLength = strategiesToRemoveFromWhitelist.length;
         for (uint256 i = 0; i < strategiesToRemoveFromWhitelistLength; ++i) {
             // change storage and emit event only if strategy is already in whitelist
@@ -197,19 +206,13 @@ contract StrategyManager is
     /**
      * @notice This function adds `shares` for a given `strategy` to the `staker` and runs through the necessary update logic.
      * @param staker The address to add shares to
-     * @param token The token that is being deposited (used for indexing)
      * @param strategy The Strategy in which the `staker` is receiving shares
      * @param shares The amount of shares to grant to the `staker`
      * @dev In particular, this function calls `delegation.increaseDelegatedShares(staker, strategy, shares)` to ensure that all
      * delegated shares are tracked, increases the stored share amount in `stakerDepositShares[staker][strategy]`, and adds `strategy`
      * to the `staker`'s list of strategies, if it is not in the list already.
      */
-    function _addShares(
-        address staker,
-        IERC20 token,
-        IStrategy strategy,
-        uint256 shares
-    ) internal returns (uint256, uint256) {
+    function _addShares(address staker, IStrategy strategy, uint256 shares) internal returns (uint256, uint256) {
         // sanity checks on inputs
         require(staker != address(0), StakerAddressZero());
         require(shares != 0, SharesAmountZero());
@@ -225,7 +228,7 @@ contract StrategyManager is
         // add the returned depositedShares to their existing shares for this strategy
         stakerDepositShares[staker][strategy] = prevDepositShares + shares;
 
-        emit Deposit(staker, token, strategy, shares);
+        emit Deposit(staker, strategy, shares);
         return (prevDepositShares, shares);
     }
 
@@ -251,7 +254,7 @@ contract StrategyManager is
         shares = strategy.deposit(token, amount);
 
         // add the returned shares to the staker's existing shares for this strategy
-        (uint256 prevDepositShares, uint256 addedShares) = _addShares(staker, token, strategy, shares);
+        (uint256 prevDepositShares, uint256 addedShares) = _addShares(staker, strategy, shares);
 
         // Increase shares delegated to operator
         delegation.increaseDelegatedShares({
@@ -271,12 +274,13 @@ contract StrategyManager is
      * @param depositSharesToRemove The amount of deposit shares to decrement
      * @dev If the amount of shares represents all of the staker`s shares in said strategy,
      * then the strategy is removed from stakerStrategyList[staker] and 'true' is returned. Otherwise 'false' is returned.
+     * Also returns the user's updated deposit shares after decrement.
      */
     function _removeDepositShares(
         address staker,
         IStrategy strategy,
         uint256 depositSharesToRemove
-    ) internal returns (bool) {
+    ) internal returns (bool, uint256) {
         // sanity checks on inputs
         require(depositSharesToRemove != 0, SharesAmountZero());
 
@@ -296,10 +300,10 @@ contract StrategyManager is
             _removeStrategyFromStakerStrategyList(staker, strategy);
 
             // return true in the event that the strategy was removed from stakerStrategyList[staker]
-            return true;
+            return (true, userDepositShares);
         }
         // return false in the event that the strategy was *not* removed from stakerStrategyList[staker]
-        return false;
+        return (false, userDepositShares);
     }
 
     /**
@@ -386,5 +390,29 @@ contract StrategyManager is
                 )
             )
         );
+    }
+
+    /// @inheritdoc IStrategyManager
+    function getBurnableShares(
+        IStrategy strategy
+    ) external view returns (uint256) {
+        (, uint256 shares) = EnumerableMap.tryGet(burnableShares, address(strategy));
+        return shares;
+    }
+
+    /// @inheritdoc IStrategyManager
+    function getStrategiesWithBurnableShares() external view returns (address[] memory, uint256[] memory) {
+        uint256 totalEntries = EnumerableMap.length(burnableShares);
+
+        address[] memory strategies = new address[](totalEntries);
+        uint256[] memory shares = new uint256[](totalEntries);
+
+        for (uint256 i = 0; i < totalEntries; i++) {
+            (address strategy, uint256 shareAmount) = EnumerableMap.at(burnableShares, i);
+            strategies[i] = strategy;
+            shares[i] = shareAmount;
+        }
+
+        return (strategies, shares);
     }
 }

@@ -10,6 +10,7 @@ import "../libraries/Merkle.sol";
 import "../permissions/Pausable.sol";
 import "./RewardsCoordinatorStorage.sol";
 import "../mixins/PermissionControllerMixin.sol";
+import "../mixins/SemVerMixin.sol";
 
 /**
  * @title RewardsCoordinator
@@ -26,7 +27,8 @@ contract RewardsCoordinator is
     Pausable,
     ReentrancyGuardUpgradeable,
     RewardsCoordinatorStorage,
-    PermissionControllerMixin
+    PermissionControllerMixin,
+    SemVerMixin
 {
     using SafeERC20 for IERC20;
     using OperatorSetLib for OperatorSet;
@@ -43,29 +45,21 @@ contract RewardsCoordinator is
 
     /// @dev Sets the immutable variables for the contract
     constructor(
-        IDelegationManager _delegationManager,
-        IStrategyManager _strategyManager,
-        IAllocationManager _allocationManager,
-        IPauserRegistry _pauserRegistry,
-        IPermissionController _permissionController,
-        uint32 _CALCULATION_INTERVAL_SECONDS,
-        uint32 _MAX_REWARDS_DURATION,
-        uint32 _MAX_RETROACTIVE_LENGTH,
-        uint32 _MAX_FUTURE_LENGTH,
-        uint32 _GENESIS_REWARDS_TIMESTAMP
+        RewardsCoordinatorConstructorParams memory params
     )
         RewardsCoordinatorStorage(
-            _delegationManager,
-            _strategyManager,
-            _allocationManager,
-            _CALCULATION_INTERVAL_SECONDS,
-            _MAX_REWARDS_DURATION,
-            _MAX_RETROACTIVE_LENGTH,
-            _MAX_FUTURE_LENGTH,
-            _GENESIS_REWARDS_TIMESTAMP
+            params.delegationManager,
+            params.strategyManager,
+            params.allocationManager,
+            params.CALCULATION_INTERVAL_SECONDS,
+            params.MAX_REWARDS_DURATION,
+            params.MAX_RETROACTIVE_LENGTH,
+            params.MAX_FUTURE_LENGTH,
+            params.GENESIS_REWARDS_TIMESTAMP
         )
-        Pausable(_pauserRegistry)
-        PermissionControllerMixin(_permissionController)
+        Pausable(params.pauserRegistry)
+        PermissionControllerMixin(params.permissionController)
+        SemVerMixin(params.version)
     {
         _disableInitializers();
     }
