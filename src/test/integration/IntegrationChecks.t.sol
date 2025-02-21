@@ -210,7 +210,8 @@ contract IntegrationCheckUtils is IntegrationBase {
         User staker, 
         User operator, 
         IStrategy[] memory strategies, 
-        uint[] memory shares, 
+        uint[] memory depositShares,
+        uint[] memory withdrawableShares, 
         Withdrawal[] memory withdrawals, 
         bytes32[] memory withdrawalRoots
     ) internal {
@@ -226,11 +227,11 @@ contract IntegrationCheckUtils is IntegrationBase {
             "check_QueuedWithdrawal_State: calculated withdrawals should match returned roots");
         assert_Snap_Added_QueuedWithdrawals(staker, withdrawals,
             "check_QueuedWithdrawal_State: staker should have increased nonce by withdrawals.length");
-        assert_Snap_Removed_OperatorShares(operator, strategies, shares,
+        assert_Snap_Removed_OperatorShares(operator, strategies, withdrawableShares,
             "check_QueuedWithdrawal_State: failed to remove operator shares");
-        assert_Snap_Removed_Staker_DepositShares(staker, strategies, shares,
+        assert_Snap_Removed_Staker_DepositShares(staker, strategies, depositShares,
             "check_QueuedWithdrawal_State: failed to remove staker shares");
-        assert_Snap_Removed_Staker_WithdrawableShares(staker, strategies, shares,
+        assert_Snap_Removed_Staker_WithdrawableShares(staker, strategies, withdrawableShares,
             "check_QueuedWithdrawal_State: failed to remove staker withdrawable shares");
     }
 
@@ -248,6 +249,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         // ... check that the staker is undelegated, all strategies from which the staker is deposited are unqueued,
         //     that the returned root matches the hashes for each strategy and share amounts, and that the staker
         //     and operator have reduced shares
+        assert_HasNoDelegatableShares(staker, "staker should have withdrawn all shares");
         assertFalse(delegationManager.isDelegated(address(staker)),
             "check_Undelegate_State: staker should not be delegated");
         assert_ValidWithdrawalHashes(withdrawals, withdrawalRoots,
@@ -268,7 +270,8 @@ contract IntegrationCheckUtils is IntegrationBase {
 
     function check_Redelegate_State(
         User staker, 
-        User operator,
+        User prevOperator,
+        User newOperator,
         IDelegationManagerTypes.Withdrawal[] memory withdrawals,
         bytes32[] memory withdrawalRoots,
         IStrategy[] memory strategies,
@@ -282,13 +285,16 @@ contract IntegrationCheckUtils is IntegrationBase {
         //     and operator have reduced shares
         assertTrue(delegationManager.isDelegated(address(staker)),
             "check_Redelegate_State: staker should not be delegated");
+        assertEq(address(newOperator), delegationManager.delegatedTo(address(staker)), "staker should be delegated to operator");
+        assert_HasExpectedShares(staker, strategies, new uint[](strategies.length), "staker should not have deposit shares after redelegation");
+        assert_Snap_Unchanged_OperatorShares(newOperator, "new operator should not have received any shares");
         assert_ValidWithdrawalHashes(withdrawals, withdrawalRoots,
             "check_Redelegate_State: calculated withdrawal should match returned root");
         assert_AllWithdrawalsPending(withdrawalRoots,
             "check_Redelegate_State: stakers withdrawal should now be pending");
         assert_Snap_Added_QueuedWithdrawals(staker, withdrawals,
             "check_Redelegate_State: staker should have increased nonce by withdrawals.length");
-        assert_Snap_Removed_OperatorShares(operator, strategies, stakerDelegatedShares,
+        assert_Snap_Removed_OperatorShares(prevOperator, strategies, stakerDelegatedShares,
             "check_Redelegate_State: failed to remove operator shares");
         assert_Snap_Removed_Staker_DepositShares(staker, strategies, stakerDepositShares,
             "check_Redelegate_State: failed to remove staker shares");
@@ -349,7 +355,7 @@ contract IntegrationCheckUtils is IntegrationBase {
             if (operator != staker) {
                 assert_Snap_Unchanged_TokenBalances(operator, "operator should not have any change in underlying token balances");
             }
-            assert_Snap_Added_OperatorShares(operator, withdrawal.strategies, withdrawal.scaledShares, "operator should have received shares");
+            assert_Snap_Added_OperatorShares(operator, strategies, shares, "operator should have received shares");
         }
     }
 
@@ -438,7 +444,7 @@ contract IntegrationCheckUtils is IntegrationBase {
     /// @dev Check global max magnitude invariants - these should ALWAYS hold
     function check_MaxMag_Invariants(
         User operator
-    ) internal {
+    ) internal view {
         assert_MaxMagsEqualMaxMagsAtCurrentBlock(operator, allStrats, "max magnitudes should equal upperlookup at current block");
         assert_MaxEqualsAllocatablePlusEncumbered(operator, "max magnitude should equal encumbered plus allocatable");
     }
@@ -447,7 +453,7 @@ contract IntegrationCheckUtils is IntegrationBase {
     function check_ActiveModification_State(
         User operator,
         AllocateParams memory params
-    ) internal {
+    ) internal view {
         OperatorSet memory operatorSet = params.operatorSet;
         IStrategy[] memory strategies = params.strategies;
 
@@ -459,7 +465,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         User operator,
         OperatorSet memory operatorSet,
         IStrategy[] memory strategies
-    ) internal {
+    ) internal view {
         assert_IsSlashable(operator, operatorSet, "operator should be slashable for operator set");
         assert_CurMinSlashableEqualsMinAllocated(operator, operatorSet, strategies, "minimum slashable stake should equal allocated stake at current block");
     }
@@ -467,7 +473,7 @@ contract IntegrationCheckUtils is IntegrationBase {
     function check_NotSlashable_State(
         User operator,
         OperatorSet memory operatorSet
-    ) internal {
+    ) internal view {
         assert_NotSlashable(operator, operatorSet, "operator should not be slashable for operator set");
         assert_NoSlashableStake(operator, operatorSet, "operator should not have any slashable stake");
     }
@@ -893,8 +899,8 @@ contract IntegrationCheckUtils is IntegrationBase {
         check_IsSlashable_State(operator, operatorSet, allocateParams.strategies);
 
         // Slashing SHOULD change max magnitude and current allocation
-        assert_Snap_Slashed_MaxMagnitude(operator, slashParams, "slash should lower max magnitude");
-        assert_Snap_Slashed_EncumberedMagnitude(operator, slashParams, "slash should lower max magnitude");
+        assert_Snap_Slashed_MaxMagnitude(operator, operatorSet, slashParams, "slash should lower max magnitude");
+        assert_Snap_Slashed_EncumberedMagnitude(operator, slashParams, "slash should lower encumbered magnitude");
         assert_Snap_Slashed_AllocatedStake(operator, operatorSet, slashParams, "slash should lower allocated stake");
         assert_Snap_Slashed_SlashableStake(operator, operatorSet, slashParams, "slash should lower slashable stake");
         assert_Snap_Slashed_OperatorShares(operator, slashParams, "slash should remove operator shares");
@@ -905,97 +911,19 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Unchanged_AllocatableMagnitude(operator, allStrats, "slashing should not change allocatable magnitude");
         assert_Snap_Unchanged_Registration(operator, operatorSet, "slash should not change registration status");
         assert_Snap_Unchanged_Slashability(operator, operatorSet, "slash should not change slashability status");
-        assert_Snap_Unchanged_AllocatedSets(operator, "should not have updated allocated sets");
-        assert_Snap_Unchanged_AllocatedStrats(operator, operatorSet, "should not have updated allocated strategies");
+        // assert_Snap_Unchanged_AllocatedSets(operator, "should not have updated allocated sets");
+        // assert_Snap_Unchanged_AllocatedStrats(operator, operatorSet, "should not have updated allocated strategies");
     }
 
-    // TODO: improvement needed 
-
-    function check_Withdrawal_AsTokens_State_AfterSlash(
-        User staker,
+    /// Slashing invariants when the operator has been fully slashed for every strategy in the operator set
+    function check_FullySlashed_State(
         User operator,
-        Withdrawal memory withdrawal,
         AllocateParams memory allocateParams,
-        SlashingParams memory slashingParams,
-        uint[] memory expectedTokens
+        SlashingParams memory slashParams
     ) internal {
-        IERC20[] memory tokens = new IERC20[](withdrawal.strategies.length);
+        check_Base_Slashing_State(operator, allocateParams, slashParams);
 
-        for (uint i; i < withdrawal.strategies.length; i++) {
-            IStrategy strat = withdrawal.strategies[i];
-
-            bool isBeaconChainETHStrategy = strat == beaconChainETHStrategy;
-
-            tokens[i] = isBeaconChainETHStrategy ? NATIVE_ETH : withdrawal.strategies[i].underlyingToken();
-            
-            if (slashingParams.strategies.contains(strat)) {
-                uint wadToSlash = slashingParams.wadsToSlash[slashingParams.strategies.indexOf(strat)];
-
-                expectedTokens[i] -= expectedTokens[i]
-                    .mulWadRoundUp(allocateParams.newMagnitudes[i].mulWadRoundUp(wadToSlash));
-
-                uint256 max = allocationManager.getMaxMagnitude(address(operator), strat);
-
-                withdrawal.scaledShares[i] -= withdrawal.scaledShares[i].calcSlashedAmount(WAD, max);
-
-                // Round down to the nearest gwei for beaconchain ETH strategy.
-                if (isBeaconChainETHStrategy) {
-                    expectedTokens[i] -= expectedTokens[i] % 1 gwei;
-                }
-            }
-        }
-
-        // Common checks
-        assert_WithdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
-        
-        // TODO FIXME
-        // assert_Snap_Added_TokenBalances(staker, tokens, expectedTokens, "staker should have received expected tokens");
-        assert_Snap_Unchanged_Staker_DepositShares(staker, "staker shares should not have changed");
-        assert_Snap_Removed_StrategyShares(withdrawal.strategies, withdrawal.scaledShares, "strategies should have total shares decremented");
-
-        // Checks specific to an operator that the Staker has delegated to
-        if (operator != User(payable(0))) {
-            if (operator != staker) {
-                assert_Snap_Unchanged_TokenBalances(operator, "operator token balances should not have changed");
-            }
-            assert_Snap_Unchanged_OperatorShares(operator, "operator shares should not have changed");
-        }
-    }
-
-    function check_Withdrawal_AsShares_State_AfterSlash(
-        User staker,
-        User operator,
-        Withdrawal memory withdrawal,
-        AllocateParams memory allocateParams, // TODO - was this needed?
-        SlashingParams memory slashingParams
-    ) internal {
-        IERC20[] memory tokens = new IERC20[](withdrawal.strategies.length);
-
-        for (uint i; i < withdrawal.strategies.length; i++) {
-            IStrategy strat = withdrawal.strategies[i];
-
-            bool isBeaconChainETHStrategy = strat == beaconChainETHStrategy;
-
-            tokens[i] = isBeaconChainETHStrategy ? NATIVE_ETH : withdrawal.strategies[i].underlyingToken();
-            
-            if (slashingParams.strategies.contains(strat)) {
-                uint256 max = allocationManager.getMaxMagnitude(address(operator), strat);
-
-                withdrawal.scaledShares[i] -= withdrawal.scaledShares[i].calcSlashedAmount(WAD, max);
-            }
-        }
-        
-        // Common checks applicable to both user and non-user operator types
-        assert_WithdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
-        assert_Snap_Unchanged_TokenBalances(staker, "staker should not have any change in underlying token balances");
-        assert_Snap_Added_Staker_DepositShares(staker, withdrawal.strategies,  withdrawal.scaledShares, "staker should have received expected shares");
-        assert_Snap_Unchanged_StrategyShares(withdrawal.strategies, "strategies should have total shares unchanged");
-
-        // Additional checks or handling for the non-user operator scenario
-        if (operator != User(User(payable(0)))) {
-            if (operator != staker) {
-                assert_Snap_Unchanged_TokenBalances(operator, "operator should not have any change in underlying token balances");
-            }
-        }
+        assert_Snap_Removed_AllocatedSet(operator, allocateParams.operatorSet, "should not have updated allocated sets");
+        assert_Snap_Removed_AllocatedStrats(operator, allocateParams.operatorSet, slashParams.strategies, "should not have updated allocated strategies");
     }
 }
