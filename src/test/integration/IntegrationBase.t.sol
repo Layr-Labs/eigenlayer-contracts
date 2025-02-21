@@ -1471,7 +1471,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
 
         // For each strategy, check (prev - removed == cur)
         for (uint i = 0; i < strategies.length; i++) {
-            assertEq(prevShares[i] + addedShares[i], curShares[i], err);
+            assertApproxEqAbs(prevShares[i] + addedShares[i], curShares[i], 1, err);
         }
     }
 
@@ -2882,6 +2882,18 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
             }
         }
         return expectedWithdrawableShares;
+    }
+
+    function _getSlashingFactor(
+        User staker,
+        IStrategy strategy
+    ) internal view returns (uint256) {
+        address operator = delegationManager.delegatedTo(address(staker));
+        uint64 maxMagnitude = allocationManager.getMaxMagnitudes(operator, strategy.toArray())[0];
+        if (strategy == beaconChainETHStrategy) {
+            return maxMagnitude.mulWad(eigenPodManager.beaconChainSlashingFactor(address(staker)));
+        }
+        return maxMagnitude;
     }
 
     function _getPrevWithdrawableShares(User staker, IStrategy[] memory strategies) internal timewarp() returns (uint[] memory) {

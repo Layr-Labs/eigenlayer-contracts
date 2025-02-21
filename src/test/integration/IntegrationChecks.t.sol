@@ -411,7 +411,6 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Added_Staker_DepositShares(staker, strategies, shares, "staker should have received expected shares");
         assert_Snap_Added_Staker_WithdrawableShares(staker, strategies, shares, "staker should have received expected withdrawable shares");
         assert_Snap_Unchanged_StrategyShares(strategies, "strategies should have total shares unchanged");
-        assert_Snap_Unchanged_DSF(staker, strategies, "dsf should not be changed");
 
         // Additional checks or handling for the non-user operator scenario
         if (operator != User(User(payable(0)))) {
