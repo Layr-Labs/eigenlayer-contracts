@@ -166,7 +166,7 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
 
         // 1. Deposit Into Strategies
         staker.depositIntoEigenlayer(strategies, tokenBalances);
-        uint256[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
+        // uint256[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
         // TODO - post-deposit and post-delegate checks?
 
         // 2. Delegate to an operator
@@ -208,7 +208,7 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
 
         for (uint256 i = 0; i < withdrawals.length; ++i) {
             staker.completeWithdrawalAsShares(withdrawals[i]);
-            check_Withdrawal_AsShares_State_AfterSlash(staker, operator, withdrawals[i], allocateParams, slashingParams);
+            check_Withdrawal_AsShares_State_AfterSlash(staker, operator, withdrawals[i], slashingParams);
         }
 
         // Check final state:
@@ -338,7 +338,7 @@ contract Integration_Deposit_Delegate_Allocate is IntegrationCheckUtils {
 
         for (uint256 i = 0; i < withdrawals.length; ++i) {
             staker.completeWithdrawalAsShares(withdrawals[i]);
-            check_Withdrawal_AsShares_State_AfterSlash(staker, operator, withdrawals[i], allocateParams, slashingParams);
+            check_Withdrawal_AsShares_State_AfterSlash(staker, operator, withdrawals[i], slashingParams);
         }
 
         // Check final state:
