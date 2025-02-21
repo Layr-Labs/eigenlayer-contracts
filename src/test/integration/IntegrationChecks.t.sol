@@ -1012,7 +1012,7 @@ contract IntegrationCheckUtils is IntegrationBase {
                                  BC/AVS SLASHING CHECKS
     *******************************************************************************/
 
-    function check_CompleteCheckPoint_AVSSLash_BCSLash_HandleRoundDown_State(
+    function check_CompleteCheckPoint_AfterAVSAndBCSlash(
         User staker,
         uint40[] memory slashedValidators,
         uint256 originalWithdrawableShares,
@@ -1029,6 +1029,9 @@ contract IntegrationCheckUtils is IntegrationBase {
         // Between the AVS slash and the BC slash, the shares should have decreased by at least the BC slash amount
         assert_withdrawableSharesDecreasedByAtLeast(staker, BEACONCHAIN_ETH_STRAT, originalWithdrawableShares, uint256(slashedBalanceGwei * GWEI_TO_WEI), "should have decreased withdrawable shares by at least the BC slash amount");
 
-        // 
+        // Calculate the withdrawable shares
+        assert_Snap_StakerWithdrawableShares_AfterAVSAndBCSlash(staker, originalWithdrawableShares, allocateParams, slashingParams, "should have decreased withdrawable shares correctly");
     }
+
+    
 }

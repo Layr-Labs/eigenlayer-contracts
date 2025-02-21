@@ -63,37 +63,42 @@ contract Integration_BeaconChain_AVS_Ordering is IntegrationCheckUtils {
             slashingParams = avs.slashOperator(operator, operatorSet.id, strategiesToSlash, wadsToSlash);
             assert_Snap_Allocations_Slashed(slashingParams, operatorSet, true, "operator allocations should be slashed");
             assert_Snap_Unchanged_Staker_DepositShares(staker, "staker deposit shares should be unchanged after slashing");
-            assert_Snap_StakerWithdrawableShares_AfterSlash(staker, allocateParams, slashingParams, "staker deposit shares should be slashed");
+            assert_Snap_StakerWithdrawableShares_AfterSlash(staker, allocateParams, slashingParams, "staker withdrawable shares should be slashed");
         }
-        uint[] memory sharesGotten = _getWithdrawableShares(staker, strategies);
-        console.log("Shares after avs slash: ", sharesGotten[0]);
 
         // 7. Slash Staker on BC
-        uint64 slashedBalanceGwei = beaconChain.slashValidators(validators);
+        uint64 slashedAmountGwei = beaconChain.slashValidators(validators);
         beaconChain.advanceEpoch_NoRewards();
         
-        console.log("slashedBalanceGwei: ", slashedBalanceGwei);
-
         // 8. Checkpoint
         staker.startCheckpoint();
-        check_StartCheckpoint_WithPodBalance_State(staker, beaconBalanceGwei - slashedBalanceGwei);
+        check_StartCheckpoint_WithPodBalance_State(staker, beaconBalanceGwei - slashedAmountGwei);
         staker.completeCheckpoint();
-        uint64[] memory maxMagnitudes = _getMaxMagnitudes(operator, strategies);
-        console.log("maxMagnitudes: ", maxMagnitudes[0]);
-        uint64 bcsf = _getBeaconChainSlashingFactor(staker);
-        console.log("bcsf: ", bcsf);
-        sharesGotten = _getWithdrawableShares(staker, strategies);
-        console.log("Shares after bc slash: ", sharesGotten[0]);
-        check_CompleteCheckPoint_AVSSLash_BCSLash_HandleRoundDown_State(staker, validators, initDepositShares[0], slashedBalanceGwei);
+        check_CompleteCheckPoint_AfterAVSAndBCSlash(staker, validators, initDepositShares[0], slashedAmountGwei, allocateParams, slashingParams);
+    }
 
+    function testFuzz_bcSlash_checkpoint_avsSlash(uint24 _random) public rand(_random) {
+        // 6. Slash staker on BC
+        uint64 slashedAmountGwei = beaconChain.slashValidators(validators);
+        beaconChain.advanceEpoch_NoRewards();
 
-        // sharesGotten = _getWithdrawableShares(staker, strategies);
-        // console.log("Shares after bc slash: ", sharesGotten[0]);
-        // console.log("Test test test");
+        // 7. Checkpoint
+        staker.startCheckpoint();
+        check_StartCheckpoint_WithPodBalance_State(staker, beaconBalanceGwei - slashedAmountGwei);
+        staker.completeCheckpoint();
+        check_CompleteCheckpoint_WithSlashing_State(staker, validators, slashedAmountGwei);
 
-        // Assert state
-        // assert_Snap_Unchanged_Staker_DepositShares(staker, "staker deposit shares should be unchanged after slashing");
-        // assert_Snap_Removed_Staker_WithdrawableShares_AtLeast(staker, BEACONCHAIN_ETH_STRAT, slashedBalanceGwei * GWEI_TO_WEI, "should have decreased withdrawable shares by slashed amount");
+        // 8. Slash operator by AVS
+        SlashingParams memory slashingParams;
+        {
+            (IStrategy[] memory strategiesToSlash, uint256[] memory wadsToSlash) =
+                _randStrategiesAndWadsToSlash(operatorSet);
+            console.log("Strategies to slash: %s", strategiesToSlash.length);
+            slashingParams = avs.slashOperator(operator, operatorSet.id, strategiesToSlash, wadsToSlash);
+            assert_Snap_Allocations_Slashed(slashingParams, operatorSet, true, "operator allocations should be slashed");
+            assert_Snap_Unchanged_Staker_DepositShares(staker, "staker deposit shares should be unchanged after slashing");
+            assert_Snap_StakerWithdrawableShares_AfterBCAndAVSSlash(staker, allocateParams, slashingParams, "staker withdrawable shares should be slashed");
+        }
     }
 
 }

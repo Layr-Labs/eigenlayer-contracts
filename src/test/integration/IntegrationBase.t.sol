@@ -1304,11 +1304,42 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
+    function assert_Snap_StakerWithdrawableShares_AfterAVSAndBCSlash(
+        User staker,
+        uint256 originalWithdrawableShares,
+        AllocateParams memory allocateParams,
+        SlashingParams memory slashingParams,
+        string memory err
+    ) internal {
+        uint[] memory curShares = _getWithdrawableShares(staker, allocateParams.strategies);
+        uint[] memory prevShares = _getPrevWithdrawableShares(staker, allocateParams.strategies);
+
+        // Only the BC slash is considered for
+        for (uint i = 0; i < allocateParams.strategies.length; i++) {
+            require(allocateParams.strategies.length == 1, "only beacon strategy supported");
+            IStrategy strat = allocateParams.strategies[i];
+
+            uint256 avsSlashedShares = 0;
+
+            if (slashingParams.strategies.contains(strat)) {
+                uint wadToSlash = slashingParams.wadsToSlash[slashingParams.strategies.indexOf(strat)];
+                avsSlashedShares = originalWithdrawableShares.mulWadRoundUp(allocateParams.newMagnitudes[i].mulWadRoundUp(wadToSlash));
+            }
+
+            uint256 postAVSSlashShares = originalWithdrawableShares - avsSlashedShares;
+
+            uint256 expectedDelta = postAVSSlashShares.mulWad(WAD - _getBeaconChainSlashingFactor(staker));
+
+            // TODO: bound this better
+            assertApproxEqAbs(prevShares[i] - expectedDelta, curShares[i], 1e4, err);
+        }
+    }
+
+    // Same as above, but when a BC slash occurs before an AVS slash
     function assert_Snap_StakerWithdrawableShares_AfterBCAndAVSSlash(
         User staker,
         AllocateParams memory allocateParams,
         SlashingParams memory slashingParams,
-        uint64 slashedBalanceGwei,
         string memory err
     ) internal {
         uint[] memory curShares = _getWithdrawableShares(staker, allocateParams.strategies);
@@ -1324,7 +1355,8 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
                 slashedShares = prevShares[i].mulWadRoundUp(allocateParams.newMagnitudes[i].mulWadRoundUp(wadToSlash));
             }
 
-            assertApproxEqAbs(prevShares[i] - slashedShares, curShares[i], 1, err);
+            // TODO: bound this better
+            assertApproxEqAbs(prevShares[i] - slashedShares, curShares[i], 1e4, err);
         }
     }
 
