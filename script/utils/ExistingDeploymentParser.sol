@@ -576,7 +576,7 @@ contract ExistingDeploymentParser is Script, Logger {
     }
 
     function logInitialDeploymentParams() public {
-        console.log("==== Parsed Initilize Params for Initial Deployment,==");
+        console.log("==== Parsed Initialize Params for Initial Deployment,==");
 
         console.log("executorMultisig", executorMultisig);
         console.log("operationsMultisig", operationsMultisig);

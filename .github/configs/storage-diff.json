@@ -1,0 +1,44 @@
+{
+    "contracts": [
+      {
+        "name": "AVSDirectory",
+        "address": "0x135dda560e946695d6f155dacafc6f1f25c1f5af"
+      },
+      {
+        "name": "DelegationManager",
+        "address": "0x39053D51B77DC0d36036Fc1fCc8Cb819df8Ef37A"
+      },
+      {
+        "name": "RewardsCoordinator",
+        "address": "0x7750d328b314EfFa365A0402CcfD489B80B0adda"
+      },
+      {
+        "name": "StrategyManager",
+        "address": "0x858646372CC42E1A627fcE94aa7A7033e7CF075A"
+      },
+      {
+        "name": "StrategyFactory",
+        "address": "0x5e4C39Ad7A3E881585e383dB9827EB4811f6F647"
+      },
+      {
+        "name": "EigenPodManager",
+        "address": "0x91E677b07F7AF907ec9a428aafA9fc14a0d3A338"
+      },
+      {
+        "name": "EigenPod",
+        "address": "0xd4018Ce9A041a9c110A9d0383d2b5E1c66Ae1513"
+      },
+      {
+        "name": "stETH Strategy",
+        "address": "0x93c4b944D05dfe6df7645A86cd2206016c51564D"
+      },
+      {
+        "name": "EigenStrategy",
+        "address": "0xaCB55C530Acdb2849e6d4f36992Cd8c9D50ED8F7"
+      },
+      {
+        "name": "StrategyBase",
+        "address": "0x6c6E8aF98a49bBaBCc17ca1dbA6b95c5D58A2ccb"
+      }
+    ]
+}

@@ -94,7 +94,7 @@ interface IDelegationManagerTypes {
      *
      * @param staker The address that queued the withdrawal
      * @param delegatedTo The address that the staker was delegated to at the time the withdrawal was queued. Used to determine if additional slashing occurred before
-     * this withdrawal became completeable.
+     * this withdrawal became completable.
      * @param withdrawer The address that will call the contract to complete the withdrawal. Note that this will always equal `staker`; alternate withdrawers are not
      * supported at this time.
      * @param nonce The staker's `cumulativeWithdrawalsQueued` at time of queuing. Used to ensure withdrawals have unique hashes.
@@ -279,7 +279,7 @@ interface IDelegationManager is ISignatureUtilsMixin, IDelegationManagerErrors, 
      * to slashing. If any slashing has occurred, the shares received may be less than the queued deposit shares.
      *
      * @dev To view all the staker's strategies/deposit shares that can be queued for withdrawal, see `getDepositedShares`
-     * @dev To view the current coversion between a staker's deposit shares and withdrawable shares, see `getWithdrawableShares`
+     * @dev To view the current conversion between a staker's deposit shares and withdrawable shares, see `getWithdrawableShares`
      */
     function queueWithdrawals(
         QueuedWithdrawalParams[] calldata params
@@ -471,11 +471,17 @@ interface IDelegationManager is ISignatureUtilsMixin, IDelegationManagerErrors, 
      */
     function depositScalingFactor(address staker, IStrategy strategy) external view returns (uint256);
 
-    /// @notice Returns the Withdrawal associated with a `withdrawalRoot`, if it exists. NOTE that
-    /// withdrawals queued before the slashing release can NOT be queried with this method.
+    /**
+     * @notice Returns the Withdrawal and corresponding shares associated with a `withdrawalRoot`
+     * @param withdrawalRoot The hash identifying the queued withdrawal
+     * @return withdrawal The withdrawal details
+     * @return shares Array of shares corresponding to each strategy in the withdrawal
+     * @dev The shares are what a user would receive from completing a queued withdrawal, assuming all slashings are applied
+     * @dev Withdrawals queued before the slashing release cannot be queried with this method
+     */
     function getQueuedWithdrawal(
         bytes32 withdrawalRoot
-    ) external view returns (Withdrawal memory);
+    ) external view returns (Withdrawal memory withdrawal, uint256[] memory shares);
 
     /**
      * @notice Returns all queued withdrawals and their corresponding shares for a staker.
@@ -487,17 +493,6 @@ interface IDelegationManager is ISignatureUtilsMixin, IDelegationManagerErrors, 
     function getQueuedWithdrawals(
         address staker
     ) external view returns (Withdrawal[] memory withdrawals, uint256[][] memory shares);
-
-    /**
-     * @notice Returns the withdrawal details and corresponding shares for a specific queued withdrawal.
-     * @param withdrawalRoot The hash identifying the queued withdrawal.
-     * @return withdrawal The withdrawal details.
-     * @return shares Array of shares corresponding to each strategy in the withdrawal.
-     * @dev The shares are what a user would receive from completing a queued withdrawal, assuming all slashings are applied.
-     */
-    function getQueuedWithdrawalFromRoot(
-        bytes32 withdrawalRoot
-    ) external view returns (Withdrawal memory withdrawal, uint256[] memory shares);
 
     /// @notice Returns a list of queued withdrawal roots for the `staker`.
     /// NOTE that this only returns withdrawals queued AFTER the slashing release.

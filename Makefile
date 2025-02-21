@@ -46,3 +46,6 @@ gha-docker:
 
 storage-report:
 	bash "bin/storage-report.sh" "docs/storage-report/"
+
+fix-typos:
+	typos --config .github/configs/typos-cli.toml --write-changes

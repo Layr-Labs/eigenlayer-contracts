@@ -18,7 +18,7 @@ Functionality is provided for AVSs to migrate from an pre-operatorSet registrati
 function becomeOperatorSetAVS() external;
 ```
 
-AVSs call this to become an operator set AVS. Once an AVS becomes an operator set AVS, they can no longer register operators via the legacy M2 registration path. This is a seperate function to help avoid accidental migrations to the operator set AVS model.
+AVSs call this to become an operator set AVS. Once an AVS becomes an operator set AVS, they can no longer register operators via the legacy M2 registration path. This is a separate function to help avoid accidental migrations to the operator set AVS model.
 
 ## `createOperatorSets`
 ```solidity
@@ -122,7 +122,7 @@ function forceDeregisterFromOperatorSets(
 
 Operators can use this function to deregister from an operator set without requiring the AVS to sign off on the deregistration. This function is intended to be used in cases where the AVS contracts are in a state that prevents operators from deregistering (either malicious or unintentional).
 
-Operators can also deallocate their slashable stake allocation seperately to avoid slashing risk, so this function is mainly for external integrations to interpret the correct state of the protocol.
+Operators can also deallocate their slashable stake allocation separately to avoid slashing risk, so this function is mainly for external integrations to interpret the correct state of the protocol.
 
 ## `updateAVSMetadataURI`
 ```solidity
@@ -142,4 +142,4 @@ This function allows an AVS to update the metadata URI associated with the AVS. 
 
 ## View Functions
 
-See the [AVS Directory Inteface](../../../src/contracts/interfaces/IAVSDirectory.sol) for view functions. 
+See the [AVS Directory Interface](../../../src/contracts/interfaces/IAVSDirectory.sol) for view functions. 
