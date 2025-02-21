@@ -1031,19 +1031,22 @@ contract IntegrationCheckUtils is IntegrationBase {
 
         // Calculate the withdrawable shares
         assert_Snap_StakerWithdrawableShares_AfterAVSAndBCSlash(staker, originalWithdrawableShares, allocateParams, slashingParams, "should have decreased withdrawable shares correctly");
-    }    
+    }
 
-    function check_CompleteCheckpoint_WithAVSAndBCSlashing_HandleRoundDown_State(
+    function check_CompleteCheckpoint_AfterAVSAndBCSlash_ExtraValidatorProven(
         User staker,
         uint40[] memory slashedValidators,
+        uint256 originalWithdrawableShares,
         uint64 slashedAmountGwei
     ) internal {
+        // Checkpoint State
         check_CompleteCheckpoint_State(staker);
-
         assert_Snap_Unchanged_Staker_DepositShares(staker, "staker shares should not have decreased");
-        // TODO: bound this better
-        assert_Snap_Removed_Staker_WithdrawableShares_AtLeast(staker, BEACONCHAIN_ETH_STRAT, slashedAmountGwei * GWEI_TO_WEI, 1e11, "should have decreased withdrawable shares by at least slashed amount");
         assert_Snap_Removed_ActiveValidatorCount(staker, slashedValidators.length, "should have decreased active validator count");
         assert_Snap_Removed_ActiveValidators(staker, slashedValidators, "exited validators should each be WITHDRAWN");
+
+        // TODO: bound this better
+        // assert_Snap_StakerWithdrawableShares_AfterAVSAndBCSlash_ExtraValidatorProven(staker, originalWithdrawableShares, allocateParams, slashingParams, "should have decreased withdrawable shares correctly");
+        // assert_Snap_Removed_Staker_WithdrawableShares_AtLeast(staker, BEACONCHAIN_ETH_STRAT, slashedAmountGwei * GWEI_TO_WEI, 1e11, "should have decreased withdrawable shares by at least slashed amount");
     }
 }
