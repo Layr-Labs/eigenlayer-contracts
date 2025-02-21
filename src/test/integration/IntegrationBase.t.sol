@@ -1331,7 +1331,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
             uint256 expectedDelta = postAVSSlashShares.mulWad(WAD - _getBeaconChainSlashingFactor(staker));
 
             // TODO: bound this better
-            assertApproxEqAbs(prevShares[i] - expectedDelta, curShares[i], 1e4, err);
+            assertApproxEqAbs(prevShares[i] - expectedDelta, curShares[i], 1e3, err);
         }
     }
 
@@ -1356,7 +1356,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
             }
 
             // TODO: bound this better
-            assertApproxEqAbs(prevShares[i] - slashedShares, curShares[i], 1e4, err);
+            assertApproxEqAbs(prevShares[i] - slashedShares, curShares[i], 1e3, err);
         }
     }
 
@@ -1578,6 +1578,24 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
+    /// @dev This is currently used
+    /// TODO: Figure out how to bound this better
+    function assert_Snap_Added_Staker_WithdrawableSharesAtLeast(
+        User staker,
+        IStrategy[] memory strategies,
+        uint[] memory addedShares,
+        string memory err
+    ) internal {
+        uint[] memory curShares = _getStakerWithdrawableShares(staker, strategies);
+        // Use timewarp to get previous staker shares
+        uint[] memory prevShares = _getPrevStakerWithdrawableShares(staker, strategies);
+
+        // For each strategy, check (prev - removed == cur)
+        for (uint i = 0; i < strategies.length; i++) {
+            assertApproxEqAbs(prevShares[i] + addedShares[i], curShares[i], 1e3, err);
+        }
+    }
+
     /// @dev Check that the staker's withdrawable shares have decreased by `removedShares`
     function assert_Snap_Removed_Staker_WithdrawableShares(
         User staker, 
@@ -1675,6 +1693,25 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
+    /// @dev Check that the staker's withdrawable shares have decreased by at least `removedShares`
+    /// @dev Used to handle overslashing of beacon chain with AVS slashings
+    function assert_Snap_Removed_Staker_WithdrawableShares_AtLeast(
+        User staker,
+        IStrategy[] memory strategies,
+        uint[] memory removedShares,
+        uint errBound,
+        string memory err
+    ) internal {
+        uint[] memory curShares = _getStakerWithdrawableShares(staker, strategies);
+        // Use timewarp to get previous staker shares
+        uint[] memory prevShares = _getPrevStakerWithdrawableShares(staker, strategies);
+
+        // For each strategy, check diff between (prev-removed) and curr is at most 1 gwei
+        for (uint i = 0; i < strategies.length; i++) {
+            assertApproxEqAbs(prevShares[i] - removedShares[i], curShares[i], errBound, err);
+        }
+    }
+
     function assert_Snap_Removed_Staker_WithdrawableShares_AtLeast(
         User staker,
         IStrategy strat,
@@ -1682,6 +1719,16 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         string memory err
     ) internal {
         assert_Snap_Removed_Staker_WithdrawableShares_AtLeast(staker, strat.toArray(), removedShares.toArrayU256(), err);
+    }
+
+    function assert_Snap_Removed_Staker_WithdrawableShares_AtLeast(
+        User staker,
+        IStrategy strat,
+        uint removedShares,
+        uint errBound,
+        string memory err
+    ) internal {
+        assert_Snap_Removed_Staker_WithdrawableShares_AtLeast(staker, strat.toArray(), removedShares.toArrayU256(), errBound, err);
     }
 
     function assert_Snap_Delta_StakerShares(
