@@ -45,158 +45,94 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
      * This user is ready to deposit into some strategies and has some underlying token balances
      */
     function _newRandomStaker() internal returns (User, IStrategy[] memory, uint[] memory) {
-        string memory stakerName;
+        (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) 
+            = _randUser(_getStakerName());
 
-        User staker;
-        IStrategy[] memory strategies;
-        uint[] memory tokenBalances;
-
-        if (!isUpgraded) {
-            stakerName = string.concat("M2Staker", cheats.toString(numStakers));
-
-            (staker, strategies, tokenBalances) = _randUser(stakerName);
-
-            stakersToMigrate.push(staker);
-        } else {
-            stakerName = string.concat("staker", cheats.toString(numStakers));
-
-            (staker, strategies, tokenBalances) = _randUser(stakerName);
-        }
+        if (!isUpgraded) stakersToMigrate.push(staker);
 
         assert_HasUnderlyingTokenBalances(staker, strategies, tokenBalances, "_newRandomStaker: failed to award token balances");
-
-        numStakers++;
         return (staker, strategies, tokenBalances);
     }
 
     /// Given a list of strategies, creates a new user with random token balances in each underlying token
     function _newStaker(IStrategy[] memory strategies) internal returns (User, uint[] memory) {
-        string memory stakerName;
+        (User staker, uint[] memory tokenBalances) 
+            = _randUser(_getStakerName(), strategies);
 
-        User staker;
-        uint[] memory tokenBalances;
+        if (!isUpgraded) stakersToMigrate.push(staker);
 
-        if (!isUpgraded) {
-            stakerName = string.concat("M2Staker", cheats.toString(numStakers));
-
-            (staker, tokenBalances) = _randUser(stakerName, strategies);
-
-            stakersToMigrate.push(staker);
-        } else {
-            stakerName = string.concat("staker", cheats.toString(numStakers));
-
-            (staker, tokenBalances) = _randUser(stakerName, strategies);
-        }
-
-        assert_HasUnderlyingTokenBalances(staker, strategies, tokenBalances, "_newRandomStaker: failed to award token balances");
-
-        numStakers++;
+        assert_HasUnderlyingTokenBalances(staker, strategies, tokenBalances, "_newStaker: failed to award token balances");
         return (staker, tokenBalances);
-    }
-
-    function _newBasicStaker() internal returns (User, IStrategy[] memory, uint[] memory) {
-        string memory stakerName;
-
-        User staker;
-        IStrategy[] memory strategies;
-        uint[] memory tokenBalances;
-
-        if (!isUpgraded) {
-            stakerName = string.concat("M2Staker", cheats.toString(numStakers));
-
-            (staker, strategies, tokenBalances) = _randUser(stakerName);
-
-            stakersToMigrate.push(staker);
-        } else {
-            stakerName = string.concat("staker", cheats.toString(numStakers));
-
-            (staker, strategies, tokenBalances) = _randUser(stakerName);
-        }
-
-        assert_HasUnderlyingTokenBalances(staker, strategies, tokenBalances, "_newRandomStaker: failed to award token balances");
-
-        numStakers++;
-        assembly { // TODO HACK
-            mstore(strategies, 1)
-            mstore(tokenBalances, 1)
-        }
-        return (staker, strategies, tokenBalances);
     }
 
     /**
      * @dev Create a new operator according to configured random variants.
      * This user will immediately deposit their randomized assets into eigenlayer.
-     * @notice If forktype is mainnet and not upgraded, then the operator will only randomize LSTs assets and deposit them
-     * as ETH podowner shares are not available yet. 
      */
     function _newRandomOperator() internal returns (User, IStrategy[] memory, uint[] memory) {
-        User operator;
-        IStrategy[] memory strategies;
-        uint[] memory tokenBalances;
-        uint[] memory addedShares;
+        /// TODO: Allow operators to have ETH
+        (User operator, IStrategy[] memory strategies, uint[] memory tokenBalances) 
+            = _randUser_NoETH(_getOperatorName());
 
+        /// Operators are created with all assets already deposited
+        uint[] memory addedShares = _calculateExpectedShares(strategies, tokenBalances);
+        operator.depositIntoEigenlayer(strategies, tokenBalances);
+
+        /// Registration flow differs for M2 vs Slashing release
         if (!isUpgraded) {
-            string memory operatorName = string.concat("M2Operator", numOperators.toString());
-
-            // Create an operator for M2.
-            // TODO: Allow this operator to have ETH 
-            (operator, strategies, tokenBalances) = _randUser_NoETH(operatorName);
-
-            addedShares = _calculateExpectedShares(strategies, tokenBalances);
-            
             User_M2(payable(operator)).registerAsOperator_M2();
-            operator.depositIntoEigenlayer(strategies, tokenBalances); // Deposits interface doesn't change between M2 and slashing
 
             operatorsToMigrate.push(operator);
         } else {
-            string memory operatorName = string.concat("operator", numOperators.toString());
-
-            (operator, strategies, tokenBalances) = _randUser_NoETH(operatorName);
-
-            addedShares = _calculateExpectedShares(strategies, tokenBalances);
-
             operator.registerAsOperator();
-            operator.depositIntoEigenlayer(strategies, tokenBalances);
 
-            // Roll past the allocation configuration delay
             rollForward({blocks: ALLOCATION_CONFIGURATION_DELAY + 1});
-
-            assert_Snap_Added_Staker_DepositShares(operator, strategies, addedShares, "_newRandomOperator: failed to add delegatable shares");
-        }        
+        }
         
         assert_Snap_Added_OperatorShares(operator, strategies, addedShares, "_newRandomOperator: failed to award shares to operator");
         assertTrue(delegationManager.isOperator(address(operator)), "_newRandomOperator: operator should be registered");
-
-        numOperators++;
+        assertEq(delegationManager.delegatedTo(address(operator)), address(operator), "_newRandomOperator: should be self-delegated");
         return (operator, strategies, tokenBalances);
     }
 
     /// @dev Creates a new operator with no assets
     function _newRandomOperator_NoAssets() internal returns (User) {
-        User operator;
+        User operator = _randUser_NoAssets(_getOperatorName());
 
+        /// Registration flow differs for M2 vs Slashing release
         if (!isUpgraded) {
-            string memory operatorName = string.concat("M2Operator", numOperators.toString());
-
-            // Create an operator for M2.
-            operator = _randUser_NoAssets(operatorName);
             User_M2(payable(operator)).registerAsOperator_M2();
 
             operatorsToMigrate.push(operator);
         } else {
-            string memory operatorName = string.concat("operator", numOperators.toString());
-
-            operator = _randUser_NoAssets(operatorName);
             operator.registerAsOperator();
 
-            // Roll past the allocation configuration delay
             rollForward({blocks: ALLOCATION_CONFIGURATION_DELAY + 1});
-        }        
+        }
 
         assertTrue(delegationManager.isOperator(address(operator)), "_newRandomOperator: operator should be registered");
-
-        numOperators++;
+        assertEq(delegationManager.delegatedTo(address(operator)), address(operator), "_newRandomOperator: should be self-delegated");
         return operator;
+    }
+
+    /// @dev Name a newly-created staker ("staker1", "staker2", ...)
+    function _getStakerName() private returns (string memory) {
+        numStakers++;
+
+        string memory stakerNum = cheats.toString(numStakers);
+        string memory namePrefix = isUpgraded ? "staker" : "m2-staker";
+
+        return string.concat(namePrefix, stakerNum);
+    }
+
+    /// @dev Name a newly-created operator ("operator1", "operator2", ...)
+    function _getOperatorName() private returns (string memory) {
+        numOperators++;
+
+        string memory operatorNum = cheats.toString(numOperators);
+        string memory namePrefix = isUpgraded ? "operator" : "m2-operator";
+
+        return string.concat(namePrefix, operatorNum);
     }
 
     function _newRandomAVS() internal returns (AVS avs, OperatorSet[] memory operatorSets) {
@@ -595,7 +531,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         User staker,
         IStrategy[] memory strategies,
         string memory err
-    ) internal {
+    ) internal view {
         uint[] memory depositScalingFactors = _getDepositScalingFactors(staker, strategies);
         for (uint i = 0; i < strategies.length; i++) {
             assertEq(depositScalingFactors[i], WAD, err);
@@ -1543,11 +1479,12 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     }
 
     /// @dev Check that all the staker's withdrawable shares have been removed
+    /// TODO - this is not a snap assertion, investigate usage
     function assert_Snap_RemovedAll_Staker_WithdrawableShares(
         User staker, 
         IStrategy[] memory strategies, 
         string memory err
-    ) internal {
+    ) internal view {
         uint[] memory curShares = _getStakerWithdrawableShares(staker, strategies);
         // For each strategy, check all shares have been withdrawn
         for (uint i = 0; i < strategies.length; i++) {
@@ -2043,16 +1980,16 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         User operator,
         OperatorSet memory operatorSet
     ) internal view returns (AllocateParams memory params) {
-        return _genDeallocation_Full({
-            operator: operator, 
-            operatorSet: operatorSet, 
-            strategies: allocationManager.getStrategiesInOperatorSet(operatorSet)
-        });
+        return _genDeallocation_Full(
+            operator, 
+            operatorSet, 
+            allocationManager.getStrategiesInOperatorSet(operatorSet)
+        );
     }
 
     /// @dev Generates params for a full deallocation from all strategies the operator is allocated to in the operator set
     function _genDeallocation_Full(
-        User operator,
+        User,
         OperatorSet memory operatorSet,
         IStrategy[] memory strategies
     ) internal pure returns (AllocateParams memory params) {
@@ -2304,7 +2241,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
-    function _calculateExpectedShares(Withdrawal memory withdrawal) internal returns (uint[] memory) {
+    function _calculateExpectedShares(Withdrawal memory withdrawal) internal view returns (uint[] memory) {
         bytes32 root = delegationManager.calculateWithdrawalRoot(withdrawal);
 
         (, uint[] memory shares) = delegationManager.getQueuedWithdrawal(root);
