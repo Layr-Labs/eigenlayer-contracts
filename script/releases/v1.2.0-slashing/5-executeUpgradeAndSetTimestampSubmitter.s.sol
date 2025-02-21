@@ -39,43 +39,13 @@ contract ExecuteUpgradeAndSetTimestampSubmitter is QueueUnpause, Pause {
     }
 
     function testScript() public virtual override(QueueUnpause, Pause) {
-        // 0. Get Queue Transactions
-        TimelockController timelock = Env.timelockController();
-
-        assertFalse(timelock.isOperationPending(QueueUpgradeAndTimestampSetter.getTimelockId()), "Transaction should not be queued.");
-        assertFalse(timelock.isOperationReady(QueueUnpause.getTimelockId()), "Transaction should not be ready for execution.");
-
-
-        // 1. Deploy Impls
-        runAsEOA();
-
-        // 2. Queue Upgrade and Set Timestamp Submitter
-        QueueUpgradeAndTimestampSetter._runAsMultisig();
-        _unsafeResetHasPranked(); // reset hasPranked so we can use it again
-
-        assertTrue(timelock.isOperationPending(QueueUpgradeAndTimestampSetter.getTimelockId()), "Transaction should be queued.");
-        assertFalse(timelock.isOperationReady(QueueUpgradeAndTimestampSetter.getTimelockId()), "Transaction should NOT be ready for execution.");
-        assertFalse(timelock.isOperationDone(QueueUpgradeAndTimestampSetter.getTimelockId()), "Transaction should NOT be complete.");
-
-        // 3. Queue Unpause
-        QueueUnpause._runAsMultisig();
-        _unsafeResetHasPranked(); // reset hasPranked so we can use it again
-
-        assertTrue(timelock.isOperationPending(QueueUnpause.getTimelockId()), "Transaction should be queued.");
-        assertFalse(timelock.isOperationReady(QueueUnpause.getTimelockId()), "Transaction should NOT be ready for execution.");
-        assertFalse(timelock.isOperationDone(QueueUnpause.getTimelockId()), "Transaction should NOT be complete.");
-
-        // 4. Run Pausing Logic
-        Pause._runAsMultisig();
-        _unsafeResetHasPranked(); // reset hasPranked so we can use it again
-
-        assertTrue(Env.proxy.eigenPodManager().paused(PAUSED_START_CHECKPOINT), "Not paused!");
-        assertTrue(Env.proxy.eigenPodManager().paused(PAUSED_EIGENPODS_VERIFY_CREDENTIALS), "Not paused!");
+        // 1-4 are completed in _completeSteps1_4()
+        _completeSteps1_4();
 
         // Warp past delay
+        TimelockController timelock = Env.timelockController();
         vm.warp(block.timestamp + timelock.getMinDelay()); // 1 tick after ETA
         assertEq(timelock.isOperationReady(QueueUpgradeAndTimestampSetter.getTimelockId()), true, "Transaction should be executable.");
-
 
         // 5. Execute
         execute();
@@ -118,5 +88,38 @@ contract ExecuteUpgradeAndSetTimestampSubmitter is QueueUnpause, Pause {
         vm.expectRevert(errInit);
         eigenPodManager.initialize(address(0), 0);
         assertTrue(eigenPodManager.owner() == Env.executorMultisig(), "epm.owner invalid");
+    }
+
+    function _completeSteps1_4() internal {
+         // 0. Get Queue Transactions
+        TimelockController timelock = Env.timelockController();
+        assertFalse(timelock.isOperationPending(QueueUpgradeAndTimestampSetter.getTimelockId()), "Transaction should not be queued.");
+        assertFalse(timelock.isOperationReady(QueueUnpause.getTimelockId()), "Transaction should not be ready for execution.");
+
+        // 1. Deploy Impls
+        runAsEOA();
+
+        // 2. Queue Upgrade and Set Timestamp Submitter
+        QueueUpgradeAndTimestampSetter._runAsMultisig();
+        _unsafeResetHasPranked(); // reset hasPranked so we can use it again
+
+        assertTrue(timelock.isOperationPending(QueueUpgradeAndTimestampSetter.getTimelockId()), "Transaction should be queued.");
+        assertFalse(timelock.isOperationReady(QueueUpgradeAndTimestampSetter.getTimelockId()), "Transaction should NOT be ready for execution.");
+        assertFalse(timelock.isOperationDone(QueueUpgradeAndTimestampSetter.getTimelockId()), "Transaction should NOT be complete.");
+
+        // 3. Queue Unpause
+        QueueUnpause._runAsMultisig();
+        _unsafeResetHasPranked(); // reset hasPranked so we can use it again
+
+        assertTrue(timelock.isOperationPending(QueueUnpause.getTimelockId()), "Transaction should be queued.");
+        assertFalse(timelock.isOperationReady(QueueUnpause.getTimelockId()), "Transaction should NOT be ready for execution.");
+        assertFalse(timelock.isOperationDone(QueueUnpause.getTimelockId()), "Transaction should NOT be complete.");
+
+        // 4. Run Pausing Logic
+        Pause._runAsMultisig();
+        _unsafeResetHasPranked(); // reset hasPranked so we can use it again
+
+        assertTrue(Env.proxy.eigenPodManager().paused(PAUSED_START_CHECKPOINT), "Not paused!");
+        assertTrue(Env.proxy.eigenPodManager().paused(PAUSED_EIGENPODS_VERIFY_CREDENTIALS), "Not paused!");
     }
 }

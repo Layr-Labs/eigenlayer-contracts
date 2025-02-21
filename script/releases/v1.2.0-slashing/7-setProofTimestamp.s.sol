@@ -11,7 +11,7 @@ import {TimelockController} from "@openzeppelin/contracts/governance/TimelockCon
 
 
 /**
- * Purpose: Enqueue a transaction which immediately sets `EigenPodManager.PAUSED_START_CHECKPOINT=true` 
+ * Purpose: Propose a transaction to set the proof timestamp
  */
 contract SetProofTimestamp is ExecuteUpgradeAndSetTimestampSubmitter {
     using Env for *;
@@ -28,30 +28,18 @@ contract SetProofTimestamp is ExecuteUpgradeAndSetTimestampSubmitter {
     }
 
     function testScript() public virtual override {
-        TimelockController timelock = Env.timelockController();
-        // Deploy Impls
-        _runAsEOA();
-
-        // Queue Upgrade and Set Timestamp Submitter
-        QueueUpgradeAndTimestampSetter._runAsMultisig();
-        _unsafeResetHasPranked();
-
-        // Queue Unpause
-        QueueUnpause._runAsMultisig();
-        _unsafeResetHasPranked();
-
-        // Run Pausing Logic
-        Pause._runAsMultisig();
-        _unsafeResetHasPranked();
+        // 1-4 are completed in _completeSteps1_4()
+        _completeSteps1_4();
 
         // Warp past delay
+        TimelockController timelock = Env.timelockController();
         vm.warp(block.timestamp + timelock.getMinDelay()); // 1 tick after ETA
 
-        // Execute Upgrade and Set Timestamp Submitter
+        // 5. Execute Upgrade and Set Timestamp Submitter
         ExecuteUpgradeAndSetTimestampSubmitter._runAsMultisig();
         _unsafeResetHasPranked();
 
-        // Set the proof timestamp
+        // 6. Set the proof timestamp
         proofTimestamp = 1740434112; // Using holesky pectra fork timestamp for testing
         execute();   
 

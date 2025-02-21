@@ -11,8 +11,7 @@ import {TimelockController} from "@openzeppelin/contracts/governance/TimelockCon
 import {SetProofTimestamp} from "./7-setProofTimestamp.s.sol";
 /**
  * Purpose: Executes the unpause transaction from step 3
- *
-*/
+ */
 contract ExecuteUnpause is SetProofTimestamp {
     using Env for *;
 
@@ -30,30 +29,18 @@ contract ExecuteUnpause is SetProofTimestamp {
     }
 
     function testScript() public virtual override {
-        TimelockController timelock = Env.timelockController();
-        // Deploy Impls
-        _runAsEOA();
-
-        // Queue Upgrade and Set Timestamp Submitter
-        QueueUpgradeAndTimestampSetter._runAsMultisig();
-        _unsafeResetHasPranked();
-
-        // Queue Unpause
-        QueueUnpause._runAsMultisig();
-        _unsafeResetHasPranked();
-
-        // Run Pausing Logic
-        Pause._runAsMultisig();
-        _unsafeResetHasPranked();
+        // 1-4 are completed in _completeSteps1_4()
+        _completeSteps1_4();
 
         // Warp past delay - this works for both the upgrade & the unpause
+        TimelockController timelock = Env.timelockController();
         vm.warp(block.timestamp + timelock.getMinDelay()); // 1 tick after ETA
 
-        // Execute Upgrade and Set Timestamp Submitter
+        // 5. Execute Upgrade and Set Timestamp Submitter
         ExecuteUpgradeAndSetTimestampSubmitter._runAsMultisig();
         _unsafeResetHasPranked();
 
-        // Set the proof timestamp
+        // 7. Set the proof timestamp
         SetProofTimestamp.setTimestamp(1740434112); // Using holesky pectra fork timestamp for testing
         SetProofTimestamp._runAsMultisig();
         _unsafeResetHasPranked();
@@ -62,8 +49,7 @@ contract ExecuteUnpause is SetProofTimestamp {
         assertTrue(timelock.isOperationDone(QueueUpgradeAndTimestampSetter.getTimelockId()), "Predecessor should be done.");
         assertTrue(timelock.isOperationReady(QueueUnpause.getTimelockId()), "Transaction should be executable.");
 
-
-        // Execute Unpause
+        // 8. Execute Unpause
         execute();
 
         // Validate that the unpause is successful
