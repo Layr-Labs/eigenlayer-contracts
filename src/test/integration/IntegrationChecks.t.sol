@@ -1012,10 +1012,10 @@ contract IntegrationCheckUtils is IntegrationBase {
                                  BC/AVS SLASHING CHECKS
     *******************************************************************************/
 
-    function check_CompleteCheckPoint_AfterAVSAndBCSlash(
+    function check_CompleteCheckPoint_AfterAVS_BCSlash(
         User staker,
         uint40[] memory slashedValidators,
-        uint256 originalWithdrawableShares,
+        uint256 depositShares,
         uint64 slashedBalanceGwei,
         AllocateParams memory allocateParams,
         SlashingParams memory slashingParams
@@ -1026,18 +1026,20 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Removed_ActiveValidatorCount(staker, slashedValidators.length, "should have decreased active validator count");
         assert_Snap_Removed_ActiveValidators(staker, slashedValidators, "exited validators should each be WITHDRAWN");
 
-        // Between the AVS slash and the BC slash, the shares should have decreased by at least the BC slash amount
-        assert_withdrawableSharesDecreasedByAtLeast(staker, BEACONCHAIN_ETH_STRAT, originalWithdrawableShares, uint256(slashedBalanceGwei * GWEI_TO_WEI), "should have decreased withdrawable shares by at least the BC slash amount");
+        // From the original shares to the BC slash, the shares should have decreased by at least the BC slash amount
+        assert_withdrawableSharesDecreasedByAtLeast(staker, BEACONCHAIN_ETH_STRAT, depositShares, uint256(slashedBalanceGwei * GWEI_TO_WEI), "should have decreased withdrawable shares by at least the BC slash amount");
 
         // Calculate the withdrawable shares
-        assert_Snap_StakerWithdrawableShares_AfterAVSAndBCSlash(staker, originalWithdrawableShares, allocateParams, slashingParams, "should have decreased withdrawable shares correctly");
+        assert_Snap_StakerWithdrawableShares_AfterAVSSlash_BCSlash(staker, allocateParams, slashingParams, "should have decreased withdrawable shares correctly");
     }
 
-    function check_CompleteCheckpoint_AfterAVSAndBCSlash_ExtraValidatorProven(
+    function check_CompleteCheckpoint_AfterAVSSlash_ValidatorProven_BCSlash(
         User staker,
         uint40[] memory slashedValidators,
         uint256 originalWithdrawableShares,
-        uint64 slashedAmountGwei
+        uint256 extraValidatorShares,
+        AllocateParams memory allocateParams,
+        SlashingParams memory slashingParams
     ) internal {
         // Checkpoint State
         check_CompleteCheckpoint_State(staker);
@@ -1046,7 +1048,6 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Removed_ActiveValidators(staker, slashedValidators, "exited validators should each be WITHDRAWN");
 
         // TODO: bound this better
-        // assert_Snap_StakerWithdrawableShares_AfterAVSAndBCSlash_ExtraValidatorProven(staker, originalWithdrawableShares, allocateParams, slashingParams, "should have decreased withdrawable shares correctly");
-        // assert_Snap_Removed_Staker_WithdrawableShares_AtLeast(staker, BEACONCHAIN_ETH_STRAT, slashedAmountGwei * GWEI_TO_WEI, 1e11, "should have decreased withdrawable shares by at least slashed amount");
+        assert_Snap_StakerWithdrawableShares_AVSSlash_ValidatorProven_BCSlash(staker, originalWithdrawableShares, extraValidatorShares, allocateParams, slashingParams, "should have decreased withdrawable shares correctly");
     }
 }
