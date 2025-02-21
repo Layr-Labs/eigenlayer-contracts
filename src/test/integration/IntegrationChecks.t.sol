@@ -210,7 +210,8 @@ contract IntegrationCheckUtils is IntegrationBase {
         User staker, 
         User operator, 
         IStrategy[] memory strategies, 
-        uint[] memory shares, 
+        uint[] memory depositShares,
+        uint[] memory withdrawableShares, 
         Withdrawal[] memory withdrawals, 
         bytes32[] memory withdrawalRoots
     ) internal {
@@ -226,11 +227,11 @@ contract IntegrationCheckUtils is IntegrationBase {
             "check_QueuedWithdrawal_State: calculated withdrawals should match returned roots");
         assert_Snap_Added_QueuedWithdrawals(staker, withdrawals,
             "check_QueuedWithdrawal_State: staker should have increased nonce by withdrawals.length");
-        assert_Snap_Removed_OperatorShares(operator, strategies, shares,
+        assert_Snap_Removed_OperatorShares(operator, strategies, withdrawableShares,
             "check_QueuedWithdrawal_State: failed to remove operator shares");
-        assert_Snap_Removed_Staker_DepositShares(staker, strategies, shares,
+        assert_Snap_Removed_Staker_DepositShares(staker, strategies, depositShares,
             "check_QueuedWithdrawal_State: failed to remove staker shares");
-        assert_Snap_Removed_Staker_WithdrawableShares(staker, strategies, shares,
+        assert_Snap_Removed_Staker_WithdrawableShares(staker, strategies, withdrawableShares,
             "check_QueuedWithdrawal_State: failed to remove staker withdrawable shares");
     }
 
@@ -248,6 +249,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         // ... check that the staker is undelegated, all strategies from which the staker is deposited are unqueued,
         //     that the returned root matches the hashes for each strategy and share amounts, and that the staker
         //     and operator have reduced shares
+        assert_HasNoDelegatableShares(staker, "staker should have withdrawn all shares");
         assertFalse(delegationManager.isDelegated(address(staker)),
             "check_Undelegate_State: staker should not be delegated");
         assert_ValidWithdrawalHashes(withdrawals, withdrawalRoots,
@@ -268,7 +270,8 @@ contract IntegrationCheckUtils is IntegrationBase {
 
     function check_Redelegate_State(
         User staker, 
-        User operator,
+        User prevOperator,
+        User newOperator,
         IDelegationManagerTypes.Withdrawal[] memory withdrawals,
         bytes32[] memory withdrawalRoots,
         IStrategy[] memory strategies,
@@ -282,13 +285,16 @@ contract IntegrationCheckUtils is IntegrationBase {
         //     and operator have reduced shares
         assertTrue(delegationManager.isDelegated(address(staker)),
             "check_Redelegate_State: staker should not be delegated");
+        assertEq(address(newOperator), delegationManager.delegatedTo(address(staker)), "staker should be delegated to operator");
+        assert_HasExpectedShares(staker, strategies, new uint[](strategies.length), "staker should not have deposit shares after redelegation");
+        assert_Snap_Unchanged_OperatorShares(newOperator, "new operator should not have received any shares");
         assert_ValidWithdrawalHashes(withdrawals, withdrawalRoots,
             "check_Redelegate_State: calculated withdrawal should match returned root");
         assert_AllWithdrawalsPending(withdrawalRoots,
             "check_Redelegate_State: stakers withdrawal should now be pending");
         assert_Snap_Added_QueuedWithdrawals(staker, withdrawals,
             "check_Redelegate_State: staker should have increased nonce by withdrawals.length");
-        assert_Snap_Removed_OperatorShares(operator, strategies, stakerDelegatedShares,
+        assert_Snap_Removed_OperatorShares(prevOperator, strategies, stakerDelegatedShares,
             "check_Redelegate_State: failed to remove operator shares");
         assert_Snap_Removed_Staker_DepositShares(staker, strategies, stakerDepositShares,
             "check_Redelegate_State: failed to remove staker shares");
@@ -349,7 +355,7 @@ contract IntegrationCheckUtils is IntegrationBase {
             if (operator != staker) {
                 assert_Snap_Unchanged_TokenBalances(operator, "operator should not have any change in underlying token balances");
             }
-            assert_Snap_Added_OperatorShares(operator, withdrawal.strategies, withdrawal.scaledShares, "operator should have received shares");
+            assert_Snap_Added_OperatorShares(operator, strategies, shares, "operator should have received shares");
         }
     }
 
@@ -399,466 +405,9 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Unchanged_StrategyShares(strategies, "strategies should have total shares unchanged");
     }
 
-    function check_Withdrawal_AsShares_Redelegated_State(
-        User staker,
-        User operator,
-        User newOperator,
-        IDelegationManagerTypes.Withdrawal memory withdrawal,
-        IStrategy[] memory strategies,
-        uint[] memory shares
-    ) internal {
-        /// Complete withdrawal(s):
-        // The staker will complete the withdrawal as shares
-        // 
-        // ... check that the withdrawal is not pending, that the token balances of the staker and operator are unchanged,
-        //     that the withdrawer received the expected shares, and that that the total shares of each o
-        //     strategy withdrawn remains unchanged 
-        assert_WithdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
-        assert_Snap_Unchanged_TokenBalances(staker, "staker should not have any change in underlying token balances");
-        assert_Snap_Unchanged_TokenBalances(operator, "operator should not have any change in underlying token balances");
-        assert_Snap_Added_Staker_DepositShares(staker, strategies, shares, "staker should have received expected shares");
-        assert_Snap_Unchanged_OperatorShares(operator, "operator should have shares unchanged");
-        assert_Snap_Unchanged_StrategyShares(strategies, "strategies should have total shares unchanged");
-    }
-
     /*******************************************************************************
                                 ALM - BASIC INVARIANTS
     *******************************************************************************/
-    
-    /// @dev Basic invariants that should hold after EVERY call to `registerForOperatorSets`
-    /// NOTE: These are only slightly modified from check_Base_Deregistration_State
-    /// If you add invariants here, consider adding them there (and vice-versa)
-    function check_Base_Registration_State(
-        User operator,
-        OperatorSet memory operatorSet
-    ) internal {
-        check_MaxMag_Invariants(operator);
-        check_IsSlashable_State(operator, operatorSet, allocationManager.getStrategiesInOperatorSet(operatorSet));
-
-        // Registration SHOULD register the operator, making them slashable and adding them as a member of the set
-        assert_Snap_Became_Registered(operator, operatorSet, "operator should not have been registered before, and is now registered");
-        assert_Snap_Became_Slashable(operator, operatorSet, "operator should not have been slashable before, and is now slashable");
-        assert_Snap_Added_RegisteredSet(operator, operatorSet, "should have added operator sets to list of registered sets");
-        assert_Snap_Added_MemberOfSet(operator, operatorSet, "should have added operator to list of set members");
-
-        // Registration should NOT change anything about magnitude, allocations, or allocated sets
-        assert_Snap_Unchanged_AllocatedSets(operator, "should not have updated allocated sets");
-        assert_Snap_Unchanged_AllocatedStrats(operator, operatorSet, "should not have updated allocated strategies");
-        assert_Snap_Unchanged_MaxMagnitude(operator, allStrats, "should not have updated max magnitudes in any way");
-        assert_Snap_Unchanged_AllocatedStake(operator, operatorSet, allStrats, "should not have updated allocated stake in any way");
-        assert_Snap_Unchanged_StrategyAllocations(operator, operatorSet, allStrats, "should not have updated any individual allocations");
-        assert_Snap_Unchanged_EncumberedMagnitude(operator, allStrats, "should not have updated encumbered magnitude");
-        assert_Snap_Unchanged_AllocatableMagnitude(operator, allStrats, "should not have updated allocatable magnitude");
-    }
-
-    /// @dev Check invariants for registerForOperatorSets given a set of strategies
-    /// for which NO allocation exists (currentMag/pendingDiff are 0)
-    /// @param unallocated For the given operatorSet, a list of strategies for which NO allocation exists
-    function check_Registration_State_NoAllocation(
-        User operator,
-        OperatorSet memory operatorSet,
-        IStrategy[] memory unallocated
-    ) internal {
-        check_Base_Registration_State(operator, operatorSet);
-
-        /// The operator is NOT allocated, ensure their slashable stake and magnitudes are unchanged
-        assert_Snap_Unchanged_AllocatedStake(operator, operatorSet, unallocated, "should not have updated allocated stake in any way");
-        assert_Snap_Unchanged_SlashableStake(operator, operatorSet, unallocated, "operator should not have increased slashable stake for any given strategy");
-    }
-
-    /// @dev Check invariants for registerForOperatorSets AFTER a prior allocation becomes active
-    /// @param active allocation params to the last call to modifyAllocations
-    ///
-    /// ASSUMES:
-    /// - the effect block for `params` has already passed
-    /// - params.newMagnitudes does NOT contain any `0` entries
-    function check_Registration_State_ActiveAllocation(
-        User operator,
-        AllocateParams memory active
-    ) internal {
-        OperatorSet memory operatorSet = active.operatorSet;
-        IStrategy[] memory strategies = active.strategies;
-
-        /// Basic registerForOperatorSets invariants
-        check_Base_Registration_State(operator, operatorSet);
-
-        /// Given an active allocation, check that the allocation is reflected in state
-        assert_IsAllocatedToSet(operator, operatorSet, "operatorSet should be included in allocatedSets");
-        assert_IsAllocatedToSetStrats(operator, operatorSet, strategies, "strategies should be included in allocatedStrategies");
-        assert_CurrentMagnitude(operator, active, "queried allocation should equal active allocation");
-        
-        /// Check that additional stake just became slashable
-        assert_Snap_Unchanged_AllocatedStake(operator, operatorSet, strategies, "should not have updated allocated stake in any way");
-        assert_Snap_StakeBecameSlashable(operator, operatorSet, strategies, "registration should make entirety of active allocation slashable");
-    }
-
-    /// @dev Check registration invariants. Assumes the operator has a PENDING allocation
-    /// to the set, but that the allocation's effect block has not yet been reached
-    function check_Registration_State_PendingAllocation(
-        User operator,
-        AllocateParams memory params
-    ) internal {
-        OperatorSet memory operatorSet = params.operatorSet;
-        IStrategy[] memory strategies = params.strategies;
-
-        check_Base_Registration_State(operator, operatorSet);
-
-        assert_IsAllocatedToSet(operator, operatorSet, "operator should be allocated to set, even while pending");
-        assert_IsAllocatedToSetStrats(operator, operatorSet, strategies, "strategies should be included in allocatedStrategies");
-
-        /// Skip pending checks if operator has no allocation delay
-        uint32 delay = _getExistingAllocationDelay(operator);
-        if (delay == 0) {
-            return;
-        }
-
-        assert_Snap_Unchanged_AllocatedStake(operator, operatorSet, strategies, "should not have updated allocated stake in any way");
-        assert_Snap_Unchanged_SlashableStake(operator, operatorSet, allStrats, "operator should not have increased slashable stake");
-    }
-
-    /*******************************************************************************
-                                 ALM - DEREGISTRATION
-    *******************************************************************************/
-
-    /// @dev Basic invariants that should hold after EVERY call to `deregisterFromOperatorSets`
-    /// NOTE: These are only slightly modified from check_Base_Registration_State
-    /// If you add invariants here, consider adding them there (and vice-versa)
-    function check_Base_Deregistration_State(
-        User operator,
-        OperatorSet memory operatorSet
-    ) internal {
-        check_MaxMag_Invariants(operator);
-
-        // Deregistration SHOULD remove the operator as a member of the set
-        assert_Snap_Became_Deregistered(operator, operatorSet, "operator should have been registered before, and is now deregistered");
-        assert_Snap_Removed_RegisteredSet(operator, operatorSet, "should have removed operator set from list of registered sets");
-        assert_Snap_Removed_MemberOfSet(operator, operatorSet, "should have removed operator from list of set members");
-
-        // Deregistration should NOT change slashability, magnitude, allocations, or allocated sets
-        assert_Snap_Remains_Slashable(operator, operatorSet, "operator should have been slashable already, and should still be slashable");
-        assert_Snap_Unchanged_AllocatedSets(operator, "should not have updated allocated sets");
-        assert_Snap_Unchanged_AllocatedStrats(operator, operatorSet, "should not have updated allocated strategies");
-        assert_Snap_Unchanged_MaxMagnitude(operator, allStrats, "should not have updated max magnitudes in any way");
-        assert_Snap_Unchanged_AllocatedStake(operator, operatorSet, allStrats, "should not have updated allocated stake in any way");
-        assert_Snap_Unchanged_StrategyAllocations(operator, operatorSet, allStrats, "should not have updated any individual allocations");
-        assert_Snap_Unchanged_EncumberedMagnitude(operator, allStrats, "should not have updated encumbered magnitude");
-        assert_Snap_Unchanged_AllocatableMagnitude(operator, allStrats, "should not have updated allocatable magnitude");
-
-        _rollForward_DeallocationDelay();
-        {
-            check_NotSlashable_State(operator, operatorSet);
-        }
-        _rollBackward_DeallocationDelay();
-    }
-
-    function check_Deregistration_State_NoAllocation(
-        User operator,
-        OperatorSet memory operatorSet
-    ) internal {
-        check_Base_Deregistration_State(operator, operatorSet);
-
-        assert_Snap_Unchanged_AllocatedStake(operator, operatorSet, allStrats, "should not have updated allocated stake in any way");
-        assert_Snap_Unchanged_SlashableStake(operator, operatorSet, allStrats, "operator should not have increased slashable stake for any given strategy");
-    }
-
-    function check_Deregistration_State_ActiveAllocation(
-        User operator,
-        OperatorSet memory operatorSet
-    ) internal {
-        check_Base_Deregistration_State(operator, operatorSet);
-
-        assert_Snap_Unchanged_AllocatedStake(operator, operatorSet, allStrats, "should not have updated allocated stake in any way");
-        assert_Snap_Unchanged_SlashableStake(operator, operatorSet, allStrats, "operator should not have increased slashable stake for any given strategy");
-    }
-
-    function check_Deregistration_State_PendingAllocation(
-        User operator,
-        OperatorSet memory operatorSet
-    ) internal {
-        check_Base_Deregistration_State(operator, operatorSet);
-
-        assert_Snap_Unchanged_AllocatedStake(operator, operatorSet, allStrats, "should not have updated allocated stake in any way");
-        assert_Snap_Unchanged_SlashableStake(operator, operatorSet, allStrats, "operator should not have increased slashable stake for any given strategy");
-    }
-
-    /*******************************************************************************
-                                ALM - INCREASE ALLOCATION
-    *******************************************************************************/
-
-    /// @dev Basic invariants that should hold after all calls to `modifyAllocations`
-    /// where the input `params` represent an _increase_ in magnitude
-    function check_Base_IncrAlloc_State(
-        User operator,
-        AllocateParams memory params
-    ) internal {
-        check_MaxMag_Invariants(operator);
-
-        OperatorSet memory operatorSet = params.operatorSet;
-        IStrategy[] memory strategies = params.strategies;
-        uint64[] memory newMagnitudes = params.newMagnitudes;
-
-        // Increasing Allocation should NOT change operator set registration, max magnitude
-        assert_Snap_Unchanged_Registration(operator, operatorSet, "operator registration status should be unchanged");
-        assert_Snap_Unchanged_Slashability(operator, operatorSet, "operator slashability should be unchanged");
-        assert_Snap_Unchanged_RegisteredSet(operator, "list of registered sets should remain unchanged");
-        assert_Snap_Unchanged_MemberOfSet(operatorSet, "list of set members should remain unchanged");
-        assert_Snap_Unchanged_MaxMagnitude(operator, allStrats, "should not have updated max magnitudes in any way");
-
-        // Increasing Allocation SHOULD consume magnitude and mark the operator as being allocated to the set
-        assert_IsAllocatedToSet(operator, operatorSet, "operator should be allocated to set");
-        assert_IsAllocatedToSetStrats(operator, operatorSet, strategies, "operator should be allocated to strategies for set");
-        assert_Snap_Allocated_Magnitude(operator, strategies, "operator should have allocated magnitude");
-    }
-
-    /// @dev Invariants for modifyAllocations. Use when:
-    /// - operator is NOT slashable for this operator set
-    /// - last call to modifyAllocations created an INCREASE in allocation
-    function check_IncrAlloc_State_NotSlashable(
-        User operator,
-        AllocateParams memory params
-    ) internal {
-        check_Base_IncrAlloc_State(operator, params);
-        check_NotSlashable_State(operator, params.operatorSet);
-
-        /// Run checks on pending allocation, if the operator has a nonzero delay
-        check_IncrAlloc_State_NotSlashable_Pending(operator, params);
-
-        /// Run checks on active allocation
-        check_IncrAlloc_State_NotSlashable_Active(operator, params);
-    }
-
-    /// @dev Invariants for modifyAllocations. Used when:
-    /// - operator is NOT slashable for this operator set
-    /// - last call to modifyAllocations created an INCREASE in allocation
-    /// - effectBlock for the increase HAS NOT been reached
-    function check_IncrAlloc_State_NotSlashable_Pending(
-        User operator,
-        AllocateParams memory params
-    ) private skipIfInstantAlloc(operator) {
-        // Validate operator allocation is pending
-        assert_HasPendingIncrease(operator, params, "params should reflect a pending modification");
-
-        // Should not have allocated magnitude
-        assert_Snap_Unchanged_AllocatedStake(operator, params.operatorSet, params.strategies, "should not have updated allocated stake in any way");
-        assert_Snap_Unchanged_SlashableStake(operator, params.operatorSet, params.strategies, "should not have updated allocated stake in any way");
-    }
-
-    /// @dev Invariants for modifyAllocations. Used when:
-    /// - operator is NOT slashable for this operator set
-    /// - last call to modifyAllocations created an INCREASE in allocation
-    /// - effectBlock for the increase HAS been reached
-    function check_IncrAlloc_State_NotSlashable_Active(
-        User operator,
-        AllocateParams memory params
-    ) private activateAllocation(operator) {
-        // Validate allocation is active
-        check_ActiveModification_State(operator, params);
-
-        // SHOULD set current magnitude and increase allocated stake
-        assert_Snap_Set_CurrentMagnitude(operator, params, "should have updated the operator's magnitude");
-        assert_HasAllocatedStake(operator, params, "operator should have expected allocated stake for each strategy");
-        assert_Snap_StakeBecameAllocated(operator, params.operatorSet, params.strategies, "allocated stake should have increased");
-
-        // Should NOT change slashable stake
-        assert_Snap_Unchanged_SlashableStake(operator, params.operatorSet, params.strategies, "slashable stake should not be changed");
-    }
-
-    /// @dev Invariants for modifyAllocations. Use when:
-    /// - operator IS slashable for this operator set
-    /// - last call to modifyAllocations created an INCREASE in allocation
-    function check_IncrAlloc_State_Slashable(
-        User operator,
-        AllocateParams memory params
-    ) internal {
-        check_Base_IncrAlloc_State(operator, params);
-        check_IsSlashable_State(operator, params.operatorSet, params.strategies);        
-
-        /// Run checks on pending allocation, if the operator has a nonzero delay
-        check_IncrAlloc_State_Slashable_Pending(operator, params);
-
-        /// Run checks on active allocation
-        check_IncrAlloc_State_Slashable_Active(operator, params);
-    }
-
-    /// @dev Invariants for modifyAllocations. Used when:
-    /// - operator IS slashable for this operator set
-    /// - last call to modifyAllocations created an INCREASE in allocation
-    /// - effectBlock for the increase HAS NOT been reached
-    function check_IncrAlloc_State_Slashable_Pending(
-        User operator,
-        AllocateParams memory params
-    ) private skipIfInstantAlloc(operator) {
-        OperatorSet memory operatorSet = params.operatorSet;
-        IStrategy[] memory strategies = params.strategies;
-
-        // Validate operator has pending allocation and unchanged allocated/slashable stake
-        assert_HasPendingIncrease(operator, params, "params should reflect a pending modification");
-
-        // Should not have allocated magnitude
-        assert_Snap_Unchanged_AllocatedStake(operator, operatorSet, strategies, "should not have updated allocated stake in any way");
-        assert_Snap_Unchanged_SlashableStake(operator, operatorSet, strategies, "should not have updated allocated stake in any way");
-    }
-
-    /// @dev Invariants for modifyAllocations. Used when:
-    /// - operator IS slashable for this operator set
-    /// - last call to modifyAllocations created an INCREASE in allocation
-    /// - effectBlock for the increase HAS been reached
-    function check_IncrAlloc_State_Slashable_Active(
-        User operator,
-        AllocateParams memory params
-    ) private activateAllocation(operator) {
-        // Validate operator does not have a pending modification, and has expected slashable stake
-        check_ActiveModification_State(operator, params);
-
-        // SHOULD set current magnitude and increase slashable/allocated stake
-        assert_Snap_Set_CurrentMagnitude(operator, params, "should have updated the operator's magnitude");
-        assert_HasAllocatedStake(operator, params, "operator should have expected allocated stake for each strategy");
-        assert_HasSlashableStake(operator, params, "operator should have expected slashable stake for each strategy");
-        assert_Snap_StakeBecameAllocated(operator, params.operatorSet, params.strategies, "allocated stake should have increased");
-        assert_Snap_StakeBecameSlashable(operator, params.operatorSet, params.strategies, "slashable stake should have increased");
-    }
-
-    /*******************************************************************************
-                                ALM - DECREASE ALLOCATION
-    *******************************************************************************/
-
-    /// @dev Basic invariants that should hold after all calls to `modifyAllocations`
-    /// where the input `params` represent a decrease in magnitude
-    function check_Base_DecrAlloc_State(
-        User operator,
-        AllocateParams memory params
-    ) internal {
-        check_MaxMag_Invariants(operator);
-
-        OperatorSet memory operatorSet = params.operatorSet;
-        IStrategy[] memory strategies = params.strategies;
-        uint64[] memory newMagnitudes = params.newMagnitudes;
-
-        // Decreasing Allocation should NOT change operator set registration, max magnitude
-        assert_Snap_Unchanged_Registration(operator, operatorSet, "operator registration status should be unchanged");
-        assert_Snap_Unchanged_Slashability(operator, operatorSet, "operator slashability should be unchanged");
-        assert_Snap_Unchanged_RegisteredSet(operator, "list of registered sets should remain unchanged");
-        assert_Snap_Unchanged_MemberOfSet(operatorSet, "list of set members should remain unchanged");
-        assert_Snap_Unchanged_MaxMagnitude(operator, allStrats, "should not have updated max magnitudes in any way");
-    }
-
-    function check_DecrAlloc_State_NotSlashable(
-        User operator,
-        AllocateParams memory params
-    ) internal {
-        OperatorSet memory operatorSet = params.operatorSet;
-        IStrategy[] memory strategies = params.strategies;
-        
-        check_Base_DecrAlloc_State(operator, params);
-        check_NotSlashable_State(operator, operatorSet);
-        check_ActiveModification_State(operator, params);
-         
-        // SHOULD set current magnitude and decrease allocated stake
-        assert_HasAllocatedStake(operator, params, "operator should have expected allocated stake for each strategy");        
-        assert_Snap_Set_CurrentMagnitude(operator, params, "should have updated the operator's magnitude");
-        assert_Snap_StakeBecameDeallocated(operator, operatorSet, strategies, "allocated stake should have increased");
-        assert_Snap_Deallocated_Magnitude(operator, strategies, "should have deallocated magnitude");
-    }
-
-    function check_DecrAlloc_State_Slashable(
-        User operator,
-        AllocateParams memory params
-    ) internal {
-        check_Base_DecrAlloc_State(operator, params);
-        check_IsSlashable_State(operator, params.operatorSet, params.strategies);
-
-        // Run checks on pending deallocation
-        check_DecrAlloc_State_Slashable_Pending(operator, params);
-
-        // Run checks on active deallocation
-        check_DecrAlloc_State_Slashable_Active(operator, params);
-    }
-
-    function check_DecrAlloc_State_Slashable_Pending(
-        User operator,
-        AllocateParams memory params
-    ) private {
-        // Validate deallocation is pending
-        assert_HasPendingDecrease(operator, params, "params should reflect a pending modification");
-
-        // Should NOT have changed allocated magnitude or stake
-        assert_Snap_Unchanged_EncumberedMagnitude(operator, params.strategies, "should not have changed encumbered magnitude");
-        assert_Snap_Unchanged_AllocatableMagnitude(operator, params.strategies, "should not have changed allocatable magnitude");
-        assert_Snap_Unchanged_AllocatedSets(operator, "should not have removed operator set from allocated sets");
-        assert_Snap_Unchanged_AllocatedStake(operator, params.operatorSet, params.strategies, "should not have updated allocated stake in any way");
-        assert_Snap_Unchanged_SlashableStake(operator, params.operatorSet, params.strategies, "should not have updated allocated stake in any way");
-    }
-
-    function check_DecrAlloc_State_Slashable_Active(
-        User operator,
-        AllocateParams memory params
-    ) private activateDeallocation() {
-        OperatorSet memory operatorSet = params.operatorSet;
-        IStrategy[] memory strategies = params.strategies;
-
-        check_ActiveModification_State(operator, params);
-
-        // SHOULD set current magnitude and decrease allocated stake
-        assert_Snap_Set_CurrentMagnitude(operator, params, "should have updated the operator's magnitude");
-        assert_HasAllocatedStake(operator, params, "operator should have expected allocated stake for each strategy");
-        assert_HasSlashableStake(operator, params, "operator should have expected slashable stake for each strategy");
-
-        assert_Snap_StakeBecomeUnslashable(operator, operatorSet, strategies, "slashable stake should have decreased");
-        assert_Snap_StakeBecameDeallocated(operator, params.operatorSet, params.strategies, "allocated stake should have decreased");
-        assert_Snap_Deallocated_Magnitude(operator, strategies, "should have deallocated magnitude");
-    }
-
-    function check_FullyDeallocated_State(
-        User operator,
-        AllocateParams memory allocateParams,
-        AllocateParams memory deallocateParams
-    ) internal {
-        OperatorSet memory operatorSet = allocateParams.operatorSet;
-        assert_NoSlashableStake(operator, operatorSet, "should not have any slashable stake");
-        // TODO - broken; do we want to fix this?
-        // assert_Snap_Removed_AllocatedSet(operator, operatorSet, "should have removed operator set from allocated sets");
-
-        // Any instant deallocation
-        assert_Snap_Removed_EncumberedMagnitude(operator, allocateParams.strategies, allocateParams.newMagnitudes, "should have removed allocation from encumbered magnitude");
-        assert_Snap_Added_AllocatableMagnitude(operator, allocateParams.strategies, allocateParams.newMagnitudes, "should have added allocation to allocatable magnitude");
-        assert_Snap_Unchanged_MaxMagnitude(operator, allStrats, "max magnitude should not have changed");
-        
-        assert_MaxEqualsAllocatablePlusEncumbered(operator, "max magnitude should equal encumbered plus allocatable");
-        check_ActiveModification_State(operator, deallocateParams); 
-    }
-
-    /*******************************************************************************
-                                ALM - SLASHING
-    *******************************************************************************/
-
-    function check_Base_Slashing_State(
-        User operator,
-        AllocateParams memory allocateParams,
-        SlashingParams memory slashParams
-    ) internal {
-        OperatorSet memory operatorSet = allocateParams.operatorSet;
-
-        check_MaxMag_Invariants(operator);
-        check_IsSlashable_State(operator, operatorSet, allocateParams.strategies);
-
-        // Slashing SHOULD change max magnitude and current allocation
-        assert_Snap_Slashed_MaxMagnitude(operator, slashParams, "slash should lower max magnitude");
-        assert_Snap_Slashed_EncumberedMagnitude(operator, slashParams, "slash should lower max magnitude");
-        assert_Snap_Slashed_AllocatedStake(operator, operatorSet, slashParams, "slash should lower allocated stake");
-        assert_Snap_Slashed_SlashableStake(operator, operatorSet, slashParams, "slash should lower slashable stake");
-        assert_Snap_Slashed_OperatorShares(operator, slashParams, "slash should remove operator shares");
-        assert_Snap_Slashed_Allocation(operator, operatorSet, slashParams, "slash should reduce current magnitude");
-        assert_Snap_Increased_BurnableShares(operator, slashParams, "slash should increase burnable shares");
-
-        // Slashing SHOULD NOT change allocatable magnitude, registration, and slashability status
-        assert_Snap_Unchanged_AllocatableMagnitude(operator, allStrats, "slashing should not change allocatable magnitude");
-        assert_Snap_Unchanged_Registration(operator, operatorSet, "slash should not change registration status");
-        assert_Snap_Unchanged_Slashability(operator, operatorSet, "slash should not change slashability status");
-        assert_Snap_Unchanged_AllocatedSets(operator, "should not have updated allocated sets");
-        assert_Snap_Unchanged_AllocatedStrats(operator, operatorSet, "should not have updated allocated strategies");
-    }
-
-    // TODO: improvement needed 
 
     /// @dev Run a method as if the user's allocation delay had passed
     /// When done, reset block number so other tests are not affected
@@ -895,7 +444,7 @@ contract IntegrationCheckUtils is IntegrationBase {
     /// @dev Check global max magnitude invariants - these should ALWAYS hold
     function check_MaxMag_Invariants(
         User operator
-    ) internal {
+    ) internal view {
         assert_MaxMagsEqualMaxMagsAtCurrentBlock(operator, allStrats, "max magnitudes should equal upperlookup at current block");
         assert_MaxEqualsAllocatablePlusEncumbered(operator, "max magnitude should equal encumbered plus allocatable");
     }
@@ -904,7 +453,7 @@ contract IntegrationCheckUtils is IntegrationBase {
     function check_ActiveModification_State(
         User operator,
         AllocateParams memory params
-    ) internal {
+    ) internal view {
         OperatorSet memory operatorSet = params.operatorSet;
         IStrategy[] memory strategies = params.strategies;
 
@@ -916,7 +465,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         User operator,
         OperatorSet memory operatorSet,
         IStrategy[] memory strategies
-    ) internal {
+    ) internal view {
         assert_IsSlashable(operator, operatorSet, "operator should be slashable for operator set");
         assert_CurMinSlashableEqualsMinAllocated(operator, operatorSet, strategies, "minimum slashable stake should equal allocated stake at current block");
     }
@@ -924,7 +473,7 @@ contract IntegrationCheckUtils is IntegrationBase {
     function check_NotSlashable_State(
         User operator,
         OperatorSet memory operatorSet
-    ) internal {
+    ) internal view {
         assert_NotSlashable(operator, operatorSet, "operator should not be slashable for operator set");
         assert_NoSlashableStake(operator, operatorSet, "operator should not have any slashable stake");
     }
@@ -1350,8 +899,8 @@ contract IntegrationCheckUtils is IntegrationBase {
         check_IsSlashable_State(operator, operatorSet, allocateParams.strategies);
 
         // Slashing SHOULD change max magnitude and current allocation
-        assert_Snap_Slashed_MaxMagnitude(operator, slashParams, "slash should lower max magnitude");
-        assert_Snap_Slashed_EncumberedMagnitude(operator, slashParams, "slash should lower max magnitude");
+        assert_Snap_Slashed_MaxMagnitude(operator, operatorSet, slashParams, "slash should lower max magnitude");
+        assert_Snap_Slashed_EncumberedMagnitude(operator, slashParams, "slash should lower encumbered magnitude");
         assert_Snap_Slashed_AllocatedStake(operator, operatorSet, slashParams, "slash should lower allocated stake");
         assert_Snap_Slashed_SlashableStake(operator, operatorSet, slashParams, "slash should lower slashable stake");
         assert_Snap_Slashed_OperatorShares(operator, slashParams, "slash should remove operator shares");
@@ -1362,97 +911,19 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Unchanged_AllocatableMagnitude(operator, allStrats, "slashing should not change allocatable magnitude");
         assert_Snap_Unchanged_Registration(operator, operatorSet, "slash should not change registration status");
         assert_Snap_Unchanged_Slashability(operator, operatorSet, "slash should not change slashability status");
-        assert_Snap_Unchanged_AllocatedSets(operator, "should not have updated allocated sets");
-        assert_Snap_Unchanged_AllocatedStrats(operator, operatorSet, "should not have updated allocated strategies");
+        // assert_Snap_Unchanged_AllocatedSets(operator, "should not have updated allocated sets");
+        // assert_Snap_Unchanged_AllocatedStrats(operator, operatorSet, "should not have updated allocated strategies");
     }
 
-    // TODO: improvement needed 
-
-    function check_Withdrawal_AsTokens_State_AfterSlash(
-        User staker,
+    /// Slashing invariants when the operator has been fully slashed for every strategy in the operator set
+    function check_FullySlashed_State(
         User operator,
-        Withdrawal memory withdrawal,
         AllocateParams memory allocateParams,
-        SlashingParams memory slashingParams,
-        uint[] memory expectedTokens
+        SlashingParams memory slashParams
     ) internal {
-        IERC20[] memory tokens = new IERC20[](withdrawal.strategies.length);
+        check_Base_Slashing_State(operator, allocateParams, slashParams);
 
-        for (uint i; i < withdrawal.strategies.length; i++) {
-            IStrategy strat = withdrawal.strategies[i];
-
-            bool isBeaconChainETHStrategy = strat == beaconChainETHStrategy;
-
-            tokens[i] = isBeaconChainETHStrategy ? NATIVE_ETH : withdrawal.strategies[i].underlyingToken();
-            
-            if (slashingParams.strategies.contains(strat)) {
-                uint wadToSlash = slashingParams.wadsToSlash[slashingParams.strategies.indexOf(strat)];
-
-                expectedTokens[i] -= expectedTokens[i]
-                    .mulWadRoundUp(allocateParams.newMagnitudes[i].mulWadRoundUp(wadToSlash));
-
-                uint256 max = allocationManager.getMaxMagnitude(address(operator), strat);
-
-                withdrawal.scaledShares[i] -= withdrawal.scaledShares[i].calcSlashedAmount(WAD, max);
-
-                // Round down to the nearest gwei for beaconchain ETH strategy.
-                if (isBeaconChainETHStrategy) {
-                    expectedTokens[i] -= expectedTokens[i] % 1 gwei;
-                }
-            }
-        }
-
-        // Common checks
-        assert_WithdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
-        
-        // TODO FIXME
-        // assert_Snap_Added_TokenBalances(staker, tokens, expectedTokens, "staker should have received expected tokens");
-        assert_Snap_Unchanged_Staker_DepositShares(staker, "staker shares should not have changed");
-        assert_Snap_Removed_StrategyShares(withdrawal.strategies, withdrawal.scaledShares, "strategies should have total shares decremented");
-
-        // Checks specific to an operator that the Staker has delegated to
-        if (operator != User(payable(0))) {
-            if (operator != staker) {
-                assert_Snap_Unchanged_TokenBalances(operator, "operator token balances should not have changed");
-            }
-            assert_Snap_Unchanged_OperatorShares(operator, "operator shares should not have changed");
-        }
-    }
-
-    function check_Withdrawal_AsShares_State_AfterSlash(
-        User staker,
-        User operator,
-        Withdrawal memory withdrawal,
-        AllocateParams memory allocateParams, // TODO - was this needed?
-        SlashingParams memory slashingParams
-    ) internal {
-        IERC20[] memory tokens = new IERC20[](withdrawal.strategies.length);
-
-        for (uint i; i < withdrawal.strategies.length; i++) {
-            IStrategy strat = withdrawal.strategies[i];
-
-            bool isBeaconChainETHStrategy = strat == beaconChainETHStrategy;
-
-            tokens[i] = isBeaconChainETHStrategy ? NATIVE_ETH : withdrawal.strategies[i].underlyingToken();
-            
-            if (slashingParams.strategies.contains(strat)) {
-                uint256 max = allocationManager.getMaxMagnitude(address(operator), strat);
-
-                withdrawal.scaledShares[i] -= withdrawal.scaledShares[i].calcSlashedAmount(WAD, max);
-            }
-        }
-        
-        // Common checks applicable to both user and non-user operator types
-        assert_WithdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
-        assert_Snap_Unchanged_TokenBalances(staker, "staker should not have any change in underlying token balances");
-        assert_Snap_Added_Staker_DepositShares(staker, withdrawal.strategies,  withdrawal.scaledShares, "staker should have received expected shares");
-        assert_Snap_Unchanged_StrategyShares(withdrawal.strategies, "strategies should have total shares unchanged");
-
-        // Additional checks or handling for the non-user operator scenario
-        if (operator != User(User(payable(0)))) {
-            if (operator != staker) {
-                assert_Snap_Unchanged_TokenBalances(operator, "operator should not have any change in underlying token balances");
-            }
-        }
+        assert_Snap_Removed_AllocatedSet(operator, allocateParams.operatorSet, "should not have updated allocated sets");
+        assert_Snap_Removed_AllocatedStrats(operator, allocateParams.operatorSet, slashParams.strategies, "should not have updated allocated strategies");
     }
 }
