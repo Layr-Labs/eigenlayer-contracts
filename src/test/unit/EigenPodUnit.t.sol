@@ -676,10 +676,9 @@ contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, Pro
     }
 
     /// @notice beaconTimestamp must be after the current checkpoint
-    function testFuzz_revert_beaconTimestampInvalid(uint256 rand) public {
-        rand = 10;
+    function testFuzz_revert_beaconTimestampInvalid() public {
         cheats.warp(10 days);
-        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
+        (EigenPodUser staker,) = _newEigenPodStaker({ rand: 0 });
         // Ensure we have more than one validator (_newEigenPodStaker allocates a nonzero amt of eth)
         cheats.deal(address(staker), address(staker).balance + 32 ether);
         (uint40[] memory validators,,) = staker.startValidators();
