@@ -26,7 +26,7 @@ contract Integration_SlashedEigenpod is IntegrationCheckUtils {
         cheats.assume(initTokenBalances[0] >= 64 ether);
 
         //Slash on Beacon chain
-        (uint40[] memory validators,) = staker.startValidators();
+        (uint40[] memory validators,,) = staker.startValidators();
         beaconChain.advanceEpoch_NoRewards();
         staker.verifyWithdrawalCredentials(validators);
 
@@ -88,7 +88,7 @@ contract Integration_SlashedEigenpod is IntegrationCheckUtils {
         //Additional deposit on beacon chain so dsf is nonwad
         uint amount = 32 ether * _randUint({min: 1, max: 5});
         cheats.deal(address(staker), amount);
-        (uint40[] memory validators,) = staker.startValidators();
+        (uint40[] memory validators,,) = staker.startValidators();
         beaconChain.advanceEpoch_NoWithdrawNoRewards();
         staker.verifyWithdrawalCredentials(validators);
         
@@ -208,7 +208,7 @@ contract Integration_SlashedEigenpod is IntegrationCheckUtils {
         //Additional deposit on beacon chain so dsf is nonwad
         uint amount = 32 ether * _randUint({min: 1, max: 5});
         cheats.deal(address(staker), amount);
-        (uint40[] memory validators,) = staker.startValidators();
+        (uint40[] memory validators,,) = staker.startValidators();
         beaconChain.advanceEpoch_NoWithdrawNoRewards();
         staker.verifyWithdrawalCredentials(validators);
         
@@ -257,7 +257,7 @@ contract Integration_SlashedEigenpod is IntegrationCheckUtils {
         //Additional deposit on beacon chain so dsf is nonwad
         uint amount = 32 ether * _randUint({min: 1, max: 5});
         cheats.deal(address(staker), amount);
-        (uint40[] memory validators,) = staker.startValidators();
+        (uint40[] memory validators,,) = staker.startValidators();
         beaconChain.advanceEpoch_NoWithdrawNoRewards();
         staker.verifyWithdrawalCredentials(validators);
         
