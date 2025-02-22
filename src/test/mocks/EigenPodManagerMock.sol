@@ -13,6 +13,8 @@ contract EigenPodManagerMock is Test, Pausable {
 
     mapping(address => uint256) public podOwnerSharesWithdrawn;
 
+    uint64 public pectraForkTimestamp;
+
     struct BeaconChainSlashingFactor {
         bool isSet;
         uint64 slashingFactor;
@@ -22,6 +24,7 @@ contract EigenPodManagerMock is Test, Pausable {
 
     constructor(IPauserRegistry _pauserRegistry) Pausable(_pauserRegistry) {
         _setPausedStatus(0);
+        pectraForkTimestamp = 1 hours * 12;
     }
 
     function podOwnerShares(address podOwner) external view returns (int256) {
@@ -76,7 +79,7 @@ contract EigenPodManagerMock is Test, Pausable {
         return bsf.isSet ? bsf.slashingFactor : WAD;
     }
 
-    function pectraForkTimestamp() external pure returns (uint64) {
-        return 0;
+    function setPectraForkTimestamp(uint64 _pectraForkTimestamp) external {
+        pectraForkTimestamp = _pectraForkTimestamp;
     }
 }

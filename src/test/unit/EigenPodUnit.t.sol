@@ -55,6 +55,7 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
         timeMachine = new TimeMachine();
         beaconChain = new BeaconChainMock(EigenPodManager(address(eigenPodManagerMock)), GENESIS_TIME_LOCAL);
 
+
         // Deploy EigenPod
         podImplementation = new EigenPod(
             ethPOSDepositMock,
@@ -837,6 +838,19 @@ contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, Pro
         cheats.stopPrank();
     }
 
+
+    /// @notice test verify wc reverts when fork timestmap is zero
+    function test_revert_forkTimestampZero() public {
+        (EigenPodUser staker,) = _newEigenPodStaker({ rand: 0 });
+        (uint40[] memory validators,,) = staker.startValidators();
+
+        // Set zero fork timestamp to zero
+        eigenPodManagerMock.setPectraForkTimestamp(0);
+
+        cheats.expectRevert(IEigenPodErrors.ForkTimestampZero.selector);
+        staker.verifyWithdrawalCredentials(validators);
+    }
+
     /// @notice modify validator field length to cause a revert
     function testFuzz_revert_invalidValidatorFields(uint256 rand) public {
         (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
@@ -1125,6 +1139,22 @@ contract EigenPodUnitTests_verifyCheckpointProofs is EigenPodUnitTests {
             balanceContainerProof: proofs.balanceContainerProof,
             proofs: proofs.balanceProofs
         });
+    }
+
+    /// @notice should revert if fork timestamp zero
+    function test_revert_forkTimestampZero() public {
+        // Setup verifyCheckpointProofs
+        (EigenPodUser staker,) = _newEigenPodStaker({ rand: 0 });
+        (uint40[] memory validators,,) = staker.startValidators();
+        staker.verifyWithdrawalCredentials(validators);
+        beaconChain.advanceEpoch();
+        staker.startCheckpoint();
+
+        // Set forkTimestamp to zero
+        eigenPodManagerMock.setPectraForkTimestamp(0);
+
+        cheats.expectRevert(IEigenPodErrors.ForkTimestampZero.selector);
+        staker.completeCheckpoint();
     }
 
     /// @notice invalid proof length should revert
@@ -1576,6 +1606,31 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
         StaleBalanceProofs memory proofs = beaconChain.getStaleBalanceProofs(validator);
 
         cheats.expectRevert(IEigenPodErrors.ValidatorNotSlashedOnBeaconChain.selector);
+        pod.verifyStaleBalance({
+            beaconTimestamp: proofs.beaconTimestamp,
+            stateRootProof: proofs.stateRootProof,
+            proof: proofs.validatorProof
+        });
+    }
+
+    /// @notice verifyStaleBalance should revert with forkTimestamp of 0
+    function test_revert_forkTimestampZero() public {
+        // setup eigenpod staker and validators
+        (EigenPodUser staker,) = _newEigenPodStaker({ rand: 0 });
+        EigenPod pod = staker.pod();
+        (uint40[] memory validators,,) = staker.startValidators();
+        uint40 validator = validators[0];
+        staker.verifyWithdrawalCredentials(validators);
+
+        // Slash validators and advance epoch
+        beaconChain.slashValidators(validators);
+        beaconChain.advanceEpoch();
+        StaleBalanceProofs memory proofs = beaconChain.getStaleBalanceProofs(validator);
+
+        // Set forkTimestamp to zero
+        eigenPodManagerMock.setPectraForkTimestamp(0);
+
+        cheats.expectRevert(IEigenPodErrors.ForkTimestampZero.selector);
         pod.verifyStaleBalance({
             beaconTimestamp: proofs.beaconTimestamp,
             stateRootProof: proofs.stateRootProof,

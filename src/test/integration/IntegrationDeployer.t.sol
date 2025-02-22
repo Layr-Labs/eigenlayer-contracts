@@ -211,6 +211,12 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         cheats.warp(BEACON_GENESIS_TIME);
         timeMachine = new TimeMachine();
         beaconChain = new BeaconChainMock(eigenPodManager, BEACON_GENESIS_TIME);
+
+        // Set the `pectraForkTimestamp` on the EigenPodManager
+        cheats.startPrank(executorMultisig);
+        eigenPodManager.setProofTimestampSetter(executorMultisig);
+        eigenPodManager.setPectraForkTimestamp(BEACON_GENESIS_TIME);
+        cheats.stopPrank();
     }
 
     /// Parse existing contracts from mainnet
