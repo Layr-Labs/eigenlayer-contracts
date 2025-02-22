@@ -176,4 +176,25 @@ contract Integration_DualSlashing_Base_AVSFirst is Integration_DualSlashing_Base
         check_VerifyWC_State(staker, newValidators, addedBeaconBalanceGwei);
         assert_Snap_Added_Staker_WithdrawableSharesAtLeast(staker, BEACONCHAIN_ETH_STRAT.toArray(), beaconSharesAdded.toArrayU256(), "staker withdrawable shares should increase by the added beacon balance");
     }
+
+    function testFuzz_avsSlash_balanceIncrease_checkpoint_verifyValidator(uint24 _rand) public rand(_rand) {
+        // 7. Slash Staker on BC
+        uint64 slashedAmountGwei = beaconChain.slashValidators(validators);
+        beaconChain.advanceEpoch_NoRewards();
+
+        // 8. Send 32 ETH to pod, some random amount of ETH, greater than the amount slashed
+        uint ethToDeposit = 32 ether;
+        cheats.deal(address(staker), ethToDeposit);
+        cheats.prank(address(staker));
+        address(staker.pod()).call{value: ethToDeposit}("");
+        uint64 beaconSharesAddedGwei = uint64(ethToDeposit / GWEI_TO_WEI);
+
+        console.log("pod balance: ", address(staker.pod()).balance);
+
+        // 9. Checkpoint
+        staker.startCheckpoint();
+        check_StartCheckpoint_WithPodBalance_State(staker, beaconBalanceGwei - slashedAmountGwei + beaconSharesAddedGwei);
+        staker.completeCheckpoint();
+        check_CompleteCheckpoint_AfterAVSSlash_ETHDeposit_BCSlash(staker, validators, slashedAmountGwei, beaconSharesAddedGwei);
+    }
 }

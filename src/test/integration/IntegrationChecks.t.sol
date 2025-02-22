@@ -1049,4 +1049,21 @@ contract IntegrationCheckUtils is IntegrationBase {
 
         assert_Snap_StakerWithdrawableShares_AVSSlash_ValidatorProven_BCSlash(staker, originalWithdrawableShares, extraValidatorShares, allocateParams, slashingParams, "should have decreased withdrawable shares correctly");
     }
+
+    /// @dev Assumes the eth deposit was greater than the amount slashed
+    function check_CompleteCheckpoint_AfterAVSSlash_ETHDeposit_BCSlash(
+        User staker,
+        uint40[] memory slashedValidators,
+        uint64 slashedBalanceGwei,
+        uint256 beaconSharesAddedGwei
+    ) internal {
+        uint sharesAdded = uint(beaconSharesAddedGwei - slashedBalanceGwei) * GWEI_TO_WEI;
+        // Checkpoint State
+        check_CompleteCheckpoint_State(staker); 
+        assert_Snap_Added_Staker_DepositShares(staker, BEACONCHAIN_ETH_STRAT, sharesAdded, "staker deposit shares should have increased");
+        assert_Snap_Removed_ActiveValidatorCount(staker, slashedValidators.length, "should have decreased active validator count");
+        assert_Snap_Removed_ActiveValidators(staker, slashedValidators, "exited validators should each be WITHDRAWN");
+
+        assert_Snap_Added_Staker_WithdrawableSharesAtLeast(staker, BEACONCHAIN_ETH_STRAT.toArray(), sharesAdded.toArrayU256(), "staker withdrawable shares should increase by diff of deposit and slash");
+    }
 }
