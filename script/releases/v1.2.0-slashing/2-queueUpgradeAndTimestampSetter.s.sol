@@ -11,7 +11,7 @@ import "zeus-templates/utils/Encode.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 
 /**
- * Purpose: Queues an ugprade to EP/EPM
+ * Purpose: Queues an upgrade to EP/EPM
  * and sets the timestamp submitter to the ops multisig
  */
 contract QueueUpgradeAndTimestampSetter is MultisigBuilder, Deploy {
