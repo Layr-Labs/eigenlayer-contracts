@@ -756,7 +756,7 @@ contract EigenPod is
         return abi.decode(result, (bytes32));
     }
 
-    /// @notice Returns the PROOF_TYPE depending on the `proofTimestamp` in relation to the fork timestmap.
+    /// @notice Returns the PROOF_TYPE depending on the `proofTimestamp` in relation to the fork timestamp.
     function _getProofVersion(
         uint64 proofTimestamp
     ) internal view returns (BeaconChainProofs.ProofVersion) {

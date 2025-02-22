@@ -838,7 +838,7 @@ contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, Pro
     }
 
 
-    /// @notice test verify wc reverts when fork timestmap is zero
+    /// @notice test verify wc reverts when fork timestamp is zero
     function test_revert_forkTimestampZero() public {
         (EigenPodUser staker,) = _newEigenPodStaker({ rand: 0 });
         (uint40[] memory validators,,) = staker.startValidators();
