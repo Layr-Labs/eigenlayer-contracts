@@ -765,7 +765,7 @@ contract BeaconChainMock is Logger {
             0 : ((validators.length - 1) / 4) + 1;
     }
 
-    function _getBeaconStateLeaves(bytes32 validatorsRoot, bytes32 balancesRoot) internal virtual view returns (bytes32[] memory) {
+    function _getBeaconStateLeaves(bytes32 validatorsRoot, bytes32 balancesRoot) internal view returns (bytes32[] memory) {
         bytes32[] memory leaves = new bytes32[](BEACON_STATE_FIELDS);
 
         // Pre-populate leaves with dummy values so sibling/parent tracking is correct

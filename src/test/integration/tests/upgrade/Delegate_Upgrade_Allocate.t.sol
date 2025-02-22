@@ -8,7 +8,7 @@ contract Integration_Upgrade_Deposit_Delegate_Allocate is UpgradeTest {
     function _init() internal override {
         // Set beacon chain mock
         beaconChain = BeaconChainMock(
-            new BeaconChainMock_PectraForkable(eigenPodManager, BEACON_GENESIS_TIME)
+            new BeaconChainMock_DenebForkable(eigenPodManager, BEACON_GENESIS_TIME)
         );
     }
 

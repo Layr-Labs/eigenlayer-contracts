@@ -9,7 +9,7 @@ contract Integration_Upgrade_Pectra is UpgradeTest, EigenPodPausingConstants {
 
         // Set beacon chain mock
         beaconChain = BeaconChainMock(
-            new BeaconChainMock_PectraForkable(eigenPodManager, BEACON_GENESIS_TIME)
+            new BeaconChainMock_DenebForkable(eigenPodManager, BEACON_GENESIS_TIME)
         );
     }
 
@@ -71,7 +71,7 @@ contract Integration_Upgrade_Pectra is UpgradeTest, EigenPodPausingConstants {
         staker.verifyWithdrawalCredentials(validators);
 
         // 2. Fork to Pectra
-        BeaconChainMock_PectraForkable(address(beaconChain)).forkToPectra(PECTRA_FORK_TIMESTAMP);
+        BeaconChainMock_DenebForkable(address(beaconChain)).forkToPectra(PECTRA_FORK_TIMESTAMP);
 
         // 3. Upgrade EigenPodManager & EigenPod
         _upgradeEigenLayerContracts();
@@ -99,7 +99,7 @@ contract Integration_Upgrade_Pectra is UpgradeTest, EigenPodPausingConstants {
         );
 
         // 2. Fork to Pectra
-        BeaconChainMock_PectraForkable(address(beaconChain)).forkToPectra(pectraForkTimestamp);
+        BeaconChainMock_DenebForkable(address(beaconChain)).forkToPectra(pectraForkTimestamp);
 
         // 3. Upgrade EigenPodManager & EigenPod
         _upgradeEigenLayerContracts();
@@ -113,7 +113,7 @@ contract Integration_Upgrade_Pectra is UpgradeTest, EigenPodPausingConstants {
         // 1. Set Timestamp
         cheats.startPrank(eigenPodManager.proofTimestampSetter());
         eigenPodManager.setPectraForkTimestamp(
-            BeaconChainMock_PectraForkable(address(beaconChain)).pectraForkTimestamp()
+            BeaconChainMock_DenebForkable(address(beaconChain)).pectraForkTimestamp()
         );
         cheats.stopPrank();
 

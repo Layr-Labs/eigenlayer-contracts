@@ -11,7 +11,7 @@ contract Integration_Upgrade_EigenPod_Slashing_Migration is UpgradeTest, EigenPo
 
         // Set beacon chain mock
         beaconChain = BeaconChainMock(
-            new BeaconChainMock_PectraForkable(eigenPodManager, BEACON_GENESIS_TIME)
+            new BeaconChainMock_DenebForkable(eigenPodManager, BEACON_GENESIS_TIME)
         );     
     }
 

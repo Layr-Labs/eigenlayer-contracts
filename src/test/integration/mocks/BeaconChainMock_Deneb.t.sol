@@ -3,8 +3,8 @@ pragma solidity ^0.8.27;
 
 import "src/test/integration/mocks/BeaconChainMock.t.sol";
 
-/// @notice A backwards-compatible BeaconChain Mock that updates containers & proofs for the Pectra upgrade
-contract BeaconChainMock_PectraForkable is BeaconChainMock {
+/// @notice A backwards-compatible BeaconChain Mock that updates containers & proofs from Deneb to Pectra
+contract BeaconChainMock_DenebForkable is BeaconChainMock {
     using StdStyle for *;
     using print for *;
 
@@ -219,20 +219,6 @@ contract BeaconChainMock_PectraForkable is BeaconChainMock {
             balanceContainerRoot: balanceContainerRoot,
             proof: proof
         });
-    }
-
-    function _getBeaconStateLeaves(bytes32 validatorsRoot, bytes32 balancesRoot) internal override view returns (bytes32[] memory) {
-        bytes32[] memory leaves = new bytes32[](BEACON_STATE_FIELDS);
-
-        // Pre-populate leaves with dummy values so sibling/parent tracking is correct
-        for (uint i = 0; i < leaves.length; i++) {
-            leaves[i] = bytes32(i + 1);
-        }
-
-        // Place validatorsRoot and balancesRoot into tree
-        leaves[BeaconChainProofs.VALIDATOR_CONTAINER_INDEX] = validatorsRoot;
-        leaves[BeaconChainProofs.BALANCE_CONTAINER_INDEX] = balancesRoot;
-        return leaves;
     }
     
     /// @notice Forks the beacon chain to Pectra
