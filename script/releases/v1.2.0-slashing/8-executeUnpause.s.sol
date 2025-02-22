@@ -56,5 +56,7 @@ contract ExecuteUnpause is SetProofTimestamp {
         assertEq(Env.proxy.eigenPodManager().paused(), 0, "Not unpaused!");
         assertEq(Env.proxy.eigenPodManager().paused(PAUSED_START_CHECKPOINT), false, "Not unpaused!");
         assertEq(Env.proxy.eigenPodManager().paused(PAUSED_EIGENPODS_VERIFY_CREDENTIALS), false, "Not unpaused!");
+        assertEq(Env.proxy.eigenPodManager().paused(PAUSED_VERIFY_STALE_BALANCE), false, "Not unpaused!");
+        assertEq(Env.proxy.eigenPodManager().paused(PAUSED_EIGENPODS_VERIFY_CHECKPOINT_PROOFS), false, "Not unpaused!");
     }
 }

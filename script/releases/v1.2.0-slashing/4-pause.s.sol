@@ -15,7 +15,9 @@ contract Pause is MultisigBuilder, EigenPodPausingConstants {
 
     function _runAsMultisig() prank(Env.pauserMultisig()) internal virtual override {
         uint mask = 2 ** PAUSED_START_CHECKPOINT |
-            2 ** PAUSED_EIGENPODS_VERIFY_CREDENTIALS;
+            2 ** PAUSED_EIGENPODS_VERIFY_CREDENTIALS | 
+            2 ** PAUSED_VERIFY_STALE_BALANCE |
+            2 ** PAUSED_EIGENPODS_VERIFY_CHECKPOINT_PROOFS;
 
         Env.proxy.eigenPodManager().pause(mask);
     }
@@ -25,10 +27,13 @@ contract Pause is MultisigBuilder, EigenPodPausingConstants {
 
         assertTrue(Env.proxy.eigenPodManager().paused(PAUSED_START_CHECKPOINT), "Not paused!");
         assertTrue(Env.proxy.eigenPodManager().paused(PAUSED_EIGENPODS_VERIFY_CREDENTIALS), "Not paused!");
+        assertTrue(Env.proxy.eigenPodManager().paused(PAUSED_VERIFY_STALE_BALANCE), "Not paused!");
+        assertTrue(Env.proxy.eigenPodManager().paused(PAUSED_EIGENPODS_VERIFY_CHECKPOINT_PROOFS), "Not paused!");
 
         // Create a new pod and try to verify credentials + start checkpoint
         EigenPod pod = EigenPod(payable(Env.proxy.eigenPodManager().createPod()));
 
+        // Revert verifying withdrawal credentials
         vm.expectRevert(IEigenPodErrors.CurrentlyPaused.selector);
         BeaconChainProofs.StateRootProof memory emptyProof;
         pod.verifyWithdrawalCredentials(
@@ -38,7 +43,24 @@ contract Pause is MultisigBuilder, EigenPodPausingConstants {
             new bytes[](0),
             new bytes32[][](0)
         );
+
+        // Revert starting checkpoint
         vm.expectRevert(IEigenPodErrors.CurrentlyPaused.selector);
         pod.startCheckpoint(false);
+
+        // Revert verifying stale balance
+        BeaconChainProofs.ValidatorProof memory validatorProof;
+        vm.expectRevert(IEigenPodErrors.CurrentlyPaused.selector);
+        pod.verifyStaleBalance(
+            0,
+            emptyProof,
+            validatorProof
+        );
+
+        // Revert completing checkpoint
+        BeaconChainProofs.BalanceContainerProof memory balanceContainerProof;
+        BeaconChainProofs.BalanceProof[] memory proofs;
+        vm.expectRevert(IEigenPodErrors.CurrentlyPaused.selector);
+        pod.verifyCheckpointProofs(balanceContainerProof, proofs);
     }
 }
