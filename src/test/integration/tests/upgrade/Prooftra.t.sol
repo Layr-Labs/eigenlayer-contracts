@@ -95,7 +95,9 @@ contract Integration_Upgrade_Pectra is UpgradeTest, EigenPodPausingConstants {
         cheats.prank(pauserMultisig);
         eigenPodManager.pause(
             2 ** PAUSED_START_CHECKPOINT |
-            2 ** PAUSED_EIGENPODS_VERIFY_CREDENTIALS
+            2 ** PAUSED_EIGENPODS_VERIFY_CREDENTIALS |
+            2 ** PAUSED_VERIFY_STALE_BALANCE |
+            2 ** PAUSED_EIGENPODS_VERIFY_CHECKPOINT_PROOFS
         );
 
         // 2. Fork to Pectra
