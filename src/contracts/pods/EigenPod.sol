@@ -172,8 +172,7 @@ contract EigenPod is
 
         // Verify `balanceContainerProof` against `beaconBlockRoot`
         BeaconChainProofs.verifyBalanceContainer({
-            proofTimestamp: checkpointTimestamp,
-            pectraForkTimestamp: _getPectraForkTimestamp(),
+            proofVersion: _getProofVersion(checkpointTimestamp),
             beaconBlockRoot: checkpoint.beaconBlockRoot,
             proof: balanceContainerProof
         });
@@ -357,8 +356,7 @@ contract EigenPod is
 
         // Verify Validator container proof against `beaconStateRoot`
         BeaconChainProofs.verifyValidatorFields({
-            proofTimestamp: beaconTimestamp,
-            pectraForkTimestamp: _getPectraForkTimestamp(),
+            proofVersion: _getProofVersion(beaconTimestamp),
             beaconStateRoot: stateRootProof.beaconStateRoot,
             validatorFields: proof.validatorFields,
             validatorFieldsProof: proof.proof,
@@ -444,7 +442,8 @@ contract EigenPod is
         bytes calldata validatorFieldsProof,
         bytes32[] calldata validatorFields
     ) internal returns (uint256) {
-        ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[validatorFields.getPubkeyHash()];
+        bytes32 pubkeyHash = validatorFields.getPubkeyHash();
+        ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[pubkeyHash];
 
         // Withdrawal credential proofs should only be processed for "INACTIVE" validators
         require(validatorInfo.status == VALIDATOR_STATUS.INACTIVE, CredentialsAlreadyVerified());
@@ -504,8 +503,7 @@ contract EigenPod is
 
         // Verify passed-in validatorFields against verified beaconStateRoot:
         BeaconChainProofs.verifyValidatorFields({
-            proofTimestamp: beaconTimestamp,
-            pectraForkTimestamp: _getPectraForkTimestamp(),
+            proofVersion: _getProofVersion(beaconTimestamp),
             beaconStateRoot: beaconStateRoot,
             validatorFields: validatorFields,
             validatorFieldsProof: validatorFieldsProof,
@@ -521,7 +519,7 @@ contract EigenPod is
             currentCheckpointTimestamp == 0 ? lastCheckpointTimestamp : currentCheckpointTimestamp;
 
         // Proofs complete - create the validator in state
-        _validatorPubkeyHashToInfo[validatorFields.getPubkeyHash()] = ValidatorInfo({
+        _validatorPubkeyHashToInfo[pubkeyHash] = ValidatorInfo({
             validatorIndex: validatorIndex,
             restakedBalanceGwei: restakedBalanceGwei,
             lastCheckpointedAt: lastCheckpointedAt,
@@ -758,11 +756,15 @@ contract EigenPod is
         return abi.decode(result, (bytes32));
     }
 
-    /// @notice Returns the timestamp of the Pectra fork, read from the `EigenPodManager` contract
-    /// @dev Specifically, this returns the timestamp of the first non-missed slot at or after the Pectra hard fork
-    function _getPectraForkTimestamp() internal view returns (uint64) {
+    /// @notice Returns the PROOF_TYPE depending on the `proofTimestamp` in relation to the fork timestmap. 
+    function _getProofVersion(uint64 proofTimestamp) internal view returns (BeaconChainProofs.ProofVersion) {
+        ///  Get the timestamp of the Pectra fork, read from the `EigenPodManager`
+        /// This returns the timestamp of the first non-missed slot at or after the Pectra hard fork
         uint64 forkTimestamp = eigenPodManager.pectraForkTimestamp();
         require(forkTimestamp != 0, ForkTimestampZero());
-        return forkTimestamp;
+
+        /// We check if the proofTimestamp is <= pectraForkTimestamp because a `proofTimestamp` at the `pectraForkTimestamp`
+        /// is considered to be Pre-Pectra given the EIP-4788 oracle returns the parent block.
+        return proofTimestamp <= forkTimestamp ? BeaconChainProofs.ProofVersion.DENEB : BeaconChainProofs.ProofVersion.PECTRA;
     }
 }
