@@ -113,6 +113,8 @@ contract Integration_DualSlashing_Base_AVSFirst is Integration_DualSlashing_Base
         check_CompleteCheckPoint_AfterAVS_BCSlash(staker, validators, initDepositShares[0], slashedAmountGwei, allocateParams, slashingParams);
     }
 
+    /// @notice Because the validator is proven prior to the BC slash, the system applies the new balance 
+    ///         to the BC and AVS slash combined
     function testFuzz_avsSlash_verifyValidator_bcSlash_checkpoint(uint24 _random) public rand(_random) {
         // 7. Verify Validator
         cheats.deal(address(staker), 32 ether);
@@ -156,6 +158,7 @@ contract Integration_DualSlashing_Base_AVSFirst is Integration_DualSlashing_Base
         check_CompleteCheckpoint_AfterAVSSlash_ValidatorProven_BCSlash(staker, validators, initDepositShares[0], beaconSharesAdded, allocateParams, slashingParams);
     }
 
+    /// @notice The validator proven should not be affected by the BC or AVS slashes
     function testFuzz_avsSlash_bcSlash_checkpoint_verifyValidator(uint24 _rand) public rand(_rand) {
         // 7. Slash Staker on BC
         uint64 slashedAmountGwei = beaconChain.slashValidators(validators);
@@ -177,6 +180,8 @@ contract Integration_DualSlashing_Base_AVSFirst is Integration_DualSlashing_Base
         assert_Snap_Added_Staker_WithdrawableSharesAtLeast(staker, BEACONCHAIN_ETH_STRAT.toArray(), beaconSharesAdded.toArrayU256(), "staker withdrawable shares should increase by the added beacon balance");
     }
 
+    /// @notice The balance increase results in the pods not processing the beacon slash as a slash, given
+    ///         that the checkpoint had a positive delta
     function testFuzz_avsSlash_balanceIncrease_checkpoint_verifyValidator(uint24 _rand) public rand(_rand) {
         // 7. Slash Staker on BC
         uint64 slashedAmountGwei = beaconChain.slashValidators(validators);
@@ -197,4 +202,6 @@ contract Integration_DualSlashing_Base_AVSFirst is Integration_DualSlashing_Base
         staker.completeCheckpoint();
         check_CompleteCheckpoint_AfterAVSSlash_ETHDeposit_BCSlash(staker, validators, slashedAmountGwei, beaconSharesAddedGwei);
     }
+
+
 }
