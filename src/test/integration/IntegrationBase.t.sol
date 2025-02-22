@@ -1400,7 +1400,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         uint prevShares = _getPrevWithdrawableShares(staker, allocateParams.strategies)[0];
 
         // 1. The withdrawable shares should decrease by a factor of the BCSF
-        assertApproxEqAbs(prevShares.mulWad(_getBeaconChainSlashingFactor(staker)), curShares, 1e4, err);
+        assertApproxEqAbs(prevShares.mulWad(_getBeaconChainSlashingFactor(staker)), curShares, 1e5, err);
 
         /**
          * 2. The delta in shares is given by:
@@ -1411,7 +1411,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         uint originalAVSSlashedShares = originalWithdrawableShares.mulWadRoundUp(allocateParams.newMagnitudes[0].mulWadRoundUp(wadToSlash));
         uint withdrawableSharesAfterValidatorProven = originalWithdrawableShares - originalAVSSlashedShares + extraValidatorShares;
         uint expectedDelta = withdrawableSharesAfterValidatorProven.mulWad(WAD - beaconChainSlashingFactor);
-        assertApproxEqAbs(prevShares - expectedDelta, curShares, 1e4, err);
+        assertApproxEqAbs(prevShares - expectedDelta, curShares, 1e5, err);
 
         /**
          * 3. The attributable avs slashed shares should decrease by a factor of the BCSF
@@ -1421,7 +1421,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         uint depositShares = _getStakerDepositShares(staker, allocateParams.strategies)[0];
         uint bcSlashedShares = depositShares.mulWad(WAD - beaconChainSlashingFactor);
         uint attributableAVSSlashedShares = depositShares - bcSlashedShares - curShares;
-        assertApproxEqAbs(originalAVSSlashedShares.mulWad(beaconChainSlashingFactor), attributableAVSSlashedShares, 1e4, err);
+        assertApproxEqAbs(originalAVSSlashedShares.mulWad(beaconChainSlashingFactor), attributableAVSSlashedShares, 1e5, err);
     }
 
 

@@ -3,7 +3,8 @@ pragma solidity ^0.8.27;
 
 import "src/test/integration/IntegrationChecks.t.sol";
 
-contract Integration_BeaconChain_AVS_Ordering is IntegrationCheckUtils {
+/// @notice Tests where we slash native eth on the Beacon Chain and by an OperatorSet 
+contract Integration_DualSlashing_Base is IntegrationCheckUtils {
     using ArrayLib for *;
 
     AVS avs;
@@ -19,7 +20,7 @@ contract Integration_BeaconChain_AVS_Ordering is IntegrationCheckUtils {
     uint[] initTokenBalances;
     uint[] initDepositShares;
 
-    function _init() internal override {
+    function _init() internal virtual override {
         _configAssetTypes(HOLDS_ETH);
 
         // Create staker, operator, and avs
@@ -52,31 +53,9 @@ contract Integration_BeaconChain_AVS_Ordering is IntegrationCheckUtils {
 
         _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
     }
+}
 
-    /// @dev Validates behavior of "restaking", ie. that the funds can be slashed twice
-    function testFuzz_avsSlash_bcSlash_checkpoint(uint24 _random) public rand(_random){ 
-        // 6. Slash Operator by AVS
-        SlashingParams memory slashingParams;
-        {
-            (IStrategy[] memory strategiesToSlash, uint256[] memory wadsToSlash) =
-                _randStrategiesAndWadsToSlash(operatorSet);
-            console.log("Strategies to slash: %s", strategiesToSlash.length);
-            slashingParams = avs.slashOperator(operator, operatorSet.id, strategiesToSlash, wadsToSlash);
-            assert_Snap_Allocations_Slashed(slashingParams, operatorSet, true, "operator allocations should be slashed");
-            assert_Snap_Unchanged_Staker_DepositShares(staker, "staker deposit shares should be unchanged after slashing");
-            assert_Snap_StakerWithdrawableShares_AfterSlash(staker, allocateParams, slashingParams, "staker withdrawable shares should be slashed");
-        }
-
-        // 7. Slash Staker on BC
-        uint64 slashedAmountGwei = beaconChain.slashValidators(validators);
-        beaconChain.advanceEpoch_NoRewards();
-        
-        // 8. Checkpoint
-        staker.startCheckpoint();
-        check_StartCheckpoint_WithPodBalance_State(staker, beaconBalanceGwei - slashedAmountGwei);
-        staker.completeCheckpoint();
-        check_CompleteCheckPoint_AfterAVS_BCSlash(staker, validators, initDepositShares[0], slashedAmountGwei, allocateParams, slashingParams);
-    }
+contract Integration_DualSlashing_Base_BeaconChainFirst is Integration_DualSlashing_Base {
 
     function testFuzz_bcSlash_checkpoint_avsSlash(uint24 _random) public rand(_random) {
         // 6. Slash staker on BC
@@ -101,20 +80,40 @@ contract Integration_BeaconChain_AVS_Ordering is IntegrationCheckUtils {
             assert_Snap_StakerWithdrawableShares_AfterBCSlash_AVSSlash(staker, allocateParams, slashingParams, "staker withdrawable shares should be slashed");
         }
     }
+}
+
+contract Integration_DualSlashing_Base_AVSFirst is Integration_DualSlashing_Base {
+    using ArrayLib for *;
+
+    SlashingParams slashingParams;
+
+    function _init() internal virtual override {
+        super._init();
+
+        // 6. Slash Operator by AVS
+        (IStrategy[] memory strategiesToSlash, uint256[] memory wadsToSlash) =
+            _randStrategiesAndWadsToSlash(operatorSet);
+        console.log("Strategies to slash: %s", strategiesToSlash.length);
+        slashingParams = avs.slashOperator(operator, operatorSet.id, strategiesToSlash, wadsToSlash);
+        assert_Snap_Allocations_Slashed(slashingParams, operatorSet, true, "operator allocations should be slashed");
+        assert_Snap_Unchanged_Staker_DepositShares(staker, "staker deposit shares should be unchanged after slashing");
+        assert_Snap_StakerWithdrawableShares_AfterSlash(staker, allocateParams, slashingParams, "staker withdrawable shares should be slashed");
+    }
+
+    /// @dev Validates behavior of "restaking", ie. that the funds can be slashed twice
+    function testFuzz_avsSlash_bcSlash_checkpoint(uint24 _random) public rand(_random){ 
+        // 7. Slash Staker on BC
+        uint64 slashedAmountGwei = beaconChain.slashValidators(validators);
+        beaconChain.advanceEpoch_NoRewards();
+        
+        // 8. Checkpoint
+        staker.startCheckpoint();
+        check_StartCheckpoint_WithPodBalance_State(staker, beaconBalanceGwei - slashedAmountGwei);
+        staker.completeCheckpoint();
+        check_CompleteCheckPoint_AfterAVS_BCSlash(staker, validators, initDepositShares[0], slashedAmountGwei, allocateParams, slashingParams);
+    }
 
     function testFuzz_avsSlash_verifyValidator_bcSlash_checkpoint(uint24 _random) public rand(_random) {
-        // 6. Slash operator by AVS
-        SlashingParams memory slashingParams;
-        {
-            (IStrategy[] memory strategiesToSlash, uint256[] memory wadsToSlash) =
-                _randStrategiesAndWadsToSlash(operatorSet);
-            console.log("Strategies to slash: %s", strategiesToSlash.length);
-            slashingParams = avs.slashOperator(operator, operatorSet.id, strategiesToSlash, wadsToSlash);
-            assert_Snap_Allocations_Slashed(slashingParams, operatorSet, true, "operator allocations should be slashed");
-            assert_Snap_Unchanged_Staker_DepositShares(staker, "staker deposit shares should be unchanged after slashing");
-            assert_Snap_StakerWithdrawableShares_AfterSlash(staker, allocateParams, slashingParams, "staker withdrawable shares should be slashed");
-        }
-
         // 7. Verify Validator
         cheats.deal(address(staker), 32 ether);
         (uint40[] memory newValidators, uint64 addedBeaconBalanceGwei) = staker.startValidators();
@@ -135,20 +134,8 @@ contract Integration_BeaconChain_AVS_Ordering is IntegrationCheckUtils {
         check_CompleteCheckpoint_AfterAVSSlash_ValidatorProven_BCSlash(staker, validators, initDepositShares[0], beaconSharesAdded, allocateParams, slashingParams);
     }
 
-    /// @dev Same as above, but validator is proven after BC slash (this ordering doesn't matter) to EL
+    /// @dev Same as above, but validator is proven after BC slash (this ordering doesn't matter to EL)
     function testFuzz_avsSlash_bcSlash_verifyValidator_checkpoint(uint24 _random) public rand(_random) {
-        // 6. Slash operator by AVS
-        SlashingParams memory slashingParams;
-        {
-            (IStrategy[] memory strategiesToSlash, uint256[] memory wadsToSlash) =
-                _randStrategiesAndWadsToSlash(operatorSet);
-            console.log("Strategies to slash: %s", strategiesToSlash.length);
-            slashingParams = avs.slashOperator(operator, operatorSet.id, strategiesToSlash, wadsToSlash);
-            assert_Snap_Allocations_Slashed(slashingParams, operatorSet, true, "operator allocations should be slashed");
-            assert_Snap_Unchanged_Staker_DepositShares(staker, "staker deposit shares should be unchanged after slashing");
-            assert_Snap_StakerWithdrawableShares_AfterSlash(staker, allocateParams, slashingParams, "staker withdrawable shares should be slashed");
-        }
-
         // 7. Slash Staker on BC
         uint64 slashedAmountGwei = beaconChain.slashValidators(validators);
         beaconChain.advanceEpoch_NoRewards();
@@ -167,5 +154,26 @@ contract Integration_BeaconChain_AVS_Ordering is IntegrationCheckUtils {
         check_StartCheckpoint_WithPodBalance_State(staker, beaconBalanceGwei - slashedAmountGwei);
         staker.completeCheckpoint();
         check_CompleteCheckpoint_AfterAVSSlash_ValidatorProven_BCSlash(staker, validators, initDepositShares[0], beaconSharesAdded, allocateParams, slashingParams);
+    }
+
+    function testFuzz_avsSlash_bcSlash_checkpoint_verifyValidator(uint24 _rand) public rand(_rand) {
+        // 7. Slash Staker on BC
+        uint64 slashedAmountGwei = beaconChain.slashValidators(validators);
+        beaconChain.advanceEpoch_NoRewards();
+        
+        // 8. Checkpoint
+        staker.startCheckpoint();
+        check_StartCheckpoint_WithPodBalance_State(staker, beaconBalanceGwei - slashedAmountGwei);
+        staker.completeCheckpoint();
+        check_CompleteCheckPoint_AfterAVS_BCSlash(staker, validators, initDepositShares[0], slashedAmountGwei, allocateParams, slashingParams);
+
+        // 9. Verify Validator
+        cheats.deal(address(staker), 32 ether);
+        (uint40[] memory newValidators, uint64 addedBeaconBalanceGwei) = staker.startValidators();
+        uint beaconSharesAdded = uint256(addedBeaconBalanceGwei * GWEI_TO_WEI);
+        beaconChain.advanceEpoch_NoRewards();
+        staker.verifyWithdrawalCredentials(newValidators);
+        check_VerifyWC_State(staker, newValidators, addedBeaconBalanceGwei);
+        assert_Snap_Added_Staker_WithdrawableSharesAtLeast(staker, BEACONCHAIN_ETH_STRAT.toArray(), beaconSharesAdded.toArrayU256(), "staker withdrawable shares should increase by the added beacon balance");
     }
 }
