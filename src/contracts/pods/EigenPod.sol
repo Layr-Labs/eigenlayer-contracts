@@ -756,8 +756,10 @@ contract EigenPod is
         return abi.decode(result, (bytes32));
     }
 
-    /// @notice Returns the PROOF_TYPE depending on the `proofTimestamp` in relation to the fork timestmap. 
-    function _getProofVersion(uint64 proofTimestamp) internal view returns (BeaconChainProofs.ProofVersion) {
+    /// @notice Returns the PROOF_TYPE depending on the `proofTimestamp` in relation to the fork timestmap.
+    function _getProofVersion(
+        uint64 proofTimestamp
+    ) internal view returns (BeaconChainProofs.ProofVersion) {
         ///  Get the timestamp of the Pectra fork, read from the `EigenPodManager`
         /// This returns the timestamp of the first non-missed slot at or after the Pectra hard fork
         uint64 forkTimestamp = eigenPodManager.pectraForkTimestamp();
@@ -765,6 +767,8 @@ contract EigenPod is
 
         /// We check if the proofTimestamp is <= pectraForkTimestamp because a `proofTimestamp` at the `pectraForkTimestamp`
         /// is considered to be Pre-Pectra given the EIP-4788 oracle returns the parent block.
-        return proofTimestamp <= forkTimestamp ? BeaconChainProofs.ProofVersion.DENEB : BeaconChainProofs.ProofVersion.PECTRA;
+        return proofTimestamp <= forkTimestamp
+            ? BeaconChainProofs.ProofVersion.DENEB
+            : BeaconChainProofs.ProofVersion.PECTRA;
     }
 }

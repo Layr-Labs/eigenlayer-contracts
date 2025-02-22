@@ -141,7 +141,7 @@ library BeaconChainProofs {
     /// @param validatorFieldsProof a merkle proof of inclusion of `validatorFields` under `beaconStateRoot`
     /// @param validatorIndex the validator's unique index
     function verifyValidatorFields(
-        ProofVersion proofVersion, 
+        ProofVersion proofVersion,
         bytes32 beaconStateRoot,
         bytes32[] calldata validatorFields,
         bytes calldata validatorFieldsProof,
