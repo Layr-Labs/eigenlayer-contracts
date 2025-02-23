@@ -38,21 +38,17 @@ abstract contract UpgradeTest is IntegrationCheckUtils {
         emit log("_upgradeEigenLayerContracts: slashing upgrade complete");
     }
 
-    uint64 constant PECTRA_FORK_TIMESTAMP = 1739352768;
-
+    // Set the fork timestamp sufficiently in the future to keep using Deneb proofs
+    // `Prooftra.t.sol` will handle the Deneb -> Pectra transition
     function _handlePectraFork() internal {
-        // 0. Fork to Pectra
-        BeaconChainMock_DenebForkable(address(beaconChain)).forkToPectra(PECTRA_FORK_TIMESTAMP);
-
         // 1. Set proof timestamp setter to operations multisig
         cheats.prank(eigenPodManager.owner());
         eigenPodManager.setProofTimestampSetter(address(operationsMultisig));
 
         // 2. Set Proof timestamp
-        cheats.startPrank(eigenPodManager.proofTimestampSetter());
+        cheats.prank(eigenPodManager.proofTimestampSetter());
         eigenPodManager.setPectraForkTimestamp(
-            BeaconChainMock_DenebForkable(address(beaconChain)).pectraForkTimestamp()
+            type(uint64).max
         );
-        cheats.stopPrank();
     }
 }

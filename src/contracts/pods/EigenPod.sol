@@ -760,7 +760,7 @@ contract EigenPod is
     function _getProofVersion(
         uint64 proofTimestamp
     ) internal view returns (BeaconChainProofs.ProofVersion) {
-        ///  Get the timestamp of the Pectra fork, read from the `EigenPodManager`
+        /// Get the timestamp of the Pectra fork, read from the `EigenPodManager`
         /// This returns the timestamp of the first non-missed slot at or after the Pectra hard fork
         uint64 forkTimestamp = eigenPodManager.pectraForkTimestamp();
         require(forkTimestamp != 0, ForkTimestampZero());

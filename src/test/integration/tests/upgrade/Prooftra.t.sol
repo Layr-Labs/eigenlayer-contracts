@@ -15,7 +15,7 @@ contract Integration_Upgrade_Pectra is UpgradeTest, EigenPodPausingConstants {
 
     function test_Upgrade_VerifyWC_StartCP_CompleteCP(uint24 _rand) public rand(_rand) {
         // 1. Pause, Fork, and Upgrade
-        _pauseForkAndUpgrade(PECTRA_FORK_TIMESTAMP);
+        _pauseForkAndUpgrade();
 
         // 2. Set Pectra Fork Timestamp & unpause
         _setTimestampAndUnpause();
@@ -51,7 +51,7 @@ contract Integration_Upgrade_Pectra is UpgradeTest, EigenPodPausingConstants {
         staker.startCheckpoint();
 
         // 3. Pause, Fork, and Upgrade
-        _pauseForkAndUpgrade(PECTRA_FORK_TIMESTAMP);
+        _pauseForkAndUpgrade();
 
         // 4. Set Pectra Fork Timestamp & unpause
         _setTimestampAndUnpause();
@@ -70,11 +70,11 @@ contract Integration_Upgrade_Pectra is UpgradeTest, EigenPodPausingConstants {
         // 1. Verify validators' withdrawal credentials
         staker.verifyWithdrawalCredentials(validators);
 
-        // 2. Fork to Pectra
-        BeaconChainMock_DenebForkable(address(beaconChain)).forkToPectra(PECTRA_FORK_TIMESTAMP);
+        // 2. Pause, Fork, and Upgrade
+        _pauseForkAndUpgrade();
 
-        // 3. Upgrade EigenPodManager & EigenPod
-        _upgradeEigenLayerContracts();
+        // 3. Set timestamp and unpause
+        _setTimestampAndUnpause();
 
         // 4. Advance epoch, generating consensus rewards and withdrawing anything over Max EB
         // Not: Nothing is withdrawn because all validators were created with 32 ETH
@@ -90,7 +90,7 @@ contract Integration_Upgrade_Pectra is UpgradeTest, EigenPodPausingConstants {
         check_CompleteCheckpoint_EarnOnBeacon_State(staker, expectedEarnedGwei);
     }
 
-    function _pauseForkAndUpgrade(uint64 pectraForkTimestamp) internal {
+    function _pauseForkAndUpgrade() internal {
         // 1. Pause starting checkpoint, completing, and credential proofs
         cheats.prank(pauserMultisig);
         eigenPodManager.pause(
@@ -101,6 +101,7 @@ contract Integration_Upgrade_Pectra is UpgradeTest, EigenPodPausingConstants {
         );
 
         // 2. Fork to Pectra
+        uint64 pectraForkTimestamp = uint64(block.timestamp) + 12;
         BeaconChainMock_DenebForkable(address(beaconChain)).forkToPectra(pectraForkTimestamp);
 
         // 3. Upgrade EigenPodManager & EigenPod
