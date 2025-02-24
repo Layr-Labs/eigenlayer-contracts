@@ -412,7 +412,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_WithdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
         assert_Snap_Unchanged_TokenBalances(staker, "staker should not have any change in underlying token balances");
         assert_Snap_Added_Staker_DepositShares(staker, strategies, shares, "staker should have received expected shares");
-        assert_Snap_Added_Staker_WithdrawableShares(staker, strategies, shares, "staker should have received expected withdrawable shares");
+        assert_Snap_Expected_Staker_WithdrawableShares_Withdrawal(staker, operator, strategies, shares, "staker should have received expected withdrawable shares");
         assert_Snap_Unchanged_StrategyShares(strategies, "strategies should have total shares unchanged");
 
         // Additional checks or handling for the non-user operator scenario

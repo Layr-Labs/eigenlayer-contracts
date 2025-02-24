@@ -1471,7 +1471,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
 
         // For each strategy, check (prev - removed == cur)
         for (uint i = 0; i < strategies.length; i++) {
-            assertApproxEqAbs(prevShares[i] + addedShares[i], curShares[i], 1, err);
+            assertEq(prevShares[i] + addedShares[i], curShares[i], err);
         }
     }
 
@@ -1530,6 +1530,27 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         // For each strategy, check expected == current
         for (uint i = 0; i < strategies.length; i++) {
             assertEq(expectedShares[i], curShares[i], err);
+        }
+    }
+
+    function assert_Snap_Expected_Staker_WithdrawableShares_Withdrawal(
+        User staker,
+        User operator,
+        IStrategy[] memory strategies,
+        uint[] memory depositSharesAdded,
+        string memory err
+    ) internal {
+        uint[] memory curShares = _getStakerWithdrawableShares(staker, strategies);
+        // Use timewarp to get previous staker shares
+        uint[] memory prevShares = _getPrevStakerWithdrawableShares(staker, strategies);
+        uint[] memory expectedWithdrawableShares = new uint[](strategies.length);
+        for (uint i = 0; i < strategies.length; i++) {
+            if (prevShares[i] == 0 && depositSharesAdded[i] > 0){
+                expectedWithdrawableShares[i] = _getExpectedWithdrawableSharesFullWithdrawal(staker, operator, strategies[i], depositSharesAdded[i]);
+                assertEq(curShares[i], expectedWithdrawableShares[i], err);
+            } else {
+                assertEq(prevShares[i] + depositSharesAdded[i], curShares[i], err);
+            }
         }
     }
 
@@ -2848,6 +2869,14 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         return WAD.divWad(_getBeaconChainSlashingFactor(staker));
     }
 
+    function _getExpectedDSFFullWithdrawal(User staker, User operator, IStrategy strategy) internal view returns (uint expectedDepositScalingFactor) {
+        if (strategy == BEACONCHAIN_ETH_STRAT){
+            return WAD.divWad(allocationManager.getMaxMagnitude(address(operator), strategy).mulWad(_getBeaconChainSlashingFactor(staker)));
+        } else {
+            return WAD.divWad(allocationManager.getMaxMagnitude(address(operator), strategy));
+        }
+    }
+
     function _getExpectedWithdrawableSharesUndelegate(User staker, IStrategy[] memory strategies, uint[] memory shares) internal returns (uint[] memory){
         uint[] memory expectedWithdrawableShares = new uint[](strategies.length);
         for (uint i = 0; i < strategies.length; i++) {
@@ -2882,6 +2911,10 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
             }
         }
         return expectedWithdrawableShares;
+    }
+
+    function _getExpectedWithdrawableSharesFullWithdrawal(User staker, User operator, IStrategy strategy, uint depositShares) internal returns (uint) {
+        return depositShares.mulWad(_getExpectedDSFFullWithdrawal(staker, operator, strategy)).mulWad(_getSlashingFactor(staker, strategy));
     }
 
     function _getSlashingFactor(
