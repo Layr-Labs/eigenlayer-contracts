@@ -39,6 +39,14 @@ struct StaleBalanceProofs {
     BeaconChainProofs.ValidatorProof validatorProof;
 }
 
+/// @notice A Pectra Beacon Chain Mock Contract. For testing upgrades, use BeaconChainMock_Upgradeable
+/// @notice This mock assumed the following
+/**
+ * @notice A Semi-Compatible Pectra Beacon Chain Mock Contract. For Testing Upgrades to Pectra use BeaconChainMock_Upgradeable
+ * @dev This mock assumes the following:
+ * - Ceiling is Max EB, at which sweeps will be triggered
+ * - No support for consolidations or any execution layer triggerable actions (exits, partial withdrawals)
+ */
 contract BeaconChainMock is Logger {
     using StdStyle for *;
     using print for *;
@@ -68,17 +76,26 @@ contract BeaconChainMock is Logger {
     uint64 public constant CONSENSUS_REWARD_AMOUNT_GWEI = 1;
     uint64 public constant MINOR_SLASH_AMOUNT_GWEI = 10;
 
-    /// PROOF CONSTANTS (PROOF LENGTHS, FIELD SIZES):
+    // Max effective balance for a validator
+    // see https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#gwei-values
+    uint256 public MAX_EFFECTIVE_BALANCE_WEI = 2048 ether;
+    uint64 public MAX_EFFECTIVE_BALANCE_GWEI = 2048 gwei;
 
-    // see https://eth2book.info/capella/part3/containers/state/#beaconstate
-    uint constant BEACON_STATE_FIELDS = 32;
+    /// PROOF CONSTANTS (PROOF LENGTHS, FIELD SIZES):
+    /// @dev Non-constant values will change with the Pectra hard fork
+
+    // see https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#beaconstate
+    uint BEACON_STATE_FIELDS = 37;
     // see https://eth2book.info/capella/part3/containers/blocks/#beaconblock
     uint constant BEACON_BLOCK_FIELDS = 5;
 
     uint immutable BLOCKROOT_PROOF_LEN = 32 * BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT;
-    uint immutable VAL_FIELDS_PROOF_LEN = 32 * ((BeaconChainProofs.VALIDATOR_TREE_HEIGHT + 1) + BeaconChainProofs.BEACON_STATE_TREE_HEIGHT);
-    uint immutable BALANCE_CONTAINER_PROOF_LEN =
-        32 * (BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT + BeaconChainProofs.BEACON_STATE_TREE_HEIGHT);
+    uint VAL_FIELDS_PROOF_LEN = 32 * (
+        (BeaconChainProofs.VALIDATOR_TREE_HEIGHT + 1) + BeaconChainProofs.PECTRA_BEACON_STATE_TREE_HEIGHT
+    );
+    uint BALANCE_CONTAINER_PROOF_LEN = 32 * (
+        BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT + BeaconChainProofs.PECTRA_BEACON_STATE_TREE_HEIGHT
+    );
     uint immutable BALANCE_PROOF_LEN = 32 * (BeaconChainProofs.BALANCE_TREE_HEIGHT + 1);
 
     uint64 genesisTime;
@@ -147,7 +164,7 @@ contract BeaconChainMock is Logger {
         }
     }
 
-    function NAME() public pure override returns (string memory) {
+    function NAME() public pure virtual override returns (string memory) {
         return "BeaconChain";
     }
 
@@ -294,7 +311,7 @@ contract BeaconChainMock is Logger {
 
     /// @dev Move forward one epoch on the beacon chain, taking care of important epoch processing:
     /// - Award ALL validators CONSENSUS_REWARD_AMOUNT
-    /// - Withdraw any balance over 32 ETH
+    /// - Withdraw any balance over Max EB
     /// - Withdraw any balance for exited validators
     /// - Effective balances updated (NOTE: we do not use hysteresis!)
     /// - Move time forward one epoch
@@ -303,7 +320,7 @@ contract BeaconChainMock is Logger {
     ///
     /// Note:
     /// - DOES generate consensus rewards for ALL non-exited validators
-    /// - DOES withdraw in excess of 32 ETH / if validator is exited
+    /// - DOES withdraw in excess of Max EB / if validator is exited
     function advanceEpoch() public {
         print.method("advanceEpoch");
         _generateRewards();
@@ -317,7 +334,7 @@ contract BeaconChainMock is Logger {
     ///
     /// Note:
     /// - does NOT generate consensus rewards
-    /// - DOES withdraw in excess of 32 ETH / if validator is exited
+    /// - DOES withdraw in excess of Max EB / if validator is exited
     function advanceEpoch_NoRewards() public {
         print.method("advanceEpoch_NoRewards");
         _withdrawExcess();
@@ -325,12 +342,12 @@ contract BeaconChainMock is Logger {
     }
 
     /// @dev Like `advanceEpoch`, but explicitly does NOT withdraw if balances
-    /// are over 32 ETH. This exists to support tests that check share increases solely
+    /// are over Max EB. This exists to support tests that check share increases solely
     /// due to beacon chain balance changes.
     ///
     /// Note:
     /// - DOES generate consensus rewards for ALL non-exited validators
-    /// - does NOT withdraw in excess of 32 ETH
+    /// - does NOT withdraw in excess of Max EB
     /// - does NOT withdraw if validator is exited
     function advanceEpoch_NoWithdraw() public {
         print.method("advanceEpoch_NoWithdraw");
@@ -364,7 +381,7 @@ contract BeaconChainMock is Logger {
         console.log("   - Generated rewards for %s of %s validators.", totalRewarded, validators.length);
     }
 
-    /// @dev Iterate over all validators. If the validator has > 32 ETH current balance
+    /// @dev Iterate over all validators. If the validator has > Max EB current balance
     /// OR is exited, withdraw the excess to the validator's withdrawal address.
     function _withdrawExcess() internal {
         uint totalExcessWei;
@@ -379,15 +396,15 @@ contract BeaconChainMock is Logger {
 
             // If the validator has exited, withdraw any existing balance
             //
-            // If the validator has > 32 ether, withdraw anything over that
+            // If the validator has > Max EB, withdraw anything over that
             if (v.exitEpoch != BeaconChainProofs.FAR_FUTURE_EPOCH) {
                 if (balanceWei == 0) continue;
 
                 excessBalanceWei = balanceWei;
                 newBalanceGwei = 0;
-            } else if (balanceWei > 32 ether) {
-                excessBalanceWei = balanceWei - 32 ether;
-                newBalanceGwei = 32 gwei;
+            } else if (balanceWei > MAX_EFFECTIVE_BALANCE_WEI) {
+                excessBalanceWei = balanceWei - MAX_EFFECTIVE_BALANCE_WEI;
+                newBalanceGwei = MAX_EFFECTIVE_BALANCE_GWEI;
             }
 
             // Send ETH to withdrawal address
@@ -401,7 +418,7 @@ contract BeaconChainMock is Logger {
         if (totalExcessWei != 0) console.log("- Withdrew excess balance:", totalExcessWei.asGwei());
     }
 
-    function _advanceEpoch() public {
+    function _advanceEpoch() public virtual {
         cheats.pauseTracing();
 
         // Update effective balances for each validator
@@ -409,9 +426,11 @@ contract BeaconChainMock is Logger {
             Validator storage v = validators[i];
             if (v.isDummy) continue; // don't process dummy validators
 
-            // Get current balance and trim anything over 32 ether
+            // Get current balance and trim anything over MAX EB
             uint64 balanceGwei = _currentBalanceGwei(uint40(i));
-            if (balanceGwei > 32 gwei) balanceGwei = 32 gwei;
+            if (balanceGwei > MAX_EFFECTIVE_BALANCE_GWEI) {
+                balanceGwei = MAX_EFFECTIVE_BALANCE_GWEI;
+            }
 
             v.effectiveBalanceGwei = balanceGwei;
         }
@@ -460,7 +479,7 @@ contract BeaconChainMock is Logger {
         // Build merkle tree for BeaconState
         bytes32 beaconStateRoot = _buildMerkleTree({
             leaves: _getBeaconStateLeaves(validatorsRoot, balanceContainerRoot),
-            treeHeight: BeaconChainProofs.BEACON_STATE_TREE_HEIGHT,
+            treeHeight: BeaconChainProofs.PECTRA_BEACON_STATE_TREE_HEIGHT,
             tree: trees[curTimestamp].stateTree
         });
         // console.log("-- beacon state root", beaconStateRoot);
@@ -635,13 +654,13 @@ contract BeaconChainMock is Logger {
         stateRootProofs[curTimestamp] = BeaconChainProofs.StateRootProof({beaconStateRoot: beaconStateRoot, proof: proof});
     }
 
-    function _genBalanceContainerProof(bytes32 balanceContainerRoot) internal {
+    function _genBalanceContainerProof(bytes32 balanceContainerRoot) internal virtual {
         bytes memory proof = new bytes(BALANCE_CONTAINER_PROOF_LEN);
         bytes32 curNode = balanceContainerRoot;
 
         uint totalHeight = BALANCE_CONTAINER_PROOF_LEN / 32;
         uint depth = 0;
-        for (uint i = 0; i < BeaconChainProofs.BEACON_STATE_TREE_HEIGHT; i++) {
+        for (uint i = 0; i < BeaconChainProofs.PECTRA_BEACON_STATE_TREE_HEIGHT; i++) {
             bytes32 sibling = trees[curTimestamp].stateTree.siblings[curNode];
 
             // proof[j] = sibling;
@@ -669,7 +688,7 @@ contract BeaconChainMock is Logger {
             BeaconChainProofs.BalanceContainerProof({balanceContainerRoot: balanceContainerRoot, proof: proof});
     }
 
-    function _genCredentialProofs() internal {
+    function _genCredentialProofs() internal virtual {
         mapping(uint40 => ValidatorFieldsProof) storage vfProofs = validatorFieldsProofs[curTimestamp];
 
         // Calculate credential proofs for each validator
@@ -693,7 +712,11 @@ contract BeaconChainMock is Logger {
             }
 
             // Validator container root -> beacon state root
-            for (uint j = depth; j < 1 + BeaconChainProofs.VALIDATOR_TREE_HEIGHT + BeaconChainProofs.BEACON_STATE_TREE_HEIGHT; j++) {
+            for (
+                uint j = depth; 
+                j < 1 + BeaconChainProofs.VALIDATOR_TREE_HEIGHT + BeaconChainProofs.PECTRA_BEACON_STATE_TREE_HEIGHT; 
+                j++
+            ) {
                 bytes32 sibling = trees[curTimestamp].stateTree.siblings[curNode];
 
                 // proof[j] = sibling;
@@ -766,7 +789,7 @@ contract BeaconChainMock is Logger {
         return (validators.length == 0) ? 0 : ((validators.length - 1) / 4) + 1;
     }
 
-    function _getBeaconStateLeaves(bytes32 validatorsRoot, bytes32 balancesRoot) internal pure returns (bytes32[] memory) {
+    function _getBeaconStateLeaves(bytes32 validatorsRoot, bytes32 balancesRoot) internal view returns (bytes32[] memory) {
         bytes32[] memory leaves = new bytes32[](BEACON_STATE_FIELDS);
 
         // Pre-populate leaves with dummy values so sibling/parent tracking is correct
