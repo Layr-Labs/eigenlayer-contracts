@@ -224,7 +224,7 @@ contract EigenPodManager is
         }
     }
 
-    /// @inheritdoc IShareManager
+    /// @dev This is a forwards-compatible function that will be added to the ShareManager contract in v1.3.0
     function increaseBurnableShares(IStrategy, uint256 addedSharesToBurn) external onlyDelegationManager nonReentrant {
         burnableETHShares += addedSharesToBurn;
         emit BurnableETHSharesIncreased(addedSharesToBurn);

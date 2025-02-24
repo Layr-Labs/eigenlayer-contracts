@@ -260,8 +260,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         }
     }
 
-    }
-
     function _upgradeMainnetContracts() public virtual {
         cheats.startPrank(address(executorMultisig));
 

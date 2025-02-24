@@ -1688,4 +1688,28 @@ abstract contract IntegrationBase is IntegrationDeployer {
     function _getPrevCheckpointBalanceExited(User staker, uint64 checkpointTimestamp) internal timewarp() returns (uint64) {
         return _getCheckpointBalanceExited(staker, checkpointTimestamp);
     }
+
+    function _strategiesAndWadsForRandFullSlash(
+        OperatorSet memory operatorSet
+    ) internal returns (IStrategy[] memory strategies, uint[] memory wadsToSlash) {
+        // Get list of all strategies in an operator set.
+        strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
+
+        // Randomly select a subset of strategies to slash.
+        uint len = _randUint({ min: 1, max: strategies.length });
+
+        // Update length of strategies array.
+        assembly {
+            mstore(strategies, len)
+        }
+        
+        wadsToSlash = new uint[](len);
+        
+        // Fully slash each selected strategy
+        for (uint i; i < len; ++i) {
+            wadsToSlash[i] = 1 ether;
+        }
+
+        return (strategies.sort(), wadsToSlash);
+    }     
 }

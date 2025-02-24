@@ -23,8 +23,7 @@ contract Deploy is EOADeployer {
                 _ethPOS: Env.ethPOS(),
                 _eigenPodBeacon: Env.beacon.eigenPod(),
                 _delegationManager: Env.proxy.delegationManager(),
-                _pauserRegistry: Env.impl.pauserRegistry(),
-                _version: "v1.2.0"
+                _pauserRegistry: Env.impl.pauserRegistry()
             }))
         });
 
@@ -34,8 +33,7 @@ contract Deploy is EOADeployer {
             deployedTo: address(new EigenPod({
                 _ethPOS: Env.ethPOS(),
                 _eigenPodManager: Env.proxy.eigenPodManager(),
-                _GENESIS_TIME: Env.EIGENPOD_GENESIS_TIME(),
-                _version: "v1.2.0"
+                _GENESIS_TIME: Env.EIGENPOD_GENESIS_TIME()
             }))
         });
 

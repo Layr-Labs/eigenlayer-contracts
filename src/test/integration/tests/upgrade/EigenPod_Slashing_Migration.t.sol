@@ -10,14 +10,6 @@ contract Integration_Upgrade_EigenPod_Slashing_Migration is UpgradeTest, EigenPo
         _configUserTypes(DEFAULT);   
     }
 
-    modifier rand(uint24 _rand) override {
-        _configRand({
-            _randomSeed: _rand,
-            _assetTypes: HOLDS_ETH,
-            _userTypes: DEFAULT
-        });
-    }
-    
     /**
      * @dev Assumes that the Prooftra and slashing upgrade occur at the same time
      * 1. Verify validators' withdrawal credentials
