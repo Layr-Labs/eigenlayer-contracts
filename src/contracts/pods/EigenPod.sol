@@ -159,6 +159,7 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
 
         // Verify `balanceContainerProof` against `beaconBlockRoot`
         BeaconChainProofs.verifyBalanceContainer({
+            proofVersion: _getProofVersion(checkpointTimestamp),
             beaconBlockRoot: checkpoint.beaconBlockRoot,
             proof: balanceContainerProof
         });
@@ -254,6 +255,7 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
         for (uint256 i = 0; i < validatorIndices.length; i++) {
             // forgefmt: disable-next-item
             totalAmountToBeRestakedWei += _verifyWithdrawalCredentials(
+                beaconTimestamp,
                 stateRootProof.beaconStateRoot,
                 validatorIndices[i],
                 validatorFieldsProofs[i],
@@ -341,6 +343,7 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
 
         // Verify Validator container proof against `beaconStateRoot`
         BeaconChainProofs.verifyValidatorFields({
+            proofVersion: _getProofVersion(beaconTimestamp),
             beaconStateRoot: stateRootProof.beaconStateRoot,
             validatorFields: proof.validatorFields,
             validatorFieldsProof: proof.proof,
@@ -378,6 +381,7 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
     }
 
     /// @notice Called by EigenPodManager when the owner wants to create another ETH validator.
+    /// @dev This function only supports staking to a 0x01 validator. For compounding validators, please interact directly with the deposit contract.
     function stake(
         bytes calldata pubkey,
         bytes calldata signature,
@@ -419,6 +423,7 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
      * @param validatorFields are the fields of the "Validator Container", refer to consensus specs
      */
     function _verifyWithdrawalCredentials(
+        uint64 beaconTimestamp,
         bytes32 beaconStateRoot,
         uint40 validatorIndex,
         bytes calldata validatorFieldsProof,
@@ -473,7 +478,8 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
 
         // Ensure the validator's withdrawal credentials are pointed at this pod
         require(
-            validatorFields.getWithdrawalCredentials() == bytes32(_podWithdrawalCredentials()),
+            validatorFields.getWithdrawalCredentials() == bytes32(_podWithdrawalCredentials())
+                || validatorFields.getWithdrawalCredentials() == bytes32(_podCompoundingWithdrawalCredentials()),
             WithdrawalCredentialsNotForEigenPod()
         );
 
@@ -484,6 +490,7 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
 
         // Verify passed-in validatorFields against verified beaconStateRoot:
         BeaconChainProofs.verifyValidatorFields({
+            proofVersion: _getProofVersion(beaconTimestamp),
             beaconStateRoot: beaconStateRoot,
             validatorFields: validatorFields,
             validatorFieldsProof: validatorFieldsProof,
@@ -665,6 +672,10 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
         return abi.encodePacked(bytes1(uint8(1)), bytes11(0), address(this));
     }
 
+    function _podCompoundingWithdrawalCredentials() internal view returns (bytes memory) {
+        return abi.encodePacked(bytes1(uint8(2)), bytes11(0), address(this));
+    }
+
     ///@notice Calculates the pubkey hash of a validator's pubkey as per SSZ spec
     function _calculateValidatorPubkeyHash(
         bytes memory validatorPubkey
@@ -730,5 +741,21 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
 
         require(success && result.length > 0, InvalidEIP4788Response());
         return abi.decode(result, (bytes32));
+    }
+
+    /// @notice Returns the PROOF_TYPE depending on the `proofTimestamp` in relation to the fork timestamp.
+    function _getProofVersion(
+        uint64 proofTimestamp
+    ) internal view returns (BeaconChainProofs.ProofVersion) {
+        /// Get the timestamp of the Pectra fork, read from the `EigenPodManager`
+        /// This returns the timestamp of the first non-missed slot at or after the Pectra hard fork
+        uint64 forkTimestamp = eigenPodManager.pectraForkTimestamp();
+        require(forkTimestamp != 0, ForkTimestampZero());
+
+        /// We check if the proofTimestamp is <= pectraForkTimestamp because a `proofTimestamp` at the `pectraForkTimestamp`
+        /// is considered to be Pre-Pectra given the EIP-4788 oracle returns the parent block.
+        return proofTimestamp <= forkTimestamp
+            ? BeaconChainProofs.ProofVersion.DENEB
+            : BeaconChainProofs.ProofVersion.PECTRA;
     }
 }

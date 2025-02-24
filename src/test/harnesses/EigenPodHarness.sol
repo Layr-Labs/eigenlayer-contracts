@@ -25,12 +25,14 @@ contract EigenPodHarness is EigenPod {
     }
 
     function verifyWithdrawalCredentials(
+        uint64 beaconTimestamp,
         bytes32 beaconStateRoot,
         uint40 validatorIndex,
         bytes calldata validatorFieldsProof,
         bytes32[] calldata validatorFields
     ) public returns (uint256) {
         return _verifyWithdrawalCredentials(
+            beaconTimestamp,
             beaconStateRoot,
             validatorIndex,
             validatorFieldsProof,

@@ -171,10 +171,125 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         DEALLOCATION_DELAY = 50;
         ALLOCATION_CONFIGURATION_DELAY = 75;
 
-        /**
-         * First, deploy upgradeable proxy contracts that **will point** to the implementations. Since the implementation contracts are
-         * not yet deployed, we give these proxies an empty contract as the initial implementation, to act as if they have no code.
-         */
+        REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS = 86400;
+        REWARDS_COORDINATOR_MAX_REWARDS_DURATION = 6048000;
+        REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH = 7776000;
+        REWARDS_COORDINATOR_MAX_FUTURE_LENGTH = 2592000;
+        REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP = 1710979200;
+
+        _deployProxies();
+        _deployImplementations();
+        _upgradeProxies();
+        _initializeProxies();
+
+        // Deploy and configure strategies and tokens
+        for (uint i = 1; i < NUM_LST_STRATS + 1; ++i) {
+            string memory name = string.concat("LST-Strat", cheats.toString(i), " token");
+            string memory symbol = string.concat("lstStrat", cheats.toString(i));
+            // Deploy half of the strategies using the factory.
+            _newStrategyAndToken(name, symbol, 10e50, address(this), i % 2 == 0);
+        }
+
+        ethStrats.push(BEACONCHAIN_ETH_STRAT);
+        allStrats.push(BEACONCHAIN_ETH_STRAT);
+        allTokens.push(NATIVE_ETH);
+        maxUniqueAssetsHeld = allStrats.length;
+
+        // Create time machine and beacon chain. Set block time to beacon chain genesis time
+        BEACON_GENESIS_TIME = GENESIS_TIME_LOCAL;
+        cheats.warp(BEACON_GENESIS_TIME);
+        timeMachine = new TimeMachine();
+        beaconChain = new BeaconChainMock(eigenPodManager, BEACON_GENESIS_TIME);
+
+        // Set the `pectraForkTimestamp` on the EigenPodManager. Use pectra state
+        cheats.startPrank(executorMultisig);
+        eigenPodManager.setProofTimestampSetter(executorMultisig);
+        eigenPodManager.setPectraForkTimestamp(BEACON_GENESIS_TIME); 
+        cheats.stopPrank();
+    }
+
+    /// Parse existing contracts from mainnet
+    function _setUpMainnet() public noTracing virtual {
+        console.log("Setting up `%s` integration tests:", "MAINNET_FORK".green().bold());
+        console.log("RPC:", cheats.rpcUrl("mainnet"));
+        console.log("Block:", mainnetForkBlock);
+
+        cheats.createSelectFork(cheats.rpcUrl("mainnet"), mainnetForkBlock);
+
+        string memory deploymentInfoPath = "script/configs/mainnet/mainnet-addresses.config.json";
+        _parseDeployedContracts(deploymentInfoPath);
+        string memory existingDeploymentParams = "script/configs/mainnet.json";
+        _parseParamsForIntegrationUpgrade(existingDeploymentParams);
+
+        // Add deployed strategies to lstStrats and allStrats
+        for (uint i; i < deployedStrategyArray.length; i++) {
+            IStrategy strategy = IStrategy(deployedStrategyArray[i]);
+
+            if (tokensNotTested[address(strategy.underlyingToken())]) {
+                continue;
+            }
+
+            // Add to lstStrats and allStrats
+            lstStrats.push(strategy);
+            allStrats.push(strategy);
+            allTokens.push(strategy.underlyingToken());
+        }
+
+        maxUniqueAssetsHeld = allStrats.length;
+        
+        // Create time machine and mock beacon chain
+        BEACON_GENESIS_TIME = GENESIS_TIME_MAINNET;
+        timeMachine = new TimeMachine();
+        beaconChain = new BeaconChainMock(eigenPodManager, BEACON_GENESIS_TIME);
+
+        // Since we haven't done the slashing upgrade on mainnet yet, upgrade mainnet contracts
+        // prior to test. `isUpgraded` is true by default, but is set to false in `UpgradeTest.t.sol`
+        if (isUpgraded) {
+            _upgradeMainnetContracts();
+
+            // Set the `pectraForkTimestamp` on the EigenPodManager. Use pectra state
+            cheats.startPrank(executorMultisig);
+            eigenPodManager.setProofTimestampSetter(executorMultisig);
+            eigenPodManager.setPectraForkTimestamp(BEACON_GENESIS_TIME); 
+            cheats.stopPrank();
+        }
+    }
+
+    function _upgradeMainnetContracts() public virtual {
+        cheats.startPrank(address(executorMultisig));
+
+        // First, deploy the new contracts as empty contracts
+        emptyContract = new EmptyContract();
+        allocationManager = AllocationManager(
+            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
+        );
+        permissionController = PermissionController(
+            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
+        );
+
+        emit log_named_uint("EPM pause status", eigenPodManager.paused());
+
+        // Deploy new implementation contracts and upgrade all proxies to point to them
+        _deployImplementations();
+        _upgradeProxies();
+
+        emit log_named_uint("EPM pause status", eigenPodManager.paused());
+
+        // Initialize the newly-deployed proxy
+        allocationManager.initialize({
+            initialOwner: executorMultisig,
+            initialPausedStatus: 0
+        });
+
+        cheats.stopPrank();
+
+        ethStrats.push(BEACONCHAIN_ETH_STRAT);
+        allStrats.push(BEACONCHAIN_ETH_STRAT);
+        allTokens.push(NATIVE_ETH);
+        maxUniqueAssetsHeld = allStrats.length;
+    }
+
+    function _deployProxies() public {
         delegationManager = DelegationManager(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
@@ -800,8 +915,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             tokenBalances = new uint[](1);
 
             // Award the user with a random amount of ETH
-            // This guarantees a multiple of 32 ETH (at least 1, up to/incl 5)
-            uint amount = 32 ether * _randUint({min: 1, max: 5});
+            // This guarantees a multiple of 32 ETH (at least 1, up to/incl 2080)
+            uint amount = 32 ether * _randUint({min: 1, max: 65});
             cheats.deal(address(user), amount);
 
             strategies[0] = BEACONCHAIN_ETH_STRAT;
@@ -823,8 +938,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             }
 
             // Award the user with a random amount of ETH
-            // This guarantees a multiple of 32 ETH (at least 1, up to/incl 5)
-            uint amount = 32 ether * _randUint({min: 1, max: 5});
+            // This guarantees a multiple of 32 ETH (at least 1, up to/incl 2080)
+            uint amount = 32 ether * _randUint({min: 1, max: 65});
             cheats.deal(address(user), amount);
 
             // Add BEACONCHAIN_ETH_STRAT and eth balance

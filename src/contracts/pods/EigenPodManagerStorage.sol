@@ -78,6 +78,15 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
     /// Note: this is specifically updated when the staker's beacon chain balance decreases
     mapping(address staker => BeaconChainSlashingFactor) internal _beaconChainSlashingFactor;
 
+    /// @notice Returns the amount of `shares` that have been slashed on EigenLayer but not burned yet.
+    uint256 public burnableETHShares;
+
+    /// @notice The address that can set proof timestamps
+    address public proofTimestampSetter;
+
+    /// @notice The timestamp of the Pectra proof
+    uint64 public pectraForkTimestamp;
+
     constructor(IETHPOSDeposit _ethPOS, IBeacon _eigenPodBeacon, IDelegationManager _delegationManager) {
         ethPOS = _ethPOS;
         eigenPodBeacon = _eigenPodBeacon;
@@ -89,5 +98,5 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[43] private __gap;
+    uint256[41] private __gap;
 }
