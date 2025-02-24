@@ -4,14 +4,6 @@ pragma solidity ^0.8.27;
 import "src/test/integration/UpgradeTest.t.sol";
 
 contract Integration_Upgrade_Complete_PreSlashing_Withdrawal is UpgradeTest {
-
-    function _init() internal override {
-        // Set beacon chain mock
-        beaconChain = BeaconChainMock(
-            new BeaconChainMock_DenebForkable(eigenPodManager, BEACON_GENESIS_TIME)
-        );
-    }
-
     function testFuzz_deposit_queue_upgrade_completeAsShares(uint24 _random) public rand(_random) {
         /// Pre-upgrade:
         /// 1. Create staker with some assets

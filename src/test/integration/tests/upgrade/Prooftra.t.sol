@@ -6,11 +6,6 @@ contract Integration_Upgrade_Pectra is UpgradeTest, EigenPodPausingConstants {
     function _init() internal override {
         _configAssetTypes(HOLDS_ETH);
         _configUserTypes(DEFAULT);
-
-        // Set beacon chain mock
-        beaconChain = BeaconChainMock(
-            new BeaconChainMock_DenebForkable(eigenPodManager, BEACON_GENESIS_TIME)
-        );
     }
 
     function test_Upgrade_VerifyWC_StartCP_CompleteCP(uint24 _rand) public rand(_rand) {

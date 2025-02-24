@@ -14,6 +14,11 @@ abstract contract UpgradeTest is IntegrationCheckUtils {
         } else {
             isUpgraded = false;
             super.setUp();
+
+            // Use Deneb Beacon Chain Mock as Pectra state is not live on mainnet
+            beaconChain = BeaconChainMock(
+                new BeaconChainMock_DenebForkable(eigenPodManager, BEACON_GENESIS_TIME)
+            );
         }
     }
 
