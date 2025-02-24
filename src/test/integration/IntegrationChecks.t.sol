@@ -468,6 +468,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Added_Staker_DepositShares(staker, strategies, shares, "staker should have received expected shares");
         assert_Snap_Unchanged_OperatorShares(operator, "operator should have shares unchanged");
         assert_Snap_Unchanged_StrategyShares(strategies, "strategies should have total shares unchanged");
+        assert_Snap_Expected_Staker_WithdrawableShares_Withdrawal(staker, newOperator, strategies, shares, "staker should have received expected withdrawable shares");
     }
 
     /*******************************************************************************
