@@ -212,10 +212,10 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         timeMachine = new TimeMachine();
         beaconChain = new BeaconChainMock(eigenPodManager, BEACON_GENESIS_TIME);
 
-        // Set the `pectraForkTimestamp` on the EigenPodManager
+        // Set the `pectraForkTimestamp` on the EigenPodManager. Use pectra state
         cheats.startPrank(executorMultisig);
         eigenPodManager.setProofTimestampSetter(executorMultisig);
-        eigenPodManager.setPectraForkTimestamp(BEACON_GENESIS_TIME);
+        eigenPodManager.setPectraForkTimestamp(BEACON_GENESIS_TIME); 
         cheats.stopPrank();
     }
 
@@ -257,6 +257,12 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         // prior to test. `isUpgraded` is true by default, but is set to false in `UpgradeTest.t.sol`
         if (isUpgraded) {
             _upgradeMainnetContracts();
+
+            // Set the `pectraForkTimestamp` on the EigenPodManager. Use pectra state
+            cheats.startPrank(executorMultisig);
+            eigenPodManager.setProofTimestampSetter(executorMultisig);
+            eigenPodManager.setPectraForkTimestamp(BEACON_GENESIS_TIME); 
+            cheats.stopPrank();
         }
     }
 
