@@ -494,7 +494,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         pod = EigenPod(payable(eigenPodManager.createPod()));
     }
 
-    /// @dev Uses any ETH held by the User to start validators on the beacon chain
+     /// @dev Uses any ETH held by the User to start validators on the beacon chain
     /// @dev Creates validators between 32 and 2048 ETH
     /// @return A list of created validator indices
     /// @return The amount of wei sent to the beacon chain
@@ -584,6 +584,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
 
         return (newValidators, totalBeaconBalanceGwei, maxEBValidators);
     }
+
 
     function _exitValidators(
         uint40[] memory _validators

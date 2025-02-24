@@ -1,0 +1,671 @@
+No files changed, compilation skipped
+src/test/integration/tests/eigenpod/VerifyWC_StartCP_CompleteCP.t.sol:Integration_VerifyWC_StartCP_CompleteCP
+  ↪ Suite result: FAILED. 0 passed; 1 failed; 0 skipped; finished in 403.57ms (18.46ms CPU time)
+
+Ran 1 test for src/test/integration/tests/eigenpod/VerifyWC_StartCP_CompleteCP.t.sol:Integration_VerifyWC_StartCP_CompleteCP
+[FAIL: staker should have added deposit shares to beacon chain strat: 736000000000000000000 !~= 736000000023000000000 (max delta: 1, real delta: 23000000000); counterexample: calldata=0xe1e21226000000000000000000000000000000000000000000000000000000000000f49c args=[62620 [6.262e4]]] test_EarnOnBeacon_VerifyWC_StartCP_CompleteCP(uint24) (runs: 0, μ: 0, ~: 0)
+Logs:
+  Setting up `MAINNET_FORK` integration tests:
+  RPC: https://fragrant-intensive-resonance.quiknode.pro/d13303176efa5210c6b9f264823045bf2400fd16/
+  Block: 21616692
+  You are parsing on ChainID 1
+  Using addresses file script/configs/mainnet/mainnet-addresses.config.json
+  - Last Updated v0.4.3-mainnet-foundation-incentives
+  You are parsing on ChainID 1
+  Using config file script/configs/mainnet.json
+  - Last Updated slashing-integration-testing
+  EPM pause status: 0
+  EPM pause status: 0
+  
+Created DEFAULT staker0 who holds ETH.
+     Balances:
+         Native ETH: 736.000000000000000000 wad
+  TimeMachine.createSnapshot(0)
+  staker0.startValidators()
+  - creating new validators 23
+  - depositing balance to beacon chain (gwei) 736000000000
+  BeaconChain.newValidator()
+  BeaconChain.newValidator()
+  BeaconChain.newValidator()
+  BeaconChain.newValidator()
+  BeaconChain.newValidator()
+  BeaconChain.newValidator()
+  BeaconChain.newValidator()
+  BeaconChain.newValidator()
+  BeaconChain.newValidator()
+  BeaconChain.newValidator()
+  BeaconChain.newValidator()
+  BeaconChain.newValidator()
+  BeaconChain.newValidator()
+  BeaconChain.newValidator()
+  BeaconChain.newValidator()
+  BeaconChain.newValidator()
+  BeaconChain.newValidator()
+  BeaconChain.newValidator()
+  BeaconChain.newValidator()
+  BeaconChain.newValidator()
+  BeaconChain.newValidator()
+  BeaconChain.newValidator()
+  BeaconChain.newValidator()
+  BeaconChain.advanceEpoch_NoWithdraw()
+     - Generated rewards for 23 of 31 validators.
+  maxEBValidators 23
+  beaconBalanceIncreaseGwei 23
+  expectedWithdrawnGwei 23
+  verifyWCRewardsIncreaseGwei 0
+  TimeMachine.createSnapshot(1)
+  staker0.verifyWithdrawalCredentials()
+  TimeMachine.travelToLast(1)
+  TimeMachine.createSnapshot(2)
+  TimeMachine.travel(2)
+
+Traces:
+  [74406006] Integration_VerifyWC_StartCP_CompleteCP::test_EarnOnBeacon_VerifyWC_StartCP_CompleteCP(62620 [6.262e4])
+    ├─ [0] VM::assertTrue(true, "_configRand: no asset types selected") [staticcall]
+    │   └─ ← [Return] 
+    ├─ [0] VM::assertTrue(true, "_configRand: no user types selected") [staticcall]
+    │   └─ ← [Return] 
+    ├─ [0] VM::assertTrue(true, "_configRand: no asset types selected") [staticcall]
+    │   └─ ← [Return] 
+    ├─ [0] VM::assertTrue(true, "_configRand: no user types selected") [staticcall]
+    │   └─ ← [Return] 
+    ├─ [0] VM::toString(0) [staticcall]
+    │   └─ ← [Return] "0"
+    ├─ [6975778] → new staker0@0x1d1499e622D69689cdf9004d05Ec547d650Ff211
+    │   ├─ [2392] Integration_VerifyWC_StartCP_CompleteCP::delegationManager() [staticcall]
+    │   │   └─ ← [Return] 0x39053D51B77DC0d36036Fc1fCc8Cb819df8Ef37A
+    │   ├─ [2393] Integration_VerifyWC_StartCP_CompleteCP::strategyManager() [staticcall]
+    │   │   └─ ← [Return] 0x858646372CC42E1A627fcE94aa7A7033e7CF075A
+    │   ├─ [2393] Integration_VerifyWC_StartCP_CompleteCP::eigenPodManager() [staticcall]
+    │   │   └─ ← [Return] 0x91E677b07F7AF907ec9a428aafA9fc14a0d3A338
+    │   ├─ [2437] Integration_VerifyWC_StartCP_CompleteCP::timeMachine() [staticcall]
+    │   │   └─ ← [Return] TimeMachine: [0xc7183455a4C133Ae270771860664b6B7ec320bB1]
+    │   ├─ [2482] Integration_VerifyWC_StartCP_CompleteCP::beaconChain() [staticcall]
+    │   │   └─ ← [Return] BeaconChainMock: [0xa0Cb889707d426A7A386870A03bc70d1b0697598]
+    │   ├─ [322621] 0x91E677b07F7AF907ec9a428aafA9fc14a0d3A338::createPod()
+    │   │   ├─ [315305] EigenPodManager::createPod() [delegatecall]
+    │   │   │   ├─ [201636] → new <unknown>@0x37333E5b404F4B6BBa9a65d4171cD7fA8bE9d8fe
+    │   │   │   │   ├─ [2308] 0x5a2a4F2F3C18f09179B6703e63D9eDD165909073::implementation() [staticcall]
+    │   │   │   │   │   └─ ← [Return] EigenPod: [0xAAFF023Aa9002c5128f83D2cd01589B6d752f1Aa]
+    │   │   │   │   ├─ emit BeaconUpgraded(beacon: 0x5a2a4F2F3C18f09179B6703e63D9eDD165909073)
+    │   │   │   │   └─ ← [Return] 846 bytes of code
+    │   │   │   ├─ [47607] 0x37333E5b404F4B6BBa9a65d4171cD7fA8bE9d8fe::initialize(staker0: [0x1d1499e622D69689cdf9004d05Ec547d650Ff211])
+    │   │   │   │   ├─ [308] 0x5a2a4F2F3C18f09179B6703e63D9eDD165909073::implementation() [staticcall]
+    │   │   │   │   │   └─ ← [Return] EigenPod: [0xAAFF023Aa9002c5128f83D2cd01589B6d752f1Aa]
+    │   │   │   │   ├─ [46511] EigenPod::initialize(staker0: [0x1d1499e622D69689cdf9004d05Ec547d650Ff211]) [delegatecall]
+    │   │   │   │   │   ├─ emit Initialized(version: 1)
+    │   │   │   │   │   └─ ← [Stop] 
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   ├─ emit PodDeployed(eigenPod: 0x37333E5b404F4B6BBa9a65d4171cD7fA8bE9d8fe, podOwner: staker0: [0x1d1499e622D69689cdf9004d05Ec547d650Ff211])
+    │   │   │   └─ ← [Return] 0x37333E5b404F4B6BBa9a65d4171cD7fA8bE9d8fe
+    │   │   └─ ← [Return] 0x37333E5b404F4B6BBa9a65d4171cD7fA8bE9d8fe
+    │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   └─ ← [Return] 
+    │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   └─ ← [Return] 
+    │   ├─ [0] VM::label(staker0: [0x1d1499e622D69689cdf9004d05Ec547d650Ff211], "\u{1b}[96mstaker0\u{1b}[0m")
+    │   │   └─ ← [Return] 
+    │   ├─ [392] Integration_VerifyWC_StartCP_CompleteCP::delegationManager() [staticcall]
+    │   │   └─ ← [Return] 0x39053D51B77DC0d36036Fc1fCc8Cb819df8Ef37A
+    │   ├─ [393] Integration_VerifyWC_StartCP_CompleteCP::strategyManager() [staticcall]
+    │   │   └─ ← [Return] 0x858646372CC42E1A627fcE94aa7A7033e7CF075A
+    │   ├─ [393] Integration_VerifyWC_StartCP_CompleteCP::eigenPodManager() [staticcall]
+    │   │   └─ ← [Return] 0x91E677b07F7AF907ec9a428aafA9fc14a0d3A338
+    │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   └─ ← [Return] 
+    │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   └─ ← [Return] 
+    │   ├─ [0] VM::label(staker0: [0x1d1499e622D69689cdf9004d05Ec547d650Ff211], "\u{1b}[96mstaker0\u{1b}[0m")
+    │   │   └─ ← [Return] 
+    │   └─ ← [Return] 31848 bytes of code
+    ├─ [0] VM::deal(staker0: [0x1d1499e622D69689cdf9004d05Ec547d650Ff211], 736000000000000000000 [7.36e20])
+    │   └─ ← [Return] 
+    ├─ [2409] Integration_VerifyWC_StartCP_CompleteCP::logging() [staticcall]
+    │   └─ ← [Return] true
+    ├─ [4992] Integration_VerifyWC_StartCP_CompleteCP::colorByRole("staker0") [staticcall]
+    │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   └─ ← [Return] 
+    │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   └─ ← [Return] 
+    │   └─ ← [Return] "\u{1b}[96mstaker0\u{1b}[0m"
+    ├─ [0] console::log("\nCreated %s %s who holds %s.", "DEFAULT", "\u{1b}[96mstaker0\u{1b}[0m", "ETH") [staticcall]
+    │   └─ ← [Stop] 
+    ├─ [0] console::log("   Balances:") [staticcall]
+    │   └─ ← [Stop] 
+    ├─ [0] VM::toString(736000000000000000000 [7.36e20]) [staticcall]
+    │   └─ ← [Return] "736000000000000000000"
+    ├─ [0] console::log("       Native ETH: %s", "736.000000000000000000 wad") [staticcall]
+    │   └─ ← [Stop] 
+    ├─ [0] VM::assertApproxEqAbs(736000000000000000000 [7.36e20], 736000000000000000000 [7.36e20], 1, "_newRandomStaker: failed to award token balances") [staticcall]
+    │   └─ ← [Return] 
+    ├─ [3546087] staker0::startValidators()
+    │   ├─ [35598] TimeMachine::createSnapshot()
+    │   │   ├─ [0] VM::snapshotState()
+    │   │   │   └─ ← [Return] 0
+    │   │   ├─ [0] VM::toString(0) [staticcall]
+    │   │   │   └─ ← [Return] "0"
+    │   │   ├─ [2408] TimeMachine::logging() [staticcall]
+    │   │   │   └─ ← [Return] true
+    │   │   ├─ [4424] TimeMachine::NAME_COLORED() [staticcall]
+    │   │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   └─ ← [Return] "\u{1b}[93mTimeMachine\u{1b}[0m"
+    │   │   ├─ [0] console::log("%s.%s(%s)", "\u{1b}[93mTimeMachine\u{1b}[0m", "\u{1b}[3mcreateSnapshot\u{1b}[0m", "0") [staticcall]
+    │   │   │   └─ ← [Stop] 
+    │   │   └─ ← [Return] 0
+    │   ├─ [430] staker0::logging() [staticcall]
+    │   │   └─ ← [Return] true
+    │   ├─ [5176] staker0::NAME_COLORED() [staticcall]
+    │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   └─ ← [Return] "\u{1b}[96mstaker0\u{1b}[0m"
+    │   ├─ [0] console::log("%s.%s()", "\u{1b}[96mstaker0\u{1b}[0m", "\u{1b}[3mstartValidators\u{1b}[0m") [staticcall]
+    │   │   └─ ← [Stop] 
+    │   ├─ [0] console::log("- creating new validators", 23) [staticcall]
+    │   │   └─ ← [Stop] 
+    │   ├─ [0] console::log("- depositing balance to beacon chain (gwei)", 736000000000 [7.36e11]) [staticcall]
+    │   │   └─ ← [Stop] 
+    │   ├─ [224920] BeaconChainMock::newValidator{value: 32000000000000000000}(0x01000000000000000000000037333e5b404f4b6bba9a65d4171cd7fa8be9d8fe)
+    │   │   ├─ [2364] BeaconChainMock::logging() [staticcall]
+    │   │   │   └─ ← [Return] true
+    │   │   ├─ [4493] BeaconChainMock::NAME_COLORED() [staticcall]
+    │   │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   └─ ← [Return] "\u{1b}[93mBeaconChain\u{1b}[0m"
+    │   │   ├─ [0] console::log("%s.%s()", "\u{1b}[93mBeaconChain\u{1b}[0m", "\u{1b}[3mnewValidator\u{1b}[0m") [staticcall]
+    │   │   │   └─ ← [Stop] 
+    │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   └─ ← [Return] 1
+    │   ├─ [104705] BeaconChainMock::newValidator{value: 32000000000000000000}(0x01000000000000000000000037333e5b404f4b6bba9a65d4171cd7fa8be9d8fe)
+    │   │   ├─ [364] BeaconChainMock::logging() [staticcall]
+    │   │   │   └─ ← [Return] true
+    │   │   ├─ [4493] BeaconChainMock::NAME_COLORED() [staticcall]
+    │   │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   └─ ← [Return] "\u{1b}[93mBeaconChain\u{1b}[0m"
+    │   │   ├─ [0] console::log("%s.%s()", "\u{1b}[93mBeaconChain\u{1b}[0m", "\u{1b}[3mnewValidator\u{1b}[0m") [staticcall]
+    │   │   │   └─ ← [Stop] 
+    │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   └─ ← [Return] 2
+    │   ├─ [104705] BeaconChainMock::newValidator{value: 32000000000000000000}(0x01000000000000000000000037333e5b404f4b6bba9a65d4171cd7fa8be9d8fe)
+    │   │   ├─ [364] BeaconChainMock::logging() [staticcall]
+    │   │   │   └─ ← [Return] true
+    │   │   ├─ [4493] BeaconChainMock::NAME_COLORED() [staticcall]
+    │   │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   └─ ← [Return] "\u{1b}[93mBeaconChain\u{1b}[0m"
+    │   │   ├─ [0] console::log("%s.%s()", "\u{1b}[93mBeaconChain\u{1b}[0m", "\u{1b}[3mnewValidator\u{1b}[0m") [staticcall]
+    │   │   │   └─ ← [Stop] 
+    │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   └─ ← [Return] 3
+    │   ├─ [199020] BeaconChainMock::newValidator{value: 32000000000000000000}(0x01000000000000000000000037333e5b404f4b6bba9a65d4171cd7fa8be9d8fe)
+    │   │   ├─ [364] BeaconChainMock::logging() [staticcall]
+    │   │   │   └─ ← [Return] true
+    │   │   ├─ [4493] BeaconChainMock::NAME_COLORED() [staticcall]
+    │   │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   └─ ← [Return] "\u{1b}[93mBeaconChain\u{1b}[0m"
+    │   │   ├─ [0] console::log("%s.%s()", "\u{1b}[93mBeaconChain\u{1b}[0m", "\u{1b}[3mnewValidator\u{1b}[0m") [staticcall]
+    │   │   │   └─ ← [Stop] 
+    │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   └─ ← [Return] 5
+    │   ├─ [104705] BeaconChainMock::newValidator{value: 32000000000000000000}(0x01000000000000000000000037333e5b404f4b6bba9a65d4171cd7fa8be9d8fe)
+    │   │   ├─ [364] BeaconChainMock::logging() [staticcall]
+    │   │   │   └─ ← [Return] true
+    │   │   ├─ [4493] BeaconChainMock::NAME_COLORED() [staticcall]
+    │   │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   └─ ← [Return] "\u{1b}[93mBeaconChain\u{1b}[0m"
+    │   │   ├─ [0] console::log("%s.%s()", "\u{1b}[93mBeaconChain\u{1b}[0m", "\u{1b}[3mnewValidator\u{1b}[0m") [staticcall]
+    │   │   │   └─ ← [Stop] 
+    │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   └─ ← [Return] 6
+    │   ├─ [104705] BeaconChainMock::newValidator{value: 32000000000000000000}(0x01000000000000000000000037333e5b404f4b6bba9a65d4171cd7fa8be9d8fe)
+    │   │   ├─ [364] BeaconChainMock::logging() [staticcall]
+    │   │   │   └─ ← [Return] true
+    │   │   ├─ [4493] BeaconChainMock::NAME_COLORED() [staticcall]
+    │   │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   └─ ← [Return] "\u{1b}[93mBeaconChain\u{1b}[0m"
+    │   │   ├─ [0] console::log("%s.%s()", "\u{1b}[93mBeaconChain\u{1b}[0m", "\u{1b}[3mnewValidator\u{1b}[0m") [staticcall]
+    │   │   │   └─ ← [Stop] 
+    │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   └─ ← [Return] 7
+    │   ├─ [199020] BeaconChainMock::newValidator{value: 32000000000000000000}(0x01000000000000000000000037333e5b404f4b6bba9a65d4171cd7fa8be9d8fe)
+    │   │   ├─ [364] BeaconChainMock::logging() [staticcall]
+    │   │   │   └─ ← [Return] true
+    │   │   ├─ [4493] BeaconChainMock::NAME_COLORED() [staticcall]
+    │   │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   └─ ← [Return] "\u{1b}[93mBeaconChain\u{1b}[0m"
+    │   │   ├─ [0] console::log("%s.%s()", "\u{1b}[93mBeaconChain\u{1b}[0m", "\u{1b}[3mnewValidator\u{1b}[0m") [staticcall]
+    │   │   │   └─ ← [Stop] 
+    │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   └─ ← [Return] 9
+    │   ├─ [104705] BeaconChainMock::newValidator{value: 32000000000000000000}(0x01000000000000000000000037333e5b404f4b6bba9a65d4171cd7fa8be9d8fe)
+    │   │   ├─ [364] BeaconChainMock::logging() [staticcall]
+    │   │   │   └─ ← [Return] true
+    │   │   ├─ [4493] BeaconChainMock::NAME_COLORED() [staticcall]
+    │   │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   └─ ← [Return] "\u{1b}[93mBeaconChain\u{1b}[0m"
+    │   │   ├─ [0] console::log("%s.%s()", "\u{1b}[93mBeaconChain\u{1b}[0m", "\u{1b}[3mnewValidator\u{1b}[0m") [staticcall]
+    │   │   │   └─ ← [Stop] 
+    │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   └─ ← [Return] 10
+    │   ├─ [104705] BeaconChainMock::newValidator{value: 32000000000000000000}(0x01000000000000000000000037333e5b404f4b6bba9a65d4171cd7fa8be9d8fe)
+    │   │   ├─ [364] BeaconChainMock::logging() [staticcall]
+    │   │   │   └─ ← [Return] true
+    │   │   ├─ [4493] BeaconChainMock::NAME_COLORED() [staticcall]
+    │   │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   └─ ← [Return] "\u{1b}[93mBeaconChain\u{1b}[0m"
+    │   │   ├─ [0] console::log("%s.%s()", "\u{1b}[93mBeaconChain\u{1b}[0m", "\u{1b}[3mnewValidator\u{1b}[0m") [staticcall]
+    │   │   │   └─ ← [Stop] 
+    │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   └─ ← [Return] 11
+    │   ├─ [199020] BeaconChainMock::newValidator{value: 32000000000000000000}(0x01000000000000000000000037333e5b404f4b6bba9a65d4171cd7fa8be9d8fe)
+    │   │   ├─ [364] BeaconChainMock::logging() [staticcall]
+    │   │   │   └─ ← [Return] true
+    │   │   ├─ [4493] BeaconChainMock::NAME_COLORED() [staticcall]
+    │   │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   └─ ← [Return] "\u{1b}[93mBeaconChain\u{1b}[0m"
+    │   │   ├─ [0] console::log("%s.%s()", "\u{1b}[93mBeaconChain\u{1b}[0m", "\u{1b}[3mnewValidator\u{1b}[0m") [staticcall]
+    │   │   │   └─ ← [Stop] 
+    │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   └─ ← [Return] 13
+    │   ├─ [104705] BeaconChainMock::newValidator{value: 32000000000000000000}(0x01000000000000000000000037333e5b404f4b6bba9a65d4171cd7fa8be9d8fe)
+    │   │   ├─ [364] BeaconChainMock::logging() [staticcall]
+    │   │   │   └─ ← [Return] true
+    │   │   ├─ [4493] BeaconChainMock::NAME_COLORED() [staticcall]
+    │   │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   └─ ← [Return] "\u{1b}[93mBeaconChain\u{1b}[0m"
+    │   │   ├─ [0] console::log("%s.%s()", "\u{1b}[93mBeaconChain\u{1b}[0m", "\u{1b}[3mnewValidator\u{1b}[0m") [staticcall]
+    │   │   │   └─ ← [Stop] 
+    │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   └─ ← [Return] 14
+    │   ├─ [104705] BeaconChainMock::newValidator{value: 32000000000000000000}(0x01000000000000000000000037333e5b404f4b6bba9a65d4171cd7fa8be9d8fe)
+    │   │   ├─ [364] BeaconChainMock::logging() [staticcall]
+    │   │   │   └─ ← [Return] true
+    │   │   ├─ [4493] BeaconChainMock::NAME_COLORED() [staticcall]
+    │   │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   └─ ← [Return] "\u{1b}[93mBeaconChain\u{1b}[0m"
+    │   │   ├─ [0] console::log("%s.%s()", "\u{1b}[93mBeaconChain\u{1b}[0m", "\u{1b}[3mnewValidator\u{1b}[0m") [staticcall]
+    │   │   │   └─ ← [Stop] 
+    │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   └─ ← [Return] 15
+    │   ├─ [199020] BeaconChainMock::newValidator{value: 32000000000000000000}(0x01000000000000000000000037333e5b404f4b6bba9a65d4171cd7fa8be9d8fe)
+    │   │   ├─ [364] BeaconChainMock::logging() [staticcall]
+    │   │   │   └─ ← [Return] true
+    │   │   ├─ [4493] BeaconChainMock::NAME_COLORED() [staticcall]
+    │   │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   └─ ← [Return] "\u{1b}[93mBeaconChain\u{1b}[0m"
+    │   │   ├─ [0] console::log("%s.%s()", "\u{1b}[93mBeaconChain\u{1b}[0m", "\u{1b}[3mnewValidator\u{1b}[0m") [staticcall]
+    │   │   │   └─ ← [Stop] 
+    │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   └─ ← [Return] 17
+    │   ├─ [104705] BeaconChainMock::newValidator{value: 32000000000000000000}(0x01000000000000000000000037333e5b404f4b6bba9a65d4171cd7fa8be9d8fe)
+    │   │   ├─ [364] BeaconChainMock::logging() [staticcall]
+    │   │   │   └─ ← [Return] true
+    │   │   ├─ [4493] BeaconChainMock::NAME_COLORED() [staticcall]
+    │   │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   └─ ← [Return] "\u{1b}[93mBeaconChain\u{1b}[0m"
+    │   │   ├─ [0] console::log("%s.%s()", "\u{1b}[93mBeaconChain\u{1b}[0m", "\u{1b}[3mnewValidator\u{1b}[0m") [staticcall]
+    │   │   │   └─ ← [Stop] 
+    │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   └─ ← [Return] 18
+    │   ├─ [104705] BeaconChainMock::newValidator{value: 32000000000000000000}(0x01000000000000000000000037333e5b404f4b6bba9a65d4171cd7fa8be9d8fe)
+    │   │   ├─ [364] BeaconChainMock::logging() [staticcall]
+    │   │   │   └─ ← [Return] true
+    │   │   ├─ [4493] BeaconChainMock::NAME_COLORED() [staticcall]
+    │   │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   └─ ← [Return] "\u{1b}[93mBeaconChain\u{1b}[0m"
+    │   │   ├─ [0] console::log("%s.%s()", "\u{1b}[93mBeaconChain\u{1b}[0m", "\u{1b}[3mnewValidator\u{1b}[0m") [staticcall]
+    │   │   │   └─ ← [Stop] 
+    │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   └─ ← [Return] 19
+    │   ├─ [199020] BeaconChainMock::newValidator{value: 32000000000000000000}(0x01000000000000000000000037333e5b404f4b6bba9a65d4171cd7fa8be9d8fe)
+    │   │   ├─ [364] BeaconChainMock::logging() [staticcall]
+    │   │   │   └─ ← [Return] true
+    │   │   ├─ [4493] BeaconChainMock::NAME_COLORED() [staticcall]
+    │   │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   └─ ← [Return] "\u{1b}[93mBeaconChain\u{1b}[0m"
+    │   │   ├─ [0] console::log("%s.%s()", "\u{1b}[93mBeaconChain\u{1b}[0m", "\u{1b}[3mnewValidator\u{1b}[0m") [staticcall]
+    │   │   │   └─ ← [Stop] 
+    │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   └─ ← [Return] 21
+    │   ├─ [104705] BeaconChainMock::newValidator{value: 32000000000000000000}(0x01000000000000000000000037333e5b404f4b6bba9a65d4171cd7fa8be9d8fe)
+    │   │   ├─ [364] BeaconChainMock::logging() [staticcall]
+    │   │   │   └─ ← [Return] true
+    │   │   ├─ [4493] BeaconChainMock::NAME_COLORED() [staticcall]
+    │   │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   └─ ← [Return] "\u{1b}[93mBeaconChain\u{1b}[0m"
+    │   │   ├─ [0] console::log("%s.%s()", "\u{1b}[93mBeaconChain\u{1b}[0m", "\u{1b}[3mnewValidator\u{1b}[0m") [staticcall]
+    │   │   │   └─ ← [Stop] 
+    │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   └─ ← [Return] 22
+    │   ├─ [104705] BeaconChainMock::newValidator{value: 32000000000000000000}(0x01000000000000000000000037333e5b404f4b6bba9a65d4171cd7fa8be9d8fe)
+    │   │   ├─ [364] BeaconChainMock::logging() [staticcall]
+    │   │   │   └─ ← [Return] true
+    │   │   ├─ [4493] BeaconChainMock::NAME_COLORED() [staticcall]
+    │   │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   └─ ← [Return] "\u{1b}[93mBeaconChain\u{1b}[0m"
+    │   │   ├─ [0] console::log("%s.%s()", "\u{1b}[93mBeaconChain\u{1b}[0m", "\u{1b}[3mnewValidator\u{1b}[0m") [staticcall]
+    │   │   │   └─ ← [Stop] 
+    │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   └─ ← [Return] 23
+    │   ├─ [199020] BeaconChainMock::newValidator{value: 32000000000000000000}(0x01000000000000000000000037333e5b404f4b6bba9a65d4171cd7fa8be9d8fe)
+    │   │   ├─ [364] BeaconChainMock::logging() [staticcall]
+    │   │   │   └─ ← [Return] true
+    │   │   ├─ [4493] BeaconChainMock::NAME_COLORED() [staticcall]
+    │   │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   └─ ← [Return] "\u{1b}[93mBeaconChain\u{1b}[0m"
+    │   │   ├─ [0] console::log("%s.%s()", "\u{1b}[93mBeaconChain\u{1b}[0m", "\u{1b}[3mnewValidator\u{1b}[0m") [staticcall]
+    │   │   │   └─ ← [Stop] 
+    │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   └─ ← [Return] 25
+    │   ├─ [104705] BeaconChainMock::newValidator{value: 32000000000000000000}(0x01000000000000000000000037333e5b404f4b6bba9a65d4171cd7fa8be9d8fe)
+    │   │   ├─ [364] BeaconChainMock::logging() [staticcall]
+    │   │   │   └─ ← [Return] true
+    │   │   ├─ [4493] BeaconChainMock::NAME_COLORED() [staticcall]
+    │   │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   └─ ← [Return] "\u{1b}[93mBeaconChain\u{1b}[0m"
+    │   │   ├─ [0] console::log("%s.%s()", "\u{1b}[93mBeaconChain\u{1b}[0m", "\u{1b}[3mnewValidator\u{1b}[0m") [staticcall]
+    │   │   │   └─ ← [Stop] 
+    │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   └─ ← [Return] 26
+    │   ├─ [104705] BeaconChainMock::newValidator{value: 32000000000000000000}(0x01000000000000000000000037333e5b404f4b6bba9a65d4171cd7fa8be9d8fe)
+    │   │   ├─ [364] BeaconChainMock::logging() [staticcall]
+    │   │   │   └─ ← [Return] true
+    │   │   ├─ [4493] BeaconChainMock::NAME_COLORED() [staticcall]
+    │   │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   └─ ← [Return] "\u{1b}[93mBeaconChain\u{1b}[0m"
+    │   │   ├─ [0] console::log("%s.%s()", "\u{1b}[93mBeaconChain\u{1b}[0m", "\u{1b}[3mnewValidator\u{1b}[0m") [staticcall]
+    │   │   │   └─ ← [Stop] 
+    │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   └─ ← [Return] 27
+    │   ├─ [199020] BeaconChainMock::newValidator{value: 32000000000000000000}(0x01000000000000000000000037333e5b404f4b6bba9a65d4171cd7fa8be9d8fe)
+    │   │   ├─ [364] BeaconChainMock::logging() [staticcall]
+    │   │   │   └─ ← [Return] true
+    │   │   ├─ [4493] BeaconChainMock::NAME_COLORED() [staticcall]
+    │   │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   └─ ← [Return] "\u{1b}[93mBeaconChain\u{1b}[0m"
+    │   │   ├─ [0] console::log("%s.%s()", "\u{1b}[93mBeaconChain\u{1b}[0m", "\u{1b}[3mnewValidator\u{1b}[0m") [staticcall]
+    │   │   │   └─ ← [Stop] 
+    │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   └─ ← [Return] 29
+    │   ├─ [104705] BeaconChainMock::newValidator{value: 32000000000000000000}(0x01000000000000000000000037333e5b404f4b6bba9a65d4171cd7fa8be9d8fe)
+    │   │   ├─ [364] BeaconChainMock::logging() [staticcall]
+    │   │   │   └─ ← [Return] true
+    │   │   ├─ [4493] BeaconChainMock::NAME_COLORED() [staticcall]
+    │   │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   └─ ← [Return] "\u{1b}[93mBeaconChain\u{1b}[0m"
+    │   │   ├─ [0] console::log("%s.%s()", "\u{1b}[93mBeaconChain\u{1b}[0m", "\u{1b}[3mnewValidator\u{1b}[0m") [staticcall]
+    │   │   │   └─ ← [Stop] 
+    │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   └─ ← [Return] 30
+    │   └─ ← [Return] [1, 2, 3, 5, 6, 7, 9, 10, 11, 13, 14, 15, 17, 18, 19, 21, 22, 23, 25, 26, 27, 29, 30], 736000000000 [7.36e11], 23
+    ├─ [61424659] BeaconChainMock::advanceEpoch_NoWithdraw()
+    │   ├─ [364] BeaconChainMock::logging() [staticcall]
+    │   │   └─ ← [Return] true
+    │   ├─ [4493] BeaconChainMock::NAME_COLORED() [staticcall]
+    │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   └─ ← [Return] "\u{1b}[93mBeaconChain\u{1b}[0m"
+    │   ├─ [0] console::log("%s.%s()", "\u{1b}[93mBeaconChain\u{1b}[0m", "\u{1b}[3madvanceEpoch_NoWithdraw\u{1b}[0m") [staticcall]
+    │   │   └─ ← [Stop] 
+    │   ├─ [0] console::log("   - Generated rewards for %s of %s validators.", 23, 31) [staticcall]
+    │   │   └─ ← [Stop] 
+    │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   └─ ← [Return] 
+    │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   └─ ← [Return] 
+    │   └─ ← [Stop] 
+    ├─ [293] BeaconChainMock::CONSENSUS_REWARD_AMOUNT_GWEI() [staticcall]
+    │   └─ ← [Return] 1
+    ├─ [293] BeaconChainMock::CONSENSUS_REWARD_AMOUNT_GWEI() [staticcall]
+    │   └─ ← [Return] 1
+    ├─ [0] console::log("maxEBValidators", 23) [staticcall]
+    │   └─ ← [Stop] 
+    ├─ [0] console::log("beaconBalanceIncreaseGwei", 23) [staticcall]
+    │   └─ ← [Stop] 
+    ├─ [0] console::log("expectedWithdrawnGwei", 23) [staticcall]
+    │   └─ ← [Stop] 
+    ├─ [0] console::log("verifyWCRewardsIncreaseGwei", 0) [staticcall]
+    │   └─ ← [Stop] 
+    ├─ [2125705] staker0::verifyWithdrawalCredentials([1, 2, 3, 5, 6, 7, 9, 10, 11, 13, 14, 15, 17, 18, 19, 21, 22, 23, 25, 26, 27, 29, 30])
+    │   ├─ [31598] TimeMachine::createSnapshot()
+    │   │   ├─ [0] VM::snapshotState()
+    │   │   │   └─ ← [Return] 1
+    │   │   ├─ [0] VM::toString(1) [staticcall]
+    │   │   │   └─ ← [Return] "1"
+    │   │   ├─ [408] TimeMachine::logging() [staticcall]
+    │   │   │   └─ ← [Return] true
+    │   │   ├─ [4424] TimeMachine::NAME_COLORED() [staticcall]
+    │   │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   └─ ← [Return] "\u{1b}[93mTimeMachine\u{1b}[0m"
+    │   │   ├─ [0] console::log("%s.%s(%s)", "\u{1b}[93mTimeMachine\u{1b}[0m", "\u{1b}[3mcreateSnapshot\u{1b}[0m", "1") [staticcall]
+    │   │   │   └─ ← [Stop] 
+    │   │   └─ ← [Return] 1
+    │   ├─ [430] staker0::logging() [staticcall]
+    │   │   └─ ← [Return] true
+    │   ├─ [5176] staker0::NAME_COLORED() [staticcall]
+    │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   └─ ← [Return] "\u{1b}[96mstaker0\u{1b}[0m"
+    │   ├─ [0] console::log("%s.%s()", "\u{1b}[96mstaker0\u{1b}[0m", "\u{1b}[3mverifyWithdrawalCredentials\u{1b}[0m") [staticcall]
+    │   │   └─ ← [Stop] 
+    │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   └─ ← [Return] 
+    │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   └─ ← [Return] 
+    │   └─ ← [Stop] 
+    ├─ [1396] 0x91E677b07F7AF907ec9a428aafA9fc14a0d3A338::podOwnerDepositShares(staker0: [0x1d1499e622D69689cdf9004d05Ec547d650Ff211]) [staticcall]
+    │   ├─ [577] EigenPodManager::podOwnerDepositShares(staker0: [0x1d1499e622D69689cdf9004d05Ec547d650Ff211]) [delegatecall]
+    │   │   └─ ← [Return] 736000000023000000000 [7.36e20]
+    │   └─ ← [Return] 736000000023000000000 [7.36e20]
+    ├─ [41990] TimeMachine::travelToLast()
+    │   ├─ [0] VM::assertTrue(true, "Global.warpToPast: invalid usage, past does not exist") [staticcall]
+    │   │   └─ ← [Return] 
+    │   ├─ [0] VM::toString(1) [staticcall]
+    │   │   └─ ← [Return] "1"
+    │   ├─ [408] TimeMachine::logging() [staticcall]
+    │   │   └─ ← [Return] true
+    │   ├─ [4424] TimeMachine::NAME_COLORED() [staticcall]
+    │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   └─ ← [Return] "\u{1b}[93mTimeMachine\u{1b}[0m"
+    │   ├─ [0] console::log("%s.%s(%s)", "\u{1b}[93mTimeMachine\u{1b}[0m", "\u{1b}[3mtravelToLast\u{1b}[0m", "1") [staticcall]
+    │   │   └─ ← [Stop] 
+    │   ├─ [0] VM::snapshotState()
+    │   │   └─ ← [Return] 2
+    │   ├─ [0] VM::toString(2) [staticcall]
+    │   │   └─ ← [Return] "2"
+    │   ├─ [408] TimeMachine::logging() [staticcall]
+    │   │   └─ ← [Return] true
+    │   ├─ [4424] TimeMachine::NAME_COLORED() [staticcall]
+    │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   └─ ← [Return] 
+    │   │   └─ ← [Return] "\u{1b}[93mTimeMachine\u{1b}[0m"
+    │   ├─ [0] console::log("%s.%s(%s)", "\u{1b}[93mTimeMachine\u{1b}[0m", "\u{1b}[3mcreateSnapshot\u{1b}[0m", "2") [staticcall]
+    │   │   └─ ← [Stop] 
+    │   ├─ [0] VM::revertToState(1)
+    │   │   └─ ← [Return] true
+    │   ├─ [3396] 0x91E677b07F7AF907ec9a428aafA9fc14a0d3A338::podOwnerDepositShares(staker0: [0x1d1499e622D69689cdf9004d05Ec547d650Ff211]) [staticcall]
+    │   │   ├─ [2577] EigenPodManager::podOwnerDepositShares(staker0: [0x1d1499e622D69689cdf9004d05Ec547d650Ff211]) [delegatecall]
+    │   │   │   └─ ← [Return] 0
+    │   │   └─ ← [Return] 0
+    │   ├─ [9335] TimeMachine::travel(2)
+    │   │   ├─ [0] VM::toString(2) [staticcall]
+    │   │   │   └─ ← [Return] "2"
+    │   │   ├─ [408] TimeMachine::logging() [staticcall]
+    │   │   │   └─ ← [Return] true
+    │   │   ├─ [4424] TimeMachine::NAME_COLORED() [staticcall]
+    │   │   │   ├─ [0] VM::pauseTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   ├─ [0] VM::resumeTracing() [staticcall]
+    │   │   │   │   └─ ← [Return] 
+    │   │   │   └─ ← [Return] "\u{1b}[93mTimeMachine\u{1b}[0m"
+    │   │   ├─ [0] console::log("%s.%s(%s)", "\u{1b}[93mTimeMachine\u{1b}[0m", "\u{1b}[3mtravel\u{1b}[0m", "2") [staticcall]
+    │   │   │   └─ ← [Stop] 
+    │   │   ├─ [0] VM::revertToState(2)
+    │   │   │   └─ ← [Return] true
+    │   │   └─ ← [Stop] 
+    │   └─ ← [Return] 2
+    ├─ [0] VM::assertApproxEqAbs(736000000000000000000 [7.36e20], 736000000023000000000 [7.36e20], 1, "staker should have added deposit shares to beacon chain strat") [staticcall]
+    │   └─ ← [Revert] staker should have added deposit shares to beacon chain strat: 736000000000000000000 !~= 736000000023000000000 (max delta: 1, real delta: 23000000000)
+    └─ ← [Revert] staker should have added deposit shares to beacon chain strat: 736000000000000000000 !~= 736000000023000000000 (max delta: 1, real delta: 23000000000)
+
+Suite result: FAILED. 0 passed; 1 failed; 0 skipped; finished in 403.57ms (18.46ms CPU time)
+
+Ran 1 test suite in 952.51ms (403.57ms CPU time): 0 tests passed, 1 failed, 0 skipped (1 total tests)
+
+Failing tests:
+Encountered 1 failing test in src/test/integration/tests/eigenpod/VerifyWC_StartCP_CompleteCP.t.sol:Integration_VerifyWC_StartCP_CompleteCP
+[FAIL: staker should have added deposit shares to beacon chain strat: 736000000000000000000 !~= 736000000023000000000 (max delta: 1, real delta: 23000000000); counterexample: calldata=0xe1e21226000000000000000000000000000000000000000000000000000000000000f49c args=[62620 [6.262e4]]] test_EarnOnBeacon_VerifyWC_StartCP_CompleteCP(uint24) (runs: 0, μ: 0, ~: 0)
+
+Encountered a total of 1 failing tests, 0 tests succeeded
