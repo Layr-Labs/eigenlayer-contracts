@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -50,6 +51,19 @@ func runTestWithForkSlot(t *testing.T, forkSlot uint64, expectedOutput string) {
 	if expectedOutput != "" && !strings.Contains(output, expectedOutput) {
 		t.Errorf("Expected output to contain:\n%s\nGot:\n%s", expectedOutput, output)
 	}
+
+	// Check the timestamp file
+	timestampPath := filepath.Join("..", "forkTimestamp.txt")
+	content, err := os.ReadFile(timestampPath)
+	if err != nil {
+		t.Errorf("Failed to read timestamp file: %v", err)
+		return
+	}
+
+	expectedTimestamp := "1739908284"
+	if string(content) != expectedTimestamp {
+		t.Errorf("Expected timestamp file to contain %s, got %s", expectedTimestamp, string(content))
+	}
 }
 
 // Test on a missed slot, should print out that it missed the first slot
@@ -57,7 +71,7 @@ func TestRunScript_ForkSlot3667156(t *testing.T) {
 	expectedOutputs := []string{
 		"Slot 3667156 was missed, checking next slot...",
 		"Found first non-missed slot at slot 3667157",
-		"Slot timestamp: 173990828",
+		"Slot timestamp: 1739908284",
 	}
 	runTestWithForkSlot(t, 3667156, strings.Join(expectedOutputs, "\n"))
 }
@@ -66,7 +80,7 @@ func TestRunScript_ForkSlot3667156(t *testing.T) {
 func TestRunScript_ForkSlot3667157(t *testing.T) {
 	expectedOutputs := []string{
 		"Found first non-missed slot at slot 3667157",
-		"Slot timestamp: 173990828",
+		"Slot timestamp: 1739908284",
 	}
 	runTestWithForkSlot(t, 3667157, strings.Join(expectedOutputs, "\n"))
 }

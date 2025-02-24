@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/attestantio/go-eth2-client/api"
 	attestantio "github.com/attestantio/go-eth2-client/http"
@@ -94,8 +96,15 @@ func runScript(args TArgs) error {
 		return fmt.Errorf("failed to decode response: %v", err)
 	}
 
-	timestamp := blockResponse.Data.Message.Body.ExecutionPayload.Timestamp
+	timestamp := strings.TrimSpace(blockResponse.Data.Message.Body.ExecutionPayload.Timestamp)
 	fmt.Printf("Slot timestamp: %s\n", timestamp)
+
+	// Write timestamp to file in the parent directory (v1.2.0-slashing)
+	outputPath := filepath.Join("..", "forkTimestamp.txt")
+	err = os.WriteFile(outputPath, []byte(timestamp), 0644)
+	if err != nil {
+		return fmt.Errorf("failed to write timestamp to file: %v", err)
+	}
 
 	return nil
 }

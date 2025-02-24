@@ -2,6 +2,7 @@
 pragma solidity ^0.8.12;
 
 import "../Env.sol";
+import "forge-std/console.sol";
 
 import {ExecuteUpgradeAndSetTimestampSubmitter} from "./5-executeUpgradeAndSetTimestampSubmitter.s.sol";
 import {QueueUnpause} from "./3-queueUnpause.s.sol";
@@ -15,11 +16,15 @@ import {TimelockController} from "@openzeppelin/contracts/governance/TimelockCon
  */
 contract SetProofTimestamp is ExecuteUpgradeAndSetTimestampSubmitter {
     using Env for *;
+    using ZEnvHelpers for *;
 
     uint64 proofTimestamp;
 
     function _runAsMultisig() prank(Env.opsMultisig()) internal virtual override {
-        require(proofTimestamp != 0, "proofTimestamp must be set");
+        proofTimestamp = _getProofTimestamp();
+        // Assert that timestamp from script is >= the actual fork timestamp
+        require(proofTimestamp >= ZEnvHelpers.state().envU64("PECTRA_FORK_TIMESTAMP"), "proofTimestamp invalid");
+
         Env.proxy.eigenPodManager().setPectraForkTimestamp(proofTimestamp);
     }
 
@@ -40,10 +45,16 @@ contract SetProofTimestamp is ExecuteUpgradeAndSetTimestampSubmitter {
         _unsafeResetHasPranked();
 
         // 6. Set the proof timestamp
-        proofTimestamp = 1740434112; // Using holesky pectra fork timestamp for testing
+        // This test uses the actual pectra fork timestamp, hence why `forkTimestamp.txt` already has a set timestamp
         execute();   
 
         // Validate that the proof timestamp is set
         assertEq(Env.proxy.eigenPodManager().pectraForkTimestamp(), proofTimestamp, "Proof timestamp is not set");
+    }
+
+    function _getProofTimestamp() internal view returns (uint64) {
+        string memory timestampPath = string.concat(vm.projectRoot(), "/script/releases/v1.2.0-slashing/forkTimestamp.txt");
+        string memory timestamp = vm.readFile(timestampPath);
+        return uint64(vm.parseUint(timestamp));
     }
 }
