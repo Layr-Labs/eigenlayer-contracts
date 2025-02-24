@@ -14,6 +14,7 @@ import "src/test/utils/ProofParsing.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
 
 import "src/test/integration/mocks/BeaconChainMock.t.sol";
+import "src/test/integration/mocks/BeaconChainMock_Deneb.t.sol";
 import "src/test/integration/mocks/EIP_4788_Oracle_Mock.t.sol";
 import "src/test/utils/EigenPodUser.t.sol";
 
@@ -1791,6 +1792,68 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
             proof: proofs.validatorProof
         });
         check_StartCheckpoint_State(staker);
+    }
+}
+
+/// @notice Tests that deneb proofs are not successful against pectra state
+contract EigenPodUnitTests_DenebProofsAgainstPectra is EigenPodUnitTests {
+
+    /// @notice Set the beacon chain mock to Deneb Forkable
+    /// @notice The EigenPods by default use Pectra state given the early `proofTimestamp`
+    function setUp() public override {
+        EigenPodUnitTests.setUp();
+
+        // Set beaconChainMock to Deneb Forkable
+        beaconChain = BeaconChainMock(
+            new BeaconChainMock_DenebForkable(EigenPodManager(address(eigenPodManagerMock)), GENESIS_TIME_LOCAL)
+        );
+    }
+
+    function testFuzz_revert_verifyWC_DenebAgainstPectra(uint24 rand) public {
+        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
+        (uint40[] memory validators,,) = staker.startValidators();
+        EigenPod pod = staker.pod();
+
+        // Get credentials proofs on Deneb state
+        CredentialProofs memory proofs = beaconChain.getCredentialProofs(validators);
+
+        cheats.prank(address(staker));
+        cheats.expectRevert(BeaconChainProofs.InvalidProofLength.selector);
+        pod.verifyWithdrawalCredentials({
+            beaconTimestamp: proofs.beaconTimestamp,
+            stateRootProof: proofs.stateRootProof,
+            validatorIndices: validators,
+            validatorFieldsProofs: proofs.validatorFieldsProofs,
+            validatorFields: proofs.validatorFields
+        });
+    }
+
+    function testFuzz_revert_completeCheckpoint_DenebAgainstPectra(uint24 rand) public {
+        // Forward proof timestamp so that EigenPods prove everything against Deneb state
+        eigenPodManagerMock.setPectraForkTimestamp(type(uint64).max);
+
+        // Setup verifyCheckpointProofs
+        (EigenPodUser staker,) = _newEigenPodStaker({ rand: rand });
+        EigenPod pod = staker.pod();
+        (uint40[] memory validators,,) = staker.startValidators();
+        staker.verifyWithdrawalCredentials(validators);
+        beaconChain.advanceEpoch();
+
+        // Get checkpoint proofs on Deneb state
+        staker.startCheckpoint();
+        CheckpointProofs memory proofs = beaconChain.getCheckpointProofs(
+            validators,
+            pod.currentCheckpointTimestamp()
+        );
+
+        // Rewind proof timestamp such that EigenPods prove everything against Pectra state
+        eigenPodManagerMock.setPectraForkTimestamp(1 hours * 12);
+
+        cheats.expectRevert(BeaconChainProofs.InvalidProofLength.selector);
+        pod.verifyCheckpointProofs({
+            balanceContainerProof: proofs.balanceContainerProof,
+            proofs: proofs.balanceProofs
+        });
     }
 }
 
