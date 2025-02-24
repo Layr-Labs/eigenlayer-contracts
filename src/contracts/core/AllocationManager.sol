@@ -54,6 +54,8 @@ contract AllocationManager is
         _disableInitializers();
     }
 
+    // MODIFY THIS TO MAKE CI RUN TESTS (HOPEFULLY)
+
     /// @inheritdoc IAllocationManager
     function initialize(address initialOwner, uint256 initialPausedStatus) external initializer {
         _setPausedStatus(initialPausedStatus);
