@@ -1,0 +1,48 @@
+{
+    "name": "slashing-prooftra",
+    "from": "1.1.1",
+    "to": "1.2.0",
+    "phases": [
+        {
+            "type": "eoa",
+            "filename": "1-eoa.s.sol"
+        },
+        {
+            "type": "multisig",
+            "filename": "2-queueUpgradeAndTimestampSetter.s.sol"
+        },
+        {
+            "type": "multisig",
+            "filename": "3-queueUnpause.s.sol"
+        },
+        {
+            "type": "multisig",
+            "filename": "4-pause.s.sol"
+        },
+        {
+            "type": "multisig",
+            "filename": "5-executeUpgradeAndSetTimestampSubmitter.s.sol"
+        },
+        {
+            "type": "script",
+            "filename": "6-script/start.sh",
+            "arguments": [
+                {
+                    "type": "url",
+                    "passBy": "env",
+                    "inputType": "text",
+                    "name": "BEACON_URL",
+                    "prompt": "Enter an ETH2 Beacon RPC URL"
+                }
+            ]
+        },
+        {
+            "type": "multisig",
+            "filename": "7-setProofTimestamp.s.sol"
+        },
+        {
+            "type": "multisig",
+            "filename": "8-executeUnpause.s.sol"
+        }
+    ]
+}
