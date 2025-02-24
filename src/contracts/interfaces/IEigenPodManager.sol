@@ -26,6 +26,8 @@ interface IEigenPodManagerErrors {
     /// @dev Thrown when the pods shares are negative and a beacon chain balance update is attempted.
     /// The podOwner should complete legacy withdrawal first.
     error LegacyWithdrawalsNotCompleted();
+    /// @dev Thrown when caller is not the proof timestamp setter
+    error OnlyProofTimestampSetter();
 }
 
 interface IEigenPodManagerEvents {
@@ -58,6 +60,12 @@ interface IEigenPodManagerEvents {
 
     /// @notice Emitted when an operator is slashed and shares to be burned are increased
     event BurnableETHSharesIncreased(uint256 shares);
+
+    /// @notice Emitted when the Pectra fork timestamp is updated
+    event PectraForkTimestampSet(uint64 newPectraForkTimestamp);
+
+    /// @notice Emitted when the proof timestamp setter is updated
+    event ProofTimestampSetterSet(address newProofTimestampSetter);
 }
 
 interface IEigenPodManagerTypes {
@@ -122,6 +130,16 @@ interface IEigenPodManager is
         int256 balanceDeltaWei
     ) external;
 
+    /// @notice Sets the address that can set proof timestamps
+    function setProofTimestampSetter(
+        address newProofTimestampSetter
+    ) external;
+
+    /// @notice Sets the Pectra fork timestamp, only callable by `proofTimestampSetter`
+    function setPectraForkTimestamp(
+        uint64 timestamp
+    ) external;
+
     /// @notice Returns the address of the `podOwner`'s EigenPod if it has been deployed.
     function ownerToPod(
         address podOwner
@@ -171,4 +189,8 @@ interface IEigenPodManager is
 
     /// @notice Returns the accumulated amount of beacon chain ETH Strategy shares
     function burnableETHShares() external view returns (uint256);
+
+    /// @notice Returns the timestamp of the Pectra hard fork
+    /// @dev Specifically, this returns the timestamp of the first non-missed slot at or after the Pectra hard fork
+    function pectraForkTimestamp() external view returns (uint64);
 }

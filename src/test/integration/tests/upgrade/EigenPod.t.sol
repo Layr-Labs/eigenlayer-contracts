@@ -72,7 +72,7 @@ contract Integration_Upgrade_EigenPod_FullSlash is Integration_Upgrade_EigenPod_
         // 5. Start a new validator & verify withdrawal credentials
         cheats.deal(address(staker), 32 ether);
         tokenBalances[0] = tokenBalances[0] + 32 ether;
-        (uint40[] memory newValidators, uint64 addedBeaconBalanceGwei) = staker.startValidators();
+        (uint40[] memory newValidators, uint64 addedBeaconBalanceGwei,) = staker.startValidators();
         beaconChain.advanceEpoch_NoRewards();
         staker.verifyWithdrawalCredentials(newValidators);
         check_VerifyWC_State(staker, newValidators, addedBeaconBalanceGwei);

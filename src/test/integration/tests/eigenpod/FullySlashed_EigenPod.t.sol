@@ -53,7 +53,7 @@ contract Integration_FullySlashedEigenpod_Checkpointed is Integration_FullySlash
     function testFuzz_fullSlash_Revert_Redeposit(uint24 _rand) public rand(_rand) {
         // Start a new validator & verify withdrawal credentials
         cheats.deal(address(staker), 32 ether);
-        (uint40[] memory newValidators,) = staker.startValidators();
+        (uint40[] memory newValidators,,) = staker.startValidators();
         beaconChain.advanceEpoch_NoRewards();
 
         // We should revert on verifyWithdrawalCredentials since the staker's slashing factor is 0
@@ -67,7 +67,7 @@ contract Integration_FullySlashedEigenpod_Checkpointed is Integration_FullySlash
 
         // Start a new validator & verify withdrawal credentials
         cheats.deal(address(staker), 32 ether);
-        (uint40[] memory newValidators,) = staker.startValidators();
+        (uint40[] memory newValidators,,) = staker.startValidators();
         beaconChain.advanceEpoch_NoRewards();
 
         // We should revert on verifyWithdrawalCredentials since the staker's slashing factor is 0

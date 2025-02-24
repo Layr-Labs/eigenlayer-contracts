@@ -28,7 +28,8 @@ library BeaconChainProofs {
     /// |                                             HEIGHT: VALIDATOR_TREE_HEIGHT
     /// individual validators
     uint256 internal constant BEACON_BLOCK_HEADER_TREE_HEIGHT = 3;
-    uint256 internal constant BEACON_STATE_TREE_HEIGHT = 5;
+    uint256 internal constant DENEB_BEACON_STATE_TREE_HEIGHT = 5;
+    uint256 internal constant PECTRA_BEACON_STATE_TREE_HEIGHT = 6;
     uint256 internal constant BALANCE_TREE_HEIGHT = 38;
     uint256 internal constant VALIDATOR_TREE_HEIGHT = 40;
 
@@ -70,6 +71,12 @@ library BeaconChainProofs {
     /// fields when a `Validator` is first created on the beacon chain
     uint64 internal constant FAR_FUTURE_EPOCH = type(uint64).max;
     bytes8 internal constant UINT64_MASK = 0xffffffffffffffff;
+
+    /// @notice The beacon chain version to validate against
+    enum ProofVersion {
+        DENEB,
+        PECTRA
+    }
 
     /// @notice Contains a beacon state root and a merkle proof verifying its inclusion under a beacon block root
     struct StateRootProof {
@@ -134,6 +141,7 @@ library BeaconChainProofs {
     /// @param validatorFieldsProof a merkle proof of inclusion of `validatorFields` under `beaconStateRoot`
     /// @param validatorIndex the validator's unique index
     function verifyValidatorFields(
+        ProofVersion proofVersion,
         bytes32 beaconStateRoot,
         bytes32[] calldata validatorFields,
         bytes calldata validatorFieldsProof,
@@ -141,10 +149,12 @@ library BeaconChainProofs {
     ) internal view {
         require(validatorFields.length == VALIDATOR_FIELDS_LENGTH, InvalidValidatorFieldsLength());
 
+        uint256 beaconStateTreeHeight = getBeaconStateTreeHeight(proofVersion);
+
         /// Note: the reason we use `VALIDATOR_TREE_HEIGHT + 1` here is because the merklization process for
         /// this container includes hashing the root of the validator tree with the length of the validator list
         require(
-            validatorFieldsProof.length == 32 * ((VALIDATOR_TREE_HEIGHT + 1) + BEACON_STATE_TREE_HEIGHT),
+            validatorFieldsProof.length == 32 * ((VALIDATOR_TREE_HEIGHT + 1) + beaconStateTreeHeight),
             InvalidProofLength()
         );
 
@@ -185,10 +195,15 @@ library BeaconChainProofs {
     /// against the same balance container root.
     /// @param beaconBlockRoot merkle root of the beacon block
     /// @param proof a beacon balance container root and merkle proof of its inclusion under `beaconBlockRoot`
-    function verifyBalanceContainer(bytes32 beaconBlockRoot, BalanceContainerProof calldata proof) internal view {
+    function verifyBalanceContainer(
+        ProofVersion proofVersion,
+        bytes32 beaconBlockRoot,
+        BalanceContainerProof calldata proof
+    ) internal view {
+        uint256 beaconStateTreeHeight = getBeaconStateTreeHeight(proofVersion);
+
         require(
-            proof.proof.length == 32 * (BEACON_BLOCK_HEADER_TREE_HEIGHT + BEACON_STATE_TREE_HEIGHT),
-            InvalidProofLength()
+            proof.proof.length == 32 * (BEACON_BLOCK_HEADER_TREE_HEIGHT + beaconStateTreeHeight), InvalidProofLength()
         );
 
         /// This proof combines two proofs, so its index accounts for the relative position of leaves in two trees:
@@ -197,7 +212,7 @@ library BeaconChainProofs {
         /// -- beaconStateRoot
         /// |                            HEIGHT: BEACON_STATE_TREE_HEIGHT
         /// ---- balancesContainerRoot
-        uint256 index = (STATE_ROOT_INDEX << (BEACON_STATE_TREE_HEIGHT)) | BALANCE_CONTAINER_INDEX;
+        uint256 index = (STATE_ROOT_INDEX << (beaconStateTreeHeight)) | BALANCE_CONTAINER_INDEX;
 
         require(
             Merkle.verifyInclusionSha256({
@@ -311,5 +326,13 @@ library BeaconChainProofs {
         bytes32[] memory validatorFields
     ) internal pure returns (uint64) {
         return Endian.fromLittleEndianUint64(validatorFields[VALIDATOR_EXIT_EPOCH_INDEX]);
+    }
+
+    /// @dev We check if the proofTimestamp is <= pectraForkTimestamp because a `proofTimestamp` at the `pectraForkTimestamp`
+    ///      is considered to be Pre-Pectra given the EIP-4788 oracle returns the parent block.
+    function getBeaconStateTreeHeight(
+        ProofVersion proofVersion
+    ) internal pure returns (uint256) {
+        return proofVersion == ProofVersion.DENEB ? DENEB_BEACON_STATE_TREE_HEIGHT : PECTRA_BEACON_STATE_TREE_HEIGHT;
     }
 }

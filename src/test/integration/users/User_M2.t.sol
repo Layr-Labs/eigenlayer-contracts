@@ -28,6 +28,7 @@ interface IUserM2MainnetForkDeployer {
 /**
  * @dev User_M2 used for performing mainnet M2 contract methods but also inherits User
  * to perform current local contract methods after a upgrade of core contracts
+ * @dev UserM2 interacts with pre-pectra beacon chain
  */
 contract User_M2 is User {
     using ArrayLib for *;
@@ -151,6 +152,57 @@ contract User_M2 is User {
     /// Internal Methods
     /// -----------------------------------------------------------------------
 
+    /// @dev Uses any ETH held by the User to start validators on the beacon chain
+    /// @return A list of created validator indices
+    /// @return The amount of wei sent to the beacon chain
+    /// @return The number of validators that have the MaxEB
+    /// Note: If the user does not have enough ETH to start a validator, this method reverts
+    /// Note: This method also advances one epoch forward on the beacon chain, so that
+    /// withdrawal credential proofs are generated for each validator.
+    function _startValidators() internal virtual override returns (uint40[] memory, uint64, uint) {
+        uint256 balanceWei = address(this).balance;
+
+        // Number of full validators: balance / 32 ETH
+        uint256 numValidators = balanceWei / 32 ether;
+        balanceWei -= (numValidators * 32 ether);
+
+        // If we still have at least 1 ETH left over, we can create another (non-full) validator
+        // Note that in the mock beacon chain this validator will generate rewards like any other.
+        // The main point is to ensure pods are able to handle validators that have less than 32 ETH
+        uint256 lastValidatorBalance;
+        uint256 totalValidators = numValidators;
+        if (balanceWei >= 1 ether) {
+            lastValidatorBalance = balanceWei - (balanceWei % 1 gwei);
+            balanceWei -= lastValidatorBalance;
+            totalValidators++;
+        }
+
+        require(totalValidators != 0, "startValidators: not enough ETH to start a validator");
+        uint40[] memory newValidators = new uint40[](totalValidators);
+        uint64 totalBeaconBalanceGwei = uint64((address(this).balance - balanceWei) / GWEI_TO_WEI);
+
+        console.log("- creating new validators", newValidators.length);
+        console.log("- depositing balance to beacon chain (gwei)", totalBeaconBalanceGwei);
+
+        // Create each of the full validators
+        for (uint256 i = 0; i < numValidators; i++) {
+            uint40 validatorIndex = beaconChain.newValidator{value: 32 ether}(_podWithdrawalCredentials());
+
+            newValidators[i] = validatorIndex;
+            validators.push(validatorIndex);
+        }
+
+        // If we had a remainder, create the final, non-full validator
+        if (totalValidators == numValidators + 1) {
+            uint40 validatorIndex = beaconChain.newValidator{value: lastValidatorBalance}(_podWithdrawalCredentials());
+
+            newValidators[newValidators.length - 1] = validatorIndex;
+            validators.push(validatorIndex);
+        }
+
+        return (newValidators, totalBeaconBalanceGwei, numValidators);
+    }
+
     function _completeCheckpoint_M2() internal {
         cheats.pauseTracing();
         IEigenPod_DeprecatedM2 pod = IEigenPod_DeprecatedM2(address(pod));
@@ -250,7 +302,7 @@ contract User_M2_AltMethods is User_M2 {
             uint tokenBalance = tokenBalances[i];
 
             if (strat == BEACONCHAIN_ETH_STRAT) {
-                (uint40[] memory newValidators,) = _startValidators();
+                (uint40[] memory newValidators, ,) = _startValidators();
                 // Advance forward one epoch and generate credential and balance proofs for each validator
                 beaconChain.advanceEpoch_NoRewards();
                 _verifyWithdrawalCredentials(newValidators);
