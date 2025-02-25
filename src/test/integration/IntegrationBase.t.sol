@@ -303,6 +303,8 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         string memory err
     ) internal view {
         EigenPod pod = staker.pod();
+        console.log("proofsRemaining: ", pod.currentCheckpoint().proofsRemaining);
+        console.log("activeValidatorCount: ", pod.activeValidatorCount());
         assertEq(pod.currentCheckpoint().proofsRemaining, pod.activeValidatorCount(), err);
     }
 

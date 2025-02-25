@@ -182,7 +182,7 @@ contract Integration_DualSlashing_Base_AVSFirst is Integration_DualSlashing_Base
 
     /// @notice The balance increase results in the pods not processing the beacon slash as a slash, given
     ///         that the checkpoint had a positive delta
-    function testFuzz_avsSlash_balanceIncrease_checkpoint_verifyValidator(uint24 _rand) public rand(_rand) {
+    function testFuzz_avsSlash_bcSlash_balanceIncrease_checkpoint(uint24 _rand) public rand(_rand) {
         // 7. Slash Staker on BC
         uint64 slashedAmountGwei = beaconChain.slashValidators(validators);
         beaconChain.advanceEpoch_NoRewards();
@@ -194,8 +194,6 @@ contract Integration_DualSlashing_Base_AVSFirst is Integration_DualSlashing_Base
         address(staker.pod()).call{value: ethToDeposit}("");
         uint64 beaconSharesAddedGwei = uint64(ethToDeposit / GWEI_TO_WEI);
 
-        console.log("pod balance: ", address(staker.pod()).balance);
-
         // 9. Checkpoint
         staker.startCheckpoint();
         check_StartCheckpoint_WithPodBalance_State(staker, beaconBalanceGwei - slashedAmountGwei + beaconSharesAddedGwei);
@@ -203,5 +201,28 @@ contract Integration_DualSlashing_Base_AVSFirst is Integration_DualSlashing_Base
         check_CompleteCheckpoint_AfterAVSSlash_ETHDeposit_BCSlash(staker, validators, slashedAmountGwei, beaconSharesAddedGwei);
     }
 
+    /// @notice The balance increase occurs after the slashings are processed, so it should be unaffected by the slashings
+    function testFuzz_avsSlash_bcSlash_checkpoint_balanceIncrease(uint24 _rand) public rand(_rand) {
+        // 7. Slash Staker on BC
+        uint64 slashedAmountGwei = beaconChain.slashValidators(validators);
+        beaconChain.advanceEpoch_NoRewards();
+        
+        // 8. Checkpoint
+        staker.startCheckpoint();
+        check_StartCheckpoint_WithPodBalance_State(staker, beaconBalanceGwei - slashedAmountGwei);
+        staker.completeCheckpoint();
+        check_CompleteCheckPoint_AfterAVS_BCSlash(staker, validators, initDepositShares[0], slashedAmountGwei, allocateParams, slashingParams);
 
+        // 9. Send 32 ETH to pod, some random amount of ETH, greater than the amount slashed
+        uint ethToDeposit = 32 ether;
+        cheats.deal(address(staker), ethToDeposit);
+        cheats.prank(address(staker));
+        address(staker.pod()).call{value: ethToDeposit}("");
+        uint64 beaconSharesAddedGwei = uint64(ethToDeposit / GWEI_TO_WEI);
+
+        // 10. Checkpoint. This should immediately complete as there are no more active validators
+        beaconChain.advanceEpoch_NoRewards();
+        staker.startCheckpoint();
+        check_StartCheckpoint_NoValidators_State(staker, beaconSharesAddedGwei);
+    }
 }
