@@ -22,6 +22,29 @@ contract Integration_Upgrade_EigenPod_Base is UpgradeTest {
     }
 }
 
+contract Integration_Upgrade_EigenPod_SlashAfterUpgrade is Integration_Upgrade_EigenPod_Base {
+    uint40[] validators;
+    uint64 slashedGwei;
+
+    function testFuzz_deposit_upgrade_slash_completeCheckpoint(uint24 _rand) public rand(_rand) {
+        uint64 initBeaconBalanceGwei = uint64(tokenBalances[0] / GWEI_TO_WEI);
+
+        /// 2. Upgrade contracts
+        _upgradeEigenLayerContracts();
+
+        /// 3. Slash the staker partially
+        validators = staker.getActiveValidators();
+        slashedGwei = beaconChain.slashValidators(validators, BeaconChainMock.SlashType.Minor);
+        beaconChain.advanceEpoch_NoRewards(); // Withdraw slashed validators to pod
+
+        // 4. Start and complete a checkpoint
+        staker.startCheckpoint();
+        check_StartCheckpoint_WithPodBalance_State(staker, initBeaconBalanceGwei - slashedGwei);
+        staker.completeCheckpoint();
+        check_CompleteCheckpoint_WithSlashing_HandleRoundDown_State(staker, validators, slashedGwei);
+    }
+}
+
 contract Integration_Upgrade_EigenPod_FullSlash is Integration_Upgrade_EigenPod_Base {
     uint40[] validators;
     uint64 slashedGwei;
