@@ -3,25 +3,25 @@ name: Foundry
 on:
   workflow_dispatch:
   pull_request:
-    paths:
-      - '.github/**'
-      - 'bin/**'
-      - 'src/**'
-      - 'lib/**'
-      - 'certora/**'
-      - 'foundry.toml'
-      - '**/*.sol'
+    # paths:
+    #   - '.github/**'
+    #   - 'bin/**'
+    #   - 'src/**'
+    #   - 'lib/**'
+    #   - 'certora/**'
+    #   - 'foundry.toml'
+    #   - '**/*.sol'
   push:
     branches:
       - "dev"
-    paths:
-      - '.github/**'
-      - 'bin/**'
-      - 'src/**'
-      - 'lib/**'
-      - 'certora/**'
-      - 'foundry.toml'
-      - '**/*.sol'
+    # paths:
+    #   - '.github/**'
+    #   - 'bin/**'
+    #   - 'src/**'
+    #   - 'lib/**'
+    #   - 'certora/**'
+    #   - 'foundry.toml'
+    #   - '**/*.sol'
 
 env:
   FOUNDRY_PROFILE: medium
