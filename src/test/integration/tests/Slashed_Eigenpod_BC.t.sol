@@ -34,7 +34,7 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         check_Deposit_State(staker, strategies, shares);
 
         uint40[] memory slashedValidators = _choose(validators);
-        slashedGwei = beaconChain.slashValidators(slashedValidators);
+        slashedGwei = beaconChain.slashValidators(slashedValidators, BeaconChainMock.SlashType.Minor);
         console.log(slashedGwei);
         beaconChain.advanceEpoch_NoWithdrawNoRewards();
         

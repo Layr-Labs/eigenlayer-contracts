@@ -101,14 +101,20 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_SlashableStake_Decrease_BCSlash(staker);
     }
 
-    function check_CompleteCheckpoint_ZeroBalanceDelta_State(
-        User staker
+    function check_CompleteCheckpoint_FullySlashed_State(
+        User staker,
+        uint40[] memory slashedValidators,
+        uint64 slashedAmountGwei
     ) internal {
         check_CompleteCheckpoint_State(staker);
-        
-        assert_Snap_Unchanged_Staker_DepositShares(staker, "staker deposit shares should not have decreased");
-        assert_Snap_Unchanged_Staker_WithdrawableShares(staker, BEACONCHAIN_ETH_STRAT.toArray(), "staker withdrawable shares should not have decreased");
-        assert_Snap_Unchanged_DSF(staker, BEACONCHAIN_ETH_STRAT.toArray(), "staker DSF should not have changed");
+
+        assert_Snap_Unchanged_Staker_DepositShares(staker, "staker shares should not have decreased");
+        assert_Snap_Removed_Staker_WithdrawableShares(staker, BEACONCHAIN_ETH_STRAT, slashedAmountGwei * GWEI_TO_WEI, "should have decreased withdrawable shares by slashed amount");
+        assert_Snap_Removed_ActiveValidatorCount(staker, slashedValidators.length, "should have decreased active validator count");
+        assert_Snap_Removed_ActiveValidators(staker, slashedValidators, "exited validators should each be WITHDRAWN");
+        assert_BCSF_Zero(staker, "BCSF should be 0");
+        assert_Snap_Unchanged_DSF(staker, BEACONCHAIN_ETH_STRAT.toArray(), "DSF should be unchanged");
+        assert_SlashableStake_Decrease_BCSlash(staker);
     }
 
     function check_CompleteCheckpoint_WithSlashing_HandleRoundDown_State(
