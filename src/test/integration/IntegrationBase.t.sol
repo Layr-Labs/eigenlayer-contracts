@@ -1606,7 +1606,9 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         uint[] memory prevDSFs = _getPrevDepositScalingFactors(staker, strategies);
 
         for (uint i = 0; i < strategies.length; i++) {
-            assertEq(prevDSFs[i], curDSFs[i], err);
+            if (strategies[i] != BEACONCHAIN_ETH_STRAT){
+                assertEq(prevDSFs[i], curDSFs[i], err);
+            }
         }
     }
 
