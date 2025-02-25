@@ -293,7 +293,7 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         (User staker, ,) = _newRandomStaker();
 
         (uint40[] memory validators, ) = staker.startValidators();
-        beaconChain.slashValidators(validators);
+        beaconChain.slashValidators(validators, BeaconChainMock.SlashType.Minor);
         // Advance epoch, withdrawing slashed validators to pod
         beaconChain.advanceEpoch_NoRewards();
         
@@ -316,7 +316,7 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         staker.verifyWithdrawalCredentials(validators);
         check_VerifyWC_State(staker, validators, beaconBalanceGwei);
 
-        uint64 slashedBalanceGwei = beaconChain.slashValidators(validators);
+        uint64 slashedBalanceGwei = beaconChain.slashValidators(validators, BeaconChainMock.SlashType.Minor);
         beaconChain.advanceEpoch_NoRewards();
 
         staker.startCheckpoint();
@@ -348,7 +348,7 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         staker.startCheckpoint();
         check_StartCheckpoint_State(staker);
 
-        uint64 slashedBalanceGwei = beaconChain.slashValidators(validators);
+        uint64 slashedBalanceGwei = beaconChain.slashValidators(validators, BeaconChainMock.SlashType.Minor);
         beaconChain.advanceEpoch_NoRewards();
 
         staker.completeCheckpoint();
@@ -377,7 +377,7 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         check_VerifyWC_State(staker, validators, beaconBalanceGwei);
 
         // Slash validators
-        uint64 slashedBalanceGwei = beaconChain.slashValidators(validators);
+        uint64 slashedBalanceGwei = beaconChain.slashValidators(validators, BeaconChainMock.SlashType.Minor);
         beaconChain.advanceEpoch_NoRewards();
 
         // Start a checkpoint
@@ -414,7 +414,7 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         staker.verifyWithdrawalCredentials(validators);
         check_VerifyWC_State(staker, validators, beaconBalanceGwei);
 
-        uint64 slashedBalanceGwei = beaconChain.slashValidators(validators);
+        uint64 slashedBalanceGwei = beaconChain.slashValidators(validators, BeaconChainMock.SlashType.Minor);
         beaconChain.advanceEpoch_NoRewards();
 
         staker.verifyStaleBalance(validators[0]);
@@ -440,7 +440,7 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         check_VerifyWC_State(staker, validators, beaconBalanceGwei);
 
         // Slash validators but do not process exits to pod
-        uint64 slashedBalanceGwei = beaconChain.slashValidators(validators);
+        uint64 slashedBalanceGwei = beaconChain.slashValidators(validators, BeaconChainMock.SlashType.Minor);
         beaconChain.advanceEpoch_NoWithdraw();
 
         staker.verifyStaleBalance(validators[0]);
@@ -450,7 +450,7 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         check_CompleteCheckpoint_WithCLSlashing_State(staker, slashedBalanceGwei);
 
         // Slash validators again but do not process exits to pod
-        uint64 secondSlashedBalanceGwei = beaconChain.slashValidators(validators);
+        uint64 secondSlashedBalanceGwei = beaconChain.slashValidators(validators, BeaconChainMock.SlashType.Minor);
         beaconChain.advanceEpoch_NoWithdraw();
 
         staker.verifyStaleBalance(validators[0]);
@@ -482,7 +482,7 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         staker.startCheckpoint();
         check_StartCheckpoint_State(staker);
 
-        uint64 slashedBalanceGwei = beaconChain.slashValidators(validators);
+        uint64 slashedBalanceGwei = beaconChain.slashValidators(validators, BeaconChainMock.SlashType.Minor);
         beaconChain.advanceEpoch_NoRewards();
 
         staker.completeCheckpoint();

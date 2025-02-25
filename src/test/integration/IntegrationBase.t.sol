@@ -2260,7 +2260,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
                     uint40[] memory validators = staker.getActiveValidators();
                     emit log_named_uint("slashing validators", validators.length);
 
-                    deltaGwei = -int64(beaconChain.slashValidators(validators));
+                    deltaGwei = -int64(beaconChain.slashValidators(validators, BeaconChainMock.SlashType.Minor));
                     beaconChain.advanceEpoch_NoRewards();
 
                     emit log_named_int("slashed amount", deltaGwei);
