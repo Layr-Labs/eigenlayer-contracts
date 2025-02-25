@@ -8,7 +8,8 @@ import "src/test/integration/users/User_M2.t.sol";
 
 /// @notice Contract that provides utility functions to reuse common test blocks & checks
 contract IntegrationCheckUtils is IntegrationBase {
-    using ArrayLib for *;
+    using ArrayLib for IStrategy[];
+    using ArrayLib for IStrategy;
     using SlashingLib for *;
     using StdStyle for *;
 
@@ -72,6 +73,7 @@ contract IntegrationCheckUtils is IntegrationBase {
 
         uint balanceAddedWei = beaconBalanceAdded * GWEI_TO_WEI;
         assert_Snap_Added_Staker_DepositShares(staker, BEACONCHAIN_ETH_STRAT, balanceAddedWei, "should have increased shares by excess beacon balance");
+        assert_Snap_BCSF_Unchanged(staker, "BCSF should be unchanged");
     }
 
     function check_CompleteCheckpoint_WithPodBalance_State(
@@ -94,6 +96,9 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Removed_Staker_WithdrawableShares(staker, BEACONCHAIN_ETH_STRAT, slashedAmountGwei * GWEI_TO_WEI, "should have decreased withdrawable shares by slashed amount");
         assert_Snap_Removed_ActiveValidatorCount(staker, slashedValidators.length, "should have decreased active validator count");
         assert_Snap_Removed_ActiveValidators(staker, slashedValidators, "exited validators should each be WITHDRAWN");
+        assert_Snap_BCSF_Decreased(staker, "BCSF should decrease");
+        assert_Snap_Unchanged_DSF(staker, BEACONCHAIN_ETH_STRAT.toArray(), "DSF should be unchanged");
+        assert_SlashableStake_Decrease_BCSlash(staker);
     }
 
     function check_CompleteCheckpoint_ZeroBalanceDelta_State(
@@ -115,6 +120,9 @@ contract IntegrationCheckUtils is IntegrationBase {
 
         assert_Snap_Unchanged_Staker_DepositShares(staker, "staker shares should not have decreased");
         assert_Snap_Removed_Staker_WithdrawableShares_AtLeast(staker, BEACONCHAIN_ETH_STRAT, slashedAmountGwei * GWEI_TO_WEI, "should have decreased withdrawable shares by at least slashed amount");
+        assert_Snap_BCSF_Decreased(staker, "BCSF should decrease");
+        assert_Snap_Unchanged_DSF(staker, BEACONCHAIN_ETH_STRAT.toArray(), "DSF should be unchanged");
+        assert_SlashableStake_Decrease_BCSlash(staker);
         // TODO - currently only used after a `NoWithdrawNoRewards` action. Investigate re-adding in future.
         // assert_Snap_Removed_ActiveValidatorCount(staker, slashedValidators.length, "should have decreased active validator count");
         // assert_Snap_Removed_ActiveValidators(staker, slashedValidators, "exited validators should each be WITHDRAWN");
@@ -129,6 +137,9 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Unchanged_Staker_DepositShares(staker, "staker shares should not have decreased");
         assert_Snap_Removed_Staker_WithdrawableShares_AtLeast(staker, BEACONCHAIN_ETH_STRAT, slashedAmountGwei * GWEI_TO_WEI, "should have decreased withdrawable shares by at least slashed amount");
         assert_Snap_Unchanged_ActiveValidatorCount(staker, "should not have changed active validator count");
+        assert_Snap_BCSF_Decreased(staker, "BCSF should decrease");
+        assert_Snap_Unchanged_DSF(staker, BEACONCHAIN_ETH_STRAT.toArray(), "DSF should be unchanged");
+        assert_SlashableStake_Decrease_BCSlash(staker);
     }
 
     function check_CompleteCheckpoint_WithCLSlashing_State(
@@ -140,6 +151,9 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Unchanged_Staker_DepositShares(staker, "staker shares should not have decreased");
         assert_Snap_Removed_Staker_WithdrawableShares(staker, BEACONCHAIN_ETH_STRAT, slashedAmountGwei * GWEI_TO_WEI, "should have decreased withdrawable shares by slashed amount");
         assert_Snap_Unchanged_ActiveValidatorCount(staker, "should not have changed active validator count");
+        assert_Snap_BCSF_Decreased(staker, "BCSF should decrease");
+        assert_Snap_Unchanged_DSF(staker, BEACONCHAIN_ETH_STRAT.toArray(), "DSF should be unchanged");
+        assert_SlashableStake_Decrease_BCSlash(staker);
     }
 
     function check_CompleteCheckpoint_WithExits_State(
@@ -189,9 +203,9 @@ contract IntegrationCheckUtils is IntegrationBase {
 
     function check_Delegation_State(
         User staker, 
-        User operator, 
+        User operator,
         IStrategy[] memory strategies, 
-        uint[] memory shares
+        uint[] memory depositShares
     ) internal {
         /// Delegate to an operator:
         //
@@ -199,11 +213,27 @@ contract IntegrationCheckUtils is IntegrationBase {
         //     was awarded the staker shares
         assertTrue(delegationManager.isDelegated(address(staker)), "staker should be delegated");
         assertEq(address(operator), delegationManager.delegatedTo(address(staker)), "staker should be delegated to operator");
-        assert_HasExpectedShares(staker, strategies, shares, "staker should still have expected shares after delegating");
+        assert_HasExpectedShares(staker, strategies, depositShares, "staker should still have expected shares after delegating");
         assert_Snap_Unchanged_Staker_DepositShares(staker, "staker shares should be unchanged after delegating");
-        assert_Snap_Unchanged_Staker_WithdrawableShares_Delegation(staker, "withdrawable shares should be unchanged after delegating");
+        assert_Snap_Expected_Staker_WithdrawableShares_Delegation(staker, operator, strategies, depositShares, "withdrawable shares should be unchanged within rounding error after delegating");
         uint256[] memory delegatableShares = _getPrevStakerWithdrawableShares(staker, strategies);
         assert_Snap_Added_OperatorShares(operator, strategies, delegatableShares, "operator should have received shares");
+        check_Added_SlashableStake(operator, strategies, delegatableShares);
+    }
+
+    function check_Added_SlashableStake(
+        User operator,
+        IStrategy[] memory strategies,
+        uint[] memory shares
+    ) internal {
+        for (uint i = 0; i < strategies.length; i++) {
+            (OperatorSet[] memory operatorSets, Allocation[] memory allocations) = _getStrategyAllocations(operator, strategies[i]);
+            for (uint j = 0; j < operatorSets.length; j++) {
+                if (allocations[j].currentMagnitude > 0) {
+                    assert_Snap_StakeBecameSlashable(operator, operatorSets[j], strategies[i].toArray(), "allocated strategies should have minSlashableStake increased");
+                }
+            }
+        }
     }
 
     function check_QueuedWithdrawal_State(
@@ -233,6 +263,37 @@ contract IntegrationCheckUtils is IntegrationBase {
             "check_QueuedWithdrawal_State: failed to remove staker shares");
         assert_Snap_Removed_Staker_WithdrawableShares(staker, strategies, withdrawableShares,
             "check_QueuedWithdrawal_State: failed to remove staker withdrawable shares");
+        check_Decreased_SlashableStake(operator, withdrawableShares, strategies);
+        // Check that the dsf is either reset to wad or unchanged
+        for (uint i = 0; i < strategies.length; i++) {
+            // For a full withdrawal, the dsf should be reset to wad
+            if (_getStakerDepositShares(staker, strategies[i].toArray())[0] == 0) {
+                assert_DSF_Reset(staker, strategies[i].toArray(), 
+                    "check_QueuedWithdrawal_State: dsf should be reset to wad");
+            }
+            // For a partial withdrawal, the dsf should not be changed 
+            else {
+                assert_Snap_Unchanged_DSF(staker, strategies[i].toArray(), 
+                    "check_QueuedWithdrawal_State: dsf should not be changed");
+            }
+        }
+    }
+
+    function check_Decreased_SlashableStake(
+        User operator,
+        uint[] memory withdrawableShares,
+        IStrategy[] memory strategies
+    ) internal {
+        for (uint i = 0; i < strategies.length; i++) {
+            if (withdrawableShares[i] > 0) {
+                (OperatorSet[] memory operatorSets, Allocation[] memory allocations) = _getStrategyAllocations(operator, strategies[i]);
+                for (uint j = 0; j < operatorSets.length; j++) {
+                    if (allocations[j].currentMagnitude > 0) {
+                        assert_Snap_StakeBecomeUnslashable(operator, operatorSets[j], strategies[i].toArray(), "allocated strategies should have minSlashableStake decreased");
+                    }
+                }
+            }
+        }
     }
 
     function check_Undelegate_State(
@@ -270,7 +331,7 @@ contract IntegrationCheckUtils is IntegrationBase {
 
     function check_Redelegate_State(
         User staker, 
-        User prevOperator,
+        User oldOperator,
         User newOperator,
         IDelegationManagerTypes.Withdrawal[] memory withdrawals,
         bytes32[] memory withdrawalRoots,
@@ -294,12 +355,14 @@ contract IntegrationCheckUtils is IntegrationBase {
             "check_Redelegate_State: stakers withdrawal should now be pending");
         assert_Snap_Added_QueuedWithdrawals(staker, withdrawals,
             "check_Redelegate_State: staker should have increased nonce by withdrawals.length");
-        assert_Snap_Removed_OperatorShares(prevOperator, strategies, stakerDelegatedShares,
+        assert_Snap_Removed_OperatorShares(oldOperator, strategies, stakerDelegatedShares,
             "check_Redelegate_State: failed to remove operator shares");
         assert_Snap_Removed_Staker_DepositShares(staker, strategies, stakerDepositShares,
             "check_Redelegate_State: failed to remove staker shares");
         assert_Snap_RemovedAll_Staker_WithdrawableShares(staker, strategies,
             "check_QueuedWithdrawal_State: failed to remove staker withdrawable shares");
+        assert_Snap_Unchanged_OperatorShares(newOperator,
+            "check_Redelegate_State: new operator shares should not have changed");
     }
 
     /**
@@ -326,6 +389,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         
         assert_Snap_Added_TokenBalances(staker, tokens, expectedTokens, "staker should have received expected tokens");
         assert_Snap_Unchanged_Staker_DepositShares(staker, "staker shares should not have changed");
+        assert_Snap_Unchanged_DSF(staker, strategies, "dsf should not be changed");
         assert_Snap_Removed_StrategyShares(strategies, shares, "strategies should have total shares decremented");
 
         // Checks specific to an operator that the Staker has delegated to
@@ -342,12 +406,13 @@ contract IntegrationCheckUtils is IntegrationBase {
         User operator,
         Withdrawal memory withdrawal,
         IStrategy[] memory strategies,
-        uint[] memory shares
+        uint[] memory withdrawableShares
     ) internal {
         // Common checks applicable to both user and non-user operator types
         assert_WithdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
         assert_Snap_Unchanged_TokenBalances(staker, "staker should not have any change in underlying token balances");
-        assert_Snap_Added_Staker_DepositShares(staker, strategies, shares, "staker should have received expected shares");
+        assert_Snap_Added_Staker_DepositShares(staker, strategies, withdrawableShares, "staker should have received expected shares");
+        assert_Snap_Expected_Staker_WithdrawableShares_Withdrawal(staker, operator, strategies, withdrawableShares, "staker should have received expected withdrawable shares");
         assert_Snap_Unchanged_StrategyShares(strategies, "strategies should have total shares unchanged");
 
         // Additional checks or handling for the non-user operator scenario
@@ -355,7 +420,7 @@ contract IntegrationCheckUtils is IntegrationBase {
             if (operator != staker) {
                 assert_Snap_Unchanged_TokenBalances(operator, "operator should not have any change in underlying token balances");
             }
-            assert_Snap_Added_OperatorShares(operator, strategies, shares, "operator should have received shares");
+            assert_Snap_Added_OperatorShares(operator, strategies, withdrawableShares, "operator should have received shares");
         }
     }
 
@@ -365,7 +430,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         User operator,
         Withdrawal memory withdrawal,
         IStrategy[] memory strategies,
-        uint[] memory shares
+        uint[] memory withdrawableShares
     ) internal {
         /// Complete withdrawal(s):
         // The staker will complete the withdrawal as shares
@@ -376,8 +441,8 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_WithdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
         assert_Snap_Unchanged_TokenBalances(staker, "staker should not have any change in underlying token balances");
         assert_Snap_Unchanged_TokenBalances(operator, "operator should not have any change in underlying token balances");
-        assert_Snap_Added_Staker_DepositShares(staker, strategies, shares, "staker should have received expected deposit shares");
-        uint[] memory expectedWithdrawableShares = _getExpectedWithdrawableSharesUndelegate(staker, strategies, shares);
+        assert_Snap_Added_Staker_DepositShares(staker, strategies, withdrawableShares, "staker should have received expected deposit shares");
+        uint[] memory expectedWithdrawableShares = _getExpectedWithdrawableSharesUndelegate(staker, strategies, withdrawableShares);
         assert_Snap_Added_Staker_WithdrawableShares(staker, strategies, expectedWithdrawableShares, "staker should have received expected withdrawable shares");
         assert_Snap_Unchanged_OperatorShares(operator, "operator should have shares unchanged");
         assert_Snap_Unchanged_StrategyShares(strategies, "strategies should have total shares unchanged");
@@ -389,7 +454,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         User newOperator,
         IDelegationManagerTypes.Withdrawal memory withdrawal,
         IStrategy[] memory strategies,
-        uint[] memory shares
+        uint[] memory withdrawableShares
     ) internal {
         /// Complete withdrawal(s):
         // The staker will complete the withdrawal as shares
@@ -400,9 +465,10 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_WithdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
         assert_Snap_Unchanged_TokenBalances(staker, "staker should not have any change in underlying token balances");
         assert_Snap_Unchanged_TokenBalances(operator, "operator should not have any change in underlying token balances");
-        assert_Snap_Added_Staker_DepositShares(staker, strategies, shares, "staker should have received expected shares");
+        assert_Snap_Added_Staker_DepositShares(staker, strategies, withdrawableShares, "staker should have received expected shares");
         assert_Snap_Unchanged_OperatorShares(operator, "operator should have shares unchanged");
         assert_Snap_Unchanged_StrategyShares(strategies, "strategies should have total shares unchanged");
+        assert_Snap_Expected_Staker_WithdrawableShares_Withdrawal(staker, newOperator, strategies, withdrawableShares, "staker should have received expected withdrawable shares");
     }
 
     /*******************************************************************************
