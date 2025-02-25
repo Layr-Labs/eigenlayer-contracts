@@ -2,13 +2,20 @@
 
 # EigenLayer
 
-EigenLayer is a set of smart contracts deployed on Ethereum that enable restaking of assets to secure new services. This repo contains the EigenLayer core contracts, whose currently-supported assets include beacon chain ETH and several liquid staking tokens (LSTs). Users use these contracts to deposit and withdraw these assets, as well as delegate them to operators providing services to AVSs.
+EigenLayer is a set of smart contracts deployed on Ethereum that enable restaking of assets to secure new services. This protocol introduces a groundbreaking approach to blockchain security by allowing users to restake their ETH and liquid staking tokens (LSTs) to secure multiple networks simultaneously.
+
+## Overview
+
+- **Restaking**: Users can deposit ETH and LSTs to participate in network security
+- **Delegation**: Token holders can delegate their assets to operators
+- **AVS Support**: Operators can provide services to Active Validator Set (AVS) clients
+- **Security**: Built with robust security measures and audited smart contracts
 
 ## Getting Started
 
-* [Branching](#branching)
+* [Branching Strategy](#branching)
 * [Documentation](#documentation)
-* [Building and Running Tests](#building-and-running-tests)
+* [Building and Testing](#building-and-running-tests)
 * [Deployments](#deployments)
 
 ## Branching
@@ -16,91 +23,102 @@ EigenLayer is a set of smart contracts deployed on Ethereum that enable restakin
 The main branches we use are:
 * [`dev (default)`](https://github.com/Layr-Labs/eigenlayer-contracts/tree/dev): The most up-to-date branch, containing the work-in-progress code for upcoming releases
 * [`testnet-holesky`](https://github.com/Layr-Labs/eigenlayer-contracts/tree/testnet-holesky): Our current testnet deployment
-* [`mainnet`](https://github.com/Layr-Labs/eigenlayer-contracts/tree/mainnet): Our current mainnet deloyment
+* [`mainnet`](https://github.com/Layr-Labs/eigenlayer-contracts/tree/mainnet): Our current mainnet deployment
 
 ## Documentation
 
 ### Basics
 
-To get a basic understanding of EigenLayer, check out [You Could've Invented EigenLayer](https://www.blog.eigenlayer.xyz/ycie/). Note that some of the document's content describes features that do not exist yet (like the Slasher). To understand more about how restakers and operators interact with EigenLayer, check out these guides:
-* [Restaking User Guide](https://docs.eigenlayer.xyz/restaking-guides/restaking-user-guide)
-* [Operator Guide](https://docs.eigenlayer.xyz/operator-guides/operator-introduction)
+To get a basic understanding of EigenLayer, check out [You Could've Invented EigenLayer](https://www.blog.eigenlayer.xyz/ycie/). Note that some features described in the document may still be in development.
 
-### Deep Dive
+### User & Operator Guides
 
-The most up-to-date and technical documentation can be found in [/docs](/docs). If you're a shadowy super coder, this is a great place to get an overview of the contracts before diving into the code.
+For practical implementation details, refer to:
+* [Restaking User Guide](https://docs.eigenlayer.xyz/eigenlayer/restaking-guides/overview) - Learn how to stake and delegate assets
+* [Operator Guide](https://docs.eigenlayer.xyz/operator-guides/operator-introduction) - Understand how to run an EigenLayer operator node
 
-To get an idea of how users interact with these contracts, check out our integration tests: [/src/test/integration](./src/test/integration/).
+### Technical Documentation
+
+* Detailed technical documentation is available in the [/docs](/docs) directory
+* For implementation examples, check our integration tests: [/src/test/integration](./src/test/integration/)
+* Smart contract architecture and design patterns are documented in individual contract files
 
 ## Building and Running Tests
 
-This repository uses Foundry. See the [Foundry docs](https://book.getfoundry.sh/) for more info on installation and usage. If you already have foundry, you can build this project and run tests with these commands:
+This repository uses Foundry. See the [Foundry Book](https://book.getfoundry.sh/) for detailed installation instructions.
 
-```
+### Quick Start
+
+```bash
+# Install Foundry
 foundryup
 
+# Build contracts
 forge build
+
+# Run tests
 forge test
 ```
 
 ### Contributor Setup
 
-To set up this repo for the first time, run:
+First time setup:
 
 ```bash
+# Install all dependencies
 make deps
 ```
 
 This will:
-* Install the pre-commit hook
-* Install foundry and its tools
+* Set up the pre-commit hook
+* Install Foundry tools
 * Install abigen
+
+### Development Requirements
+
+- Foundry
+- Solidity ^0.8.12
+- Node.js (for development tools)
+- Make
 
 ### Running Fork Tests
 
-We have a few fork tests against ETH mainnet. Passing these requires the environment variable `RPC_MAINNET` to be set. See `.env.example` for an example. Once you've set up your environment, `forge test` should show these fork tests passing.
+For mainnet fork tests:
 
-Additionally, to run all tests in a forked environment, [install yq](https://mikefarah.gitbook.io/yq/v/v3.x/). Then, set up your environment using this script to read from `config.yml`:
+1. Set up `RPC_MAINNET` in your environment (see `.env.example`)
+2. Run tests with: `forge test`
 
-`source source-env.sh [goerli|local]`
+For all tests in a forked environment:
 
-Then run the tests:
+1. Install [yq](https://mikefarah.gitbook.io/yq/v/v3.x/)
+2. Set up environment: `source bin/source-env.sh [goerli|local]`
+3. Run: `forge test --fork-url [RPC_URL]`
 
-`forge test --fork-url [RPC_URL]`
+## Security
 
-### Running Static Analysis
+- All smart contracts are thoroughly audited
+- Bug bounty program is available for security researchers
+- Security vulnerabilities should be reported to security@eigenlabs.org
 
-1. Install [solhint](https://github.com/protofire/solhint), then run:
+## Contributing
 
-`solhint 'src/contracts/**/*.sol'`
+We welcome contributions from the community! Here's how you can help:
 
-2. Install [slither](https://github.com/crytic/slither), then run:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run tests and linting
+5. Submit a pull request
 
-`slither .`
+Please ensure your PR:
+- Includes tests for new functionality
+- Updates documentation as needed
+- Follows our coding standards
+- Has a clear description of changes
 
-### Generate Inheritance and Control-Flow Graphs
+## License
 
-1. Install [surya](https://github.com/ConsenSys/surya/) and graphviz:
-
-```
-npm i -g surya
-
-apt install graphviz
-```
-
-2. Then, run:
-
-```
-surya inheritance ./src/contracts/**/*.sol | dot -Tpng > InheritanceGraph.png
-
-surya mdreport surya_report.md ./src/contracts/**/*.sol
-```
-
-### Generate Go bindings
-
-```bash
-make bindings
-```
+EigenLayer is licensed under [MIT License](LICENSE)
 
 ## Deployments
 
