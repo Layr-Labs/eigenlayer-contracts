@@ -27,7 +27,6 @@ contract Integration_ALMSlashBase is IntegrationCheckUtils {
     /// 5. Operator registers for operator set
     /// NOTE: Steps 4 and 5 are done in random order, as these should not have an outcome on the test
     function _init() internal virtual override {
-        _configAssetTypes(HOLDS_LST);
         (staker, strategies, initTokenBalances) = _newRandomStaker();
         operator = _newRandomOperator_NoAssets();
         (avs,) = _newRandomAVS();
