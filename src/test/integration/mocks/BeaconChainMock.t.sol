@@ -250,12 +250,14 @@ contract BeaconChainMock is Logger {
                 slashedBalanceGwei += curBalanceGwei;
                 curBalanceGwei = 0;
             } else {
-                slashedBalanceGwei += MINOR_SLASH_AMOUNT_GWEI;
-                curBalanceGwei -= MINOR_SLASH_AMOUNT_GWEI;
+                slashedBalanceGwei += slashAmountGwei;
+                curBalanceGwei -= slashAmountGwei;
             }
 
             // Decrease current balance (effective balance updated during epoch processing)
             _setCurrentBalance(validatorIndex, curBalanceGwei);
+
+            console.log("   - Slashed validator %s by %s gwei", validatorIndex, slashAmountGwei);
         }
 
         return slashedBalanceGwei;

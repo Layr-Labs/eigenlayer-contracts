@@ -537,6 +537,14 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
             assertEq(depositScalingFactors[i], WAD, err);
         }
     }
+
+    function assert_BCSF_Zero(
+        User staker,
+        string memory err
+    ) internal {
+        uint64 curBCSF = _getBeaconChainSlashingFactor(staker);
+        assertEq(curBCSF, 0, err);
+    }
     
     /*******************************************************************************
                                 SNAPSHOT ASSERTIONS
