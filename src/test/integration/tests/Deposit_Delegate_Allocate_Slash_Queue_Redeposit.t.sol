@@ -24,7 +24,6 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
     function _init() internal override {
         // TODO: Partial deposits don't work when beacon chain eth balance is initialized to < 64 ETH, need to write _newRandomStaker variant that ensures beacon chain ETH balance
         // greater than or equal to 64
-        _configAssetTypes(HOLDS_LST);
         _configUserTypes(DEFAULT);
 
         (staker, strategies, initTokenBalances) = _newRandomStaker();
@@ -34,9 +33,12 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
 
         uint256[] memory tokensToDeposit = new uint256[](initTokenBalances.length);
         numTokensRemaining = new uint256[](initTokenBalances.length);
+        uint256 eth_to_deal;
         for (uint256 i = 0; i < initTokenBalances.length; i++) {
             if (strategies[i] == BEACONCHAIN_ETH_STRAT) {
                 tokensToDeposit[i] = initTokenBalances[i];
+                eth_to_deal = initTokenBalances[i];
+                numTokensRemaining[i] = initTokenBalances[i];
                 continue;
             }
 
@@ -48,7 +50,9 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
 
         // 1. Deposit Into Strategies
         staker.depositIntoEigenlayer(strategies, tokensToDeposit);
+        cheats.deal(address(staker), eth_to_deal);
         check_Deposit_State_PartialDeposit(staker, strategies, shares, numTokensRemaining);
+
 
         // 2. Delegate to operator
         staker.delegateTo(operator);
