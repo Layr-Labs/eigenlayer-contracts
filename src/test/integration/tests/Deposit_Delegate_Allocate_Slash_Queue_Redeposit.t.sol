@@ -5,7 +5,7 @@ import "src/test/integration/IntegrationChecks.t.sol";
 import "src/test/integration/users/User.t.sol";
 import {console} from "forge-std/console.sol";
 
-contract Integration_Redeposits is IntegrationCheckUtils {
+contract Integration_FullSlash_Redeposits is IntegrationCheckUtils {
 
     AVS avs;
     OperatorSet operatorSet;
