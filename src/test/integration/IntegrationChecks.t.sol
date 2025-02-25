@@ -303,7 +303,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         bytes32[] memory withdrawalRoots,
         IStrategy[] memory strategies,
         uint[] memory stakerDepositShares,
-        uint[] memory stakerDelegatedShares 
+        uint[] memory withdrawableShares 
     ) internal {
         /// Undelegate from an operator
         //
@@ -321,7 +321,7 @@ contract IntegrationCheckUtils is IntegrationBase {
             "check_Undelegate_State: staker dsfs should be reset to wad");
         assert_Snap_Added_QueuedWithdrawals(staker, withdrawals,
             "check_Undelegate_State: staker should have increased nonce by withdrawals.length");
-        assert_Snap_Removed_OperatorShares(operator, strategies, stakerDelegatedShares,
+        assert_Snap_Removed_OperatorShares(operator, strategies, withdrawableShares,
             "check_Undelegate_State: failed to remove operator shares");
         assert_Snap_Removed_Staker_DepositShares(staker, strategies, stakerDepositShares,
             "check_Undelegate_State: failed to remove staker shares");
@@ -337,7 +337,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         bytes32[] memory withdrawalRoots,
         IStrategy[] memory strategies,
         uint[] memory stakerDepositShares,
-        uint[] memory stakerDelegatedShares  
+        uint[] memory withdrawableShares  
     ) internal {
         /// Redelegate to a new operator
         //
@@ -355,7 +355,7 @@ contract IntegrationCheckUtils is IntegrationBase {
             "check_Redelegate_State: stakers withdrawal should now be pending");
         assert_Snap_Added_QueuedWithdrawals(staker, withdrawals,
             "check_Redelegate_State: staker should have increased nonce by withdrawals.length");
-        assert_Snap_Removed_OperatorShares(oldOperator, strategies, stakerDelegatedShares,
+        assert_Snap_Removed_OperatorShares(oldOperator, strategies, withdrawableShares,
             "check_Redelegate_State: failed to remove operator shares");
         assert_Snap_Removed_Staker_DepositShares(staker, strategies, stakerDepositShares,
             "check_Redelegate_State: failed to remove staker shares");
