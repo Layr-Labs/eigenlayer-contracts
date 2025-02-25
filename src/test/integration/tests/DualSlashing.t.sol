@@ -71,10 +71,8 @@ contract Integration_DualSlashing_Base_BeaconChainFirst is Integration_DualSlash
         // 8. Slash operator by AVS
         SlashingParams memory slashingParams;
         {
-            (IStrategy[] memory strategiesToSlash, uint256[] memory wadsToSlash) =
-                _randStrategiesAndWadsToSlash(operatorSet);
-            console.log("Strategies to slash: %s", strategiesToSlash.length);
-            slashingParams = avs.slashOperator(operator, operatorSet.id, strategiesToSlash, wadsToSlash);
+            slashingParams = _genSlashing_Rand(operator, operatorSet);
+            avs.slashOperator(slashingParams);
             assert_Snap_Allocations_Slashed(slashingParams, operatorSet, true, "operator allocations should be slashed");
             assert_Snap_Unchanged_Staker_DepositShares(staker, "staker deposit shares should be unchanged after slashing");
             assert_Snap_StakerWithdrawableShares_AfterBCSlash_AVSSlash(staker, allocateParams, slashingParams, "staker withdrawable shares should be slashed");
@@ -90,14 +88,12 @@ contract Integration_DualSlashing_Base_AVSFirst is Integration_DualSlashing_Base
     function _init() internal virtual override {
         super._init();
 
-        // 6. Slash Operator by AVS
-        (IStrategy[] memory strategiesToSlash, uint256[] memory wadsToSlash) =
-            _randStrategiesAndWadsToSlash(operatorSet);
-        console.log("Strategies to slash: %s", strategiesToSlash.length);
-        slashingParams = avs.slashOperator(operator, operatorSet.id, strategiesToSlash, wadsToSlash);
+        // 8. Slash operator by AVS
+        slashingParams = _genSlashing_Rand(operator, operatorSet);
+        avs.slashOperator(slashingParams);
         assert_Snap_Allocations_Slashed(slashingParams, operatorSet, true, "operator allocations should be slashed");
         assert_Snap_Unchanged_Staker_DepositShares(staker, "staker deposit shares should be unchanged after slashing");
-        assert_Snap_StakerWithdrawableShares_AfterSlash(staker, allocateParams, slashingParams, "staker withdrawable shares should be slashed");
+        assert_Snap_StakerWithdrawableShares_AfterBCSlash_AVSSlash(staker, allocateParams, slashingParams, "staker withdrawable shares should be slashed");
     }
 
     /// @dev Validates behavior of "restaking", ie. that the funds can be slashed twice
