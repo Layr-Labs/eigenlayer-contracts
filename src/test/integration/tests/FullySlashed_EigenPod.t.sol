@@ -40,7 +40,7 @@ contract Integration_FullySlashedEigenpod is IntegrationCheckUtils {
     function test_fullSlash_Delegate(uint24 _rand) public rand(_rand) {
         (User operator,,) = _newRandomOperator();
 
-        // Delegate to an operator - should succeed given the slashing
+        // Delegate to an operator - should succeed given that delegation only checks the operator's slashing factor
         staker.delegateTo(operator);
         check_Delegation_State(staker, operator, strategies, initDepositShares);
     }
@@ -51,7 +51,7 @@ contract Integration_FullySlashedEigenpod is IntegrationCheckUtils {
         (uint40[] memory newValidators, uint64 addedBeaconBalanceGwei) = staker.startValidators();
         beaconChain.advanceEpoch_NoRewards();
 
-        // We should revert on verifyWithdrawalCredentials
+        // We should revert on verifyWithdrawalCredentials since the staker's slashing factor is 0
         cheats.expectRevert(IDelegationManagerErrors.FullySlashed.selector);
         staker.verifyWithdrawalCredentials(newValidators);
     }
