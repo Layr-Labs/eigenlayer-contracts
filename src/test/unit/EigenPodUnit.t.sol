@@ -1568,7 +1568,7 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
         staker.verifyWithdrawalCredentials(validators);
 
         // Slash validators and advance epoch
-        beaconChain.slashValidators(validators);
+        beaconChain.slashValidators(validators, BeaconChainMock.SlashType.Minor);
         beaconChain.advanceEpoch();
         StaleBalanceProofs memory proofs = beaconChain.getStaleBalanceProofs(validator);
 
@@ -1597,7 +1597,7 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
         staker.verifyWithdrawalCredentials(validators);
 
         // Slash validators and advance epoch
-        beaconChain.slashValidators(validators);
+        beaconChain.slashValidators(validators, BeaconChainMock.SlashType.Minor);
         beaconChain.advanceEpoch();
         StaleBalanceProofs memory proofs = beaconChain.getStaleBalanceProofs(validator);
 
@@ -1627,7 +1627,7 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
         staker.verifyWithdrawalCredentials(validators);
 
         // Slash validators and advance epoch
-        beaconChain.slashValidators(validators);
+        beaconChain.slashValidators(validators, BeaconChainMock.SlashType.Minor);
         beaconChain.advanceEpoch();
         StaleBalanceProofs memory proofs = beaconChain.getStaleBalanceProofs(validator);
 
@@ -1673,7 +1673,7 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
         staker.verifyWithdrawalCredentials(validators);
 
         // Slash validators and advance epoch
-        beaconChain.slashValidators(validators);
+        beaconChain.slashValidators(validators, BeaconChainMock.SlashType.Minor);
         beaconChain.advanceEpoch();
         StaleBalanceProofs memory proofs = beaconChain.getStaleBalanceProofs(validator);
 
@@ -1700,7 +1700,7 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
         staker.verifyWithdrawalCredentials(validators);
 
         // Slash validators and advance epoch
-        beaconChain.slashValidators(validators);
+        beaconChain.slashValidators(validators, BeaconChainMock.SlashType.Minor);
         beaconChain.advanceEpoch();
         StaleBalanceProofs memory proofs = beaconChain.getStaleBalanceProofs(validator);
 

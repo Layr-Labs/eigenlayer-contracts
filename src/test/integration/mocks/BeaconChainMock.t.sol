@@ -53,12 +53,19 @@ contract BeaconChainMock is Logger {
         uint64 exitEpoch;
     }
 
+    /// @dev The type of slash to apply to a validator
+    enum SlashType {
+        Minor, // `MINOR_SLASH_AMOUNT_GWEI`
+        Half, // Half of the validator's balance
+        Full // The validator's entire balance
+    }
+
     /// @dev All withdrawals are processed with index == 0
     uint constant ZERO_NODES_LENGTH = 100;
 
     // Rewards given to each validator during epoch processing
     uint64 public constant CONSENSUS_REWARD_AMOUNT_GWEI = 1;
-    uint64 public constant SLASH_AMOUNT_GWEI = 10;
+    uint64 public constant MINOR_SLASH_AMOUNT_GWEI = 10;
 
     /// PROOF CONSTANTS (PROOF LENGTHS, FIELD SIZES):
 
@@ -212,7 +219,7 @@ contract BeaconChainMock is Logger {
         return exitedBalanceGwei;
     }
 
-    function slashValidators(uint40[] memory _validators) public returns (uint64 slashedBalanceGwei) {
+    function slashValidators(uint40[] memory _validators, SlashType _slashType) public returns (uint64 slashedBalanceGwei) {
         print.method("slashValidators");
 
         for (uint i = 0; i < _validators.length; i++) {
@@ -225,19 +232,32 @@ contract BeaconChainMock is Logger {
                 v.isSlashed = true;
                 v.exitEpoch = currentEpoch() + 1;
             }
-            
+
             // Calculate slash amount
+            uint64 slashAmountGwei;
             uint64 curBalanceGwei = _currentBalanceGwei(validatorIndex);
-            if (SLASH_AMOUNT_GWEI > curBalanceGwei) {
+
+            if (_slashType == SlashType.Minor) {
+                slashAmountGwei = MINOR_SLASH_AMOUNT_GWEI;
+            } else if (_slashType == SlashType.Half) {
+                slashAmountGwei = curBalanceGwei / 2;
+            } else if (_slashType == SlashType.Full) {
+                slashAmountGwei = curBalanceGwei;
+            }
+
+            // Calculate slash amount
+            if (slashAmountGwei > curBalanceGwei) {
                 slashedBalanceGwei += curBalanceGwei;
                 curBalanceGwei = 0;
             } else {
-                slashedBalanceGwei += SLASH_AMOUNT_GWEI;
-                curBalanceGwei -= SLASH_AMOUNT_GWEI;
+                slashedBalanceGwei += slashAmountGwei;
+                curBalanceGwei -= slashAmountGwei;
             }
 
             // Decrease current balance (effective balance updated during epoch processing)
             _setCurrentBalance(validatorIndex, curBalanceGwei);
+
+            console.log("   - Slashed validator %s by %s gwei", validatorIndex, slashAmountGwei);
         }
 
         return slashedBalanceGwei;
