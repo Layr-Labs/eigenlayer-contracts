@@ -192,7 +192,6 @@ contract Integration_SlashThenWithdraw is Integration_ALMSlashBase {
         // Complete withdrawal as tokens
         for (uint i = 0; i < withdrawals.length; i++) {
             uint[] memory expectedShares = _calculateExpectedShares(withdrawals[i]);
-            uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, expectedShares);
             staker.completeWithdrawalAsTokens(withdrawals[i]);
             check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], withdrawals[i].strategies, expectedShares, tokens, expectedTokens);
         }
