@@ -11,8 +11,8 @@ import {Integration_ALMSlashBase, IStrategy, IERC20} from "src/test/integration/
  * - The staker has no pending slash requests
  * - The staker is delegated to the operator
  */
-contract Integration_Timing is Integration_ALMSlashBase {
-    
+contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
+
     ///////////////////////////////
     /// WITHDRAWAL TIMING TESTS ///
     ///////////////////////////////
@@ -35,10 +35,6 @@ contract Integration_Timing is Integration_ALMSlashBase {
         uint256[] memory withdrawableShares = _calcWithdrawable(staker, strategies, depositSharesToWithdraw);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, depositSharesToWithdraw);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
-        
-        // Note: Because this is a partial withdrawal, we pass in the initial token balances as the withdrawable shares
-        // rather than `initDepositShares`
-        // Moreover, the shares to withdraw are the expected shares calculated from the token balances
         check_QueuedWithdrawal_State(staker, operator, strategies, depositSharesToWithdraw, withdrawableShares, withdrawals, withdrawalRoots);
 
         // 2. Move time forward to _just before_ withdrawal block
@@ -121,7 +117,6 @@ contract Integration_Timing is Integration_ALMSlashBase {
     /**
      * @notice Test that a staker can still complete a partial withdrawal even after a slash has been performed
      */
-     // TODO: revisit with updated syntax
     function testFuzz_queuePartialWithdrawal_slashAfterWithdrawalDelay_completeAsTokens(
         uint24 _random
     ) public rand(_random) {
@@ -137,7 +132,7 @@ contract Integration_Timing is Integration_ALMSlashBase {
         uint256[] memory withdrawableShares = _calcWithdrawable(staker, strategies, depositSharesToWithdraw);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, depositSharesToWithdraw);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
-        
+
         // Note: Because this is a partial withdrawal, we pass in the initial token balances as the withdrawable shares
         // rather than `initDepositShares`
         // Moreover, the shares to withdraw are the expected shares calculated from the token balances
@@ -153,6 +148,8 @@ contract Integration_Timing is Integration_ALMSlashBase {
         check_Base_Slashing_State(operator, allocateParams, slashingParams);
 
         // 5. Complete withdrawals
+        // Note: expectedTokens must be recalculated because the withdrawable shares
+        // have changed due to the slash
         uint[] memory expectedTokens = _calculateExpectedTokens(strategies, withdrawableShares);
         staker.completeWithdrawalsAsTokens(withdrawals);
         for (uint256 i = 0; i < withdrawals.length; ++i) {
@@ -182,8 +179,9 @@ contract Integration_Timing is Integration_ALMSlashBase {
 
         check_QueuedWithdrawal_State(staker, operator, strategies, initDepositShares, withdrawableShares, withdrawals, withdrawalRoots);
 
-        // 2. Move time forward to _just before_ withdrawal block
-        // Expected behavior: Withdrawals are still pending and cannot be completed, but slashes can still be performed
+        // 2. Move time forward to withdrawal block
+        // Expected behavior: Withdrawals are no longer pending, and slashes
+        // no longer affect the staker
         _rollBlocksForCompleteWithdrawals(withdrawals);
 
         // 3. Slash operator
@@ -206,5 +204,44 @@ contract Integration_Timing is Integration_ALMSlashBase {
 
         // Assert that all withdrawals are removed from pending
         assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
+    }
+}
+
+contract Integration_OperatorDeallocationTiming is Integration_ALMSlashBase {
+
+    //////////////////////////////////////////
+    /// OPERATOR DEALLOCATION TIMING TESTS ///
+    //////////////////////////////////////////
+
+    function testFuzz_deallocateFully_slashBeforeDelay(uint24 _r) public rand(_r) {
+        // 1. Deallocate
+        AllocateParams memory deallocateParams = _genDeallocation_Full(operator, operatorSet);
+        operator.modifyAllocations(deallocateParams);
+        check_DecrAlloc_State_Slashable(operator, deallocateParams);
+
+        // 2. Move time forward to _just before_ deallocation delay
+        // Expected behavior: Deallocation delay is not yet passed, so slashes can still be performed
+        _rollForward_DeallocationDelay();
+        rollBackward(1); // make sure that deallocation delay is not yet passed
+
+        // 3. Slash operator
+        slashParams = _genSlashing_Rand(operator, operatorSet);
+        avs.slashOperator(slashParams);
+        check_Base_Slashing_State(operator, deallocateParams, slashParams);
+    }
+
+    function testFuzz_deallocateFully_slashAfterDelay(uint24 _r) public rand(_r) {
+        // 1. Deallocate
+        AllocateParams memory deallocateParams = _genDeallocation_Full(operator, operatorSet);
+        operator.modifyAllocations(deallocateParams);
+        check_DecrAlloc_State_Slashable(operator, deallocateParams);
+
+        // 2. Move time forward to deallocation delay
+        _rollForward_DeallocationDelay();
+
+        // 3. Slash operator
+        slashParams = _genSlashing_Rand(operator, operatorSet);
+        avs.slashOperator(slashParams);
+        check_Base_Slashing_State(operator, deallocateParams, slashParams);
     }
 }
