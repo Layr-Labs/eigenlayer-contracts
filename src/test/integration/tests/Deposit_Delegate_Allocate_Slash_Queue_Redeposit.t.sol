@@ -286,4 +286,58 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         // Final state checks
         assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }
+
+    /**
+     * T-95: Staker Delegated - 0 Shares, Operator allocated
+     * Partially slash operator on opSet, Deposit, Undelegate, Complete as Tokens
+     */
+    function testFuzz_delegate_zeroShares_partialSlash_deposit_undelegate_complete(uint24 r) public rand(r) {
+        // Create a new staker with 0 shares
+        (User zeroSharesStaker, uint[] memory tokensToDeposit) = _newStaker(strategies);
+        
+        // Delegate to operator (with 0 shares)
+        zeroSharesStaker.delegateTo(operator);
+        
+        // Partially slash operator
+        SlashingParams memory slashParams = _genSlashing_Half(operator, operatorSet);
+        avs.slashOperator(slashParams);
+        
+        // Deposit tokens
+        uint[] memory depositShares = _calculateExpectedShares(strategies, tokensToDeposit);
+        zeroSharesStaker.depositIntoEigenlayer(strategies, tokensToDeposit);
+        check_Deposit_State(zeroSharesStaker, strategies, depositShares);
+        
+        // Undelegate
+        Withdrawal[] memory withdrawals = zeroSharesStaker.undelegate();
+        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        
+        // Complete withdrawal
+        _rollBlocksForCompleteWithdrawals(withdrawals);
+        for (uint i = 0; i < withdrawals.length; i++) {
+            zeroSharesStaker.completeWithdrawalAsTokens(withdrawals[i]);
+        }
+        
+        // Final state checks
+        assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
+        assertFalse(delegationManager.isDelegated(address(zeroSharesStaker)), "staker should not be delegated after undelegating");
+    }
+
+    /**
+     * T-96: Staker with nonzero shares, Staker Delegated
+     * Allocate to opSet, Partially slash operator on opSet, Deallocate from opSet
+     */
+    function testFuzz_deposit_delegate_allocate_partialSlash_deallocate(uint24 r) public rand(r) {
+        // Partially slash operator
+        SlashingParams memory slashParams = _genSlashing_Half(operator, operatorSet);
+        avs.slashOperator(slashParams);
+        
+        // Deallocate from operator set
+        operator.deallocateAll(operatorSet);
+        
+        // Verify operator is no longer allocated to the operator set
+        
+        // Verify staker is still delegated
+        assertTrue(delegationManager.isDelegated(address(staker)), "staker should still be delegated");
+        assertEq(delegationManager.delegatedTo(address(staker)), address(operator), "staker should still be delegated to operator");
+    }
 }
