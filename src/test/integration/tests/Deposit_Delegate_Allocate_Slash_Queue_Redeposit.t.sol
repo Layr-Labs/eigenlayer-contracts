@@ -167,4 +167,137 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         assert_HasNoUnderlyingTokenBalance(staker, slashingParams.strategies, "staker not have any underlying tokens");
         assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }
+
+    /**
+     * T-83: Staker with nonzero shares, Operator allocated, Staker Delegated
+     * Partially slash operator on opSet, Redeposit, Queue Full Withdrawal, Complete as Tokens
+     */
+    function testFuzz_deposit_delegate_allocate_partialSlash_redeposit_queue_complete(uint24 r) public rand(r) {
+        // Partially slash operator
+        SlashingParams memory slashParams = _genSlashing_Half(operator, operatorSet);
+        avs.slashOperator(slashParams);
+        check_PartiallySlashed_State(operator, allocateParams, slashParams);
+
+        // Redeposit remaining tokens
+        uint[] memory additionalShares = _calculateExpectedShares(strategies, numTokensRemaining);
+        staker.depositIntoEigenlayer(strategies, numTokensRemaining);
+        check_Deposit_State(staker, strategies, additionalShares);
+        
+        // Queue withdrawal
+        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, withdrawableShares);
+        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        assert_AllWithdrawalsPending(withdrawalRoots, "withdrawals should be pending after queueing");
+        
+        // Complete withdrawal
+        _rollBlocksForCompleteWithdrawals(withdrawals);
+        for (uint i = 0; i < withdrawals.length; i++) {
+            staker.completeWithdrawalAsTokens(withdrawals[i]);
+            // Check that each withdrawal is properly completed
+            assert_WithdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawals[i]), 
+                "withdrawal should not be pending after completion");
+        }
+        
+        // Final state checks
+        assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
+    }
+    
+    /**
+     * T-84: Staker with nonzero shares, Operator allocated, Staker Delegated
+     * Undelegate, Partially slash operator on opSet, Complete as Tokens
+     */
+    function testFuzz_deposit_delegate_undelegate_partialSlash_complete(uint24 r) public rand(r) {
+        // Undelegate from operator
+        Withdrawal[] memory withdrawals = staker.undelegate();
+        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        assert_AllWithdrawalsPending(withdrawalRoots, "withdrawals should be pending after undelegating");
+        assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated after undelegating");
+        
+        // Partially slash operator
+        SlashingParams memory slashParams = _genSlashing_Half(operator, operatorSet);
+        avs.slashOperator(slashParams);
+        check_PartiallySlashed_State(operator, allocateParams, slashParams);
+        
+        // Complete withdrawal
+        _rollBlocksForCompleteWithdrawals(withdrawals);
+        for (uint i = 0; i < withdrawals.length; i++) {
+            staker.completeWithdrawalAsTokens(withdrawals[i]);
+            // Check that each withdrawal is properly completed
+            assert_WithdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawals[i]), 
+                "withdrawal should not be pending after completion");
+        }
+        
+        // Final state checks
+        assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
+    }
+
+    /**
+     * T-85: Staker with nonzero shares, Operator allocated, Staker Delegated
+     * Deallocate from opSet, Partially slash operator on opSet, Queue Full Withdrawal, Complete as Tokens
+     */
+    function testFuzz_deposit_delegate_deallocate_partialSlash_queue_complete(uint24 r) public rand(r) {
+        // Deallocate from operator set
+        operator.modifyAllocations(AllocateParams({
+            operatorSet: operatorSet,
+            strategies: allocateParams.strategies,
+            newMagnitudes: new uint64[](allocateParams.strategies.length)
+        }));
+        
+        // Check that the operator has deallocated
+        for (uint i = 0; i < allocateParams.strategies.length; i++) {
+            (uint64 currentMagnitude, ) = allocationManager.getAllocation(
+                address(operator), 
+                operatorSet.id, 
+                allocateParams.strategies[i]
+            );
+            assertEq(currentMagnitude, 0, "operator should have zero allocation after deallocating");
+        }
+        
+        // Partially slash operator
+        SlashingParams memory slashParams = _genSlashing_Half(operator, operatorSet);
+        avs.slashOperator(slashParams);
+        check_PartiallySlashed_State(operator, allocateParams, slashParams);
+        
+        // Queue withdrawal
+        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, withdrawableShares);
+        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        
+        // Complete withdrawal
+        _rollBlocksForCompleteWithdrawals(withdrawals);
+        for (uint i = 0; i < withdrawals.length; i++) {
+            staker.completeWithdrawalAsTokens(withdrawals[i]);
+        }
+        
+        // Final state checks
+        assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
+    }
+
+    /**
+     * T-86: Staker with nonzero shares, Operator allocated, Staker Delegated
+     * Deregister from opSet, Partially slash operator on opSet, Queue Full Withdrawal, Complete as Tokens
+     */
+    function testFuzz_deposit_delegate_deregister_partialSlash_queue_complete(uint24 r) public rand(r) {
+        // Deregister operator from operator set
+        operator.deregisterFromOperatorSet(operatorSet);
+        
+        // Partially slash operator
+        SlashingParams memory slashParams = _genSlashing_Half(operator, operatorSet);
+        avs.slashOperator(slashParams);
+        check_PartiallySlashed_State(operator, allocateParams, slashParams);
+        
+        // Queue withdrawal
+        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, withdrawableShares);
+        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        
+        // Complete withdrawal
+        _rollBlocksForCompleteWithdrawals(withdrawals);
+        for (uint i = 0; i < withdrawals.length; i++) {
+            staker.completeWithdrawalAsTokens(withdrawals[i]);
+        }
+        
+        // Final state checks
+        assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
+    }
 }

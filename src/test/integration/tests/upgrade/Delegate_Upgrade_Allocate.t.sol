@@ -51,14 +51,4 @@ contract Integration_Upgrade_Deposit_Delegate_Allocate is UpgradeTest {
         (state.avs,) = _newRandomAVS();
         _setupAllocation(state);
     }
-
-    // TODO
- 
-    function testFuzz_deposit_delegate_upgrade_allocate_partialSlash_redeposit_queue_complete(uint24 r) public rand(r) {}
-    
-    function testFuzz_deposit_delegate_undelegate_partialSlash_complete(uint24 r) public rand(r) {}
-
-    function testFuzz_deposit_delegate_deallocate_partialSlash_queue_complete(uint24 r) public rand(r) {}
-
-    function testFuzz_deposit_delegate_deregister_partialSlash_queue_complete(uint24 r) public rand(r) {}
 }
