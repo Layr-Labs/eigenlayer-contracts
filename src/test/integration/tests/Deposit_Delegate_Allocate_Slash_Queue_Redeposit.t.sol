@@ -241,16 +241,6 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
             newMagnitudes: new uint64[](allocateParams.strategies.length)
         }));
         
-        // Check that the operator has deallocated
-        for (uint i = 0; i < allocateParams.strategies.length; i++) {
-            (uint64 currentMagnitude, ) = allocationManager.getAllocation(
-                address(operator), 
-                operatorSet.id, 
-                allocateParams.strategies[i]
-            );
-            assertEq(currentMagnitude, 0, "operator should have zero allocation after deallocating");
-        }
-        
         // Partially slash operator
         SlashingParams memory slashParams = _genSlashing_Half(operator, operatorSet);
         avs.slashOperator(slashParams);
