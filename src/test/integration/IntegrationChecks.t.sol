@@ -160,6 +160,19 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_SlashableStake_Decrease_BCSlash(staker);
     }
 
+    /// @notice Used for edge cases where rounding behaviors of magnitudes close to 1 are tested.
+    /// Normal 
+    function check_CompleteCheckPoint_WithSlashing_LowMagnitude_State(
+        User staker,
+        uint64 slashedAmountGwei
+    ) internal {
+        check_CompleteCheckpoint_State(staker);
+
+        assert_Snap_Unchanged_Staker_DepositShares(staker, "staker shares should not have decreased");
+        assert_Snap_Removed_Staker_WithdrawableShares_AtLeast(staker, BEACONCHAIN_ETH_STRAT, slashedAmountGwei * GWEI_TO_WEI, "should have decreased withdrawable shares by at least slashed amount");
+        assert_Snap_Unchanged_ActiveValidatorCount(staker, "should not have changed active validator count");
+    }
+
     function check_CompleteCheckpoint_WithCLSlashing_State(
         User staker,
         uint64 slashedAmountGwei
@@ -881,6 +894,24 @@ contract IntegrationCheckUtils is IntegrationBase {
         check_IncrAlloc_State_Slashable_Active(operator, params);
     }
 
+    /// @dev Invariants for modifyAllocations. Use when:
+    /// - operator IS slashable for this operator set
+    /// - last call to modifyAllocations created an INCREASE in allocation
+    /// - operator has no delegated shares/stake so their slashable stake remains UNCHANGED
+    function check_IncrAlloc_State_Slashable_NoDelegatedStake(
+        User operator,
+        AllocateParams memory params
+    ) internal {
+        check_Base_IncrAlloc_State(operator, params);
+        check_IsSlashable_State(operator, params.operatorSet, params.strategies);        
+
+        /// Run checks on pending allocation, if the operator has a nonzero delay
+        check_IncrAlloc_State_Slashable_Pending(operator, params);
+
+        // Validate operator has no pending modification and has increased allocation
+        check_IncrAlloc_State_Slashable_Active_NoDelegatedStake(operator, params);
+    }
+
     /// @dev Invariants for modifyAllocations. Used when:
     /// - operator IS slashable for this operator set
     /// - last call to modifyAllocations created an INCREASE in allocation
@@ -917,6 +948,23 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_HasSlashableStake(operator, params, "operator should have expected slashable stake for each strategy");
         assert_Snap_StakeBecameAllocated(operator, params.operatorSet, params.strategies, "allocated stake should have increased");
         assert_Snap_StakeBecameSlashable(operator, params.operatorSet, params.strategies, "slashable stake should have increased");
+    }
+
+    /// @dev Invariants for modifyAllocations. Used when:
+    /// - operator IS slashable for this operator set
+    /// - last call to modifyAllocations created an INCREASE in allocation
+    /// - effectBlock for the increase HAS been reached
+    function check_IncrAlloc_State_Slashable_Active_NoDelegatedStake(
+        User operator,
+        AllocateParams memory params
+    ) private activateAllocation(operator) {
+        // Validate operator does not have a pending modification, and has expected slashable stake
+        check_ActiveModification_State(operator, params);
+
+        // SHOULD set current magnitude and increase slashable/allocated stake
+        assert_Snap_Set_CurrentMagnitude(operator, params, "should have updated the operator's magnitude");
+        assert_HasAllocatedStake(operator, params, "operator should have expected allocated stake for each strategy");
+        assert_HasSlashableStake(operator, params, "operator should have expected slashable stake for each strategy");
     }
 
     /*******************************************************************************

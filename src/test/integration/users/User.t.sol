@@ -472,7 +472,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     }
 
     /// -----------------------------------------------------------------------
-    /// Internal Methods
+    /// View Methods
     /// -----------------------------------------------------------------------
 
     function allocationManager() public view returns (AllocationManager) {
@@ -482,6 +482,14 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     function permissionController() public view returns (PermissionController) {
         return PermissionController(address(delegationManager.permissionController()));
     }
+
+    function getSlashingFactor(IStrategy strategy) public view returns (uint256) {
+        return _getSlashingFactor(address(this), strategy);
+    }
+
+    /// -----------------------------------------------------------------------
+    /// Internal Methods
+    /// -----------------------------------------------------------------------
 
     function _completeQueuedWithdrawal(
         Withdrawal memory withdrawal,

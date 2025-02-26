@@ -1870,9 +1870,10 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         // Use timewarp to get previous staker shares
         uint[] memory prevShares = _getPrevStakerWithdrawableShares(staker, strategies);
 
-        // For each strategy, check diff between (prev-removed) and curr is at most 1 gwei
+        // Assert that the decrease in withdrawable shares is at least as much as the removed shares
+        // Checking for expected rounding down behavior
         for (uint i = 0; i < strategies.length; i++) {
-            assertApproxEqAbs(prevShares[i] - removedShares[i], curShares[i], 1e9, err);
+            assertGe(prevShares[i] - curShares[i], removedShares[i], err);
         }
     }
 
