@@ -545,6 +545,23 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         uint64 curBCSF = _getBeaconChainSlashingFactor(staker);
         assertEq(curBCSF, 0, err);
     }
+
+    function assert_BCSF_WAD(
+        User staker,
+        string memory err
+    ) internal view {
+        uint64 curBCSF = _getBeaconChainSlashingFactor(staker);
+        assertEq(curBCSF, WAD, err);
+    }
+
+    function assert_ActiveValidatorCount(
+        User staker,
+        uint expectedCount,
+        string memory err
+    ) internal view {
+        uint curActiveValidatorCount = _getActiveValidatorCount(staker);
+        assertEq(curActiveValidatorCount, expectedCount, err);
+    }
     
     /*******************************************************************************
                                 SNAPSHOT ASSERTIONS
@@ -2246,6 +2263,11 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     /**
      * Helpful getters:
      */
+
+    function _randSlashType() internal returns (BeaconChainMock.SlashType) {
+        return BeaconChainMock.SlashType(_randUint({ min: 0, max: 2 }));
+    }
+
     function _randBalanceUpdate(
         User staker,
         IStrategy[] memory strategies
