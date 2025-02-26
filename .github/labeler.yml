@@ -1,0 +1,49 @@
+# Cannot move to .github/configs/ for some reason... this should do for now.
+
+# Applies when PR branch name contains "bug" or "fix"
+'🐞 Bug':
+  - head-branch: ['bug', 'fix']
+
+# Applies when PR branch name contains "chore"
+'📜 Chore':
+  - head-branch: ['chore']
+  - changed-files:
+    - any-glob-to-any-file: ['.github/**/*', '.vscode/**/*', '.devcontainer/**/*', '.*', '.*rc', '.*ignore', '.env*']
+
+# Applies when PR branch name contains "docs" or "documentation" or changes markdown files
+'📖 Documentation':
+  - head-branch: ['docs', 'documentation']
+  - changed-files:
+    - any-glob-to-any-file: ['**/*.md']
+
+# Applies when PR branch name contains "feat", "feature", or "enhance" or changes contract files
+'✨ Enhancement':
+  - head-branch: ['feat', 'feature', 'enhance']
+  - changed-files:
+    - any-glob-to-any-file: ['src/contracts/*.sol']
+
+# Applies when PR branch name contains "fix", "bug", or "patch"
+'🔧 Fix':
+  - head-branch: ['fix', 'bug', 'patch']
+
+# Applies when PR branch name contains "optimize" or "perf"
+'⚡ Optimization':
+  - head-branch: ['optimize', 'perf']
+
+# Applies when PR branch name contains "refactor"
+'♻️ Refactor':
+  - head-branch: ['refactor']
+
+# Applies when PR changes script files
+'📜 Script':
+  - changed-files:
+    - any-glob-to-any-file: ['script/**/*', 'bin/**/*']
+
+# Applies when PR targets the slashing integration testing branch
+'🗡️ Slashing Release':
+  - base-branch: 'test/slashing-integration-testing'
+
+# Applies when PR changes test files
+'🧪 Test':
+  - changed-files:
+    - any-glob-to-any-file: ['src/test/**/*']
