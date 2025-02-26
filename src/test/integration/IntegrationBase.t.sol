@@ -1541,6 +1541,19 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         assert_Snap_Removed_Staker_WithdrawableShares(staker, strat.toArray(), removedShares.toArrayU256(), err);
     }
 
+    function assert_Snap_Unchanged_Staker_WithdrawableShares(
+        User staker,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal {
+        uint[] memory curShares = _getStakerWithdrawableShares(staker, strategies);
+        uint[] memory prevShares = _getPrevStakerWithdrawableShares(staker, strategies);
+        // For each strategy, check all shares have been withdrawn
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(prevShares[i], curShares[i], err);
+        }
+    }
+
     /// @dev Check that the staker's withdrawable shares have decreased by `removedShares`
     /// FIX THIS WHEN WORKING ON ROUNDING ISSUES
     function assert_Snap_Unchanged_Staker_WithdrawableShares_Delegation(
@@ -1599,6 +1612,20 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         // For each strategy, check (prev + added == cur)
         for (uint i = 0; i < strategies.length; i++) {
             assertEq(prevShares[i] + shareDeltas[i], curShares[i], err);
+        }
+    }
+
+    function assert_Snap_Unchanged_DSF(
+        User staker,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal {
+        uint[] memory curDSFs = _getDepositScalingFactors(staker, strategies);
+        uint[] memory prevDSFs = _getPrevDepositScalingFactors(staker, strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            console.log("prevDSF: ", prevDSFs[0]);
+            assertEq(prevDSFs[i], curDSFs[i], err);
         }
     }
 
@@ -2781,6 +2808,10 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
 
     function _getDepositScalingFactor(User staker, IStrategy strategy) internal view returns (uint) {
         return delegationManager.depositScalingFactor(address(staker), strategy);
+    }
+
+    function _getPrevDepositScalingFactors(User staker, IStrategy[] memory strategies) internal timewarp() returns (uint[] memory) {
+        return _getDepositScalingFactors(staker, strategies);
     }
 
     function _getExpectedDSFUndelegate(User staker) internal view returns (uint expectedDepositScalingFactor) {
