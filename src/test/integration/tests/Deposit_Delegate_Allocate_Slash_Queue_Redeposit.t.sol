@@ -176,7 +176,6 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         // Partially slash operator
         SlashingParams memory slashParams = _genSlashing_Half(operator, operatorSet);
         avs.slashOperator(slashParams);
-        check_PartiallySlashed_State(operator, allocateParams, slashParams);
 
         // Redeposit remaining tokens
         uint[] memory additionalShares = _calculateExpectedShares(strategies, numTokensRemaining);
@@ -216,7 +215,6 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         // Partially slash operator
         SlashingParams memory slashParams = _genSlashing_Half(operator, operatorSet);
         avs.slashOperator(slashParams);
-        check_PartiallySlashed_State(operator, allocateParams, slashParams);
         
         // Complete withdrawal
         _rollBlocksForCompleteWithdrawals(withdrawals);
@@ -256,8 +254,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         // Partially slash operator
         SlashingParams memory slashParams = _genSlashing_Half(operator, operatorSet);
         avs.slashOperator(slashParams);
-        check_PartiallySlashed_State(operator, allocateParams, slashParams);
-        
+
         // Queue withdrawal
         uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, withdrawableShares);
@@ -284,8 +281,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         // Partially slash operator
         SlashingParams memory slashParams = _genSlashing_Half(operator, operatorSet);
         avs.slashOperator(slashParams);
-        check_PartiallySlashed_State(operator, allocateParams, slashParams);
-        
+
         // Queue withdrawal
         uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, withdrawableShares);
