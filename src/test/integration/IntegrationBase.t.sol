@@ -1624,7 +1624,6 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         uint[] memory prevDSFs = _getPrevDepositScalingFactors(staker, strategies);
 
         for (uint i = 0; i < strategies.length; i++) {
-            console.log("prevDSF: ", prevDSFs[0]);
             assertEq(prevDSFs[i], curDSFs[i], err);
         }
     }
@@ -2095,7 +2094,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         params.wadsToSlash = new uint[](params.strategies.length);
 
         for (uint i = 0; i < params.wadsToSlash.length; i++) {
-            params.wadsToSlash[i] = 1e17;
+            params.wadsToSlash[i] = 5e17;
         }
     }
 
@@ -2736,6 +2735,10 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         return curShares;
     }
 
+    function _getExpectedWithdrawableSharesAfterCompletion(User staker, uint scaledShares, uint depositScalingFactor, uint slashingFactor) internal view returns (uint) {
+        return scaledShares.mulWad(depositScalingFactor).mulWad(slashingFactor);
+    }
+
     function _getPrevStakerWithdrawableShares(User staker, IStrategy[] memory strategies) internal timewarp() returns (uint[] memory) {
         return _getStakerWithdrawableShares(staker, strategies);
     }
@@ -2905,5 +2908,22 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
 
     function _getPrevCheckpointBalanceExited(User staker, uint64 checkpointTimestamp) internal timewarp() returns (uint64) {
         return _getCheckpointBalanceExited(staker, checkpointTimestamp);
+    }
+
+    function _getQueuedWithdrawals(User staker) internal view returns (Withdrawal[] memory) {
+        (Withdrawal[] memory withdrawals,) = delegationManager.getQueuedWithdrawals(address(staker));
+        return withdrawals;
+    }
+
+    function _getSlashingFactor(
+        User staker,
+        IStrategy strategy
+    ) internal view returns (uint256) {
+        address operator = delegationManager.delegatedTo(address(staker));
+        uint64 maxMagnitude = allocationManager.getMaxMagnitudes(operator, strategy.toArray())[0];
+        if (strategy == BEACONCHAIN_ETH_STRAT) {
+            return maxMagnitude.mulWad(eigenPodManager.beaconChainSlashingFactor(address(staker)));
+        }
+        return maxMagnitude;
     }
 }

@@ -23,6 +23,7 @@ contract IntegrationCheckUtils is IntegrationBase {
     ) internal {
         uint beaconBalanceWei = beaconBalanceGwei * GWEI_TO_WEI;
         assert_Snap_Added_Staker_DepositShares(staker, BEACONCHAIN_ETH_STRAT, beaconBalanceWei, "staker should have added deposit shares to beacon chain strat");
+        assert_Snap_Added_Staker_WithdrawableShares(staker, BEACONCHAIN_ETH_STRAT.toArray(), beaconBalanceWei.toArrayU256(), "staker should have added withdrawable shares to beacon chain strat");
         assert_Snap_Added_ActiveValidatorCount(staker, validators.length, "staker should have increased active validator count");
         assert_Snap_Added_ActiveValidators(staker, validators, "validators should each be active");
     }
