@@ -54,6 +54,18 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         check_Base_Slashing_State(operator, allocateParams, slashParams);
     }
 
+    /// @dev Asserts that the DSF isn't updated after a checkpoint with 0 balance
+    function testFuzz_deposit_delegate_allocate_slash_checkpointZeroBalance(uint24 _rand) public rand(_rand) {
+        beaconChain.advanceEpoch_NoRewards();
+
+        // 7. Start & complete checkpoint
+        staker.startCheckpoint();
+        check_StartCheckpoint_State(staker);
+        staker.completeCheckpoint();
+        check_CompleteCheckpoint_ZeroBalanceDelta_State(staker);
+        require(false==true);
+    }
+
     /// @dev Asserts that the DSF isn't updated after a queued withdrawal and a checkpoint with 0 balance
     function testFuzz_deposit_delegate_allocate_slash_queueWithdrawal_checkpointZeroBalance(uint24 _rand) public rand(_rand) {
         beaconChain.advanceEpoch_NoRewards();
