@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import {Integration_ALMSlashBase, IStrategy, IERC20, IAllocationManagerErrors} from "src/test/integration/tests/SlashingWithdrawals.t.sol";
+import {Integration_ALMSlashBase, IStrategy, IERC20, IAllocationManagerErrors, IntegrationCheckUtils, User, OperatorSet, AVS, HOLDS_LST} from "src/test/integration/tests/SlashingWithdrawals.t.sol";
 
 /**
  * @notice These tests check for specific timing edge case behavior correctness
@@ -278,5 +278,124 @@ contract Integration_OperatorDeregistrationTiming is Integration_ALMSlashBase {
         slashParams = _genSlashing_Rand(operator, operatorSet);
         vm.expectRevert(IAllocationManagerErrors.OperatorNotSlashable.selector);
         avs.slashOperator(slashParams);
+    }
+}
+
+contract Integration_OperatorAllocationTiming is IntegrationCheckUtils {
+    AVS avs;
+    User operator;
+    OperatorSet operatorSet;
+    
+    AllocateParams allocateParams;
+    SlashingParams slashParams;
+    
+    User staker;
+    IStrategy[] strategies;
+    IERC20[] tokens;
+    uint[] initTokenBalances;
+    uint[] initDepositShares;
+
+    ////////////////////////////////////////
+    /// OPERATOR ALLOCATION TIMING TESTS ///
+    ////////////////////////////////////////
+    
+    function _init() internal virtual override {
+        _configAssetTypes(HOLDS_LST);
+        (staker, strategies, initTokenBalances) = _newRandomStaker();
+        operator = _newRandomOperator_NoAssets();
+        (avs,) = _newRandomAVS();
+        tokens = _getUnderlyingTokens(strategies);
+
+        // 1. Deposit Into Strategies
+        staker.depositIntoEigenlayer(strategies, initTokenBalances);
+        initDepositShares = _calculateExpectedShares(strategies, initTokenBalances);
+        check_Deposit_State(staker, strategies, initDepositShares);
+
+        // 2. Delegate to an operator
+        staker.delegateTo(operator);
+        check_Delegation_State(staker, operator, strategies, initDepositShares);
+
+        // 3. Create an operator set and register an operator.
+        operatorSet = avs.createOperatorSet(strategies);
+    }
+    
+    function testFuzz_register_allocate_slashBeforeDelay(uint24 _r) public rand(_r) {
+        // 0. Create and register operator
+        operator.registerForOperatorSet(operatorSet);
+        check_Registration_State_NoAllocation(operator, operatorSet, allStrats);
+        
+        // 1. Allocate
+        allocateParams = _genAllocation_AllAvailable(operator, operatorSet);
+        operator.modifyAllocations(allocateParams);
+        check_IncrAlloc_State_Slashable(operator, allocateParams);
+
+        // 2. Move time forward to _just before_ allocation delay
+        _rollForward_AllocationDelay(operator);
+        rollBackward(1); // make sure that allocation delay is not yet passed
+
+        // 3. Slash operator
+        avs.slashOperator(_genSlashing_Rand(operator, operatorSet));
+        // Note: slashParams remains uninitialized, as the slash _should not_ impact the 
+        // operator.
+        check_Base_Slashing_State(operator, allocateParams, slashParams);
+    }
+    
+    function testFuzz_allocate_register_slashBeforeDelay(uint24 _r) public rand(_r) {
+        // 0. Allocate
+        allocateParams = _genAllocation_AllAvailable(operator, operatorSet);
+        operator.modifyAllocations(allocateParams);
+        check_IncrAlloc_State_NotSlashable(operator, allocateParams);
+        
+        // 1. Create and register operator
+        operator.registerForOperatorSet(operatorSet);
+        check_Registration_State_PendingAllocation(operator, allocateParams);
+
+        // 2. Move time forward to _just before_ allocation delay
+        _rollForward_AllocationDelay(operator);
+        rollBackward(1); // make sure that allocation delay is not yet passed
+
+        // 3. Slash operator
+        avs.slashOperator(_genSlashing_Rand(operator, operatorSet));
+        // Note: slashParams remains uninitialized, as the slash _should not_ impact the 
+        // operator.
+        check_Base_Slashing_State(operator, allocateParams, slashParams);
+    }
+    
+    function testFuzz_register_allocate_slashAfterDelay(uint24 _r) public rand(_r) {
+        // 0. Create and register operator
+        operator.registerForOperatorSet(operatorSet);
+        check_Registration_State_NoAllocation(operator, operatorSet, allStrats);
+        
+        // 1. Allocate
+        allocateParams = _genAllocation_AllAvailable(operator, operatorSet);
+        operator.modifyAllocations(allocateParams);
+        check_IncrAlloc_State_Slashable(operator, allocateParams);
+
+        // 2. Move time forward to _just before_ allocation delay
+        _rollForward_AllocationDelay(operator);
+
+        // 3. Slash operator
+        slashParams = _genSlashing_Rand(operator, operatorSet);
+        avs.slashOperator(slashParams);
+        check_Base_Slashing_State(operator, allocateParams, slashParams);
+    }
+    
+    function testFuzz_allocate_register_slashAfterDelay(uint24 _r) public rand(_r) {
+        // 0. Allocate
+        allocateParams = _genAllocation_AllAvailable(operator, operatorSet);
+        operator.modifyAllocations(allocateParams);
+        check_IncrAlloc_State_NotSlashable(operator, allocateParams);
+        
+        // 1. Create and register operator
+        operator.registerForOperatorSet(operatorSet);
+        check_Registration_State_PendingAllocation(operator, allocateParams);
+
+        // 2. Move time forward to _just before_ allocation delay
+        _rollForward_AllocationDelay(operator);
+
+        // 3. Slash operator
+        slashParams = _genSlashing_Rand(operator, operatorSet);
+        avs.slashOperator(slashParams);
+        check_Base_Slashing_State(operator, allocateParams, slashParams);
     }
 }
