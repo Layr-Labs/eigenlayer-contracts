@@ -1,4 +1,5 @@
-name: Automation
+name: PR Labeler
+
 on:
   pull_request:
 
@@ -6,7 +7,8 @@ jobs:
   triage:
     runs-on: protocol-x64-16core
 
-    name: Labeler
+    name: Bot
+
     permissions:
       contents: read
       pull-requests: write
