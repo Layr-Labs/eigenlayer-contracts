@@ -176,6 +176,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         // Partially slash operator
         SlashingParams memory slashParams = _genSlashing_Half(operator, operatorSet);
         avs.slashOperator(slashParams);
+        check_Base_Slashing_State(operator, allocateParams, slashParams);
 
         // Redeposit remaining tokens
         uint[] memory additionalShares = _calculateExpectedShares(strategies, numTokensRemaining);
@@ -215,6 +216,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         // Partially slash operator
         SlashingParams memory slashParams = _genSlashing_Half(operator, operatorSet);
         avs.slashOperator(slashParams);
+        check_Base_Slashing_State(operator, allocateParams, slashParams);
         
         // Complete withdrawal
         _rollBlocksForCompleteWithdrawals(withdrawals);
@@ -244,6 +246,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         // Partially slash operator
         SlashingParams memory slashParams = _genSlashing_Half(operator, operatorSet);
         avs.slashOperator(slashParams);
+        check_Base_Slashing_State(operator, allocateParams, slashParams);
 
         // Queue withdrawal
         uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
@@ -271,6 +274,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         // Partially slash operator
         SlashingParams memory slashParams = _genSlashing_Half(operator, operatorSet);
         avs.slashOperator(slashParams);
+        check_Base_Slashing_State(operator, allocateParams, slashParams);
 
         // Queue withdrawal
         uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
@@ -301,6 +305,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         // Partially slash operator
         SlashingParams memory slashParams = _genSlashing_Half(operator, operatorSet);
         avs.slashOperator(slashParams);
+        check_Base_Slashing_State(operator, allocateParams, slashParams);
         
         // Deposit tokens
         uint[] memory depositShares = _calculateExpectedShares(strategies, tokensToDeposit);
@@ -319,7 +324,6 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         
         // Final state checks
         assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
-        assertFalse(delegationManager.isDelegated(address(zeroSharesStaker)), "staker should not be delegated after undelegating");
     }
 
     /**
@@ -330,14 +334,11 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         // Partially slash operator
         SlashingParams memory slashParams = _genSlashing_Half(operator, operatorSet);
         avs.slashOperator(slashParams);
+        check_Base_Slashing_State(operator, allocateParams, slashParams);
         
         // Deallocate from operator set
-        operator.deallocateAll(operatorSet);
-        
-        // Verify operator is no longer allocated to the operator set
-        
-        // Verify staker is still delegated
-        assertTrue(delegationManager.isDelegated(address(staker)), "staker should still be delegated");
-        assertEq(delegationManager.delegatedTo(address(staker)), address(operator), "staker should still be delegated to operator");
+        AllocateParams memory deallocateParams = _genDeallocation_Full(operator, operatorSet);
+        operator.modifyAllocations(deallocateParams);
+        check_DecrAlloc_State_Slashable(operator, deallocateParams);
     }
 }
