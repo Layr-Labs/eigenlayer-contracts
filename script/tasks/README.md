@@ -94,8 +94,8 @@ forge script ../tasks/allocate_operatorSet.s.sol \
 ```sh
 forge script ../tasks/slash_operatorSet.s.sol \
     --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast \
-    --sig "run(string memory configFile,address operator,uint32 operatorSetId,uint256 wadToSlash)" \
-    -- local/slashing_output.json $SENDER 00000001 0500000000000000000
+    --sig "run(string memory configFile,address operator,uint32 operatorSetId,address[] strategies,uint256[] wadToSlash)" \
+    -- local/slashing_output.json $SENDER 00000001 "[$STRATEGY]" "[0500000000000000000]"
 ```
 
 12. Verify that the sender holds **1000** Deposited `TOKEN` shares:
@@ -115,6 +115,8 @@ cast call $DELEGATION_MANAGER "getWithdrawableShares(address,address[])(uint256[
 export DEPOSITS=$(cast call $DELEGATION_MANAGER "getDepositedShares(address)(address[],uint256[])" $SENDER "[$STRATEGY]" --rpc-url $RPC_URL | sed -n '2p' | tr -d '[]')
 export SHARES=$(cast call $DELEGATION_MANAGER "getWithdrawableShares(address,address[])(uint256[],uint256[])" $SENDER "[$STRATEGY]" --rpc-url $RPC_URL | sed -n '1p' | tr -d '[]')
 export NONCE=$(cast call $DELEGATION_MANAGER "cumulativeWithdrawalsQueued(address)(uint256)" $SENDER --rpc-url $RPC_URL)
+export SF=$(cast call $DELEGATION_MANAGER "depositScalingFactor(address,address)(uint256)" $SENDER $STRATEGY --rpc-url $RPC_URL | awk '{print $1}')
+
 ```
 
 - Queue withdrawal
@@ -140,8 +142,8 @@ cast rpc anvil_mine 5 --rpc-url $RPC_URL
 ```sh
 forge script ../tasks/complete_withdrawal_from_strategy.s.sol \
     --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast \
-    --sig "run(string memory configFile,address strategy,address token,uint256 amount,uint256 nonce,uint32 startBlock)" \
-    -- local/slashing_output.json $STRATEGY $TOKEN $SHARES $NONCE $WITHDRAWAL_START_BLOCK_NUMBER
+    --sig "run(string memory configFile,address strategy,address token,uint256 SF,uint256 amount,uint256 nonce,uint32 startBlock)" \
+    -- local/slashing_output.json $STRATEGY $TOKEN $SF $DEPOSITS $NONCE $WITHDRAWAL_START_BLOCK_NUMBER
 ```
 
 15. Verify that the `SHARES` we're withdrawn back to the sender

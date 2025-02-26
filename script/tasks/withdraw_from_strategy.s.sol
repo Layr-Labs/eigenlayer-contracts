@@ -44,7 +44,8 @@ contract WithdrawFromStrategy is Script, Test {
         uint256 nonce = dm.cumulativeWithdrawalsQueued(msg.sender);
 
         // Define QueuedWithdrawalParams struct instance
-        IDelegationManagerTypes.QueuedWithdrawalParams[] memory queueWithdrawals = new IDelegationManagerTypes.QueuedWithdrawalParams[](1);
+        IDelegationManagerTypes.QueuedWithdrawalParams[] memory queueWithdrawals =
+            new IDelegationManagerTypes.QueuedWithdrawalParams[](1);
         queueWithdrawals[0] = IDelegationManagerTypes.QueuedWithdrawalParams({
             strategies: strategies,
             depositShares: shares,
@@ -63,7 +64,7 @@ contract WithdrawFromStrategy is Script, Test {
 
         // Log the withdrawalRoot
         emit log_named_bytes32("withdrawalRoot", withdrawalRoots[0]);
-        
+
         // STOP RECORDING TRANSACTIONS FOR DEPLOYMENT
         vm.stopBroadcast();
     }
