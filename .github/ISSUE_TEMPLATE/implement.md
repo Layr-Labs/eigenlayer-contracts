@@ -24,6 +24,6 @@ Is anything blocking for this? (Do we need to design and/or build something firs
 Please link blocking issues here. If something is blocking and doesn't have an issue yet, create it!
 
 ### Don't Forget To
-* Assign this to a project (our default is [eigenlayer](https://github.com/orgs/Layr-Labs/projects/3/))
+* Assign this to a project (our default is [eigenlayer](https://github.com/Layr-Labs/eigenlayer-contracts))
 * Add priority + size estimate
 * Set status to New
