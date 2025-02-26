@@ -211,9 +211,10 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
         maxUniqueAssetsHeld = allStrats.length;
 
-        // Create time machine and beacon chain. Set block time to beacon chain genesis time
+        // Create time machine and beacon chain. Set block time to beacon chain genesis time and starting block number
         BEACON_GENESIS_TIME = GENESIS_TIME_LOCAL;
         cheats.warp(BEACON_GENESIS_TIME);
+        cheats.roll(10000);
         timeMachine = new TimeMachine();
         beaconChain = new BeaconChainMock(eigenPodManager, BEACON_GENESIS_TIME);
     }

@@ -279,6 +279,8 @@ contract IntegrationCheckUtils is IntegrationBase {
             "check_QueuedWithdrawal_State: failed to remove staker shares");
         assert_Snap_Removed_Staker_WithdrawableShares(staker, strategies, withdrawableShares,
             "check_QueuedWithdrawal_State: failed to remove staker withdrawable shares");
+        assert_Snap_Increased_SlashableSharesInQueue(operator, withdrawals,
+            "check_QueuedWithdrawal_State: failed to increase slashable shares in queue");
         check_Decreased_SlashableStake(operator, withdrawableShares, strategies);
         // Check that the dsf is either reset to wad or unchanged
         for (uint i = 0; i < strategies.length; i++) {
@@ -988,6 +990,35 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Slashed_OperatorShares(operator, slashParams, "slash should remove operator shares");
         assert_Snap_Slashed_Allocation(operator, operatorSet, slashParams, "slash should reduce current magnitude");
         assert_Snap_Increased_BurnableShares(operator, slashParams, "slash should increase burnable shares");
+
+        // Slashing SHOULD NOT change allocatable magnitude, registration, and slashability status
+        assert_Snap_Unchanged_AllocatableMagnitude(operator, allStrats, "slashing should not change allocatable magnitude");
+        assert_Snap_Unchanged_Registration(operator, operatorSet, "slash should not change registration status");
+        assert_Snap_Unchanged_Slashability(operator, operatorSet, "slash should not change slashability status");
+        // assert_Snap_Unchanged_AllocatedSets(operator, "should not have updated allocated sets");
+        // assert_Snap_Unchanged_AllocatedStrats(operator, operatorSet, "should not have updated allocated strategies");
+    }
+
+    function check_Base_Slashing_State(
+        User operator,
+        AllocateParams memory allocateParams,
+        SlashingParams memory slashParams,
+        Withdrawal[] memory withdrawals
+    ) internal {
+        OperatorSet memory operatorSet = allocateParams.operatorSet;
+
+        check_MaxMag_Invariants(operator);
+        check_IsSlashable_State(operator, operatorSet, allocateParams.strategies);
+
+        // Slashing SHOULD change max magnitude and current allocation
+        assert_Snap_Slashed_MaxMagnitude(operator, operatorSet, slashParams, "slash should lower max magnitude");
+        assert_Snap_Slashed_EncumberedMagnitude(operator, slashParams, "slash should lower encumbered magnitude");
+        assert_Snap_Slashed_AllocatedStake(operator, operatorSet, slashParams, "slash should lower allocated stake");
+        assert_Snap_Slashed_SlashableStake(operator, operatorSet, slashParams, "slash should lower slashable stake");
+        assert_Snap_Slashed_OperatorShares(operator, slashParams, "slash should remove operator shares");
+        assert_Snap_Slashed_Allocation(operator, operatorSet, slashParams, "slash should reduce current magnitude");
+        assert_Snap_Increased_BurnableShares(operator, slashParams, "slash should increase burnable shares");
+        assert_Snap_Decreased_SlashableSharesInQueue(operator, slashParams, withdrawals, "slash should decrease slashable shares in queue");
 
         // Slashing SHOULD NOT change allocatable magnitude, registration, and slashability status
         assert_Snap_Unchanged_AllocatableMagnitude(operator, allStrats, "slashing should not change allocatable magnitude");
