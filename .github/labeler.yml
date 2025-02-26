@@ -1,0 +1,53 @@
+ # Audit-related fixes
+# '⚖️ Audit Fix':
+#   - changed-files:
+#     - any-glob-to-any-file: 'audits/**/*'
+
+# Bug - applied when PR description contains "bug" or "fix"
+'🐞 Bug':
+  - head-branch: ['bug', 'fix']
+
+# Chore - maintenance related changes
+'📜 Chore':
+  - changed-files:
+    - any-glob-to-any-file: ['.github/**/*', '.vscode/**/*', '.devcontainer/**/*', '.*', '.*rc', '.*ignore', '.env*']
+
+# # Deployment - code deployed to testnet or mainnet
+# '🚢 Deployment':
+#   - changed-files:
+#     - any-glob-to-any-file: ['script/deploy/**/*']
+
+# Documentation - improvements or additions to documentation
+'📖 Documentation':
+  - changed-files:
+    - any-glob-to-any-file: ['docs/**/*', '**/*.md', '**/README.md', 'CONTRIBUTING.md']
+
+# Enhancement - new features or requests
+'✨ Enhancement':
+  - head-branch: ['feature', 'enhance', 'feat']
+
+# Fix - bug fixes or minor corrections
+'🔧 Fix':
+  - head-branch: ['fix', 'bug', 'patch']
+
+# Optimization - performance or efficiency improvements
+'⚡ Optimization':
+  - head-branch: ['optimize', 'perf']
+
+# Refactor - code improvements without changing functionality
+'♻️ Refactor':
+  - head-branch: ['refactor']
+
+# Script - script-related changes
+'📜 Script':
+  - changed-files:
+    - any-glob-to-any-file: ['script/**/*', 'bin/**/*']
+
+# Slashing Release - changes for the slashing release
+'🗡️ Slashing Release':
+  - base-branch: 'test/slashing-integration-testing'
+
+# Test - test-related changes
+'🧪 Test':
+  - changed-files:
+    - any-glob-to-any-file: ['src/test/**/*']
