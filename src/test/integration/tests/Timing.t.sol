@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import {Integration_ALMSlashBase, IStrategy, IERC20} from "src/test/integration/tests/SlashingWithdrawals.t.sol";
+import {Integration_ALMSlashBase, IStrategy, IERC20, IAllocationManagerErrors} from "src/test/integration/tests/SlashingWithdrawals.t.sol";
 
 /**
  * @notice These tests check for specific timing edge case behavior correctness
@@ -243,5 +243,40 @@ contract Integration_OperatorDeallocationTiming is Integration_ALMSlashBase {
         slashParams = _genSlashing_Rand(operator, operatorSet);
         avs.slashOperator(slashParams);
         check_Base_Slashing_State(operator, deallocateParams, slashParams);
+    }
+}
+
+contract Integration_OperatorDeregistrationTiming is Integration_ALMSlashBase {
+
+    ////////////////////////////////////////////
+    /// OPERATOR DEREGISTRATION TIMING TESTS ///
+    ////////////////////////////////////////////
+    
+    function testFuzz_deregister_slashBeforeDelay(uint24 _r) public rand(_r) {
+        operator.deregisterFromOperatorSet(operatorSet);
+        check_Deregistration_State_PendingAllocation(operator, operatorSet);
+
+        // 2. Move time forward to _just before_ deregistration delay
+        _rollForward_DeallocationDelay();
+        rollBackward(1); // make sure that deregistration delay is not yet passed
+
+        // 3. Slash operator
+        slashParams = _genSlashing_Rand(operator, operatorSet);
+        avs.slashOperator(slashParams);
+        check_Base_Slashing_State(operator, allocateParams, slashParams);
+    }
+
+    function testFuzz_deregister_slashAfterDelay(uint24 _r) public rand(_r) {
+        // 1. Deregister
+        operator.deregisterFromOperatorSet(operatorSet);
+        check_Deregistration_State_PendingAllocation(operator, operatorSet);
+
+        // 2. Move time forward to deregistration delay
+        _rollForward_DeallocationDelay();
+
+        // 3. Slash operator
+        slashParams = _genSlashing_Rand(operator, operatorSet);
+        vm.expectRevert(IAllocationManagerErrors.OperatorNotSlashable.selector);
+        avs.slashOperator(slashParams);
     }
 }
