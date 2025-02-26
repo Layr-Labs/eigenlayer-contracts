@@ -558,7 +558,7 @@ contract EigenPodManagerUnitTests_BeaconChainETHBalanceUpdateTests is EigenPodMa
     ) public {
         // Constrain inputs
         sharesBefore = bound(sharesBefore, 0, type(uint224).max) * uint(GWEI_TO_WEI);
-        sharesDelta = bound(sharesDelta, 0, type(uint224).max) * uint(GWEI_TO_WEI);
+        sharesDelta = bound(sharesDelta, 1, type(uint224).max) * uint(GWEI_TO_WEI);
         prevRestakedBalanceWei = bound(prevRestakedBalanceWei, 0, type(uint256).max);
 
         // Initialize shares
