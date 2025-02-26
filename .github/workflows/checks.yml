@@ -2,6 +2,7 @@ name: Check
 
 on:
   push:
+  pull_request:
   workflow_dispatch: {}
 
 permissions:
@@ -41,3 +42,14 @@ jobs:
           make docker
           docker run -v `pwd`:/build -w /build --rm -i eigenlayer-contracts:latest bash -c "make gha"
           if [ ! -z "$(git status --porcelain)" ]; then git diff; git status; exit 1; fi
+  
+  labels:
+    name: Labels
+    # Only run on pull requests that don't have any labels
+    if: github.event_name == 'pull_request' && github.event.pull_request.labels[0] == null
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail if this PR has no labels
+        run: |
+          echo "This PR has no labels. Please add the appropriate labels to the PR."
+          exit 1
