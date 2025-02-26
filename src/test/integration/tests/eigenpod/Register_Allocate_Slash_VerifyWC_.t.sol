@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
+import "src/test/integration/mocks/BeaconChainMock.t.sol";
 import "src/test/integration/IntegrationChecks.t.sol";
 
 /// @notice Testing the rounding behavior when operator magnitude is initially 1
@@ -76,7 +77,7 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationCheckUtils {
     function test_slashBC_startCompleteCP_queue_complete(uint24 _r) public rand(_r) {
         // 4. slash validators on beacon chain (start/complete checkpoint)
         uint40[] memory slashedValidators = _choose(validators);
-        slashedGwei = beaconChain.slashValidators(slashedValidators);
+        slashedGwei = beaconChain.slashValidators(slashedValidators, BeaconChainMock.SlashType.Minor);
         // ensure non zero amount slashed gwei so that we can test rounding down behavior
         cheats.assume(slashedGwei > 0);
         beaconChain.advanceEpoch_NoWithdrawNoRewards();
@@ -85,7 +86,7 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationCheckUtils {
         check_StartCheckpoint_State(staker);
 
         staker.completeCheckpoint();
-        check_CompleteCheckpoint_WithCLSlashing_HandleRoundDown_State(staker, slashedGwei);
+        check_CompleteCheckPoint_WithSlashing_LowMagnitude_State(staker, slashedGwei);
 
         // 5. queue withdrawal
         ( , uint[] memory withdrawShares) = _randWithdrawal(strategies, initDepositShares);

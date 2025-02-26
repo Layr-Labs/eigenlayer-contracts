@@ -151,7 +151,6 @@ contract IntegrationCheckUtils is IntegrationBase {
         uint64 slashedAmountGwei
     ) internal {
         check_CompleteCheckpoint_State(staker);
-
         assert_Snap_Unchanged_Staker_DepositShares(staker, "staker shares should not have decreased");
         assert_Snap_Removed_Staker_WithdrawableShares_AtLeast(staker, BEACONCHAIN_ETH_STRAT, slashedAmountGwei * GWEI_TO_WEI, "should have decreased withdrawable shares by at least slashed amount");
         assert_Snap_Unchanged_ActiveValidatorCount(staker, "should not have changed active validator count");
@@ -167,10 +166,11 @@ contract IntegrationCheckUtils is IntegrationBase {
         uint64 slashedAmountGwei
     ) internal {
         check_CompleteCheckpoint_State(staker);
-
         assert_Snap_Unchanged_Staker_DepositShares(staker, "staker shares should not have decreased");
         assert_Snap_Removed_Staker_WithdrawableShares_AtLeast(staker, BEACONCHAIN_ETH_STRAT, slashedAmountGwei * GWEI_TO_WEI, "should have decreased withdrawable shares by at least slashed amount");
         assert_Snap_Unchanged_ActiveValidatorCount(staker, "should not have changed active validator count");
+        assert_Snap_BCSF_Decreased(staker, "BCSF should decrease");
+        assert_Snap_Unchanged_DSF(staker, BEACONCHAIN_ETH_STRAT.toArray(), "DSF should be unchanged");
     }
 
     function check_CompleteCheckpoint_WithCLSlashing_State(

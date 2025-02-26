@@ -930,24 +930,11 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         IStrategy[] memory strategies,
         string memory err
     ) internal {
-        uint[] memory curSlashableStake = _getMinSlashableStake(operator, operatorSet, strategies);
-        uint[] memory prevSlashableStake = _getPrevMinSlashableStake(operator, operatorSet, strategies);
+        uint[] memory curSlashableStake = _getMinSlashableStake(address(operator), operatorSet, strategies);
+        uint[] memory prevSlashableStake = _getPrevMinSlashableStake(address(operator), operatorSet, strategies);
 
         for (uint i = 0; i < strategies.length; i++) {
             assertTrue(prevSlashableStake[i] > curSlashableStake[i], err);
-        }
-    }
-
-    function assert_Snap_StakeBecomeUnslashable(
-        address operator,
-        OperatorSet memory operatorSet,
-        IStrategy[] memory strategies,
-        string memory err
-    ) internal {
-        uint[] memory curSlashableStake = _getMinSlashableStake(operator, operatorSet, strategies);
-        uint[] memory prevSlashableStake = _getPrevMinSlashableStake(operator, operatorSet, strategies);
-
-        for (uint i = 0; i < strategies.length; i++) {
             assertTrue(prevSlashableStake[i] > curSlashableStake[i], err);
         }
     }
@@ -2105,7 +2092,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
             (OperatorSet[] memory operatorSets, Allocation[] memory allocations) = _getStrategyAllocations(operator, BEACONCHAIN_ETH_STRAT);
             for (uint i = 0; i < operatorSets.length; i++) {
                 if (allocations[i].currentMagnitude > 0) {
-                    assert_Snap_StakeBecomeUnslashable(operator, operatorSets[i], BEACONCHAIN_ETH_STRAT.toArray(), "operator should have minSlashableStake decreased");
+                    assert_Snap_StakeBecomeUnslashable(User(payable(operator)), operatorSets[i], BEACONCHAIN_ETH_STRAT.toArray(), "operator should have minSlashableStake decreased");
                 }
             }
         }
