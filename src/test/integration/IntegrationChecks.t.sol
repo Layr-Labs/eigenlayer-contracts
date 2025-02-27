@@ -506,34 +506,6 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_DSF_State_WithdrawalAsShares(staker, strategies, "staker's DSF not updated correctly");
     }
 
-    // // TODO: add checks on the burnable shares in queue
-    // function check_Withdrawal_AsTokens_SlashInQueue_State(
-    //     User staker,
-    //     User operator,
-    //     Withdrawal memory withdrawal,
-    //     IStrategy[] memory strategies,
-    //     uint[] memory shares,
-    //     IERC20[] memory tokens,
-    //     uint[] memory expectedTokens
-    // ) internal {
-    //     // Common checks
-    //     assert_WithdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
-        
-    //     assert_Snap_Added_TokenBalances(staker, tokens, expectedTokens, "staker should have received expected tokens");
-    //     assert_Snap_Unchanged_Staker_DepositShares(staker, "staker shares should not have changed");
-    //     assert_Snap_Removed_StrategyShares(strategies, shares, "strategies should have total shares decremented");
-
-    //     assert_Snap_Unchanged_DSF(staker, strategies, "dsf should not be changed");
-
-    //     // Checks specific to an operator that the Staker has delegated to
-    //     if (operator != User(payable(0))) {
-    //         if (operator != staker) {
-    //             assert_Snap_Unchanged_TokenBalances(operator, "operator token balances should not have changed");
-    //         }
-    //         assert_Snap_Unchanged_OperatorShares(operator, "operator shares should not have changed");
-    //     }
-    // }
-
     /// @notice Difference from above is that operator shares do not increase since staker is not delegated
     function check_Withdrawal_AsShares_Undelegated_State(
         User staker,
