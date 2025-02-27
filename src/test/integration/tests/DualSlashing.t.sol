@@ -59,7 +59,7 @@ contract Integration_DualSlashing_Base_BeaconChainFirst is Integration_DualSlash
 
     function testFuzz_bcSlash_checkpoint_avsSlash(uint24 _random) public rand(_random) {
         // 6. Slash staker on BC
-        uint64 slashedAmountGwei = beaconChain.slashValidators(validators);
+        uint64 slashedAmountGwei = beaconChain.slashValidators(validators, BeaconChainMock.SlashType.Minor);
         beaconChain.advanceEpoch_NoRewards();
 
         // 7. Checkpoint
@@ -99,7 +99,7 @@ contract Integration_DualSlashing_Base_AVSFirst is Integration_DualSlashing_Base
     /// @dev Validates behavior of "restaking", ie. that the funds can be slashed twice
     function testFuzz_avsSlash_bcSlash_checkpoint(uint24 _random) public rand(_random){ 
         // 7. Slash Staker on BC
-        uint64 slashedAmountGwei = beaconChain.slashValidators(validators);
+        uint64 slashedAmountGwei = beaconChain.slashValidators(validators, BeaconChainMock.SlashType.Minor);
         beaconChain.advanceEpoch_NoRewards();
         
         // 8. Checkpoint
@@ -122,7 +122,7 @@ contract Integration_DualSlashing_Base_AVSFirst is Integration_DualSlashing_Base
         assert_Snap_Added_Staker_WithdrawableSharesAtLeast(staker, BEACONCHAIN_ETH_STRAT.toArray(), beaconSharesAdded.toArrayU256(), "staker withdrawable shares should increase by the added beacon balance");
 
         // 8. Slash first validators on BC
-        uint64 slashedAmountGwei = beaconChain.slashValidators(validators);
+        uint64 slashedAmountGwei = beaconChain.slashValidators(validators, BeaconChainMock.SlashType.Minor);
         beaconChain.advanceEpoch_NoRewards();
 
         // 9. Checkpoint
@@ -135,7 +135,7 @@ contract Integration_DualSlashing_Base_AVSFirst is Integration_DualSlashing_Base
     /// @dev Same as above, but validator is proven after BC slash (this ordering doesn't matter to EL)
     function testFuzz_avsSlash_bcSlash_verifyValidator_checkpoint(uint24 _random) public rand(_random) {
         // 7. Slash Staker on BC
-        uint64 slashedAmountGwei = beaconChain.slashValidators(validators);
+        uint64 slashedAmountGwei = beaconChain.slashValidators(validators, BeaconChainMock.SlashType.Minor);
         beaconChain.advanceEpoch_NoRewards();
 
         // 8. Verify Validator
@@ -157,7 +157,7 @@ contract Integration_DualSlashing_Base_AVSFirst is Integration_DualSlashing_Base
     /// @notice The validator proven should not be affected by the BC or AVS slashes
     function testFuzz_avsSlash_bcSlash_checkpoint_verifyValidator(uint24 _rand) public rand(_rand) {
         // 7. Slash Staker on BC
-        uint64 slashedAmountGwei = beaconChain.slashValidators(validators);
+        uint64 slashedAmountGwei = beaconChain.slashValidators(validators, BeaconChainMock.SlashType.Minor);
         beaconChain.advanceEpoch_NoRewards();
         
         // 8. Checkpoint
@@ -180,7 +180,7 @@ contract Integration_DualSlashing_Base_AVSFirst is Integration_DualSlashing_Base
     ///         that the checkpoint had a positive delta
     function testFuzz_avsSlash_bcSlash_balanceIncrease_checkpoint(uint24 _rand) public rand(_rand) {
         // 7. Slash Staker on BC
-        uint64 slashedAmountGwei = beaconChain.slashValidators(validators);
+        uint64 slashedAmountGwei = beaconChain.slashValidators(validators, BeaconChainMock.SlashType.Minor);
         beaconChain.advanceEpoch_NoRewards();
 
         // 8. Send 32 ETH to pod, some random amount of ETH, greater than the amount slashed
@@ -200,7 +200,7 @@ contract Integration_DualSlashing_Base_AVSFirst is Integration_DualSlashing_Base
     /// @notice The balance increase occurs after the slashings are processed, so it should be unaffected by the slashings
     function testFuzz_avsSlash_bcSlash_checkpoint_balanceIncrease(uint24 _rand) public rand(_rand) {
         // 7. Slash Staker on BC
-        uint64 slashedAmountGwei = beaconChain.slashValidators(validators);
+        uint64 slashedAmountGwei = beaconChain.slashValidators(validators, BeaconChainMock.SlashType.Minor);
         beaconChain.advanceEpoch_NoRewards();
         
         // 8. Checkpoint
