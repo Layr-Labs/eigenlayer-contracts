@@ -437,7 +437,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         
         assert_Snap_Added_TokenBalances(staker, tokens, expectedTokens, "staker should have received expected tokens");
         assert_Snap_Unchanged_Staker_DepositShares(staker, "staker shares should not have changed");
-        // assert_Snap_Unchanged_DSF(staker, strategies, "dsf should not be changed");
+        assert_Snap_Unchanged_DSF(staker, strategies, "dsf should not be changed");
         assert_Snap_Removed_StrategyShares(strategies, shares, "strategies should have total shares decremented");
 
         // Checks specific to an operator that the Staker has delegated to
