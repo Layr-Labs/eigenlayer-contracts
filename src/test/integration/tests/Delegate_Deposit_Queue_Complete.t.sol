@@ -29,9 +29,6 @@ contract Integration_Delegate_Deposit_Queue_Complete is IntegrationCheckUtils {
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(staker, operator, strategies, shares, withdrawableShares, withdrawals, withdrawalRoots);
 
-        // Upgrade contracts if forkType is not local
-        _upgradeEigenLayerContracts();
-
         // 4. Complete Queued Withdrawal
         _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint i = 0; i < withdrawals.length; i++) {
@@ -63,9 +60,6 @@ contract Integration_Delegate_Deposit_Queue_Complete is IntegrationCheckUtils {
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(staker, operator, strategies, shares, withdrawableShares, withdrawals, withdrawalRoots);
-
-        // Upgrade contracts if forkType is not local
-        _upgradeEigenLayerContracts();
 
         // 4. Complete Queued Withdrawal
         _rollBlocksForCompleteWithdrawals(withdrawals);

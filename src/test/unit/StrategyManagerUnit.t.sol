@@ -1591,10 +1591,14 @@ contract StrategyManagerUnitTests_burnShares is StrategyManagerUnitTests {
         strategyManager.burnShares(strategy);
 
         assertEq(
+            strategyManager.getBurnableShares(strategy),
             sharesToBurn,
             "burnable shares should be unchanged"
         );
     }
+}
+
+contract StrategyManagerUnitTests_setStrategyWhitelister is StrategyManagerUnitTests {
     function testFuzz_SetStrategyWhitelister(
         address newWhitelister
     ) external filterFuzzedAddressInputs(newWhitelister) {

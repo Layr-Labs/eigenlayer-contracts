@@ -279,29 +279,6 @@ contract EigenPodManager is
         else {
             return (uint256(prevDepositShares), shares);
         }
-
-        return (prevDepositShares < 0 ? 0 : uint256(prevDepositShares), shares);
-    }
-
-    /// @dev Calculates the proportion a pod owner's restaked balance has decreased, and
-    /// reduces their beacon slashing factor accordingly.
-    /// Note: `balanceDecreasedWei` is assumed to be less than `prevRestakedBalanceWei`
-    function _reduceSlashingFactor(
-        address podOwner,
-        uint256 prevRestakedBalanceWei,
-        uint256 balanceDecreasedWei
-    ) internal returns (uint64) {
-        uint256 newRestakedBalanceWei = prevRestakedBalanceWei - balanceDecreasedWei;
-        uint64 prevBeaconSlashingFactor = beaconChainSlashingFactor(podOwner);
-        // newBeaconSlashingFactor is less than prevBeaconSlashingFactor because
-        // newRestakedBalanceWei < prevRestakedBalanceWei
-        uint64 newBeaconSlashingFactor =
-            uint64(prevBeaconSlashingFactor.mulDiv(newRestakedBalanceWei, prevRestakedBalanceWei));
-        uint64 beaconChainSlashingFactorDecrease = prevBeaconSlashingFactor - newBeaconSlashingFactor;
-        _beaconChainSlashingFactor[podOwner] =
-            BeaconChainSlashingFactor({slashingFactor: newBeaconSlashingFactor, isSet: true});
-        emit BeaconChainSlashingFactorDecreased(podOwner, prevBeaconSlashingFactor, newBeaconSlashingFactor);
-        return beaconChainSlashingFactorDecrease;
     }
 
     /// @dev Calculates the proportion a pod owner's restaked balance has decreased, and

@@ -127,10 +127,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         return "Integration Deployer";
     }
 
-    function NAME() public view virtual override returns (string memory) {
-        return "Integration Deployer";
-    }
-
     /**
      * @dev Anyone who wants to test using this contract in a separate repo via submodules may have to
      * override this function to set the correct paths for the deployment info files.
