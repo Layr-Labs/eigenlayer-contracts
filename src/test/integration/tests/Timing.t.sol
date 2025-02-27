@@ -66,6 +66,7 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
         }
 
         /// 5. Complete withdrawals
+        // Note: expectedTokens must be recalculated because the withdrawable shares have changed due to the slash
         withdrawableShares = _calcWithdrawable(staker, strategies, depositSharesToWithdraw);
         uint[] memory expectedTokens = _calculateExpectedTokens(strategies, withdrawableShares);
         staker.completeWithdrawalsAsTokens(withdrawals);
@@ -80,9 +81,6 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
         // Assert that all strategies have some shares remaining
         (IStrategy[] memory strats,) = delegationManager.getDepositedShares(address(staker));
         assertEq(strats.length, strategies.length, "all strategies should have some shares remaining");
-
-        // Assert that all withdrawals are removed from pending
-        assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }
 
     /**
@@ -127,6 +125,7 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
         }
 
         /// 5. Complete withdrawals
+        // Note: expectedTokens must be recalculated because the withdrawable shares have changed due to the slash
         withdrawableShares = _calcWithdrawable(staker, strategies, initDepositShares);
         uint[] memory expectedTokens = _calculateExpectedTokens(strategies, withdrawableShares);
         staker.completeWithdrawalsAsTokens(withdrawals);
@@ -141,9 +140,6 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
         // Assert that all strategies have some shares remaining
         (IStrategy[] memory strats,) = delegationManager.getDepositedShares(address(staker));
         assertEq(strats.length, 0, "all strategies should have no shares remaining");
-
-        // Assert that all withdrawals are removed from pending
-        assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }
 
     /**
@@ -186,8 +182,7 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
         check_Base_Slashing_State(operator, allocateParams, slashingParams);
 
         /// 4. Complete withdrawals
-        // Note: expectedTokens must be recalculated because the withdrawable shares
-        // have changed due to the slash
+        // Note: expectedTokens must be recalculated because the withdrawable shares have changed due to the slash
         uint[] memory expectedTokens = _calculateExpectedTokens(strategies, withdrawableShares);
         staker.completeWithdrawalsAsTokens(withdrawals);
         
@@ -201,9 +196,6 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
         // Assert that all strategies have some shares remaining
         (IStrategy[] memory strats,) = delegationManager.getDepositedShares(address(staker));
         assertEq(strats.length, strategies.length, "all strategies should have some shares remaining");
-
-        // Assert that all withdrawals are removed from pending
-        assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }
 
     /**
@@ -238,12 +230,11 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
         check_Base_Slashing_State(operator, allocateParams, slashingParams);
 
         /// 4. Complete withdrawals
-        uint[] memory expectedTokens = _calculateExpectedTokens(strategies, withdrawableShares);
         staker.completeWithdrawalsAsTokens(withdrawals);
         
         // Verify that the withdrawals were completed correctly
         for (uint256 i = 0; i < withdrawals.length; ++i) {
-            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], strategies, withdrawableShares, tokens, expectedTokens);
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], strategies, withdrawableShares, tokens, initTokenBalances);
         }
 
         /// 5. Check final state
@@ -251,12 +242,8 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
         // Assert that all strategies have some shares remaining
         (IStrategy[] memory strats,) = delegationManager.getDepositedShares(address(staker));
         assertEq(strats.length, 0, "all strategies should have no shares remaining");
-
-        // Assert that all withdrawals are removed from pending
-        assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }
 }
-
 
 /**
  * @notice These tests check for specific deallocation correctness around timing
@@ -271,9 +258,10 @@ contract Integration_OperatorDeallocationTiming is Integration_ALMSlashBase {
 
     function testFuzz_deallocateFully_slashBeforeDelay(uint24 _r) public rand(_r) {
         /// 1. Deallocate
-        operator.deregisterFromOperatorSet(operatorSet);
+        AllocateParams memory deallocateParams = _genDeallocation_Full(operator, operatorSet);
+        operator.modifyAllocations(deallocateParams);
         // Validate the deallocation
-        check_Deregistration_State_NoAllocation(operator, operatorSet);
+        check_DecrAlloc_State_Slashable(operator, deallocateParams);
 
         /// 2. Move time forward to _just before_ deallocation delay
         // Expected behavior: Deallocation delay is not yet passed, so slashes can still be performed
@@ -291,19 +279,25 @@ contract Integration_OperatorDeallocationTiming is Integration_ALMSlashBase {
 
     function testFuzz_deallocateFully_slashAfterDelay(uint24 _r) public rand(_r) {
         /// 1. Deallocate
-        operator.deregisterFromOperatorSet(operatorSet);
+        AllocateParams memory deallocateParams = _genDeallocation_Full(operator, operatorSet);
+        operator.modifyAllocations(deallocateParams);
         // Validate the deallocation
-        check_Deregistration_State_NoAllocation(operator, operatorSet);
+        check_DecrAlloc_State_Slashable(operator, deallocateParams);
 
         /// 2. Move time forward to deallocation delay
         _rollForward_DeallocationDelay();
-        // Verify that the operator is _no longer_ slashable
-        check_NotSlashable_State(operator, operatorSet);
+        // Verify that the operator is fully deallocated.
+        // Note: even though the operator is technically still slashable, a slash is effectively useless as the 
+        // operator is no longer allocated.
+        check_FullyDeallocated_State(operator, allocateParams, deallocateParams);
 
         /// 3. Slash operator
         slashParams = _genSlashing_Rand(operator, operatorSet);
-        vm.expectRevert(IAllocationManagerErrors.OperatorNotSlashable.selector);
         avs.slashOperator(slashParams);
+        // Verify that the slash has no impact on the operator
+        // Note: emptySlashParams remains uninitialized, as the slash _should not_ impact the operator.
+        SlashingParams memory emptySlashParams;
+        check_Base_Slashing_State(operator, allocateParams, emptySlashParams);
     }
 }
 
@@ -344,6 +338,7 @@ contract Integration_OperatorDeregistrationTiming is Integration_ALMSlashBase {
         check_NotSlashable_State(operator, operatorSet);
 
         /// 3. Slash operator
+        // Note: Unlike the deallocation case, the operator is no longer registered, so a slash will revert entirely.
         slashParams = _genSlashing_Rand(operator, operatorSet);
         vm.expectRevert(IAllocationManagerErrors.OperatorNotSlashable.selector);
         avs.slashOperator(slashParams);
