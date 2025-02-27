@@ -166,6 +166,8 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         // Queue withdrawal
         uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, withdrawableShares);
+        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        check_QueuedWithdrawal_State(staker, operator, strategies, additionalShares, withdrawableShares, withdrawals, withdrawalRoots);
 
         // Complete withdrawal
         _rollBlocksForCompleteWithdrawals(withdrawals);
@@ -195,11 +197,9 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
 
     function testFuzz_deposit_delegate_deallocate_partialSlash_queue_complete(uint24 r) public rand(r) {
         // Deallocate from operator set
-        operator.modifyAllocations(AllocateParams({
-            operatorSet: operatorSet,
-            strategies: allocateParams.strategies,
-            newMagnitudes: new uint64[](allocateParams.strategies.length)
-        }));
+        AllocateParams memory deallocateParams = _genDeallocation_Full(operator, operatorSet);
+        operator.modifyAllocations(deallocateParams);
+        check_DecrAlloc_State_Slashable(operator, deallocateParams);
         
         // Partially slash operator
         SlashingParams memory slashParams = _genSlashing_Half(operator, operatorSet);
@@ -210,6 +210,9 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
         uint[] memory depositShares = _calculateExpectedShares(strategies, numTokensRemaining);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, withdrawableShares);
+        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        check_QueuedWithdrawal_State(staker, operator, strategies, depositShares, withdrawableShares, withdrawals, withdrawalRoots);
+
         
         // Complete withdrawal
         _rollBlocksForCompleteWithdrawals(withdrawals);
@@ -223,6 +226,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
     function testFuzz_deposit_delegate_deregister_partialSlash_queue_complete(uint24 r) public rand(r) {
         // Deregister operator from operator set
         operator.deregisterFromOperatorSet(operatorSet);
+        check_Deregistration_State_ActiveAllocation(operator, operatorSet);
         
         // Partially slash operator
         SlashingParams memory slashParams = _genSlashing_Half(operator, operatorSet);
@@ -233,6 +237,8 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
         uint[] memory depositShares = _calculateExpectedShares(strategies, numTokensRemaining);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, withdrawableShares);
+        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        check_QueuedWithdrawal_State(staker, operator, strategies, depositShares, withdrawableShares, withdrawals, withdrawalRoots);
         
         // Complete withdrawal
         _rollBlocksForCompleteWithdrawals(withdrawals);
