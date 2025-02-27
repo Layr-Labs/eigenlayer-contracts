@@ -18,10 +18,24 @@ DEPOSIT_SHARES=1000
 # Ensure output directory exists
 mkdir -p $OUTPUT_DIR
 
-# Fund Multicall3 deployer
+# Deploy contracts
+forge script -C src/contracts --via-ir ../deploy/local/deploy_from_scratch.slashing.s.sol \
+    --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast \
+    --sig "run(string memory configFile)" \
+    -- local/deploy_from_scratch.slashing.anvil.config.json
+
+# Extract contract addresses from deployment output
+DELEGATION_MANAGER=$(jq -r '.addresses.delegationManager' "$OUTPUT_DIR/slashing_output.json")
+STRATEGY=$(jq -r '.addresses.strategy' "$OUTPUT_DIR/slashing_output.json")
+TOKEN=$(jq -r '.addresses.TestToken' "$OUTPUT_DIR/slashing_output.json")
+BALANCE=$(cast call $TOKEN "balanceOf(address)(uint256)" $SENDER --rpc-url $RPC_URL)
+
+# Start deploying multicall3 contract
 echo -e "==========================\n"
 echo -e "## Deploying multicall3.\n"
 echo "##### deploy mulitcall3"
+
+# Fund Multicall3 deployer
 FUND_OUTPUT=$(cast send $MULTICALL3_DEPLOYER_ADDRESS --value 0.1ether --rpc-url $RPC_URL --private-key $PRIVATE_KEY 2>&1)
 FUND_STATUS=$(echo "$FUND_OUTPUT" | grep "status" | awk '{print $2}')
 if [[ "$FUND_OUTPUT" == *"error"* ]]; then
@@ -43,18 +57,6 @@ fi
 
 # End of multicall3 deployment
 echo -e "\n==========================\n"
-
-# Deploy contracts
-forge script -C src/contracts --via-ir ../deploy/local/deploy_from_scratch.slashing.s.sol \
-    --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast \
-    --sig "run(string memory configFile)" \
-    -- local/deploy_from_scratch.slashing.anvil.config.json
-
-# Extract contract addresses from deployment output
-DELEGATION_MANAGER=$(jq -r '.addresses.delegationManager' "$OUTPUT_DIR/slashing_output.json")
-STRATEGY=$(jq -r '.addresses.strategy' "$OUTPUT_DIR/slashing_output.json")
-TOKEN=$(jq -r '.addresses.TestToken' "$OUTPUT_DIR/slashing_output.json")
-BALANCE=$(cast call $TOKEN "balanceOf(address)(uint256)" $SENDER --rpc-url $RPC_URL)
 
 # Unpause the AVS Directory
 forge script -C script/tasks ../tasks/unpause_avsDirectory.s.sol \
