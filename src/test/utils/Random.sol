@@ -4,6 +4,7 @@ pragma solidity ^0.8.27;
 import "src/contracts/interfaces/IAllocationManager.sol";
 import "src/contracts/interfaces/IStrategy.sol";
 import "src/contracts/libraries/OperatorSetLib.sol";
+import "src/contracts/libraries/SlashingLib.sol";
 
 type Randomness is uint256;
 
@@ -283,118 +284,25 @@ library Random {
     ) internal returns (IAllocationManagerTypes.AllocateParams[] memory allocateParams) {
         allocateParams = new IAllocationManagerTypes.AllocateParams[](numAllocations);
 
-        // TODO: Randomize magnitudes such that they sum to 1e18 (100%).
-        uint64 magnitudePerSet = uint64(WAD / numStrats);
-
         for (uint256 i; i < numAllocations; ++i) {
             allocateParams[i].operatorSet = OperatorSet(avs, r.Uint32());
             allocateParams[i].strategies = r.StrategyArray(numStrats);
             allocateParams[i].newMagnitudes = new uint64[](numStrats);
 
-            for (uint256 j; j < numStrats; ++j) {
-                allocateParams[i].newMagnitudes[j] = magnitudePerSet;
+            // Generate random magnitudes that sum up to WAD (1e18)
+            uint256 remaining = SlashingLib.WAD;
+            for (uint256 j; j < numStrats - 1; ++j) {
+                // For each strategy except the last one, generate a random magnitude
+                // from 0 to the remaining amount
+                uint256 magnitude = r.Uint256() % (remaining / (numStrats - j));
+                allocateParams[i].newMagnitudes[j] = uint64(magnitude);
+                remaining -= magnitude;
             }
+            // Assign the remaining amount to the last strategy
+            allocateParams[i].newMagnitudes[numStrats - 1] = uint64(remaining);
         }
     }
 
     /// @dev Usage:
     /// ```
-    /// AllocateParams[] memory allocateParams = r.allocateParams(avs, numAllocations, numStrats);
-    /// AllocateParams[] memory deallocateParams = r.deallocateParams(allocateParams);
-    /// CreateSetParams[] memory createSetParams = r.createSetParams(allocateParams);
-    /// 
-    /// cheats.prank(avs);
-    /// allocationManager.createOperatorSets(createSetParams);
-    /// 
-    /// cheats.prank(operator);
-    /// allocationManager.modifyAllocations(allocateParams);
-    ///
-    /// cheats.prank(operator)
-    /// allocationManager.modifyAllocations(deallocateParams);
-    /// ```
-    function DeallocateParams(
-        Randomness r,
-        IAllocationManagerTypes.AllocateParams[] memory allocateParams
-    ) internal returns (IAllocationManagerTypes.AllocateParams[] memory deallocateParams) {
-        uint256 numDeallocations = allocateParams.length;
-
-        deallocateParams = new IAllocationManagerTypes.AllocateParams[](numDeallocations);
-
-        for (uint256 i; i < numDeallocations; ++i) {
-            deallocateParams[i].operatorSet = allocateParams[i].operatorSet;
-            deallocateParams[i].strategies = allocateParams[i].strategies;
-            
-            deallocateParams[i].newMagnitudes = new uint64[](allocateParams[i].strategies.length);
-            for (uint256 j; j < allocateParams[i].strategies.length; ++j) {
-                deallocateParams[i].newMagnitudes[j] = r.Uint64(0, allocateParams[i].newMagnitudes[j] - 1);
-            }
-        }
-    }
-
-    /// @dev Usage:
-    /// ```
-    /// AllocateParams[] memory allocateParams = r.allocateParams(avs, numAllocations, numStrats);
-    /// CreateSetParams[] memory createSetParams = r.createSetParams(allocateParams);
-    /// RegisterParams memory registerParams = r.registerParams(allocateParams);
-    ///
-    /// cheats.prank(avs);
-    /// allocationManager.createOperatorSets(createSetParams);
-    ///
-    /// cheats.prank(operator);
-    /// allocationmanager.registerForOperatorSets(registerParams);
-    /// ```
-    function RegisterParams(
-        Randomness r, 
-        IAllocationManagerTypes.AllocateParams[] memory allocateParams
-    ) internal returns (IAllocationManagerTypes.RegisterParams memory params) {
-        params.avs = allocateParams[0].operatorSet.avs;
-        params.operatorSetIds = new uint32[](allocateParams.length);
-        for (uint256 i; i < allocateParams.length; ++i) {
-            params.operatorSetIds[i] = allocateParams[i].operatorSet.id;
-        }
-        params.data = abi.encode(r.Bytes32());
-    }
-
-    function SlashingParams(
-        Randomness r, 
-        address operator,
-        IAllocationManagerTypes.AllocateParams memory allocateParams
-    ) internal returns (IAllocationManagerTypes.SlashingParams memory params) {
-        IStrategy[] memory strategies = allocateParams.strategies;
-
-        params.operator = operator;
-        params.operatorSetId = allocateParams.operatorSet.id;
-
-        // Randomly select a subset of strategies to slash.
-        uint len = r.Uint256({ min: 1, max: strategies.length });
-
-        // Update length of strategies array.
-        assembly {
-            mstore(strategies, len)
-        }
-        
-        params.strategies = strategies;
-        params.wadsToSlash = new uint[](len);
-        
-        // Randomly select a `wadToSlash` for each strategy.
-        for (uint i; i < len; ++i) {
-            params.wadsToSlash[i] = r.Uint256({ min: 0.001 ether, max: 1 ether });
-        }
-    }
-
-    /// -----------------------------------------------------------------------
-    /// Helpers
-    /// -----------------------------------------------------------------------
-
-    function wrap(
-        uint256 r
-    ) internal pure returns (Randomness) {
-        return Randomness.wrap(r);
-    }
-
-    function unwrap(
-        Randomness r
-    ) internal pure returns (uint256) {
-        return Randomness.unwrap(r);
-    }
 }
