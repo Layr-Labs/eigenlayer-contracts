@@ -1316,7 +1316,7 @@ func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageSession) CreateAVSRew
 	return _RewardsCoordinatorStorage.Contract.CreateAVSRewardsSubmission(&_RewardsCoordinatorStorage.TransactOpts, rewardsSubmissions)
 }
 
-// CreateAVSRewardsSubmission is a paid mutator transaction binding the contract method 0x43ea4476.
+// CreateAVSRewardsSubmission is a paid mutator transaction binding the contract method 0xfce36c7d.
 //
 // Solidity: function createAVSRewardsSubmission(((address,uint96)[],address,uint256,uint32,uint32)[] rewardsSubmissions) returns()
 func (_RewardsCoordinatorStorage *RewardsCoordinatorStorageTransactorSession) CreateAVSRewardsSubmission(rewardsSubmissions []IRewardsCoordinatorTypesRewardsSubmission) (*types.Transaction, error) {

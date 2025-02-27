@@ -516,33 +516,33 @@ func (_IDelegationManager *IDelegationManagerCallerSession) DepositScalingFactor
 
 // DomainSeparator is a free data retrieval call binding the contract method 0xf698da25.
 //
-// Solidity: function depositScalingFactor(address staker, address strategy) view returns(uint256)
-func (_IDelegationManager *IDelegationManagerCaller) DepositScalingFactor(opts *bind.CallOpts, staker common.Address, strategy common.Address) (*big.Int, error) {
+// Solidity: function domainSeparator() view returns(bytes32)
+func (_IDelegationManager *IDelegationManagerCaller) DomainSeparator(opts *bind.CallOpts) ([32]byte, error) {
 	var out []interface{}
-	err := _IDelegationManager.contract.Call(opts, &out, "depositScalingFactor", staker, strategy)
+	err := _IDelegationManager.contract.Call(opts, &out, "domainSeparator")
 
 	if err != nil {
-		return *new(*big.Int), err
+		return *new([32]byte), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
 
 	return out0, err
 
 }
 
-// DepositScalingFactor is a free data retrieval call binding the contract method 0xbfae3fd2.
+// DomainSeparator is a free data retrieval call binding the contract method 0xf698da25.
 //
-// Solidity: function depositScalingFactor(address staker, address strategy) view returns(uint256)
-func (_IDelegationManager *IDelegationManagerSession) DepositScalingFactor(staker common.Address, strategy common.Address) (*big.Int, error) {
-	return _IDelegationManager.Contract.DepositScalingFactor(&_IDelegationManager.CallOpts, staker, strategy)
+// Solidity: function domainSeparator() view returns(bytes32)
+func (_IDelegationManager *IDelegationManagerSession) DomainSeparator() ([32]byte, error) {
+	return _IDelegationManager.Contract.DomainSeparator(&_IDelegationManager.CallOpts)
 }
 
-// DepositScalingFactor is a free data retrieval call binding the contract method 0xbfae3fd2.
+// DomainSeparator is a free data retrieval call binding the contract method 0xf698da25.
 //
-// Solidity: function depositScalingFactor(address staker, address strategy) view returns(uint256)
-func (_IDelegationManager *IDelegationManagerCallerSession) DepositScalingFactor(staker common.Address, strategy common.Address) (*big.Int, error) {
-	return _IDelegationManager.Contract.DepositScalingFactor(&_IDelegationManager.CallOpts, staker, strategy)
+// Solidity: function domainSeparator() view returns(bytes32)
+func (_IDelegationManager *IDelegationManagerCallerSession) DomainSeparator() ([32]byte, error) {
+	return _IDelegationManager.Contract.DomainSeparator(&_IDelegationManager.CallOpts)
 }
 
 // GetDepositedShares is a free data retrieval call binding the contract method 0x66d5ba93.
@@ -682,37 +682,6 @@ func (_IDelegationManager *IDelegationManagerCallerSession) GetQueuedWithdrawal(
 	Shares     []*big.Int
 }, error) {
 	return _IDelegationManager.Contract.GetQueuedWithdrawal(&_IDelegationManager.CallOpts, withdrawalRoot)
-}
-
-// GetQueuedWithdrawalRoots is a free data retrieval call binding the contract method 0xfd8aa88d.
-//
-// Solidity: function getQueuedWithdrawalRoots(address staker) view returns(bytes32[])
-func (_IDelegationManager *IDelegationManagerCaller) GetQueuedWithdrawalRoots(opts *bind.CallOpts, staker common.Address) ([][32]byte, error) {
-	var out []interface{}
-	err := _IDelegationManager.contract.Call(opts, &out, "getQueuedWithdrawalRoots", staker)
-
-	if err != nil {
-		return *new([][32]byte), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new([][32]byte)).(*[][32]byte)
-
-	return out0, err
-
-}
-
-// GetQueuedWithdrawalRoots is a free data retrieval call binding the contract method 0xfd8aa88d.
-//
-// Solidity: function getQueuedWithdrawalRoots(address staker) view returns(bytes32[])
-func (_IDelegationManager *IDelegationManagerSession) GetQueuedWithdrawalRoots(staker common.Address) ([][32]byte, error) {
-	return _IDelegationManager.Contract.GetQueuedWithdrawalRoots(&_IDelegationManager.CallOpts, staker)
-}
-
-// GetQueuedWithdrawalRoots is a free data retrieval call binding the contract method 0xfd8aa88d.
-//
-// Solidity: function getQueuedWithdrawalRoots(address staker) view returns(bytes32[])
-func (_IDelegationManager *IDelegationManagerCallerSession) GetQueuedWithdrawalRoots(staker common.Address) ([][32]byte, error) {
-	return _IDelegationManager.Contract.GetQueuedWithdrawalRoots(&_IDelegationManager.CallOpts, staker)
 }
 
 // GetQueuedWithdrawalRoots is a free data retrieval call binding the contract method 0xfd8aa88d.
@@ -954,37 +923,6 @@ func (_IDelegationManager *IDelegationManagerSession) MinWithdrawalDelayBlocks()
 }
 
 // MinWithdrawalDelayBlocks is a free data retrieval call binding the contract method 0xc448feb8.
-//
-// Solidity: function minWithdrawalDelayBlocks() view returns(uint32)
-func (_IDelegationManager *IDelegationManagerCallerSession) MinWithdrawalDelayBlocks() (uint32, error) {
-	return _IDelegationManager.Contract.MinWithdrawalDelayBlocks(&_IDelegationManager.CallOpts)
-}
-
-// BurnOperatorShares is a paid mutator transaction binding the contract method 0xee74937f.
-//
-// Solidity: function minWithdrawalDelayBlocks() view returns(uint32)
-func (_IDelegationManager *IDelegationManagerCaller) MinWithdrawalDelayBlocks(opts *bind.CallOpts) (uint32, error) {
-	var out []interface{}
-	err := _IDelegationManager.contract.Call(opts, &out, "minWithdrawalDelayBlocks")
-
-	if err != nil {
-		return *new(uint32), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(uint32)).(*uint32)
-
-	return out0, err
-
-}
-
-// BurnOperatorShares is a paid mutator transaction binding the contract method 0xee74937f.
-//
-// Solidity: function minWithdrawalDelayBlocks() view returns(uint32)
-func (_IDelegationManager *IDelegationManagerSession) MinWithdrawalDelayBlocks() (uint32, error) {
-	return _IDelegationManager.Contract.MinWithdrawalDelayBlocks(&_IDelegationManager.CallOpts)
-}
-
-// BurnOperatorShares is a paid mutator transaction binding the contract method 0xee74937f.
 //
 // Solidity: function minWithdrawalDelayBlocks() view returns(uint32)
 func (_IDelegationManager *IDelegationManagerCallerSession) MinWithdrawalDelayBlocks() (uint32, error) {

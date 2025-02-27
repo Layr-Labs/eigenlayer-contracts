@@ -253,27 +253,6 @@ func (_IShareManager *IShareManagerTransactorSession) IncreaseBurnableShares(str
 	return _IShareManager.Contract.IncreaseBurnableShares(&_IShareManager.TransactOpts, strategy, addedSharesToBurn)
 }
 
-// IncreaseBurnableShares is a paid mutator transaction binding the contract method 0xdebe1eab.
-//
-// Solidity: function increaseBurnableShares(address strategy, uint256 addedSharesToBurn) returns()
-func (_IShareManager *IShareManagerTransactor) IncreaseBurnableShares(opts *bind.TransactOpts, strategy common.Address, addedSharesToBurn *big.Int) (*types.Transaction, error) {
-	return _IShareManager.contract.Transact(opts, "increaseBurnableShares", strategy, addedSharesToBurn)
-}
-
-// IncreaseBurnableShares is a paid mutator transaction binding the contract method 0xdebe1eab.
-//
-// Solidity: function increaseBurnableShares(address strategy, uint256 addedSharesToBurn) returns()
-func (_IShareManager *IShareManagerSession) IncreaseBurnableShares(strategy common.Address, addedSharesToBurn *big.Int) (*types.Transaction, error) {
-	return _IShareManager.Contract.IncreaseBurnableShares(&_IShareManager.TransactOpts, strategy, addedSharesToBurn)
-}
-
-// IncreaseBurnableShares is a paid mutator transaction binding the contract method 0xdebe1eab.
-//
-// Solidity: function increaseBurnableShares(address strategy, uint256 addedSharesToBurn) returns()
-func (_IShareManager *IShareManagerTransactorSession) IncreaseBurnableShares(strategy common.Address, addedSharesToBurn *big.Int) (*types.Transaction, error) {
-	return _IShareManager.Contract.IncreaseBurnableShares(&_IShareManager.TransactOpts, strategy, addedSharesToBurn)
-}
-
 // RemoveDepositShares is a paid mutator transaction binding the contract method 0x724af423.
 //
 // Solidity: function removeDepositShares(address staker, address strategy, uint256 depositSharesToRemove) returns(uint256)

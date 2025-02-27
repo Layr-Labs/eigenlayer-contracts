@@ -545,35 +545,35 @@ func (_DelegationManagerStorage *DelegationManagerStorageCallerSession) DepositS
 	return _DelegationManagerStorage.Contract.DepositScalingFactor(&_DelegationManagerStorage.CallOpts, staker, strategy)
 }
 
-// DepositScalingFactor is a free data retrieval call binding the contract method 0xbfae3fd2.
+// DomainSeparator is a free data retrieval call binding the contract method 0xf698da25.
 //
-// Solidity: function depositScalingFactor(address staker, address strategy) view returns(uint256)
-func (_DelegationManagerStorage *DelegationManagerStorageCaller) DepositScalingFactor(opts *bind.CallOpts, staker common.Address, strategy common.Address) (*big.Int, error) {
+// Solidity: function domainSeparator() view returns(bytes32)
+func (_DelegationManagerStorage *DelegationManagerStorageCaller) DomainSeparator(opts *bind.CallOpts) ([32]byte, error) {
 	var out []interface{}
-	err := _DelegationManagerStorage.contract.Call(opts, &out, "depositScalingFactor", staker, strategy)
+	err := _DelegationManagerStorage.contract.Call(opts, &out, "domainSeparator")
 
 	if err != nil {
-		return *new(*big.Int), err
+		return *new([32]byte), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
 
 	return out0, err
 
 }
 
-// DepositScalingFactor is a free data retrieval call binding the contract method 0xbfae3fd2.
+// DomainSeparator is a free data retrieval call binding the contract method 0xf698da25.
 //
-// Solidity: function depositScalingFactor(address staker, address strategy) view returns(uint256)
-func (_DelegationManagerStorage *DelegationManagerStorageSession) DepositScalingFactor(staker common.Address, strategy common.Address) (*big.Int, error) {
-	return _DelegationManagerStorage.Contract.DepositScalingFactor(&_DelegationManagerStorage.CallOpts, staker, strategy)
+// Solidity: function domainSeparator() view returns(bytes32)
+func (_DelegationManagerStorage *DelegationManagerStorageSession) DomainSeparator() ([32]byte, error) {
+	return _DelegationManagerStorage.Contract.DomainSeparator(&_DelegationManagerStorage.CallOpts)
 }
 
-// DepositScalingFactor is a free data retrieval call binding the contract method 0xbfae3fd2.
+// DomainSeparator is a free data retrieval call binding the contract method 0xf698da25.
 //
-// Solidity: function depositScalingFactor(address staker, address strategy) view returns(uint256)
-func (_DelegationManagerStorage *DelegationManagerStorageCallerSession) DepositScalingFactor(staker common.Address, strategy common.Address) (*big.Int, error) {
-	return _DelegationManagerStorage.Contract.DepositScalingFactor(&_DelegationManagerStorage.CallOpts, staker, strategy)
+// Solidity: function domainSeparator() view returns(bytes32)
+func (_DelegationManagerStorage *DelegationManagerStorageCallerSession) DomainSeparator() ([32]byte, error) {
+	return _DelegationManagerStorage.Contract.DomainSeparator(&_DelegationManagerStorage.CallOpts)
 }
 
 // EigenPodManager is a free data retrieval call binding the contract method 0x4665bcda.
@@ -744,37 +744,6 @@ func (_DelegationManagerStorage *DelegationManagerStorageCallerSession) GetQueue
 	Shares     []*big.Int
 }, error) {
 	return _DelegationManagerStorage.Contract.GetQueuedWithdrawal(&_DelegationManagerStorage.CallOpts, withdrawalRoot)
-}
-
-// GetQueuedWithdrawalRoots is a free data retrieval call binding the contract method 0xfd8aa88d.
-//
-// Solidity: function getQueuedWithdrawalRoots(address staker) view returns(bytes32[])
-func (_DelegationManagerStorage *DelegationManagerStorageCaller) GetQueuedWithdrawalRoots(opts *bind.CallOpts, staker common.Address) ([][32]byte, error) {
-	var out []interface{}
-	err := _DelegationManagerStorage.contract.Call(opts, &out, "getQueuedWithdrawalRoots", staker)
-
-	if err != nil {
-		return *new([][32]byte), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new([][32]byte)).(*[][32]byte)
-
-	return out0, err
-
-}
-
-// GetQueuedWithdrawalRoots is a free data retrieval call binding the contract method 0xfd8aa88d.
-//
-// Solidity: function getQueuedWithdrawalRoots(address staker) view returns(bytes32[])
-func (_DelegationManagerStorage *DelegationManagerStorageSession) GetQueuedWithdrawalRoots(staker common.Address) ([][32]byte, error) {
-	return _DelegationManagerStorage.Contract.GetQueuedWithdrawalRoots(&_DelegationManagerStorage.CallOpts, staker)
-}
-
-// GetQueuedWithdrawalRoots is a free data retrieval call binding the contract method 0xfd8aa88d.
-//
-// Solidity: function getQueuedWithdrawalRoots(address staker) view returns(bytes32[])
-func (_DelegationManagerStorage *DelegationManagerStorageCallerSession) GetQueuedWithdrawalRoots(staker common.Address) ([][32]byte, error) {
-	return _DelegationManagerStorage.Contract.GetQueuedWithdrawalRoots(&_DelegationManagerStorage.CallOpts, staker)
 }
 
 // GetQueuedWithdrawalRoots is a free data retrieval call binding the contract method 0xfd8aa88d.
