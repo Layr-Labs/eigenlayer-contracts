@@ -6,12 +6,17 @@ We then register the `Operator` to an `OperatorSet`, allocate the `Strategy` in 
 
 ---
 
-1. Start `anvil` in one terminal
+1. Copy `.env.example` to `.env`
+```sh
+cp .env.example .env
+```
+
+2. Start `anvil` in one terminal
 ```sh
 anvil
 ```
 
-2. Run the full setup in another terminal
+3. Run the full setup in another terminal
 ```sh
 ./run.sh
 ```
