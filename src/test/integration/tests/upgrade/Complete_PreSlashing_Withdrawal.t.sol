@@ -41,7 +41,6 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal_Base is UpgradeTest
     }
 
     function _completeWithdrawal(TestState memory state) internal virtual {
-        console.log("withdrawals length: ", state.withdrawals.length);
         for (uint256 i = 0; i < state.withdrawals.length; i++) {
             if (state.completeAsTokens) {
                 IERC20[] memory tokens = state.staker.completeWithdrawalAsTokens(state.withdrawals[i]);
