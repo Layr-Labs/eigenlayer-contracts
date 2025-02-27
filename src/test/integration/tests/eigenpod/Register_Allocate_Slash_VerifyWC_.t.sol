@@ -63,6 +63,7 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationCheckUtils {
         (validators, beaconBalanceGwei) = staker.startValidators();
         beaconChain.advanceEpoch_NoRewards();
         staker.verifyWithdrawalCredentials(validators);
+        check_VerifyWC_State(staker, validators, beaconBalanceGwei);
     }
 
     /**
@@ -179,5 +180,75 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationCheckUtils {
 
         staker.completeCheckpoint();
         check_CompleteCheckpoint_State(staker);
+    }
+
+    /**
+     * Test sequence following _init()
+     * 4. fully slash operator on opSet again to 0 magnitude
+     * 5. undelegate
+     * 6. complete withdrawals as tokens(although amount 0 from fully slashed operator)
+     * 7. redeposit (start new validators and verifywc)
+     * This is testing when an operator is fully slashed with 0 magnitude, the staker can still undelegate,
+     * complete withdrawals as tokens(0 tokens though), and redeposit to Eigenlayer.
+     */
+    function test_slash_undelegate_completeAsTokens_verifyWC(uint24 _r) public rand(_r) {
+        // 4. AVS slashes operator again to 0 magnitude and fully slashed
+        SlashingParams memory slashParams = _genSlashing_Full(operator, operatorSet);
+        slashParams.wadsToSlash[0] = WAD;
+        avs.slashOperator(slashParams);
+        check_Base_Slashing_State(operator, allocateParams, slashParams);
+
+        // 5. undelegate results in 0 delegated shares removed since operator has 0 magnitude and staker is fully slashed too
+        Withdrawal[] memory withdrawals = staker.undelegate();
+        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, initDepositShares, 0.toArrayU256());
+
+        // 6. complete withdrawals as tokens(although amount 0 from fully slashed operator)
+        // This also exits validators on the beacon chain
+        _rollBlocksForCompleteWithdrawals(withdrawals);
+        IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[0]);
+        check_Withdrawal_AsTokens_State(
+            staker, operator, withdrawals[0], strategies, 0.toArrayU256(), tokens, 0.toArrayU256()
+        );
+
+        // 7. deposit/verify withdrawal credentials
+        // randomly startup 1-10 validators
+        (validators, beaconBalanceGwei) = staker.startValidators(uint8(_randUint(1, 10)));
+        beaconChain.advanceEpoch_NoRewards();
+        staker.verifyWithdrawalCredentials(validators);
+        check_VerifyWC_State(staker, validators, beaconBalanceGwei);
+    }
+
+    /**
+     * Test sequence following _init()
+     * 4. queue withdrawal
+     * 5. complete withdrawal as tokens
+     * This is testing a staker can queue a withdrawal and complete as tokens even
+     * though the operator has 1 maxMagnitude
+     */
+    function test_queueAllShares_completeAsTokens(uint24 _r) public rand(_r) {
+        // 4. queue withdrawal
+        // ( , uint[] memory withdrawShares) = _randWithdrawal(strategies, initDepositShares);
+        Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, initDepositShares);
+        bytes32[] memory roots = _getWithdrawalHashes(withdrawals);
+        check_QueuedWithdrawal_State({
+            staker: staker,
+            operator: operator,
+            strategies: strategies,
+            depositShares: initDepositShares,
+            withdrawableShares: initDepositShares,
+            withdrawals: withdrawals,
+            withdrawalRoots: roots
+        });
+
+        // 5. complete withdrawal as tokens
+        // - exits validators
+        // - advances epoch
+        // - starts/completes checkpoint
+        _rollBlocksForCompleteWithdrawals(withdrawals);
+        IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[0]);
+        check_Withdrawal_AsTokens_State(
+            staker, operator, withdrawals[0], strategies, initDepositShares, tokens, initDepositShares
+        );
     }
 }
