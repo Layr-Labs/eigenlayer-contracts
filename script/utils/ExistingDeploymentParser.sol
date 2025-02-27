@@ -491,47 +491,6 @@ contract ExistingDeploymentParser is Script, Logger {
         assertEq(avsDirectory.paused(), AVS_DIRECTORY_INIT_PAUSED_STATUS, "avsdirectory: init paused status set incorrectly");
         // RewardsCoordinator
         assertTrue(rewardsCoordinator.pauserRegistry() == eigenLayerPauserReg, "rewardsCoordinator: pauser registry not set correctly");
-        // assertEq(
-        //     rewardsCoordinator.owner(), executorMultisig,
-        //     "rewardsCoordinator: owner not set correctly"
-        // );
-        // assertEq(
-        //     rewardsCoordinator.paused(), REWARDS_COORDINATOR_INIT_PAUSED_STATUS,
-        //     "rewardsCoordinator: init paused status set incorrectly"
-        // );
-        assertEq(
-            rewardsCoordinator.MAX_REWARDS_DURATION(),
-            REWARDS_COORDINATOR_MAX_REWARDS_DURATION,
-            "rewardsCoordinator: maxRewardsDuration not set correctly"
-        );
-        assertEq(
-            rewardsCoordinator.MAX_RETROACTIVE_LENGTH(),
-            REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH,
-            "rewardsCoordinator: maxRetroactiveLength not set correctly"
-        );
-        assertEq(
-            rewardsCoordinator.MAX_FUTURE_LENGTH(), REWARDS_COORDINATOR_MAX_FUTURE_LENGTH, "rewardsCoordinator: maxFutureLength not set correctly"
-        );
-        assertEq(
-            rewardsCoordinator.GENESIS_REWARDS_TIMESTAMP(),
-            REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP,
-            "rewardsCoordinator: genesisRewardsTimestamp not set correctly"
-        );
-        // assertEq(
-        //     rewardsCoordinator.rewardsUpdater(), REWARDS_COORDINATOR_UPDATER,
-        //     "rewardsCoordinator: rewardsUpdater not set correctly"
-        // );
-        assertEq(rewardsCoordinator.activationDelay(), REWARDS_COORDINATOR_ACTIVATION_DELAY, "rewardsCoordinator: activationDelay not set correctly");
-        assertEq(
-            rewardsCoordinator.CALCULATION_INTERVAL_SECONDS(),
-            REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
-            "rewardsCoordinator: CALCULATION_INTERVAL_SECONDS not set correctly"
-        );
-        assertEq(
-            rewardsCoordinator.defaultOperatorSplitBips(),
-            REWARDS_COORDINATOR_DEFAULT_OPERATOR_SPLIT_BIPS,
-            "rewardsCoordinator: defaultSplitBips not set correctly"
-        );
         // DelegationManager
         assertTrue(delegationManager.pauserRegistry() == eigenLayerPauserReg, "delegationManager: pauser registry not set correctly");
         assertEq(delegationManager.owner(), executorMultisig, "delegationManager: owner not set correctly");
@@ -576,30 +535,42 @@ contract ExistingDeploymentParser is Script, Logger {
     }
 
     function logInitialDeploymentParams() public {
-        console.log("==== Parsed Initialize Params for Initial Deployment,==");
+        console.log("==== Parsed Initialize Params for Initial Deployment ====");
 
+        console.log("=== Multisig Addresses ===");
         console.log("executorMultisig", executorMultisig);
         console.log("operationsMultisig", operationsMultisig);
         console.log("communityMultisig", communityMultisig);
         console.log("pauserMultisig", pauserMultisig);
 
+        console.log("=== Core Contract Parameters ===");
         console.log("STRATEGY_MANAGER_INIT_PAUSED_STATUS", STRATEGY_MANAGER_INIT_PAUSED_STATUS);
         console.log("STRATEGY_MANAGER_WHITELISTER", STRATEGY_MANAGER_WHITELISTER);
         console.log("DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS", DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS);
         console.log("DELEGATION_MANAGER_INIT_PAUSED_STATUS", DELEGATION_MANAGER_INIT_PAUSED_STATUS);
         console.log("AVS_DIRECTORY_INIT_PAUSED_STATUS", AVS_DIRECTORY_INIT_PAUSED_STATUS);
+        
+        console.log("=== RewardsCoordinator Parameters ===");
         console.log("REWARDS_COORDINATOR_INIT_PAUSED_STATUS", REWARDS_COORDINATOR_INIT_PAUSED_STATUS);
-        // todo log all rewards coordinator params
+        console.log("REWARDS_COORDINATOR_MAX_REWARDS_DURATION", REWARDS_COORDINATOR_MAX_REWARDS_DURATION);
+        console.log("REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH", REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH);
+        console.log("REWARDS_COORDINATOR_MAX_FUTURE_LENGTH", REWARDS_COORDINATOR_MAX_FUTURE_LENGTH);
+        console.log("REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP", REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP);
+        console.log("REWARDS_COORDINATOR_UPDATER", REWARDS_COORDINATOR_UPDATER);
+        console.log("REWARDS_COORDINATOR_ACTIVATION_DELAY", REWARDS_COORDINATOR_ACTIVATION_DELAY);
+        console.log("REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS", REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS);
+        console.log("REWARDS_COORDINATOR_DEFAULT_OPERATOR_SPLIT_BIPS", REWARDS_COORDINATOR_DEFAULT_OPERATOR_SPLIT_BIPS);
+        console.log("REWARDS_COORDINATOR_OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP", REWARDS_COORDINATOR_OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP);
+        console.log("REWARDS_COORDINATOR_OPERATOR_SET_MAX_RETROACTIVE_LENGTH", REWARDS_COORDINATOR_OPERATOR_SET_MAX_RETROACTIVE_LENGTH);
+
+        console.log("=== EigenPod Parameters ===");
         console.log("EIGENPOD_MANAGER_INIT_PAUSED_STATUS", EIGENPOD_MANAGER_INIT_PAUSED_STATUS);
         console.log("EIGENPOD_GENESIS_TIME", EIGENPOD_GENESIS_TIME);
         console.log("ETHPOSDepositAddress", ETHPOSDepositAddress);
 
-        console.log("==== Strategies to Deploy,==");
+        console.log("=== Strategies to Deploy ===");
         for (uint256 i = 0; i < numStrategiesToDeploy; ++i) {
-            // Decode the token information into the Token struct
             StrategyUnderlyingTokenConfig memory tokenInfo = strategiesToDeploy[i];
-
-            strategiesToDeploy.push(tokenInfo);
             console.log("TOKEN ADDRESS", tokenInfo.tokenAddress);
             console.log("TOKEN NAME", tokenInfo.tokenName);
             console.log("TOKEN SYMBOL", tokenInfo.tokenSymbol);
