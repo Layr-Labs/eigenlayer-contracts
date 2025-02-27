@@ -1336,8 +1336,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
                 slashedShares = prevShares[i].mulWadRoundUp(allocateParams.newMagnitudes[i].mulWadRoundUp(wadToSlash));
             }
 
-            // TODO: bound this better
-            assertApproxEqAbs(prevShares[i] - slashedShares, curShares[i], 1e3, err);
+            assertEq(prevShares[i] - slashedShares, curShares[i], err);
         }
     }
 
@@ -1357,7 +1356,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         uint depositShares = _getStakerDepositShares(staker, allocateParams.strategies)[0];
 
         // 1. The withdrawable shares should decrease by a factor of the BCSF
-        assertApproxEqAbs(prevShares.mulWad(_getBeaconChainSlashingFactor(staker)), curShares, 1e3, err);
+        assertEq(prevShares.mulWad(_getBeaconChainSlashingFactor(staker)), curShares, err);
 
         /**
          * 2. The delta in shares is given by:
@@ -1369,7 +1368,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         uint originalAVSSlashedShares = depositShares.mulWadRoundUp(allocateParams.newMagnitudes[0].mulWadRoundUp(wadToSlash));
         uint withdrawableSharesAfterAVSSlash = depositShares - originalAVSSlashedShares;
         uint expectedDelta = withdrawableSharesAfterAVSSlash.mulWad(WAD - beaconChainSlashingFactor);
-        assertApproxEqAbs(prevShares - expectedDelta, curShares, 1e3, err);
+        assertEq(prevShares - expectedDelta, curShares, err);
 
         /**
          * 3. The attributable avs slashed shares should decrease by a factor of the BCSF
@@ -1378,7 +1377,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
          */
         uint bcSlashedShares = depositShares.mulWad(WAD - beaconChainSlashingFactor);
         uint attributableAVSSlashedShares = depositShares - bcSlashedShares - curShares;
-        assertApproxEqAbs(originalAVSSlashedShares.mulWad(beaconChainSlashingFactor), attributableAVSSlashedShares, 1e3, err);
+        assertEq(originalAVSSlashedShares.mulWad(beaconChainSlashingFactor), attributableAVSSlashedShares, err);
     }
 
     /**
