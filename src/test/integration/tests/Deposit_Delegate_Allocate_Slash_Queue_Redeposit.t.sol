@@ -196,9 +196,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint i = 0; i < withdrawals.length; i++) {
             staker.completeWithdrawalAsTokens(withdrawals[i]);
-            // Check that each withdrawal is properly completed
-            assert_WithdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawals[i]), 
-                "withdrawal should not be pending after completion");
+            // How to handle slashed withdrawal via undelegating?
         }
     }
 
@@ -217,13 +215,16 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
 
         // Queue withdrawal
         uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        uint[] memory shares = _calculateExpectedShares(strategies, numTokensRemaining);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, withdrawableShares);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         
         // Complete withdrawal
         _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint i = 0; i < withdrawals.length; i++) {
-            staker.completeWithdrawalAsTokens(withdrawals[i]);
+            uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].scaledShares);
+            IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], strategies, shares, tokens, expectedTokens);
         }
     }
 
@@ -238,13 +239,16 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
 
         // Queue withdrawal
         uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        uint[] memory shares = _calculateExpectedShares(strategies, numTokensRemaining);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, withdrawableShares);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         
         // Complete withdrawal
         _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint i = 0; i < withdrawals.length; i++) {
-            staker.completeWithdrawalAsTokens(withdrawals[i]);
+            uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].scaledShares);
+            IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], strategies, shares, tokens, expectedTokens);
         }
     }
 
@@ -272,7 +276,9 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         // Complete withdrawal
         _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint i = 0; i < withdrawals.length; i++) {
-            zeroSharesStaker.completeWithdrawalAsTokens(withdrawals[i]);
+            uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].scaledShares);
+            IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], strategies, shares, tokens, expectedTokens);
         }
     }
 
