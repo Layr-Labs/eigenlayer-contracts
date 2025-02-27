@@ -2,7 +2,7 @@
 
 # Applies when PR branch name contains "bug" or "fix"
 '🐞 Bug':
-  - head-branch: ['bug', 'fix']
+  - head-branch: ['bug']
 
 # Applies when PR branch name contains "chore"
 '📜 Chore':
@@ -24,7 +24,7 @@
 
 # Applies when PR branch name contains "fix", "bug", or "patch"
 '🔧 Fix':
-  - head-branch: ['fix', 'bug', 'patch']
+  - head-branch: ['fix', 'patch']
 
 # Applies when PR branch name contains "optimize" or "perf"
 '⚡ Optimization':
