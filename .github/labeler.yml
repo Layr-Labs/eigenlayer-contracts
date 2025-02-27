@@ -20,7 +20,7 @@
 '✨ Enhancement':
   - head-branch: ['feat', 'feature', 'enhance']
   - changed-files:
-    - any-glob-to-any-file: ['src/contracts/*.sol']
+    - any-glob-to-any-file: ['src/contracts/**/*']
 
 # Applies when PR branch name contains "fix", "bug", or "patch"
 '🔧 Fix':
@@ -41,7 +41,7 @@
 
 # Applies when PR targets the slashing integration testing branch
 '🗡️ Slashing Release':
-  - base-branch: 'test/slashing-integration-testing'
+  - base-branch: ['slashing','test/slashing-integration-testing']
 
 # Applies when PR changes test files
 '🧪 Test':
