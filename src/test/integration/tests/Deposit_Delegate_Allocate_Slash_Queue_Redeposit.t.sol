@@ -168,10 +168,6 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }
 
-    /**
-     * T-83: Staker with nonzero shares, Operator allocated, Staker Delegated
-     * Partially slash operator on opSet, Redeposit, Queue Full Withdrawal, Complete as Tokens
-     */
     function testFuzz_deposit_delegate_allocate_partialSlash_redeposit_queue_complete(uint24 r) public rand(r) {
         // Partially slash operator
         SlashingParams memory slashParams = _genSlashing_Half(operator, operatorSet);
@@ -202,10 +198,6 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }
     
-    /**
-     * T-84: Staker with nonzero shares, Operator allocated, Staker Delegated
-     * Undelegate, Partially slash operator on opSet, Complete as Tokens
-     */
     function testFuzz_deposit_delegate_undelegate_partialSlash_complete(uint24 r) public rand(r) {
         // Undelegate from operator
         Withdrawal[] memory withdrawals = staker.undelegate();
@@ -231,10 +223,6 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }
 
-    /**
-     * T-85: Staker with nonzero shares, Operator allocated, Staker Delegated
-     * Deallocate from opSet, Partially slash operator on opSet, Queue Full Withdrawal, Complete as Tokens
-     */
     function testFuzz_deposit_delegate_deallocate_partialSlash_queue_complete(uint24 r) public rand(r) {
         // Deallocate from operator set
         operator.modifyAllocations(AllocateParams({
@@ -263,10 +251,6 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }
 
-    /**
-     * T-86: Staker with nonzero shares, Operator allocated, Staker Delegated
-     * Deregister from opSet, Partially slash operator on opSet, Queue Full Withdrawal, Complete as Tokens
-     */
     function testFuzz_deposit_delegate_deregister_partialSlash_queue_complete(uint24 r) public rand(r) {
         // Deregister operator from operator set
         operator.deregisterFromOperatorSet(operatorSet);
@@ -291,10 +275,6 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }
 
-    /**
-     * T-95: Staker Delegated - 0 Shares, Operator allocated
-     * Partially slash operator on opSet, Deposit, Undelegate, Complete as Tokens
-     */
     function testFuzz_delegate_zeroShares_partialSlash_deposit_undelegate_complete(uint24 r) public rand(r) {
         // Create a new staker with 0 shares
         (User zeroSharesStaker, uint[] memory tokensToDeposit) = _newStaker(strategies);
@@ -326,10 +306,6 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }
 
-    /**
-     * T-96: Staker with nonzero shares, Staker Delegated
-     * Allocate to opSet, Partially slash operator on opSet, Deallocate from opSet
-     */
     function testFuzz_deposit_delegate_allocate_partialSlash_deallocate(uint24 r) public rand(r) {
         // Partially slash operator
         SlashingParams memory slashParams = _genSlashing_Half(operator, operatorSet);
