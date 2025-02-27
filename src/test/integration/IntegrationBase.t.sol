@@ -2830,6 +2830,15 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         return withdrawableShares; 
     }
 
+    function _calcWithdrawable(User staker, IStrategy[] memory strategies, uint[] memory depositSharesToWithdraw) internal view returns (uint[] memory) {
+        uint[] memory withdrawableShares = new uint[](strategies.length);
+        uint[] memory depositScalingFactors = _getDepositScalingFactors(staker, strategies);
+        for (uint i = 0; i < strategies.length; i++) {
+            withdrawableShares[i] = depositSharesToWithdraw[i].mulWad(depositScalingFactors[i]).mulWad(_getSlashingFactor(staker, strategies[i]));
+        }
+        return withdrawableShares;
+    }
+
     /// @dev Uses timewarp modifier to get staker beacon chain scaling factor at the last snapshot
     function _getPrevBeaconChainSlashingFactor(User staker) internal timewarp() returns (uint64) {
         return _getBeaconChainSlashingFactor(staker);
