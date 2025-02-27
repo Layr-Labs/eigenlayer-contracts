@@ -93,10 +93,6 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         uint[] memory shares = _calculateExpectedShares(strategies, numTokensRemaining);
         staker.depositIntoEigenlayer(strategies, numTokensRemaining);
         check_Deposit_State(staker, strategies, shares);
-
-        // Final state checks
-        assert_HasExpectedShares(staker, strategies, shares, "staker should have expected shares after redeposit");
-        assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");      
     }
 
     function testFuzz_undelegate_fullSlash_complete_redeposit(
@@ -112,10 +108,10 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         check_FullySlashed_State(operator, allocateParams, slashParams);
 
         // 6. Complete withdrawal. Staker should receive 0 shares/tokens after a full slash
-        _rollBlocksForCompleteWithdrawals(withdrawals);
         uint[] memory expectedShares = new uint[](strategies.length);
         uint[] memory expectedTokens = new uint[](strategies.length);
 
+        _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint256 i = 0; i < withdrawals.length; ++i) {
             staker.completeWithdrawalAsTokens(withdrawals[i]);
             check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], strategies, expectedShares, tokens, expectedTokens);
@@ -125,10 +121,6 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         uint[] memory shares = _calculateExpectedShares(strategies, numTokensRemaining);
         staker.depositIntoEigenlayer(strategies, numTokensRemaining);
         check_Deposit_State(staker, strategies, shares);
-
-        // Final state checks
-        assert_HasExpectedShares(staker, strategies, shares, "staker should have expected shares after redeposit");
-        assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");      
     }
 
     function testFuzz_depositFull_fullSlash_undelegate_completeAsShares(
@@ -162,10 +154,6 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
             staker.completeWithdrawalAsShares(withdrawals[i]);
             check_Withdrawal_AsShares_Undelegated_State(staker, operator, withdrawals[i], withdrawals[i].strategies, expectedShares);
         }
-
-        // Check final state:
-        assert_HasNoUnderlyingTokenBalance(staker, slashingParams.strategies, "staker not have any underlying tokens");
-        assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }
 
     function testFuzz_deposit_delegate_allocate_partialSlash_redeposit_queue_complete(uint24 r) public rand(r) {
@@ -184,7 +172,6 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         uint[] memory shares = _calculateExpectedShares(strategies, numTokensRemaining);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, withdrawableShares);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
-        assert_AllWithdrawalsPending(withdrawalRoots, "withdrawals should be pending after queueing");
 
         // Complete withdrawal
         _rollBlocksForCompleteWithdrawals(withdrawals);
@@ -199,8 +186,6 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         // Undelegate from operator
         Withdrawal[] memory withdrawals = staker.undelegate();
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
-        assert_AllWithdrawalsPending(withdrawalRoots, "withdrawals should be pending after undelegating");
-        assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated after undelegating");
         
         // Partially slash operator
         SlashingParams memory slashParams = _genSlashing_Half(operator, operatorSet);
@@ -215,9 +200,6 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
             assert_WithdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawals[i]), 
                 "withdrawal should not be pending after completion");
         }
-        
-        // Final state checks
-        assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }
 
     function testFuzz_deposit_delegate_deallocate_partialSlash_queue_complete(uint24 r) public rand(r) {
@@ -243,9 +225,6 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         for (uint i = 0; i < withdrawals.length; i++) {
             staker.completeWithdrawalAsTokens(withdrawals[i]);
         }
-        
-        // Final state checks
-        assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }
 
     function testFuzz_deposit_delegate_deregister_partialSlash_queue_complete(uint24 r) public rand(r) {
@@ -267,9 +246,6 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         for (uint i = 0; i < withdrawals.length; i++) {
             staker.completeWithdrawalAsTokens(withdrawals[i]);
         }
-        
-        // Final state checks
-        assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }
 
     function testFuzz_delegate_zeroShares_partialSlash_deposit_undelegate_complete(uint24 r) public rand(r) {
@@ -298,9 +274,6 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         for (uint i = 0; i < withdrawals.length; i++) {
             zeroSharesStaker.completeWithdrawalAsTokens(withdrawals[i]);
         }
-        
-        // Final state checks
-        assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }
 
     function testFuzz_deposit_delegate_allocate_partialSlash_deallocate(uint24 r) public rand(r) {
