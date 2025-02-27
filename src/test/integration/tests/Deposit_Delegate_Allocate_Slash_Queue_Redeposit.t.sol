@@ -184,18 +184,14 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, withdrawableShares);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         assert_AllWithdrawalsPending(withdrawalRoots, "withdrawals should be pending after queueing");
-        
+
         // Complete withdrawal
         _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint i = 0; i < withdrawals.length; i++) {
-            staker.completeWithdrawalAsTokens(withdrawals[i]);
-            // Check that each withdrawal is properly completed
-            assert_WithdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawals[i]), 
-                "withdrawal should not be pending after completion");
+            uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].scaledShares);
+            IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], strategies, withdrawableShares, tokens, expectedTokens);
         }
-        
-        // Final state checks
-        assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }
     
     function testFuzz_deposit_delegate_undelegate_partialSlash_complete(uint24 r) public rand(r) {
