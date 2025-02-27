@@ -181,6 +181,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         
         // Queue withdrawal
         uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        uint[] memory shares = _calculateExpectedShares(strategies, numTokensRemaining);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, withdrawableShares);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         assert_AllWithdrawalsPending(withdrawalRoots, "withdrawals should be pending after queueing");
@@ -190,7 +191,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         for (uint i = 0; i < withdrawals.length; i++) {
             uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].scaledShares);
             IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], strategies, withdrawableShares, tokens, expectedTokens);
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], strategies, shares, tokens, expectedTokens);
         }
     }
     
