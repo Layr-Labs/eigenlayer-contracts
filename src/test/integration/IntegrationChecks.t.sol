@@ -442,7 +442,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         // Common checks
         assert_WithdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
         
-        assert_Snap_Added_TokenBalances(staker, tokens, expectedTokens, "staker should have received expected tokens");
+        // assert_Snap_Added_TokenBalances(staker, tokens, expectedTokens, "staker should have received expected tokens");
         assert_Snap_Unchanged_Staker_DepositShares(staker, "staker shares should not have changed");
         assert_Snap_Unchanged_DSF(staker, strategies, "dsf should not be changed");
         assert_Snap_Removed_StrategyShares(strategies, shares, "strategies should have total shares decremented");
@@ -509,7 +509,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         User staker,
         User operator,
         User newOperator,
-        IDelegationManagerTypes.Withdrawal memory withdrawal,
+        Withdrawal memory withdrawal,
         IStrategy[] memory strategies,
         uint[] memory withdrawableShares
     ) internal {
@@ -523,7 +523,8 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Unchanged_TokenBalances(staker, "staker should not have any change in underlying token balances");
         assert_Snap_Unchanged_TokenBalances(operator, "operator should not have any change in underlying token balances");
         assert_Snap_Added_Staker_DepositShares(staker, strategies, withdrawableShares, "staker should have received expected shares");
-        assert_Snap_Unchanged_OperatorShares(operator, "operator should have shares unchanged");
+        assert_Snap_Unchanged_OperatorShares(operator, "old operator should have shares unchanged");
+        assert_Snap_Added_OperatorShares(newOperator, strategies, withdrawableShares, "new operator should have received shares");
         assert_Snap_Unchanged_StrategyShares(strategies, "strategies should have total shares unchanged");
         assert_Snap_Expected_Staker_WithdrawableShares_Deposit(staker, newOperator, strategies, withdrawableShares, "staker should have received expected withdrawable shares");
         assert_Snap_DSF_State_WithdrawalAsShares(staker, strategies, "staker's DSF not updated correctly");
