@@ -1889,26 +1889,54 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
-    /// @dev Used to assert that the DSF is either increased or unchanged, depending on the slashing factor
-    /// @dev Asserted whenever a user deposits, or completes a withdrawal as shares
-    function assert_Snap_DSF_State(
+    /// @dev Used to assert that the DSF is either increased or unchanged, depending on the slashing factor, on a deposit
+    function assert_Snap_DSF_State_Deposit(
         User staker,
         IStrategy[] memory strategies,
         string memory err
-    ) internal {
+    ) internal {        
         for (uint i = 0; i < strategies.length; i++) {
             /// @dev We don't need the previous slashing factors as they shouldn't change before/after a deposit
             uint curSlashingFactor = _getSlashingFactor(staker, strategies[i]);
 
+            // If there was never a slashing, no need to normalize
             if (curSlashingFactor == WAD) {
                 assert_Snap_Unchanged_DSF(staker, strategies[i].toArray(), err); // No slashing, so DSF is unchanged
-            } else {
+            }
+            // If there was a slashing, and we deposit, normalize
+            else {
                 assert_Snap_Increased_DSF(staker, strategies[i].toArray(), err); // Slashing, so DSF is increased
             }
         }
     }
 
-    /// @dev Same as above, but on delegation you can have a non-zero deposit, so we must pass in the delegatable shares
+    /// @dev When completing withdrawals as shares, the DSF should remain unchanged
+    function assert_Snap_DSF_State_WithdrawalAsShares(
+        User staker,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal {
+        uint[] memory curDepositShares = _getStakerDepositShares(staker, strategies);
+        for (uint i = 0; i < strategies.length; i++) {
+            /// @dev We don't need the previous slashing factors as they shouldn't change before/after a deposit
+            uint curSlashingFactor = _getSlashingFactor(staker, strategies[i]);
+            
+            // If there was never a slashing, no need to normalize
+            if (curSlashingFactor == WAD) {
+                assert_Snap_Unchanged_DSF(staker, strategies[i].toArray(), err);
+            }
+            // If there was a slashing, but we complete a withdrawal for 0 shares, no need to normalize
+            else if (curSlashingFactor != WAD && curDepositShares[i] == 0) {
+                assert_Snap_Unchanged_DSF(staker, strategies[i].toArray(), err);
+            } 
+            // If there was a slashing, and we complete a withdrawal for non-zero shares, normalize
+            else {
+                assert_Snap_Increased_DSF(staker, strategies[i].toArray(), err);
+            }
+        }
+    }
+
+    /// @dev On a delegation, the DSF should be increased if the operator magnitude is non-WAD
     function assert_Snap_DSF_State_Delegation(
         User staker,
         IStrategy[] memory strategies,
@@ -1918,11 +1946,13 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         uint64[] memory maxMags = _getMaxMagnitudes(staker, strategies);
 
         for (uint i = 0; i < strategies.length; i++) {
-            /// @dev Zero delegatable shares or a WAD operator magnitude means the DSF should be unchanged
-            /// @dev Even if the BCSF is non-WAD, the DSF should be unchanged since only a non-WAD operator magnitude can update the DSF here
+            // If there was never a slashing, no need to normalize
+            // If there was a slashing, but delegating with 0 shares, no need to normalize
             if (delegatableShares[i] == 0 || maxMags[i] == WAD) {
                 assert_Snap_Unchanged_DSF(staker, strategies[i].toArray(), err);
-            } else { 
+            }
+            // If there was a slashing, and delegating with non-zero shares, normalize
+            else { 
                 assert_Snap_Increased_DSF(staker, strategies[i].toArray(), err); // Slashing, so DSF is increased
             }
         }

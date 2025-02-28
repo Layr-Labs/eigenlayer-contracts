@@ -208,7 +208,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         } else {
             assert_Snap_Added_Staker_WithdrawableShares(staker, strategies, shares, "deposit should increase withdrawable shares");
         }
-        assert_Snap_DSF_State(staker, strategies, "staker's DSF not updated correctly");
+        assert_Snap_DSF_State_Deposit(staker, strategies, "staker's DSF not updated correctly");
     }
 
     function check_Deposit_State_PartialDeposit(User staker, IStrategy[] memory strategies, uint[] memory shares, uint[] memory tokenBalances) internal {
@@ -227,7 +227,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         } else {
             assert_Snap_Added_Staker_WithdrawableShares(staker, strategies, shares, "deposit should increase withdrawable shares");
         }
-        assert_Snap_DSF_State(staker, strategies, "staker's DSF not updated correctly");
+        assert_Snap_DSF_State_Deposit(staker, strategies, "staker's DSF not updated correctly");
     }
 
     function check_Delegation_State(
@@ -452,7 +452,7 @@ contract IntegrationCheckUtils is IntegrationBase {
             }
             assert_Snap_Added_OperatorShares(operator, strategies, withdrawableShares, "operator should have received shares");
         }
-        assert_Snap_DSF_State(staker, strategies, "staker's DSF not updated correctly");
+        assert_Snap_DSF_State_WithdrawalAsShares(staker, strategies, "staker's DSF not updated correctly");
     }
 
     /// @notice Difference from above is that operator shares do not increase since staker is not delegated
@@ -477,7 +477,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Added_Staker_WithdrawableShares(staker, strategies, expectedWithdrawableShares, "staker should have received expected withdrawable shares");
         assert_Snap_Unchanged_OperatorShares(operator, "operator should have shares unchanged");
         assert_Snap_Unchanged_StrategyShares(strategies, "strategies should have total shares unchanged");
-        assert_Snap_DSF_State(staker, strategies, "staker's DSF not updated correctly");
+        assert_Snap_DSF_State_WithdrawalAsShares(staker, strategies, "staker's DSF not updated correctly");
     }
 
     function check_Withdrawal_AsShares_Redelegated_State(
@@ -501,7 +501,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Unchanged_OperatorShares(operator, "operator should have shares unchanged");
         assert_Snap_Unchanged_StrategyShares(strategies, "strategies should have total shares unchanged");
         assert_Snap_Expected_Staker_WithdrawableShares_Deposit(staker, newOperator, strategies, withdrawableShares, "staker should have received expected withdrawable shares");
-        assert_Snap_DSF_State(staker, strategies, "staker's DSF not updated correctly");
+        assert_Snap_DSF_State_WithdrawalAsShares(staker, strategies, "staker's DSF not updated correctly");
     }
 
     /*******************************************************************************
