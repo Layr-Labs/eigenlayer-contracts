@@ -48,7 +48,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         // 3. Undelegate from an operator
         Withdrawal[] memory withdrawals = staker.undelegate();
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
-        check_Undelegate_State(staker, operator1, withdrawals, withdrawalRoots, strategies, shares, delegatableShares);
+        check_Undelegate_State(staker, operator1, withdrawals, withdrawalRoots, strategies, delegatableShares);
 
         // 4. Complete withdrawal as shares
         // Fast forward to when we can complete the withdrawal
@@ -114,7 +114,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         // 3. Undelegate from an operator
         Withdrawal[] memory withdrawals = staker.undelegate();
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
-        check_Undelegate_State(staker, operator1, withdrawals, withdrawalRoots, strategies, shares, delegatableShares);
+        check_Undelegate_State(staker, operator1, withdrawals, withdrawalRoots, strategies, delegatableShares);
 
         // 4. Complete withdrawal as shares
         // Fast forward to when we can complete the withdrawal
@@ -205,7 +205,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
             // 3. Undelegate from an operator
             Withdrawal[] memory withdrawals = staker.undelegate();
             bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
-            check_Undelegate_State(staker, operator1, withdrawals, withdrawalRoots, strategies, halfShares, delegatableShares);
+            check_Undelegate_State(staker, operator1, withdrawals, withdrawalRoots, strategies, delegatableShares);
 
             // 4. Complete withdrawal as shares
             // Fast forward to when we can complete the withdrawal
@@ -293,7 +293,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
                 // 3. Undelegate from an operator
                 Withdrawal[] memory withdrawals = staker.undelegate();
                 bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
-                check_Undelegate_State(staker, operator1, withdrawals, withdrawalRoots, strategies, sharesFromFirstDeposit, delegatableShares);
+                check_Undelegate_State(staker, operator1, withdrawals, withdrawalRoots, strategies, delegatableShares);
 
                 // 4. Complete withdrawal as shares
                 // Fast forward to when we can complete the withdrawal
@@ -369,7 +369,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         // 3. Undelegate from an operator
         Withdrawal[] memory withdrawals = staker.undelegate();
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
-        check_Undelegate_State(staker, operator1, withdrawals, withdrawalRoots, strategies, shares, delegatableShares);
+        check_Undelegate_State(staker, operator1, withdrawals, withdrawalRoots, strategies, delegatableShares);
 
         // 4. Complete withdrawal as tokens
         // Fast forward to when we can complete the withdrawal
@@ -439,7 +439,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         // 3. Undelegate from an operator
         Withdrawal[] memory withdrawals = staker.undelegate();
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
-        check_Undelegate_State(staker, operator1, withdrawals, withdrawalRoots, strategies, shares, delegatableShares);
+        check_Undelegate_State(staker, operator1, withdrawals, withdrawalRoots, strategies, delegatableShares);
 
         // 4. Complete withdrawal as Tokens
         // Fast forward to when we can complete the withdrawal

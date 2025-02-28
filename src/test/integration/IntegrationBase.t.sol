@@ -236,6 +236,31 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
+    /// @dev Check that all the staker's deposit shares have been removed
+    function assert_RemovedAll_Staker_DepositShares(
+        User user,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal view {
+        uint[] memory depositShares = _getStakerDepositShares(user, strategies);
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(depositShares[i], 0, err);
+        }
+    }
+
+    /// @dev Check that all the staker's withdrawable shares have been removed
+    function assert_RemovedAll_Staker_WithdrawableShares(
+        User staker, 
+        IStrategy[] memory strategies, 
+        string memory err
+    ) internal view {
+        uint[] memory curShares = _getStakerWithdrawableShares(staker, strategies);
+        // For each strategy, check all shares have been withdrawn
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(0, curShares[i], err);
+        }
+    }
+
     function assert_HasOperatorShares(
         User user, 
         IStrategy[] memory strategies, 
@@ -1514,20 +1539,6 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         // For each strategy, check (prev - removed == cur)
         for (uint i = 0; i < strategies.length; i++) {
             assertEq(prevShares[i] - removedShares[i], curShares[i], err);
-        }
-    }
-
-    /// @dev Check that all the staker's withdrawable shares have been removed
-    /// TODO - this is not a snap assertion, investigate usage
-    function assert_Snap_RemovedAll_Staker_WithdrawableShares(
-        User staker, 
-        IStrategy[] memory strategies, 
-        string memory err
-    ) internal view {
-        uint[] memory curShares = _getStakerWithdrawableShares(staker, strategies);
-        // For each strategy, check all shares have been withdrawn
-        for (uint i = 0; i < strategies.length; i++) {
-            assertEq(0, curShares[i], err);
         }
     }
 
