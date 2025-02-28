@@ -152,7 +152,7 @@ contract Integration_SlashThenWithdraw is Integration_ALMSlashBase {
         uint[] memory shares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.undelegate();
         bytes32[] memory roots = _getWithdrawalHashes(withdrawals);
-        check_Undelegate_State(staker, operator, withdrawals, roots, strategies, initDepositShares, shares);
+        check_Undelegate_State(staker, operator, withdrawals, roots, strategies, shares);
 
         _rollBlocksForCompleteWithdrawals(withdrawals);
 
@@ -169,7 +169,7 @@ contract Integration_SlashThenWithdraw is Integration_ALMSlashBase {
         uint[] memory shares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.redelegate(operatorB);
         bytes32[] memory roots = _getWithdrawalHashes(withdrawals);
-        check_Redelegate_State(staker, operator, operatorB, withdrawals, roots, strategies, initDepositShares, shares);
+        check_Redelegate_State(staker, operator, operatorB, withdrawals, roots, strategies, shares);
 
         _rollBlocksForCompleteWithdrawals(withdrawals);
 
@@ -204,7 +204,7 @@ contract Integration_SlashThenWithdraw is Integration_ALMSlashBase {
         uint[] memory shares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.undelegate();
         bytes32[] memory roots = _getWithdrawalHashes(withdrawals);
-        check_Undelegate_State(staker, operator, withdrawals, roots, strategies, initDepositShares, shares);
+        check_Undelegate_State(staker, operator, withdrawals, roots, strategies, shares);
 
         _rollBlocksForCompleteWithdrawals(withdrawals);
 
@@ -220,7 +220,7 @@ contract Integration_SlashThenWithdraw is Integration_ALMSlashBase {
         uint[] memory shares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.redelegate(operatorB);
         bytes32[] memory roots = _getWithdrawalHashes(withdrawals);
-        check_Redelegate_State(staker, operator, operatorB, withdrawals, roots, strategies, initDepositShares, shares);
+        check_Redelegate_State(staker, operator, operatorB, withdrawals, roots, strategies, shares);
 
         _rollBlocksForCompleteWithdrawals(withdrawals);
 
