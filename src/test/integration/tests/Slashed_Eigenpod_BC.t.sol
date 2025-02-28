@@ -22,22 +22,20 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         (staker, strategies, initTokenBalances) = _newRandomStaker();
         (operator,,) = _newRandomOperator();
         (avs,) = _newRandomAVS();
-
         cheats.assume(initTokenBalances[0] >= 64 ether);
 
-        //Slash on Beacon chain
-        (uint40[] memory validators,) = staker.startValidators();
-        beaconChain.advanceEpoch_NoRewards();
-        staker.verifyWithdrawalCredentials(validators);
-
+        // Deposit staker
         uint[] memory shares = _calculateExpectedShares(strategies, initTokenBalances);
+        staker.depositIntoEigenlayer(strategies, initTokenBalances);
         check_Deposit_State(staker, strategies, shares);
+        uint40[] memory validators = staker.getActiveValidators();
 
+        //Slash on Beacon chain
         uint40[] memory slashedValidators = _choose(validators);
         slashedGwei = beaconChain.slashValidators(slashedValidators, BeaconChainMock.SlashType.Minor);
-        console.log(slashedGwei);
         beaconChain.advanceEpoch_NoWithdrawNoRewards();
         
+        // Checkpoint post slash
         staker.startCheckpoint();
         staker.completeCheckpoint();
         check_CompleteCheckpoint_WithSlashing_HandleRoundDown_State(staker, slashedValidators, slashedGwei);
@@ -84,17 +82,12 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
     }
 
     function testFuzz_delegateSlashedStaker_dsfNonWad(uint24 _random) public rand(_random) {
-
         //Additional deposit on beacon chain so dsf is nonwad
         uint amount = 32 ether * _randUint({min: 1, max: 5});
         cheats.deal(address(staker), amount);
         (uint40[] memory validators,) = staker.startValidators();
         beaconChain.advanceEpoch_NoWithdrawNoRewards();
         staker.verifyWithdrawalCredentials(validators);
-        
-        staker.startCheckpoint();
-        staker.completeCheckpoint();
-
 
         uint256[] memory initDelegatableShares = _getWithdrawableShares(staker, strategies);
         uint256[] memory initDepositShares = _getStakerDepositShares(staker, strategies);
@@ -211,10 +204,6 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         (uint40[] memory validators,) = staker.startValidators();
         beaconChain.advanceEpoch_NoWithdrawNoRewards();
         staker.verifyWithdrawalCredentials(validators);
-        
-        staker.startCheckpoint();
-        staker.completeCheckpoint();
-
 
         uint256[] memory initDepositShares = _getStakerDepositShares(staker, strategies);
 
@@ -260,9 +249,6 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         (uint40[] memory validators,) = staker.startValidators();
         beaconChain.advanceEpoch_NoWithdrawNoRewards();
         staker.verifyWithdrawalCredentials(validators);
-        
-        staker.startCheckpoint();
-        staker.completeCheckpoint();
 
         uint256[] memory initDepositShares = _getStakerDepositShares(staker, strategies);
 
@@ -303,5 +289,21 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         assertEq(depositSharesAfter[0], delegatedShares[0], "Deposit shares should reset to reflect slash(es)");
         assertApproxEqAbs(withdrawableSharesAfter[0], depositSharesAfter[0], 100, "Withdrawable shares should equal deposit shares after withdrawal");
     }
+
+    function testFuzz_redeposit_queue_completeAsTokens(uint24 _random) public rand(_random){
+        // Prove an additional validator
+        uint amount = 32 ether * _randUint({min: 1, max: 5});
+        cheats.deal(address(staker), amount);
+        (uint40[] memory validators, uint64 addedBeaconBalanceGwei) = staker.startValidators();
+        beaconChain.advanceEpoch_NoWithdrawNoRewards();
+        staker.verifyWithdrawalCredentials(validators);
+        check_VerifyWC_State(staker, validators, addedBeaconBalanceGwei);
+    }
+
+    function testFuzz_redeposit_queue_completeAsShares(uint24 _random) public rand(_random){}
+
+    function testFuzz_verifyValidator_queue_completeAsTokens(uint24 _random) public rand(_random){}
+
+    function testFuzz_verifyValidator_queue_completeAsShares(uint24 _random) public rand(_random){}
     
 }

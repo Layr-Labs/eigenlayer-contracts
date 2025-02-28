@@ -1745,6 +1745,9 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
 
         // For each strategy, check (prev - removed == cur)
         for (uint i = 0; i < strategies.length; i++) {
+            console.log("prevShares[i]", prevShares[i]);
+            console.log("addedShares[i]", addedShares[i]);
+            console.log("curShares[i]", curShares[i]);
             assertEq(prevShares[i] + addedShares[i], curShares[i], err);
         }
     }
