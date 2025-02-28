@@ -30,10 +30,10 @@ jobs:
           PR_TITLE=$(jq -r '.pull_request.title' "$GITHUB_EVENT_PATH")
           echo "PR title: $PR_TITLE"
 
-          # Define the valid pattern (supports both with and without parentheses)
-          if [[ ! "$PR_TITLE" =~ ^(feat|fix|chore|docs|refactor|test|style|ci|perf)(\(\))?\:\ .* ]]; then
+          # Define the valid pattern (supports conventional commit format)
+          if [[ ! "$PR_TITLE" =~ ^(feat|fix|chore|docs|refactor|test|style|ci|perf)(\([a-z0-9-]+\))?\:\ .* ]]; then
             echo "❌ Invalid PR title: '$PR_TITLE'"
-            echo "Expected format: 'type: description' or 'type(): description'"
+            echo "Expected format: 'type: description' or 'type(scope): description'"
             echo "Allowed types: feat, fix, chore, docs, refactor, test, style, ci, perf."
             exit 1
           fi
