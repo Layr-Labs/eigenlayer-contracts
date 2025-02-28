@@ -198,8 +198,10 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         // Complete withdrawal
         _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint i = 0; i < withdrawals.length; i++) {
+            uint[] memory expectedShares = _calculateExpectedShares(withdrawals[i]);
+            uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, expectedShares);
             staker.completeWithdrawalAsTokens(withdrawals[i]);
-            // How to handle slashed withdrawal via undelegating?
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], withdrawals[i].strategies, expectedShares, tokens, expectedTokens);
         }
     }
 
