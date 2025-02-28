@@ -43,9 +43,8 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
             numTokensRemaining[i] = initTokenBalances[i] - tokensToDeposit[i];
         }
 
-        initDepositShares = _calculateExpectedShares(strategies, tokensToDeposit);
-
         // 1. Deposit Into Strategies
+        initDepositShares = _calculateExpectedShares(strategies, tokensToDeposit);
         staker.depositIntoEigenlayer(strategies, tokensToDeposit);
         check_Deposit_State_PartialDeposit(staker, strategies, initDepositShares, numTokensRemaining);
 
@@ -151,11 +150,15 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         staker.depositIntoEigenlayer(strategies, numTokensRemaining);
         check_Deposit_State(staker, strategies, depositShares);
 
+        for (uint i = 0; i < depositShares.length; i++) {
+            initDepositShares[i] += depositShares[i];
+        }
+
         // Queue withdrawal
         uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
-        Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, depositShares);
+        Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, initDepositShares);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
-        check_QueuedWithdrawal_State(staker, operator, strategies, depositShares, withdrawableShares, withdrawals, withdrawalRoots);
+        check_QueuedWithdrawal_State(staker, operator, strategies, initDepositShares, withdrawableShares, withdrawals, withdrawalRoots);
 
         // Complete withdrawal
         _rollBlocksForCompleteWithdrawals(withdrawals);
