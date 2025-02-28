@@ -178,7 +178,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         for (uint i = 0; i < withdrawals.length; i++) {
             uint[] memory expectedShares = _calculateExpectedShares(withdrawals[i]);
             uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, expectedShares);
-            IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
+            staker.completeWithdrawalAsTokens(withdrawals[i]);
             check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], withdrawals[i].strategies, expectedShares, tokens, expectedTokens);
         }
     }
@@ -225,7 +225,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         for (uint i = 0; i < withdrawals.length; i++) {
             uint[] memory expectedShares = _calculateExpectedShares(withdrawals[i]);
             uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, expectedShares);
-            IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
+            staker.completeWithdrawalAsTokens(withdrawals[i]);
             check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], withdrawals[i].strategies, expectedShares, tokens, expectedTokens);
         }
     }
@@ -251,7 +251,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         for (uint i = 0; i < withdrawals.length; i++) {
             uint[] memory expectedShares = _calculateExpectedShares(withdrawals[i]);
             uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, expectedShares);
-            IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
+            staker.completeWithdrawalAsTokens(withdrawals[i]);
             check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], withdrawals[i].strategies, expectedShares, tokens, expectedTokens);
         }
     }
@@ -284,7 +284,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         for (uint i = 0; i < withdrawals.length; i++) {
             uint[] memory expectedShares = _calculateExpectedShares(withdrawals[i]);
             uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, expectedShares);
-            IERC20[] memory tokens = zeroSharesStaker.completeWithdrawalAsTokens(withdrawals[i]);
+            zeroSharesStaker.completeWithdrawalAsTokens(withdrawals[i]);
             check_Withdrawal_AsTokens_State(zeroSharesStaker, operator, withdrawals[i], withdrawals[i].strategies, expectedShares, tokens, expectedTokens);
         }
     }

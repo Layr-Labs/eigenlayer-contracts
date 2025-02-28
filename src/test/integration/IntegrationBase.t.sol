@@ -566,7 +566,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     function assert_BCSF_Zero(
         User staker,
         string memory err
-    ) internal {
+    ) internal view {
         uint64 curBCSF = _getBeaconChainSlashingFactor(staker);
         assertEq(curBCSF, 0, err);
     }
@@ -2927,7 +2927,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
-    function _getExpectedWithdrawableSharesUndelegate(User staker, IStrategy[] memory strategies, uint[] memory shares) internal returns (uint[] memory){
+    function _getExpectedWithdrawableSharesUndelegate(User staker, IStrategy[] memory strategies, uint[] memory shares) internal view returns (uint[] memory){
         uint[] memory expectedWithdrawableShares = new uint[](strategies.length);
         for (uint i = 0; i < strategies.length; i++) {
             if (strategies[i] == BEACONCHAIN_ETH_STRAT) {
@@ -2963,7 +2963,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         return expectedWithdrawableShares;
     }
 
-    function _getExpectedWithdrawableSharesFullWithdrawal(User staker, User operator, IStrategy strategy, uint depositShares) internal returns (uint) {
+    function _getExpectedWithdrawableSharesFullWithdrawal(User staker, User operator, IStrategy strategy, uint depositShares) internal view returns (uint) {
         return depositShares.mulWad(_getExpectedDSFFullWithdrawal(staker, operator, strategy)).mulWad(_getSlashingFactor(staker, strategy));
     }
 
