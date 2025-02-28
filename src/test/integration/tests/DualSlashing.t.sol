@@ -106,7 +106,7 @@ contract Integration_DualSlashing_Base_AVSFirst is Integration_DualSlashing_Base
         staker.startCheckpoint();
         check_StartCheckpoint_WithPodBalance_State(staker, beaconBalanceGwei - slashedAmountGwei);
         staker.completeCheckpoint();
-        check_CompleteCheckPoint_AfterAVS_BCSlash(staker, validators, initDepositShares[0], slashedAmountGwei, allocateParams, slashingParams);
+        check_CompleteCheckpoint_AfterAVSSlash_BCSlash(staker, validators, initDepositShares[0], slashedAmountGwei, allocateParams, slashingParams);
     }
 
     /// @notice Because the validator is proven prior to the BC slash, the system applies the new balance 
@@ -164,7 +164,7 @@ contract Integration_DualSlashing_Base_AVSFirst is Integration_DualSlashing_Base
         staker.startCheckpoint();
         check_StartCheckpoint_WithPodBalance_State(staker, beaconBalanceGwei - slashedAmountGwei);
         staker.completeCheckpoint();
-        check_CompleteCheckPoint_AfterAVS_BCSlash(staker, validators, initDepositShares[0], slashedAmountGwei, allocateParams, slashingParams);
+        check_CompleteCheckpoint_AfterAVSSlash_BCSlash(staker, validators, initDepositShares[0], slashedAmountGwei, allocateParams, slashingParams);
 
         // 9. Verify Validator
         cheats.deal(address(staker), 32 ether);
@@ -207,7 +207,7 @@ contract Integration_DualSlashing_Base_AVSFirst is Integration_DualSlashing_Base
         staker.startCheckpoint();
         check_StartCheckpoint_WithPodBalance_State(staker, beaconBalanceGwei - slashedAmountGwei);
         staker.completeCheckpoint();
-        check_CompleteCheckPoint_AfterAVS_BCSlash(staker, validators, initDepositShares[0], slashedAmountGwei, allocateParams, slashingParams);
+        check_CompleteCheckpoint_AfterAVSSlash_BCSlash(staker, validators, initDepositShares[0], slashedAmountGwei, allocateParams, slashingParams);
 
         // 9. Send 32 ETH to pod, some random amount of ETH, greater than the amount slashed
         uint ethToDeposit = 32 ether;

@@ -1012,7 +1012,7 @@ contract IntegrationCheckUtils is IntegrationBase {
                                  BC/AVS SLASHING CHECKS
     *******************************************************************************/
 
-    function check_CompleteCheckPoint_AfterAVS_BCSlash(
+    function check_CompleteCheckpoint_AfterAVSSlash_BCSlash(
         User staker,
         uint40[] memory slashedValidators,
         uint256 depositShares,
