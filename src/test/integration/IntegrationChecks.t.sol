@@ -8,8 +8,7 @@ import "src/test/integration/users/User_M2.t.sol";
 
 /// @notice Contract that provides utility functions to reuse common test blocks & checks
 contract IntegrationCheckUtils is IntegrationBase {
-    using ArrayLib for IStrategy[];
-    using ArrayLib for IStrategy;
+    using ArrayLib for *;
     using SlashingLib for *;
     using StdStyle for *;
 
@@ -993,5 +992,64 @@ contract IntegrationCheckUtils is IntegrationBase {
 
         assert_Snap_Removed_AllocatedSet(operator, allocateParams.operatorSet, "should not have updated allocated sets");
         assert_Snap_Removed_AllocatedStrats(operator, allocateParams.operatorSet, slashParams.strategies, "should not have updated allocated strategies");
+    }
+
+    /*******************************************************************************
+                                 BC/AVS SLASHING CHECKS
+    *******************************************************************************/
+
+    function check_CompleteCheckpoint_AfterAVSSlash_BCSlash(
+        User staker,
+        uint40[] memory slashedValidators,
+        uint256 depositShares,
+        uint64 slashedBalanceGwei,
+        AllocateParams memory allocateParams,
+        SlashingParams memory slashingParams
+    ) internal {
+        // Checkpoint State
+        check_CompleteCheckpoint_State(staker);
+        assert_Snap_Unchanged_Staker_DepositShares(staker, "staker shares should not have decreased");
+        assert_Snap_Removed_ActiveValidatorCount(staker, slashedValidators.length, "should have decreased active validator count");
+        assert_Snap_Removed_ActiveValidators(staker, slashedValidators, "exited validators should each be WITHDRAWN");
+
+        // From the original shares to the BC slash, the shares should have decreased by at least the BC slash amount
+        assert_withdrawableSharesDecreasedByAtLeast(staker, BEACONCHAIN_ETH_STRAT, depositShares, uint256(slashedBalanceGwei * GWEI_TO_WEI), "should have decreased withdrawable shares by at least the BC slash amount");
+
+        // Calculate the withdrawable shares
+        assert_Snap_StakerWithdrawableShares_AfterAVSSlash_BCSlash(staker, allocateParams, slashingParams, "should have decreased withdrawable shares correctly");
+    }
+
+    function check_CompleteCheckpoint_AfterAVSSlash_ValidatorProven_BCSlash(
+        User staker,
+        uint40[] memory slashedValidators,
+        uint256 originalWithdrawableShares,
+        uint256 extraValidatorShares,
+        AllocateParams memory allocateParams,
+        SlashingParams memory slashingParams
+    ) internal {
+        // Checkpoint State
+        check_CompleteCheckpoint_State(staker);
+        assert_Snap_Unchanged_Staker_DepositShares(staker, "staker shares should not have decreased");
+        assert_Snap_Removed_ActiveValidatorCount(staker, slashedValidators.length, "should have decreased active validator count");
+        assert_Snap_Removed_ActiveValidators(staker, slashedValidators, "exited validators should each be WITHDRAWN");
+
+        assert_Snap_StakerWithdrawableShares_AVSSlash_ValidatorProven_BCSlash(staker, originalWithdrawableShares, extraValidatorShares, allocateParams, slashingParams, "should have decreased withdrawable shares correctly");
+    }
+
+    /// @dev Assumes the eth deposit was greater than the amount slashed
+    function check_CompleteCheckpoint_AfterAVSSlash_ETHDeposit_BCSlash(
+        User staker,
+        uint40[] memory slashedValidators,
+        uint64 slashedBalanceGwei,
+        uint256 beaconSharesAddedGwei
+    ) internal {
+        uint sharesAdded = uint(beaconSharesAddedGwei - slashedBalanceGwei) * GWEI_TO_WEI;
+        // Checkpoint State
+        check_CompleteCheckpoint_State(staker); 
+        assert_Snap_Added_Staker_DepositShares(staker, BEACONCHAIN_ETH_STRAT, sharesAdded, "staker deposit shares should have increased");
+        assert_Snap_Removed_ActiveValidatorCount(staker, slashedValidators.length, "should have decreased active validator count");
+        assert_Snap_Removed_ActiveValidators(staker, slashedValidators, "exited validators should each be WITHDRAWN");
+
+        assert_Snap_Added_Staker_WithdrawableShares_AtLeast(staker, BEACONCHAIN_ETH_STRAT.toArray(), sharesAdded.toArrayU256(), "staker withdrawable shares should increase by diff of deposit and slash");
     }
 }

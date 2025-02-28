@@ -328,6 +328,8 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         string memory err
     ) internal view {
         EigenPod pod = staker.pod();
+        console.log("proofsRemaining: ", pod.currentCheckpoint().proofsRemaining);
+        console.log("activeValidatorCount: ", pod.activeValidatorCount());
         assertEq(pod.currentCheckpoint().proofsRemaining, pod.activeValidatorCount(), err);
     }
 
@@ -586,6 +588,28 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     ) internal view {
         uint curActiveValidatorCount = _getActiveValidatorCount(staker);
         assertEq(curActiveValidatorCount, expectedCount, err);
+    }
+    function assert_withdrawableSharesDecreasedByAtLeast(
+        User staker,
+        IStrategy[] memory strategies,
+        uint256[] memory originalShares,
+        uint256[] memory expectedDecreases,
+        string memory err
+    ) internal view {
+        for (uint i = 0; i < strategies.length; i++) {
+            assert_withdrawableSharesDecreasedByAtLeast(staker, strategies[i], originalShares[i], expectedDecreases[i], err);
+        }
+    }
+
+    function assert_withdrawableSharesDecreasedByAtLeast(
+        User staker,
+        IStrategy strategy,
+        uint256 originalShares,
+        uint256 expectedDecrease,
+        string memory err
+    ) internal view {
+        uint currentShares = _getWithdrawableShares(staker, strategy);
+        assertLt(currentShares, originalShares - expectedDecrease, err);
     }
     
     /*******************************************************************************
@@ -1307,6 +1331,120 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
+    /*******************************************************************************
+                    SNAPSHOT ASSERTIONS: BEACON CHAIN AND AVS SLASHING
+    *******************************************************************************/
+    
+    /// @dev Same as `assert_Snap_StakerWithdrawableShares_AfterSlash`
+    /// @dev but when a BC slash occurs before an AVS slash
+    /// @dev There is additional rounding error when a BC and AVS slash occur together
+    function assert_Snap_StakerWithdrawableShares_AfterBCSlash_AVSSlash(
+        User staker,
+        AllocateParams memory allocateParams,
+        SlashingParams memory slashingParams,
+        string memory err
+    ) internal {
+        require(allocateParams.strategies.length == 1 && slashingParams.strategies.length == 1, "only beacon strategy supported");
+        require(allocateParams.strategies[0] == BEACONCHAIN_ETH_STRAT, "only beacon strategy supported");
+        require(slashingParams.strategies[0] == BEACONCHAIN_ETH_STRAT, "only beacon strategy supported");
+
+        uint curShares = _getWithdrawableShares(staker, allocateParams.strategies)[0];
+        uint prevShares = _getPrevWithdrawableShares(staker, allocateParams.strategies)[0];
+
+        uint256 slashedShares = 0;
+
+        uint wadToSlash = slashingParams.wadsToSlash[0];
+        slashedShares = prevShares.mulWadRoundUp(allocateParams.newMagnitudes[0].mulWadRoundUp(wadToSlash));
+
+        assertEq(prevShares - slashedShares, curShares, err);
+    }
+
+    /// @dev Validates behavior of "restaking", ie. that the funds can be slashed twice
+    function assert_Snap_StakerWithdrawableShares_AfterAVSSlash_BCSlash(
+        User staker,
+        AllocateParams memory allocateParams,
+        SlashingParams memory slashingParams,
+        string memory err
+    ) internal {
+        require(allocateParams.strategies.length == 1  && slashingParams.strategies.length == 1, "only beacon strategy supported");
+        require(allocateParams.strategies[0] == BEACONCHAIN_ETH_STRAT, "only beacon strategy supported");
+        require(slashingParams.strategies[0] == BEACONCHAIN_ETH_STRAT, "only beacon strategy supported");
+
+        uint curShares = _getWithdrawableShares(staker, allocateParams.strategies)[0];
+        uint prevShares = _getPrevWithdrawableShares(staker, allocateParams.strategies)[0];
+        uint depositShares = _getStakerDepositShares(staker, allocateParams.strategies)[0];
+
+        // 1. The withdrawable shares should decrease by a factor of the BCSF
+        assertEq(prevShares.mulWad(_getBeaconChainSlashingFactor(staker)), curShares, err);
+
+        /**
+         * 2. The delta in shares is given by:
+         * (depositShares * operatorMag) - (depositShares * operatorMag * BCSF)
+         *  = depositShares * operatorMag * (1 - BCSF)
+         */
+        uint beaconChainSlashingFactor = _getBeaconChainSlashingFactor(staker);
+        uint wadToSlash = slashingParams.wadsToSlash[0];
+        uint originalAVSSlashedShares = depositShares.mulWadRoundUp(allocateParams.newMagnitudes[0].mulWadRoundUp(wadToSlash));
+        uint withdrawableSharesAfterAVSSlash = depositShares - originalAVSSlashedShares;
+        uint expectedDelta = withdrawableSharesAfterAVSSlash.mulWad(WAD - beaconChainSlashingFactor);
+        assertEq(prevShares - expectedDelta, curShares, err);
+
+        /**
+         * 3. The attributable avs slashed shares should decrease by a factor of the BCSF
+         * Attributable avs slashed shares = originalWithdrawableShares - bcSlashedShares - curShares
+         * Where bcSlashedShares = originalWithdrawableShares * (1 - BCSF)
+         */
+        uint bcSlashedShares = depositShares.mulWad(WAD - beaconChainSlashingFactor);
+        uint attributableAVSSlashedShares = depositShares - bcSlashedShares - curShares;
+        assertEq(originalAVSSlashedShares.mulWad(beaconChainSlashingFactor), attributableAVSSlashedShares, err);
+    }
+
+    /**
+     * @dev Validates behavior of "restaking", ie. that the funds can be slashed twice. Also validates
+     *      the edge case where a validator is proven prior to the BC slash.
+     * @dev These bounds are based off of rounding when avs and bc slashing occur together
+     */
+    function assert_Snap_StakerWithdrawableShares_AVSSlash_ValidatorProven_BCSlash(
+        User staker,
+        uint256 originalWithdrawableShares,
+        uint256 extraValidatorShares,
+        AllocateParams memory allocateParams,
+        SlashingParams memory slashingParams,
+        string memory err
+    ) internal {
+        require(allocateParams.strategies.length == 1  && slashingParams.strategies.length == 1, "only beacon strategy supported");
+        require(allocateParams.strategies[0] == BEACONCHAIN_ETH_STRAT, "only beacon strategy supported");
+        require(slashingParams.strategies[0] == BEACONCHAIN_ETH_STRAT, "only beacon strategy supported");
+
+        uint curShares = _getWithdrawableShares(staker, allocateParams.strategies)[0];
+        uint prevShares = _getPrevWithdrawableShares(staker, allocateParams.strategies)[0];
+
+        // 1. The withdrawable shares should decrease by a factor of the BCSF
+        assertApproxEqAbs(prevShares.mulWad(_getBeaconChainSlashingFactor(staker)), curShares, 1e5, err);
+
+        /**
+         * 2. The delta in shares is given by:
+         * (originalWithdrawableShares * operatorMag) + extraValidatorShares - (depositShares * operatorMag * BCSF * dsf)
+         */
+        uint beaconChainSlashingFactor = _getBeaconChainSlashingFactor(staker);
+        uint wadToSlash = slashingParams.wadsToSlash[0];
+        uint originalAVSSlashedShares = originalWithdrawableShares.mulWadRoundUp(allocateParams.newMagnitudes[0].mulWadRoundUp(wadToSlash));
+        uint withdrawableSharesAfterValidatorProven = originalWithdrawableShares - originalAVSSlashedShares + extraValidatorShares;
+        uint expectedDelta = withdrawableSharesAfterValidatorProven.mulWad(WAD - beaconChainSlashingFactor);
+        assertApproxEqAbs(prevShares - expectedDelta, curShares, 1e5, err);
+
+        /**
+         * 3. The attributable avs slashed shares should decrease by a factor of the BCSF
+         * Attributable avs slashed shares = depositShares - bcSlashedShares - curShars
+         * Where bcSlashedShares = depositShares * (1 - BCSF)
+         */
+        uint depositShares = _getStakerDepositShares(staker, allocateParams.strategies)[0];
+        uint bcSlashedShares = depositShares.mulWad(WAD - beaconChainSlashingFactor);
+        uint attributableAVSSlashedShares = depositShares - bcSlashedShares - curShares;
+        assertApproxEqAbs(originalAVSSlashedShares.mulWad(beaconChainSlashingFactor), attributableAVSSlashedShares, 1e5, err);
+    }
+
+
     // TODO: slashable stake
 
     /*******************************************************************************
@@ -1525,6 +1663,24 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
+    /// @dev This is currently used by dual slashing tests
+    /// TODO: potentially bound better
+    function assert_Snap_Added_Staker_WithdrawableShares_AtLeast(
+        User staker,
+        IStrategy[] memory strategies,
+        uint[] memory addedShares,
+        string memory err
+    ) internal {
+        uint[] memory curShares = _getStakerWithdrawableShares(staker, strategies);
+        // Use timewarp to get previous staker shares
+        uint[] memory prevShares = _getPrevStakerWithdrawableShares(staker, strategies);
+
+        // For each strategy, check (prev - removed == cur)
+        for (uint i = 0; i < strategies.length; i++) {
+            assertApproxEqAbs(prevShares[i] + addedShares[i], curShares[i], 1e3, err);
+        }
+    }
+
     /// @dev Check that the staker's withdrawable shares have decreased by `removedShares`
     function assert_Snap_Removed_Staker_WithdrawableShares(
         User staker, 
@@ -1608,6 +1764,25 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
+    /// @dev Check that the staker's withdrawable shares have decreased by at least `removedShares`
+    /// @dev Used to handle overslashing of beacon chain with AVS slashings
+    function assert_Snap_Removed_Staker_WithdrawableShares_AtLeast(
+        User staker,
+        IStrategy[] memory strategies,
+        uint[] memory removedShares,
+        uint errBound,
+        string memory err
+    ) internal {
+        uint[] memory curShares = _getStakerWithdrawableShares(staker, strategies);
+        // Use timewarp to get previous staker shares
+        uint[] memory prevShares = _getPrevStakerWithdrawableShares(staker, strategies);
+
+        // For each strategy, check diff between (prev-removed) and curr is at most 1 gwei
+        for (uint i = 0; i < strategies.length; i++) {
+            assertApproxEqAbs(prevShares[i] - removedShares[i], curShares[i], errBound, err);
+        }
+    }
+
     function assert_Snap_Removed_Staker_WithdrawableShares_AtLeast(
         User staker,
         IStrategy strat,
@@ -1615,6 +1790,16 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         string memory err
     ) internal {
         assert_Snap_Removed_Staker_WithdrawableShares_AtLeast(staker, strat.toArray(), removedShares.toArrayU256(), err);
+    }
+
+    function assert_Snap_Removed_Staker_WithdrawableShares_AtLeast(
+        User staker,
+        IStrategy strat,
+        uint removedShares,
+        uint errBound,
+        string memory err
+    ) internal {
+        assert_Snap_Removed_Staker_WithdrawableShares_AtLeast(staker, strat.toArray(), removedShares.toArrayU256(), errBound, err);
     }
 
     function assert_Snap_Delta_StakerShares(
@@ -2989,6 +3174,11 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
 
     function _getWithdrawableShares(User staker, IStrategy[] memory strategies) internal view returns (uint[] memory withdrawableShares) {
         (withdrawableShares, ) =  delegationManager.getWithdrawableShares(address(staker), strategies);
+    }
+
+    function _getWithdrawableShares(User staker, IStrategy strategy) internal view returns (uint withdrawableShares) {
+        (uint[] memory _withdrawableShares, ) =  delegationManager.getWithdrawableShares(address(staker), strategy.toArray());
+        return _withdrawableShares[0];
     }
 
     function _getActiveValidatorCount(User staker) internal view returns (uint) {
