@@ -1309,6 +1309,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     /*******************************************************************************
                     SNAPSHOT ASSERTIONS: BEACON CHAIN AND AVS SLASHING
     *******************************************************************************/
+    
     /// @dev Same as `assert_Snap_StakerWithdrawableShares_AfterSlash`
     /// @dev but when a BC slash occurs before an AVS slash
     /// @dev There is additional rounding error when a BC and AVS slash occur together
