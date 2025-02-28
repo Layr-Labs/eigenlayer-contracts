@@ -31,10 +31,10 @@ jobs:
           echo "PR title: $PR_TITLE"
 
           # Define the valid pattern (customize as needed)
-          if [[ ! "$PR_TITLE" =~ ^(feat|fix|chore|docs|refactor|test|style|ci):\ .* ]]; then
+          if [[ ! "$PR_TITLE" =~ ^(feat|fix|chore|docs|refactor|test|style|ci|perf):\ .* ]]; then
             echo "❌ Invalid PR title: '$PR_TITLE'"
             echo "Expected format: 'type: description'"
-            echo "Allowed types: feat, fix, chore, docs, refactor, test, style, ci."
+            echo "Allowed types: feat, fix, chore, docs, refactor, test, style, ci, perf."
             exit 1
           fi
 
