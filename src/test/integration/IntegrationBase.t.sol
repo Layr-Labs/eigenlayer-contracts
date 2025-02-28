@@ -1910,7 +1910,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
-    /// @dev When completing withdrawals as shares, the DSF should remain unchanged
+    /// @dev When completing withdrawals as shares, we must also handle the case where a staker completes a withdrawal for 0 shares
     function assert_Snap_DSF_State_WithdrawalAsShares(
         User staker,
         IStrategy[] memory strategies,
@@ -1918,17 +1918,14 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     ) internal {
         uint[] memory curDepositShares = _getStakerDepositShares(staker, strategies);
         for (uint i = 0; i < strategies.length; i++) {
-            /// @dev We don't need the previous slashing factors as they shouldn't change before/after a deposit
+            /// We don't need the previous slashing factors as they shouldn't change before/after a deposit
             uint curSlashingFactor = _getSlashingFactor(staker, strategies[i]);
             
             // If there was never a slashing, no need to normalize
-            if (curSlashingFactor == WAD) {
+            // If there was a slashing, but we complete a withdrawal for 0 shares, no need to normalize
+            if (curSlashingFactor == WAD || curDepositShares[i] == 0) {
                 assert_Snap_Unchanged_DSF(staker, strategies[i].toArray(), err);
             }
-            // If there was a slashing, but we complete a withdrawal for 0 shares, no need to normalize
-            else if (curSlashingFactor != WAD && curDepositShares[i] == 0) {
-                assert_Snap_Unchanged_DSF(staker, strategies[i].toArray(), err);
-            } 
             // If there was a slashing, and we complete a withdrawal for non-zero shares, normalize
             else {
                 assert_Snap_Increased_DSF(staker, strategies[i].toArray(), err);
