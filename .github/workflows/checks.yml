@@ -21,15 +21,6 @@ jobs:
         with:
           config: .github/configs/typos-cli.toml
 
-  pr-name-linter:
-    name: Pull Request Name Linting
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    - name: Install Dependencies
-      run: npm install @commitlint/config-conventional
-    - uses: JulienKode/pull-request-name-linter-action@v0.5.0
-
   go-bindings:
     name: Bindings
     runs-on: ubuntu-latest
