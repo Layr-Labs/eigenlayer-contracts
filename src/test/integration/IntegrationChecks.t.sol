@@ -1064,6 +1064,6 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Removed_ActiveValidatorCount(staker, slashedValidators.length, "should have decreased active validator count");
         assert_Snap_Removed_ActiveValidators(staker, slashedValidators, "exited validators should each be WITHDRAWN");
 
-        assert_Snap_Added_Staker_WithdrawableSharesAtLeast(staker, BEACONCHAIN_ETH_STRAT.toArray(), sharesAdded.toArrayU256(), "staker withdrawable shares should increase by diff of deposit and slash");
+        assert_Snap_Added_Staker_WithdrawableShares_AtLeast(staker, BEACONCHAIN_ETH_STRAT.toArray(), sharesAdded.toArrayU256(), "staker withdrawable shares should increase by diff of deposit and slash");
     }
 }

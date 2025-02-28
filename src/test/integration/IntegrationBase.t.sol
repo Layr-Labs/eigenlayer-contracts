@@ -1643,9 +1643,9 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
-    /// @dev This is currently used
-    /// TODO: Figure out how to bound this better
-    function assert_Snap_Added_Staker_WithdrawableSharesAtLeast(
+    /// @dev This is currently used by dual slashing tests
+    /// TODO: potentially bound better
+    function assert_Snap_Added_Staker_WithdrawableShares_AtLeast(
         User staker,
         IStrategy[] memory strategies,
         uint[] memory addedShares,
