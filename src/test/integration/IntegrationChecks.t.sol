@@ -191,7 +191,13 @@ contract IntegrationCheckUtils is IntegrationBase {
         //     and that the staker now has the expected amount of delegated shares in each strategy
         assert_HasNoUnderlyingTokenBalance(staker, strategies, "staker should have transferred all underlying tokens");
         assert_Snap_Added_Staker_DepositShares(staker, strategies, shares, "staker should expect shares in each strategy after depositing");
-        assert_Snap_Added_Staker_WithdrawableShares(staker, strategies, shares, "deposit should increase withdrawable shares");
+
+        if (delegationManager.isDelegated(address(staker))) {
+            User operator = User(payable(delegationManager.delegatedTo(address(staker))));
+            assert_Snap_Expected_Staker_WithdrawableShares_Deposit(staker, operator, strategies, shares, "staker should have received expected withdrawable shares");
+        } else {
+            assert_Snap_Added_Staker_WithdrawableShares(staker, strategies, shares, "deposit should increase withdrawable shares");
+        }
     }
 
     function check_Deposit_State_PartialDeposit(User staker, IStrategy[] memory strategies, uint[] memory shares, uint[] memory tokenBalances) internal {
@@ -203,7 +209,13 @@ contract IntegrationCheckUtils is IntegrationBase {
         //     and that the staker now has the expected amount of delegated shares in each strategy
         assert_HasUnderlyingTokenBalances(staker, strategies, tokenBalances, "staker should have transferred some underlying tokens");
         assert_Snap_Added_Staker_DepositShares(staker, strategies, shares, "staker should expected shares in each strategy after depositing");
-        assert_Snap_Added_Staker_WithdrawableShares(staker, strategies, shares, "deposit should increase withdrawable shares");
+        
+        if (delegationManager.isDelegated(address(staker))) {
+            User operator = User(payable(delegationManager.delegatedTo(address(staker))));
+            assert_Snap_Expected_Staker_WithdrawableShares_Deposit(staker, operator, strategies, shares, "staker should have received expected withdrawable shares");
+        } else {
+            assert_Snap_Added_Staker_WithdrawableShares(staker, strategies, shares, "deposit should increase withdrawable shares");
+        }
     }
 
     function check_Delegation_State(
@@ -415,7 +427,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_WithdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
         assert_Snap_Unchanged_TokenBalances(staker, "staker should not have any change in underlying token balances");
         assert_Snap_Added_Staker_DepositShares(staker, strategies, withdrawableShares, "staker should have received expected shares");
-        assert_Snap_Expected_Staker_WithdrawableShares_Withdrawal(staker, operator, strategies, withdrawableShares, "staker should have received expected withdrawable shares");
+        assert_Snap_Expected_Staker_WithdrawableShares_Deposit(staker, operator, strategies, withdrawableShares, "staker should have received expected withdrawable shares");
         assert_Snap_Unchanged_StrategyShares(strategies, "strategies should have total shares unchanged");
 
         // Additional checks or handling for the non-user operator scenario
@@ -471,7 +483,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Added_Staker_DepositShares(staker, strategies, withdrawableShares, "staker should have received expected shares");
         assert_Snap_Unchanged_OperatorShares(operator, "operator should have shares unchanged");
         assert_Snap_Unchanged_StrategyShares(strategies, "strategies should have total shares unchanged");
-        assert_Snap_Expected_Staker_WithdrawableShares_Withdrawal(staker, newOperator, strategies, withdrawableShares, "staker should have received expected withdrawable shares");
+        assert_Snap_Expected_Staker_WithdrawableShares_Deposit(staker, newOperator, strategies, withdrawableShares, "staker should have received expected withdrawable shares");
     }
 
     /*******************************************************************************
