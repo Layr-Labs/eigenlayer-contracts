@@ -967,6 +967,50 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
+    //@dev requires slashparams strategies to be same as withdrawal strategies
+    // meant to be used in check_base_slashing_state
+    function assert_Snap_Decreased_SlashableSharesInQueue(
+        User operator,
+        SlashingParams memory slashParams,
+        Withdrawal[] memory withdrawals,
+        string memory err
+    ) internal {
+        IStrategy[] memory strategies = slashParams.strategies;
+        uint[] memory curSlashableSharesInQueue = _getSlashableSharesInQueue(operator, strategies);
+        uint[] memory prevSlashableSharesInQueue = _getPrevSlashableSharesInQueue(operator, strategies);
+
+
+        uint[] memory totalScaledShares = new uint[](strategies.length);
+        for (uint i = 0; i < withdrawals.length; i++) {
+            for (uint j = 0; j < withdrawals[i].strategies.length; j++) {
+                totalScaledShares[j] = totalScaledShares[j] + withdrawals[i].scaledShares[j];
+            }
+        }
+
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(curSlashableSharesInQueue[i], prevSlashableSharesInQueue[i] - totalScaledShares[i].mulWad(slashParams.wadsToSlash[i]), err);
+        }
+    }
+
+    function assert_Snap_Increased_SlashableSharesInQueue(
+        User operator,
+        Withdrawal[] memory withdrawals,
+        string memory err
+    ) internal {
+        uint[] memory curSlashableSharesInQueue;
+        uint[] memory prevSlashableSharesInQueue;
+        uint64[] memory maxMagnitudes;
+        for (uint i = 0; i < withdrawals.length; i++) {
+            curSlashableSharesInQueue = _getSlashableSharesInQueue(operator, withdrawals[i].strategies);
+            prevSlashableSharesInQueue = _getPrevSlashableSharesInQueue(operator, withdrawals[i].strategies);
+            maxMagnitudes = _getMaxMagnitudes(operator, withdrawals[i].strategies);
+
+            for (uint j = 0; j < withdrawals[i].strategies.length; j++) {
+                assertEq(curSlashableSharesInQueue[j], prevSlashableSharesInQueue[j] + withdrawals[i].scaledShares[j].mulWad(maxMagnitudes[j]), err);
+            }
+        }
+    }
+
     function assert_Snap_StakeBecameAllocated(
         User operator,
         OperatorSet memory operatorSet,

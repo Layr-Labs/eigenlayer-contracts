@@ -268,6 +268,8 @@ contract IntegrationCheckUtils is IntegrationBase {
             "check_QueuedWithdrawal_State: failed to remove staker shares");
         assert_Snap_Removed_Staker_WithdrawableShares(staker, strategies, withdrawableShares,
             "check_QueuedWithdrawal_State: failed to remove staker withdrawable shares");
+        assert_Snap_Increased_SlashableSharesInQueue(operator, withdrawals,
+            "check_QueuedWithdrawal_State: failed to increase slashable shares in queue");
         check_Decreased_SlashableStake(operator, withdrawableShares, strategies);
         // Check that the dsf is either reset to wad or unchanged
         for (uint i = 0; i < strategies.length; i++) {
@@ -980,6 +982,16 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Unchanged_Slashability(operator, operatorSet, "slash should not change slashability status");
         // assert_Snap_Unchanged_AllocatedSets(operator, "should not have updated allocated sets");
         // assert_Snap_Unchanged_AllocatedStrats(operator, operatorSet, "should not have updated allocated strategies");
+    }
+
+    function check_Base_Slashing_State(
+        User operator,
+        AllocateParams memory allocateParams,
+        SlashingParams memory slashParams,
+        Withdrawal[] memory withdrawals
+    ) internal {
+        check_Base_Slashing_State(operator, allocateParams, slashParams);
+        assert_Snap_Decreased_SlashableSharesInQueue(operator, slashParams, withdrawals, "slash should decrease slashable shares in queue");
     }
 
     /// Slashing invariants when the operator has been fully slashed for every strategy in the operator set
