@@ -510,7 +510,7 @@ contract DeployFromScratch is Script, Test {
         );
         require(
             eigenPodManagerContract.ethPOS() == ethPOSDeposit,
-            " eigenPodManager: ethPOSDeposit contract address not set correctly"
+            "eigenPodManager: ethPOSDeposit contract address not set correctly"
         );
         require(
             eigenPodManagerContract.eigenPodBeacon() == eigenPodBeacon,
