@@ -571,9 +571,8 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         uint256[] memory expectedDecreases,
         string memory err
     ) internal view {
-        uint256[] memory currentShares = _getWithdrawableShares(staker, strategies);
-        for (uint i = 0; i < currentShares.length; i++) {
-            assertLt(currentShares[i], originalShares[i] - expectedDecreases[i], err);
+        for (uint i = 0; i < strategies.length; i++) {
+            assert_withdrawableSharesDecreasedByAtLeast(staker, strategies[i], originalShares[i], expectedDecreases[i], err);
         }
     }
 
@@ -581,10 +580,11 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         User staker,
         IStrategy strategy,
         uint256 originalShares,
-        uint256 expectedDecreases,
+        uint256 expectedDecrease,
         string memory err
     ) internal view {
-        return assert_withdrawableSharesDecreasedByAtLeast(staker, strategy.toArray(), originalShares.toArrayU256(), expectedDecreases.toArrayU256(), err);
+        uint currentShares = _getWithdrawableShares(staker, strategy);
+        assertLt(currentShares, originalShares - expectedDecrease, err);
     }
     
     /*******************************************************************************
@@ -1309,9 +1309,8 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     /*******************************************************************************
                     SNAPSHOT ASSERTIONS: BEACON CHAIN AND AVS SLASHING
     *******************************************************************************/
-    //TODO: handle all of these bounds properly 
-
-    /// @dev Same as above, but when a BC slash occurs before an AVS slash
+    /// @dev Same as `assert_Snap_StakerWithdrawableShares_AfterSlash`
+    /// @dev but when a BC slash occurs before an AVS slash
     /// @dev There is additional rounding error when a BC and AVS slash occur together
     function assert_Snap_StakerWithdrawableShares_AfterBCSlash_AVSSlash(
         User staker,
@@ -1383,7 +1382,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     /**
      * @dev Validates behavior of "restaking", ie. that the funds can be slashed twice. Also validates
      *      the edge case where a validator is proven prior to the BC slash.
-     * @dev TODO: handle the bounds properly
+     * @dev These bounds are based off of rounding when avs and bc slashing occur together
      */
     function assert_Snap_StakerWithdrawableShares_AVSSlash_ValidatorProven_BCSlash(
         User staker,
@@ -3156,6 +3155,11 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
 
     function _getWithdrawableShares(User staker, IStrategy[] memory strategies) internal view returns (uint[] memory withdrawableShares) {
         (withdrawableShares, ) =  delegationManager.getWithdrawableShares(address(staker), strategies);
+    }
+
+    function _getWithdrawableShares(User staker, IStrategy strategy) internal view returns (uint withdrawableShares) {
+        (uint[] memory _withdrawableShares, ) =  delegationManager.getWithdrawableShares(address(staker), strategy.toArray());
+        return _withdrawableShares[0];
     }
 
     function _getActiveValidatorCount(User staker) internal view returns (uint) {
