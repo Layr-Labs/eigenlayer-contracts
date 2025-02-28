@@ -1322,21 +1322,15 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         require(allocateParams.strategies[0] == BEACONCHAIN_ETH_STRAT, "only beacon strategy supported");
         require(slashingParams.strategies[0] == BEACONCHAIN_ETH_STRAT, "only beacon strategy supported");
 
-        uint[] memory curShares = _getWithdrawableShares(staker, allocateParams.strategies);
-        uint[] memory prevShares = _getPrevWithdrawableShares(staker, allocateParams.strategies);
+        uint curShares = _getWithdrawableShares(staker, allocateParams.strategies)[0];
+        uint prevShares = _getPrevWithdrawableShares(staker, allocateParams.strategies)[0];
 
-        for (uint i = 0; i < allocateParams.strategies.length; i++) {
-            IStrategy strat = allocateParams.strategies[i];
+        uint256 slashedShares = 0;
 
-            uint256 slashedShares = 0;
+        uint wadToSlash = slashingParams.wadsToSlash[0];
+        slashedShares = prevShares.mulWadRoundUp(allocateParams.newMagnitudes[0].mulWadRoundUp(wadToSlash));
 
-            if (slashingParams.strategies.contains(strat)) {
-                uint wadToSlash = slashingParams.wadsToSlash[slashingParams.strategies.indexOf(strat)];
-                slashedShares = prevShares[i].mulWadRoundUp(allocateParams.newMagnitudes[i].mulWadRoundUp(wadToSlash));
-            }
-
-            assertEq(prevShares[i] - slashedShares, curShares[i], err);
-        }
+        assertEq(prevShares - slashedShares, curShares, err);
     }
 
     /// @dev Validates behavior of "restaking", ie. that the funds can be slashed twice
