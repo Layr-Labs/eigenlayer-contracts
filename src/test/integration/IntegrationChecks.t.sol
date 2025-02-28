@@ -220,7 +220,13 @@ contract IntegrationCheckUtils is IntegrationBase {
         //     and that the staker now has the expected amount of delegated shares in each strategy
         assert_HasUnderlyingTokenBalances(staker, strategies, tokenBalances, "staker should have transferred some underlying tokens");
         assert_Snap_Added_Staker_DepositShares(staker, strategies, shares, "staker should expected shares in each strategy after depositing");
-        assert_Snap_Added_Staker_WithdrawableShares(staker, strategies, shares, "deposit should increase withdrawable shares");
+        
+        if (delegationManager.isDelegated(address(staker))) {
+            User operator = User(payable(delegationManager.delegatedTo(address(staker))));
+            assert_Snap_Expected_Staker_WithdrawableShares_Deposit(staker, operator, strategies, shares, "staker should have received expected withdrawable shares");
+        } else {
+            assert_Snap_Added_Staker_WithdrawableShares(staker, strategies, shares, "deposit should increase withdrawable shares");
+        }
     }
 
     function check_Delegation_State(
