@@ -1,14 +1,13 @@
-name: PR Labeler
+name: PR
 
 on:
   pull_request:
+    types: [opened, edited, synchronize]
 
 jobs:
   triage:
     runs-on: protocol-x64-16core
-
-    name: Bot
-
+    name: Labels
     permissions:
       contents: read
       pull-requests: write
@@ -21,3 +20,22 @@ jobs:
         with:
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
           sync-labels: true
+
+  lint-pr-title:
+    runs-on: ubuntu-latest
+    name: Title
+    steps:
+      - name: Fetch PR Title
+        run: |
+          PR_TITLE=$(jq -r '.pull_request.title' "$GITHUB_EVENT_PATH")
+          echo "PR title: $PR_TITLE"
+
+          # Define the valid pattern (supports conventional commit format)
+          if [[ ! "$PR_TITLE" =~ ^(feat|fix|chore|docs|refactor|test|style|ci|perf)(\([a-z0-9-]+\))?\:\ .* ]]; then
+            echo "❌ Invalid PR title: '$PR_TITLE'"
+            echo "Expected format: 'type: description' or 'type(scope): description'"
+            echo "Allowed types: feat, fix, chore, docs, refactor, test, style, ci, perf."
+            exit 1
+          fi
+
+          echo "✅ PR title is valid"

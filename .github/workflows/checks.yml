@@ -21,13 +21,6 @@ jobs:
         with:
           config: .github/configs/typos-cli.toml
 
-  commitlint:
-    name: Commit Linting
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: wagoid/commitlint-github-action@v6
-
   go-bindings:
     name: Bindings
     runs-on: ubuntu-latest
