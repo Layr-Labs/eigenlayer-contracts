@@ -1318,7 +1318,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         SlashingParams memory slashingParams,
         string memory err
     ) internal {
-        require(allocateParams.strategies.length == 1  && slashingParams.strategies.length == 1, "only beacon strategy supported");
+        require(allocateParams.strategies.length == 1 && slashingParams.strategies.length == 1, "only beacon strategy supported");
         require(allocateParams.strategies[0] == BEACONCHAIN_ETH_STRAT, "only beacon strategy supported");
         require(slashingParams.strategies[0] == BEACONCHAIN_ETH_STRAT, "only beacon strategy supported");
 
