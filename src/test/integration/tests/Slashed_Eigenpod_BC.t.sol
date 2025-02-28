@@ -68,7 +68,7 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         // Undelegate from an operator
         IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.undelegate();
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
-        check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, initDepositShares, initDelegatableShares);
+        check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, initDelegatableShares);
 
         // Complete withdrawal as shares
         // Fast forward to when we can complete the withdrawal
@@ -119,7 +119,7 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         // Undelegate from an operator
         IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.undelegate();
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
-        check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, initDepositShares, initDelegatableShares);
+        check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, initDelegatableShares);
 
         // Complete withdrawal as shares
         // Fast forward to when we can complete the withdrawal
@@ -237,7 +237,7 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         // Undelegate from an operator
         IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.redelegate(operator2);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
-        check_Redelegate_State(staker, operator, operator2, withdrawals, withdrawalRoots, strategies, initDepositShares, delegatedShares);
+        check_Redelegate_State(staker, operator, operator2, withdrawals, withdrawalRoots, strategies, delegatedShares);
 
         // Complete withdrawal as shares
         // Fast forward to when we can complete the withdrawal
