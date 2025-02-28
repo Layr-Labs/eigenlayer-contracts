@@ -1876,6 +1876,58 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
+    function assert_Snap_Increased_DSF(
+        User staker,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal {
+        uint[] memory curDSFs = _getDepositScalingFactors(staker, strategies);
+        uint[] memory prevDSFs = _getPrevDepositScalingFactors(staker, strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            assertGt(curDSFs[i], prevDSFs[i], err);
+        }
+    }
+
+    /// @dev Used to assert that the DSF is either increased or unchanged, depending on the slashing factor
+    /// @dev Asserted whenever a user deposits, or completes a withdrawal as shares
+    function assert_Snap_DSF_State(
+        User staker,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal {
+        for (uint i = 0; i < strategies.length; i++) {
+            /// @dev We don't need the previous slashing factors as they shouldn't change before/after a deposit
+            uint curSlashingFactor = _getSlashingFactor(staker, strategies[i]);
+
+            if (curSlashingFactor == WAD) {
+                assert_Snap_Unchanged_DSF(staker, strategies[i].toArray(), err); // No slashing, so DSF is unchanged
+            } else {
+                assert_Snap_Increased_DSF(staker, strategies[i].toArray(), err); // Slashing, so DSF is increased
+            }
+        }
+    }
+
+    /// @dev Same as above, but on delegation you can have a non-zero deposit, so we must pass in the delegatable shares
+    function assert_Snap_DSF_State_Delegation(
+        User staker,
+        IStrategy[] memory strategies,
+        uint[] memory delegatableShares,
+        string memory err
+    ) internal {
+        uint64[] memory maxMags = _getMaxMagnitudes(staker, strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            /// @dev Zero delegatable shares or a WAD operator magnitude means the DSF should be unchanged
+            /// @dev Even if the BCSF is non-WAD, the DSF should be unchanged since only a non-WAD operator magnitude can update the DSF here
+            if (delegatableShares[i] == 0 || maxMags[i] == WAD) {
+                assert_Snap_Unchanged_DSF(staker, strategies[i].toArray(), err);
+            } else { 
+                assert_Snap_Increased_DSF(staker, strategies[i].toArray(), err); // Slashing, so DSF is increased
+            }
+        }
+    }
+
     /*******************************************************************************
                         SNAPSHOT ASSERTIONS: STRATEGY SHARES
     *******************************************************************************/
