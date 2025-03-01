@@ -55,7 +55,7 @@ contract Integration_DualSlashing_Base is IntegrationCheckUtils {
     }
 }
 
-contract Integration_DualSlashing_Base_BeaconChainFirst is Integration_DualSlashing_Base {
+contract Integration_DualSlashing_BeaconChainFirst is Integration_DualSlashing_Base {
 
     function testFuzz_bcSlash_checkpoint_avsSlash(uint24 _random) public rand(_random) {
         // 6. Slash staker on BC
@@ -80,7 +80,7 @@ contract Integration_DualSlashing_Base_BeaconChainFirst is Integration_DualSlash
     }
 }
 
-contract Integration_DualSlashing_Base_AVSFirst is Integration_DualSlashing_Base {
+contract Integration_DualSlashing_AVSFirst is Integration_DualSlashing_Base {
     using ArrayLib for *;
 
     SlashingParams slashingParams;
@@ -221,5 +221,38 @@ contract Integration_DualSlashing_Base_AVSFirst is Integration_DualSlashing_Base
         beaconChain.advanceEpoch_NoRewards();
         staker.startCheckpoint();
         check_StartCheckpoint_NoValidators_State(staker, beaconSharesAddedGwei);
+    }
+}
+
+contract Integration_DualSlashing_FullSlashes is Integration_DualSlashing_Base {
+    using ArrayLib for *;
+
+    SlashingParams slashingParams;
+    uint64 slashedAmountGwei;
+
+    function _init() internal virtual override {
+        super._init();
+
+        
+
+        // 6. Slash operator by AVS fully
+        slashingParams = _genSlashing_Full(operator, operatorSet);
+        avs.slashOperator(slashingParams);
+        check_Base_Slashing_State(operator, allocateParams, slashingParams);
+        assert_Snap_Allocations_Slashed(slashingParams, operatorSet, true, "operator allocations should be slashed");
+        assert_Snap_Unchanged_Staker_DepositShares(staker, "staker deposit shares should be unchanged after slashing");
+        assert_Snap_StakerWithdrawableShares_AfterSlash(staker, allocateParams, slashingParams, "staker withdrawable shares should be slashed");
+
+        /// 7. Fully slash on BC
+        slashedAmountGwei = beaconChain.slashValidators(validators, BeaconChainMock.SlashType.Full);
+        beaconChain.advanceEpoch_NoRewards();
+    }
+
+    function testFuzz_avsFullSlash_bcFullSlash_checkpoint_verifyValidator(uint24 _random) public rand(_random) {
+        // 8. Checkpoint
+        // staker.startCheckpoint();
+        // check_StartCheckpoint_WithPodBalance_State(staker, beaconBalanceGwei - slashedAmountGwei);
+        // staker.completeCheckpoint();
+        // check_CompleteCheckpoint_AfterAVSSlash_BCSlash(staker, validators, initDepositShares[0], slashedAmountGwei, allocateParams, slashingParams);
     }
 }

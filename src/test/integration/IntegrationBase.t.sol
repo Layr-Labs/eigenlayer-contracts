@@ -2349,7 +2349,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         assertEq(prevExitedBalanceGwei + addedGwei, curExitedBalanceGwei, err);
     }
 
-    function assert_Snap_BCSF_Decreased(
+    function assert_Snap_Decreased_BCSF(
         User staker,
         string memory err
     ) internal {
@@ -2359,7 +2359,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         assertLt(curBCSF, prevBCSF, err);
     }
 
-    function assert_Snap_BCSF_Unchanged(
+    function assert_Snap_Unchanged_BCSF(
         User staker,
         string memory err
     ) internal {
