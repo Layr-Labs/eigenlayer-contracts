@@ -16,12 +16,14 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
     IStrategy[] strategies;
     uint[] initTokenBalances;
     uint64 slashedGwei;
+    IERC20[] tokens;
 
     function _init() internal override {
         _configAssetTypes(HOLDS_ETH);
         (staker, strategies, initTokenBalances) = _newRandomStaker();
         (operator,,) = _newRandomOperator();
         (avs,) = _newRandomAVS();
+        tokens = _getUnderlyingTokens(strategies); // Should only return ETH
         cheats.assume(initTokenBalances[0] >= 64 ether);
 
         // Deposit staker
@@ -298,6 +300,22 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         beaconChain.advanceEpoch_NoWithdrawNoRewards();
         staker.verifyWithdrawalCredentials(validators);
         check_VerifyWC_State(staker, validators, addedBeaconBalanceGwei);
+
+        // Queue withdrawal for all tokens
+        uint[] memory depositShares = _getStakerDepositShares(staker, strategies);
+        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, depositShares);
+        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        check_QueuedWithdrawal_State_NotDelegated(staker, strategies, depositShares, withdrawableShares, withdrawals, withdrawalRoots);
+
+        // Complete withdrawal as tokens
+        // Fast forward to when we can complete the withdrawal
+        _rollBlocksForCompleteWithdrawals(withdrawals);
+        for (uint256 i = 0; i < withdrawals.length; ++i) {
+            uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawableShares);
+            staker.completeWithdrawalAsTokens(withdrawals[i]);
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], withdrawals[i].strategies, withdrawableShares, tokens, expectedTokens);
+        }
     }
 
     function testFuzz_redeposit_queue_completeAsShares(uint24 _random) public rand(_random){}
