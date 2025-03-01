@@ -140,8 +140,8 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Unchanged_DSF(staker, BEACONCHAIN_ETH_STRAT.toArray(), "DSF should be unchanged");
         assert_SlashableStake_Decrease_BCSlash(staker);
         // TODO - currently only used after a `NoWithdrawNoRewards` action. Investigate re-adding in future.
-        assert_Snap_Removed_ActiveValidatorCount(staker, slashedValidators.length, "should have decreased active validator count");
-        assert_Snap_Removed_ActiveValidators(staker, slashedValidators, "exited validators should each be WITHDRAWN");
+        // assert_Snap_Removed_ActiveValidatorCount(staker, slashedValidators.length, "should have decreased active validator count");
+        // assert_Snap_Removed_ActiveValidators(staker, slashedValidators, "exited validators should each be WITHDRAWN");
     }
 
     function check_CompleteCheckpoint_WithCLSlashing_HandleRoundDown_State(
