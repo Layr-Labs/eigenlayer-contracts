@@ -28,7 +28,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     uint numOperators = 0;
     uint numAVSs = 0;
 
-    // Lists of operators created before the m2 (not slashing) upgrade
+    // Lists of operators created prev the m2 (not slashing) upgrade
     //
     // When we call _upgradeEigenLayerContracts, we iterate over
     // these lists and migrate perform the standard migration actions
@@ -387,12 +387,10 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     function assert_MaxEqualsAllocatablePlusEncumbered(
         User operator,
         string memory err
-    ) internal view {
-        Magnitudes[] memory mags = _getMagnitudes(operator, allStrats);
-
+    ) internal {
+        (, Magnitudes[] memory current) = _getMagnitudes(operator, allStrats);
         for (uint i = 0; i < allStrats.length; i++) {
-            Magnitudes memory m = mags[i];
-            assertEq(m.max, m.encumbered + m.allocatable, err);
+            assertEq(current[i].max, current[i].encumbered + current[i].allocatable, err);
         }
     }
 
@@ -401,10 +399,9 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         OperatorSet memory operatorSet,
         IStrategy[] memory strategies,
         string memory err
-    ) internal view {
-        uint[] memory minSlashableStake = _getMinSlashableStake(operator, operatorSet, strategies);
-        uint[] memory minAllocatedStake = _getAllocatedStake(operator, operatorSet, strategies);
-
+    ) internal {
+        (, uint[] memory minSlashableStake) = _getMinSlashableStake(operator, operatorSet, strategies);
+        (, uint[] memory minAllocatedStake) = _getAllocatedStake(operator, operatorSet, strategies);
         for (uint i = 0; i < strategies.length; i++) {
             assertEq(minSlashableStake[i], minAllocatedStake[i], err);
         }
@@ -427,9 +424,8 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         User operator,
         AllocateParams memory params,
         string memory err
-    ) internal view {
-        Allocation[] memory allocations = _getAllocations(operator, params.operatorSet, params.strategies);
-
+    ) internal {
+        (, Allocation[] memory allocations) = _getAllocations(operator, params.operatorSet, params.strategies);
         for (uint i = 0; i < allocations.length; i++) {
             assertEq(allocations[i].currentMagnitude, params.newMagnitudes[i], err);
         }
@@ -440,8 +436,8 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         OperatorSet memory operatorSet,
         IStrategy[] memory strategies,
         string memory err
-    ) internal view {
-        Allocation[] memory allocations = _getAllocations(operator, operatorSet, strategies);
+    ) internal {
+        (, Allocation[] memory allocations) = _getAllocations(operator, operatorSet, strategies);
 
         for (uint i = 0; i < allocations.length; i++) {
             assertEq(0, allocations[i].effectBlock, err);
@@ -452,9 +448,9 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         User operator,
         AllocateParams memory params,
         string memory err
-    ) internal view {
+    ) internal {
         uint32 delay = _getExistingAllocationDelay(operator);
-        Allocation[] memory allocations = _getAllocations(operator, params.operatorSet, params.strategies);
+        (, Allocation[] memory allocations) = _getAllocations(operator, params.operatorSet, params.strategies);
 
         for (uint i = 0; i < allocations.length; i++) {
             assertEq(allocations[i].effectBlock, uint32(block.number) + delay, err);
@@ -467,9 +463,9 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         User operator,
         AllocateParams memory params,
         string memory err
-    ) internal view {
+    ) internal {
         uint32 deallocationDelay = allocationManager.DEALLOCATION_DELAY();
-        Allocation[] memory allocations = _getAllocations(operator, params.operatorSet, params.strategies);
+        (, Allocation[] memory allocations) = _getAllocations(operator, params.operatorSet, params.strategies);
 
         for (uint i = 0; i < allocations.length; i++) {
             assertEq(allocations[i].effectBlock, uint32(block.number) + deallocationDelay + 1, err);
@@ -535,14 +531,14 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         User operator,
         AllocateParams memory params,
         string memory err
-    ) internal view {
+    ) internal {
         OperatorSet memory operatorSet = params.operatorSet;
         IStrategy[] memory strategies = params.strategies;
         uint64[] memory curMagnitudes = params.newMagnitudes;
 
         uint64[] memory maxMagnitudes = _getMaxMagnitudes(operator, params.strategies);
         uint[] memory operatorShares = _getOperatorShares(operator, params.strategies);
-        uint[] memory allocatedStake = _getAllocatedStake(operator, operatorSet, strategies);
+        (, uint[] memory allocatedStake) = _getAllocatedStake(operator, operatorSet, strategies);
 
         for (uint i = 0; i < strategies.length; i++) {
             uint expectedAllocated;
@@ -561,14 +557,14 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         User operator,
         AllocateParams memory params,
         string memory err
-    ) internal view {
+    ) internal {
         OperatorSet memory operatorSet = params.operatorSet;
         IStrategy[] memory strategies = params.strategies;
         uint64[] memory curMagnitudes = params.newMagnitudes;
 
         uint64[] memory maxMagnitudes = _getMaxMagnitudes(operator, params.strategies);
         uint[] memory operatorShares = _getOperatorShares(operator, params.strategies);
-        uint[] memory slashableStake = _getMinSlashableStake(operator, operatorSet, strategies);
+        (, uint[] memory slashableStake) = _getMinSlashableStake(operator, operatorSet, strategies);
 
         for (uint i = 0; i < strategies.length; i++) {
             uint expectedSlashable;
@@ -587,9 +583,9 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         User operator,
         OperatorSet memory operatorSet,
         string memory err
-    ) internal view {
+    ) internal {
         IStrategy[] memory strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
-        uint[] memory slashableStake = _getMinSlashableStake(operator, operatorSet, strategies);
+        (, uint[] memory slashableStake) = _getMinSlashableStake(operator, operatorSet, strategies);
 
         for (uint i = 0; i < slashableStake.length; i++) {
             assertEq(slashableStake[i], 0, err);
@@ -741,7 +737,6 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     ) internal {
         bool curIsSlashable = _getIsSlashable(operator, operatorSet);
         bool prevIsSlashable = _getPrevIsSlashable(operator, operatorSet);
-
         assertEq(prevIsSlashable, curIsSlashable, err);
     }
 
@@ -750,13 +745,10 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         OperatorSet memory operatorSet,
         string memory err
     ) internal {
-        IStrategy[] memory curAllocatedStrats = _getAllocatedStrats(operator, operatorSet);
-        IStrategy[] memory prevAllocatedStrats = _getPrevAllocatedStrats(operator, operatorSet);
-
-        assertEq(curAllocatedStrats.length, prevAllocatedStrats.length, err);
-
-        for (uint i = 0; i < curAllocatedStrats.length; i++) {
-            assertEq(address(curAllocatedStrats[i]), address(prevAllocatedStrats[i]), err);
+        (IStrategy[] memory prev, IStrategy[] memory current) = _getAllocatedStrats(operator, operatorSet);
+        assertEq(current.length, prev.length, err);
+        for (uint i = 0; i < current.length; i++) {
+            assertEq(address(current[i]), address(prev[i]), err);
         }
     }
 
@@ -766,11 +758,8 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         IStrategy[] memory removedStrats,
         string memory err
     ) internal {
-        IStrategy[] memory curAllocatedStrats = _getAllocatedStrats(operator, operatorSet);
-        IStrategy[] memory prevAllocatedStrats = _getPrevAllocatedStrats(operator, operatorSet);
-
+        (IStrategy[] memory curAllocatedStrats, IStrategy[] memory prevAllocatedStrats) = _getAllocatedStrats(operator, operatorSet);
         assertEq(curAllocatedStrats.length + removedStrats.length, prevAllocatedStrats.length, err);
-
         for (uint i = 0; i < removedStrats.length; i++) {
             assertFalse(curAllocatedStrats.contains(removedStrats[i]), err);
         }
@@ -782,13 +771,10 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         IStrategy[] memory strategies,
         string memory err
     ) internal {
-        Allocation[] memory curAllocations = _getAllocations(operator, operatorSet, strategies);
-        Allocation[] memory prevAllocations = _getPrevAllocations(operator, operatorSet, strategies);
-
+        (Allocation[] memory prev, Allocation[] memory current) = _getAllocations(operator, operatorSet, strategies);
         for (uint i = 0; i < strategies.length; i++) {
-            Allocation memory curAllocation = curAllocations[i];
-            Allocation memory prevAllocation = prevAllocations[i];
-
+            Allocation memory curAllocation = current[i];
+            Allocation memory prevAllocation = prev[i];
             assertEq(curAllocation.currentMagnitude, prevAllocation.currentMagnitude, err);
             assertEq(curAllocation.pendingDiff, prevAllocation.pendingDiff, err);
             assertEq(curAllocation.effectBlock, prevAllocation.effectBlock, err);
@@ -800,22 +786,22 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         OperatorSet memory operatorSet,
         string memory err
     ) internal {
-        OperatorSet[] memory curAllocatedSets = _getAllocatedSets(operator);
-        OperatorSet[] memory prevAllocatedSets = _getPrevAllocatedSets(operator);
-
-        assertEq(curAllocatedSets.length, prevAllocatedSets.length + 1, err);
-        assertFalse(prevAllocatedSets.contains(operatorSet), err);
-        assertTrue(curAllocatedSets.contains(operatorSet), err);
+        (OperatorSet[] memory prev, OperatorSet[] memory current) = _getAllocatedSets(operator);
+        assertEq(current.length, prev.length + 1, err);
+        assertFalse(prev.contains(operatorSet), err);
+        assertTrue(current.contains(operatorSet), err);
     }
 
     function assert_Snap_Unchanged_AllocatedSets(
         User operator,
         string memory err
     ) internal {
-        OperatorSet[] memory curAllocatedSets = _getAllocatedSets(operator);
-        OperatorSet[] memory prevAllocatedSets = _getPrevAllocatedSets(operator);
-
-        assertEq(curAllocatedSets.length, prevAllocatedSets.length, err);
+        (OperatorSet[] memory prev, OperatorSet[] memory current) = _getAllocatedSets(operator);
+        assertEq(current.length, prev.length, err);
+        for (uint i = 0; i < current.length; i++) {
+            assertEq(current[i].avs, prev[i].avs, err);
+            assertEq(current[i].id, prev[i].id, err);
+        }
     }
 
     function assert_Snap_Removed_AllocatedSet(
@@ -823,12 +809,10 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         OperatorSet memory operatorSet,
         string memory err
     ) internal {
-        OperatorSet[] memory curAllocatedSets = _getAllocatedSets(operator);
-        OperatorSet[] memory prevAllocatedSets = _getPrevAllocatedSets(operator);
-
-        assertEq(curAllocatedSets.length + 1, prevAllocatedSets.length, err);
-        assertTrue(prevAllocatedSets.contains(operatorSet), err);
-        assertFalse(curAllocatedSets.contains(operatorSet), err);
+        (OperatorSet[] memory prev, OperatorSet[] memory current) = _getAllocatedSets(operator);
+        assertEq(current.length + 1, prev.length, err);
+        assertTrue(prev.contains(operatorSet), err);
+        assertFalse(current.contains(operatorSet), err);
     }
 
     function assert_Snap_Added_RegisteredSet(
@@ -836,12 +820,10 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         OperatorSet memory operatorSet,
         string memory err
     ) internal {
-        OperatorSet[] memory curRegisteredSets = _getRegisteredSets(operator);
-        OperatorSet[] memory prevRegisteredSets = _getPrevRegisteredSets(operator);
-
-        assertEq(curRegisteredSets.length, prevRegisteredSets.length + 1, err);
-        assertFalse(prevRegisteredSets.contains(operatorSet), err);
-        assertTrue(curRegisteredSets.contains(operatorSet), err);
+        (OperatorSet[] memory prev, OperatorSet[] memory current) = _getRegisteredSets(operator);
+        assertEq(current.length, prev.length + 1, err);
+        assertFalse(prev.contains(operatorSet), err);
+        assertTrue(current.contains(operatorSet), err);
     }
 
     function assert_Snap_Removed_RegisteredSet(
@@ -849,25 +831,21 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         OperatorSet memory operatorSet,
         string memory err
     ) internal {
-        OperatorSet[] memory curRegisteredSets = _getRegisteredSets(operator);
-        OperatorSet[] memory prevRegisteredSets = _getPrevRegisteredSets(operator);
-
-        assertEq(curRegisteredSets.length + 1, prevRegisteredSets.length, err);
-        assertTrue(prevRegisteredSets.contains(operatorSet), err);
-        assertFalse(curRegisteredSets.contains(operatorSet), err);
+        (OperatorSet[] memory prev, OperatorSet[] memory current) = _getRegisteredSets(operator);
+        assertEq(current.length + 1, prev.length, err);
+        assertTrue(prev.contains(operatorSet), err);
+        assertFalse(current.contains(operatorSet), err);
     }
 
     function assert_Snap_Unchanged_RegisteredSet(
         User operator,
         string memory err
     ) internal {
-        OperatorSet[] memory curRegisteredSets = _getRegisteredSets(operator);
-        OperatorSet[] memory prevRegisteredSets = _getPrevRegisteredSets(operator);
-
-        assertEq(curRegisteredSets.length, prevRegisteredSets.length, err);
-        for (uint i = 0; i < curRegisteredSets.length; i++) {
-            assertEq(curRegisteredSets[i].avs, prevRegisteredSets[i].avs, err);
-            assertEq(curRegisteredSets[i].id, prevRegisteredSets[i].id, err);
+        (OperatorSet[] memory prev, OperatorSet[] memory current) = _getRegisteredSets(operator);
+        assertEq(current.length, prev.length, err);
+        for (uint i = 0; i < current.length; i++) {
+            assertEq(current[i].avs, prev[i].avs, err);
+            assertEq(current[i].id, prev[i].id, err);
         }
     }
 
@@ -876,12 +854,10 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         OperatorSet memory operatorSet,
         string memory err
     ) internal {
-        address[] memory curOperators = _getMembers(operatorSet);
-        address[] memory prevOperators = _getPrevMembers(operatorSet);
-
-        assertEq(curOperators.length, prevOperators.length + 1, err);
-        assertFalse(prevOperators.contains(address(operator)), err);
-        assertTrue(curOperators.contains(address(operator)), err);
+        (address[] memory prev, address[] memory current) = _getMembers(operatorSet);
+        assertEq(current.length, prev.length + 1, err);
+        assertFalse(prev.contains(address(operator)), err);
+        assertTrue(current.contains(address(operator)), err);
     }
 
     function assert_Snap_Removed_MemberOfSet(
@@ -889,24 +865,20 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         OperatorSet memory operatorSet,
         string memory err
     ) internal {
-        address[] memory curOperators = _getMembers(operatorSet);
-        address[] memory prevOperators = _getPrevMembers(operatorSet);
-
-        assertEq(curOperators.length + 1, prevOperators.length, err);
-        assertTrue(prevOperators.contains(address(operator)), err);
-        assertFalse(curOperators.contains(address(operator)), err);
+        (address[] memory prev, address[] memory current) = _getMembers(operatorSet);
+        assertEq(current.length + 1, prev.length, err);
+        assertTrue(prev.contains(address(operator)), err);
+        assertFalse(current.contains(address(operator)), err);
     }
 
     function assert_Snap_Unchanged_MemberOfSet(
         OperatorSet memory operatorSet,
         string memory err
     ) internal {
-        address[] memory curOperators = _getMembers(operatorSet);
-        address[] memory prevOperators = _getPrevMembers(operatorSet);
-
-        assertEq(curOperators.length, prevOperators.length, err);
-        for (uint i = 0; i < curOperators.length; i++) {
-            assertEq(curOperators[i], prevOperators[i], err);
+        (address[] memory prev, address[] memory current) = _getMembers(operatorSet);
+        assertEq(current.length, prev.length, err);
+        for (uint i = 0; i < current.length; i++) {
+            assertEq(current[i], prev[i], err);
         }
     }
 
@@ -916,11 +888,9 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         IStrategy[] memory strategies,
         string memory err
     ) internal {
-        uint[] memory curSlashableStake = _getMinSlashableStake(operator, operatorSet, strategies);
-        uint[] memory prevSlashableStake = _getPrevMinSlashableStake(operator, operatorSet, strategies);
-
+        (uint[] memory prev, uint[] memory current) = _getMinSlashableStake(operator, operatorSet, strategies);
         for (uint i = 0; i < strategies.length; i++) {
-            assertTrue(prevSlashableStake[i] < curSlashableStake[i], err);
+            assertTrue(prev[i] < current[i], err);
         }
     }
 
@@ -930,11 +900,9 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         IStrategy[] memory strategies,
         string memory err
     ) internal {
-        uint[] memory curSlashableStake = _getMinSlashableStake(operator, operatorSet, strategies);
-        uint[] memory prevSlashableStake = _getPrevMinSlashableStake(operator, operatorSet, strategies);
-
+        (uint[] memory prev, uint[] memory current) = _getMinSlashableStake(operator, operatorSet, strategies);
         for (uint i = 0; i < strategies.length; i++) {
-            assertTrue(prevSlashableStake[i] > curSlashableStake[i], err);
+            assertTrue(prev[i] > current[i], err);
         }
     }
 
@@ -944,9 +912,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         IStrategy[] memory strategies,
         string memory err
     ) internal {
-        uint[] memory curSlashableStake = _getMinSlashableStake(operator, operatorSet, strategies);
-        uint[] memory prevSlashableStake = _getPrevMinSlashableStake(operator, operatorSet, strategies);
-
+        (uint[] memory curSlashableStake, uint[] memory prevSlashableStake) = _getMinSlashableStake(User(payable(operator)), operatorSet, strategies);
         for (uint i = 0; i < strategies.length; i++) {
             assertTrue(prevSlashableStake[i] > curSlashableStake[i], err);
         }
@@ -959,11 +925,9 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         uint[] memory slashableShares,
         string memory err
     ) internal {
-        uint[] memory curSlashableStake = _getMinSlashableStake(operator, operatorSet, strategies);
-        uint[] memory prevSlashableStake = _getPrevMinSlashableStake(operator, operatorSet, strategies);
-
+        (uint[] memory prev, uint[] memory current) = _getMinSlashableStake(operator, operatorSet, strategies);
         for (uint i = 0; i < strategies.length; i++) {
-            assertEq(curSlashableStake[i], prevSlashableStake[i] + slashableShares[i], err);
+            assertEq(current[i], prev[i] + slashableShares[i], err);
         }
     }
 
@@ -973,11 +937,9 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         IStrategy[] memory strategies,
         string memory err
     ) internal {
-        uint[] memory curSlashableStake = _getMinSlashableStake(operator, operatorSet, strategies);
-        uint[] memory prevSlashableStake = _getPrevMinSlashableStake(operator, operatorSet, strategies);
-
+        (uint[] memory prev, uint[] memory current) = _getMinSlashableStake(operator, operatorSet, strategies);
         for (uint i = 0; i < strategies.length; i++) {
-            assertEq(curSlashableStake[i], prevSlashableStake[i], err);
+            assertEq(current[i], prev[i], err);
         }
     }
 
@@ -988,11 +950,9 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         uint[] memory removedSlashableShares,
         string memory err
     ) internal {
-        uint[] memory curSlashableStake = _getMinSlashableStake(operator, operatorSet, strategies);
-        uint[] memory prevSlashableStake = _getPrevMinSlashableStake(operator, operatorSet, strategies);
-
+        (uint[] memory prev, uint[] memory current) = _getMinSlashableStake(operator, operatorSet, strategies);
         for (uint i = 0; i < strategies.length; i++) {
-            assertEq(curSlashableStake[i] + removedSlashableShares[i], prevSlashableStake[i], err);
+            assertEq(current[i] + removedSlashableShares[i], prev[i], err);
         }
     }
 
@@ -1002,22 +962,19 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         SlashingParams memory params,
         string memory err
     ) internal {
-        uint[] memory curSlashableStake = _getMinSlashableStake(operator, operatorSet, params.strategies);
-        uint[] memory prevSlashableStake = _getPrevMinSlashableStake(operator, operatorSet, params.strategies);
-
-        Magnitudes[] memory curMagnitudes = _getMagnitudes(operator, params.strategies);
-        Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, params.strategies);
+        (uint[] memory prevSlashableStake, uint[] memory currentSlashableStake)
+             = _getMinSlashableStake(operator, operatorSet, params.strategies);
+        (Magnitudes[] memory prevMagnitudes, Magnitudes[] memory currentMagnitudes)
+             = _getMagnitudes(operator, params.strategies);
 
         for (uint i = 0; i < params.strategies.length; i++) {
-            // Slashing doesn't occur if the operator has no slashable magnitude
-            // This prevents a div by 0 when calculating expected slashed
-            uint expectedSlashed = prevMagnitudes[i].max == 0 ? 0 : SlashingLib.calcSlashedAmount({
+            uint expectedSlashed = SlashingLib.calcSlashedAmount({
                 operatorShares: prevSlashableStake[i],
                 prevMaxMagnitude: prevMagnitudes[i].max,
-                newMaxMagnitude: curMagnitudes[i].max
+                newMaxMagnitude: currentMagnitudes[i].max
             });
 
-            assertEq(curSlashableStake[i], prevSlashableStake[i] - expectedSlashed, err);
+            assertEq(currentSlashableStake[i], prevSlashableStake[i] - expectedSlashed, err);
         }
     }
 
@@ -1071,11 +1028,9 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         IStrategy[] memory strategies,
         string memory err
     ) internal {
-        uint[] memory curMinAllocatedStake = _getAllocatedStake(operator, operatorSet, strategies);
-        uint[] memory prevMinAllocatedStake = _getPrevAllocatedStake(operator, operatorSet, strategies);
-
+        (uint[] memory prev, uint[] memory current) = _getAllocatedStake(operator, operatorSet, strategies);
         for (uint i = 0; i < strategies.length; i++) {
-            assertGt(curMinAllocatedStake[i], prevMinAllocatedStake[i], err);
+            assertGt(current[i], prev[i], err);
         }
     }
 
@@ -1085,11 +1040,9 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         IStrategy[] memory strategies,
         string memory err
     ) internal {
-        uint[] memory curMinAllocatedStake = _getAllocatedStake(operator, operatorSet, strategies);
-        uint[] memory prevMinAllocatedStake = _getPrevAllocatedStake(operator, operatorSet, strategies);
-
+        (uint[] memory prev, uint[] memory current) = _getAllocatedStake(operator, operatorSet, strategies);
         for (uint i = 0; i < strategies.length; i++) {
-            assertLt(curMinAllocatedStake[i], prevMinAllocatedStake[i], err);
+            assertLt(current[i], prev[i], err);
         }
     }
 
@@ -1099,11 +1052,9 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         IStrategy[] memory strategies,
         string memory err
     ) internal {
-        uint[] memory curAllocatedStake = _getAllocatedStake(operator, operatorSet, strategies);
-        uint[] memory prevAllocatedStake = _getPrevAllocatedStake(operator, operatorSet, strategies);
-
-        for (uint i = 0; i < curAllocatedStake.length; i++) {
-            assertEq(curAllocatedStake[i], prevAllocatedStake[i], err);
+        (uint[] memory prev, uint[] memory current) = _getAllocatedStake(operator, operatorSet, strategies);
+        for (uint i = 0; i < current.length; i++) {
+            assertEq(current[i], prev[i], err);
         }
     }
 
@@ -1113,22 +1064,15 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         SlashingParams memory params,
         string memory err
     ) internal {
-        uint[] memory curAllocatedStake = _getAllocatedStake(operator, operatorSet, params.strategies);
-        uint[] memory prevAllocatedStake = _getPrevAllocatedStake(operator, operatorSet, params.strategies);
-
-        Magnitudes[] memory curMagnitudes = _getMagnitudes(operator, params.strategies);
-        Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, params.strategies);
-
-        for (uint i = 0; i < curAllocatedStake.length; i++) {
-            // Slashing doesn't occur if the operator has no slashable magnitude
-            // This prevents a div by 0 when calculating expected slashed
-            uint expectedSlashed = prevMagnitudes[i].max == 0 ? 0 : SlashingLib.calcSlashedAmount({
-                operatorShares: prevAllocatedStake[i],
+        (uint[] memory prev, uint[] memory current) = _getAllocatedStake(operator, operatorSet, params.strategies);
+        (Magnitudes[] memory prevMagnitudes, Magnitudes[] memory currentMagnitudes) = _getMagnitudes(operator, params.strategies);
+        for (uint i = 0; i < current.length; i++) {
+            uint expectedSlashed = SlashingLib.calcSlashedAmount({
+                operatorShares: prev[i],
                 prevMaxMagnitude: prevMagnitudes[i].max,
-                newMaxMagnitude: curMagnitudes[i].max
+                newMaxMagnitude: currentMagnitudes[i].max
             });
-
-            assertEq(curAllocatedStake[i], prevAllocatedStake[i] - expectedSlashed, err);
+            assertEq(current[i], prev[i] - expectedSlashed, err);
         }
     }
 
@@ -1138,11 +1082,9 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         uint64[] memory magnitudeAdded,
         string memory err
     ) internal {
-        Magnitudes[] memory curMagnitudes = _getMagnitudes(operator, strategies);
-        Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, strategies);
-
+        (Magnitudes[] memory prev, Magnitudes[] memory current) = _getMagnitudes(operator, strategies);
         for (uint i = 0; i < strategies.length; i++) {
-            assertEq(curMagnitudes[i].encumbered, prevMagnitudes[i].encumbered + magnitudeAdded[i], err);
+            assertEq(current[i].encumbered, prev[i].encumbered + magnitudeAdded[i], err);
         }
     }
 
@@ -1151,11 +1093,9 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         IStrategy[] memory strategies,
         string memory err
     ) internal {
-        Magnitudes[] memory curMagnitudes = _getMagnitudes(operator, strategies);
-        Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, strategies);
-
+        (Magnitudes[] memory prev, Magnitudes[] memory current) = _getMagnitudes(operator, strategies);
         for (uint i = 0; i < strategies.length; i++) {
-            assertEq(curMagnitudes[i].encumbered, prevMagnitudes[i].encumbered, err);
+            assertEq(current[i].encumbered, prev[i].encumbered, err);
         }
     }
 
@@ -1165,11 +1105,9 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         uint64[] memory magnitudeRemoved,
         string memory err
     ) internal {
-        Magnitudes[] memory curMagnitudes = _getMagnitudes(operator, strategies);
-        Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, strategies);
-
+        (Magnitudes[] memory prev, Magnitudes[] memory current) = _getMagnitudes(operator, strategies);
         for (uint i = 0; i < strategies.length; i++) {
-            assertEq(curMagnitudes[i].encumbered + magnitudeRemoved[i], prevMagnitudes[i].encumbered, err);
+            assertEq(current[i].encumbered + magnitudeRemoved[i], prev[i].encumbered, err);
         }
     }
 
@@ -1178,12 +1116,10 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         SlashingParams memory params,
         string memory err
     ) internal {
-        Magnitudes[] memory curMagnitudes = _getMagnitudes(operator, params.strategies);
-        Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, params.strategies);
-
+        (Magnitudes[] memory prev, Magnitudes[] memory current) = _getMagnitudes(operator, params.strategies);
         for (uint i = 0; i < params.strategies.length; i++) {
-            uint expectedSlashed = prevMagnitudes[i].encumbered.mulWadRoundUp(params.wadsToSlash[i]);
-            assertEq(curMagnitudes[i].encumbered, prevMagnitudes[i].encumbered - expectedSlashed, err);
+            uint expectedSlashed = prev[i].encumbered.mulWadRoundUp(params.wadsToSlash[i]);
+            assertEq(current[i].encumbered, prev[i].encumbered - expectedSlashed, err);
         }
     }
 
@@ -1193,11 +1129,9 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         uint64[] memory magnitudeFreed,
         string memory err
     ) internal {
-        Magnitudes[] memory curMagnitudes = _getMagnitudes(operator, strategies);
-        Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, strategies);
-
+        (Magnitudes[] memory prev, Magnitudes[] memory current) = _getMagnitudes(operator, strategies);
         for (uint i = 0; i < strategies.length; i++) {
-            assertEq(curMagnitudes[i].allocatable, prevMagnitudes[i].allocatable + magnitudeFreed[i], err);
+            assertEq(current[i].allocatable, prev[i].allocatable + magnitudeFreed[i], err);
         }
     }
 
@@ -1206,11 +1140,9 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         IStrategy[] memory strategies,
         string memory err
     ) internal {
-        Magnitudes[] memory curMagnitudes = _getMagnitudes(operator, strategies);
-        Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, strategies);
-
+        (Magnitudes[] memory prev, Magnitudes[] memory current) = _getMagnitudes(operator, strategies);
         for (uint i = 0; i < strategies.length; i++) {
-            assertEq(curMagnitudes[i].allocatable, prevMagnitudes[i].allocatable, err);
+            assertEq(current[i].allocatable, prev[i].allocatable, err);
         }
     }
 
@@ -1220,11 +1152,9 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         uint64[] memory magnitudeRemoved,
         string memory err
     ) internal {
-        Magnitudes[] memory curMagnitudes = _getMagnitudes(operator, strategies);
-        Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, strategies);
-
+        (Magnitudes[] memory prev, Magnitudes[] memory current) = _getMagnitudes(operator, strategies);
         for (uint i = 0; i < strategies.length; i++) {
-            assertEq(curMagnitudes[i].allocatable, prevMagnitudes[i].allocatable - magnitudeRemoved[i], err);
+            assertEq(current[i].allocatable, prev[i].allocatable - magnitudeRemoved[i], err);
         }
     }
 
@@ -1233,15 +1163,13 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         IStrategy[] memory strategies,
         string memory err
     ) internal {
-        Magnitudes[] memory curMagnitudes = _getMagnitudes(operator, strategies);
-        Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, strategies);
-
+        (Magnitudes[] memory prev, Magnitudes[] memory current) = _getMagnitudes(operator, strategies);
         /// Check:
         /// allocatable increased
         /// encumbered decreased
         for (uint i = 0; i < strategies.length; i++) {
-            assertLt(curMagnitudes[i].allocatable, prevMagnitudes[i].allocatable, err);
-            assertGt(curMagnitudes[i].encumbered, prevMagnitudes[i].encumbered, err);
+            assertLt(current[i].allocatable, prev[i].allocatable, err);
+            assertGt(current[i].encumbered, prev[i].encumbered, err);
         }
     }
 
@@ -1250,15 +1178,14 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         IStrategy[] memory strategies,
         string memory err
     ) internal {
-        Magnitudes[] memory curMagnitudes = _getMagnitudes(operator, strategies);
-        Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, strategies);
+        (Magnitudes[] memory prev, Magnitudes[] memory current) = _getMagnitudes(operator, strategies);
 
         /// Check:
         /// allocatable increased
         /// encumbered decreased
         for (uint i = 0; i < strategies.length; i++) {
-            assertGt(curMagnitudes[i].allocatable, prevMagnitudes[i].allocatable, err);
-            assertLt(curMagnitudes[i].encumbered, prevMagnitudes[i].encumbered, err);
+            assertGt(current[i].allocatable, prev[i].allocatable, err);
+            assertLt(current[i].encumbered, prev[i].encumbered, err);
         }
     }
 
@@ -1267,14 +1194,12 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         AllocateParams memory params,
         string memory err
     ) internal {
-        Allocation[] memory curAllocations = _getAllocations(operator, params.operatorSet, params.strategies);
-        Allocation[] memory prevAllocations = _getPrevAllocations(operator, params.operatorSet, params.strategies);
-
+        (Allocation[] memory prev, Allocation[] memory current) = _getAllocations(operator, params.operatorSet, params.strategies);
         /// Prev allocation.currentMagnitude should NOT equal newly-set magnitude
         /// Cur allocation.currentMagnitude SHOULD
         for (uint i = 0; i < params.strategies.length; i++) {
-            assertTrue(prevAllocations[i].currentMagnitude != params.newMagnitudes[i], err);
-            assertEq(curAllocations[i].currentMagnitude, params.newMagnitudes[i], err);
+            assertTrue(prev[i].currentMagnitude != params.newMagnitudes[i], err);
+            assertEq(current[i].currentMagnitude, params.newMagnitudes[i], err);
         }
     }
 
@@ -1284,12 +1209,10 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         SlashingParams memory params,
         string memory err
     ) internal {
-        Allocation[] memory curAllocations = _getAllocations(operator, operatorSet, params.strategies);
-        Allocation[] memory prevAllocations = _getPrevAllocations(operator, operatorSet, params.strategies);
-
+        (Allocation[] memory prev, Allocation[] memory current) = _getAllocations(operator, operatorSet, params.strategies);
         for (uint i = 0; i < params.strategies.length; i++) {
-            uint expectedSlashed = prevAllocations[i].currentMagnitude.mulWadRoundUp(params.wadsToSlash[i]);
-            assertEq(curAllocations[i].currentMagnitude, prevAllocations[i].currentMagnitude - expectedSlashed, err);
+            uint expectedSlashed = prev[i].currentMagnitude.mulWadRoundUp(params.wadsToSlash[i]);
+            assertEq(current[i].currentMagnitude, prev[i].currentMagnitude - expectedSlashed, err);
         }
     }
 
@@ -1298,11 +1221,9 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         IStrategy[] memory strategies,
         string memory err
     ) internal {
-        Magnitudes[] memory curMagnitudes = _getMagnitudes(operator, strategies);
-        Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, strategies);
-
+        (Magnitudes[] memory prev, Magnitudes[] memory current) = _getMagnitudes(operator, strategies);
         for (uint i = 0; i < strategies.length; i++) {
-            assertEq(curMagnitudes[i].max, prevMagnitudes[i].max, err);
+            assertEq(current[i].max, prev[i].max, err);
         }
     }
 
@@ -1312,14 +1233,10 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         SlashingParams memory params,
         string memory err
     ) internal {
-        Allocation[] memory prevAllocations = _getPrevAllocations(operator, operatorSet, params.strategies);
-
-        Magnitudes[] memory curMagnitudes = _getMagnitudes(operator, params.strategies);
-        Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, params.strategies);
-
+        (Magnitudes[] memory prev, Magnitudes[] memory current) = _getMagnitudes(operator, params.strategies);
         for (uint i = 0; i < params.strategies.length; i++) {
-            uint expectedSlashed = prevAllocations[i].currentMagnitude.mulWadRoundUp(params.wadsToSlash[i]);
-            assertEq(curMagnitudes[i].max, prevMagnitudes[i].max - expectedSlashed, err);
+            uint expectedSlashed = prev[i].max.mulWadRoundUp(params.wadsToSlash[i]);
+            assertEq(current[i].max, prev[i].max - expectedSlashed, err);
         }
     }
 
@@ -1331,15 +1248,13 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     ) internal {
         User op = User(payable(slashingParams.operator));
         
-        Allocation[] memory curAllocs = _getAllocations(op, operatorSet, slashingParams.strategies);
-        Allocation[] memory prevAllocs = _getPrevAllocations(op, operatorSet, slashingParams.strategies);
-        Magnitudes[] memory curMagnitudes = _getMagnitudes(op, slashingParams.strategies);
-        Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(op, slashingParams.strategies);
+        (Allocation[] memory prevAllocs, Allocation[] memory currentAllocs) = _getAllocations(op, operatorSet, slashingParams.strategies);
+        (Magnitudes[] memory prevMagnitudes, Magnitudes[] memory currentMagnitudes) = _getMagnitudes(op, slashingParams.strategies);
 
         uint32 delay = _getExistingAllocationDelay(User(payable(slashingParams.operator)));
 
         for (uint i = 0; i < slashingParams.strategies.length; i++) {
-            Allocation memory curAlloc = curAllocs[i];
+            Allocation memory curAlloc = currentAllocs[i];
             Allocation memory prevAlloc = prevAllocs[i]; 
 
             uint64 slashedMagnitude = uint64(uint256(prevAlloc.currentMagnitude).mulWadRoundUp(slashingParams.wadsToSlash[i]));
@@ -1383,7 +1298,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
             }
 
             // Check Magnitudes
-            Magnitudes memory curMagnitude = curMagnitudes[i];
+            Magnitudes memory curMagnitude = currentMagnitudes[i];
             Magnitudes memory prevMagnitude = prevMagnitudes[i];
 
             assertEq(
@@ -1633,8 +1548,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         uint[] memory curShares = _getOperatorShares(operator, params.strategies);
         uint[] memory prevShares = _getPrevOperatorShares(operator, params.strategies);
 
-        Magnitudes[] memory curMagnitudes = _getMagnitudes(operator, params.strategies);
-        Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, params.strategies);
+        (Magnitudes[] memory prevMagnitudes, Magnitudes[] memory currentMagnitudes) = _getMagnitudes(operator, params.strategies);
 
         for (uint i = 0; i < params.strategies.length; i++) {
             // Slashing doesn't occur if the operator has no slashable magnitude
@@ -1642,7 +1556,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
             uint expectedSlashed = prevMagnitudes[i].max == 0 ? 0 : SlashingLib.calcSlashedAmount({
                 operatorShares: prevShares[i],
                 prevMaxMagnitude: prevMagnitudes[i].max,
-                newMaxMagnitude: curMagnitudes[i].max
+                newMaxMagnitude: currentMagnitudes[i].max
             });
 
             assertEq(curShares[i], prevShares[i] - expectedSlashed, err);
@@ -2403,7 +2317,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     function _genAllocation_HalfAvailable(
         User operator, 
         OperatorSet memory operatorSet
-    ) internal view returns (AllocateParams memory params) {
+    ) internal returns (AllocateParams memory params) {
         return _genAllocation_HalfAvailable({
             operator: operator, 
             operatorSet: operatorSet, 
@@ -2417,13 +2331,13 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         User operator, 
         OperatorSet memory operatorSet,
         IStrategy[] memory strategies
-    ) internal view returns (AllocateParams memory params) {
+    ) internal returns (AllocateParams memory params) {
         params.operatorSet = operatorSet;
         params.strategies = strategies;
         params.newMagnitudes = new uint64[](params.strategies.length);
 
-        Allocation[] memory allocations = _getAllocations(operator, operatorSet, strategies);
-        Magnitudes[] memory magnitudes = _getMagnitudes(operator, strategies);
+        (, Allocation[] memory allocations) = _getAllocations(operator, operatorSet, strategies);
+        (, Magnitudes[] memory magnitudes) = _getMagnitudes(operator, strategies);
 
         for (uint i = 0; i < params.strategies.length; i++) {
             uint64 halfAvailable = uint64(magnitudes[i].allocatable) / 2;
@@ -2442,8 +2356,8 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         params.strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
         params.newMagnitudes = new uint64[](params.strategies.length);
 
-        Allocation[] memory allocations = _getAllocations(operator, operatorSet, params.strategies);
-        Magnitudes[] memory magnitudes = _getMagnitudes(operator, params.strategies);
+        (, Allocation[] memory allocations) = _getAllocations(operator, operatorSet, params.strategies);
+        (, Magnitudes[] memory magnitudes) = _getMagnitudes(operator, params.strategies);
 
         for (uint i = 0; i < params.strategies.length; i++) {
             // minimum of 10%, maximum of 100%. increments of 10%.
@@ -2890,75 +2804,55 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         cheats.roll(latest + 1);
     }
 
-    /// @dev Uses timewarp modifier to get the operator set strategy allocations at the last snapshot.
-    function _getPrevAllocations(
-        User operator,
-        OperatorSet memory operatorSet,
-        IStrategy[] memory strategies
-    ) internal timewarp() returns (Allocation[] memory) {
-        return _getAllocations(operator, operatorSet, strategies);
-    }
-
-    /// @dev Looks up each strategy for an operator set and returns a list of operator allocations.
-    function _getAllocations(
-        User operator,
-        OperatorSet memory operatorSet,
-        IStrategy[] memory strategies
-    ) internal view returns (Allocation[] memory allocations) {
-        allocations = new Allocation[](strategies.length);
+    function _getAllocations(User operator, OperatorSet memory operatorSet, IStrategy[] memory strategies) 
+        internal 
+        returns (Allocation[] memory prev, Allocation[] memory current) 
+    {
+        prev = new Allocation[](strategies.length);
+        current = new Allocation[](strategies.length);
         for (uint i = 0; i < strategies.length; ++i) {
-            allocations[i] = allocationManager.getAllocation(address(operator), operatorSet, strategies[i]);
+            uint currentState = timeMachine.travelToLast();
+            prev[i] = allocationManager.getAllocation(address(operator), operatorSet, strategies[i]);
+            timeMachine.travel(currentState);
+            current[i] = allocationManager.getAllocation(address(operator), operatorSet, strategies[i]);
         }
-    }
-
-    function _getPrevAllocatedStrats(
-        User operator,
-        OperatorSet memory operatorSet
-    ) internal timewarp() returns (IStrategy[] memory) {
-        return _getAllocatedStrats(operator, operatorSet);
     }
 
     function _getAllocatedStrats(
         User operator,
         OperatorSet memory operatorSet
-    ) internal view returns (IStrategy[] memory) {
-        return allocationManager.getAllocatedStrategies(address(operator), operatorSet);
+    ) internal returns (IStrategy[] memory prev, IStrategy[] memory current) {
+        uint currentState = timeMachine.travelToLast();
+        prev = allocationManager.getAllocatedStrategies(address(operator), operatorSet);
+        timeMachine.travel(currentState);
+        current = allocationManager.getAllocatedStrategies(address(operator), operatorSet);
     }
-
-    function _getPrevAllocatedSets(
-        User operator
-    ) internal timewarp() returns (OperatorSet[] memory) {
-        return _getAllocatedSets(operator);
-    }
-
+    
     function _getAllocatedSets(
         User operator
-    ) internal view returns (OperatorSet[] memory) {
-        return allocationManager.getAllocatedSets(address(operator));
-    }
-
-    function _getPrevRegisteredSets(
-        User operator
-    ) internal timewarp() returns (OperatorSet[] memory) {
-        return _getRegisteredSets(operator);
+    ) internal returns (OperatorSet[] memory prev, OperatorSet[] memory current) {
+        uint currentState = timeMachine.travelToLast();
+        prev = allocationManager.getAllocatedSets(address(operator));
+        timeMachine.travel(currentState);
+        current = allocationManager.getAllocatedSets(address(operator));
     }
 
     function _getRegisteredSets(
         User operator
-    ) internal view returns (OperatorSet[] memory) {
-        return allocationManager.getRegisteredSets(address(operator));
-    }
-
-    function _getPrevMembers(
-        OperatorSet memory operatorSet
-    ) internal timewarp returns (address[] memory) {
-        return _getMembers(operatorSet);
+    ) internal returns (OperatorSet[] memory prev, OperatorSet[] memory current) {
+        uint currentState = timeMachine.travelToLast();
+        prev = allocationManager.getRegisteredSets(address(operator));
+        timeMachine.travel(currentState);
+        current = allocationManager.getRegisteredSets(address(operator));
     }
 
     function _getMembers(
         OperatorSet memory operatorSet
-    ) internal view returns (address[] memory) {
-        return allocationManager.getMembers(operatorSet);
+    ) internal returns (address[] memory prev, address[] memory current) {
+        uint currentState = timeMachine.travelToLast();
+        prev = allocationManager.getMembers(operatorSet);
+        timeMachine.travel(currentState);
+        current = allocationManager.getMembers(operatorSet);
     }
 
     struct Magnitudes {
@@ -2967,20 +2861,21 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         uint256 max;
     }
 
-    function _getPrevMagnitudes(
-        User operator,
-        IStrategy[] memory strategies
-    ) internal timewarp() returns (Magnitudes[] memory) {
-        return _getMagnitudes(operator, strategies);
-    }
-
     function _getMagnitudes(
         User operator,
         IStrategy[] memory strategies
-    ) internal view returns (Magnitudes[] memory magnitudes) {
-        magnitudes = new Magnitudes[](strategies.length);
+    ) internal returns (Magnitudes[] memory prev, Magnitudes[] memory current) {
+        prev = new Magnitudes[](strategies.length);
+        current = new Magnitudes[](strategies.length);
         for (uint i = 0; i < strategies.length; ++i) {
-            magnitudes[i] = Magnitudes({
+            uint currentState = timeMachine.travelToLast();
+            prev[i] = Magnitudes({
+                encumbered: allocationManager.getEncumberedMagnitude(address(operator), strategies[i]),
+                allocatable: allocationManager.getAllocatableMagnitude(address(operator), strategies[i]),
+                max: allocationManager.getMaxMagnitude(address(operator), strategies[i])
+            });
+            timeMachine.travel(currentState);
+            current[i] = Magnitudes({
                 encumbered: allocationManager.getEncumberedMagnitude(address(operator), strategies[i]),
                 allocatable: allocationManager.getAllocatableMagnitude(address(operator), strategies[i]),
                 max: allocationManager.getMaxMagnitude(address(operator), strategies[i])
@@ -3003,62 +2898,40 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         return allocationManager.getMaxMagnitudesAtBlock(address(operator), strategies, blockNum);
     }
 
-    function _getPrevMinSlashableStake(
-        User operator,
-        OperatorSet memory operatorSet,
-        IStrategy[] memory strategies
-    ) internal timewarp() returns (uint[] memory) {
-        return _getMinSlashableStake(operator, operatorSet, strategies);
-    }
-
-    function _getPrevMinSlashableStake(
-        address operator,
-        OperatorSet memory operatorSet,
-        IStrategy[] memory strategies
-    ) internal timewarp() returns (uint[] memory) {
-        return _getMinSlashableStake(operator, operatorSet, strategies);
-    }
-
     function _getMinSlashableStake(
         User operator,
         OperatorSet memory operatorSet,
         IStrategy[] memory strategies
-    ) internal view returns (uint[] memory) {
-        return allocationManager.getMinimumSlashableStake({
+    ) internal returns (uint[] memory prev, uint[] memory current) {
+        uint currentState = timeMachine.travelToLast();
+        prev = allocationManager.getMinimumSlashableStake({
             operatorSet: operatorSet,
             operators: address(operator).toArray(),
             strategies: strategies,
             futureBlock: uint32(block.number)
         })[0];
-    }
-
-    function _getMinSlashableStake(
-        address operator,
-        OperatorSet memory operatorSet,
-        IStrategy[] memory strategies
-    ) internal view returns (uint[] memory) {
-        return allocationManager.getMinimumSlashableStake({
+        timeMachine.travel(currentState);
+        current = allocationManager.getMinimumSlashableStake({
             operatorSet: operatorSet,
             operators: address(operator).toArray(),
             strategies: strategies,
             futureBlock: uint32(block.number)
         })[0];
-    }
-
-    function _getPrevAllocatedStake(
-        User operator,
-        OperatorSet memory operatorSet,
-        IStrategy[] memory strategies
-    ) internal timewarp() returns (uint[] memory) {
-        return _getAllocatedStake(operator, operatorSet, strategies);
     }
 
     function _getAllocatedStake(
         User operator,
         OperatorSet memory operatorSet,
         IStrategy[] memory strategies
-    ) internal view returns (uint[] memory) {
-        return allocationManager.getAllocatedStake({
+    ) internal returns (uint[] memory prev, uint[] memory current) {
+        uint currentState = timeMachine.travelToLast();
+        prev = allocationManager.getAllocatedStake({
+            operatorSet: operatorSet,
+            operators: address(operator).toArray(),
+            strategies: strategies
+        })[0];
+        timeMachine.travel(currentState);
+        current = allocationManager.getAllocatedStake({
             operatorSet: operatorSet,
             operators: address(operator).toArray(),
             strategies: strategies
