@@ -17,6 +17,7 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
     uint[] initTokenBalances;
     uint64 slashedGwei;
     IERC20[] tokens;
+    uint40[] slashedValidators;
 
     function _init() internal override {
         _configAssetTypes(HOLDS_ETH);
@@ -33,7 +34,7 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         uint40[] memory validators = staker.getActiveValidators();
 
         //Slash on Beacon chain
-        uint40[] memory slashedValidators = _choose(validators);
+        slashedValidators = _choose(validators);
         slashedGwei = beaconChain.slashValidators(slashedValidators, BeaconChainMock.SlashType.Minor);
         beaconChain.advanceEpoch_NoWithdrawNoRewards();
         
@@ -318,10 +319,28 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         }
     }
 
-    function testFuzz_redeposit_queue_completeAsShares(uint24 _random) public rand(_random){}
+    function testFuzz_redeposit_queue_completeAsShares(uint24 _random) public rand(_random){
+        // Prove an additional validator
+        uint amount = 32 ether * _randUint({min: 1, max: 5});
+        cheats.deal(address(staker), amount);
+        (uint40[] memory validators, uint64 addedBeaconBalanceGwei) = staker.startValidators();
+        beaconChain.advanceEpoch_NoWithdrawNoRewards();
+        staker.verifyWithdrawalCredentials(validators);
+        check_VerifyWC_State(staker, validators, addedBeaconBalanceGwei);
 
-    function testFuzz_verifyValidator_queue_completeAsTokens(uint24 _random) public rand(_random){}
+        // Queue withdrawal for all 
+        uint[] memory depositShares = _getStakerDepositShares(staker, strategies);
+        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, depositShares);
+        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        check_QueuedWithdrawal_State_NotDelegated(staker, strategies, depositShares, withdrawableShares, withdrawals, withdrawalRoots);
 
-    function testFuzz_verifyValidator_queue_completeAsShares(uint24 _random) public rand(_random){}
-    
+        // Complete withdrawal as shares
+        // Fast forward to when we can complete the withdrawal
+        _rollBlocksForCompleteWithdrawals(withdrawals);
+        for (uint256 i = 0; i < withdrawals.length; ++i) {
+            staker.completeWithdrawalAsShares(withdrawals[i]);
+            check_Withdrawal_AsShares_Undelegated_State(staker, operator, withdrawals[i], withdrawals[i].strategies, withdrawableShares);
+        }
+    }
 }
