@@ -666,6 +666,14 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
     
+    function assert_Zero_WithdrawableShares(
+        User staker,
+        IStrategy strategy,
+        string memory err
+    ) internal view {
+        assertEq(_getWithdrawableShares(staker, strategy), 0, err);
+    }
+    
     /*******************************************************************************
                                 SNAPSHOT ASSERTIONS
                        TIME TRAVELERS ONLY BEYOND THIS POINT
@@ -1766,6 +1774,22 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
+    /// @dev Check that the staker's withdrawable shares have not changed
+    function assert_Snap_Unchanged_Staker_WithdrawableShares(
+        User staker,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal {
+        uint[] memory curShares = _getStakerWithdrawableShares(staker, strategies);
+        // Use timewarp to get previous staker shares
+        uint[] memory prevShares = _getPrevStakerWithdrawableShares(staker, strategies);
+
+        // For each strategy, check (prev == cur)
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(prevShares[i], curShares[i], err);
+        }
+    }
+
     /// @dev Check that the staker's withdrawable shares have decreased by `removedShares`
     function assert_Snap_Removed_Staker_WithdrawableShares(
         User staker, 
@@ -1890,16 +1914,6 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         string memory err
     ) internal {
         assert_Snap_Removed_Staker_WithdrawableShares_AtLeast(staker, strat.toArray(), removedShares.toArrayU256(), err);
-    }
-
-    function assert_Snap_Removed_Staker_WithdrawableShares_AtLeast(
-        User staker,
-        IStrategy strat,
-        uint removedShares,
-        uint errBound,
-        string memory err
-    ) internal {
-        assert_Snap_Removed_Staker_WithdrawableShares_AtLeast(staker, strat.toArray(), removedShares.toArrayU256(), errBound, err);
     }
 
     function assert_Snap_Delta_StakerShares(

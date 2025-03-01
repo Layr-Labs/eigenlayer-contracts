@@ -1203,12 +1203,27 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Removed_ActiveValidators(staker, slashedValidators, "exited validators should each be WITHDRAWN");
 
         // Share check.
-        // DSF and deposit shares should increase because we have a new deposit against a slashed operator
+        // DSF and deposit shares should increase because our deposit amount is larger than the slash amount
         uint sharesAdded = uint(beaconSharesAddedGwei - slashedBalanceGwei) * GWEI_TO_WEI;
         assert_Snap_Unchanged_BCSF(staker, "BCSF should be unchanged");
         assert_Snap_Increased_DSF(staker, BEACONCHAIN_ETH_STRAT.toArray(), "DSF should be increases");
         assert_Snap_Added_Staker_DepositShares(staker, BEACONCHAIN_ETH_STRAT, sharesAdded, "staker deposit shares should have increased");
         
         assert_Snap_Added_Staker_WithdrawableShares_AtLeast(staker, BEACONCHAIN_ETH_STRAT.toArray(), sharesAdded.toArrayU256(), "staker withdrawable shares should increase by diff of deposit and slash");
+    }
+
+    function check_CompleteCheckpoint_FullDualSlashes(
+        User staker,
+        uint40[] memory slashedValidators,
+        AllocateParams memory allocateParams,
+        SlashingParams memory slashingParams
+    ) internal {
+        check_CompleteCheckpoint_WithSlashing_Exits_State_Base(staker, slashedValidators);
+
+        // Assert no withdrawable shares
+        assert_Zero_WithdrawableShares(staker, BEACONCHAIN_ETH_STRAT, "should not have any withdrawable shares");
+        assert_Snap_Unchanged_Staker_WithdrawableShares(staker, BEACONCHAIN_ETH_STRAT.toArray(), "should not have any change in withdrawable shares");
+
+        assert_Snap_StakerWithdrawableShares_AfterAVSSlash_BCSlash(staker, allocateParams, slashingParams, "should have decreased withdrawable shares correctly");
     }
 }
