@@ -332,7 +332,7 @@ contract Integration_DualSlashing_FullSlashes is Integration_DualSlashing_Base {
         address(staker.pod()).call{value: ethToDeposit}("");
         uint64 ethDepositedGwei = uint64(ethToDeposit / GWEI_TO_WEI);
 
-        // 9. Checkpoint. This should immediately complete as there are no more active validators
+        // 9. Checkpoint. This should revert as the slashing factor is 0
         beaconChain.advanceEpoch_NoRewards();
         staker.startCheckpoint();
         check_StartCheckpoint_WithPodBalance_State(staker, ethDepositedGwei);
