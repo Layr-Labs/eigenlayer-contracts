@@ -27,9 +27,6 @@ contract IntegrationCheckUtils is IntegrationBase {
         // assert_Snap_Added_Staker_WithdrawableShares(staker, BEACONCHAIN_ETH_STRAT.toArray(), beaconBalanceWei.toArrayU256(), "staker should have added withdrawable shares to beacon chain strat");
         assert_Snap_Added_ActiveValidatorCount(staker, validators.length, "staker should have increased active validator count");
         assert_Snap_Added_ActiveValidators(staker, validators, "validators should each be active");
-
-        // uint[] memory addedWithdrawableShares = _getExpectedWithdrawableSharesAdded(staker, BEACONCHAIN_ETH_STRAT.toArray(), beaconBalanceWei.toArrayU256());
-        // assert_Snap_Added_Staker_WithdrawableShares(staker, BEACONCHAIN_ETH_STRAT.toArray(), beaconBalanceWei.toArrayU256(), "staker should have added withdrawable shares");
     }
 
     function check_StartCheckpoint_State(
