@@ -314,6 +314,42 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         assertEq(withdrawalRoot, delegationManager.calculateWithdrawalRoot(withdrawal), err);
     }
 
+    function assert_StakerStrategyListEmpty(
+        User staker,
+        string memory err
+    ) internal view {
+        IStrategy[] memory strategies = _getStakerStrategyList(staker);
+        assertEq(strategies.length, 0, err);
+    }
+
+    function assert_StrategyNotInStakerStrategyList(
+        User staker,
+        IStrategy strategy,
+        string memory err
+    ) internal view {
+        IStrategy[] memory strategies = _getStakerStrategyList(staker);
+        assertFalse(strategies.contains(strategy), err);
+    }
+
+    function assert_StrategiesInStakerStrategyList(
+        User staker,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal view {
+        for(uint i = 0; i < strategies.length; i++) {
+            assert_StrategyInStakerStrategyList(staker, strategies[i], err);
+        }
+    }
+
+    function assert_StrategyInStakerStrategyList(
+        User staker,
+        IStrategy strategy,
+        string memory err
+    ) internal view {
+        IStrategy[] memory strategies = _getStakerStrategyList(staker);
+        assertTrue(strategies.contains(strategy), err);
+    }
+
     function assert_PodBalance_Eq(
         User staker,
         uint expectedBalance,
@@ -3056,6 +3092,10 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
 
         return curShares;
+    }
+
+    function _getStakerStrategyList(User staker) internal view returns (IStrategy[] memory) {
+        return strategyManager.getStakerStrategyList(address(staker));
     }
 
     function _getPrevStakerWithdrawableShares(User staker, IStrategy[] memory strategies) internal timewarp() returns (uint[] memory) {
