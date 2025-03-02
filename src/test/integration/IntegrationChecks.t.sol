@@ -300,7 +300,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         for (uint i = 0; i < strategies.length; i++) {
             // For a full withdrawal, the dsf should be reset to wad
             if (_getStakerDepositShares(staker, strategies[i].toArray())[0] == 0) {
-                assert_DSF_Reset(staker, strategies[i].toArray(), 
+                assert_DSF_WAD(staker, strategies[i].toArray(), 
                     "check_QueuedWithdrawal_State: dsf should be reset to wad");
             }
             // For a partial withdrawal, the dsf should not be changed 
@@ -348,7 +348,7 @@ contract IntegrationCheckUtils is IntegrationBase {
             "check_Undelegate_State: calculated withdrawal should match returned root");
         assert_AllWithdrawalsPending(withdrawalRoots,
             "check_Undelegate_State: stakers withdrawal should now be pending");
-        assert_DSF_Reset(staker, strategies,
+        assert_DSF_WAD(staker, strategies,
             "check_Undelegate_State: staker dsfs should be reset to wad");
         assert_Snap_Added_QueuedWithdrawals(staker, withdrawals,
             "check_Undelegate_State: staker should have increased nonce by withdrawals.length");
@@ -391,7 +391,7 @@ contract IntegrationCheckUtils is IntegrationBase {
             "check_QueuedWithdrawal_State: failed to remove staker withdrawable shares");
         assert_Snap_Unchanged_OperatorShares(newOperator,
             "check_Redelegate_State: new operator shares should not have changed");
-        assert_DSF_Reset(staker, strategies,
+        assert_DSF_WAD(staker, strategies,
             "check_Redelegate_State: staker dsfs should be reset to wad");
     }
 
