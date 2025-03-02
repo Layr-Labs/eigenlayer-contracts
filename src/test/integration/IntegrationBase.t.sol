@@ -327,6 +327,9 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         IStrategy strategy,
         string memory err
     ) internal view {
+        // BEACONCHAIN_ETH_STRAT is not in the staker's strategy list
+        if (strategy == BEACONCHAIN_ETH_STRAT) return;       
+        
         IStrategy[] memory strategies = _getStakerStrategyList(staker);
         assertFalse(strategies.contains(strategy), err);
     }
@@ -346,6 +349,9 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         IStrategy strategy,
         string memory err
     ) internal view {
+        // BEACONCHAIN_ETH_STRAT is not in the staker's strategy list
+        if (strategy == BEACONCHAIN_ETH_STRAT) return;
+
         IStrategy[] memory strategies = _getStakerStrategyList(staker);
         assertTrue(strategies.contains(strategy), err);
     }
