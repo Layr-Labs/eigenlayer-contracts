@@ -310,7 +310,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         return (depositAmounts, withdrawalAmounts, prevMagnitudes, newMagnitudes);
     }
 
-    function _setUpQueueWithdrawalsSingleStrat(
+    function _setUpQueueWithdrawalsSingleStart(
         address staker,
         IStrategy strategy,
         uint256 depositSharesToWithdraw
@@ -439,7 +439,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
      * - operator is already a registered operator.
      * - withdrawalAmount <= depositAmount
      */
-    function _setUpCompleteQueuedWithdrawalSingleStrat(
+    function _setUpCompleteQueuedWithdrawalSingleStart(
         address staker,
         uint256 depositAmount,
         uint256 withdrawalAmount,
@@ -449,7 +449,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         depositAmounts[0] = depositAmount;
         IStrategy[] memory strategies = _deployAndDepositIntoStrategies(staker, depositAmounts, isBeaconChainStrategy);
         (QueuedWithdrawalParams[] memory queuedWithdrawalParams, Withdrawal memory withdrawal, bytes32 withdrawalRoot) =
-        _setUpQueueWithdrawalsSingleStrat({
+        _setUpQueueWithdrawalsSingleStart({
             staker: staker,
             strategy: strategies[0],
             depositSharesToWithdraw: withdrawalAmount
@@ -476,7 +476,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
      * - total deposit amount = depositAmount * numWithdrawals
      * - this will fully withdraw from the single strategy
      */
-    function _setUpCompleteQueuedWithdrawalsSingleStrat(
+    function _setUpCompleteQueuedWithdrawalsSingleStart(
         address staker,
         uint256 depositAmount,
         uint256 numWithdrawals
@@ -494,7 +494,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
                 QueuedWithdrawalParams[] memory queuedWithdrawalParams,
                 Withdrawal memory withdrawal,
                 bytes32 withdrawalRoot
-            ) = _setUpQueueWithdrawalsSingleStrat({
+            ) = _setUpQueueWithdrawalsSingleStart({
                 staker: staker,
                 strategy: strategies[0],
                 depositSharesToWithdraw: depositAmount
@@ -623,7 +623,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         }
     }
 
-    struct DelegateToSingleStratEmitStruct {
+    struct DelegateToSingleStartEmitStruct {
         address staker;
         address operator;
         IStrategy strategy;
@@ -631,8 +631,8 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
         uint256 depositScalingFactor;
     }
 
-    function _delegateTo_expectEmit_singleStrat(
-        DelegateToSingleStratEmitStruct memory params
+    function _delegateTo_expectEmit_singleStart(
+        DelegateToSingleStartEmitStruct memory params
     ) internal {
         cheats.expectEmit(true, true, true, true, address(delegationManager));
         emit StakerDelegated(params.staker, params.operator);
@@ -658,7 +658,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
 
     /// @notice Assumes only single strategy for staker being withdrawn, only checks for single strategy if
     /// param.strategy address is not 0x0
-    function _undelegate_expectEmit_singleStrat(
+    function _undelegate_expectEmit_singleStart(
         UndelegateEmitStruct memory params
     ) internal {
         if (params.forceUndelegated) {
@@ -1683,8 +1683,8 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
         strategyManagerMock.addDeposit(staker, strategyMock, shares);
         // delegate from the `staker` to the operator
         cheats.prank(staker);
-        _delegateTo_expectEmit_singleStrat(
-            DelegateToSingleStratEmitStruct({
+        _delegateTo_expectEmit_singleStart(
+            DelegateToSingleStartEmitStruct({
                 staker: staker,
                 operator: defaultOperator,
                 strategy: strategyMock,
@@ -1749,8 +1749,8 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
 
         // delegate from the `staker` to the operator
         cheats.startPrank(staker);
-        _delegateTo_expectEmit_singleStrat(
-            DelegateToSingleStratEmitStruct({
+        _delegateTo_expectEmit_singleStart(
+            DelegateToSingleStartEmitStruct({
                 staker: staker,
                 operator: defaultOperator,
                 strategy: beaconChainETHStrategy,
@@ -1915,8 +1915,8 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
 
         // delegate from the `staker` to the operator
         cheats.prank(staker);
-        _delegateTo_expectEmit_singleStrat(
-            DelegateToSingleStratEmitStruct({
+        _delegateTo_expectEmit_singleStart(
+            DelegateToSingleStartEmitStruct({
                 staker: staker,
                 operator: defaultOperator,
                 strategy: strategyMock,
@@ -1983,8 +1983,8 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
 
         // delegate from the `staker` to the operator, check for events emitted
         cheats.startPrank(staker);
-        _delegateTo_expectEmit_singleStrat(
-            DelegateToSingleStratEmitStruct({
+        _delegateTo_expectEmit_singleStart(
+            DelegateToSingleStartEmitStruct({
                 staker: staker,
                 operator: defaultOperator,
                 strategy: beaconChainETHStrategy,
@@ -2055,8 +2055,8 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
 
         // delegate from the `staker` to the operator, check for events emitted
         cheats.startPrank(staker);
-        _delegateTo_expectEmit_singleStrat(
-            DelegateToSingleStratEmitStruct({
+        _delegateTo_expectEmit_singleStart(
+            DelegateToSingleStartEmitStruct({
                 staker: staker,
                 operator: defaultOperator,
                 strategy: beaconChainETHStrategy,
@@ -2524,8 +2524,8 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
         strategyManagerMock.addDeposit(staker, strategyMock, shares);
         // delegate from the `staker` to the operator
         cheats.startPrank(staker);
-        _delegateTo_expectEmit_singleStrat(
-            DelegateToSingleStratEmitStruct({
+        _delegateTo_expectEmit_singleStart(
+            DelegateToSingleStartEmitStruct({
                 staker: staker,
                 operator: defaultOperator,
                 strategy: strategyMock,
@@ -2612,8 +2612,8 @@ contract DelegationManagerUnitTests_delegateTo is DelegationManagerUnitTests {
         eigenPodManagerMock.setPodOwnerShares(staker, beaconShares);
         // delegate from the `staker` to the operator
         cheats.startPrank(staker);
-        _delegateTo_expectEmit_singleStrat(
-            DelegateToSingleStratEmitStruct({
+        _delegateTo_expectEmit_singleStart(
+            DelegateToSingleStartEmitStruct({
                 staker: staker,
                 operator: defaultOperator,
                 strategy: beaconChainETHStrategy,
@@ -3829,7 +3829,7 @@ contract DelegationManagerUnitTests_undelegate is DelegationManagerUnitTests {
         }
 
         Withdrawal memory withdrawal;
-        _undelegate_expectEmit_singleStrat(
+        _undelegate_expectEmit_singleStart(
             UndelegateEmitStruct({
                 staker: staker,
                 operator: defaultOperator,
@@ -3881,14 +3881,14 @@ contract DelegationManagerUnitTests_undelegate is DelegationManagerUnitTests {
         });
 
         // Format queued withdrawal
-        (, Withdrawal memory withdrawal, bytes32 withdrawalRoot) = _setUpQueueWithdrawalsSingleStrat({
+        (, Withdrawal memory withdrawal, bytes32 withdrawalRoot) = _setUpQueueWithdrawalsSingleStart({
             staker: defaultStaker,
             strategy: strategy,
             depositSharesToWithdraw: shares
         });
 
         // Undelegate the staker
-        _undelegate_expectEmit_singleStrat(
+        _undelegate_expectEmit_singleStart(
             UndelegateEmitStruct({
                 staker: defaultStaker,
                 operator: defaultOperator,
@@ -3956,7 +3956,7 @@ contract DelegationManagerUnitTests_undelegate is DelegationManagerUnitTests {
         });
 
         // Format queued withdrawal
-        (, Withdrawal memory withdrawal, bytes32 withdrawalRoot) = _setUpQueueWithdrawalsSingleStrat({
+        (, Withdrawal memory withdrawal, bytes32 withdrawalRoot) = _setUpQueueWithdrawalsSingleStart({
             staker: defaultStaker,
             strategy: strategy,
             depositSharesToWithdraw: shares
@@ -3969,7 +3969,7 @@ contract DelegationManagerUnitTests_undelegate is DelegationManagerUnitTests {
         assertLe(operatorSharesDecreased, shares, "operatorSharesDecreased should be <= shares");
 
         // Undelegate the staker
-        _undelegate_expectEmit_singleStrat(
+        _undelegate_expectEmit_singleStart(
             UndelegateEmitStruct({
                 staker: defaultStaker,
                 operator: defaultOperator,
@@ -4096,14 +4096,14 @@ contract DelegationManagerUnitTests_undelegate is DelegationManagerUnitTests {
             delegationManager.getWithdrawableShares(defaultStaker, strategy.toArray());
         uint256 operatorSharesBefore = delegationManager.operatorShares(defaultOperator, strategy);
         {
-            (, Withdrawal memory withdrawal, bytes32 withdrawalRoot) = _setUpQueueWithdrawalsSingleStrat({
+            (, Withdrawal memory withdrawal, bytes32 withdrawalRoot) = _setUpQueueWithdrawalsSingleStart({
                 staker: defaultStaker,
                 strategy: strategy,
                 depositSharesToWithdraw: shares
             });
 
             // Undelegate the staker
-            _undelegate_expectEmit_singleStrat(
+            _undelegate_expectEmit_singleStart(
                 UndelegateEmitStruct({
                     staker: defaultStaker,
                     operator: defaultOperator,
@@ -4186,7 +4186,7 @@ contract DelegationManagerUnitTests_undelegate is DelegationManagerUnitTests {
             assertEq(operatorSharesAfterSlash, 0, "operator shares not fully slashed");
         }
 
-        (, Withdrawal memory withdrawal, bytes32 withdrawalRoot) = _setUpQueueWithdrawalsSingleStrat({
+        (, Withdrawal memory withdrawal, bytes32 withdrawalRoot) = _setUpQueueWithdrawalsSingleStart({
             staker: defaultStaker,
             strategy: strategy,
             depositSharesToWithdraw: shares
@@ -4203,7 +4203,7 @@ contract DelegationManagerUnitTests_undelegate is DelegationManagerUnitTests {
         }
 
         // Undelegate the staker
-        _undelegate_expectEmit_singleStrat(
+        _undelegate_expectEmit_singleStart(
             UndelegateEmitStruct({
                 staker: defaultStaker,
                 operator: defaultOperator,
@@ -4317,7 +4317,7 @@ contract DelegationManagerUnitTests_undelegate is DelegationManagerUnitTests {
         // 5. Undelegate the stakers with expected events
         uint256 totalOperatorSharesDecreased = 0;
         for (uint256 i = 0; i < stakers.length; ++i) {
-            (, Withdrawal memory withdrawal, bytes32 withdrawalRoot) = _setUpQueueWithdrawalsSingleStrat({
+            (, Withdrawal memory withdrawal, bytes32 withdrawalRoot) = _setUpQueueWithdrawalsSingleStart({
                 staker: stakers[i],
                 strategy: strategyMock,
                 depositSharesToWithdraw: stakerDepositShares[stakers[i]]
@@ -4327,7 +4327,7 @@ contract DelegationManagerUnitTests_undelegate is DelegationManagerUnitTests {
                 delegationManager.depositScalingFactor(stakers[i], strategyMock),
                 newMaxMagnitude
             );
-            _undelegate_expectEmit_singleStrat(
+            _undelegate_expectEmit_singleStart(
                 UndelegateEmitStruct({
                     staker: stakers[i],
                     operator: defaultOperator,
@@ -4395,7 +4395,7 @@ contract DelegationManagerUnitTests_undelegate is DelegationManagerUnitTests {
         uint256 operatorSharesBefore = delegationManager.operatorShares(defaultOperator, strategyMock);
 
         // Format queued withdrawal
-        (, Withdrawal memory withdrawal, bytes32 withdrawalRoot) = _setUpQueueWithdrawalsSingleStrat({
+        (, Withdrawal memory withdrawal, bytes32 withdrawalRoot) = _setUpQueueWithdrawalsSingleStart({
             staker: defaultStaker,
             strategy: strategyMock,
             depositSharesToWithdraw: shares
@@ -4408,7 +4408,7 @@ contract DelegationManagerUnitTests_undelegate is DelegationManagerUnitTests {
 
         // Undelegate the staker
         cheats.prank(defaultStaker);
-        _undelegate_expectEmit_singleStrat(
+        _undelegate_expectEmit_singleStart(
             UndelegateEmitStruct({
                 staker: defaultStaker,
                 operator: defaultOperator,
@@ -4646,14 +4646,14 @@ contract DelegationManagerUnitTests_redelegate is DelegationManagerUnitTests {
         _registerOperatorWithBaseDetails(newOperator);
 
         // Format queued withdrawal
-        (, Withdrawal memory withdrawal, bytes32 withdrawalRoot) = _setUpQueueWithdrawalsSingleStrat({
+        (, Withdrawal memory withdrawal, bytes32 withdrawalRoot) = _setUpQueueWithdrawalsSingleStart({
             staker: defaultStaker,
             strategy: strategy,
             depositSharesToWithdraw: shares
         });
 
         // Redelegate the staker
-        _undelegate_expectEmit_singleStrat(
+        _undelegate_expectEmit_singleStart(
             UndelegateEmitStruct({
                 staker: defaultStaker,
                 operator: defaultOperator,
@@ -4666,8 +4666,8 @@ contract DelegationManagerUnitTests_redelegate is DelegationManagerUnitTests {
                 forceUndelegated: false
             })
         );
-        _delegateTo_expectEmit_singleStrat(
-            DelegateToSingleStratEmitStruct({
+        _delegateTo_expectEmit_singleStart(
+            DelegateToSingleStartEmitStruct({
                 staker: defaultStaker,
                 operator: newOperator,
                 strategy: strategyMock,
@@ -4743,12 +4743,12 @@ contract DelegationManagerUnitTests_redelegate is DelegationManagerUnitTests {
 
         // 3. Setup queued withdrawals from `undelegate`
         // queued withdrawals done for single strat as this is how undelegate queue withdraws
-        (, Withdrawal memory strategyWithdrawal,) = _setUpQueueWithdrawalsSingleStrat({
+        (, Withdrawal memory strategyWithdrawal,) = _setUpQueueWithdrawalsSingleStart({
             staker: staker,
             strategy: strategyMock,
             depositSharesToWithdraw: strategyShares
         });
-        (, Withdrawal memory beaconWithdrawal,) = _setUpQueueWithdrawalsSingleStrat({
+        (, Withdrawal memory beaconWithdrawal,) = _setUpQueueWithdrawalsSingleStart({
             staker: staker,
             strategy: IStrategy(address(beaconChainETHStrategy)),
             depositSharesToWithdraw: uint256(beaconShares)
@@ -4804,7 +4804,7 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
     function test_Revert_WhenEnterQueueWithdrawalsPaused() public {
         cheats.prank(pauser);
         delegationManager.pause(2 ** PAUSED_ENTER_WITHDRAWAL_QUEUE);
-        (QueuedWithdrawalParams[] memory queuedWithdrawalParams,,) = _setUpQueueWithdrawalsSingleStrat({
+        (QueuedWithdrawalParams[] memory queuedWithdrawalParams,,) = _setUpQueueWithdrawalsSingleStart({
             staker: defaultStaker,
             strategy: strategyMock,
             depositSharesToWithdraw: 100
@@ -4834,7 +4834,7 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
         address withdrawer
     ) public {
         _depositIntoStrategies(defaultStaker, strategyMock.toArray(), uint256(100).toArrayU256());
-        (QueuedWithdrawalParams[] memory queuedWithdrawalParams,,) = _setUpQueueWithdrawalsSingleStrat({
+        (QueuedWithdrawalParams[] memory queuedWithdrawalParams,,) = _setUpQueueWithdrawalsSingleStart({
             staker: defaultStaker,
             strategy: strategyMock,
             depositSharesToWithdraw: 100
@@ -4874,7 +4874,7 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
      * - Asserts that staker cumulativeWithdrawalsQueued nonce is incremented
      * - Checks that event was emitted with correct withdrawalRoot and withdrawal
      */
-    function testFuzz_queueWithdrawal_SingleStrat_nonSlashedOperator(
+    function testFuzz_queueWithdrawal_SingleStart_nonSlashedOperator(
         Randomness r
     ) public rand(r) {
         uint256 depositAmount = r.Uint256(1, MAX_STRATEGY_SHARES);
@@ -4896,7 +4896,7 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
             depositAmount: depositAmount
         });
         (QueuedWithdrawalParams[] memory queuedWithdrawalParams, Withdrawal memory withdrawal, bytes32 withdrawalRoot) =
-        _setUpQueueWithdrawalsSingleStrat({
+        _setUpQueueWithdrawalsSingleStart({
             staker: defaultStaker,
             strategy: strategies[0],
             depositSharesToWithdraw: withdrawalAmount
@@ -4943,7 +4943,7 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
      * - Asserts that staker cumulativeWithdrawalsQueued nonce is incremented
      * - Checks that event was emitted with correct withdrawalRoot and withdrawal
      */
-    function testFuzz_queueWithdrawal_SingleStrat_preSlashedOperator(
+    function testFuzz_queueWithdrawal_SingleStart_preSlashedOperator(
         Randomness r
     ) public rand(r) {
         uint256 depositAmount = r.Uint256(1, MAX_STRATEGY_SHARES);
@@ -4969,7 +4969,7 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
         });
 
         (QueuedWithdrawalParams[] memory queuedWithdrawalParams, Withdrawal memory withdrawal, bytes32 withdrawalRoot) =
-        _setUpQueueWithdrawalsSingleStrat({
+        _setUpQueueWithdrawalsSingleStart({
             staker: defaultStaker,
             strategy: strategyMock,
             depositSharesToWithdraw: withdrawalAmount
@@ -5018,7 +5018,7 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
      * - Asserts that staker cumulativeWithdrawalsQueued nonce is incremented
      * - Checks that event was emitted with correct withdrawalRoot and withdrawal
      */
-    function testFuzz_queueWithdrawal_SingleStrat_slashedWhileStaked(
+    function testFuzz_queueWithdrawal_SingleStart_slashedWhileStaked(
         Randomness r
     ) public rand(r) {
         uint256 depositAmount = r.Uint256(1, MAX_STRATEGY_SHARES);
@@ -5064,7 +5064,7 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
                 QueuedWithdrawalParams[] memory queuedWithdrawalParams,
                 Withdrawal memory withdrawal,
                 bytes32 withdrawalRoot
-            ) = _setUpQueueWithdrawalsSingleStrat({
+            ) = _setUpQueueWithdrawalsSingleStart({
                 staker: defaultStaker,
                 strategy: strategyMock,
                 depositSharesToWithdraw: withdrawalAmount
@@ -5110,7 +5110,7 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
      * - Asserts that staker withdrawableShares after is 0
      * - Checks that event was emitted with correct withdrawalRoot and withdrawal
      */
-    function testFuzz_queueWithdrawal_SingleStrat_slashed100PercentWhileStaked(
+    function testFuzz_queueWithdrawal_SingleStart_slashed100PercentWhileStaked(
         Randomness r
     ) public rand(r) {
         uint256 depositAmount = r.Uint256(1, MAX_STRATEGY_SHARES);
@@ -5131,7 +5131,7 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
         });
 
         (QueuedWithdrawalParams[] memory queuedWithdrawalParams, Withdrawal memory withdrawal, bytes32 withdrawalRoot) =
-        _setUpQueueWithdrawalsSingleStrat({
+        _setUpQueueWithdrawalsSingleStart({
             staker: defaultStaker,
             strategy: strategyMock,
             depositSharesToWithdraw: 0 // expected 0 since slashed 100%
@@ -5621,7 +5621,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
             Withdrawal memory withdrawal,
             IERC20[] memory tokens,
             /* bytes32 withdrawalRoot */
-        ) = _setUpCompleteQueuedWithdrawalSingleStrat({
+        ) = _setUpCompleteQueuedWithdrawalSingleStart({
             staker: defaultStaker,
             depositAmount: 100,
             withdrawalAmount: 100,
@@ -5653,7 +5653,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
             Withdrawal memory withdrawal,
             IERC20[] memory tokens,
             /* bytes32 withdrawalRoot */
-        ) = _setUpCompleteQueuedWithdrawalSingleStrat({
+        ) = _setUpCompleteQueuedWithdrawalSingleStart({
             staker: defaultStaker,
             depositAmount: 100,
             withdrawalAmount: 100,
@@ -5682,7 +5682,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         address invalidCaller = r.Address();
 
         _registerOperatorWithBaseDetails(defaultOperator);
-        (Withdrawal memory withdrawal, IERC20[] memory tokens,) = _setUpCompleteQueuedWithdrawalSingleStrat({
+        (Withdrawal memory withdrawal, IERC20[] memory tokens,) = _setUpCompleteQueuedWithdrawalSingleStart({
             staker: defaultStaker,
             depositAmount: 100,
             withdrawalAmount: 100,
@@ -5698,7 +5698,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
     function test_Revert_WhenInvalidWithdrawalRoot() public {
         _registerOperatorWithBaseDetails(defaultOperator);
         (Withdrawal memory withdrawal, IERC20[] memory tokens, bytes32 withdrawalRoot) =
-        _setUpCompleteQueuedWithdrawalSingleStrat({
+        _setUpCompleteQueuedWithdrawalSingleStart({
             staker: defaultStaker,
             depositAmount: 100,
             withdrawalAmount: 100,
@@ -5766,7 +5766,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         // Queue withdrawal
         uint256 withdrawalAmount = depositAmount;
         (QueuedWithdrawalParams[] memory queuedWithdrawalParams, Withdrawal memory withdrawal,) =
-        _setUpQueueWithdrawalsSingleStrat({
+        _setUpQueueWithdrawalsSingleStart({
             staker: defaultStaker,
             strategy: strategyMock,
             depositSharesToWithdraw: withdrawalAmount
@@ -5817,7 +5817,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         bool receiveAsTokens = r.Boolean();
 
         (Withdrawal[] memory withdrawals, IERC20[][] memory tokens, bytes32[] memory withdrawalRoots) =
-        _setUpCompleteQueuedWithdrawalsSingleStrat({
+        _setUpCompleteQueuedWithdrawalsSingleStart({
             staker: staker,
             depositAmount: depositAmount,
             numWithdrawals: numWithdrawals
@@ -5885,7 +5885,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
      * - Asserts operatorShares is increased correctly after `completeQueuedWithdrawal`
      * - Asserts that the staker's withdrawable shares, deposit shares, and depositScalingFactors are updated correctly
      */
-    function test_completeQueuedWithdrawal_SingleStrat(
+    function test_completeQueuedWithdrawal_SingleStart(
         Randomness r
     ) public rand(r) {
         uint256 depositAmount = r.Uint256(1, MAX_STRATEGY_SHARES);
@@ -5894,7 +5894,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
 
         _registerOperatorWithBaseDetails(defaultOperator);
         (Withdrawal memory withdrawal, IERC20[] memory tokens, bytes32 withdrawalRoot) =
-        _setUpCompleteQueuedWithdrawalSingleStrat({
+        _setUpCompleteQueuedWithdrawalSingleStart({
             staker: defaultStaker,
             depositAmount: depositAmount,
             withdrawalAmount: withdrawalAmount,
@@ -5940,7 +5940,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
      * - Checks that event `WithdrawalCompleted` is emitted with withdrawalRoot
      * - Asserts that the shares the staker completed withdrawal for are less than what is expected since its operator is slashed
      */
-    function test_completeQueuedWithdrawal_SingleStrat_slashOperatorDuringQueue(
+    function test_completeQueuedWithdrawal_SingleStart_slashOperatorDuringQueue(
         Randomness r
     ) public rand(r) {
         uint256 depositAmount = r.Uint256(1, MAX_STRATEGY_SHARES);
@@ -5959,7 +5959,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
 
         // Queue withdrawal
         (QueuedWithdrawalParams[] memory queuedWithdrawalParams, Withdrawal memory withdrawal, bytes32 withdrawalRoot) =
-        _setUpQueueWithdrawalsSingleStrat({
+        _setUpQueueWithdrawalsSingleStart({
             staker: defaultStaker,
             strategy: strategyMock,
             depositSharesToWithdraw: withdrawalAmount
@@ -6066,7 +6066,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
 
         // Queue withdrawal
         (QueuedWithdrawalParams[] memory queuedWithdrawalParams, Withdrawal memory withdrawal, bytes32 withdrawalRoot) =
-        _setUpQueueWithdrawalsSingleStrat({
+        _setUpQueueWithdrawalsSingleStart({
             staker: defaultStaker,
             strategy: beaconChainETHStrategy,
             depositSharesToWithdraw: withdrawalAmount
@@ -6173,7 +6173,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
 
         // Queue withdrawal
         (QueuedWithdrawalParams[] memory queuedWithdrawalParams, Withdrawal memory withdrawal, bytes32 withdrawalRoot) =
-        _setUpQueueWithdrawalsSingleStrat({
+        _setUpQueueWithdrawalsSingleStart({
             staker: defaultStaker,
             strategy: beaconChainETHStrategy,
             depositSharesToWithdraw: withdrawalAmount
@@ -6261,7 +6261,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
      * - Asserts if staker == withdrawer, operatorShares increase, otherwise operatorShares are unchanged
      * - Checks that event `WithdrawalCompleted` is emitted with withdrawalRoot
      */
-    function testFuzz_completeQueuedWithdrawal_SingleStratWithdrawAsShares_nonSlashedOperator(
+    function testFuzz_completeQueuedWithdrawal_SingleStartWithdrawAsShares_nonSlashedOperator(
         Randomness r
     ) public rand(r) {
         address staker = r.Address();
@@ -6271,7 +6271,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         _registerOperatorWithBaseDetails(defaultOperator);
 
         (Withdrawal memory withdrawal, IERC20[] memory tokens, bytes32 withdrawalRoot) =
-        _setUpCompleteQueuedWithdrawalSingleStrat({
+        _setUpCompleteQueuedWithdrawalSingleStart({
             staker: staker,
             depositAmount: depositAmount,
             withdrawalAmount: withdrawalAmount,
@@ -6322,7 +6322,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         for (uint256 i; i < 4; ++i) {
             cheats.roll(startBlock + i);
             (QueuedWithdrawalParams[] memory params, Withdrawal memory withdrawal,) =
-                _setUpQueueWithdrawalsSingleStrat(defaultStaker, strategyMock, depositSharesPerWithdrawal);
+                _setUpQueueWithdrawalsSingleStart(defaultStaker, strategyMock, depositSharesPerWithdrawal);
             withdrawal.nonce = nonce;
             nonce += 1;
 
@@ -6409,7 +6409,7 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
         // Queue withdrawal
         uint256 withdrawalAmount = depositAmount;
         (QueuedWithdrawalParams[] memory queuedWithdrawalParams, Withdrawal memory withdrawal,) =
-        _setUpQueueWithdrawalsSingleStrat({
+        _setUpQueueWithdrawalsSingleStart({
             staker: defaultStaker,
             strategy: strategyMock,
             depositSharesToWithdraw: withdrawalAmount
@@ -6467,7 +6467,7 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
         // Queue withdrawal
         uint256 withdrawalAmount = depositAmount;
         (QueuedWithdrawalParams[] memory queuedWithdrawalParams, Withdrawal memory withdrawal,) =
-        _setUpQueueWithdrawalsSingleStrat({
+        _setUpQueueWithdrawalsSingleStart({
             staker: defaultStaker,
             strategy: strategyMock,
             depositSharesToWithdraw: withdrawalAmount
@@ -6518,7 +6518,7 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
         uint256 startBlock = block.number;
         uint256 withdrawalAmount = depositAmount / 6;
         for (uint256 i = 0; i < 5; i++) {
-            (QueuedWithdrawalParams[] memory queuedWithdrawalParams,,) = _setUpQueueWithdrawalsSingleStrat({
+            (QueuedWithdrawalParams[] memory queuedWithdrawalParams,,) = _setUpQueueWithdrawalsSingleStart({
                 staker: defaultStaker,
                 strategy: strategyMock,
                 depositSharesToWithdraw: withdrawalAmount
@@ -6752,7 +6752,7 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
         // 3. Queue withdrawal for staker2 and roll blocks forward so that the withdrawal is not slashable
         {
             (QueuedWithdrawalParams[] memory queuedWithdrawalParams, Withdrawal memory withdrawal,) =
-            _setUpQueueWithdrawalsSingleStrat({
+            _setUpQueueWithdrawalsSingleStart({
                 staker: staker2,
                 strategy: strategyMock,
                 depositSharesToWithdraw: withdrawAmount
@@ -6839,7 +6839,7 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
 
         // 3. Queue withdrawal for staker2 so that the withdrawal is slashable
         {
-            (QueuedWithdrawalParams[] memory queuedWithdrawalParams,,) = _setUpQueueWithdrawalsSingleStrat({
+            (QueuedWithdrawalParams[] memory queuedWithdrawalParams,,) = _setUpQueueWithdrawalsSingleStart({
                 staker: staker2,
                 strategy: strategyMock,
                 depositSharesToWithdraw: withdrawAmount
@@ -6929,7 +6929,7 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
         // 3. Queue withdrawal for staker and roll blocks forward so that the withdrawal is not slashable
         {
             (QueuedWithdrawalParams[] memory queuedWithdrawalParams, Withdrawal memory withdrawal,) =
-            _setUpQueueWithdrawalsSingleStrat({
+            _setUpQueueWithdrawalsSingleStart({
                 staker: staker,
                 strategy: strategyMock,
                 depositSharesToWithdraw: withdrawAmount1
@@ -6942,7 +6942,7 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
                 "there should be withdrawAmount slashable shares in queue"
             );
 
-            (queuedWithdrawalParams, withdrawal,) = _setUpQueueWithdrawalsSingleStrat({
+            (queuedWithdrawalParams, withdrawal,) = _setUpQueueWithdrawalsSingleStart({
                 staker: staker,
                 strategy: strategyMock,
                 depositSharesToWithdraw: withdrawAmount2
@@ -7039,7 +7039,7 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
 
         // 3. Queue withdrawal for staker and slash operator for 50%
         {
-            (QueuedWithdrawalParams[] memory queuedWithdrawalParams,,) = _setUpQueueWithdrawalsSingleStrat({
+            (QueuedWithdrawalParams[] memory queuedWithdrawalParams,,) = _setUpQueueWithdrawalsSingleStart({
                 staker: staker,
                 strategy: strategyMock,
                 depositSharesToWithdraw: depositSharesToWithdraw1
@@ -7098,7 +7098,7 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
         // 4. Queue withdrawal for staker and slash operator for 60% again
         newMagnitude = 25e16;
         {
-            (QueuedWithdrawalParams[] memory queuedWithdrawalParams,,) = _setUpQueueWithdrawalsSingleStrat({
+            (QueuedWithdrawalParams[] memory queuedWithdrawalParams,,) = _setUpQueueWithdrawalsSingleStart({
                 staker: staker,
                 strategy: strategyMock,
                 depositSharesToWithdraw: depositSharesToWithdraw2
@@ -7180,7 +7180,7 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
         uint256 completableBlock;
         {
             (QueuedWithdrawalParams[] memory queuedWithdrawalParams, Withdrawal memory withdrawal,) =
-            _setUpQueueWithdrawalsSingleStrat({
+            _setUpQueueWithdrawalsSingleStart({
                 staker: staker,
                 strategy: strategyMock,
                 depositSharesToWithdraw: depositAmount
@@ -7285,7 +7285,7 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
 
         // 3. Queue withdrawal for staker2 so that the withdrawal is slashable
         {
-            (QueuedWithdrawalParams[] memory queuedWithdrawalParams,,) = _setUpQueueWithdrawalsSingleStrat({
+            (QueuedWithdrawalParams[] memory queuedWithdrawalParams,,) = _setUpQueueWithdrawalsSingleStart({
                 staker: staker2,
                 strategy: beaconChainETHStrategy,
                 depositSharesToWithdraw: withdrawAmount
@@ -8207,7 +8207,7 @@ contract DelegationManagerUnitTests_Lifecycle is DelegationManagerUnitTests {
             assertEq(operatorSharesAfterSlash, 0, "operator shares not fully slashed");
         }
 
-        (, Withdrawal memory withdrawal, bytes32 withdrawalRoot) = _setUpQueueWithdrawalsSingleStrat({
+        (, Withdrawal memory withdrawal, bytes32 withdrawalRoot) = _setUpQueueWithdrawalsSingleStart({
             staker: defaultStaker,
             strategy: strategy,
             depositSharesToWithdraw: shares
@@ -8224,7 +8224,7 @@ contract DelegationManagerUnitTests_Lifecycle is DelegationManagerUnitTests {
         }
 
         // Undelegate the staker
-        _undelegate_expectEmit_singleStrat(
+        _undelegate_expectEmit_singleStart(
             UndelegateEmitStruct({
                 staker: defaultStaker,
                 operator: defaultOperator,
@@ -8386,7 +8386,7 @@ contract DelegationManagerUnitTests_ConvertToDepositShares is DelegationManagerU
 
     function _queueAndCompleteWithdrawalForSingleStrategy(IStrategy strategy, uint256 shares) public {
         (QueuedWithdrawalParams[] memory queuedWithdrawalParams, Withdrawal memory withdrawal,) =
-        _setUpQueueWithdrawalsSingleStrat({staker: defaultStaker, strategy: strategy, depositSharesToWithdraw: shares});
+        _setUpQueueWithdrawalsSingleStart({staker: defaultStaker, strategy: strategy, depositSharesToWithdraw: shares});
 
         cheats.prank(defaultStaker);
         delegationManager.queueWithdrawals(queuedWithdrawalParams);
@@ -8471,7 +8471,7 @@ contract DelegationManagerUnitTests_getQueuedWithdrawals is DelegationManagerUni
             QueuedWithdrawalParams[] memory queuedWithdrawalParams0,
             Withdrawal memory withdrawal0,
             bytes32 withdrawalRoot0
-        ) = _setUpQueueWithdrawalsSingleStrat({
+        ) = _setUpQueueWithdrawalsSingleStart({
             staker: defaultStaker,
             strategy: strategyMock,
             depositSharesToWithdraw: totalDepositShares / 2
@@ -8484,7 +8484,7 @@ contract DelegationManagerUnitTests_getQueuedWithdrawals is DelegationManagerUni
             QueuedWithdrawalParams[] memory queuedWithdrawalParams1,
             Withdrawal memory withdrawal1,
             bytes32 withdrawalRoot1
-        ) = _setUpQueueWithdrawalsSingleStrat({
+        ) = _setUpQueueWithdrawalsSingleStart({
             staker: defaultStaker,
             strategy: strategyMock,
             depositSharesToWithdraw: totalDepositShares / 2
@@ -8531,7 +8531,7 @@ contract DelegationManagerUnitTests_getQueuedWithdrawals is DelegationManagerUni
 
         // Queue withdrawal
         (QueuedWithdrawalParams[] memory queuedWithdrawalParams, Withdrawal memory withdrawal, bytes32 withdrawalRoot) =
-        _setUpQueueWithdrawalsSingleStrat({
+        _setUpQueueWithdrawalsSingleStart({
             staker: defaultStaker,
             strategy: strategyMock,
             depositSharesToWithdraw: depositAmount
@@ -8654,7 +8654,7 @@ contract DelegationManagerUnitTests_getQueuedWithdrawals is DelegationManagerUni
             QueuedWithdrawalParams[] memory queuedWithdrawalParams,
             Withdrawal memory withdrawal,
             bytes32 withdrawalRoot
-        ) = _setUpQueueWithdrawalsSingleStrat({
+        ) = _setUpQueueWithdrawalsSingleStart({
             staker: defaultStaker,
             strategy: strategyMock,
             depositSharesToWithdraw: depositAmount
@@ -8693,7 +8693,7 @@ contract DelegationManagerUnitTests_getQueuedWithdrawal is DelegationManagerUnit
             QueuedWithdrawalParams[] memory queuedWithdrawalParams,
             Withdrawal memory withdrawal,
             bytes32 withdrawalRoot
-        ) = _setUpQueueWithdrawalsSingleStrat({
+        ) = _setUpQueueWithdrawalsSingleStart({
             staker: defaultStaker,
             strategy: strategyMock,
             depositSharesToWithdraw: depositAmount
@@ -8724,7 +8724,7 @@ contract DelegationManagerUnitTests_getQueuedWithdrawal is DelegationManagerUnit
             QueuedWithdrawalParams[] memory queuedWithdrawalParams,
             Withdrawal memory withdrawal,
             bytes32 withdrawalRoot
-        ) = _setUpQueueWithdrawalsSingleStrat({
+        ) = _setUpQueueWithdrawalsSingleStart({
             staker: defaultStaker,
             strategy: strategyMock,
             depositSharesToWithdraw: depositAmount
