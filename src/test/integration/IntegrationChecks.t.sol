@@ -191,6 +191,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         //     and that the staker now has the expected amount of delegated shares in each strategy
         assert_HasNoUnderlyingTokenBalance(staker, strategies, "staker should have transferred all underlying tokens");
         assert_Snap_Added_Staker_DepositShares(staker, strategies, shares, "staker should expect shares in each strategy after depositing");
+        assert_StrategiesInStakerStrategyList(staker, strategies, "staker strategy list should contain all strategies");
 
         if (delegationManager.isDelegated(address(staker))) {
             User operator = User(payable(delegationManager.delegatedTo(address(staker))));
@@ -209,6 +210,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         //     and that the staker now has the expected amount of delegated shares in each strategy
         assert_HasUnderlyingTokenBalances(staker, strategies, tokenBalances, "staker should have transferred some underlying tokens");
         assert_Snap_Added_Staker_DepositShares(staker, strategies, shares, "staker should expected shares in each strategy after depositing");
+        assert_StrategiesInStakerStrategyList(staker, strategies, "staker strategy list should contain all strategies");
         
         if (delegationManager.isDelegated(address(staker))) {
             User operator = User(payable(delegationManager.delegatedTo(address(staker))));
@@ -285,15 +287,17 @@ contract IntegrationCheckUtils is IntegrationBase {
         check_Decreased_SlashableStake(operator, withdrawableShares, strategies);
         // Check that the dsf is either reset to wad or unchanged
         for (uint i = 0; i < strategies.length; i++) {
-            // For a full withdrawal, the dsf should be reset to wad
+            // For a full withdrawal, the dsf should be reset to wad & the staker strategy list should not contain the strategy
             if (_getStakerDepositShares(staker, strategies[i].toArray())[0] == 0) {
                 assert_DSF_Reset(staker, strategies[i].toArray(), 
                     "check_QueuedWithdrawal_State: dsf should be reset to wad");
+                assert_StrategyNotInStakerStrategyList(staker, strategies[i], "check_QueuedWithdrawal_State: staker strategy list should not contain strategy");
             }
-            // For a partial withdrawal, the dsf should not be changed 
+            // For a partial withdrawal, the dsf should not be changed & the strategy should still be in the staker strategy list
             else {
                 assert_Snap_Unchanged_DSF(staker, strategies[i].toArray(), 
                     "check_QueuedWithdrawal_State: dsf should not be changed");
+                assert_StrategyInStakerStrategyList(staker, strategies[i], "check_QueuedWithdrawal_State: staker strategy list should contain strategy");
             }
         }
     }
@@ -337,13 +341,14 @@ contract IntegrationCheckUtils is IntegrationBase {
             "check_Undelegate_State: stakers withdrawal should now be pending");
         assert_DSF_Reset(staker, strategies,
             "check_Undelegate_State: staker dsfs should be reset to wad");
+        assert_StakerStrategyListEmpty(staker, "check_Undelegate_State: staker strategy list should be empty");
         assert_Snap_Added_QueuedWithdrawals(staker, withdrawals,
             "check_Undelegate_State: staker should have increased nonce by withdrawals.length");
         assert_Snap_Removed_OperatorShares(operator, strategies, stakerDelegatedShares,
             "check_Undelegate_State: failed to remove operator shares");
         assert_RemovedAll_Staker_DepositShares(staker, strategies, "check_Undelegate_State: failed to remove staker shares");
         assert_RemovedAll_Staker_WithdrawableShares(staker, strategies,
-            "check_QueuedWithdrawal_State: failed to remove staker withdrawable shares");
+            "check_Undelegate_State: failed to remove staker withdrawable shares");
     }
 
     function check_Redelegate_State(
@@ -371,11 +376,12 @@ contract IntegrationCheckUtils is IntegrationBase {
             "check_Redelegate_State: stakers withdrawal should now be pending");
         assert_Snap_Added_QueuedWithdrawals(staker, withdrawals,
             "check_Redelegate_State: staker should have increased nonce by withdrawals.length");
+        assert_StakerStrategyListEmpty(staker, "check_Redelegate_State: staker strategy list should be empty");
         assert_Snap_Removed_OperatorShares(oldOperator, strategies, stakerDelegatedShares,
             "check_Redelegate_State: failed to remove operator shares");
         assert_RemovedAll_Staker_DepositShares(staker, strategies, "check_Undelegate_State: failed to remove staker shares");
         assert_RemovedAll_Staker_WithdrawableShares(staker, strategies,
-            "check_QueuedWithdrawal_State: failed to remove staker withdrawable shares");
+            "check_Redelegate_State: failed to remove staker withdrawable shares");
         assert_Snap_Unchanged_OperatorShares(newOperator,
             "check_Redelegate_State: new operator shares should not have changed");
     }
