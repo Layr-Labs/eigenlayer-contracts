@@ -127,7 +127,6 @@ jobs:
   storage-diff:
     name: Test (Storage)
     runs-on: protocol-x64-16core
-    if: needs.check-paths.outputs.code == 'true'
     steps:
       # Check out repository with all submodules for complete codebase access.
       - uses: actions/checkout@v4
@@ -166,7 +165,6 @@ jobs:
     runs-on: protocol-x64-16core
     # Only run coverage checks on dev, testnet-holesky, and mainnet branches, or PRs targeting these branches
     if: |
-      needs.check-paths.outputs.code == 'true' ||
       github.ref == 'refs/heads/dev' ||
       github.ref == 'refs/heads/testnet-holesky' ||
       github.ref == 'refs/heads/mainnet' ||
@@ -264,7 +262,6 @@ jobs:
   compare-contract-sizes:
     name: Size Diff
     runs-on: protocol-x64-16core
-    if: needs.check-paths.outputs.code == 'true'
     steps:
       # Check out repository with all submodules for complete codebase access.
       - uses: actions/checkout@v4
