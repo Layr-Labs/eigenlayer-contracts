@@ -264,6 +264,16 @@ interface IRewardsCoordinatorEvents is IRewardsCoordinatorTypes {
         RewardsSubmission rewardsSubmission
     );
 
+    // TODO: documentation -- perhaps want to reduce number of event fields as well?
+    event IncentivesDistributed(
+        address indexed submitter,
+        uint256 indexed submissionNonce,
+        bytes32 indexed incentivesSubmissionHash,
+        RewardsSubmission incentivesSubmission,
+        uint256 incentivesVersion,
+        bytes additionalData
+    );
+
     /**
      * @notice Emitted when an AVS creates a valid `OperatorDirectedRewardsSubmission`
      * @param caller The address calling `createOperatorDirectedAVSRewardsSubmission`.
@@ -437,6 +447,22 @@ interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorE
      */
     function createRewardsForAllEarners(
         RewardsSubmission[] calldata rewardsSubmissions
+    ) external;
+
+// TODO: decide if managing valid `incentivesVersion`s makes sense!
+    /**
+     * @notice Creates a new incentives submission. The method of distribution amongst stakers and operators depends
+     * on the `incentivesVersion`, whilethe details of the distribution are dependent on the `incentivesSubmission`
+     * as well as potentially on the `additionalData` input
+     * @param incentivesVersion The version of incentives logic to 
+     * @param incentivesSubmission Details about the incentives being distributed
+     * @param additionalData Optional field (perhaps required for some `incentivesVersion`s!) providing other
+     * information on how the incentives will be distributed
+     */
+    function distributeIncentives(
+        uint256 incentivesVersion,
+        RewardsSubmission calldata incentivesSubmission,
+        bytes calldata additionalData
     ) external;
 
     /**

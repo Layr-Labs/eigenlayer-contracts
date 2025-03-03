@@ -154,6 +154,25 @@ contract RewardsCoordinator is
         }
     }
 
+    function distributeIncentives(
+        uint256 incentivesVersion,
+        RewardsSubmission calldata incentivesSubmission,
+        bytes calldata additionalData
+    ) external onlyWhenNotPaused(PAUSED_INCENTIVES_DISTRIBUTION) onlyRewardsForAllSubmitter nonReentrant {
+        uint256 nonce = submissionNonce[msg.sender];
+        bytes32 incentivesSubmissionHash = keccak256(abi.encode(msg.sender, nonce, incentivesSubmission));
+
+        _validateRewardsSubmission(incentivesSubmission);
+
+        isRewardsSubmissionForAllEarnersHash[msg.sender][incentivesSubmissionHash] = true;
+        submissionNonce[msg.sender] = nonce + 1;
+
+        emit IncentivesDistributed(
+            msg.sender, nonce, incentivesSubmissionHash, incentivesSubmission, incentivesVersion, additionalData
+        );
+        incentivesSubmission.token.safeTransferFrom(msg.sender, address(this), incentivesSubmission.amount);
+    }
+
     /// @inheritdoc IRewardsCoordinator
     function createOperatorDirectedAVSRewardsSubmission(
         address avs,
