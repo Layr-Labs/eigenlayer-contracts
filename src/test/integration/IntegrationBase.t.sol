@@ -1995,11 +1995,11 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     /// @dev On a delegation, the DSF should be increased if the operator magnitude is non-WAD
     function assert_Snap_DSF_State_Delegation(
         User staker,
+        User operator,
         IStrategy[] memory strategies,
         uint[] memory delegatableShares,
         string memory err
     ) internal {
-        User operator = User(payable(delegationManager.delegatedTo(address(staker))));
         uint64[] memory maxMags = _getMaxMagnitudes(operator, strategies);
 
         for (uint i = 0; i < strategies.length; i++) {
