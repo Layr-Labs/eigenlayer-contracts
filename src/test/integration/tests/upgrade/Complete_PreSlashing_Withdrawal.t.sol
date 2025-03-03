@@ -151,11 +151,11 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal_Slash is Integratio
         _completeWithdrawal(state);
     }
 
-    function testFuzz_delegate_deposit_queue_upgrade_slashHalf_completeAsShares(uint24 r) public rand(r) {
+    function testFuzz_delegate_deposit_queue_upgrade_slash_completeAsShares(uint24 r) public rand(r) {
         TestState memory state = _init_({randomness: r, withOperator: true, withDelegation: true});
 
         // Slash operator by AVS
-        SlashingParams memory slashParams = _genSlashing_Half(state.operator, operatorSet);
+        SlashingParams memory slashParams = _genSlashing_Rand(state.operator, operatorSet);
         avs.slashOperator(slashParams);
         check_Base_Slashing_State(state.operator, allocateParams, slashParams);
 
@@ -166,11 +166,11 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal_Slash is Integratio
         _completeWithdrawal(state);
     }
 
-    function testFuzz_delegate_deposit_queue_upgrade_slashHalf_completeAsTokens(uint24 r) public rand(r) {
+    function testFuzz_delegate_deposit_queue_upgrade_slash_completeAsTokens(uint24 r) public rand(r) {
         TestState memory state = _init_({randomness: r, withOperator: true, withDelegation: true});
 
         // Slash operator by AVS
-        SlashingParams memory slashParams = _genSlashing_Half(state.operator, operatorSet);
+        SlashingParams memory slashParams = _genSlashing_Rand(state.operator, operatorSet);
         avs.slashOperator(slashParams);
         check_Base_Slashing_State(state.operator, allocateParams, slashParams);
 
