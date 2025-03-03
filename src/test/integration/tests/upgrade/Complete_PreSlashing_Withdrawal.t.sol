@@ -40,7 +40,7 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal_Base is UpgradeTest
         state.completeAsTokens = _randBool();
     }
 
-    function _completeWithdrawal(TestState memory state) internal virtual {
+    function _completeWithdrawal(TestState memory state) internal {
         for (uint256 i = 0; i < state.withdrawals.length; i++) {
             if (state.completeAsTokens) {
                 IERC20[] memory tokens = state.staker.completeWithdrawalAsTokens(state.withdrawals[i]);
