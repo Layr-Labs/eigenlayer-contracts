@@ -81,8 +81,6 @@ contract Integration_SlashedOperator is IntegrationCheckUtils {
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_Redelegate_State(staker, operator, newOperator, withdrawals, withdrawalRoots, strategies, new uint256[](strategies.length));
 
-        _rollBlocksForCompleteWithdrawals(withdrawals);
-
         // 7) Staker deposits into strategies.
         staker.depositIntoEigenlayer(strategies, initTokenBalances);
         initDepositShares = _calculateExpectedShares(strategies, initTokenBalances);
