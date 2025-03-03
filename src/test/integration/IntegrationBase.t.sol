@@ -1793,6 +1793,19 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         assert_Snap_Removed_Staker_WithdrawableShares(staker, strat.toArray(), removedShares.toArrayU256(), err);
     }
 
+    function assert_Snap_Unchanged_Staker_WithdrawableShares(
+        User staker,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal {
+        uint[] memory curShares = _getStakerWithdrawableShares(staker, strategies);
+        uint[] memory prevShares = _getPrevStakerWithdrawableShares(staker, strategies);
+        // For each strategy, check all shares have been withdrawn
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(prevShares[i], curShares[i], err);
+        }
+    }
+
     /// @dev Check that the staker's withdrawable shares have changed by the expected amount
     function assert_Snap_Expected_Staker_WithdrawableShares_Delegation(
         User staker,
@@ -3194,6 +3207,10 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     function _getStakerStrategyList(User staker) internal view returns (IStrategy[] memory) {
         return strategyManager.getStakerStrategyList(address(staker));
     }
+    
+    function _getExpectedWithdrawableSharesAfterCompletion(User staker, uint scaledShares, uint depositScalingFactor, uint slashingFactor) internal view returns (uint) {
+        return scaledShares.mulWad(depositScalingFactor).mulWad(slashingFactor);
+    }
 
     function _getPrevStakerWithdrawableShares(User staker, IStrategy[] memory strategies) internal timewarp() returns (uint[] memory) {
         return _getStakerWithdrawableShares(staker, strategies);
@@ -3431,17 +3448,5 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     function _getQueuedWithdrawals(User staker) internal view returns (Withdrawal[] memory) {
         (Withdrawal[] memory withdrawals,) = delegationManager.getQueuedWithdrawals(address(staker));
         return withdrawals;
-    }
-
-    function _getSlashingFactor(
-        User staker,
-        IStrategy strategy
-    ) internal view returns (uint256) {
-        address operator = delegationManager.delegatedTo(address(staker));
-        uint64 maxMagnitude = allocationManager.getMaxMagnitudes(operator, strategy.toArray())[0];
-        if (strategy == BEACONCHAIN_ETH_STRAT) {
-            return maxMagnitude.mulWad(eigenPodManager.beaconChainSlashingFactor(address(staker)));
-        }
-        return maxMagnitude;
     }
 }
