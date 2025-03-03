@@ -1839,11 +1839,6 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
             if (prevShares[i] == 0 && depositSharesAdded[i] > 0){
                 expectedWithdrawableShares[i] = _getExpectedWithdrawableSharesDeposit(staker, operator, strategies[i], depositSharesAdded[i]);
                 assertEq(curShares[i], expectedWithdrawableShares[i], err);
-            }
-            // TODO bound this properly 
-            else if (_getSlashingFactor(staker, strategies[i]) != WAD){
-                // If we are depositing again with a non-WAD slashing factor and a non-zero balance, we assume some rounding down
-                assertApproxEqAbs(curShares[i], prevShares[i] + depositSharesAdded[i], 1e3, err);
             } else {
                 uint[] memory prevDepositShares = _getPrevStakerDepositShares(staker, strategies);
                 assertEq((prevDepositShares[i] + depositSharesAdded[i]).mulWad(_getDepositScalingFactor(staker, strategies[i])).mulWad(_getSlashingFactor(staker, strategies[i])), curShares[i], err);
@@ -3381,7 +3376,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         (uint[] memory _withdrawableShares, ) =  delegationManager.getWithdrawableShares(address(staker), strategy.toArray());
         return _withdrawableShares[0];
     }
-    
+
     /// @dev Assumes that the staker has one withdrawal queued
     function _getWithdrawableSharesAfterCompletion(User staker) internal view returns (uint[] memory withdrawableShares) {
         bytes32 root = delegationManager.getQueuedWithdrawalRoots(address(staker))[0];
