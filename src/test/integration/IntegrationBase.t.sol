@@ -659,10 +659,10 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         IStrategy[] memory strategies,
         string memory err
     ) internal view {
-        uint[] memory depositShares = _getDepositShares(staker, strategies);
+        uint[] memory depositShares = _getStakerDepositShares(staker, strategies);
         uint[] memory withdrawableShares = _getWithdrawableShares(staker, strategies);
         for (uint i = 0; i < strategies.length; i++) {
-            assertGte(depositShares[i], withdrawableShares[i], err);
+            assertGe(depositShares[i], withdrawableShares[i], err);
         }
     }
     
