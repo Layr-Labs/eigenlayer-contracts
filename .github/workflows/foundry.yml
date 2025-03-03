@@ -22,7 +22,6 @@ jobs:
   test-suite:
     name: Test
     runs-on: protocol-x64-16core
-    if: needs.check-paths.outputs.code == 'true'
     strategy:
       matrix:
         suite: [Unit, Integration, Fork]
