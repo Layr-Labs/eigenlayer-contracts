@@ -202,3 +202,42 @@ If a staker wants to fully withdraw from the beacon chain, they need to perform 
 As the staker's `EigenPod` accumulates consensus layer or execution layer yield, the `EigenPod's` balance will increase. The staker can Checkpoint their validator to claim this yield as shares, which can either remain staked in EigenLayer or be withdrawn via the `DelegationManager` withdrawal queue:
 
 ![.](./images/Staker%20Flow%20Diagrams/Validator%20Yield.png)
+
+### Slashing Mechanism
+
+The slashing mechanism is a critical security feature of EigenLayer that allows AVSs to penalize operators for malicious behavior or non-compliance with protocol rules. This section explains how slashing works in EigenLayer.
+
+#### Slashing Overview
+
+Slashing in EigenLayer follows the principles outlined in [ELIP-002](https://github.com/eigenfoundation/ELIPs/blob/main/ELIPs/ELIP-002.md) and involves several key components:
+
+1. **Operator Sets**: AVSs create operator sets through the `AllocationManager`. These sets define which EigenLayer Strategies are included and which operators are registered.
+
+2. **Slashable Allocations**: Operators make security commitments by allocating a proportion of their delegated stake to be slashable by specific operator sets. For example, an operator can allocate 50% of their delegated stETH to be slashable by a particular operator set.
+
+3. **Slashing Execution**: When an operator violates the rules of an AVS, the AVS can slash the operator's allocated stake through the `AllocationManager`.
+
+4. **Share Accounting**: The `DelegationManager` manages the accounting of slashed shares, applying the appropriate slashing factors to both operators and their delegated stakers.
+
+#### Slashing Factors and Scaling Shares
+
+The slashing mechanism uses two key factors to convert between a staker's _deposit shares_ and their _withdrawable shares_:
+
+- **Slashing Factor**: Applied to operators who have been slashed by AVSs. This factor starts at `1 WAD` (10^18) and decreases when an operator is slashed.
+
+- **Deposit Scaling Factor**: Applied to stakers who have delegated to slashed operators. This factor also starts at `1 WAD` and decreases proportionally to the operator's slashing.
+
+These factors ensure that when an operator is slashed, both the operator and their delegators experience a proportional reduction in their withdrawable shares, maintaining the security of the system.
+
+#### Slashing Flow
+
+1. An AVS detects malicious behavior from an operator registered in one of its operator sets.
+2. The AVS calls the `AllocationManager` to slash the operator.
+3. The `AllocationManager` calculates the appropriate slashing amount based on the operator's allocation to that operator set.
+4. The `DelegationManager` updates the operator's slashing factor and the deposit scaling factors for all stakers delegated to that operator.
+5. When stakers or the operator attempt to withdraw, their withdrawable shares are scaled according to these factors, resulting in a reduced withdrawal amount.
+
+For more detailed information on slashing, refer to:
+- [Shares Accounting](./core/accounting/SharesAccounting.md)
+- [DelegationManager](./core/DelegationManager.md)
+- [AllocationManager](./core/AllocationManager.md)
