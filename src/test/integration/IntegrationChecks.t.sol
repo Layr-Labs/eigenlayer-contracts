@@ -251,7 +251,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         uint256[] memory delegatableShares = _getPrevStakerWithdrawableShares(staker, strategies);
         assert_Snap_Added_OperatorShares(operator, strategies, delegatableShares, "operator should have received shares");
         check_Added_SlashableStake(operator, strategies, delegatableShares);
-        assert_Snap_DSF_State_Delegation(staker, strategies, delegatableShares, "staker's DSF not updated correctly");
+        assert_Snap_DSF_State_Delegation(staker, operator, strategies, delegatableShares, "staker's DSF not updated correctly");
     }
 
     function check_Added_SlashableStake(
