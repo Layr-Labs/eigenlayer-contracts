@@ -1,5 +1,7 @@
 # AVSDirectory
 
+*Note: The AVSDirectory is usable but obsolete, and will be fully deprecated in the future. This documentation is kept for historical purposes. AVSs are recommended to use the [AllocationManager](./AllocationManager.md) for the new operatorSet model.*
+
 ## Overview
 
 The AVSDirectory contract is where registration relationships are defined between AVSs, operatorSets, and operators. Registration and deregistration are used in the protocol to activate and deactivate slashable stake allocations. They're also used to make the protocol more legible to external integrations.
