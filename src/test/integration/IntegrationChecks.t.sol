@@ -33,6 +33,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         uint64 beaconBalanceGwei
     ) internal {
         uint beaconBalanceWei = beaconBalanceGwei * GWEI_TO_WEI;
+        assert_DepositShares_GTE_WithdrawableShares(staker, BEACONCHAIN_ETH_STRAT.toArray(), "deposit shares should be greater than or equal to withdrawable shares");
         assert_Snap_Added_Staker_DepositShares(staker, BEACONCHAIN_ETH_STRAT, beaconBalanceWei, "staker should have added deposit shares to beacon chain strat");
         assert_Snap_Added_ActiveValidatorCount(staker, validators.length, "staker should have increased active validator count");
         assert_Snap_Added_ActiveValidators(staker, validators, "validators should each be active");
@@ -69,6 +70,7 @@ contract IntegrationCheckUtils is IntegrationBase {
     function check_CompleteCheckpoint_State(
         User staker
     ) internal {
+        assert_DepositShares_GTE_WithdrawableShares(staker, BEACONCHAIN_ETH_STRAT.toArray(), "deposit shares should be greater than or equal to withdrawable shares");
         assert_Snap_Removed_Checkpoint(staker, "should have deleted active checkpoint");
         assert_Snap_Updated_LastCheckpoint(staker, "last checkpoint timestamp should be updated");
         assert_Snap_Added_PodBalanceToWithdrawable(staker, "pod balance should have been added to withdrawable restaked exec layer gwei");
@@ -200,6 +202,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         // ... check that all underlying tokens were transferred to the correct destination
         //     and that the staker now has the expected amount of delegated shares in each strategy
         assert_HasNoUnderlyingTokenBalance(staker, strategies, "staker should have transferred all underlying tokens");
+        assert_DepositShares_GTE_WithdrawableShares(staker, strategies, "deposit shares should be greater than or equal to withdrawable shares");
         assert_Snap_Added_Staker_DepositShares(staker, strategies, shares, "staker should expect shares in each strategy after depositing");
         assert_StrategiesInStakerStrategyList(staker, strategies, "staker strategy list should contain all strategies");
 
@@ -220,8 +223,9 @@ contract IntegrationCheckUtils is IntegrationBase {
         // ... check that some underlying tokens were transferred to the correct destination
         //     and that the staker now has the expected amount of delegated shares in each strategy
         assert_HasUnderlyingTokenBalances(staker, strategies, tokenBalances, "staker should have transferred some underlying tokens");
-        assert_Snap_Added_Staker_DepositShares(staker, strategies, shares, "staker should expected shares in each strategy after depositing");
+        assert_DepositShares_GTE_WithdrawableShares(staker, strategies, "deposit shares should be greater than or equal to withdrawable shares");
         assert_StrategiesInStakerStrategyList(staker, strategies, "staker strategy list should contain all strategies");
+        assert_Snap_Added_Staker_DepositShares(staker, strategies, shares, "staker should expected shares in each strategy after depositing");
         
         if (delegationManager.isDelegated(address(staker))) {
             User operator = User(payable(delegationManager.delegatedTo(address(staker))));
@@ -229,8 +233,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         } else {
             assert_Snap_Added_Staker_WithdrawableShares(staker, strategies, shares, "deposit should increase withdrawable shares");
         }
-        assert_Snap_DSF_State_Deposit(staker, strategies, "staker's DSF not updated correctly");
-    }
+        assert_Snap_DSF_State_Deposit(staker, strategies, "staker's DSF not updated correctly");    }
 
     function check_Delegation_State(
         User staker, 
@@ -245,6 +248,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         assertTrue(delegationManager.isDelegated(address(staker)), "staker should be delegated");
         assertEq(address(operator), delegationManager.delegatedTo(address(staker)), "staker should be delegated to operator");
         assert_HasExpectedShares(staker, strategies, depositShares, "staker should still have expected shares after delegating");
+        assert_DepositShares_GTE_WithdrawableShares(staker, strategies, "deposit shares should be greater than or equal to withdrawable shares");
         assert_Snap_Unchanged_Staker_DepositShares(staker, "staker shares should be unchanged after delegating");
         assert_Snap_Expected_Staker_WithdrawableShares_Delegation(staker, operator, strategies, depositShares, "withdrawable shares should be unchanged within rounding error after delegating");
         uint256[] memory delegatableShares = _getPrevStakerWithdrawableShares(staker, strategies);
@@ -287,6 +291,7 @@ contract IntegrationCheckUtils is IntegrationBase {
             "check_QueuedWithdrawal_State: staker withdrawals should now be pending");
         assert_ValidWithdrawalHashes(withdrawals, withdrawalRoots,
             "check_QueuedWithdrawal_State: calculated withdrawals should match returned roots");
+        assert_DepositShares_GTE_WithdrawableShares(staker, strategies, "deposit shares should be greater than or equal to withdrawable shares");
         assert_Snap_Added_QueuedWithdrawals(staker, withdrawals,
             "check_QueuedWithdrawal_State: staker should have increased nonce by withdrawals.length");
         assert_Snap_Removed_OperatorShares(operator, strategies, withdrawableShares,
@@ -422,6 +427,7 @@ contract IntegrationCheckUtils is IntegrationBase {
     ) internal {
         // Common checks
         assert_WithdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
+        assert_DepositShares_GTE_WithdrawableShares(staker, strategies, "deposit shares should be greater than or equal to withdrawable shares");
         
         assert_Snap_Added_TokenBalances(staker, tokens, expectedTokens, "staker should have received expected tokens");
         assert_Snap_Unchanged_Staker_DepositShares(staker, "staker shares should not have changed");
@@ -446,6 +452,7 @@ contract IntegrationCheckUtils is IntegrationBase {
     ) internal {
         // Common checks applicable to both user and non-user operator types
         assert_WithdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
+        assert_DepositShares_GTE_WithdrawableShares(staker, strategies, "deposit shares should be greater than or equal to withdrawable shares");
         assert_Snap_Unchanged_TokenBalances(staker, "staker should not have any change in underlying token balances");
         assert_Snap_Added_Staker_DepositShares(staker, strategies, withdrawableShares, "staker should have received expected shares");
         assert_Snap_Expected_Staker_WithdrawableShares_Deposit(staker, operator, strategies, withdrawableShares, "staker should have received expected withdrawable shares");
@@ -476,6 +483,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         //     that the withdrawer received the expected shares, and that that the total shares of each o
         //     strategy withdrawn remains unchanged 
         assert_WithdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
+        assert_DepositShares_GTE_WithdrawableShares(staker, strategies, "deposit shares should be greater than or equal to withdrawable shares");
         assert_Snap_Unchanged_TokenBalances(staker, "staker should not have any change in underlying token balances");
         assert_Snap_Unchanged_TokenBalances(operator, "operator should not have any change in underlying token balances");
         assert_Snap_Added_Staker_DepositShares(staker, strategies, withdrawableShares, "staker should have received expected deposit shares");
@@ -501,6 +509,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         //     that the withdrawer received the expected shares, and that that the total shares of each o
         //     strategy withdrawn remains unchanged 
         assert_WithdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
+        assert_DepositShares_GTE_WithdrawableShares(staker, strategies, "deposit shares should be greater than or equal to withdrawable shares");
         assert_Snap_Unchanged_TokenBalances(staker, "staker should not have any change in underlying token balances");
         assert_Snap_Unchanged_TokenBalances(operator, "operator should not have any change in underlying token balances");
         assert_Snap_Added_Staker_DepositShares(staker, strategies, withdrawableShares, "staker should have received expected shares");
