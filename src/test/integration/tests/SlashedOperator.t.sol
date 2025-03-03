@@ -61,9 +61,9 @@ contract Integration_SlashedOperator is IntegrationCheckUtils {
     function testFuzz_register_allocate_fullSlash_delegate_deposit(uint24 r) public rand(r) {
         // 5) Staker delegates to operator who is fully slashed, should fail.
         staker.delegateTo(operator);
-        // NOTE: Leads to division by zero?
-        // check_Delegation_State(staker, operator, strategies, new uint256[](strategies.length)); // Initial shares are zero
-        
+        // NOTE: We didn't use check_Delegation_State as it leads to division by zero.
+        assertEq(address(operator), delegationManager.delegatedTo(address(staker)), "staker should be delegated to operator");
+
         // 6) Staker deposits into strategies, should fail.
         vm.expectRevert(IDelegationManagerErrors.FullySlashed.selector);
         staker.depositIntoEigenlayer(strategies, initTokenBalances);
