@@ -15,31 +15,6 @@ env:
   CHAIN_ID: ${{ secrets.CHAIN_ID }}
 
 jobs:
-
-  # -----------------------------------------------------------------------
-  # Check changed files code path
-  # -----------------------------------------------------------------------
-
-  check-paths:
-    runs-on: ubuntu-latest
-    outputs:
-      code: ${{ steps.filter.outputs.code }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Check changed files
-        id: filter
-        uses: dorny/paths-filter@v3
-        with:
-          filters: |
-            code:
-              - '.github/**'
-              - 'bin/**'
-              - 'src/**'
-              - 'lib/**'
-              - 'certora/**'
-              - 'foundry.toml'
-              - '**/*.sol'
-
   # -----------------------------------------------------------------------
   # Forge Test
   # -----------------------------------------------------------------------
@@ -47,8 +22,6 @@ jobs:
   test-suite:
     name: Test
     runs-on: protocol-x64-16core
-    needs: check-paths
-    if: needs.check-paths.outputs.code == 'true'
     strategy:
       matrix:
         suite: [Unit, Integration, Fork]
@@ -106,9 +79,8 @@ jobs:
   continuous-fuzzing:
     name: Test (Intense)
     runs-on: protocol-x64-16core
-    needs: check-paths
     # Only run on push events to dev branch, not on PR events
-    if: github.event_name == 'push' && github.ref == 'refs/heads/dev' && needs.check-paths.outputs.code == 'true'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
     strategy:
       fail-fast: true
     steps:
@@ -155,8 +127,6 @@ jobs:
   storage-diff:
     name: Test (Storage)
     runs-on: protocol-x64-16core
-    needs: check-paths
-    if: needs.check-paths.outputs.code == 'true'
     steps:
       # Check out repository with all submodules for complete codebase access.
       - uses: actions/checkout@v4
@@ -193,10 +163,8 @@ jobs:
   run-coverage:
     name: Coverage
     runs-on: protocol-x64-16core
-    needs: check-paths
     # Only run coverage checks on dev, testnet-holesky, and mainnet branches, or PRs targeting these branches
     if: |
-      needs.check-paths.outputs.code == 'true' ||
       github.ref == 'refs/heads/dev' ||
       github.ref == 'refs/heads/testnet-holesky' ||
       github.ref == 'refs/heads/mainnet' ||
@@ -294,8 +262,6 @@ jobs:
   compare-contract-sizes:
     name: Size Diff
     runs-on: protocol-x64-16core
-    needs: check-paths
-    if: needs.check-paths.outputs.code == 'true'
     steps:
       # Check out repository with all submodules for complete codebase access.
       - uses: actions/checkout@v4
