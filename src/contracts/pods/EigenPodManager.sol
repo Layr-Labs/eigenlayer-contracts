@@ -106,10 +106,10 @@ contract EigenPodManager is
         int256 currentDepositShares = podOwnerDepositShares[podOwner];
         require(currentDepositShares >= 0, LegacyWithdrawalsNotCompleted());
 
-        // Shares are only added to the pod owner's balance when `balanceDeltaWei` >= 0. When a pod reports
+        // Shares are only added to the pod owner's balance when `balanceDeltaWei` > 0. When a pod reports
         // a negative balance delta, the pod owner's beacon chain slashing factor is decreased, devaluing
-        // their shares.
-        if (balanceDeltaWei >= 0) {
+        // their shares. If the delta is zero, then no action needs to be taken.
+        if (balanceDeltaWei > 0) {
             (uint256 prevDepositShares, uint256 addedShares) = _addShares(podOwner, uint256(balanceDeltaWei));
 
             // Update operator shares
@@ -119,7 +119,7 @@ contract EigenPodManager is
                 prevDepositShares: prevDepositShares,
                 addedShares: addedShares
             });
-        } else {
+        } else if (balanceDeltaWei < 0) {
             uint64 beaconChainSlashingFactorDecrease = _reduceSlashingFactor({
                 podOwner: podOwner,
                 prevRestakedBalanceWei: prevRestakedBalanceWei,

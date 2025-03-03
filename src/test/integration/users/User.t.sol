@@ -645,18 +645,6 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         return abi.encodePacked(bytes1(uint8(1)), bytes11(0), address(pod));
     }
 
-    function _getSlashingFactor(
-        address staker,
-        IStrategy strategy
-    ) internal view returns (uint256) {
-        address operator = delegationManager.delegatedTo(staker);
-        uint64 maxMagnitude = allocationManager().getMaxMagnitudes(operator, strategy.toArray())[0];
-        if (strategy == beaconChainETHStrategy) {
-            return maxMagnitude.mulWad(eigenPodManager.beaconChainSlashingFactor(staker));
-        }
-        return maxMagnitude;
-    }
-
     /// @notice Gets the expected withdrawals to be created when the staker is undelegated via a call to `DelegationManager.undelegate()`
     /// @notice Assumes staker and withdrawer are the same and that all strategies and shares are withdrawn
     function _getExpectedWithdrawalStructsForStaker(

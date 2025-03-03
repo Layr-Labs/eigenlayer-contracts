@@ -320,14 +320,15 @@ function recordBeaconChainETHBalanceUpdate(
     nonReentrant
 ```
 
-This method is called by an `EigenPod` to report a change in its pod owner's shares. It accepts a positive or negative `balanceDeltaWei`. A positive delta is added to the pod owner's _deposit shares,_ and delegated to their operator if applicable. A negative delta is NOT removed from the pod owner's deposit shares. Instead, the proportion of the balance decrease is used to update the pod owner's beacon chain slashing factor and decrease the number of shares delegated to their operator (if applicable).
+This method is called by an `EigenPod` to report a change in its pod owner's shares. It accepts a positive or negative `balanceDeltaWei`. A positive delta is added to the pod owner's _deposit shares,_ and delegated to their operator if applicable. A negative delta is NOT removed from the pod owner's deposit shares. Instead, the proportion of the balance decrease is used to update the pod owner's beacon chain slashing factor and decrease the number of shares delegated to their operator (if applicable). A zero delta results in no change. 
 
 **Note** that prior to the slashing release, negative balance deltas subtracted from the pod owner's shares, and could, in certain cases, result in a negative share balance. As of the slashing release, negative balance deltas no longer subtract from share balances, updating the beacon chain slashing factor instead. 
 
 If a staker has negative shares as of the slashing release, this method will REVERT, preventing any further balance updates from their pod while the negative share balance persists. In order to fix this and restore the use of their pod, the staker should complete any outstanding withdrawals in the `DelegationManager` "as shares," which will correct the share deficit.
 
 *Effects*:
-* If `balanceDeltaWei` is positive or 0:
+* If `balanceDeltaWei` is zero, do nothing
+* If `balanceDeltaWei` is positive:
   * Adds `shares` to `podOwnerDepositShares` for `podOwner`
   * Emits `PodSharesUpdated` and `NewTotalShares` events
   * Calls [`DelegationManager.increaseDelegatedShares`](./DelegationManager.md#increasedelegatedshares)

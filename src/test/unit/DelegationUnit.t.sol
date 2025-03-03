@@ -3075,8 +3075,12 @@ contract DelegationManagerUnitTests_increaseDelegatedShares is DelegationManager
         assertFalse(delegationManager.isDelegated(staker), "bad test setup");
 
         cheats.prank(address(strategyManagerMock));
+        vm.recordLogs();
         delegationManager.increaseDelegatedShares(staker, strategyMock, 0, 0);
         assertEq(delegationManager.operatorShares(defaultOperator, strategyMock), 0, "shares should not have changed");
+
+        Vm.Log[] memory entries = vm.getRecordedLogs();
+        assertEq(0, entries.length, "should not have emitted any events");
     }
 
     /**
