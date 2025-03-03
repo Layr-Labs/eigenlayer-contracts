@@ -327,7 +327,8 @@ This method is called by an `EigenPod` to report a change in its pod owner's sha
 If a staker has negative shares as of the slashing release, this method will REVERT, preventing any further balance updates from their pod while the negative share balance persists. In order to fix this and restore the use of their pod, the staker should complete any outstanding withdrawals in the `DelegationManager` "as shares," which will correct the share deficit.
 
 *Effects*:
-* If `balanceDeltaWei` is positive or 0:
+* If `balanceDeltaWei` is zero, do nothing
+* If `balanceDeltaWei` is positive:
   * Adds `shares` to `podOwnerDepositShares` for `podOwner`
   * Emits `PodSharesUpdated` and `NewTotalShares` events
   * Calls [`DelegationManager.increaseDelegatedShares`](./DelegationManager.md#increasedelegatedshares)
