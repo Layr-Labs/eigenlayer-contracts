@@ -1541,6 +1541,19 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         assert_Snap_Removed_Staker_WithdrawableShares(staker, strat.toArray(), removedShares.toArrayU256(), err);
     }
 
+    function assert_Snap_Unchanged_Staker_WithdrawableShares(
+        User staker,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal {
+        uint[] memory curShares = _getStakerWithdrawableShares(staker, strategies);
+        uint[] memory prevShares = _getPrevStakerWithdrawableShares(staker, strategies);
+        // For each strategy, check all shares have been withdrawn
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(prevShares[i], curShares[i], err);
+        }
+    }
+
     /// @dev Check that the staker's withdrawable shares have decreased by `removedShares`
     /// FIX THIS WHEN WORKING ON ROUNDING ISSUES
     function assert_Snap_Unchanged_Staker_WithdrawableShares_Delegation(
@@ -1599,6 +1612,19 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         // For each strategy, check (prev + added == cur)
         for (uint i = 0; i < strategies.length; i++) {
             assertEq(prevShares[i] + shareDeltas[i], curShares[i], err);
+        }
+    }
+
+    function assert_Snap_Unchanged_DSF(
+        User staker,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal {
+        uint[] memory curDSFs = _getDepositScalingFactors(staker, strategies);
+        uint[] memory prevDSFs = _getPrevDepositScalingFactors(staker, strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(prevDSFs[i], curDSFs[i], err);
         }
     }
 
@@ -2068,7 +2094,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         params.wadsToSlash = new uint[](params.strategies.length);
 
         for (uint i = 0; i < params.wadsToSlash.length; i++) {
-            params.wadsToSlash[i] = 1e17;
+            params.wadsToSlash[i] = 5e17;
         }
     }
 
@@ -2709,6 +2735,10 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         return curShares;
     }
 
+    function _getExpectedWithdrawableSharesAfterCompletion(User staker, uint scaledShares, uint depositScalingFactor, uint slashingFactor) internal view returns (uint) {
+        return scaledShares.mulWad(depositScalingFactor).mulWad(slashingFactor);
+    }
+
     function _getPrevStakerWithdrawableShares(User staker, IStrategy[] memory strategies) internal timewarp() returns (uint[] memory) {
         return _getStakerWithdrawableShares(staker, strategies);
     }
@@ -2781,6 +2811,10 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
 
     function _getDepositScalingFactor(User staker, IStrategy strategy) internal view returns (uint) {
         return delegationManager.depositScalingFactor(address(staker), strategy);
+    }
+
+    function _getPrevDepositScalingFactors(User staker, IStrategy[] memory strategies) internal timewarp() returns (uint[] memory) {
+        return _getDepositScalingFactors(staker, strategies);
     }
 
     function _getExpectedDSFUndelegate(User staker) internal view returns (uint expectedDepositScalingFactor) {
@@ -2874,5 +2908,22 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
 
     function _getPrevCheckpointBalanceExited(User staker, uint64 checkpointTimestamp) internal timewarp() returns (uint64) {
         return _getCheckpointBalanceExited(staker, checkpointTimestamp);
+    }
+
+    function _getQueuedWithdrawals(User staker) internal view returns (Withdrawal[] memory) {
+        (Withdrawal[] memory withdrawals,) = delegationManager.getQueuedWithdrawals(address(staker));
+        return withdrawals;
+    }
+
+    function _getSlashingFactor(
+        User staker,
+        IStrategy strategy
+    ) internal view returns (uint256) {
+        address operator = delegationManager.delegatedTo(address(staker));
+        uint64 maxMagnitude = allocationManager.getMaxMagnitudes(operator, strategy.toArray())[0];
+        if (strategy == BEACONCHAIN_ETH_STRAT) {
+            return maxMagnitude.mulWad(eigenPodManager.beaconChainSlashingFactor(address(staker)));
+        }
+        return maxMagnitude;
     }
 }

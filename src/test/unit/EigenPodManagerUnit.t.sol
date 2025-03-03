@@ -532,6 +532,25 @@ contract EigenPodManagerUnitTests_BeaconChainETHBalanceUpdateTests is EigenPodMa
         eigenPodManager.recordBeaconChainETHBalanceUpdate(defaultStaker, 0, 0);
     }
 
+    function testFuzz_noCall_zeroBalanceUpdate(uint256 sharesBefore, uint256 prevRestakedBalanceWei) public {
+        // Constrain Inputs
+        sharesBefore = bound(sharesBefore, 0, type(uint224).max) * uint(GWEI_TO_WEI);
+        prevRestakedBalanceWei = bound(prevRestakedBalanceWei, 0, type(uint256).max);
+
+        // Initialize shares
+        _initializePodWithShares(defaultStaker, int256(sharesBefore));
+
+        // Add 0 shares, expect no call to DM
+        bytes memory emptyBytes;
+        cheats.prank(address(defaultPod));
+        cheats.expectCall(
+            address(delegationManagerMock), 
+            emptyBytes, // Cheatcode checks a partial match starting at the first byte of the calldata
+            0 // No call is made
+        );
+        eigenPodManager.recordBeaconChainETHBalanceUpdate(defaultStaker, prevRestakedBalanceWei, 0);
+    }
+
     function testFuzz_recordPositiveBalanceUpdate(
         uint256 sharesBefore, 
         uint256 sharesDelta,
@@ -539,7 +558,7 @@ contract EigenPodManagerUnitTests_BeaconChainETHBalanceUpdateTests is EigenPodMa
     ) public {
         // Constrain inputs
         sharesBefore = bound(sharesBefore, 0, type(uint224).max) * uint(GWEI_TO_WEI);
-        sharesDelta = bound(sharesDelta, 0, type(uint224).max) * uint(GWEI_TO_WEI);
+        sharesDelta = bound(sharesDelta, 1, type(uint224).max) * uint(GWEI_TO_WEI);
         prevRestakedBalanceWei = bound(prevRestakedBalanceWei, 0, type(uint256).max);
 
         // Initialize shares

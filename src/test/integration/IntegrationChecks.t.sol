@@ -8,7 +8,7 @@ import "src/test/integration/users/User_M2.t.sol";
 
 /// @notice Contract that provides utility functions to reuse common test blocks & checks
 contract IntegrationCheckUtils is IntegrationBase {
-    using ArrayLib for IStrategy[];
+    using ArrayLib for *;
     using SlashingLib for *;
     using StdStyle for *;
 
@@ -23,6 +23,7 @@ contract IntegrationCheckUtils is IntegrationBase {
     ) internal {
         uint beaconBalanceWei = beaconBalanceGwei * GWEI_TO_WEI;
         assert_Snap_Added_Staker_DepositShares(staker, BEACONCHAIN_ETH_STRAT, beaconBalanceWei, "staker should have added deposit shares to beacon chain strat");
+        assert_Snap_Added_Staker_WithdrawableShares(staker, BEACONCHAIN_ETH_STRAT.toArray(), beaconBalanceWei.toArrayU256(), "staker should have added withdrawable shares to beacon chain strat");
         assert_Snap_Added_ActiveValidatorCount(staker, validators.length, "staker should have increased active validator count");
         assert_Snap_Added_ActiveValidators(staker, validators, "validators should each be active");
     }
@@ -93,6 +94,16 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Removed_Staker_WithdrawableShares(staker, BEACONCHAIN_ETH_STRAT, slashedAmountGwei * GWEI_TO_WEI, "should have decreased withdrawable shares by slashed amount");
         assert_Snap_Removed_ActiveValidatorCount(staker, slashedValidators.length, "should have decreased active validator count");
         assert_Snap_Removed_ActiveValidators(staker, slashedValidators, "exited validators should each be WITHDRAWN");
+    }
+
+    function check_CompleteCheckpoint_ZeroBalanceDelta_State(
+        User staker
+    ) internal {
+        check_CompleteCheckpoint_State(staker);
+        
+        assert_Snap_Unchanged_Staker_DepositShares(staker, "staker deposit shares should not have decreased");
+        assert_Snap_Unchanged_Staker_WithdrawableShares(staker, BEACONCHAIN_ETH_STRAT.toArray(), "staker withdrawable shares should not have decreased");
+        assert_Snap_Unchanged_DSF(staker, BEACONCHAIN_ETH_STRAT.toArray(), "staker DSF should not have changed");
     }
 
     function check_CompleteCheckpoint_WithSlashing_HandleRoundDown_State(
