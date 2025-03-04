@@ -32,7 +32,7 @@ import "forge-std/Test.sol";
 // source .env
 
 // # To deploy and verify our contract
-// forge script script/deploy/local/deploy_from_scratch.slashing.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run(string memory configFile)" -- local/deploy_from_scratch.slashing.anvil.config.json
+// forge script script/deploy/local/deploy_from_scratch.slashing.s.sol --rpc-url $RPC_URL -vvvv --private-key $PRIVATE_KEY --broadcast --sig "run(string memory configFile)" -- local/deploy_from_scratch.slashing.anvil.config.json
 contract DeployFromScratch is Script, Test {
     Vm cheats = Vm(VM_ADDRESS);
 
@@ -82,7 +82,7 @@ contract DeployFromScratch is Script, Test {
     StrategyBaseTVLLimits[] public deployedStrategyArray;
 
     // IMMUTABLES TO SET
-    uint64 GOERLI_GENESIS_TIME = 1616508000;
+    uint64 HOLESKY_GENESIS_TIME = 1616508000;
 
     // OTHER DEPLOYMENT PARAMETERS
     uint256 STRATEGY_MANAGER_INIT_PAUSED_STATUS;
@@ -105,7 +105,7 @@ contract DeployFromScratch is Script, Test {
     address REWARDS_COORDINATOR_UPDATER;
     uint32 REWARDS_COORDINATOR_ACTIVATION_DELAY;
     uint32 REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS;
-    uint32 REWARDS_COORDINATOR_GLOBAL_OPERATOR_COMMISSION_BIPS;
+    uint32 REWARDS_COORDINATOR_DEFAULT_OPERATOR_SPLIT_BIPS;
     uint32 REWARDS_COORDINATOR_OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP;
     uint32 REWARDS_COORDINATOR_OPERATOR_SET_MAX_RETROACTIVE_LENGTH;
 
@@ -149,7 +149,7 @@ contract DeployFromScratch is Script, Test {
         REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS = uint32(
             stdJson.readUint(config_data, ".rewardsCoordinator.calculation_interval_seconds")
         );
-        REWARDS_COORDINATOR_GLOBAL_OPERATOR_COMMISSION_BIPS = uint32(
+        REWARDS_COORDINATOR_DEFAULT_OPERATOR_SPLIT_BIPS = uint32(
             stdJson.readUint(config_data, ".rewardsCoordinator.global_operator_commission_bips")
         );
         REWARDS_COORDINATOR_OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP = uint32(
@@ -238,7 +238,7 @@ contract DeployFromScratch is Script, Test {
         eigenPodImplementation = new EigenPod(
             ethPOSDeposit,
             eigenPodManager,
-            GOERLI_GENESIS_TIME,
+            HOLESKY_GENESIS_TIME,
             SEMVER
         );
 
@@ -339,7 +339,7 @@ contract DeployFromScratch is Script, Test {
                 REWARDS_COORDINATOR_INIT_PAUSED_STATUS,
                 REWARDS_COORDINATOR_UPDATER,
                 REWARDS_COORDINATOR_ACTIVATION_DELAY,
-                REWARDS_COORDINATOR_GLOBAL_OPERATOR_COMMISSION_BIPS
+                REWARDS_COORDINATOR_DEFAULT_OPERATOR_SPLIT_BIPS
             )
         );
 
@@ -383,14 +383,9 @@ contract DeployFromScratch is Script, Test {
             );
         }
 
-        {
-            // Whitelist the strategies
-            IStrategy[] memory strategies = new IStrategy[](deployedStrategyArray.length);
-            for (uint256 i = 0; i < deployedStrategyArray.length; ++i) {
-                strategies[i] = IStrategy(deployedStrategyArray[i]);
-            }
-            strategyManager.addStrategiesToDepositWhitelist(strategies);
-        }
+        // Transfer ownership 
+        eigenLayerProxyAdmin.transferOwnership(executorMultisig);
+        eigenPodBeacon.transferOwnership(executorMultisig);
 
         // STOP RECORDING TRANSACTIONS FOR DEPLOYMENT
         vm.stopBroadcast();
@@ -493,9 +488,7 @@ contract DeployFromScratch is Script, Test {
         vm.serializeString(parent_object, deployed_addresses, deployed_addresses_output);
         vm.serializeString(parent_object, chain_info, chain_info_output);
         string memory finalJson = vm.serializeString(parent_object, parameters, parameters_output);
-        // TODO: should output to different file depending on configFile passed to run()
-        //       so that we don't override mainnet output by deploying to goerli for eg.
-        vm.writeJson(finalJson, "script/output/local/slashing_output.json");
+        vm.writeJson(finalJson, "script/output/devnet/SLASHING_deploy_from_scratch_deployment_data.json");
     }
 
     function _verifyContractsPointAtOneAnother(

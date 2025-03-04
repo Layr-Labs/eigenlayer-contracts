@@ -17,8 +17,8 @@
   ],
   "allocationManager": {
     "init_paused_status": 0,
-    "DEALLOCATION_DELAY": 86400,
-    "ALLOCATION_CONFIGURATION_DELAY": 600
+    "DEALLOCATION_DELAY": 900,
+    "ALLOCATION_CONFIGURATION_DELAY": 1200
   },
   "strategyManager": {
     "init_paused_status": 0,
@@ -39,7 +39,7 @@
     "init_paused_status": 0
   },
   "delegation": {
-    "withdrawal_delay_blocks": 5,
+    "withdrawal_delay_blocks": 900,
     "init_paused_status": 0,
     "init_withdrawal_delay_blocks": 1
   },
