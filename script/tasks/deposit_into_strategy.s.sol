@@ -44,7 +44,7 @@ contract DepositIntoStrategy is Script, Test {
 
         // do deposit
         sm.depositIntoStrategy(IStrategy(strategy), IERC20(token), amount);
-        
+
         vm.stopBroadcast();
     }
 }

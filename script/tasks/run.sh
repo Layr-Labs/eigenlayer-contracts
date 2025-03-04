@@ -10,7 +10,10 @@ export $(grep -v '^#' .env | xargs)
 set +a
 
 # Get sender from provided private key
-SENDER=$(cast wallet address --private-key $PRIVATE_KEY)
+SENDER=$(cast wallet address --private-key $PRIVATE_KEY)     # deposits, delegates, is slashed and withdraws
+SENDER_1=$(cast wallet address --private-key $PRIVATE_KEY_1) # deposits, delegates and is slashed
+SENDER_2=$(cast wallet address --private-key $PRIVATE_KEY_2) # deposits, delegates, is slashed and undelegates (doesn't complete)
+SENDER_3=$(cast wallet address --private-key $PRIVATE_KEY_3) # deposits, is slashed
 
 # Define amount of shares to deposit/withdraw
 DEPOSIT_SHARES=1000
@@ -28,7 +31,6 @@ forge script -C src/contracts --via-ir ../deploy/local/deploy_from_scratch.slash
 DELEGATION_MANAGER=$(jq -r '.addresses.delegationManager' "$OUTPUT_DIR/slashing_output.json")
 STRATEGY=$(jq -r '.addresses.strategy' "$OUTPUT_DIR/slashing_output.json")
 TOKEN=$(jq -r '.addresses.TestToken' "$OUTPUT_DIR/slashing_output.json")
-BALANCE=$(cast call $TOKEN "balanceOf(address)(uint256)" $SENDER --rpc-url $RPC_URL)
 
 # Start deploying multicall3 contract
 echo -e "==========================\n"
@@ -58,6 +60,17 @@ fi
 # End of multicall3 deployment
 echo -e "\n==========================\n"
 
+# Fund other senders
+FUND_OUTPUT_SENDER_1=$(cast send $TOKEN "transfer(address,uint256)" $SENDER_1 5000 --private-key $PRIVATE_KEY --rpc-url $RPC_URL 2>&1)
+FUND_STATUS_SENDER_1=$(echo "$FUND_OUTPUT_SENDER_1" | grep "status" | awk '{print $2}')
+FUND_OUTPUT_SENDER_2=$(cast send $TOKEN "transfer(address,uint256)" $SENDER_2 5000 --private-key $PRIVATE_KEY --rpc-url $RPC_URL 2>&1)
+FUND_STATUS_SENDER_2=$(echo "$FUND_OUTPUT_SENDER_2" | grep "status" | awk '{print $2}')
+FUND_OUTPUT_SENDER_3=$(cast send $TOKEN "transfer(address,uint256)" $SENDER_3 5000 --private-key $PRIVATE_KEY --rpc-url $RPC_URL 2>&1)
+FUND_STATUS_SENDER_3=$(echo "$FUND_OUTPUT_SENDER_3" | grep "status" | awk '{print $2}')
+
+# Record initial balance of $SENDER after funding other $SENDER_s
+BALANCE=$(cast call $TOKEN "balanceOf(address)(uint256)" $SENDER --rpc-url $RPC_URL)
+
 # Unpause the AVS Directory
 forge script -C script/tasks ../tasks/unpause_avsDirectory.s.sol \
     --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast \
@@ -67,6 +80,24 @@ forge script -C script/tasks ../tasks/unpause_avsDirectory.s.sol \
 # Deposit shares into strategy
 forge script -C script/tasks ../tasks/deposit_into_strategy.s.sol \
     --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast \
+    --sig "run(string memory configFile,address strategy,address token,uint256 amount)" \
+    -- local/slashing_output.json $STRATEGY $TOKEN $DEPOSIT_SHARES
+
+# Deposit shares into strategy
+forge script -C script/tasks ../tasks/deposit_into_strategy.s.sol \
+    --rpc-url $RPC_URL --private-key $PRIVATE_KEY_1 --broadcast \
+    --sig "run(string memory configFile,address strategy,address token,uint256 amount)" \
+    -- local/slashing_output.json $STRATEGY $TOKEN $DEPOSIT_SHARES
+
+# Deposit shares into strategy
+forge script -C script/tasks ../tasks/deposit_into_strategy.s.sol \
+    --rpc-url $RPC_URL --private-key $PRIVATE_KEY_2 --broadcast \
+    --sig "run(string memory configFile,address strategy,address token,uint256 amount)" \
+    -- local/slashing_output.json $STRATEGY $TOKEN $DEPOSIT_SHARES
+
+# Deposit shares into strategy
+forge script -C script/tasks ../tasks/deposit_into_strategy.s.sol \
+    --rpc-url $RPC_URL --private-key $PRIVATE_KEY_3 --broadcast \
     --sig "run(string memory configFile,address strategy,address token,uint256 amount)" \
     -- local/slashing_output.json $STRATEGY $TOKEN $DEPOSIT_SHARES
 
@@ -82,6 +113,12 @@ forge script -C script/tasks ../tasks/register_operator_to_operatorSet.s.sol \
     --tc RegisterOperatorToOperatorSets \
     --sig "run(string memory configFile)" \
     -- local/slashing_output.json
+
+# Delegate to $SENDERs operator
+forge script -C script/tasks ../tasks/delegate_to_operator.s.sol \
+    --rpc-url $RPC_URL --private-key $PRIVATE_KEY_1 --broadcast \
+    --sig "run(string memory configFile,address operator,uint256 operatorPrivateKey,uint256 saltInt)" \
+    -- local/slashing_output.json $SENDER $PRIVATE_KEY 1
 
 # Advance the blockchain by 600 blocks to pass pending delay
 cast rpc anvil_mine 600 --rpc-url $RPC_URL
@@ -104,7 +141,19 @@ forge script -C script/tasks ../tasks/deposit_into_strategy.s.sol \
     --sig "run(string memory configFile,address strategy,address token,uint256 amount)" \
     -- local/slashing_output.json $STRATEGY $TOKEN $DEPOSIT_SHARES
 
-# Fetch current withdrawable shares and nonce
+# Delegate to $SENDERs operator
+forge script -C script/tasks ../tasks/delegate_to_operator.s.sol \
+    --rpc-url $RPC_URL --private-key $PRIVATE_KEY_2 --broadcast \
+    --sig "run(string memory configFile,address operator,uint256 operatorPrivateKey,uint256 saltInt)" \
+    -- local/slashing_output.json $SENDER $PRIVATE_KEY 2
+
+# Undelegate from $SENDERs operator (withdraw as tokens - this will need completing)
+forge script -C script/tasks ../tasks/undelegate_from_operator.s.sol \
+    --rpc-url $RPC_URL --private-key $PRIVATE_KEY_2 --broadcast \
+    --sig "run(string memory configFile)" \
+    -- local/slashing_output.json
+
+# Fetch current withdrawable shares and nonce (to complete withdrawal)
 DEPOSITS=$(cast call $DELEGATION_MANAGER "getDepositedShares(address)(address[],uint256[])" $SENDER "[$STRATEGY]" --rpc-url $RPC_URL | sed -n '2p' | tr -d '[]')
 SHARES=$(cast call $DELEGATION_MANAGER "getWithdrawableShares(address,address[])(uint256[],uint256[])" $SENDER "[$STRATEGY]" --rpc-url $RPC_URL | sed -n '1p' | tr -d '[]')
 NONCE=$(cast call $DELEGATION_MANAGER "cumulativeWithdrawalsQueued(address)(uint256)" $SENDER --rpc-url $RPC_URL)
@@ -122,7 +171,7 @@ WITHDRAWAL_START_BLOCK_NUMBER=$(cast block-number --rpc-url $RPC_URL)
 # Advance the blockchain by 5 blocks to meet `MIN_WITHDRAWAL_DELAY_BLOCKS`
 cast rpc anvil_mine 6 --rpc-url $RPC_URL
 
-# Slash the OperatorSet (50%)
+# Slash the OperatorSet (50%) - this won't apply to $SENDER who has already successfully undelegated
 forge script -C script/tasks ../tasks/slash_operatorSet.s.sol \
     --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast \
     --sig "run(string memory configFile,address operator,uint32 operatorSetId,address[] strategies,uint256[] wadToSlash)" \
@@ -145,10 +194,9 @@ SLASHED_BY_BALANCE=$(bc <<<"$BALANCE_AS_DEC - $FINAL_BALANCE_AS_DEC")
 echo -e "==========================\n"
 echo -e "Addresses saved to: $(realpath $(pwd)/../../script/output/local/slashing_output.json)"
 echo -e "\n==========================\n"
-echo "Number of tokens held initially: $BALANCE"
+echo -e "Spot check sender: $SENDER\n"
 echo "Number of shares deposited: $DEPOSITS"
 echo "Number of shares after slashing: $SHARES"
 echo "Number of shares remaining: $FINAL_SHARES"
-echo "Number of tokens held: $FINAL_BALANCE"
-echo "Number of tokens slashed: $SLASHED_BY_BALANCE"
+echo "Number of shares slashed: $SLASHED_BY_BALANCE"
 echo -e "\n=========================="
