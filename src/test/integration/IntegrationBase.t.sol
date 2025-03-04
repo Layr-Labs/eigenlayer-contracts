@@ -1956,6 +1956,19 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
+    function assert_Snap_WithinErrorBounds_DSF(
+        User staker,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal {
+        uint[] memory curDSFs = _getDepositScalingFactors(staker, strategies);
+        uint[] memory prevDSFs = _getPrevDepositScalingFactors(staker, strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            assertApproxEqAbs(curDSFs[i], prevDSFs[i], 1e2, err);
+        }
+    }
+
     /// @dev Used to assert that the DSF is either increased or unchanged, depending on the slashing factor, on a deposit
     function assert_Snap_DSF_State_Deposit(
         User staker,
@@ -1986,6 +1999,8 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         string memory err
     ) internal {
         uint[] memory curDepositShares = _getStakerDepositShares(staker, strategies);
+        uint[] memory prevDepositShares = _getPrevStakerDepositShares(staker, strategies);
+
         for (uint i = 0; i < strategies.length; i++) {
             IStrategy[] memory stratArray = strategies[i].toArray();
             /// We don't need the previous slashing factors as they shouldn't change before/after a deposit
@@ -1997,9 +2012,12 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
                 assert_Snap_Unchanged_DSF(staker, stratArray, err);
                 assert_DSF_WAD(staker, stratArray, err);
             }
-            // If there was a slashing, and we complete a withdrawal for non-zero shares, normalize
+            // If there was a slashing and we complete a withdrawal for non-zero shares, normalize the DSF
             else {
                 assert_Snap_Increased_DSF(staker, stratArray, err);
+                /// @dev Note there may be cases when the DSF `stays` the same, such as when a withdrawal is 
+                ///      queued, we deposit, and then complete as shares. THe DSF would stay the same. That test should use 
+                ///      `assert_Snap_WithinErrorBounds_DSF`
             }
         }
     }
@@ -3384,6 +3402,12 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     function _getWithdrawableShares(User staker, IStrategy strategy) internal view returns (uint withdrawableShares) {
         (uint[] memory _withdrawableShares, ) =  delegationManager.getWithdrawableShares(address(staker), strategy.toArray());
         return _withdrawableShares[0];
+    }
+
+    /// @dev Assumes that the staker has one withdrawal queued
+    function _getWithdrawableSharesAfterCompletion(User staker) internal view returns (uint[] memory withdrawableShares) {
+        bytes32 root = delegationManager.getQueuedWithdrawalRoots(address(staker))[0];
+        (, withdrawableShares) = delegationManager.getQueuedWithdrawal(root);
     }
 
     function _getActiveValidatorCount(User staker) internal view returns (uint) {
