@@ -168,7 +168,7 @@ contract Integration_FullySlashedEigenpod_NotCheckpointed is Integration_FullySl
             // BCSF is asserted to be zero here
             check_CompleteCheckpoint_FullySlashed_State(staker, validators, slashedGwei);
         } else {
-            check_CompleteCheckpoint_WithSlashing_HandleRoundDown_State(staker, validators, slashedGwei);
+            check_CompleteCheckpoint_WithSlashing_HandleRoundDown_State(staker, validators, slashedGwei - podBalanceGwei);
         }
     }
 }
