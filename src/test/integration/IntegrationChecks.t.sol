@@ -283,23 +283,26 @@ contract IntegrationCheckUtils is IntegrationBase {
         // ... check that each withdrawal was successfully enqueued, that the returned roots
         //     match the hashes of each withdrawal, and that the staker and operator have
         //     reduced shares.
-        check_QueuedWithdrawal_State_NotDelegated(staker, strategies, depositShares, withdrawableShares, withdrawals, withdrawalRoots);
-        assert_Snap_Removed_OperatorShares(operator, strategies, withdrawableShares,
-            "check_QueuedWithdrawal_State: failed to remove operator shares");
-        assert_Snap_Increased_SlashableSharesInQueue(operator, withdrawals,
-            "check_QueuedWithdrawal_State: failed to increase slashable shares in queue");
-        check_Decreased_SlashableStake(operator, withdrawableShares, strategies);
+        _check_QueuedWithdrawal_State_NotDelegated(staker, strategies, depositShares, withdrawableShares, withdrawals, withdrawalRoots);
+
+        if (delegationManager.isDelegated(address(staker))) {
+            assert_Snap_Removed_OperatorShares(operator, strategies, withdrawableShares,
+                "check_QueuedWithdrawal_State: failed to remove operator shares");
+            assert_Snap_Increased_SlashableSharesInQueue(operator, withdrawals,
+                "check_QueuedWithdrawal_State: failed to increase slashable shares in queue");
+            check_Decreased_SlashableStake(operator, withdrawableShares, strategies);
+        }
     }
 
-    /// @dev Basic queued withdrawal checks if the staker is not delegated
-    function check_QueuedWithdrawal_State_NotDelegated(
+    /// @dev Basic queued withdrawal checks if the staker is not delegated, should be called by the above function only
+    function _check_QueuedWithdrawal_State_NotDelegated(
         User staker,
         IStrategy[] memory strategies,
         uint[] memory depositShares,
         uint[] memory withdrawableShares,
         Withdrawal[] memory withdrawals,
         bytes32[] memory withdrawalRoots
-    ) internal {
+    ) private {
         assertEq(withdrawalRoots.length, 1, "check_QueuedWithdrawal_State: should only have 1 withdrawal root after queueing"); 
         assert_AllWithdrawalsPending(withdrawalRoots,
             "check_QueuedWithdrawal_State: staker withdrawals should now be pending");

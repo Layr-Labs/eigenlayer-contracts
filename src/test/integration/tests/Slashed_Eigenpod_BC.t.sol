@@ -307,7 +307,7 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, depositShares);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
-        check_QueuedWithdrawal_State_NotDelegated(staker, strategies, depositShares, withdrawableShares, withdrawals, withdrawalRoots);
+        check_QueuedWithdrawal_State(staker, User(payable(address(0))), strategies, depositShares, withdrawableShares, withdrawals, withdrawalRoots);
 
         // Complete withdrawal as tokens
         // Fast forward to when we can complete the withdrawal
@@ -333,7 +333,7 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, depositShares);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
-        check_QueuedWithdrawal_State_NotDelegated(staker, strategies, depositShares, withdrawableShares, withdrawals, withdrawalRoots);
+        check_QueuedWithdrawal_State(staker, User(payable(address(0))), strategies, depositShares, withdrawableShares, withdrawals, withdrawalRoots);
 
         // Complete withdrawal as shares
         // Fast forward to when we can complete the withdrawal
