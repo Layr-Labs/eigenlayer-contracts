@@ -57,6 +57,10 @@ library Env {
         return _envAddress("executorMultisig");
     }
 
+    function beigenExecutorMultisig() internal view returns (address) {
+        return _envAddress("beigenExecutorMultisig");
+    }
+
     function opsMultisig() internal view returns (address) {
         return _envAddress("operationsMultisig");
     }
@@ -69,8 +73,16 @@ library Env {
         return _envAddress("pauserMultisig");
     }
 
+    function communityMultisig() internal view returns (address) {
+        return _envAddress("communityMultisig");
+    }
+
     function proxyAdmin() internal view returns (address) {
         return _envAddress("proxyAdmin");
+    }
+
+    function beigenProxyAdmin() internal view returns (address) {
+        return _envAddress("beigenProxyAdmin");
     }
 
     function ethPOS() internal view returns (IETHPOSDeposit) {
@@ -79,6 +91,10 @@ library Env {
 
     function timelockController() internal view returns (TimelockController) {
         return TimelockController(payable(_envAddress("timelockController")));
+    }
+
+    function beigenTimelockController() internal view returns (TimelockController) {
+        return TimelockController(payable(_envAddress("beigenTimelockController")));
     }
 
     function multiSendCallOnly() internal view returns (address) {
