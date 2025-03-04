@@ -43,7 +43,7 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
         check_Delegation_State(staker, operator, strategies, shares);
 
         // 3. Queue Withdrawals
-        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        (, uint[] memory withdrawableShares) = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(staker, operator, strategies, shares, withdrawableShares, withdrawals, withdrawalRoots);
@@ -97,7 +97,7 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
         check_Delegation_State(staker, operator, strategies, shares);
 
         // 3. Queue Withdrawals
-        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        (, uint[] memory withdrawableShares) = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(staker, operator, strategies, shares, withdrawableShares, withdrawals, withdrawalRoots);

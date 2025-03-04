@@ -64,7 +64,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         assertNotEq(address(operator1), delegationManager.delegatedTo(address(staker)), "staker should not be delegated to operator1");
 
         // 6. Queue Withdrawal
-        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        (, uint[] memory withdrawableShares) = _getStakerWithdrawableShares(staker, strategies);
         withdrawals = staker.queueWithdrawals(strategies, shares);
         withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(staker, operator2, strategies, shares, withdrawableShares, withdrawals, withdrawalRoots);
@@ -130,7 +130,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         assertNotEq(address(operator1), delegationManager.delegatedTo(address(staker)), "staker should not be delegated to operator1");
 
         // 6. Queue Withdrawal
-        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        (, uint[] memory withdrawableShares) = _getStakerWithdrawableShares(staker, strategies);
         withdrawals = staker.queueWithdrawals(strategies, shares);
         withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(staker, operator2, strategies, shares, withdrawableShares, withdrawals, withdrawalRoots);
@@ -392,7 +392,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
 
         {
             // 7. Queue Withdrawal
-            uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+            (, uint[] memory withdrawableShares) = _getStakerWithdrawableShares(staker, strategies);
             withdrawals = staker.queueWithdrawals(strategies, shares);
             withdrawalRoots = _getWithdrawalHashes(withdrawals);
             check_QueuedWithdrawal_State(staker, operator2, strategies, shares, withdrawableShares, withdrawals, withdrawalRoots);

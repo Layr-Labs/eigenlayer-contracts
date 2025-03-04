@@ -46,8 +46,8 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
 
     function testFuzz_delegateSlashedStaker_dsfWad(uint24 _random) public rand(_random) {
 
-        uint256[] memory initDelegatableShares = _getWithdrawableShares(staker, strategies);
-        uint256[] memory initDepositShares = _getStakerDepositShares(staker, strategies);
+        (, uint256[] memory initDelegatableShares) = _getWithdrawableShares(staker, strategies);
+        (, uint256[] memory initDepositShares) = _getStakerDepositShares(staker, strategies);
 
         // Delegate to an operator
         staker.delegateTo(operator);
@@ -64,7 +64,7 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         check_IncrAlloc_State_Slashable(operator, allocateParams);
         _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
 
-        (uint256[] memory withdrawableSharesBefore, ) = delegationManager.getWithdrawableShares(address(staker), strategies);
+        (, uint256[] memory withdrawableSharesBefore) = delegationManager.getWithdrawableShares(address(staker), strategies);
 
         // Undelegate from an operator
         IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.undelegate();
@@ -92,13 +92,13 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         beaconChain.advanceEpoch_NoWithdrawNoRewards();
         staker.verifyWithdrawalCredentials(validators);
 
-        uint256[] memory initDelegatableShares = _getWithdrawableShares(staker, strategies);
-        uint256[] memory initDepositShares = _getStakerDepositShares(staker, strategies);
+        (, uint256[] memory initDelegatableShares) = _getWithdrawableShares(staker, strategies);
+        (, uint256[] memory initDepositShares) = _getStakerDepositShares(staker, strategies);
         // Delegate to an operator
         staker.delegateTo(operator);
         check_Delegation_State(staker, operator, strategies, initDepositShares);
 
-        uint256[] memory withdrawableSharesAfterDelegation = _getWithdrawableShares(staker, strategies);
+        (, uint256[] memory withdrawableSharesAfterDelegation) = _getWithdrawableShares(staker, strategies);
 
         // Create an operator set and register an operator.
         operatorSet = avs.createOperatorSet(strategies);
@@ -170,12 +170,12 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         slashingParams = avs.slashOperator(operator, operatorSet.id, strategies, wadToSlash.toArrayU256());
         assert_Snap_Allocations_Slashed(slashingParams, operatorSet, true, "operator allocations should be slashed");
 
-        uint256[] memory initDelegatableShares = _getWithdrawableShares(staker, strategies);
-        uint256[] memory initDepositShares = _getStakerDepositShares(staker, strategies);
+        (, uint256[] memory initDelegatableShares) = _getWithdrawableShares(staker, strategies);
+        (, uint256[] memory initDepositShares) = _getStakerDepositShares(staker, strategies);
 
         // Delegate to an operator
         staker.delegateTo(operator);
-        (uint256[] memory delegatedShares, ) = delegationManager.getWithdrawableShares(address(staker), strategies);
+        (, uint256[] memory delegatedShares) = delegationManager.getWithdrawableShares(address(staker), strategies);
         check_Delegation_State(staker, operator, strategies, initDepositShares);
         
         // Undelegate from an operator
@@ -207,12 +207,12 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         beaconChain.advanceEpoch_NoWithdrawNoRewards();
         staker.verifyWithdrawalCredentials(validators);
 
-        uint256[] memory initDepositShares = _getStakerDepositShares(staker, strategies);
+        (, uint256[] memory initDepositShares) = _getStakerDepositShares(staker, strategies);
 
         // Delegate to an operator
         staker.delegateTo(operator);
         check_Delegation_State(staker, operator, strategies, initDepositShares);
-        (uint256[] memory delegatedShares, ) = delegationManager.getWithdrawableShares(address(staker), strategies);
+        (, uint256[] memory delegatedShares) = delegationManager.getWithdrawableShares(address(staker), strategies);
 
         // Create an operator set and register an operator.
         operatorSet = avs.createOperatorSet(strategies);
@@ -252,7 +252,7 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         beaconChain.advanceEpoch_NoWithdrawNoRewards();
         staker.verifyWithdrawalCredentials(validators);
 
-        uint256[] memory initDepositShares = _getStakerDepositShares(staker, strategies);
+        (, uint256[] memory initDepositShares) = _getStakerDepositShares(staker, strategies);
 
         // Create an operator set and register an operator.
         operatorSet = avs.createOperatorSet(strategies);
@@ -268,7 +268,7 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         // Delegate to an operator
         staker.delegateTo(operator);
         check_Delegation_State(staker, operator, strategies, initDepositShares);
-        (uint256[] memory delegatedShares, ) = delegationManager.getWithdrawableShares(address(staker), strategies);
+        (, uint256[] memory delegatedShares) = delegationManager.getWithdrawableShares(address(staker), strategies);
         
         // Allocate to operator set
         allocateParams = _genAllocation_AllAvailable(operator, operatorSet, strategies);
@@ -302,8 +302,8 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         check_VerifyWC_State(staker, validators, addedBeaconBalanceGwei);
 
         // Queue withdrawal for all tokens
-        uint[] memory depositShares = _getStakerDepositShares(staker, strategies);
-        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        (, uint[] memory depositShares) = _getStakerDepositShares(staker, strategies);
+        (, uint[] memory withdrawableShares) = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, depositShares);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(staker, User(payable(address(0))), strategies, depositShares, withdrawableShares, withdrawals, withdrawalRoots);
@@ -328,8 +328,8 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         check_VerifyWC_State(staker, validators, addedBeaconBalanceGwei);
 
         // Queue withdrawal for all 
-        uint[] memory depositShares = _getStakerDepositShares(staker, strategies);
-        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        (, uint[] memory depositShares) = _getStakerDepositShares(staker, strategies);
+        (, uint[] memory withdrawableShares) = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, depositShares);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(staker, User(payable(address(0))), strategies, depositShares, withdrawableShares, withdrawals, withdrawalRoots);

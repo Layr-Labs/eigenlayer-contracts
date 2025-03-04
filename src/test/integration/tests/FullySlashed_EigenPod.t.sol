@@ -127,8 +127,8 @@ contract Integration_FullySlashedEigenpod_NotCheckpointed is Integration_FullySl
         check_CompleteCheckpoint_WithSlashing_HandleRoundDown_State(staker, validators, slashedGwei);
 
         // Queue Full Withdrawal
-        uint[] memory depositShares = _getStakerDepositShares(staker, strategies);
-        uint[] memory withdrawableShares = _getWithdrawableShares(staker, strategies);
+        (, uint[] memory depositShares) = _getStakerDepositShares(staker, strategies);
+        (, uint[] memory withdrawableShares) = _getWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, depositShares);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(staker, User(payable(address(0))), strategies, depositShares, withdrawableShares, withdrawals, withdrawalRoots);

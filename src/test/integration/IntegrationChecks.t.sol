@@ -252,7 +252,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_DepositShares_GTE_WithdrawableShares(staker, strategies, "deposit shares should be greater than or equal to withdrawable shares");
         assert_Snap_Unchanged_Staker_DepositShares(staker, "staker shares should be unchanged after delegating");
         assert_Snap_Expected_Staker_WithdrawableShares_Delegation(staker, operator, strategies, depositShares, "withdrawable shares should be unchanged within rounding error after delegating");
-        uint256[] memory delegatableShares = _getPrevStakerWithdrawableShares(staker, strategies);
+        (, uint256[] memory delegatableShares) = _getStakerWithdrawableShares(staker, strategies);
         assert_Snap_Added_OperatorShares(operator, strategies, delegatableShares, "operator should have received shares");
         check_Added_SlashableStake(operator, strategies, delegatableShares);
         assert_Snap_DSF_State_Delegation(staker, operator, strategies, delegatableShares, "staker's DSF not updated correctly");
@@ -323,7 +323,8 @@ contract IntegrationCheckUtils is IntegrationBase {
         // Check that the dsf is either reset to wad or unchanged
         for (uint i = 0; i < strategies.length; i++) {
             // For a full withdrawal, the dsf should be reset to wad & the staker strategy list should not contain the strategy
-            if (_getStakerDepositShares(staker, strategies[i].toArray())[0] == 0) {
+            (, uint[] memory curDepositShares) = _getStakerDepositShares(staker, strategies[i].toArray());
+            if (curDepositShares[0] == 0) {
                 assert_DSF_WAD(staker, strategies[i].toArray(), 
                     "check_QueuedWithdrawal_State: dsf should be reset to wad");
                 assert_StrategyNotInStakerStrategyList(staker, strategies[i], "check_QueuedWithdrawal_State: staker strategy list should not contain strategy");

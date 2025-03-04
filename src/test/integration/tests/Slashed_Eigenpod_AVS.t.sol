@@ -78,6 +78,7 @@ contract Integration_SlashedEigenpod_AVS_Checkpoint is Integration_SlashedEigenp
 contract Integration_SlashedEigenpod_AVS_Withdraw is Integration_SlashedEigenpod_AVS_Base {
     using Math for uint256;
     using SlashingLib for uint256;
+    using ArrayLib for *;
 
     uint[] withdrawableSharesAfterSlash;
 
@@ -157,7 +158,6 @@ contract Integration_SlashedEigenpod_AVS_Withdraw is Integration_SlashedEigenpod
         Withdrawal[] memory withdrawals = _getQueuedWithdrawals(staker);
         _rollBlocksForCompleteWithdrawals(withdrawals);
         uint slashingFactor = _getSlashingFactor(staker, BEACONCHAIN_ETH_STRAT);
-        uint depositScalingFactor = _getDepositScalingFactor(staker, BEACONCHAIN_ETH_STRAT);
         uint[] memory withdrawableShares = _calcWithdrawable(staker, strategies, initDepositShares);
 
         // 9.  Start & complete checkpoint, since the next step does not. 

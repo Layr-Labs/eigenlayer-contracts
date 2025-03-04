@@ -76,7 +76,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         check_FullySlashed_State(operator, allocateParams, slashParams);
 
         // 5. Undelegate from an operator
-        uint[] memory shares = _getStakerWithdrawableShares(staker, strategies);
+        (, uint[] memory shares) = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.undelegate();
         bytes32[] memory roots = _getWithdrawalHashes(withdrawals);
         check_Undelegate_State(staker, operator, withdrawals, roots, strategies, shares);
@@ -98,7 +98,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
 
     function testFuzz_undelegate_fullSlash_complete_redeposit(uint24 _random) public rand(_random) {
         // 4. Undelegate from an operator
-        uint[] memory shares = _getStakerWithdrawableShares(staker, strategies);
+        (, uint[] memory shares) = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.undelegate();
         bytes32[] memory roots = _getWithdrawalHashes(withdrawals);
         check_Undelegate_State(staker, operator, withdrawals, roots, strategies, shares);
@@ -140,7 +140,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         }
 
         // 5. Undelegate from an operator
-        uint[] memory shares = _getStakerWithdrawableShares(staker, strategies);
+        (, uint[] memory shares) = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.undelegate();
         bytes32[] memory roots = _getWithdrawalHashes(withdrawals);
         check_Undelegate_State(staker, operator, withdrawals, roots, strategies, shares);
@@ -172,7 +172,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         }
 
         // Queue withdrawal
-        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        (, uint[] memory withdrawableShares) = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, initDepositShares);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(staker, operator, strategies, initDepositShares, withdrawableShares, withdrawals, withdrawalRoots);
@@ -189,7 +189,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
 
     function testFuzz_deposit_delegate_undelegate_partialSlash_complete(uint24 r) public rand(r) {
         // Undelegate from operator
-        uint[] memory shares = _getStakerWithdrawableShares(staker, strategies);
+        (, uint[] memory shares) = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.undelegate();
         bytes32[] memory roots = _getWithdrawalHashes(withdrawals);
         check_Undelegate_State(staker, operator, withdrawals, roots, strategies, shares);
@@ -221,7 +221,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         check_Base_Slashing_State(operator, allocateParams, slashParams);
 
         // Queue withdrawal
-        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        (, uint[] memory withdrawableShares) = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, initDepositShares);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(staker, operator, strategies, initDepositShares, withdrawableShares, withdrawals, withdrawalRoots);
@@ -247,7 +247,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         check_Base_Slashing_State(operator, allocateParams, slashParams);
 
         // Queue withdrawal
-        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        (, uint[] memory withdrawableShares) = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, initDepositShares);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(staker, operator, strategies, initDepositShares, withdrawableShares, withdrawals, withdrawalRoots);
@@ -280,7 +280,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         check_Deposit_State(zeroSharesStaker, strategies, depositShares);
 
         // Undelegate
-        uint[] memory shares = _getStakerWithdrawableShares(zeroSharesStaker, strategies);
+        (, uint[] memory shares) = _getStakerWithdrawableShares(zeroSharesStaker, strategies);
         Withdrawal[] memory withdrawals = zeroSharesStaker.undelegate();
         bytes32[] memory roots = _getWithdrawalHashes(withdrawals);
         check_Undelegate_State(zeroSharesStaker, operator, withdrawals, roots, strategies, shares);
@@ -311,7 +311,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         uint24 _random
     ) public rand(_random) {
 
-        initDepositShares = _getStakerDepositShares(staker, strategies);
+        (, initDepositShares) = _getStakerDepositShares(staker, strategies);
 
         // 4. Fully slash operator
         SlashingParams memory slashParams = _genSlashing_Full(operator, operatorSet);
@@ -319,7 +319,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         check_FullySlashed_State(operator, allocateParams, slashParams);
 
         // 5. Undelegate from an operator
-        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        (, uint[] memory withdrawableShares) = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.undelegate();
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, withdrawableShares);
@@ -349,7 +349,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
     ) public rand(_random) {
 
         (User operator2, ,) = _newRandomOperator();
-        initDepositShares = _getStakerDepositShares(staker, strategies);
+        (, initDepositShares) = _getStakerDepositShares(staker, strategies);
 
         // 4. Fully slash operator
         SlashingParams memory slashParams = _genSlashing_Full(operator, operatorSet);
@@ -357,7 +357,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         check_FullySlashed_State(operator, allocateParams, slashParams);
 
         // 5. Undelegate from an operator
-        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        (, uint[] memory withdrawableShares) = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.redelegate(operator2);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_Redelegate_State(staker, operator, operator2, withdrawals, withdrawalRoots, strategies, withdrawableShares);
