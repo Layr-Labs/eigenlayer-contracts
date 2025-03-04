@@ -1,0 +1,11 @@
+{
+    "name": "gov-init-protocol_council",
+    "from": "0.0.0",
+    "to": "0.0.1",
+    "phases": [
+        {
+            "type": "eoa",
+            "filename": "1-eoa.s.sol"
+        }
+    ]
+}
