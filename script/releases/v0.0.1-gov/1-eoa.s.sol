@@ -37,7 +37,6 @@ contract Deploy is EOADeployer {
         address[] memory executors = new address[](1);
         executors[0] = msg.sender;
 
-        vm.startBroadcast();
         deployImpl({
             name: "timelockController",
             deployedTo: address(new TimelockController({
