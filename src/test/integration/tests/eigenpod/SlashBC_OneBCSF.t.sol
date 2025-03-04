@@ -105,6 +105,9 @@ contract Integration_SlashBC_OneBCSF is IntegrationCheckUtils {
             staker.verifyWithdrawalCredentials(validators);
         } else {
             // Start/complete CP
+            // Ensure that not all validators were slashed so that some rewards can be generated when
+            // we advance epoch
+            cheats.assume(slashedValidators.length < validators.length);
             beaconChain.advanceEpoch();
             staker.startCheckpoint();
 
