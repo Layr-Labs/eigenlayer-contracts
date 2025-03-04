@@ -1944,6 +1944,19 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
+    function assert_Snap_WithinErrorBounds_DSF(
+        User staker,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal {
+        uint[] memory curDSFs = _getDepositScalingFactors(staker, strategies);
+        uint[] memory prevDSFs = _getPrevDepositScalingFactors(staker, strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            assertApproxEqAbs(curDSFs[i], prevDSFs[i], 1e2, err);
+        }
+    }
+
     /// @dev Used to assert that the DSF is either increased or unchanged, depending on the slashing factor, on a deposit
     function assert_Snap_DSF_State_Deposit(
         User staker,
@@ -1974,6 +1987,8 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         string memory err
     ) internal {
         uint[] memory curDepositShares = _getStakerDepositShares(staker, strategies);
+        uint[] memory prevDepositShares = _getPrevStakerDepositShares(staker, strategies);
+
         for (uint i = 0; i < strategies.length; i++) {
             IStrategy[] memory stratArray = strategies[i].toArray();
             /// We don't need the previous slashing factors as they shouldn't change before/after a deposit
@@ -1985,9 +2000,16 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
                 assert_Snap_Unchanged_DSF(staker, stratArray, err);
                 assert_DSF_WAD(staker, stratArray, err);
             }
-            // If there was a slashing, and we complete a withdrawal for non-zero shares, normalize
+            // If there was a slashing and we complete a withdrawal for non-zero shares..
             else {
-                assert_Snap_Increased_DSF(staker, stratArray, err);
+                // Normalize the DSF if prevDepositShares is 0
+                if (prevDepositShares[i] == 0) {
+                    assert_Snap_Increased_DSF(staker, stratArray, err);
+                }
+                // If prevDepositShares is not 0, the DSF has already been normalized, so we just check within error bounds
+                else {
+                    assert_Snap_WithinErrorBounds_DSF(staker, stratArray, err);
+                }
             }
         }
     }
