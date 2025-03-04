@@ -21,8 +21,6 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
     uint[] numTokensRemaining;
 
     function _init() internal override {
-        // TODO: Partial deposits don't work when beacon chain eth balance is initialized to < 64 ETH, need to write _newRandomStaker variant that ensures beacon chain ETH balance
-        // greater than or equal to 64
         _configUserTypes(DEFAULT);
 
         (staker, strategies, initTokenBalances) = _newRandomStaker();
