@@ -3209,10 +3209,6 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     function _getStakerStrategyList(User staker) internal view returns (IStrategy[] memory) {
         return strategyManager.getStakerStrategyList(address(staker));
     }
-    
-    function _getExpectedWithdrawableSharesAfterCompletion(User staker, uint scaledShares, uint depositScalingFactor, uint slashingFactor) internal view returns (uint) {
-        return scaledShares.mulWad(depositScalingFactor).mulWad(slashingFactor);
-    }
 
     function _getPrevStakerWithdrawableShares(User staker, IStrategy[] memory strategies) internal timewarp() returns (uint[] memory) {
         return _getStakerWithdrawableShares(staker, strategies);
