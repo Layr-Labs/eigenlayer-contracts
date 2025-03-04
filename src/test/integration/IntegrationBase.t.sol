@@ -607,7 +607,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
-    function assert_BCSF_Zero(
+    function assert_Zero_BCSF(
         User staker,
         string memory err
     ) internal view {
