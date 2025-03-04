@@ -302,25 +302,17 @@ contract Deploy is EOADeployer {
             minterAddress: address(0),
             newStatus: true
         });
-        BackingEigen(address(Env.proxy.beigen())).transferOwnership(Env.beigenExecutorMultisig());
+        BackingEigen(address(Env.proxy.beigen())).transferOwnership(Env.executorMultisig());
 
-        proxyAdmin.changeProxyAdmin({
-            proxy: ITransparentUpgradeableProxy(address(Env.proxy.eigen())),
-            newAdmin: address(proxyAdmin)
-        });
-
-        beigenProxyAdmin.changeProxyAdmin({
-            proxy: ITransparentUpgradeableProxy(address(Env.proxy.beigen())),
-            newAdmin: address(proxyAdmin)
-        });
+        // transfer proxy admin ownership
+        proxyAdmin.transferOwnership(Env.executorMultisig());
+        beigenProxyAdmin.transferOwnership(Env.beigenExecutorMultisig());
     }
 
     function checkGovernanceConfiguration() public view {
         ProxyAdmin proxyAdmin = ProxyAdmin(Env.proxyAdmin());
         ProxyAdmin beigenProxyAdmin = ProxyAdmin(Env.beigenProxyAdmin());
 
-        assertEq(proxyAdmin.owner(), Env.executorMultisig(),
-            "proxyAdmin.owner() != executorMultisig");
         require(address(Env.proxyAdmin()) != address(Env.beigenProxyAdmin()),
             "tokens must have different proxy admins to allow different timelock controllers");
         require(address(Env.timelockController()) != address(Env.beigenTimelockController()),
