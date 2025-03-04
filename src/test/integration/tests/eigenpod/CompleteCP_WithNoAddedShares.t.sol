@@ -68,13 +68,10 @@ contract Integration_CompleteCP_WithNoAddedShares is IntegrationCheckUtils {
 
         // Staker deposit shares should be 0 from queue withdrawing all depositShares
         // therefore the depositScalingFactor should also be reset WAD
-        // TODO: add back these checks after this bug is fixed
-        // assertEq(eigenPodManager.podOwnerDepositShares(address(staker)), 0);
-        // assertEq(delegationManager.depositScalingFactor(address(staker), beaconChainETHStrategy), WAD);
+        assertEq(eigenPodManager.podOwnerDepositShares(address(staker)), 0);
+        assertEq(delegationManager.depositScalingFactor(address(staker), beaconChainETHStrategy), WAD);
 
         // 7. deposit: can either verify wc or start/complete cp or complete the withdrawals as shares
-        // (uint40[] memory newValidators, uint64 addedBeaconBalanceGwei) = staker.startValidators();
-        // staker.verifyWithdrawalCredentials(newValidators);
         _rollBlocksForCompleteWithdrawals(withdrawals);
         staker.completeWithdrawalsAsShares(withdrawals);
 
