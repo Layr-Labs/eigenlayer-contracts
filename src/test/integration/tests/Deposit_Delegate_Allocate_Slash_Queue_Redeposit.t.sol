@@ -21,9 +21,6 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
     uint[] numTokensRemaining;
 
     function _init() internal override {
-        // TODO: Partial deposits don't work when beacon chain eth balance is initialized to < 64 ETH, need to write _newRandomStaker variant that ensures beacon chain ETH balance
-        // greater than or equal to 64
-        _configAssetTypes(HOLDS_LST);
         _configUserTypes(DEFAULT);
 
         (staker, strategies, initTokenBalances) = _newRandomStaker();
@@ -33,9 +30,14 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
 
         uint[] memory tokensToDeposit = new uint[](initTokenBalances.length);
         numTokensRemaining = new uint[](initTokenBalances.length);
+        uint256 eth_to_deal;
         for (uint i = 0; i < initTokenBalances.length; i++) {
             if (strategies[i] == BEACONCHAIN_ETH_STRAT) {
                 tokensToDeposit[i] = initTokenBalances[i];
+                //user.depositIntoEigenlayer uses all ETH balance for a pod, so we deal back staker's
+                //starting ETH to replicate partial deposit state
+                eth_to_deal = initTokenBalances[i];
+                numTokensRemaining[i] = initTokenBalances[i];
                 continue;
             }
 
@@ -46,6 +48,8 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         // 1. Deposit Into Strategies
         initDepositShares = _calculateExpectedShares(strategies, tokensToDeposit);
         staker.depositIntoEigenlayer(strategies, tokensToDeposit);
+        //dealing back ETH
+        cheats.deal(address(staker), eth_to_deal);
         check_Deposit_State_PartialDeposit(staker, strategies, initDepositShares, numTokensRemaining);
 
         // 2. Delegate to operator
@@ -301,5 +305,80 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         AllocateParams memory deallocateParams = _genDeallocation_Full(operator, operatorSet);
         operator.modifyAllocations(deallocateParams);
         check_DecrAlloc_State_Slashable(operator, deallocateParams);
+    }
+
+    function testFuzz_fullSlash_undelegate_redeposit_complete(
+        uint24 _random
+    ) public rand(_random) {
+
+        initDepositShares = _getStakerDepositShares(staker, strategies);
+
+        // 4. Fully slash operator
+        SlashingParams memory slashParams = _genSlashing_Full(operator, operatorSet);
+        avs.slashOperator(slashParams);
+        check_FullySlashed_State(operator, allocateParams, slashParams);
+
+        // 5. Undelegate from an operator
+        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        Withdrawal[] memory withdrawals = staker.undelegate();
+        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, withdrawableShares);
+
+        // 6. Redeposit
+        uint[] memory shares = _calculateExpectedShares(strategies, numTokensRemaining);
+        staker.depositIntoEigenlayer(strategies, numTokensRemaining);
+        check_Deposit_State(staker, strategies, shares);
+
+        // 7. Complete withdrawal. Staker should receive 0 shares/tokens after a full slash
+        _rollBlocksForCompleteWithdrawals(withdrawals);
+
+        for (uint256 i = 0; i < withdrawals.length; ++i) {
+            uint[] memory expectedShares = _calculateExpectedShares(withdrawals[i]);
+            staker.completeWithdrawalAsShares(withdrawals[i]);
+            check_Withdrawal_AsShares_Undelegated_State(staker, operator, withdrawals[i], withdrawals[i].strategies, expectedShares);
+        }
+
+
+        // Final state checks
+        assert_HasExpectedShares(staker, strategies, shares, "staker should have expected shares after redeposit");
+        assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
+    }
+
+    function testFuzz_fullSlash_redelegate_redeposit_complete(
+        uint24 _random
+    ) public rand(_random) {
+
+        (User operator2, ,) = _newRandomOperator();
+        initDepositShares = _getStakerDepositShares(staker, strategies);
+
+        // 4. Fully slash operator
+        SlashingParams memory slashParams = _genSlashing_Full(operator, operatorSet);
+        avs.slashOperator(slashParams);
+        check_FullySlashed_State(operator, allocateParams, slashParams);
+
+        // 5. Undelegate from an operator
+        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        Withdrawal[] memory withdrawals = staker.redelegate(operator2);
+        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        check_Redelegate_State(staker, operator, operator2, withdrawals, withdrawalRoots, strategies, withdrawableShares);
+
+        // 6. Redeposit
+        uint[] memory shares = _calculateExpectedShares(strategies, numTokensRemaining);
+        staker.depositIntoEigenlayer(strategies, numTokensRemaining);
+        check_Deposit_State(staker, strategies, shares);
+
+        // 7. Complete withdrawal. Staker should receive 0 shares/tokens after a full slash
+        _rollBlocksForCompleteWithdrawals(withdrawals);
+
+        for (uint256 i = 0; i < withdrawals.length; ++i) {
+            uint[] memory expectedShares = _calculateExpectedShares(withdrawals[i]);
+            staker.completeWithdrawalAsShares(withdrawals[i]);
+            check_Withdrawal_AsShares_Undelegated_State(staker, operator, withdrawals[i], withdrawals[i].strategies, expectedShares);
+        }
+
+
+        // Final state checks
+        assert_HasExpectedShares(staker, strategies, shares, "staker should have expected shares after redeposit");
+        assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }
 }
