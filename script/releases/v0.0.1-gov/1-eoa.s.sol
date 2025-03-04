@@ -58,6 +58,11 @@ contract Deploy is EOADeployer {
     }
 
     function deployProtocolMultisigs() public {
+
+        // TODO: consider frontunning of multisig deployment
+        // pseudorandom number
+        uint256 salt = 87883615229;
+
         // deploy multisigs that simply have the deployer as their initial owner
         address[] memory singleOwner = new address[](1);
         singleOwner[0] = msg.sender;
@@ -65,28 +70,32 @@ contract Deploy is EOADeployer {
             name: "pauserMultisig",
             deployedTo: deployMultisig({
                 initialOwners: singleOwner,
-                initialThreshold: 1
+                initialThreshold: 1,
+                salt: ++salt
             })
         });
         deployImpl({
             name: "opsMultisig",
             deployedTo: deployMultisig({
                 initialOwners: singleOwner,
-                initialThreshold: 1
+                initialThreshold: 1,
+                salt: ++salt
             })
         });
         deployImpl({
             name: "protocolCouncilMultisig",
             deployedTo: deployMultisig({
                 initialOwners: singleOwner,
-                initialThreshold: 1
+                initialThreshold: 1,
+                salt: ++salt
             })
         });
         deployImpl({
             name: "communityMultisig",
             deployedTo: deployMultisig({
                 initialOwners: singleOwner,
-                initialThreshold: 1
+                initialThreshold: 1,
+                salt: ++salt
             })
         });
 
@@ -100,7 +109,8 @@ contract Deploy is EOADeployer {
             name: "executorMultisig",
             deployedTo: deployMultisig({
                 initialOwners: owners_executorMultisig,
-                initialThreshold: 1
+                initialThreshold: 1,
+                salt: ++salt
             })
         });
 
@@ -114,12 +124,13 @@ contract Deploy is EOADeployer {
             name: "beigenExecutorMultisig",
             deployedTo: deployMultisig({
                 initialOwners: owners_beigenExecutorMultisig,
-                initialThreshold: 1
+                initialThreshold: 1,
+                salt: ++salt
             })
         });
     }
 
-    function deployMultisig(address[] memory initialOwners, uint256 initialThreshold) public returns (address) {
+    function deployMultisig(address[] memory initialOwners, uint256 initialThreshold, uint256 salt) public returns (address) {
         // TODO: solution for local networks / those that do not have Safe deployed on them?
         // addresses taken from https://github.com/safe-global/safe-smart-account/blob/main/CHANGELOG.md#expected-addresses-with-deterministic-deployment-proxy-default
         address safeFactory = 0xa6B71E26C5e0845f74c812102Ca7114b6a896AB2;
@@ -127,8 +138,6 @@ contract Deploy is EOADeployer {
         address safeFallbackHandler = 0xf48f2B2d2a534e402487b3ee7C18c33Aec0Fe5e4;
 
         bytes memory emptyData;
-        // TODO: is implementing a nonzero salt useful at all? if yes, this should be an input
-        uint256 salt = 0;
 
         bytes memory initializerData = abi.encodeWithSignature(
             "setup(address[],uint256,address,bytes,address,address,uint256,address)",
