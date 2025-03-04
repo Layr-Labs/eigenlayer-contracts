@@ -61,7 +61,6 @@ contract Deploy is EOADeployer {
     }
 
     function deployProtocolMultisigs() public {
-        // TODO: consider frontunning of multisig deployment
         // pseudorandom number
         uint256 salt = 87883615229;
 
@@ -127,7 +126,6 @@ contract Deploy is EOADeployer {
     }
 
     function deployMultisig(address[] memory initialOwners, uint256 initialThreshold, uint256 salt) public returns (address) {
-        // TODO: solution for local networks / those that do not have Safe deployed on them?
         // addresses taken from https://github.com/safe-global/safe-smart-account/blob/main/CHANGELOG.md#expected-addresses-with-deterministic-deployment-proxy-default
         address safeFactory = Env.safeFactory();
         address safeSingleton = Env.safeSingleton();
@@ -353,30 +351,6 @@ contract Deploy is EOADeployer {
 
         checkTimelockControllerConfig(Env.timelockController());
         checkTimelockControllerConfig(Env.beigenTimelockController());
-
-        // TODO: this block commented-out because these contracts aren't deployed yet! move to another script?
-        // assertEq(delegationManager.owner(), Env.executorMultisig(),
-        //     "delegationManager.owner() != executorMultisig");
-        // assertEq(strategyManager.owner(), Env.executorMultisig(),
-        //     "strategyManager.owner() != executorMultisig");
-        // assertEq(strategyManager.strategyWhitelister(), address(strategyFactory),
-        //     "strategyManager.strategyWhitelister() != address(strategyFactory)");
-        // assertEq(strategyFactory.owner(), Env.opsMultisig(),
-        //     "strategyFactory.owner() != operationsMultisig");
-        // assertEq(avsDirectory.owner(), executorMultisig,
-        //     "avsDirectory.owner() != executorMultisig");
-        // assertEq(rewardsCoordinator.owner(), Env.opsMultisig(),
-        //     "rewardsCoordinator.owner() != operationsMultisig");
-        // assertEq(eigenLayerPauserReg.unpauser(), Env.executorMultisig(),
-        //     "eigenLayerPauserReg.unpauser() != operationsMultisig");
-        // require(eigenLayerPauserReg.isPauser(Env.opsMultisig()),
-        //     "operationsMultisig does not have pausing permissions");
-        // require(eigenLayerPauserReg.isPauser(Env.executorMultisig()),
-        //     "executorMultisig does not have pausing permissions");
-        // require(eigenLayerPauserReg.isPauser(pauserMultisig),
-        //     "pauserMultisig does not have pausing permissions");
-        // require(eigenPodBeacon.owner() == Env.executorMultisig(), "eigenPodBeacon: owner not set correctly");
-        // require(strategyBeacon.owner() == Env.executorMultisig(), "strategyBeacon: owner not set correctly");
     }
 
     function checkExecutorMultisigOwnership(address _executorMultisig, address timelockControllerAddress) public view {
