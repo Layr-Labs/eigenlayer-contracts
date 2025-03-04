@@ -3,7 +3,7 @@ pragma solidity ^0.8.27;
 
 import "src/test/integration/UpgradeTest.t.sol";
 
-contract Integration_Upgrade_Complete_PreSlashing_Withdrawal is UpgradeTest {
+contract Integration_Upgrade_Complete_PreSlashing_Withdrawal_Base is UpgradeTest {
     struct TestState {
         User staker;
         User operator;
@@ -17,13 +17,16 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal is UpgradeTest {
         bool completeAsTokens;
     }
 
-    function _init_(uint24 randomness, bool withOperator, bool withDelegation) internal returns (TestState memory state) {
+    function _init_(uint24 randomness, bool withOperator, bool withDelegation) internal virtual returns (TestState memory state) {
+        // Create staker
         (state.staker, state.strategies, state.tokenBalances) = _newRandomStaker();
         state.shares = _calculateExpectedShares(state.strategies, state.tokenBalances);
 
+        // Delegate staker to operator
         state.operator = withOperator ? _newRandomOperator_NoAssets() : User(payable(0));
         if (withDelegation) state.staker.delegateTo(state.operator);
 
+        // Deposit into EigenLayer
         state.staker.depositIntoEigenlayer(state.strategies, state.tokenBalances);
 
         // Setup withdrawal shares (full or partial)
@@ -48,6 +51,9 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal is UpgradeTest {
             }
         }
     }
+}
+
+contract Integration_Upgrade_Complete_PreSlashing_Withdrawal is Integration_Upgrade_Complete_PreSlashing_Withdrawal_Base {
 
     function testFuzz_deposit_queue_upgrade_complete(uint24 r) public rand(r) {
         TestState memory state = _init_({randomness: r, withOperator: false, withDelegation: false});
@@ -81,6 +87,96 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal is UpgradeTest {
         // We must roll forward by the delay twice since pre-upgrade delay is half as long as post-upgrade delay.
         rollForward(delegationManager.minWithdrawalDelayBlocks() + 1);
         _upgradeEigenLayerContracts();
+        _completeWithdrawal(state);
+    }
+}
+
+contract Integration_Upgrade_Complete_PreSlashing_Withdrawal_Slash is Integration_Upgrade_Complete_PreSlashing_Withdrawal_Base {
+    using ArrayLib for *;
+
+    AVS avs;
+    OperatorSet operatorSet;
+    AllocateParams allocateParams;
+
+    function _init_(uint24 randomness, bool withOperator, bool withDelegation) internal override returns (TestState memory state) {
+        // Initialize state, queue a full withdrawal
+        state = super._init_({randomness: randomness, withOperator: withOperator, withDelegation: withDelegation});
+
+        state.withdrawals = state.staker.queueWithdrawals(state.strategies, state.withdrawalShares);
+
+        // Upgrade contracts
+        _upgradeEigenLayerContracts();
+
+        // Set allocation delay, register for operatorSet & allocate fully
+        state.operator.setAllocationDelay(1);
+        rollForward({blocks: ALLOCATION_CONFIGURATION_DELAY + 1});
+        (avs,) = _newRandomAVS();
+        operatorSet = avs.createOperatorSet(state.strategies);
+        allocateParams = _genAllocation_AllAvailable(state.operator, operatorSet);
+
+        state.operator.registerForOperatorSet(operatorSet);
+        check_Registration_State_NoAllocation(state.operator, operatorSet, allStrats);
+
+        state.operator.modifyAllocations(allocateParams);
+        check_Base_IncrAlloc_State(state.operator, allocateParams);
+        _rollBlocksForCompleteAllocation(state.operator, operatorSet, state.strategies);
+    }
+
+    function testFuzz_delegate_deposit_queue_upgrade_slashFully_revertCompleteAsShares(uint24 r) public rand(r) {
+        TestState memory state = _init_({randomness: r, withOperator: true, withDelegation: true});
+
+        // Slash operator by AVS
+        SlashingParams memory slashParams = _genSlashing_Full(state.operator, operatorSet);
+        avs.slashOperator(slashParams);
+        check_Base_Slashing_State(state.operator, allocateParams, slashParams);
+
+        // Complete withdrawals as shares
+        state.completeAsTokens = false;
+        _rollBlocksForCompleteWithdrawals(state.withdrawals);
+        cheats.expectRevert(IDelegationManagerErrors.FullySlashed.selector);
+        state.staker.completeWithdrawalsAsShares(state.withdrawals);
+    }
+
+    function testFuzz_delegate_deposit_queue_upgrade_slashFully_completeAsTokens(uint24 r) public rand(r) {
+        TestState memory state = _init_({randomness: r, withOperator: true, withDelegation: true});
+
+        // Slash operator by AVS
+        SlashingParams memory slashParams = _genSlashing_Full(state.operator, operatorSet);
+        avs.slashOperator(slashParams);
+        check_Base_Slashing_State(state.operator, allocateParams, slashParams);
+
+        // Complete withdrawals as tokens
+        state.completeAsTokens = true;
+        _rollBlocksForCompleteWithdrawals(state.withdrawals);
+        _completeWithdrawal(state);
+    }
+
+    function testFuzz_delegate_deposit_queue_upgrade_slash_completeAsShares(uint24 r) public rand(r) {
+        TestState memory state = _init_({randomness: r, withOperator: true, withDelegation: true});
+
+        // Slash operator by AVS
+        SlashingParams memory slashParams = _genSlashing_Rand(state.operator, operatorSet);
+        avs.slashOperator(slashParams);
+        check_Base_Slashing_State(state.operator, allocateParams, slashParams);
+
+        // Complete withdrawals as shares. Shares need to be recalculated to handle slight round down after slashing. 
+        state.completeAsTokens = false;
+        
+        _rollBlocksForCompleteWithdrawals(state.withdrawals);
+        _completeWithdrawal(state);
+    }
+
+    function testFuzz_delegate_deposit_queue_upgrade_slash_completeAsTokens(uint24 r) public rand(r) {
+        TestState memory state = _init_({randomness: r, withOperator: true, withDelegation: true});
+
+        // Slash operator by AVS
+        SlashingParams memory slashParams = _genSlashing_Rand(state.operator, operatorSet);
+        avs.slashOperator(slashParams);
+        check_Base_Slashing_State(state.operator, allocateParams, slashParams);
+
+        // Complete withdrawals as tokens
+        state.completeAsTokens = true;
+        _rollBlocksForCompleteWithdrawals(state.withdrawals);
         _completeWithdrawal(state);
     }
 }
