@@ -26,8 +26,7 @@ contract Deploy is EOADeployer {
 
     function testDeploy() public virtual {
         _runAsEOA();
-        // TODO: seems more appropriate after more complete deployment!
-        // checkGovernanceConfiguration();
+        checkGovernanceConfiguration();
     }
 
     // set up initially with deployer as a proposer & executor, to be renounced prior to finalizing deployment
