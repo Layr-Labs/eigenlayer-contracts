@@ -57,7 +57,7 @@ contract Deploy is EOADeployer {
         // eigen governance, in later zeus upgrades, is referred to via `const` addresses, and not as
         // deployed contracts (e.g via `deployImpl`/`deployProxy`). As such, we use `zUpdate()` to update these values.
         zUpdate('timelockController', address(timelockController));
-        zUpdate('timelockController_BEIGEN', address(beigenTimelockController));
+        zUpdate('beigenTimelockController', address(beigenTimelockController));
     }
 
     function deployProtocolMultisigs() public {
@@ -230,16 +230,10 @@ contract Deploy is EOADeployer {
     }
 
     function deployTokensAndStrategy() public {
-        deployImpl({
-            name: "proxyAdmin",
-            deployedTo: address(new ProxyAdmin())
-        });
-        deployImpl({
-            name: "beigenProxyAdmin",
-            deployedTo: address(new ProxyAdmin())
-        });
-        ProxyAdmin proxyAdmin = ProxyAdmin(Env.proxyAdmin());
-        ProxyAdmin beigenProxyAdmin = ProxyAdmin(Env.beigenProxyAdmin());
+        ProxyAdmin proxyAdmin = new ProxyAdmin();
+        zUpdate("proxyAdmin", address(proxyAdmin));
+        ProxyAdmin beigenProxyAdmin = new ProxyAdmin();
+        zUpdate("beigenProxyAdmin", address(beigenProxyAdmin));
 
         // TODO: decide if this should be in env
         // placeholder used for initial proxy deployments since initial implementation must be a contract
@@ -265,13 +259,13 @@ contract Deploy is EOADeployer {
         deployImpl({
             name: type(BackingEigen).name,
             deployedTo: address(new BackingEigen({
-                _EIGEN: IERC20(Env.proxy.eigen())
+                _EIGEN: IERC20(Env.proxy.beigen())
             }))
         });
         deployImpl({
             name: type(Eigen).name,
             deployedTo: address(new Eigen({
-                _bEIGEN: IERC20(Env.proxy.beigen())
+                _bEIGEN: IERC20(Env.proxy.eigen())
             }))
         });
 
@@ -295,7 +289,7 @@ contract Deploy is EOADeployer {
         Eigen(address(Env.proxy.eigen())).transferOwnership(Env.executorMultisig());
 
         // use deployer as initial owner, for editing minting permissions prior to transferring ownership
-        proxyAdmin.upgradeAndCall({
+        beigenProxyAdmin.upgradeAndCall({
             proxy: ITransparentUpgradeableProxy(address(Env.proxy.beigen())),
             implementation: address(Env.impl.beigen()),
             data: abi.encodeWithSelector(
@@ -315,7 +309,7 @@ contract Deploy is EOADeployer {
             newAdmin: address(proxyAdmin)
         });
 
-        proxyAdmin.changeProxyAdmin({
+        beigenProxyAdmin.changeProxyAdmin({
             proxy: ITransparentUpgradeableProxy(address(Env.proxy.beigen())),
             newAdmin: address(proxyAdmin)
         });
