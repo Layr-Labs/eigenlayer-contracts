@@ -665,7 +665,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
             assertGe(depositShares[i], withdrawableShares[i], err);
         }
     }
-    
+
     function assert_Zero_WithdrawableShares(
         User staker,
         IStrategy strategy,
@@ -1771,22 +1771,6 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         // For each strategy, check (prev - removed == cur)
         for (uint i = 0; i < strategies.length; i++) {
             assertApproxEqAbs(prevShares[i] + addedShares[i], curShares[i], 1e3, err);
-        }
-    }
-
-    /// @dev Check that the staker's withdrawable shares have not changed
-    function assert_Snap_Unchanged_Staker_WithdrawableShares(
-        User staker,
-        IStrategy[] memory strategies,
-        string memory err
-    ) internal {
-        uint[] memory curShares = _getStakerWithdrawableShares(staker, strategies);
-        // Use timewarp to get previous staker shares
-        uint[] memory prevShares = _getPrevStakerWithdrawableShares(staker, strategies);
-
-        // For each strategy, check (prev == cur)
-        for (uint i = 0; i < strategies.length; i++) {
-            assertEq(prevShares[i], curShares[i], err);
         }
     }
 
