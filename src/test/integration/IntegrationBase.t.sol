@@ -2000,16 +2000,12 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
                 assert_Snap_Unchanged_DSF(staker, stratArray, err);
                 assert_DSF_WAD(staker, stratArray, err);
             }
-            // If there was a slashing and we complete a withdrawal for non-zero shares..
+            // If there was a slashing and we complete a withdrawal for non-zero shares, normalize the DSF
             else {
-                // Normalize the DSF if prevDepositShares is 0
-                if (prevDepositShares[i] == 0) {
-                    assert_Snap_Increased_DSF(staker, stratArray, err);
-                }
-                // If prevDepositShares is not 0, the DSF has already been normalized, so we just check within error bounds
-                else {
-                    assert_Snap_WithinErrorBounds_DSF(staker, stratArray, err);
-                }
+                assert_Snap_Increased_DSF(staker, stratArray, err);
+                /// @dev Note there may be cases when the DSF `stays` the same, such as when a withdrawal is 
+                ///      queued, we deposit, and then complete as shares. THe DSF would stay the same. That test should use 
+                ///      `assert_Snap_WithinErrorBounds_DSF`
             }
         }
     }
