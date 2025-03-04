@@ -256,16 +256,19 @@ contract Deploy is EOADeployer {
             }))
         });
 
+        address eigen = address(Env.proxy.eigen());
+        address beigen = address(Env.proxy.beigen());
+
         deployImpl({
             name: type(BackingEigen).name,
             deployedTo: address(new BackingEigen({
-                _EIGEN: IERC20(Env.proxy.beigen())
+                _EIGEN: IERC20(eigen)
             }))
         });
         deployImpl({
             name: type(Eigen).name,
             deployedTo: address(new Eigen({
-                _bEIGEN: IERC20(Env.proxy.eigen())
+                _bEIGEN: IERC20(beigen)
             }))
         });
 
@@ -275,7 +278,7 @@ contract Deploy is EOADeployer {
         uint256[] memory mintingAllowances;
         uint256[] memory mintAllowedAfters;
         proxyAdmin.upgradeAndCall({
-            proxy: ITransparentUpgradeableProxy(address(Env.proxy.eigen())),
+            proxy: ITransparentUpgradeableProxy(eigen),
             implementation: address(Env.impl.eigen()),
             data: abi.encodeWithSelector(
                 Eigen.initialize.selector,
@@ -285,24 +288,32 @@ contract Deploy is EOADeployer {
                 mintAllowedAfters
             )
         });
-        Eigen(address(Env.proxy.eigen())).disableTransferRestrictions();
-        Eigen(address(Env.proxy.eigen())).transferOwnership(Env.executorMultisig());
+        Eigen(eigen).disableTransferRestrictions();
+        Eigen(eigen).transferOwnership(Env.executorMultisig());
 
-        // use deployer as initial owner, for editing minting permissions prior to transferring ownership
+        // use deployer as initial owner, for minting first tokens prior to transferring ownership
         beigenProxyAdmin.upgradeAndCall({
-            proxy: ITransparentUpgradeableProxy(address(Env.proxy.beigen())),
+            proxy: ITransparentUpgradeableProxy(beigen),
             implementation: address(Env.impl.beigen()),
             data: abi.encodeWithSelector(
                 BackingEigen.initialize.selector,
                 initialOwner
             )
         });
-        // TODO: get correct minterAddress here!
-        BackingEigen(address(Env.proxy.beigen())).setIsMinter({
-            minterAddress: address(0),
+        // perform initial mint, renounce minting rights + transfer ownership
+        uint256 initialMintAmount = 1.6e27;
+        BackingEigen(beigen).setIsMinter({
+            minterAddress: msg.sender,
             newStatus: true
         });
-        BackingEigen(address(Env.proxy.beigen())).transferOwnership(Env.executorMultisig());
+        BackingEigen(beigen).mint(msg.sender, initialMintAmount);
+        BackingEigen(beigen).setIsMinter({
+            minterAddress: msg.sender,
+            newStatus: false
+        });
+        BackingEigen(beigen).approve(eigen, initialMintAmount);
+        Eigen(eigen).wrap(initialMintAmount);
+        BackingEigen(beigen).transferOwnership(Env.executorMultisig());
 
         // transfer proxy admin ownership
         proxyAdmin.transferOwnership(Env.executorMultisig());
