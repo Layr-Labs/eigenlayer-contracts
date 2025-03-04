@@ -2775,7 +2775,8 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
             IStrategy strat = strategies[i];
 
             if (strat == BEACONCHAIN_ETH_STRAT) {
-                expectedTokens[i] = shares[i];
+                // We round down expected tokens to the nearest gwei
+                expectedTokens[i] = (shares[i] / GWEI_TO_WEI) * GWEI_TO_WEI;
             } else {
                 expectedTokens[i] = strat.sharesToUnderlying(shares[i]);
             }
