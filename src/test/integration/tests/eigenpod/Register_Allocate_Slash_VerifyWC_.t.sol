@@ -139,13 +139,23 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationCheckUtils {
 
         check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, withdrawableShares);
 
-        // 6. redeposit (start/complete checkpoint)
-        beaconChain.advanceEpoch();
-        staker.startCheckpoint();
-        check_StartCheckpoint_State(staker);
+        // 6. redeposit (start/complete checkpoint or verifyWC)
+        if (_randBool()) {
+            // Verify WC
+            (validators, beaconBalanceGwei) = staker.startValidators(uint8(_randUint(3, 10)));
+            beaconChain.advanceEpoch();
 
-        staker.completeCheckpoint();
-        check_CompleteCheckpoint_State(staker);
+            staker.verifyWithdrawalCredentials(validators);
+            check_VerifyWC_State(staker, validators, beaconBalanceGwei);
+        } else {
+            // Start/complete CP
+            beaconChain.advanceEpoch();
+            staker.startCheckpoint();
+            check_StartCheckpoint_State(staker);
+
+            staker.completeCheckpoint();
+            check_CompleteCheckpoint_State(staker);
+        }
     }
 
     /**
