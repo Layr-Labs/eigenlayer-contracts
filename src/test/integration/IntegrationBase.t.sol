@@ -653,6 +653,18 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         uint currentShares = _getWithdrawableShares(staker, strategy);
         assertLt(currentShares, originalShares - expectedDecrease, err);
     }
+
+    function assert_DepositShares_GTE_WithdrawableShares(
+        User staker,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal view {
+        uint[] memory depositShares = _getStakerDepositShares(staker, strategies);
+        uint[] memory withdrawableShares = _getWithdrawableShares(staker, strategies);
+        for (uint i = 0; i < strategies.length; i++) {
+            assertGe(depositShares[i], withdrawableShares[i], err);
+        }
+    }
     
     /*******************************************************************************
                                 SNAPSHOT ASSERTIONS
