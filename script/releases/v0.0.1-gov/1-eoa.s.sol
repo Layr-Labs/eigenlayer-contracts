@@ -3,6 +3,7 @@ pragma solidity ^0.8.12;
 
 import {EOADeployer} from "zeus-templates/templates/EOADeployer.sol";
 import "../Env.sol";
+import "zeus-templates/utils/ZEnvHelpers.sol";  
 
 import "@openzeppelin/contracts/governance/TimelockController.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
@@ -11,6 +12,7 @@ import "src/test/mocks/EmptyContract.sol";
 
 contract Deploy is EOADeployer {
     using Env for *;
+    using ZEnvHelpers for *;
 
     function _runAsEOA() internal override {
         vm.startBroadcast();
@@ -37,28 +39,28 @@ contract Deploy is EOADeployer {
         address[] memory executors = new address[](1);
         executors[0] = msg.sender;
 
-        deployImpl({
-            name: "timelockController",
-            deployedTo: address(new TimelockController({
-                minDelay: 0, // no delay for setup
-                proposers: proposers, 
-                executors: executors,
-                admin: address(0)
-            }))
+
+        TimelockController timelockController = new TimelockController({
+            minDelay: 0, // no delay for setup
+            proposers: proposers, 
+            executors: executors,
+            admin: address(0)
         });
-        deployImpl({
-            name: "beigenTimelockController",
-            deployedTo: address(new TimelockController({
-                minDelay: 0, // no delay for setup
-                proposers: proposers, 
-                executors: executors,
-                admin: address(0)
-            }))
+
+        TimelockController beigenTimelockController = new TimelockController({
+            minDelay: 0, // no delay for setup
+            proposers: proposers, 
+            executors: executors,
+            admin: address(0)
         });
+
+        // eigen governance, in later zeus upgrades, is referred to via `const` addresses, and not as
+        // deployed contracts (e.g via `deployImpl`/`deployProxy`). As such, we use `zUpdate()` to update these values.
+        zUpdate('timelockController', address(timelockController));
+        zUpdate('timelockController_BEIGEN', address(beigenTimelockController));
     }
 
     function deployProtocolMultisigs() public {
-
         // TODO: consider frontunning of multisig deployment
         // pseudorandom number
         uint256 salt = 87883615229;
@@ -66,38 +68,34 @@ contract Deploy is EOADeployer {
         // deploy multisigs that simply have the deployer as their initial owner
         address[] memory singleOwner = new address[](1);
         singleOwner[0] = msg.sender;
-        deployImpl({
-            name: "pauserMultisig",
-            deployedTo: deployMultisig({
-                initialOwners: singleOwner,
-                initialThreshold: 1,
-                salt: ++salt
-            })
+
+        address pauserMultisig = deployMultisig({
+            initialOwners: singleOwner,
+            initialThreshold: 1,
+            salt: ++salt
         });
-        deployImpl({
-            name: "opsMultisig",
-            deployedTo: deployMultisig({
-                initialOwners: singleOwner,
-                initialThreshold: 1,
-                salt: ++salt
-            })
+        zUpdate("pauserMultisig", pauserMultisig);
+
+        address opsMultisig = deployMultisig({
+            initialOwners: singleOwner,
+            initialThreshold: 1,
+            salt: ++salt
         });
-        deployImpl({
-            name: "protocolCouncilMultisig",
-            deployedTo: deployMultisig({
-                initialOwners: singleOwner,
-                initialThreshold: 1,
-                salt: ++salt
-            })
+        zUpdate("operationsMultisig", opsMultisig);
+
+        address protocolCouncilMultisig = deployMultisig({
+            initialOwners: singleOwner,
+            initialThreshold: 1,
+            salt: ++salt
         });
-        deployImpl({
-            name: "communityMultisig",
-            deployedTo: deployMultisig({
-                initialOwners: singleOwner,
-                initialThreshold: 1,
-                salt: ++salt
-            })
+        zUpdate("protocolCouncilMultisig", protocolCouncilMultisig);
+
+        address communityMultisig = deployMultisig({
+            initialOwners: singleOwner,
+            initialThreshold: 1,
+            salt: ++salt
         });
+        zUpdate("communityMultisig", communityMultisig);
 
         // deploy primary executorMultisig
         require(address(Env.timelockController()) != address(0),
@@ -105,14 +103,13 @@ contract Deploy is EOADeployer {
         address[] memory owners_executorMultisig = new address[](2);
         owners_executorMultisig[0] = address(Env.timelockController());
         owners_executorMultisig[1] = Env.communityMultisig();
-        deployImpl({
-            name: "executorMultisig",
-            deployedTo: deployMultisig({
-                initialOwners: owners_executorMultisig,
-                initialThreshold: 1,
-                salt: ++salt
-            })
+
+        address executorMultisig = deployMultisig({
+            initialOwners: owners_executorMultisig,
+            initialThreshold: 1,
+            salt: ++salt
         });
+        zUpdate("executorMultisig", executorMultisig);
 
         // deploy beigenExecutorMultisig
         require(address(Env.beigenTimelockController()) != address(0),
@@ -120,22 +117,21 @@ contract Deploy is EOADeployer {
         address[] memory owners_beigenExecutorMultisig = new address[](2);
         owners_beigenExecutorMultisig[0] = address(Env.beigenTimelockController());
         owners_beigenExecutorMultisig[1] = Env.communityMultisig();
-        deployImpl({
-            name: "beigenExecutorMultisig",
-            deployedTo: deployMultisig({
-                initialOwners: owners_beigenExecutorMultisig,
-                initialThreshold: 1,
-                salt: ++salt
-            })
+
+        address beigenExecutorMultisig = deployMultisig({
+            initialOwners: owners_beigenExecutorMultisig,
+            initialThreshold: 1,
+            salt: ++salt
         });
+        zUpdate("beigenExecutorMultisig", beigenExecutorMultisig);
     }
 
     function deployMultisig(address[] memory initialOwners, uint256 initialThreshold, uint256 salt) public returns (address) {
         // TODO: solution for local networks / those that do not have Safe deployed on them?
         // addresses taken from https://github.com/safe-global/safe-smart-account/blob/main/CHANGELOG.md#expected-addresses-with-deterministic-deployment-proxy-default
-        address safeFactory = 0xa6B71E26C5e0845f74c812102Ca7114b6a896AB2;
-        address safeSingleton = 0xd9Db270c1B5E3Bd161E8c8503c55cEABeE709552;
-        address safeFallbackHandler = 0xf48f2B2d2a534e402487b3ee7C18c33Aec0Fe5e4;
+        address safeFactory = Env.safeFactory();
+        address safeSingleton = Env.safeSingleton();
+        address safeFallbackHandler = Env.safeFallbackHandler();
 
         bytes memory emptyData;
 

@@ -50,6 +50,21 @@ library Env {
     DeployedInstance internal constant instance = DeployedInstance.A;
 
     /**
+     * SAFE
+     */
+    function safeFactory() internal view returns (address) {
+        return _envAddress("safeFactory");
+    }
+
+    function safeSingleton() internal view returns (address) {
+        return _envAddress("safeSingleton");
+    }
+
+    function safeFallbackHandler() internal view returns (address) {
+        return _envAddress("safeFallbackHandler");
+    }
+
+    /**
      * env
      */
 
