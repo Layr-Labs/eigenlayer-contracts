@@ -930,24 +930,11 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         IStrategy[] memory strategies,
         string memory err
     ) internal {
-        uint[] memory curSlashableStake = _getMinSlashableStake(operator, operatorSet, strategies);
-        uint[] memory prevSlashableStake = _getPrevMinSlashableStake(operator, operatorSet, strategies);
+        uint[] memory curSlashableStake = _getMinSlashableStake(address(operator), operatorSet, strategies);
+        uint[] memory prevSlashableStake = _getPrevMinSlashableStake(address(operator), operatorSet, strategies);
 
         for (uint i = 0; i < strategies.length; i++) {
             assertTrue(prevSlashableStake[i] > curSlashableStake[i], err);
-        }
-    }
-
-    function assert_Snap_StakeBecomeUnslashable(
-        address operator,
-        OperatorSet memory operatorSet,
-        IStrategy[] memory strategies,
-        string memory err
-    ) internal {
-        uint[] memory curSlashableStake = _getMinSlashableStake(operator, operatorSet, strategies);
-        uint[] memory prevSlashableStake = _getPrevMinSlashableStake(operator, operatorSet, strategies);
-
-        for (uint i = 0; i < strategies.length; i++) {
             assertTrue(prevSlashableStake[i] > curSlashableStake[i], err);
         }
     }
@@ -1870,9 +1857,10 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         // Use timewarp to get previous staker shares
         uint[] memory prevShares = _getPrevStakerWithdrawableShares(staker, strategies);
 
-        // For each strategy, check diff between (prev-removed) and curr is at most 1 gwei
+        // Assert that the decrease in withdrawable shares is at least as much as the removed shares
+        // Checking for expected rounding down behavior
         for (uint i = 0; i < strategies.length; i++) {
-            assertApproxEqAbs(prevShares[i] - removedShares[i], curShares[i], 1e9, err);
+            assertGe(prevShares[i] - curShares[i], removedShares[i], err);
         }
     }
 
@@ -2010,7 +1998,11 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
             // If there was a slashing, but we complete a withdrawal for 0 shares, no need to normalize
             if (curSlashingFactor == WAD || curDepositShares[i] == 0) {
                 assert_Snap_Unchanged_DSF(staker, stratArray, err);
-                assert_DSF_WAD(staker, stratArray, err);
+                assert_DSF_WAD(staker, stratArray, err);    
+            } 
+            // If the staker has a slashingFactor of 0, any withdrawal as shares won't change the DSF
+            else if (staker.getSlashingFactor(strategies[i]) == 0) {
+                assert_Snap_Unchanged_DSF(staker, stratArray, err);
             }
             // If there was a slashing and we complete a withdrawal for non-zero shares, normalize the DSF
             else {
@@ -2030,7 +2022,8 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         uint[] memory delegatableShares,
         string memory err
     ) internal {
-        uint64[] memory maxMags = _getMaxMagnitudes(operator, strategies);
+        address operator = delegationManager.delegatedTo(address(staker));
+        uint64[] memory maxMags = _getMaxMagnitudes(User(payable(operator)), strategies);
 
         for (uint i = 0; i < strategies.length; i++) {
             IStrategy[] memory stratArray = strategies[i].toArray();
@@ -2104,7 +2097,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
             (OperatorSet[] memory operatorSets, Allocation[] memory allocations) = _getStrategyAllocations(operator, BEACONCHAIN_ETH_STRAT);
             for (uint i = 0; i < operatorSets.length; i++) {
                 if (allocations[i].currentMagnitude > 0) {
-                    assert_Snap_StakeBecomeUnslashable(operator, operatorSets[i], BEACONCHAIN_ETH_STRAT.toArray(), "operator should have minSlashableStake decreased");
+                    assert_Snap_StakeBecomeUnslashable(User(payable(operator)), operatorSets[i], BEACONCHAIN_ETH_STRAT.toArray(), "operator should have minSlashableStake decreased");
                 }
             }
         }
@@ -2571,6 +2564,22 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         // slash 100%
         for (uint i = 0; i < params.wadsToSlash.length; i++) {
             params.wadsToSlash[i] = 1e18;
+        }
+    }
+
+    function _genSlashing_Custom(
+        User operator,
+        OperatorSet memory operatorSet,
+        uint wadsToSlash
+    ) internal view returns (SlashingParams memory params) {
+        params.operator = address(operator);
+        params.operatorSetId = operatorSet.id;
+        params.description = "_genSlashing_Custom";
+        params.strategies = allocationManager.getStrategiesInOperatorSet(operatorSet).sort();
+        params.wadsToSlash = new uint[](params.strategies.length);
+
+        for (uint i = 0; i < params.wadsToSlash.length; i++) {
+            params.wadsToSlash[i] = wadsToSlash;
         }
     }
 

@@ -151,13 +151,26 @@ contract IntegrationCheckUtils is IntegrationBase {
         uint64 slashedAmountGwei
     ) internal {
         check_CompleteCheckpoint_State(staker);
-
         assert_Snap_Unchanged_Staker_DepositShares(staker, "staker shares should not have decreased");
         assert_Snap_Removed_Staker_WithdrawableShares_AtLeast(staker, BEACONCHAIN_ETH_STRAT, slashedAmountGwei * GWEI_TO_WEI, "should have decreased withdrawable shares by at least slashed amount");
         assert_Snap_Unchanged_ActiveValidatorCount(staker, "should not have changed active validator count");
         assert_Snap_BCSF_Decreased(staker, "BCSF should decrease");
         assert_Snap_Unchanged_DSF(staker, BEACONCHAIN_ETH_STRAT.toArray(), "DSF should be unchanged");
         assert_SlashableStake_Decrease_BCSlash(staker);
+    }
+
+    /// @notice Used for edge cases where rounding behaviors of magnitudes close to 1 are tested.
+    /// Normal 
+    function check_CompleteCheckPoint_WithSlashing_LowMagnitude_State(
+        User staker,
+        uint64 slashedAmountGwei
+    ) internal {
+        check_CompleteCheckpoint_State(staker);
+        assert_Snap_Unchanged_Staker_DepositShares(staker, "staker shares should not have decreased");
+        assert_Snap_Removed_Staker_WithdrawableShares_AtLeast(staker, BEACONCHAIN_ETH_STRAT, slashedAmountGwei * GWEI_TO_WEI, "should have decreased withdrawable shares by at least slashed amount");
+        assert_Snap_Unchanged_ActiveValidatorCount(staker, "should not have changed active validator count");
+        assert_Snap_BCSF_Decreased(staker, "BCSF should decrease");
+        assert_Snap_Unchanged_DSF(staker, BEACONCHAIN_ETH_STRAT.toArray(), "DSF should be unchanged");
     }
 
     function check_CompleteCheckpoint_WithCLSlashing_State(
@@ -234,7 +247,31 @@ contract IntegrationCheckUtils is IntegrationBase {
         } else {
             assert_Snap_Added_Staker_WithdrawableShares(staker, strategies, shares, "deposit should increase withdrawable shares");
         }
-        assert_Snap_DSF_State_Deposit(staker, strategies, "staker's DSF not updated correctly");    }
+        assert_Snap_DSF_State_Deposit(staker, strategies, "staker's DSF not updated correctly");
+    }
+
+    /// @notice Used for edge cases where rounding behaviors impact the assertions after a deposit, specifically when
+    /// there already exists depositShares for a staker for a strategy.
+    function check_Deposit_State_SubsequentDeposit_WithRounding(User staker, IStrategy[] memory strategies, uint[] memory shares) internal {
+        /// Deposit into strategies:
+        // For each of the assets held by the staker (either StrategyManager or EigenPodManager),
+        // the staker calls the relevant deposit function, depositing all held assets.
+        //
+        // ... check that all underlying tokens were transferred to the correct destination
+        //     and that the staker now has the expected amount of delegated shares in each strategy
+        assert_HasNoUnderlyingTokenBalance(staker, strategies, "staker should have transferred all underlying tokens");
+        assert_DepositShares_GTE_WithdrawableShares(staker, strategies, "deposit shares should be greater than or equal to withdrawable shares");
+        assert_Snap_Added_Staker_DepositShares(staker, strategies, shares, "staker should expect shares in each strategy after depositing");
+        assert_StrategiesInStakerStrategyList(staker, strategies, "staker strategy list should contain all strategies");
+
+        if (delegationManager.isDelegated(address(staker))) {
+            User operator = User(payable(delegationManager.delegatedTo(address(staker))));
+            assert_Snap_Expected_Staker_WithdrawableShares_Deposit(staker, operator, strategies, shares, "staker should have received expected withdrawable shares");
+        } else {
+            assert_Snap_Added_Staker_WithdrawableShares(staker, strategies, shares, "deposit should increase withdrawable shares");
+        }
+        assert_Snap_WithinErrorBounds_DSF(staker, strategies, "staker's DSF not updated correctly");
+    }
 
     function check_Delegation_State(
         User staker, 
@@ -881,6 +918,24 @@ contract IntegrationCheckUtils is IntegrationBase {
         check_IncrAlloc_State_Slashable_Active(operator, params);
     }
 
+    /// @dev Invariants for modifyAllocations. Use when:
+    /// - operator IS slashable for this operator set
+    /// - last call to modifyAllocations created an INCREASE in allocation
+    /// - operator has no delegated shares/stake so their slashable stake remains UNCHANGED
+    function check_IncrAlloc_State_Slashable_NoDelegatedStake(
+        User operator,
+        AllocateParams memory params
+    ) internal {
+        check_Base_IncrAlloc_State(operator, params);
+        check_IsSlashable_State(operator, params.operatorSet, params.strategies);        
+
+        /// Run checks on pending allocation, if the operator has a nonzero delay
+        check_IncrAlloc_State_Slashable_Pending(operator, params);
+
+        // Validate operator has no pending modification and has increased allocation
+        check_IncrAlloc_State_Slashable_Active_NoDelegatedStake(operator, params);
+    }
+
     /// @dev Invariants for modifyAllocations. Used when:
     /// - operator IS slashable for this operator set
     /// - last call to modifyAllocations created an INCREASE in allocation
@@ -917,6 +972,23 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_HasSlashableStake(operator, params, "operator should have expected slashable stake for each strategy");
         assert_Snap_StakeBecameAllocated(operator, params.operatorSet, params.strategies, "allocated stake should have increased");
         assert_Snap_StakeBecameSlashable(operator, params.operatorSet, params.strategies, "slashable stake should have increased");
+    }
+
+    /// @dev Invariants for modifyAllocations. Used when:
+    /// - operator IS slashable for this operator set
+    /// - last call to modifyAllocations created an INCREASE in allocation
+    /// - effectBlock for the increase HAS been reached
+    function check_IncrAlloc_State_Slashable_Active_NoDelegatedStake(
+        User operator,
+        AllocateParams memory params
+    ) private activateAllocation(operator) {
+        // Validate operator does not have a pending modification, and has expected slashable stake
+        check_ActiveModification_State(operator, params);
+
+        // SHOULD set current magnitude and increase slashable/allocated stake
+        assert_Snap_Set_CurrentMagnitude(operator, params, "should have updated the operator's magnitude");
+        assert_HasAllocatedStake(operator, params, "operator should have expected allocated stake for each strategy");
+        assert_HasSlashableStake(operator, params, "operator should have expected slashable stake for each strategy");
     }
 
     /*******************************************************************************

@@ -375,6 +375,24 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         return _startValidators();
     }
 
+    /// @dev Starts a specified number of validators on the beacon chain
+    /// @param numValidators The number of validators to start
+    /// @return A list of created validator indices
+    /// @return The amount of wei sent to the beacon chain
+    function startValidators(
+        uint8 numValidators
+    ) public virtual createSnapshot returns (uint40[] memory, uint64) {
+        require(numValidators > 0 && numValidators <= 10, "startValidators: numValidators must be between 1 and 10");
+        uint256 balanceWei = address(this).balance;
+
+        // given a number of validators, the current balance, calculate the amount of ETH needed to start that many validators
+        uint256 ethNeeded = numValidators * 32 ether - balanceWei;
+        cheats.deal(address(this), ethNeeded);
+
+        print.method("startValidators");
+        return _startValidators();
+    }
+
     function exitValidators(
         uint40[] memory _validators
     ) public virtual createSnapshot returns (uint64 exitedBalanceGwei) {
@@ -472,7 +490,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     }
 
     /// -----------------------------------------------------------------------
-    /// Internal Methods
+    /// View Methods
     /// -----------------------------------------------------------------------
 
     function allocationManager() public view returns (AllocationManager) {
@@ -482,6 +500,14 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     function permissionController() public view returns (PermissionController) {
         return PermissionController(address(delegationManager.permissionController()));
     }
+
+    function getSlashingFactor(IStrategy strategy) public view returns (uint256) {
+        return _getSlashingFactor(address(this), strategy);
+    }
+
+    /// -----------------------------------------------------------------------
+    /// Internal Methods
+    /// -----------------------------------------------------------------------
 
     function _completeQueuedWithdrawal(
         Withdrawal memory withdrawal,
@@ -643,6 +669,18 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
 
     function _podWithdrawalCredentials() internal view returns (bytes memory) {
         return abi.encodePacked(bytes1(uint8(1)), bytes11(0), address(pod));
+    }
+
+    function _getSlashingFactor(
+        address staker,
+        IStrategy strategy
+    ) internal view returns (uint256) {
+        address operator = delegationManager.delegatedTo(staker);
+        uint64 maxMagnitude = allocationManager().getMaxMagnitudes(operator, strategy.toArray())[0];
+        if (strategy == beaconChainETHStrategy) {
+            return maxMagnitude.mulWad(eigenPodManager.beaconChainSlashingFactor(staker));
+        }
+        return maxMagnitude;
     }
 
     /// @notice Gets the expected withdrawals to be created when the staker is undelegated via a call to `DelegationManager.undelegate()`

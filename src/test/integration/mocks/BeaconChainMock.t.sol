@@ -263,6 +263,41 @@ contract BeaconChainMock is Logger {
         return slashedBalanceGwei;
     }
 
+    function slashValidators(uint40[] memory _validators, uint64 _slashAmountGwei) public {
+        print.method("slashValidatorsAmountGwei");
+
+        for (uint i = 0; i < _validators.length; i++) {
+            uint40 validatorIndex = _validators[i];
+            Validator storage v = validators[validatorIndex];
+            require(!v.isDummy, "BeaconChainMock: attempting to exit dummy validator. We need those for proofgen >:(");
+
+            // Mark slashed and initiate validator exit
+            if (!v.isSlashed) {
+                v.isSlashed = true;
+                v.exitEpoch = currentEpoch() + 1;
+            }
+
+            // Calculate slash amount
+            uint64 curBalanceGwei = _currentBalanceGwei(validatorIndex);
+
+            // Calculate slash amount
+            uint64 slashedAmountGwei;
+            if (_slashAmountGwei > curBalanceGwei) {
+                slashedAmountGwei = curBalanceGwei;
+                _slashAmountGwei -= curBalanceGwei;
+                curBalanceGwei = 0;
+            } else {
+                slashedAmountGwei = _slashAmountGwei;
+                curBalanceGwei -= _slashAmountGwei;
+            }
+
+            // Decrease current balance (effective balance updated during epoch processing)
+            _setCurrentBalance(validatorIndex, curBalanceGwei);
+
+            console.log("   - Slashed validator %s by %s gwei", validatorIndex, slashedAmountGwei);
+        }
+    }
+
     /// @dev Move forward one epoch on the beacon chain, taking care of important epoch processing:
     /// - Award ALL validators CONSENSUS_REWARD_AMOUNT
     /// - Withdraw any balance over 32 ETH
