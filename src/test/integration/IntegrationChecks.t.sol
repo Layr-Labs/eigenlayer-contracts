@@ -17,17 +17,6 @@ contract IntegrationCheckUtils is IntegrationBase {
     *******************************************************************************/
 
     function check_VerifyWC_State(
-        User_M2 staker,
-        uint40[] memory validators,
-        uint64 beaconBalanceGwei
-    ) internal {
-        uint beaconBalanceWei = beaconBalanceGwei * GWEI_TO_WEI;
-        assert_Snap_Added_Staker_DepositShares(staker, BEACONCHAIN_ETH_STRAT, beaconBalanceWei, "staker should have added deposit shares to beacon chain strat");
-        assert_Snap_Added_ActiveValidatorCount(staker, validators.length, "staker should have increased active validator count");
-        assert_Snap_Added_ActiveValidators(staker, validators, "validators should each be active");
-    }
-
-    function check_VerifyWC_State(
         User staker,
         uint40[] memory validators,
         uint64 beaconBalanceGwei
@@ -294,6 +283,26 @@ contract IntegrationCheckUtils is IntegrationBase {
         // ... check that each withdrawal was successfully enqueued, that the returned roots
         //     match the hashes of each withdrawal, and that the staker and operator have
         //     reduced shares.
+        _check_QueuedWithdrawal_State_NotDelegated(staker, strategies, depositShares, withdrawableShares, withdrawals, withdrawalRoots);
+
+        if (delegationManager.isDelegated(address(staker))) {
+            assert_Snap_Removed_OperatorShares(operator, strategies, withdrawableShares,
+                "check_QueuedWithdrawal_State: failed to remove operator shares");
+            assert_Snap_Increased_SlashableSharesInQueue(operator, withdrawals,
+                "check_QueuedWithdrawal_State: failed to increase slashable shares in queue");
+            check_Decreased_SlashableStake(operator, withdrawableShares, strategies);
+        }
+    }
+
+    /// @dev Basic queued withdrawal checks if the staker is not delegated, should be called by the above function only
+    function _check_QueuedWithdrawal_State_NotDelegated(
+        User staker,
+        IStrategy[] memory strategies,
+        uint[] memory depositShares,
+        uint[] memory withdrawableShares,
+        Withdrawal[] memory withdrawals,
+        bytes32[] memory withdrawalRoots
+    ) private {
         assertEq(withdrawalRoots.length, 1, "check_QueuedWithdrawal_State: should only have 1 withdrawal root after queueing"); 
         assert_AllWithdrawalsPending(withdrawalRoots,
             "check_QueuedWithdrawal_State: staker withdrawals should now be pending");
@@ -301,15 +310,11 @@ contract IntegrationCheckUtils is IntegrationBase {
             "check_QueuedWithdrawal_State: calculated withdrawals should match returned roots");
         assert_Snap_Added_QueuedWithdrawals(staker, withdrawals,
             "check_QueuedWithdrawal_State: staker should have increased nonce by withdrawals.length");
-        assert_Snap_Removed_OperatorShares(operator, strategies, withdrawableShares,
-            "check_QueuedWithdrawal_State: failed to remove operator shares");
         assert_Snap_Removed_Staker_DepositShares(staker, strategies, depositShares,
             "check_QueuedWithdrawal_State: failed to remove staker shares");
         assert_Snap_Removed_Staker_WithdrawableShares(staker, strategies, withdrawableShares,
             "check_QueuedWithdrawal_State: failed to remove staker withdrawable shares");
-        assert_Snap_Increased_SlashableSharesInQueue(operator, withdrawals,
-            "check_QueuedWithdrawal_State: failed to increase slashable shares in queue");
-        check_Decreased_SlashableStake(operator, withdrawableShares, strategies);
+
         // Check that the dsf is either reset to wad or unchanged
         for (uint i = 0; i < strategies.length; i++) {
             // For a full withdrawal, the dsf should be reset to wad & the staker strategy list should not contain the strategy
@@ -326,6 +331,8 @@ contract IntegrationCheckUtils is IntegrationBase {
             }
         }
     }
+
+    
 
     function check_Decreased_SlashableStake(
         User operator,
