@@ -411,10 +411,10 @@ contract Integration_SlashedOperator_SlashedEigenpod is Integration_SlashedOpera
         uint40[] memory validators = staker.getActiveValidators();
         uint40[] memory slashedValidators = _choose(validators);
         uint64 slashedGwei = beaconChain.slashValidators(slashedValidators, BeaconChainMock.SlashType.Minor);
-        beaconChain.advanceEpoch_NoWithdrawNoRewards();
+        beaconChain.advanceEpoch_NoRewards();
         staker.startCheckpoint();
         staker.completeCheckpoint();
-        check_CompleteCheckpoint_WithCLSlashing_HandleRoundDown_State(staker, slashedGwei);
+        check_CompleteCheckpoint_WithSlashing_HandleRoundDown_State(staker, slashedValidators, slashedGwei);
 
         // 7. Delegate to operator
         staker.delegateTo(operator);
