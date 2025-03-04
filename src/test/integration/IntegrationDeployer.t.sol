@@ -721,6 +721,20 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         return tokenBalances;
     }
 
+    /// Given an array of strategies and an array of amounts, deal the amounts to the user
+    function _dealAmounts(User user, IStrategy[] memory strategies, uint[] memory amounts) internal noTracing {
+        for (uint i = 0; i < amounts.length; i++) {
+            IStrategy strategy = strategies[i];
+
+            if (strategy == BEACONCHAIN_ETH_STRAT) {
+                cheats.deal(address(user), amounts[i]);
+            } else {
+                IERC20 underlyingToken = strategy.underlyingToken();
+                StdCheats.deal(address(underlyingToken), address(user), amounts[i]);
+            }
+        }
+    }
+
     /// @dev Uses `random` to return a random uint, with a range given by `min` and `max` (inclusive)
     /// @return `min` <= result <= `max`
     function _randUint(uint min, uint max) internal returns (uint) {

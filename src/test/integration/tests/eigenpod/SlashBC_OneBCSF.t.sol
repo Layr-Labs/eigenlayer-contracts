@@ -29,7 +29,7 @@ contract Integration_SlashBC_OneBCSF is IntegrationCheckUtils {
      * rounding down to 0 in a single slash even with increased MaxEB to 2048 is not possible and would require several
      * iterations of slashing to do so. Using a harness to set the beaconChainSlashingFactor to 1 is the easiest way for this test.
      * 2. create a new staker, operator, and avs
-     * 3. verify withdrawal credentials
+     * 3. start validators and verify withdrawal credentials
      */
     function _init() internal override {
         // 1. etch a new implementation to set staker's beaconChainSlashingFactor to 1
@@ -83,7 +83,7 @@ contract Integration_SlashBC_OneBCSF is IntegrationCheckUtils {
     
     /// @notice Test that a staker is slashed to 0 BCSF from a minor slash and that they can't deposit more shares
     /// from their EigenPod (either through verifyWC or start/complete CP)
-    function test_slashFullyBC_deposit(uint24 _r) public rand(_r) {
+    function test_slashFullyBC_revert_deposit(uint24 _r) public rand(_r) {
         // 4. slash validators on beacon chain (start/complete checkpoint)
         uint40[] memory slashedValidators = _choose(validators);
         slashedGwei = beaconChain.slashValidators(slashedValidators, BeaconChainMock.SlashType.Minor);
@@ -125,7 +125,7 @@ contract Integration_SlashBC_OneBCSF is IntegrationCheckUtils {
      * 6. delegate to operator
      * 7. deposit expecting revert (randomly pick to verifyWC, start/complete CP)
      */
-    function test_slashAVS_delegate_startCompleteCP(uint24 _r) public rand(_r) {
+    function test_slashAVS_delegate_revert_startCompleteCP(uint24 _r) public rand(_r) {
         // 4. Create an operator set and register an operator
         operatorSet = avs.createOperatorSet(strategies);
         operator.registerForOperatorSet(operatorSet);
@@ -137,8 +137,7 @@ contract Integration_SlashBC_OneBCSF is IntegrationCheckUtils {
         _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
 
         // 5. slash operator to 1 magnitude remaining
-        SlashingParams memory slashParams = _genSlashing_Full(operator, operatorSet);
-        slashParams.wadsToSlash[0] = WAD - 1;
+        SlashingParams memory slashParams = _genSlashing_Custom(operator, operatorSet, WAD - 1);
         avs.slashOperator(slashParams);
         check_Base_Slashing_State(operator, allocateParams, slashParams);
 

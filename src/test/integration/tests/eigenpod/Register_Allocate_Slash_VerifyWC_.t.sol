@@ -47,8 +47,7 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationCheckUtils {
         _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
 
         // 2. Fully slash operator
-        SlashingParams memory slashParams = _genSlashing_Full(operator, operatorSet);
-        slashParams.wadsToSlash[0] = WAD - 1;
+        SlashingParams memory slashParams = _genSlashing_Custom(operator, operatorSet, WAD - 1);
         avs.slashOperator(slashParams);
         check_Base_Slashing_State(operator, allocateParams, slashParams);
 
