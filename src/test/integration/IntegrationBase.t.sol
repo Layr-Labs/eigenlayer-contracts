@@ -1998,7 +1998,11 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
             // If there was a slashing, but we complete a withdrawal for 0 shares, no need to normalize
             if (curSlashingFactor == WAD || curDepositShares[i] == 0) {
                 assert_Snap_Unchanged_DSF(staker, stratArray, err);
-                assert_DSF_WAD(staker, stratArray, err);
+                assert_DSF_WAD(staker, stratArray, err);    
+            } 
+            // If the staker has a slashingFactor of 0, any withdrawal as shares won't change the DSF
+            else if (staker.getSlashingFactor(strategies[i]) == 0) {
+                assert_Snap_Unchanged_DSF(staker, stratArray, err);
             }
             // If there was a slashing and we complete a withdrawal for non-zero shares, normalize the DSF
             else {
@@ -2018,7 +2022,8 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         uint[] memory delegatableShares,
         string memory err
     ) internal {
-        uint64[] memory maxMags = _getMaxMagnitudes(operator, strategies);
+        address operator = delegationManager.delegatedTo(address(staker));
+        uint64[] memory maxMags = _getMaxMagnitudes(User(payable(operator)), strategies);
 
         for (uint i = 0; i < strategies.length; i++) {
             IStrategy[] memory stratArray = strategies[i].toArray();

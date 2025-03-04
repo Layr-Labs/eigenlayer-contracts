@@ -133,9 +133,11 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationCheckUtils {
         check_Base_Slashing_State(operator, allocateParams, slashParams);
 
         // 5. undelegate results in 0 delegated shares removed since operator has 0 magnitude and staker is fully slashed too
+        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.undelegate();
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
-        check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, initDepositShares, 0.toArrayU256());
+
+        check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, withdrawableShares);
 
         // 6. redeposit (start/complete checkpoint)
         beaconChain.advanceEpoch();
@@ -163,9 +165,10 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationCheckUtils {
         check_Base_Slashing_State(operator, allocateParams, slashParams);
 
         // 5. undelegate results in 0 delegated shares removed since operator has 0 magnitude and staker is fully slashed too
+        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.undelegate();
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
-        check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, initDepositShares, 0.toArrayU256());
+        check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, withdrawableShares);
 
         // 6. complete withdrawals as shares(although amount 0 from fully slashed operator)
         _rollBlocksForCompleteWithdrawals(withdrawals);
@@ -199,9 +202,10 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationCheckUtils {
         check_Base_Slashing_State(operator, allocateParams, slashParams);
 
         // 5. undelegate results in 0 delegated shares removed since operator has 0 magnitude and staker is fully slashed too
+        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.undelegate();
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
-        check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, initDepositShares, 0.toArrayU256());
+        check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, withdrawableShares);
 
         // 6. complete withdrawals as tokens(although amount 0 from fully slashed operator)
         // This also exits validators on the beacon chain

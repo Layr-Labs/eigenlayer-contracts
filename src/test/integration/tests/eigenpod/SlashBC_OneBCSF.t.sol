@@ -98,7 +98,7 @@ contract Integration_SlashBC_OneBCSF is IntegrationCheckUtils {
         // 5. deposit expecting revert (randomly pick to verifyWC, start/complete CP)
         if (_randBool()) {
             // Verify WC
-            (validators, ) = staker.startValidators(uint8(_randUint(1, 10)));
+            (validators, ) = staker.startValidators(uint8(_randUint(3, 10)));
             beaconChain.advanceEpoch();
 
             cheats.expectRevert(IDelegationManagerErrors.FullySlashed.selector);
