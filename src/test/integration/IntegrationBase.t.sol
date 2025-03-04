@@ -566,7 +566,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
-    function assert_DSF_Reset(
+    function assert_DSF_WAD(
         User staker,
         IStrategy[] memory strategies,
         string memory err
