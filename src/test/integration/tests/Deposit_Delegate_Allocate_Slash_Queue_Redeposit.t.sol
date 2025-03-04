@@ -34,6 +34,8 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         for (uint i = 0; i < initTokenBalances.length; i++) {
             if (strategies[i] == BEACONCHAIN_ETH_STRAT) {
                 tokensToDeposit[i] = initTokenBalances[i];
+                //user.depositIntoEigenlayer uses all ETH balance for a pod, so we deal back staker's
+                //starting ETH to replicate partial deposit state
                 eth_to_deal = initTokenBalances[i];
                 numTokensRemaining[i] = initTokenBalances[i];
                 continue;
@@ -46,6 +48,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         // 1. Deposit Into Strategies
         initDepositShares = _calculateExpectedShares(strategies, tokensToDeposit);
         staker.depositIntoEigenlayer(strategies, tokensToDeposit);
+        //dealing back ETH
         cheats.deal(address(staker), eth_to_deal);
         check_Deposit_State_PartialDeposit(staker, strategies, initDepositShares, numTokensRemaining);
 
