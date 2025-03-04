@@ -414,7 +414,7 @@ contract Integration_SlashedOperator_SlashedEigenpod is Integration_SlashedOpera
         beaconChain.advanceEpoch_NoWithdrawNoRewards();
         staker.startCheckpoint();
         staker.completeCheckpoint();
-        check_CompleteCheckpoint_WithSlashing_HandleRoundDown_State(staker, slashedValidators, slashedGwei);
+        check_CompleteCheckpoint_WithCLSlashing_HandleRoundDown_State(staker, slashedGwei);
 
         // 7. Delegate to operator
         staker.delegateTo(operator);
