@@ -995,7 +995,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         check_MaxMag_Invariants(operator);
 
         OperatorSet memory operatorSet = params.operatorSet;
-    
+
         // Decreasing Allocation should NOT change operator set registration, max magnitude
         assert_Snap_Unchanged_Registration(operator, operatorSet, "operator registration status should be unchanged");
         assert_Snap_Unchanged_Slashability(operator, operatorSet, "operator slashability should be unchanged");
