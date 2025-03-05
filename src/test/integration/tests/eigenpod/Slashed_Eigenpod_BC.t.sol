@@ -566,9 +566,7 @@ contract Integration_Redelegate_SlashOperator_SlashEigenpod is Integration_Slash
         _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint256 i = 0; i < withdrawals.length; ++i) {
             staker.completeWithdrawalAsShares(withdrawals[i]);
-            check_Withdrawal_AsShares_Redelegated_State_Base(staker, operator, operator2, withdrawals[i], withdrawals[i].strategies, stakerWithdrawableShares);
-            // DSF actually decreases a bit because we deposited after the withdrawal, which normalized, and then deposited again
-            assert_Snap_WithinErrorBounds_DSF(staker, withdrawals[i].strategies, "staker's DSF not updated correctly");
+            check_Withdrawal_AsShares_Redelegated_State(staker, operator, operator2, withdrawals[i], withdrawals[i].strategies, stakerWithdrawableShares);
         }
     }
 

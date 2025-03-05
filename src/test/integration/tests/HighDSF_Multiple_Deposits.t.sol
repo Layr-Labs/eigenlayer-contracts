@@ -70,7 +70,7 @@ contract Integration_HighDSF_Multiple_Deposits is IntegrationCheckUtils {
             _dealAmounts(staker, strategies, initTokenBalances);
             staker.depositIntoEigenlayer(strategies, initTokenBalances);
             initDepositShares = _calculateExpectedShares(strategies, initTokenBalances);
-            check_Deposit_State_SubsequentDeposit_WithRounding(staker, strategies, initDepositShares);
+            check_Deposit_State(staker, strategies, initDepositShares);
         }
 
         // Check that the DSF is still bounded without overflow
