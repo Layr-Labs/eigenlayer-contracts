@@ -295,24 +295,6 @@ contract ExistingDeploymentParser is Script, Logger {
         eigenStrategyImpl = EigenStrategy(json.readAddress(".addresses.token.eigenStrategyImpl"));
     }
 
-    function _parseDeployedEigenPods(
-        string memory existingDeploymentInfoPath
-    ) internal returns (DeployedEigenPods memory) {
-        uint256 currentChainId = block.chainid;
-
-        // READ JSON CONFIG DATA
-        string memory json = cheats.readFile(existingDeploymentInfoPath);
-
-        // check that the chainID matches the one in the config
-        uint256 configChainId = json.readUint(".chainInfo.chainId");
-        assertEq(configChainId, currentChainId, "You are on the wrong chain for this config");
-
-        multiValidatorPods = json.readAddressArray(".eigenPods.multiValidatorPods");
-        singleValidatorPods = json.readAddressArray(".eigenPods.singleValidatorPods");
-        inActivePods = json.readAddressArray(".eigenPods.inActivePods");
-        allEigenPods = json.readAddressArray(".eigenPods.allEigenPods");
-        return DeployedEigenPods({multiValidatorPods: multiValidatorPods, singleValidatorPods: singleValidatorPods, inActivePods: inActivePods});
-    }
 
     /// @notice use for deploying a new set of EigenLayer contracts
     /// Note that this does assertEq multisigs to already be deployed
@@ -606,63 +588,6 @@ contract ExistingDeploymentParser is Script, Logger {
         }
     }
 
-    /**
-     * @notice Log contract addresses and write to output json file
-     */
-    function logAndOutputContractAddresses(
-        string memory outputPath
-    ) public {
-        // WRITE JSON DATA
-        string memory parent_object = "parent object";
-
-        string memory deployed_strategies = "strategies";
-        for (uint256 i = 0; i < numStrategiesToDeploy; ++i) {
-            deployed_strategies.serialize(strategiesToDeploy[i].tokenSymbol, address(deployedStrategyArray[i]));
-        }
-        string memory deployed_strategies_output = numStrategiesToDeploy == 0
-            ? ""
-            : deployed_strategies.serialize(
-                strategiesToDeploy[numStrategiesToDeploy - 1].tokenSymbol, address(deployedStrategyArray[numStrategiesToDeploy - 1])
-            );
-
-        string memory deployed_addresses = "addresses";
-        deployed_addresses.serialize("eigenLayerProxyAdmin", address(eigenLayerProxyAdmin));
-        deployed_addresses.serialize("eigenLayerPauserReg", address(eigenLayerPauserReg));
-        deployed_addresses.serialize("avsDirectory", address(avsDirectory));
-        deployed_addresses.serialize("avsDirectoryImplementation", address(avsDirectoryImplementation));
-        deployed_addresses.serialize("delegationManager", address(delegationManager));
-        deployed_addresses.serialize("delegationManagerImplementation", address(delegationManagerImplementation));
-        deployed_addresses.serialize("strategyManager", address(strategyManager));
-        deployed_addresses.serialize("strategyManagerImplementation", address(strategyManagerImplementation));
-        deployed_addresses.serialize("rewardsCoordinator", address(rewardsCoordinator));
-        deployed_addresses.serialize("rewardsCoordinatorImplementation", address(rewardsCoordinatorImplementation));
-        deployed_addresses.serialize("eigenPodManager", address(eigenPodManager));
-        deployed_addresses.serialize("eigenPodManagerImplementation", address(eigenPodManagerImplementation));
-        deployed_addresses.serialize("eigenPodBeacon", address(eigenPodBeacon));
-        deployed_addresses.serialize("eigenPodImplementation", address(eigenPodImplementation));
-        deployed_addresses.serialize("baseStrategyImplementation", address(baseStrategyImplementation));
-        deployed_addresses.serialize("emptyContract", address(emptyContract));
-        string memory deployed_addresses_output = deployed_addresses.serialize("strategies", deployed_strategies_output);
-
-        string memory parameters = "parameters";
-        parameters.serialize("executorMultisig", executorMultisig);
-        parameters.serialize("operationsMultisig", operationsMultisig);
-        parameters.serialize("communityMultisig", communityMultisig);
-        parameters.serialize("pauserMultisig", pauserMultisig);
-        parameters.serialize("timelock", timelock);
-        string memory parameters_output = parameters.serialize("operationsMultisig", operationsMultisig);
-
-        string memory chain_info = "chainInfo";
-        chain_info.serialize("deploymentBlock", block.number);
-        string memory chain_info_output = chain_info.serialize("chainId", block.chainid);
-
-        // serialize all the data
-        parent_object.serialize(deployed_addresses, deployed_addresses_output);
-        parent_object.serialize(chain_info, chain_info_output);
-        string memory finalJson = parent_object.serialize(parameters, parameters_output);
-
-        cheats.writeJson(finalJson, outputPath);
-    }
 
     /// @notice used for parsing parameters used in the integration test upgrade
     function _parseParamsForIntegrationUpgrade(

@@ -14,11 +14,5 @@ contract PausableHarness is Pausable {
     }
 
     // bitwise operations
-    function bitwise_not(uint256 input) external pure returns (uint256) {
-        return (~input);
-    }
 
-    function bitwise_and(uint256 input_1, uint256 input_2) external pure returns (uint256) {
-        return (input_1 & input_2);
-    }
 }

@@ -25,9 +25,6 @@ abstract contract OpenZeppelin_Context {
         return msg.sender;
     }
 
-    function _msgData() internal view virtual returns (bytes calldata) {
-        return msg.data;
-    }
 }
 
 // OpenZeppelin Contracts (last updated v4.6.0) (token/ERC20/IERC20.sol)
@@ -522,21 +519,6 @@ abstract contract OpenZeppelin_ERC20Burnable is OpenZeppelin_Context, OpenZeppel
         _burn(_msgSender(), amount);
     }
 
-    /**
-     * @dev Destroys `amount` tokens from `account`, deducting from the caller's
-     * allowance.
-     *
-     * See {ERC20-_burn} and {ERC20-allowance}.
-     *
-     * Requirements:
-     *
-     * - the caller must have allowance for ``accounts``'s tokens of at least
-     * `amount`.
-     */
-    function burnFrom(address account, uint256 amount) public virtual {
-        _spendAllowance(account, _msgSender(), amount);
-        _burn(account, amount);
-    }
 }
 
 // OpenZeppelin Contracts (last updated v4.5.0) (token/ERC20/presets/ERC20PresetFixedSupply.sol)

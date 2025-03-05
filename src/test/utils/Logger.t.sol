@@ -140,10 +140,6 @@ abstract contract Logger is Test {
     /// Logging
     /// -----------------------------------------------------------------------
 
-    function _toggleLog() internal {
-        logging = !logging;
-        console.log("\n%s logging %s...", NAME_COLORED(), logging ? "enabled" : "disabled");
-    }
 
     /// -----------------------------------------------------------------------
     /// Trace Counter get/set
@@ -265,17 +261,6 @@ library print {
         }
     }
 
-    function asForkType(
-        uint256 t
-    ) internal pure returns (string memory s) {
-        if (t == LOCAL) {
-            s = "LOCAL";
-        } else if (t == MAINNET) {
-            s = "MAINNET";
-        } else if (t == HOLESKY) {
-            s = "HOLESKY";
-        }
-    }
 
     function asGwei(
         uint256 x
