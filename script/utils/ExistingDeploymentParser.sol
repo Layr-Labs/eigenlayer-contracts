@@ -100,7 +100,7 @@ contract ExistingDeploymentParser is Script, Logger {
     PauserRegistry public eigenLayerPauserReg;
     UpgradeableBeacon public eigenPodBeacon;
     UpgradeableBeacon public strategyBeacon;
-    
+
     /// @dev AllocationManager
     AllocationManager public allocationManager;
     AllocationManager public allocationManagerImplementation;
@@ -129,7 +129,7 @@ contract ExistingDeploymentParser is Script, Logger {
     /// @dev StrategyManager
     StrategyManager public strategyManager;
     StrategyManager public strategyManagerImplementation;
-    
+
     /// @dev StrategyFactory
     StrategyFactory public strategyFactory;
     StrategyFactory public strategyFactoryImplementation;
@@ -172,7 +172,7 @@ contract ExistingDeploymentParser is Script, Logger {
     StrategyUnderlyingTokenConfig[] public strategiesToDeploy;
 
     /// -----------------------------------------------------------------------
-    /// 
+    ///
     /// -----------------------------------------------------------------------
 
     function NAME() public view virtual override returns (string memory) {
@@ -186,7 +186,7 @@ contract ExistingDeploymentParser is Script, Logger {
     /// @notice use for parsing already deployed EigenLayer contracts
     function _parseDeployedContracts(
         string memory existingDeploymentInfoPath
-    ) internal noTracing virtual {
+    ) internal virtual noTracing {
         // read and log the chainID
         uint256 currentChainId = block.chainid;
         console.log("You are parsing on ChainID", currentChainId);
@@ -212,25 +212,32 @@ contract ExistingDeploymentParser is Script, Logger {
 
         eigenLayerProxyAdmin = ProxyAdmin(json.readAddress(".addresses.eigenLayerProxyAdmin"));
         eigenLayerPauserReg = PauserRegistry(json.readAddress(".addresses.eigenLayerPauserReg"));
-        
+
         // FIXME: hotfix - remove later...
         permissionControllerImplementation = new PermissionController(SEMVER);
         permissionController = PermissionController(
-            address(new TransparentUpgradeableProxy(address(permissionControllerImplementation), address(eigenLayerProxyAdmin), ""))
+            address(
+                new TransparentUpgradeableProxy(
+                    address(permissionControllerImplementation), address(eigenLayerProxyAdmin), ""
+                )
+            )
         );
 
         allocationManagerImplementation = new AllocationManager(
-            delegationManager, 
-            eigenLayerPauserReg, 
-            permissionController, 
-            DEALLOCATION_DELAY, 
+            delegationManager,
+            eigenLayerPauserReg,
+            permissionController,
+            DEALLOCATION_DELAY,
             ALLOCATION_CONFIGURATION_DELAY,
             SEMVER
         );
         allocationManager = AllocationManager(
-            address(new TransparentUpgradeableProxy(address(allocationManagerImplementation), address(eigenLayerProxyAdmin), ""))
+            address(
+                new TransparentUpgradeableProxy(
+                    address(allocationManagerImplementation), address(eigenLayerProxyAdmin), ""
+                )
+            )
         );
-
 
         // // AllocationManager
         // allocationManager = AllocationManager(json.readAddress(".addresses.allocationManager"));
@@ -242,7 +249,8 @@ contract ExistingDeploymentParser is Script, Logger {
 
         // DelegationManager
         delegationManager = DelegationManager(json.readAddress(".addresses.delegationManager"));
-        delegationManagerImplementation = DelegationManager(json.readAddress(".addresses.delegationManagerImplementation"));
+        delegationManagerImplementation =
+            DelegationManager(json.readAddress(".addresses.delegationManagerImplementation"));
 
         // // PermissionController
         // permissionController = PermissionController(json.readAddress(".addresses.permissionController"));
@@ -250,7 +258,8 @@ contract ExistingDeploymentParser is Script, Logger {
 
         // RewardsCoordinator
         rewardsCoordinator = RewardsCoordinator(json.readAddress(".addresses.rewardsCoordinator"));
-        rewardsCoordinatorImplementation = RewardsCoordinator(json.readAddress(".addresses.rewardsCoordinatorImplementation"));
+        rewardsCoordinatorImplementation =
+            RewardsCoordinator(json.readAddress(".addresses.rewardsCoordinatorImplementation"));
 
         // StrategyManager
         strategyManager = StrategyManager(json.readAddress(".addresses.strategyManager"));
@@ -262,7 +271,8 @@ contract ExistingDeploymentParser is Script, Logger {
 
         // StrategyBeacon
         strategyBeacon = UpgradeableBeacon(json.readAddress(".addresses.strategyFactoryBeacon"));
-        strategyFactoryBeaconImplementation = StrategyBase(json.readAddress(".addresses.strategyFactoryBeaconImplementation"));
+        strategyFactoryBeaconImplementation =
+            StrategyBase(json.readAddress(".addresses.strategyFactoryBeaconImplementation"));
         baseStrategyImplementation = StrategyBase(json.readAddress(".addresses.baseStrategyImplementation"));
 
         // EigenPodManager
@@ -311,7 +321,11 @@ contract ExistingDeploymentParser is Script, Logger {
         singleValidatorPods = json.readAddressArray(".eigenPods.singleValidatorPods");
         inActivePods = json.readAddressArray(".eigenPods.inActivePods");
         allEigenPods = json.readAddressArray(".eigenPods.allEigenPods");
-        return DeployedEigenPods({multiValidatorPods: multiValidatorPods, singleValidatorPods: singleValidatorPods, inActivePods: inActivePods});
+        return DeployedEigenPods({
+            multiValidatorPods: multiValidatorPods,
+            singleValidatorPods: singleValidatorPods,
+            inActivePods: inActivePods
+        });
     }
 
     /// @notice use for deploying a new set of EigenLayer contracts
@@ -360,22 +374,27 @@ contract ExistingDeploymentParser is Script, Logger {
         STRATEGY_MANAGER_INIT_PAUSED_STATUS = json.readUint(".strategyManager.init_paused_status");
         STRATEGY_MANAGER_WHITELISTER = json.readAddress(".strategyManager.init_strategy_whitelister");
         // DelegationManager
-        DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS = uint32(json.readUint(".delegationManager.init_minWithdrawalDelayBlocks"));
+        DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS =
+            uint32(json.readUint(".delegationManager.init_minWithdrawalDelayBlocks"));
         DELEGATION_MANAGER_INIT_PAUSED_STATUS = json.readUint(".delegationManager.init_paused_status");
         // RewardsCoordinator
 
         REWARDS_COORDINATOR_INIT_PAUSED_STATUS = json.readUint(".rewardsCoordinator.init_paused_status");
-        REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS = uint32(json.readUint(".rewardsCoordinator.CALCULATION_INTERVAL_SECONDS"));
+        REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS =
+            uint32(json.readUint(".rewardsCoordinator.CALCULATION_INTERVAL_SECONDS"));
         REWARDS_COORDINATOR_MAX_REWARDS_DURATION = uint32(json.readUint(".rewardsCoordinator.MAX_REWARDS_DURATION"));
         REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH = uint32(json.readUint(".rewardsCoordinator.MAX_RETROACTIVE_LENGTH"));
         REWARDS_COORDINATOR_MAX_FUTURE_LENGTH = uint32(json.readUint(".rewardsCoordinator.MAX_FUTURE_LENGTH"));
-        REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP = uint32(json.readUint(".rewardsCoordinator.GENESIS_REWARDS_TIMESTAMP"));
+        REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP =
+            uint32(json.readUint(".rewardsCoordinator.GENESIS_REWARDS_TIMESTAMP"));
         REWARDS_COORDINATOR_UPDATER = json.readAddress(".rewardsCoordinator.rewards_updater_address");
         REWARDS_COORDINATOR_ACTIVATION_DELAY = uint32(json.readUint(".rewardsCoordinator.activation_delay"));
-        REWARDS_COORDINATOR_DEFAULT_OPERATOR_SPLIT_BIPS = uint32(json.readUint(".rewardsCoordinator.default_operator_split_bips"));
+        REWARDS_COORDINATOR_DEFAULT_OPERATOR_SPLIT_BIPS =
+            uint32(json.readUint(".rewardsCoordinator.default_operator_split_bips"));
         REWARDS_COORDINATOR_OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP =
             uint32(json.readUint(".rewardsCoordinator.OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP"));
-        REWARDS_COORDINATOR_OPERATOR_SET_MAX_RETROACTIVE_LENGTH = uint32(json.readUint(".rewardsCoordinator.OPERATOR_SET_MAX_RETROACTIVE_LENGTH"));
+        REWARDS_COORDINATOR_OPERATOR_SET_MAX_RETROACTIVE_LENGTH =
+            uint32(json.readUint(".rewardsCoordinator.OPERATOR_SET_MAX_RETROACTIVE_LENGTH"));
         // AVSDirectory
         AVS_DIRECTORY_INIT_PAUSED_STATUS = json.readUint(".avsDirectory.init_paused_status");
         // EigenPodManager
@@ -393,19 +412,45 @@ contract ExistingDeploymentParser is Script, Logger {
     /// @notice Ensure contracts point at each other correctly via constructors
     function _verifyContractPointers() internal view virtual {
         // AVSDirectory
-        assertTrue(avsDirectory.delegation() == delegationManager, "avsDirectory: delegationManager address not set correctly");
+        assertTrue(
+            avsDirectory.delegation() == delegationManager, "avsDirectory: delegationManager address not set correctly"
+        );
         // RewardsCoordinator
-        assertTrue(rewardsCoordinator.delegationManager() == delegationManager, "rewardsCoordinator: delegationManager address not set correctly");
-        assertTrue(rewardsCoordinator.strategyManager() == strategyManager, "rewardsCoordinator: strategyManager address not set correctly");
+        assertTrue(
+            rewardsCoordinator.delegationManager() == delegationManager,
+            "rewardsCoordinator: delegationManager address not set correctly"
+        );
+        assertTrue(
+            rewardsCoordinator.strategyManager() == strategyManager,
+            "rewardsCoordinator: strategyManager address not set correctly"
+        );
         // DelegationManager
-        assertTrue(delegationManager.strategyManager() == strategyManager, "delegationManager: strategyManager address not set correctly");
-        assertTrue(delegationManager.eigenPodManager() == eigenPodManager, "delegationManager: eigenPodManager address not set correctly");
+        assertTrue(
+            delegationManager.strategyManager() == strategyManager,
+            "delegationManager: strategyManager address not set correctly"
+        );
+        assertTrue(
+            delegationManager.eigenPodManager() == eigenPodManager,
+            "delegationManager: eigenPodManager address not set correctly"
+        );
         // StrategyManager
-        assertTrue(strategyManager.delegation() == delegationManager, "strategyManager: delegationManager address not set correctly");
+        assertTrue(
+            strategyManager.delegation() == delegationManager,
+            "strategyManager: delegationManager address not set correctly"
+        );
         // EPM
-        assertTrue(address(eigenPodManager.ethPOS()) == ETHPOSDepositAddress, "eigenPodManager: ethPOSDeposit contract address not set correctly");
-        assertTrue(eigenPodManager.eigenPodBeacon() == eigenPodBeacon, "eigenPodManager: eigenPodBeacon contract address not set correctly");
-        assertTrue(eigenPodManager.delegationManager() == delegationManager, "eigenPodManager: delegationManager contract address not set correctly");
+        assertTrue(
+            address(eigenPodManager.ethPOS()) == ETHPOSDepositAddress,
+            "eigenPodManager: ethPOSDeposit contract address not set correctly"
+        );
+        assertTrue(
+            eigenPodManager.eigenPodBeacon() == eigenPodBeacon,
+            "eigenPodManager: eigenPodBeacon contract address not set correctly"
+        );
+        assertTrue(
+            eigenPodManager.delegationManager() == delegationManager,
+            "eigenPodManager: delegationManager contract address not set correctly"
+        );
     }
 
     /// @notice verify implementations for Transparent Upgradeable Proxies
@@ -416,12 +461,16 @@ contract ExistingDeploymentParser is Script, Logger {
             "avsDirectory: implementation set incorrectly"
         );
         assertEq(
-            eigenLayerProxyAdmin.getProxyImplementation(ITransparentUpgradeableProxy(payable(address(rewardsCoordinator)))),
+            eigenLayerProxyAdmin.getProxyImplementation(
+                ITransparentUpgradeableProxy(payable(address(rewardsCoordinator)))
+            ),
             address(rewardsCoordinatorImplementation),
             "rewardsCoordinator: implementation set incorrectly"
         );
         assertEq(
-            eigenLayerProxyAdmin.getProxyImplementation(ITransparentUpgradeableProxy(payable(address(delegationManager)))),
+            eigenLayerProxyAdmin.getProxyImplementation(
+                ITransparentUpgradeableProxy(payable(address(delegationManager)))
+            ),
             address(delegationManagerImplementation),
             "delegationManager: implementation set incorrectly"
         );
@@ -438,13 +487,19 @@ contract ExistingDeploymentParser is Script, Logger {
 
         for (uint256 i = 0; i < deployedStrategyArray.length; ++i) {
             assertEq(
-                eigenLayerProxyAdmin.getProxyImplementation(ITransparentUpgradeableProxy(payable(address(deployedStrategyArray[i])))),
+                eigenLayerProxyAdmin.getProxyImplementation(
+                    ITransparentUpgradeableProxy(payable(address(deployedStrategyArray[i])))
+                ),
                 address(baseStrategyImplementation),
                 "strategy: implementation set incorrectly"
             );
         }
 
-        assertEq(eigenPodBeacon.implementation(), address(eigenPodImplementation), "eigenPodBeacon: implementation set incorrectly");
+        assertEq(
+            eigenPodBeacon.implementation(),
+            address(eigenPodImplementation),
+            "eigenPodBeacon: implementation set incorrectly"
+        );
     }
 
     /**
@@ -486,11 +541,18 @@ contract ExistingDeploymentParser is Script, Logger {
     /// @notice Verify params based on config constants that are updated from calling `_parseInitialDeploymentParams`
     function _verifyInitializationParams() internal view virtual {
         // AVSDirectory
-        assertTrue(avsDirectory.pauserRegistry() == eigenLayerPauserReg, "avsdirectory: pauser registry not set correctly");
+        assertTrue(
+            avsDirectory.pauserRegistry() == eigenLayerPauserReg, "avsdirectory: pauser registry not set correctly"
+        );
         assertEq(avsDirectory.owner(), executorMultisig, "avsdirectory: owner not set correctly");
-        assertEq(avsDirectory.paused(), AVS_DIRECTORY_INIT_PAUSED_STATUS, "avsdirectory: init paused status set incorrectly");
+        assertEq(
+            avsDirectory.paused(), AVS_DIRECTORY_INIT_PAUSED_STATUS, "avsdirectory: init paused status set incorrectly"
+        );
         // RewardsCoordinator
-        assertTrue(rewardsCoordinator.pauserRegistry() == eigenLayerPauserReg, "rewardsCoordinator: pauser registry not set correctly");
+        assertTrue(
+            rewardsCoordinator.pauserRegistry() == eigenLayerPauserReg,
+            "rewardsCoordinator: pauser registry not set correctly"
+        );
         // assertEq(
         //     rewardsCoordinator.owner(), executorMultisig,
         //     "rewardsCoordinator: owner not set correctly"
@@ -510,7 +572,9 @@ contract ExistingDeploymentParser is Script, Logger {
             "rewardsCoordinator: maxRetroactiveLength not set correctly"
         );
         assertEq(
-            rewardsCoordinator.MAX_FUTURE_LENGTH(), REWARDS_COORDINATOR_MAX_FUTURE_LENGTH, "rewardsCoordinator: maxFutureLength not set correctly"
+            rewardsCoordinator.MAX_FUTURE_LENGTH(),
+            REWARDS_COORDINATOR_MAX_FUTURE_LENGTH,
+            "rewardsCoordinator: maxFutureLength not set correctly"
         );
         assertEq(
             rewardsCoordinator.GENESIS_REWARDS_TIMESTAMP(),
@@ -521,7 +585,11 @@ contract ExistingDeploymentParser is Script, Logger {
         //     rewardsCoordinator.rewardsUpdater(), REWARDS_COORDINATOR_UPDATER,
         //     "rewardsCoordinator: rewardsUpdater not set correctly"
         // );
-        assertEq(rewardsCoordinator.activationDelay(), REWARDS_COORDINATOR_ACTIVATION_DELAY, "rewardsCoordinator: activationDelay not set correctly");
+        assertEq(
+            rewardsCoordinator.activationDelay(),
+            REWARDS_COORDINATOR_ACTIVATION_DELAY,
+            "rewardsCoordinator: activationDelay not set correctly"
+        );
         assertEq(
             rewardsCoordinator.CALCULATION_INTERVAL_SECONDS(),
             REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
@@ -533,15 +601,33 @@ contract ExistingDeploymentParser is Script, Logger {
             "rewardsCoordinator: defaultSplitBips not set correctly"
         );
         // DelegationManager
-        assertTrue(delegationManager.pauserRegistry() == eigenLayerPauserReg, "delegationManager: pauser registry not set correctly");
+        assertTrue(
+            delegationManager.pauserRegistry() == eigenLayerPauserReg,
+            "delegationManager: pauser registry not set correctly"
+        );
         assertEq(delegationManager.owner(), executorMultisig, "delegationManager: owner not set correctly");
-        assertEq(delegationManager.paused(), DELEGATION_MANAGER_INIT_PAUSED_STATUS, "delegationManager: init paused status set incorrectly");
+        assertEq(
+            delegationManager.paused(),
+            DELEGATION_MANAGER_INIT_PAUSED_STATUS,
+            "delegationManager: init paused status set incorrectly"
+        );
         // StrategyManager
-        assertTrue(strategyManager.pauserRegistry() == eigenLayerPauserReg, "strategyManager: pauser registry not set correctly");
+        assertTrue(
+            strategyManager.pauserRegistry() == eigenLayerPauserReg,
+            "strategyManager: pauser registry not set correctly"
+        );
         assertEq(strategyManager.owner(), executorMultisig, "strategyManager: owner not set correctly");
-        assertEq(strategyManager.paused(), STRATEGY_MANAGER_INIT_PAUSED_STATUS, "strategyManager: init paused status set incorrectly");
+        assertEq(
+            strategyManager.paused(),
+            STRATEGY_MANAGER_INIT_PAUSED_STATUS,
+            "strategyManager: init paused status set incorrectly"
+        );
         if (block.chainid == 1) {
-            assertEq(strategyManager.strategyWhitelister(), address(strategyFactory), "strategyManager: strategyWhitelister not set correctly");
+            assertEq(
+                strategyManager.strategyWhitelister(),
+                address(strategyFactory),
+                "strategyManager: strategyWhitelister not set correctly"
+            );
         } else if (block.chainid == 17_000) {
             // On holesky, for ease of whitelisting we set to executorMultisig
             // assertEq(
@@ -550,21 +636,44 @@ contract ExistingDeploymentParser is Script, Logger {
             // );
         }
         // EigenPodManager
-        assertTrue(eigenPodManager.pauserRegistry() == eigenLayerPauserReg, "eigenPodManager: pauser registry not set correctly");
+        assertTrue(
+            eigenPodManager.pauserRegistry() == eigenLayerPauserReg,
+            "eigenPodManager: pauser registry not set correctly"
+        );
         assertEq(eigenPodManager.owner(), executorMultisig, "eigenPodManager: owner not set correctly");
-        assertEq(eigenPodManager.paused(), EIGENPOD_MANAGER_INIT_PAUSED_STATUS, "eigenPodManager: init paused status set incorrectly");
-        assertEq(address(eigenPodManager.ethPOS()), address(ETHPOSDepositAddress), "eigenPodManager: ethPOS not set correctly");
+        assertEq(
+            eigenPodManager.paused(),
+            EIGENPOD_MANAGER_INIT_PAUSED_STATUS,
+            "eigenPodManager: init paused status set incorrectly"
+        );
+        assertEq(
+            address(eigenPodManager.ethPOS()),
+            address(ETHPOSDepositAddress),
+            "eigenPodManager: ethPOS not set correctly"
+        );
         // EigenPodBeacon
         assertEq(eigenPodBeacon.owner(), executorMultisig, "eigenPodBeacon: owner not set correctly");
         // EigenPodImplementation
-        assertEq(eigenPodImplementation.GENESIS_TIME(), EIGENPOD_GENESIS_TIME, "eigenPodImplementation: GENESIS TIME not set correctly");
-        assertEq(address(eigenPodImplementation.ethPOS()), ETHPOSDepositAddress, "eigenPodImplementation: ethPOS not set correctly");
+        assertEq(
+            eigenPodImplementation.GENESIS_TIME(),
+            EIGENPOD_GENESIS_TIME,
+            "eigenPodImplementation: GENESIS TIME not set correctly"
+        );
+        assertEq(
+            address(eigenPodImplementation.ethPOS()),
+            ETHPOSDepositAddress,
+            "eigenPodImplementation: ethPOS not set correctly"
+        );
         // Strategies
         for (uint256 i = 0; i < deployedStrategyArray.length; ++i) {
-            assertTrue(deployedStrategyArray[i].pauserRegistry() == eigenLayerPauserReg, "StrategyBaseTVLLimits: pauser registry not set correctly");
+            assertTrue(
+                deployedStrategyArray[i].pauserRegistry() == eigenLayerPauserReg,
+                "StrategyBaseTVLLimits: pauser registry not set correctly"
+            );
             assertEq(deployedStrategyArray[i].paused(), 0, "StrategyBaseTVLLimits: init paused status set incorrectly");
             assertTrue(
-                strategyManager.strategyIsWhitelistedForDeposit(deployedStrategyArray[i]), "StrategyBaseTVLLimits: strategy should be whitelisted"
+                strategyManager.strategyIsWhitelistedForDeposit(deployedStrategyArray[i]),
+                "StrategyBaseTVLLimits: strategy should be whitelisted"
             );
         }
 
@@ -622,7 +731,8 @@ contract ExistingDeploymentParser is Script, Logger {
         string memory deployed_strategies_output = numStrategiesToDeploy == 0
             ? ""
             : deployed_strategies.serialize(
-                strategiesToDeploy[numStrategiesToDeploy - 1].tokenSymbol, address(deployedStrategyArray[numStrategiesToDeploy - 1])
+                strategiesToDeploy[numStrategiesToDeploy - 1].tokenSymbol,
+                address(deployedStrategyArray[numStrategiesToDeploy - 1])
             );
 
         string memory deployed_addresses = "addresses";
@@ -667,7 +777,7 @@ contract ExistingDeploymentParser is Script, Logger {
     /// @notice used for parsing parameters used in the integration test upgrade
     function _parseParamsForIntegrationUpgrade(
         string memory initialDeploymentParamsPath
-    ) internal noTracing virtual {
+    ) internal virtual noTracing {
         // read and log the chainID
         uint256 currentChainId = block.chainid;
         console.log("You are parsing on ChainID", currentChainId);
@@ -682,14 +792,17 @@ contract ExistingDeploymentParser is Script, Logger {
         console.log("Using config file", initialDeploymentParamsPath);
         console.log("- Last Updated", stdJson.readString(json, ".config.environment.lastUpdated"));
 
-        REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS = uint32(json.readUint(".config.params.CALCULATION_INTERVAL_SECONDS"));
+        REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS =
+            uint32(json.readUint(".config.params.CALCULATION_INTERVAL_SECONDS"));
         REWARDS_COORDINATOR_MAX_REWARDS_DURATION = uint32(json.readUint(".config.params.MAX_REWARDS_DURATION"));
         REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH = uint32(json.readUint(".config.params.MAX_RETROACTIVE_LENGTH"));
         REWARDS_COORDINATOR_MAX_FUTURE_LENGTH = uint32(json.readUint(".config.params.MAX_FUTURE_LENGTH"));
-        REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP = uint32(json.readUint(".config.params.GENESIS_REWARDS_TIMESTAMP"));
+        REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP =
+            uint32(json.readUint(".config.params.GENESIS_REWARDS_TIMESTAMP"));
 
         DEALLOCATION_DELAY = uint32(json.readUint(".config.params.MIN_WITHDRAWAL_DELAY_BLOCKS"));
         ALLOCATION_CONFIGURATION_DELAY = uint32(json.readUint(".config.params.ALLOCATION_CONFIGURATION_DELAY"));
-        DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS = uint32(json.readUint(".config.params.MIN_WITHDRAWAL_DELAY_BLOCKS"));
+        DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS =
+            uint32(json.readUint(".config.params.MIN_WITHDRAWAL_DELAY_BLOCKS"));
     }
 }

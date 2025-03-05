@@ -2,9 +2,7 @@
 pragma solidity ^0.8.27;
 
 contract MockAVSRegistrar {
-    function supportsAVS(
-        address /*avs*/
-    ) external pure returns (bool) {
+    function supportsAVS(address /*avs*/ ) external pure returns (bool) {
         return true;
     }
 

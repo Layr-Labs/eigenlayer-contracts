@@ -18,9 +18,13 @@ contract AVSRegistrar is IAVSRegistrar {
         bytes calldata data
     ) external {}
     function deregisterOperator(address operator, address avsIdentifier, uint32[] calldata operatorSetIds) external {}
-    function supportsAVS(address /*avs*/) external pure returns (bool) {
+
+    function supportsAVS(
+        address /*avs*/
+    ) external pure returns (bool) {
         return true;
     }
+
     fallback() external {}
 }
 
@@ -72,7 +76,10 @@ contract RegisterOperatorToOperatorSets is Script, Test {
 
         // Register the Operator to the AVS
         avsDirectory.registerOperatorToAVS(
-            operator, ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), bytes32(uint256(0) + 1), expiry)
+            operator,
+            ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry(
+                abi.encodePacked(r, s, v), bytes32(uint256(0) + 1), expiry
+            )
         );
 
         // Deploy and set registrar.

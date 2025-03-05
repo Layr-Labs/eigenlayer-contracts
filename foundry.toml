@@ -79,17 +79,18 @@
     wrap_comments = false  
     # List of files to ignore during formatting (can use glob patterns)
     ignore = [
-        "./script/**/*",
         "./src/test/**/*"
     ]
 
-# TODO: Decide if we want to enable this.
-# [profile.test.fmt]
-#     int_types = "short"
-#     line_length = 140
-#     ignore = [
-#         "./src/contracts/**/*"
-#     ]
+[profile.test.fmt]
+    single_line_statement_blocks = "single"
+    multiline_func_header = "attributes_first"
+    int_types = "short"
+    line_length = 140
+    ignore = [
+        "./script/**/*",
+        "./src/contracts/**/*"
+    ]
 
 [profile.forktest.fuzz]    
     optimizer = false

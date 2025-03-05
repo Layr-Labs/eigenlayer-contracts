@@ -6,8 +6,8 @@ import "src/test/integration/UpgradeTest.t.sol";
 contract Integration_Upgrade_EigenPod_Base is UpgradeTest {
     User staker;
     IStrategy[] strategies;
-    uint256[] tokenBalances;
-    uint256[] shares;
+    uint[] tokenBalances;
+    uint[] shares;
 
     function _init() internal virtual override {
         _configAssetTypes(HOLDS_ETH);
@@ -93,7 +93,7 @@ contract Integration_Upgrade_EigenPod_NegativeShares is Integration_Upgrade_Eige
 
     function _init() internal override {
         super._init();
-        
+
         // 3. Delegate to operator
         (operator,,) = _newRandomOperator();
         staker.delegateTo(operator);
@@ -118,23 +118,23 @@ contract Integration_Upgrade_EigenPod_NegativeShares is Integration_Upgrade_Eige
         staker.completeWithdrawalAsShares(withdrawal);
 
         // Manually complete checks since we could still negative shares prior to the upgrade, causing a revert in the share check
-        (uint256[] memory expectedOperatorShareDelta, int256[] memory expectedStakerShareDelta) =
+        (uint[] memory expectedOperatorShareDelta, int[] memory expectedStakerShareDelta) =
             _getPostWithdrawalExpectedShareDeltas(balanceUpdateShareDelta[0], withdrawal);
         assert_WithdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
         assert_Snap_Unchanged_TokenBalances(staker, "staker should not have any change in underlying token balances");
-        assert_Snap_Added_OperatorShares(operator, withdrawal.strategies, expectedOperatorShareDelta, "operator should have received shares");
+        assert_Snap_Added_OperatorShares(
+            operator, withdrawal.strategies, expectedOperatorShareDelta, "operator should have received shares"
+        );
         assert_Snap_Delta_StakerShares(staker, strategies, expectedStakerShareDelta, "staker should have received expected shares");
     }
 
-    function testFuzz_deposit_delegate_updateBalance_upgrade_completeAsTokens(
-        uint24 _rand
-    ) public rand(_rand) {
+    function testFuzz_deposit_delegate_updateBalance_upgrade_completeAsTokens(uint24 _rand) public rand(_rand) {
         /// 7. Complete the withdrawal as tokens
         Withdrawal[] memory withdrawals = new Withdrawal[](1);
         withdrawals[0] = withdrawal;
         _rollBlocksForCompleteWithdrawals(withdrawals);
         IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawal);
-        uint256[] memory expectedTokens = _getPostWithdrawalExpectedTokenDeltas(balanceUpdateShareDelta[0], withdrawal);
+        uint[] memory expectedTokens = _getPostWithdrawalExpectedTokenDeltas(balanceUpdateShareDelta[0], withdrawal);
 
         // Manually complete checks since we could still negative shares prior to the upgrade, causing a revert in the share check
         assert_WithdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
@@ -147,43 +147,45 @@ contract Integration_Upgrade_EigenPod_NegativeShares is Integration_Upgrade_Eige
         }
         // Else, the staker shares should have increased by the magnitude of the negative share delta
         else {
-            int256[] memory expectedStakerShareDelta = new int256[](1);
+            int[] memory expectedStakerShareDelta = new int[](1);
             expectedStakerShareDelta[0] = -balanceUpdateShareDelta[0];
             assert_Snap_Delta_StakerShares(staker, strategies, expectedStakerShareDelta, "staker should have received expected shares");
         }
     }
 
-    function _getPostWithdrawalExpectedShareDeltas(
-        int256 _balanceUpdateShareDelta,
-        Withdrawal memory _withdrawal
-    ) internal pure returns (uint256[] memory, int256[] memory) {
-        uint256[] memory operatorShareDelta = new uint256[](1);
-        int256[] memory stakerShareDelta = new int256[](1);
+    function _getPostWithdrawalExpectedShareDeltas(int _balanceUpdateShareDelta, Withdrawal memory _withdrawal)
+        internal
+        pure
+        returns (uint[] memory, int[] memory)
+    {
+        uint[] memory operatorShareDelta = new uint[](1);
+        int[] memory stakerShareDelta = new int[](1);
         // The staker share delta is the withdrawal scaled shares since it can go from negative to positive
-        stakerShareDelta[0] = int256(_withdrawal.scaledShares[0]);
+        stakerShareDelta[0] = int(_withdrawal.scaledShares[0]);
 
         if (_balanceUpdateShareDelta > 0) {
             // If balanceUpdateShareDelta is positive, then the operator delta is the withdrawal scaled shares
             operatorShareDelta[0] = _withdrawal.scaledShares[0];
         } else {
             // Operator shares never went negative, so we can just add the withdrawal scaled shares and the negative share delta
-            operatorShareDelta[0] = uint256(int256(_withdrawal.scaledShares[0]) + _balanceUpdateShareDelta);
+            operatorShareDelta[0] = uint(int(_withdrawal.scaledShares[0]) + _balanceUpdateShareDelta);
         }
 
         return (operatorShareDelta, stakerShareDelta);
     }
 
-    function _getPostWithdrawalExpectedTokenDeltas(
-        int256 _balanceUpdateShareDelta,
-        Withdrawal memory _withdrawal
-    ) internal pure returns (uint256[] memory) {
-        uint256[] memory expectedTokenDeltas = new uint256[](1);
+    function _getPostWithdrawalExpectedTokenDeltas(int _balanceUpdateShareDelta, Withdrawal memory _withdrawal)
+        internal
+        pure
+        returns (uint[] memory)
+    {
+        uint[] memory expectedTokenDeltas = new uint[](1);
         if (_balanceUpdateShareDelta > 0) {
             // If we had a positive balance update, then the expected token delta is the withdrawal scaled shares
             expectedTokenDeltas[0] = _withdrawal.scaledShares[0];
         } else {
             // If we had a negative balance update, then the expected token delta is the withdrawal scaled shares plus the negative share delta
-            expectedTokenDeltas[0] = uint256(int256(_withdrawal.scaledShares[0]) + _balanceUpdateShareDelta);
+            expectedTokenDeltas[0] = uint(int(_withdrawal.scaledShares[0]) + _balanceUpdateShareDelta);
         }
         return expectedTokenDeltas;
     }

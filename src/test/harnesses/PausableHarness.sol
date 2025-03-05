@@ -7,7 +7,7 @@ import "../../contracts/permissions/Pausable.sol";
 contract PausableHarness is Pausable {
     constructor(IPauserRegistry _pauserRegistry) Pausable(_pauserRegistry) {}
 
-    function initializePauser(uint256 initPausedStatus) external {
+    function initializePauser(uint initPausedStatus) external {
         _setPausedStatus(initPausedStatus);
     }
 }

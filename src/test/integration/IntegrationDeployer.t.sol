@@ -92,11 +92,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     ///
     /// (Alternatively, this modifier can be overwritten)
     modifier rand(uint24 r) virtual {
-        _configRand({
-            _randomSeed: r,
-            _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
-            _userTypes: DEFAULT | ALT_METHODS
-        });
+        _configRand({_randomSeed: r, _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL, _userTypes: DEFAULT | ALT_METHODS});
 
         // Used to create shared setups between tests
         _init();
@@ -163,7 +159,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     }
 
     /// Deploy EigenLayer locally
-    function _setUpLocal() public noTracing virtual {
+    function _setUpLocal() public virtual noTracing {
         console.log("Setting up `%s` integration tests:", "LOCAL".yellow().bold());
 
         // Deploy ProxyAdmin
@@ -183,11 +179,11 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         DEALLOCATION_DELAY = 50;
         ALLOCATION_CONFIGURATION_DELAY = 75;
 
-        REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS = 86400;
-        REWARDS_COORDINATOR_MAX_REWARDS_DURATION = 6048000;
-        REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH = 7776000;
-        REWARDS_COORDINATOR_MAX_FUTURE_LENGTH = 2592000;
-        REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP = 1710979200;
+        REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS = 86_400;
+        REWARDS_COORDINATOR_MAX_REWARDS_DURATION = 6_048_000;
+        REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH = 7_776_000;
+        REWARDS_COORDINATOR_MAX_FUTURE_LENGTH = 2_592_000;
+        REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP = 1_710_979_200;
 
         _deployProxies();
         _deployImplementations();
@@ -214,13 +210,13 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         // Create time machine and beacon chain. Set block time to beacon chain genesis time and starting block number
         BEACON_GENESIS_TIME = GENESIS_TIME_LOCAL;
         cheats.warp(BEACON_GENESIS_TIME);
-        cheats.roll(10000);
+        cheats.roll(10_000);
         timeMachine = new TimeMachine();
         beaconChain = new BeaconChainMock(eigenPodManager, BEACON_GENESIS_TIME);
     }
 
     /// Parse existing contracts from mainnet
-    function _setUpMainnet() public noTracing virtual {
+    function _setUpMainnet() public virtual noTracing {
         console.log("Setting up `%s` integration tests:", "MAINNET_FORK".green().bold());
         console.log("RPC:", cheats.rpcUrl("mainnet"));
         console.log("Block:", mainnetForkBlock);
@@ -243,9 +239,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         for (uint i; i < deployedStrategyArray.length; i++) {
             IStrategy strategy = IStrategy(deployedStrategyArray[i]);
 
-            if (tokensNotTested[address(strategy.underlyingToken())]) {
-                continue;
-            }
+            if (tokensNotTested[address(strategy.underlyingToken())]) continue;
 
             // Add to lstStrats and allStrats
             lstStrats.push(strategy);
@@ -254,7 +248,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         }
 
         maxUniqueAssetsHeld = allStrats.length;
-        
+
         // Create time machine and mock beacon chain
         BEACON_GENESIS_TIME = GENESIS_TIME_MAINNET;
         timeMachine = new TimeMachine();
@@ -262,9 +256,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
         // Since we haven't done the slashing upgrade on mainnet yet, upgrade mainnet contracts
         // prior to test. `isUpgraded` is true by default, but is set to false in `UpgradeTest.t.sol`
-        if (isUpgraded) {
-            _upgradeMainnetContracts();
-        }
+        if (isUpgraded) _upgradeMainnetContracts();
     }
 
     function _upgradeMainnetContracts() public virtual {
@@ -272,12 +264,10 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
         // First, deploy the new contracts as empty contracts
         emptyContract = new EmptyContract();
-        allocationManager = AllocationManager(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
-        );
-        permissionController = PermissionController(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
-        );
+        allocationManager =
+            AllocationManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
+        permissionController =
+            PermissionController(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
 
         emit log_named_uint("EPM pause status", eigenPodManager.paused());
 
@@ -288,39 +278,27 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         emit log_named_uint("EPM pause status", eigenPodManager.paused());
 
         // Initialize the newly-deployed proxy
-        allocationManager.initialize({
-            initialOwner: executorMultisig,
-            initialPausedStatus: 0
-        });
+        allocationManager.initialize({initialOwner: executorMultisig, initialPausedStatus: 0});
 
         cheats.stopPrank();
     }
 
     function _deployProxies() public {
-        delegationManager = DelegationManager(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
-        );
-        strategyManager = StrategyManager(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
-        );
-        eigenPodManager = EigenPodManager(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
-        );
-        rewardsCoordinator = RewardsCoordinator(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
-        );
-        avsDirectory = AVSDirectory(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
-        );
-        strategyFactory = StrategyFactory(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
-        );
-        allocationManager = AllocationManager(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
-        );
-        permissionController = PermissionController(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
-        );
+        delegationManager =
+            DelegationManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
+        strategyManager =
+            StrategyManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
+        eigenPodManager =
+            EigenPodManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
+        rewardsCoordinator =
+            RewardsCoordinator(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
+        avsDirectory = AVSDirectory(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
+        strategyFactory =
+            StrategyFactory(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
+        allocationManager =
+            AllocationManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
+        permissionController =
+            PermissionController(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
         eigenPodBeacon = new UpgradeableBeacon(address(emptyContract));
         strategyBeacon = new UpgradeableBeacon(address(emptyContract));
     }
@@ -328,20 +306,15 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     /// Deploy an implementation contract for each contract in the system
     function _deployImplementations() public {
         allocationManagerImplementation = new AllocationManager(
-            delegationManager, 
-            eigenLayerPauserReg, 
-            permissionController, 
-            DEALLOCATION_DELAY, 
-            ALLOCATION_CONFIGURATION_DELAY,
-            version
+            delegationManager, eigenLayerPauserReg, permissionController, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY, version
         );
         permissionControllerImplementation = new PermissionController(version);
         delegationManagerImplementation = new DelegationManager(
-            strategyManager, 
-            eigenPodManager, 
-            allocationManager, 
-            eigenLayerPauserReg, 
-            permissionController, 
+            strategyManager,
+            eigenPodManager,
+            allocationManager,
+            eigenLayerPauserReg,
+            permissionController,
             DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS,
             version
         );
@@ -362,13 +335,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             })
         );
         avsDirectoryImplementation = new AVSDirectory(delegationManager, eigenLayerPauserReg, version);
-        eigenPodManagerImplementation = new EigenPodManager(
-            DEPOSIT_CONTRACT,
-            eigenPodBeacon,
-            delegationManager,
-            eigenLayerPauserReg,
-            "v9.9.9"
-        );
+        eigenPodManagerImplementation =
+            new EigenPodManager(DEPOSIT_CONTRACT, eigenPodBeacon, delegationManager, eigenLayerPauserReg, "v9.9.9");
         strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg, "v9.9.9");
 
         // Beacon implementations
@@ -382,50 +350,40 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     function _upgradeProxies() public noTracing {
         // DelegationManager
         eigenLayerProxyAdmin.upgrade(
-            ITransparentUpgradeableProxy(payable(address(delegationManager))),
-            address(delegationManagerImplementation)
+            ITransparentUpgradeableProxy(payable(address(delegationManager))), address(delegationManagerImplementation)
         );
 
         // StrategyManager
         eigenLayerProxyAdmin.upgrade(
-            ITransparentUpgradeableProxy(payable(address(strategyManager))),
-            address(strategyManagerImplementation)
+            ITransparentUpgradeableProxy(payable(address(strategyManager))), address(strategyManagerImplementation)
         );
 
         // EigenPodManager
         eigenLayerProxyAdmin.upgrade(
-            ITransparentUpgradeableProxy(payable(address(eigenPodManager))),
-            address(eigenPodManagerImplementation)
+            ITransparentUpgradeableProxy(payable(address(eigenPodManager))), address(eigenPodManagerImplementation)
         );
 
         // RewardsCoordinator
         eigenLayerProxyAdmin.upgrade(
-            ITransparentUpgradeableProxy(payable(address(rewardsCoordinator))), 
-            address(rewardsCoordinatorImplementation)
+            ITransparentUpgradeableProxy(payable(address(rewardsCoordinator))), address(rewardsCoordinatorImplementation)
         );
 
         // AVSDirectory
-        eigenLayerProxyAdmin.upgrade(
-            ITransparentUpgradeableProxy(payable(address(avsDirectory))),
-            address(avsDirectoryImplementation)
-        );
+        eigenLayerProxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(avsDirectory))), address(avsDirectoryImplementation));
 
         // AllocationManager
         eigenLayerProxyAdmin.upgrade(
-            ITransparentUpgradeableProxy(payable(address(allocationManager))),
-            address(allocationManagerImplementation)
+            ITransparentUpgradeableProxy(payable(address(allocationManager))), address(allocationManagerImplementation)
         );
 
         // PermissionController
         eigenLayerProxyAdmin.upgrade(
-            ITransparentUpgradeableProxy(payable(address(permissionController))),
-            address(permissionControllerImplementation)
+            ITransparentUpgradeableProxy(payable(address(permissionController))), address(permissionControllerImplementation)
         );
 
         // StrategyFactory
         eigenLayerProxyAdmin.upgrade(
-            ITransparentUpgradeableProxy(payable(address(strategyFactory))),
-            address(strategyFactoryImplementation)
+            ITransparentUpgradeableProxy(payable(address(strategyFactory))), address(strategyFactoryImplementation)
         );
 
         // EigenPod beacon
@@ -438,17 +396,13 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         for (uint i = 0; i < numStrategiesDeployed; i++) {
             // Upgrade existing strategy
             eigenLayerProxyAdmin.upgrade(
-                ITransparentUpgradeableProxy(payable(address(deployedStrategyArray[i]))),
-                address(baseStrategyImplementation)
+                ITransparentUpgradeableProxy(payable(address(deployedStrategyArray[i]))), address(baseStrategyImplementation)
             );
         }
     }
 
     function _initializeProxies() public noTracing {
-        delegationManager.initialize({
-            initialOwner: executorMultisig,
-            initialPausedStatus: 0
-        });
+        delegationManager.initialize({initialOwner: executorMultisig, initialPausedStatus: 0});
 
         strategyManager.initialize({
             initialOwner: executorMultisig,
@@ -456,37 +410,21 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             initialPausedStatus: 0
         });
 
-        eigenPodManager.initialize({
-            initialOwner: executorMultisig,
-            _initPausedStatus: 0
-        });
+        eigenPodManager.initialize({initialOwner: executorMultisig, _initPausedStatus: 0});
 
-        avsDirectory.initialize({
-            initialOwner: executorMultisig,
-            initialPausedStatus: 0
-        });
+        avsDirectory.initialize({initialOwner: executorMultisig, initialPausedStatus: 0});
 
-        allocationManager.initialize({
-            initialOwner: executorMultisig,
-            initialPausedStatus: 0
-        });
+        allocationManager.initialize({initialOwner: executorMultisig, initialPausedStatus: 0});
 
-        strategyFactory.initialize({
-            _initialOwner: executorMultisig,
-            _initialPausedStatus: 0,
-            _strategyBeacon: strategyBeacon
-        });
+        strategyFactory.initialize({_initialOwner: executorMultisig, _initialPausedStatus: 0, _strategyBeacon: strategyBeacon});
     }
 
     /// @dev Deploy a strategy and its underlying token, push to global lists of tokens/strategies, and whitelist
     /// strategy in strategyManager
-    function _newStrategyAndToken(
-        string memory tokenName,
-        string memory tokenSymbol,
-        uint initialSupply,
-        address owner,
-        bool useFactory
-    ) internal noTracing {
+    function _newStrategyAndToken(string memory tokenName, string memory tokenSymbol, uint initialSupply, address owner, bool useFactory)
+        internal
+        noTracing
+    {
         IERC20 underlyingToken = new ERC20PresetFixedSupply(tokenName, tokenSymbol, initialSupply, owner);
 
         StrategyBase strategy;
@@ -522,7 +460,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         // Using uint24 for the seed type so that if a test fails, it's easier
         // to manually use the seed to replay the same test.
         random = _hash(_randomSeed);
-        
+
         // Convert flag bitmaps to bytes of set bits for easy use with _randUint
         _configAssetTypes(_assetTypes);
         _configUserTypes(_userTypes);
@@ -534,9 +472,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     }
 
     function _configAssetAmounts(uint _maxUniqueAssetsHeld) internal {
-        if (_maxUniqueAssetsHeld > allStrats.length) {
-            _maxUniqueAssetsHeld = allStrats.length;
-        }
+        if (_maxUniqueAssetsHeld > allStrats.length) _maxUniqueAssetsHeld = allStrats.length;
 
         maxUniqueAssetsHeld = _maxUniqueAssetsHeld;
         require(maxUniqueAssetsHeld != 0, "_configAssetAmounts: invalid 0");
@@ -552,14 +488,12 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
      *
      * Assets are pulled from `strategies` based on a random staker/operator `assetType`
      */
-    function _randUser(
-        string memory name
-    ) internal noTracing returns (User, IStrategy[] memory, uint[] memory) {
+    function _randUser(string memory name) internal noTracing returns (User, IStrategy[] memory, uint[] memory) {
         // Deploy new User contract
         uint userType = _randUserType();
         User user = _genRandUser(name, userType);
 
-        // For the specific asset selection we made, get a random assortment of strategies 
+        // For the specific asset selection we made, get a random assortment of strategies
         // and deal the user some corresponding underlying token balances
         uint assetType = _randAssetType();
         IStrategy[] memory strategies = _selectRandAssets(assetType);
@@ -569,10 +503,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         return (user, strategies, tokenBalances);
     }
 
-    function _randUser(
-        string memory name,
-        IStrategy[] memory strategies
-    ) internal noTracing returns (User, uint[] memory) {
+    function _randUser(string memory name, IStrategy[] memory strategies) internal noTracing returns (User, uint[] memory) {
         // Deploy new User contract
         uint userType = _randUserType();
         User user = _genRandUser(name, userType);
@@ -585,9 +516,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     }
 
     /// @dev Create a new user without native ETH. See _randUser above for standard usage
-    function _randUser_NoETH(
-        string memory name
-    ) internal noTracing returns (User, IStrategy[] memory, uint[] memory) {
+    function _randUser_NoETH(string memory name) internal noTracing returns (User, IStrategy[] memory, uint[] memory) {
         // Deploy new User contract
         uint userType = _randUserType();
         User user = _genRandUser(name, userType);
@@ -595,13 +524,10 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         // Pick the user's asset distribution, removing "native ETH" as an option
         // I'm sorry if this eventually leads to a bug that's really hard to track down
         uint assetType = _randAssetType();
-        if (assetType == HOLDS_ETH) {
-            assetType = NO_ASSETS;
-        } else if (assetType == HOLDS_ALL || assetType == HOLDS_MAX) {
-            assetType = HOLDS_LST;
-        }
+        if (assetType == HOLDS_ETH) assetType = NO_ASSETS;
+        else if (assetType == HOLDS_ALL || assetType == HOLDS_MAX) assetType = HOLDS_LST;
 
-        // For the specific asset selection we made, get a random assortment of strategies 
+        // For the specific asset selection we made, get a random assortment of strategies
         // and deal the user some corresponding underlying token balances
         IStrategy[] memory strategies = _selectRandAssets(assetType);
         uint[] memory tokenBalances = _dealRandAmounts(user, strategies);
@@ -611,9 +537,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     }
 
     /// @dev Creates a new user without any assets
-    function _randUser_NoAssets(
-        string memory name
-    ) internal noTracing returns (User) {
+    function _randUser_NoAssets(string memory name) internal noTracing returns (User) {
         // Deploy new User contract
         uint userType = _randUserType();
         User user = _genRandUser(name, userType);
@@ -649,28 +573,18 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         }
     }
 
-    function _genRandAVS(
-        string memory name
-    ) internal returns (AVS avs) {
-        if (forkType == LOCAL) {
-            avs = new AVS(name);
-        } else if (forkType == MAINNET) {
-            avs = new AVS(name);
-        } else {
-            revert("_genRandAVS: unimplemented forkType");
-        }
+    function _genRandAVS(string memory name) internal returns (AVS avs) {
+        if (forkType == LOCAL) avs = new AVS(name);
+        else if (forkType == MAINNET) avs = new AVS(name);
+        else revert("_genRandAVS: unimplemented forkType");
     }
 
     /// Given an assetType, select strategies the user will be dealt assets in
     function _selectRandAssets(uint assetType) internal noTracing returns (IStrategy[] memory) {
-        if (assetType == NO_ASSETS) {
-            return new IStrategy[](0);
-        } 
-        
+        if (assetType == NO_ASSETS) return new IStrategy[](0);
+
         /// Select only ETH
-        if (assetType == HOLDS_ETH) {
-            return beaconChainETHStrategy.toArray();
-        }
+        if (assetType == HOLDS_ETH) return beaconChainETHStrategy.toArray();
 
         /// Select multiple LSTs, and maybe add ETH:
 
@@ -754,9 +668,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         uint value = uint(random) & mask;
 
         // in case value is out of range, wrap around or retry
-        while (value >= range) {
-            value = (value - range) & mask;
-        }
+        while (value >= range) value = (value - range) & mask;
 
         // Hash `random` with itself so the next value we generate is different
         random = _hash(uint(random));
@@ -781,28 +693,28 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         return userType;
     }
 
-    function _shuffle(IStrategy[] memory strats) internal returns (IStrategy[] memory) {        
+    function _shuffle(IStrategy[] memory strats) internal returns (IStrategy[] memory) {
         // Fisher-Yates shuffle algorithm
-        for (uint i = strats.length - 1; i > 0; i--)  {
-            uint randomIndex = _randUint({ min: 0, max: i });
-            
+        for (uint i = strats.length - 1; i > 0; i--) {
+            uint randomIndex = _randUint({min: 0, max: i});
+
             // Swap elements
             IStrategy temp = strats[i];
             strats[i] = strats[randomIndex];
             strats[randomIndex] = temp;
         }
-        
+
         return strats;
     }
 
     function _randomStrategies() internal returns (IStrategy[][] memory strategies) {
-        uint numOpSets = _randUint({ min: 1, max: 5 });
+        uint numOpSets = _randUint({min: 1, max: 5});
 
         strategies = new IStrategy[][](numOpSets);
-        
+
         for (uint i; i < numOpSets; ++i) {
             IStrategy[] memory randomStrategies = _shuffle(allStrats);
-            uint numStrategies = _randUint({ min: 1, max: maxUniqueAssetsHeld });
+            uint numStrategies = _randUint({min: 1, max: maxUniqueAssetsHeld});
 
             // Modify the length of the array in memory (thus ignoring remaining elements).
             assembly {
@@ -817,30 +729,22 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
      * @dev Converts a bitmap into an array of bytes
      * @dev Each byte in the input is processed as indicating a single bit to flip in the bitmap
      */
-    function _bitmapToBytes(
-        uint bitmap
-    ) internal pure returns (bytes memory bytesArray) {
+    function _bitmapToBytes(uint bitmap) internal pure returns (bytes memory bytesArray) {
         for (uint i = 0; i < 256; ++i) {
             // Mask for i-th bit
             uint mask = uint(1 << i);
 
             // If the i-th bit is flipped, add a byte to the return array
-            if (bitmap & mask != 0) {
-                bytesArray = bytes.concat(bytesArray, bytes1(uint8(1 << i)));
-            }
+            if (bitmap & mask != 0) bytesArray = bytes.concat(bytesArray, bytes1(uint8(1 << i)));
         }
         return bytesArray;
     }
 
-    function _hash(
-        string memory x
-    ) internal pure returns (bytes32) {
+    function _hash(string memory x) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked(x));
     }
 
-    function _hash(
-        uint x
-    ) internal pure returns (bytes32) {
+    function _hash(uint x) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked(x));
     }
 }

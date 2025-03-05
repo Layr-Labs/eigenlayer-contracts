@@ -8,7 +8,7 @@ import "src/test/harnesses/EigenPodManagerWrapper.sol";
 /// @notice Testing the rounding behavior when beacon chain slashing factor is initially 1
 contract Integration_SlashBC_OneBCSF is IntegrationCheckUtils {
     using ArrayLib for *;
-    
+
     AVS avs;
     OperatorSet operatorSet;
 
@@ -33,13 +33,8 @@ contract Integration_SlashBC_OneBCSF is IntegrationCheckUtils {
      */
     function _init() internal override {
         // 1. etch a new implementation to set staker's beaconChainSlashingFactor to 1
-        EigenPodManagerWrapper eigenPodManagerWrapper = new EigenPodManagerWrapper(
-            DEPOSIT_CONTRACT,
-            eigenPodBeacon,
-            delegationManager,
-            eigenLayerPauserReg,
-            "v9.9.9"
-        );
+        EigenPodManagerWrapper eigenPodManagerWrapper =
+            new EigenPodManagerWrapper(DEPOSIT_CONTRACT, eigenPodBeacon, delegationManager, eigenLayerPauserReg, "v9.9.9");
         address targetAddr = address(eigenPodManagerImplementation);
         cheats.etch(targetAddr, address(eigenPodManagerWrapper).code);
 
@@ -80,7 +75,7 @@ contract Integration_SlashBC_OneBCSF is IntegrationCheckUtils {
         // 6. Assert BCSF is still 1
         assertEq(eigenPodManager.beaconChainSlashingFactor(address(staker)), 1);
     }
-    
+
     /// @notice Test that a staker is slashed to 0 BCSF from a minor slash and that they can't deposit more shares
     /// from their EigenPod (either through verifyWC or start/complete CP)
     function test_slashFullyBC_revert_deposit(uint24 _r) public rand(_r) {
@@ -98,7 +93,7 @@ contract Integration_SlashBC_OneBCSF is IntegrationCheckUtils {
         // 5. deposit expecting revert (randomly pick to verifyWC, start/complete CP)
         if (_randBool()) {
             // Verify WC
-            (validators, ) = staker.startValidators(uint8(_randUint(3, 10)));
+            (validators,) = staker.startValidators(uint8(_randUint(3, 10)));
             beaconChain.advanceEpoch();
 
             cheats.expectRevert(IDelegationManagerErrors.FullySlashed.selector);
@@ -151,7 +146,7 @@ contract Integration_SlashBC_OneBCSF is IntegrationCheckUtils {
         // 7. deposit expecting revert (randomly pick to verifyWC, start/complete CP)
         if (_randBool()) {
             // Verify WC
-            (validators, ) = staker.startValidators(uint8(_randUint(1, 10)));
+            (validators,) = staker.startValidators(uint8(_randUint(1, 10)));
             beaconChain.advanceEpoch();
 
             cheats.expectRevert(IDelegationManagerErrors.FullySlashed.selector);

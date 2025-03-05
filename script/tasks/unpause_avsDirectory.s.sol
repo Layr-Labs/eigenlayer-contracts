@@ -25,7 +25,9 @@ import "forge-std/Test.sol";
 contract UnpauseAVSDirectory is Script, Test {
     Vm cheats = Vm(VM_ADDRESS);
 
-    function run(string memory configFile) public {
+    function run(
+        string memory configFile
+    ) public {
         // Load config
         string memory deployConfigPath = string(bytes(string.concat("script/output/", configFile)));
         string memory config_data = vm.readFile(deployConfigPath);

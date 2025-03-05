@@ -5,7 +5,6 @@ import "src/test/integration/IntegrationDeployer.t.sol";
 import "src/test/integration/IntegrationChecks.t.sol";
 
 abstract contract UpgradeTest is IntegrationCheckUtils {
-
     /// Only run upgrade tests on mainnet forks
     function setUp() public virtual override {
         if (!isForktest()) {

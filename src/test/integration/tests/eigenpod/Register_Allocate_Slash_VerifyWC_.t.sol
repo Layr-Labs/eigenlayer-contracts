@@ -7,7 +7,7 @@ import "src/test/integration/IntegrationChecks.t.sol";
 /// @notice Testing the rounding behavior when operator magnitude is initially 1
 contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationCheckUtils {
     using ArrayLib for *;
-    
+
     AVS avs;
     OperatorSet operatorSet;
 
@@ -55,7 +55,7 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationCheckUtils {
         staker.delegateTo(operator);
         // delegate staker without any depositShares in beaconChainETHStrategy yet
         IStrategy[] memory emptyStrategies;
-        uint256[] memory emptyTokenBalances;
+        uint[] memory emptyTokenBalances;
         check_Delegation_State(staker, operator, emptyStrategies, emptyTokenBalances);
 
         // 4. deposit/verify withdrawal credentials
@@ -89,7 +89,7 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationCheckUtils {
         check_CompleteCheckPoint_WithSlashing_LowMagnitude_State(staker, slashedGwei);
 
         // 5. queue withdrawal
-        ( , uint[] memory withdrawShares) = _randWithdrawal(strategies, initDepositShares);
+        (, uint[] memory withdrawShares) = _randWithdrawal(strategies, initDepositShares);
 
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, withdrawShares);
         bytes32[] memory roots = _getWithdrawalHashes(withdrawals);
@@ -105,7 +105,7 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationCheckUtils {
 
         // Operator's maxMagnitude is 1 and staker was slashed to non-WAD BCSF. Therefore
         // staker should have been rounded down to 0
-        uint256 slashingFactor = staker.getSlashingFactor(beaconChainETHStrategy);
+        uint slashingFactor = staker.getSlashingFactor(beaconChainETHStrategy);
         assertEq(slashingFactor, 0, "slashing factor should be rounded down to 0");
 
         // 6. complete withdrawal
@@ -220,9 +220,7 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationCheckUtils {
         // This also exits validators on the beacon chain
         _rollBlocksForCompleteWithdrawals(withdrawals);
         IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[0]);
-        check_Withdrawal_AsTokens_State(
-            staker, operator, withdrawals[0], strategies, 0.toArrayU256(), tokens, 0.toArrayU256()
-        );
+        check_Withdrawal_AsTokens_State(staker, operator, withdrawals[0], strategies, 0.toArrayU256(), tokens, 0.toArrayU256());
 
         // 7. deposit/verify withdrawal credentials
         // randomly startup 1-10 validators
@@ -260,8 +258,6 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationCheckUtils {
         // - starts/completes checkpoint
         _rollBlocksForCompleteWithdrawals(withdrawals);
         IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[0]);
-        check_Withdrawal_AsTokens_State(
-            staker, operator, withdrawals[0], strategies, initDepositShares, tokens, initDepositShares
-        );
+        check_Withdrawal_AsTokens_State(staker, operator, withdrawals[0], strategies, initDepositShares, tokens, initDepositShares);
     }
 }

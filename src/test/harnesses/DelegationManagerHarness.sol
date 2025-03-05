@@ -5,7 +5,6 @@ import "../../contracts/core/DelegationManager.sol";
 import "forge-std/Test.sol";
 
 contract DelegationManagerHarness is DelegationManager {
-
     constructor(
         IStrategyManager _strategyManager,
         IEigenPodManager _eigenPodManager,
@@ -25,28 +24,19 @@ contract DelegationManagerHarness is DelegationManager {
         )
     {}
 
-    function getSlashingFactor(
-        address staker,
-        IStrategy strategy,
-        uint64 operatorMaxMagnitude
-    ) external view returns (uint256) {
+    function getSlashingFactor(address staker, IStrategy strategy, uint64 operatorMaxMagnitude) external view returns (uint) {
         return _getSlashingFactor(staker, strategy, operatorMaxMagnitude);
     }
 
-    function getSlashingFactors(
-        address staker,
-        address operator,
-        IStrategy[] memory strategies
-    ) external view returns (uint256[] memory) {
+    function getSlashingFactors(address staker, address operator, IStrategy[] memory strategies) external view returns (uint[] memory) {
         return _getSlashingFactors(staker, operator, strategies);
     }
 
-    function getSlashingFactorsAtBlock(
-        address staker,
-        address operator,
-        IStrategy[] memory strategies,
-        uint32 blockNumber
-    ) external view returns (uint256[] memory) {
+    function getSlashingFactorsAtBlock(address staker, address operator, IStrategy[] memory strategies, uint32 blockNumber)
+        external
+        view
+        returns (uint[] memory)
+    {
         return _getSlashingFactorsAtBlock(staker, operator, strategies, blockNumber);
     }
 }

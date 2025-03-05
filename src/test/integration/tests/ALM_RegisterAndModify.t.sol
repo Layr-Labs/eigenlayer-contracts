@@ -4,7 +4,6 @@ pragma solidity ^0.8.27;
 import "src/test/integration/IntegrationChecks.t.sol";
 
 contract Integration_ALMBase is IntegrationCheckUtils {
-    
     AVS avs;
     OperatorSet operatorSet;
 
@@ -17,7 +16,7 @@ contract Integration_ALMBase is IntegrationCheckUtils {
     uint[] initDepositShares;
 
     /// Shared setup:
-    /// 
+    ///
     /// 1. Generate staker with deposited assets, operator, and AVS
     /// 2. Deposit asssets and delegate to operator
     /// 3. AVS creates an operator set containing the strategies held by the staker
@@ -41,7 +40,6 @@ contract Integration_ALMBase is IntegrationCheckUtils {
 }
 
 contract Integration_InitRegistered is Integration_ALMBase {
-
     /// @dev Integration test variants that start with the operator being registered
     /// for the operator set
     function _init() internal virtual override {
@@ -168,7 +166,6 @@ contract Integration_InitRegistered is Integration_ALMBase {
 }
 
 contract Integration_InitAllocated is Integration_ALMBase {
-
     /// @dev Integration test variants that start with the operator being allocated
     /// for the operator set
     function _init() internal virtual override {
