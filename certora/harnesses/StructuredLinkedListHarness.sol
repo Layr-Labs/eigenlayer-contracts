@@ -17,6 +17,13 @@ contract StructuredLinkedListHarness {
     StructuredLinkedList.List public listStorage;
 
     /// Getters with single value returns.
+    function getAdjacentStrict(uint256 _node, bool _direction) public view returns (uint256 adj) {
+        if (!nodeExists(_node)) {
+            revert();
+        } else {
+            adj = listStorage.list[_node][_direction];
+        }
+    }
 
     // Generic setters that cover all use cases
     function insert(uint256 _node, uint256 _new, bool _dir) public {
