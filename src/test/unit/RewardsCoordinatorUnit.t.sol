@@ -41,7 +41,7 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
     StrategyAndMultiplier[] defaultStrategyAndMultipliers;
 
     // Config Variables
-    /// @notice intervals(epochs) are 1 weeks
+    /// @notice intervals(epochs) are 1 day: https://github.com/eigenfoundation/ELIPs/blob/main/ELIPs/ELIP-001.md#updated-calculation-interval-seconds
     uint32 CALCULATION_INTERVAL_SECONDS = 1 days;
 
     /// @notice Max duration is 5 epochs (2 weeks * 5 = 10 weeks in seconds)
