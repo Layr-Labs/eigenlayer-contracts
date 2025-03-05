@@ -1677,7 +1677,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     /// @dev Used to assert that the DSF is either increased or unchanged, depending on the slashing factor, on a deposit
     function assert_Snap_DSF_State_Deposit(User staker, IStrategy[] memory strategies, string memory err) internal {
         uint[] memory curDepositShares = _getStakerDepositShares(staker, strategies);
-        uint[] memory prevDepositShares = _getPrevStakerDepositShares(staker, strategies);    
+        uint[] memory prevDepositShares = _getPrevStakerDepositShares(staker, strategies);
         uint[] memory curDSFs = _getDepositScalingFactors(staker, strategies);
         uint[] memory prevDSFs = _getPrevDepositScalingFactors(staker, strategies);
         for (uint i = 0; i < strategies.length; i++) {
@@ -1696,10 +1696,8 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
                 // an additional deposit can slightly decrease the DSF due to fixed point arithmetic rounding
                 uint prevSlashingFactor = _getPrevSlashingFactor(staker, strategies[i]);
                 uint prevWithdrawableFactor = prevDSFs[i].mulWad(prevSlashingFactor);
-                if (WAD >= prevWithdrawableFactor && prevDepositShares[i] > 0 && curSlashingFactor == prevSlashingFactor){
-                    if (WAD - prevWithdrawableFactor < 1e2){
-                        assertApproxEqAbs(curDSFs[i], prevDSFs[i], 1e2, err);
-                    }
+                if (WAD >= prevWithdrawableFactor && prevDepositShares[i] > 0 && curSlashingFactor == prevSlashingFactor) {
+                    if (WAD - prevWithdrawableFactor < 1e2) assertApproxEqAbs(curDSFs[i], prevDSFs[i], 1e2, err);
                 } else {
                     assertGt(curDSFs[i], prevDSFs[i], err); // Slashing, so DSF is increased
                 }
@@ -1722,8 +1720,8 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
             // If there was a slashing, but we complete a withdrawal for 0 shares, no need to normalize
             if (curSlashingFactor == WAD || curDepositShares[i] == 0) {
                 assertEq(prevDSFs[i], curDSFs[i], err);
-                assertEq(curDSFs[i], WAD, err); 
-            } 
+                assertEq(curDSFs[i], WAD, err);
+            }
             // If the staker has a slashingFactor of 0, any withdrawal as shares won't change the DSF
             else if (staker.getSlashingFactor(strategies[i]) == 0) {
                 assertEq(prevDSFs[i], curDSFs[i], err);
@@ -1734,10 +1732,8 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
                 // an additional deposit can slightly decrease the DSF due to fixed point arithmetic rounding
                 uint prevSlashingFactor = _getPrevSlashingFactor(staker, strategies[i]);
                 uint prevWithdrawableFactor = prevDSFs[i].mulWad(prevSlashingFactor);
-                if (WAD >= prevWithdrawableFactor && prevDepositShares[i] > 0 && curSlashingFactor == prevSlashingFactor){
-                    if (WAD - prevWithdrawableFactor < 1e2){
-                        assertApproxEqAbs(curDSFs[i], prevDSFs[i], 1e2, err);
-                    }
+                if (WAD >= prevWithdrawableFactor && prevDepositShares[i] > 0 && curSlashingFactor == prevSlashingFactor) {
+                    if (WAD - prevWithdrawableFactor < 1e2) assertApproxEqAbs(curDSFs[i], prevDSFs[i], 1e2, err);
                 } else {
                     assertGt(curDSFs[i], prevDSFs[i], err); // Slashing, so DSF is increased
                 }
@@ -2968,7 +2964,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         return maxMagnitude;
     }
 
-    function _getPrevSlashingFactor(User staker, IStrategy strategy) internal timewarp returns (uint256) {
+    function _getPrevSlashingFactor(User staker, IStrategy strategy) internal timewarp returns (uint) {
         return _getSlashingFactor(staker, strategy);
     }
 

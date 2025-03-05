@@ -588,8 +588,8 @@ contract Integration_Redelegate_SlashOperator_SlashEigenpod is Integration_Slash
         for (uint i = 0; i < withdrawals.length; ++i) {
             staker.completeWithdrawalAsShares(withdrawals[i]);
             check_Withdrawal_AsShares_Redelegated_State(
-              staker, operator, operator2, withdrawals[i], withdrawals[i].strategies, stakerWithdrawableShares
-             );
+                staker, operator, operator2, withdrawals[i], withdrawals[i].strategies, stakerWithdrawableShares
+            );
         }
     }
 
