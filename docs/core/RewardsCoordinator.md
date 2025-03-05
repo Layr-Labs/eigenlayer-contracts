@@ -128,6 +128,7 @@ The rewards distribution amongst the AVS's Operators and delegated Stakers is de
         * `rewardsSubmission.amount <= MAX_REWARDS_AMOUNT`
         * `rewardsSubmission.duration <= MAX_REWARDS_DURATION`
         * `rewardsSubmission.duration % calculationIntervalSeconds == 0`
+        * `rewardsSubmission.duration > 0`
         * `rewardsSubmission.startTimestamp % calculationIntervalSeconds == 0`
         * `block.timestamp - MAX_RETROACTIVE_LENGTH <= rewardsSubmission.startTimestamp`
         * `GENESIS_REWARDS_TIMESTAMP <= rewardsSubmission.startTimestamp`
@@ -234,6 +235,7 @@ AVS may make Rewards v2 submissions by calling `createOperatorDirectedAVSRewards
     * `operatorDirectedRewardsSubmission.strategiesAndMultipliers.length > 0`
     * `operatorDirectedRewardsSubmission.duration <= MAX_REWARDS_DURATION`
     * `operatorDirectedRewardsSubmission.duration % calculationIntervalSeconds == 0`
+    * `operatorDirectedRewardsSubmission.duration > 0`
     * `operatorDirectedRewardsSubmission.startTimestamp % calculationIntervalSeconds == 0`
     * `block.timestamp - MAX_RETROACTIVE_LENGTH <= operatorDirectedRewardsSubmission.startTimestamp`
     * `GENESIS_REWARDS_TIMESTAMP <= operatorDirectedRewardsSubmission.startTimestamp`

@@ -49,6 +49,8 @@ interface IRewardsCoordinatorErrors {
     error PreviousSplitPending();
     /// @dev Thrown when input `duration` exceeds maximum.
     error DurationExceedsMax();
+    /// @dev Thrown when input `duration` is zero.
+    error DurationIsZero();
     /// @dev Thrown when input `duration` is not evenly divisble by CALCULATION_INTERVAL_SECONDS.
     error InvalidDurationRemainder();
     /// @dev Thrown when GENESIS_REWARDS_TIMESTAMP is not evenly divisble by CALCULATION_INTERVAL_SECONDS.
@@ -444,6 +446,7 @@ interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorE
      * @param rewardsSubmissions The rewards submissions being created
      * @dev Expected to be called by the ServiceManager of the AVS on behalf of which the submission is being made
      * @dev The duration of the `rewardsSubmission` cannot exceed `MAX_REWARDS_DURATION`
+     * @dev The duration of the `rewardsSubmission` cannot be 0 and must be a multiple of `CALCULATION_INTERVAL_SECONDS`
      * @dev The tokens are sent to the `RewardsCoordinator` contract
      * @dev Strategies must be in ascending order of addresses to check for duplicates
      * @dev This function will revert if the `rewardsSubmission` is malformed,
@@ -481,6 +484,7 @@ interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorE
      * @param operatorDirectedRewardsSubmissions The operator-directed rewards submissions being created
      * @dev Expected to be called by the ServiceManager of the AVS on behalf of which the submission is being made
      * @dev The duration of the `rewardsSubmission` cannot exceed `MAX_REWARDS_DURATION`
+     * @dev The duration of the `rewardsSubmission` cannot be 0 and must be a multiple of `CALCULATION_INTERVAL_SECONDS`
      * @dev The tokens are sent to the `RewardsCoordinator` contract
      * @dev The `RewardsCoordinator` contract needs a token approval of sum of all `operatorRewards` in the `operatorDirectedRewardsSubmissions`, before calling this function.
      * @dev Strategies must be in ascending order of addresses to check for duplicates
@@ -499,6 +503,7 @@ interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorE
      * @param operatorDirectedRewardsSubmissions The operator-directed rewards submissions being created
      * @dev Expected to be called by the AVS that created the operator set
      * @dev The duration of the `rewardsSubmission` cannot exceed `MAX_REWARDS_DURATION`
+     * @dev The duration of the `rewardsSubmission` cannot be 0 and must be a multiple of `CALCULATION_INTERVAL_SECONDS`
      * @dev The tokens are sent to the `RewardsCoordinator` contract
      * @dev The `RewardsCoordinator` contract needs a token approval of sum of all `operatorRewards` in the `operatorDirectedRewardsSubmissions`, before calling this function
      * @dev Strategies must be in ascending order of addresses to check for duplicates

@@ -58,7 +58,7 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     IAllocationManager public immutable allocationManager;
 
     /// @notice The interval in seconds at which the calculation for rewards distribution is done.
-    /// @dev RewardsSubmission durations must be multiples of this interval. This is going to be configured to 1 week
+    /// @dev RewardsSubmission durations must be multiples of this interval. This is going to be configured to 1 day
     uint32 public immutable CALCULATION_INTERVAL_SECONDS;
     /// @notice The maximum amount of time (seconds) that a rewards submission can span over
     uint32 public immutable MAX_REWARDS_DURATION;
