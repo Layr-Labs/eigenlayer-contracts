@@ -7634,7 +7634,7 @@ contract DelegationManagerUnitTests_getQueuedWithdrawals is DelegationManagerUni
 
         // Alice queues withdrawal of all 100 shares while operator magnitude is 0.5
         // This means she should get back 50 shares (100 * 0.5)
-        (QueuedWithdrawalParams[] memory queuedWithdrawalParams, Withdrawal memory withdrawal, bytes32 withdrawalRoot) =
+        (QueuedWithdrawalParams[] memory queuedWithdrawalParams,, bytes32 withdrawalRoot) =
             _setUpQueueWithdrawalsSingleStrat({staker: defaultStaker, strategy: strategyMock, depositSharesToWithdraw: depositAmount});
 
         cheats.prank(defaultStaker);
@@ -7666,7 +7666,7 @@ contract DelegationManagerUnitTests_getQueuedWithdrawal is DelegationManagerUnit
         _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
 
         // Queue withdrawal
-        (QueuedWithdrawalParams[] memory queuedWithdrawalParams, Withdrawal memory withdrawal, bytes32 withdrawalRoot) =
+        (QueuedWithdrawalParams[] memory queuedWithdrawalParams,, bytes32 withdrawalRoot) =
             _setUpQueueWithdrawalsSingleStrat({staker: defaultStaker, strategy: strategyMock, depositSharesToWithdraw: depositAmount});
 
         cheats.prank(defaultStaker);
@@ -7690,7 +7690,7 @@ contract DelegationManagerUnitTests_getQueuedWithdrawal is DelegationManagerUnit
         _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
 
         // Queue withdrawal
-        (QueuedWithdrawalParams[] memory queuedWithdrawalParams, Withdrawal memory withdrawal, bytes32 withdrawalRoot) =
+        (QueuedWithdrawalParams[] memory queuedWithdrawalParams,, bytes32 withdrawalRoot) =
             _setUpQueueWithdrawalsSingleStrat({staker: defaultStaker, strategy: strategyMock, depositSharesToWithdraw: depositAmount});
 
         cheats.prank(defaultStaker);
@@ -7709,7 +7709,7 @@ contract DelegationManagerUnitTests_getQueuedWithdrawal is DelegationManagerUnit
         assertEq(shares[0], depositAmount / 2, "shares not properly slashed");
     }
 
-    function test_getQueuedWithdrawal_NonexistentWithdrawal() public {
+    function test_getQueuedWithdrawal_NonexistentWithdrawal() public view {
         bytes32 nonexistentRoot = bytes32(uint(1));
         (, uint[] memory shares) = delegationManager.getQueuedWithdrawal(nonexistentRoot);
         assertEq(shares.length, 0, "shares array should be empty");
@@ -7727,7 +7727,7 @@ contract DelegationManagerUnitTests_getQueuedWithdrawal is DelegationManagerUnit
         _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
 
         // Queue withdrawals for multiple strategies
-        (QueuedWithdrawalParams[] memory queuedWithdrawalParams, Withdrawal memory withdrawal, bytes32 withdrawalRoot) =
+        (QueuedWithdrawalParams[] memory queuedWithdrawalParams,, bytes32 withdrawalRoot) =
             _setUpQueueWithdrawals({staker: defaultStaker, strategies: strategies, depositWithdrawalAmounts: depositShares});
 
         cheats.prank(defaultStaker);
@@ -7743,7 +7743,7 @@ contract DelegationManagerUnitTests_getQueuedWithdrawal is DelegationManagerUnit
         }
     }
 
-    function testFuzz_getQueuedWithdrawal_EmptyWithdrawal(bytes32 withdrawalRoot) public {
+    function testFuzz_getQueuedWithdrawal_EmptyWithdrawal(bytes32 withdrawalRoot) public view {
         (, uint[] memory shares) = delegationManager.getQueuedWithdrawal(withdrawalRoot);
         assertEq(shares.length, 0, "sanity check");
     }

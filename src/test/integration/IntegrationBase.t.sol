@@ -1696,7 +1696,6 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     /// @dev When completing withdrawals as shares, we must also handle the case where a staker completes a withdrawal for 0 shares
     function assert_Snap_DSF_State_WithdrawalAsShares(User staker, IStrategy[] memory strategies, string memory err) internal {
         uint[] memory curDepositShares = _getStakerDepositShares(staker, strategies);
-        uint[] memory prevDepositShares = _getPrevStakerDepositShares(staker, strategies);
 
         for (uint i = 0; i < strategies.length; i++) {
             IStrategy[] memory stratArray = strategies[i].toArray();
@@ -1731,8 +1730,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         uint[] memory delegatableShares,
         string memory err
     ) internal {
-        address operator = delegationManager.delegatedTo(address(staker));
-        uint64[] memory maxMags = _getMaxMagnitudes(User(payable(operator)), strategies);
+        uint64[] memory maxMags = _getMaxMagnitudes(operator, strategies);
 
         for (uint i = 0; i < strategies.length; i++) {
             IStrategy[] memory stratArray = strategies[i].toArray();

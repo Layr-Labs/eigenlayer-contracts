@@ -43,7 +43,7 @@ contract SignatureUtilsMixinUnit is Test, SignatureUtilsMixin("v0.0.0") {
         );
     }
 
-    function test_domainSeparator_NonZero() public {
+    function test_domainSeparator_NonZero() public view {
         assertTrue(domainSeparator() != 0, "The domain separator should be non-zero");
         assertTrue(domainSeparator() == expectedDomainSeparator, "The domain separator should be as expected");
     }
