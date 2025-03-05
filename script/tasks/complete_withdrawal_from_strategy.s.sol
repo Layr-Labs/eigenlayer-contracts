@@ -20,7 +20,14 @@ contract CompleteWithdrawFromStrategy is Script, Test {
     string public deployConfigPath;
     string public config_data;
 
-    function run(string memory configFile, address strategy, address token, uint amount, uint nonce, uint32 startBlock) public {
+    function run(
+        string memory configFile,
+        address strategy,
+        address token,
+        uint256 amount,
+        uint256 nonce,
+        uint32 startBlock
+    ) public {
         // Load config
         deployConfigPath = string(bytes(string.concat("script/output/", configFile)));
         config_data = vm.readFile(deployConfigPath);
@@ -38,7 +45,8 @@ contract CompleteWithdrawFromStrategy is Script, Test {
         tokens[0] = IERC20(token);
 
         // Get the withdrawal struct
-        IDelegationManagerTypes.Withdrawal memory withdrawal = getWithdrawalStruct(am, dm, em, strategy, amount, nonce, startBlock);
+        IDelegationManagerTypes.Withdrawal memory withdrawal =
+            getWithdrawalStruct(am, dm, em, strategy, amount, nonce, startBlock);
 
         // complete
         dm.completeQueuedWithdrawal(withdrawal, tokens, true);
@@ -52,15 +60,15 @@ contract CompleteWithdrawFromStrategy is Script, Test {
         DelegationManager dm,
         EigenPodManager em,
         address strategy,
-        uint amount,
-        uint nonce,
+        uint256 amount,
+        uint256 nonce,
         uint32 startBlock
     ) internal returns (IDelegationManagerTypes.Withdrawal memory) {
         // Add strategy to array
         IStrategy[] memory strategies = new IStrategy[](1);
         strategies[0] = IStrategy(strategy);
         // Add shares to array
-        uint[] memory shares = new uint[](1);
+        uint256[] memory shares = new uint256[](1);
         shares[0] = amount;
 
         // Get DSF for Staker in strategy
@@ -68,11 +76,11 @@ contract CompleteWithdrawFromStrategy is Script, Test {
 
         // Get TM for Operator in strategies
         uint64[] memory maxMagnitudes = am.getMaxMagnitudesAtBlock(msg.sender, strategies, startBlock);
-        uint slashingFactor = _getSlashingFactor(em, msg.sender, strategies[0], maxMagnitudes[0]);
-        uint sharesToWithdraw = dsf.calcWithdrawable(amount, slashingFactor);
+        uint256 slashingFactor = _getSlashingFactor(em, msg.sender, strategies[0], maxMagnitudes[0]);
+        uint256 sharesToWithdraw = dsf.calcWithdrawable(amount, slashingFactor);
 
         // Get scaled shares for the given amount
-        uint[] memory scaledShares = new uint[](1);
+        uint256[] memory scaledShares = new uint256[](1);
         scaledShares[0] = dsf.scaleForQueueWithdrawal(sharesToWithdraw);
 
         // Log the current state before completing
@@ -95,11 +103,12 @@ contract CompleteWithdrawFromStrategy is Script, Test {
         return withdrawal;
     }
 
-    function _getSlashingFactor(EigenPodManager em, address staker, IStrategy strategy, uint64 operatorMaxMagnitude)
-        internal
-        view
-        returns (uint)
-    {
+    function _getSlashingFactor(
+        EigenPodManager em,
+        address staker,
+        IStrategy strategy,
+        uint64 operatorMaxMagnitude
+    ) internal view returns (uint256) {
         if (strategy == em.beaconChainETHStrategy()) {
             uint64 beaconChainSlashingFactor = em.beaconChainSlashingFactor(staker);
             return operatorMaxMagnitude.mulWad(beaconChainSlashingFactor);

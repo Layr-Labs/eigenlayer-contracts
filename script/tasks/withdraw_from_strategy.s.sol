@@ -14,7 +14,7 @@ import "forge-std/Test.sol";
 contract WithdrawFromStrategy is Script, Test {
     Vm cheats = Vm(VM_ADDRESS);
 
-    function run(string memory configFile, address strategy, address token, uint amount) public {
+    function run(string memory configFile, address strategy, address token, uint256 amount) public {
         // Load config
         string memory deployConfigPath = string(bytes(string.concat("script/output/", configFile)));
         string memory config_data = vm.readFile(deployConfigPath);
@@ -34,17 +34,18 @@ contract WithdrawFromStrategy is Script, Test {
         IStrategy[] memory strategies = new IStrategy[](1);
         strategies[0] = IStrategy(strategy);
         // Add shares to array
-        uint[] memory shares = new uint[](1);
+        uint256[] memory shares = new uint256[](1);
         shares[0] = amount;
         // Add token to array
         IERC20[] memory tokens = new IERC20[](1);
         tokens[0] = IERC20(token);
 
         // Get the current withdrawal nonce for sender
-        uint nonce = dm.cumulativeWithdrawalsQueued(msg.sender);
+        uint256 nonce = dm.cumulativeWithdrawalsQueued(msg.sender);
 
         // Define QueuedWithdrawalParams struct instance
-        IDelegationManagerTypes.QueuedWithdrawalParams[] memory queueWithdrawals = new IDelegationManagerTypes.QueuedWithdrawalParams[](1);
+        IDelegationManagerTypes.QueuedWithdrawalParams[] memory queueWithdrawals =
+            new IDelegationManagerTypes.QueuedWithdrawalParams[](1);
         queueWithdrawals[0] = IDelegationManagerTypes.QueuedWithdrawalParams({
             strategies: strategies,
             depositShares: shares,

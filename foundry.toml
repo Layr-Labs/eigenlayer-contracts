@@ -79,7 +79,6 @@
     wrap_comments = false  
     # List of files to ignore during formatting (can use glob patterns)
     ignore = [
-        "./script/**/*",
         "./src/test/**/*"
     ]
 
@@ -89,6 +88,7 @@
     int_types = "short"
     line_length = 140
     ignore = [
+        "./script/**/*",
         "./src/contracts/**/*"
     ]
 

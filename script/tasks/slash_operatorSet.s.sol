@@ -12,9 +12,13 @@ import "forge-std/Test.sol";
 contract SlashOperatorSet is Script, Test, IAllocationManagerTypes {
     Vm cheats = Vm(VM_ADDRESS);
 
-    function run(string memory configFile, address operator, uint32 operatorSetId, IStrategy[] memory strategies, uint[] memory wadsToSlash)
-        public
-    {
+    function run(
+        string memory configFile,
+        address operator,
+        uint32 operatorSetId,
+        IStrategy[] memory strategies,
+        uint256[] memory wadsToSlash
+    ) public {
         // Load config
         string memory deployConfigPath = string(bytes(string.concat("script/output/", configFile)));
         string memory config_data = vm.readFile(deployConfigPath);
