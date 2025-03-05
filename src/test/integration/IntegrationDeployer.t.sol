@@ -35,6 +35,7 @@ IStrategy constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeE
 
 abstract contract IntegrationDeployer is ExistingDeploymentParser {
     using StdStyle for *;
+    using ArrayLib for *;
 
     // Fork ids for specific fork tests
     bool isUpgraded;
@@ -193,6 +194,13 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         _upgradeProxies();
         _initializeProxies();
 
+        // Place native ETH first in `allStrats`
+        // This ensures when we select a nonzero number of strategies from this array, we always
+        // have beacon chain ETH
+        ethStrats.push(BEACONCHAIN_ETH_STRAT);
+        allStrats.push(BEACONCHAIN_ETH_STRAT);
+        allTokens.push(NATIVE_ETH);
+
         // Deploy and configure strategies and tokens
         for (uint i = 1; i < NUM_LST_STRATS + 1; ++i) {
             string memory name = string.concat("LST-Strat", cheats.toString(i), " token");
@@ -201,14 +209,12 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             _newStrategyAndToken(name, symbol, 10e50, address(this), i % 2 == 0);
         }
 
-        ethStrats.push(BEACONCHAIN_ETH_STRAT);
-        allStrats.push(BEACONCHAIN_ETH_STRAT);
-        allTokens.push(NATIVE_ETH);
         maxUniqueAssetsHeld = allStrats.length;
 
-        // Create time machine and beacon chain. Set block time to beacon chain genesis time
+        // Create time machine and beacon chain. Set block time to beacon chain genesis time and starting block number
         BEACON_GENESIS_TIME = GENESIS_TIME_LOCAL;
         cheats.warp(BEACON_GENESIS_TIME);
+        cheats.roll(10000);
         timeMachine = new TimeMachine();
         beaconChain = new BeaconChainMock(eigenPodManager, BEACON_GENESIS_TIME);
     }
@@ -225,6 +231,13 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         _parseDeployedContracts(deploymentInfoPath);
         string memory existingDeploymentParams = "script/configs/mainnet.json";
         _parseParamsForIntegrationUpgrade(existingDeploymentParams);
+
+        // Place native ETH first in `allStrats`
+        // This ensures when we select a nonzero number of strategies from this array, we always
+        // have beacon chain ETH
+        ethStrats.push(BEACONCHAIN_ETH_STRAT);
+        allStrats.push(BEACONCHAIN_ETH_STRAT);
+        allTokens.push(NATIVE_ETH);
 
         // Add deployed strategies to lstStrats and allStrats
         for (uint i; i < deployedStrategyArray.length; i++) {
@@ -281,11 +294,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         });
 
         cheats.stopPrank();
-
-        ethStrats.push(BEACONCHAIN_ETH_STRAT);
-        allStrats.push(BEACONCHAIN_ETH_STRAT);
-        allTokens.push(NATIVE_ETH);
-        maxUniqueAssetsHeld = allStrats.length;
     }
 
     function _deployProxies() public {
@@ -547,49 +555,56 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     function _randUser(
         string memory name
     ) internal noTracing returns (User, IStrategy[] memory, uint[] memory) {
-        // For the new user, select what type of assets they'll have and whether
-        // they'll use `xWithSignature` methods.
-        //
-        // The values selected here are in the ranges configured via `_configRand`
-        uint assetType = _randAssetType();
-        uint userType = _randUserType();
-
         // Deploy new User contract
+        uint userType = _randUserType();
         User user = _genRandUser(name, userType);
 
-        // For the specific asset selection we made, get a random assortment of
-        // strategies and deal the user some corresponding underlying token balances
-        (IStrategy[] memory strategies, uint[] memory tokenBalances) = _dealRandAssets(user, assetType);
+        // For the specific asset selection we made, get a random assortment of strategies 
+        // and deal the user some corresponding underlying token balances
+        uint assetType = _randAssetType();
+        IStrategy[] memory strategies = _selectRandAssets(assetType);
+        uint[] memory tokenBalances = _dealRandAmounts(user, strategies);
 
         print.user(name, assetType, userType, strategies, tokenBalances);
         return (user, strategies, tokenBalances);
+    }
+
+    function _randUser(
+        string memory name,
+        IStrategy[] memory strategies
+    ) internal noTracing returns (User, uint[] memory) {
+        // Deploy new User contract
+        uint userType = _randUserType();
+        User user = _genRandUser(name, userType);
+
+        // Deal the user some corresponding underlying token balances
+        uint[] memory tokenBalances = _dealRandAmounts(user, strategies);
+
+        print.user(name, HOLDS_ALL, userType, strategies, tokenBalances);
+        return (user, tokenBalances);
     }
 
     /// @dev Create a new user without native ETH. See _randUser above for standard usage
     function _randUser_NoETH(
         string memory name
     ) internal noTracing returns (User, IStrategy[] memory, uint[] memory) {
-        // For the new user, select what type of assets they'll have and whether
-        // they'll use `xWithSignature` methods.
-        //
-        // The values selected here are in the ranges configured via `_configRand`
+        // Deploy new User contract
         uint userType = _randUserType();
+        User user = _genRandUser(name, userType);
 
         // Pick the user's asset distribution, removing "native ETH" as an option
         // I'm sorry if this eventually leads to a bug that's really hard to track down
         uint assetType = _randAssetType();
         if (assetType == HOLDS_ETH) {
             assetType = NO_ASSETS;
-        } else if (assetType == HOLDS_ALL) {
+        } else if (assetType == HOLDS_ALL || assetType == HOLDS_MAX) {
             assetType = HOLDS_LST;
         }
 
-        // Deploy new User contract
-        User user = _genRandUser(name, userType);
-
-        // For the specific asset selection we made, get a random assortment of
-        // strategies and deal the user some corresponding underlying token balances
-        (IStrategy[] memory strategies, uint[] memory tokenBalances) = _dealRandAssets(user, assetType);
+        // For the specific asset selection we made, get a random assortment of strategies 
+        // and deal the user some corresponding underlying token balances
+        IStrategy[] memory strategies = _selectRandAssets(assetType);
+        uint[] memory tokenBalances = _dealRandAmounts(user, strategies);
 
         print.user(name, assetType, userType, strategies, tokenBalances);
         return (user, strategies, tokenBalances);
@@ -599,13 +614,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     function _randUser_NoAssets(
         string memory name
     ) internal noTracing returns (User) {
-        // For the new user, select what type of assets they'll have and whether
-        // they'll use `xWithSignature` methods.
-        //
-        // The values selected here are in the ranges configured via `_configRand`
-        uint userType = _randUserType();
-
         // Deploy new User contract
+        uint userType = _randUserType();
         User user = _genRandUser(name, userType);
 
         print.user(name, NO_ASSETS, userType, new IStrategy[](0), new uint[](0));
@@ -651,83 +661,78 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         }
     }
 
-    /// @dev For a given `assetType`, select a random assortment of strategies and assets
-    /// NO_ASSETS - return will be empty
-    /// HOLDS_LST - `strategies` will be a random subset of initialized strategies
-    ///             `tokenBalances` will be the user's balances in each token
-    /// HOLDS_ETH - `strategies` will only contain BEACONCHAIN_ETH_STRAT, and
-    ///             `tokenBalances` will contain the user's eth balance
-    /// HOLDS_ALL - `strategies` will contain ALL initialized strategies AND BEACONCHAIN_ETH_STRAT, and
-    ///             `tokenBalances` will contain random token/eth balances accordingly
-    function _dealRandAssets(User user, uint assetType) internal noTracing returns (IStrategy[] memory, uint[] memory) {
-        IStrategy[] memory strategies;
-        uint[] memory tokenBalances;
+    /// Given an assetType, select strategies the user will be dealt assets in
+    function _selectRandAssets(uint assetType) internal noTracing returns (IStrategy[] memory) {
         if (assetType == NO_ASSETS) {
-            strategies = new IStrategy[](0);
-            tokenBalances = new uint[](0);
-        } else if (assetType == HOLDS_LST) {
-            assetType = HOLDS_LST;
-            // Select a random number of assets
-            uint max = lstStrats.length;
-            if (max > maxUniqueAssetsHeld) {
-                max = maxUniqueAssetsHeld;
-            }
-            uint numAssets = _randUint({min: 1, max: max});
-
-            strategies = new IStrategy[](numAssets);
-            tokenBalances = new uint[](numAssets);
-
-            // For each asset, award the user a random balance of the underlying token
-            for (uint i = 0; i < numAssets; i++) {
-                IStrategy strat = lstStrats[i];
-                IERC20 underlyingToken = strat.underlyingToken();
-                uint balance = _randUint({min: MIN_BALANCE, max: MAX_BALANCE});
-
-                StdCheats.deal(address(underlyingToken), address(user), balance);
-                tokenBalances[i] = balance;
-                strategies[i] = strat;
-            }
-        } else if (assetType == HOLDS_ETH) {
-            strategies = new IStrategy[](1);
-            tokenBalances = new uint[](1);
-
-            // Award the user with a random amount of ETH
-            // This guarantees a multiple of 32 ETH (at least 1, up to/incl 5)
-            uint amount = 32 ether * _randUint({min: 1, max: 5});
-            cheats.deal(address(user), amount);
-
-            strategies[0] = BEACONCHAIN_ETH_STRAT;
-            tokenBalances[0] = amount;
-        } else if (assetType == HOLDS_ALL || assetType == HOLDS_MAX) {
-            uint randHeld = _randUint({min: 1, max: maxUniqueAssetsHeld-1});
-            uint numLSTs = assetType == HOLDS_MAX ? lstStrats.length : randHeld;
-            strategies = new IStrategy[](numLSTs + 1);
-            tokenBalances = new uint[](numLSTs + 1);
-
-            // For each LST, award the user a random balance of the underlying token
-            for (uint i = 0; i < numLSTs; i++) {
-                IStrategy strat = lstStrats[i];
-                IERC20 underlyingToken = strat.underlyingToken();
-                uint balance = _randUint({min: MIN_BALANCE, max: MAX_BALANCE});
-
-                StdCheats.deal(address(underlyingToken), address(user), balance);
-                tokenBalances[i] = balance;
-                strategies[i] = strat;
-            }
-
-            // Award the user with a random amount of ETH
-            // This guarantees a multiple of 32 ETH (at least 1, up to/incl 5)
-            uint amount = 32 ether * _randUint({min: 1, max: 5});
-            cheats.deal(address(user), amount);
-
-            // Add BEACONCHAIN_ETH_STRAT and eth balance
-            strategies[numLSTs] = BEACONCHAIN_ETH_STRAT;
-            tokenBalances[numLSTs] = amount;
-        } else {
-            revert("_dealRandAssets: assetType unimplemented");
+            return new IStrategy[](0);
+        } 
+        
+        /// Select only ETH
+        if (assetType == HOLDS_ETH) {
+            return beaconChainETHStrategy.toArray();
         }
 
-        return (strategies, tokenBalances);
+        /// Select multiple LSTs, and maybe add ETH:
+
+        // Select number of assets:
+        // HOLDS_LST can hold at most all LSTs. HOLDS_ALL and HOLDS_MAX also hold ETH.
+        // Clamp number of assets to maxUniqueAssetsHeld (guaranteed to be at least 1)
+        uint assetPoolSize = assetType == HOLDS_LST ? lstStrats.length : allStrats.length;
+        uint maxAssets = assetPoolSize > maxUniqueAssetsHeld ? maxUniqueAssetsHeld : assetPoolSize;
+
+        uint numAssets = assetType == HOLDS_MAX ? maxAssets : _randUint(1, maxAssets);
+
+        IStrategy[] memory strategies = new IStrategy[](numAssets);
+        for (uint i = 0; i < strategies.length; i++) {
+            if (assetType == HOLDS_LST) {
+                strategies[i] = lstStrats[i];
+            } else {
+                // allStrats[0] is the beaconChainETHStrategy
+                strategies[i] = allStrats[i];
+            }
+        }
+
+        return strategies;
+    }
+
+    /// Given an input list of strategies, deal random underlying token amounts to a user
+    function _dealRandAmounts(User user, IStrategy[] memory strategies) internal noTracing returns (uint[] memory) {
+        uint[] memory tokenBalances = new uint[](strategies.length);
+
+        for (uint i = 0; i < tokenBalances.length; i++) {
+            IStrategy strategy = strategies[i];
+            uint balance;
+
+            if (strategy == BEACONCHAIN_ETH_STRAT) {
+                // Award the user with a random amount of ETH
+                // This guarantees a multiple of 32 ETH (at least 1, up to/incl 5)
+                balance = 32 ether * _randUint({min: 1, max: 5});
+                cheats.deal(address(user), balance);
+            } else {
+                IERC20 underlyingToken = strategy.underlyingToken();
+                balance = _randUint({min: MIN_BALANCE, max: MAX_BALANCE});
+
+                StdCheats.deal(address(underlyingToken), address(user), balance);
+            }
+
+            tokenBalances[i] = balance;
+        }
+
+        return tokenBalances;
+    }
+
+    /// Given an array of strategies and an array of amounts, deal the amounts to the user
+    function _dealAmounts(User user, IStrategy[] memory strategies, uint[] memory amounts) internal noTracing {
+        for (uint i = 0; i < amounts.length; i++) {
+            IStrategy strategy = strategies[i];
+
+            if (strategy == BEACONCHAIN_ETH_STRAT) {
+                cheats.deal(address(user), amounts[i]);
+            } else {
+                IERC20 underlyingToken = strategy.underlyingToken();
+                StdCheats.deal(address(underlyingToken), address(user), amounts[i]);
+            }
+        }
     }
 
     /// @dev Uses `random` to return a random uint, with a range given by `min` and `max` (inclusive)

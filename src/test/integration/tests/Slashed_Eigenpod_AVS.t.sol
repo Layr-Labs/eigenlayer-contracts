@@ -76,6 +76,10 @@ contract Integration_SlashedEigenpod_AVS_Checkpoint is Integration_SlashedEigenp
 }
 
 contract Integration_SlashedEigenpod_AVS_Withdraw is Integration_SlashedEigenpod_AVS_Base {
+    using Math for uint256;
+    using SlashingLib for uint256;
+
+    uint[] withdrawableSharesAfterSlash;
 
     function _init() internal override {
         super._init();
@@ -87,19 +91,24 @@ contract Integration_SlashedEigenpod_AVS_Withdraw is Integration_SlashedEigenpod
             avs.slashOperator(slashParams);
             check_Base_Slashing_State(operator, allocateParams, slashParams);
 
-            // 8. Queue Withdrawal for all shares. TODO: add proper assertion
-            staker.queueWithdrawals(strategies, initDepositShares);
+            // 8. Queue Withdrawal for all shares. 
+            Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, initDepositShares);
+            bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+            withdrawableSharesAfterSlash = _calcWithdrawable(staker, strategies, initDepositShares);
+            check_QueuedWithdrawal_State(staker, operator, strategies, initDepositShares, withdrawableSharesAfterSlash, withdrawals, withdrawalRoots);
         } else { // Queue Withdrawal -> Slash
             // 7. Queue Withdrawal for all shares
             Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, initDepositShares);
             bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
-            check_QueuedWithdrawal_State(staker, operator, strategies, initDepositShares, withdrawals, withdrawalRoots);
+            withdrawableSharesAfterSlash = _calcWithdrawable(staker, strategies, initDepositShares);
+            check_QueuedWithdrawal_State(staker, operator, strategies, initDepositShares, withdrawableSharesAfterSlash, withdrawals, withdrawalRoots);
 
             // 8. Slash
             slashParams = _genSlashing_Half(operator, operatorSet);
             avs.slashOperator(slashParams);
             check_Base_Slashing_State(operator, allocateParams, slashParams);
         }
+        withdrawableSharesAfterSlash = _calcWithdrawable(staker, strategies, initDepositShares);
 
         beaconChain.advanceEpoch_NoRewards();
     }
@@ -128,10 +137,11 @@ contract Integration_SlashedEigenpod_AVS_Withdraw is Integration_SlashedEigenpod
 
         // 9. Complete withdrawal as tokens
         for (uint256 i = 0; i < withdrawals.length; ++i) {
+            IERC20[] memory tokens = _getUnderlyingTokens(withdrawals[i].strategies);
             uint256[] memory expectedTokens =
-                _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].scaledShares);
+                _calculateExpectedTokens(withdrawals[i].strategies, withdrawableSharesAfterSlash);
             staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State_AfterSlash(staker, operator, withdrawals[i], allocateParams, slashParams, expectedTokens);
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], strategies, withdrawals[i].scaledShares, tokens, expectedTokens);
         }
 
         // 10. Redeposit
@@ -148,6 +158,7 @@ contract Integration_SlashedEigenpod_AVS_Withdraw is Integration_SlashedEigenpod
         _rollBlocksForCompleteWithdrawals(withdrawals);
         uint slashingFactor = _getSlashingFactor(staker, BEACONCHAIN_ETH_STRAT);
         uint depositScalingFactor = _getDepositScalingFactor(staker, BEACONCHAIN_ETH_STRAT);
+        uint[] memory withdrawableShares = _calcWithdrawable(staker, strategies, initDepositShares);
 
         // 9.  Start & complete checkpoint, since the next step does not. 
         staker.startCheckpoint();
@@ -157,11 +168,6 @@ contract Integration_SlashedEigenpod_AVS_Withdraw is Integration_SlashedEigenpod
 
         // 10. Complete withdrawal as shares. Deposit scaling factor is doubled because operator was slashed by half.
         staker.completeWithdrawalAsShares(withdrawals[0]);
-        check_Withdrawal_AsShares_State_AfterSlash(staker, operator, withdrawals[0], allocateParams, slashParams);
-        assertEq(
-            _getStakerWithdrawableShares(staker, strategies)[0],
-            _getExpectedWithdrawableSharesAfterCompletion(staker, withdrawals[0].scaledShares[0], depositScalingFactor * 2, slashingFactor),
-            "withdrawable shares not incremented correctly"
-        );
+        check_Withdrawal_AsShares_State(staker, operator, withdrawals[0], strategies, withdrawableShares);
     }
 }

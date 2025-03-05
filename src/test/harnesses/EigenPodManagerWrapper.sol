@@ -20,4 +20,11 @@ contract EigenPodManagerWrapper is EigenPodManager {
     function setPodOwnerShares(address owner, int256 shares) external {
         podOwnerDepositShares[owner] = shares;
     }
+
+    function setBeaconChainSlashingFactor(address podOwner, uint64 slashingFactor) external {
+        _beaconChainSlashingFactor[podOwner] = BeaconChainSlashingFactor({
+            slashingFactor: slashingFactor,
+            isSet: true
+        });
+    }
 }

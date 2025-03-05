@@ -45,133 +45,94 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
      * This user is ready to deposit into some strategies and has some underlying token balances
      */
     function _newRandomStaker() internal returns (User, IStrategy[] memory, uint[] memory) {
-        string memory stakerName;
+        (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) 
+            = _randUser(_getStakerName());
 
-        User staker;
-        IStrategy[] memory strategies;
-        uint[] memory tokenBalances;
-
-        if (!isUpgraded) {
-            stakerName = string.concat("M2Staker", cheats.toString(numStakers));
-
-            (staker, strategies, tokenBalances) = _randUser(stakerName);
-
-            stakersToMigrate.push(staker);
-        } else {
-            stakerName = string.concat("staker", cheats.toString(numStakers));
-
-            (staker, strategies, tokenBalances) = _randUser(stakerName);
-        }
+        if (!isUpgraded) stakersToMigrate.push(staker);
 
         assert_HasUnderlyingTokenBalances(staker, strategies, tokenBalances, "_newRandomStaker: failed to award token balances");
-
-        numStakers++;
         return (staker, strategies, tokenBalances);
     }
 
-    function _newBasicStaker() internal returns (User, IStrategy[] memory, uint[] memory) {
-        string memory stakerName;
+    /// Given a list of strategies, creates a new user with random token balances in each underlying token
+    function _newStaker(IStrategy[] memory strategies) internal returns (User, uint[] memory) {
+        (User staker, uint[] memory tokenBalances) 
+            = _randUser(_getStakerName(), strategies);
 
-        User staker;
-        IStrategy[] memory strategies;
-        uint[] memory tokenBalances;
+        if (!isUpgraded) stakersToMigrate.push(staker);
 
-        if (!isUpgraded) {
-            stakerName = string.concat("M2Staker", cheats.toString(numStakers));
-
-            (staker, strategies, tokenBalances) = _randUser(stakerName);
-
-            stakersToMigrate.push(staker);
-        } else {
-            stakerName = string.concat("staker", cheats.toString(numStakers));
-
-            (staker, strategies, tokenBalances) = _randUser(stakerName);
-        }
-
-        assert_HasUnderlyingTokenBalances(staker, strategies, tokenBalances, "_newRandomStaker: failed to award token balances");
-
-        numStakers++;
-        assembly { // TODO HACK
-            mstore(strategies, 1)
-            mstore(tokenBalances, 1)
-        }
-        return (staker, strategies, tokenBalances);
+        assert_HasUnderlyingTokenBalances(staker, strategies, tokenBalances, "_newStaker: failed to award token balances");
+        return (staker, tokenBalances);
     }
 
     /**
      * @dev Create a new operator according to configured random variants.
      * This user will immediately deposit their randomized assets into eigenlayer.
-     * @notice If forktype is mainnet and not upgraded, then the operator will only randomize LSTs assets and deposit them
-     * as ETH podowner shares are not available yet. 
      */
     function _newRandomOperator() internal returns (User, IStrategy[] memory, uint[] memory) {
-        User operator;
-        IStrategy[] memory strategies;
-        uint[] memory tokenBalances;
-        uint[] memory addedShares;
+        /// TODO: Allow operators to have ETH
+        (User operator, IStrategy[] memory strategies, uint[] memory tokenBalances) 
+            = _randUser_NoETH(_getOperatorName());
 
+        /// Operators are created with all assets already deposited
+        uint[] memory addedShares = _calculateExpectedShares(strategies, tokenBalances);
+        operator.depositIntoEigenlayer(strategies, tokenBalances);
+
+        /// Registration flow differs for M2 vs Slashing release
         if (!isUpgraded) {
-            string memory operatorName = string.concat("M2Operator", numOperators.toString());
-
-            // Create an operator for M2.
-            // TODO: Allow this operator to have ETH 
-            (operator, strategies, tokenBalances) = _randUser_NoETH(operatorName);
-
-            addedShares = _calculateExpectedShares(strategies, tokenBalances);
-            
             User_M2(payable(operator)).registerAsOperator_M2();
-            operator.depositIntoEigenlayer(strategies, tokenBalances); // Deposits interface doesn't change between M2 and slashing
 
             operatorsToMigrate.push(operator);
         } else {
-            string memory operatorName = string.concat("operator", numOperators.toString());
-
-            (operator, strategies, tokenBalances) = _randUser_NoETH(operatorName);
-
-            addedShares = _calculateExpectedShares(strategies, tokenBalances);
-
             operator.registerAsOperator();
-            operator.depositIntoEigenlayer(strategies, tokenBalances);
 
-            // Roll past the allocation configuration delay
             rollForward({blocks: ALLOCATION_CONFIGURATION_DELAY + 1});
-
-            assert_Snap_Added_Staker_DepositShares(operator, strategies, addedShares, "_newRandomOperator: failed to add delegatable shares");
-        }        
+        }
         
         assert_Snap_Added_OperatorShares(operator, strategies, addedShares, "_newRandomOperator: failed to award shares to operator");
         assertTrue(delegationManager.isOperator(address(operator)), "_newRandomOperator: operator should be registered");
-
-        numOperators++;
+        assertEq(delegationManager.delegatedTo(address(operator)), address(operator), "_newRandomOperator: should be self-delegated");
         return (operator, strategies, tokenBalances);
     }
 
     /// @dev Creates a new operator with no assets
     function _newRandomOperator_NoAssets() internal returns (User) {
-        User operator;
+        User operator = _randUser_NoAssets(_getOperatorName());
 
+        /// Registration flow differs for M2 vs Slashing release
         if (!isUpgraded) {
-            string memory operatorName = string.concat("M2Operator", numOperators.toString());
-
-            // Create an operator for M2.
-            operator = _randUser_NoAssets(operatorName);
             User_M2(payable(operator)).registerAsOperator_M2();
 
             operatorsToMigrate.push(operator);
         } else {
-            string memory operatorName = string.concat("operator", numOperators.toString());
-
-            operator = _randUser_NoAssets(operatorName);
             operator.registerAsOperator();
 
-            // Roll past the allocation configuration delay
             rollForward({blocks: ALLOCATION_CONFIGURATION_DELAY + 1});
-        }        
+        }
 
         assertTrue(delegationManager.isOperator(address(operator)), "_newRandomOperator: operator should be registered");
-
-        numOperators++;
+        assertEq(delegationManager.delegatedTo(address(operator)), address(operator), "_newRandomOperator: should be self-delegated");
         return operator;
+    }
+
+    /// @dev Name a newly-created staker ("staker1", "staker2", ...)
+    function _getStakerName() private returns (string memory) {
+        numStakers++;
+
+        string memory stakerNum = cheats.toString(numStakers);
+        string memory namePrefix = isUpgraded ? "staker" : "m2-staker";
+
+        return string.concat(namePrefix, stakerNum);
+    }
+
+    /// @dev Name a newly-created operator ("operator1", "operator2", ...)
+    function _getOperatorName() private returns (string memory) {
+        numOperators++;
+
+        string memory operatorNum = cheats.toString(numOperators);
+        string memory namePrefix = isUpgraded ? "operator" : "m2-operator";
+
+        return string.concat(namePrefix, operatorNum);
     }
 
     function _newRandomAVS() internal returns (AVS avs, OperatorSet[] memory operatorSets) {
@@ -202,7 +163,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     
     /// @dev Choose a random subset of validators (selects AT LEAST ONE)
     function _choose(uint40[] memory validators) internal returns (uint40[] memory) {
-        uint _rand = _randUint({ min: 1, max: validators.length ** 2 });
+        uint _rand = _randUint({ min: 1, max: (2**validators.length) - 1 });
 
         uint40[] memory result = new uint40[](validators.length);
         uint newLen;
@@ -275,6 +236,31 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
+    /// @dev Check that all the staker's deposit shares have been removed
+    function assert_RemovedAll_Staker_DepositShares(
+        User user,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal view {
+        uint[] memory depositShares = _getStakerDepositShares(user, strategies);
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(depositShares[i], 0, err);
+        }
+    }
+
+    /// @dev Check that all the staker's withdrawable shares have been removed
+    function assert_RemovedAll_Staker_WithdrawableShares(
+        User staker, 
+        IStrategy[] memory strategies, 
+        string memory err
+    ) internal view {
+        uint[] memory curShares = _getStakerWithdrawableShares(staker, strategies);
+        // For each strategy, check all shares have been withdrawn
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(0, curShares[i], err);
+        }
+    }
+
     function assert_HasOperatorShares(
         User user, 
         IStrategy[] memory strategies, 
@@ -328,6 +314,48 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         assertEq(withdrawalRoot, delegationManager.calculateWithdrawalRoot(withdrawal), err);
     }
 
+    function assert_StakerStrategyListEmpty(
+        User staker,
+        string memory err
+    ) internal view {
+        IStrategy[] memory strategies = _getStakerStrategyList(staker);
+        assertEq(strategies.length, 0, err);
+    }
+
+    function assert_StrategyNotInStakerStrategyList(
+        User staker,
+        IStrategy strategy,
+        string memory err
+    ) internal view {
+        // BEACONCHAIN_ETH_STRAT is not in the staker's strategy list
+        if (strategy == BEACONCHAIN_ETH_STRAT) return;       
+        
+        IStrategy[] memory strategies = _getStakerStrategyList(staker);
+        assertFalse(strategies.contains(strategy), err);
+    }
+
+    function assert_StrategiesInStakerStrategyList(
+        User staker,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal view {
+        for(uint i = 0; i < strategies.length; i++) {
+            assert_StrategyInStakerStrategyList(staker, strategies[i], err);
+        }
+    }
+
+    function assert_StrategyInStakerStrategyList(
+        User staker,
+        IStrategy strategy,
+        string memory err
+    ) internal view {
+        // BEACONCHAIN_ETH_STRAT is not in the staker's strategy list
+        if (strategy == BEACONCHAIN_ETH_STRAT) return;
+
+        IStrategy[] memory strategies = _getStakerStrategyList(staker);
+        assertTrue(strategies.contains(strategy), err);
+    }
+
     function assert_PodBalance_Eq(
         User staker,
         uint expectedBalance,
@@ -342,6 +370,8 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         string memory err
     ) internal view {
         EigenPod pod = staker.pod();
+        console.log("proofsRemaining: ", pod.currentCheckpoint().proofsRemaining);
+        console.log("activeValidatorCount: ", pod.activeValidatorCount());
         assertEq(pod.currentCheckpoint().proofsRemaining, pod.activeValidatorCount(), err);
     }
 
@@ -566,15 +596,82 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
-    function assert_DSF_Reset(
+    function assert_DSF_WAD(
         User staker,
         IStrategy[] memory strategies,
         string memory err
-    ) internal {
+    ) internal view {
         uint[] memory depositScalingFactors = _getDepositScalingFactors(staker, strategies);
         for (uint i = 0; i < strategies.length; i++) {
             assertEq(depositScalingFactors[i], WAD, err);
         }
+    }
+
+    function assert_Zero_BCSF(
+        User staker,
+        string memory err
+    ) internal view {
+        uint64 curBCSF = _getBeaconChainSlashingFactor(staker);
+        assertEq(curBCSF, 0, err);
+    }
+
+    function assert_BCSF_WAD(
+        User staker,
+        string memory err
+    ) internal view {
+        uint64 curBCSF = _getBeaconChainSlashingFactor(staker);
+        assertEq(curBCSF, WAD, err);
+    }
+
+    function assert_ActiveValidatorCount(
+        User staker,
+        uint expectedCount,
+        string memory err
+    ) internal view {
+        uint curActiveValidatorCount = _getActiveValidatorCount(staker);
+        assertEq(curActiveValidatorCount, expectedCount, err);
+    }
+    function assert_withdrawableSharesDecreasedByAtLeast(
+        User staker,
+        IStrategy[] memory strategies,
+        uint256[] memory originalShares,
+        uint256[] memory expectedDecreases,
+        string memory err
+    ) internal view {
+        for (uint i = 0; i < strategies.length; i++) {
+            assert_withdrawableSharesDecreasedByAtLeast(staker, strategies[i], originalShares[i], expectedDecreases[i], err);
+        }
+    }
+
+    function assert_withdrawableSharesDecreasedByAtLeast(
+        User staker,
+        IStrategy strategy,
+        uint256 originalShares,
+        uint256 expectedDecrease,
+        string memory err
+    ) internal view {
+        uint currentShares = _getWithdrawableShares(staker, strategy);
+        assertLt(currentShares, originalShares - expectedDecrease, err);
+    }
+
+    function assert_DepositShares_GTE_WithdrawableShares(
+        User staker,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal view {
+        uint[] memory depositShares = _getStakerDepositShares(staker, strategies);
+        uint[] memory withdrawableShares = _getWithdrawableShares(staker, strategies);
+        for (uint i = 0; i < strategies.length; i++) {
+            assertGe(depositShares[i], withdrawableShares[i], err);
+        }
+    }
+
+    function assert_Zero_WithdrawableShares(
+        User staker,
+        IStrategy strategy,
+        string memory err
+    ) internal view {
+        assertEq(_getWithdrawableShares(staker, strategy), 0, err);
     }
     
     /*******************************************************************************
@@ -668,6 +765,22 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
 
         for (uint i = 0; i < curAllocatedStrats.length; i++) {
             assertEq(address(curAllocatedStrats[i]), address(prevAllocatedStrats[i]), err);
+        }
+    }
+
+    function assert_Snap_Removed_AllocatedStrats(
+        User operator,
+        OperatorSet memory operatorSet,
+        IStrategy[] memory removedStrats,
+        string memory err
+    ) internal {
+        IStrategy[] memory curAllocatedStrats = _getAllocatedStrats(operator, operatorSet);
+        IStrategy[] memory prevAllocatedStrats = _getPrevAllocatedStrats(operator, operatorSet);
+
+        assertEq(curAllocatedStrats.length + removedStrats.length, prevAllocatedStrats.length, err);
+
+        for (uint i = 0; i < removedStrats.length; i++) {
+            assertFalse(curAllocatedStrats.contains(removedStrats[i]), err);
         }
     }
 
@@ -825,10 +938,11 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         IStrategy[] memory strategies,
         string memory err
     ) internal {
-        uint[] memory curSlashableStake = _getMinSlashableStake(operator, operatorSet, strategies);
-        uint[] memory prevSlashableStake = _getPrevMinSlashableStake(operator, operatorSet, strategies);
+        uint[] memory curSlashableStake = _getMinSlashableStake(address(operator), operatorSet, strategies);
+        uint[] memory prevSlashableStake = _getPrevMinSlashableStake(address(operator), operatorSet, strategies);
 
         for (uint i = 0; i < strategies.length; i++) {
+            assertTrue(prevSlashableStake[i] > curSlashableStake[i], err);
             assertTrue(prevSlashableStake[i] > curSlashableStake[i], err);
         }
     }
@@ -890,13 +1004,59 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, params.strategies);
 
         for (uint i = 0; i < params.strategies.length; i++) {
-            uint expectedSlashed = SlashingLib.calcSlashedAmount({
+            // Slashing doesn't occur if the operator has no slashable magnitude
+            // This prevents a div by 0 when calculating expected slashed
+            uint expectedSlashed = prevMagnitudes[i].max == 0 ? 0 : SlashingLib.calcSlashedAmount({
                 operatorShares: prevSlashableStake[i],
                 prevMaxMagnitude: prevMagnitudes[i].max,
                 newMaxMagnitude: curMagnitudes[i].max
             });
 
             assertEq(curSlashableStake[i], prevSlashableStake[i] - expectedSlashed, err);
+        }
+    }
+
+    //@dev requires slashparams strategies to be same as withdrawal strategies
+    // meant to be used in check_base_slashing_state
+    function assert_Snap_Decreased_SlashableSharesInQueue(
+        User operator,
+        SlashingParams memory slashParams,
+        Withdrawal[] memory withdrawals,
+        string memory err
+    ) internal {
+        IStrategy[] memory strategies = slashParams.strategies;
+        uint[] memory curSlashableSharesInQueue = _getSlashableSharesInQueue(operator, strategies);
+        uint[] memory prevSlashableSharesInQueue = _getPrevSlashableSharesInQueue(operator, strategies);
+
+
+        uint[] memory totalScaledShares = new uint[](strategies.length);
+        for (uint i = 0; i < withdrawals.length; i++) {
+            for (uint j = 0; j < withdrawals[i].strategies.length; j++) {
+                totalScaledShares[j] = totalScaledShares[j] + withdrawals[i].scaledShares[j];
+            }
+        }
+
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(curSlashableSharesInQueue[i], prevSlashableSharesInQueue[i] - totalScaledShares[i].mulWad(slashParams.wadsToSlash[i]), err);
+        }
+    }
+
+    function assert_Snap_Increased_SlashableSharesInQueue(
+        User operator,
+        Withdrawal[] memory withdrawals,
+        string memory err
+    ) internal {
+        uint[] memory curSlashableSharesInQueue;
+        uint[] memory prevSlashableSharesInQueue;
+        uint64[] memory maxMagnitudes;
+        for (uint i = 0; i < withdrawals.length; i++) {
+            curSlashableSharesInQueue = _getSlashableSharesInQueue(operator, withdrawals[i].strategies);
+            prevSlashableSharesInQueue = _getPrevSlashableSharesInQueue(operator, withdrawals[i].strategies);
+            maxMagnitudes = _getMaxMagnitudes(operator, withdrawals[i].strategies);
+
+            for (uint j = 0; j < withdrawals[i].strategies.length; j++) {
+                assertEq(curSlashableSharesInQueue[j], prevSlashableSharesInQueue[j] + withdrawals[i].scaledShares[j].mulWad(maxMagnitudes[j]), err);
+            }
         }
     }
 
@@ -955,7 +1115,9 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, params.strategies);
 
         for (uint i = 0; i < curAllocatedStake.length; i++) {
-            uint expectedSlashed = SlashingLib.calcSlashedAmount({
+            // Slashing doesn't occur if the operator has no slashable magnitude
+            // This prevents a div by 0 when calculating expected slashed
+            uint expectedSlashed = prevMagnitudes[i].max == 0 ? 0 : SlashingLib.calcSlashedAmount({
                 operatorShares: prevAllocatedStake[i],
                 prevMaxMagnitude: prevMagnitudes[i].max,
                 newMaxMagnitude: curMagnitudes[i].max
@@ -1141,14 +1303,17 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
 
     function assert_Snap_Slashed_MaxMagnitude(
         User operator,
+        OperatorSet memory operatorSet,
         SlashingParams memory params,
         string memory err
     ) internal {
+        Allocation[] memory prevAllocations = _getPrevAllocations(operator, operatorSet, params.strategies);
+
         Magnitudes[] memory curMagnitudes = _getMagnitudes(operator, params.strategies);
         Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, params.strategies);
 
         for (uint i = 0; i < params.strategies.length; i++) {
-            uint expectedSlashed = prevMagnitudes[i].max.mulWadRoundUp(params.wadsToSlash[i]);
+            uint expectedSlashed = prevAllocations[i].currentMagnitude.mulWadRoundUp(params.wadsToSlash[i]);
             assertEq(curMagnitudes[i].max, prevMagnitudes[i].max - expectedSlashed, err);
         }
     }
@@ -1236,33 +1401,6 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
-    function assert_HasUnderlyingTokenBalances_AfterSlash(
-        User staker,
-        AllocateParams memory allocateParams,
-        SlashingParams memory slashingParams,
-        uint[] memory expectedBalances,
-        string memory err
-    ) internal view {
-        for (uint i; i < allocateParams.strategies.length; ++i) {
-            IStrategy strat = allocateParams.strategies[i];
-            
-            uint balance = strat == BEACONCHAIN_ETH_STRAT 
-                ? address(staker).balance 
-                : strat.underlyingToken().balanceOf(address(staker));
-
-            uint256 maxDelta = strat == BEACONCHAIN_ETH_STRAT ? 1 gwei : 3;
-
-            if (slashingParams.strategies.contains(strat)) {
-                uint256 wadToSlash = slashingParams.wadsToSlash[slashingParams.strategies.indexOf(strat)];
-
-                expectedBalances[i] -= expectedBalances[i]
-                    .mulWadRoundUp(allocateParams.newMagnitudes[i].mulWadRoundUp(wadToSlash));
-            } 
-
-            assertApproxEqAbs(expectedBalances[i], balance, maxDelta, err);
-        }
-    }
-
     function assert_Snap_StakerWithdrawableShares_AfterSlash(
         User staker,
         AllocateParams memory allocateParams,
@@ -1285,6 +1423,120 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
             assertApproxEqAbs(prevShares[i] - slashedShares, curShares[i], 1, err);
         }
     }
+
+    /*******************************************************************************
+                    SNAPSHOT ASSERTIONS: BEACON CHAIN AND AVS SLASHING
+    *******************************************************************************/
+    
+    /// @dev Same as `assert_Snap_StakerWithdrawableShares_AfterSlash`
+    /// @dev but when a BC slash occurs before an AVS slash
+    /// @dev There is additional rounding error when a BC and AVS slash occur together
+    function assert_Snap_StakerWithdrawableShares_AfterBCSlash_AVSSlash(
+        User staker,
+        AllocateParams memory allocateParams,
+        SlashingParams memory slashingParams,
+        string memory err
+    ) internal {
+        require(allocateParams.strategies.length == 1 && slashingParams.strategies.length == 1, "only beacon strategy supported");
+        require(allocateParams.strategies[0] == BEACONCHAIN_ETH_STRAT, "only beacon strategy supported");
+        require(slashingParams.strategies[0] == BEACONCHAIN_ETH_STRAT, "only beacon strategy supported");
+
+        uint curShares = _getWithdrawableShares(staker, allocateParams.strategies)[0];
+        uint prevShares = _getPrevWithdrawableShares(staker, allocateParams.strategies)[0];
+
+        uint256 slashedShares = 0;
+
+        uint wadToSlash = slashingParams.wadsToSlash[0];
+        slashedShares = prevShares.mulWadRoundUp(allocateParams.newMagnitudes[0].mulWadRoundUp(wadToSlash));
+
+        assertEq(prevShares - slashedShares, curShares, err);
+    }
+
+    /// @dev Validates behavior of "restaking", ie. that the funds can be slashed twice
+    function assert_Snap_StakerWithdrawableShares_AfterAVSSlash_BCSlash(
+        User staker,
+        AllocateParams memory allocateParams,
+        SlashingParams memory slashingParams,
+        string memory err
+    ) internal {
+        require(allocateParams.strategies.length == 1  && slashingParams.strategies.length == 1, "only beacon strategy supported");
+        require(allocateParams.strategies[0] == BEACONCHAIN_ETH_STRAT, "only beacon strategy supported");
+        require(slashingParams.strategies[0] == BEACONCHAIN_ETH_STRAT, "only beacon strategy supported");
+
+        uint curShares = _getWithdrawableShares(staker, allocateParams.strategies)[0];
+        uint prevShares = _getPrevWithdrawableShares(staker, allocateParams.strategies)[0];
+        uint depositShares = _getStakerDepositShares(staker, allocateParams.strategies)[0];
+
+        // 1. The withdrawable shares should decrease by a factor of the BCSF
+        assertEq(prevShares.mulWad(_getBeaconChainSlashingFactor(staker)), curShares, err);
+
+        /**
+         * 2. The delta in shares is given by:
+         * (depositShares * operatorMag) - (depositShares * operatorMag * BCSF)
+         *  = depositShares * operatorMag * (1 - BCSF)
+         */
+        uint beaconChainSlashingFactor = _getBeaconChainSlashingFactor(staker);
+        uint wadToSlash = slashingParams.wadsToSlash[0];
+        uint originalAVSSlashedShares = depositShares.mulWadRoundUp(allocateParams.newMagnitudes[0].mulWadRoundUp(wadToSlash));
+        uint withdrawableSharesAfterAVSSlash = depositShares - originalAVSSlashedShares;
+        uint expectedDelta = withdrawableSharesAfterAVSSlash.mulWad(WAD - beaconChainSlashingFactor);
+        assertEq(prevShares - expectedDelta, curShares, err);
+
+        /**
+         * 3. The attributable avs slashed shares should decrease by a factor of the BCSF
+         * Attributable avs slashed shares = originalWithdrawableShares - bcSlashedShares - curShares
+         * Where bcSlashedShares = originalWithdrawableShares * (1 - BCSF)
+         */
+        uint bcSlashedShares = depositShares.mulWad(WAD - beaconChainSlashingFactor);
+        uint attributableAVSSlashedShares = depositShares - bcSlashedShares - curShares;
+        assertEq(originalAVSSlashedShares.mulWad(beaconChainSlashingFactor), attributableAVSSlashedShares, err);
+    }
+
+    /**
+     * @dev Validates behavior of "restaking", ie. that the funds can be slashed twice. Also validates
+     *      the edge case where a validator is proven prior to the BC slash.
+     * @dev These bounds are based off of rounding when avs and bc slashing occur together
+     */
+    function assert_Snap_StakerWithdrawableShares_AVSSlash_ValidatorProven_BCSlash(
+        User staker,
+        uint256 originalWithdrawableShares,
+        uint256 extraValidatorShares,
+        AllocateParams memory allocateParams,
+        SlashingParams memory slashingParams,
+        string memory err
+    ) internal {
+        require(allocateParams.strategies.length == 1  && slashingParams.strategies.length == 1, "only beacon strategy supported");
+        require(allocateParams.strategies[0] == BEACONCHAIN_ETH_STRAT, "only beacon strategy supported");
+        require(slashingParams.strategies[0] == BEACONCHAIN_ETH_STRAT, "only beacon strategy supported");
+
+        uint curShares = _getWithdrawableShares(staker, allocateParams.strategies)[0];
+        uint prevShares = _getPrevWithdrawableShares(staker, allocateParams.strategies)[0];
+
+        // 1. The withdrawable shares should decrease by a factor of the BCSF
+        assertApproxEqAbs(prevShares.mulWad(_getBeaconChainSlashingFactor(staker)), curShares, 1e5, err);
+
+        /**
+         * 2. The delta in shares is given by:
+         * (originalWithdrawableShares * operatorMag) + extraValidatorShares - (depositShares * operatorMag * BCSF * dsf)
+         */
+        uint beaconChainSlashingFactor = _getBeaconChainSlashingFactor(staker);
+        uint wadToSlash = slashingParams.wadsToSlash[0];
+        uint originalAVSSlashedShares = originalWithdrawableShares.mulWadRoundUp(allocateParams.newMagnitudes[0].mulWadRoundUp(wadToSlash));
+        uint withdrawableSharesAfterValidatorProven = originalWithdrawableShares - originalAVSSlashedShares + extraValidatorShares;
+        uint expectedDelta = withdrawableSharesAfterValidatorProven.mulWad(WAD - beaconChainSlashingFactor);
+        assertApproxEqAbs(prevShares - expectedDelta, curShares, 1e5, err);
+
+        /**
+         * 3. The attributable avs slashed shares should decrease by a factor of the BCSF
+         * Attributable avs slashed shares = depositShares - bcSlashedShares - curShars
+         * Where bcSlashedShares = depositShares * (1 - BCSF)
+         */
+        uint depositShares = _getStakerDepositShares(staker, allocateParams.strategies)[0];
+        uint bcSlashedShares = depositShares.mulWad(WAD - beaconChainSlashingFactor);
+        uint attributableAVSSlashedShares = depositShares - bcSlashedShares - curShares;
+        assertApproxEqAbs(originalAVSSlashedShares.mulWad(beaconChainSlashingFactor), attributableAVSSlashedShares, 1e5, err);
+    }
+
 
     // TODO: slashable stake
 
@@ -1380,7 +1632,9 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, params.strategies);
 
         for (uint i = 0; i < params.strategies.length; i++) {
-            uint expectedSlashed = SlashingLib.calcSlashedAmount({
+            // Slashing doesn't occur if the operator has no slashable magnitude
+            // This prevents a div by 0 when calculating expected slashed
+            uint expectedSlashed = prevMagnitudes[i].max == 0 ? 0 : SlashingLib.calcSlashedAmount({
                 operatorShares: prevShares[i],
                 prevMaxMagnitude: prevMagnitudes[i].max,
                 newMaxMagnitude: curMagnitudes[i].max
@@ -1502,6 +1756,24 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
+    /// @dev This is currently used by dual slashing tests
+    /// TODO: potentially bound better
+    function assert_Snap_Added_Staker_WithdrawableShares_AtLeast(
+        User staker,
+        IStrategy[] memory strategies,
+        uint[] memory addedShares,
+        string memory err
+    ) internal {
+        uint[] memory curShares = _getStakerWithdrawableShares(staker, strategies);
+        // Use timewarp to get previous staker shares
+        uint[] memory prevShares = _getPrevStakerWithdrawableShares(staker, strategies);
+
+        // For each strategy, check (prev - removed == cur)
+        for (uint i = 0; i < strategies.length; i++) {
+            assertApproxEqAbs(prevShares[i] + addedShares[i], curShares[i], 1e3, err);
+        }
+    }
+
     /// @dev Check that the staker's withdrawable shares have decreased by `removedShares`
     function assert_Snap_Removed_Staker_WithdrawableShares(
         User staker, 
@@ -1516,19 +1788,6 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         // For each strategy, check (prev - removed == cur)
         for (uint i = 0; i < strategies.length; i++) {
             assertEq(prevShares[i] - removedShares[i], curShares[i], err);
-        }
-    }
-
-    /// @dev Check that all the staker's withdrawable shares have been removed
-    function assert_Snap_RemovedAll_Staker_WithdrawableShares(
-        User staker, 
-        IStrategy[] memory strategies, 
-        string memory err
-    ) internal {
-        uint[] memory curShares = _getStakerWithdrawableShares(staker, strategies);
-        // For each strategy, check all shares have been withdrawn
-        for (uint i = 0; i < strategies.length; i++) {
-            assertEq(0, curShares[i], err);
         }
     }
 
@@ -1554,21 +1813,43 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
-    /// @dev Check that the staker's withdrawable shares have decreased by `removedShares`
-    /// FIX THIS WHEN WORKING ON ROUNDING ISSUES
-    function assert_Snap_Unchanged_Staker_WithdrawableShares_Delegation(
+    /// @dev Check that the staker's withdrawable shares have changed by the expected amount
+    function assert_Snap_Expected_Staker_WithdrawableShares_Delegation(
         User staker,
+        User operator,
+        IStrategy[] memory strategies,
+        uint[] memory depositShares,
         string memory err
     ) internal {
-        IStrategy[] memory strategies = allStrats;
+        uint[] memory curShares = _getStakerWithdrawableShares(staker, strategies);
+        // Use timewarp to get previous staker shares
+        uint[] memory expectedShares = _getExpectedWithdrawableSharesDelegate(staker, operator, strategies, depositShares);
 
+        // For each strategy, check expected == current
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(expectedShares[i], curShares[i], err);
+        }
+    }
+
+    function assert_Snap_Expected_Staker_WithdrawableShares_Deposit(
+        User staker,
+        User operator,
+        IStrategy[] memory strategies,
+        uint[] memory depositSharesAdded,
+        string memory err
+    ) internal {
         uint[] memory curShares = _getStakerWithdrawableShares(staker, strategies);
         // Use timewarp to get previous staker shares
         uint[] memory prevShares = _getPrevStakerWithdrawableShares(staker, strategies);
-
-        // For each strategy, check (prev - removed == cur)
+        uint[] memory expectedWithdrawableShares = new uint[](strategies.length);
         for (uint i = 0; i < strategies.length; i++) {
-            assertApproxEqAbs(prevShares[i], curShares[i], 100000, err);
+            if (prevShares[i] == 0 && depositSharesAdded[i] > 0){
+                expectedWithdrawableShares[i] = _getExpectedWithdrawableSharesDeposit(staker, operator, strategies[i], depositSharesAdded[i]);
+                assertEq(curShares[i], expectedWithdrawableShares[i], err);
+            } else {
+                uint[] memory prevDepositShares = _getPrevStakerDepositShares(staker, strategies);
+                assertEq((prevDepositShares[i] + depositSharesAdded[i]).mulWad(_getDepositScalingFactor(staker, strategies[i])).mulWad(_getSlashingFactor(staker, strategies[i])), curShares[i], err);
+            }
         }
     }
 
@@ -1584,9 +1865,29 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         // Use timewarp to get previous staker shares
         uint[] memory prevShares = _getPrevStakerWithdrawableShares(staker, strategies);
 
+        // Assert that the decrease in withdrawable shares is at least as much as the removed shares
+        // Checking for expected rounding down behavior
+        for (uint i = 0; i < strategies.length; i++) {
+            assertGe(prevShares[i] - curShares[i], removedShares[i], err);
+        }
+    }
+
+    /// @dev Check that the staker's withdrawable shares have decreased by at least `removedShares`
+    /// @dev Used to handle overslashing of beacon chain with AVS slashings
+    function assert_Snap_Removed_Staker_WithdrawableShares_AtLeast(
+        User staker,
+        IStrategy[] memory strategies,
+        uint[] memory removedShares,
+        uint errBound,
+        string memory err
+    ) internal {
+        uint[] memory curShares = _getStakerWithdrawableShares(staker, strategies);
+        // Use timewarp to get previous staker shares
+        uint[] memory prevShares = _getPrevStakerWithdrawableShares(staker, strategies);
+
         // For each strategy, check diff between (prev-removed) and curr is at most 1 gwei
         for (uint i = 0; i < strategies.length; i++) {
-            assertApproxEqAbs(prevShares[i] - removedShares[i], curShares[i], 1e9, err);
+            assertApproxEqAbs(prevShares[i] - removedShares[i], curShares[i], errBound, err);
         }
     }
 
@@ -1625,6 +1926,121 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
 
         for (uint i = 0; i < strategies.length; i++) {
             assertEq(prevDSFs[i], curDSFs[i], err);
+        }
+    }
+
+    function assert_Snap_Increased_DSF(
+        User staker,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal {
+        uint[] memory curDSFs = _getDepositScalingFactors(staker, strategies);
+        uint[] memory prevDSFs = _getPrevDepositScalingFactors(staker, strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            assertGt(curDSFs[i], prevDSFs[i], err);
+        }
+    }
+
+    function assert_Snap_WithinErrorBounds_DSF(
+        User staker,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal {
+        uint[] memory curDSFs = _getDepositScalingFactors(staker, strategies);
+        uint[] memory prevDSFs = _getPrevDepositScalingFactors(staker, strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            assertApproxEqAbs(curDSFs[i], prevDSFs[i], 1e2, err);
+        }
+    }
+
+    /// @dev Used to assert that the DSF is either increased or unchanged, depending on the slashing factor, on a deposit
+    function assert_Snap_DSF_State_Deposit(
+        User staker,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal {        
+        for (uint i = 0; i < strategies.length; i++) {
+            IStrategy[] memory stratArray = strategies[i].toArray();
+            /// @dev We don't need the previous slashing factors as they shouldn't change before/after a deposit
+            uint curSlashingFactor = _getSlashingFactor(staker, strategies[i]);
+
+            // If there was never a slashing, no need to normalize
+            if (curSlashingFactor == WAD) {
+                assert_Snap_Unchanged_DSF(staker, stratArray, err); // No slashing, so DSF is unchanged
+                assert_DSF_WAD(staker, stratArray, err); // DSF should have always been WAD
+            }
+            // If there was a slashing, and we deposit, normalize
+            else {
+                assert_Snap_Increased_DSF(staker, stratArray, err); // Slashing, so DSF is increased
+            }
+        }
+    }
+
+    /// @dev When completing withdrawals as shares, we must also handle the case where a staker completes a withdrawal for 0 shares
+    function assert_Snap_DSF_State_WithdrawalAsShares(
+        User staker,
+        IStrategy[] memory strategies,
+        string memory err
+    ) internal {
+        uint[] memory curDepositShares = _getStakerDepositShares(staker, strategies);
+        uint[] memory prevDepositShares = _getPrevStakerDepositShares(staker, strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            IStrategy[] memory stratArray = strategies[i].toArray();
+            /// We don't need the previous slashing factors as they shouldn't change before/after a deposit
+            uint curSlashingFactor = _getSlashingFactor(staker, strategies[i]);
+            
+            // If there was never a slashing, no need to normalize
+            // If there was a slashing, but we complete a withdrawal for 0 shares, no need to normalize
+            if (curSlashingFactor == WAD || curDepositShares[i] == 0) {
+                assert_Snap_Unchanged_DSF(staker, stratArray, err);
+                assert_DSF_WAD(staker, stratArray, err);    
+            } 
+            // If the staker has a slashingFactor of 0, any withdrawal as shares won't change the DSF
+            else if (staker.getSlashingFactor(strategies[i]) == 0) {
+                assert_Snap_Unchanged_DSF(staker, stratArray, err);
+            }
+            // If there was a slashing and we complete a withdrawal for non-zero shares, normalize the DSF
+            else {
+                assert_Snap_Increased_DSF(staker, stratArray, err);
+                /// @dev Note there may be cases when the DSF `stays` the same, such as when a withdrawal is 
+                ///      queued, we deposit, and then complete as shares. THe DSF would stay the same. That test should use 
+                ///      `assert_Snap_WithinErrorBounds_DSF`
+            }
+        }
+    }
+
+    /// @dev On a delegation, the DSF should be increased if the operator magnitude is non-WAD
+    function assert_Snap_DSF_State_Delegation(
+        User staker,
+        User operator,
+        IStrategy[] memory strategies,
+        uint[] memory delegatableShares,
+        string memory err
+    ) internal {
+        address operator = delegationManager.delegatedTo(address(staker));
+        uint64[] memory maxMags = _getMaxMagnitudes(User(payable(operator)), strategies);
+
+        for (uint i = 0; i < strategies.length; i++) {
+            IStrategy[] memory stratArray = strategies[i].toArray();
+
+            // If you are delegating with 0 shares, no need to normalize
+            // If there was never an operator slashing, no need to normalize
+            if (delegatableShares[i] == 0 || maxMags[i] == WAD) {
+                assert_Snap_Unchanged_DSF(staker, stratArray, err);
+
+                // If we are not a beaconChainStrategy, we should also have a DSF of WAD 
+                // We exclude BEACONCHAIN_ETH_STRAT because it could have had a non-WAD DSF from BC slashings
+                if (strategies[i] != BEACONCHAIN_ETH_STRAT) {
+                    assert_DSF_WAD(staker, stratArray, err);
+                }
+            }
+            // If there was an operator slashing, and delegating with non-zero shares, normalize
+            else { 
+                assert_Snap_Increased_DSF(staker, stratArray, err); // Slashing, so DSF is increased
+            }
         }
     }
 
@@ -1668,6 +2084,20 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
             uint curShare = curShares[i];
 
             assertEq(prevShare, curShare, err);
+        }
+    }
+
+    function assert_SlashableStake_Decrease_BCSlash(
+        User staker
+    ) internal {
+        if (delegationManager.isDelegated(address(staker))) {
+            address operator = delegationManager.delegatedTo(address(staker));
+            (OperatorSet[] memory operatorSets, Allocation[] memory allocations) = _getStrategyAllocations(operator, BEACONCHAIN_ETH_STRAT);
+            for (uint i = 0; i < operatorSets.length; i++) {
+                if (allocations[i].currentMagnitude > 0) {
+                    assert_Snap_StakeBecomeUnslashable(User(payable(operator)), operatorSets[i], BEACONCHAIN_ETH_STRAT.toArray(), "operator should have minSlashableStake decreased");
+                }
+            }
         }
     }
 
@@ -1917,6 +2347,26 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         assertEq(prevExitedBalanceGwei + addedGwei, curExitedBalanceGwei, err);
     }
 
+    function assert_Snap_Decreased_BCSF(
+        User staker,
+        string memory err
+    ) internal {
+        uint64 curBCSF = _getBeaconChainSlashingFactor(staker);
+        uint64 prevBCSF = _getPrevBeaconChainSlashingFactor(staker);
+
+        assertLt(curBCSF, prevBCSF, err);
+    }
+
+    function assert_Snap_Unchanged_BCSF(
+        User staker,
+        string memory err
+    ) internal {
+        uint64 curBCSF = _getBeaconChainSlashingFactor(staker);
+        uint64 prevBCSF = _getPrevBeaconChainSlashingFactor(staker);
+
+        assertEq(curBCSF, prevBCSF, err);
+    }
+
     /*******************************************************************************
                                 UTILITY METHODS
     *******************************************************************************/
@@ -2046,16 +2496,16 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         User operator,
         OperatorSet memory operatorSet
     ) internal view returns (AllocateParams memory params) {
-        return _genDeallocation_Full({
-            operator: operator, 
-            operatorSet: operatorSet, 
-            strategies: allocationManager.getStrategiesInOperatorSet(operatorSet)
-        });
+        return _genDeallocation_Full(
+            operator, 
+            operatorSet, 
+            allocationManager.getStrategiesInOperatorSet(operatorSet)
+        );
     }
 
     /// @dev Generates params for a full deallocation from all strategies the operator is allocated to in the operator set
     function _genDeallocation_Full(
-        User operator,
+        User,
         OperatorSet memory operatorSet,
         IStrategy[] memory strategies
     ) internal pure returns (AllocateParams memory params) {
@@ -2071,7 +2521,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     ) internal returns (SlashingParams memory params) {
         params.operator = address(operator);
         params.operatorSetId = operatorSet.id;
-        params.description = "genSlashing_Half";
+        params.description = "genSlashing_Rand";
         params.strategies = allocationManager.getStrategiesInOperatorSet(operatorSet).sort();
         params.wadsToSlash = new uint[](params.strategies.length);
 
@@ -2093,37 +2543,46 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         params.strategies = allocationManager.getStrategiesInOperatorSet(operatorSet).sort();
         params.wadsToSlash = new uint[](params.strategies.length);
 
+        // slash 50%
         for (uint i = 0; i < params.wadsToSlash.length; i++) {
             params.wadsToSlash[i] = 5e17;
         }
     }
 
-    function _randWadToSlash() internal returns (uint) {
-        return _randUint({ min: 0.01 ether, max: 1 ether });
+    function _genSlashing_Full(
+        User operator,
+        OperatorSet memory operatorSet
+    ) internal view returns (SlashingParams memory params) {
+        params.operator = address(operator);
+        params.operatorSetId = operatorSet.id;
+        params.description = "_genSlashing_Full";
+        params.strategies = allocationManager.getStrategiesInOperatorSet(operatorSet).sort();
+        params.wadsToSlash = new uint[](params.strategies.length);
+
+        // slash 100%
+        for (uint i = 0; i < params.wadsToSlash.length; i++) {
+            params.wadsToSlash[i] = 1e18;
+        }
     }
 
-    function _randStrategiesAndWadsToSlash(
-        OperatorSet memory operatorSet
-    ) internal returns (IStrategy[] memory strategies, uint[] memory wadsToSlash) {
-        // Get list of all strategies in an operator set.
-        strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
+    function _genSlashing_Custom(
+        User operator,
+        OperatorSet memory operatorSet,
+        uint wadsToSlash
+    ) internal view returns (SlashingParams memory params) {
+        params.operator = address(operator);
+        params.operatorSetId = operatorSet.id;
+        params.description = "_genSlashing_Custom";
+        params.strategies = allocationManager.getStrategiesInOperatorSet(operatorSet).sort();
+        params.wadsToSlash = new uint[](params.strategies.length);
 
-        // Randomly select a subset of strategies to slash.
-        uint len = _randUint({ min: 1, max: strategies.length });
-
-        // Update length of strategies array.
-        assembly {
-            mstore(strategies, len)
+        for (uint i = 0; i < params.wadsToSlash.length; i++) {
+            params.wadsToSlash[i] = wadsToSlash;
         }
-        
-        wadsToSlash = new uint[](len);
-        
-        // Randomly select a `wadToSlash` for each strategy.
-        for (uint i; i < len; ++i) {
-            wadsToSlash[i] = _randWadToSlash();
-        }
+    }
 
-        return (strategies.sort(), wadsToSlash);
+    function _randWadToSlash() internal returns (uint) {
+        return _randUint({ min: 0.01 ether, max: 1 ether });
     }
 
     function _strategiesAndWadsForFullSlash(
@@ -2229,6 +2688,11 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     /**
      * Helpful getters:
      */
+
+    function _randSlashType() internal returns (BeaconChainMock.SlashType) {
+        return BeaconChainMock.SlashType(_randUint({ min: 0, max: 2 }));
+    }
+
     function _randBalanceUpdate(
         User staker,
         IStrategy[] memory strategies
@@ -2251,7 +2715,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
                     uint40[] memory validators = staker.getActiveValidators();
                     emit log_named_uint("slashing validators", validators.length);
 
-                    deltaGwei = -int64(beaconChain.slashValidators(validators));
+                    deltaGwei = -int64(beaconChain.slashValidators(validators, BeaconChainMock.SlashType.Minor));
                     beaconChain.advanceEpoch_NoRewards();
 
                     emit log_named_int("slashed amount", deltaGwei);
@@ -2314,6 +2778,13 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
+    function _calculateExpectedShares(Withdrawal memory withdrawal) internal view returns (uint[] memory) {
+        bytes32 root = delegationManager.calculateWithdrawalRoot(withdrawal);
+
+        (, uint[] memory shares) = delegationManager.getQueuedWithdrawal(root);
+        return shares;
+    }
+
     /// @dev For some strategies/underlying token balances, calculate the expected shares received
     /// from depositing all tokens
     function _calculateExpectedShares(IStrategy[] memory strategies, uint[] memory tokenBalances) internal returns (uint[] memory) {
@@ -2342,7 +2813,8 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
             IStrategy strat = strategies[i];
 
             if (strat == BEACONCHAIN_ETH_STRAT) {
-                expectedTokens[i] = shares[i];
+                // We round down expected tokens to the nearest gwei
+                expectedTokens[i] = (shares[i] / GWEI_TO_WEI) * GWEI_TO_WEI;
             } else {
                 expectedTokens[i] = strat.sharesToUnderlying(shares[i]);
             }
@@ -2564,8 +3036,29 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         return _getMinSlashableStake(operator, operatorSet, strategies);
     }
 
+    function _getPrevMinSlashableStake(
+        address operator,
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies
+    ) internal timewarp() returns (uint[] memory) {
+        return _getMinSlashableStake(operator, operatorSet, strategies);
+    }
+
     function _getMinSlashableStake(
         User operator,
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies
+    ) internal view returns (uint[] memory) {
+        return allocationManager.getMinimumSlashableStake({
+            operatorSet: operatorSet,
+            operators: address(operator).toArray(),
+            strategies: strategies,
+            futureBlock: uint32(block.number)
+        })[0];
+    }
+
+    function _getMinSlashableStake(
+        address operator,
         OperatorSet memory operatorSet,
         IStrategy[] memory strategies
     ) internal view returns (uint[] memory) {
@@ -2596,6 +3089,21 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
             strategies: strategies
         })[0];
     }
+
+    function _getStrategyAllocations(
+        User operator,
+        IStrategy strategy
+    ) internal view returns (OperatorSet[] memory operatorSets, Allocation[] memory allocations) {
+        (operatorSets, allocations) = allocationManager.getStrategyAllocations(address(operator), strategy);
+    }
+
+    function _getStrategyAllocations(
+        address operator,
+        IStrategy strategy
+    ) internal view returns (OperatorSet[] memory operatorSets, Allocation[] memory allocations) {
+        (operatorSets, allocations) = allocationManager.getStrategyAllocations(operator, strategy);
+    }
+
 
     function _getPrevIsSlashable(
         User operator,
@@ -2735,8 +3243,8 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         return curShares;
     }
 
-    function _getExpectedWithdrawableSharesAfterCompletion(User staker, uint scaledShares, uint depositScalingFactor, uint slashingFactor) internal view returns (uint) {
-        return scaledShares.mulWad(depositScalingFactor).mulWad(slashingFactor);
+    function _getStakerStrategyList(User staker) internal view returns (IStrategy[] memory) {
+        return strategyManager.getStakerStrategyList(address(staker));
     }
 
     function _getPrevStakerWithdrawableShares(User staker, IStrategy[] memory strategies) internal timewarp() returns (uint[] memory) {
@@ -2746,6 +3254,15 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     function _getStakerWithdrawableShares(User staker, IStrategy[] memory strategies) internal view returns (uint[] memory) {
         (uint256[] memory withdrawableShares, ) = delegationManager.getWithdrawableShares(address(staker), strategies);
         return withdrawableShares; 
+    }
+
+    function _calcWithdrawable(User staker, IStrategy[] memory strategies, uint[] memory depositSharesToWithdraw) internal view returns (uint[] memory) {
+        uint[] memory withdrawableShares = new uint[](strategies.length);
+        uint[] memory depositScalingFactors = _getDepositScalingFactors(staker, strategies);
+        for (uint i = 0; i < strategies.length; i++) {
+            withdrawableShares[i] = depositSharesToWithdraw[i].mulWad(depositScalingFactors[i]).mulWad(_getSlashingFactor(staker, strategies[i]));
+        }
+        return withdrawableShares;
     }
 
     /// @dev Uses timewarp modifier to get staker beacon chain scaling factor at the last snapshot
@@ -2821,6 +3338,14 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         return WAD.divWad(_getBeaconChainSlashingFactor(staker));
     }
 
+    function _getExpectedDSFDeposit(User staker, User operator, IStrategy strategy) internal view returns (uint expectedDepositScalingFactor) {
+        if (strategy == BEACONCHAIN_ETH_STRAT){
+            return WAD.divWad(allocationManager.getMaxMagnitude(address(operator), strategy).mulWad(_getBeaconChainSlashingFactor(staker)));
+        } else {
+            return WAD.divWad(allocationManager.getMaxMagnitude(address(operator), strategy));
+        }
+    }
+
     function _getExpectedWithdrawableSharesUndelegate(User staker, IStrategy[] memory strategies, uint[] memory shares) internal view returns (uint[] memory){
         uint[] memory expectedWithdrawableShares = new uint[](strategies.length);
         for (uint i = 0; i < strategies.length; i++) {
@@ -2833,12 +3358,63 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         return expectedWithdrawableShares;
     }
 
+    function _getExpectedDSFsDelegate(User staker, User operator, IStrategy[] memory strategies) internal returns (uint[] memory) {
+        uint[] memory expectedDepositScalingFactors = new uint[](strategies.length);
+        uint[] memory oldDepositScalingFactors = _getPrevDepositScalingFactors(staker, strategies);
+        uint64[] memory maxMagnitudes = _getMaxMagnitudes(operator, strategies);
+        for (uint i = 0; i < strategies.length; i++) {
+            expectedDepositScalingFactors[i] = oldDepositScalingFactors[i].divWad(maxMagnitudes[i]);
+        }
+        return expectedDepositScalingFactors;
+    }
+
+    function _getExpectedWithdrawableSharesDelegate(User staker, User operator, IStrategy[] memory strategies, uint[] memory depositShares) internal returns (uint[] memory){
+        uint[] memory expectedWithdrawableShares = new uint[](strategies.length);
+        uint[] memory expectedDSFs = _getExpectedDSFsDelegate(staker, operator, strategies);
+        uint64[] memory maxMagnitudes = _getMaxMagnitudes(operator, strategies);
+        for (uint i = 0; i < strategies.length; i++) {
+            if (strategies[i] == BEACONCHAIN_ETH_STRAT) {
+                expectedWithdrawableShares[i] = depositShares[i].mulWad(expectedDSFs[i]).mulWad(maxMagnitudes[i].mulWad(_getBeaconChainSlashingFactor(staker)));
+            } else {
+                expectedWithdrawableShares[i] = depositShares[i].mulWad(expectedDSFs[i]).mulWad(maxMagnitudes[i]);
+            }
+        }
+        return expectedWithdrawableShares;
+    }
+
+    function _getExpectedWithdrawableSharesDeposit(User staker, User operator, IStrategy strategy, uint depositShares) internal view returns (uint) {
+        return depositShares.mulWad(_getExpectedDSFDeposit(staker, operator, strategy)).mulWad(_getSlashingFactor(staker, strategy));
+    }
+
+    function _getSlashingFactor(
+        User staker,
+        IStrategy strategy
+    ) internal view returns (uint256) {
+        address operator = delegationManager.delegatedTo(address(staker));
+        uint64 maxMagnitude = allocationManager.getMaxMagnitudes(operator, strategy.toArray())[0];
+        if (strategy == beaconChainETHStrategy) {
+            return maxMagnitude.mulWad(eigenPodManager.beaconChainSlashingFactor(address(staker)));
+        }
+        return maxMagnitude;
+    }
+
     function _getPrevWithdrawableShares(User staker, IStrategy[] memory strategies) internal timewarp() returns (uint[] memory) {
         return _getWithdrawableShares(staker, strategies);
     }
 
     function _getWithdrawableShares(User staker, IStrategy[] memory strategies) internal view returns (uint[] memory withdrawableShares) {
         (withdrawableShares, ) =  delegationManager.getWithdrawableShares(address(staker), strategies);
+    }
+
+    function _getWithdrawableShares(User staker, IStrategy strategy) internal view returns (uint withdrawableShares) {
+        (uint[] memory _withdrawableShares, ) =  delegationManager.getWithdrawableShares(address(staker), strategy.toArray());
+        return _withdrawableShares[0];
+    }
+
+    /// @dev Assumes that the staker has one withdrawal queued
+    function _getWithdrawableSharesAfterCompletion(User staker) internal view returns (uint[] memory withdrawableShares) {
+        bytes32 root = delegationManager.getQueuedWithdrawalRoots(address(staker))[0];
+        (, withdrawableShares) = delegationManager.getQueuedWithdrawal(root);
     }
 
     function _getActiveValidatorCount(User staker) internal view returns (uint) {
@@ -2913,17 +3489,5 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     function _getQueuedWithdrawals(User staker) internal view returns (Withdrawal[] memory) {
         (Withdrawal[] memory withdrawals,) = delegationManager.getQueuedWithdrawals(address(staker));
         return withdrawals;
-    }
-
-    function _getSlashingFactor(
-        User staker,
-        IStrategy strategy
-    ) internal view returns (uint256) {
-        address operator = delegationManager.delegatedTo(address(staker));
-        uint64 maxMagnitude = allocationManager.getMaxMagnitudes(operator, strategy.toArray())[0];
-        if (strategy == BEACONCHAIN_ETH_STRAT) {
-            return maxMagnitude.mulWad(eigenPodManager.beaconChainSlashingFactor(address(staker)));
-        }
-        return maxMagnitude;
     }
 }
