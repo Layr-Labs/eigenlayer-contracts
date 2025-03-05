@@ -15,7 +15,6 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
     User staker;
     IStrategy[] strategies;
     uint[] initTokenBalances;
-    uint[] initDepositShares;
     uint64 beaconBalanceGwei;
     uint64 slashedGwei;
     IERC20[] tokens;
@@ -44,7 +43,7 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         // Checkpoint post slash
         staker.startCheckpoint();
         staker.completeCheckpoint();
-        check_CompleteCheckpoint_WithSlashing_HandleRoundDown_State(staker, slashedValidators, slashedGwei);
+        check_CompleteCheckpoint_WithCLSlashing_HandleRoundDown_State(staker, slashedGwei);
     }
 
     function testFuzz_delegateSlashedStaker_dsfWad(uint24 _random) public rand(_random) {
@@ -55,8 +54,6 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         // Delegate to an operator
         staker.delegateTo(operator);
         check_Delegation_State(staker, operator, strategies, initDepositShares);
-
-        (uint256[] memory withdrawableSharesBefore, ) = delegationManager.getWithdrawableShares(address(staker), strategies);
 
         // Undelegate from an operator
         IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.undelegate();
@@ -80,9 +77,9 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         //Additional deposit on beacon chain so dsf is nonwad
         uint amount = 32 ether * _randUint({min: 1, max: 5});
         cheats.deal(address(staker), amount);
-        (uint40[] memory validators,) = staker.startValidators();
+        (uint40[] memory newValidators,) = staker.startValidators();
         beaconChain.advanceEpoch_NoWithdrawNoRewards();
-        staker.verifyWithdrawalCredentials(validators);
+        staker.verifyWithdrawalCredentials(newValidators);
 
         uint256[] memory initDelegatableShares = _getWithdrawableShares(staker, strategies);
         uint256[] memory initDepositShares = _getStakerDepositShares(staker, strategies);
@@ -91,9 +88,6 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         staker.delegateTo(operator);
         check_Delegation_State(staker, operator, strategies, initDepositShares);
 
-        uint256[] memory withdrawableSharesAfterDelegation = _getWithdrawableShares(staker, strategies);
-
-        (uint256[] memory withdrawableSharesBefore, ) = delegationManager.getWithdrawableShares(address(staker), strategies);
         // Undelegate from an operator
         IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.undelegate();
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
@@ -114,7 +108,6 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
 
     function testFuzz_delegateSlashedStaker_slashedOperator(uint24 _random) public rand(_random) {
 
-
         (User staker2,,) = _newRandomStaker();
         (uint40[] memory validators2,) = staker2.startValidators();
         beaconChain.advanceEpoch_NoWithdrawNoRewards();
@@ -127,9 +120,9 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         if(_randBool()){
             uint amount = 32 ether * _randUint({min: 1, max: 5});
             cheats.deal(address(staker), amount);
-            (uint40[] memory validators,) = staker.startValidators();
+            (uint40[] memory newValidators,) = staker.startValidators();
             beaconChain.advanceEpoch_NoWithdrawNoRewards();
-            staker.verifyWithdrawalCredentials(validators);
+            staker.verifyWithdrawalCredentials(newValidators);
             
             staker.startCheckpoint();
             staker.completeCheckpoint();
@@ -152,7 +145,6 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         slashingParams = avs.slashOperator(operator, operatorSet.id, strategies, wadToSlash.toArrayU256());
         assert_Snap_Allocations_Slashed(slashingParams, operatorSet, true, "operator allocations should be slashed");
 
-        uint256[] memory initDelegatableShares = _getWithdrawableShares(staker, strategies);
         uint256[] memory initDepositShares = _getStakerDepositShares(staker, strategies);
 
         // Delegate to an operator
@@ -645,37 +637,44 @@ contract Integration_Redelegate_SlashOperator_SlashEigenpod is Integration_Slash
     }
 }
 
-contract Integration_SlashedEigenpod_BC_HalfSlash is Integration_SlashedEigenpod_BC {
+contract Integration_SlashedEigenpod_BC_HalfSlash is IntegrationCheckUtils {
     using ArrayLib for *;
+    
+    AVS avs;
+    OperatorSet operatorSet;
+
+    User operator;
+    AllocateParams allocateParams;
+
+    User staker;
+    IStrategy[] strategies;
+    uint[] initTokenBalances;
+    uint[] initDepositShares;
+    uint64 slashedGwei;
+    uint40[] slashedValidators;
 
     function _init() internal override {
         _configAssetTypes(HOLDS_ETH);
-        (staker, strategies, initDepositShares) = _newRandomStaker();
+        (staker, strategies, initTokenBalances) = _newRandomStaker();
         (operator,,) = _newRandomOperator();
         (avs,) = _newRandomAVS();
 
-        cheats.assume(initDepositShares[0] >= 64 ether);
-
-        // 1. start validators, advance epoch
-        (validators, beaconBalanceGwei) = staker.startValidators();
-        beaconChain.advanceEpoch_NoRewards();
-        
-        // 2. deposit: verify wc
-        staker.verifyWithdrawalCredentials(validators);
-        check_VerifyWC_State(staker, validators, beaconBalanceGwei);
-
-        uint[] memory shares = _calculateExpectedShares(strategies, initDepositShares);
+        // 1. Deposit staker
+        uint[] memory shares = _calculateExpectedShares(strategies, initTokenBalances);
+        initDepositShares = shares;
+        staker.depositIntoEigenlayer(strategies, initTokenBalances);
         check_Deposit_State(staker, strategies, shares);
+        uint40[] memory validators = staker.getActiveValidators();
 
-        // 3. slash validators (half)
-        uint40[] memory slashedValidators = _choose(validators);
+        // 2. Slash on Beacon chain
+        slashedValidators = _choose(validators);
         slashedGwei = beaconChain.slashValidators(slashedValidators, BeaconChainMock.SlashType.Half);
         beaconChain.advanceEpoch_NoWithdrawNoRewards();
         
-        // 4. start/complete cp to reduce BCSF
+        // 3. Checkpoint post slash
         staker.startCheckpoint();
         staker.completeCheckpoint();
-        check_CompleteCheckpoint_WithSlashing_HandleRoundDown_State(staker, slashedValidators, slashedGwei);
+        check_CompleteCheckpoint_WithCLSlashing_HandleRoundDown_State(staker, slashedGwei);
     }
 
     /**
@@ -683,11 +682,11 @@ contract Integration_SlashedEigenpod_BC_HalfSlash is Integration_SlashedEigenpod
      * which sets it to 0, they can then complete checkpoints repeatedly with 0 shares increase to increase the staker DSF each time
      */
     function test_completeCP_withNoAddedShares(uint24 _rand) public rand(_rand) {
-        // 5. queue withdraw all depositShares having it set to 0
+        // 4. queue withdraw all depositShares having it set to 0
         uint withdrawableSharesBefore = _getStakerWithdrawableShares(staker, strategies)[0];
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, initDepositShares);
 
-        // 6. advance epoch no rewards
+        // 5. advance epoch no rewards
         // start/complete cp repeatedly with 0 shares increase to increase the staker DSF each time
         for (uint256 i = 0; i < 10; i++) {
             beaconChain.advanceEpoch_NoWithdrawNoRewards();
@@ -700,11 +699,11 @@ contract Integration_SlashedEigenpod_BC_HalfSlash is Integration_SlashedEigenpod
         assertEq(eigenPodManager.podOwnerDepositShares(address(staker)), 0);
         assertEq(delegationManager.depositScalingFactor(address(staker), beaconChainETHStrategy), WAD);
 
-        // 7. deposit: can either verify wc or start/complete cp or complete the withdrawals as shares
+        // 6. deposit: can either verify wc or start/complete cp or complete the withdrawals as shares
         _rollBlocksForCompleteWithdrawals(withdrawals);
         staker.completeWithdrawalsAsShares(withdrawals);
 
-        // 8. delegateTo an operator
+        // 7. delegateTo an operator
         staker.delegateTo(operator);
         // End state: staker and operator have much higher inflated withdrawable and delegated shares respectively
         // The staker's withdrawable shares should be <= from withdrawable shares before (should be equal but could be less due to rounding)
