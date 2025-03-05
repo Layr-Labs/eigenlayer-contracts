@@ -1094,6 +1094,41 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
         rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
     }
 
+    // Revert when duration is 0
+    function testFuzz_Revert_WhenDurationIsZero(address avs, uint startTimestamp, uint amount)
+        public
+        filterFuzzedAddressInputs(avs)
+    {
+        cheats.assume(avs != address(0));
+        cheats.prank(rewardsCoordinator.owner());
+
+        // 1. Bound fuzz inputs to valid ranges and amounts
+        IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
+        amount = bound(amount, 1, mockTokenInitialSupply);
+        startTimestamp = bound(
+            startTimestamp,
+            uint(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) + CALCULATION_INTERVAL_SECONDS
+                - 1,
+            block.timestamp + uint(MAX_FUTURE_LENGTH)
+        );
+        startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
+
+        // 2. Create rewards submission input param
+        RewardsSubmission[] memory rewardsSubmissions = new RewardsSubmission[](1);
+        rewardsSubmissions[0] = RewardsSubmission({
+            strategiesAndMultipliers: defaultStrategyAndMultipliers,
+            token: rewardToken,
+            amount: amount,
+            startTimestamp: uint32(startTimestamp),
+            duration: 0
+        });
+
+        // 3. call createAVSRewardsSubmission() with expected revert
+        cheats.prank(avs);
+        cheats.expectRevert(DurationIsZero.selector);
+        rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
+    }
+
     // Revert with retroactive rewards enabled and set too far in past
     // - either before genesis rewards timestamp
     // - before max retroactive length
@@ -1399,6 +1434,39 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllSubmission is RewardsCoo
         rewardsCoordinator.createRewardsForAllSubmission(rewardsSubmissions);
     }
 
+    // Revert when duration is 0
+    function testFuzz_Revert_WhenDurationIsZero(uint startTimestamp, uint amount)
+        public
+    {
+        cheats.prank(rewardsCoordinator.owner());
+
+        // 1. Bound fuzz inputs to valid ranges and amounts
+        IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, rewardsForAllSubmitter);
+        amount = bound(amount, 1, mockTokenInitialSupply);
+        startTimestamp = bound(
+            startTimestamp,
+            uint(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) + CALCULATION_INTERVAL_SECONDS
+                - 1,
+            block.timestamp + uint(MAX_FUTURE_LENGTH)
+        );
+        startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
+
+        // 2. Create rewards submission input param
+        RewardsSubmission[] memory rewardsSubmissions = new RewardsSubmission[](1);
+        rewardsSubmissions[0] = RewardsSubmission({
+            strategiesAndMultipliers: defaultStrategyAndMultipliers,
+            token: rewardToken,
+            amount: amount,
+            startTimestamp: uint32(startTimestamp),
+            duration: 0
+        });
+
+        // 3. call createRewardsForAllSubmission() with expected revert
+        cheats.prank(rewardsForAllSubmitter);
+        cheats.expectRevert(DurationIsZero.selector);
+        rewardsCoordinator.createRewardsForAllSubmission(rewardsSubmissions);
+    }
+
     /**
      * @notice test a single rewards submission asserting for the following
      * - correct event emitted
@@ -1592,6 +1660,39 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllEarners is RewardsCoordi
 
         cheats.expectRevert(UnauthorizedCaller.selector);
         RewardsSubmission[] memory rewardsSubmissions;
+        rewardsCoordinator.createRewardsForAllEarners(rewardsSubmissions);
+    }
+
+    // Revert when duration is 0
+    function testFuzz_Revert_WhenDurationIsZero(uint startTimestamp, uint amount)
+        public
+    {
+        cheats.prank(rewardsCoordinator.owner());
+
+        // 1. Bound fuzz inputs to valid ranges and amounts
+        IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, rewardsForAllSubmitter);
+        amount = bound(amount, 1, mockTokenInitialSupply);
+        startTimestamp = bound(
+            startTimestamp,
+            uint(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) + CALCULATION_INTERVAL_SECONDS
+                - 1,
+            block.timestamp + uint(MAX_FUTURE_LENGTH)
+        );
+        startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
+
+        // 2. Create rewards submission input param
+        RewardsSubmission[] memory rewardsSubmissions = new RewardsSubmission[](1);
+        rewardsSubmissions[0] = RewardsSubmission({
+            strategiesAndMultipliers: defaultStrategyAndMultipliers,
+            token: rewardToken,
+            amount: amount,
+            startTimestamp: uint32(startTimestamp),
+            duration: 0
+        });
+
+        // 3. call createRewardsForAllEarners() with expected revert
+        cheats.prank(rewardsForAllSubmitter);
+        cheats.expectRevert(DurationIsZero.selector);
         rewardsCoordinator.createRewardsForAllEarners(rewardsSubmissions);
     }
 
@@ -2146,6 +2247,41 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
         // 3. call createOperatorDirectedAVSRewardsSubmission() with expected revert
         cheats.prank(avs);
         cheats.expectRevert(InvalidDurationRemainder.selector);
+        rewardsCoordinator.createOperatorDirectedAVSRewardsSubmission(avs, operatorDirectedRewardsSubmissions);
+    }
+
+    // Revert when duration is 0
+    function testFuzz_Revert_WhenDurationIsZero(address avs, uint startTimestamp)
+        public
+        filterFuzzedAddressInputs(avs)
+    {
+        cheats.assume(avs != address(0));
+        cheats.prank(rewardsCoordinator.owner());
+
+        // 1. Bound fuzz inputs to valid ranges and amounts
+        IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
+        startTimestamp = bound(
+            startTimestamp,
+            uint(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) + CALCULATION_INTERVAL_SECONDS
+                - 1,
+            block.timestamp - 1
+        );
+        startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
+
+        // 2. Create operator directed rewards submission input param
+        OperatorDirectedRewardsSubmission[] memory operatorDirectedRewardsSubmissions = new OperatorDirectedRewardsSubmission[](1);
+        operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
+            strategiesAndMultipliers: defaultStrategyAndMultipliers,
+            token: rewardToken,
+            operatorRewards: defaultOperatorRewards,
+            startTimestamp: uint32(startTimestamp),
+            duration: 0,
+            description: ""
+        });
+
+        // 3. call createOperatorDirectedAVSRewardsSubmission() with expected revert
+        cheats.prank(avs);
+        cheats.expectRevert(DurationIsZero.selector);
         rewardsCoordinator.createOperatorDirectedAVSRewardsSubmission(avs, operatorDirectedRewardsSubmissions);
     }
 
@@ -3013,6 +3149,45 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
         // 3. call createOperatorDirectedOperatorSetRewardsSubmission() with expected revert
         cheats.prank(avs);
         cheats.expectRevert(InvalidDurationRemainder.selector);
+        rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, operatorDirectedRewardsSubmissions);
+    }
+
+    // Revert when duration is 0
+    function testFuzz_Revert_WhenDurationIsZero(address avs, uint startTimestamp)
+        public
+        filterFuzzedAddressInputs(avs)
+    {
+        cheats.assume(avs != address(0));
+
+        operatorSet = OperatorSet(avs, 1);
+        allocationManagerMock.setIsOperatorSet(operatorSet, true);
+
+        cheats.prank(rewardsCoordinator.owner());
+
+        // 1. Bound fuzz inputs to valid ranges and amounts
+        IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
+        startTimestamp = bound(
+            startTimestamp,
+            uint(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) + CALCULATION_INTERVAL_SECONDS
+                - 1,
+            block.timestamp - 1
+        );
+        startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
+
+        // 2. Create operator directed rewards submission input param
+        OperatorDirectedRewardsSubmission[] memory operatorDirectedRewardsSubmissions = new OperatorDirectedRewardsSubmission[](1);
+        operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
+            strategiesAndMultipliers: defaultStrategyAndMultipliers,
+            token: rewardToken,
+            operatorRewards: defaultOperatorRewards,
+            startTimestamp: uint32(startTimestamp),
+            duration: 0,
+            description: ""
+        });
+
+        // 3. call createOperatorDirectedOperatorSetRewardsSubmission() with expected revert
+        cheats.prank(avs);
+        cheats.expectRevert(DurationIsZero.selector);
         rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, operatorDirectedRewardsSubmissions);
     }
 
