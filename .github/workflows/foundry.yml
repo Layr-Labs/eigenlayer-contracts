@@ -53,6 +53,7 @@ jobs:
       - name: "Forge Fmt"
         run: |
           forge fmt --check
+          FOUNDRY_PROFILE=test forge fmt --check
         id: fmt
 
       # Build the project and display contract sizes.
