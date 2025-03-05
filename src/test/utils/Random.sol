@@ -140,53 +140,9 @@ library Random {
     /// Arrays
     /// -----------------------------------------------------------------------
 
-    function Int256Array(
-        Randomness r,
-        uint256 len,
-        int256 min, 
-        int256 max
-    ) internal returns (int256[] memory arr) {
-        arr = new int256[](len);
-        for (uint256 i; i < len; ++i) {
-            arr[i] = r.Int256(min, max);
-        }
-    }
 
-    function Int128Array(
-        Randomness r,
-        uint256 len,
-        int128 min, 
-        int128 max
-    ) internal returns (int128[] memory arr) {
-        arr = new int128[](len);
-        for (uint256 i; i < len; ++i) {
-            arr[i] = r.Int128(min, max);
-        }
-    }
 
-    function Int64Array(
-        Randomness r,
-        uint256 len,
-        int64 min, 
-        int64 max
-    ) internal returns (int64[] memory arr) {
-        arr = new int64[](len);
-        for (uint256 i; i < len; ++i) {
-            arr[i] = r.Int64(min, max);
-        }
-    }
 
-    function Int32Array(
-        Randomness r,
-        uint256 len,
-        int32 min, 
-        int32 max
-    ) internal returns (int32[] memory arr) {
-        arr = new int32[](len);
-        for (uint256 i; i < len; ++i) {
-            arr[i] = r.Int32(min, max);
-        }
-    }
 
     function Uint256Array(
         Randomness r,

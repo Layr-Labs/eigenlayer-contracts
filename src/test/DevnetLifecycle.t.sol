@@ -55,13 +55,7 @@ contract Devnet_Lifecycle_Test is Test, IAllocationManagerTypes {
         operatorSet = OperatorSet({avs: avs, id: operatorSetId});
     }
 
-    function _getOperatorSetArray() internal view returns (uint32[] memory) {
-        return operatorSetId.toArrayU32();
-    }
     
-    function _getOperatorSetsArray() internal view returns (OperatorSet[] memory) {
-        return  OperatorSet({avs: avs, id: operatorSetId}).toArray();
-    }
 
     function test() public {
         if (block.chainid == 17000) {

@@ -81,13 +81,11 @@ contract EigenPodMock is IEigenPod, SemVerMixin, Test {
     ) external {}
 
     /// @notice Called by the pod owner to withdraw the balance of the pod when `hasRestaked` is set to false
-    function activateRestaking() external {}
 
     /// @notice Called by the pod owner to withdraw the balance of the pod when `hasRestaked` is set to false
     function withdrawBeforeRestaking() external {}
 
     /// @notice Called by the pod owner to withdraw the nonBeaconChainETHBalanceWei
-    function withdrawNonBeaconChainETHBalanceWei(address recipient, uint256 amountToWithdraw) external {}
 
     /// @notice called by owner of a pod to remove any ERC20s deposited in the pod
     function recoverTokens(IERC20[] memory tokenList, uint256[] memory amountsToWithdraw, address recipient) external {}

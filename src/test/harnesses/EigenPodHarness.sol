@@ -22,9 +22,6 @@ contract EigenPodHarness is EigenPod {
         return activeValidatorCount;
     }
 
-    function setActiveValidatorCount(uint _count) public {
-        activeValidatorCount = _count;
-    }
 
     function verifyWithdrawalCredentials(
         bytes32 beaconStateRoot,
@@ -40,11 +37,5 @@ contract EigenPodHarness is EigenPod {
         );
     }
 
-    function setValidatorStatus(bytes32 pkhash, VALIDATOR_STATUS status) public {
-        _validatorPubkeyHashToInfo[pkhash].status = status;
-    }
 
-    function setValidatorRestakedBalance(bytes32 pkhash, uint64 restakedBalanceGwei) public {
-        _validatorPubkeyHashToInfo[pkhash].restakedBalanceGwei = restakedBalanceGwei;
-    }
 }

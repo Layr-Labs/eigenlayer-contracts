@@ -99,12 +99,6 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
         timeMachine.travel(curState);
     }
 
-    function _seedPodWithETH(uint256 ethAmount) internal {
-        cheats.deal(address(this), ethAmount);
-        bool result;
-        bytes memory data;
-        (result, data) = address(eigenPod).call{value: ethAmount}("");
-    }
 
     function _newEigenPodStaker(uint256 rand) internal returns (EigenPodUser, uint256) {
         string memory stakerName;
@@ -1750,25 +1744,7 @@ contract EigenPodUnitTests_proofParsingTests is EigenPodHarnessSetup, ProofParsi
     bytes validatorFieldsProof;
     bytes32[] validatorFields;
 
-    function _assertWithdrawalCredentialsSet(uint256 restakedBalanceGwei) internal view {
-        IEigenPodTypes.ValidatorInfo memory validatorInfo = eigenPodHarness.validatorPubkeyHashToInfo(validatorFields[0]);
-        assertEq(uint8(validatorInfo.status), uint8(IEigenPodTypes.VALIDATOR_STATUS.ACTIVE), "Validator status should be active");
-        assertEq(validatorInfo.validatorIndex, validatorIndex, "Validator index incorrectly set");
-        assertEq(validatorInfo.lastCheckpointedAt, oracleTimestamp, "Last checkpointed at timestamp incorrectly set");
-        assertEq(validatorInfo.restakedBalanceGwei, restakedBalanceGwei, "Restaked balance gwei not set correctly");
-    }
 
-    function _setWithdrawalCredentialParams() public {
-        // Set beacon state root, validatorIndex
-        beaconStateRoot = getBeaconStateRoot();
-        validatorIndex = uint40(getValidatorIndex());
-        validatorFieldsProof = getWithdrawalCredentialProof(); // Validator fields are proven here
-        validatorFields = getValidatorFields();
-
-        // Get an oracle timestamp
-        cheats.warp(GENESIS_TIME_LOCAL + 1 days);
-        oracleTimestamp = uint64(block.timestamp);
-    }
 
     ///@notice Effective balance is > 32 ETH
     modifier setWithdrawalCredentialsExcess() {

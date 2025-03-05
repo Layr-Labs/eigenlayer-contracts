@@ -65,9 +65,6 @@ contract StrategyManagerMock is Test {
         return stakerStrategyListLengthReturnValue;
     }
 
-    function setStakerStrategyListLengthReturnValue(uint256 valueToSet) public {
-        stakerStrategyListLengthReturnValue = valueToSet;
-    }
 
     function setStrategyWhitelist(IStrategy strategy, bool value) external {
         strategyIsWhitelistedForDeposit[strategy] = value;

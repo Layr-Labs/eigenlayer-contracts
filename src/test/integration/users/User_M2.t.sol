@@ -171,71 +171,9 @@ contract User_M2 is User {
     }
 
 
-    function _completeQueuedWithdrawal_M2(
-        IDelegationManager_DeprecatedM2.Withdrawal memory withdrawal,
-        bool receiveAsTokens
-    ) internal virtual returns (IERC20[] memory) {
-        IERC20[] memory tokens = new IERC20[](withdrawal.strategies.length);
-
-        for (uint256 i = 0; i < tokens.length; i++) {
-            IStrategy strat = withdrawal.strategies[i];
-
-            if (strat == BEACONCHAIN_ETH_STRAT) {
-                tokens[i] = NATIVE_ETH;
-
-                // If we're withdrawing native ETH as tokens, stop ALL validators
-                // and complete a checkpoint
-                if (receiveAsTokens) {
-                    console.log("- exiting all validators and completing checkpoint");
-                    _exitValidators(getActiveValidators());
-
-                    beaconChain.advanceEpoch_NoRewards();
-
-                    _startCheckpoint();
-                    if (pod.activeValidatorCount() != 0) {
-                        _completeCheckpoint();
-                    }
-                }
-            } else {
-                tokens[i] = strat.underlyingToken();
-            }
-        }
-
-        delegationManager_M2.completeQueuedWithdrawal(withdrawal, tokens, 0, receiveAsTokens);
-
-        return tokens;
-    }
 
     /// @notice Gets the expected withdrawals to be created when the staker is undelegated via a call to `delegationManager_M2.undelegate()`
     /// @notice Assumes staker and withdrawer are the same and that all strategies and shares are withdrawn
-    function _getExpectedM2WithdrawalStructsForStaker(
-        address staker
-    ) internal view returns (IDelegationManager_DeprecatedM2.Withdrawal[] memory) {
-        (IStrategy[] memory strategies, uint256[] memory shares)
-            = delegationManager_M2.getDelegatableShares(staker);
-
-        IDelegationManager_DeprecatedM2.Withdrawal[] memory expectedWithdrawals = new IDelegationManager_DeprecatedM2.Withdrawal[](strategies.length);
-        address delegatedTo = delegationManager_M2.delegatedTo(staker);
-        uint256 nonce = delegationManager_M2.cumulativeWithdrawalsQueued(staker);
-
-        for (uint256 i = 0; i < strategies.length; ++i) {
-            IStrategy[] memory singleStrategy = new IStrategy[](1);
-            uint256[] memory singleShares = new uint256[](1);
-            singleStrategy[0] = strategies[i];
-            singleShares[0] = shares[i];
-            expectedWithdrawals[i] = IDelegationManager_DeprecatedM2.Withdrawal({
-                staker: staker,
-                delegatedTo: delegatedTo,
-                withdrawer: staker,
-                nonce: (nonce + i),
-                startBlock: uint32(block.number),
-                strategies: singleStrategy,
-                shares: singleShares
-            });
-        }
-
-        return expectedWithdrawals;
-    }
 }
 
 /// @notice A user contract that calls nonstandard methods (like xBySignature methods)

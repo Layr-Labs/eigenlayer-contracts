@@ -181,12 +181,6 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         return result;
     }
     
-    function _getTokenName(IERC20 token) internal view returns (string memory) {
-        if (token == NATIVE_ETH) {
-            return "Native ETH";
-        }
-        return IERC20Metadata(address(token)).name();
-    }
     /*******************************************************************************
                                 COMMON ASSERTIONS
     *******************************************************************************/
@@ -261,17 +255,6 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
-    function assert_HasOperatorShares(
-        User user, 
-        IStrategy[] memory strategies, 
-        uint[] memory expectedShares, 
-        string memory err
-    ) internal view {
-        for (uint i = 0; i < strategies.length; i++) {
-            uint actualShares = delegationManager.operatorShares(address(user), strategies[i]);
-            assertEq(expectedShares[i], actualShares, err);
-        }
-    }
 
     /// @dev Asserts that ALL of the `withdrawalRoots` is in `delegationManager.pendingWithdrawals`
     function assert_AllWithdrawalsPending(bytes32[] memory withdrawalRoots, string memory err) internal view {
@@ -478,13 +461,6 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
-    function assert_IsRegistered(
-        User operator,
-        OperatorSet memory operatorSet,
-        string memory err
-    ) internal view {
-        assertTrue(allocationManager.isMemberOfOperatorSet(address(operator), operatorSet), err);
-    }
 
     function assert_IsSlashable(
         User operator,
@@ -510,13 +486,6 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         assertTrue(allocationManager.getAllocatedSets(address(operator)).contains(operatorSet), err);
     }
 
-    function assert_IsNotAllocated(
-        User operator,
-        OperatorSet memory operatorSet,
-        string memory err
-    ) internal view {
-        assertEq(allocationManager.getAllocatedStrategies(address(operator), operatorSet).length, 0, err);
-    }
 
     function assert_IsAllocatedToSetStrats(
         User operator,
@@ -803,18 +772,6 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
-    function assert_Snap_Added_AllocatedSet(
-        User operator,
-        OperatorSet memory operatorSet,
-        string memory err
-    ) internal {
-        OperatorSet[] memory curAllocatedSets = _getAllocatedSets(operator);
-        OperatorSet[] memory prevAllocatedSets = _getPrevAllocatedSets(operator);
-
-        assertEq(curAllocatedSets.length, prevAllocatedSets.length + 1, err);
-        assertFalse(prevAllocatedSets.contains(operatorSet), err);
-        assertTrue(curAllocatedSets.contains(operatorSet), err);
-    }
 
     function assert_Snap_Unchanged_AllocatedSets(
         User operator,
@@ -947,20 +904,6 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
-    function assert_Snap_Added_SlashableStake(
-        User operator,
-        OperatorSet memory operatorSet,
-        IStrategy[] memory strategies,
-        uint[] memory slashableShares,
-        string memory err
-    ) internal {
-        uint[] memory curSlashableStake = _getMinSlashableStake(operator, operatorSet, strategies);
-        uint[] memory prevSlashableStake = _getPrevMinSlashableStake(operator, operatorSet, strategies);
-
-        for (uint i = 0; i < strategies.length; i++) {
-            assertEq(curSlashableStake[i], prevSlashableStake[i] + slashableShares[i], err);
-        }
-    }
 
     function assert_Snap_Unchanged_SlashableStake(
         User operator,
@@ -976,20 +919,6 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
-    function assert_Snap_Removed_SlashableStake(
-        User operator,
-        OperatorSet memory operatorSet,
-        IStrategy[] memory strategies,
-        uint[] memory removedSlashableShares,
-        string memory err
-    ) internal {
-        uint[] memory curSlashableStake = _getMinSlashableStake(operator, operatorSet, strategies);
-        uint[] memory prevSlashableStake = _getPrevMinSlashableStake(operator, operatorSet, strategies);
-
-        for (uint i = 0; i < strategies.length; i++) {
-            assertEq(curSlashableStake[i] + removedSlashableShares[i], prevSlashableStake[i], err);
-        }
-    }
 
     function assert_Snap_Slashed_SlashableStake(
         User operator,
@@ -1127,19 +1056,6 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
-    function assert_Snap_Added_EncumberedMagnitude(
-        User operator,
-        IStrategy[] memory strategies,
-        uint64[] memory magnitudeAdded,
-        string memory err
-    ) internal {
-        Magnitudes[] memory curMagnitudes = _getMagnitudes(operator, strategies);
-        Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, strategies);
-
-        for (uint i = 0; i < strategies.length; i++) {
-            assertEq(curMagnitudes[i].encumbered, prevMagnitudes[i].encumbered + magnitudeAdded[i], err);
-        }
-    }
 
     function assert_Snap_Unchanged_EncumberedMagnitude(
         User operator,
@@ -1209,19 +1125,6 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
-    function assert_Snap_Removed_AllocatableMagnitude(
-        User operator,
-        IStrategy[] memory strategies,
-        uint64[] memory magnitudeRemoved,
-        string memory err
-    ) internal {
-        Magnitudes[] memory curMagnitudes = _getMagnitudes(operator, strategies);
-        Magnitudes[] memory prevMagnitudes = _getPrevMagnitudes(operator, strategies);
-
-        for (uint i = 0; i < strategies.length; i++) {
-            assertEq(curMagnitudes[i].allocatable, prevMagnitudes[i].allocatable - magnitudeRemoved[i], err);
-        }
-    }
 
     function assert_Snap_Allocated_Magnitude(
         User operator,
@@ -2127,25 +2030,6 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
 
     /// @dev Check that the staker has `removedTokens` fewer underlying tokens 
     // since the last snapshot
-    function assert_Snap_Removed_TokenBalances(
-        User staker,
-        IStrategy[] memory strategies,
-        uint[] memory removedTokens,
-        string memory err
-    ) internal {
-        IERC20[] memory tokens = _getUnderlyingTokens(strategies);
-
-        uint[] memory curTokenBalances = _getTokenBalances(staker, tokens);
-        // Use timewarp to get previous token balances
-        uint[] memory prevTokenBalances = _getPrevTokenBalances(staker, tokens);
-
-        for (uint i = 0; i < tokens.length; i++) {
-            uint prevBalance = prevTokenBalances[i];
-            uint curBalance = curTokenBalances[i];
-
-            assertEq(prevBalance - removedTokens[i], curBalance, err);
-        }
-    }
 
     /// @dev Check that the staker's underlying token balance for ALL tokens have
     /// not changed since the last snapshot
@@ -2585,44 +2469,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         return _randUint({ min: 0.01 ether, max: 1 ether });
     }
 
-    function _strategiesAndWadsForFullSlash(
-        OperatorSet memory operatorSet
-    ) internal view returns (IStrategy[] memory strategies, uint[] memory wadsToSlash) {
-        // Get list of all strategies in an operator set.
-        strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
 
-        wadsToSlash = new uint[](strategies.length);
-
-        for (uint i; i < strategies.length; ++i) {
-            wadsToSlash[i] = 1 ether;
-        }
-
-        return(strategies.sort(), wadsToSlash);
-    }
-
-    function _strategiesAndWadsForRandFullSlash(
-        OperatorSet memory operatorSet
-    ) internal returns (IStrategy[] memory strategies, uint[] memory wadsToSlash) {
-        // Get list of all strategies in an operator set.
-        strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
-
-        // Randomly select a subset of strategies to slash.
-        uint len = _randUint({ min: 1, max: strategies.length });
-
-        // Update length of strategies array.
-        assembly {
-            mstore(strategies, len)
-        }
-        
-        wadsToSlash = new uint[](len);
-        
-        // Fully slash each selected strategy
-        for (uint i; i < len; ++i) {
-            wadsToSlash[i] = 1 ether;
-        }
-
-        return (strategies.sort(), wadsToSlash);
-    }     
     
     function _randMagnitudes(uint64 sum, uint256 len) internal returns (uint64[] memory magnitudes) {
         magnitudes = new uint64[](len);
@@ -2641,17 +2488,6 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
-    function _maxMagnitudes(OperatorSet memory operatorSet, User operator) internal view returns (uint64[] memory magnitudes) {
-        IStrategy[] memory strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
-        uint256 len = strategies.length;
-        magnitudes = new uint64[](len);
-
-        if (len == 0) return magnitudes;
-
-        for (uint256 i; i < len; ++i) {
-            magnitudes[i] = allocationManager.getMaxMagnitude(address(operator), strategies[i]);
-        }
-    }
 
     function _randWithdrawal(
         IStrategy[] memory strategies, 

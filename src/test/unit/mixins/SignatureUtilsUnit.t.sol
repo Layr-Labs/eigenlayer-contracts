@@ -7,9 +7,6 @@ import "src/contracts/mixins/SignatureUtilsMixin.sol";
 contract MockSigner {
     mapping(bytes32 => mapping(bytes => bool)) public validSignatures;
 
-    function setValidSignature(bytes32 digest, bytes memory signature, bool valid) public {
-        validSignatures[digest][signature] = valid;
-    }
 
     function isValidSignatureNow(bytes32 digest, bytes memory signature) public view returns (bool) {
         return validSignatures[digest][signature];
