@@ -55,7 +55,7 @@ contract Integration_DualSlashing_Base is IntegrationCheckUtils {
     }
 }
 
-contract Integration_DualSlashing_Base_BeaconChainFirst is Integration_DualSlashing_Base {
+contract Integration_DualSlashing_BeaconChainFirst is Integration_DualSlashing_Base {
 
     function testFuzz_bcSlash_checkpoint_avsSlash(uint24 _random) public rand(_random) {
         // 6. Slash staker on BC
@@ -80,7 +80,7 @@ contract Integration_DualSlashing_Base_BeaconChainFirst is Integration_DualSlash
     }
 }
 
-contract Integration_DualSlashing_Base_AVSFirst is Integration_DualSlashing_Base {
+contract Integration_DualSlashing_AVSFirst is Integration_DualSlashing_Base {
     using ArrayLib for *;
 
     SlashingParams slashingParams;
@@ -189,13 +189,13 @@ contract Integration_DualSlashing_Base_AVSFirst is Integration_DualSlashing_Base
         cheats.deal(address(staker), ethToDeposit);
         cheats.prank(address(staker));
         address(staker.pod()).call{value: ethToDeposit}("");
-        uint64 beaconSharesAddedGwei = uint64(ethToDeposit / GWEI_TO_WEI);
+        uint64 ethDepositedGwei = uint64(ethToDeposit / GWEI_TO_WEI);
 
         // 9. Checkpoint
         staker.startCheckpoint();
-        check_StartCheckpoint_WithPodBalance_State(staker, beaconBalanceGwei - slashedAmountGwei + beaconSharesAddedGwei);
+        check_StartCheckpoint_WithPodBalance_State(staker, beaconBalanceGwei - slashedAmountGwei + ethDepositedGwei);
         staker.completeCheckpoint();
-        check_CompleteCheckpoint_AfterAVSSlash_ETHDeposit_BCSlash(staker, validators, slashedAmountGwei, beaconSharesAddedGwei);
+        check_CompleteCheckpoint_AfterAVSSlash_ETHDeposit_BCSlash(staker, validators, slashedAmountGwei, ethDepositedGwei);
     }
 
     /// @notice The balance increase occurs after the slashings are processed, so it should be unaffected by the slashings
@@ -215,11 +215,136 @@ contract Integration_DualSlashing_Base_AVSFirst is Integration_DualSlashing_Base
         cheats.deal(address(staker), ethToDeposit);
         cheats.prank(address(staker));
         address(staker.pod()).call{value: ethToDeposit}("");
-        uint64 beaconSharesAddedGwei = uint64(ethToDeposit / GWEI_TO_WEI);
+        uint64 ethDepositedGwei = uint64(ethToDeposit / GWEI_TO_WEI);
 
         // 10. Checkpoint. This should immediately complete as there are no more active validators
         beaconChain.advanceEpoch_NoRewards();
         staker.startCheckpoint();
-        check_StartCheckpoint_NoValidators_State(staker, beaconSharesAddedGwei);
+        check_StartCheckpoint_NoValidators_State(staker, ethDepositedGwei);
+    }
+}
+
+contract Integration_DualSlashing_FullSlashes is Integration_DualSlashing_Base {
+    using ArrayLib for *;
+    using SlashingLib for *;
+    using Math for uint256;
+
+    SlashingParams slashingParams;
+    uint64 slashedAmountGwei;
+    IERC20[] tokens;
+    function _init() internal virtual override {
+        super._init();
+        tokens = _getUnderlyingTokens(strategies);
+
+        // Either Fully Slash on AVS or BC, ordering does not matter
+
+        if (_randBool()) {
+            // 6. Slash operator by AVS fully
+            slashingParams = _genSlashing_Full(operator, operatorSet);
+            avs.slashOperator(slashingParams);
+            check_Base_Slashing_State(operator, allocateParams, slashingParams);
+            assert_Snap_Allocations_Slashed(slashingParams, operatorSet, true, "operator allocations should be slashed");
+            assert_Snap_Unchanged_Staker_DepositShares(staker, "staker deposit shares should be unchanged after slashing");
+            assert_Snap_StakerWithdrawableShares_AfterSlash(staker, allocateParams, slashingParams, "staker withdrawable shares should be slashed");
+
+            /// 7. Fully slash on BC
+            slashedAmountGwei = beaconChain.slashValidators(validators, BeaconChainMock.SlashType.Full);
+            beaconChain.advanceEpoch_NoRewards();
+        } else {
+            // 6. Slash operator by BC fully
+            slashedAmountGwei = beaconChain.slashValidators(validators, BeaconChainMock.SlashType.Full);
+            beaconChain.advanceEpoch_NoRewards();
+
+            // 7. Slash operator by AVS fully
+            slashingParams = _genSlashing_Full(operator, operatorSet);
+            avs.slashOperator(slashingParams);
+            check_Base_Slashing_State(operator, allocateParams, slashingParams);
+            assert_Snap_Allocations_Slashed(slashingParams, operatorSet, true, "operator allocations should be slashed");
+            assert_Snap_Unchanged_Staker_DepositShares(staker, "staker deposit shares should be unchanged after slashing");
+            assert_Snap_StakerWithdrawableShares_AfterSlash(staker, allocateParams, slashingParams, "staker withdrawable shares should be slashed");
+        }
+    }
+
+    function testFuzz_fullDualSlash_undelegate_verifyValidator_checkpoint_exitEverything(uint24 _random) public rand(_random) {
+        // 8. Undelegate staker, so we don't revert when verifying a validator
+        Withdrawal[] memory withdrawals = staker.undelegate();
+        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, uint256(0).toArrayU256());
+
+        // 9. Verify validator
+        cheats.deal(address(staker), 32 ether);
+        (uint40[] memory newValidators, uint64 addedBeaconBalanceGwei) = staker.startValidators();
+        beaconChain.advanceEpoch_NoRewards();
+        staker.verifyWithdrawalCredentials(newValidators);
+        check_VerifyWC_State(staker, newValidators, addedBeaconBalanceGwei);
+        uint256 withdrawableShares = _getWithdrawableShares(staker, strategies)[0];
+
+        // 10. Checkpoint
+        staker.startCheckpoint();
+        check_StartCheckpoint_State(staker);
+        staker.completeCheckpoint();
+        check_CompleteCheckpoint_WithSlashing_Exits_State_Base(staker, validators);
+        // Withdrawable shares should decrease by a factor of the BCSF
+        uint256 sharesRemoved = withdrawableShares.mulWad(WAD - _getBeaconChainSlashingFactor(staker));
+        assert_Snap_Removed_Staker_WithdrawableShares_AtLeast(staker, strategies, sharesRemoved.toArrayU256(), "should have decreased withdrawable shares correctly");
+
+        // 11. Exit remaining validators & checkpoint
+        staker.exitValidators(newValidators);
+        beaconChain.advanceEpoch_NoRewards();
+        staker.startCheckpoint();
+        check_StartCheckpoint_WithPodBalance_State(staker, addedBeaconBalanceGwei);
+        staker.completeCheckpoint();
+        check_CompleteCheckpoint_WithPodBalance_State(staker, addedBeaconBalanceGwei);
+
+
+        // 12. Complete first set of withdrawals
+        _rollBlocksForCompleteWithdrawals(withdrawals);
+        for (uint256 i = 0; i < withdrawals.length; ++i) {
+            staker.completeWithdrawalAsTokens(withdrawals[i]);
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], withdrawals[i].strategies, uint256(0).toArrayU256(), tokens, uint256(0).toArrayU256());
+        }
+
+        // 13. Queue withdrawal for all remaining shares
+        uint[] memory depositShares = _getStakerDepositShares(staker, strategies);
+        uint[] memory withdrawableShares2 = _getWithdrawableShares(staker, strategies);
+        Withdrawal[] memory withdrawals2 = staker.queueWithdrawals(strategies, depositShares);
+        bytes32[] memory withdrawalRoots2 = _getWithdrawalHashes(withdrawals2);
+        check_QueuedWithdrawal_State(staker, operator, strategies, depositShares, withdrawableShares2, withdrawals2, withdrawalRoots2);
+
+        // 14. Complete second set of withdrawals
+        _rollBlocksForCompleteWithdrawals(withdrawals2);
+        uint[] memory expectedTokens = _calculateExpectedTokens(strategies, withdrawableShares2);
+        for (uint256 i = 0; i < withdrawals2.length; ++i) {
+            staker.completeWithdrawalAsTokens(withdrawals2[i]);
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals2[i], withdrawals2[i].strategies, withdrawableShares2, tokens, expectedTokens);
+        }
+
+        // Sanity check that balance locked in pod and depositShares are 0
+        assertEq(0, _getStakerDepositShares(staker, strategies)[0], "deposit shares should be 0");
+        assertEq(address(staker.pod()).balance, depositShares[0] - expectedTokens[0], "staker withdrew more than expected");
+    }
+
+    function testFuzz_fullDualSlash_redeposit_revertCheckpoint(uint24 _random) public rand(_random) {
+        // 8. Deposit ETH into pod, doesn't matter how large it is, we'll still revert
+        uint ethToDeposit = 1000 ether;
+        cheats.deal(address(staker), ethToDeposit);
+        cheats.prank(address(staker));
+        address(staker.pod()).call{value: ethToDeposit}("");
+        uint64 ethDepositedGwei = uint64(ethToDeposit / GWEI_TO_WEI);
+
+        // 9. Checkpoint. This should revert as the slashing factor is 0
+        beaconChain.advanceEpoch_NoRewards();
+        staker.startCheckpoint();
+        check_StartCheckpoint_WithPodBalance_State(staker, ethDepositedGwei);
+        cheats.expectRevert(IDelegationManagerErrors.FullySlashed.selector);
+        staker.completeCheckpoint();
+    }
+
+    function testFuzz_fullDualSlash_checkpoint(uint24 _random) public rand(_random) {
+        // 8. Checkpoint
+        staker.startCheckpoint();
+        check_StartCheckpoint_WithPodBalance_State(staker, beaconBalanceGwei - slashedAmountGwei);
+        staker.completeCheckpoint();
+        check_CompleteCheckpoint_FullDualSlashes(staker, validators, allocateParams, slashingParams);
     }
 }

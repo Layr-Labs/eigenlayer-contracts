@@ -3,7 +3,7 @@ pragma solidity ^0.8.27;
 
 import "src/test/integration/IntegrationChecks.t.sol";
 
-contract Integration_SlashedOperator is IntegrationCheckUtils {
+contract Integration_FullySlashed_Operator is IntegrationCheckUtils {
     AVS avs;
     User staker;
     User operator;
@@ -59,7 +59,7 @@ contract Integration_SlashedOperator is IntegrationCheckUtils {
     }
 
     function testFuzz_register_allocate_fullSlash_delegate_deposit(uint24 r) public rand(r) {
-        // 5) Staker delegates to operator who is fully slashed, should fail.
+        // 5) Staker delegates to operator who is fully slashed.
         staker.delegateTo(operator);
         // NOTE: We didn't use check_Delegation_State as it leads to division by zero.
         assertEq(address(operator), delegationManager.delegatedTo(address(staker)), "staker should be delegated to operator");
@@ -70,7 +70,7 @@ contract Integration_SlashedOperator is IntegrationCheckUtils {
     }
 
     function testFuzz_register_allocate_fullSlash_delegate_redelegate_deposit(uint24 r) public rand(r) {
-        // 5) Staker delegates to operator who is fully slashed, should fail.
+        // 5) Staker delegates to operator who is fully slashed
         staker.delegateTo(operator);
 
         User newOperator = _newRandomOperator_NoAssets();
