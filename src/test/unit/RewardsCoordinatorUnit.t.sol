@@ -1095,10 +1095,7 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
     }
 
     // Revert when duration is 0
-    function testFuzz_Revert_WhenDurationIsZero(address avs, uint startTimestamp, uint amount)
-        public
-        filterFuzzedAddressInputs(avs)
-    {
+    function testFuzz_Revert_WhenDurationIsZero(address avs, uint startTimestamp, uint amount) public filterFuzzedAddressInputs(avs) {
         cheats.assume(avs != address(0));
         cheats.prank(rewardsCoordinator.owner());
 
@@ -1435,9 +1432,7 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllSubmission is RewardsCoo
     }
 
     // Revert when duration is 0
-    function testFuzz_Revert_WhenDurationIsZero(uint startTimestamp, uint amount)
-        public
-    {
+    function testFuzz_Revert_WhenDurationIsZero(uint startTimestamp, uint amount) public {
         cheats.prank(rewardsCoordinator.owner());
 
         // 1. Bound fuzz inputs to valid ranges and amounts
@@ -1664,9 +1659,7 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllEarners is RewardsCoordi
     }
 
     // Revert when duration is 0
-    function testFuzz_Revert_WhenDurationIsZero(uint startTimestamp, uint amount)
-        public
-    {
+    function testFuzz_Revert_WhenDurationIsZero(uint startTimestamp, uint amount) public {
         cheats.prank(rewardsCoordinator.owner());
 
         // 1. Bound fuzz inputs to valid ranges and amounts
@@ -2251,10 +2244,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
     }
 
     // Revert when duration is 0
-    function testFuzz_Revert_WhenDurationIsZero(address avs, uint startTimestamp)
-        public
-        filterFuzzedAddressInputs(avs)
-    {
+    function testFuzz_Revert_WhenDurationIsZero(address avs, uint startTimestamp) public filterFuzzedAddressInputs(avs) {
         cheats.assume(avs != address(0));
         cheats.prank(rewardsCoordinator.owner());
 
@@ -3153,10 +3143,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
     }
 
     // Revert when duration is 0
-    function testFuzz_Revert_WhenDurationIsZero(address avs, uint startTimestamp)
-        public
-        filterFuzzedAddressInputs(avs)
-    {
+    function testFuzz_Revert_WhenDurationIsZero(address avs, uint startTimestamp) public filterFuzzedAddressInputs(avs) {
         cheats.assume(avs != address(0));
 
         operatorSet = OperatorSet(avs, 1);
