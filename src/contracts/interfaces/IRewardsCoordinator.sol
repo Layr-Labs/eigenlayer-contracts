@@ -49,6 +49,8 @@ interface IRewardsCoordinatorErrors {
     error PreviousSplitPending();
     /// @dev Thrown when input `duration` exceeds maximum.
     error DurationExceedsMax();
+    /// @dev Thrown when input `duration` is zero.
+    error DurationIsZero();
     /// @dev Thrown when input `duration` is not evenly divisble by CALCULATION_INTERVAL_SECONDS.
     error InvalidDurationRemainder();
     /// @dev Thrown when GENESIS_REWARDS_TIMESTAMP is not evenly divisble by CALCULATION_INTERVAL_SECONDS.

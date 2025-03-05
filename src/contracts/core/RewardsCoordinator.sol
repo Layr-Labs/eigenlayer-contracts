@@ -437,6 +437,7 @@ contract RewardsCoordinator is
         require(strategiesAndMultipliers.length > 0, InputArrayLengthZero());
         require(duration <= MAX_REWARDS_DURATION, DurationExceedsMax());
         require(duration % CALCULATION_INTERVAL_SECONDS == 0, InvalidDurationRemainder());
+        require(duration > 0, DurationIsZero());
         require(startTimestamp % CALCULATION_INTERVAL_SECONDS == 0, InvalidStartTimestampRemainder());
         require(
             block.timestamp - MAX_RETROACTIVE_LENGTH <= startTimestamp && GENESIS_REWARDS_TIMESTAMP <= startTimestamp,
