@@ -6,8 +6,8 @@ import "src/test/integration/IntegrationChecks.t.sol";
 contract Integration_SlashedEigenpod_AVS_Base is IntegrationCheckUtils {
     using ArrayLib for *;
     using SlashingLib for *;
-    using Math for uint256;
-    
+    using Math for uint;
+
     AVS avs;
     OperatorSet operatorSet;
 
@@ -53,7 +53,6 @@ contract Integration_SlashedEigenpod_AVS_Base is IntegrationCheckUtils {
 }
 
 contract Integration_SlashedEigenpod_AVS_Checkpoint is Integration_SlashedEigenpod_AVS_Base {
-
     function _init() internal override {
         super._init();
 
@@ -76,8 +75,8 @@ contract Integration_SlashedEigenpod_AVS_Checkpoint is Integration_SlashedEigenp
 }
 
 contract Integration_SlashedEigenpod_AVS_Withdraw is Integration_SlashedEigenpod_AVS_Base {
-    using Math for uint256;
-    using SlashingLib for uint256;
+    using Math for uint;
+    using SlashingLib for uint;
 
     uint[] withdrawableSharesAfterSlash;
 
@@ -85,23 +84,29 @@ contract Integration_SlashedEigenpod_AVS_Withdraw is Integration_SlashedEigenpod
         super._init();
 
         // Slash or queue a withdrawal in a random order
-        if (_randBool()) { // Slash -> Queue Withdrawal
+        if (_randBool()) {
+            // Slash -> Queue Withdrawal
             // 7. Slash
             slashParams = _genSlashing_Half(operator, operatorSet);
             avs.slashOperator(slashParams);
             check_Base_Slashing_State(operator, allocateParams, slashParams);
 
-            // 8. Queue Withdrawal for all shares. 
+            // 8. Queue Withdrawal for all shares.
             Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, initDepositShares);
             bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
             withdrawableSharesAfterSlash = _calcWithdrawable(staker, strategies, initDepositShares);
-            check_QueuedWithdrawal_State(staker, operator, strategies, initDepositShares, withdrawableSharesAfterSlash, withdrawals, withdrawalRoots);
-        } else { // Queue Withdrawal -> Slash
+            check_QueuedWithdrawal_State(
+                staker, operator, strategies, initDepositShares, withdrawableSharesAfterSlash, withdrawals, withdrawalRoots
+            );
+        } else {
+            // Queue Withdrawal -> Slash
             // 7. Queue Withdrawal for all shares
             Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, initDepositShares);
             bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
             withdrawableSharesAfterSlash = _calcWithdrawable(staker, strategies, initDepositShares);
-            check_QueuedWithdrawal_State(staker, operator, strategies, initDepositShares, withdrawableSharesAfterSlash, withdrawals, withdrawalRoots);
+            check_QueuedWithdrawal_State(
+                staker, operator, strategies, initDepositShares, withdrawableSharesAfterSlash, withdrawals, withdrawalRoots
+            );
 
             // 8. Slash
             slashParams = _genSlashing_Half(operator, operatorSet);
@@ -113,10 +118,10 @@ contract Integration_SlashedEigenpod_AVS_Withdraw is Integration_SlashedEigenpod
         beaconChain.advanceEpoch_NoRewards();
     }
 
-    /// @dev Asserts that the DSF isn't updated after a slash/queue and a checkpoint with 0 balance. 
+    /// @dev Asserts that the DSF isn't updated after a slash/queue and a checkpoint with 0 balance.
     /// @dev The staker should subsequently not be able to inflate their withdrawable shares
     function testFuzz_deposit_delegate_allocate_slashAndQueue_checkpoint_redeposit(uint24 _rand) public rand(_rand) {
-        // 9.  Start & complete checkpoint. 
+        // 9.  Start & complete checkpoint.
         staker.startCheckpoint();
         check_StartCheckpoint_State(staker);
         staker.completeCheckpoint();
@@ -136,12 +141,13 @@ contract Integration_SlashedEigenpod_AVS_Withdraw is Integration_SlashedEigenpod
         _rollBlocksForCompleteWithdrawals(withdrawals);
 
         // 9. Complete withdrawal as tokens
-        for (uint256 i = 0; i < withdrawals.length; ++i) {
+        for (uint i = 0; i < withdrawals.length; ++i) {
             IERC20[] memory tokens = _getUnderlyingTokens(withdrawals[i].strategies);
-            uint256[] memory expectedTokens =
-                _calculateExpectedTokens(withdrawals[i].strategies, withdrawableSharesAfterSlash);
+            uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawableSharesAfterSlash);
             staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], strategies, withdrawals[i].scaledShares, tokens, expectedTokens);
+            check_Withdrawal_AsTokens_State(
+                staker, operator, withdrawals[i], strategies, withdrawals[i].scaledShares, tokens, expectedTokens
+            );
         }
 
         // 10. Redeposit
@@ -160,7 +166,7 @@ contract Integration_SlashedEigenpod_AVS_Withdraw is Integration_SlashedEigenpod
         uint depositScalingFactor = _getDepositScalingFactor(staker, BEACONCHAIN_ETH_STRAT);
         uint[] memory withdrawableShares = _calcWithdrawable(staker, strategies, initDepositShares);
 
-        // 9.  Start & complete checkpoint, since the next step does not. 
+        // 9.  Start & complete checkpoint, since the next step does not.
         staker.startCheckpoint();
         check_StartCheckpoint_State(staker);
         staker.completeCheckpoint();

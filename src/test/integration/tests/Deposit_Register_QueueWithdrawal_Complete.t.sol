@@ -15,7 +15,7 @@ contract Integration_Deposit_Register_QueueWithdrawal_Complete is IntegrationChe
         check_Deposit_State(staker, strategies, shares);
 
         // 2. Staker registers as an operator
-        staker.registerAsOperator();        
+        staker.registerAsOperator();
         assertTrue(delegationManager.isOperator(address(staker)), "Staker should be registered as an operator");
 
         // 3. Queue Withdrawal
@@ -55,7 +55,7 @@ contract Integration_Deposit_Register_QueueWithdrawal_Complete is IntegrationChe
         for (uint i = 0; i < withdrawals.length; i++) {
             IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
             uint[] memory expectedTokens = _calculateExpectedTokens(strategies, shares);
-            
+
             check_Withdrawal_AsTokens_State(staker, staker, withdrawals[i], strategies, shares, tokens, expectedTokens);
         }
     }

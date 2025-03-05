@@ -11,16 +11,13 @@ import "forge-std/Test.sol";
 
 // Define dummy AVSRegistrar contract to prevent revert
 contract AVSRegistrar is IAVSRegistrar {
-    function registerOperator(
-        address operator,
-        address avsIdentifier,
-        uint32[] calldata operatorSetIds,
-        bytes calldata data
-    ) external {}
+    function registerOperator(address operator, address avsIdentifier, uint32[] calldata operatorSetIds, bytes calldata data) external {}
     function deregisterOperator(address operator, address avsIdentifier, uint32[] calldata operatorSetIds) external {}
-    function supportsAVS(address /*avs*/) external pure returns (bool) {
+
+    function supportsAVS(address /*avs*/ ) external pure returns (bool) {
         return true;
     }
+
     fallback() external {}
 }
 
@@ -30,9 +27,7 @@ contract AVSRegistrar is IAVSRegistrar {
 contract RegisterOperatorToOperatorSets is Script, Test {
     Vm cheats = Vm(VM_ADDRESS);
 
-    function run(
-        string memory configFile
-    ) public {
+    function run(string memory configFile) public {
         // Load config
         string memory deployConfigPath = string(bytes(string.concat("script/output/", configFile)));
         string memory config_data = vm.readFile(deployConfigPath);
@@ -51,15 +46,13 @@ contract RegisterOperatorToOperatorSets is Script, Test {
 
         // Use privateKey to register as an operator
         address operator = cheats.addr(vm.envUint("PRIVATE_KEY"));
-        uint256 expiry = type(uint256).max;
+        uint expiry = type(uint).max;
         uint32[] memory oids = new uint32[](1);
         oids[0] = 1;
 
         // Sign as Operator
-        (uint8 v, bytes32 r, bytes32 s) = cheats.sign(
-            operator,
-            avsDirectory.calculateOperatorAVSRegistrationDigestHash(operator, operator, bytes32(uint256(0) + 1), expiry)
-        );
+        (uint8 v, bytes32 r, bytes32 s) =
+            cheats.sign(operator, avsDirectory.calculateOperatorAVSRegistrationDigestHash(operator, operator, bytes32(uint(0) + 1), expiry));
 
         // Add strategies to array
         IStrategy[] memory strategies = new IStrategy[](1);
@@ -72,7 +65,7 @@ contract RegisterOperatorToOperatorSets is Script, Test {
 
         // Register the Operator to the AVS
         avsDirectory.registerOperatorToAVS(
-            operator, ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), bytes32(uint256(0) + 1), expiry)
+            operator, ISignatureUtilsMixinTypes.SignatureWithSaltAndExpiry(abi.encodePacked(r, s, v), bytes32(uint(0) + 1), expiry)
         );
 
         // Deploy and set registrar.

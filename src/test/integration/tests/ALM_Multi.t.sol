@@ -4,7 +4,6 @@ pragma solidity ^0.8.27;
 import "src/test/integration/IntegrationChecks.t.sol";
 
 contract Integration_ALM_Multi is IntegrationCheckUtils {
-
     using StdStyle for *;
 
     enum Action {
@@ -49,11 +48,10 @@ contract Integration_ALM_Multi is IntegrationCheckUtils {
         operatorSet = avs.createOperatorSet(allStrats);
 
         for (uint i = 0; i < NUM_OPERATORS; i++) {
-            (User staker, IStrategy[] memory _strategies, uint[] memory initTokenBalances)
-                = _newRandomStaker();
-            
+            (User staker, IStrategy[] memory _strategies, uint[] memory initTokenBalances) = _newRandomStaker();
+
             User operator = _newRandomOperator_NoAssets();
-            
+
             // 1. Deposit into strategies
             staker.depositIntoEigenlayer(_strategies, initTokenBalances);
             uint[] memory initDepositShares = _calculateExpectedShares(_strategies, initTokenBalances);
@@ -76,7 +74,7 @@ contract Integration_ALM_Multi is IntegrationCheckUtils {
     function test_Multi(uint24 _r) public rand(_r) {
         // Do 20 iterations
         for (uint i = 1; i <= NUM_ITERATIONS; i++) {
-            console.log("%s: %d", "iter".green().italic(), i-1);
+            console.log("%s: %d", "iter".green().italic(), i - 1);
 
             _dispatchNone(i);
             _dispatchRegistered(i);
@@ -95,15 +93,9 @@ contract Integration_ALM_Multi is IntegrationCheckUtils {
     function _dispatchNone(uint iter) internal {
         // Fetch all NONE operators from previous iteration
         User[] memory _operators = operators[iter - 1][State.NONE];
-        Action[3] memory actions = [
-            Action.REGISTER,
-            Action.INCR_ALLOC,
-            Action.INCR_ALLOC_FULL
-        ];
+        Action[3] memory actions = [Action.REGISTER, Action.INCR_ALLOC, Action.INCR_ALLOC_FULL];
 
-        if (_operators.length == 0) {
-            return;
-        }
+        if (_operators.length == 0) return;
 
         console.log("%s: %d operators", "_dispatchNone".green(), _operators.length);
 
@@ -111,9 +103,9 @@ contract Integration_ALM_Multi is IntegrationCheckUtils {
             // Get operator and allocated strategies
             User operator = _operators[i];
             IStrategy[] memory _strats = allocatedStrats[operator];
-            
+
             // Get action
-            uint aI = _randUint(0, actions.length-1);
+            uint aI = _randUint(0, actions.length - 1);
             Action action = actions[aI];
 
             // Process action
@@ -145,15 +137,9 @@ contract Integration_ALM_Multi is IntegrationCheckUtils {
     function _dispatchRegistered(uint iter) internal {
         // Fetch all REGISTERED operators from previous iteration
         User[] memory _operators = operators[iter - 1][State.REGISTERED];
-        Action[3] memory actions = [
-            Action.DEREGISTER,
-            Action.INCR_ALLOC,
-            Action.INCR_ALLOC_FULL
-        ];
+        Action[3] memory actions = [Action.DEREGISTER, Action.INCR_ALLOC, Action.INCR_ALLOC_FULL];
 
-        if (_operators.length == 0) {
-            return;
-        }
+        if (_operators.length == 0) return;
 
         console.log("%s: %d operators", "_dispatchRegistered".green(), _operators.length);
 
@@ -161,9 +147,9 @@ contract Integration_ALM_Multi is IntegrationCheckUtils {
             // Get operator
             User operator = _operators[i];
             IStrategy[] memory _strats = allocatedStrats[operator];
-            
+
             // Get action
-            uint aI = _randUint(0, actions.length-1);
+            uint aI = _randUint(0, actions.length - 1);
             Action action = actions[aI];
 
             // Process action
@@ -196,17 +182,9 @@ contract Integration_ALM_Multi is IntegrationCheckUtils {
     function _dispatchAllocated(uint iter) internal {
         // Fetch all ALLOCATED operators from previous iteration
         User[] memory _operators = operators[iter - 1][State.ALLOCATED];
-        Action[5] memory actions = [
-            Action.REGISTER,
-            Action.INCR_ALLOC,
-            Action.INCR_ALLOC_FULL,
-            Action.DECR_ALLOC,
-            Action.DECR_ALLOC_FULL
-        ];
+        Action[5] memory actions = [Action.REGISTER, Action.INCR_ALLOC, Action.INCR_ALLOC_FULL, Action.DECR_ALLOC, Action.DECR_ALLOC_FULL];
 
-        if (_operators.length == 0) {
-            return;
-        }
+        if (_operators.length == 0) return;
 
         console.log("%s: %d operators", "_dispatchAllocated".green(), _operators.length);
 
@@ -214,11 +192,11 @@ contract Integration_ALM_Multi is IntegrationCheckUtils {
             // Get operator
             User operator = _operators[i];
             IStrategy[] memory _strats = allocatedStrats[operator];
-            
+
             // Get action
-            uint aI = _randUint(0, actions.length-1);
+            uint aI = _randUint(0, actions.length - 1);
             Action action = actions[aI];
-            
+
             // Process action
             if (action == Action.REGISTER) {
                 operator.registerForOperatorSet(operatorSet);
@@ -264,15 +242,9 @@ contract Integration_ALM_Multi is IntegrationCheckUtils {
     function _dispatchFullyAllocated(uint iter) internal {
         // Fetch all FULLY_ALLOCATED operators from previous iteration
         User[] memory _operators = operators[iter - 1][State.FULLY_ALLOCATED];
-        Action[3] memory actions = [
-            Action.REGISTER,
-            Action.DECR_ALLOC,
-            Action.DECR_ALLOC_FULL
-        ];
+        Action[3] memory actions = [Action.REGISTER, Action.DECR_ALLOC, Action.DECR_ALLOC_FULL];
 
-        if (_operators.length == 0) {
-            return;
-        }
+        if (_operators.length == 0) return;
 
         console.log("%s: %d operators", "_dispatchFullyAllocated".green(), _operators.length);
 
@@ -280,11 +252,11 @@ contract Integration_ALM_Multi is IntegrationCheckUtils {
             // Get operator
             User operator = _operators[i];
             IStrategy[] memory _strats = allocatedStrats[operator];
-            
+
             // Get action
-            uint aI = _randUint(0, actions.length-1);
+            uint aI = _randUint(0, actions.length - 1);
             Action action = actions[aI];
-            
+
             // Process action
             if (action == Action.REGISTER) {
                 operator.registerForOperatorSet(operatorSet);
@@ -315,17 +287,9 @@ contract Integration_ALM_Multi is IntegrationCheckUtils {
     function _dispatchRegAlloc(uint iter) internal {
         // Fetch all REG_ALLOC operators from previous iteration
         User[] memory _operators = operators[iter - 1][State.REG_ALLOC];
-        Action[5] memory actions = [
-            Action.DEREGISTER,
-            Action.INCR_ALLOC,
-            Action.INCR_ALLOC_FULL,
-            Action.DECR_ALLOC,
-            Action.DECR_ALLOC_FULL
-        ];
+        Action[5] memory actions = [Action.DEREGISTER, Action.INCR_ALLOC, Action.INCR_ALLOC_FULL, Action.DECR_ALLOC, Action.DECR_ALLOC_FULL];
 
-        if (_operators.length == 0) {
-            return;
-        }
+        if (_operators.length == 0) return;
 
         console.log("%s: %d operators", "_dispatchRegAlloc".green(), _operators.length);
 
@@ -333,11 +297,11 @@ contract Integration_ALM_Multi is IntegrationCheckUtils {
             // Get operator
             User operator = _operators[i];
             IStrategy[] memory _strats = allocatedStrats[operator];
-            
+
             // Get action
-            uint aI = _randUint(0, actions.length-1);
+            uint aI = _randUint(0, actions.length - 1);
             Action action = actions[aI];
-            
+
             // Process action
             if (action == Action.DEREGISTER) {
                 operator.deregisterFromOperatorSet(operatorSet);
@@ -383,15 +347,9 @@ contract Integration_ALM_Multi is IntegrationCheckUtils {
     function _dispatchRegFullyAlloc(uint iter) internal {
         // Fetch all REG_FULLY_ALLOC operators from previous iteration
         User[] memory _operators = operators[iter - 1][State.REG_FULLY_ALLOC];
-        Action[3] memory actions = [
-            Action.DEREGISTER,
-            Action.DECR_ALLOC,
-            Action.DECR_ALLOC_FULL
-        ];
+        Action[3] memory actions = [Action.DEREGISTER, Action.DECR_ALLOC, Action.DECR_ALLOC_FULL];
 
-        if (_operators.length == 0) {
-            return;
-        }
+        if (_operators.length == 0) return;
 
         console.log("%s: %d operators", "_dispatchRegFullyAlloc".green(), _operators.length);
 
@@ -399,11 +357,11 @@ contract Integration_ALM_Multi is IntegrationCheckUtils {
             // Get operator
             User operator = _operators[i];
             IStrategy[] memory _strats = allocatedStrats[operator];
-            
+
             // Get action
-            uint aI = _randUint(0, actions.length-1);
+            uint aI = _randUint(0, actions.length - 1);
             Action action = actions[aI];
-            
+
             // Process action
             if (action == Action.DEREGISTER) {
                 operator.deregisterFromOperatorSet(operatorSet);

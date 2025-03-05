@@ -8,7 +8,6 @@ import "src/contracts/interfaces/IEigenPod.sol";
 import "src/contracts/interfaces/IEigenPodManager.sol";
 import "src/contracts/interfaces/IStrategyManager.sol";
 
-
 /// @dev A master interface contract that imports types defined in our
 /// contract interfaces so they can be used without needing to refer to
 /// the interface, e.g:
@@ -16,11 +15,4 @@ import "src/contracts/interfaces/IStrategyManager.sol";
 /// `AllocateParams memory params;`
 /// vs
 /// `IAllocationManagerTypes.AllocateParams memory params;`
-interface TypeImporter is 
-    IAllocationManagerTypes,
-    IAVSDirectoryTypes,
-    IDelegationManagerTypes,
-    IEigenPodManagerTypes,
-    IEigenPodTypes
-{
-}
+interface TypeImporter is IAllocationManagerTypes, IAVSDirectoryTypes, IDelegationManagerTypes, IEigenPodManagerTypes, IEigenPodTypes {}

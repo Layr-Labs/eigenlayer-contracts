@@ -2,7 +2,7 @@
 pragma solidity ^0.8.12;
 
 import "forge-std/Vm.sol";
-import "zeus-templates/utils/ZEnvHelpers.sol";  
+import "zeus-templates/utils/ZEnvHelpers.sol";
 
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
@@ -35,14 +35,21 @@ import "src/contracts/token/Eigen.sol";
 import "src/contracts/token/BackingEigen.sol";
 
 library Env {
-
     using ZEnvHelpers for *;
 
     /// Dummy types and variables to facilitate syntax, e.g: `Env.proxy.delegationManager()`
-    enum DeployedProxy { A }
-    enum DeployedBeacon { A }
-    enum DeployedImpl { A }
-    enum DeployedInstance { A }
+    enum DeployedProxy {
+        A
+    }
+    enum DeployedBeacon {
+        A
+    }
+    enum DeployedImpl {
+        A
+    }
+    enum DeployedInstance {
+        A
+    }
 
     DeployedProxy internal constant proxy = DeployedProxy.A;
     DeployedBeacon internal constant beacon = DeployedBeacon.A;
@@ -52,7 +59,6 @@ library Env {
     /**
      * env
      */
-
     function executorMultisig() internal view returns (address) {
         return _envAddress("executorMultisig");
     }
@@ -82,7 +88,7 @@ library Env {
     }
 
     function multiSendCallOnly() internal view returns (address) {
-        return _envAddress("MultiSendCallOnly");   
+        return _envAddress("MultiSendCallOnly");
     }
 
     function EIGENPOD_GENESIS_TIME() internal view returns (uint64) {
@@ -136,7 +142,6 @@ library Env {
     /**
      * core/
      */
-
     function allocationManager(DeployedProxy) internal view returns (AllocationManager) {
         return AllocationManager(_deployedProxy(type(AllocationManager).name));
     }
@@ -158,7 +163,7 @@ library Env {
     }
 
     function delegationManager(DeployedImpl) internal view returns (DelegationManager) {
-        return DelegationManager(_deployedImpl(type(DelegationManager).name)); 
+        return DelegationManager(_deployedImpl(type(DelegationManager).name));
     }
 
     function rewardsCoordinator(DeployedProxy) internal view returns (RewardsCoordinator) {
@@ -166,7 +171,7 @@ library Env {
     }
 
     function rewardsCoordinator(DeployedImpl) internal view returns (RewardsCoordinator) {
-        return RewardsCoordinator(_deployedImpl(type(RewardsCoordinator).name)); 
+        return RewardsCoordinator(_deployedImpl(type(RewardsCoordinator).name));
     }
 
     function strategyManager(DeployedProxy) internal view returns (StrategyManager) {
@@ -174,13 +179,12 @@ library Env {
     }
 
     function strategyManager(DeployedImpl) internal view returns (StrategyManager) {
-        return StrategyManager(_deployedImpl(type(StrategyManager).name)); 
+        return StrategyManager(_deployedImpl(type(StrategyManager).name));
     }
 
     /**
      * permissions/
      */
-
     function pauserRegistry(DeployedImpl) internal view returns (PauserRegistry) {
         return PauserRegistry(_deployedImpl(type(PauserRegistry).name));
     }
@@ -190,19 +194,18 @@ library Env {
     }
 
     function permissionController(DeployedImpl) internal view returns (PermissionController) {
-        return PermissionController(_deployedImpl(type(PermissionController).name)); 
+        return PermissionController(_deployedImpl(type(PermissionController).name));
     }
 
     /**
      * pods/
      */
-
     function eigenPod(DeployedBeacon) internal view returns (UpgradeableBeacon) {
         return UpgradeableBeacon(_deployedBeacon(type(EigenPod).name));
     }
 
     function eigenPod(DeployedImpl) internal view returns (EigenPod) {
-        return EigenPod(payable(_deployedImpl(type(EigenPod).name))); 
+        return EigenPod(payable(_deployedImpl(type(EigenPod).name)));
     }
 
     function eigenPodManager(DeployedProxy) internal view returns (EigenPodManager) {
@@ -210,19 +213,18 @@ library Env {
     }
 
     function eigenPodManager(DeployedImpl) internal view returns (EigenPodManager) {
-        return EigenPodManager(_deployedImpl(type(EigenPodManager).name)); 
+        return EigenPodManager(_deployedImpl(type(EigenPodManager).name));
     }
 
     /**
      * strategies/
      */
-
     function eigenStrategy(DeployedProxy) internal view returns (EigenStrategy) {
         return EigenStrategy(_deployedProxy(type(EigenStrategy).name));
     }
 
     function eigenStrategy(DeployedImpl) internal view returns (EigenStrategy) {
-        return EigenStrategy(_deployedImpl(type(EigenStrategy).name)); 
+        return EigenStrategy(_deployedImpl(type(EigenStrategy).name));
     }
 
     // Beacon proxy
@@ -232,7 +234,7 @@ library Env {
 
     // Beaconed impl
     function strategyBase(DeployedImpl) internal view returns (StrategyBase) {
-        return StrategyBase(_deployedImpl(type(StrategyBase).name)); 
+        return StrategyBase(_deployedImpl(type(StrategyBase).name));
     }
 
     // Returns the number of proxy instances
@@ -246,7 +248,7 @@ library Env {
     }
 
     function strategyBaseTVLLimits(DeployedImpl) internal view returns (StrategyBaseTVLLimits) {
-        return StrategyBaseTVLLimits(_deployedImpl(type(StrategyBaseTVLLimits).name)); 
+        return StrategyBaseTVLLimits(_deployedImpl(type(StrategyBaseTVLLimits).name));
     }
 
     function strategyFactory(DeployedProxy) internal view returns (StrategyFactory) {
@@ -254,19 +256,18 @@ library Env {
     }
 
     function strategyFactory(DeployedImpl) internal view returns (StrategyFactory) {
-        return StrategyFactory(_deployedImpl(type(StrategyFactory).name)); 
+        return StrategyFactory(_deployedImpl(type(StrategyFactory).name));
     }
 
     /**
      * token/
      */
-    
     function eigen(DeployedProxy) internal view returns (IEigen) {
         return IEigen(_deployedProxy(type(Eigen).name));
     }
 
     function eigen(DeployedImpl) internal view returns (IEigen) {
-        return IEigen(_deployedImpl(type(Eigen).name)); 
+        return IEigen(_deployedImpl(type(Eigen).name));
     }
 
     function beigen(DeployedProxy) internal view returns (IBackingEigen) {
@@ -274,13 +275,12 @@ library Env {
     }
 
     function beigen(DeployedImpl) internal view returns (IBackingEigen) {
-        return IBackingEigen(_deployedImpl(type(BackingEigen).name)); 
+        return IBackingEigen(_deployedImpl(type(BackingEigen).name));
     }
 
     /**
      * Helpers
      */
-
     function _deployedInstance(string memory name, uint idx) private view returns (address) {
         return ZEnvHelpers.state().deployedInstance(name, idx);
     }

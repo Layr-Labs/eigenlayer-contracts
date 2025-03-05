@@ -17,7 +17,7 @@ contract MockSigner {
 }
 
 contract SignatureUtilsMixinUnit is Test, SignatureUtilsMixin("v0.0.0") {
-    uint256 signerPk;
+    uint signerPk;
     address signer;
     bytes32 hash;
     bytes32 digest;
@@ -28,16 +28,16 @@ contract SignatureUtilsMixinUnit is Test, SignatureUtilsMixin("v0.0.0") {
 
         signerPk = 1;
         signer = vm.addr(signerPk);
-        
+
         hash = keccak256("");
         digest = _calculateSignableDigest(hash);
 
         expectedDomainSeparator = keccak256(
             abi.encode(
                 keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
-                keccak256(bytes("EigenLayer")), 
+                keccak256(bytes("EigenLayer")),
                 keccak256(bytes(_majorVersion())),
-                block.chainid, 
+                block.chainid,
                 address(this)
             )
         );
@@ -57,10 +57,7 @@ contract SignatureUtilsMixinUnit is Test, SignatureUtilsMixin("v0.0.0") {
         bytes32 newDomainSeparator = domainSeparator();
 
         assertTrue(newDomainSeparator != 0, "The new domain separator should be non-zero");
-        assertTrue(
-            initialDomainSeparator != newDomainSeparator,
-            "The domain separator should change when the chain ID changes"
-        );
+        assertTrue(initialDomainSeparator != newDomainSeparator, "The domain separator should change when the chain ID changes");
     }
 
     /// forge-config: default.allow_internal_expect_revert = true

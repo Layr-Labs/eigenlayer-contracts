@@ -26,7 +26,7 @@ import "src/test/utils/ArrayLib.sol";
 abstract contract EigenLayerUnitTestSetup is Test {
     using ArrayLib for *;
 
-    uint256 internal constant MAX_PRIVATE_KEY = 0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364140;
+    uint internal constant MAX_PRIVATE_KEY = 0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364140;
 
     Vm cheats = Vm(VM_ADDRESS);
 
@@ -44,7 +44,6 @@ abstract contract EigenLayerUnitTestSetup is Test {
     DelegationManagerMock delegationManagerMock;
     EigenPodManagerMock eigenPodManagerMock;
     EmptyContract emptyContract;
-
 
     mapping(address => bool) public isExcludedFuzzAddress;
 
@@ -72,19 +71,17 @@ abstract contract EigenLayerUnitTestSetup is Test {
 
         // Deploy permission controller
         permissionControllerImplementation = new PermissionController("v9.9.9");
-        permissionController = PermissionController(address(new TransparentUpgradeableProxy(
-            address(permissionControllerImplementation),
-            address(eigenLayerProxyAdmin),
-            ""
-        )));
+        permissionController = PermissionController(
+            address(new TransparentUpgradeableProxy(address(permissionControllerImplementation), address(eigenLayerProxyAdmin), ""))
+        );
 
         avsDirectoryMock = AVSDirectoryMock(payable(address(new AVSDirectoryMock())));
         allocationManagerMock = AllocationManagerMock(payable(address(new AllocationManagerMock())));
-        strategyManagerMock = StrategyManagerMock(payable(address(new StrategyManagerMock(IDelegationManager(address(delegationManagerMock))))));
+        strategyManagerMock =
+            StrategyManagerMock(payable(address(new StrategyManagerMock(IDelegationManager(address(delegationManagerMock))))));
         delegationManagerMock = DelegationManagerMock(payable(address(new DelegationManagerMock())));
         eigenPodManagerMock = EigenPodManagerMock(payable(address(new EigenPodManagerMock(pauserRegistry))));
         emptyContract = new EmptyContract();
-
 
         isExcludedFuzzAddress[address(0)] = true;
         isExcludedFuzzAddress[address(pauserRegistry)] = true;

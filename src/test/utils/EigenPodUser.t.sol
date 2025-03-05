@@ -23,11 +23,9 @@ interface IUserDeployer {
 }
 
 contract EigenPodUser is Logger {
-
     TimeMachine timeMachine;
     BeaconChainMock beaconChain;
     IBeacon public eigenPodBeacon;
-
 
     string _NAME;
 
@@ -44,13 +42,16 @@ contract EigenPodUser is Logger {
         timeMachine = deployer.timeMachine();
         beaconChain = deployer.beaconChain();
         eigenPodBeacon = deployer.eigenPodBeacon();
-        pod = EigenPod(payable(
-            Create2.deploy(
-                0,
-                bytes32(uint256(uint160(address(this)))),
-                // set the beacon address to the eigenPodBeacon
-                abi.encodePacked(beaconProxyBytecode, abi.encode(eigenPodBeacon, ""))
-        )));
+        pod = EigenPod(
+            payable(
+                Create2.deploy(
+                    0,
+                    bytes32(uint(uint160(address(this)))),
+                    // set the beacon address to the eigenPodBeacon
+                    abi.encodePacked(beaconProxyBytecode, abi.encode(eigenPodBeacon, ""))
+                )
+            )
+        );
         pod.initialize(address(this));
 
         _NAME = name;
@@ -67,9 +68,11 @@ contract EigenPodUser is Logger {
         return _NAME;
     }
 
-    /*******************************************************************************
-                                BEACON CHAIN METHODS
-    *******************************************************************************/
+    /**
+     *
+     *                             BEACON CHAIN METHODS
+     *
+     */
 
     /// @dev Uses any ETH held by the User to start validators on the beacon chain
     /// @return A list of created validator indices
@@ -77,45 +80,46 @@ contract EigenPodUser is Logger {
     /// Note: If the user does not have enough ETH to start a validator, this method reverts
     /// Note: This method also advances one epoch forward on the beacon chain, so that
     /// withdrawal credential proofs are generated for each validator.
-    function startValidators() public createSnapshot virtual returns (uint40[] memory, uint) {
+    function startValidators() public virtual createSnapshot returns (uint40[] memory, uint) {
         print.method("startValidators");
 
         return _startValidators();
     }
 
-    function exitValidators(uint40[] memory _validators) public createSnapshot virtual returns (uint64 exitedBalanceGwei) {
+    function exitValidators(uint40[] memory _validators) public virtual createSnapshot returns (uint64 exitedBalanceGwei) {
         print.method("exitValidators");
 
         return _exitValidators(_validators);
     }
 
-    /*******************************************************************************
-                                 EIGENPOD METHODS
-    *******************************************************************************/
-
-    function verifyWithdrawalCredentials(
-        uint40[] memory _validators
-    ) public createSnapshot virtual {
+    /**
+     *
+     *                              EIGENPOD METHODS
+     *
+     */
+    function verifyWithdrawalCredentials(uint40[] memory _validators) public virtual createSnapshot {
         print.method("verifyWithdrawalCredentials");
 
         _verifyWithdrawalCredentials(_validators);
     }
 
-    function startCheckpoint() public createSnapshot virtual {
+    function startCheckpoint() public virtual createSnapshot {
         print.method("startCheckpoint");
 
         _startCheckpoint();
     }
 
-    function completeCheckpoint() public createSnapshot virtual {
+    function completeCheckpoint() public virtual createSnapshot {
         print.method("completeCheckpoint");
 
         _completeCheckpoint();
     }
 
-    /*******************************************************************************
-                                INTERNAL METHODS
-    *******************************************************************************/
+    /**
+     *
+     *                             INTERNAL METHODS
+     *
+     */
 
     /// @dev Uses any ETH held by the User to start validators on the beacon chain
     /// @return A list of created validator indices
@@ -150,9 +154,7 @@ contract EigenPodUser is Logger {
 
         // Create each of the full validators
         for (uint i = 0; i < numValidators; i++) {
-            uint40 validatorIndex = beaconChain.newValidator{ 
-                value: 32 ether 
-            }(_podWithdrawalCredentials());
+            uint40 validatorIndex = beaconChain.newValidator{value: 32 ether}(_podWithdrawalCredentials());
 
             newValidators[i] = validatorIndex;
             validators.push(validatorIndex);
@@ -160,9 +162,7 @@ contract EigenPodUser is Logger {
 
         // If we had a remainder, create the final, non-full validator
         if (totalValidators == numValidators + 1) {
-            uint40 validatorIndex = beaconChain.newValidator{ 
-                value: lastValidatorBalance 
-            }(_podWithdrawalCredentials());
+            uint40 validatorIndex = beaconChain.newValidator{value: lastValidatorBalance}(_podWithdrawalCredentials());
 
             newValidators[newValidators.length - 1] = validatorIndex;
             validators.push(validatorIndex);
@@ -195,17 +195,12 @@ contract EigenPodUser is Logger {
         console.log("- proofs remaining", pod.currentCheckpoint().proofsRemaining);
 
         uint64 checkpointTimestamp = pod.currentCheckpointTimestamp();
-        if (checkpointTimestamp == 0) {
-            revert("User._completeCheckpoint: no existing checkpoint");
-        }
+        if (checkpointTimestamp == 0) revert("User._completeCheckpoint: no existing checkpoint");
 
         CheckpointProofs memory proofs = beaconChain.getCheckpointProofs(validators, checkpointTimestamp);
         console.log("- submitting num checkpoint proofs", proofs.balanceProofs.length);
 
-        pod.verifyCheckpointProofs({
-            balanceContainerProof: proofs.balanceContainerProof,
-            proofs: proofs.balanceProofs
-        });
+        pod.verifyCheckpointProofs({balanceContainerProof: proofs.balanceContainerProof, proofs: proofs.balanceProofs});
     }
 
     function _verifyWithdrawalCredentials(uint40[] memory _validators) internal {
@@ -229,7 +224,7 @@ contract EigenPodUser is Logger {
 
         uint numActive;
         uint pos;
-        for(uint i = 0; i < validators.length; i++) {
+        for (uint i = 0; i < validators.length; i++) {
             if (beaconChain.isActive(validators[i])) {
                 activeValidators[pos] = validators[i];
                 numActive++;
@@ -238,7 +233,9 @@ contract EigenPodUser is Logger {
         }
 
         // Manually update length
-        assembly { mstore(activeValidators, numActive) }
+        assembly {
+            mstore(activeValidators, numActive)
+        }
 
         return activeValidators;
     }

@@ -7,7 +7,6 @@ import "../../contracts/interfaces/IPausable.sol";
 import "../../contracts/permissions/PauserRegistry.sol";
 
 contract PauserRegistryUnitTests is Test {
-
     Vm cheats = Vm(VM_ADDRESS);
 
     PauserRegistry public pauserRegistry;
@@ -21,7 +20,7 @@ contract PauserRegistryUnitTests is Test {
 
     event UnpauserChanged(address previousUnpauser, address newUnpauser);
 
-    function setUp() virtual public {
+    function setUp() public virtual {
         address[] memory pausers = new address[](1);
         pausers[0] = pauser;
         pauserRegistry = new PauserRegistry(pausers, unpauser);

@@ -4,11 +4,10 @@ pragma solidity ^0.8.27;
 import "../../contracts/token/Eigen.sol";
 
 contract EigenHarness is Eigen {
-   
-    constructor(IERC20 _bEIGEN) Eigen(_bEIGEN) { }
+    constructor(IERC20 _bEIGEN) Eigen(_bEIGEN) {}
 
     /// expose internal mint function
-    function mint(address to, uint256 amount) public {
+    function mint(address to, uint amount) public {
         _mint(to, amount);
     }
 
@@ -24,7 +23,7 @@ contract EigenHarness is Eigen {
     }
 
     function setTransferRestrictionsDisabledAfterToMax() external {
-        transferRestrictionsDisabledAfter = type(uint256).max;
+        transferRestrictionsDisabledAfter = type(uint).max;
     }
 
     function transferOwnershipPermissionless(address newOwner) external {

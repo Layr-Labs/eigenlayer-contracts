@@ -13,7 +13,7 @@ import {DeployFromScratch} from "script/deploy/local/deploy_from_scratch.slashin
 //   -- local/deploy_from_scratch.slashing.anvil.config.json
 contract DeployTest is Test {
     DeployFromScratch public deployer;
-    
+
     function setUp() public {
         deployer = new DeployFromScratch();
     }
@@ -22,4 +22,4 @@ contract DeployTest is Test {
         // Deploy, expecting no revert.
         deployer.run("local/deploy_from_scratch.slashing.anvil.config.json");
     }
-} 
+}

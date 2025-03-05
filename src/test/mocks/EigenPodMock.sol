@@ -8,10 +8,10 @@ import "../../contracts/mixins/SemVerMixin.sol";
 contract EigenPodMock is IEigenPod, SemVerMixin, Test {
     constructor() SemVerMixin("v9.9.9") {}
 
-    function nonBeaconChainETHBalanceWei() external view returns(uint256) {}
+    function nonBeaconChainETHBalanceWei() external view returns (uint) {}
 
-    /// @notice the amount of execution layer ETH in this contract that is staked in EigenLayer (i.e. withdrawn from beaconchain but not EigenLayer), 
-    function withdrawableRestakedExecutionLayerGwei() external view returns(uint64) {}
+    /// @notice the amount of execution layer ETH in this contract that is staked in EigenLayer (i.e. withdrawn from beaconchain but not EigenLayer),
+    function withdrawableRestakedExecutionLayerGwei() external view returns (uint64) {}
 
     /// @notice Used to initialize the pointers to contracts crucial to the pod's functionality, in beacon proxy construction from EigenPodManager
     function initialize(address owner) external {}
@@ -25,7 +25,7 @@ contract EigenPodMock is IEigenPod, SemVerMixin, Test {
      * @dev Called during withdrawal or slashing.
      * @dev Note that this function is marked as non-reentrant to prevent the recipient calling back into it
      */
-    function withdrawRestakedBeaconChainETH(address recipient, uint256 amount) external {}
+    function withdrawRestakedBeaconChainETH(address recipient, uint amount) external {}
 
     /// @notice The single EigenPodManager for EigenLayer
     function eigenPodManager() external view returns (IEigenPodManager) {}
@@ -43,10 +43,10 @@ contract EigenPodMock is IEigenPod, SemVerMixin, Test {
     function validatorPubkeyHashToInfo(bytes32 validatorPubkeyHash) external view returns (ValidatorInfo memory) {}
 
     /// @notice This returns the status of a given validator
-    function validatorStatus(bytes32 pubkeyHash) external view returns(VALIDATOR_STATUS) {}
+    function validatorStatus(bytes32 pubkeyHash) external view returns (VALIDATOR_STATUS) {}
 
     /// @notice Number of validators with proven withdrawal credentials, who do not have proven full withdrawals
-    function activeValidatorCount() external view returns (uint256) {}
+    function activeValidatorCount() external view returns (uint) {}
 
     /// @notice The timestamp of the last checkpoint finalized
     function lastCheckpointTimestamp() external view returns (uint64) {}
@@ -87,17 +87,17 @@ contract EigenPodMock is IEigenPod, SemVerMixin, Test {
     function withdrawBeforeRestaking() external {}
 
     /// @notice Called by the pod owner to withdraw the nonBeaconChainETHBalanceWei
-    function withdrawNonBeaconChainETHBalanceWei(address recipient, uint256 amountToWithdraw) external {}
+    function withdrawNonBeaconChainETHBalanceWei(address recipient, uint amountToWithdraw) external {}
 
     /// @notice called by owner of a pod to remove any ERC20s deposited in the pod
-    function recoverTokens(IERC20[] memory tokenList, uint256[] memory amountsToWithdraw, address recipient) external {}
+    function recoverTokens(IERC20[] memory tokenList, uint[] memory amountsToWithdraw, address recipient) external {}
 
     function setProofSubmitter(address newProofSubmitter) external {}
 
     function proofSubmitter() external view returns (address) {}
 
-    function validatorStatus(bytes calldata pubkey) external view returns (VALIDATOR_STATUS){}
-    function validatorPubkeyToInfo(bytes calldata validatorPubkey) external view returns (ValidatorInfo memory){}
+    function validatorStatus(bytes calldata pubkey) external view returns (VALIDATOR_STATUS) {}
+    function validatorPubkeyToInfo(bytes calldata validatorPubkey) external view returns (ValidatorInfo memory) {}
 
     /// @notice Query the 4788 oracle to get the parent block root of the slot with the given `timestamp`
     /// @param timestamp of the block for which the parent block root will be returned. MUST correspond

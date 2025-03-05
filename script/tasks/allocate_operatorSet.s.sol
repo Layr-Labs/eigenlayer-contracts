@@ -33,10 +33,7 @@ contract AllocateOperatorSet is Script, Test {
 
         // Set OperatorSets
         OperatorSet[] memory sets = new OperatorSet[](1);
-        sets[0] = OperatorSet({
-            avs: avs,
-            id: operatorSetId
-        });
+        sets[0] = OperatorSet({avs: avs, id: operatorSetId});
 
         // Set new mangitudes
         uint64[] memory magnitudes = new uint64[](1);
@@ -44,15 +41,11 @@ contract AllocateOperatorSet is Script, Test {
 
         // Define a single MagnitudeAllocation and wrap it in an array
         IAllocationManagerTypes.AllocateParams[] memory allocations = new IAllocationManagerTypes.AllocateParams[](1);
-        allocations[0] = IAllocationManagerTypes.AllocateParams({
-            operatorSet: sets[0],
-            strategies: strategies,
-            newMagnitudes: magnitudes
-        });
+        allocations[0] = IAllocationManagerTypes.AllocateParams({operatorSet: sets[0], strategies: strategies, newMagnitudes: magnitudes});
 
         // Perform allocation
         am.modifyAllocations(msg.sender, allocations);
-        
+
         // STOP RECORDING TRANSACTIONS FOR DEPLOYMENT
         vm.stopBroadcast();
     }

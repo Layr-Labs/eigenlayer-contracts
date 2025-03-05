@@ -8,10 +8,10 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal_Base is UpgradeTest
         User staker;
         User operator;
         IStrategy[] strategies;
-        uint256[] tokenBalances;
-        uint256[] shares;
-        uint256[] withdrawalShares;
-        uint256[] expectedTokens;
+        uint[] tokenBalances;
+        uint[] shares;
+        uint[] withdrawalShares;
+        uint[] expectedTokens;
         Withdrawal[] withdrawals;
         bool isPartial;
         bool completeAsTokens;
@@ -31,8 +31,8 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal_Base is UpgradeTest
 
         // Setup withdrawal shares (full or partial)
         state.isPartial = _randBool();
-        state.withdrawalShares = new uint256[](state.shares.length);
-        for (uint256 i = 0; i < state.shares.length; i++) {
+        state.withdrawalShares = new uint[](state.shares.length);
+        for (uint i = 0; i < state.shares.length; i++) {
             state.withdrawalShares[i] = state.isPartial ? state.shares[i] / 2 : state.shares[i];
         }
 
@@ -41,20 +41,29 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal_Base is UpgradeTest
     }
 
     function _completeWithdrawal(TestState memory state) internal {
-        for (uint256 i = 0; i < state.withdrawals.length; i++) {
+        for (uint i = 0; i < state.withdrawals.length; i++) {
             if (state.completeAsTokens) {
                 IERC20[] memory tokens = state.staker.completeWithdrawalAsTokens(state.withdrawals[i]);
-                check_Withdrawal_AsTokens_State(state.staker, state.operator, state.withdrawals[i], state.strategies, state.withdrawalShares, tokens, state.expectedTokens);
+                check_Withdrawal_AsTokens_State(
+                    state.staker,
+                    state.operator,
+                    state.withdrawals[i],
+                    state.strategies,
+                    state.withdrawalShares,
+                    tokens,
+                    state.expectedTokens
+                );
             } else {
                 state.staker.completeWithdrawalAsShares(state.withdrawals[i]);
-                check_Withdrawal_AsShares_State(state.staker, state.operator, state.withdrawals[i], state.strategies, state.withdrawalShares);
+                check_Withdrawal_AsShares_State(
+                    state.staker, state.operator, state.withdrawals[i], state.strategies, state.withdrawalShares
+                );
             }
         }
     }
 }
 
 contract Integration_Upgrade_Complete_PreSlashing_Withdrawal is Integration_Upgrade_Complete_PreSlashing_Withdrawal_Base {
-
     function testFuzz_deposit_queue_upgrade_complete(uint24 r) public rand(r) {
         TestState memory state = _init_({randomness: r, withOperator: false, withDelegation: false});
         state.withdrawals = state.staker.queueWithdrawals(state.strategies, state.withdrawalShares);
@@ -159,9 +168,9 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal_Slash is Integratio
         avs.slashOperator(slashParams);
         check_Base_Slashing_State(state.operator, allocateParams, slashParams);
 
-        // Complete withdrawals as shares. Shares need to be recalculated to handle slight round down after slashing. 
+        // Complete withdrawals as shares. Shares need to be recalculated to handle slight round down after slashing.
         state.completeAsTokens = false;
-        
+
         _rollBlocksForCompleteWithdrawals(state.withdrawals);
         _completeWithdrawal(state);
     }

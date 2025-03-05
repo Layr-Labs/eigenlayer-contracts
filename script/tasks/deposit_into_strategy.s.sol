@@ -25,7 +25,7 @@ import "forge-std/Test.sol";
 contract DepositIntoStrategy is Script, Test {
     Vm cheats = Vm(VM_ADDRESS);
 
-    function run(string memory configFile, address strategy, address token, uint256 amount) public {
+    function run(string memory configFile, address strategy, address token, uint amount) public {
         // Load config
         string memory deployConfigPath = string(bytes(string.concat("script/output/", configFile)));
         string memory config_data = vm.readFile(deployConfigPath);
@@ -44,7 +44,7 @@ contract DepositIntoStrategy is Script, Test {
 
         // do deposit
         sm.depositIntoStrategy(IStrategy(strategy), IERC20(token), amount);
-        
+
         vm.stopBroadcast();
     }
 }

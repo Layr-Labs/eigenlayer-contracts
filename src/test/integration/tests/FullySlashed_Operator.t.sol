@@ -25,7 +25,7 @@ contract Integration_FullySlashed_Operator is IntegrationCheckUtils {
         (staker, strategies, initTokenBalances) = _newRandomStaker();
         operator = _newRandomOperator_NoAssets();
         (avs,) = _newRandomAVS();
-        
+
         operatorSet = avs.createOperatorSet(strategies);
         tokens = _getUnderlyingTokens(strategies);
 
@@ -79,7 +79,7 @@ contract Integration_FullySlashed_Operator is IntegrationCheckUtils {
         // 6) Staker redelegates to new operator.
         Withdrawal[] memory withdrawals = staker.redelegate(newOperator);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
-        check_Redelegate_State(staker, operator, newOperator, withdrawals, withdrawalRoots, strategies, new uint256[](strategies.length));
+        check_Redelegate_State(staker, operator, newOperator, withdrawals, withdrawalRoots, strategies, new uint[](strategies.length));
         for (uint i = 0; i < withdrawals.length; i++) {
             for (uint j = 0; j < withdrawals[i].strategies.length; j++) {
                 assertEq(withdrawals[i].scaledShares[j], 0, "sanity: scaled shares should be zero");
