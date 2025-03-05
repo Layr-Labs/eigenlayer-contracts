@@ -79,7 +79,7 @@ contract DeployFromScratch is Script, Test {
     string SEMVER;
 
     // IMMUTABLES TO SET
-    uint64 GOERLI_GENESIS_TIME = 1616508000;
+    uint64 HOLESKY_GENESIS_TIME = 1616508000;
 
     // OTHER DEPLOYMENT PARAMETERS
     uint256 STRATEGY_MANAGER_INIT_PAUSED_STATUS;
@@ -231,7 +231,7 @@ contract DeployFromScratch is Script, Test {
         eigenPodImplementation = new EigenPod(
             ethPOSDeposit,
             eigenPodManager,
-            GOERLI_GENESIS_TIME,
+            HOLESKY_GENESIS_TIME,
             SEMVER
         );
 
