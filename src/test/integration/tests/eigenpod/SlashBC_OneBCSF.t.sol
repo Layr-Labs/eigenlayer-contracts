@@ -91,7 +91,7 @@ contract Integration_SlashBC_OneBCSF is IntegrationCheckUtils {
 
         staker.startCheckpoint();
         staker.completeCheckpoint();
-        check_CompleteCheckpoint_WithSlashing_HandleRoundDown_State(staker, slashedValidators, slashedGwei);
+        check_CompleteCheckpoint_WithCLSlashing_HandleRoundDown_State(staker, slashedGwei);
         // BCSF should be 0 now
         assertEq(eigenPodManager.beaconChainSlashingFactor(address(staker)), 0);
 

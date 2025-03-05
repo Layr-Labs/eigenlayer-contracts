@@ -607,7 +607,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
-    function assert_BCSF_Zero(
+    function assert_Zero_BCSF(
         User staker,
         string memory err
     ) internal view {
@@ -664,6 +664,14 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         for (uint i = 0; i < strategies.length; i++) {
             assertGe(depositShares[i], withdrawableShares[i], err);
         }
+    }
+
+    function assert_Zero_WithdrawableShares(
+        User staker,
+        IStrategy strategy,
+        string memory err
+    ) internal view {
+        assertEq(_getWithdrawableShares(staker, strategy), 0, err);
     }
     
     /*******************************************************************************
@@ -1892,16 +1900,6 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         assert_Snap_Removed_Staker_WithdrawableShares_AtLeast(staker, strat.toArray(), removedShares.toArrayU256(), err);
     }
 
-    function assert_Snap_Removed_Staker_WithdrawableShares_AtLeast(
-        User staker,
-        IStrategy strat,
-        uint removedShares,
-        uint errBound,
-        string memory err
-    ) internal {
-        assert_Snap_Removed_Staker_WithdrawableShares_AtLeast(staker, strat.toArray(), removedShares.toArrayU256(), errBound, err);
-    }
-
     function assert_Snap_Delta_StakerShares(
         User staker, 
         IStrategy[] memory strategies, 
@@ -2349,7 +2347,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         assertEq(prevExitedBalanceGwei + addedGwei, curExitedBalanceGwei, err);
     }
 
-    function assert_Snap_BCSF_Decreased(
+    function assert_Snap_Decreased_BCSF(
         User staker,
         string memory err
     ) internal {
@@ -2359,7 +2357,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         assertLt(curBCSF, prevBCSF, err);
     }
 
-    function assert_Snap_BCSF_Unchanged(
+    function assert_Snap_Unchanged_BCSF(
         User staker,
         string memory err
     ) internal {
