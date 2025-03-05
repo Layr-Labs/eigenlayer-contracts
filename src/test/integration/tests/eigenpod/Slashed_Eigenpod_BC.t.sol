@@ -177,9 +177,9 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         //Additional deposit on beacon chain so dsf is nonwad
         uint amount = 32 ether * _randUint({min: 1, max: 5});
         cheats.deal(address(staker), amount);
-        (uint40[] memory validators,) = staker.startValidators();
+        (uint40[] memory newValidators,) = staker.startValidators();
         beaconChain.advanceEpoch_NoWithdrawNoRewards();
-        staker.verifyWithdrawalCredentials(validators);
+        staker.verifyWithdrawalCredentials(newValidators);
 
         uint256[] memory initDepositShares = _getStakerDepositShares(staker, strategies);
 
@@ -211,9 +211,9 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         //Additional deposit on beacon chain so dsf is nonwad
         uint amount = 32 ether * _randUint({min: 1, max: 5});
         cheats.deal(address(staker), amount);
-        (uint40[] memory validators,) = staker.startValidators();
+        (uint40[] memory newValidators,) = staker.startValidators();
         beaconChain.advanceEpoch_NoWithdrawNoRewards();
-        staker.verifyWithdrawalCredentials(validators);
+        staker.verifyWithdrawalCredentials(newValidators);
 
         uint256[] memory initDepositShares = _getStakerDepositShares(staker, strategies);
 
@@ -239,15 +239,18 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         check_IncrAlloc_State_Slashable(operator, allocateParams);
         _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
 
-        //Withdraw all shares
-        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, initDepositShares);
+        // Withdraw all shares
+        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, initDepositShares);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        check_QueuedWithdrawal_State(staker, operator, strategies, initDepositShares, withdrawableShares, withdrawals, withdrawalRoots);
 
         // Complete withdrawal as shares
         // Fast forward to when we can complete the withdrawal
         _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint256 i = 0; i < withdrawals.length; ++i) {
             staker.completeWithdrawalAsShares(withdrawals[i]);
+            check_Withdrawal_AsShares_State(staker, operator, withdrawals[i], withdrawals[i].strategies, withdrawableShares);
         }
 
         (uint256[] memory withdrawableSharesAfter, uint256[] memory depositSharesAfter) = delegationManager.getWithdrawableShares(address(staker), strategies);
@@ -259,10 +262,10 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         // Prove an additional validator
         uint amount = 32 ether * _randUint({min: 1, max: 5});
         cheats.deal(address(staker), amount);
-        (uint40[] memory validators, uint64 addedBeaconBalanceGwei) = staker.startValidators();
+        (uint40[] memory newValidators, uint64 addedBeaconBalanceGwei) = staker.startValidators();
         beaconChain.advanceEpoch_NoWithdrawNoRewards();
-        staker.verifyWithdrawalCredentials(validators);
-        check_VerifyWC_State(staker, validators, addedBeaconBalanceGwei);
+        staker.verifyWithdrawalCredentials(newValidators);
+        check_VerifyWC_State(staker, newValidators, addedBeaconBalanceGwei);
 
         // Queue withdrawal for all tokens
         uint[] memory depositShares = _getStakerDepositShares(staker, strategies);
@@ -285,10 +288,10 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         // Prove an additional validator
         uint amount = 32 ether * _randUint({min: 1, max: 5});
         cheats.deal(address(staker), amount);
-        (uint40[] memory validators, uint64 addedBeaconBalanceGwei) = staker.startValidators();
+        (uint40[] memory newValidators, uint64 addedBeaconBalanceGwei) = staker.startValidators();
         beaconChain.advanceEpoch_NoWithdrawNoRewards();
-        staker.verifyWithdrawalCredentials(validators);
-        check_VerifyWC_State(staker, validators, addedBeaconBalanceGwei);
+        staker.verifyWithdrawalCredentials(newValidators);
+        check_VerifyWC_State(staker, newValidators, addedBeaconBalanceGwei);
 
         // Queue withdrawal for all 
         uint[] memory depositShares = _getStakerDepositShares(staker, strategies);
@@ -332,14 +335,15 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         beaconChain.advanceEpoch_NoWithdrawNoRewards();
         staker.verifyWithdrawalCredentials(newValidators);
         check_VerifyWC_State(staker, newValidators, beaconBalanceAddedGwei);
-        uint[] memory initDepositShares = _getStakerDepositShares(staker, strategies); // Deposit shares increased after verifying validator
 
         // Delegate to operator
+        uint[] memory initDepositShares = _getStakerDepositShares(staker, strategies); // Deposit shares increased after verifying validator
         staker.delegateTo(operator);
         check_Delegation_State(staker, operator, strategies, initDepositShares);
     }
 }
 
+/// @notice This is not considered dual slashing since the operator is pre-slashed
 contract Integration_SlashedOperator_SlashedEigenpod_Base is IntegrationCheckUtils {
     using ArrayLib for *;
     

@@ -309,18 +309,18 @@ contract Integration_DualSlashing_FullSlashes is Integration_DualSlashing_Base {
         uint[] memory withdrawableShares2 = _getWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals2 = staker.queueWithdrawals(strategies, depositShares);
         bytes32[] memory withdrawalRoots2 = _getWithdrawalHashes(withdrawals2);
-        // TODO: add check once queued withdrawal without operator is implemented
-        // check_QueuedWithdrawal_State(staker, operator, strategies, depositShares, withdrawableShares2, withdrawals2, withdrawalRoots2);
+        check_QueuedWithdrawal_State(staker, operator, strategies, depositShares, withdrawableShares2, withdrawals2, withdrawalRoots2);
 
         // 14. Complete second set of withdrawals
         _rollBlocksForCompleteWithdrawals(withdrawals2);
         uint[] memory expectedTokens = _calculateExpectedTokens(strategies, withdrawableShares2);
         for (uint256 i = 0; i < withdrawals2.length; ++i) {
             staker.completeWithdrawalAsTokens(withdrawals2[i]);
-            // check_Withdrawal_AsTokens_State(staker, operator, withdrawals2[i], withdrawals2[i].strategies, withdrawableShares2, tokens, expectedTokens);
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals2[i], withdrawals2[i].strategies, withdrawableShares2, tokens, expectedTokens);
         }
 
-        // Sanity check that balance locked in pod is correct
+        // Sanity check that balance locked in pod and depositShares are 0
+        assertEq(0, _getStakerDepositShares(staker, strategies)[0], "deposit shares should be 0");
         assertEq(address(staker.pod()).balance, depositShares[0] - expectedTokens[0], "staker withdrew more than expected");
     }
 
