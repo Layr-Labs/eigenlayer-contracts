@@ -71,6 +71,8 @@ interface IStrategy is IStrategyErrors, IStrategyEvents, ISemVerMixin {
 
     /**
      * @notice Used to convert a number of shares to the equivalent amount of underlying tokens for this strategy.
+     * For a staker using this function and trying to calculate the amount of underlying tokens they have in total they
+     * should input into `amountShares` their withdrawable shares read from the `DelegationManager` contract.
      * @notice In contrast to `sharesToUnderlyingView`, this function **may** make state modifications
      * @param amountShares is the amount of shares to calculate its conversion into the underlying token
      * @return The amount of underlying tokens corresponding to the input `amountShares`
@@ -84,7 +86,8 @@ interface IStrategy is IStrategyErrors, IStrategyEvents, ISemVerMixin {
      * @notice Used to convert an amount of underlying tokens to the equivalent amount of shares in this strategy.
      * @notice In contrast to `underlyingToSharesView`, this function **may** make state modifications
      * @param amountUnderlying is the amount of `underlyingToken` to calculate its conversion into strategy shares
-     * @return The amount of underlying tokens corresponding to the input `amountShares`
+     * @return The amount of shares corresponding to the input `amountUnderlying`.  This is used as deposit shares
+     * in the `StrategyManager` contract.
      * @dev Implementation for these functions in particular may vary significantly for different strategies
      */
     function underlyingToShares(
@@ -109,9 +112,11 @@ interface IStrategy is IStrategyErrors, IStrategyEvents, ISemVerMixin {
 
     /**
      * @notice Used to convert a number of shares to the equivalent amount of underlying tokens for this strategy.
+     * For a staker using this function and trying to calculate the amount of underlying tokens they have in total they
+     * should input into `amountShares` their withdrawable shares read from the `DelegationManager` contract.
      * @notice In contrast to `sharesToUnderlying`, this function guarantees no state modifications
      * @param amountShares is the amount of shares to calculate its conversion into the underlying token
-     * @return The amount of shares corresponding to the input `amountUnderlying`
+     * @return The amount of underlying tokens corresponding to the input `amountShares`
      * @dev Implementation for these functions in particular may vary significantly for different strategies
      */
     function sharesToUnderlyingView(
@@ -122,7 +127,8 @@ interface IStrategy is IStrategyErrors, IStrategyEvents, ISemVerMixin {
      * @notice Used to convert an amount of underlying tokens to the equivalent amount of shares in this strategy.
      * @notice In contrast to `underlyingToShares`, this function guarantees no state modifications
      * @param amountUnderlying is the amount of `underlyingToken` to calculate its conversion into strategy shares
-     * @return The amount of shares corresponding to the input `amountUnderlying`
+     * @return The amount of shares corresponding to the input `amountUnderlying`. This is used as deposit shares
+     * in the `StrategyManager` contract.
      * @dev Implementation for these functions in particular may vary significantly for different strategies
      */
     function underlyingToSharesView(

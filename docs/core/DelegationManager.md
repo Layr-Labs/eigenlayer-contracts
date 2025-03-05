@@ -91,7 +91,7 @@ function registerAsOperator(
     address initDelegationApprover,
     uint32 allocationDelay,
     string calldata metadataURI
-) external;
+) external nonReentrant;
 ```
 
 Registers the caller as an operator in EigenLayer. The new operator provides the following input parameters:
@@ -128,6 +128,7 @@ function modifyOperatorDetails(
 ) 
     external 
     checkCanCall(operator)
+    nonReentrant
 ```
 
 _Note: this method can be called directly by an operator, or by a caller authorized by the operator. See [`PermissionController.md`](../permissions/PermissionController.md) for details._
@@ -332,6 +333,7 @@ function delegateTo(
     bytes32 approverSalt
 ) 
     external
+    nonReentrant
 ```
 
 Allows a staker to delegate their assets to an operator. Delegation is all-or-nothing: when a staker delegates to an operator, they delegate ALL their assets. Stakers can only be delegated to one operator at a time.
@@ -369,7 +371,8 @@ For each strategy the staker has deposit shares in, the `DelegationManager` will
 function undelegate(
     address staker
 ) 
-    external 
+    external
+    nonReentrant
     returns (bytes32[] memory withdrawalRoots);
 ```
 
@@ -470,7 +473,8 @@ function queueWithdrawals(
     QueuedWithdrawalParams[] calldata queuedWithdrawalParams
 ) 
     external 
-    onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE) 
+    onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE)
+    nonReentrant
     returns (bytes32[] memory)
 ```
 
@@ -566,7 +570,7 @@ For each `Withdrawal`, `withdrawal.scaledShares` are converted into _withdrawabl
 
 If the staker chooses to receive the withdrawal _as tokens_, the withdrawable shares are converted to tokens via the corresponding share manager (`EigenPodManager`/`StrategyManager`), and sent to the caller.
 
-If the staker chooses to receive the withdrawal _as shares_, the withdrawable shares are credited to the staker via the corresponding share manager (`EigenPodManager`/`StrategyManager`). Additionally, if the caller is delegated to an operator, the new slashing factor for the given `(staker, operator, strategy)` determines how many shares are awarded to the operator (and how the staker's deposit scaling factor is updated) (See [Slashing Factors and Scaling Shares](#slashing-factors-and-scaling-shares)).
+If the staker chooses to receive the withdrawal _as shares_, the withdrawable shares are credited to the staker via the corresponding share manager (`EigenPodManager`/`StrategyManager`). Additionally, if the caller is delegated to an operator, the new slashing factor for the given `(staker, operator, strategy)` determines how many shares are awarded to the operator (and how the staker's deposit scaling factor is updated) (See [Slashing Factors and Scaling Shares](#slashing-factors-and-scaling-shares)). In receiving the withdrawal as shares, this amount is credited as deposit shares for the staker. Due to known rounding error, the amount of withdrawable shares after completing the withdrawal may be slightly less than what was originally withdrawable.
 
 **Note:** if the staker (i) receives the withdrawal as shares, (ii) has `MAX_STAKER_STRATEGY_LIST_LENGTH` unique deposit strategies in the `StrategyManager`, and (iii) is withdrawing to a `StrategyManager` strategy in which they do not currently have shares, this will revert. The staker cannot withdraw such that their `stakerStrategyList` length exceeds the maximum; this withdrawal will have to be completed as tokens instead.
 
@@ -653,6 +657,7 @@ function slashOperatorShares(
 ) 
     external
     onlyAllocationManager
+    nonReentrant
 ```
 
 _See [Shares Accounting - Slashing](https://github.com/Layr-Labs/eigenlayer-contracts/blob/slashing-magnitudes/docs/core/accounting/SharesAccounting.md#slashing) for a description of the accounting in this method._
@@ -697,13 +702,14 @@ function increaseDelegatedShares(
 ) 
     external
     onlyStrategyManagerOrEigenPodManager
+    nonReentrant
 ```
 
 Called by either the `StrategyManager` or `EigenPodManager` when a staker's deposit shares for one or more strategies increase.
 
 If the staker is delegated to an operator, the new deposit shares are directly added to that operator's `operatorShares`. Regardless of delegation status, the staker's deposit scaling factor is updated.
 
-**Note** that if either the staker's current operator has been slashed 100% for `strategy`, OR the staker has been slashed 100% on the beacon chain such that the calculated slashing factor is 0, this method WILL REVERT. See [Shares Accounting - Fully Slashed](./accounting/SharesAccountingEdgeCases.md#fully-slashed-for-a-strategy) for details.
+**Note** that if either the staker's current operator has been slashed 100% for `strategy`, OR the staker has been slashed 100% on the beacon chain such that the calculated slashing factor is 0, this method WILL REVERT. See [Shares Accounting - Fully Slashed](./accounting/SharesAccountingEdgeCases.md#fully-slashed-for-a-strategy) for details. This doesn't block delegation to an operator if the staker has 0 deposit shares for a strategy which has a slashing factor of 0, but any subsequent deposits that call `increaseDelegatedShares` will revert from the **Fully Slashed** edge case.
 
 *Effects*:
 * If the staker is delegated to an operator, `addedShares` are added to the operator's shares
@@ -731,6 +737,7 @@ function decreaseDelegatedShares(
 ) 
     external
     onlyEigenPodManager
+    nonReentrant
 ```
 
 Called by the `EigenPodManager` when a staker's shares decrease due to a checkpointed balance decrease on the beacon chain. If the staker is delegated to an operator, the operator's shares are decreased in return. Otherwise, this method does nothing.
