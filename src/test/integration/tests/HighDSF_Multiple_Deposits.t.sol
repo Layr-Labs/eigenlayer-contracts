@@ -6,7 +6,7 @@ import "src/test/integration/IntegrationChecks.t.sol";
 /// @notice Testing the rounding behavior when the DSF is high and there are multiple deposits
 contract Integration_HighDSF_Multiple_Deposits is IntegrationCheckUtils {
     using ArrayLib for *;
- 
+
     AVS avs;
     OperatorSet operatorSet;
 
@@ -51,7 +51,7 @@ contract Integration_HighDSF_Multiple_Deposits is IntegrationCheckUtils {
         // 4. delegate to operator
         staker.delegateTo(operator);
 
-        uint256 slashingFactor = staker.getSlashingFactor(strategies[0]);
+        uint slashingFactor = staker.getSlashingFactor(strategies[0]);
         assertEq(slashingFactor, 1, "slashing factor should be 1");
     }
 

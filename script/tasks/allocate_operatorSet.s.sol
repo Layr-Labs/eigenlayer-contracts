@@ -13,7 +13,13 @@ import "forge-std/Test.sol";
 contract AllocateOperatorSet is Script, Test {
     Vm cheats = Vm(VM_ADDRESS);
 
-    function run(string memory configFile, address strategy, address avs, uint32 operatorSetId, uint64 magnitude) public {
+    function run(
+        string memory configFile,
+        address strategy,
+        address avs,
+        uint32 operatorSetId,
+        uint64 magnitude
+    ) public {
         // Load config
         string memory deployConfigPath = string(bytes(string.concat("script/output/", configFile)));
         string memory config_data = vm.readFile(deployConfigPath);
@@ -33,10 +39,7 @@ contract AllocateOperatorSet is Script, Test {
 
         // Set OperatorSets
         OperatorSet[] memory sets = new OperatorSet[](1);
-        sets[0] = OperatorSet({
-            avs: avs,
-            id: operatorSetId
-        });
+        sets[0] = OperatorSet({avs: avs, id: operatorSetId});
 
         // Set new mangitudes
         uint64[] memory magnitudes = new uint64[](1);
@@ -52,7 +55,7 @@ contract AllocateOperatorSet is Script, Test {
 
         // Perform allocation
         am.modifyAllocations(msg.sender, allocations);
-        
+
         // STOP RECORDING TRANSACTIONS FOR DEPLOYMENT
         vm.stopBroadcast();
     }

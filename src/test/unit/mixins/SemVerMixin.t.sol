@@ -7,7 +7,7 @@ import {SemVerMixin} from "src/contracts/mixins/SemVerMixin.sol";
 // Helper contract to test the abstract SemVerMixin
 contract SemVerMixinMock is SemVerMixin {
     constructor(string memory version) SemVerMixin(version) {}
-    
+
     // Expose internal function for testing
     function majorVersion() public view returns (string memory) {
         return _majorVersion();
@@ -26,4 +26,4 @@ contract SemVerMixinTest is Test {
         semVer = new SemVerMixinMock("v1.2.3");
         assertEq(semVer.majorVersion(), "v1");
     }
-} 
+}

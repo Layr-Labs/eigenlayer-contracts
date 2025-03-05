@@ -11,11 +11,11 @@ interface IDelayedWithdrawalRouter_DeprecatedM1 {
 
     // struct used to store a single users delayedWithdrawal data
     struct UserDelayedWithdrawals {
-        uint256 delayedWithdrawalsCompleted;
+        uint delayedWithdrawalsCompleted;
         DelayedWithdrawal[] delayedWithdrawals;
     }
 
-    /** 
+    /**
      * @notice Creates an delayed withdrawal for `msg.value` to the `recipient`.
      * @dev Only callable by the `podOwner`'s EigenPod contract.
      */
@@ -26,16 +26,16 @@ interface IDelayedWithdrawalRouter_DeprecatedM1 {
      * @param recipient The address to claim delayedWithdrawals for.
      * @param maxNumberOfWithdrawalsToClaim Used to limit the maximum number of withdrawals to loop through claiming.
      */
-    function claimDelayedWithdrawals(address recipient, uint256 maxNumberOfWithdrawalsToClaim) external;
+    function claimDelayedWithdrawals(address recipient, uint maxNumberOfWithdrawalsToClaim) external;
 
     /**
      * @notice Called in order to withdraw delayed withdrawals made to the caller that have passed the `withdrawalDelayBlocks` period.
      * @param maxNumberOfWithdrawalsToClaim Used to limit the maximum number of withdrawals to loop through claiming.
      */
-    function claimDelayedWithdrawals(uint256 maxNumberOfWithdrawalsToClaim) external;
+    function claimDelayedWithdrawals(uint maxNumberOfWithdrawalsToClaim) external;
 
     /// @notice Owner-only function for modifying the value of the `withdrawalDelayBlocks` variable.
-    function setWithdrawalDelayBlocks(uint256 newValue) external;
+    function setWithdrawalDelayBlocks(uint newValue) external;
 
     /// @notice Getter function for the mapping `_userWithdrawals`
     function userWithdrawals(address user) external view returns (UserDelayedWithdrawals memory);
@@ -45,19 +45,19 @@ interface IDelayedWithdrawalRouter_DeprecatedM1 {
 
     /// @notice Getter function to get all delayedWithdrawals that are currently claimable by the `user`
     function getClaimableUserDelayedWithdrawals(address user) external view returns (DelayedWithdrawal[] memory);
-    
+
     /// @notice Getter function for fetching the delayedWithdrawal at the `index`th entry from the `_userWithdrawals[user].delayedWithdrawals` array
-    function userDelayedWithdrawalByIndex(address user, uint256 index) external view returns (DelayedWithdrawal memory);
+    function userDelayedWithdrawalByIndex(address user, uint index) external view returns (DelayedWithdrawal memory);
 
     /// @notice Getter function for fetching the length of the delayedWithdrawals array of a specific user
-    function userWithdrawalsLength(address user) external view returns (uint256);
+    function userWithdrawalsLength(address user) external view returns (uint);
 
     /// @notice Convenience function for checking whether or not the delayedWithdrawal at the `index`th entry from the `_userWithdrawals[user].delayedWithdrawals` array is currently claimable
-    function canClaimDelayedWithdrawal(address user, uint256 index) external view returns (bool);
+    function canClaimDelayedWithdrawal(address user, uint index) external view returns (bool);
 
     /**
      * @notice Delay enforced by this contract for completing any delayedWithdrawal. Measured in blocks, and adjustable by this contract's owner,
      * up to a maximum of `MAX_WITHDRAWAL_DELAY_BLOCKS`. Minimum value is 0 (i.e. no delay enforced).
      */
-    function withdrawalDelayBlocks() external view returns (uint256);
+    function withdrawalDelayBlocks() external view returns (uint);
 }

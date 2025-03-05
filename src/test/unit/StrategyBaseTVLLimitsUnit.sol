@@ -10,16 +10,16 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
     StrategyBaseTVLLimits public strategyWithTVLLimits;
 
     // defaults for tests, used in setup
-    uint256 maxTotalDeposits = 3200e18;
-    uint256 maxPerDeposit = 32e18;
+    uint maxTotalDeposits = 3200e18;
+    uint maxPerDeposit = 32e18;
 
     /// @notice Emitted when `maxPerDeposit` value is updated from `previousValue` to `newValue`
-    event MaxPerDepositUpdated(uint256 previousValue, uint256 newValue);
+    event MaxPerDepositUpdated(uint previousValue, uint newValue);
 
     /// @notice Emitted when `maxTotalDeposits` value is updated from `previousValue` to `newValue`
-    event MaxTotalDepositsUpdated(uint256 previousValue, uint256 newValue);
+    event MaxTotalDepositsUpdated(uint previousValue, uint newValue);
 
-    function setUp() virtual public override {
+    function setUp() public virtual override {
         // copy setup for StrategyBaseUnitTests
         StrategyBaseUnitTests.setUp();
 
@@ -30,7 +30,9 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
                 new TransparentUpgradeableProxy(
                     address(strategyBaseTVLLimitsImplementation),
                     address(proxyAdmin),
-                    abi.encodeWithSelector(StrategyBaseTVLLimits.initialize.selector, maxPerDeposit, maxTotalDeposits, underlyingToken, pauserRegistry)
+                    abi.encodeWithSelector(
+                        StrategyBaseTVLLimits.initialize.selector, maxPerDeposit, maxTotalDeposits, underlyingToken, pauserRegistry
+                    )
                 )
             )
         );
@@ -44,15 +46,19 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
         strategy = strategyWithTVLLimits;
     }
 
-    function testSetTVLLimits(uint256 maxPerDepositFuzzedInput, uint256 maxTotalDepositsFuzzedInput) public {
+    function testSetTVLLimits(uint maxPerDepositFuzzedInput, uint maxTotalDepositsFuzzedInput) public {
         _setTVLLimits(maxPerDepositFuzzedInput, maxTotalDepositsFuzzedInput);
-        (uint256 _maxPerDeposit, uint256 _maxDeposits) = strategyWithTVLLimits.getTVLLimits();
+        (uint _maxPerDeposit, uint _maxDeposits) = strategyWithTVLLimits.getTVLLimits();
 
         assertEq(_maxPerDeposit, maxPerDepositFuzzedInput);
         assertEq(_maxDeposits, maxTotalDepositsFuzzedInput);
     }
 
-    function testSetTVLLimitsFailsWhenNotCalledByUnpauser(uint256 maxPerDepositFuzzedInput, uint256 maxTotalDepositsFuzzedInput, address notUnpauser) public {
+    function testSetTVLLimitsFailsWhenNotCalledByUnpauser(
+        uint maxPerDepositFuzzedInput,
+        uint maxTotalDepositsFuzzedInput,
+        address notUnpauser
+    ) public {
         cheats.assume(notUnpauser != address(proxyAdmin));
         cheats.assume(notUnpauser != unpauser);
         cheats.prank(notUnpauser);
@@ -60,14 +66,14 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
         strategyWithTVLLimits.setTVLLimits(maxPerDepositFuzzedInput, maxTotalDepositsFuzzedInput);
     }
 
-    function testSetInvalidMaxPerDepositAndMaxDeposits(uint256 maxPerDepositFuzzedInput, uint256 maxTotalDepositsFuzzedInput) public {
+    function testSetInvalidMaxPerDepositAndMaxDeposits(uint maxPerDepositFuzzedInput, uint maxTotalDepositsFuzzedInput) public {
         cheats.assume(maxTotalDepositsFuzzedInput < maxPerDepositFuzzedInput);
         cheats.prank(unpauser);
         cheats.expectRevert(IStrategyErrors.MaxPerDepositExceedsMax.selector);
         strategyWithTVLLimits.setTVLLimits(maxPerDepositFuzzedInput, maxTotalDepositsFuzzedInput);
     }
 
-    function testDepositMoreThanMaxPerDeposit(uint256 maxPerDepositFuzzedInput, uint256 maxTotalDepositsFuzzedInput, uint256 amount) public {
+    function testDepositMoreThanMaxPerDeposit(uint maxPerDepositFuzzedInput, uint maxTotalDepositsFuzzedInput, uint amount) public {
         cheats.assume(amount > maxPerDepositFuzzedInput);
         _setTVLLimits(maxPerDepositFuzzedInput, maxTotalDepositsFuzzedInput);
 
@@ -79,13 +85,13 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
     function testDepositMorethanMaxDeposits() public {
         maxTotalDeposits = 1e12;
         maxPerDeposit = 3e11;
-        uint256 numDeposits = maxTotalDeposits / maxPerDeposit;
+        uint numDeposits = maxTotalDeposits / maxPerDeposit;
 
         _setTVLLimits(maxPerDeposit, maxTotalDeposits);
 
         underlyingToken.transfer(address(strategyManager), maxTotalDeposits);
         cheats.startPrank(address(strategyManager));
-        for (uint256 i = 0; i < numDeposits; i++) {
+        for (uint i = 0; i < numDeposits; i++) {
             underlyingToken.transfer(address(strategyWithTVLLimits), maxPerDeposit);
             strategyWithTVLLimits.deposit(underlyingToken, maxPerDeposit);
         }
@@ -99,7 +105,7 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
         strategyWithTVLLimits.deposit(underlyingToken, maxPerDeposit);
     }
 
-    function testDepositValidAmount(uint256 depositAmount) public {
+    function testDepositValidAmount(uint depositAmount) public {
         maxTotalDeposits = 1e12;
         maxPerDeposit = 3e11;
         cheats.assume(depositAmount > 0);
@@ -110,14 +116,14 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
         // we need to actually transfer the tokens to the strategy to avoid underflow in the `deposit` calculation
         underlyingToken.transfer(address(strategyWithTVLLimits), depositAmount);
 
-        uint256 sharesBefore = strategyWithTVLLimits.totalShares();
+        uint sharesBefore = strategyWithTVLLimits.totalShares();
         cheats.prank(address(strategyManager));
         strategyWithTVLLimits.deposit(underlyingToken, depositAmount);
 
         require(strategyWithTVLLimits.totalShares() == depositAmount + sharesBefore, "total shares not updated correctly");
     }
 
-    function testDepositTVLLimit_ThenChangeTVLLimit(uint256 maxTotalDepositsFuzzedInput, uint256 newMaxTotalDepositsFuzzedInput) public {
+    function testDepositTVLLimit_ThenChangeTVLLimit(uint maxTotalDepositsFuzzedInput, uint newMaxTotalDepositsFuzzedInput) public {
         cheats.assume(maxTotalDepositsFuzzedInput > 0);
         cheats.assume(newMaxTotalDepositsFuzzedInput > maxTotalDepositsFuzzedInput);
         cheats.assume(newMaxTotalDepositsFuzzedInput < initialSupply);
@@ -126,7 +132,7 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
 
         underlyingToken.transfer(address(strategyWithTVLLimits), maxTotalDepositsFuzzedInput);
 
-        uint256 sharesBefore = strategyWithTVLLimits.totalShares();
+        uint sharesBefore = strategyWithTVLLimits.totalShares();
 
         cheats.prank(address(strategyManager));
         strategyWithTVLLimits.deposit(underlyingToken, maxTotalDepositsFuzzedInput);
@@ -139,15 +145,16 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
         underlyingToken.transfer(address(strategyWithTVLLimits), newMaxTotalDepositsFuzzedInput - maxTotalDepositsFuzzedInput);
 
         sharesBefore = strategyWithTVLLimits.totalShares();
-        cheats.prank(address(strategyManager));    
+        cheats.prank(address(strategyManager));
         strategyWithTVLLimits.deposit(underlyingToken, newMaxTotalDepositsFuzzedInput - maxTotalDepositsFuzzedInput);
 
         require(strategyWithTVLLimits.totalShares() == newMaxTotalDepositsFuzzedInput, "total shares not updated correctly");
     }
 
     /// @notice General-purpose test, re-useable, handles whether the deposit should revert or not and returns 'true' if it did revert.
-    function testDeposit_WithTVLLimits(uint256 maxPerDepositFuzzedInput, uint256 maxTotalDepositsFuzzedInput, uint256 depositAmount)
-        public returns (bool depositReverted)
+    function testDeposit_WithTVLLimits(uint maxPerDepositFuzzedInput, uint maxTotalDepositsFuzzedInput, uint depositAmount)
+        public
+        returns (bool depositReverted)
     {
         cheats.assume(maxPerDepositFuzzedInput < maxTotalDepositsFuzzedInput);
         // need to filter this to make sure the deposit amounts can actually be transferred
@@ -156,7 +163,7 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
         _setTVLLimits(maxPerDepositFuzzedInput, maxTotalDepositsFuzzedInput);
 
         // we need to calculate this before transferring tokens to the strategy
-        uint256 expectedSharesOut = strategyWithTVLLimits.underlyingToShares(depositAmount);
+        uint expectedSharesOut = strategyWithTVLLimits.underlyingToShares(depositAmount);
 
         // we need to actually transfer the tokens to the strategy to avoid underflow in the `deposit` calculation
         underlyingToken.transfer(address(strategyWithTVLLimits), depositAmount);
@@ -184,7 +191,7 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
             // return 'true' since the call to `deposit` reverted
             return true;
         } else {
-            uint256 totalSharesBefore = strategyWithTVLLimits.totalShares();
+            uint totalSharesBefore = strategyWithTVLLimits.totalShares();
             if (expectedSharesOut == 0) {
                 cheats.prank(address(strategyManager));
                 cheats.expectRevert(IStrategyErrors.NewSharesZero.selector);
@@ -209,9 +216,9 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
     }
 
     // sets the TVL Limits and checks that events were emitted correctly
-    function _setTVLLimits(uint256 _maxPerDeposit, uint256 _maxTotalDeposits) internal {
+    function _setTVLLimits(uint _maxPerDeposit, uint _maxTotalDeposits) internal {
         cheats.assume(_maxPerDeposit < _maxTotalDeposits);
-        (uint256 _maxPerDepositBefore, uint256 _maxTotalDepositsBefore) = strategyWithTVLLimits.getTVLLimits();
+        (uint _maxPerDepositBefore, uint _maxTotalDepositsBefore) = strategyWithTVLLimits.getTVLLimits();
         cheats.expectEmit(true, true, true, true, address(strategyWithTVLLimits));
         cheats.prank(unpauser);
         emit MaxPerDepositUpdated(_maxPerDepositBefore, _maxPerDeposit);
@@ -220,50 +227,93 @@ contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
     }
 
     /// OVERRIDING EXISTING TESTS TO FILTER INPUTS THAT WOULD FAIL DUE TO DEPOSIT-LIMITING
-    modifier filterToValidDepositAmounts(uint256 amountToDeposit) {
-        (uint256 _maxPerDeposit, uint256 _maxTotalDeposits) = strategyWithTVLLimits.getTVLLimits();
+    modifier filterToValidDepositAmounts(uint amountToDeposit) {
+        (uint _maxPerDeposit, uint _maxTotalDeposits) = strategyWithTVLLimits.getTVLLimits();
         cheats.assume(amountToDeposit <= _maxPerDeposit && amountToDeposit <= _maxTotalDeposits);
         _;
     }
 
-    function testCanWithdrawDownToSmallShares(uint256 amountToDeposit, uint32 sharesToLeave) public virtual override filterToValidDepositAmounts(amountToDeposit) {
+    function testCanWithdrawDownToSmallShares(uint amountToDeposit, uint32 sharesToLeave)
+        public
+        virtual
+        override
+        filterToValidDepositAmounts(amountToDeposit)
+    {
         StrategyBaseUnitTests.testCanWithdrawDownToSmallShares(amountToDeposit, sharesToLeave);
     }
 
-    function testDepositWithNonzeroPriorBalanceAndNonzeroPriorShares(uint256 priorTotalShares, uint256 amountToDeposit
-    ) public virtual override filterToValidDepositAmounts(priorTotalShares) filterToValidDepositAmounts(amountToDeposit) {
+    function testDepositWithNonzeroPriorBalanceAndNonzeroPriorShares(uint priorTotalShares, uint amountToDeposit)
+        public
+        virtual
+        override
+        filterToValidDepositAmounts(priorTotalShares)
+        filterToValidDepositAmounts(amountToDeposit)
+    {
         StrategyBaseUnitTests.testDepositWithNonzeroPriorBalanceAndNonzeroPriorShares(priorTotalShares, amountToDeposit);
     }
 
-    function testDepositWithZeroPriorBalanceAndZeroPriorShares(uint256 amountToDeposit) public virtual override filterToValidDepositAmounts(amountToDeposit) {
+    function testDepositWithZeroPriorBalanceAndZeroPriorShares(uint amountToDeposit)
+        public
+        virtual
+        override
+        filterToValidDepositAmounts(amountToDeposit)
+    {
         StrategyBaseUnitTests.testDepositWithZeroPriorBalanceAndZeroPriorShares(amountToDeposit);
     }
 
-    function testIntegrityOfSharesToUnderlyingWithNonzeroTotalShares(uint256 amountToDeposit, uint256 amountToTransfer, uint96 amountSharesToQuery
+    function testIntegrityOfSharesToUnderlyingWithNonzeroTotalShares(
+        uint amountToDeposit,
+        uint amountToTransfer,
+        uint96 amountSharesToQuery
     ) public virtual override filterToValidDepositAmounts(amountToDeposit) {
-        StrategyBaseUnitTests.testIntegrityOfSharesToUnderlyingWithNonzeroTotalShares(amountToDeposit, amountToTransfer, amountSharesToQuery);
+        StrategyBaseUnitTests.testIntegrityOfSharesToUnderlyingWithNonzeroTotalShares(
+            amountToDeposit, amountToTransfer, amountSharesToQuery
+        );
     }
 
-    function testIntegrityOfUnderlyingToSharesWithNonzeroTotalShares(uint256 amountToDeposit, uint256 amountToTransfer, uint96 amountUnderlyingToQuery
+    function testIntegrityOfUnderlyingToSharesWithNonzeroTotalShares(
+        uint amountToDeposit,
+        uint amountToTransfer,
+        uint96 amountUnderlyingToQuery
     ) public virtual override filterToValidDepositAmounts(amountToDeposit) {
-        StrategyBaseUnitTests.testIntegrityOfUnderlyingToSharesWithNonzeroTotalShares(amountToDeposit, amountToTransfer, amountUnderlyingToQuery);
+        StrategyBaseUnitTests.testIntegrityOfUnderlyingToSharesWithNonzeroTotalShares(
+            amountToDeposit, amountToTransfer, amountUnderlyingToQuery
+        );
     }
 
-    function testWithdrawFailsWhenSharesGreaterThanTotalShares(uint256 amountToDeposit, uint256 sharesToWithdraw
-    ) public virtual override filterToValidDepositAmounts(amountToDeposit) {
+    function testWithdrawFailsWhenSharesGreaterThanTotalShares(uint amountToDeposit, uint sharesToWithdraw)
+        public
+        virtual
+        override
+        filterToValidDepositAmounts(amountToDeposit)
+    {
         StrategyBaseUnitTests.testWithdrawFailsWhenSharesGreaterThanTotalShares(amountToDeposit, sharesToWithdraw);
     }
 
-    function testWithdrawFailsWhenWithdrawalsPaused(uint256 amountToDeposit) public virtual override filterToValidDepositAmounts(amountToDeposit) {
+    function testWithdrawFailsWhenWithdrawalsPaused(uint amountToDeposit)
+        public
+        virtual
+        override
+        filterToValidDepositAmounts(amountToDeposit)
+    {
         StrategyBaseUnitTests.testWithdrawFailsWhenWithdrawalsPaused(amountToDeposit);
     }
 
-    function testWithdrawWithPriorTotalSharesAndAmountSharesEqual(uint256 amountToDeposit) public virtual override filterToValidDepositAmounts(amountToDeposit) {
+    function testWithdrawWithPriorTotalSharesAndAmountSharesEqual(uint amountToDeposit)
+        public
+        virtual
+        override
+        filterToValidDepositAmounts(amountToDeposit)
+    {
         StrategyBaseUnitTests.testWithdrawWithPriorTotalSharesAndAmountSharesEqual(amountToDeposit);
     }
 
-    function testWithdrawWithPriorTotalSharesAndAmountSharesNotEqual(uint96 amountToDeposit, uint96 sharesToWithdraw
-    ) public virtual override filterToValidDepositAmounts(amountToDeposit) {
+    function testWithdrawWithPriorTotalSharesAndAmountSharesNotEqual(uint96 amountToDeposit, uint96 sharesToWithdraw)
+        public
+        virtual
+        override
+        filterToValidDepositAmounts(amountToDeposit)
+    {
         StrategyBaseUnitTests.testWithdrawWithPriorTotalSharesAndAmountSharesNotEqual(amountToDeposit, sharesToWithdraw);
     }
 }

@@ -9,7 +9,7 @@ contract Integration_Upgrade_Deposit_Delegate_Allocate is UpgradeTest {
         User operator;
         AVS avs;
         IStrategy[] strategies;
-        uint256[] tokenBalances;
+        uint[] tokenBalances;
         OperatorSet operatorSet;
         AllocateParams allocateParams;
     }

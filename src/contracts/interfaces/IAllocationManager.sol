@@ -562,7 +562,8 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
      * will return 0 for the slashable stake if the operator is not slashable at the time of the call.
      * @dev This method queries actual delegated stakes in the DelegationManager and applies
      * each operator's allocation to the stake to produce the slashable stake each allocation
-     * represents.
+     * represents. This method does not consider slashable stake in the withdrawal queue even though there could be
+     * slashable stake in the queue.
      * @dev This minimum takes into account `futureBlock`, and will omit any pending magnitude
      * diffs that will not be in effect as of `futureBlock`. NOTE that in order to get the true
      * minimum slashable stake as of some future block, `futureBlock` MUST be greater than block.number

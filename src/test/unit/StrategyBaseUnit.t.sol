@@ -26,7 +26,7 @@ contract StrategyBaseUnitTests is Test {
     address public pauser = address(555);
     address public unpauser = address(999);
 
-    uint256 initialSupply = 1e36;
+    uint initialSupply = 1e36;
     address initialOwner = address(this);
 
     /**
@@ -34,23 +34,23 @@ contract StrategyBaseUnitTests is Test {
      * Constant value chosen to reasonably reduce attempted share inflation by the first depositor, while still
      * incurring reasonably small losses to depositors
      */
-    uint256 internal constant SHARES_OFFSET = 1e3;
-    /** 
+    uint internal constant SHARES_OFFSET = 1e3;
+    /**
      * @notice virtual balance used as part of the mitigation of the common 'share inflation' attack vector
      * Constant value chosen to reasonably reduce attempted share inflation by the first depositor, while still
      * incurring reasonably small losses to depositors
      */
-    uint256 internal constant BALANCE_OFFSET = 1e3;
+    uint internal constant BALANCE_OFFSET = 1e3;
 
-    event ExchangeRateEmitted(uint256 rate);
+    event ExchangeRateEmitted(uint rate);
 
-    function setUp() virtual public {
+    function setUp() public virtual {
         proxyAdmin = new ProxyAdmin();
 
         address[] memory pausers = new address[](1);
         pausers[0] = pauser;
         pauserRegistry = new PauserRegistry(pausers, unpauser);
-        
+
         strategyManager = IStrategyManager(address(new StrategyManagerMock(IDelegationManager(address(0)))));
 
         underlyingToken = new ERC20PresetFixedSupply("Test Token", "TEST", initialSupply, initialOwner);
@@ -74,7 +74,7 @@ contract StrategyBaseUnitTests is Test {
     }
 
     function testCannotReceiveZeroShares() public {
-        uint256 amountToDeposit = 0;
+        uint amountToDeposit = 0;
 
         cheats.startPrank(address(strategyManager));
         cheats.expectRevert(IStrategyErrors.NewSharesZero.selector);
@@ -82,27 +82,27 @@ contract StrategyBaseUnitTests is Test {
         cheats.stopPrank();
     }
 
-    function testDepositWithZeroPriorBalanceAndZeroPriorShares(uint256 amountToDeposit) public virtual {
+    function testDepositWithZeroPriorBalanceAndZeroPriorShares(uint amountToDeposit) public virtual {
         // sanity check / filter
         cheats.assume(amountToDeposit <= underlyingToken.balanceOf(address(this)));
         cheats.assume(amountToDeposit >= 1);
 
-        uint256 totalSharesBefore = strategy.totalShares();
+        uint totalSharesBefore = strategy.totalShares();
 
         underlyingToken.transfer(address(strategy), amountToDeposit);
 
         cheats.prank(address(strategyManager));
         cheats.expectEmit(true, true, true, true, address(strategy));
         emit ExchangeRateEmitted(1e18);
-        uint256 newShares = strategy.deposit(underlyingToken, amountToDeposit);
+        uint newShares = strategy.deposit(underlyingToken, amountToDeposit);
 
         require(newShares == amountToDeposit, "newShares != amountToDeposit");
-        uint256 totalSharesAfter = strategy.totalShares();
+        uint totalSharesAfter = strategy.totalShares();
         require(totalSharesAfter - totalSharesBefore == newShares, "totalSharesAfter - totalSharesBefore != newShares");
         require(strategy.sharesToUnderlying(1e18) == 1e18);
     }
 
-    function testDepositWithNonzeroPriorBalanceAndNonzeroPriorShares(uint256 priorTotalShares, uint256 amountToDeposit) public virtual {
+    function testDepositWithNonzeroPriorBalanceAndNonzeroPriorShares(uint priorTotalShares, uint amountToDeposit) public virtual {
         cheats.assume(priorTotalShares >= 1 && amountToDeposit > 0);
 
         testDepositWithZeroPriorBalanceAndZeroPriorShares(priorTotalShares);
@@ -110,15 +110,15 @@ contract StrategyBaseUnitTests is Test {
         // sanity check / filter
         cheats.assume(amountToDeposit <= underlyingToken.balanceOf(address(this)));
 
-        uint256 totalSharesBefore = strategy.totalShares();
+        uint totalSharesBefore = strategy.totalShares();
 
         underlyingToken.transfer(address(strategy), amountToDeposit);
 
         cheats.prank(address(strategyManager));
-        uint256 newShares = strategy.deposit(underlyingToken, amountToDeposit);
+        uint newShares = strategy.deposit(underlyingToken, amountToDeposit);
 
         require(newShares == amountToDeposit, "newShares != amountToDeposit");
-        uint256 totalSharesAfter = strategy.totalShares();
+        uint totalSharesAfter = strategy.totalShares();
         require(totalSharesAfter - totalSharesBefore == newShares, "totalSharesAfter - totalSharesBefore != newShares");
     }
 
@@ -127,7 +127,7 @@ contract StrategyBaseUnitTests is Test {
         cheats.prank(pauser);
         strategy.pause(1);
 
-        uint256 amountToDeposit = 1e18;
+        uint amountToDeposit = 1e18;
         underlyingToken.transfer(address(strategy), amountToDeposit);
 
         cheats.expectRevert(IPausable.CurrentlyPaused.selector);
@@ -135,11 +135,10 @@ contract StrategyBaseUnitTests is Test {
         strategy.deposit(underlyingToken, amountToDeposit);
     }
 
-
     function testDepositFailsWhenCallingFromNotStrategyManager(address caller) public {
         cheats.assume(caller != address(strategy.strategyManager()) && caller != address(proxyAdmin));
 
-        uint256 amountToDeposit = 1e18;
+        uint amountToDeposit = 1e18;
         underlyingToken.transfer(address(strategy), amountToDeposit);
 
         cheats.expectRevert(IStrategyErrors.OnlyStrategyManager.selector);
@@ -150,7 +149,7 @@ contract StrategyBaseUnitTests is Test {
     function testDepositFailsWhenNotUsingUnderlyingToken(address notUnderlyingToken) public {
         cheats.assume(notUnderlyingToken != address(underlyingToken));
 
-        uint256 amountToDeposit = 1e18;
+        uint amountToDeposit = 1e18;
 
         cheats.expectRevert(IStrategyErrors.OnlyUnderlyingToken.selector);
         cheats.prank(address(strategyManager));
@@ -174,9 +173,8 @@ contract StrategyBaseUnitTests is Test {
         );
 
         // Transfer underlying token to strategy
-        uint256 amountToDeposit = 1e39;
+        uint amountToDeposit = 1e39;
         underlyingToken.transfer(address(strategy), amountToDeposit);
-
 
         // Deposit
         cheats.prank(address(strategyManager));
@@ -184,55 +182,59 @@ contract StrategyBaseUnitTests is Test {
         strategy.deposit(underlyingToken, amountToDeposit);
     }
 
-    function testWithdrawWithPriorTotalSharesAndAmountSharesEqual(uint256 amountToDeposit) public virtual {
+    function testWithdrawWithPriorTotalSharesAndAmountSharesEqual(uint amountToDeposit) public virtual {
         cheats.assume(amountToDeposit >= 1);
         testDepositWithZeroPriorBalanceAndZeroPriorShares(amountToDeposit);
 
-        uint256 sharesToWithdraw = strategy.totalShares();
-        uint256 strategyBalanceBefore = underlyingToken.balanceOf(address(strategy));
+        uint sharesToWithdraw = strategy.totalShares();
+        uint strategyBalanceBefore = underlyingToken.balanceOf(address(strategy));
 
-        uint256 tokenBalanceBefore = underlyingToken.balanceOf(address(this));
+        uint tokenBalanceBefore = underlyingToken.balanceOf(address(this));
         cheats.prank(address(strategyManager));
         cheats.expectEmit(true, true, true, true, address(strategy));
         emit ExchangeRateEmitted(1e18);
         strategy.withdraw(address(this), underlyingToken, sharesToWithdraw);
 
-        uint256 tokenBalanceAfter = underlyingToken.balanceOf(address(this));
-        uint256 totalSharesAfter = strategy.totalShares();
+        uint tokenBalanceAfter = underlyingToken.balanceOf(address(this));
+        uint totalSharesAfter = strategy.totalShares();
 
         require(totalSharesAfter == 0, "shares did not decrease appropriately");
-        require(tokenBalanceAfter - tokenBalanceBefore == strategyBalanceBefore, "tokenBalanceAfter - tokenBalanceBefore != strategyBalanceBefore");
+        require(
+            tokenBalanceAfter - tokenBalanceBefore == strategyBalanceBefore,
+            "tokenBalanceAfter - tokenBalanceBefore != strategyBalanceBefore"
+        );
     }
 
     function testWithdrawWithPriorTotalSharesAndAmountSharesNotEqual(uint96 amountToDeposit, uint96 sharesToWithdraw) public virtual {
         cheats.assume(amountToDeposit >= 1);
         testDepositWithZeroPriorBalanceAndZeroPriorShares(amountToDeposit);
 
-        uint256 totalSharesBefore = strategy.totalShares();
+        uint totalSharesBefore = strategy.totalShares();
         cheats.assume(sharesToWithdraw <= totalSharesBefore);
-        uint256 strategyBalanceBefore = underlyingToken.balanceOf(address(strategy));
-        uint256 tokenBalanceBefore = underlyingToken.balanceOf(address(this));
-
+        uint strategyBalanceBefore = underlyingToken.balanceOf(address(strategy));
+        uint tokenBalanceBefore = underlyingToken.balanceOf(address(this));
 
         cheats.prank(address(strategyManager));
         strategy.withdraw(address(this), underlyingToken, sharesToWithdraw);
 
-        uint256 tokenBalanceAfter = underlyingToken.balanceOf(address(this));
-        uint256 totalSharesAfter = strategy.totalShares();
+        uint tokenBalanceAfter = underlyingToken.balanceOf(address(this));
+        uint totalSharesAfter = strategy.totalShares();
 
         require(totalSharesBefore - totalSharesAfter == sharesToWithdraw, "shares did not decrease appropriately");
-        require(tokenBalanceAfter - tokenBalanceBefore == (strategyBalanceBefore * sharesToWithdraw) / totalSharesBefore,
-            "token balance did not increase appropriately");
+        require(
+            tokenBalanceAfter - tokenBalanceBefore == (strategyBalanceBefore * sharesToWithdraw) / totalSharesBefore,
+            "token balance did not increase appropriately"
+        );
     }
 
-    function testWithdrawZeroAmount(uint256 amountToDeposit) public {
-         cheats.assume(amountToDeposit >= 1);
+    function testWithdrawZeroAmount(uint amountToDeposit) public {
+        cheats.assume(amountToDeposit >= 1);
         testDepositWithZeroPriorBalanceAndZeroPriorShares(amountToDeposit);
 
-        uint256 amountToWithdraw = 0;
+        uint amountToWithdraw = 0;
 
-        uint256 sharesBefore = strategy.totalShares();
-        uint256 tokenBalanceBefore = underlyingToken.balanceOf(address(this));
+        uint sharesBefore = strategy.totalShares();
+        uint tokenBalanceBefore = underlyingToken.balanceOf(address(this));
         cheats.prank(address(strategyManager));
         strategy.withdraw(address(this), underlyingToken, amountToWithdraw);
 
@@ -240,7 +242,7 @@ contract StrategyBaseUnitTests is Test {
         require(tokenBalanceBefore == underlyingToken.balanceOf(address(this)), "token balance changed");
     }
 
-    function testWithdrawFailsWhenWithdrawalsPaused(uint256 amountToDeposit) public virtual {
+    function testWithdrawFailsWhenWithdrawalsPaused(uint amountToDeposit) public virtual {
         cheats.assume(amountToDeposit >= 1);
         testDepositWithZeroPriorBalanceAndZeroPriorShares(amountToDeposit);
 
@@ -248,7 +250,7 @@ contract StrategyBaseUnitTests is Test {
         cheats.prank(pauser);
         strategy.pause(2);
 
-        uint256 amountToWithdraw = 1e18;
+        uint amountToWithdraw = 1e18;
 
         cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         cheats.prank(address(strategyManager));
@@ -258,10 +260,10 @@ contract StrategyBaseUnitTests is Test {
     function testWithdrawalFailsWhenCallingFromNotStrategyManager(address caller) public {
         cheats.assume(caller != address(strategy.strategyManager()) && caller != address(proxyAdmin));
 
-        uint256 amountToDeposit = 1e18;
+        uint amountToDeposit = 1e18;
         testDepositWithZeroPriorBalanceAndZeroPriorShares(amountToDeposit);
 
-        uint256 amountToWithdraw = 1e18;
+        uint amountToWithdraw = 1e18;
 
         cheats.expectRevert(IStrategyErrors.OnlyStrategyManager.selector);
         cheats.prank(caller);
@@ -271,18 +273,18 @@ contract StrategyBaseUnitTests is Test {
     function testWithdrawalFailsWhenNotUsingUnderlyingToken(address notUnderlyingToken) public {
         cheats.assume(notUnderlyingToken != address(underlyingToken));
 
-        uint256 amountToWithdraw = 1e18;
+        uint amountToWithdraw = 1e18;
 
         cheats.expectRevert(IStrategyErrors.OnlyUnderlyingToken.selector);
         cheats.prank(address(strategyManager));
         strategy.withdraw(address(this), IERC20(notUnderlyingToken), amountToWithdraw);
     }
 
-    function testWithdrawFailsWhenSharesGreaterThanTotalShares(uint256 amountToDeposit, uint256 sharesToWithdraw) public virtual {
+    function testWithdrawFailsWhenSharesGreaterThanTotalShares(uint amountToDeposit, uint sharesToWithdraw) public virtual {
         cheats.assume(amountToDeposit >= 1);
         testDepositWithZeroPriorBalanceAndZeroPriorShares(amountToDeposit);
 
-        uint256 totalSharesBefore = strategy.totalShares();
+        uint totalSharesBefore = strategy.totalShares();
 
         // since we are checking strictly greater than in this test
         cheats.assume(sharesToWithdraw > totalSharesBefore);
@@ -305,10 +307,10 @@ contract StrategyBaseUnitTests is Test {
             )
         );
 
-        uint256 amountToDeposit = 1e18;
+        uint amountToDeposit = 1e18;
         testDepositWithZeroPriorBalanceAndZeroPriorShares(amountToDeposit);
 
-        uint256 amountToWithdraw = 1e18;
+        uint amountToWithdraw = 1e18;
         ERC20_SetTransferReverting_Mock(address(underlyingToken)).setTransfersRevert(true);
 
         cheats.expectRevert();
@@ -318,10 +320,10 @@ contract StrategyBaseUnitTests is Test {
 
     // uint240 input to prevent overflow
     function testIntegrityOfSharesToUnderlyingWithZeroTotalShares(uint240 amountSharesToQuery) public view {
-        uint256 underlyingFromShares = strategy.sharesToUnderlying(amountSharesToQuery);
+        uint underlyingFromShares = strategy.sharesToUnderlying(amountSharesToQuery);
         require(underlyingFromShares == amountSharesToQuery, "underlyingFromShares != amountSharesToQuery");
 
-        uint256 underlyingFromSharesView = strategy.sharesToUnderlyingView(amountSharesToQuery);
+        uint underlyingFromSharesView = strategy.sharesToUnderlyingView(amountSharesToQuery);
         require(underlyingFromSharesView == amountSharesToQuery, "underlyingFromSharesView != amountSharesToQuery");
     }
 
@@ -331,9 +333,11 @@ contract StrategyBaseUnitTests is Test {
         strategy.deposit(underlyingToken, 0);
     }
 
-
     // amountSharesToQuery input is uint96 to prevent overflow
-    function testIntegrityOfSharesToUnderlyingWithNonzeroTotalShares(uint256 amountToDeposit, uint256 amountToTransfer, uint96 amountSharesToQuery
+    function testIntegrityOfSharesToUnderlyingWithNonzeroTotalShares(
+        uint amountToDeposit,
+        uint amountToTransfer,
+        uint96 amountSharesToQuery
     ) public virtual {
         // sanity check / filter
         cheats.assume(amountToDeposit <= underlyingToken.balanceOf(address(this)));
@@ -343,20 +347,23 @@ contract StrategyBaseUnitTests is Test {
 
         cheats.assume(amountToTransfer <= underlyingToken.balanceOf(address(this)));
         underlyingToken.transfer(address(strategy), amountToTransfer);
-        uint256 strategyBalance = underlyingToken.balanceOf(address(strategy));
-        uint256 virtualBalance = strategyBalance + BALANCE_OFFSET;
+        uint strategyBalance = underlyingToken.balanceOf(address(strategy));
+        uint virtualBalance = strategyBalance + BALANCE_OFFSET;
 
-        uint256 expectedValueOut = (virtualBalance * amountSharesToQuery) / (strategy.totalShares() + SHARES_OFFSET);
+        uint expectedValueOut = (virtualBalance * amountSharesToQuery) / (strategy.totalShares() + SHARES_OFFSET);
 
-        uint256 underlyingFromShares = strategy.sharesToUnderlying(amountSharesToQuery);
+        uint underlyingFromShares = strategy.sharesToUnderlying(amountSharesToQuery);
         require(underlyingFromShares == expectedValueOut, "underlyingFromShares != expectedValueOut");
 
-        uint256 underlyingFromSharesView = strategy.sharesToUnderlyingView(amountSharesToQuery);
+        uint underlyingFromSharesView = strategy.sharesToUnderlyingView(amountSharesToQuery);
         require(underlyingFromSharesView == expectedValueOut, "underlyingFromSharesView != expectedValueOut");
     }
 
     // amountUnderlyingToQuery input is uint96 to prevent overflow
-    function testIntegrityOfUnderlyingToSharesWithNonzeroTotalShares(uint256 amountToDeposit, uint256 amountToTransfer, uint96 amountUnderlyingToQuery
+    function testIntegrityOfUnderlyingToSharesWithNonzeroTotalShares(
+        uint amountToDeposit,
+        uint amountToTransfer,
+        uint96 amountUnderlyingToQuery
     ) public virtual {
         // sanity check / filter
         cheats.assume(amountToDeposit <= underlyingToken.balanceOf(address(this)));
@@ -366,27 +373,27 @@ contract StrategyBaseUnitTests is Test {
 
         cheats.assume(amountToTransfer <= underlyingToken.balanceOf(address(this)));
         underlyingToken.transfer(address(strategy), amountToTransfer);
-        uint256 strategyBalance = underlyingToken.balanceOf(address(strategy));
+        uint strategyBalance = underlyingToken.balanceOf(address(strategy));
 
-        uint256 expectedValueOut = ((strategy.totalShares() + SHARES_OFFSET) * amountUnderlyingToQuery) / (strategyBalance + BALANCE_OFFSET);
+        uint expectedValueOut = ((strategy.totalShares() + SHARES_OFFSET) * amountUnderlyingToQuery) / (strategyBalance + BALANCE_OFFSET);
 
-        uint256 sharesFromUnderlying = strategy.underlyingToShares(amountUnderlyingToQuery);
+        uint sharesFromUnderlying = strategy.underlyingToShares(amountUnderlyingToQuery);
         require(sharesFromUnderlying == expectedValueOut, "sharesFromUnderlying != expectedValueOut");
 
-        uint256 sharesFromUnderlyingView = strategy.underlyingToSharesView(amountUnderlyingToQuery);
+        uint sharesFromUnderlyingView = strategy.underlyingToSharesView(amountUnderlyingToQuery);
         require(sharesFromUnderlyingView == expectedValueOut, "sharesFromUnderlyingView != expectedValueOut");
     }
 
     // verify that small remaining share amounts (nonzero in particular) are allowed
-    function testCanWithdrawDownToSmallShares(uint256 amountToDeposit, uint32 sharesToLeave) public virtual {
+    function testCanWithdrawDownToSmallShares(uint amountToDeposit, uint32 sharesToLeave) public virtual {
         cheats.assume(amountToDeposit >= 1);
         testDepositWithZeroPriorBalanceAndZeroPriorShares(amountToDeposit);
 
-        uint256 totalSharesBefore = strategy.totalShares();
+        uint totalSharesBefore = strategy.totalShares();
         // filter out underflow
         cheats.assume(sharesToLeave <= totalSharesBefore);
 
-        uint256 sharesToWithdraw = totalSharesBefore - sharesToLeave;
+        uint sharesToWithdraw = totalSharesBefore - sharesToLeave;
 
         cheats.prank(address(strategyManager));
         strategy.withdraw(address(this), underlyingToken, sharesToWithdraw);

@@ -13,10 +13,10 @@ contract SlashOperatorSet is Script, Test, IAllocationManagerTypes {
     Vm cheats = Vm(VM_ADDRESS);
 
     function run(
-        string memory configFile, 
-        address operator, 
-        uint32 operatorSetId, 
-        IStrategy[] memory strategies, 
+        string memory configFile,
+        address operator,
+        uint32 operatorSetId,
+        IStrategy[] memory strategies,
         uint256[] memory wadsToSlash
     ) public {
         // Load config
@@ -43,7 +43,7 @@ contract SlashOperatorSet is Script, Test, IAllocationManagerTypes {
 
         // Perform slashing
         am.slashOperator(operator, slashing);
-        
+
         // STOP RECORDING TRANSACTIONS FOR DEPLOYMENT
         vm.stopBroadcast();
     }

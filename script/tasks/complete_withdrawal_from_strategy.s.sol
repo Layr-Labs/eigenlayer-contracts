@@ -11,7 +11,7 @@ import "forge-std/Test.sol";
 
 // use forge:
 // RUST_LOG=forge,foundry=trace forge script script/tasks/complete_withdrawal_from_strategy.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run(string memory configFile,,address strategy,address token,uint256 amount)" -- <DEPLOYMENT_OUTPUT_JSON> <STRATEGY_ADDRESS> <TOKEN_ADDRESS> <AMOUNT> <NONCE> <START_BLOCK_NUMBER>
-// RUST_LOG=forge,foundry=trace forge script script/tasks/complete_withdrawal_from_strategy.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run(string memory configFile,,address strategy,address token,uint256 amount,uint256 nonce,uint32 startBlock)" -- local/slashing_output.json 0x8aCd85898458400f7Db866d53FCFF6f0D49741FF 0x67d269191c92Caf3cD7723F116c85e6E9bf55933 750 0 630 
+// RUST_LOG=forge,foundry=trace forge script script/tasks/complete_withdrawal_from_strategy.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run(string memory configFile,,address strategy,address token,uint256 amount,uint256 nonce,uint32 startBlock)" -- local/slashing_output.json 0x8aCd85898458400f7Db866d53FCFF6f0D49741FF 0x67d269191c92Caf3cD7723F116c85e6E9bf55933 750 0 630
 contract CompleteWithdrawFromStrategy is Script, Test {
     using SlashingLib for *;
 
@@ -20,7 +20,14 @@ contract CompleteWithdrawFromStrategy is Script, Test {
     string public deployConfigPath;
     string public config_data;
 
-    function run(string memory configFile, address strategy, address token, uint256 amount, uint256 nonce, uint32 startBlock) public {
+    function run(
+        string memory configFile,
+        address strategy,
+        address token,
+        uint256 amount,
+        uint256 nonce,
+        uint32 startBlock
+    ) public {
         // Load config
         deployConfigPath = string(bytes(string.concat("script/output/", configFile)));
         config_data = vm.readFile(deployConfigPath);
@@ -38,16 +45,9 @@ contract CompleteWithdrawFromStrategy is Script, Test {
         tokens[0] = IERC20(token);
 
         // Get the withdrawal struct
-        IDelegationManagerTypes.Withdrawal memory withdrawal = getWithdrawalStruct(
-            am, 
-            dm, 
-            em, 
-            strategy, 
-            amount, 
-            nonce, 
-            startBlock
-        );
-        
+        IDelegationManagerTypes.Withdrawal memory withdrawal =
+            getWithdrawalStruct(am, dm, em, strategy, amount, nonce, startBlock);
+
         // complete
         dm.completeQueuedWithdrawal(withdrawal, tokens, true);
 
@@ -56,14 +56,14 @@ contract CompleteWithdrawFromStrategy is Script, Test {
     }
 
     function getWithdrawalStruct(
-        AllocationManager am, 
-        DelegationManager dm, 
-        EigenPodManager em, 
-        address strategy, 
-        uint256 amount, 
-        uint256 nonce, 
+        AllocationManager am,
+        DelegationManager dm,
+        EigenPodManager em,
+        address strategy,
+        uint256 amount,
+        uint256 nonce,
         uint32 startBlock
-    ) internal returns (IDelegationManagerTypes.Withdrawal memory)  {
+    ) internal returns (IDelegationManagerTypes.Withdrawal memory) {
         // Add strategy to array
         IStrategy[] memory strategies = new IStrategy[](1);
         strategies[0] = IStrategy(strategy);
@@ -96,7 +96,7 @@ contract CompleteWithdrawFromStrategy is Script, Test {
             nonce: nonce,
             startBlock: startBlock,
             strategies: strategies,
-            scaledShares: scaledShares 
+            scaledShares: scaledShares
         });
 
         // Return the withdrawal struct

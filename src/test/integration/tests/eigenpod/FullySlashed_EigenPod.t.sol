@@ -32,7 +32,6 @@ contract Integration_FullySlashedEigenpod_Base is IntegrationCheckUtils {
 }
 
 contract Integration_FullySlashedEigenpod_Checkpointed is Integration_FullySlashedEigenpod_Base {
-
     function _init() internal override {
         super._init();
 
@@ -80,7 +79,7 @@ contract Integration_FullySlashedEigenpod_Checkpointed is Integration_FullySlash
         // Register staker as operator
         staker.registerAsOperator();
         User operator = User(payable(address(staker)));
-        
+
         // Initialize new staker
         (User staker2, IStrategy[] memory strategies2, uint[] memory initTokenBalances2) = _newRandomStaker();
         uint[] memory shares = _calculateExpectedShares(strategies2, initTokenBalances2);
@@ -90,7 +89,7 @@ contract Integration_FullySlashedEigenpod_Checkpointed is Integration_FullySlash
         // Delegate to an operator who has now become a staker, this should succeed as slashed operator's BCSF should not affect the staker
         staker2.delegateTo(operator);
         check_Delegation_State(staker2, operator, strategies2, shares);
-        
+
         // Register as operator and undelegate - the equivalent of redelegating to yourself
         Withdrawal[] memory withdrawals = staker2.undelegate();
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
@@ -106,7 +105,6 @@ contract Integration_FullySlashedEigenpod_Checkpointed is Integration_FullySlash
 }
 
 contract Integration_FullySlashedEigenpod_NotCheckpointed is Integration_FullySlashedEigenpod_Base {
-
     /// @dev Adding funds prior to checkpointing allows the pod to not be "bricked"
     function testFuzz_proveValidator_checkpoint_queue_completeAsTokens(uint24 _rand) public rand(_rand) {
         // Deal ETH to staker
@@ -131,7 +129,9 @@ contract Integration_FullySlashedEigenpod_NotCheckpointed is Integration_FullySl
         uint[] memory withdrawableShares = _getWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, depositShares);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
-        check_QueuedWithdrawal_State(staker, User(payable(address(0))), strategies, depositShares, withdrawableShares, withdrawals, withdrawalRoots);
+        check_QueuedWithdrawal_State(
+            staker, User(payable(address(0))), strategies, depositShares, withdrawableShares, withdrawals, withdrawalRoots
+        );
 
         // Complete withdrawal as tokens
         _rollBlocksForCompleteWithdrawals(withdrawals);
@@ -139,7 +139,9 @@ contract Integration_FullySlashedEigenpod_NotCheckpointed is Integration_FullySl
             IERC20[] memory tokens = _getUnderlyingTokens(withdrawals[i].strategies);
             uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawableShares);
             staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State(staker, User(payable(address(0))), withdrawals[i], withdrawals[i].strategies, withdrawableShares, tokens, expectedTokens);
+            check_Withdrawal_AsTokens_State(
+                staker, User(payable(address(0))), withdrawals[i], withdrawals[i].strategies, withdrawableShares, tokens, expectedTokens
+            );
         }
     }
 

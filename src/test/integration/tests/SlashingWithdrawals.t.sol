@@ -4,7 +4,6 @@ pragma solidity ^0.8.27;
 import "src/test/integration/IntegrationChecks.t.sol";
 
 contract Integration_ALMSlashBase is IntegrationCheckUtils {
-    
     AVS avs;
     OperatorSet operatorSet;
 
@@ -19,7 +18,7 @@ contract Integration_ALMSlashBase is IntegrationCheckUtils {
     uint[] initDepositShares;
 
     /// Shared setup:
-    /// 
+    ///
     /// 1. Generate staker, operator, and AVS
     /// 2. Staker deposits and delegates to operator
     /// 3. AVS creates an operator set containing the strategies held by the staker
@@ -63,13 +62,12 @@ contract Integration_ALMSlashBase is IntegrationCheckUtils {
             operator.registerForOperatorSet(operatorSet);
             check_Registration_State_PendingAllocation(operator, allocateParams);
         }
-   
+
         _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
     }
 }
 
 contract Integration_SlashThenWithdraw is Integration_ALMSlashBase {
-
     User stakerB;
     uint[] initTokenBalancesB;
     uint[] initTokenSharesB;
@@ -94,10 +92,10 @@ contract Integration_SlashThenWithdraw is Integration_ALMSlashBase {
         {
             // Create operatorB
             operatorB = _newRandomOperator_NoAssets();
-            
+
             // Create stakerB, deposit, and delegate to operatorB
             (stakerB, initTokenBalancesB) = _newStaker(strategies);
-            
+
             stakerB.depositIntoEigenlayer(strategies, initTokenBalancesB);
             initTokenSharesB = _calculateExpectedShares(strategies, initTokenBalancesB);
             check_Deposit_State(stakerB, strategies, initTokenSharesB);
@@ -194,7 +192,9 @@ contract Integration_SlashThenWithdraw is Integration_ALMSlashBase {
             uint[] memory expectedShares = _calculateExpectedShares(withdrawals[i]);
             uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, expectedShares);
             staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], withdrawals[i].strategies, expectedShares, tokens, expectedTokens);
+            check_Withdrawal_AsTokens_State(
+                staker, operator, withdrawals[i], withdrawals[i].strategies, expectedShares, tokens, expectedTokens
+            );
         }
     }
 
@@ -213,7 +213,7 @@ contract Integration_SlashThenWithdraw is Integration_ALMSlashBase {
             check_Withdrawal_AsShares_Undelegated_State(staker, operator, withdrawals[i], strategies, shares);
         }
     }
-    
+
     function testFuzz_redelegate_completeAsShares(uint24 _r) public rand(_r) {
         // Redelegate to operatorB
         uint[] memory shares = _getStakerWithdrawableShares(staker, strategies);
@@ -248,7 +248,6 @@ contract Integration_SlashThenWithdraw is Integration_ALMSlashBase {
 }
 
 contract Integration_QueueWithdrawalThenSlash is Integration_ALMSlashBase {
-    
     function testFuzz_queue_slash_completeAsTokens(uint24 _r) public rand(_r) {
         // 4. Queue withdrawal
         uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
@@ -264,7 +263,7 @@ contract Integration_QueueWithdrawalThenSlash is Integration_ALMSlashBase {
 
         // 6. Complete withdrawal
         _rollBlocksForCompleteWithdrawals(withdrawals);
-        for (uint256 i = 0; i < withdrawals.length; ++i) {
+        for (uint i = 0; i < withdrawals.length; ++i) {
             uint[] memory expectedShares = _calculateExpectedShares(withdrawals[i]);
             uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, expectedShares);
             staker.completeWithdrawalAsTokens(withdrawals[i]);
@@ -294,7 +293,7 @@ contract Integration_QueueWithdrawalThenSlash is Integration_ALMSlashBase {
         // Fast forward to when we can complete the withdrawal
         _rollBlocksForCompleteWithdrawals(withdrawals);
 
-        for (uint256 i = 0; i < withdrawals.length; ++i) {
+        for (uint i = 0; i < withdrawals.length; ++i) {
             uint[] memory expectedShares = _calculateExpectedShares(withdrawals[i]);
             staker.completeWithdrawalAsShares(withdrawals[i]);
             check_Withdrawal_AsShares_State(staker, operator, withdrawals[i], strategies, expectedShares);
@@ -307,7 +306,6 @@ contract Integration_QueueWithdrawalThenSlash is Integration_ALMSlashBase {
 }
 
 contract Integration_DeallocateThenSlash is Integration_ALMSlashBase {
-
     function testFuzz_deallocate_slash_queue_completeAsTokens(uint24 _r) public rand(_r) {
         // 4. Deallocate all.
         AllocateParams memory deallocateParams = _genDeallocation_Full(operator, operatorSet);
@@ -321,7 +319,7 @@ contract Integration_DeallocateThenSlash is Integration_ALMSlashBase {
         avs.slashOperator(slashParams);
         check_Base_Slashing_State(operator, deallocateParams, slashParams);
         // TODO - staker variants?
-        
+
         // 6. Queue withdrawals
         uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, initDepositShares);
@@ -330,20 +328,14 @@ contract Integration_DeallocateThenSlash is Integration_ALMSlashBase {
 
         // 7. Complete withdrawal
         _rollBlocksForCompleteWithdrawals(withdrawals);
-        for (uint256 i = 0; i < withdrawals.length; ++i) {
-            uint256[] memory expectedTokens =
-                _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].scaledShares);
+        for (uint i = 0; i < withdrawals.length; ++i) {
+            uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].scaledShares);
             staker.completeWithdrawalAsTokens(withdrawals[i]);
             check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], strategies, initDepositShares, tokens, expectedTokens);
         }
-        
+
         // Check Final State
-        assert_HasUnderlyingTokenBalances(
-            staker,
-            allocateParams.strategies,
-            initTokenBalances,
-            "staker should have withdrawn all shares"
-        );
+        assert_HasUnderlyingTokenBalances(staker, allocateParams.strategies, initTokenBalances, "staker should have withdrawn all shares");
         assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }
 
