@@ -215,21 +215,12 @@ contract StrategyBase is Initializable, Pausable, IStrategy, SemVerMixin {
         token.safeTransfer(recipient, amountToSend);
     }
 
-    /**
-     * @notice Currently returns a brief string explaining the strategy's goal & purpose, but for more complex
-     * strategies, may be a link to metadata that explains in more detail.
-     */
+    /// @inheritdoc IStrategy
     function explanation() external pure virtual override returns (string memory) {
         return "Base Strategy implementation to inherit from for more complex implementations";
     }
 
-    /**
-     * @notice Used to convert a number of shares to the equivalent amount of underlying tokens for this strategy.
-     * @notice In contrast to `sharesToUnderlying`, this function guarantees no state modifications
-     * @param amountShares is the amount of shares to calculate its conversion into the underlying token
-     * @return The amount of underlying tokens corresponding to the input `amountShares`
-     * @dev Implementation for these functions in particular may vary significantly for different strategies
-     */
+    /// @inheritdoc IStrategy
     function sharesToUnderlyingView(
         uint256 amountShares
     ) public view virtual override returns (uint256) {
@@ -240,26 +231,14 @@ contract StrategyBase is Initializable, Pausable, IStrategy, SemVerMixin {
         return (virtualTokenBalance * amountShares) / virtualTotalShares;
     }
 
-    /**
-     * @notice Used to convert a number of shares to the equivalent amount of underlying tokens for this strategy.
-     * @notice In contrast to `sharesToUnderlyingView`, this function **may** make state modifications
-     * @param amountShares is the amount of shares to calculate its conversion into the underlying token
-     * @return The amount of underlying tokens corresponding to the input `amountShares`
-     * @dev Implementation for these functions in particular may vary significantly for different strategies
-     */
+    /// @inheritdoc IStrategy
     function sharesToUnderlying(
         uint256 amountShares
     ) public view virtual override returns (uint256) {
         return sharesToUnderlyingView(amountShares);
     }
 
-    /**
-     * @notice Used to convert an amount of underlying tokens to the equivalent amount of shares in this strategy.
-     * @notice In contrast to `underlyingToShares`, this function guarantees no state modifications
-     * @param amountUnderlying is the amount of `underlyingToken` to calculate its conversion into strategy shares
-     * @return The amount of shares corresponding to the input `amountUnderlying`
-     * @dev Implementation for these functions in particular may vary significantly for different strategies
-     */
+    /// @inheritdoc IStrategy
     function underlyingToSharesView(
         uint256 amountUnderlying
     ) public view virtual returns (uint256) {
@@ -270,43 +249,28 @@ contract StrategyBase is Initializable, Pausable, IStrategy, SemVerMixin {
         return (amountUnderlying * virtualTotalShares) / virtualTokenBalance;
     }
 
-    /**
-     * @notice Used to convert an amount of underlying tokens to the equivalent amount of shares in this strategy.
-     * @notice In contrast to `underlyingToSharesView`, this function **may** make state modifications
-     * @param amountUnderlying is the amount of `underlyingToken` to calculate its conversion into strategy shares
-     * @return The amount of shares corresponding to the input `amountUnderlying`
-     * @dev Implementation for these functions in particular may vary significantly for different strategies
-     */
+    /// @inheritdoc IStrategy
     function underlyingToShares(
         uint256 amountUnderlying
     ) external view virtual returns (uint256) {
         return underlyingToSharesView(amountUnderlying);
     }
 
-    /**
-     * @notice convenience function for fetching the current underlying value of all of the `user`'s shares in
-     * this strategy. In contrast to `userUnderlying`, this function guarantees no state modifications
-     */
+    /// @inheritdoc IStrategy
     function userUnderlyingView(
         address user
     ) external view virtual returns (uint256) {
         return sharesToUnderlyingView(shares(user));
     }
 
-    /**
-     * @notice convenience function for fetching the current underlying value of all of the `user`'s shares in
-     * this strategy. In contrast to `userUnderlyingView`, this function **may** make state modifications
-     */
+    /// @inheritdoc IStrategy
     function userUnderlying(
         address user
     ) external virtual returns (uint256) {
         return sharesToUnderlying(shares(user));
     }
 
-    /**
-     * @notice convenience function for fetching the current total shares of `user` in this strategy, by
-     * querying the `strategyManager` contract
-     */
+    /// @inheritdoc IStrategy
     function shares(
         address user
     ) public view virtual returns (uint256) {
