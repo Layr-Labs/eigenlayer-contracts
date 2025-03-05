@@ -42,7 +42,7 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
 
     // Config Variables
     /// @notice intervals(epochs) are 1 weeks
-    uint32 CALCULATION_INTERVAL_SECONDS = 7 days;
+    uint32 CALCULATION_INTERVAL_SECONDS = 1 days;
 
     /// @notice Max duration is 5 epochs (2 weeks * 5 = 10 weeks in seconds)
     uint32 MAX_REWARDS_DURATION = 70 days;
@@ -903,7 +903,7 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
             token: IERC20(address(reenterer)),
             amount: amount,
             startTimestamp: uint32(block.timestamp),
-            duration: 0
+            duration: CALCULATION_INTERVAL_SECONDS
         });
 
         bytes memory calldataToUse = abi.encodeWithSelector(RewardsCoordinator.createAVSRewardsSubmission.selector, rewardsSubmissions);
@@ -924,7 +924,7 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
         // 1. Bound fuzz inputs to valid ranges and amounts
         IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
         amount = bound(amount, 1, mockTokenInitialSupply);
-        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = bound(duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(
             startTimestamp,
@@ -959,7 +959,7 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
         // 1. Bound fuzz inputs
         amount = bound(amount, 1e38, type(uint).max);
         IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", amount, avs);
-        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = bound(duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(
             startTimestamp,
@@ -992,7 +992,7 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
         // 1. Bound fuzz inputs to valid ranges and amounts
         IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
         amount = bound(amount, 1, mockTokenInitialSupply);
-        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = bound(duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(
             startTimestamp,
@@ -1068,7 +1068,7 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
         // 1. Bound fuzz inputs to valid ranges and amounts
         IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
         amount = bound(amount, 1, mockTokenInitialSupply);
-        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = bound(duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
         cheats.assume(duration % CALCULATION_INTERVAL_SECONDS != 0);
         startTimestamp = bound(
             startTimestamp,
@@ -1113,7 +1113,7 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
 
         IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
         amount = bound(amount, 1, mockTokenInitialSupply);
-        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = bound(duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp =
             bound(startTimestamp, 0, uint(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) - 1);
@@ -1146,7 +1146,7 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
         // 1. Bound fuzz inputs to valid ranges and amounts
         IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
         amount = bound(amount, 1, mockTokenInitialSupply);
-        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = bound(duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp =
             bound(startTimestamp, block.timestamp + uint(MAX_FUTURE_LENGTH) + 1 + CALCULATION_INTERVAL_SECONDS, type(uint32).max);
@@ -1179,7 +1179,7 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
         // 1. Bound fuzz inputs to valid ranges and amounts
         IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
         amount = bound(amount, 1, mockTokenInitialSupply);
-        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = bound(duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(
             startTimestamp,
@@ -1223,7 +1223,7 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
         // 1. Bound fuzz inputs to valid ranges and amounts
         IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
         amount = bound(amount, 1, mockTokenInitialSupply);
-        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = bound(duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(
             startTimestamp,
@@ -1296,7 +1296,7 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
             // 1. Bound fuzz inputs to valid ranges and amounts using randSeed for each
             param.amount = bound(param.amount + i, 1, mockTokenInitialSupply);
             amounts[i] = param.amount;
-            param.duration = bound(param.duration + i, 0, MAX_REWARDS_DURATION);
+            param.duration = bound(param.duration + i, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
             param.duration = param.duration - (param.duration % CALCULATION_INTERVAL_SECONDS);
             param.startTimestamp = bound(
                 param.startTimestamp + i,
@@ -1380,7 +1380,7 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllSubmission is RewardsCoo
             token: IERC20(address(reenterer)),
             amount: amount,
             startTimestamp: uint32(block.timestamp),
-            duration: 0
+            duration: CALCULATION_INTERVAL_SECONDS
         });
 
         bytes memory calldataToUse = abi.encodeWithSelector(RewardsCoordinator.createAVSRewardsSubmission.selector, rewardsSubmissions);
@@ -1412,7 +1412,7 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllSubmission is RewardsCoo
         // 1. Bound fuzz inputs to valid ranges and amounts
         IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, rewardsForAllSubmitter);
         amount = bound(amount, 1, mockTokenInitialSupply);
-        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = bound(duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(
             startTimestamp,
@@ -1490,7 +1490,7 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllSubmission is RewardsCoo
             // 1. Bound fuzz inputs to valid ranges and amounts using randSeed for each
             param.amount = bound(param.amount + i, 1, mockTokenInitialSupply);
             amounts[i] = param.amount;
-            param.duration = bound(param.duration + i, 0, MAX_REWARDS_DURATION);
+            param.duration = bound(param.duration + i, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
             param.duration = param.duration - (param.duration % CALCULATION_INTERVAL_SECONDS);
             param.startTimestamp = bound(
                 param.startTimestamp + i,
@@ -1576,7 +1576,7 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllEarners is RewardsCoordi
             token: IERC20(address(reenterer)),
             amount: amount,
             startTimestamp: uint32(block.timestamp),
-            duration: 0
+            duration: CALCULATION_INTERVAL_SECONDS
         });
 
         bytes memory calldataToUse = abi.encodeWithSelector(RewardsCoordinator.createAVSRewardsSubmission.selector, rewardsSubmissions);
@@ -1608,7 +1608,7 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllEarners is RewardsCoordi
         // 1. Bound fuzz inputs to valid ranges and amounts
         IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, rewardsForAllSubmitter);
         amount = bound(amount, 1, mockTokenInitialSupply);
-        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = bound(duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(
             startTimestamp,
@@ -1688,7 +1688,7 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllEarners is RewardsCoordi
             // 1. Bound fuzz inputs to valid ranges and amounts using randSeed for each
             param.amount = bound(param.amount + i, 1, mockTokenInitialSupply);
             amounts[i] = param.amount;
-            param.duration = bound(param.duration + i, 0, MAX_REWARDS_DURATION);
+            param.duration = bound(param.duration + i, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
             param.duration = param.duration - (param.duration % CALCULATION_INTERVAL_SECONDS);
             param.startTimestamp = bound(
                 param.startTimestamp + i,
@@ -1809,7 +1809,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
     // Revert from reentrancy
     function testFuzz_Revert_WhenReentrancy(uint startTimestamp, uint duration) public {
         // 1. Bound fuzz inputs to valid ranges and amounts
-        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = bound(duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(
             startTimestamp,
@@ -1855,7 +1855,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
 
         // 1. Bound fuzz inputs to valid ranges and amounts
         IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
-        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = bound(duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(
             startTimestamp,
@@ -1893,7 +1893,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
 
         // 1. Bound fuzz inputs to valid ranges and amounts
         IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
-        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = bound(duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(
             startTimestamp,
@@ -1931,7 +1931,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
 
         // 1. Bound fuzz inputs to valid ranges and amounts
         IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
-        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = bound(duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(
             startTimestamp,
@@ -1969,7 +1969,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
 
         // 1. Bound fuzz inputs to valid ranges and amounts
         IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
-        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = bound(duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(
             startTimestamp,
@@ -2009,7 +2009,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
 
         // 1. Bound fuzz inputs to valid ranges and amounts
         IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
-        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = bound(duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(
             startTimestamp,
@@ -2048,7 +2048,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
         // 1. Bound fuzz inputs to valid ranges and amounts
         amount = bound(amount, 1e38, type(uint).max - 5e18);
         IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
-        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = bound(duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(
             startTimestamp,
@@ -2122,7 +2122,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
 
         // 1. Bound fuzz inputs to valid ranges and amounts
         IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
-        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = bound(duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
         cheats.assume(duration % CALCULATION_INTERVAL_SECONDS != 0);
         startTimestamp = bound(
             startTimestamp,
@@ -2159,7 +2159,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
 
         // 1. Bound fuzz inputs to valid ranges and amounts
         IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
-        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = bound(duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(
             startTimestamp,
@@ -2198,7 +2198,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
 
         // 1. Bound fuzz inputs to valid ranges and amounts
         IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
-        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = bound(duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(startTimestamp, 0, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH - 1);
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
@@ -2230,7 +2230,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
 
         // 1. Bound fuzz inputs to valid ranges and amounts
         IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
-        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = bound(duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(startTimestamp, block.timestamp - duration + CALCULATION_INTERVAL_SECONDS, type(uint32).max - duration);
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
@@ -2259,7 +2259,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
 
         // 1. Bound fuzz inputs to valid ranges and amounts
         IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
-        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = bound(duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(
             startTimestamp,
@@ -2297,7 +2297,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
 
         // 1. Bound fuzz inputs to valid ranges and amounts
         IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
-        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = bound(duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(
             startTimestamp,
@@ -2343,7 +2343,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
 
         // 1. Bound fuzz inputs to valid ranges and amounts
         IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
-        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = bound(duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(
             startTimestamp,
@@ -2414,7 +2414,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
 
         // 1. Bound fuzz inputs to valid ranges and amounts
         IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, defaultAppointee);
-        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = bound(duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(
             startTimestamp,
@@ -2497,7 +2497,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
         for (uint i = 0; i < numSubmissions; ++i) {
             // 1. Bound fuzz inputs to valid ranges and amounts using randSeed for each
             amounts[i] = _getTotalRewardsAmount(defaultOperatorRewards);
-            param.duration = bound(param.duration, 0, MAX_REWARDS_DURATION);
+            param.duration = bound(param.duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
             param.duration = param.duration - (param.duration % CALCULATION_INTERVAL_SECONDS);
             param.startTimestamp = bound(
                 param.startTimestamp + i,
@@ -2507,7 +2507,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
             );
             param.startTimestamp = param.startTimestamp - (param.startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
-            param.duration = bound(param.duration, 0, MAX_REWARDS_DURATION);
+            param.duration = bound(param.duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
             param.duration = param.duration - (param.duration % CALCULATION_INTERVAL_SECONDS);
             param.startTimestamp = bound(
                 param.startTimestamp,
@@ -2642,7 +2642,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
     // Revert from reentrancy
     function testFuzz_Revert_WhenReentrancy(uint startTimestamp, uint duration) public {
         // 1. Bound fuzz inputs to valid ranges and amounts
-        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = bound(duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(
             startTimestamp,
@@ -2694,7 +2694,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
 
         // 1. Bound fuzz inputs to valid ranges and amounts
         IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
-        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = bound(duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(
             startTimestamp,
@@ -2736,7 +2736,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
 
         // 1. Bound fuzz inputs to valid ranges and amounts
         IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
-        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = bound(duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(
             startTimestamp,
@@ -2778,7 +2778,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
 
         // 1. Bound fuzz inputs to valid ranges and amounts
         IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
-        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = bound(duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(
             startTimestamp,
@@ -2820,7 +2820,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
 
         // 1. Bound fuzz inputs to valid ranges and amounts
         IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
-        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = bound(duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(
             startTimestamp,
@@ -2864,7 +2864,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
 
         // 1. Bound fuzz inputs to valid ranges and amounts
         IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
-        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = bound(duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(
             startTimestamp,
@@ -2907,7 +2907,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
         // 1. Bound fuzz inputs to valid ranges and amounts
         amount = bound(amount, 1e38, type(uint).max - 5e18);
         IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
-        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = bound(duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(
             startTimestamp,
@@ -2989,7 +2989,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
 
         // 1. Bound fuzz inputs to valid ranges and amounts
         IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
-        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = bound(duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
         cheats.assume(duration % CALCULATION_INTERVAL_SECONDS != 0);
         startTimestamp = bound(
             startTimestamp,
@@ -3030,7 +3030,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
 
         // 1. Bound fuzz inputs to valid ranges and amounts
         IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
-        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = bound(duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(
             startTimestamp,
@@ -3073,7 +3073,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
 
         // 1. Bound fuzz inputs to valid ranges and amounts
         IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
-        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = bound(duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(startTimestamp, 0, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH - 1);
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
@@ -3109,7 +3109,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
 
         // 1. Bound fuzz inputs to valid ranges and amounts
         IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
-        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = bound(duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(startTimestamp, block.timestamp - duration + CALCULATION_INTERVAL_SECONDS, type(uint32).max - duration);
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
@@ -3142,7 +3142,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
 
         // 1. Bound fuzz inputs to valid ranges and amounts
         IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
-        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = bound(duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(
             startTimestamp,
@@ -3184,7 +3184,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
 
         // 1. Bound fuzz inputs to valid ranges and amounts
         IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
-        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = bound(duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(
             startTimestamp,
@@ -3234,7 +3234,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
 
         // 1. Bound fuzz inputs to valid ranges and amounts
         IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
-        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = bound(duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(
             startTimestamp,
@@ -3312,7 +3312,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
 
         // 1. Bound fuzz inputs to valid ranges and amounts
         IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, defaultAppointee);
-        duration = bound(duration, 0, MAX_REWARDS_DURATION);
+        duration = bound(duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
         startTimestamp = bound(
             startTimestamp,
@@ -3399,7 +3399,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
         for (uint i = 0; i < numSubmissions; ++i) {
             // 1. Bound fuzz inputs to valid ranges and amounts using randSeed for each
             amounts[i] = _getTotalRewardsAmount(defaultOperatorRewards);
-            param.duration = bound(param.duration, 0, MAX_REWARDS_DURATION);
+            param.duration = bound(param.duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
             param.duration = param.duration - (param.duration % CALCULATION_INTERVAL_SECONDS);
             param.startTimestamp = bound(
                 param.startTimestamp + i,
@@ -3409,7 +3409,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
             );
             param.startTimestamp = param.startTimestamp - (param.startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
-            param.duration = bound(param.duration, 0, MAX_REWARDS_DURATION);
+            param.duration = bound(param.duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
             param.duration = param.duration - (param.duration % CALCULATION_INTERVAL_SECONDS);
             param.startTimestamp = bound(
                 param.startTimestamp,
