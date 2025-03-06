@@ -12,7 +12,7 @@ This document describes edge cases surrounding the slashing of a staker for nati
 
 Consider a staker, Alice who is in the following state:
 
-1. Alice has verified a validator. `withdrawble: 32 ETH`
+1. Alice has verified a validator. `withdrawable: 32 ETH`
 2. Alice's operator is slashed for 75%. `withdrawable: 8 ETH`
     <details>
     <summary>Calculation</summary>
@@ -119,19 +119,19 @@ This edge case also applies if Alice undelegates after being slashed on the beac
 <details>
 <summary>Scenario</summary>
 
-1. Alice verifies a validator: `withdrawble: 32 ETH`
-2. Alice's operator is slashed for 100%. `withdrawble: 0 ETH` 
+1. Alice verifies a validator: `withdrawable: 32 ETH`
+2. Alice's operator is slashed for 100%. `withdrawable: 0 ETH` 
 3. Alice is slashed by 16 ETH on the beacon chain. 
 4. Alice undelegates. `depositShares = 0` 
-5. Alice verifies another validator. `withdrawble: 32 ETH`. `depositShares: 32 ETH` 
-6. Alice checkpoints her slash from step 3. `withdrawble: 24 ETH`
+5. Alice verifies another validator. `withdrawable: 32 ETH`. `depositShares: 32 ETH` 
+6. Alice checkpoints her slash from step 3. `withdrawable: 24 ETH`
     - `restakedExecutionLayerGwei = 16`. This is the AVSs attributable slashed amount, but it increases once Alice completely exits. 
-    - BCSF: 48/64 = 0.75
+    - `BCSF= 48/64 = 0.75`
 7. Alice completes her withdrawal as shares from undelegaiton. No affect since the operator's magnitude was 0
-8. Alice exits her validator from step 5. `withdrawble: 24 ETH`
+8. Alice exits her validator from step 5. `withdrawable: 24 ETH`
     - `restakedExecutionLayerGwei = 48` 
 9. Alice queues a withdrawal for all shares. `scaledShares = 32` 
 10. Alice completes her withdrawal. Alice receives 24 ETH
-    - `scaledShares * slashingFacotr = 32 * 0.75 = 24` 
+    - `scaledShares * slashingFactor = 32 * 0.75 = 24` 
 11. There is 24 ETH locked up in the pod. 
 </details>
