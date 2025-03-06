@@ -24,7 +24,7 @@
     # Specifies the exact version of Solidity to use, overriding auto-detection.
     solc_version = '0.8.27'
     # If enabled, treats Solidity compiler warnings as errors, preventing artifact generation if warnings are present.
-    deny_warnings = false 
+    deny_warnings = true 
     # If set to true, changes compilation pipeline to go through the new IR optimizer.
     via_ir = false
     # Whether or not to enable the Solidity optimizer.
