@@ -1695,7 +1695,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
                 // fixed point arithmetic rounding. Outer if is to prevent int underflow errors.
                 uint prevWithdrawableFactor = prevDSFs[i].mulWad(prevSlashingFactors[i]);
                 if (WAD >= prevWithdrawableFactor) {
-                    if (WAD - prevWithdrawableFactor < 1e2 && prevDepositShares[i] > 0 && curSlashingFactors[i] == prevSlashingFactors[i]) { 
+                    if (WAD - prevWithdrawableFactor < 1e2 && prevDepositShares[i] > 0 && curSlashingFactors[i] == prevSlashingFactors[i]) {
                         assertApproxEqAbs(curDSFs[i], prevDSFs[i], 1e2, err);
                     } else {
                         assertGt(curDSFs[i], prevDSFs[i], err); // Slashing, so DSF is increased
@@ -1734,7 +1734,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
                 // fixed point arithmetic rounding. Outer if is to prevent int underflow errors.
                 uint prevWithdrawableFactor = prevDSFs[i].mulWad(prevSlashingFactors[i]);
                 if (WAD >= prevWithdrawableFactor) {
-                    if (WAD - prevWithdrawableFactor < 1e2 && prevDepositShares[i] > 0 && curSlashingFactors[i] == prevSlashingFactors[i]) { 
+                    if (WAD - prevWithdrawableFactor < 1e2 && prevDepositShares[i] > 0 && curSlashingFactors[i] == prevSlashingFactors[i]) {
                         assertApproxEqAbs(curDSFs[i], prevDSFs[i], 1e2, err);
                     } else {
                         assertGt(curDSFs[i], prevDSFs[i], err); // Slashing, so DSF is increased
