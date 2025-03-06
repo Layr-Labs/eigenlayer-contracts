@@ -254,35 +254,6 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_DSF_State_Deposit(staker, strategies, "staker's DSF not updated correctly");
     }
 
-    /// @notice Used for edge cases where rounding behaviors impact the assertions after a deposit, specifically when
-    /// there already exists depositShares for a staker for a strategy.
-    function check_Deposit_State_SubsequentDeposit_WithRounding(User staker, IStrategy[] memory strategies, uint[] memory shares)
-        internal
-    {
-        /// Deposit into strategies:
-        // For each of the assets held by the staker (either StrategyManager or EigenPodManager),
-        // the staker calls the relevant deposit function, depositing all held assets.
-        //
-        // ... check that all underlying tokens were transferred to the correct destination
-        //     and that the staker now has the expected amount of delegated shares in each strategy
-        assert_HasNoUnderlyingTokenBalance(staker, strategies, "staker should have transferred all underlying tokens");
-        assert_DepositShares_GTE_WithdrawableShares(
-            staker, strategies, "deposit shares should be greater than or equal to withdrawable shares"
-        );
-        assert_Snap_Added_Staker_DepositShares(staker, strategies, shares, "staker should expect shares in each strategy after depositing");
-        assert_StrategiesInStakerStrategyList(staker, strategies, "staker strategy list should contain all strategies");
-
-        if (delegationManager.isDelegated(address(staker))) {
-            User operator = User(payable(delegationManager.delegatedTo(address(staker))));
-            assert_Snap_Expected_Staker_WithdrawableShares_Deposit(
-                staker, operator, strategies, shares, "staker should have received expected withdrawable shares"
-            );
-        } else {
-            assert_Snap_Added_Staker_WithdrawableShares(staker, strategies, shares, "deposit should increase withdrawable shares");
-        }
-        assert_Snap_WithinErrorBounds_DSF(staker, strategies, "staker's DSF not updated correctly");
-    }
-
     function check_Delegation_State(User staker, User operator, IStrategy[] memory strategies, uint[] memory depositShares) internal {
         /// Delegate to an operator:
         //
@@ -578,7 +549,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_DSF_State_WithdrawalAsShares(staker, strategies, "staker's DSF not updated correctly");
     }
 
-    function check_Withdrawal_AsShares_Redelegated_State_Base(
+    function check_Withdrawal_AsShares_Redelegated_State(
         User staker,
         User operator,
         User newOperator,
@@ -602,12 +573,11 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Unchanged_OperatorShares(operator, "old operator should have shares unchanged");
         assert_Snap_Added_OperatorShares(newOperator, strategies, withdrawableShares, "new operator should have received shares");
         assert_Snap_Unchanged_StrategyShares(strategies, "strategies should have total shares unchanged");
+
         assert_Snap_Expected_Staker_WithdrawableShares_Deposit(
             staker, newOperator, strategies, withdrawableShares, "staker should have received expected withdrawable shares"
         );
-    }
 
-    function check_Withdrawal_AsShares_Redelegated_State(User staker, IStrategy[] memory strategies) internal {
         assert_Snap_DSF_State_WithdrawalAsShares(staker, strategies, "staker's DSF not updated correctly");
     }
 

@@ -204,7 +204,9 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint i = 0; i < withdrawals.length; ++i) {
             staker.completeWithdrawalAsShares(withdrawals[i]);
-            check_Withdrawal_AsShares_Redelegated_State(staker, strategies);
+            check_Withdrawal_AsShares_Redelegated_State(
+                staker, operator, operator2, withdrawals[i], withdrawals[i].strategies, delegatedShares
+            );
         }
 
         (uint[] memory withdrawableSharesAfter, uint[] memory depositSharesAfter) =
@@ -519,7 +521,9 @@ contract Integration_SlashedOperator_SlashedEigenpod is Integration_SlashedOpera
         _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint i = 0; i < withdrawals.length; ++i) {
             staker.completeWithdrawalAsShares(withdrawals[i]);
-            check_Withdrawal_AsShares_Redelegated_State(staker, strategies);
+            check_Withdrawal_AsShares_Redelegated_State(
+                staker, operator, operator2, withdrawals[i], withdrawals[i].strategies, stakerWithdrawableShares
+            );
         }
     }
 }
@@ -583,11 +587,9 @@ contract Integration_Redelegate_SlashOperator_SlashEigenpod is Integration_Slash
         _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint i = 0; i < withdrawals.length; ++i) {
             staker.completeWithdrawalAsShares(withdrawals[i]);
-            check_Withdrawal_AsShares_Redelegated_State_Base(
+            check_Withdrawal_AsShares_Redelegated_State(
                 staker, operator, operator2, withdrawals[i], withdrawals[i].strategies, stakerWithdrawableShares
             );
-            // DSF actually decreases a bit because we deposited after the withdrawal, which normalized, and then deposited again
-            assert_Snap_WithinErrorBounds_DSF(staker, withdrawals[i].strategies, "staker's DSF not updated correctly");
         }
     }
 
@@ -622,10 +624,13 @@ contract Integration_Redelegate_SlashOperator_SlashEigenpod is Integration_Slash
         withdrawals[0] = withdrawal;
 
         // 11. Complete withdrawal as shares
+        uint[] memory stakerWithdrawableShares = _getWithdrawableSharesAfterCompletion(staker);
         _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint i = 0; i < withdrawals.length; ++i) {
             staker.completeWithdrawalAsShares(withdrawals[i]);
-            check_Withdrawal_AsShares_Redelegated_State(staker, strategies);
+            check_Withdrawal_AsShares_Redelegated_State(
+                staker, operator, operator2, withdrawals[i], withdrawals[i].strategies, stakerWithdrawableShares
+            );
         }
 
         // 12. Verify additional validator

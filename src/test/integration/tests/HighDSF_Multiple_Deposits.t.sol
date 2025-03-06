@@ -66,12 +66,15 @@ contract Integration_HighDSF_Multiple_Deposits is IntegrationCheckUtils {
         check_Deposit_State(staker, strategies, initDepositShares);
 
         // Repeat the deposit 50 times
+        // Gas intensive so we pause gas metering for this loop
+        cheats.pauseGasMetering();
         for (uint i = 0; i < 50; i++) {
             _dealAmounts(staker, strategies, initTokenBalances);
             staker.depositIntoEigenlayer(strategies, initTokenBalances);
             initDepositShares = _calculateExpectedShares(strategies, initTokenBalances);
-            check_Deposit_State_SubsequentDeposit_WithRounding(staker, strategies, initDepositShares);
+            check_Deposit_State(staker, strategies, initDepositShares);
         }
+        cheats.resumeGasMetering();
 
         // Check that the DSF is still bounded without overflow
         for (uint i = 0; i < strategies.length; i++) {

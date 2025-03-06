@@ -1676,19 +1676,30 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
 
     /// @dev Used to assert that the DSF is either increased or unchanged, depending on the slashing factor, on a deposit
     function assert_Snap_DSF_State_Deposit(User staker, IStrategy[] memory strategies, string memory err) internal {
+        uint[] memory curDepositShares = _getStakerDepositShares(staker, strategies);
+        uint[] memory prevDepositShares = _getPrevStakerDepositShares(staker, strategies);
+        uint[] memory curDSFs = _getDepositScalingFactors(staker, strategies);
+        uint[] memory prevDSFs = _getPrevDepositScalingFactors(staker, strategies);
+        uint[] memory curSlashingFactors = _getSlashingFactors(staker, strategies);
+        uint[] memory prevSlashingFactors = _getPrevSlashingFactors(staker, strategies);
         for (uint i = 0; i < strategies.length; i++) {
-            IStrategy[] memory stratArray = strategies[i].toArray();
-            /// @dev We don't need the previous slashing factors as they shouldn't change before/after a deposit
-            uint curSlashingFactor = _getSlashingFactor(staker, strategies[i]);
-
             // If there was never a slashing, no need to normalize
-            if (curSlashingFactor == WAD) {
-                assert_Snap_Unchanged_DSF(staker, stratArray, err); // No slashing, so DSF is unchanged
-                assert_DSF_WAD(staker, stratArray, err); // DSF should have always been WAD
+            if (curSlashingFactors[i] == WAD) {
+                assertEq(prevDSFs[i], curDSFs[i], err); // No slashing, so DSF is unchanged
+                assertEq(curDSFs[i], WAD, err); // DSF should have always been WAD
             }
             // If there was a slashing, and we deposit, normalize
             else {
-                assert_Snap_Increased_DSF(staker, stratArray, err); // Slashing, so DSF is increased
+                // If the DSF and slashing factor are already normalized against each other from a previous deposit (prevWithdrawableFactor very close to WAD)
+                // and there have been no subsequent slashings, DSF "should" stay the same, but recomputing decreases it slightly due to
+                // fixed point arithmetic rounding. Outer if is to prevent int underflow errors.
+                uint prevWithdrawableFactor = prevDSFs[i].mulWad(prevSlashingFactors[i]);
+                require(WAD >= prevWithdrawableFactor, "withdrawableFactor should always be less than or equal to WAD");
+                if (WAD - prevWithdrawableFactor < 1e2 && prevDepositShares[i] > 0 && curSlashingFactors[i] == prevSlashingFactors[i]) {
+                    assertApproxEqAbs(curDSFs[i], prevDSFs[i], 1e2, err);
+                } else {
+                    assertGt(curDSFs[i], prevDSFs[i], err); // Slashing, so DSF is increased
+                }
             }
         }
     }
@@ -1696,28 +1707,35 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     /// @dev When completing withdrawals as shares, we must also handle the case where a staker completes a withdrawal for 0 shares
     function assert_Snap_DSF_State_WithdrawalAsShares(User staker, IStrategy[] memory strategies, string memory err) internal {
         uint[] memory curDepositShares = _getStakerDepositShares(staker, strategies);
+        uint[] memory prevDepositShares = _getPrevStakerDepositShares(staker, strategies);
+        uint[] memory curDSFs = _getDepositScalingFactors(staker, strategies);
+        uint[] memory prevDSFs = _getPrevDepositScalingFactors(staker, strategies);
+        uint[] memory curSlashingFactors = _getSlashingFactors(staker, strategies);
+        uint[] memory prevSlashingFactors = _getPrevSlashingFactors(staker, strategies);
 
         for (uint i = 0; i < strategies.length; i++) {
-            IStrategy[] memory stratArray = strategies[i].toArray();
-            /// We don't need the previous slashing factors as they shouldn't change before/after a deposit
-            uint curSlashingFactor = _getSlashingFactor(staker, strategies[i]);
-
             // If there was never a slashing, no need to normalize
             // If there was a slashing, but we complete a withdrawal for 0 shares, no need to normalize
-            if (curSlashingFactor == WAD || curDepositShares[i] == 0) {
-                assert_Snap_Unchanged_DSF(staker, stratArray, err);
-                assert_DSF_WAD(staker, stratArray, err);
+            if (curSlashingFactors[i] == WAD || curDepositShares[i] == 0) {
+                assertEq(prevDSFs[i], curDSFs[i], err);
+                assertEq(curDSFs[i], WAD, err);
             }
             // If the staker has a slashingFactor of 0, any withdrawal as shares won't change the DSF
-            else if (staker.getSlashingFactor(strategies[i]) == 0) {
-                assert_Snap_Unchanged_DSF(staker, stratArray, err);
+            else if (curSlashingFactors[i] == 0) {
+                assertEq(prevDSFs[i], curDSFs[i], err);
             }
             // If there was a slashing and we complete a withdrawal for non-zero shares, normalize the DSF
             else {
-                assert_Snap_Increased_DSF(staker, stratArray, err);
-                /// @dev Note there may be cases when the DSF `stays` the same, such as when a withdrawal is
-                ///      queued, we deposit, and then complete as shares. THe DSF would stay the same. That test should use
-                ///      `assert_Snap_WithinErrorBounds_DSF`
+                // If the DSF and slashing factor are already normalized against each other from a previous deposit (prevWithdrawableFactor very close to WAD)
+                // and there have been no subsequent slashings, DSF "should" stay the same, but recomputing decreases it slightly due to
+                // fixed point arithmetic rounding. Outer if is to prevent int underflow errors.
+                uint prevWithdrawableFactor = prevDSFs[i].mulWad(prevSlashingFactors[i]);
+                require(WAD >= prevWithdrawableFactor, "withdrawableFactor should always be less than or equal to WAD");
+                if (WAD - prevWithdrawableFactor < 1e2 && prevDepositShares[i] > 0 && curSlashingFactors[i] == prevSlashingFactors[i]) {
+                    assertApproxEqAbs(curDSFs[i], prevDSFs[i], 1e2, err);
+                } else {
+                    assertGt(curDSFs[i], prevDSFs[i], err); // Slashing, so DSF is increased
+                }
             }
         }
     }
@@ -2942,6 +2960,28 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         uint64 maxMagnitude = allocationManager.getMaxMagnitudes(operator, strategy.toArray())[0];
         if (strategy == beaconChainETHStrategy) return maxMagnitude.mulWad(eigenPodManager.beaconChainSlashingFactor(address(staker)));
         return maxMagnitude;
+    }
+
+    function _getPrevSlashingFactor(User staker, IStrategy strategy) internal timewarp returns (uint) {
+        return _getSlashingFactor(staker, strategy);
+    }
+
+    function _getSlashingFactors(User staker, IStrategy[] memory strategies) internal view returns (uint[] memory) {
+        address operator = delegationManager.delegatedTo(address(staker));
+        uint64[] memory maxMagnitudes = allocationManager.getMaxMagnitudes(operator, strategies);
+        uint[] memory slashingFactors = new uint[](strategies.length);
+        for (uint i = 0; i < strategies.length; i++) {
+            if (strategies[i] == beaconChainETHStrategy) {
+                slashingFactors[i] = maxMagnitudes[i].mulWad(eigenPodManager.beaconChainSlashingFactor(address(staker)));
+            } else {
+                slashingFactors[i] = maxMagnitudes[i];
+            }
+        }
+        return slashingFactors;
+    }
+
+    function _getPrevSlashingFactors(User staker, IStrategy[] memory strategies) internal timewarp returns (uint[] memory) {
+        return _getSlashingFactors(staker, strategies);
     }
 
     function _getPrevWithdrawableShares(User staker, IStrategy[] memory strategies) internal timewarp returns (uint[] memory) {

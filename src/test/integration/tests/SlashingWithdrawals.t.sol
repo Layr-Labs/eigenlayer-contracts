@@ -226,7 +226,7 @@ contract Integration_SlashThenWithdraw is Integration_ALMSlashBase {
         // Complete withdrawal as shares
         staker.completeWithdrawalsAsShares(withdrawals);
         for (uint i = 0; i < withdrawals.length; i++) {
-            check_Withdrawal_AsShares_Redelegated_State(staker, strategies);
+            check_Withdrawal_AsShares_Redelegated_State(staker, operator, operatorB, withdrawals[i], strategies, shares);
         }
     }
 
