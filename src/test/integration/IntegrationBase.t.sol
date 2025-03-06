@@ -1690,11 +1690,16 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
             }
             // If there was a slashing, and we deposit, normalize
             else {
-                // If the DSF and slashing factor are already normalized against each other from a previous deposit and there have been no subsequent slashings,
-                // an additional deposit can slightly decrease the DSF due to fixed point arithmetic rounding
+                // If the DSF and slashing factor are already normalized against each other from a previous deposit (prevWithdrawableFactor very close to WAD)
+                // and there have been no subsequent slashings, DSF "should" stay the same, but recomputing decreases it slightly due to
+                // fixed point arithmetic rounding. Outer if is to prevent int underflow errors.
                 uint prevWithdrawableFactor = prevDSFs[i].mulWad(prevSlashingFactors[i]);
-                if (WAD >= prevWithdrawableFactor && prevDepositShares[i] > 0 && curSlashingFactors[i] == prevSlashingFactors[i]) {
-                    if (WAD - prevWithdrawableFactor < 1e2) assertApproxEqAbs(curDSFs[i], prevDSFs[i], 1e2, err);
+                if (WAD >= prevWithdrawableFactor) {
+                    if (WAD - prevWithdrawableFactor < 1e2 && prevDepositShares[i] > 0 && curSlashingFactors[i] == prevSlashingFactors[i]) { 
+                        assertApproxEqAbs(curDSFs[i], prevDSFs[i], 1e2, err);
+                    } else {
+                        assertGt(curDSFs[i], prevDSFs[i], err); // Slashing, so DSF is increased
+                    }
                 } else {
                     assertGt(curDSFs[i], prevDSFs[i], err); // Slashing, so DSF is increased
                 }
@@ -1723,11 +1728,16 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
             }
             // If there was a slashing and we complete a withdrawal for non-zero shares, normalize the DSF
             else {
-                // If the DSF and slashing factor are already normalized against each other from a previous deposit and there have been no subsequent slashings,
-                // an additional deposit can slightly decrease the DSF due to fixed point arithmetic rounding
+                // If the DSF and slashing factor are already normalized against each other from a previous deposit (prevWithdrawableFactor very close to WAD)
+                // and there have been no subsequent slashings, DSF "should" stay the same, but recomputing decreases it slightly due to
+                // fixed point arithmetic rounding. Outer if is to prevent int underflow errors.
                 uint prevWithdrawableFactor = prevDSFs[i].mulWad(prevSlashingFactors[i]);
-                if (WAD >= prevWithdrawableFactor && prevDepositShares[i] > 0 && curSlashingFactors[i] == prevSlashingFactors[i]) {
-                    if (WAD - prevWithdrawableFactor < 1e2) assertApproxEqAbs(curDSFs[i], prevDSFs[i], 1e2, err);
+                if (WAD >= prevWithdrawableFactor) {
+                    if (WAD - prevWithdrawableFactor < 1e2 && prevDepositShares[i] > 0 && curSlashingFactors[i] == prevSlashingFactors[i]) { 
+                        assertApproxEqAbs(curDSFs[i], prevDSFs[i], 1e2, err);
+                    } else {
+                        assertGt(curDSFs[i], prevDSFs[i], err); // Slashing, so DSF is increased
+                    }
                 } else {
                     assertGt(curDSFs[i], prevDSFs[i], err); // Slashing, so DSF is increased
                 }
