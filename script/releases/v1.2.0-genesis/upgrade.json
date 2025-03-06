@@ -1,0 +1,15 @@
+{
+    "name": "slashing-genesis",
+    "from": "0.0.0",
+    "to": "1.2.0",
+    "phases": [
+        {
+            "type": "eoa",
+            "filename": "1-deploy-contracts.s.sol"
+        },
+        {
+            "type": "eoa",
+            "filename": "2-disable-eigenpods-if-needed.s.sol"
+        }
+    ]
+}

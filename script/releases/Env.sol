@@ -100,6 +100,10 @@ library Env {
         return _envAddress("beigenProxyAdmin");
     }
 
+    function supportsNativeEth() internal view returns (bool) {
+        return _envBool("supportsNativeEthRestaking");
+    }
+
     function ethPOS() internal view returns (IETHPOSDeposit) {
         return IETHPOSDeposit(_envAddress("ethPOS"));
     }
@@ -342,6 +346,10 @@ library Env {
 
     function _envU64(string memory key) private view returns (uint64) {
         return ZEnvHelpers.state().envU64(key);
+    }
+
+    function _envBool(string memory key) private view returns (bool) {
+        return ZEnvHelpers.state().envBool(key);
     }
 
     function _envU32(string memory key) private view returns (uint32) {
