@@ -1,0 +1,75 @@
+name: Certora Prover Workflow
+
+on:
+  push:
+    branches:
+      - dev
+  pull_request:
+    branches:
+      - dev
+  workflow_dispatch:
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+      - name: Install forge dependencies
+        run: forge install
+      - uses: Certora/certora-run-action@v1
+        with:
+          configurations: |-
+            certora/confs/core/AllocationManager.conf
+            certora/confs/core/AllocationManagerSanity.conf
+            certora/confs/core/DelegationManager.conf
+            certora/confs/core/DelegationManagerValidState.conf
+            certora/confs/core/StrategyManager.conf
+            certora/confs/permissions/Pausable.conf
+            certora/confs/pods/EigenPodManagerRules.conf
+            certora/confs/strategies/StrategyBase.conf
+          use-beta: true
+          solc-versions: 0.8.27
+          solc-remove-version-prefix: "0."
+          job-name: "Eigenlayer Contracts"
+          certora-key: ${{ secrets.CERTORAKEY }}
+          compilation-steps-only: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  verify:
+    runs-on: ubuntu-latest
+    needs: compile
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+      - name: Install forge dependencies
+        run: forge install
+      - uses: Certora/certora-run-action@v1
+        with:
+          configurations: |-
+            certora/confs/core/AllocationManager.conf
+            certora/confs/core/AllocationManagerSanity.conf
+            certora/confs/core/DelegationManager.conf
+            certora/confs/core/DelegationManagerValidState.conf
+            certora/confs/core/StrategyManager.conf
+            certora/confs/permissions/Pausable.conf
+            certora/confs/pods/EigenPodManagerRules.conf
+            certora/confs/strategies/StrategyBase.conf
+          use-beta: true
+          solc-versions: 0.8.27
+          solc-remove-version-prefix: "0."
+          job-name: "Eigenlayer Contracts"
+          certora-key: ${{ secrets.CERTORAKEY }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -44,7 +44,7 @@ contract Integration_HighDSF_Multiple_Deposits is IntegrationCheckUtils {
         _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
 
         // 3. slash operator to 1 magnitude remaining
-        SlashingParams memory slashParams = _genSlashing_Custom(operator, operatorSet, WAD - 1);
+        slashParams = _genSlashing_Custom(operator, operatorSet, WAD - 1);
         avs.slashOperator(slashParams);
         check_Base_Slashing_State(operator, allocateParams, slashParams);
 

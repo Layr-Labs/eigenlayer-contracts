@@ -1455,7 +1455,7 @@ contract StrategyManagerUnitTests_burnShares is StrategyManagerUnitTests {
         assertEq(burnAddressBalanceAfter, burnAddressBalanceBefore + sharesToBurn, "balanceAfter != balanceBefore + sharesAmount");
 
         // Verify strategy was removed from burnable shares
-        (address[] memory strategiesAfterBurn, uint[] memory sharesAfterBurn) = strategyManager.getStrategiesWithBurnableShares();
+        (address[] memory strategiesAfterBurn,) = strategyManager.getStrategiesWithBurnableShares();
         assertEq(strategiesAfterBurn.length, 0, "Should have no strategies after burning");
         assertEq(strategyManager.getBurnableShares(strategy), 0, "getBurnableShares should return 0 after burning");
     }
@@ -1649,7 +1649,7 @@ contract StrategyManagerUnitTests_removeStrategiesFromDepositWhitelist is Strate
 }
 
 contract StrategyManagerUnitTests_getStrategiesWithBurnableShares is StrategyManagerUnitTests {
-    function test_getStrategiesWithBurnableShares_Empty() public {
+    function test_getStrategiesWithBurnableShares_Empty() public view {
         (address[] memory strategies, uint[] memory shares) = strategyManager.getStrategiesWithBurnableShares();
         assertEq(strategies.length, 0, "Should have no strategies when empty");
         assertEq(shares.length, 0, "Should have no shares when empty");

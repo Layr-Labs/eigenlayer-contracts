@@ -1715,6 +1715,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         uint[] memory prevDSFs = _getPrevDepositScalingFactors(staker, strategies);
         uint[] memory curSlashingFactors = _getSlashingFactors(staker, strategies);
         uint[] memory prevSlashingFactors = _getPrevSlashingFactors(staker, strategies);
+        
         for (uint i = 0; i < strategies.length; i++) {
             // If there was never a slashing, no need to normalize
             // If there was a slashing, but we complete a withdrawal for 0 shares, no need to normalize
@@ -1748,7 +1749,6 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     /// @dev On a delegation, the DSF should be increased if the operator magnitude is non-WAD
     function assert_Snap_DSF_State_Delegation(
         User staker,
-        User operator,
         IStrategy[] memory strategies,
         uint[] memory delegatableShares,
         string memory err
