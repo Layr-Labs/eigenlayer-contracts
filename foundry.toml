@@ -24,7 +24,7 @@
     # Specifies the exact version of Solidity to use, overriding auto-detection.
     solc_version = '0.8.27'
     # If enabled, treats Solidity compiler warnings as errors, preventing artifact generation if warnings are present.
-    deny_warnings = false 
+    deny_warnings = true 
     # If set to true, changes compilation pipeline to go through the new IR optimizer.
     via_ir = false
     # Whether or not to enable the Solidity optimizer.
@@ -33,6 +33,30 @@
     # across the life-time of the contract. This means it is a trade-off parameter between code size (deploy cost) 
     # and code execution cost (cost after deployment).
     optimizer_runs = 200
+    # An array of Solidity compiler error codes to ignore during build, such as warnings.
+    ignored_error_codes = [
+        # 1878, # license
+        5574, # code-size
+        # 2018, # func-mutability
+        # 2072, # unused-var
+        # 5667, # unused-param
+        # 9302, # unused-return
+        # 5815, # virtual-interfaces
+        # 3628, # missing-receive-ether
+        # 2519, # shadowing
+        # 8760, # same-varname
+        # 6321, # unnamed-return
+        # 5740, # unreachable
+        # 3420, # pragma-solidity
+        # 2462, # constructor-visibility
+        3860, # init-code-size
+        # 2394, # transient-storage
+        4591  # too-many-warnings
+    ]
+    # An array of file paths from which warnings should be ignored during compilation.
+    ignored_warnings_from = [
+        "src/test"
+    ]
 
     # Test Configuration
 
