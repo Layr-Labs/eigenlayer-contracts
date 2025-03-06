@@ -51,7 +51,7 @@
         # 2462, # constructor-visibility
         3860, # init-code-size
         # 2394, # transient-storage
-        # 4591  # too-many-warnings
+        4591  # too-many-warnings
     ]
     # An array of file paths from which warnings should be ignored during compilation.
     ignored_warnings_from = [
