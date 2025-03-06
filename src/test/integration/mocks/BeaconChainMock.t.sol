@@ -807,15 +807,6 @@ contract BeaconChainMock is Logger {
         return validators[validatorIndex].exitEpoch;
     }
 
-    function totalEffectiveBalanceWei(uint40[] memory validatorIndices) public view returns (uint) {
-        uint total;
-        for (uint i = 0; i < validatorIndices.length; i++) {
-            total += uint(validators[validatorIndices[i]].effectiveBalanceGwei * GWEI_TO_WEI);
-        }
-
-        return total;
-    }
-
     /// @dev Returns the validator's effective balance, in gwei
     function effectiveBalance(uint40 validatorIndex) public view returns (uint64) {
         return validators[validatorIndex].effectiveBalanceGwei;
@@ -859,14 +850,6 @@ contract BeaconChainMock is Logger {
     /// From EigenPod.sol
     function _nextEpochStartTimestamp(uint64 epoch) internal view returns (uint64) {
         return genesisTime + ((1 + epoch) * BeaconChainProofs.SECONDS_PER_EPOCH);
-    }
-
-    function _calcValProofIndex(uint40 validatorIndex) internal pure returns (uint) {
-        return (BeaconChainProofs.VALIDATOR_CONTAINER_INDEX << (BeaconChainProofs.VALIDATOR_TREE_HEIGHT + 1)) | uint(validatorIndex);
-    }
-
-    function _calcBalanceProofIndex(uint40 balanceRootIndex) internal pure returns (uint) {
-        return (BeaconChainProofs.BALANCE_CONTAINER_INDEX << (BeaconChainProofs.BALANCE_TREE_HEIGHT + 1)) | uint(balanceRootIndex);
     }
 
     function _getZeroNode(uint depth) internal view returns (bytes32) {
@@ -991,10 +974,6 @@ contract BeaconChainMock is Logger {
             stateRootProof: stateRootProofs[curTimestamp],
             validatorProof: BeaconChainProofs.ValidatorProof({validatorFields: vfProof.validatorFields, proof: vfProof.validatorFieldsProof})
         });
-    }
-
-    function balanceOfGwei(uint40 validatorIndex) public view returns (uint64) {
-        return validators[validatorIndex].effectiveBalanceGwei;
     }
 
     function pubkeyHash(uint40 validatorIndex) public view returns (bytes32) {
