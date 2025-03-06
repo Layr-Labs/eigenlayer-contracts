@@ -4,7 +4,7 @@ pragma solidity ^0.8.27;
 import "src/test/integration/IntegrationChecks.t.sol";
 
 /// @notice Testing the rounding behavior when the DSF is high and there are multiple deposits
-contract Integration_HighDSF_Multiple_Deposits is IntegrationCheckUtils {
+contract Integration_HighDSF_Multiple_Deposits is IntegrationChecks {
     using ArrayLib for *;
 
     AVS avs;

@@ -402,21 +402,16 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     }
 
     function _initializeProxies() public noTracing {
+        allocationManager.initialize({initialOwner: executorMultisig, initialPausedStatus: 0});
+        avsDirectory.initialize({initialOwner: executorMultisig, initialPausedStatus: 0});
         delegationManager.initialize({initialOwner: executorMultisig, initialPausedStatus: 0});
-
+        eigenPodManager.initialize({initialOwner: executorMultisig, _initPausedStatus: 0});
+        strategyFactory.initialize({_initialOwner: executorMultisig, _initialPausedStatus: 0, _strategyBeacon: strategyBeacon});
         strategyManager.initialize({
             initialOwner: executorMultisig,
             initialStrategyWhitelister: address(strategyFactory),
             initialPausedStatus: 0
         });
-
-        eigenPodManager.initialize({initialOwner: executorMultisig, _initPausedStatus: 0});
-
-        avsDirectory.initialize({initialOwner: executorMultisig, initialPausedStatus: 0});
-
-        allocationManager.initialize({initialOwner: executorMultisig, initialPausedStatus: 0});
-
-        strategyFactory.initialize({_initialOwner: executorMultisig, _initialPausedStatus: 0, _strategyBeacon: strategyBeacon});
     }
 
     /// @dev Deploy a strategy and its underlying token, push to global lists of tokens/strategies, and whitelist

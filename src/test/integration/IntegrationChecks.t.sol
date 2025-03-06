@@ -7,9 +7,8 @@ import "src/test/integration/users/User_M1.t.sol";
 import "src/test/integration/users/User_M2.t.sol";
 
 /// @notice Contract that provides utility functions to reuse common test blocks & checks
-contract IntegrationCheckUtils is IntegrationBase {
+contract IntegrationChecks is IntegrationBase {
     using ArrayLib for *;
-    using SlashingLib for *;
     using StdStyle for *;
 
     /**
@@ -17,7 +16,7 @@ contract IntegrationCheckUtils is IntegrationBase {
      *                              EIGENPOD CHECKS
      *
      */
-    function check_VerifyWC_State(User staker, uint40[] memory validators, uint64 beaconBalanceGwei) internal {
+    function check_VerifyWC_State(User staker, uint40[] memory validators, uint64 beaconBalanceGwei) public {
         uint beaconBalanceWei = beaconBalanceGwei * GWEI_TO_WEI;
         assert_DepositShares_GTE_WithdrawableShares(
             staker, BEACONCHAIN_ETH_STRAT.toArray(), "deposit shares should be greater than or equal to withdrawable shares"
@@ -31,18 +30,18 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Added_ActiveValidators(staker, validators, "validators should each be active");
     }
 
-    function check_StartCheckpoint_State(User staker) internal {
+    function check_StartCheckpoint_State(User staker) public {
         assert_ProofsRemainingEqualsActive(staker, "checkpoint proofs remaining should equal active validator count");
         assert_Snap_Created_Checkpoint(staker, "staker should have created a new checkpoint");
     }
 
-    function check_StartCheckpoint_WithPodBalance_State(User staker, uint64 expectedPodBalanceGwei) internal {
+    function check_StartCheckpoint_WithPodBalance_State(User staker, uint64 expectedPodBalanceGwei) public {
         check_StartCheckpoint_State(staker);
 
         assert_CheckpointPodBalance(staker, expectedPodBalanceGwei, "checkpoint podBalanceGwei should equal expected");
     }
 
-    function check_StartCheckpoint_NoValidators_State(User staker, uint64 sharesAddedGwei) internal {
+    function check_StartCheckpoint_NoValidators_State(User staker, uint64 sharesAddedGwei) public {
         assert_Snap_Added_Staker_DepositShares(
             staker, BEACONCHAIN_ETH_STRAT, sharesAddedGwei * GWEI_TO_WEI, "should have added staker shares"
         );
@@ -53,7 +52,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Unchanged_Checkpoint(staker, "current checkpoint timestamp should be unchanged");
     }
 
-    function check_CompleteCheckpoint_State(User staker) internal {
+    function check_CompleteCheckpoint_State(User staker) public {
         assert_DepositShares_GTE_WithdrawableShares(
             staker, BEACONCHAIN_ETH_STRAT.toArray(), "deposit shares should be greater than or equal to withdrawable shares"
         );
@@ -62,7 +61,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Added_PodBalanceToWithdrawable(staker, "pod balance should have been added to withdrawable restaked exec layer gwei");
     }
 
-    function check_CompleteCheckpoint_EarnOnBeacon_State(User staker, uint64 beaconBalanceAdded) internal {
+    function check_CompleteCheckpoint_EarnOnBeacon_State(User staker, uint64 beaconBalanceAdded) public {
         check_CompleteCheckpoint_State(staker);
 
         uint balanceAddedWei = beaconBalanceAdded * GWEI_TO_WEI;
@@ -72,7 +71,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Unchanged_BCSF(staker, "BCSF should be unchanged");
     }
 
-    function check_CompleteCheckpoint_WithPodBalance_State(User staker, uint64 expectedPodBalanceGwei) internal {
+    function check_CompleteCheckpoint_WithPodBalance_State(User staker, uint64 expectedPodBalanceGwei) public {
         check_CompleteCheckpoint_State(staker);
 
         assert_Snap_Added_WithdrawableGwei(
@@ -81,7 +80,7 @@ contract IntegrationCheckUtils is IntegrationBase {
     }
 
     /// @dev Common checks for all slashing states, irrespective of validator exits
-    function check_CompleteCheckpoint_WithSlashing_State_Base(User staker) internal {
+    function check_CompleteCheckpoint_WithSlashing_State_Base(User staker) public {
         check_CompleteCheckpoint_State(staker);
 
         assert_Snap_Unchanged_Staker_DepositShares(staker, "staker shares should not have decreased");
@@ -90,7 +89,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_SlashableStake_Decrease_BCSlash(staker);
     }
 
-    function check_CompleteCheckpoint_WithSlashing_Exits_State_Base(User staker, uint40[] memory slashedValidators) internal {
+    function check_CompleteCheckpoint_WithSlashing_Exits_State_Base(User staker, uint40[] memory slashedValidators) public {
         check_CompleteCheckpoint_WithSlashing_State_Base(staker);
 
         // Validator exits
@@ -99,9 +98,7 @@ contract IntegrationCheckUtils is IntegrationBase {
     }
 
     /// @dev Includes validator exits
-    function check_CompleteCheckpoint_WithSlashing_State(User staker, uint40[] memory slashedValidators, uint64 slashedAmountGwei)
-        internal
-    {
+    function check_CompleteCheckpoint_WithSlashing_State(User staker, uint40[] memory slashedValidators, uint64 slashedAmountGwei) public {
         check_CompleteCheckpoint_WithSlashing_Exits_State_Base(staker, slashedValidators);
 
         // Prove withdrawable shares decrease
@@ -111,9 +108,7 @@ contract IntegrationCheckUtils is IntegrationBase {
     }
 
     /// @dev Same as above, but BCSF must be zero on a full slash
-    function check_CompleteCheckpoint_FullySlashed_State(User staker, uint40[] memory slashedValidators, uint64 slashedAmountGwei)
-        internal
-    {
+    function check_CompleteCheckpoint_FullySlashed_State(User staker, uint40[] memory slashedValidators, uint64 slashedAmountGwei) public {
         check_CompleteCheckpoint_WithSlashing_State(staker, slashedValidators, slashedAmountGwei);
         assert_Zero_BCSF(staker, "BCSF should be 0");
     }
@@ -122,7 +117,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         User staker,
         uint40[] memory slashedValidators,
         uint64 slashedAmountGwei
-    ) internal {
+    ) public {
         check_CompleteCheckpoint_WithSlashing_Exits_State_Base(staker, slashedValidators);
 
         assert_Snap_Removed_Staker_WithdrawableShares_AtLeast(
@@ -138,7 +133,7 @@ contract IntegrationCheckUtils is IntegrationBase {
 
     /// @notice Used for edge cases where rounding behaviors of magnitudes close to 1 are tested.
     /// Normal
-    function check_CompleteCheckPoint_WithSlashing_LowMagnitude_State(User staker, uint64 slashedAmountGwei) internal {
+    function check_CompleteCheckPoint_WithSlashing_LowMagnitude_State(User staker, uint64 slashedAmountGwei) public {
         check_CompleteCheckpoint_State(staker);
         assert_Snap_Unchanged_Staker_DepositShares(staker, "staker shares should not have decreased");
         assert_Snap_Removed_Staker_WithdrawableShares_AtLeast(
@@ -152,7 +147,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Unchanged_DSF(staker, BEACONCHAIN_ETH_STRAT.toArray(), "DSF should be unchanged");
     }
 
-    function check_CompleteCheckpoint_WithCLSlashing_State(User staker, uint64 slashedAmountGwei) internal {
+    function check_CompleteCheckpoint_WithCLSlashing_State(User staker, uint64 slashedAmountGwei) public {
         check_CompleteCheckpoint_WithSlashing_State_Base(staker);
 
         assert_Snap_Removed_Staker_WithdrawableShares(
@@ -161,7 +156,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Unchanged_ActiveValidatorCount(staker, "should not have changed active validator count");
     }
 
-    function check_CompleteCheckpoint_WithCLSlashing_HandleRoundDown_State(User staker, uint64 slashedAmountGwei) internal {
+    function check_CompleteCheckpoint_WithCLSlashing_HandleRoundDown_State(User staker, uint64 slashedAmountGwei) public {
         check_CompleteCheckpoint_WithSlashing_State_Base(staker);
 
         assert_Snap_Removed_Staker_WithdrawableShares_AtLeast(
@@ -173,7 +168,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Unchanged_ActiveValidatorCount(staker, "should not have changed active validator count");
     }
 
-    function check_CompleteCheckpoint_WithExits_State(User staker, uint40[] memory exitedValidators, uint64 exitedBalanceGwei) internal {
+    function check_CompleteCheckpoint_WithExits_State(User staker, uint40[] memory exitedValidators, uint64 exitedBalanceGwei) public {
         check_CompleteCheckpoint_WithPodBalance_State(staker, exitedBalanceGwei);
 
         assert_Snap_Unchanged_Staker_DepositShares(staker, "staker should not have changed shares");
@@ -182,7 +177,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Removed_ActiveValidators(staker, exitedValidators, "exited validators should each be WITHDRAWN");
     }
 
-    function check_CompleteCheckpoint_ZeroBalanceDelta_State(User staker) internal {
+    function check_CompleteCheckpoint_ZeroBalanceDelta_State(User staker) public {
         check_CompleteCheckpoint_State(staker);
 
         assert_Snap_Unchanged_Staker_DepositShares(staker, "staker deposit shares should not have decreased");
@@ -197,7 +192,7 @@ contract IntegrationCheckUtils is IntegrationBase {
      *                           LST/DELEGATION CHECKS
      *
      */
-    function check_Deposit_State(User staker, IStrategy[] memory strategies, uint[] memory shares) internal {
+    function check_Deposit_State(User staker, IStrategy[] memory strategies, uint[] memory shares) public {
         /// Deposit into strategies:
         // For each of the assets held by the staker (either StrategyManager or EigenPodManager),
         // the staker calls the relevant deposit function, depositing all held assets.
@@ -227,7 +222,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         IStrategy[] memory strategies,
         uint[] memory shares,
         uint[] memory tokenBalances
-    ) internal {
+    ) public {
         /// Deposit into strategies:
         // For each of the assets held by the staker (either StrategyManager or EigenPodManager),
         // the staker calls the relevant deposit function, depositing some subset of held assets
@@ -254,7 +249,36 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_DSF_State_Deposit(staker, strategies, "staker's DSF not updated correctly");
     }
 
-    function check_Delegation_State(User staker, User operator, IStrategy[] memory strategies, uint[] memory depositShares) internal {
+    /// @notice Used for edge cases where rounding behaviors impact the assertions after a deposit, specifically when
+    /// there already exists depositShares for a staker for a strategy.
+    function check_Deposit_State_SubsequentDeposit_WithRounding(User staker, IStrategy[] memory strategies, uint[] memory shares)
+        internal
+    {
+        /// Deposit into strategies:
+        // For each of the assets held by the staker (either StrategyManager or EigenPodManager),
+        // the staker calls the relevant deposit function, depositing all held assets.
+        //
+        // ... check that all underlying tokens were transferred to the correct destination
+        //     and that the staker now has the expected amount of delegated shares in each strategy
+        assert_HasNoUnderlyingTokenBalance(staker, strategies, "staker should have transferred all underlying tokens");
+        assert_DepositShares_GTE_WithdrawableShares(
+            staker, strategies, "deposit shares should be greater than or equal to withdrawable shares"
+        );
+        assert_Snap_Added_Staker_DepositShares(staker, strategies, shares, "staker should expect shares in each strategy after depositing");
+        assert_StrategiesInStakerStrategyList(staker, strategies, "staker strategy list should contain all strategies");
+
+        if (delegationManager.isDelegated(address(staker))) {
+            User operator = User(payable(delegationManager.delegatedTo(address(staker))));
+            assert_Snap_Expected_Staker_WithdrawableShares_Deposit(
+                staker, operator, strategies, shares, "staker should have received expected withdrawable shares"
+            );
+        } else {
+            assert_Snap_Added_Staker_WithdrawableShares(staker, strategies, shares, "deposit should increase withdrawable shares");
+        }
+        assert_Snap_WithinErrorBounds_DSF(staker, strategies, "staker's DSF not updated correctly");
+    }
+
+    function check_Delegation_State(User staker, User operator, IStrategy[] memory strategies, uint[] memory depositShares) public {
         /// Delegate to an operator:
         //
         // ... check that the staker is now delegated to the operator, and that the operator
@@ -275,7 +299,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_DSF_State_Delegation(staker, strategies, delegatableShares, "staker's DSF not updated correctly");
     }
 
-    function check_Added_SlashableStake(User operator, IStrategy[] memory strategies) internal {
+    function check_Added_SlashableStake(User operator, IStrategy[] memory strategies) public {
         for (uint i = 0; i < strategies.length; i++) {
             (OperatorSet[] memory operatorSets, Allocation[] memory allocations) = _getStrategyAllocations(operator, strategies[i]);
             for (uint j = 0; j < operatorSets.length; j++) {
@@ -296,7 +320,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         uint[] memory withdrawableShares,
         Withdrawal[] memory withdrawals,
         bytes32[] memory withdrawalRoots
-    ) internal {
+    ) public {
         // The staker will queue one or more withdrawals for the selected strategies and shares
         //
         // ... check that each withdrawal was successfully enqueued, that the returned roots
@@ -361,7 +385,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         }
     }
 
-    function check_Decreased_SlashableStake(User operator, uint[] memory withdrawableShares, IStrategy[] memory strategies) internal {
+    function check_Decreased_SlashableStake(User operator, uint[] memory withdrawableShares, IStrategy[] memory strategies) public {
         for (uint i = 0; i < strategies.length; i++) {
             if (withdrawableShares[i] > 0) {
                 (OperatorSet[] memory operatorSets, Allocation[] memory allocations) = _getStrategyAllocations(operator, strategies[i]);
@@ -386,7 +410,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         bytes32[] memory withdrawalRoots,
         IStrategy[] memory strategies,
         uint[] memory stakerDelegatedShares
-    ) internal {
+    ) public {
         /// Undelegate from an operator
         //
         // ... check that the staker is undelegated, all strategies from which the staker is deposited are unqueued,
@@ -420,7 +444,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         bytes32[] memory withdrawalRoots,
         IStrategy[] memory strategies,
         uint[] memory stakerDelegatedShares
-    ) internal {
+    ) public {
         /// Redelegate to a new operator
         //
         // ... check that the staker is delegated to new operator, all strategies from which the staker is deposited are unqueued,
@@ -469,7 +493,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         uint[] memory shares,
         IERC20[] memory tokens,
         uint[] memory expectedTokens
-    ) internal {
+    ) public {
         // Common checks
         assert_WithdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
         assert_DepositShares_GTE_WithdrawableShares(
@@ -494,7 +518,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         Withdrawal memory withdrawal,
         IStrategy[] memory strategies,
         uint[] memory withdrawableShares
-    ) internal {
+    ) public {
         // Common checks applicable to both user and non-user operator types
         assert_WithdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
         assert_DepositShares_GTE_WithdrawableShares(
@@ -524,7 +548,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         Withdrawal memory withdrawal,
         IStrategy[] memory strategies,
         uint[] memory withdrawableShares
-    ) internal {
+    ) public {
         /// Complete withdrawal(s):
         // The staker will complete the withdrawal as shares
         //
@@ -556,7 +580,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         Withdrawal memory withdrawal,
         IStrategy[] memory strategies,
         uint[] memory withdrawableShares
-    ) internal {
+    ) public {
         /// Complete withdrawal(s):
         // The staker will complete the withdrawal as shares
         //
@@ -578,6 +602,7 @@ contract IntegrationCheckUtils is IntegrationBase {
             staker, newOperator, strategies, withdrawableShares, "staker should have received expected withdrawable shares"
         );
 
+    function check_Withdrawal_AsShares_Redelegated_State(User staker, IStrategy[] memory strategies) internal {
         assert_Snap_DSF_State_WithdrawalAsShares(staker, strategies, "staker's DSF not updated correctly");
     }
 
@@ -617,13 +642,13 @@ contract IntegrationCheckUtils is IntegrationBase {
     }
 
     /// @dev Check global max magnitude invariants - these should ALWAYS hold
-    function check_MaxMag_Invariants(User operator) internal view {
+    function check_MaxMag_Invariants(User operator) public view {
         assert_MaxMagsEqualMaxMagsAtCurrentBlock(operator, allStrats, "max magnitudes should equal upperlookup at current block");
         assert_MaxEqualsAllocatablePlusEncumbered(operator, "max magnitude should equal encumbered plus allocatable");
     }
 
     /// @dev Check that the last call to modifyAllocations resulted in a non-pending modification
-    function check_ActiveModification_State(User operator, AllocateParams memory params) internal view {
+    function check_ActiveModification_State(User operator, AllocateParams memory params) public view {
         OperatorSet memory operatorSet = params.operatorSet;
         IStrategy[] memory strategies = params.strategies;
 
@@ -631,14 +656,14 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_NoPendingModification(operator, operatorSet, strategies, "there should not be a pending modification for any strategy");
     }
 
-    function check_IsSlashable_State(User operator, OperatorSet memory operatorSet, IStrategy[] memory strategies) internal view {
+    function check_IsSlashable_State(User operator, OperatorSet memory operatorSet, IStrategy[] memory strategies) public view {
         assert_IsSlashable(operator, operatorSet, "operator should be slashable for operator set");
         assert_CurMinSlashableEqualsMinAllocated(
             operator, operatorSet, strategies, "minimum slashable stake should equal allocated stake at current block"
         );
     }
 
-    function check_NotSlashable_State(User operator, OperatorSet memory operatorSet) internal view {
+    function check_NotSlashable_State(User operator, OperatorSet memory operatorSet) public view {
         assert_NotSlashable(operator, operatorSet, "operator should not be slashable for operator set");
         assert_NoSlashableStake(operator, operatorSet, "operator should not have any slashable stake");
     }
@@ -652,7 +677,7 @@ contract IntegrationCheckUtils is IntegrationBase {
     /// @dev Basic invariants that should hold after EVERY call to `registerForOperatorSets`
     /// NOTE: These are only slightly modified from check_Base_Deregistration_State
     /// If you add invariants here, consider adding them there (and vice-versa)
-    function check_Base_Registration_State(User operator, OperatorSet memory operatorSet) internal {
+    function check_Base_Registration_State(User operator, OperatorSet memory operatorSet) public {
         check_MaxMag_Invariants(operator);
         check_IsSlashable_State(operator, operatorSet, allocationManager.getStrategiesInOperatorSet(operatorSet));
 
@@ -675,9 +700,7 @@ contract IntegrationCheckUtils is IntegrationBase {
     /// @dev Check invariants for registerForOperatorSets given a set of strategies
     /// for which NO allocation exists (currentMag/pendingDiff are 0)
     /// @param unallocated For the given operatorSet, a list of strategies for which NO allocation exists
-    function check_Registration_State_NoAllocation(User operator, OperatorSet memory operatorSet, IStrategy[] memory unallocated)
-        internal
-    {
+    function check_Registration_State_NoAllocation(User operator, OperatorSet memory operatorSet, IStrategy[] memory unallocated) public {
         check_Base_Registration_State(operator, operatorSet);
 
         /// The operator is NOT allocated, ensure their slashable stake and magnitudes are unchanged
@@ -693,7 +716,7 @@ contract IntegrationCheckUtils is IntegrationBase {
     /// ASSUMES:
     /// - the effect block for `params` has already passed
     /// - params.newMagnitudes does NOT contain any `0` entries
-    function check_Registration_State_ActiveAllocation(User operator, AllocateParams memory active) internal {
+    function check_Registration_State_ActiveAllocation(User operator, AllocateParams memory active) public {
         OperatorSet memory operatorSet = active.operatorSet;
         IStrategy[] memory strategies = active.strategies;
 
@@ -714,7 +737,7 @@ contract IntegrationCheckUtils is IntegrationBase {
 
     /// @dev Check registration invariants. Assumes the operator has a PENDING allocation
     /// to the set, but that the allocation's effect block has not yet been reached
-    function check_Registration_State_PendingAllocation(User operator, AllocateParams memory params) internal {
+    function check_Registration_State_PendingAllocation(User operator, AllocateParams memory params) public {
         OperatorSet memory operatorSet = params.operatorSet;
         IStrategy[] memory strategies = params.strategies;
 
@@ -740,7 +763,7 @@ contract IntegrationCheckUtils is IntegrationBase {
     /// @dev Basic invariants that should hold after EVERY call to `deregisterFromOperatorSets`
     /// NOTE: These are only slightly modified from check_Base_Registration_State
     /// If you add invariants here, consider adding them there (and vice-versa)
-    function check_Base_Deregistration_State(User operator, OperatorSet memory operatorSet) internal {
+    function check_Base_Deregistration_State(User operator, OperatorSet memory operatorSet) public {
         check_MaxMag_Invariants(operator);
 
         // Deregistration SHOULD remove the operator as a member of the set
@@ -765,7 +788,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         _rollBackward_DeallocationDelay();
     }
 
-    function check_Deregistration_State_NoAllocation(User operator, OperatorSet memory operatorSet) internal {
+    function check_Deregistration_State_NoAllocation(User operator, OperatorSet memory operatorSet) public {
         check_Base_Deregistration_State(operator, operatorSet);
 
         assert_Snap_Unchanged_AllocatedStake(operator, operatorSet, allStrats, "should not have updated allocated stake in any way");
@@ -774,7 +797,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         );
     }
 
-    function check_Deregistration_State_ActiveAllocation(User operator, OperatorSet memory operatorSet) internal {
+    function check_Deregistration_State_ActiveAllocation(User operator, OperatorSet memory operatorSet) public {
         check_Base_Deregistration_State(operator, operatorSet);
 
         assert_Snap_Unchanged_AllocatedStake(operator, operatorSet, allStrats, "should not have updated allocated stake in any way");
@@ -783,7 +806,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         );
     }
 
-    function check_Deregistration_State_PendingAllocation(User operator, OperatorSet memory operatorSet) internal {
+    function check_Deregistration_State_PendingAllocation(User operator, OperatorSet memory operatorSet) public {
         check_Base_Deregistration_State(operator, operatorSet);
 
         assert_Snap_Unchanged_AllocatedStake(operator, operatorSet, allStrats, "should not have updated allocated stake in any way");
@@ -800,7 +823,7 @@ contract IntegrationCheckUtils is IntegrationBase {
 
     /// @dev Basic invariants that should hold after all calls to `modifyAllocations`
     /// where the input `params` represent an _increase_ in magnitude
-    function check_Base_IncrAlloc_State(User operator, AllocateParams memory params) internal {
+    function check_Base_IncrAlloc_State(User operator, AllocateParams memory params) public {
         check_MaxMag_Invariants(operator);
 
         OperatorSet memory operatorSet = params.operatorSet;
@@ -822,7 +845,7 @@ contract IntegrationCheckUtils is IntegrationBase {
     /// @dev Invariants for modifyAllocations. Use when:
     /// - operator is NOT slashable for this operator set
     /// - last call to modifyAllocations created an INCREASE in allocation
-    function check_IncrAlloc_State_NotSlashable(User operator, AllocateParams memory params) internal {
+    function check_IncrAlloc_State_NotSlashable(User operator, AllocateParams memory params) public {
         check_Base_IncrAlloc_State(operator, params);
         check_NotSlashable_State(operator, params.operatorSet);
 
@@ -870,7 +893,7 @@ contract IntegrationCheckUtils is IntegrationBase {
     /// @dev Invariants for modifyAllocations. Use when:
     /// - operator IS slashable for this operator set
     /// - last call to modifyAllocations created an INCREASE in allocation
-    function check_IncrAlloc_State_Slashable(User operator, AllocateParams memory params) internal {
+    function check_IncrAlloc_State_Slashable(User operator, AllocateParams memory params) public {
         check_Base_IncrAlloc_State(operator, params);
         check_IsSlashable_State(operator, params.operatorSet, params.strategies);
 
@@ -885,7 +908,7 @@ contract IntegrationCheckUtils is IntegrationBase {
     /// - operator IS slashable for this operator set
     /// - last call to modifyAllocations created an INCREASE in allocation
     /// - operator has no delegated shares/stake so their slashable stake remains UNCHANGED
-    function check_IncrAlloc_State_Slashable_NoDelegatedStake(User operator, AllocateParams memory params) internal {
+    function check_IncrAlloc_State_Slashable_NoDelegatedStake(User operator, AllocateParams memory params) public {
         check_Base_IncrAlloc_State(operator, params);
         check_IsSlashable_State(operator, params.operatorSet, params.strategies);
 
@@ -953,7 +976,7 @@ contract IntegrationCheckUtils is IntegrationBase {
 
     /// @dev Basic invariants that should hold after all calls to `modifyAllocations`
     /// where the input `params` represent a decrease in magnitude
-    function check_Base_DecrAlloc_State(User operator, AllocateParams memory params) internal {
+    function check_Base_DecrAlloc_State(User operator, AllocateParams memory params) public {
         check_MaxMag_Invariants(operator);
 
         OperatorSet memory operatorSet = params.operatorSet;
@@ -966,7 +989,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Unchanged_MaxMagnitude(operator, allStrats, "should not have updated max magnitudes in any way");
     }
 
-    function check_DecrAlloc_State_NotSlashable(User operator, AllocateParams memory params) internal {
+    function check_DecrAlloc_State_NotSlashable(User operator, AllocateParams memory params) public {
         OperatorSet memory operatorSet = params.operatorSet;
         IStrategy[] memory strategies = params.strategies;
 
@@ -981,7 +1004,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Deallocated_Magnitude(operator, strategies, "should have deallocated magnitude");
     }
 
-    function check_DecrAlloc_State_Slashable(User operator, AllocateParams memory params) internal {
+    function check_DecrAlloc_State_Slashable(User operator, AllocateParams memory params) public {
         check_Base_DecrAlloc_State(operator, params);
         check_IsSlashable_State(operator, params.operatorSet, params.strategies);
 
@@ -1025,7 +1048,7 @@ contract IntegrationCheckUtils is IntegrationBase {
     }
 
     function check_FullyDeallocated_State(User operator, AllocateParams memory allocateParams, AllocateParams memory deallocateParams)
-        internal
+        public
     {
         OperatorSet memory operatorSet = allocateParams.operatorSet;
         assert_NoSlashableStake(operator, operatorSet, "should not have any slashable stake");
@@ -1050,7 +1073,7 @@ contract IntegrationCheckUtils is IntegrationBase {
      *                             ALM - SLASHING
      *
      */
-    function check_Base_Slashing_State(User operator, AllocateParams memory allocateParams, SlashingParams memory slashParams) internal {
+    function check_Base_Slashing_State(User operator, AllocateParams memory allocateParams, SlashingParams memory slashParams) public {
         OperatorSet memory operatorSet = allocateParams.operatorSet;
 
         check_MaxMag_Invariants(operator);
@@ -1078,13 +1101,13 @@ contract IntegrationCheckUtils is IntegrationBase {
         AllocateParams memory allocateParams,
         SlashingParams memory slashParams,
         Withdrawal[] memory withdrawals
-    ) internal {
+    ) public {
         check_Base_Slashing_State(operator, allocateParams, slashParams);
         assert_Snap_Decreased_SlashableSharesInQueue(operator, slashParams, withdrawals, "slash should decrease slashable shares in queue");
     }
 
     /// Slashing invariants when the operator has been fully slashed for every strategy in the operator set
-    function check_FullySlashed_State(User operator, AllocateParams memory allocateParams, SlashingParams memory slashParams) internal {
+    function check_FullySlashed_State(User operator, AllocateParams memory allocateParams, SlashingParams memory slashParams) public {
         check_Base_Slashing_State(operator, allocateParams, slashParams);
 
         assert_Snap_Removed_AllocatedSet(operator, allocateParams.operatorSet, "should not have updated allocated sets");
@@ -1105,7 +1128,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         uint64 slashedBalanceGwei,
         AllocateParams memory allocateParams,
         SlashingParams memory slashingParams
-    ) internal {
+    ) public {
         check_CompleteCheckpoint_WithSlashing_Exits_State_Base(staker, slashedValidators);
 
         // From the original shares to the BC slash (AVS slash in between), the shares should have decreased by at least the BC slash amount
@@ -1130,7 +1153,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         uint extraValidatorShares,
         AllocateParams memory allocateParams,
         SlashingParams memory slashingParams
-    ) internal {
+    ) public {
         // Checkpoint State
         check_CompleteCheckpoint_WithSlashing_Exits_State_Base(staker, slashedValidators);
 
@@ -1150,7 +1173,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         uint40[] memory slashedValidators,
         uint64 slashedBalanceGwei,
         uint beaconSharesAddedGwei
-    ) internal {
+    ) public {
         // Checkpoint State - can't use base check since a BC balance decrease isn't occurring
         check_CompleteCheckpoint_State(staker);
         assert_Snap_Removed_ActiveValidatorCount(staker, slashedValidators.length, "should have decreased active validator count");
@@ -1176,7 +1199,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         uint40[] memory slashedValidators,
         AllocateParams memory allocateParams,
         SlashingParams memory slashingParams
-    ) internal {
+    ) public {
         check_CompleteCheckpoint_WithSlashing_Exits_State_Base(staker, slashedValidators);
 
         // Assert no withdrawable shares

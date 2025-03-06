@@ -3,7 +3,7 @@ pragma solidity ^0.8.27;
 
 import "src/test/integration/IntegrationChecks.t.sol";
 
-contract IntegrationMainnetFork_UpgradeSetup is IntegrationCheckUtils {
+contract IntegrationMainnetFork_UpgradeSetup is IntegrationChecks {
     // /// @notice Test upgrade setup is correct
     // /// forge-config: default.fuzz.runs = 1
     // function test_mainnet_upgrade_setup(uint24 _random) public {

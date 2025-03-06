@@ -3,7 +3,7 @@ pragma solidity ^0.8.27;
 
 import "src/test/integration/IntegrationChecks.t.sol";
 
-contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
+contract Integration_SlashedEigenpod_BC is IntegrationChecks {
     using ArrayLib for *;
 
     AVS avs;
@@ -363,7 +363,7 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
 }
 
 /// @notice This is not considered dual slashing since the operator is pre-slashed
-contract Integration_SlashedOperator_SlashedEigenpod_Base is IntegrationCheckUtils {
+contract Integration_SlashedOperator_SlashedEigenpod_Base is IntegrationChecks {
     using ArrayLib for *;
 
     AVS avs;
@@ -668,7 +668,7 @@ contract Integration_Redelegate_SlashOperator_SlashEigenpod is Integration_Slash
     }
 }
 
-contract Integration_SlashedEigenpod_BC_HalfSlash is IntegrationCheckUtils {
+contract Integration_SlashedEigenpod_BC_HalfSlash is IntegrationChecks {
     using ArrayLib for *;
 
     AVS avs;

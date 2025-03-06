@@ -340,11 +340,11 @@ contract Integration_OperatorDeregistrationTiming is Integration_ALMSlashBase {
 
 /**
  * @notice These tests check for specific allocation correctness around timing
- * @dev These tests inherit from IntegrationCheckUtils instead of Integration_ALMSlashBase because they require a
+ * @dev These tests inherit from IntegrationChecks instead of Integration_ALMSlashBase because they require a
  * different initialization -- specifically, the allocation must be performed within the tests. As such, there are no
  * assumptions and many state variables are declared below.
  */
-contract Integration_OperatorAllocationTiming is IntegrationCheckUtils {
+contract Integration_OperatorAllocationTiming is IntegrationChecks {
     AVS avs;
     User operator;
     OperatorSet operatorSet;

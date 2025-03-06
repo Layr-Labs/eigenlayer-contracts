@@ -4,7 +4,7 @@ pragma solidity ^0.8.27;
 import "src/test/integration/IntegrationChecks.t.sol";
 
 /// @notice Tests where we slash native eth on the Beacon Chain and by an OperatorSet
-contract Integration_DualSlashing_Base is IntegrationCheckUtils {
+contract Integration_DualSlashing_Base is IntegrationChecks {
     using ArrayLib for *;
 
     AVS avs;

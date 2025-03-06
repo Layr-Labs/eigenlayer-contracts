@@ -4,7 +4,7 @@ pragma solidity ^0.8.27;
 import "src/test/integration/IntegrationChecks.t.sol";
 import "src/test/integration/users/User.t.sol";
 
-contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
+contract Integration_Deposit_Delegate_Queue_Complete is IntegrationChecks {
     /**
      *
      *                             FULL WITHDRAWALS

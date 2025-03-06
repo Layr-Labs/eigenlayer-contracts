@@ -3,7 +3,7 @@ pragma solidity ^0.8.27;
 
 import "src/test/integration/IntegrationChecks.t.sol";
 
-contract Integration_SlashedEigenpod_AVS_Base is IntegrationCheckUtils {
+contract Integration_SlashedEigenpod_AVS_Base is IntegrationChecks {
     using ArrayLib for *;
     using SlashingLib for *;
     using Math for uint;

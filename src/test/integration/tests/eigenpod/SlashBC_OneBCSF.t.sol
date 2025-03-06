@@ -6,7 +6,7 @@ import "src/test/integration/IntegrationChecks.t.sol";
 import "src/test/harnesses/EigenPodManagerWrapper.sol";
 
 /// @notice Testing the rounding behavior when beacon chain slashing factor is initially 1
-contract Integration_SlashBC_OneBCSF is IntegrationCheckUtils {
+contract Integration_SlashBC_OneBCSF is IntegrationChecks {
     using ArrayLib for *;
 
     AVS avs;
