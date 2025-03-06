@@ -53,7 +53,8 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
         ethPOSDepositMock = new ETHPOSDepositMock();
         cheats.warp(GENESIS_TIME_LOCAL);
         timeMachine = new TimeMachine();
-        beaconChain = new BeaconChainMock(EigenPodManager(address(eigenPodManagerMock)), GENESIS_TIME_LOCAL);
+        beaconChain = new BeaconChainMock();
+        beaconChain.initialize(EigenPodManager(address(eigenPodManagerMock)), GENESIS_TIME_LOCAL);
 
         // Deploy EigenPod
         podImplementation = new EigenPod(ethPOSDepositMock, IEigenPodManager(address(eigenPodManagerMock)), GENESIS_TIME_LOCAL, "v9.9.9");

@@ -9,7 +9,6 @@ import "src/contracts/strategies/StrategyFactory.sol";
 
 import "src/test/mocks/ERC20Mock.sol";
 import "src/test/integration/users/User.t.sol";
-import "src/test/integration/TimeMachine.t.sol";
 import "src/test/utils/Logger.t.sol";
 
 import "src/test/utils/ArrayLib.sol";
@@ -20,7 +19,6 @@ interface IAVSDeployer {
     function allocationManager() external view returns (AllocationManager);
     function strategyFactory() external view returns (StrategyFactory);
     function permissionController() external view returns (PermissionController);
-    function timeMachine() external view returns (TimeMachine);
 }
 
 contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
@@ -28,13 +26,13 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
     using ArrayLib for *;
 
     IStrategy constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
+    TimeMachine constant timeMachine = TimeMachine(address(0x000000000000000074696D65206D616368696e65));
 
     // TODO: fix later for same reason as User.t.sol
     AllocationManager immutable allocationManager;
     PermissionController immutable permissionController;
     DelegationManager immutable delegationManager;
     StrategyFactory immutable strategyFactory;
-    TimeMachine immutable timeMachine;
     string _NAME;
 
     uint32 totalOperatorSets;
@@ -45,7 +43,6 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
         permissionController = deployer.permissionController();
         delegationManager = deployer.delegationManager();
         strategyFactory = deployer.strategyFactory();
-        timeMachine = deployer.timeMachine();
         _NAME = name;
         cheats.label(address(this), NAME_COLORED());
     }

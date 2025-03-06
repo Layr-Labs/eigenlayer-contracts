@@ -67,8 +67,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     mapping(address => bool) public tokensNotTested;
 
     // Mock Contracts to deploy
-    TimeMachine public timeMachine;
-    BeaconChainMock public beaconChain;
+    TimeMachine public constant timeMachine = TimeMachine(address(0x000000000000000074696D65206D616368696e65)); // bytes("time machine")
+    BeaconChainMock public constant beaconChain = BeaconChainMock(address(0x0000000000000000626561636f6e636861696e6D6f636b)); // bytes("beacon chain")
 
     // Admin Addresses
     address constant pauser = address(555);
@@ -211,8 +211,10 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         BEACON_GENESIS_TIME = GENESIS_TIME_LOCAL;
         cheats.warp(BEACON_GENESIS_TIME);
         cheats.roll(10_000);
-        timeMachine = new TimeMachine();
-        beaconChain = new BeaconChainMock(eigenPodManager, BEACON_GENESIS_TIME);
+
+        vm.etch(address(timeMachine), type(TimeMachine).runtimeCode);
+        vm.etch(address(beaconChain), type(BeaconChainMock).runtimeCode);
+        beaconChain.initialize(eigenPodManager, BEACON_GENESIS_TIME);
     }
 
     /// Parse existing contracts from mainnet
@@ -251,8 +253,9 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
         // Create time machine and mock beacon chain
         BEACON_GENESIS_TIME = GENESIS_TIME_MAINNET;
-        timeMachine = new TimeMachine();
-        beaconChain = new BeaconChainMock(eigenPodManager, BEACON_GENESIS_TIME);
+        vm.etch(address(timeMachine), type(TimeMachine).runtimeCode);
+        vm.etch(address(beaconChain), type(BeaconChainMock).runtimeCode);
+        beaconChain.initialize(eigenPodManager, BEACON_GENESIS_TIME);
 
         // Since we haven't done the slashing upgrade on mainnet yet, upgrade mainnet contracts
         // prior to test. `isUpgraded` is true by default, but is set to false in `UpgradeTest.t.sol`

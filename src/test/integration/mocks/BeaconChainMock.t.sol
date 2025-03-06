@@ -75,11 +75,11 @@ contract BeaconChainMock is Logger {
     // see https://eth2book.info/capella/part3/containers/blocks/#beaconblock
     uint constant BEACON_BLOCK_FIELDS = 5;
 
-    uint immutable BLOCKROOT_PROOF_LEN = 32 * BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT;
-    uint immutable VAL_FIELDS_PROOF_LEN = 32 * ((BeaconChainProofs.VALIDATOR_TREE_HEIGHT + 1) + BeaconChainProofs.BEACON_STATE_TREE_HEIGHT);
-    uint immutable BALANCE_CONTAINER_PROOF_LEN =
+    uint constant BLOCKROOT_PROOF_LEN = 32 * BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT;
+    uint constant VAL_FIELDS_PROOF_LEN = 32 * ((BeaconChainProofs.VALIDATOR_TREE_HEIGHT + 1) + BeaconChainProofs.BEACON_STATE_TREE_HEIGHT);
+    uint constant BALANCE_CONTAINER_PROOF_LEN =
         32 * (BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT + BeaconChainProofs.BEACON_STATE_TREE_HEIGHT);
-    uint immutable BALANCE_PROOF_LEN = 32 * (BeaconChainProofs.BALANCE_TREE_HEIGHT + 1);
+    uint constant BALANCE_PROOF_LEN = 32 * (BeaconChainProofs.BALANCE_TREE_HEIGHT + 1);
 
     uint64 genesisTime;
     uint64 public nextTimestamp;
@@ -128,7 +128,7 @@ contract BeaconChainMock is Logger {
 
     bytes32[] zeroNodes;
 
-    constructor(EigenPodManager _eigenPodManager, uint64 _genesisTime) {
+    function initialize(EigenPodManager _eigenPodManager, uint64 _genesisTime) public {
         genesisTime = _genesisTime;
         eigenPodManager = _eigenPodManager;
 
