@@ -4,9 +4,12 @@ pragma solidity ^0.8.27;
 import "../../src/contracts/core/StrategyManager.sol";
 
 contract StrategyManagerHarness is StrategyManager {
-    constructor(IDelegationManager _delegation, IEigenPodManager _eigenPodManager, ISlasher _slasher)
-        StrategyManager(_delegation, _eigenPodManager, _slasher)
-        {}
+    constructor(
+        IDelegationManager _delegation,
+        IPauserRegistry _pauseRegistry,
+        string memory _version
+    ) StrategyManager(_delegation, _pauseRegistry, _version)
+    {}
 
     function strategy_is_in_stakers_array(address staker, IStrategy strategy) public view returns (bool) {
         uint256 length = stakerStrategyList[staker].length;
@@ -37,7 +40,7 @@ contract StrategyManagerHarness is StrategyManager {
         for (uint256 i = 0; i < length; ++i) {
             IStrategy strategy = stakerStrategyList[staker][i];
             // check that staker's shares in strategy are nonzero
-            if (stakerStrategyShares[staker][strategy] == 0) {
+            if (stakerDepositShares[staker][strategy] == 0) {
                 return false;
             }
             // check that strategy is not duplicated in array
@@ -52,7 +55,11 @@ contract StrategyManagerHarness is StrategyManager {
         return IStrategy(strategy).totalShares();
     }
 
-    function get_stakerStrategyShares(address staker, IStrategy strategy) public view returns (uint256) {
-        return stakerStrategyShares[staker][strategy];
+    function get_stakerDepositShares(address staker, IStrategy strategy) public view returns (uint256) {
+        return stakerDepositShares[staker][strategy];
+    }
+
+    function sharesToUnderlyingView(address strategy, uint256 shares) public returns (uint256) {
+        return IStrategy(strategy).sharesToUnderlyingView(shares);
     }
 }
