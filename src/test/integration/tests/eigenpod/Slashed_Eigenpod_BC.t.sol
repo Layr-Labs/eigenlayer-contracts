@@ -204,7 +204,9 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint i = 0; i < withdrawals.length; ++i) {
             staker.completeWithdrawalAsShares(withdrawals[i]);
-            check_Withdrawal_AsShares_Redelegated_State(staker, operator, operator2, withdrawals[i], withdrawals[i].strategies, delegatedShares);
+            check_Withdrawal_AsShares_Redelegated_State(
+                staker, operator, operator2, withdrawals[i], withdrawals[i].strategies, delegatedShares
+            );
         }
 
         (uint[] memory withdrawableSharesAfter, uint[] memory depositSharesAfter) =
