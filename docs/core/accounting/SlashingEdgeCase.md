@@ -45,8 +45,8 @@ In the above scenario, let's say the Alice now proves a checkpoint.
 The checkpoint slash has devalued Alice's currently withdrawable assets by 50%. The AVS slashes from what's left due to the BC getting priority burning rights. Thus, AVSs must factor Native ETH (or an LST) being slashed by the beacon chain when designing their slashing conditions. The below diagram illustrates this behavior:
 
 <figure>
-<img src="../../images/avs-bc-slash.png" alt="AVS and Beacon Chain Slashing Behavior">
-<figcaption>Diagram showing how AVS slashing is applied after Beacon Chain slashing, with BC having priority burning rights</figcaption>
+    <img src="../../images/avs-bc-slash.png" alt="AVS and Beacon Chain Slashing Behavior">
+    <figcaption>Diagram showing how AVS slashing is applied after Beacon Chain slashing, with BC having priority burning rights</figcaption>
 </figure>
 
 Note that the portion that is marked as BC Slash and BC + AVS Slash has priority burning rights by the beacon chain. 12 ETH has been slashed "twice", but this is by design given our definition of restaking.
@@ -85,7 +85,7 @@ Scenario A:
     * `withdrawable = 64 * 0.25 * 0.75 * 2.5 = 30 ETH`
     </details>
 
-In this scenario, 25% of Alice’s currently proven assets are slashed. Similarly, the AVSs attributable slashed amount has been decreased by 25% (24 → 18 ETH). 
+In this scenario, 25% of Alice's currently proven assets are slashed. Similarly, the AVSs attributable slashed amount has been decreased by 25% (24 → 18 ETH). 
 
 
 Scenario B:
@@ -112,7 +112,7 @@ Scenario B:
     * `withdrawable = 64 * 0.25 * 0.5 * 4.5 = 36 ETH`
     </details>
 
-In scenario B, 50% of Alice’s currently proven assets are slashed, along with a commensurate decrease in the AVSs attributable slashed amount. In both cases Alice’s withdrawable shares and the AVSs attributable slashed amount decrease by the same percentage.
+In scenario B, 50% of Alice's currently proven assets are slashed, along with a commensurate decrease in the AVSs attributable slashed amount. In both cases Alice's withdrawable shares and the AVSs attributable slashed amount decrease by the same percentage.
 
 We acknowledge this edge case. A benefit of this system is that stakers are incentivized to immediately prove BC slashed. Eigen Labs runs an off-chain process (EigenPod Health Checker) that monitors BC slashings and starts checkpoints as needed. Conversely, when Native-ETH burning is implemented, AVSs are incentivized to immediately exit stakers from the BC to recoup the maximum possible attributable slashed amount.  
 
