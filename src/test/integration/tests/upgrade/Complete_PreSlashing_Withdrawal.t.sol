@@ -17,7 +17,7 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal_Base is UpgradeTest
         bool completeAsTokens;
     }
 
-    function _init_(uint24 randomness, bool withOperator, bool withDelegation) internal virtual returns (TestState memory state) {
+    function _init_(bool withOperator, bool withDelegation) internal virtual returns (TestState memory state) {
         // Create staker
         (state.staker, state.strategies, state.tokenBalances) = _newRandomStaker();
         state.shares = _calculateExpectedShares(state.strategies, state.tokenBalances);
@@ -65,7 +65,7 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal_Base is UpgradeTest
 
 contract Integration_Upgrade_Complete_PreSlashing_Withdrawal is Integration_Upgrade_Complete_PreSlashing_Withdrawal_Base {
     function testFuzz_deposit_queue_upgrade_complete(uint24 r) public rand(r) {
-        TestState memory state = _init_({randomness: r, withOperator: false, withDelegation: false});
+        TestState memory state = _init_({withOperator: false, withDelegation: false});
         state.withdrawals = state.staker.queueWithdrawals(state.strategies, state.withdrawalShares);
         _upgradeEigenLayerContracts();
         _rollBlocksForCompleteWithdrawals(state.withdrawals);
@@ -73,7 +73,7 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal is Integration_Upgr
     }
 
     function testFuzz_delegate_deposit_queue_upgrade_complete(uint24 r) public rand(r) {
-        TestState memory state = _init_({randomness: r, withOperator: true, withDelegation: true});
+        TestState memory state = _init_({withOperator: true, withDelegation: true});
         state.withdrawals = state.staker.queueWithdrawals(state.strategies, state.withdrawalShares);
         _upgradeEigenLayerContracts();
         _rollBlocksForCompleteWithdrawals(state.withdrawals);
@@ -81,7 +81,7 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal is Integration_Upgr
     }
 
     function testFuzz_upgrade_delegate_queuePartial_complete(uint24 r) public rand(r) {
-        TestState memory state = _init_({randomness: r, withOperator: true, withDelegation: false});
+        TestState memory state = _init_({withOperator: true, withDelegation: false});
         _upgradeEigenLayerContracts();
         state.staker.delegateTo(state.operator);
         state.withdrawals = state.staker.queueWithdrawals(state.strategies, state.withdrawalShares);
@@ -90,7 +90,7 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal is Integration_Upgr
     }
 
     function testFuzz_delegate_deposit_queue_completeBeforeUpgrade(uint24 r) public rand(r) {
-        TestState memory state = _init_({randomness: r, withOperator: true, withDelegation: true});
+        TestState memory state = _init_({withOperator: true, withDelegation: true});
         state.withdrawals = state.staker.queueWithdrawals(state.strategies, state.withdrawalShares);
         _rollBlocksForCompleteWithdrawals(state.withdrawals);
         // We must roll forward by the delay twice since pre-upgrade delay is half as long as post-upgrade delay.
@@ -107,9 +107,9 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal_Slash is Integratio
     OperatorSet operatorSet;
     AllocateParams allocateParams;
 
-    function _init_(uint24 randomness, bool withOperator, bool withDelegation) internal override returns (TestState memory state) {
+    function _init_(bool withOperator, bool withDelegation) internal override returns (TestState memory state) {
         // Initialize state, queue a full withdrawal
-        state = super._init_({randomness: randomness, withOperator: withOperator, withDelegation: withDelegation});
+        state = super._init_({withOperator: withOperator, withDelegation: withDelegation});
 
         state.withdrawals = state.staker.queueWithdrawals(state.strategies, state.withdrawalShares);
 
@@ -132,7 +132,7 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal_Slash is Integratio
     }
 
     function testFuzz_delegate_deposit_queue_upgrade_slashFully_revertCompleteAsShares(uint24 r) public rand(r) {
-        TestState memory state = _init_({randomness: r, withOperator: true, withDelegation: true});
+        TestState memory state = _init_({withOperator: true, withDelegation: true});
 
         // Slash operator by AVS
         SlashingParams memory slashParams = _genSlashing_Full(state.operator, operatorSet);
@@ -147,7 +147,7 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal_Slash is Integratio
     }
 
     function testFuzz_delegate_deposit_queue_upgrade_slashFully_completeAsTokens(uint24 r) public rand(r) {
-        TestState memory state = _init_({randomness: r, withOperator: true, withDelegation: true});
+        TestState memory state = _init_({withOperator: true, withDelegation: true});
 
         // Slash operator by AVS
         SlashingParams memory slashParams = _genSlashing_Full(state.operator, operatorSet);
@@ -161,7 +161,7 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal_Slash is Integratio
     }
 
     function testFuzz_delegate_deposit_queue_upgrade_slash_completeAsShares(uint24 r) public rand(r) {
-        TestState memory state = _init_({randomness: r, withOperator: true, withDelegation: true});
+        TestState memory state = _init_({withOperator: true, withDelegation: true});
 
         // Slash operator by AVS
         SlashingParams memory slashParams = _genSlashing_Rand(state.operator, operatorSet);
@@ -176,7 +176,7 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal_Slash is Integratio
     }
 
     function testFuzz_delegate_deposit_queue_upgrade_slash_completeAsTokens(uint24 r) public rand(r) {
-        TestState memory state = _init_({randomness: r, withOperator: true, withDelegation: true});
+        TestState memory state = _init_({withOperator: true, withDelegation: true});
 
         // Slash operator by AVS
         SlashingParams memory slashParams = _genSlashing_Rand(state.operator, operatorSet);

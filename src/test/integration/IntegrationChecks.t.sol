@@ -300,11 +300,11 @@ contract IntegrationCheckUtils is IntegrationBase {
         );
         uint[] memory delegatableShares = _getPrevStakerWithdrawableShares(staker, strategies);
         assert_Snap_Added_OperatorShares(operator, strategies, delegatableShares, "operator should have received shares");
-        check_Added_SlashableStake(operator, strategies, delegatableShares);
-        assert_Snap_DSF_State_Delegation(staker, operator, strategies, delegatableShares, "staker's DSF not updated correctly");
+        check_Added_SlashableStake(operator, strategies);
+        assert_Snap_DSF_State_Delegation(staker, strategies, delegatableShares, "staker's DSF not updated correctly");
     }
 
-    function check_Added_SlashableStake(User operator, IStrategy[] memory strategies, uint[] memory shares) internal {
+    function check_Added_SlashableStake(User operator, IStrategy[] memory strategies) internal {
         for (uint i = 0; i < strategies.length; i++) {
             (OperatorSet[] memory operatorSets, Allocation[] memory allocations) = _getStrategyAllocations(operator, strategies[i]);
             for (uint j = 0; j < operatorSets.length; j++) {
@@ -609,11 +609,7 @@ contract IntegrationCheckUtils is IntegrationBase {
 
     function check_Withdrawal_AsShares_Redelegated_State(
         User staker,
-        User operator,
-        User newOperator,
-        Withdrawal memory withdrawal,
-        IStrategy[] memory strategies,
-        uint[] memory withdrawableShares
+        IStrategy[] memory strategies
     ) internal {
         assert_Snap_DSF_State_WithdrawalAsShares(staker, strategies, "staker's DSF not updated correctly");
     }
@@ -842,7 +838,6 @@ contract IntegrationCheckUtils is IntegrationBase {
 
         OperatorSet memory operatorSet = params.operatorSet;
         IStrategy[] memory strategies = params.strategies;
-        uint64[] memory newMagnitudes = params.newMagnitudes;
 
         // Increasing Allocation should NOT change operator set registration, max magnitude
         assert_Snap_Unchanged_Registration(operator, operatorSet, "operator registration status should be unchanged");
@@ -993,11 +988,9 @@ contract IntegrationCheckUtils is IntegrationBase {
     /// where the input `params` represent a decrease in magnitude
     function check_Base_DecrAlloc_State(User operator, AllocateParams memory params) internal {
         check_MaxMag_Invariants(operator);
-
+        
         OperatorSet memory operatorSet = params.operatorSet;
-        IStrategy[] memory strategies = params.strategies;
-        uint64[] memory newMagnitudes = params.newMagnitudes;
-
+        
         // Decreasing Allocation should NOT change operator set registration, max magnitude
         assert_Snap_Unchanged_Registration(operator, operatorSet, "operator registration status should be unchanged");
         assert_Snap_Unchanged_Slashability(operator, operatorSet, "operator slashability should be unchanged");

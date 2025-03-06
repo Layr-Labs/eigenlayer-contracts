@@ -162,8 +162,6 @@ contract Integration_SlashedEigenpod_AVS_Withdraw is Integration_SlashedEigenpod
     function testFuzz_deposit_delegate_allocate_slashAndQueue_checkPoint_completeAsShares(uint24 _rand) public rand(_rand) {
         Withdrawal[] memory withdrawals = _getQueuedWithdrawals(staker);
         _rollBlocksForCompleteWithdrawals(withdrawals);
-        uint slashingFactor = _getSlashingFactor(staker, BEACONCHAIN_ETH_STRAT);
-        uint depositScalingFactor = _getDepositScalingFactor(staker, BEACONCHAIN_ETH_STRAT);
         uint[] memory withdrawableShares = _calcWithdrawable(staker, strategies, initDepositShares);
 
         // 9.  Start & complete checkpoint, since the next step does not.

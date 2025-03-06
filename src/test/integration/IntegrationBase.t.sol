@@ -1696,7 +1696,6 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     /// @dev When completing withdrawals as shares, we must also handle the case where a staker completes a withdrawal for 0 shares
     function assert_Snap_DSF_State_WithdrawalAsShares(User staker, IStrategy[] memory strategies, string memory err) internal {
         uint[] memory curDepositShares = _getStakerDepositShares(staker, strategies);
-        uint[] memory prevDepositShares = _getPrevStakerDepositShares(staker, strategies);
 
         for (uint i = 0; i < strategies.length; i++) {
             IStrategy[] memory stratArray = strategies[i].toArray();
@@ -1726,7 +1725,6 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     /// @dev On a delegation, the DSF should be increased if the operator magnitude is non-WAD
     function assert_Snap_DSF_State_Delegation(
         User staker,
-        User operator,
         IStrategy[] memory strategies,
         uint[] memory delegatableShares,
         string memory err
