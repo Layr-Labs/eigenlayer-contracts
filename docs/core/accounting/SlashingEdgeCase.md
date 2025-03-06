@@ -127,7 +127,7 @@ This edge case also applies if Alice undelegates after being slashed on the beac
 6. Alice checkpoints her slash from step 3. `withdrawable: 24 ETH`
     - `restakedExecutionLayerGwei = 16`. This is the AVSs attributable slashed amount, but it increases once Alice completely exits. 
     - `BCSF= 48/64 = 0.75`
-7. Alice completes her withdrawal as shares from undelegaiton. No affect since the operator's magnitude was 0
+7. Alice completes her withdrawal as shares from undelegation. No affect since the operator's magnitude was 0
 8. Alice exits her validator from step 5. `withdrawable: 24 ETH`
     - `restakedExecutionLayerGwei = 48` 
 9. Alice queues a withdrawal for all shares. `scaledShares = 32` 
