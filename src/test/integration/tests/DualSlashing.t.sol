@@ -214,7 +214,7 @@ contract Integration_DualSlashing_AVSFirst is Integration_DualSlashing_Base {
         uint ethToDeposit = 32 ether;
         cheats.deal(address(staker), ethToDeposit);
         cheats.prank(address(staker));
-        (bool success, ) = address(staker.pod()).call{value: ethToDeposit}("");
+        (bool success,) = address(staker.pod()).call{value: ethToDeposit}("");
         require(success, "pod call failed");
         uint64 ethDepositedGwei = uint64(ethToDeposit / GWEI_TO_WEI);
 
@@ -243,7 +243,7 @@ contract Integration_DualSlashing_AVSFirst is Integration_DualSlashing_Base {
         uint ethToDeposit = 32 ether;
         cheats.deal(address(staker), ethToDeposit);
         cheats.prank(address(staker));
-        (bool success, ) = address(staker.pod()).call{value: ethToDeposit}("");
+        (bool success,) = address(staker.pod()).call{value: ethToDeposit}("");
         require(success, "pod call failed");
         uint64 ethDepositedGwei = uint64(ethToDeposit / GWEI_TO_WEI);
 
@@ -369,7 +369,7 @@ contract Integration_DualSlashing_FullSlashes is Integration_DualSlashing_Base {
         uint ethToDeposit = 1000 ether;
         cheats.deal(address(staker), ethToDeposit);
         cheats.prank(address(staker));
-        (bool success, ) = address(staker.pod()).call{value: ethToDeposit}("");
+        (bool success,) = address(staker.pod()).call{value: ethToDeposit}("");
         require(success, "pod call failed");
         uint64 ethDepositedGwei = uint64(ethToDeposit / GWEI_TO_WEI);
 

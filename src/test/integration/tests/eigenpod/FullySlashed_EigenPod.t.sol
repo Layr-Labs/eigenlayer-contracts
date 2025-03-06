@@ -160,7 +160,7 @@ contract Integration_FullySlashedEigenpod_NotCheckpointed is Integration_FullySl
 
         // Send ETH to pod
         cheats.prank(address(staker));
-        (bool success, ) = address(staker.pod()).call{value: amountToDeal}("");
+        (bool success,) = address(staker.pod()).call{value: amountToDeal}("");
         require(success, "pod call failed");
 
         // Checkpoint slashed EigenPod

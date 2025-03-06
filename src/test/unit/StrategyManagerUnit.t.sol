@@ -1455,7 +1455,7 @@ contract StrategyManagerUnitTests_burnShares is StrategyManagerUnitTests {
         assertEq(burnAddressBalanceAfter, burnAddressBalanceBefore + sharesToBurn, "balanceAfter != balanceBefore + sharesAmount");
 
         // Verify strategy was removed from burnable shares
-        (address[] memory strategiesAfterBurn, ) = strategyManager.getStrategiesWithBurnableShares();
+        (address[] memory strategiesAfterBurn,) = strategyManager.getStrategiesWithBurnableShares();
         assertEq(strategiesAfterBurn.length, 0, "Should have no strategies after burning");
         assertEq(strategyManager.getBurnableShares(strategy), 0, "getBurnableShares should return 0 after burning");
     }

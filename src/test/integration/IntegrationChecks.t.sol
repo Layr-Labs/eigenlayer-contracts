@@ -607,10 +607,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         );
     }
 
-    function check_Withdrawal_AsShares_Redelegated_State(
-        User staker,
-        IStrategy[] memory strategies
-    ) internal {
+    function check_Withdrawal_AsShares_Redelegated_State(User staker, IStrategy[] memory strategies) internal {
         assert_Snap_DSF_State_WithdrawalAsShares(staker, strategies, "staker's DSF not updated correctly");
     }
 
@@ -988,9 +985,9 @@ contract IntegrationCheckUtils is IntegrationBase {
     /// where the input `params` represent a decrease in magnitude
     function check_Base_DecrAlloc_State(User operator, AllocateParams memory params) internal {
         check_MaxMag_Invariants(operator);
-        
+
         OperatorSet memory operatorSet = params.operatorSet;
-        
+
         // Decreasing Allocation should NOT change operator set registration, max magnitude
         assert_Snap_Unchanged_Registration(operator, operatorSet, "operator registration status should be unchanged");
         assert_Snap_Unchanged_Slashability(operator, operatorSet, "operator slashability should be unchanged");
