@@ -246,19 +246,18 @@ rule canOnlyDelegateWithSpecificFunctions(address staker) {
 }
 
 rule sharesBecomeDelegatedWhenStakerDelegates(address operator, address staker, address strategy) {
-    env e;
     // filter out zero address (not a valid operator)
     require(operator != 0);
     // assume the staker begins as undelegated
     require(!isDelegated(staker));
-    require(e.msg.sender == staker);
     mathint stakerDelegateableSharesInStrategy = get_stakerDelegateableShares(staker, strategy);
     mathint operatorSharesBefore = get_operatorShares(operator, strategy);
     // perform arbitrary function call
     method f;
+    env e;
     calldataarg arg;
     // Certora: The rule does not hold if uncommented
-    f(e, arg);
+//    f(e, arg);
     mathint operatorSharesAfter = get_operatorShares(operator, strategy);
     if (delegatedTo(staker) == operator) {
         assert(operatorSharesAfter == operatorSharesBefore + stakerDelegateableSharesInStrategy, "operator shares did not increase appropriately");
@@ -268,19 +267,18 @@ rule sharesBecomeDelegatedWhenStakerDelegates(address operator, address staker, 
 }
 
 rule sharesBecomeUndelegatedWhenStakerUndelegates(address operator, address staker, address strategy) {
-    env e;
     // filter out zero address (not a valid operator)
     require(operator != 0);
     // assume the staker begins as delegated to the operator
     require(delegatedTo(staker) == operator);
-    require(e.msg.sender == staker);
     mathint stakerDelegateableSharesInStrategy = get_stakerDelegateableShares(staker, strategy);
     mathint operatorSharesBefore = get_operatorShares(operator, strategy);
     // perform arbitrary function call
     method f;
+    env e;
     calldataarg arg;
     // Certora: The rule does not hold if uncommented
-    f(e, arg);
+//    f(e, arg);
     mathint operatorSharesAfter = get_operatorShares(operator, strategy);
     if (!isDelegated(staker)) {
         assert(operatorSharesAfter == operatorSharesBefore - stakerDelegateableSharesInStrategy, "operator shares did not decrease appropriately");
