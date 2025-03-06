@@ -44,10 +44,9 @@ In the above scenario, let's say the Alice now proves a checkpoint.
 
 The checkpoint slash has devalued Alice's currently withdrawable assets by 50%. The AVS slashes from what's left due to the BC getting priority burning rights. Thus, AVSs must factor Native ETH (or an LST) being slashed by the beacon chain when designing their slashing conditions. The below diagram illustrates this behavior:
 
-<figure>
-    <img src="../../images/avs-bc-slash.png" alt="AVS and Beacon Chain Slashing Behavior">
-    <figcaption>Diagram showing how AVS slashing is applied after Beacon Chain slashing, with BC having priority burning rights</figcaption>
-</figure>
+| ![AVS and Beacon Chain Slashing Behavior](../../images/avs-bc-slash.png) |
+|:--:|
+| *Diagram showing how AVS slashing is applied after Beacon Chain slashing, with BC having priority burning rights* |
 
 Note that the portion that is marked as BC Slash and BC + AVS Slash has priority burning rights by the beacon chain. 12 ETH has been slashed "twice", but this is by design given our definition of restaking.
 
