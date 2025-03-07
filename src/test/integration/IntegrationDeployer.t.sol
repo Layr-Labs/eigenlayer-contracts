@@ -2,26 +2,14 @@
 pragma solidity ^0.8.27;
 
 // Imports
+import "forge-std/Test.sol";
+
 import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
 import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
-import "forge-std/Test.sol";
-
-import "src/contracts/core/DelegationManager.sol";
-import "src/contracts/core/AllocationManager.sol";
-import "src/contracts/core/StrategyManager.sol";
-import "src/contracts/strategies/StrategyFactory.sol";
-import "src/contracts/strategies/StrategyBase.sol";
-import "src/contracts/strategies/StrategyBaseTVLLimits.sol";
-import "src/contracts/pods/EigenPodManager.sol";
-import "src/contracts/pods/EigenPod.sol";
-import "src/contracts/permissions/PauserRegistry.sol";
-import "src/contracts/permissions/PermissionController.sol";
 
 import "src/test/mocks/EmptyContract.sol";
-import "src/test/mocks/ETHDepositMock.sol";
 import "src/test/integration/mocks/BeaconChainMock.t.sol";
 
 import "src/test/integration/users/AVS.t.sol";
@@ -633,11 +621,11 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     }
 
     function _randAssetType() internal returns (uint assetType) {
-        return uint(uint8(assetTypes[randUint({min: 0, max: assetTypes.length - 1})]));
+        return uint(uint8(assetTypes[vm.randomUint({min: 0, max: assetTypes.length - 1})]));
     }
 
     function _randUserType() internal returns (uint) {
-        return uint(uint8(userTypes[randUint({min: 0, max: userTypes.length - 1})]));
+        return uint(uint8(userTypes[vm.randomUint({min: 0, max: userTypes.length - 1})]));
     }
 
     function _parseAssetTypes(uint bitmap) internal pure returns (bytes memory bytesArray) {
