@@ -145,5 +145,5 @@ Currently our mainnet fork tests spam whatever RPC we use. We can improve this i
 `anvil -f RPC_URL `
 You can use `anvil -h` for more info on what it can do.
 
-> Then in your test you use the vm.createSelectFork command in your setup with the argument to point to your local anvil node which is basically a copy of the rpc you set it up as. 
+> Then in your test you use the cheats.createSelectFork command in your setup with the argument to point to your local anvil node which is basically a copy of the rpc you set it up as. 
 >  If you want to do some setup before running your tests you can write a script file and broadcast the setup transactions to your local anvil node (make sure to use one of the private keys anvil gives you)

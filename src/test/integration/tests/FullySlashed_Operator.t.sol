@@ -54,7 +54,7 @@ contract Integration_FullySlashed_Operator is IntegrationChecks {
         check_Deposit_State(staker, strategies, initDepositShares);
 
         // 6) Staker delegates to operator who is fully slashed, should fail.
-        vm.expectRevert(IDelegationManagerErrors.FullySlashed.selector);
+        cheats.expectRevert(IDelegationManagerErrors.FullySlashed.selector);
         staker.delegateTo(operator);
     }
 
@@ -65,7 +65,7 @@ contract Integration_FullySlashed_Operator is IntegrationChecks {
         assertEq(address(operator), delegationManager.delegatedTo(address(staker)), "staker should be delegated to operator");
 
         // 6) Staker deposits into strategies, should fail.
-        vm.expectRevert(IDelegationManagerErrors.FullySlashed.selector);
+        cheats.expectRevert(IDelegationManagerErrors.FullySlashed.selector);
         staker.depositIntoEigenlayer(strategies, initTokenBalances);
     }
 

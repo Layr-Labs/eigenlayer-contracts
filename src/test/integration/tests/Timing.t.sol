@@ -40,7 +40,7 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
         /// 2. Move time forward to _just before_ withdrawal block
         // Expected behavior: Withdrawals are still pending and cannot be completed, but slashes can still be performed
         _rollBlocksForCompleteWithdrawals(withdrawals);
-        vm.roll(block.number - 1);
+        cheats.roll(block.number - 1);
 
         // Verify that the withdrawals are _still_ slashable
         for (uint i = 0; i < withdrawals.length; ++i) {
@@ -56,7 +56,7 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
         check_Base_Slashing_State(operator, allocateParams, slashingParams);
 
         /// 4. Move time forward to withdrawal block
-        vm.roll(block.number + 1);
+        cheats.roll(block.number + 1);
 
         // Verify that the withdrawals are _no longer_ slashable
         for (uint i = 0; i < withdrawals.length; ++i) {
@@ -97,7 +97,7 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
         /// 2. Move time forward to _just before_ withdrawal block
         // Expected behavior: Withdrawals are still pending and cannot be completed, but slashes can still be performed
         _rollBlocksForCompleteWithdrawals(withdrawals);
-        vm.roll(block.number - 1);
+        cheats.roll(block.number - 1);
 
         // Verify that the withdrawals are _still_ slashable
         for (uint i = 0; i < withdrawals.length; ++i) {
@@ -113,7 +113,7 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
         check_Base_Slashing_State(operator, allocateParams, slashingParams);
 
         /// 4. Move time forward to withdrawal block
-        vm.roll(block.number + 1);
+        cheats.roll(block.number + 1);
 
         // Verify that the withdrawals are _no longer_ slashable
         for (uint i = 0; i < withdrawals.length; ++i) {
@@ -333,7 +333,7 @@ contract Integration_OperatorDeregistrationTiming is Integration_ALMSlashBase {
         /// 3. Slash operator
         // Note: Unlike the deallocation case, the operator is no longer registered, so a slash will revert entirely.
         slashParams = _genSlashing_Rand(operator, operatorSet);
-        vm.expectRevert(IAllocationManagerErrors.OperatorNotSlashable.selector);
+        cheats.expectRevert(IAllocationManagerErrors.OperatorNotSlashable.selector);
         avs.slashOperator(slashParams);
     }
 }
