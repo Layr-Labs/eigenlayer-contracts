@@ -463,7 +463,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     }
 
     function _configAssetTypes(uint _assetTypes) internal {
-        assetTypes = _bitmapToBytes(_assetTypes);
+        assetTypes = _parseAssetTypes(_assetTypes);
         assertTrue(assetTypes.length != 0, "_configRand: no asset types selected");
     }
 
@@ -475,7 +475,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     }
 
     function _configUserTypes(uint _userTypes) internal {
-        userTypes = _bitmapToBytes(_userTypes);
+        userTypes = _parseUserTypes(_userTypes);
         assertTrue(userTypes.length != 0, "_configRand: no user types selected");
     }
 
@@ -629,34 +629,28 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     }
 
     function _randBool() internal returns (bool) {
-        return _randUint({min: 0, max: 1}) == 0;
+        return vm.randomBool();
     }
 
-    function _randAssetType() internal returns (uint) {
-        uint idx = _randUint({min: 0, max: assetTypes.length - 1});
-        uint assetType = uint(uint8(assetTypes[idx]));
-
-        return assetType;
+    function _randAssetType() internal returns (uint assetType) {
+        return uint(uint8(assetTypes[randUint({min: 0, max: assetTypes.length - 1})]));
     }
 
     function _randUserType() internal returns (uint) {
-        uint idx = _randUint({min: 0, max: userTypes.length - 1});
-        uint userType = uint(uint8(userTypes[idx]));
-
-        return userType;
+        return uint(uint8(userTypes[randUint({min: 0, max: userTypes.length - 1})]));
     }
 
-    /**
-     * @dev Converts a bitmap into an array of bytes
-     * @dev Each byte in the input is processed as indicating a single bit to flip in the bitmap
-     */
-    function _bitmapToBytes(uint bitmap) internal pure returns (bytes memory bytesArray) {
-        // Asset type flags
+    function _parseAssetTypes(uint bitmap) internal pure returns (bytes memory bytesArray) {
         if (bitmap & NO_ASSETS != 0) bytesArray = bytes.concat(bytesArray, bytes1(uint8(1)));
         if (bitmap & HOLDS_LST != 0) bytesArray = bytes.concat(bytesArray, bytes1(uint8(2)));
         if (bitmap & HOLDS_ETH != 0) bytesArray = bytes.concat(bytesArray, bytes1(uint8(4)));
         if (bitmap & HOLDS_ALL != 0) bytesArray = bytes.concat(bytesArray, bytes1(uint8(8)));
         if (bitmap & HOLDS_MAX != 0) bytesArray = bytes.concat(bytesArray, bytes1(uint8(16)));
+    }
+
+    function _parseUserTypes(uint bitmap) internal pure returns (bytes memory bytesArray) {
+        if (bitmap & DEFAULT != 0) bytesArray = bytes.concat(bytesArray, bytes1(uint8(1)));
+        if (bitmap & ALT_METHODS != 0) bytesArray = bytes.concat(bytesArray, bytes1(uint8(2)));
     }
 
     function _hash(string memory x) internal pure returns (bytes32) {
