@@ -11,6 +11,7 @@ import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "src/contracts/libraries/BeaconChainProofs.sol";
+import "forge-std/console.sol";
 
 /**
  * Purpose: update the implementation contracts on the previously deployed blank proxies. 

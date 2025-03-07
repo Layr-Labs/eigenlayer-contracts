@@ -62,7 +62,7 @@ contract Deploy is EOADeployer {
 
     function deployProtocolMultisigs() public {
         // pseudorandom number
-        uint256 salt = 87883615229;
+        uint256 salt = 87883615230;
 
         // deploy multisigs that simply have the deployer as their initial owner
         address[] memory singleOwner = new address[](1);
