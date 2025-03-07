@@ -20,6 +20,7 @@ on:
   workflow_dispatch:
 
 jobs:
+  # First job: Compile the contracts for Certora verification
   compile:
     name: Compile
     # Run if it meets one of these conditions:
@@ -37,21 +38,27 @@ jobs:
       github.event_name == 'workflow_dispatch'
     runs-on: protocol-x64-16core
     steps:
+      # Checkout the repository with submodules
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+          # Use dev branch for scheduled runs, otherwise use the branch that triggered the workflow
           ref: ${{ github.event_name == 'schedule' && 'dev' || github.ref }}
 
+      # Install the Foundry toolchain
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: stable
 
+      # Install dependencies using Forge
       - name: Install forge dependencies
         run: forge install
 
+      # Run Certora compilation step only
       - uses: Certora/certora-run-action@v1
         with:
+          # List of configuration files for different contracts to verify
           configurations: |-
             certora/confs/core/AllocationManager.conf
             certora/confs/core/AllocationManagerSanity.conf
@@ -66,13 +73,16 @@ jobs:
           solc-remove-version-prefix: "0."
           job-name: "Eigenlayer Contracts"
           certora-key: ${{ secrets.CERTORAKEY }}
+          # Only compile, don't run verification yet
           compilation-steps-only: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  # Second job: Run the actual verification after compilation succeeds
   verify:
     name: Verify
     runs-on: protocol-x64-16core
+    # This job depends on the compile job
     needs: compile
     # Same conditions as the compile job
     if: >
@@ -84,21 +94,27 @@ jobs:
       github.event_name == 'schedule' || 
       github.event_name == 'workflow_dispatch'
     steps:
+      # Checkout the repository with submodules
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+          # Use dev branch for scheduled runs, otherwise use the branch that triggered the workflow
           ref: ${{ github.event_name == 'schedule' && 'dev' || github.ref }}
           
+      # Install the Foundry toolchain.
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: nightly
+          version: stable
 
+      # Install dependencies using Forge
       - name: Install forge dependencies
         run: forge install
 
+      # Run Certora verification with the same configurations
       - uses: Certora/certora-run-action@v1
         with:
+          # List of configuration files for different contracts to verify
           configurations: |-
             certora/confs/core/AllocationManager.conf
             certora/confs/core/AllocationManagerSanity.conf
