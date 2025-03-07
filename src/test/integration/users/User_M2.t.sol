@@ -160,17 +160,17 @@ contract User_M2 is User {
     /// Note: This method also advances one epoch forward on the beacon chain, so that
     /// withdrawal credential proofs are generated for each validator.
     function _startValidators() internal virtual override returns (uint40[] memory, uint64, uint) {
-        uint256 balanceWei = address(this).balance;
+        uint balanceWei = address(this).balance;
 
         // Number of full validators: balance / 32 ETH
-        uint256 numValidators = balanceWei / 32 ether;
+        uint numValidators = balanceWei / 32 ether;
         balanceWei -= (numValidators * 32 ether);
 
         // If we still have at least 1 ETH left over, we can create another (non-full) validator
         // Note that in the mock beacon chain this validator will generate rewards like any other.
         // The main point is to ensure pods are able to handle validators that have less than 32 ETH
-        uint256 lastValidatorBalance;
-        uint256 totalValidators = numValidators;
+        uint lastValidatorBalance;
+        uint totalValidators = numValidators;
         if (balanceWei >= 1 ether) {
             lastValidatorBalance = balanceWei - (balanceWei % 1 gwei);
             balanceWei -= lastValidatorBalance;
@@ -185,7 +185,7 @@ contract User_M2 is User {
         console.log("- depositing balance to beacon chain (gwei)", totalBeaconBalanceGwei);
 
         // Create each of the full validators
-        for (uint256 i = 0; i < numValidators; i++) {
+        for (uint i = 0; i < numValidators; i++) {
             uint40 validatorIndex = beaconChain.newValidator{value: 32 ether}(_podWithdrawalCredentials());
 
             newValidators[i] = validatorIndex;
@@ -302,7 +302,7 @@ contract User_M2_AltMethods is User_M2 {
             uint tokenBalance = tokenBalances[i];
 
             if (strat == BEACONCHAIN_ETH_STRAT) {
-                (uint40[] memory newValidators, ,) = _startValidators();
+                (uint40[] memory newValidators,,) = _startValidators();
                 // Advance forward one epoch and generate credential and balance proofs for each validator
                 beaconChain.advanceEpoch_NoRewards();
                 _verifyWithdrawalCredentials(newValidators);

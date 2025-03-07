@@ -18,12 +18,7 @@ contract QueueUpgradeAndTimestampSetter is MultisigBuilder, Deploy {
     using Env for *;
     using Encode for *;
 
-    function _runAsMultisig()
-        internal
-        virtual
-        override
-        prank(Env.opsMultisig())
-    {
+    function _runAsMultisig() internal virtual override prank(Env.opsMultisig()) {
         bytes memory calldata_to_executor = _getCalldataToExecutor_queueUpgrade();
 
         TimelockController timelock = Env.timelockController();
@@ -39,35 +34,29 @@ contract QueueUpgradeAndTimestampSetter is MultisigBuilder, Deploy {
 
     /// @dev Get the calldata to be sent from the timelock to the executor
     function _getCalldataToExecutor_queueUpgrade() internal virtual returns (bytes memory) {
-        MultisigCall[] storage executorCalls = Encode
-            .newMultisigCalls()
-            .append({
-                to: address(Env.beacon.eigenPod()),
-                data: Encode.upgradeableBeacon.upgradeTo({
-                    newImpl: address(Env.impl.eigenPod())
-                })
+        MultisigCall[] storage executorCalls = Encode.newMultisigCalls().append({
+            to: address(Env.beacon.eigenPod()),
+            data: Encode.upgradeableBeacon.upgradeTo({newImpl: address(Env.impl.eigenPod())})
+        }).append({
+            to: Env.proxyAdmin(),
+            data: Encode.proxyAdmin.upgrade({
+                proxy: address(Env.proxy.eigenPodManager()),
+                impl: address(Env.impl.eigenPodManager())
             })
-            .append({
-                to: Env.proxyAdmin(),
-                data: Encode.proxyAdmin.upgrade({
-                    proxy: address(Env.proxy.eigenPodManager()),
-                    impl: address(Env.impl.eigenPodManager())
-                })
-            });
+        });
 
         // Set the timestamp submitter to the ops multisig
         executorCalls.append({
             to: address(Env.proxy.eigenPodManager()),
             data: abi.encodeCall(EigenPodManager.setProofTimestampSetter, (address(Env.opsMultisig())))
         });
-            
-        return
-            Encode.gnosisSafe.execTransaction({
-                from: address(Env.timelockController()),
-                to: address(Env.multiSendCallOnly()),
-                op: Encode.Operation.DelegateCall,
-                data: Encode.multiSend(executorCalls)
-            });
+
+        return Encode.gnosisSafe.execTransaction({
+            from: address(Env.timelockController()),
+            to: address(Env.multiSendCallOnly()),
+            op: Encode.Operation.DelegateCall,
+            data: Encode.multiSend(executorCalls)
+        });
     }
 
     function testScript() public virtual {
@@ -84,18 +73,12 @@ contract QueueUpgradeAndTimestampSetter is MultisigBuilder, Deploy {
         });
 
         // Check that the upgrade does not exist in the timelock
-        assertFalse(
-            timelock.isOperationPending(txHash),
-            "Transaction should NOT be queued."
-        );
+        assertFalse(timelock.isOperationPending(txHash), "Transaction should NOT be queued.");
 
         execute();
 
         // Check that the upgrade has been added to the timelock
-        assertTrue(
-            timelock.isOperationPending(txHash),
-            "Transaction should be queued."
-        );
+        assertTrue(timelock.isOperationPending(txHash), "Transaction should be queued.");
     }
 
     function getTimelockId() public virtual returns (bytes32) {

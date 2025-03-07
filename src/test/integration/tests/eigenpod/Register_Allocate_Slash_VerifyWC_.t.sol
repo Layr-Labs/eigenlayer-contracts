@@ -142,13 +142,13 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationCheckUtils {
         if (_randBool()) {
             // Verify WC
             (validators, beaconBalanceGwei,) = staker.startValidators(uint8(_randUint(3, 10)));
-            beaconChain.advanceEpoch();
+            beaconChain.advanceEpoch_NoRewards();
 
             staker.verifyWithdrawalCredentials(validators);
             check_VerifyWC_State(staker, validators, beaconBalanceGwei);
         } else {
             // Start/complete CP
-            beaconChain.advanceEpoch();
+            beaconChain.advanceEpoch_NoRewards();
             staker.startCheckpoint();
             check_StartCheckpoint_State(staker);
 

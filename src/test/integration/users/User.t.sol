@@ -331,7 +331,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         return _startValidators();
     }
 
-    /// @dev Starts a specified number of validators on the beacon chain
+    /// @dev Starts a specified number of validators for 32 ETH each on the beacon chain
     /// @param numValidators The number of validators to start
     /// @return A list of created validator indices
     /// @return The amount of wei sent to the beacon chain
@@ -398,7 +398,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
             uint tokenBalance = tokenBalances[i];
 
             if (strat == BEACONCHAIN_ETH_STRAT) {
-                (uint40[] memory newValidators, ,) = _startValidators();
+                (uint40[] memory newValidators,,) = _startValidators();
                 // Advance forward one epoch and generate credential and balance proofs for each validator
                 beaconChain.advanceEpoch_NoRewards();
                 _verifyWithdrawalCredentials(newValidators);
@@ -507,35 +507,24 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         // Create validators between 32 and 2048 ETH until we can't create more
         while (balanceWei >= 32 ether) {
             // Generate random validator balance between 32 and 2048 ETH
-            uint validatorEth = uint(keccak256(abi.encodePacked(
-                block.timestamp,
-                balanceWei,
-                numValidators
-            ))) % 64 + 1; // 1-64 multiplier
+            uint validatorEth = uint(keccak256(abi.encodePacked(block.timestamp, balanceWei, numValidators))) % 64 + 1; // 1-64 multiplier
             validatorEth *= 32 ether; // Results in 32-2048 ETH
 
-            // If we don't have enough ETH for the random amount, use remaining balance 
+            // If we don't have enough ETH for the random amount, use remaining balance
             // as long as it's >= 32 ETH
             if (balanceWei < validatorEth) {
-                if (balanceWei >= 32 ether) {
-                    validatorEth = balanceWei - (balanceWei % 32 ether);
-                } else {
-                    break;
-                }
+                if (balanceWei >= 32 ether) validatorEth = balanceWei - (balanceWei % 32 ether);
+                else break;
             }
 
-            // Track validators with maximum effective balance 
-            if (validatorEth == 2048 ether) {
-                maxEBValidators++;
-            }
+            // Track validators with maximum effective balance
+            if (validatorEth == 2048 ether) maxEBValidators++;
 
             // Create the validator
-            bytes memory withdrawalCredentials = validatorEth == 32 ether ? 
-                _podWithdrawalCredentials() : _podCompoundingWithdrawalCredentials();
-            
-            uint40 validatorIndex = beaconChain.newValidator{
-                value: validatorEth
-            }(withdrawalCredentials);
+            bytes memory withdrawalCredentials =
+                validatorEth == 32 ether ? _podWithdrawalCredentials() : _podCompoundingWithdrawalCredentials();
+
+            uint40 validatorIndex = beaconChain.newValidator{value: validatorEth}(withdrawalCredentials);
 
             newValidators[numValidators] = validatorIndex;
             validators.push(validatorIndex);
@@ -550,9 +539,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         if (balanceWei >= 1 ether) {
             uint lastValidatorBalance = balanceWei - (balanceWei % 1 gwei);
 
-            uint40 validatorIndex = beaconChain.newValidator{ 
-                value: lastValidatorBalance 
-            }(_podWithdrawalCredentials());
+            uint40 validatorIndex = beaconChain.newValidator{value: lastValidatorBalance}(_podWithdrawalCredentials());
 
             newValidators[numValidators] = validatorIndex;
             validators.push(validatorIndex);
@@ -646,10 +633,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         return abi.encodePacked(bytes1(uint8(2)), bytes11(0), address(pod));
     }
 
-    function _getSlashingFactor(
-        address staker,
-        IStrategy strategy
-    ) internal view returns (uint256) {
+    function _getSlashingFactor(address staker, IStrategy strategy) internal view returns (uint) {
         address operator = delegationManager.delegatedTo(staker);
         uint64 maxMagnitude = allocationManager().getMaxMagnitudes(operator, strategy.toArray())[0];
         if (strategy == beaconChainETHStrategy) return maxMagnitude.mulWad(eigenPodManager.beaconChainSlashingFactor(staker));
@@ -735,7 +719,7 @@ contract User_AltMethods is User {
             uint tokenBalance = tokenBalances[i];
 
             if (strat == BEACONCHAIN_ETH_STRAT) {
-                (uint40[] memory newValidators, ,) = _startValidators();
+                (uint40[] memory newValidators,,) = _startValidators();
                 // Advance forward one epoch and generate credential and balance proofs for each validator
                 beaconChain.advanceEpoch_NoRewards();
                 _verifyWithdrawalCredentials(newValidators);

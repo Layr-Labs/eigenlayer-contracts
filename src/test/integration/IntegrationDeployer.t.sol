@@ -217,7 +217,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         // Set the `pectraForkTimestamp` on the EigenPodManager. Use pectra state
         cheats.startPrank(executorMultisig);
         eigenPodManager.setProofTimestampSetter(executorMultisig);
-        eigenPodManager.setPectraForkTimestamp(BEACON_GENESIS_TIME); 
+        eigenPodManager.setPectraForkTimestamp(BEACON_GENESIS_TIME);
         cheats.stopPrank();
     }
 
@@ -268,7 +268,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             // Set the `pectraForkTimestamp` on the EigenPodManager. Use pectra state
             cheats.startPrank(executorMultisig);
             eigenPodManager.setProofTimestampSetter(executorMultisig);
-            eigenPodManager.setPectraForkTimestamp(BEACON_GENESIS_TIME); 
+            eigenPodManager.setPectraForkTimestamp(BEACON_GENESIS_TIME);
             cheats.stopPrank();
         }
     }

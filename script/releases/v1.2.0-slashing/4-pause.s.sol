@@ -13,11 +13,9 @@ import {MultisigBuilder} from "zeus-templates/templates/MultisigBuilder.sol";
 contract Pause is MultisigBuilder, EigenPodPausingConstants {
     using Env for *;
 
-    function _runAsMultisig() prank(Env.pauserMultisig()) internal virtual override {
-        uint mask = 2 ** PAUSED_START_CHECKPOINT |
-            2 ** PAUSED_EIGENPODS_VERIFY_CREDENTIALS | 
-            2 ** PAUSED_VERIFY_STALE_BALANCE |
-            2 ** PAUSED_EIGENPODS_VERIFY_CHECKPOINT_PROOFS;
+    function _runAsMultisig() internal virtual override prank(Env.pauserMultisig()) {
+        uint256 mask = 2 ** PAUSED_START_CHECKPOINT | 2 ** PAUSED_EIGENPODS_VERIFY_CREDENTIALS
+            | 2 ** PAUSED_VERIFY_STALE_BALANCE | 2 ** PAUSED_EIGENPODS_VERIFY_CHECKPOINT_PROOFS;
 
         Env.proxy.eigenPodManager().pause(mask);
     }
@@ -36,13 +34,7 @@ contract Pause is MultisigBuilder, EigenPodPausingConstants {
         // Revert verifying withdrawal credentials
         vm.expectRevert(IEigenPodErrors.CurrentlyPaused.selector);
         BeaconChainProofs.StateRootProof memory emptyProof;
-        pod.verifyWithdrawalCredentials(
-            0,
-            emptyProof,
-            new uint40[](0),
-            new bytes[](0),
-            new bytes32[][](0)
-        );
+        pod.verifyWithdrawalCredentials(0, emptyProof, new uint40[](0), new bytes[](0), new bytes32[][](0));
 
         // Revert starting checkpoint
         vm.expectRevert(IEigenPodErrors.CurrentlyPaused.selector);
@@ -51,11 +43,7 @@ contract Pause is MultisigBuilder, EigenPodPausingConstants {
         // Revert verifying stale balance
         BeaconChainProofs.ValidatorProof memory validatorProof;
         vm.expectRevert(IEigenPodErrors.CurrentlyPaused.selector);
-        pod.verifyStaleBalance(
-            0,
-            emptyProof,
-            validatorProof
-        );
+        pod.verifyStaleBalance(0, emptyProof, validatorProof);
 
         // Revert completing checkpoint
         BeaconChainProofs.BalanceContainerProof memory balanceContainerProof;

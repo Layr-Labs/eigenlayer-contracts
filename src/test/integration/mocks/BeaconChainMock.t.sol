@@ -78,7 +78,7 @@ contract BeaconChainMock is Logger {
 
     // Max effective balance for a validator
     // see https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#gwei-values
-    uint256 public MAX_EFFECTIVE_BALANCE_WEI = 2048 ether;
+    uint public MAX_EFFECTIVE_BALANCE_WEI = 2048 ether;
     uint64 public MAX_EFFECTIVE_BALANCE_GWEI = 2048 gwei;
 
     /// PROOF CONSTANTS (PROOF LENGTHS, FIELD SIZES):
@@ -90,12 +90,9 @@ contract BeaconChainMock is Logger {
     uint constant BEACON_BLOCK_FIELDS = 5;
 
     uint immutable BLOCKROOT_PROOF_LEN = 32 * BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT;
-    uint VAL_FIELDS_PROOF_LEN = 32 * (
-        (BeaconChainProofs.VALIDATOR_TREE_HEIGHT + 1) + BeaconChainProofs.PECTRA_BEACON_STATE_TREE_HEIGHT
-    );
-    uint BALANCE_CONTAINER_PROOF_LEN = 32 * (
-        BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT + BeaconChainProofs.PECTRA_BEACON_STATE_TREE_HEIGHT
-    );
+    uint VAL_FIELDS_PROOF_LEN = 32 * ((BeaconChainProofs.VALIDATOR_TREE_HEIGHT + 1) + BeaconChainProofs.PECTRA_BEACON_STATE_TREE_HEIGHT);
+    uint BALANCE_CONTAINER_PROOF_LEN =
+        32 * (BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT + BeaconChainProofs.PECTRA_BEACON_STATE_TREE_HEIGHT);
     uint immutable BALANCE_PROOF_LEN = 32 * (BeaconChainProofs.BALANCE_TREE_HEIGHT + 1);
 
     uint64 genesisTime;
@@ -428,9 +425,7 @@ contract BeaconChainMock is Logger {
 
             // Get current balance and trim anything over MAX EB
             uint64 balanceGwei = _currentBalanceGwei(uint40(i));
-            if (balanceGwei > MAX_EFFECTIVE_BALANCE_GWEI) {
-                balanceGwei = MAX_EFFECTIVE_BALANCE_GWEI;
-            }
+            if (balanceGwei > MAX_EFFECTIVE_BALANCE_GWEI) balanceGwei = MAX_EFFECTIVE_BALANCE_GWEI;
 
             v.effectiveBalanceGwei = balanceGwei;
         }
@@ -712,11 +707,7 @@ contract BeaconChainMock is Logger {
             }
 
             // Validator container root -> beacon state root
-            for (
-                uint j = depth; 
-                j < 1 + BeaconChainProofs.VALIDATOR_TREE_HEIGHT + BeaconChainProofs.PECTRA_BEACON_STATE_TREE_HEIGHT; 
-                j++
-            ) {
+            for (uint j = depth; j < 1 + BeaconChainProofs.VALIDATOR_TREE_HEIGHT + BeaconChainProofs.PECTRA_BEACON_STATE_TREE_HEIGHT; j++) {
                 bytes32 sibling = trees[curTimestamp].stateTree.siblings[curNode];
 
                 // proof[j] = sibling;

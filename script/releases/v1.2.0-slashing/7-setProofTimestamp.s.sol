@@ -10,7 +10,6 @@ import {QueueUpgradeAndTimestampSetter} from "./2-queueUpgradeAndTimestampSetter
 import {Pause} from "./4-pause.s.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 
-
 /**
  * Purpose: Propose a transaction to set the proof timestamp
  */
@@ -20,7 +19,7 @@ contract SetProofTimestamp is ExecuteUpgradeAndSetTimestampSubmitter {
 
     uint64 proofTimestamp;
 
-    function _runAsMultisig() prank(Env.opsMultisig()) internal virtual override {
+    function _runAsMultisig() internal virtual override prank(Env.opsMultisig()) {
         proofTimestamp = _getProofTimestamp();
         // Assert that timestamp from script is >= the actual fork timestamp
         require(proofTimestamp >= ZEnvHelpers.state().envU64("PECTRA_FORK_TIMESTAMP"), "proofTimestamp invalid");
@@ -28,7 +27,9 @@ contract SetProofTimestamp is ExecuteUpgradeAndSetTimestampSubmitter {
         Env.proxy.eigenPodManager().setPectraForkTimestamp(proofTimestamp);
     }
 
-    function setTimestamp(uint64 _proofTimestamp) public {
+    function setTimestamp(
+        uint64 _proofTimestamp
+    ) public {
         proofTimestamp = _proofTimestamp;
     }
 
@@ -46,14 +47,15 @@ contract SetProofTimestamp is ExecuteUpgradeAndSetTimestampSubmitter {
 
         // 6. Set the proof timestamp
         // This test uses the actual pectra fork timestamp, hence why `forkTimestamp.txt` already has a set timestamp
-        execute();   
+        execute();
 
         // Validate that the proof timestamp is set
         assertEq(Env.proxy.eigenPodManager().pectraForkTimestamp(), proofTimestamp, "Proof timestamp is not set");
     }
 
     function _getProofTimestamp() internal view returns (uint64) {
-        string memory timestampPath = string.concat(vm.projectRoot(), "/script/releases/v1.2.0-slashing/forkTimestamp.txt");
+        string memory timestampPath =
+            string.concat(vm.projectRoot(), "/script/releases/v1.2.0-slashing/forkTimestamp.txt");
         string memory timestamp = vm.readFile(timestampPath);
         return uint64(vm.parseUint(timestamp));
     }
