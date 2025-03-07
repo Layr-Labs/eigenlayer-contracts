@@ -8,7 +8,7 @@ contract Integration_Delegate_Deposit_Queue_Complete is IntegrationChecks {
     function testFuzz_delegate_deposit_queue_completeAsShares(uint24 _random) public rand {
         // Create a staker and an operator with a nonzero balance and corresponding strategies
         (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
-        (User operator,,) = _newRandomOperator();
+        User operator = _newRandomOperator();
 
         // 1. Delegate to operator
         staker.delegateTo(operator);
@@ -39,7 +39,7 @@ contract Integration_Delegate_Deposit_Queue_Complete is IntegrationChecks {
     function testFuzz_delegate_deposit_queue_completeAsTokens(uint24 _random) public rand {
         // Create a staker and an operator with a nonzero balance and corresponding strategies
         (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
-        (User operator,,) = _newRandomOperator();
+        User operator = _newRandomOperator();
 
         // 1. Delegate to operator
         staker.delegateTo(operator);

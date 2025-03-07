@@ -63,7 +63,7 @@ contract Integration_Upgrade_EigenPod_FullSlash is Integration_Upgrade_EigenPod_
 
     function testFuzz_deposit_fullSlash_upgrade_delegate(uint24 _rand) public rand {
         /// 4. Delegate to operator
-        (User operator,,) = _newRandomOperator();
+        User operator = _newRandomOperator();
         staker.delegateTo(operator);
         check_Delegation_State(staker, operator, strategies, shares);
     }
@@ -79,7 +79,7 @@ contract Integration_Upgrade_EigenPod_FullSlash is Integration_Upgrade_EigenPod_
         shares = _calculateExpectedShares(strategies, tokenBalances);
 
         // 6. Delegate to operator
-        (User operator,,) = _newRandomOperator();
+        User operator = _newRandomOperator();
         staker.delegateTo(operator);
         check_Delegation_State(staker, operator, strategies, shares);
     }
@@ -95,7 +95,7 @@ contract Integration_Upgrade_EigenPod_NegativeShares is Integration_Upgrade_Eige
         super._init();
 
         // 3. Delegate to operator
-        (operator,,) = _newRandomOperator();
+        operator = _newRandomOperator();
         staker.delegateTo(operator);
 
         /// 4. Queue a withdrawal for all shares

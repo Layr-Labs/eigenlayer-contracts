@@ -24,7 +24,7 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationChecks {
         //
         // ... check that the staker has no delegatable shares and isn't currently delegated
         (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
-        (User operator,,) = _newRandomOperator();
+        User operator = _newRandomOperator();
 
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 
@@ -74,7 +74,7 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationChecks {
         //
         // ... check that the staker has no delegatable shares and isn't currently delegated
         (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
-        (User operator,,) = _newRandomOperator();
+        User operator = _newRandomOperator();
 
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 
@@ -128,7 +128,7 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationChecks {
 
         /// 0. Create a staker and operator
         (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
-        (User operator,,) = _newRandomOperator();
+        User operator = _newRandomOperator();
 
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 

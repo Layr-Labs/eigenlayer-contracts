@@ -24,8 +24,8 @@ contract Integration_SlashedEigenpod_BC is IntegrationChecks {
     function _init() internal virtual override {
         _configAssetTypes(HOLDS_ETH);
         (staker, strategies, initTokenBalances) = _newRandomStaker();
-        (operator,,) = _newRandomOperator();
-        (avs,) = _newRandomAVS();
+        operator = _newRandomOperator();
+        avs = _newRandomAVS();
         tokens = _getUnderlyingTokens(strategies); // Should only return ETH
 
         // Ensure the staker has at least 64 ETH to deposit.
@@ -182,7 +182,7 @@ contract Integration_SlashedEigenpod_BC is IntegrationChecks {
     }
 
     function testFuzz_delegateSlashedStaker_redelegate_complete(uint24 _random) public rand {
-        (User operator2,,) = _newRandomOperator();
+        User operator2 = _newRandomOperator();
 
         //Additional deposit on beacon chain so dsf is nonwad
         uint amount = 32 ether * _randUint({min: 1, max: 5});
@@ -383,8 +383,8 @@ contract Integration_SlashedOperator_SlashedEigenpod_Base is IntegrationChecks {
     function _init() internal virtual override {
         _configAssetTypes(HOLDS_ETH);
         (staker, strategies, initTokenBalances) = _newRandomStaker();
-        operator = _newRandomOperator_NoAssets();
-        (avs,) = _newRandomAVS();
+        operator = _newRandomOperator();
+        avs = _newRandomAVS();
 
         // 1. Deposit Into Strategies
         staker.depositIntoEigenlayer(strategies, initTokenBalances);
@@ -485,7 +485,7 @@ contract Integration_SlashedOperator_SlashedEigenpod is Integration_SlashedOpera
 
     function testFuzz_slashOnBC_delegate_verifyValidator_redelegate_completeAsTokens(uint24 _random) public rand {
         // Create new operator
-        User operator2 = _newRandomOperator_NoAssets();
+        User operator2 = _newRandomOperator();
 
         // Randomly give the operator a non-WAD magnitude
         if (_randBool()) _giveOperatorNonWadMagnitude(operator2);
@@ -509,7 +509,7 @@ contract Integration_SlashedOperator_SlashedEigenpod is Integration_SlashedOpera
 
     function testFuzz_slashOnBC_delegate_verifyValidator_redelegate_completeAsShares(uint24 _random) public rand {
         // Create new operator
-        User operator2 = _newRandomOperator_NoAssets();
+        User operator2 = _newRandomOperator();
 
         // Randomly give the operator a non-WAD magnitude
         if (_randBool()) _giveOperatorNonWadMagnitude(operator2);
@@ -547,7 +547,7 @@ contract Integration_Redelegate_SlashOperator_SlashEigenpod is Integration_Slash
         check_Delegation_State(staker, operator, strategies, initDepositShares);
 
         // 7. Create new operator & randomly give it a non-WAD magnitude
-        operator2 = _newRandomOperator_NoAssets();
+        operator2 = _newRandomOperator();
         if (_randBool()) _giveOperatorNonWadMagnitude(operator2);
 
         // 8. Redelegate
@@ -690,8 +690,8 @@ contract Integration_SlashedEigenpod_BC_HalfSlash is IntegrationChecks {
     function _init() internal override {
         _configAssetTypes(HOLDS_ETH);
         (staker, strategies, initTokenBalances) = _newRandomStaker();
-        (operator,,) = _newRandomOperator();
-        (avs,) = _newRandomAVS();
+        operator = _newRandomOperator();
+        avs = _newRandomAVS();
 
         // 1. Deposit staker
         uint[] memory shares = _calculateExpectedShares(strategies, initTokenBalances);

@@ -23,7 +23,7 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal_Base is UpgradeTest
         state.shares = _calculateExpectedShares(state.strategies, state.tokenBalances);
 
         // Delegate staker to operator
-        state.operator = withOperator ? _newRandomOperator_NoAssets() : User(payable(0));
+        state.operator = withOperator ? _newRandomOperator() : User(payable(0));
         if (withDelegation) state.staker.delegateTo(state.operator);
 
         // Deposit into EigenLayer
@@ -119,7 +119,7 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal_Slash is Integratio
         // Set allocation delay, register for operatorSet & allocate fully
         state.operator.setAllocationDelay(1);
         rollForward({blocks: ALLOCATION_CONFIGURATION_DELAY + 1});
-        (avs,) = _newRandomAVS();
+        avs = _newRandomAVS();
         operatorSet = avs.createOperatorSet(state.strategies);
         allocateParams = _genAllocation_AllAvailable(state.operator, operatorSet);
 

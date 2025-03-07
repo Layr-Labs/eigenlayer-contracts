@@ -25,8 +25,8 @@ contract Integration_DualSlashing_Base is IntegrationChecks {
 
         // Create staker, operator, and avs
         (staker, strategies, initTokenBalances) = _newRandomStaker();
-        (operator,,) = _newRandomOperator();
-        (avs,) = _newRandomAVS();
+        operator = _newRandomOperator();
+        avs = _newRandomAVS();
 
         // 1. Deposit into strategies
         (validators, beaconBalanceGwei) = staker.startValidators();

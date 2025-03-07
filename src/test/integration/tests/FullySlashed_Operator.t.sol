@@ -23,8 +23,8 @@ contract Integration_FullySlashed_Operator is IntegrationChecks {
         _configAssetTypes(HOLDS_LST);
 
         (staker, strategies, initTokenBalances) = _newRandomStaker();
-        operator = _newRandomOperator_NoAssets();
-        (avs,) = _newRandomAVS();
+        operator = _newRandomOperator();
+        avs = _newRandomAVS();
 
         operatorSet = avs.createOperatorSet(strategies);
         tokens = _getUnderlyingTokens(strategies);
@@ -73,7 +73,7 @@ contract Integration_FullySlashed_Operator is IntegrationChecks {
         // 5) Staker delegates to operator who is fully slashed
         staker.delegateTo(operator);
 
-        User newOperator = _newRandomOperator_NoAssets();
+        User newOperator = _newRandomOperator();
         newOperator.registerForOperatorSet(operatorSet);
 
         // 6) Staker redelegates to new operator.

@@ -23,8 +23,8 @@ contract Integration_SlashedEigenpod_AVS_Base is IntegrationChecks {
     function _init() internal virtual override {
         _configAssetTypes(HOLDS_ETH);
         (staker, strategies, initTokenBalances) = _newRandomStaker();
-        (operator,,) = _newRandomOperator();
-        (avs,) = _newRandomAVS();
+        operator = _newRandomOperator();
+        avs = _newRandomAVS();
 
         // Ensure the staker has at least 64 ETH to deposit.
         if (initTokenBalances[0] < 64 ether) {

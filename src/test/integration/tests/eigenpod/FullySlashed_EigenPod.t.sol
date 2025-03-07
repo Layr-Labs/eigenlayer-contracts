@@ -48,7 +48,7 @@ contract Integration_FullySlashedEigenpod_Checkpointed is Integration_FullySlash
     }
 
     function testFuzz_fullSlash_Delegate(uint24 _rand) public rand {
-        (User operator,,) = _newRandomOperator();
+        User operator = _newRandomOperator();
 
         // Delegate to an operator - should succeed given that delegation only checks the operator's slashing factor
         staker.delegateTo(operator);

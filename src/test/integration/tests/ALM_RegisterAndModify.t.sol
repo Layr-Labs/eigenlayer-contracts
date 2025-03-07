@@ -22,8 +22,8 @@ contract Integration_ALMBase is IntegrationChecks {
     /// 3. AVS creates an operator set containing the strategies held by the staker
     function _init() internal virtual override {
         (staker, strategies, initTokenBalances) = _newRandomStaker();
-        operator = _newRandomOperator_NoAssets();
-        (avs,) = _newRandomAVS();
+        operator = _newRandomOperator();
+        avs = _newRandomAVS();
 
         // 1. Deposit Into Strategies
         staker.depositIntoEigenlayer(strategies, initTokenBalances);

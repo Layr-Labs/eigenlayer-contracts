@@ -18,7 +18,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationChecks {
         // ... check that the staker has no deleagatable shares and isn't delegated
 
         (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
-        (User operator,,) = _newRandomOperator();
+        User operator = _newRandomOperator();
 
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
         //delegatable shares equals deposit shares here because no bc slashing
@@ -72,7 +72,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationChecks {
         // ... check that the staker has no deleagatable shares and isn't delegated
 
         (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
-        (User operator,,) = _newRandomOperator();
+        User operator = _newRandomOperator();
 
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
         //delegatable shares equals deposit shares here because no bc slashing
@@ -119,7 +119,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationChecks {
         // ... check that the staker has no deleagatable shares and isn't delegated
 
         (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
-        (User operator,,) = _newRandomOperator();
+        User operator = _newRandomOperator();
 
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
         //delegatable shares equals deposit shares here because no bc slashing
@@ -167,7 +167,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationChecks {
         // ... check that the staker has no deleagatable shares and isn't delegated
 
         (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
-        (User operator,,) = _newRandomOperator();
+        User operator = _newRandomOperator();
 
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
         //delegatable shares equals deposit shares here because no bc slashing
@@ -209,7 +209,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationChecks {
         _configAssetTypes(HOLDS_MAX);
 
         (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
-        (User operator,,) = _newRandomOperator();
+        User operator = _newRandomOperator();
 
         if (forkType == LOCAL) assertEq(strategies.length, 33, "sanity");
 

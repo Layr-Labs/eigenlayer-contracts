@@ -16,7 +16,7 @@ contract Integration_Upgrade_Deposit_Delegate_Allocate is UpgradeTest {
 
     function _init_() internal returns (TestState memory state) {
         (state.staker, state.strategies, state.tokenBalances) = _newRandomStaker();
-        (state.operator,,) = _newRandomOperator();
+        state.operator = _newRandomOperator();
 
         // Pre-upgrade:
         // 1. Create staker and operator with assets, then deposit into EigenLayer
@@ -44,7 +44,7 @@ contract Integration_Upgrade_Deposit_Delegate_Allocate is UpgradeTest {
     function testFuzz_deposit_delegate_upgrade_allocate(uint24 r) public rand {
         TestState memory state = _init_();
         _upgradeEigenLayerContracts();
-        (state.avs,) = _newRandomAVS();
+        state.avs = _newRandomAVS();
         _setupAllocation(state);
     }
 }

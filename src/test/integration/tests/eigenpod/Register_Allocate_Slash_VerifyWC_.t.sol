@@ -31,8 +31,8 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationChecks {
     function _init() internal override {
         _configAssetTypes(HOLDS_ETH);
         (staker, strategies, initDepositShares) = _newRandomStaker();
-        (operator,,) = _newRandomOperator();
-        (avs,) = _newRandomAVS();
+        operator = _newRandomOperator();
+        avs = _newRandomAVS();
 
         // Ensure the staker has at least 64 ETH to deposit.
         if (initDepositShares[0] < 64 ether) {

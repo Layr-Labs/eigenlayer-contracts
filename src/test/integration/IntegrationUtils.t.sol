@@ -46,37 +46,8 @@ contract IntegrationUtils is IntegrationBase {
         return (staker, tokenBalances);
     }
 
-    /**
-     * @dev Create a new operator according to configured random variants.
-     * This user will immediately deposit their randomized assets into eigenlayer.
-     */
-    function _newRandomOperator() internal returns (User, IStrategy[] memory, uint[] memory) {
-        /// TODO: Allow operators to have ETH
-        (User operator, IStrategy[] memory strategies, uint[] memory tokenBalances) = _randUser_NoETH(_getOperatorName());
-
-        /// Operators are created with all assets already deposited
-        uint[] memory addedShares = _calculateExpectedShares(strategies, tokenBalances);
-        operator.depositIntoEigenlayer(strategies, tokenBalances);
-
-        /// Registration flow differs for M2 vs Slashing release
-        if (!isUpgraded) {
-            User_M2(payable(operator)).registerAsOperator_M2();
-
-            operatorsToMigrate.push(operator);
-        } else {
-            operator.registerAsOperator();
-
-            rollForward({blocks: ALLOCATION_CONFIGURATION_DELAY + 1});
-        }
-
-        assert_Snap_Added_OperatorShares(operator, strategies, addedShares, "_newRandomOperator: failed to award shares to operator");
-        assertTrue(delegationManager.isOperator(address(operator)), "_newRandomOperator: operator should be registered");
-        assertEq(delegationManager.delegatedTo(address(operator)), address(operator), "_newRandomOperator: should be self-delegated");
-        return (operator, strategies, tokenBalances);
-    }
-
     /// @dev Creates a new operator with no assets
-    function _newRandomOperator_NoAssets() internal returns (User) {
+    function _newRandomOperator() internal returns (User) {
         User operator = _randUser_NoAssets(_getOperatorName());
 
         /// Registration flow differs for M2 vs Slashing release
@@ -93,6 +64,13 @@ contract IntegrationUtils is IntegrationBase {
         assertTrue(delegationManager.isOperator(address(operator)), "_newRandomOperator: operator should be registered");
         assertEq(delegationManager.delegatedTo(address(operator)), address(operator), "_newRandomOperator: should be self-delegated");
         return operator;
+    }
+
+    function _newRandomAVS() internal returns (AVS avs) {
+        string memory avsName = string.concat("avs", numAVSs.toString());
+        avs = _genRandAVS(avsName);
+        avs.updateAVSMetadataURI("https://example.com");
+        ++numAVSs;
     }
 
     /// @dev Name a newly-created staker ("staker1", "staker2", ...)
@@ -113,14 +91,6 @@ contract IntegrationUtils is IntegrationBase {
         string memory namePrefix = isUpgraded ? "operator" : "m2-operator";
 
         return string.concat(namePrefix, operatorNum);
-    }
-
-    function _newRandomAVS() internal returns (AVS avs, OperatorSet[] memory operatorSets) {
-        string memory avsName = string.concat("avs", numAVSs.toString());
-        avs = _genRandAVS(avsName);
-        avs.updateAVSMetadataURI("https://example.com");
-        operatorSets = avs.createOperatorSets(_randomStrategies());
-        ++numAVSs;
     }
 
     /// @dev Send a random amount of ETH (up to 10 gwei) to the destination via `call`,

@@ -27,8 +27,8 @@ contract Integration_ALMSlashBase is IntegrationChecks {
     /// NOTE: Steps 4 and 5 are done in random order, as these should not have an outcome on the test
     function _init() internal virtual override {
         (staker, strategies, initTokenBalances) = _newRandomStaker();
-        operator = _newRandomOperator_NoAssets();
-        (avs,) = _newRandomAVS();
+        operator = _newRandomOperator();
+        avs = _newRandomAVS();
         tokens = _getUnderlyingTokens(strategies);
 
         // 1. Deposit Into Strategies
@@ -91,7 +91,7 @@ contract Integration_SlashThenWithdraw is Integration_ALMSlashBase {
         /// be checked via invariants.
         {
             // Create operatorB
-            operatorB = _newRandomOperator_NoAssets();
+            operatorB = _newRandomOperator();
 
             // Create stakerB, deposit, and delegate to operatorB
             (stakerB, initTokenBalancesB) = _newStaker(strategies);

@@ -24,8 +24,8 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         _configUserTypes(DEFAULT);
 
         (staker, strategies, initTokenBalances) = _newRandomStaker();
-        (operator,,) = _newRandomOperator();
-        (avs,) = _newRandomAVS();
+        operator = _newRandomOperator();
+        avs = _newRandomAVS();
         tokens = _getUnderlyingTokens(strategies);
 
         uint[] memory tokensToDeposit = new uint[](initTokenBalances.length);
@@ -351,7 +351,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
     }
 
     function testFuzz_fullSlash_redelegate_redeposit_complete(uint24 _random) public rand {
-        (User operator2,,) = _newRandomOperator();
+        User operator2 = _newRandomOperator();
         initDepositShares = _getStakerDepositShares(staker, strategies);
 
         // 4. Fully slash operator

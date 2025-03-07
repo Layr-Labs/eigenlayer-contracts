@@ -366,8 +366,8 @@ contract Integration_OperatorAllocationTiming is IntegrationChecks {
         /// 0. Instantiate relevant objects
         _configAssetTypes(HOLDS_LST);
         (staker, strategies, initTokenBalances) = _newRandomStaker();
-        operator = _newRandomOperator_NoAssets();
-        (avs,) = _newRandomAVS();
+        operator = _newRandomOperator();
+        avs = _newRandomAVS();
         tokens = _getUnderlyingTokens(strategies);
 
         /// 1. Deposit into strategies

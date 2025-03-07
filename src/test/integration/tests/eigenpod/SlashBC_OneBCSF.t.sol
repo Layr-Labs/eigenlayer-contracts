@@ -41,8 +41,8 @@ contract Integration_SlashBC_OneBCSF is IntegrationChecks {
         // 2. create a new staker, operator, and avs
         _configAssetTypes(HOLDS_ETH);
         (staker, strategies, initDepositShares) = _newRandomStaker();
-        (operator,,) = _newRandomOperator();
-        (avs,) = _newRandomAVS();
+        operator = _newRandomOperator();
+        avs = _newRandomAVS();
 
         // Ensure the staker has at least 64 ETH to deposit.
         if (initDepositShares[0] < 64 ether) {

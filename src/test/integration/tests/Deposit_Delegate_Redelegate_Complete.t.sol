@@ -23,8 +23,8 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
         // ... check that the staker has no deleagatable shares and isn't delegated
 
         (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
-        (User operator1,,) = _newRandomOperator();
-        (User operator2,,) = _newRandomOperator();
+        User operator1 = _newRandomOperator();
+        User operator2 = _newRandomOperator();
 
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
         //delegatable shares equals deposit shares here because no bc slashing
@@ -89,8 +89,8 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
         // ... check that the staker has no deleagatable shares and isn't delegated
 
         (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
-        (User operator1,,) = _newRandomOperator();
-        (User operator2,,) = _newRandomOperator();
+        User operator1 = _newRandomOperator();
+        User operator2 = _newRandomOperator();
 
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
         //delegatable shares equals deposit shares here because no bc slashing
@@ -162,8 +162,8 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
         // ... check that the staker has no deleagatable shares and isn't delegated
 
         (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
-        (User operator1,,) = _newRandomOperator();
-        (User operator2,,) = _newRandomOperator();
+        User operator1 = _newRandomOperator();
+        User operator2 = _newRandomOperator();
 
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 
@@ -247,8 +247,8 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
         // ... check that the staker has no deleagatable shares and isn't delegated
 
         (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
-        (User operator1,,) = _newRandomOperator();
-        (User operator2,,) = _newRandomOperator();
+        User operator1 = _newRandomOperator();
+        User operator2 = _newRandomOperator();
 
         uint[] memory totalShares = new uint[](strategies.length);
 
@@ -331,8 +331,8 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
     function testFuzz_deposit_delegate_undelegate_withdrawAsTokens_reDelegate_completeAsTokens(uint24 _random) public rand {
         /// 0. Create operators and a staker
         (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
-        (User operator1,,) = _newRandomOperator();
-        (User operator2,,) = _newRandomOperator();
+        User operator1 = _newRandomOperator();
+        User operator2 = _newRandomOperator();
 
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
         //delegatable shares equals deposit shares here because no bc slashing
@@ -399,8 +399,8 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
     function testFuzz_deposit_delegate_undelegate_withdrawAsTokens_reDelegate_completeAsShares(uint24 _random) public rand {
         /// 0. Create operators and a staker
         (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
-        (User operator1,,) = _newRandomOperator();
-        (User operator2,,) = _newRandomOperator();
+        User operator1 = _newRandomOperator();
+        User operator2 = _newRandomOperator();
 
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
         //delegatable shares equals deposit shares here because no bc slashing

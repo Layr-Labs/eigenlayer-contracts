@@ -44,13 +44,13 @@ contract Integration_ALM_Multi is IntegrationChecks {
     function _init() internal virtual override {
         _configAssetAmounts(NUM_UNIQUE_ASSETS);
 
-        (avs,) = _newRandomAVS();
+        avs = _newRandomAVS();
         operatorSet = avs.createOperatorSet(allStrats);
 
         for (uint i = 0; i < NUM_OPERATORS; i++) {
             (User staker, IStrategy[] memory _strategies, uint[] memory initTokenBalances) = _newRandomStaker();
 
-            User operator = _newRandomOperator_NoAssets();
+            User operator = _newRandomOperator();
 
             // 1. Deposit into strategies
             staker.depositIntoEigenlayer(_strategies, initTokenBalances);

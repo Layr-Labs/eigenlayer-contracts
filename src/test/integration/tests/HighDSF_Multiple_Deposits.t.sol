@@ -31,8 +31,8 @@ contract Integration_HighDSF_Multiple_Deposits is IntegrationChecks {
         // 1. create a new staker, operator, and avs
         _configAssetTypes(HOLDS_LST);
         (staker, strategies, initTokenBalances) = _newRandomStaker();
-        (operator,,) = _newRandomOperator();
-        (avs,) = _newRandomAVS();
+        operator = _newRandomOperator();
+        avs = _newRandomAVS();
 
         // 2. Create an operator set and register an operator, allocate all magnitude to the operator set
         operatorSet = avs.createOperatorSet(strategies);
