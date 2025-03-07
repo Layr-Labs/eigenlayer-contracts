@@ -529,6 +529,13 @@ Given an `operator` and an `Allocation` from a `strategy` to an AVS's `OperatorS
 
 If ALL of these are true, the `AllocationManager` will allow the AVS to slash the `operator's` `Allocation`.
 
+#### Evaluating How Much of the Allocation is "Slashable"
+
+The `getMinimumSlashableStake` calculates the minimum amount of stake that will be slashable at a specified future block. This computation accounts for each operator’s allocated stake from different strategies within an operator set. The function considers pending allocation changes that could reduce the slashable stake over time, ensuring a minimum guaranteed value. Because this is a forecast, the slashable stake at any given moment is a discrete value, but when looking ahead to a future block, the function provides the lowest possible amount, factoring in any planned allocation adjustments that will take effect within the specified timeframe.
+
+Please see [IAllocationManager.sol:getMinimumSlashableStake](https://github.com/Layr-Labs/eigenlayer-contracts/blob/dev/src/contracts/interfaces/IAllocationManager.sol#L577) for more detail.
+
+
 #### `modifyAllocations`
 
 ```solidity
