@@ -20,7 +20,7 @@ contract IntegrationUtils is IntegrationBase {
     User[] stakersToMigrate;
 
     /// -----------------------------------------------------------------------
-    /// 
+    ///
     /// -----------------------------------------------------------------------
 
     /**
@@ -164,7 +164,7 @@ contract IntegrationUtils is IntegrationBase {
     }
 
     /// -----------------------------------------------------------------------
-    /// 
+    ///
     /// -----------------------------------------------------------------------
 
     /// @dev Generate params to allocate all available magnitude to each strategy in the operator set
