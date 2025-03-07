@@ -1,6 +1,6 @@
 {
     "name": "slashing-genesis",
-    "from": "0.0.0",
+    "from": "0.0.1",
     "to": "1.2.0",
     "phases": [
         {
