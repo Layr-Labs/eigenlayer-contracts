@@ -16,7 +16,12 @@ contract Integration_FullySlashedEigenpod_Base is IntegrationChecks {
     function _init() internal virtual override {
         _configAssetTypes(HOLDS_ETH);
         (staker, strategies, initTokenBalances) = _newRandomStaker();
-        cheats.assume(initTokenBalances[0] >= 64 ether);
+
+        // Ensure the staker has at least 64 ETH to deposit.
+        if (initTokenBalances[0] < 64 ether) {
+            initTokenBalances[0] = 64 ether;
+            cheats.deal(address(staker), 64 ether);
+        }
 
         // Deposit staker
         uint[] memory shares = _calculateExpectedShares(strategies, initTokenBalances);

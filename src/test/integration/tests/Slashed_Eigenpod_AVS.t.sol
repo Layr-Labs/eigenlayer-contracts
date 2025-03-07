@@ -26,7 +26,11 @@ contract Integration_SlashedEigenpod_AVS_Base is IntegrationChecks {
         (operator,,) = _newRandomOperator();
         (avs,) = _newRandomAVS();
 
-        cheats.assume(initTokenBalances[0] >= 64 ether);
+        // Ensure the staker has at least 64 ETH to deposit.
+        if (initTokenBalances[0] < 64 ether) {
+            initTokenBalances[0] = 64 ether;
+            cheats.deal(address(staker), 64 ether);
+        }
 
         // 1. Deposit Into Strategies
         staker.depositIntoEigenlayer(strategies, initTokenBalances);

@@ -44,7 +44,11 @@ contract Integration_SlashBC_OneBCSF is IntegrationChecks {
         (operator,,) = _newRandomOperator();
         (avs,) = _newRandomAVS();
 
-        cheats.assume(initDepositShares[0] >= 64 ether);
+        // Ensure the staker has at least 64 ETH to deposit.
+        if (initDepositShares[0] < 64 ether) {
+            initDepositShares[0] = 64 ether;
+            cheats.deal(address(staker), 64 ether);
+        }
 
         EigenPodManagerWrapper(address(eigenPodManager)).setBeaconChainSlashingFactor(address(staker), 1);
         assertEq(eigenPodManager.beaconChainSlashingFactor(address(staker)), 1);

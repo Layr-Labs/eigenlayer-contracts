@@ -27,7 +27,12 @@ contract Integration_SlashedEigenpod_BC is IntegrationChecks {
         (operator,,) = _newRandomOperator();
         (avs,) = _newRandomAVS();
         tokens = _getUnderlyingTokens(strategies); // Should only return ETH
-        cheats.assume(initTokenBalances[0] >= 64 ether);
+
+        // Ensure the staker has at least 64 ETH to deposit.
+        if (initTokenBalances[0] < 64 ether) {
+            initTokenBalances[0] = 64 ether;
+            cheats.deal(address(staker), 64 ether);
+        }
 
         // Deposit staker
         uint[] memory shares = _calculateExpectedShares(strategies, initTokenBalances);

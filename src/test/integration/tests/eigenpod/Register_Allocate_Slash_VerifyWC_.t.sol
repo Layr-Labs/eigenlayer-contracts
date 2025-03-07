@@ -34,7 +34,11 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationChecks {
         (operator,,) = _newRandomOperator();
         (avs,) = _newRandomAVS();
 
-        cheats.assume(initDepositShares[0] >= 64 ether);
+        // Ensure the staker has at least 64 ETH to deposit.
+        if (initDepositShares[0] < 64 ether) {
+            initDepositShares[0] = 64 ether;
+            cheats.deal(address(staker), 64 ether);
+        }
 
         // 1. Create an operator set and register an operator
         operatorSet = avs.createOperatorSet(strategies);
