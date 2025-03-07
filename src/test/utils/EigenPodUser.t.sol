@@ -141,35 +141,24 @@ contract EigenPodUser is Logger {
         // Create validators between 32 and 2048 ETH until we can't create more
         while (balanceWei >= 32 ether) {
             // Generate random validator balance between 32 and 2048 ETH
-            uint validatorEth = uint(keccak256(abi.encodePacked(
-                block.timestamp,
-                balanceWei,
-                numValidators
-            ))) % 64 + 1; // 1-64 multiplier
+            uint validatorEth = uint(keccak256(abi.encodePacked(block.timestamp, balanceWei, numValidators))) % 64 + 1; // 1-64 multiplier
             validatorEth *= 32 ether; // Results in 32-2048 ETH
 
-            // If we don't have enough ETH for the random amount, use remaining balance 
+            // If we don't have enough ETH for the random amount, use remaining balance
             // as long as it's >= 32 ETH
             if (balanceWei < validatorEth) {
-                if (balanceWei >= 32 ether) {
-                    validatorEth = balanceWei - (balanceWei % 32 ether);
-                } else {
-                    break;
-                }
+                if (balanceWei >= 32 ether) validatorEth = balanceWei - (balanceWei % 32 ether);
+                else break;
             }
 
-            // Track validators with maximum effective balance 
-            if (validatorEth == 2048 ether) {
-                maxEBValidators++;
-            }
+            // Track validators with maximum effective balance
+            if (validatorEth == 2048 ether) maxEBValidators++;
 
             // Create the validator
-            bytes memory withdrawalCredentials = validatorEth == 32 ether ? 
-                _podWithdrawalCredentials() : _podCompoundingWithdrawalCredentials();
-            
-            uint40 validatorIndex = beaconChain.newValidator{
-                value: validatorEth
-            }(withdrawalCredentials);
+            bytes memory withdrawalCredentials =
+                validatorEth == 32 ether ? _podWithdrawalCredentials() : _podCompoundingWithdrawalCredentials();
+
+            uint40 validatorIndex = beaconChain.newValidator{value: validatorEth}(withdrawalCredentials);
 
             newValidators[numValidators] = validatorIndex;
             validators.push(validatorIndex);
@@ -184,9 +173,7 @@ contract EigenPodUser is Logger {
         if (balanceWei >= 1 ether) {
             uint lastValidatorBalance = balanceWei - (balanceWei % 1 gwei);
 
-            uint40 validatorIndex = beaconChain.newValidator{ 
-                value: lastValidatorBalance 
-            }(_podWithdrawalCredentials());
+            uint40 validatorIndex = beaconChain.newValidator{value: lastValidatorBalance}(_podWithdrawalCredentials());
 
             newValidators[numValidators] = validatorIndex;
             validators.push(validatorIndex);
@@ -211,7 +198,7 @@ contract EigenPodUser is Logger {
 
         return (newValidators, totalBeaconBalanceGwei, maxEBValidators);
     }
-    
+
     function _exitValidators(uint40[] memory _validators) internal returns (uint64 exitedBalanceGwei) {
         console.log("- exiting num validators", _validators.length);
 

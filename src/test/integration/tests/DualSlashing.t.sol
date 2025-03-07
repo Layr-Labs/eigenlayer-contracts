@@ -65,7 +65,7 @@ contract Integration_DualSlashing_BeaconChainFirst is Integration_DualSlashing_B
         staker.startCheckpoint();
         check_StartCheckpoint_WithPodBalance_State(staker, beaconBalanceGwei - slashedAmountGwei);
         staker.completeCheckpoint();
-        check_CompleteCheckpoint_WithSlashing_State(staker, validators, slashedAmountGwei);
+        check_CompleteCheckpoint_WithSlashing_HandleRoundDown_State(staker, validators, slashedAmountGwei);
 
         // 8. Slash operator by AVS
         SlashingParams memory slashingParams;

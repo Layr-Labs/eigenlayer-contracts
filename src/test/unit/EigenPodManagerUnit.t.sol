@@ -145,7 +145,6 @@ contract EigenPodManagerUnitTests_CreationTests is EigenPodManagerUnitTests {
 }
 
 contract EigenPodManagerUnitTests_ProofTimestampSetterTests is EigenPodManagerUnitTests {
-
     function testFuzz_setProofTimestampSetter_revert_notOwner(address notOwner) public filterFuzzedAddressInputs(notOwner) {
         cheats.assume(notOwner != initialOwner);
         cheats.prank(notOwner);
@@ -157,10 +156,10 @@ contract EigenPodManagerUnitTests_ProofTimestampSetterTests is EigenPodManagerUn
         address newSetter = address(1);
         cheats.expectEmit(true, true, true, true);
         emit ProofTimestampSetterSet(newSetter);
-        
+
         cheats.prank(initialOwner);
         eigenPodManager.setProofTimestampSetter(newSetter);
-        
+
         assertEq(eigenPodManager.proofTimestampSetter(), newSetter, "Proof timestamp setter not set correctly");
     }
 
@@ -169,7 +168,7 @@ contract EigenPodManagerUnitTests_ProofTimestampSetterTests is EigenPodManagerUn
         address setter = address(1);
         cheats.prank(initialOwner);
         eigenPodManager.setProofTimestampSetter(setter);
-        
+
         // Try to set timestamp from non-setter address
         cheats.assume(notSetter != setter);
         cheats.prank(notSetter);
@@ -182,15 +181,15 @@ contract EigenPodManagerUnitTests_ProofTimestampSetterTests is EigenPodManagerUn
         address setter = address(1);
         cheats.prank(initialOwner);
         eigenPodManager.setProofTimestampSetter(setter);
-        
+
         // Set new timestamp
         uint64 newTimestamp = 1;
         cheats.expectEmit(true, true, true, true);
         emit PectraForkTimestampSet(newTimestamp);
-        
+
         cheats.prank(setter);
         eigenPodManager.setPectraForkTimestamp(newTimestamp);
-        
+
         assertEq(eigenPodManager.pectraForkTimestamp(), newTimestamp, "Pectra fork timestamp not set correctly");
     }
 }

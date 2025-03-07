@@ -12,10 +12,11 @@ import {SetProofTimestamp} from "./7-setProofTimestamp.s.sol";
 /**
  * Purpose: Executes the unpause transaction from step 3
  */
+
 contract ExecuteUnpause is SetProofTimestamp {
     using Env for *;
 
-    function _runAsMultisig() prank(Env.protocolCouncilMultisig()) internal virtual override {
+    function _runAsMultisig() internal virtual override prank(Env.protocolCouncilMultisig()) {
         bytes memory calldata_to_executor = QueueUnpause._getCalldataToExecutor_queueUnpause();
 
         TimelockController timelock = Env.timelockController();
@@ -45,7 +46,9 @@ contract ExecuteUnpause is SetProofTimestamp {
         _unsafeResetHasPranked();
 
         // Check that unpausing is ready (predecessor is done & we've warped past delay)
-        assertTrue(timelock.isOperationDone(QueueUpgradeAndTimestampSetter.getTimelockId()), "Predecessor should be done.");
+        assertTrue(
+            timelock.isOperationDone(QueueUpgradeAndTimestampSetter.getTimelockId()), "Predecessor should be done."
+        );
         assertTrue(timelock.isOperationReady(QueueUnpause.getTimelockId()), "Transaction should be executable.");
 
         // 8. Execute Unpause

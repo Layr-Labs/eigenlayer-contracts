@@ -96,6 +96,11 @@ contract IntegrationCheckUtils is IntegrationBase {
         // Validator exits
         assert_Snap_Removed_ActiveValidatorCount(staker, slashedValidators.length, "should have decreased active validator count");
         assert_Snap_Removed_ActiveValidators(staker, slashedValidators, "exited validators should each be WITHDRAWN");
+
+        // System Vars
+        assert_Snap_Decreased_BCSF(staker, "BCSF should decrease");
+        assert_Snap_Unchanged_DSF(staker, BEACONCHAIN_ETH_STRAT.toArray(), "DSF should be unchanged");
+        assert_SlashableStake_Decrease_BCSlash(staker);
     }
 
     /// @dev Includes validator exits
@@ -131,9 +136,6 @@ contract IntegrationCheckUtils is IntegrationBase {
             slashedAmountGwei * GWEI_TO_WEI,
             "should have decreased withdrawable shares by at least slashed amount"
         );
-        assert_Snap_Decreased_BCSF(staker, "BCSF should decrease");
-        assert_Snap_Unchanged_DSF(staker, BEACONCHAIN_ETH_STRAT.toArray(), "DSF should be unchanged");
-        assert_SlashableStake_Decrease_BCSlash(staker);
     }
 
     /// @notice Used for edge cases where rounding behaviors of magnitudes close to 1 are tested.

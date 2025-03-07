@@ -19,24 +19,28 @@ contract Deploy is EOADeployer {
         // Deploy EigenPodManager Impl
         deployImpl({
             name: type(EigenPodManager).name,
-            deployedTo: address(new EigenPodManager({
-                _ethPOS: Env.ethPOS(),
-                _eigenPodBeacon: Env.beacon.eigenPod(),
-                _delegationManager: Env.proxy.delegationManager(),
-                _pauserRegistry: Env.impl.pauserRegistry(),
-                _version: "v1.2.0"
-            }))
+            deployedTo: address(
+                new EigenPodManager({
+                    _ethPOS: Env.ethPOS(),
+                    _eigenPodBeacon: Env.beacon.eigenPod(),
+                    _delegationManager: Env.proxy.delegationManager(),
+                    _pauserRegistry: Env.impl.pauserRegistry(),
+                    _version: "v1.2.0"
+                })
+            )
         });
 
         // Deploy EigenPodBeacon Impl
         deployImpl({
             name: type(EigenPod).name,
-            deployedTo: address(new EigenPod({
-                _ethPOS: Env.ethPOS(),
-                _eigenPodManager: Env.proxy.eigenPodManager(),
-                _GENESIS_TIME: Env.EIGENPOD_GENESIS_TIME(),
-                _version: "v1.2.0"
-            }))
+            deployedTo: address(
+                new EigenPod({
+                    _ethPOS: Env.ethPOS(),
+                    _eigenPodManager: Env.proxy.eigenPodManager(),
+                    _GENESIS_TIME: Env.EIGENPOD_GENESIS_TIME(),
+                    _version: "v1.2.0"
+                })
+            )
         });
 
         vm.stopBroadcast();
@@ -55,16 +59,14 @@ contract Deploy is EOADeployer {
     ///
     /// Note: The upgrade script can call this with `areMatching == true` to check that these impl
     /// addresses _are_ matches.
-    function _validateNewImplAddresses(bool areMatching) internal view {
+    function _validateNewImplAddresses(
+        bool areMatching
+    ) internal view {
         function(address, address, string memory)
             internal
             pure assertion = areMatching ? _assertMatch : _assertNotMatch;
 
-        assertion(
-            Env.beacon.eigenPod().implementation(),
-            address(Env.impl.eigenPod()),
-            "eigenPod impl failed"
-        );
+        assertion(Env.beacon.eigenPod().implementation(), address(Env.impl.eigenPod()), "eigenPod impl failed");
 
         assertion(
             _getProxyImpl(address(Env.proxy.eigenPodManager())),
@@ -75,10 +77,7 @@ contract Deploy is EOADeployer {
 
     /// @dev Ensure each deployed TUP/beacon is owned by the proxyAdmin/executorMultisig
     function _validateProxyAdmins() internal view {
-        assertTrue(
-            Env.beacon.eigenPod().owner() == Env.executorMultisig(),
-            "eigenPod beacon owner incorrect"
-        );
+        assertTrue(Env.beacon.eigenPod().owner() == Env.executorMultisig(), "eigenPod beacon owner incorrect");
 
         assertTrue(
             _getProxyAdmin(address(Env.proxy.eigenPodManager())) == Env.proxyAdmin(),
@@ -115,34 +114,24 @@ contract Deploy is EOADeployer {
     }
 
     /// @dev Query and return `proxyAdmin.getProxyImplementation(proxy)`
-    function _getProxyImpl(address proxy) internal view returns (address) {
-        return
-            ProxyAdmin(Env.proxyAdmin()).getProxyImplementation(
-                ITransparentUpgradeableProxy(proxy)
-            );
+    function _getProxyImpl(
+        address proxy
+    ) internal view returns (address) {
+        return ProxyAdmin(Env.proxyAdmin()).getProxyImplementation(ITransparentUpgradeableProxy(proxy));
     }
 
     /// @dev Query and return `proxyAdmin.getProxyAdmin(proxy)`
-    function _getProxyAdmin(address proxy) internal view returns (address) {
-        return
-            ProxyAdmin(Env.proxyAdmin()).getProxyAdmin(
-                ITransparentUpgradeableProxy(proxy)
-            );
+    function _getProxyAdmin(
+        address proxy
+    ) internal view returns (address) {
+        return ProxyAdmin(Env.proxyAdmin()).getProxyAdmin(ITransparentUpgradeableProxy(proxy));
     }
 
-    function _assertMatch(
-        address a,
-        address b,
-        string memory err
-    ) private pure {
+    function _assertMatch(address a, address b, string memory err) private pure {
         assertEq(a, b, err);
     }
 
-    function _assertNotMatch(
-        address a,
-        address b,
-        string memory err
-    ) private pure {
+    function _assertNotMatch(address a, address b, string memory err) private pure {
         assertNotEq(a, b, err);
     }
 }

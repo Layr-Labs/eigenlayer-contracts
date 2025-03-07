@@ -13,19 +13,16 @@ contract BeaconChainMock_DenebForkable is BeaconChainMock {
 
     // The timestamp of the Pectra hard fork
     uint64 public pectraForkTimestamp;
-    
+
     constructor(EigenPodManager _eigenPodManager, uint64 _genesisTime) BeaconChainMock(_eigenPodManager, _genesisTime) {
         /// DENEB SPECIFIC CONSTANTS (PROOF LENGTHS, FIELD SIZES):
         // see https://eth2book.info/capella/part3/containers/state/#beaconstate
         BEACON_STATE_FIELDS = 32;
 
-        VAL_FIELDS_PROOF_LEN = 32 * (
-            (BeaconChainProofs.VALIDATOR_TREE_HEIGHT + 1) + BeaconChainProofs.DENEB_BEACON_STATE_TREE_HEIGHT
-        );
+        VAL_FIELDS_PROOF_LEN = 32 * ((BeaconChainProofs.VALIDATOR_TREE_HEIGHT + 1) + BeaconChainProofs.DENEB_BEACON_STATE_TREE_HEIGHT);
 
-        BALANCE_CONTAINER_PROOF_LEN = 32 * (
-            BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT + BeaconChainProofs.DENEB_BEACON_STATE_TREE_HEIGHT
-        );
+        BALANCE_CONTAINER_PROOF_LEN =
+            32 * (BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT + BeaconChainProofs.DENEB_BEACON_STATE_TREE_HEIGHT);
 
         MAX_EFFECTIVE_BALANCE_GWEI = 32 gwei;
         MAX_EFFECTIVE_BALANCE_WEI = 32 ether;
@@ -35,10 +32,11 @@ contract BeaconChainMock_DenebForkable is BeaconChainMock {
         return "BeaconChain_PectraForkable";
     }
 
-    /*******************************************************************************
-                                INTERNAL FUNCTIONS
-    *******************************************************************************/
-
+    /**
+     *
+     *                             INTERNAL FUNCTIONS
+     *
+     */
     function _advanceEpoch() public override {
         cheats.pauseTracing();
 
@@ -49,9 +47,7 @@ contract BeaconChainMock_DenebForkable is BeaconChainMock {
 
             // Get current balance and trim anything over MaxEB
             uint64 balanceGwei = _currentBalanceGwei(uint40(i));
-            if (balanceGwei > MAX_EFFECTIVE_BALANCE_GWEI) {
-                balanceGwei = MAX_EFFECTIVE_BALANCE_GWEI;
-            }
+            if (balanceGwei > MAX_EFFECTIVE_BALANCE_GWEI) balanceGwei = MAX_EFFECTIVE_BALANCE_GWEI;
 
             v.effectiveBalanceGwei = balanceGwei;
         }
@@ -67,7 +63,7 @@ contract BeaconChainMock_DenebForkable is BeaconChainMock {
         // console.log("   Jumping to next epoch...".dim());
         // console.log("       timestamp:", block.timestamp);
         // console.log("       epoch:", currentEpoch());
-                
+
         // console.log("   Building beacon state trees...".dim());
 
         // Log total number of validators and number being processed for the first time
@@ -80,7 +76,7 @@ contract BeaconChainMock_DenebForkable is BeaconChainMock {
             // console.log("-- no validators; added empty block root");
             return;
         }
-        
+
         // Build merkle tree for validators
         bytes32 validatorsRoot = _buildMerkleTree({
             leaves: _getValidatorLeaves(),
@@ -88,7 +84,7 @@ contract BeaconChainMock_DenebForkable is BeaconChainMock {
             tree: trees[curTimestamp].validatorTree
         });
         // console.log("-- validator container root", validatorsRoot);
-        
+
         // Build merkle tree for current balances
         bytes32 balanceContainerRoot = _buildMerkleTree({
             leaves: _getBalanceLeaves(),
@@ -96,7 +92,7 @@ contract BeaconChainMock_DenebForkable is BeaconChainMock {
             tree: trees[curTimestamp].balancesTree
         });
         // console.log("-- balances container root", balanceContainerRoot);
-        
+
         // Build merkle tree for BeaconState
         bytes32 beaconStateRoot = _buildMerkleTree({
             leaves: _getBeaconStateLeaves(validatorsRoot, balanceContainerRoot),
@@ -111,7 +107,6 @@ contract BeaconChainMock_DenebForkable is BeaconChainMock {
             treeHeight: BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT,
             tree: trees[curTimestamp].blockTree
         });
-
 
         // console.log("-- beacon block root", cheats.toString(beaconBlockRoot));
 
@@ -132,7 +127,6 @@ contract BeaconChainMock_DenebForkable is BeaconChainMock {
 
         // Calculate credential proofs for each validator
         for (uint i = 0; i < validators.length; i++) {
-
             bytes memory proof = new bytes(VAL_FIELDS_PROOF_LEN);
             bytes32[] memory validatorFields = _getValidatorFields(uint40(i));
             bytes32 curNode = Merkle.merkleizeSha256(validatorFields);
@@ -144,10 +138,7 @@ contract BeaconChainMock_DenebForkable is BeaconChainMock {
 
                 // proof[j] = sibling;
                 assembly {
-                    mstore(
-                        add(proof, add(32, mul(32, j))),
-                        sibling
-                    )
+                    mstore(add(proof, add(32, mul(32, j))), sibling)
                 }
 
                 curNode = trees[curTimestamp].validatorTree.parents[curNode];
@@ -155,19 +146,12 @@ contract BeaconChainMock_DenebForkable is BeaconChainMock {
             }
 
             // Validator container root -> beacon state root
-            for (
-                uint j = depth; 
-                j < 1 + BeaconChainProofs.VALIDATOR_TREE_HEIGHT + getBeaconStateTreeHeight(); 
-                j++
-            ) {
+            for (uint j = depth; j < 1 + BeaconChainProofs.VALIDATOR_TREE_HEIGHT + getBeaconStateTreeHeight(); j++) {
                 bytes32 sibling = trees[curTimestamp].stateTree.siblings[curNode];
 
                 // proof[j] = sibling;
                 assembly {
-                    mstore(
-                        add(proof, add(32, mul(32, j))),
-                        sibling
-                    )
+                    mstore(add(proof, add(32, mul(32, j))), sibling)
                 }
 
                 curNode = trees[curTimestamp].stateTree.parents[curNode];
@@ -190,10 +174,7 @@ contract BeaconChainMock_DenebForkable is BeaconChainMock {
 
             // proof[j] = sibling;
             assembly {
-                mstore(
-                    add(proof, add(32, mul(32, i))),
-                    sibling
-                )
+                mstore(add(proof, add(32, mul(32, i))), sibling)
             }
 
             curNode = trees[curTimestamp].stateTree.parents[curNode];
@@ -205,34 +186,26 @@ contract BeaconChainMock_DenebForkable is BeaconChainMock {
 
             // proof[j] = sibling;
             assembly {
-                mstore(
-                    add(proof, add(32, mul(32, i))),
-                    sibling
-                )
+                mstore(add(proof, add(32, mul(32, i))), sibling)
             }
 
             curNode = trees[curTimestamp].blockTree.parents[curNode];
             depth++;
         }
 
-        balanceContainerProofs[curTimestamp] = BeaconChainProofs.BalanceContainerProof({
-            balanceContainerRoot: balanceContainerRoot,
-            proof: proof
-        });
+        balanceContainerProofs[curTimestamp] =
+            BeaconChainProofs.BalanceContainerProof({balanceContainerRoot: balanceContainerRoot, proof: proof});
     }
-    
+
     /// @notice Forks the beacon chain to Pectra
     /// @dev Test battery should warp to the fork timestamp after calling this method
     function forkToPectra(uint64 _pectraForkTimestamp) public {
         // https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#beaconstate
         BEACON_STATE_FIELDS = 37;
-        
-        VAL_FIELDS_PROOF_LEN = 32 * (
-            (BeaconChainProofs.VALIDATOR_TREE_HEIGHT + 1) + BeaconChainProofs.PECTRA_BEACON_STATE_TREE_HEIGHT
-        );
-        BALANCE_CONTAINER_PROOF_LEN = 32 * (
-            BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT + BeaconChainProofs.PECTRA_BEACON_STATE_TREE_HEIGHT
-        );
+
+        VAL_FIELDS_PROOF_LEN = 32 * ((BeaconChainProofs.VALIDATOR_TREE_HEIGHT + 1) + BeaconChainProofs.PECTRA_BEACON_STATE_TREE_HEIGHT);
+        BALANCE_CONTAINER_PROOF_LEN =
+            32 * (BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT + BeaconChainProofs.PECTRA_BEACON_STATE_TREE_HEIGHT);
 
         MAX_EFFECTIVE_BALANCE_GWEI = 2048 gwei;
         MAX_EFFECTIVE_BALANCE_WEI = 2048 ether;
@@ -241,7 +214,6 @@ contract BeaconChainMock_DenebForkable is BeaconChainMock {
 
         cheats.warp(_pectraForkTimestamp);
         pectraForkTimestamp = _pectraForkTimestamp;
-
     }
 
     function getBeaconStateTreeHeight() public view returns (uint) {

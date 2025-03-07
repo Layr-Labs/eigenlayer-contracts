@@ -2,6 +2,7 @@
 pragma solidity ^0.8.27;
 
 import "src/test/integration/UpgradeTest.t.sol";
+
 contract Integration_Upgrade_Pectra is UpgradeTest, EigenPodPausingConstants {
     function _init() internal override {
         _configAssetTypes(HOLDS_ETH);
@@ -16,8 +17,8 @@ contract Integration_Upgrade_Pectra is UpgradeTest, EigenPodPausingConstants {
         _setTimestampAndUnpause();
 
         // 3. Initialize Staker
-        (User staker, ,) = _newRandomStaker();
-        (uint40[] memory validators, uint64 beaconBalanceGwei, ) = staker.startValidators();
+        (User staker,,) = _newRandomStaker();
+        (uint40[] memory validators, uint64 beaconBalanceGwei,) = staker.startValidators();
         beaconChain.advanceEpoch_NoRewards();
 
         // 4. Verify Withdrawal Credentials
@@ -31,13 +32,13 @@ contract Integration_Upgrade_Pectra is UpgradeTest, EigenPodPausingConstants {
         // 5. Complete Checkpoint
         staker.completeCheckpoint();
         check_CompleteCheckpoint_State(staker);
-    }        
+    }
 
     function test_VerifyWC_StartCP_Fork_CompleteCP(uint24 _rand) public rand(_rand) {
         // Initialize state
-        (User staker, ,) = _newRandomStaker();    
-        (uint40[] memory validators, ,) = staker.startValidators();
-        beaconChain.advanceEpoch_NoRewards(); 
+        (User staker,,) = _newRandomStaker();
+        (uint40[] memory validators,,) = staker.startValidators();
+        beaconChain.advanceEpoch_NoRewards();
 
         // 1. Verify validators' withdrawal credentials
         staker.verifyWithdrawalCredentials(validators);
@@ -58,9 +59,9 @@ contract Integration_Upgrade_Pectra is UpgradeTest, EigenPodPausingConstants {
 
     function test_VerifyWC_Fork_EarnToPod_StartCP_CompleteCP(uint24 _rand) public rand(_rand) {
         // Initialize state
-        (User staker, ,) = _newRandomStaker();    
-        (uint40[] memory validators, ,) = staker.startValidators();
-        beaconChain.advanceEpoch_NoRewards(); 
+        (User staker,,) = _newRandomStaker();
+        (uint40[] memory validators,,) = staker.startValidators();
+        beaconChain.advanceEpoch_NoRewards();
 
         // 1. Verify validators' withdrawal credentials
         staker.verifyWithdrawalCredentials(validators);
@@ -89,10 +90,8 @@ contract Integration_Upgrade_Pectra is UpgradeTest, EigenPodPausingConstants {
         // 1. Pause starting checkpoint, completing, and credential proofs
         cheats.prank(pauserMultisig);
         eigenPodManager.pause(
-            2 ** PAUSED_START_CHECKPOINT |
-            2 ** PAUSED_EIGENPODS_VERIFY_CREDENTIALS |
-            2 ** PAUSED_VERIFY_STALE_BALANCE |
-            2 ** PAUSED_EIGENPODS_VERIFY_CHECKPOINT_PROOFS
+            2 ** PAUSED_START_CHECKPOINT | 2 ** PAUSED_EIGENPODS_VERIFY_CREDENTIALS | 2 ** PAUSED_VERIFY_STALE_BALANCE
+                | 2 ** PAUSED_EIGENPODS_VERIFY_CHECKPOINT_PROOFS
         );
 
         // 2. Fork to Pectra
@@ -110,16 +109,14 @@ contract Integration_Upgrade_Pectra is UpgradeTest, EigenPodPausingConstants {
     function _setTimestampAndUnpause() internal {
         // 1. Set Timestamp
         cheats.startPrank(eigenPodManager.proofTimestampSetter());
-        eigenPodManager.setPectraForkTimestamp(
-            BeaconChainMock_DenebForkable(address(beaconChain)).pectraForkTimestamp()
-        );
+        eigenPodManager.setPectraForkTimestamp(BeaconChainMock_DenebForkable(address(beaconChain)).pectraForkTimestamp());
         cheats.stopPrank();
 
         // 2. Randomly warp to just after the fork timestamp
         // If we do not warp, proofs will be against deneb state
         if (_randBool()) {
             // If we warp, proofs will be against electra state
-            cheats.warp(block.timestamp + 1); 
+            cheats.warp(block.timestamp + 1);
         }
 
         // 3. Unpause
