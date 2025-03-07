@@ -5,11 +5,15 @@
     "phases": [
         {
             "type": "eoa",
-            "filename": "1-deploy-contracts.s.sol"
+            "filename": "1-deploy-proxies-and-implementations.s.sol"
         },
         {
-            "type": "eoa",
-            "filename": "2-disable-eigenpods-if-needed.s.sol"
+            "type": "multisig",
+            "filename": "2-swap-implementations.sol"
+        },
+        {
+            "type": "multisig",
+            "filename": "3-disable-eigenpods-if-needed.s.sol"
         }
     ]
 }

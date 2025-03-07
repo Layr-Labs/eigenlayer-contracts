@@ -120,6 +120,22 @@ library Env {
         return _envAddress("MultiSendCallOnly");   
     }
 
+    function EIGENPOD_MANAGER_INIT_PAUSED_STATUS() internal view returns (uint64) {
+        return _envU64("EIGENPOD_MANAGER_INIT_PAUSED_STATUS");
+    }
+
+    function STRATEGY_MANAGER_INIT_PAUSED_STATUS() internal view returns (uint64) {
+        return _envU64("STRATEGY_MANAGER_INIT_PAUSED_STATUS");
+    }
+
+    function DELEGATION_INIT_PAUSED_STATUS() internal view returns (uint64) {
+        return _envU64("DELEGATION_INIT_PAUSED_STATUS");
+    }
+
+    function DEALLOCATION_DELAY() internal view returns (uint32) {
+        return _envU32("DEALLOCATION_DELAY");
+    }
+
     function EIGENPOD_GENESIS_TIME() internal view returns (uint64) {
         return _envU64("EIGENPOD_GENESIS_TIME");
     }
@@ -168,10 +184,13 @@ library Env {
         return _envU256("REWARDS_COORDINATOR_PAUSE_STATUS");
     }
 
+    function ALLOCATION_MANAGER_INIT_PAUSED_STATUS() internal view returns (uint) {
+        return _envU32("ALLOCATION_MANAGER_INIT_PAUSED_STATUS");
+    }
+
     /**
      * core/
      */
-
     function allocationManager(DeployedProxy) internal view returns (AllocationManager) {
         return AllocationManager(_deployedProxy(type(AllocationManager).name));
     }
