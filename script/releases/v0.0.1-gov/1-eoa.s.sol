@@ -39,7 +39,6 @@ contract Deploy is EOADeployer {
         address[] memory executors = new address[](1);
         executors[0] = msg.sender;
 
-
         TimelockController timelockController = new TimelockController({
             minDelay: 0, // no delay for setup
             proposers: proposers, 
