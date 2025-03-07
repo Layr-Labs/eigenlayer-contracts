@@ -404,6 +404,24 @@ contract IntegrationGetters is IntegrationDeployer, TypeImporter {
         return _getCheckpointBalanceExited(staker, checkpointTimestamp);
     }
 
+    function _getSlashingFactors(User staker, IStrategy[] memory strategies) internal view returns (uint[] memory) {
+        address operator = delegationManager.delegatedTo(address(staker));
+        uint64[] memory maxMagnitudes = allocationManager.getMaxMagnitudes(operator, strategies);
+        uint[] memory slashingFactors = new uint[](strategies.length);
+        for (uint i = 0; i < strategies.length; i++) {
+            if (strategies[i] == beaconChainETHStrategy) {
+                slashingFactors[i] = maxMagnitudes[i].mulWad(eigenPodManager.beaconChainSlashingFactor(address(staker)));
+            } else {
+                slashingFactors[i] = maxMagnitudes[i];
+            }
+        }
+        return slashingFactors;
+    }
+
+    function _getPrevSlashingFactors(User staker, IStrategy[] memory strategies) internal timewarp returns (uint[] memory) {
+        return _getSlashingFactors(staker, strategies);
+    }
+
     /// -----------------------------------------------------------------------
     /// Non-timewarp functions
     /// -----------------------------------------------------------------------

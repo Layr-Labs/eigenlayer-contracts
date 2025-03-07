@@ -601,6 +601,7 @@ contract IntegrationChecks is IntegrationBase {
         assert_Snap_Expected_Staker_WithdrawableShares_Deposit(
             staker, newOperator, strategies, withdrawableShares, "staker should have received expected withdrawable shares"
         );
+    }
 
     function check_Withdrawal_AsShares_Redelegated_State(User staker, IStrategy[] memory strategies) internal {
         assert_Snap_DSF_State_WithdrawalAsShares(staker, strategies, "staker's DSF not updated correctly");
