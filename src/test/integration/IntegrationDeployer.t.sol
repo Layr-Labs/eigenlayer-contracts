@@ -646,33 +646,17 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         return userType;
     }
 
-    function _shuffle(IStrategy[] memory strats) internal returns (IStrategy[] memory) {
-        // Fisher-Yates shuffle algorithm
-        for (uint i = strats.length - 1; i > 0; i--) {
-            uint randomIndex = _randUint({min: 0, max: i});
-
-            // Swap elements
-            IStrategy temp = strats[i];
-            strats[i] = strats[randomIndex];
-            strats[randomIndex] = temp;
-        }
-
-        return strats;
-    }
-
     /**
      * @dev Converts a bitmap into an array of bytes
      * @dev Each byte in the input is processed as indicating a single bit to flip in the bitmap
      */
     function _bitmapToBytes(uint bitmap) internal pure returns (bytes memory bytesArray) {
-        for (uint i = 0; i < 256; ++i) {
-            // Mask for i-th bit
-            uint mask = uint(1 << i);
-
-            // If the i-th bit is flipped, add a byte to the return array
-            if (bitmap & mask != 0) bytesArray = bytes.concat(bytesArray, bytes1(uint8(1 << i)));
-        }
-        return bytesArray;
+        // Asset type flags
+        if (bitmap & NO_ASSETS != 0) bytesArray = bytes.concat(bytesArray, bytes1(uint8(1)));
+        if (bitmap & HOLDS_LST != 0) bytesArray = bytes.concat(bytesArray, bytes1(uint8(2)));
+        if (bitmap & HOLDS_ETH != 0) bytesArray = bytes.concat(bytesArray, bytes1(uint8(4)));
+        if (bitmap & HOLDS_ALL != 0) bytesArray = bytes.concat(bytesArray, bytes1(uint8(8)));
+        if (bitmap & HOLDS_MAX != 0) bytesArray = bytes.concat(bytesArray, bytes1(uint8(16)));
     }
 
     function _hash(string memory x) internal pure returns (bytes32) {
