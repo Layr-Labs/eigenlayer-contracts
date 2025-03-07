@@ -65,7 +65,7 @@ contract Integration_SlashedEigenpod_AVS_Checkpoint is Integration_SlashedEigenp
     }
 
     /// @dev Asserts that the DSF isn't updated after a slash & checkpoint with 0 balance
-    function testFuzz_deposit_delegate_allocate_slash_checkpointZeroBalance(uint24 _rand) public rand(_rand) {
+    function testFuzz_deposit_delegate_allocate_slash_checkpointZeroBalance(uint24 _rand) public rand {
         // 7. Start & complete checkpoint
         staker.startCheckpoint();
         check_StartCheckpoint_State(staker);
@@ -120,7 +120,7 @@ contract Integration_SlashedEigenpod_AVS_Withdraw is Integration_SlashedEigenpod
 
     /// @dev Asserts that the DSF isn't updated after a slash/queue and a checkpoint with 0 balance.
     /// @dev The staker should subsequently not be able to inflate their withdrawable shares
-    function testFuzz_deposit_delegate_allocate_slashAndQueue_checkpoint_redeposit(uint24 _rand) public rand(_rand) {
+    function testFuzz_deposit_delegate_allocate_slashAndQueue_checkpoint_redeposit(uint24 _rand) public rand {
         // 9.  Start & complete checkpoint.
         staker.startCheckpoint();
         check_StartCheckpoint_State(staker);
@@ -136,7 +136,7 @@ contract Integration_SlashedEigenpod_AVS_Withdraw is Integration_SlashedEigenpod
     }
 
     /// @dev Asserts that the staker cannot inflate withdrawable shares after redepositing
-    function testFuzz_deposit_delegate_allocate_slashAndQueue_completeAsTokens_redeposit(uint24 _rand) public rand(_rand) {
+    function testFuzz_deposit_delegate_allocate_slashAndQueue_completeAsTokens_redeposit(uint24 _rand) public rand {
         Withdrawal[] memory withdrawals = _getQueuedWithdrawals(staker);
         _rollBlocksForCompleteWithdrawals(withdrawals);
 
@@ -159,7 +159,7 @@ contract Integration_SlashedEigenpod_AVS_Withdraw is Integration_SlashedEigenpod
     }
 
     /// @dev Asserts that the staker cannot inflate withdrawable shares after checkpointing & completing as shares
-    function testFuzz_deposit_delegate_allocate_slashAndQueue_checkPoint_completeAsShares(uint24 _rand) public rand(_rand) {
+    function testFuzz_deposit_delegate_allocate_slashAndQueue_checkPoint_completeAsShares(uint24 _rand) public rand {
         Withdrawal[] memory withdrawals = _getQueuedWithdrawals(staker);
         _rollBlocksForCompleteWithdrawals(withdrawals);
         uint[] memory withdrawableShares = _calcWithdrawable(staker, strategies, initDepositShares);

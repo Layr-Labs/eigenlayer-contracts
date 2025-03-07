@@ -15,7 +15,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
     /// 5. delegate to a new operator
     /// 5. queueWithdrawal
     /// 7. complete their queued withdrawal as tokens
-    function testFuzz_deposit_delegate_reDelegate_completeAsTokens(uint24 _random) public rand(_random) {
+    function testFuzz_deposit_delegate_reDelegate_completeAsTokens(uint24 _random) public rand {
         /// 0. Create an operator and a staker with:
         // - some nonzero underlying token balances
         // - corresponding to a random number of strategies
@@ -81,7 +81,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
         }
     }
 
-    function testFuzz_deposit_delegate_reDelegate_completeAsShares(uint24 _random) public rand(_random) {
+    function testFuzz_deposit_delegate_reDelegate_completeAsShares(uint24 _random) public rand {
         /// 0. Create an operator and a staker with:
         // - some nonzero underlying token balances
         // - corresponding to a random number of strategies
@@ -152,7 +152,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
         );
     }
 
-    function testFuzz_deposit_delegate_reDelegate_depositAfterRedelegate(uint24 _random) public rand(_random) {
+    function testFuzz_deposit_delegate_reDelegate_depositAfterRedelegate(uint24 _random) public rand {
         _configAssetTypes(HOLDS_LST); // not holding ETH since we can only deposit 32 ETH multiples
 
         /// 0. Create an operator and a staker with:
@@ -237,7 +237,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
         }
     }
 
-    function testFuzz_deposit_delegate_reDelegate_depositBeforeRedelegate(uint24 _random) public rand(_random) {
+    function testFuzz_deposit_delegate_reDelegate_depositBeforeRedelegate(uint24 _random) public rand {
         _configAssetTypes(HOLDS_LST); // not holding ETH since we can only deposit 32 ETH multiples
 
         /// 0. Create an operator and a staker with:
@@ -328,7 +328,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
         }
     }
 
-    function testFuzz_deposit_delegate_undelegate_withdrawAsTokens_reDelegate_completeAsTokens(uint24 _random) public rand(_random) {
+    function testFuzz_deposit_delegate_undelegate_withdrawAsTokens_reDelegate_completeAsTokens(uint24 _random) public rand {
         /// 0. Create operators and a staker
         (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
         (User operator1,,) = _newRandomOperator();
@@ -396,7 +396,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
         }
     }
 
-    function testFuzz_deposit_delegate_undelegate_withdrawAsTokens_reDelegate_completeAsShares(uint24 _random) public rand(_random) {
+    function testFuzz_deposit_delegate_undelegate_withdrawAsTokens_reDelegate_completeAsShares(uint24 _random) public rand {
         /// 0. Create operators and a staker
         (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
         (User operator1,,) = _newRandomOperator();

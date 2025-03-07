@@ -44,7 +44,7 @@ contract Integration_Upgrade_EigenPod_Slashing_Migration is UpgradeTest, EigenPo
         eigenPodManager.unpause(0);
     }
 
-    function testFuzz_earnRewards_migrate_exit(uint24 _rand) public rand(_rand) {
+    function testFuzz_earnRewards_migrate_exit(uint24 _rand) public rand {
         // 2. Advance epoch, generating consensus rewards and withdrawing anything over 32 ETH
         beaconChain.advanceEpoch();
 
@@ -63,7 +63,7 @@ contract Integration_Upgrade_EigenPod_Slashing_Migration is UpgradeTest, EigenPo
         check_CompleteCheckpoint_WithExits_State(staker, subset, exitedBalanceGwei);
     }
 
-    function testFuzz_slash_migrate(uint24 _rand) public rand(_rand) {
+    function testFuzz_slash_migrate(uint24 _rand) public rand {
         // 2. Slash validators
         uint40[] memory subset = _choose(validators);
         uint64 slashedGwei = beaconChain.slashValidators(subset, BeaconChainMock.SlashType(_randUint({min: 0, max: 2})));

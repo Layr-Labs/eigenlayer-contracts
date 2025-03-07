@@ -57,7 +57,7 @@ contract Integration_SlashBC_OneBCSF is IntegrationChecks {
     }
 
     /// @notice Test that a staker can still verify WC, start/complete CP even if the operator has 1 magnitude remaining
-    function test_verifyWC_startCompleteCP(uint24 _r) public rand(_r) {
+    function test_verifyWC_startCompleteCP(uint24 _r) public rand {
         // 4. start validators and verify withdrawal credentials
         (validators, beaconBalanceGwei) = staker.startValidators(uint8(_randUint(1, 10)));
         beaconChain.advanceEpoch_NoRewards();
@@ -78,7 +78,7 @@ contract Integration_SlashBC_OneBCSF is IntegrationChecks {
 
     /// @notice Test that a staker is slashed to 0 BCSF from a minor slash and that they can't deposit more shares
     /// from their EigenPod (either through verifyWC or start/complete CP)
-    function test_slashFullyBC_revert_deposit(uint24 _r) public rand(_r) {
+    function test_slashFullyBC_revert_deposit(uint24 _r) public rand {
         // 4. slash validators on beacon chain (start/complete checkpoint)
         uint40[] memory slashedValidators = _choose(validators);
         slashedGwei = beaconChain.slashValidators(slashedValidators, BeaconChainMock.SlashType.Minor);
@@ -120,7 +120,7 @@ contract Integration_SlashBC_OneBCSF is IntegrationChecks {
      * 6. delegate to operator
      * 7. deposit expecting revert (randomly pick to verifyWC, start/complete CP)
      */
-    function test_slashAVS_delegate_revert_startCompleteCP(uint24 _r) public rand(_r) {
+    function test_slashAVS_delegate_revert_startCompleteCP(uint24 _r) public rand {
         // 4. Create an operator set and register an operator
         operatorSet = avs.createOperatorSet(strategies);
         operator.registerForOperatorSet(operatorSet);

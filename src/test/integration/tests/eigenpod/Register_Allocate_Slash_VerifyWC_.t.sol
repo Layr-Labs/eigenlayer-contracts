@@ -74,7 +74,7 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationChecks {
      * and calculating a non-WAD BCSF, their slashing factor should be rounded down to 0. Resulting in
      * the staker having 0 withdrawable shares.
      */
-    function test_slashBC_startCompleteCP_queue_complete(uint24 _r) public rand(_r) {
+    function test_slashBC_startCompleteCP_queue_complete(uint24 _r) public rand {
         // 4. slash validators on beacon chain (start/complete checkpoint)
         uint40[] memory slashedValidators = _choose(validators);
         slashedGwei = beaconChain.slashValidators(slashedValidators, BeaconChainMock.SlashType.Minor);
@@ -123,7 +123,7 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationChecks {
      * This is testing when an operator is fully slashed with 0 magnitude, the staker can still undelegate
      * and "redeposit" to Eigenlayer.
      */
-    function test_slash_undelegate_redeposit(uint24 _r) public rand(_r) {
+    function test_slash_undelegate_redeposit(uint24 _r) public rand {
         // 4. AVS slashes operator again to 0 magnitude and fully slashed
         SlashingParams memory slashParams = _genSlashing_Full(operator, operatorSet);
         slashParams.wadsToSlash[0] = WAD;
@@ -165,7 +165,7 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationChecks {
      * This is testing when an operator is fully slashed with 0 magnitude, the staker can still undelegate,
      * complete withdrawals as shares(0 shares though), and redeposit to Eigenlayer.
      */
-    function test_slash_undelegate_completeAsShares_startCompleteCP(uint24 _r) public rand(_r) {
+    function test_slash_undelegate_completeAsShares_startCompleteCP(uint24 _r) public rand {
         // 4. AVS slashes operator again to 0 magnitude and fully slashed
         SlashingParams memory slashParams = _genSlashing_Full(operator, operatorSet);
         slashParams.wadsToSlash[0] = WAD;
@@ -202,7 +202,7 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationChecks {
      * This is testing when an operator is fully slashed with 0 magnitude, the staker can still undelegate,
      * complete withdrawals as tokens(0 tokens though), and redeposit to Eigenlayer.
      */
-    function test_slash_undelegate_completeAsTokens_verifyWC(uint24 _r) public rand(_r) {
+    function test_slash_undelegate_completeAsTokens_verifyWC(uint24 _r) public rand {
         // 4. AVS slashes operator again to 0 magnitude and fully slashed
         SlashingParams memory slashParams = _genSlashing_Full(operator, operatorSet);
         slashParams.wadsToSlash[0] = WAD;
@@ -236,7 +236,7 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationChecks {
      * This is testing a staker can queue a withdrawal and complete as tokens even
      * though the operator has 1 maxMagnitude
      */
-    function test_queueAllShares_completeAsTokens(uint24 _r) public rand(_r) {
+    function test_queueAllShares_completeAsTokens(uint24 _r) public rand {
         // 4. queue withdrawal
         // ( , uint[] memory withdrawShares) = _randWithdrawal(strategies, initDepositShares);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, initDepositShares);

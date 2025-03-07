@@ -74,8 +74,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     address constant pauser = address(555);
     address constant unpauser = address(556);
 
-    // Randomness state vars
-    bytes32 random;
     // After calling `_configRand`, these are the allowed "variants" on users that will
     // be returned from `_randUser`.
     bytes assetTypes;
@@ -91,8 +89,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     /// _configUserTypes(...)
     ///
     /// (Alternatively, this modifier can be overwritten)
-    modifier rand(uint24 r) virtual {
-        _configRand({_randomSeed: r, _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL, _userTypes: DEFAULT | ALT_METHODS});
+    modifier rand() virtual {
+        _configRand({_assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL, _userTypes: DEFAULT | ALT_METHODS});
 
         // Used to create shared setups between tests
         _init();
@@ -456,11 +454,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         allTokens.push(underlyingToken);
     }
 
-    function _configRand(uint24 _randomSeed, uint _assetTypes, uint _userTypes) private noTracing {
-        // Using uint24 for the seed type so that if a test fails, it's easier
-        // to manually use the seed to replay the same test.
-        random = _hash(_randomSeed);
-
+    function _configRand(uint _assetTypes, uint _userTypes) private noTracing {
         // Convert flag bitmaps to bytes of set bits for easy use with _randUint
         _configAssetTypes(_assetTypes);
         _configUserTypes(_userTypes);
@@ -649,30 +643,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         }
     }
 
-    /// @dev Uses `random` to return a random uint, with a range given by `min` and `max` (inclusive)
-    /// @return `min` <= result <= `max`
     function _randUint(uint min, uint max) internal returns (uint) {
-        uint range = max - min + 1;
-
-        // calculate the number of bits needed for the range
-        uint bitsNeeded = 0;
-        uint tempRange = range;
-        while (tempRange > 0) {
-            bitsNeeded++;
-            tempRange >>= 1;
-        }
-
-        // create a mask for the required number of bits
-        // and extract the value from the hash
-        uint mask = (1 << bitsNeeded) - 1;
-        uint value = uint(random) & mask;
-
-        // in case value is out of range, wrap around or retry
-        while (value >= range) value = (value - range) & mask;
-
-        // Hash `random` with itself so the next value we generate is different
-        random = _hash(uint(random));
-        return min + value;
+        return vm.randomUint(min, max);
     }
 
     function _randBool() internal returns (bool) {
@@ -741,10 +713,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     }
 
     function _hash(string memory x) internal pure returns (bytes32) {
-        return keccak256(abi.encodePacked(x));
-    }
-
-    function _hash(uint x) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked(x));
     }
 }

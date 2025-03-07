@@ -1917,14 +1917,6 @@ abstract contract IntegrationBase is IntegrationGetters {
      *
      */
 
-    /// @dev Fetches the opreator's allocation delay; asserts that it is set
-    function _getExistingAllocationDelay(User operator) internal view returns (uint32) {
-        (bool isSet, uint32 delay) = allocationManager.getAllocationDelay(address(operator));
-        assertTrue(isSet, "_getExistingAllocationDelay: expected allocation delay to be set");
-
-        return delay;
-    }
-
     /// @dev Generate params to allocate all available magnitude to each strategy in the operator set
     function _genAllocation_AllAvailable(User operator, OperatorSet memory operatorSet)
         internal

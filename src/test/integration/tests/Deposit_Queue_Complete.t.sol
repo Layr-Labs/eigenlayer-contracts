@@ -9,7 +9,7 @@ contract Integration_Deposit_QueueWithdrawal_Complete is IntegrationChecks {
     /// 1. deposit into strategy
     /// 2. queueWithdrawal
     /// 3. completeQueuedWithdrawal"
-    function testFuzz_deposit_queueWithdrawal_completeAsTokens(uint24 _random) public rand(_random) {
+    function testFuzz_deposit_queueWithdrawal_completeAsTokens(uint24 _random) public rand {
         // Create a staker with a nonzero balance and corresponding strategies
         (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
 
@@ -36,7 +36,7 @@ contract Integration_Deposit_QueueWithdrawal_Complete is IntegrationChecks {
         assertFalse(delegationManager.isDelegated(address(staker)), "Staker should still not be delegated after withdrawal");
     }
 
-    function testFuzz_deposit_queueWithdrawal_completeAsShares(uint24 _random) public rand(_random) {
+    function testFuzz_deposit_queueWithdrawal_completeAsShares(uint24 _random) public rand {
         // Create a staker with a nonzero balance and corresponding strategies
         (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
 

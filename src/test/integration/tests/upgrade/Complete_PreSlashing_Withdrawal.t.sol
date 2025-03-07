@@ -64,7 +64,7 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal_Base is UpgradeTest
 }
 
 contract Integration_Upgrade_Complete_PreSlashing_Withdrawal is Integration_Upgrade_Complete_PreSlashing_Withdrawal_Base {
-    function testFuzz_deposit_queue_upgrade_complete(uint24 r) public rand(r) {
+    function testFuzz_deposit_queue_upgrade_complete(uint24 r) public rand {
         TestState memory state = _init_({withOperator: false, withDelegation: false});
         state.withdrawals = state.staker.queueWithdrawals(state.strategies, state.withdrawalShares);
         _upgradeEigenLayerContracts();
@@ -72,7 +72,7 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal is Integration_Upgr
         _completeWithdrawal(state);
     }
 
-    function testFuzz_delegate_deposit_queue_upgrade_complete(uint24 r) public rand(r) {
+    function testFuzz_delegate_deposit_queue_upgrade_complete(uint24 r) public rand {
         TestState memory state = _init_({withOperator: true, withDelegation: true});
         state.withdrawals = state.staker.queueWithdrawals(state.strategies, state.withdrawalShares);
         _upgradeEigenLayerContracts();
@@ -80,7 +80,7 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal is Integration_Upgr
         _completeWithdrawal(state);
     }
 
-    function testFuzz_upgrade_delegate_queuePartial_complete(uint24 r) public rand(r) {
+    function testFuzz_upgrade_delegate_queuePartial_complete(uint24 r) public rand {
         TestState memory state = _init_({withOperator: true, withDelegation: false});
         _upgradeEigenLayerContracts();
         state.staker.delegateTo(state.operator);
@@ -89,7 +89,7 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal is Integration_Upgr
         _completeWithdrawal(state);
     }
 
-    function testFuzz_delegate_deposit_queue_completeBeforeUpgrade(uint24 r) public rand(r) {
+    function testFuzz_delegate_deposit_queue_completeBeforeUpgrade(uint24 r) public rand {
         TestState memory state = _init_({withOperator: true, withDelegation: true});
         state.withdrawals = state.staker.queueWithdrawals(state.strategies, state.withdrawalShares);
         _rollBlocksForCompleteWithdrawals(state.withdrawals);
@@ -131,7 +131,7 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal_Slash is Integratio
         _rollBlocksForCompleteAllocation(state.operator, operatorSet, state.strategies);
     }
 
-    function testFuzz_delegate_deposit_queue_upgrade_slashFully_revertCompleteAsShares(uint24 r) public rand(r) {
+    function testFuzz_delegate_deposit_queue_upgrade_slashFully_revertCompleteAsShares(uint24 r) public rand {
         TestState memory state = _init_({withOperator: true, withDelegation: true});
 
         // Slash operator by AVS
@@ -146,7 +146,7 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal_Slash is Integratio
         state.staker.completeWithdrawalsAsShares(state.withdrawals);
     }
 
-    function testFuzz_delegate_deposit_queue_upgrade_slashFully_completeAsTokens(uint24 r) public rand(r) {
+    function testFuzz_delegate_deposit_queue_upgrade_slashFully_completeAsTokens(uint24 r) public rand {
         TestState memory state = _init_({withOperator: true, withDelegation: true});
 
         // Slash operator by AVS
@@ -160,7 +160,7 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal_Slash is Integratio
         _completeWithdrawal(state);
     }
 
-    function testFuzz_delegate_deposit_queue_upgrade_slash_completeAsShares(uint24 r) public rand(r) {
+    function testFuzz_delegate_deposit_queue_upgrade_slash_completeAsShares(uint24 r) public rand {
         TestState memory state = _init_({withOperator: true, withDelegation: true});
 
         // Slash operator by AVS
@@ -175,7 +175,7 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal_Slash is Integratio
         _completeWithdrawal(state);
     }
 
-    function testFuzz_delegate_deposit_queue_upgrade_slash_completeAsTokens(uint24 r) public rand(r) {
+    function testFuzz_delegate_deposit_queue_upgrade_slash_completeAsTokens(uint24 r) public rand {
         TestState memory state = _init_({withOperator: true, withDelegation: true});
 
         // Slash operator by AVS

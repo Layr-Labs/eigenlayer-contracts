@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.27;
 
 import "src/test/integration/TypeImporter.t.sol";
 import "src/test/integration/IntegrationDeployer.t.sol";
@@ -640,5 +640,13 @@ contract IntegrationGetters is IntegrationDeployer, TypeImporter {
     function _getQueuedWithdrawals(User staker) internal view returns (Withdrawal[] memory) {
         (Withdrawal[] memory withdrawals,) = delegationManager.getQueuedWithdrawals(address(staker));
         return withdrawals;
+    }
+
+    /// @dev Fetches the opreator's allocation delay; asserts that it is set
+    function _getExistingAllocationDelay(User operator) internal view returns (uint32) {
+        (bool isSet, uint32 delay) = allocationManager.getAllocationDelay(address(operator));
+        assertTrue(isSet, "_getExistingAllocationDelay: expected allocation delay to be set");
+
+        return delay;
     }
 }
