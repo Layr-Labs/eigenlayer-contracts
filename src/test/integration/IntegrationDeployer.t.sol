@@ -511,27 +511,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         return (user, tokenBalances);
     }
 
-    /// @dev Create a new user without native ETH. See _randUser above for standard usage
-    function _randUser_NoETH(string memory name) internal noTracing returns (User, IStrategy[] memory, uint[] memory) {
-        // Deploy new User contract
-        uint userType = _randUserType();
-        User user = _genRandUser(name, userType);
-
-        // Pick the user's asset distribution, removing "native ETH" as an option
-        // I'm sorry if this eventually leads to a bug that's really hard to track down
-        uint assetType = _randAssetType();
-        if (assetType == HOLDS_ETH) assetType = NO_ASSETS;
-        else if (assetType == HOLDS_ALL || assetType == HOLDS_MAX) assetType = HOLDS_LST;
-
-        // For the specific asset selection we made, get a random assortment of strategies
-        // and deal the user some corresponding underlying token balances
-        IStrategy[] memory strategies = _selectRandAssets(assetType);
-        uint[] memory tokenBalances = _dealRandAmounts(user, strategies);
-
-        print.user(name, assetType, userType, strategies, tokenBalances);
-        return (user, strategies, tokenBalances);
-    }
-
     /// @dev Creates a new user without any assets
     function _randUser_NoAssets(string memory name) internal noTracing returns (User) {
         // Deploy new User contract
@@ -679,24 +658,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         }
 
         return strats;
-    }
-
-    function _randomStrategies() internal returns (IStrategy[][] memory strategies) {
-        uint numOpSets = _randUint({min: 1, max: 5});
-
-        strategies = new IStrategy[][](numOpSets);
-
-        for (uint i; i < numOpSets; ++i) {
-            IStrategy[] memory randomStrategies = _shuffle(allStrats);
-            uint numStrategies = _randUint({min: 1, max: maxUniqueAssetsHeld});
-
-            // Modify the length of the array in memory (thus ignoring remaining elements).
-            assembly {
-                mstore(randomStrategies, numStrategies)
-            }
-
-            strategies[i] = randomStrategies;
-        }
     }
 
     /**
