@@ -27,9 +27,7 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
     IBeacon public eigenPodBeacon;
 
     // BeaconChain Mock Setup
-    TimeMachine public timeMachine;
     ETHPOSDepositMock ethPOSDepositMock;
-    BeaconChainMock public beaconChain;
     EIP_4788_Oracle_Mock constant EIP_4788_ORACLE = EIP_4788_Oracle_Mock(0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02);
 
     uint public numStakers;
@@ -52,8 +50,9 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
         // beaconChainMock will also etch 4788 precompile
         ethPOSDepositMock = new ETHPOSDepositMock();
         cheats.warp(GENESIS_TIME_LOCAL);
-        timeMachine = new TimeMachine();
-        beaconChain = new BeaconChainMock();
+
+        cheats.etch(address(timeMachine), type(TimeMachine).runtimeCode);
+        cheats.etch(address(beaconChain), type(BeaconChainMock).runtimeCode);
         beaconChain.initialize(EigenPodManager(address(eigenPodManagerMock)), GENESIS_TIME_LOCAL);
 
         // Deploy EigenPod
