@@ -1,4 +1,4 @@
-name: Certora Prover Workflow
+name: Certora
 
 on:
   # Run when PRs from feat/* branches are merged into dev
@@ -21,6 +21,7 @@ on:
 
 jobs:
   compile:
+    name: Compile
     # Run if it meets one of these conditions:
     # 1. It's a merged PR from a feat/* branch to dev
     # 2. It's a push to a certora/* branch
@@ -67,6 +68,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   verify:
+    name: Verify
     runs-on: ubuntu-latest
     needs: compile
     # Same conditions as the compile job
