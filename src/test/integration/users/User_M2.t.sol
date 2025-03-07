@@ -3,10 +3,10 @@ pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
 
-import "src/test/integration/deprecatedInterfaces/mainnet/IEigenPod.sol";
-import "src/test/integration/deprecatedInterfaces/mainnet/IEigenPodManager.sol";
-import "src/test/integration/deprecatedInterfaces/mainnet/IStrategyManager.sol";
-import "src/test/integration/deprecatedInterfaces/mainnet/IDelegationManager.sol";
+import "src/test/integration/deprecated/mainnet/IEigenPod.sol";
+import "src/test/integration/deprecated/mainnet/IEigenPodManager.sol";
+import "src/test/integration/deprecated/mainnet/IStrategyManager.sol";
+import "src/test/integration/deprecated/mainnet/IDelegationManager.sol";
 
 import "src/test/integration/users/User.t.sol";
 import "src/test/integration/mocks/BeaconChainMock.t.sol";

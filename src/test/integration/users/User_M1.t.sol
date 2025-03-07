@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "src/test/integration/deprecatedInterfaces/mainnet/IEigenPod.sol";
-import "src/test/integration/deprecatedInterfaces/mainnet/IEigenPodManager.sol";
-import "src/test/integration/deprecatedInterfaces/mainnet/IStrategyManager.sol";
+import "src/test/integration/deprecated/mainnet/IEigenPod.sol";
+import "src/test/integration/deprecated/mainnet/IEigenPodManager.sol";
+import "src/test/integration/deprecated/mainnet/IStrategyManager.sol";
 import "src/test/integration/users/User.t.sol";
 import "src/contracts/mixins/SignatureUtilsMixin.sol";
 
