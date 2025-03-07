@@ -9,7 +9,7 @@ import "src/test/integration/deprecated/mainnet/IStrategyManager.sol";
 import "src/test/integration/deprecated/mainnet/IDelegationManager.sol";
 
 import "src/test/integration/users/User.t.sol";
-import "src/test/integration/mocks/BeaconChainMock.t.sol";
+import "src/test/mocks/BeaconChainMock.t.sol";
 
 import "src/test/utils/Logger.t.sol";
 import "src/test/utils/ArrayLib.sol";

@@ -10,7 +10,7 @@ import "src/contracts/core/StrategyManager.sol";
 import "src/contracts/pods/EigenPodManager.sol";
 import "src/contracts/pods/EigenPod.sol";
 
-import "src/test/integration/mocks/BeaconChainMock.t.sol";
+import "src/test/mocks/BeaconChainMock.t.sol";
 
 import "src/test/utils/Logger.t.sol";
 import "src/test/utils/ArrayLib.sol";

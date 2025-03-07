@@ -13,8 +13,8 @@ import "src/test/harnesses/EigenPodHarness.sol";
 import "src/test/utils/ProofParsing.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
 
-import "src/test/integration/mocks/BeaconChainMock.t.sol";
-import "src/test/integration/mocks/EIP_4788_Oracle_Mock.t.sol";
+import "src/test/mocks/BeaconChainMock.t.sol";
+import "src/test/mocks/EIP_4788_Oracle_Mock.t.sol";
 import "src/test/utils/EigenPodUser.t.sol";
 
 contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants, IEigenPodEvents {

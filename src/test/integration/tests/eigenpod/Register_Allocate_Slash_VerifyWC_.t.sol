@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "src/test/integration/mocks/BeaconChainMock.t.sol";
+import "src/test/mocks/BeaconChainMock.t.sol";
 import "src/test/integration/IntegrationChecks.t.sol";
 
 /// @notice Testing the rounding behavior when operator magnitude is initially 1

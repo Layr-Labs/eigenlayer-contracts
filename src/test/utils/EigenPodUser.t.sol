@@ -8,7 +8,7 @@ import "src/contracts/pods/EigenPod.sol";
 
 import "src/contracts/interfaces/IStrategy.sol";
 
-import "src/test/integration/mocks/BeaconChainMock.t.sol";
+import "src/test/mocks/BeaconChainMock.t.sol";
 
 import "src/test/utils/Logger.t.sol";
 import "src/test/utils/TimeMachine.t.sol";

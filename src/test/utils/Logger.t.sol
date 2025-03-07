@@ -9,7 +9,7 @@ import "src/contracts/interfaces/IStrategy.sol";
 import {IAllocationManagerTypes} from "src/contracts/interfaces/IAllocationManager.sol";
 
 import "src/test/utils/TimeMachine.t.sol";
-import "src/test/integration/mocks/BeaconChainMock.t.sol";
+import "src/test/mocks/BeaconChainMock.t.sol";
 
 import "src/test/utils/Constants.t.sol";
 

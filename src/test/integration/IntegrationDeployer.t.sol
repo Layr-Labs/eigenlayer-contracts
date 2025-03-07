@@ -12,7 +12,7 @@ import "src/test/integration/users/AVS.t.sol";
 import "src/test/integration/users/User.t.sol";
 import "src/test/integration/users/User_M1.t.sol";
 import "src/test/integration/users/User_M2.t.sol";
-import "src/test/integration/mocks/BeaconChainMock.t.sol";
+import "src/test/mocks/BeaconChainMock.t.sol";
 
 import "src/test/mocks/EmptyContract.sol";
 import "src/test/utils/Constants.t.sol";
