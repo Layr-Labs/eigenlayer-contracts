@@ -1,90 +1,60 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-// Imports
 import "forge-std/Test.sol";
+import {MockERC20} from "forge-std/mocks/MockERC20.sol";
 
-import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
-
-import "src/test/mocks/EmptyContract.sol";
-import "src/test/integration/mocks/BeaconChainMock.t.sol";
 
 import "src/test/integration/users/AVS.t.sol";
 import "src/test/integration/users/User.t.sol";
 import "src/test/integration/users/User_M1.t.sol";
 import "src/test/integration/users/User_M2.t.sol";
+import "src/test/integration/mocks/BeaconChainMock.t.sol";
+
+import "src/test/mocks/EmptyContract.sol";
+import "src/test/utils/Constants.t.sol";
 
 import "script/utils/ExistingDeploymentParser.sol";
-
-IStrategy constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 
 abstract contract IntegrationDeployer is ExistingDeploymentParser {
     using StdStyle for *;
     using ArrayLib for *;
 
-    // Fork ids for specific fork tests
-    bool isUpgraded;
-    uint mainnetForkBlock = 21_616_692; // Post Protocol Council upgrade
+    /// -----------------------------------------------------------------------
+    /// State
+    /// -----------------------------------------------------------------------
 
-    string version = "v9.9.9";
+    /// @notice Returns the genesis time for the beacon chain. Depends on the fork type.
+    uint64 public BEACON_GENESIS_TIME;
 
-    // Beacon chain genesis time when running locally
-    // Multiple of 12 for sanity's sake
-    uint64 constant GENESIS_TIME_LOCAL = 1 hours * 12;
-    uint64 constant GENESIS_TIME_MAINNET = 1_606_824_023;
-    uint64 BEACON_GENESIS_TIME; // set after forkType is decided
+    /// @notice Returns whether the contracts have been upgraded or not.
+    bool public isUpgraded;
+    /// @notice Returns the allowed asset types for the tests.
+    bytes public assetTypes;
+    /// @notice Returns types of users to be randomly selected during tests
+    bytes public userTypes;
+    /// @notice Returns the fork type, set only once in setUp if FORK_MAINNET env is set
+    uint public forkType;
 
-    // Beacon chain deposit contract. The BeaconChainMock contract etchs ETHPOSDepositMock code here.
-    IETHPOSDeposit constant DEPOSIT_CONTRACT = IETHPOSDeposit(0x00000000219ab540356cBB839Cbe05303d7705Fa);
+    /// @notice Returns an array of deployed LST strategies.
+    IStrategy[] public lstStrats;
+    /// @notice Returns an array of all deployed strategies.
+    IStrategy[] public allStrats;
+    /// @notice Returns an array of all underlying tokens corresponding to strategies in `allStrats`.
+    IERC20[] public allTokens;
 
-    uint8 constant NUM_LST_STRATS = 32;
-    // Lists of strategies used in the system
-    //
-    // When we select random user assets, we use the `assetType` to determine
-    // which of these lists to select user assets from.
-    IStrategy[] lstStrats;
-    IStrategy[] ethStrats; // only has one strat tbh
-    IStrategy[] allStrats; // just a combination of the above 2 lists
-    IERC20[] allTokens; // `allStrats`, but contains all of the underlying tokens instead
-    uint maxUniqueAssetsHeld;
-
-    // If a token is in this mapping, then we will ignore this LST as it causes issues with reading balanceOf
+    /// @notice Returns the maximum number of unique assets a user holds.
+    uint public maxUniqueAssetsHeld;
+    /// @dev Returns true if a token should be excluded from testing
+    /// If a token is in this mapping, we will ignore this LST as it causes issues with reading balanceOf
     mapping(address => bool) public tokensNotTested;
 
-    // Mock Contracts to deploy
-    TimeMachine public constant timeMachine = TimeMachine(address(0x000000000000000074696D65206D616368696e65)); // bytes("time machine")
-    BeaconChainMock public constant beaconChain = BeaconChainMock(address(0x0000000000000000626561636f6e636861696e6D6f636b)); // bytes("beacon chain")
-
-    // Admin Addresses
-    address constant pauser = address(555);
-    address constant unpauser = address(556);
-
-    // After calling `_configRand`, these are the allowed "variants" on users that will
-    // be returned from `_randUser`.
-    bytes assetTypes;
-    bytes userTypes;
-    // Set only once in setUp, if FORK_MAINNET env is set
-    uint forkType;
-
-    /// @dev used to configure randomness and default user/asset types
-    ///
-    /// Tests that want alternate user/asset types can still use this modifier,
-    /// and then configure user/asset types individually using the methods:
-    /// _configAssetTypes(...)
-    /// _configUserTypes(...)
-    ///
-    /// (Alternatively, this modifier can be overwritten)
-    modifier rand() virtual {
-        _configRand({_assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL, _userTypes: DEFAULT | ALT_METHODS});
-
-        // Used to create shared setups between tests
-        _init();
-
-        _;
-    }
+    /// -----------------------------------------------------------------------
+    /// Setup
+    /// -----------------------------------------------------------------------
 
     constructor() {
         address stETH_Holesky = 0x3F1c547b21f65e10480dE3ad8E19fAAC46C95034;
@@ -105,10 +75,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         isUpgraded = true;
     }
 
-    function NAME() public view virtual override returns (string memory) {
-        return "Integration Deployer";
-    }
-
     /**
      * @dev Anyone who wants to test using this contract in a separate repo via submodules may have to
      * override this function to set the correct paths for the deployment info files.
@@ -117,6 +83,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
      * Note that forkIds are also created so you can make explicit fork tests using cheats.selectFork(forkId)
      */
     function setUp() public virtual {
+        SEMVER = "v9.9.9";
+
         bool forkMainnet = isForktest();
 
         if (forkMainnet) {
@@ -126,6 +94,27 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             forkType = LOCAL;
             _setUpLocal();
         }
+    }
+
+    /// -----------------------------------------------------------------------
+    /// Helpers
+    /// -----------------------------------------------------------------------
+
+    /// @dev used to configure randomness and default user/asset types
+    ///
+    /// Tests that want alternate user/asset types can still use this modifier,
+    /// and then configure user/asset types individually using the methods:
+    /// _configAssetTypes(...)
+    /// _configUserTypes(...)
+    ///
+    /// (Alternatively, this modifier can be overwritten)
+    modifier rand() virtual {
+        _configRand({_assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL, _userTypes: DEFAULT | ALT_METHODS});
+
+        // Used to create shared setups between tests
+        _init();
+
+        _;
     }
 
     /// @dev Used to create shared setup between tests. This method is called
@@ -154,8 +143,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
         // Deploy PauserRegistry
         address[] memory pausers = new address[](1);
-        pausers[0] = pauser;
-        eigenLayerPauserReg = new PauserRegistry(pausers, unpauser);
+        pausers[0] = PAUSER;
+        eigenLayerPauserReg = new PauserRegistry(pausers, UNPAUSER);
 
         // Deploy mocks
         emptyContract = new EmptyContract();
@@ -179,7 +168,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         // Place native ETH first in `allStrats`
         // This ensures when we select a nonzero number of strategies from this array, we always
         // have beacon chain ETH
-        ethStrats.push(BEACONCHAIN_ETH_STRAT);
         allStrats.push(BEACONCHAIN_ETH_STRAT);
         allTokens.push(NATIVE_ETH);
 
@@ -198,10 +186,10 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         cheats.warp(BEACON_GENESIS_TIME);
         cheats.roll(10_000);
 
-        vm.etch(address(timeMachine), type(TimeMachine).runtimeCode);
-        vm.etch(address(beaconChain), type(BeaconChainMock).runtimeCode);
-        vm.allowCheatcodes(address(timeMachine));
-        vm.allowCheatcodes(address(beaconChain));
+        cheats.etch(address(timeMachine), type(TimeMachine).runtimeCode);
+        cheats.etch(address(beaconChain), type(BeaconChainMock).runtimeCode);
+        cheats.allowCheatcodes(address(timeMachine));
+        cheats.allowCheatcodes(address(beaconChain));
         beaconChain.initialize(eigenPodManager, BEACON_GENESIS_TIME);
     }
 
@@ -209,9 +197,9 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     function _setUpMainnet() public virtual noTracing {
         console.log("Setting up `%s` integration tests:", "MAINNET_FORK".green().bold());
         console.log("RPC:", cheats.rpcUrl("mainnet"));
-        console.log("Block:", mainnetForkBlock);
+        console.log("Block:", MAINNET_FORK_BLOCK);
 
-        cheats.createSelectFork(cheats.rpcUrl("mainnet"), mainnetForkBlock);
+        cheats.createSelectFork(cheats.rpcUrl("mainnet"), MAINNET_FORK_BLOCK);
 
         string memory deploymentInfoPath = "script/configs/mainnet/mainnet-addresses.config.json";
         _parseDeployedContracts(deploymentInfoPath);
@@ -221,7 +209,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         // Place native ETH first in `allStrats`
         // This ensures when we select a nonzero number of strategies from this array, we always
         // have beacon chain ETH
-        ethStrats.push(BEACONCHAIN_ETH_STRAT);
         allStrats.push(BEACONCHAIN_ETH_STRAT);
         allTokens.push(NATIVE_ETH);
 
@@ -241,10 +228,10 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
         // Create time machine and mock beacon chain
         BEACON_GENESIS_TIME = GENESIS_TIME_MAINNET;
-        vm.etch(address(timeMachine), type(TimeMachine).runtimeCode);
-        vm.etch(address(beaconChain), type(BeaconChainMock).runtimeCode);
-        vm.allowCheatcodes(address(timeMachine));
-        vm.allowCheatcodes(address(beaconChain));
+        cheats.etch(address(timeMachine), type(TimeMachine).runtimeCode);
+        cheats.etch(address(beaconChain), type(BeaconChainMock).runtimeCode);
+        cheats.allowCheatcodes(address(timeMachine));
+        cheats.allowCheatcodes(address(beaconChain));
         beaconChain.initialize(eigenPodManager, BEACON_GENESIS_TIME);
 
         // Since we haven't done the slashing upgrade on mainnet yet, upgrade mainnet contracts
@@ -299,9 +286,9 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     /// Deploy an implementation contract for each contract in the system
     function _deployImplementations() public {
         allocationManagerImplementation = new AllocationManager(
-            delegationManager, eigenLayerPauserReg, permissionController, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY, version
+            delegationManager, eigenLayerPauserReg, permissionController, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY, SEMVER
         );
-        permissionControllerImplementation = new PermissionController(version);
+        permissionControllerImplementation = new PermissionController(SEMVER);
         delegationManagerImplementation = new DelegationManager(
             strategyManager,
             eigenPodManager,
@@ -309,9 +296,9 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             eigenLayerPauserReg,
             permissionController,
             DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS,
-            version
+            SEMVER
         );
-        strategyManagerImplementation = new StrategyManager(delegationManager, eigenLayerPauserReg, version);
+        strategyManagerImplementation = new StrategyManager(delegationManager, eigenLayerPauserReg, SEMVER);
         rewardsCoordinatorImplementation = new RewardsCoordinator(
             IRewardsCoordinatorTypes.RewardsCoordinatorConstructorParams({
                 delegationManager: delegationManager,
@@ -324,10 +311,10 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
                 MAX_RETROACTIVE_LENGTH: REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH,
                 MAX_FUTURE_LENGTH: REWARDS_COORDINATOR_MAX_FUTURE_LENGTH,
                 GENESIS_REWARDS_TIMESTAMP: REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP,
-                version: version
+                version: SEMVER
             })
         );
-        avsDirectoryImplementation = new AVSDirectory(delegationManager, eigenLayerPauserReg, version);
+        avsDirectoryImplementation = new AVSDirectory(delegationManager, eigenLayerPauserReg, SEMVER);
         eigenPodManagerImplementation =
             new EigenPodManager(DEPOSIT_CONTRACT, eigenPodBeacon, delegationManager, eigenLayerPauserReg, "v9.9.9");
         strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg, "v9.9.9");
@@ -413,7 +400,10 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         internal
         noTracing
     {
-        IERC20 underlyingToken = new ERC20PresetFixedSupply(tokenName, tokenSymbol, initialSupply, owner);
+        MockERC20 token = new MockERC20();
+        token.initialize(tokenName, tokenSymbol, 18);
+        IERC20 underlyingToken = IERC20(address(token));
+        deal(address(underlyingToken), address(owner), initialSupply);
 
         StrategyBase strategy;
 
@@ -547,7 +537,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         if (assetType == NO_ASSETS) return new IStrategy[](0);
 
         /// Select only ETH
-        if (assetType == HOLDS_ETH) return beaconChainETHStrategy.toArray();
+        if (assetType == HOLDS_ETH) return BEACONCHAIN_ETH_STRAT.toArray();
 
         /// Select multiple LSTs, and maybe add ETH:
 
@@ -564,7 +554,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             if (assetType == HOLDS_LST) {
                 strategies[i] = lstStrats[i];
             } else {
-                // allStrats[0] is the beaconChainETHStrategy
+                // allStrats[0] is the BEACONCHAIN_ETH_STRAT
                 strategies[i] = allStrats[i];
             }
         }
@@ -613,19 +603,19 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     }
 
     function _randUint(uint min, uint max) internal returns (uint) {
-        return vm.randomUint(min, max);
+        return cheats.randomUint(min, max);
     }
 
     function _randBool() internal returns (bool) {
-        return vm.randomBool();
+        return cheats.randomBool();
     }
 
     function _randAssetType() internal returns (uint assetType) {
-        return uint(uint8(assetTypes[vm.randomUint({min: 0, max: assetTypes.length - 1})]));
+        return uint(uint8(assetTypes[cheats.randomUint({min: 0, max: assetTypes.length - 1})]));
     }
 
     function _randUserType() internal returns (uint) {
-        return uint(uint8(userTypes[vm.randomUint({min: 0, max: userTypes.length - 1})]));
+        return uint(uint8(userTypes[cheats.randomUint({min: 0, max: userTypes.length - 1})]));
     }
 
     function _parseAssetTypes(uint bitmap) internal pure returns (bytes memory bytesArray) {
@@ -643,5 +633,9 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
     function _hash(string memory x) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked(x));
+    }
+
+    function NAME() public view virtual override returns (string memory) {
+        return "Integration Deployer";
     }
 }

@@ -12,6 +12,7 @@ import "src/test/integration/mocks/BeaconChainMock.t.sol";
 
 import "src/test/utils/Logger.t.sol";
 import "src/test/utils/TimeMachine.t.sol";
+import "src/test/utils/Constants.t.sol";
 
 struct Validator {
     uint40 index;
@@ -24,8 +25,6 @@ interface IUserDeployer {
 }
 
 contract EigenPodUser is Logger {
-    TimeMachine timeMachine;
-    BeaconChainMock beaconChain;
     IBeacon public eigenPodBeacon;
 
     string _NAME;
@@ -39,10 +38,8 @@ contract EigenPodUser is Logger {
 
     constructor(string memory name) {
         IUserDeployer deployer = IUserDeployer(msg.sender);
-
-        timeMachine = deployer.timeMachine();
-        beaconChain = deployer.beaconChain();
         eigenPodBeacon = deployer.eigenPodBeacon();
+
         pod = EigenPod(
             payable(
                 Create2.deploy(

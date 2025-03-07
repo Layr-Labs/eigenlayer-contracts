@@ -14,6 +14,8 @@ import "src/test/utils/Logger.t.sol";
 import "src/test/utils/ArrayLib.sol";
 import "src/contracts/interfaces/IAVSRegistrar.sol";
 
+import "src/test/utils/Constants.t.sol";
+
 interface IAVSDeployer {
     function delegationManager() external view returns (DelegationManager);
     function allocationManager() external view returns (AllocationManager);
@@ -24,9 +26,6 @@ interface IAVSDeployer {
 contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
     using print for *;
     using ArrayLib for *;
-
-    IStrategy constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
-    TimeMachine constant timeMachine = TimeMachine(address(0x000000000000000074696D65206D616368696e65));
 
     // TODO: fix later for same reason as User.t.sol
     AllocationManager immutable allocationManager;
@@ -110,7 +109,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
 
     function slashOperator(SlashingParams memory params) public createSnapshot {
         for (uint i; i < params.strategies.length; ++i) {
-            string memory strategyName = params.strategies[i] == beaconChainETHStrategy
+            string memory strategyName = params.strategies[i] == BEACONCHAIN_ETH_STRAT
                 ? "Native ETH"
                 : IERC20Metadata(address(params.strategies[i].underlyingToken())).name();
 
@@ -150,7 +149,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
 
         for (uint i; i < strategies.length; ++i) {
             string memory strategyName =
-                strategies[i] == beaconChainETHStrategy ? "Native ETH" : IERC20Metadata(address(strategies[i].underlyingToken())).name();
+                strategies[i] == BEACONCHAIN_ETH_STRAT ? "Native ETH" : IERC20Metadata(address(strategies[i].underlyingToken())).name();
 
             print.method(
                 "slashOperator",
