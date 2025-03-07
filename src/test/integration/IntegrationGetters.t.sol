@@ -176,7 +176,7 @@ contract IntegrationGetters is IntegrationDeployer, TypeImporter {
         uint[] memory burnableShares = new uint[](strategies.length);
 
         for (uint i = 0; i < strategies.length; i++) {
-            if (strategies[i] == beaconChainETHStrategy) burnableShares[i] = eigenPodManager.burnableETHShares();
+            if (strategies[i] == BEACONCHAIN_ETH_STRAT) burnableShares[i] = eigenPodManager.burnableETHShares();
             else burnableShares[i] = strategyManager.getBurnableShares(strategies[i]);
         }
 
@@ -409,7 +409,7 @@ contract IntegrationGetters is IntegrationDeployer, TypeImporter {
         uint64[] memory maxMagnitudes = allocationManager.getMaxMagnitudes(operator, strategies);
         uint[] memory slashingFactors = new uint[](strategies.length);
         for (uint i = 0; i < strategies.length; i++) {
-            if (strategies[i] == beaconChainETHStrategy) {
+            if (strategies[i] == BEACONCHAIN_ETH_STRAT) {
                 slashingFactors[i] = maxMagnitudes[i].mulWad(eigenPodManager.beaconChainSlashingFactor(address(staker)));
             } else {
                 slashingFactors[i] = maxMagnitudes[i];
@@ -627,7 +627,7 @@ contract IntegrationGetters is IntegrationDeployer, TypeImporter {
     function _getSlashingFactor(User staker, IStrategy strategy) internal view returns (uint) {
         address operator = delegationManager.delegatedTo(address(staker));
         uint64 maxMagnitude = allocationManager.getMaxMagnitudes(operator, strategy.toArray())[0];
-        if (strategy == beaconChainETHStrategy) return maxMagnitude.mulWad(eigenPodManager.beaconChainSlashingFactor(address(staker)));
+        if (strategy == BEACONCHAIN_ETH_STRAT) return maxMagnitude.mulWad(eigenPodManager.beaconChainSlashingFactor(address(staker)));
         return maxMagnitude;
     }
 

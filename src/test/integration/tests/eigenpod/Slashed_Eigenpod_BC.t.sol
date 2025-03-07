@@ -731,7 +731,7 @@ contract Integration_SlashedEigenpod_BC_HalfSlash is IntegrationChecks {
         // Staker deposit shares should be 0 from queue withdrawing all depositShares
         // therefore the depositScalingFactor should also be reset WAD
         assertEq(eigenPodManager.podOwnerDepositShares(address(staker)), 0);
-        assertEq(delegationManager.depositScalingFactor(address(staker), beaconChainETHStrategy), WAD);
+        assertEq(delegationManager.depositScalingFactor(address(staker), BEACONCHAIN_ETH_STRAT), WAD);
 
         // 6. deposit: can either verify wc or start/complete cp or complete the withdrawals as shares
         _rollBlocksForCompleteWithdrawals(withdrawals);

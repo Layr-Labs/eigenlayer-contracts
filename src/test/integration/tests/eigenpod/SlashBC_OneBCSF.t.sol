@@ -141,7 +141,7 @@ contract Integration_SlashBC_OneBCSF is IntegrationChecks {
         check_Base_Slashing_State(operator, allocateParams, slashParams);
 
         // assert operator has 1 magnitude remaining
-        assertEq(allocationManager.getMaxMagnitude(address(operator), beaconChainETHStrategy), 1);
+        assertEq(allocationManager.getMaxMagnitude(address(operator), BEACONCHAIN_ETH_STRAT), 1);
 
         // 6. delegate to operator
         staker.delegateTo(operator);

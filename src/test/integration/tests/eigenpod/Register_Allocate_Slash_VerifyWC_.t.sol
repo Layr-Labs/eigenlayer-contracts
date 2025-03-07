@@ -57,7 +57,7 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationChecks {
 
         // 3. Delegate to an operator
         staker.delegateTo(operator);
-        // delegate staker without any depositShares in beaconChainETHStrategy yet
+        // delegate staker without any depositShares in BEACONCHAIN_ETH_STRAT yet
         IStrategy[] memory emptyStrategies;
         uint[] memory emptyTokenBalances;
         check_Delegation_State(staker, operator, emptyStrategies, emptyTokenBalances);
@@ -108,11 +108,11 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationChecks {
 
         // Operator's maxMagnitude is 1 and staker was slashed to non-WAD BCSF. Therefore
         // staker should have been rounded down to 0
-        uint slashingFactor = staker.getSlashingFactor(beaconChainETHStrategy);
+        uint slashingFactor = staker.getSlashingFactor(BEACONCHAIN_ETH_STRAT);
         assertEq(slashingFactor, 0, "slashing factor should be rounded down to 0");
 
         // 6. complete withdrawal
-        // only strategy is beaconChainETHStrategy
+        // only strategy is BEACONCHAIN_ETH_STRAT
         _rollBlocksForCompleteWithdrawals(withdrawals);
 
         staker.completeWithdrawalAsShares(withdrawals[0]);
