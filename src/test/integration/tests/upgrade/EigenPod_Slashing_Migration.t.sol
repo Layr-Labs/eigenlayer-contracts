@@ -66,7 +66,7 @@ contract Integration_Upgrade_EigenPod_Slashing_Migration is UpgradeTest, EigenPo
     function testFuzz_slash_migrate(uint24 _rand) public rand(_rand) {
         // 2. Slash validators
         uint40[] memory subset = _choose(validators);
-        uint64 slashedGwei = beaconChain.slashValidators(subset, _randSlashType());
+        uint64 slashedGwei = beaconChain.slashValidators(subset, BeaconChainMock.SlashType(_randUint({min: 0, max: 2})));
         beaconChain.advanceEpoch_NoRewards();
         shares[0] = shares[0] - slashedGwei * GWEI_TO_WEI; // Shares should decrease by slashed amount
 

@@ -144,9 +144,8 @@ contract Integration_SlashedEigenpod_BC is IntegrationChecks {
         _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
 
         //Slash operator before delegation
-        IAllocationManagerTypes.SlashingParams memory slashingParams;
-        uint wadToSlash = _randWadToSlash();
-        slashingParams = avs.slashOperator(operator, operatorSet.id, strategies, wadToSlash.toArrayU256());
+        SlashingParams memory slashingParams = _genSlashing_Half(operator, operatorSet);
+        avs.slashOperator(slashingParams);
         assert_Snap_Allocations_Slashed(slashingParams, operatorSet, true, "operator allocations should be slashed");
 
         uint[] memory initDepositShares = _getStakerDepositShares(staker, strategies);
@@ -233,9 +232,8 @@ contract Integration_SlashedEigenpod_BC is IntegrationChecks {
         check_Registration_State_NoAllocation(operator, operatorSet, strategies);
 
         // Slash operator before delegation
-        SlashingParams memory slashingParams;
-        uint wadToSlash = _randWadToSlash();
-        slashingParams = avs.slashOperator(operator, operatorSet.id, strategies, wadToSlash.toArrayU256());
+        SlashingParams memory slashingParams = _genSlashing_Full(operator, operatorSet);
+        avs.slashOperator(slashingParams);
         assert_Snap_Allocations_Slashed(slashingParams, operatorSet, true, "operator allocations should be slashed");
 
         // Delegate to an operator

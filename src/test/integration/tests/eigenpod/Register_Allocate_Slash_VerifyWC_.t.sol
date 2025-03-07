@@ -89,8 +89,7 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationChecks {
         check_CompleteCheckPoint_WithSlashing_LowMagnitude_State(staker, slashedGwei);
 
         // 5. queue withdrawal
-        (, uint[] memory withdrawShares) = _randWithdrawal(strategies, initDepositShares);
-
+        uint[] memory withdrawShares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, withdrawShares);
         bytes32[] memory roots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State({

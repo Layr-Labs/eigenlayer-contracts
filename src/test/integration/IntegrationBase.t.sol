@@ -2111,63 +2111,6 @@ abstract contract IntegrationBase is IntegrationGetters {
         }
     }
 
-    function _randWadToSlash() internal returns (uint) {
-        return _randUint({min: 0.01 ether, max: 1 ether});
-    }
-
-    function _randMagnitudes(uint64 sum, uint len) internal returns (uint64[] memory magnitudes) {
-        magnitudes = new uint64[](len);
-
-        if (sum == 0 || len == 0) return magnitudes;
-
-        uint64 remaining = sum;
-
-        for (uint i; i < len; ++i) {
-            if (i == len - 1) {
-                magnitudes[i] = remaining;
-            } else {
-                magnitudes[i] = uint64(_randUint(0, remaining / (len - i)));
-                remaining -= magnitudes[i];
-            }
-        }
-    }
-
-    function _randWithdrawal(IStrategy[] memory strategies, uint[] memory shares) internal returns (IStrategy[] memory, uint[] memory) {
-        uint stratsToWithdraw = _randUint({min: 1, max: strategies.length});
-
-        IStrategy[] memory withdrawStrats = new IStrategy[](stratsToWithdraw);
-        uint[] memory withdrawShares = new uint[](stratsToWithdraw);
-
-        for (uint i = 0; i < stratsToWithdraw; i++) {
-            uint sharesToWithdraw;
-
-            if (strategies[i] == BEACONCHAIN_ETH_STRAT) {
-                // For native eth, withdraw a random amount of gwei (at least 1)
-                uint portion = _randUint({min: 1, max: shares[i] / GWEI_TO_WEI});
-                portion *= GWEI_TO_WEI;
-
-                sharesToWithdraw = shares[i] - portion;
-            } else {
-                // For LSTs, withdraw a random amount of shares (at least 1)
-                uint portion = _randUint({min: 1, max: shares[i]});
-
-                sharesToWithdraw = shares[i] - portion;
-            }
-
-            withdrawStrats[i] = strategies[i];
-            withdrawShares[i] = sharesToWithdraw;
-        }
-
-        return (withdrawStrats, withdrawShares);
-    }
-
-    /**
-     * Helpful getters:
-     */
-    function _randSlashType() internal returns (BeaconChainMock.SlashType) {
-        return BeaconChainMock.SlashType(_randUint({min: 0, max: 2}));
-    }
-
     function _randBalanceUpdate(User staker, IStrategy[] memory strategies) internal returns (int[] memory, int[] memory, int[] memory) {
         int[] memory tokenDeltas = new int[](strategies.length);
         int[] memory stakerShareDeltas = new int[](strategies.length);

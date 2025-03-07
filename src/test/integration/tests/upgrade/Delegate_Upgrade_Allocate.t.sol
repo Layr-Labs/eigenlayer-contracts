@@ -36,11 +36,7 @@ contract Integration_Upgrade_Deposit_Delegate_Allocate is UpgradeTest {
         check_Registration_State_NoAllocation(state.operator, state.operatorSet, allStrats);
 
         // 5. Allocate to operator set.
-        state.allocateParams = AllocateParams({
-            operatorSet: state.operatorSet,
-            strategies: state.strategies,
-            newMagnitudes: _randMagnitudes({sum: 1 ether, len: state.strategies.length})
-        });
+        state.allocateParams = _genAllocation_Rand(state.operator, state.operatorSet);
         state.operator.modifyAllocations(state.allocateParams);
         check_IncrAlloc_State_Slashable(state.operator, state.allocateParams);
     }
