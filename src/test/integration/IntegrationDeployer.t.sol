@@ -255,6 +255,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         BEACON_GENESIS_TIME = GENESIS_TIME_MAINNET;
         vm.etch(address(timeMachine), type(TimeMachine).runtimeCode);
         vm.etch(address(beaconChain), type(BeaconChainMock).runtimeCode);
+        vm.allowCheatcodes(address(timeMachine));
+        vm.allowCheatcodes(address(beaconChain));
         beaconChain.initialize(eigenPodManager, BEACON_GENESIS_TIME);
 
         // Since we haven't done the slashing upgrade on mainnet yet, upgrade mainnet contracts
