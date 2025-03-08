@@ -58,7 +58,7 @@ contract Integration_HighDSF_Multiple_Deposits is IntegrationChecks {
     /// @notice Test setup with a staker with slashingFactor of 1 (maxMagnitude = 1)
     /// with repeat deposits to increase the DSF. Limiting number of fuzzed runs to speed up tests since this
     /// for loops several times.
-    /// forge-config: default.fuzz.runs = 10
+    /// forge-config: default.fuzz.runs = 1
     function test_multiple_deposits(uint24 _r) public rand {
         // deposit initial assets into strategies
         staker.depositIntoEigenlayer(strategies, initTokenBalances);

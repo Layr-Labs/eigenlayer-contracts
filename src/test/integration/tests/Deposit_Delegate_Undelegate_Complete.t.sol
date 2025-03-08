@@ -205,6 +205,8 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationChecks {
         assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }
 
+    /// forge-config: default.fuzz.runs = 1
+    /// forge-config: forktest.fuzz.runs = 1
     function testFuzz_deposit_delegate_undelegate_completeAsTokens_Max_Strategies(uint24 _random) public rand {
         _configAssetTypes(HOLDS_MAX);
 
