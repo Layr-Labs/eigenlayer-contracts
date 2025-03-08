@@ -24,14 +24,8 @@ contract Integration_ALM_Multi is IntegrationChecks {
         REG_FULLY_ALLOC
     }
 
-    AVS avs;
-    OperatorSet operatorSet;
-
-    IStrategy[] strategies;
-
     /// iteration idx -> list of operators in each state
     mapping(uint => mapping(State => User[])) operators;
-
     /// operator -> list of strategies they have delegated assets in
     mapping(User => IStrategy[]) allocatedStrats;
     /// Last modifyAllocations params made by the operator

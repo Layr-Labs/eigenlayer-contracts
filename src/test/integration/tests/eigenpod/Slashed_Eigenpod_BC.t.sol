@@ -6,21 +6,6 @@ import "src/test/integration/IntegrationChecks.t.sol";
 contract Integration_SlashedEigenpod_BC is IntegrationChecks {
     using ArrayLib for *;
 
-    AVS avs;
-    OperatorSet operatorSet;
-
-    User operator;
-    AllocateParams allocateParams;
-
-    User staker;
-    IStrategy[] strategies;
-    uint[] initTokenBalances;
-    uint64 beaconBalanceGwei;
-    uint64 slashedGwei;
-    IERC20[] tokens;
-    uint40[] validators;
-    uint40[] slashedValidators;
-
     function _init() internal virtual override {
         _configAssetTypes(HOLDS_ETH);
         (staker, strategies, initTokenBalances) = _newRandomStaker();
@@ -369,17 +354,6 @@ contract Integration_SlashedEigenpod_BC is IntegrationChecks {
 contract Integration_SlashedOperator_SlashedEigenpod_Base is IntegrationChecks {
     using ArrayLib for *;
 
-    AVS avs;
-    OperatorSet operatorSet;
-    AllocateParams allocateParams;
-
-    User operator;
-
-    User staker;
-    IStrategy[] strategies;
-    uint[] initTokenBalances;
-    uint[] initDepositShares;
-
     function _init() internal virtual override {
         _configAssetTypes(HOLDS_ETH);
         (staker, strategies, initTokenBalances) = _newRandomStaker();
@@ -536,7 +510,6 @@ contract Integration_Redelegate_SlashOperator_SlashEigenpod is Integration_Slash
 
     User operator2;
     Withdrawal withdrawal;
-    uint64 slashedGwei;
 
     function _init() internal virtual override {
         // 1-5.
@@ -673,19 +646,6 @@ contract Integration_Redelegate_SlashOperator_SlashEigenpod is Integration_Slash
 
 contract Integration_SlashedEigenpod_BC_HalfSlash is IntegrationChecks {
     using ArrayLib for *;
-
-    AVS avs;
-    OperatorSet operatorSet;
-
-    User operator;
-    AllocateParams allocateParams;
-
-    User staker;
-    IStrategy[] strategies;
-    uint[] initTokenBalances;
-    uint[] initDepositShares;
-    uint64 slashedGwei;
-    uint40[] slashedValidators;
 
     function _init() internal override {
         _configAssetTypes(HOLDS_ETH);

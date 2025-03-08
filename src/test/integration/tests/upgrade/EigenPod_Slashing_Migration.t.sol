@@ -4,10 +4,7 @@ pragma solidity ^0.8.27;
 import "src/test/integration/UpgradeTest.t.sol";
 
 contract Integration_Upgrade_EigenPod_Slashing_Migration is UpgradeTest, EigenPodPausingConstants {
-    User staker;
-    uint40[] validators;
     uint[] shares;
-    IStrategy[] strategies;
     uint[] tokenBalances;
 
     function _init() internal override {

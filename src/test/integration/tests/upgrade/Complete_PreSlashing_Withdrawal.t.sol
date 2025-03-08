@@ -103,10 +103,6 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal is Integration_Upgr
 contract Integration_Upgrade_Complete_PreSlashing_Withdrawal_Slash is Integration_Upgrade_Complete_PreSlashing_Withdrawal_Base {
     using ArrayLib for *;
 
-    AVS avs;
-    OperatorSet operatorSet;
-    AllocateParams allocateParams;
-
     function _init_(bool withOperator, bool withDelegation) internal override returns (TestState memory state) {
         // Initialize state, queue a full withdrawal
         state = super._init_({withOperator: withOperator, withDelegation: withDelegation});

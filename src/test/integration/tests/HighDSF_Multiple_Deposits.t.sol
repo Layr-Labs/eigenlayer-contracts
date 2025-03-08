@@ -7,19 +7,6 @@ import "src/test/integration/IntegrationChecks.t.sol";
 contract Integration_HighDSF_Multiple_Deposits is IntegrationChecks {
     using ArrayLib for *;
 
-    AVS avs;
-    OperatorSet operatorSet;
-
-    User operator;
-    AllocateParams allocateParams;
-    SlashingParams slashParams;
-
-    User staker;
-    IStrategy[] strategies;
-    IERC20[] tokens; // underlying token for each strategy
-    uint[] initTokenBalances;
-    uint[] initDepositShares;
-
     /**
      * Shared setup:
      * 1. create a new staker, operator, and avs

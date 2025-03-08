@@ -4,8 +4,6 @@ pragma solidity ^0.8.27;
 import "src/test/integration/UpgradeTest.t.sol";
 
 contract Integration_Upgrade_EigenPod_Base is UpgradeTest {
-    User staker;
-    IStrategy[] strategies;
     uint[] tokenBalances;
     uint[] shares;
 
@@ -23,9 +21,6 @@ contract Integration_Upgrade_EigenPod_Base is UpgradeTest {
 }
 
 contract Integration_Upgrade_EigenPod_SlashAfterUpgrade is Integration_Upgrade_EigenPod_Base {
-    uint40[] validators;
-    uint64 slashedGwei;
-
     function testFuzz_deposit_upgrade_slash_completeCheckpoint(uint24 _rand) public rand {
         uint64 initBeaconBalanceGwei = uint64(tokenBalances[0] / GWEI_TO_WEI);
 
@@ -46,9 +41,6 @@ contract Integration_Upgrade_EigenPod_SlashAfterUpgrade is Integration_Upgrade_E
 }
 
 contract Integration_Upgrade_EigenPod_FullSlash is Integration_Upgrade_EigenPod_Base {
-    uint40[] validators;
-    uint64 slashedGwei;
-
     function _init() internal override {
         super._init();
 
@@ -86,10 +78,9 @@ contract Integration_Upgrade_EigenPod_FullSlash is Integration_Upgrade_EigenPod_
 }
 
 contract Integration_Upgrade_EigenPod_NegativeShares is Integration_Upgrade_EigenPod_Base {
-    User operator;
-    Withdrawal withdrawal;
     int[] tokenDeltas;
     int[] balanceUpdateShareDelta;
+    Withdrawal withdrawal;
 
     function _init() internal override {
         super._init();

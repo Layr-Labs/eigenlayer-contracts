@@ -345,19 +345,6 @@ contract Integration_OperatorDeregistrationTiming is Integration_ALMSlashBase {
  * assumptions and many state variables are declared below.
  */
 contract Integration_OperatorAllocationTiming is IntegrationChecks {
-    AVS avs;
-    User operator;
-    OperatorSet operatorSet;
-
-    AllocateParams allocateParams;
-    SlashingParams slashParams;
-
-    User staker;
-    IStrategy[] strategies;
-    IERC20[] tokens;
-    uint[] initTokenBalances;
-    uint[] initDepositShares;
-
     ////////////////////////////////////////
     /// OPERATOR ALLOCATION TIMING TESTS ///
     ////////////////////////////////////////

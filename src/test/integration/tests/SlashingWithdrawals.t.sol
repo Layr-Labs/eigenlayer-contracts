@@ -4,19 +4,6 @@ pragma solidity ^0.8.27;
 import "src/test/integration/IntegrationChecks.t.sol";
 
 contract Integration_ALMSlashBase is IntegrationChecks {
-    AVS avs;
-    OperatorSet operatorSet;
-
-    User operator;
-    AllocateParams allocateParams;
-    SlashingParams slashParams;
-
-    User staker;
-    IStrategy[] strategies;
-    IERC20[] tokens; // underlying token for each strategy
-    uint[] initTokenBalances;
-    uint[] initDepositShares;
-
     /// Shared setup:
     ///
     /// 1. Generate staker, operator, and AVS

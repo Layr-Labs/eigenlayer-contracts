@@ -8,18 +8,6 @@ contract Integration_SlashedEigenpod_AVS_Base is IntegrationChecks {
     using SlashingLib for *;
     using Math for uint;
 
-    AVS avs;
-    OperatorSet operatorSet;
-
-    User operator;
-    AllocateParams allocateParams;
-    SlashingParams slashParams;
-
-    User staker;
-    IStrategy[] strategies;
-    uint[] initTokenBalances;
-    uint[] initDepositShares;
-
     function _init() internal virtual override {
         _configAssetTypes(HOLDS_ETH);
         (staker, strategies, initTokenBalances) = _newRandomStaker();

@@ -6,20 +6,6 @@ import "src/test/integration/users/User.t.sol";
 import {console} from "forge-std/console.sol";
 
 contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is IntegrationChecks {
-    AVS avs;
-    OperatorSet operatorSet;
-
-    User operator;
-    AllocateParams allocateParams;
-
-    User staker;
-    IStrategy[] strategies;
-    IERC20[] tokens;
-    uint[] initTokenBalances;
-    uint[] initDepositShares;
-
-    uint[] numTokensRemaining;
-
     function _init() internal override {
         _configUserTypes(DEFAULT);
 

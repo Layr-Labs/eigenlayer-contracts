@@ -8,20 +8,6 @@ import "src/test/integration/IntegrationChecks.t.sol";
 contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationChecks {
     using ArrayLib for *;
 
-    AVS avs;
-    OperatorSet operatorSet;
-
-    User operator;
-    IAllocationManagerTypes.AllocateParams allocateParams;
-
-    User staker;
-    IStrategy[] strategies;
-    // uint[] initTokenBalances;
-    uint[] initDepositShares;
-    uint40[] validators;
-    uint64 beaconBalanceGwei;
-    uint64 slashedGwei;
-
     /**
      * 1. Create an operatorSet and register the operator allocating all magnitude
      * 2. slash operator to 1 magnitude remaining

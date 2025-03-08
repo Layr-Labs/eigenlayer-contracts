@@ -84,8 +84,6 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     /// Allocation Manager Methods
     /// -----------------------------------------------------------------------
 
-    /// @dev Allocates randomly across the operator set's strategies with a sum of `magnitudeSum`.
-    /// NOTE: Calling more than once will lead to deallocations...
     function modifyAllocations(AllocateParams memory params) public virtual createSnapshot {
         print.method(
             "modifyAllocations",

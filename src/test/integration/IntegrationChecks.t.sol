@@ -11,6 +11,30 @@ contract IntegrationChecks is IntegrationUtils {
     using ArrayLib for *;
     using StdStyle for *;
 
+    AVS avs;
+    SlashingParams slashParams;
+    SlashingParams slashingParams;
+
+    User operator;
+    OperatorSet operatorSet;
+    AllocateParams allocateParams;
+
+    User staker;
+    IERC20[] tokens;
+    IStrategy[] strategies;
+    uint[] initTokenBalances;
+    uint[] initDepositShares;
+    uint[] stakerWithdrawableShares;
+    Withdrawal[] withdrawals;
+    bytes32[] withdrawalRoots;
+    uint[] numTokensRemaining;
+
+    uint64 beaconBalanceGwei;
+    uint40[] validators;
+    uint40[] slashedValidators;
+    uint64 slashedGwei;
+    uint64 slashedAmountGwei;
+
     /**
      *
      *                              EIGENPOD CHECKS

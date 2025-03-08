@@ -6,13 +6,6 @@ import "src/test/integration/IntegrationChecks.t.sol";
 contract Integration_FullySlashedEigenpod_Base is IntegrationChecks {
     using ArrayLib for *;
 
-    User staker;
-    IStrategy[] strategies;
-    uint[] initTokenBalances;
-    uint[] initDepositShares;
-    uint64 slashedGwei;
-    uint40[] validators;
-
     function _init() internal virtual override {
         _configAssetTypes(HOLDS_ETH);
         (staker, strategies, initTokenBalances) = _newRandomStaker();

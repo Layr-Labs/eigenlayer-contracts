@@ -9,19 +9,6 @@ import "src/test/harnesses/EigenPodManagerWrapper.sol";
 contract Integration_SlashBC_OneBCSF is IntegrationChecks {
     using ArrayLib for *;
 
-    AVS avs;
-    OperatorSet operatorSet;
-
-    User operator;
-    IAllocationManagerTypes.AllocateParams allocateParams;
-
-    User staker;
-    IStrategy[] strategies;
-    uint[] initDepositShares;
-    uint40[] validators;
-    uint64 beaconBalanceGwei;
-    uint64 slashedGwei;
-
     /**
      * Shared setup:
      * 1. Update the EPM implementation to manually set the beaconChainSlashingFactor to 1

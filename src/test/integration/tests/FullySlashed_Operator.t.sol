@@ -4,21 +4,6 @@ pragma solidity ^0.8.27;
 import "src/test/integration/IntegrationChecks.t.sol";
 
 contract Integration_FullySlashed_Operator is IntegrationChecks {
-    AVS avs;
-    User staker;
-    User operator;
-
-    OperatorSet operatorSet;
-
-    AllocateParams allocateParams;
-    SlashingParams slashParams;
-
-    IStrategy[] strategies;
-    IERC20[] tokens;
-
-    uint[] initTokenBalances;
-    uint[] initDepositShares;
-
     function _init() internal virtual override {
         _configAssetTypes(HOLDS_LST);
 

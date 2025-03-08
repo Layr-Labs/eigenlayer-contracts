@@ -7,19 +7,6 @@ import "src/test/integration/IntegrationChecks.t.sol";
 contract Integration_DualSlashing_Base is IntegrationChecks {
     using ArrayLib for *;
 
-    AVS avs;
-    OperatorSet operatorSet;
-
-    User operator;
-    AllocateParams allocateParams;
-
-    User staker;
-    uint64 beaconBalanceGwei;
-    uint40[] validators;
-    IStrategy[] strategies;
-    uint[] initTokenBalances;
-    uint[] initDepositShares;
-
     function _init() internal virtual override {
         _configAssetTypes(HOLDS_ETH);
 
@@ -83,8 +70,6 @@ contract Integration_DualSlashing_BeaconChainFirst is Integration_DualSlashing_B
 
 contract Integration_DualSlashing_AVSFirst is Integration_DualSlashing_Base {
     using ArrayLib for *;
-
-    SlashingParams slashingParams;
 
     function _init() internal virtual override {
         super._init();
@@ -258,10 +243,6 @@ contract Integration_DualSlashing_FullSlashes is Integration_DualSlashing_Base {
     using ArrayLib for *;
     using SlashingLib for *;
     using Math for uint;
-
-    SlashingParams slashingParams;
-    uint64 slashedAmountGwei;
-    IERC20[] tokens;
 
     function _init() internal virtual override {
         super._init();
