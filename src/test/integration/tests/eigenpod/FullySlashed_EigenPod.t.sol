@@ -41,7 +41,7 @@ contract Integration_FullySlashedEigenpod_Checkpointed is Integration_FullySlash
     }
 
     function testFuzz_fullSlash_Delegate(uint24 _rand) public rand {
-        User operator = _newRandomOperator();
+        operator = _newRandomOperator();
 
         // Delegate to an operator - should succeed given that delegation only checks the operator's slashing factor
         staker.delegateTo(operator);
@@ -90,7 +90,7 @@ contract Integration_FullySlashedEigenpod_Checkpointed is Integration_FullySlash
 
         // Register as operator and undelegate - the equivalent of redelegating to yourself
         Withdrawal[] memory withdrawals = staker2.undelegate();
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_Undelegate_State(staker2, operator, withdrawals, withdrawalRoots, strategies2, shares);
 
         // Complete withdrawals as shares
@@ -126,7 +126,7 @@ contract Integration_FullySlashedEigenpod_NotCheckpointed is Integration_FullySl
         uint[] memory depositShares = _getStakerDepositShares(staker, strategies);
         uint[] memory withdrawableShares = _getWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, depositShares);
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(
             staker, User(payable(address(0))), strategies, depositShares, withdrawableShares, withdrawals, withdrawalRoots
         );

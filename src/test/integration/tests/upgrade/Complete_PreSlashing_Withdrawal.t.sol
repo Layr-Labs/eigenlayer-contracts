@@ -8,7 +8,7 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal_Base is UpgradeTest
         User staker;
         User operator;
         IStrategy[] strategies;
-        uint[] tokenBalances;
+        uint[] initTokenBalances;
         uint[] shares;
         uint[] withdrawalShares;
         uint[] expectedTokens;
@@ -19,15 +19,15 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal_Base is UpgradeTest
 
     function _init_(bool withOperator, bool withDelegation) internal virtual returns (TestState memory state) {
         // Create staker
-        (state.staker, state.strategies, state.tokenBalances) = _newRandomStaker();
-        state.shares = _calculateExpectedShares(state.strategies, state.tokenBalances);
+        (state.staker, state.strategies, state.initTokenBalances) = _newRandomStaker();
+        state.shares = _calculateExpectedShares(state.strategies, state.initTokenBalances);
 
         // Delegate staker to operator
         state.operator = withOperator ? _newRandomOperator() : User(payable(0));
         if (withDelegation) state.staker.delegateTo(state.operator);
 
         // Deposit into EigenLayer
-        state.staker.depositIntoEigenlayer(state.strategies, state.tokenBalances);
+        state.staker.depositIntoEigenlayer(state.strategies, state.initTokenBalances);
 
         // Setup withdrawal shares (full or partial)
         state.isPartial = _randBool();

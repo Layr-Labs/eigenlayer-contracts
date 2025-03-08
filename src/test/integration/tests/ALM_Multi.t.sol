@@ -44,7 +44,7 @@ contract Integration_ALM_Multi is IntegrationChecks {
         for (uint i = 0; i < NUM_OPERATORS; i++) {
             (User staker, IStrategy[] memory _strategies, uint[] memory initTokenBalances) = _newRandomStaker();
 
-            User operator = _newRandomOperator();
+            operator = _newRandomOperator();
 
             // 1. Deposit into strategies
             staker.depositIntoEigenlayer(_strategies, initTokenBalances);

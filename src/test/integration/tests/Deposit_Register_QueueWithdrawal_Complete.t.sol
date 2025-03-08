@@ -7,11 +7,11 @@ import "src/test/integration/IntegrationChecks.t.sol";
 contract Integration_Deposit_Register_QueueWithdrawal_Complete is IntegrationChecks {
     function testFuzz_deposit_registerOperator_queueWithdrawal_completeAsShares(uint24 _random) public rand {
         // Create a staker with a nonzero balance and corresponding strategies
-        (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
+        (staker, strategies, initTokenBalances) = _newRandomStaker();
 
         // 1. Staker deposits into strategy
-        staker.depositIntoEigenlayer(strategies, tokenBalances);
-        uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
+        staker.depositIntoEigenlayer(strategies, initTokenBalances);
+        uint[] memory shares = _calculateExpectedShares(strategies, initTokenBalances);
         check_Deposit_State(staker, strategies, shares);
 
         // 2. Staker registers as an operator
@@ -19,9 +19,9 @@ contract Integration_Deposit_Register_QueueWithdrawal_Complete is IntegrationChe
         assertTrue(delegationManager.isOperator(address(staker)), "Staker should be registered as an operator");
 
         // 3. Queue Withdrawal
-        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(staker, staker, strategies, shares, withdrawableShares, withdrawals, withdrawalRoots);
 
         // 4. Complete Queued Withdrawal as Shares
@@ -34,10 +34,10 @@ contract Integration_Deposit_Register_QueueWithdrawal_Complete is IntegrationChe
 
     function testFuzz_deposit_registerOperator_queueWithdrawal_completeAsTokens(uint24 _random) public rand {
         // Create a staker with a nonzero balance and corresponding strategies
-        (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
+        (staker, strategies, initTokenBalances) = _newRandomStaker();
         // 1. Staker deposits into strategy
-        staker.depositIntoEigenlayer(strategies, tokenBalances);
-        uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
+        staker.depositIntoEigenlayer(strategies, initTokenBalances);
+        uint[] memory shares = _calculateExpectedShares(strategies, initTokenBalances);
         check_Deposit_State(staker, strategies, shares);
 
         // 2. Staker registers as an operator
@@ -45,9 +45,9 @@ contract Integration_Deposit_Register_QueueWithdrawal_Complete is IntegrationChe
         assertTrue(delegationManager.isOperator(address(staker)), "Staker should be registered as an operator");
 
         // 3. Queue Withdrawal
-        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(staker, staker, strategies, shares, withdrawableShares, withdrawals, withdrawalRoots);
 
         // 4. Complete Queued Withdrawal as Tokens

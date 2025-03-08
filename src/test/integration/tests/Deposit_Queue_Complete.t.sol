@@ -11,11 +11,11 @@ contract Integration_Deposit_QueueWithdrawal_Complete is IntegrationChecks {
     /// 3. completeQueuedWithdrawal"
     function testFuzz_deposit_queueWithdrawal_completeAsTokens(uint24 _random) public rand {
         // Create a staker with a nonzero balance and corresponding strategies
-        (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
+        (staker, strategies, initTokenBalances) = _newRandomStaker();
 
         // 1. Deposit into strategy
-        staker.depositIntoEigenlayer(strategies, tokenBalances);
-        uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
+        staker.depositIntoEigenlayer(strategies, initTokenBalances);
+        uint[] memory shares = _calculateExpectedShares(strategies, initTokenBalances);
         check_Deposit_State(staker, strategies, shares);
 
         // Ensure staker is not delegated to anyone post deposit
@@ -38,11 +38,11 @@ contract Integration_Deposit_QueueWithdrawal_Complete is IntegrationChecks {
 
     function testFuzz_deposit_queueWithdrawal_completeAsShares(uint24 _random) public rand {
         // Create a staker with a nonzero balance and corresponding strategies
-        (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
+        (staker, strategies, initTokenBalances) = _newRandomStaker();
 
         // 1. Deposit into strategy
-        staker.depositIntoEigenlayer(strategies, tokenBalances);
-        uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
+        staker.depositIntoEigenlayer(strategies, initTokenBalances);
+        uint[] memory shares = _calculateExpectedShares(strategies, initTokenBalances);
         check_Deposit_State(staker, strategies, shares);
 
         // Ensure staker is not delegated to anyone post deposit

@@ -30,7 +30,7 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
         /// 1. Queue withdrawal
         uint[] memory withdrawableShares = _calcWithdrawable(staker, strategies, depositSharesToWithdraw);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, depositSharesToWithdraw);
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
 
         // Validate correctly queued withdrawals
         check_QueuedWithdrawal_State(
@@ -89,7 +89,7 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
         /// 1. Queue withdrawal
         uint[] memory withdrawableShares = _calcWithdrawable(staker, strategies, initDepositShares);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, initDepositShares);
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
 
         // Validate correctly queued withdrawals
         check_QueuedWithdrawal_State(staker, operator, strategies, initDepositShares, withdrawableShares, withdrawals, withdrawalRoots);
@@ -154,7 +154,7 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
         /// 1. Queue withdrawal
         uint[] memory withdrawableShares = _calcWithdrawable(staker, strategies, depositSharesToWithdraw);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, depositSharesToWithdraw);
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
 
         // Validate correctly queued withdrawals
         check_QueuedWithdrawal_State(
@@ -202,7 +202,7 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
         /// 1. Queue withdrawal
         uint[] memory withdrawableShares = _calcWithdrawable(staker, strategies, initDepositShares);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, initDepositShares);
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
 
         // Validate correctly queued withdrawals
         check_QueuedWithdrawal_State(staker, operator, strategies, initDepositShares, withdrawableShares, withdrawals, withdrawalRoots);

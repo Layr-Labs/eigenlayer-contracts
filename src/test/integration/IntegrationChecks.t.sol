@@ -24,8 +24,8 @@ contract IntegrationChecks is IntegrationUtils {
     IStrategy[] strategies;
     uint[] initTokenBalances;
     uint[] initDepositShares;
-    uint[] stakerWithdrawableShares;
-    Withdrawal[] withdrawals;
+    uint[] withdrawableShares;
+    // Withdrawal[] withdrawals; // cannot copy from memory to storage easily
     bytes32[] withdrawalRoots;
     uint[] numTokensRemaining;
 
@@ -435,7 +435,7 @@ contract IntegrationChecks is IntegrationUtils {
         User staker,
         User oldOperator,
         User newOperator,
-        IDelegationManagerTypes.Withdrawal[] memory withdrawals,
+        Withdrawal[] memory withdrawals,
         bytes32[] memory withdrawalRoots,
         IStrategy[] memory strategies,
         uint[] memory stakerDelegatedShares

@@ -9,19 +9,19 @@ contract Integration_Upgrade_Deposit_Delegate_Allocate is UpgradeTest {
         User operator;
         AVS avs;
         IStrategy[] strategies;
-        uint[] tokenBalances;
+        uint[] initTokenBalances;
         OperatorSet operatorSet;
         AllocateParams allocateParams;
     }
 
     function _init_() internal returns (TestState memory state) {
-        (state.staker, state.strategies, state.tokenBalances) = _newRandomStaker();
+        (state.staker, state.strategies, state.initTokenBalances) = _newRandomStaker();
         state.operator = _newRandomOperator();
 
         // Pre-upgrade:
         // 1. Create staker and operator with assets, then deposit into EigenLayer
         // 2. Delegate to operator
-        state.staker.depositIntoEigenlayer(state.strategies, state.tokenBalances);
+        state.staker.depositIntoEigenlayer(state.strategies, state.initTokenBalances);
         state.staker.delegateTo(state.operator);
     }
 

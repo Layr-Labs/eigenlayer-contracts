@@ -4,7 +4,6 @@ pragma solidity ^0.8.27;
 import "src/test/integration/UpgradeTest.t.sol";
 
 contract Integration_Upgrade_EigenPod_Base is UpgradeTest {
-    uint[] tokenBalances;
     uint[] shares;
 
     function _init() internal virtual override {
@@ -12,17 +11,17 @@ contract Integration_Upgrade_EigenPod_Base is UpgradeTest {
         _configUserTypes(DEFAULT);
 
         /// 0. Create a staker with underlying assets
-        (staker, strategies, tokenBalances) = _newRandomStaker();
-        shares = _calculateExpectedShares(strategies, tokenBalances);
+        (staker, strategies, initTokenBalances) = _newRandomStaker();
+        shares = _calculateExpectedShares(strategies, initTokenBalances);
 
         ///  1. Deposit into strategies
-        staker.depositIntoEigenlayer(strategies, tokenBalances);
+        staker.depositIntoEigenlayer(strategies, initTokenBalances);
     }
 }
 
 contract Integration_Upgrade_EigenPod_SlashAfterUpgrade is Integration_Upgrade_EigenPod_Base {
     function testFuzz_deposit_upgrade_slash_completeCheckpoint(uint24 _rand) public rand {
-        uint64 initBeaconBalanceGwei = uint64(tokenBalances[0] / GWEI_TO_WEI);
+        uint64 initBeaconBalanceGwei = uint64(initTokenBalances[0] / GWEI_TO_WEI);
 
         /// 2. Upgrade contracts
         _upgradeEigenLayerContracts();
@@ -55,7 +54,7 @@ contract Integration_Upgrade_EigenPod_FullSlash is Integration_Upgrade_EigenPod_
 
     function testFuzz_deposit_fullSlash_upgrade_delegate(uint24 _rand) public rand {
         /// 4. Delegate to operator
-        User operator = _newRandomOperator();
+        operator = _newRandomOperator();
         staker.delegateTo(operator);
         check_Delegation_State(staker, operator, strategies, shares);
     }
@@ -63,15 +62,15 @@ contract Integration_Upgrade_EigenPod_FullSlash is Integration_Upgrade_EigenPod_
     function testFuzz_deposit_fullSlash_upgrade_deposit_delegate(uint24 _rand) public rand {
         // 5. Start a new validator & verify withdrawal credentials
         cheats.deal(address(staker), 32 ether);
-        tokenBalances[0] = tokenBalances[0] + 32 ether;
+        initTokenBalances[0] = initTokenBalances[0] + 32 ether;
         (uint40[] memory newValidators, uint64 addedBeaconBalanceGwei) = staker.startValidators();
         beaconChain.advanceEpoch_NoRewards();
         staker.verifyWithdrawalCredentials(newValidators);
         check_VerifyWC_State(staker, newValidators, addedBeaconBalanceGwei);
-        shares = _calculateExpectedShares(strategies, tokenBalances);
+        shares = _calculateExpectedShares(strategies, initTokenBalances);
 
         // 6. Delegate to operator
-        User operator = _newRandomOperator();
+        operator = _newRandomOperator();
         staker.delegateTo(operator);
         check_Delegation_State(staker, operator, strategies, shares);
     }

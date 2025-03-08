@@ -135,8 +135,8 @@ contract Integration_SlashThenWithdraw is Integration_ALMSlashBase {
         /// Undelegate from operatorA
         uint[] memory shares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.undelegate();
-        bytes32[] memory roots = _getWithdrawalHashes(withdrawals);
-        check_Undelegate_State(staker, operator, withdrawals, roots, strategies, shares);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, shares);
 
         _rollBlocksForCompleteWithdrawals(withdrawals);
 
@@ -152,8 +152,8 @@ contract Integration_SlashThenWithdraw is Integration_ALMSlashBase {
         /// Redelegate to operatorB
         uint[] memory shares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.redelegate(operatorB);
-        bytes32[] memory roots = _getWithdrawalHashes(withdrawals);
-        check_Redelegate_State(staker, operator, operatorB, withdrawals, roots, strategies, shares);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        check_Redelegate_State(staker, operator, operatorB, withdrawals, withdrawalRoots, strategies, shares);
 
         _rollBlocksForCompleteWithdrawals(withdrawals);
 
@@ -167,9 +167,9 @@ contract Integration_SlashThenWithdraw is Integration_ALMSlashBase {
 
     function testFuzz_queueFull_completeAsTokens(uint24 _r) public rand {
         // Queue a withdrawal for all shares
-        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, initDepositShares);
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(staker, operator, strategies, initDepositShares, withdrawableShares, withdrawals, withdrawalRoots);
 
         _rollBlocksForCompleteWithdrawals(withdrawals);
@@ -189,8 +189,8 @@ contract Integration_SlashThenWithdraw is Integration_ALMSlashBase {
         // Undelegate from operatorA
         uint[] memory shares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.undelegate();
-        bytes32[] memory roots = _getWithdrawalHashes(withdrawals);
-        check_Undelegate_State(staker, operator, withdrawals, roots, strategies, shares);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, shares);
 
         _rollBlocksForCompleteWithdrawals(withdrawals);
 
@@ -205,8 +205,8 @@ contract Integration_SlashThenWithdraw is Integration_ALMSlashBase {
         // Redelegate to operatorB
         uint[] memory shares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.redelegate(operatorB);
-        bytes32[] memory roots = _getWithdrawalHashes(withdrawals);
-        check_Redelegate_State(staker, operator, operatorB, withdrawals, roots, strategies, shares);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        check_Redelegate_State(staker, operator, operatorB, withdrawals, withdrawalRoots, strategies, shares);
 
         _rollBlocksForCompleteWithdrawals(withdrawals);
 
@@ -219,9 +219,9 @@ contract Integration_SlashThenWithdraw is Integration_ALMSlashBase {
 
     function testFuzz_queueFull_completeAsShares(uint24 _r) public rand {
         // Queue a withdrawal for all shares
-        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, initDepositShares);
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(staker, operator, strategies, initDepositShares, withdrawableShares, withdrawals, withdrawalRoots);
 
         _rollBlocksForCompleteWithdrawals(withdrawals);
@@ -237,9 +237,9 @@ contract Integration_SlashThenWithdraw is Integration_ALMSlashBase {
 contract Integration_QueueWithdrawalThenSlash is Integration_ALMSlashBase {
     function testFuzz_queue_slash_completeAsTokens(uint24 _r) public rand {
         // 4. Queue withdrawal
-        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, initDepositShares);
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(staker, operator, strategies, initDepositShares, withdrawableShares, withdrawals, withdrawalRoots);
 
         // 5. Slash operator
@@ -265,9 +265,9 @@ contract Integration_QueueWithdrawalThenSlash is Integration_ALMSlashBase {
 
     function testFuzz_queue_slash_completeAsShares(uint24 _r) public rand {
         // 4. Queue withdrawal
-        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, initDepositShares);
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(staker, operator, strategies, initDepositShares, withdrawableShares, withdrawals, withdrawalRoots);
 
         // 5. Slash operator
@@ -308,9 +308,9 @@ contract Integration_DeallocateThenSlash is Integration_ALMSlashBase {
         // TODO - staker variants?
 
         // 6. Queue withdrawals
-        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, initDepositShares);
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(staker, operator, strategies, initDepositShares, withdrawableShares, withdrawals, withdrawalRoots);
 
         // 7. Complete withdrawal

@@ -23,19 +23,19 @@ contract Integration_Deposit_Delegate_UpdateBalance is IntegrationChecks {
 //     (
 //         User staker,
 //         IStrategy[] memory strategies,
-//         uint[] memory tokenBalances
+//         uint[] memory initTokenBalances
 //     ) = _newRandomStaker();
 //     (User operator, ,) = _newRandomOperator();
 //     // Upgrade contracts if forkType is not local
 //     _upgradeEigenLayerContracts();
 
-//     uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
+//     uint[] memory shares = _calculateExpectedShares(strategies, initTokenBalances);
 
 //     assert_HasNoDelegatableShares(staker, "staker should not have delegatable shares before depositing");
 //     assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated");
 
 //     /// 1. Deposit into strategies
-//     staker.depositIntoEigenlayer(strategies, tokenBalances);
+//     staker.depositIntoEigenlayer(strategies, initTokenBalances);
 //     check_Deposit_State(staker, strategies, shares);
 
 //     /// 2. Delegate to an operator
@@ -44,7 +44,7 @@ contract Integration_Deposit_Delegate_UpdateBalance is IntegrationChecks {
 
 //     /// 3. Queue withdrawals for ALL shares
 //     Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
-//     bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+//     withdrawalRoots = _getWithdrawalHashes(withdrawals);
 //     check_QueuedWithdrawal_State(staker, operator, strategies, shares, withdrawals, withdrawalRoots);
 
 //     // Generate a random balance update:

@@ -22,12 +22,12 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal is UpgradeTest {
         /// 1. Create staker with some assets
         /// 2. Staker deposits into EigenLayer
         /// 3. Staker queues a withdrawal
-        (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
+        (staker, strategies, initTokenBalances) = _newRandomStaker();
         User operator = User(payable(0));
 
-        staker.depositIntoEigenlayer(strategies, tokenBalances);
-        uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
-        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
+        staker.depositIntoEigenlayer(strategies, initTokenBalances);
+        uint[] memory shares = _calculateExpectedShares(strategies, initTokenBalances);
+        Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
 
         /// Upgrade to slashing contracts
         _upgradeEigenLayerContracts();

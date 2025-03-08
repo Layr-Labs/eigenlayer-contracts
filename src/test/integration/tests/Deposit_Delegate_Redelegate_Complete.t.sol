@@ -22,11 +22,11 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
         //
         // ... check that the staker has no deleagatable shares and isn't delegated
 
-        (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
+        (staker, strategies, initTokenBalances) = _newRandomStaker();
         User operator1 = _newRandomOperator();
         User operator2 = _newRandomOperator();
 
-        uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
+        uint[] memory shares = _calculateExpectedShares(strategies, initTokenBalances);
         //delegatable shares equals deposit shares here because no bc slashing
         uint[] memory delegatableShares = shares;
 
@@ -34,7 +34,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
         assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated");
 
         /// 1. Deposit Into Strategies
-        staker.depositIntoEigenlayer(strategies, tokenBalances);
+        staker.depositIntoEigenlayer(strategies, initTokenBalances);
         check_Deposit_State(staker, strategies, shares);
 
         // 2. Delegate to an operator
@@ -43,7 +43,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
 
         // 3. Undelegate from an operator
         Withdrawal[] memory withdrawals = staker.undelegate();
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_Undelegate_State(staker, operator1, withdrawals, withdrawalRoots, strategies, delegatableShares);
 
         // 4. Complete withdrawal as shares
@@ -62,7 +62,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
         assertNotEq(address(operator1), delegationManager.delegatedTo(address(staker)), "staker should not be delegated to operator1");
 
         // 6. Queue Withdrawal
-        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
         withdrawals = staker.queueWithdrawals(strategies, shares);
         withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(staker, operator2, strategies, shares, withdrawableShares, withdrawals, withdrawalRoots);
@@ -88,11 +88,11 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
         //
         // ... check that the staker has no deleagatable shares and isn't delegated
 
-        (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
+        (staker, strategies, initTokenBalances) = _newRandomStaker();
         User operator1 = _newRandomOperator();
         User operator2 = _newRandomOperator();
 
-        uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
+        uint[] memory shares = _calculateExpectedShares(strategies, initTokenBalances);
         //delegatable shares equals deposit shares here because no bc slashing
         uint[] memory delegatableShares = shares;
 
@@ -100,7 +100,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
         assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated");
 
         /// 1. Deposit Into Strategies
-        staker.depositIntoEigenlayer(strategies, tokenBalances);
+        staker.depositIntoEigenlayer(strategies, initTokenBalances);
         check_Deposit_State(staker, strategies, shares);
 
         // 2. Delegate to an operator
@@ -109,7 +109,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
 
         // 3. Undelegate from an operator
         Withdrawal[] memory withdrawals = staker.undelegate();
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_Undelegate_State(staker, operator1, withdrawals, withdrawalRoots, strategies, delegatableShares);
 
         // 4. Complete withdrawal as shares
@@ -128,7 +128,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
         assertNotEq(address(operator1), delegationManager.delegatedTo(address(staker)), "staker should not be delegated to operator1");
 
         // 6. Queue Withdrawal
-        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
         withdrawals = staker.queueWithdrawals(strategies, shares);
         withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(staker, operator2, strategies, shares, withdrawableShares, withdrawals, withdrawalRoots);
@@ -161,22 +161,22 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
         //
         // ... check that the staker has no deleagatable shares and isn't delegated
 
-        (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
+        (staker, strategies, initTokenBalances) = _newRandomStaker();
         User operator1 = _newRandomOperator();
         User operator2 = _newRandomOperator();
 
-        uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
+        uint[] memory shares = _calculateExpectedShares(strategies, initTokenBalances);
 
         assert_HasNoDelegatableShares(staker, "staker should not have delegatable shares before depositing");
         assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated");
 
         {
             // Divide shares by 2 in new array to do deposits after redelegate
-            uint[] memory numTokensToDeposit = new uint[](tokenBalances.length);
-            uint[] memory numTokensRemaining = new uint[](tokenBalances.length);
+            uint[] memory numTokensToDeposit = new uint[](initTokenBalances.length);
+            uint[] memory numTokensRemaining = new uint[](initTokenBalances.length);
             for (uint i = 0; i < shares.length; i++) {
-                numTokensToDeposit[i] = tokenBalances[i] / 2;
-                numTokensRemaining[i] = tokenBalances[i] - numTokensToDeposit[i];
+                numTokensToDeposit[i] = initTokenBalances[i] / 2;
+                numTokensRemaining[i] = initTokenBalances[i] - numTokensToDeposit[i];
             }
             uint[] memory halfShares = _calculateExpectedShares(strategies, numTokensToDeposit);
             //delegatable shares equals deposit shares here because no bc slashing
@@ -192,7 +192,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
 
             // 3. Undelegate from an operator
             Withdrawal[] memory withdrawals = staker.undelegate();
-            bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+            withdrawalRoots = _getWithdrawalHashes(withdrawals);
             check_Undelegate_State(staker, operator1, withdrawals, withdrawalRoots, strategies, delegatableShares);
 
             // 4. Complete withdrawal as shares
@@ -213,13 +213,13 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
             // 6. Deposit into Strategies
             uint[] memory sharesAdded = _calculateExpectedShares(strategies, numTokensRemaining);
             staker.depositIntoEigenlayer(strategies, numTokensRemaining);
-            tokenBalances = _calculateExpectedTokens(strategies, shares);
+            initTokenBalances = _calculateExpectedTokens(strategies, shares);
             check_Deposit_State(staker, strategies, sharesAdded);
         }
 
         {
             // 7. Queue Withdrawal
-            shares = _calculateExpectedShares(strategies, tokenBalances);
+            shares = _calculateExpectedShares(strategies, initTokenBalances);
             Withdrawal[] memory newWithdrawals = staker.queueWithdrawals(strategies, shares);
             bytes32[] memory newWithdrawalRoots = _getWithdrawalHashes(newWithdrawals);
             check_QueuedWithdrawal_State(staker, operator2, strategies, shares, shares, newWithdrawals, newWithdrawalRoots);
@@ -246,7 +246,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
         //
         // ... check that the staker has no deleagatable shares and isn't delegated
 
-        (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
+        (staker, strategies, initTokenBalances) = _newRandomStaker();
         User operator1 = _newRandomOperator();
         User operator2 = _newRandomOperator();
 
@@ -257,11 +257,11 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
 
         {
             // Divide shares by 2 in new array to do deposits after redelegate
-            uint[] memory numTokensToDeposit = new uint[](tokenBalances.length);
-            uint[] memory numTokensRemaining = new uint[](tokenBalances.length);
+            uint[] memory numTokensToDeposit = new uint[](initTokenBalances.length);
+            uint[] memory numTokensRemaining = new uint[](initTokenBalances.length);
             for (uint i = 0; i < strategies.length; i++) {
-                numTokensToDeposit[i] = tokenBalances[i] / 2;
-                numTokensRemaining[i] = tokenBalances[i] - numTokensToDeposit[i];
+                numTokensToDeposit[i] = initTokenBalances[i] / 2;
+                numTokensRemaining[i] = initTokenBalances[i] - numTokensToDeposit[i];
             }
             {
                 uint[] memory sharesFromFirstDeposit = _calculateExpectedShares(strategies, numTokensToDeposit);
@@ -278,7 +278,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
 
                 // 3. Undelegate from an operator
                 Withdrawal[] memory withdrawals = staker.undelegate();
-                bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+                withdrawalRoots = _getWithdrawalHashes(withdrawals);
                 check_Undelegate_State(staker, operator1, withdrawals, withdrawalRoots, strategies, delegatableShares);
 
                 // 4. Complete withdrawal as shares
@@ -298,7 +298,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
                 }
 
                 staker.depositIntoEigenlayer(strategies, numTokensRemaining);
-                tokenBalances = _calculateExpectedTokens(strategies, totalShares);
+                initTokenBalances = _calculateExpectedTokens(strategies, totalShares);
                 check_Deposit_State(staker, strategies, sharesFromSecondDeposit);
             }
 
@@ -310,7 +310,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
 
         {
             // 7. Queue Withdrawal
-            totalShares = _calculateExpectedShares(strategies, tokenBalances);
+            totalShares = _calculateExpectedShares(strategies, initTokenBalances);
             Withdrawal[] memory newWithdrawals = staker.queueWithdrawals(strategies, totalShares);
             bytes32[] memory newWithdrawalRoots = _getWithdrawalHashes(newWithdrawals);
             check_QueuedWithdrawal_State(staker, operator2, strategies, totalShares, totalShares, newWithdrawals, newWithdrawalRoots);
@@ -330,11 +330,11 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
 
     function testFuzz_deposit_delegate_undelegate_withdrawAsTokens_reDelegate_completeAsTokens(uint24 _random) public rand {
         /// 0. Create operators and a staker
-        (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
+        (staker, strategies, initTokenBalances) = _newRandomStaker();
         User operator1 = _newRandomOperator();
         User operator2 = _newRandomOperator();
 
-        uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
+        uint[] memory shares = _calculateExpectedShares(strategies, initTokenBalances);
         //delegatable shares equals deposit shares here because no bc slashing
         uint[] memory delegatableShares = shares;
 
@@ -342,7 +342,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
         assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated");
 
         /// 1. Deposit Into Strategies
-        staker.depositIntoEigenlayer(strategies, tokenBalances);
+        staker.depositIntoEigenlayer(strategies, initTokenBalances);
         uint[] memory withdrawnTokenBalances = _calculateExpectedTokens(strategies, shares);
         check_Deposit_State(staker, strategies, shares);
 
@@ -352,7 +352,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
 
         // 3. Undelegate from an operator
         Withdrawal[] memory withdrawals = staker.undelegate();
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_Undelegate_State(staker, operator1, withdrawals, withdrawalRoots, strategies, delegatableShares);
 
         // 4. Complete withdrawal as tokens
@@ -378,7 +378,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
 
         {
             // 7. Queue Withdrawal
-            uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+            withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
             withdrawals = staker.queueWithdrawals(strategies, shares);
             withdrawalRoots = _getWithdrawalHashes(withdrawals);
             check_QueuedWithdrawal_State(staker, operator2, strategies, shares, withdrawableShares, withdrawals, withdrawalRoots);
@@ -398,11 +398,11 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
 
     function testFuzz_deposit_delegate_undelegate_withdrawAsTokens_reDelegate_completeAsShares(uint24 _random) public rand {
         /// 0. Create operators and a staker
-        (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
+        (staker, strategies, initTokenBalances) = _newRandomStaker();
         User operator1 = _newRandomOperator();
         User operator2 = _newRandomOperator();
 
-        uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
+        uint[] memory shares = _calculateExpectedShares(strategies, initTokenBalances);
         //delegatable shares equals deposit shares here because no bc slashing
         uint[] memory delegatableShares = shares;
 
@@ -410,7 +410,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
         assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated");
 
         /// 1. Deposit Into Strategies
-        staker.depositIntoEigenlayer(strategies, tokenBalances);
+        staker.depositIntoEigenlayer(strategies, initTokenBalances);
         uint[] memory withdrawnTokenBalances = _calculateExpectedTokens(strategies, shares);
         check_Deposit_State(staker, strategies, shares);
 
@@ -420,7 +420,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
 
         // 3. Undelegate from an operator
         Withdrawal[] memory withdrawals = staker.undelegate();
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_Undelegate_State(staker, operator1, withdrawals, withdrawalRoots, strategies, delegatableShares);
 
         // 4. Complete withdrawal as Tokens

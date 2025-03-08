@@ -81,7 +81,7 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationChecks {
         // 5. queue withdrawal
         uint[] memory withdrawShares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, withdrawShares);
-        bytes32[] memory roots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State({
             staker: staker,
             operator: operator,
@@ -89,7 +89,7 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationChecks {
             depositShares: withdrawShares, // amount of deposit shares to withdraw
             withdrawableShares: 0.toArrayU256(), // amount of withdrawable shares is 0 due to slashing factor being 0
             withdrawals: withdrawals,
-            withdrawalRoots: roots
+            withdrawalRoots: withdrawalRoots
         });
 
         // Operator's maxMagnitude is 1 and staker was slashed to non-WAD BCSF. Therefore
@@ -121,9 +121,9 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationChecks {
         check_Base_Slashing_State(operator, allocateParams, slashParams);
 
         // 5. undelegate results in 0 delegated shares removed since operator has 0 magnitude and staker is fully slashed too
-        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.undelegate();
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
 
         check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, withdrawableShares);
 
@@ -163,9 +163,9 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationChecks {
         check_Base_Slashing_State(operator, allocateParams, slashParams);
 
         // 5. undelegate results in 0 delegated shares removed since operator has 0 magnitude and staker is fully slashed too
-        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.undelegate();
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, withdrawableShares);
 
         // 6. complete withdrawals as shares(although amount 0 from fully slashed operator)
@@ -200,9 +200,9 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationChecks {
         check_Base_Slashing_State(operator, allocateParams, slashParams);
 
         // 5. undelegate results in 0 delegated shares removed since operator has 0 magnitude and staker is fully slashed too
-        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.undelegate();
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, withdrawableShares);
 
         // 6. complete withdrawals as tokens(although amount 0 from fully slashed operator)
@@ -230,7 +230,7 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationChecks {
         // 4. queue withdrawal
         // ( , uint[] memory withdrawShares) = _randWithdrawal(strategies, initDepositShares);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, initDepositShares);
-        bytes32[] memory roots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State({
             staker: staker,
             operator: operator,
@@ -238,7 +238,7 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationChecks {
             depositShares: initDepositShares,
             withdrawableShares: initDepositShares,
             withdrawals: withdrawals,
-            withdrawalRoots: roots
+            withdrawalRoots: withdrawalRoots
         });
 
         // 5. complete withdrawal as tokens

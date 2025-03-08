@@ -5,18 +5,17 @@ import "src/test/integration/UpgradeTest.t.sol";
 
 contract Integration_Upgrade_EigenPod_Slashing_Migration is UpgradeTest, EigenPodPausingConstants {
     uint[] shares;
-    uint[] tokenBalances;
 
     function _init() internal override {
         _configAssetTypes(HOLDS_ETH);
         _configUserTypes(DEFAULT);
 
         /// 0. Create a staker with underlying assets
-        (staker, strategies, tokenBalances) = _newRandomStaker();
-        shares = _calculateExpectedShares(strategies, tokenBalances);
+        (staker, strategies, initTokenBalances) = _newRandomStaker();
+        shares = _calculateExpectedShares(strategies, initTokenBalances);
 
         ///  1. Deposit into strategies
-        staker.depositIntoEigenlayer(strategies, tokenBalances);
+        staker.depositIntoEigenlayer(strategies, initTokenBalances);
         validators = staker.getActiveValidators();
     }
 

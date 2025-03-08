@@ -45,8 +45,8 @@ contract Integration_SlashedEigenpod_BC is IntegrationChecks {
         check_Delegation_State(staker, operator, strategies, initDepositShares);
 
         // Undelegate from an operator
-        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.undelegate();
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        Withdrawal[] memory withdrawals = staker.undelegate();
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, initDelegatableShares);
 
         // Complete withdrawal as shares
@@ -81,8 +81,8 @@ contract Integration_SlashedEigenpod_BC is IntegrationChecks {
         check_Delegation_State(staker, operator, strategies, initDepositShares);
 
         // Undelegate from an operator
-        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.undelegate();
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        Withdrawal[] memory withdrawals = staker.undelegate();
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, initDelegatableShares);
 
         // Complete withdrawal as shares
@@ -146,8 +146,8 @@ contract Integration_SlashedEigenpod_BC is IntegrationChecks {
         check_Delegation_State(staker, operator, strategies, initDepositShares);
 
         // Undelegate from an operator
-        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.undelegate();
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        Withdrawal[] memory withdrawals = staker.undelegate();
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, delegatedShares);
 
         // Complete withdrawal as shares
@@ -184,8 +184,8 @@ contract Integration_SlashedEigenpod_BC is IntegrationChecks {
         (uint[] memory delegatedShares,) = delegationManager.getWithdrawableShares(address(staker), strategies);
 
         // Undelegate from an operator
-        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.redelegate(operator2);
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        Withdrawal[] memory withdrawals = staker.redelegate(operator2);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_Redelegate_State(staker, operator, operator2, withdrawals, withdrawalRoots, strategies, delegatedShares);
 
         // Complete withdrawal as shares
@@ -238,9 +238,9 @@ contract Integration_SlashedEigenpod_BC is IntegrationChecks {
         _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
 
         // Withdraw all shares
-        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, initDepositShares);
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(staker, operator, strategies, initDepositShares, withdrawableShares, withdrawals, withdrawalRoots);
 
         // Complete withdrawal as shares
@@ -270,9 +270,9 @@ contract Integration_SlashedEigenpod_BC is IntegrationChecks {
 
         // Queue withdrawal for all tokens
         uint[] memory depositShares = _getStakerDepositShares(staker, strategies);
-        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, depositShares);
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(
             staker, User(payable(address(0))), strategies, depositShares, withdrawableShares, withdrawals, withdrawalRoots
         );
@@ -300,9 +300,9 @@ contract Integration_SlashedEigenpod_BC is IntegrationChecks {
 
         // Queue withdrawal for all
         uint[] memory depositShares = _getStakerDepositShares(staker, strategies);
-        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, depositShares);
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(
             staker, User(payable(address(0))), strategies, depositShares, withdrawableShares, withdrawals, withdrawalRoots
         );
@@ -424,36 +424,34 @@ contract Integration_SlashedOperator_SlashedEigenpod is Integration_SlashedOpera
 
     function testFuzz_slashOnBC_delegate_verifyValidator_undelegate_completeAsTokens(uint24 _random) public rand {
         // 9. Undelegate
-        uint[] memory stakerWithdrawableShares = _getWithdrawableShares(staker, strategies);
+        uint[] memory withdrawableShares = _getWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.undelegate();
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
-        check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, stakerWithdrawableShares);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, withdrawableShares);
 
         // 10. Complete withdrawal as tokens
         _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint i = 0; i < withdrawals.length; ++i) {
-            uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, stakerWithdrawableShares);
+            uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawableShares);
             IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
             check_Withdrawal_AsTokens_State(
-                staker, operator, withdrawals[i], withdrawals[i].strategies, stakerWithdrawableShares, tokens, expectedTokens
+                staker, operator, withdrawals[i], withdrawals[i].strategies, withdrawableShares, tokens, expectedTokens
             );
         }
     }
 
     function testFuzz_slashOnBC_delegate_verifyValidator_undelegate_completeAsShares(uint24 _random) public rand {
         // 9. Undelegate
-        uint[] memory stakerWithdrawableShares = _getWithdrawableShares(staker, strategies);
+        uint[] memory withdrawableShares = _getWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.undelegate();
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
-        check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, stakerWithdrawableShares);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, withdrawableShares);
 
         // 10. Complete withdrawal as shares
         _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint i = 0; i < withdrawals.length; ++i) {
             staker.completeWithdrawalAsShares(withdrawals[i]);
-            check_Withdrawal_AsShares_Undelegated_State(
-                staker, operator, withdrawals[i], withdrawals[i].strategies, stakerWithdrawableShares
-            );
+            check_Withdrawal_AsShares_Undelegated_State(staker, operator, withdrawals[i], withdrawals[i].strategies, withdrawableShares);
         }
     }
 
@@ -465,18 +463,18 @@ contract Integration_SlashedOperator_SlashedEigenpod is Integration_SlashedOpera
         if (_randBool()) _giveOperatorNonWadMagnitude(operator2);
 
         // 9. Redelegate
-        uint[] memory stakerWithdrawableShares = _getWithdrawableShares(staker, strategies);
+        uint[] memory withdrawableShares = _getWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.redelegate(operator2);
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
-        check_Redelegate_State(staker, operator, operator2, withdrawals, withdrawalRoots, strategies, stakerWithdrawableShares);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        check_Redelegate_State(staker, operator, operator2, withdrawals, withdrawalRoots, strategies, withdrawableShares);
 
         // 10. Complete withdrawal as tokens
         _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint i = 0; i < withdrawals.length; ++i) {
-            uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, stakerWithdrawableShares);
+            uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawableShares);
             IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
             check_Withdrawal_AsTokens_State(
-                staker, operator2, withdrawals[i], withdrawals[i].strategies, stakerWithdrawableShares, tokens, expectedTokens
+                staker, operator2, withdrawals[i], withdrawals[i].strategies, withdrawableShares, tokens, expectedTokens
             );
         }
     }
@@ -489,17 +487,17 @@ contract Integration_SlashedOperator_SlashedEigenpod is Integration_SlashedOpera
         if (_randBool()) _giveOperatorNonWadMagnitude(operator2);
 
         // 9. Redelegate
-        uint[] memory stakerWithdrawableShares = _getWithdrawableShares(staker, strategies);
+        uint[] memory withdrawableShares = _getWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.redelegate(operator2);
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
-        check_Redelegate_State(staker, operator, operator2, withdrawals, withdrawalRoots, strategies, stakerWithdrawableShares);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        check_Redelegate_State(staker, operator, operator2, withdrawals, withdrawalRoots, strategies, withdrawableShares);
 
         // 10. Complete withdrawal as shares
         _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint i = 0; i < withdrawals.length; ++i) {
             staker.completeWithdrawalAsShares(withdrawals[i]);
             check_Withdrawal_AsShares_Redelegated_State(
-                staker, operator, operator2, withdrawals[i], withdrawals[i].strategies, stakerWithdrawableShares
+                staker, operator, operator2, withdrawals[i], withdrawals[i].strategies, withdrawableShares
             );
         }
     }
@@ -524,12 +522,12 @@ contract Integration_Redelegate_SlashOperator_SlashEigenpod is Integration_Slash
         if (_randBool()) _giveOperatorNonWadMagnitude(operator2);
 
         // 8. Redelegate
-        uint[] memory stakerWithdrawableShares = _getWithdrawableShares(staker, strategies);
+        uint[] memory withdrawableShares = _getWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.redelegate(operator2);
         require(withdrawals.length == 1, "Expected 1 withdrawal");
         withdrawal = withdrawals[0];
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
-        check_Redelegate_State(staker, operator, operator2, withdrawals, withdrawalRoots, strategies, stakerWithdrawableShares);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        check_Redelegate_State(staker, operator, operator2, withdrawals, withdrawalRoots, strategies, withdrawableShares);
 
         // 9. Slash original operator
         SlashingParams memory slashParams = _genSlashing_Half(operator, operatorSet);
@@ -559,12 +557,12 @@ contract Integration_Redelegate_SlashOperator_SlashEigenpod is Integration_Slash
         check_VerifyWC_State(staker, newValidators, beaconBalanceAddedGwei);
 
         // 12. Complete withdrawal as shares
-        uint[] memory stakerWithdrawableShares = _getWithdrawableSharesAfterCompletion(staker);
+        uint[] memory withdrawableShares = _getWithdrawableSharesAfterCompletion(staker);
         _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint i = 0; i < withdrawals.length; ++i) {
             staker.completeWithdrawalAsShares(withdrawals[i]);
             check_Withdrawal_AsShares_Redelegated_State(
-                staker, operator, operator2, withdrawals[i], withdrawals[i].strategies, stakerWithdrawableShares
+                staker, operator, operator2, withdrawals[i], withdrawals[i].strategies, withdrawableShares
             );
         }
     }
@@ -584,12 +582,12 @@ contract Integration_Redelegate_SlashOperator_SlashEigenpod is Integration_Slash
 
         // 12. Complete withdrawal as tokens
         _rollBlocksForCompleteWithdrawals(withdrawals);
-        uint[] memory stakerWithdrawableShares = _getWithdrawableSharesAfterCompletion(staker);
+        uint[] memory withdrawableShares = _getWithdrawableSharesAfterCompletion(staker);
         for (uint i = 0; i < withdrawals.length; ++i) {
-            uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, stakerWithdrawableShares);
+            uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawableShares);
             IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
             check_Withdrawal_AsTokens_State(
-                staker, operator2, withdrawals[i], withdrawals[i].strategies, stakerWithdrawableShares, tokens, expectedTokens
+                staker, operator2, withdrawals[i], withdrawals[i].strategies, withdrawableShares, tokens, expectedTokens
             );
         }
     }
@@ -600,12 +598,12 @@ contract Integration_Redelegate_SlashOperator_SlashEigenpod is Integration_Slash
         withdrawals[0] = withdrawal;
 
         // 11. Complete withdrawal as shares
-        uint[] memory stakerWithdrawableShares = _getWithdrawableSharesAfterCompletion(staker);
+        uint[] memory withdrawableShares = _getWithdrawableSharesAfterCompletion(staker);
         _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint i = 0; i < withdrawals.length; ++i) {
             staker.completeWithdrawalAsShares(withdrawals[i]);
             check_Withdrawal_AsShares_Redelegated_State(
-                staker, operator, operator2, withdrawals[i], withdrawals[i].strategies, stakerWithdrawableShares
+                staker, operator, operator2, withdrawals[i], withdrawals[i].strategies, withdrawableShares
             );
         }
 
@@ -625,12 +623,12 @@ contract Integration_Redelegate_SlashOperator_SlashEigenpod is Integration_Slash
 
         // 11. Complete withdrawal as tokens
         _rollBlocksForCompleteWithdrawals(withdrawals);
-        uint[] memory stakerWithdrawableShares = _getWithdrawableSharesAfterCompletion(staker);
+        uint[] memory withdrawableShares = _getWithdrawableSharesAfterCompletion(staker);
         for (uint i = 0; i < withdrawals.length; ++i) {
-            uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, stakerWithdrawableShares);
+            uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawableShares);
             IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
             check_Withdrawal_AsTokens_State(
-                staker, operator2, withdrawals[i], withdrawals[i].strategies, stakerWithdrawableShares, tokens, expectedTokens
+                staker, operator2, withdrawals[i], withdrawals[i].strategies, withdrawableShares, tokens, expectedTokens
             );
         }
 

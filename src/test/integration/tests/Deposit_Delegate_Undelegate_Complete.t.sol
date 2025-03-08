@@ -17,10 +17,10 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationChecks {
         //
         // ... check that the staker has no deleagatable shares and isn't delegated
 
-        (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
-        User operator = _newRandomOperator();
+        (staker, strategies, initTokenBalances) = _newRandomStaker();
+        operator = _newRandomOperator();
 
-        uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
+        uint[] memory shares = _calculateExpectedShares(strategies, initTokenBalances);
         //delegatable shares equals deposit shares here because no bc slashing
         uint[] memory delegatableShares = shares;
 
@@ -28,7 +28,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationChecks {
         assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated");
 
         /// 1. Deposit Into Strategies
-        staker.depositIntoEigenlayer(strategies, tokenBalances);
+        staker.depositIntoEigenlayer(strategies, initTokenBalances);
         check_Deposit_State(staker, strategies, shares);
 
         // 2. Delegate to an operator
@@ -37,7 +37,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationChecks {
 
         // 3. Undelegate from an operator
         Withdrawal[] memory withdrawals = staker.undelegate();
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, delegatableShares);
 
         // 4. Complete withdrawal
@@ -55,7 +55,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationChecks {
 
         // Check Final State
         assert_HasNoDelegatableShares(staker, "staker should have withdrawn all shares");
-        assert_HasUnderlyingTokenBalances(staker, strategies, tokenBalances, "staker should once again have original token balances");
+        assert_HasUnderlyingTokenBalances(staker, strategies, initTokenBalances, "staker should once again have original token balances");
         assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }
 
@@ -71,10 +71,10 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationChecks {
         //
         // ... check that the staker has no deleagatable shares and isn't delegated
 
-        (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
-        User operator = _newRandomOperator();
+        (staker, strategies, initTokenBalances) = _newRandomStaker();
+        operator = _newRandomOperator();
 
-        uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
+        uint[] memory shares = _calculateExpectedShares(strategies, initTokenBalances);
         //delegatable shares equals deposit shares here because no bc slashing
         uint[] memory delegatableShares = shares;
 
@@ -82,7 +82,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationChecks {
         assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated");
 
         /// 1. Deposit Into Strategies
-        staker.depositIntoEigenlayer(strategies, tokenBalances);
+        staker.depositIntoEigenlayer(strategies, initTokenBalances);
         check_Deposit_State(staker, strategies, shares);
 
         // 2. Delegate to an operator
@@ -91,7 +91,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationChecks {
 
         // 3. Undelegate from an operator
         Withdrawal[] memory withdrawals = staker.undelegate();
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, delegatableShares);
 
         // 4. Complete withdrawal
@@ -118,10 +118,10 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationChecks {
         //
         // ... check that the staker has no deleagatable shares and isn't delegated
 
-        (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
-        User operator = _newRandomOperator();
+        (staker, strategies, initTokenBalances) = _newRandomStaker();
+        operator = _newRandomOperator();
 
-        uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
+        uint[] memory shares = _calculateExpectedShares(strategies, initTokenBalances);
         //delegatable shares equals deposit shares here because no bc slashing
         uint[] memory delegatableShares = shares;
 
@@ -129,7 +129,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationChecks {
         assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated");
 
         /// 1. Deposit Into Strategies
-        staker.depositIntoEigenlayer(strategies, tokenBalances);
+        staker.depositIntoEigenlayer(strategies, initTokenBalances);
         check_Deposit_State(staker, strategies, shares);
 
         // 2. Delegate to an operator
@@ -138,7 +138,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationChecks {
 
         // 3. Force undelegate
         Withdrawal[] memory withdrawals = operator.forceUndelegate(staker);
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, delegatableShares);
 
         // 4. Complete withdrawal
@@ -155,7 +155,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationChecks {
 
         // Check Final State
         assert_HasNoDelegatableShares(staker, "staker should have withdrawn all shares");
-        assert_HasUnderlyingTokenBalances(staker, strategies, tokenBalances, "staker should once again have original token balances");
+        assert_HasUnderlyingTokenBalances(staker, strategies, initTokenBalances, "staker should once again have original token balances");
         assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }
 
@@ -166,10 +166,10 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationChecks {
         //
         // ... check that the staker has no deleagatable shares and isn't delegated
 
-        (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
-        User operator = _newRandomOperator();
+        (staker, strategies, initTokenBalances) = _newRandomStaker();
+        operator = _newRandomOperator();
 
-        uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
+        uint[] memory shares = _calculateExpectedShares(strategies, initTokenBalances);
         //delegatable shares equals deposit shares here because no bc slashing
         uint[] memory delegatableShares = shares;
 
@@ -177,7 +177,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationChecks {
         assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated");
 
         /// 1. Deposit Into Strategies
-        staker.depositIntoEigenlayer(strategies, tokenBalances);
+        staker.depositIntoEigenlayer(strategies, initTokenBalances);
         check_Deposit_State(staker, strategies, shares);
 
         // 2. Delegate to an operator
@@ -186,7 +186,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationChecks {
 
         // 3. Force undelegate
         Withdrawal[] memory withdrawals = operator.forceUndelegate(staker);
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, delegatableShares);
 
         // 4. Complete withdrawal
@@ -210,12 +210,12 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationChecks {
     function testFuzz_deposit_delegate_undelegate_completeAsTokens_Max_Strategies(uint24 _random) public rand {
         _configAssetTypes(HOLDS_MAX);
 
-        (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
-        User operator = _newRandomOperator();
+        (staker, strategies, initTokenBalances) = _newRandomStaker();
+        operator = _newRandomOperator();
 
         if (forkType == LOCAL) assertEq(strategies.length, 33, "sanity");
 
-        uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
+        uint[] memory shares = _calculateExpectedShares(strategies, initTokenBalances);
         //delegatable shares equals deposit shares here because no bc slashing
         uint[] memory delegatableShares = shares;
 
@@ -223,7 +223,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationChecks {
         assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated");
 
         /// 1. Deposit Into Strategies
-        staker.depositIntoEigenlayer(strategies, tokenBalances);
+        staker.depositIntoEigenlayer(strategies, initTokenBalances);
         check_Deposit_State(staker, strategies, shares);
 
         // 2. Delegate to an operator
@@ -232,7 +232,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationChecks {
 
         // 3. Undelegate from an operator
         Withdrawal[] memory withdrawals = staker.undelegate();
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, delegatableShares);
 
         // 4. Complete withdrawal
@@ -250,7 +250,9 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationChecks {
 
         // Check Final State
         assert_HasNoDelegatableShares(staker, "staker should have withdrawn all shares");
-        assert_HasUnderlyingTokenBalances(staker, strategies, tokenBalances, "staker should once again have original token tokenBalances");
+        assert_HasUnderlyingTokenBalances(
+            staker, strategies, initTokenBalances, "staker should once again have original token initTokenBalances"
+        );
         assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }
 }
