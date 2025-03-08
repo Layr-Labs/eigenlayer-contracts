@@ -533,33 +533,23 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     }
 
     /// Given an assetType, select strategies the user will be dealt assets in
-    function _selectRandAssets(uint assetType) internal noTracing returns (IStrategy[] memory) {
+    function _selectRandAssets(uint assetType) internal noTracing returns (IStrategy[] memory strategies) {
         if (assetType == NO_ASSETS) return new IStrategy[](0);
-
-        /// Select only ETH
         if (assetType == HOLDS_ETH) return BEACONCHAIN_ETH_STRAT.toArray();
-
-        /// Select multiple LSTs, and maybe add ETH:
 
         // Select number of assets:
         // HOLDS_LST can hold at most all LSTs. HOLDS_ALL and HOLDS_MAX also hold ETH.
         // Clamp number of assets to maxUniqueAssetsHeld (guaranteed to be at least 1)
         uint assetPoolSize = assetType == HOLDS_LST ? lstStrats.length : allStrats.length;
         uint maxAssets = assetPoolSize > maxUniqueAssetsHeld ? maxUniqueAssetsHeld : assetPoolSize;
-
         uint numAssets = assetType == HOLDS_MAX ? maxAssets : _randUint(1, maxAssets);
 
-        IStrategy[] memory strategies = new IStrategy[](numAssets);
+        strategies = new IStrategy[](numAssets);
         for (uint i = 0; i < strategies.length; i++) {
-            if (assetType == HOLDS_LST) {
-                strategies[i] = lstStrats[i];
-            } else {
-                // allStrats[0] is the BEACONCHAIN_ETH_STRAT
-                strategies[i] = allStrats[i];
-            }
+            strategies[i] = assetType == HOLDS_LST ? lstStrats[i] : allStrats[i];
         }
 
-        return strategies;
+        return strategies.sort();
     }
 
     /// Given an input list of strategies, deal random underlying token amounts to a user

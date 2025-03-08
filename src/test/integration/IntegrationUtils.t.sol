@@ -270,7 +270,7 @@ contract IntegrationUtils is IntegrationBase {
         params.operator = address(operator);
         params.operatorSetId = operatorSet.id;
         params.description = "genSlashing_Rand";
-        params.strategies = allocationManager.getStrategiesInOperatorSet(operatorSet).sort();
+        params.strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
         params.wadsToSlash = new uint[](params.strategies.length);
 
         /// 1% * rand(1, 99)
@@ -285,7 +285,7 @@ contract IntegrationUtils is IntegrationBase {
         params.operator = address(operator);
         params.operatorSetId = operatorSet.id;
         params.description = "genSlashing_Half";
-        params.strategies = allocationManager.getStrategiesInOperatorSet(operatorSet).sort();
+        params.strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
         params.wadsToSlash = new uint[](params.strategies.length);
 
         // slash 50%
@@ -298,7 +298,7 @@ contract IntegrationUtils is IntegrationBase {
         params.operator = address(operator);
         params.operatorSetId = operatorSet.id;
         params.description = "_genSlashing_Full";
-        params.strategies = allocationManager.getStrategiesInOperatorSet(operatorSet).sort();
+        params.strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
         params.wadsToSlash = new uint[](params.strategies.length);
 
         // slash 100%
@@ -315,7 +315,7 @@ contract IntegrationUtils is IntegrationBase {
         params.operator = address(operator);
         params.operatorSetId = operatorSet.id;
         params.description = "_genSlashing_Custom";
-        params.strategies = allocationManager.getStrategiesInOperatorSet(operatorSet).sort();
+        params.strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
         params.wadsToSlash = new uint[](params.strategies.length);
 
         for (uint i = 0; i < params.wadsToSlash.length; i++) {
