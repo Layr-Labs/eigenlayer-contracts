@@ -116,21 +116,17 @@
         "./src/contracts/**/*"
     ]
 
-[profile.forktest.fuzz]    
-    optimizer = false
-    runs = 16
+[profile.forktest]    
+    fuzz.runs = 16
 
-[profile.coverage.fuzz]
-    optimizer = false
-    runs = 1
+[profile.coverage]
+    fuzz.runs = 1
 
-[profile.medium.fuzz]
-    optimizer = false
-    runs = 256
+[profile.medium]
+    fuzz.runs = 256
 
-[profile.intense.fuzz]
-    optimizer = false
-    runs = 5000
+[profile.intense]
+    fuzz.runs = 5000
 
 [rpc_endpoints]
     mainnet = "${RPC_MAINNET}"
