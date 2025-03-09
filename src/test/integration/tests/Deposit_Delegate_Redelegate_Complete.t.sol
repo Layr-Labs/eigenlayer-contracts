@@ -74,10 +74,8 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
         // Complete withdrawals
         for (uint i = 0; i < withdrawals.length; i++) {
             uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].scaledShares);
-            IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State(
-                staker, operator2, withdrawals[i], withdrawals[i].strategies, withdrawals[i].scaledShares, tokens, expectedTokens
-            );
+            staker.completeWithdrawalAsTokens(withdrawals[i]);
+            check_Withdrawal_AsTokens_State(staker, operator2, withdrawals[i], withdrawals[i].scaledShares, expectedTokens);
         }
     }
 
@@ -138,18 +136,11 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
         _rollBlocksForCompleteWithdrawals(withdrawals);
 
         // Complete all but last withdrawal as tokens
-        for (uint i = 0; i < withdrawals.length - 1; i++) {
-            IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
+        for (uint i = 0; i < withdrawals.length; i++) {
             uint[] memory expectedTokens = _calculateExpectedTokens(strategies, shares);
-            check_Withdrawal_AsTokens_State(staker, staker, withdrawals[i], strategies, shares, tokens, expectedTokens);
+            staker.completeWithdrawalAsTokens(withdrawals[i]);
+            check_Withdrawal_AsTokens_State(staker, staker, withdrawals[i], shares, expectedTokens);
         }
-
-        // Complete last withdrawal as shares
-        IERC20[] memory finalWithdrawaltokens = staker.completeWithdrawalAsTokens(withdrawals[withdrawals.length - 1]);
-        uint[] memory finalExpectedTokens = _calculateExpectedTokens(strategies, shares);
-        check_Withdrawal_AsTokens_State(
-            staker, operator2, withdrawals[withdrawals.length - 1], strategies, shares, finalWithdrawaltokens, finalExpectedTokens
-        );
     }
 
     function testFuzz_deposit_delegate_reDelegate_depositAfterRedelegate(uint24 _random) public rand {
@@ -231,8 +222,8 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
             // Complete withdrawals
             for (uint i = 0; i < newWithdrawals.length; i++) {
                 uint[] memory expectedTokens = _calculateExpectedTokens(newWithdrawals[i].strategies, newWithdrawals[i].scaledShares);
-                IERC20[] memory tokens = staker.completeWithdrawalAsTokens(newWithdrawals[i]);
-                check_Withdrawal_AsTokens_State(staker, operator2, newWithdrawals[i], strategies, shares, tokens, expectedTokens);
+                staker.completeWithdrawalAsTokens(newWithdrawals[i]);
+                check_Withdrawal_AsTokens_State(staker, operator2, newWithdrawals[i], shares, expectedTokens);
             }
         }
     }
@@ -322,8 +313,8 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
             // Complete withdrawals
             for (uint i = 0; i < newWithdrawals.length; i++) {
                 uint[] memory expectedTokens = _calculateExpectedTokens(newWithdrawals[i].strategies, newWithdrawals[i].scaledShares);
-                IERC20[] memory tokens = staker.completeWithdrawalAsTokens(newWithdrawals[i]);
-                check_Withdrawal_AsTokens_State(staker, operator2, newWithdrawals[i], strategies, totalShares, tokens, expectedTokens);
+                staker.completeWithdrawalAsTokens(newWithdrawals[i]);
+                check_Withdrawal_AsTokens_State(staker, operator2, newWithdrawals[i], totalShares, expectedTokens);
             }
         }
     }
@@ -360,10 +351,8 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
         _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint i = 0; i < withdrawals.length; ++i) {
             uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].scaledShares);
-            IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State(
-                staker, operator1, withdrawals[i], withdrawals[i].strategies, withdrawals[i].scaledShares, tokens, expectedTokens
-            );
+            staker.completeWithdrawalAsTokens(withdrawals[i]);
+            check_Withdrawal_AsTokens_State(staker, operator1, withdrawals[i], withdrawals[i].scaledShares, expectedTokens);
         }
 
         //5. Deposit into Strategies
@@ -391,8 +380,8 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
         // Complete withdrawals as tokens
         for (uint i = 0; i < withdrawals.length; i++) {
             uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].scaledShares);
-            IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State(staker, operator2, withdrawals[i], strategies, shares, tokens, expectedTokens);
+            staker.completeWithdrawalAsTokens(withdrawals[i]);
+            check_Withdrawal_AsTokens_State(staker, operator2, withdrawals[i], shares, expectedTokens);
         }
     }
 
@@ -428,10 +417,8 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
         _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint i = 0; i < withdrawals.length; ++i) {
             uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].scaledShares);
-            IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State(
-                staker, operator1, withdrawals[i], withdrawals[i].strategies, withdrawals[i].scaledShares, tokens, expectedTokens
-            );
+            staker.completeWithdrawalAsTokens(withdrawals[i]);
+            check_Withdrawal_AsTokens_State(staker, operator1, withdrawals[i], withdrawals[i].scaledShares, expectedTokens);
         }
 
         // 5. Deposit into Strategies

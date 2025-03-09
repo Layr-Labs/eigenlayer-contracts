@@ -28,8 +28,8 @@ contract Integration_Deposit_QueueWithdrawal_Complete is IntegrationChecks {
         _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint i = 0; i < withdrawals.length; i++) {
             uint[] memory expectedTokens = _calculateExpectedTokens(strategies, shares);
-            IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State(staker, User(payable(0)), withdrawals[i], strategies, shares, tokens, expectedTokens);
+            staker.completeWithdrawalAsTokens(withdrawals[i]);
+            check_Withdrawal_AsTokens_State(staker, User(payable(0)), withdrawals[i], shares, expectedTokens);
         }
 
         // Ensure staker is still not delegated to anyone post withdrawal completion

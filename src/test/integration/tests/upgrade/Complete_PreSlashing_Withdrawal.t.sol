@@ -43,15 +43,9 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal_Base is UpgradeTest
     function _completeWithdrawal(TestState memory state) internal {
         for (uint i = 0; i < state.withdrawals.length; i++) {
             if (state.completeAsTokens) {
-                IERC20[] memory tokens = state.staker.completeWithdrawalAsTokens(state.withdrawals[i]);
+                state.staker.completeWithdrawalAsTokens(state.withdrawals[i]);
                 check_Withdrawal_AsTokens_State(
-                    state.staker,
-                    state.operator,
-                    state.withdrawals[i],
-                    state.strategies,
-                    state.withdrawalShares,
-                    tokens,
-                    state.expectedTokens
+                    state.staker, state.operator, state.withdrawals[i], state.withdrawalShares, state.expectedTokens
                 );
             } else {
                 state.staker.completeWithdrawalAsShares(state.withdrawals[i]);

@@ -47,10 +47,8 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationChecks {
         // Complete withdrawal
         for (uint i = 0; i < withdrawals.length; ++i) {
             uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].scaledShares);
-            IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State(
-                staker, operator, withdrawals[i], withdrawals[i].strategies, withdrawals[i].scaledShares, tokens, expectedTokens
-            );
+            staker.completeWithdrawalAsTokens(withdrawals[i]);
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], withdrawals[i].scaledShares, expectedTokens);
         }
 
         // Check Final State
@@ -147,10 +145,8 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationChecks {
 
         for (uint i = 0; i < withdrawals.length; ++i) {
             uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].scaledShares);
-            IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State(
-                staker, operator, withdrawals[i], withdrawals[i].strategies, withdrawals[i].scaledShares, tokens, expectedTokens
-            );
+            staker.completeWithdrawalAsTokens(withdrawals[i]);
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], withdrawals[i].scaledShares, expectedTokens);
         }
 
         // Check Final State
@@ -242,10 +238,8 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationChecks {
         // Complete withdrawal
         for (uint i = 0; i < withdrawals.length; ++i) {
             uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].scaledShares);
-            IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State(
-                staker, operator, withdrawals[i], withdrawals[i].strategies, withdrawals[i].scaledShares, tokens, expectedTokens
-            );
+            staker.completeWithdrawalAsTokens(withdrawals[i]);
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], withdrawals[i].scaledShares, expectedTokens);
         }
 
         // Check Final State

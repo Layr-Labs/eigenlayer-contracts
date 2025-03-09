@@ -318,9 +318,7 @@ contract Integration_DualSlashing_FullSlashes is Integration_DualSlashing_Base {
         _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint i = 0; i < withdrawals.length; ++i) {
             staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State(
-                staker, operator, withdrawals[i], withdrawals[i].strategies, uint(0).toArrayU256(), tokens, uint(0).toArrayU256()
-            );
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], uint(0).toArrayU256(), uint(0).toArrayU256());
         }
 
         // 13. Queue withdrawal for all remaining shares
@@ -335,9 +333,7 @@ contract Integration_DualSlashing_FullSlashes is Integration_DualSlashing_Base {
         uint[] memory expectedTokens = _calculateExpectedTokens(strategies, withdrawableShares2);
         for (uint i = 0; i < withdrawals2.length; ++i) {
             staker.completeWithdrawalAsTokens(withdrawals2[i]);
-            check_Withdrawal_AsTokens_State(
-                staker, operator, withdrawals2[i], withdrawals2[i].strategies, withdrawableShares2, tokens, expectedTokens
-            );
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals2[i], withdrawableShares2, expectedTokens);
         }
 
         // Sanity check that balance locked in pod and depositShares are 0

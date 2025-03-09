@@ -72,7 +72,7 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
 
         // Verify that the withdrawals were completed correctly
         for (uint i = 0; i < withdrawals.length; ++i) {
-            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], strategies, withdrawableShares, tokens, expectedTokens);
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], withdrawableShares, expectedTokens);
         }
 
         /// 6. Check final state
@@ -129,7 +129,7 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
 
         // Verify that the withdrawals were completed correctly
         for (uint i = 0; i < withdrawals.length; ++i) {
-            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], strategies, withdrawableShares, tokens, expectedTokens);
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], withdrawableShares, expectedTokens);
         }
 
         /// 6. Check final state
@@ -185,7 +185,7 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
 
         // Verify that the withdrawals were completed correctly
         for (uint i = 0; i < withdrawals.length; ++i) {
-            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], strategies, withdrawableShares, tokens, expectedTokens);
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], withdrawableShares, expectedTokens);
         }
 
         /// 5. Check final state
@@ -229,7 +229,7 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
 
         // Verify that the withdrawals were completed correctly
         for (uint i = 0; i < withdrawals.length; ++i) {
-            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], strategies, withdrawableShares, tokens, initTokenBalances);
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], withdrawableShares, initTokenBalances);
         }
 
         /// 5. Check final state

@@ -283,9 +283,7 @@ contract Integration_SlashedEigenpod_BC is IntegrationChecks {
         for (uint i = 0; i < withdrawals.length; ++i) {
             uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawableShares);
             staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State(
-                staker, operator, withdrawals[i], withdrawals[i].strategies, withdrawableShares, tokens, expectedTokens
-            );
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], withdrawableShares, expectedTokens);
         }
     }
 
@@ -433,10 +431,8 @@ contract Integration_SlashedOperator_SlashedEigenpod is Integration_SlashedOpera
         _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint i = 0; i < withdrawals.length; ++i) {
             uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawableShares);
-            IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State(
-                staker, operator, withdrawals[i], withdrawals[i].strategies, withdrawableShares, tokens, expectedTokens
-            );
+            staker.completeWithdrawalAsTokens(withdrawals[i]);
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], withdrawableShares, expectedTokens);
         }
     }
 
@@ -472,10 +468,8 @@ contract Integration_SlashedOperator_SlashedEigenpod is Integration_SlashedOpera
         _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint i = 0; i < withdrawals.length; ++i) {
             uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawableShares);
-            IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State(
-                staker, operator2, withdrawals[i], withdrawals[i].strategies, withdrawableShares, tokens, expectedTokens
-            );
+            staker.completeWithdrawalAsTokens(withdrawals[i]);
+            check_Withdrawal_AsTokens_State(staker, operator2, withdrawals[i], withdrawableShares, expectedTokens);
         }
     }
 
@@ -585,10 +579,8 @@ contract Integration_Redelegate_SlashOperator_SlashEigenpod is Integration_Slash
         uint[] memory withdrawableShares = _getWithdrawableSharesAfterCompletion(staker);
         for (uint i = 0; i < withdrawals.length; ++i) {
             uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawableShares);
-            IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State(
-                staker, operator2, withdrawals[i], withdrawals[i].strategies, withdrawableShares, tokens, expectedTokens
-            );
+            staker.completeWithdrawalAsTokens(withdrawals[i]);
+            check_Withdrawal_AsTokens_State(staker, operator2, withdrawals[i], withdrawableShares, expectedTokens);
         }
     }
 
@@ -626,10 +618,8 @@ contract Integration_Redelegate_SlashOperator_SlashEigenpod is Integration_Slash
         uint[] memory withdrawableShares = _getWithdrawableSharesAfterCompletion(staker);
         for (uint i = 0; i < withdrawals.length; ++i) {
             uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawableShares);
-            IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State(
-                staker, operator2, withdrawals[i], withdrawals[i].strategies, withdrawableShares, tokens, expectedTokens
-            );
+            staker.completeWithdrawalAsTokens(withdrawals[i]);
+            check_Withdrawal_AsTokens_State(staker, operator2, withdrawals[i], withdrawableShares, expectedTokens);
         }
 
         // 12. Verify additional validator

@@ -583,12 +583,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         for (uint i = 0; i < amounts.length; i++) {
             IStrategy strategy = strategies[i];
 
-            if (strategy == BEACONCHAIN_ETH_STRAT) {
-                cheats.deal(address(user), amounts[i]);
-            } else {
-                IERC20 underlyingToken = strategy.underlyingToken();
-                StdCheats.deal(address(underlyingToken), address(user), amounts[i]);
-            }
+            if (strategy == BEACONCHAIN_ETH_STRAT) cheats.deal(address(user), amounts[i]);
+            else deal(address(strategy.underlyingToken()), address(user), amounts[i]);
         }
     }
 
@@ -600,7 +596,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         return cheats.randomBool();
     }
 
-    function _randAssetType() internal returns (uint assetType) {
+    function _randAssetType() internal returns (uint) {
         return uint(uint8(assetTypes[cheats.randomUint({min: 0, max: assetTypes.length - 1})]));
     }
 

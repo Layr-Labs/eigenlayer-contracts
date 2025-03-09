@@ -137,9 +137,7 @@ contract Integration_FullySlashedEigenpod_NotCheckpointed is Integration_FullySl
             IERC20[] memory tokens = _getUnderlyingTokens(withdrawals[i].strategies);
             uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawableShares);
             staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State(
-                staker, User(payable(address(0))), withdrawals[i], withdrawals[i].strategies, withdrawableShares, tokens, expectedTokens
-            );
+            check_Withdrawal_AsTokens_State(staker, User(payable(address(0))), withdrawals[i], withdrawableShares, expectedTokens);
         }
     }
 

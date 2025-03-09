@@ -209,7 +209,7 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationChecks {
         // This also exits validators on the beacon chain
         _rollBlocksForCompleteWithdrawals(withdrawals);
         IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[0]);
-        check_Withdrawal_AsTokens_State(staker, operator, withdrawals[0], strategies, 0.toArrayU256(), tokens, 0.toArrayU256());
+        check_Withdrawal_AsTokens_State(staker, operator, withdrawals[0], 0.toArrayU256(), 0.toArrayU256());
 
         // 7. deposit/verify withdrawal credentials
         // randomly startup 1-10 validators
@@ -247,6 +247,6 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationChecks {
         // - starts/completes checkpoint
         _rollBlocksForCompleteWithdrawals(withdrawals);
         IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[0]);
-        check_Withdrawal_AsTokens_State(staker, operator, withdrawals[0], strategies, initDepositShares, tokens, initDepositShares);
+        check_Withdrawal_AsTokens_State(staker, operator, withdrawals[0], initDepositShares, initDepositShares);
     }
 }

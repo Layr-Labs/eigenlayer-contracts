@@ -144,7 +144,7 @@ contract Integration_SlashThenWithdraw is Integration_ALMSlashBase {
         uint[] memory expectedTokens = _calculateExpectedTokens(strategies, shares);
         staker.completeWithdrawalsAsTokens(withdrawals);
         for (uint i = 0; i < withdrawals.length; i++) {
-            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], strategies, shares, tokens, expectedTokens);
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], shares, expectedTokens);
         }
     }
 
@@ -161,7 +161,7 @@ contract Integration_SlashThenWithdraw is Integration_ALMSlashBase {
         uint[] memory expectedTokens = _calculateExpectedTokens(strategies, shares);
         staker.completeWithdrawalsAsTokens(withdrawals);
         for (uint i = 0; i < withdrawals.length; i++) {
-            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], strategies, shares, tokens, expectedTokens);
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], shares, expectedTokens);
         }
     }
 
@@ -179,9 +179,7 @@ contract Integration_SlashThenWithdraw is Integration_ALMSlashBase {
             uint[] memory expectedShares = _calculateExpectedShares(withdrawals[i]);
             uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, expectedShares);
             staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State(
-                staker, operator, withdrawals[i], withdrawals[i].strategies, expectedShares, tokens, expectedTokens
-            );
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], expectedShares, expectedTokens);
         }
     }
 
@@ -254,7 +252,7 @@ contract Integration_QueueWithdrawalThenSlash is Integration_ALMSlashBase {
             uint[] memory expectedShares = _calculateExpectedShares(withdrawals[i]);
             uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, expectedShares);
             staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], strategies, expectedShares, tokens, expectedTokens);
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], expectedShares, expectedTokens);
         }
 
         // Check Final State
@@ -318,7 +316,7 @@ contract Integration_DeallocateThenSlash is Integration_ALMSlashBase {
         for (uint i = 0; i < withdrawals.length; ++i) {
             uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].scaledShares);
             staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], strategies, initDepositShares, tokens, expectedTokens);
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], initDepositShares, expectedTokens);
         }
 
         // Check Final State

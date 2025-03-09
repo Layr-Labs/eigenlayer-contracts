@@ -63,8 +63,8 @@ contract Integration_Delegate_Deposit_Queue_Complete is IntegrationChecks {
         // 4. Complete Queued Withdrawal
         _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint i = 0; i < withdrawals.length; i++) {
-            IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], strategies, shares, tokens, expectedTokens);
+            staker.completeWithdrawalAsTokens(withdrawals[i]);
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], shares, expectedTokens);
         }
     }
 }

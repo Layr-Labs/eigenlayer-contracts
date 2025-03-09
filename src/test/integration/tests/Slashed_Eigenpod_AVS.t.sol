@@ -137,9 +137,7 @@ contract Integration_SlashedEigenpod_AVS_Withdraw is Integration_SlashedEigenpod
             IERC20[] memory tokens = _getUnderlyingTokens(withdrawals[i].strategies);
             uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawableSharesAfterSlash);
             staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State(
-                staker, operator, withdrawals[i], strategies, withdrawals[i].scaledShares, tokens, expectedTokens
-            );
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], withdrawals[i].scaledShares, expectedTokens);
         }
 
         // 10. Redeposit

@@ -37,12 +37,8 @@ abstract contract IntegrationBase is IntegrationGetters {
     {
         for (uint i = 0; i < strategies.length; i++) {
             IStrategy strat = strategies[i];
-
             uint expectedBalance = expectedBalances[i];
-            uint tokenBalance;
-            if (strat == BEACONCHAIN_ETH_STRAT) tokenBalance = address(user).balance;
-            else tokenBalance = strat.underlyingToken().balanceOf(address(user));
-
+            uint tokenBalance = strat == BEACONCHAIN_ETH_STRAT ? address(user).balance : strat.underlyingToken().balanceOf(address(user));
             assertApproxEqAbs(expectedBalance, tokenBalance, 1, err);
         }
     }
@@ -1579,6 +1575,22 @@ abstract contract IntegrationBase is IntegrationGetters {
     /// @dev Check that the staker has `addedTokens` additional underlying tokens
     // since the last snapshot
     function assert_Snap_Added_TokenBalances(User staker, IERC20[] memory tokens, uint[] memory addedTokens, string memory err) internal {
+        uint[] memory curTokenBalances = _getTokenBalances(staker, tokens);
+        // Use timewarp to get previous token balances
+        uint[] memory prevTokenBalances = _getPrevTokenBalances(staker, tokens);
+
+        for (uint i = 0; i < tokens.length; i++) {
+            uint prevBalance = prevTokenBalances[i];
+            uint curBalance = curTokenBalances[i];
+
+            assertApproxEqAbs(prevBalance + addedTokens[i], curBalance, 1, err);
+        }
+    }
+
+    function assert_Snap_Added_TokenBalances(User staker, IStrategy[] memory strategies, uint[] memory addedTokens, string memory err)
+        internal
+    {
+        IERC20[] memory tokens = _getUnderlyingTokens(strategies);
         uint[] memory curTokenBalances = _getTokenBalances(staker, tokens);
         // Use timewarp to get previous token balances
         uint[] memory prevTokenBalances = _getPrevTokenBalances(staker, tokens);

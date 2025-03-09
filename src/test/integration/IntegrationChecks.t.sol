@@ -35,6 +35,25 @@ contract IntegrationChecks is IntegrationUtils {
     uint64 slashedGwei;
     uint64 slashedAmountGwei;
 
+    function _completeWithdrawal(
+        User staker,
+        User operator,
+        Withdrawal[] memory withdrawals,
+        IStrategy[] memory strategies,
+        uint[] memory withdrawalShares,
+        uint[] memory expectedTokens
+    ) internal {
+        for (uint i = 0; i < withdrawals.length; i++) {
+            if (_randBool()) {
+                staker.completeWithdrawalAsTokens(withdrawals[i]);
+                check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], withdrawalShares, expectedTokens);
+            } else {
+                staker.completeWithdrawalAsShares(withdrawals[i]);
+                check_Withdrawal_AsShares_State(staker, operator, withdrawals[i], withdrawals[i].strategies, withdrawalShares);
+            }
+        }
+    }
+
     /**
      *
      *                              EIGENPOD CHECKS
@@ -475,30 +494,26 @@ contract IntegrationChecks is IntegrationUtils {
      * @param staker The staker who completed the withdrawal.
      * @param operator The operator address, which can be a non-user type like address(0).
      * @param withdrawal The details of the withdrawal that was completed.
-     * @param strategies The strategies from which the withdrawal was made.
      * @param shares The number of shares involved in the withdrawal.
-     * @param tokens The tokens received after the withdrawal.
      * @param expectedTokens The expected tokens to be received after the withdrawal.
      */
     function check_Withdrawal_AsTokens_State(
         User staker,
         User operator,
         Withdrawal memory withdrawal,
-        IStrategy[] memory strategies,
         uint[] memory shares,
-        IERC20[] memory tokens,
         uint[] memory expectedTokens
     ) public {
         // Common checks
         assert_WithdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
         assert_DepositShares_GTE_WithdrawableShares(
-            staker, strategies, "deposit shares should be greater than or equal to withdrawable shares"
+            staker, withdrawal.strategies, "deposit shares should be greater than or equal to withdrawable shares"
         );
 
-        assert_Snap_Added_TokenBalances(staker, tokens, expectedTokens, "staker should have received expected tokens");
+        assert_Snap_Added_TokenBalances(staker, withdrawal.strategies, expectedTokens, "staker should have received expected tokens");
         assert_Snap_Unchanged_Staker_DepositShares(staker, "staker shares should not have changed");
-        assert_Snap_Unchanged_DSF(staker, strategies, "dsf should not be changed");
-        assert_Snap_Removed_StrategyShares(strategies, shares, "strategies should have total shares decremented");
+        assert_Snap_Unchanged_DSF(staker, withdrawal.strategies, "dsf should not be changed");
+        assert_Snap_Removed_StrategyShares(withdrawal.strategies, shares, "strategies should have total shares decremented");
 
         // Checks specific to an operator that the Staker has delegated to
         if (operator != User(payable(0))) {
