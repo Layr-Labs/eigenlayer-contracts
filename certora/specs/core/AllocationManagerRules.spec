@@ -9,7 +9,7 @@ use invariant negativePendingDiffAtMostCurrentMagnitude;
 use invariant deallocationQueueDataUniqueness;
 use invariant noZeroKeyInDealocationQ;
 use invariant deallocationQueueEffectBlocLessThanCurrBlockNumberPlushDelayPlusOne;
-use invariant deallocationQueueEffectBlockAscesndingOrder;
+use invariant deallocationQueueEffectBlockAscendingOrder;
 use invariant noPositivePendingDiffInDeallocationQ;
 use invariant effectBlockZeroHasNoPendingDiff;
 
