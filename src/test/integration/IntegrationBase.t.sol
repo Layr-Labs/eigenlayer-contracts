@@ -173,7 +173,11 @@ abstract contract IntegrationBase is IntegrationGetters {
     }
 
     function assert_MaxMagsEqualMaxMagsAtCurrentBlock(User operator, IStrategy[] memory strategies, string memory err) internal view {
-        assertEq(_getMaxMagnitudes(operator, strategies).toUintArray(), _getMaxMagnitudes(operator, strategies, uint32(block.number)).toUintArray(), err);
+        assertEq(
+            _getMaxMagnitudes(operator, strategies).toUintArray(),
+            _getMaxMagnitudes(operator, strategies, uint32(block.number)).toUintArray(),
+            err
+        );
     }
 
     function assert_CurrentMagnitude(User operator, AllocateParams memory params, string memory err) internal view {
@@ -554,9 +558,7 @@ abstract contract IntegrationBase is IntegrationGetters {
         string memory err
     ) internal {
         assertEq(
-            _getMinSlashableStake(operator, operatorSet, strategies),
-            _getPrevMinSlashableStake(operator, operatorSet, strategies),
-            err
+            _getMinSlashableStake(operator, operatorSet, strategies), _getPrevMinSlashableStake(operator, operatorSet, strategies), err
         );
     }
 
@@ -666,11 +668,7 @@ abstract contract IntegrationBase is IntegrationGetters {
         IStrategy[] memory strategies,
         string memory err
     ) internal {
-        assertEq(
-            _getAllocatedStake(operator, operatorSet, strategies),
-            _getPrevAllocatedStake(operator, operatorSet, strategies),
-            err
-        );
+        assertEq(_getAllocatedStake(operator, operatorSet, strategies), _getPrevAllocatedStake(operator, operatorSet, strategies), err);
     }
 
     function assert_Snap_Slashed_AllocatedStake(
@@ -1254,7 +1252,11 @@ abstract contract IntegrationBase is IntegrationGetters {
         uint[] memory depositShares,
         string memory err
     ) internal {
-        assertEq(_getStakerWithdrawableShares(staker, strategies), _getExpectedWithdrawableSharesDelegate(staker, operator, strategies, depositShares), err);
+        assertEq(
+            _getStakerWithdrawableShares(staker, strategies),
+            _getExpectedWithdrawableSharesDelegate(staker, operator, strategies, depositShares),
+            err
+        );
     }
 
     function assert_Snap_Expected_Staker_WithdrawableShares_Deposit(
@@ -1551,7 +1553,6 @@ abstract contract IntegrationBase is IntegrationGetters {
      *                   SNAPSHOT ASSERTIONS: QUEUED WITHDRAWALS
      *
      */
-     
     function assert_Snap_Added_QueuedWithdrawals(User staker, Withdrawal[] memory withdrawals, string memory err) internal {
         assertEq(_getPrevCumulativeWithdrawals(staker) + withdrawals.length, _getCumulativeWithdrawals(staker), err);
     }
@@ -1565,7 +1566,6 @@ abstract contract IntegrationBase is IntegrationGetters {
      *                      SNAPSHOT ASSERTIONS: EIGENPODS
      *
      */
-
     function assert_Snap_Added_ActiveValidatorCount(User staker, uint addedValidators, string memory err) internal {
         assertEq(_getPrevActiveValidatorCount(staker) + addedValidators, _getActiveValidatorCount(staker), err);
     }
