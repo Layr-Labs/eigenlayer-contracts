@@ -169,21 +169,11 @@ abstract contract IntegrationBase is IntegrationGetters {
         IStrategy[] memory strategies,
         string memory err
     ) internal view {
-        uint[] memory minSlashableStake = _getMinSlashableStake(operator, operatorSet, strategies);
-        uint[] memory minAllocatedStake = _getAllocatedStake(operator, operatorSet, strategies);
-
-        for (uint i = 0; i < strategies.length; i++) {
-            assertEq(minSlashableStake[i], minAllocatedStake[i], err);
-        }
+        assertEq(_getMinSlashableStake(operator, operatorSet, strategies), _getAllocatedStake(operator, operatorSet, strategies), err);
     }
 
     function assert_MaxMagsEqualMaxMagsAtCurrentBlock(User operator, IStrategy[] memory strategies, string memory err) internal view {
-        uint64[] memory maxMagnitudes = _getMaxMagnitudes(operator, strategies);
-        uint64[] memory maxAtCurrentBlock = _getMaxMagnitudes(operator, strategies, uint32(block.number));
-
-        for (uint i = 0; i < strategies.length; i++) {
-            assertEq(maxMagnitudes[i], maxAtCurrentBlock[i], err);
-        }
+        assertEq(_getMaxMagnitudes(operator, strategies).toUintArray(), _getMaxMagnitudes(operator, strategies, uint32(block.number)).toUintArray(), err);
     }
 
     function assert_CurrentMagnitude(User operator, AllocateParams memory params, string memory err) internal view {
@@ -419,14 +409,11 @@ abstract contract IntegrationBase is IntegrationGetters {
     }
 
     function assert_Snap_Unchanged_AllocatedStrats(User operator, OperatorSet memory operatorSet, string memory err) internal {
-        IStrategy[] memory curAllocatedStrats = _getAllocatedStrats(operator, operatorSet);
-        IStrategy[] memory prevAllocatedStrats = _getPrevAllocatedStrats(operator, operatorSet);
-
-        assertEq(curAllocatedStrats.length, prevAllocatedStrats.length, err);
-
-        for (uint i = 0; i < curAllocatedStrats.length; i++) {
-            assertEq(address(curAllocatedStrats[i]), address(prevAllocatedStrats[i]), err);
-        }
+        assertEq(
+            _getAllocatedStrats(operator, operatorSet).toAddressArray(),
+            _getPrevAllocatedStrats(operator, operatorSet).toAddressArray(),
+            err
+        );
     }
 
     function assert_Snap_Removed_AllocatedStrats(
@@ -528,13 +515,7 @@ abstract contract IntegrationBase is IntegrationGetters {
     }
 
     function assert_Snap_Unchanged_MemberOfSet(OperatorSet memory operatorSet, string memory err) internal {
-        address[] memory curOperators = _getMembers(operatorSet);
-        address[] memory prevOperators = _getPrevMembers(operatorSet);
-
-        assertEq(curOperators.length, prevOperators.length, err);
-        for (uint i = 0; i < curOperators.length; i++) {
-            assertEq(curOperators[i], prevOperators[i], err);
-        }
+        assertEq(_getMembers(operatorSet), _getPrevMembers(operatorSet), err);
     }
 
     function assert_Snap_StakeBecameSlashable(
@@ -572,12 +553,11 @@ abstract contract IntegrationBase is IntegrationGetters {
         IStrategy[] memory strategies,
         string memory err
     ) internal {
-        uint[] memory curSlashableStake = _getMinSlashableStake(operator, operatorSet, strategies);
-        uint[] memory prevSlashableStake = _getPrevMinSlashableStake(operator, operatorSet, strategies);
-
-        for (uint i = 0; i < strategies.length; i++) {
-            assertEq(curSlashableStake[i], prevSlashableStake[i], err);
-        }
+        assertEq(
+            _getMinSlashableStake(operator, operatorSet, strategies),
+            _getPrevMinSlashableStake(operator, operatorSet, strategies),
+            err
+        );
     }
 
     function assert_Snap_Slashed_SlashableStake(
@@ -686,12 +666,11 @@ abstract contract IntegrationBase is IntegrationGetters {
         IStrategy[] memory strategies,
         string memory err
     ) internal {
-        uint[] memory curAllocatedStake = _getAllocatedStake(operator, operatorSet, strategies);
-        uint[] memory prevAllocatedStake = _getPrevAllocatedStake(operator, operatorSet, strategies);
-
-        for (uint i = 0; i < curAllocatedStake.length; i++) {
-            assertEq(curAllocatedStake[i], prevAllocatedStake[i], err);
-        }
+        assertEq(
+            _getAllocatedStake(operator, operatorSet, strategies),
+            _getPrevAllocatedStake(operator, operatorSet, strategies),
+            err
+        );
     }
 
     function assert_Snap_Slashed_AllocatedStake(
@@ -1094,15 +1073,7 @@ abstract contract IntegrationBase is IntegrationGetters {
     /// since the last snapshot
     function assert_Snap_Unchanged_OperatorShares(User operator, string memory err) internal {
         IStrategy[] memory strategies = allStrats;
-
-        uint[] memory curShares = _getOperatorShares(operator, strategies);
-        // Use timewarp to get previous operator shares
-        uint[] memory prevShares = _getPrevOperatorShares(operator, strategies);
-
-        // For each strategy, check (prev == cur)
-        for (uint i = 0; i < strategies.length; i++) {
-            assertEq(prevShares[i], curShares[i], err);
-        }
+        assertEq(_getOperatorShares(operator, strategies), _getPrevOperatorShares(operator, strategies), err);
     }
 
     function assert_Snap_Delta_OperatorShares(User operator, IStrategy[] memory strategies, int[] memory shareDeltas, string memory err)
@@ -1212,15 +1183,7 @@ abstract contract IntegrationBase is IntegrationGetters {
     /// since the last snapshot
     function assert_Snap_Unchanged_Staker_DepositShares(User staker, string memory err) internal {
         IStrategy[] memory strategies = allStrats;
-
-        uint[] memory curShares = _getStakerDepositShares(staker, strategies);
-        // Use timewarp to get previous staker shares
-        uint[] memory prevShares = _getPrevStakerDepositShares(staker, strategies);
-
-        // For each strategy, check (prev == cur)
-        for (uint i = 0; i < strategies.length; i++) {
-            assertEq(prevShares[i], curShares[i], err);
-        }
+        assertEq(_getStakerDepositShares(staker, strategies), _getPrevStakerDepositShares(staker, strategies), err);
     }
 
     /// @dev Check that the staker's withdrawable shares have increased by `addedShares`
@@ -1280,12 +1243,7 @@ abstract contract IntegrationBase is IntegrationGetters {
     }
 
     function assert_Snap_Unchanged_Staker_WithdrawableShares(User staker, IStrategy[] memory strategies, string memory err) internal {
-        uint[] memory curShares = _getStakerWithdrawableShares(staker, strategies);
-        uint[] memory prevShares = _getPrevStakerWithdrawableShares(staker, strategies);
-        // For each strategy, check all shares have been withdrawn
-        for (uint i = 0; i < strategies.length; i++) {
-            assertEq(prevShares[i], curShares[i], err);
-        }
+        assertEq(_getStakerWithdrawableShares(staker, strategies), _getPrevStakerWithdrawableShares(staker, strategies), err);
     }
 
     /// @dev Check that the staker's withdrawable shares have changed by the expected amount
@@ -1296,14 +1254,7 @@ abstract contract IntegrationBase is IntegrationGetters {
         uint[] memory depositShares,
         string memory err
     ) internal {
-        uint[] memory curShares = _getStakerWithdrawableShares(staker, strategies);
-        // Use timewarp to get previous staker shares
-        uint[] memory expectedShares = _getExpectedWithdrawableSharesDelegate(staker, operator, strategies, depositShares);
-
-        // For each strategy, check expected == current
-        for (uint i = 0; i < strategies.length; i++) {
-            assertEq(expectedShares[i], curShares[i], err);
-        }
+        assertEq(_getStakerWithdrawableShares(staker, strategies), _getExpectedWithdrawableSharesDelegate(staker, operator, strategies, depositShares), err);
     }
 
     function assert_Snap_Expected_Staker_WithdrawableShares_Deposit(
@@ -1393,12 +1344,7 @@ abstract contract IntegrationBase is IntegrationGetters {
     }
 
     function assert_Snap_Unchanged_DSF(User staker, IStrategy[] memory strategies, string memory err) internal {
-        uint[] memory curDSFs = _getDepositScalingFactors(staker, strategies);
-        uint[] memory prevDSFs = _getPrevDepositScalingFactors(staker, strategies);
-
-        for (uint i = 0; i < strategies.length; i++) {
-            assertEq(prevDSFs[i], curDSFs[i], err);
-        }
+        assertEq(_getDepositScalingFactors(staker, strategies), _getPrevDepositScalingFactors(staker, strategies), err);
     }
 
     function assert_Snap_Increased_DSF(User staker, IStrategy[] memory strategies, string memory err) internal {
@@ -1536,17 +1482,7 @@ abstract contract IntegrationBase is IntegrationGetters {
     }
 
     function assert_Snap_Unchanged_StrategyShares(IStrategy[] memory strategies, string memory err) internal {
-        uint[] memory curShares = _getTotalStrategyShares(strategies);
-
-        // Use timewarp to get previous strategy shares
-        uint[] memory prevShares = _getPrevTotalStrategyShares(strategies);
-
-        for (uint i = 0; i < strategies.length; i++) {
-            uint prevShare = prevShares[i];
-            uint curShare = curShares[i];
-
-            assertEq(prevShare, curShare, err);
-        }
+        assertEq(_getTotalStrategyShares(strategies), _getPrevTotalStrategyShares(strategies), err);
     }
 
     function assert_SlashableStake_Decrease_BCSlash(User staker) internal {
@@ -1607,14 +1543,7 @@ abstract contract IntegrationBase is IntegrationGetters {
     /// not changed since the last snapshot
     function assert_Snap_Unchanged_TokenBalances(User staker, string memory err) internal {
         IERC20[] memory tokens = allTokens;
-
-        uint[] memory curTokenBalances = _getTokenBalances(staker, tokens);
-        // Use timewarp to get previous token balances
-        uint[] memory prevTokenBalances = _getPrevTokenBalances(staker, tokens);
-
-        for (uint i = 0; i < tokens.length; i++) {
-            assertEq(prevTokenBalances[i], curTokenBalances[i], err);
-        }
+        assertEq(_getTokenBalances(staker, tokens), _getPrevTokenBalances(staker, tokens), err);
     }
 
     /**
@@ -1622,20 +1551,13 @@ abstract contract IntegrationBase is IntegrationGetters {
      *                   SNAPSHOT ASSERTIONS: QUEUED WITHDRAWALS
      *
      */
+     
     function assert_Snap_Added_QueuedWithdrawals(User staker, Withdrawal[] memory withdrawals, string memory err) internal {
-        uint curQueuedWithdrawals = _getCumulativeWithdrawals(staker);
-        // Use timewarp to get previous cumulative withdrawals
-        uint prevQueuedWithdrawals = _getPrevCumulativeWithdrawals(staker);
-
-        assertEq(prevQueuedWithdrawals + withdrawals.length, curQueuedWithdrawals, err);
+        assertEq(_getPrevCumulativeWithdrawals(staker) + withdrawals.length, _getCumulativeWithdrawals(staker), err);
     }
 
     function assert_Snap_Added_QueuedWithdrawal(User staker, Withdrawal memory, /*withdrawal*/ string memory err) internal {
-        uint curQueuedWithdrawal = _getCumulativeWithdrawals(staker);
-        // Use timewarp to get previous cumulative withdrawals
-        uint prevQueuedWithdrawal = _getPrevCumulativeWithdrawals(staker);
-
-        assertEq(prevQueuedWithdrawal + 1, curQueuedWithdrawal, err);
+        assertEq(_getPrevCumulativeWithdrawals(staker) + 1, _getCumulativeWithdrawals(staker), err);
     }
 
     /**
@@ -1643,25 +1565,17 @@ abstract contract IntegrationBase is IntegrationGetters {
      *                      SNAPSHOT ASSERTIONS: EIGENPODS
      *
      */
-    function assert_Snap_Added_ActiveValidatorCount(User staker, uint addedValidators, string memory err) internal {
-        uint curActiveValidatorCount = _getActiveValidatorCount(staker);
-        uint prevActiveValidatorCount = _getPrevActiveValidatorCount(staker);
 
-        assertEq(prevActiveValidatorCount + addedValidators, curActiveValidatorCount, err);
+    function assert_Snap_Added_ActiveValidatorCount(User staker, uint addedValidators, string memory err) internal {
+        assertEq(_getPrevActiveValidatorCount(staker) + addedValidators, _getActiveValidatorCount(staker), err);
     }
 
     function assert_Snap_Removed_ActiveValidatorCount(User staker, uint exitedValidators, string memory err) internal {
-        uint curActiveValidatorCount = _getActiveValidatorCount(staker);
-        uint prevActiveValidatorCount = _getPrevActiveValidatorCount(staker);
-
-        assertEq(curActiveValidatorCount + exitedValidators, prevActiveValidatorCount, err);
+        assertEq(_getActiveValidatorCount(staker) + exitedValidators, _getPrevActiveValidatorCount(staker), err);
     }
 
     function assert_Snap_Unchanged_ActiveValidatorCount(User staker, string memory err) internal {
-        uint curActiveValidatorCount = _getActiveValidatorCount(staker);
-        uint prevActiveValidatorCount = _getPrevActiveValidatorCount(staker);
-
-        assertEq(curActiveValidatorCount, prevActiveValidatorCount, err);
+        assertEq(_getActiveValidatorCount(staker), _getPrevActiveValidatorCount(staker), err);
     }
 
     function assert_Snap_Added_ActiveValidators(User staker, uint40[] memory addedValidators, string memory err) internal {

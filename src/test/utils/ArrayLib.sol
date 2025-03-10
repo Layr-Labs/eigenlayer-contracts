@@ -373,4 +373,20 @@ library ArrayLib {
 
         return array;
     }
+
+    /// -----------------------------------------------------------------------
+    /// Typecasting
+    /// -----------------------------------------------------------------------
+
+    function toAddressArray(IStrategy[] memory array) internal pure returns (address[] memory r) {
+        assembly {
+            r := array
+        }
+    }
+
+    function toUintArray(uint64[] memory array) internal pure returns (uint[] memory r) {
+        assembly {
+            r := array
+        }
+    }
 }
