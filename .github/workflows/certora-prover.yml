@@ -70,7 +70,6 @@ jobs:
             certora/confs/strategies/StrategyBase.conf
           use-beta: true
           solc-versions: 0.8.27
-          solc-remove-version-prefix: "0.8.27"
           job-name: "Eigenlayer Contracts"
           certora-key: ${{ secrets.CERTORAKEY }}
           # Only compile, don't run verification yet
@@ -126,7 +125,6 @@ jobs:
             certora/confs/strategies/StrategyBase.conf
           use-beta: true
           solc-versions: 0.8.27
-          solc-remove-version-prefix: "0.8.27"
           job-name: "Eigenlayer Contracts"
           certora-key: ${{ secrets.CERTORAKEY }}
         env:
