@@ -26,7 +26,7 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationChecks {
         (staker, strategies, initTokenBalances) = _newRandomStaker();
         operator = _newRandomOperator();
         uint[] memory shares = _calculateExpectedShares(strategies, initTokenBalances);
-        
+
         // 1. Deposit Into Strategies
         staker.depositIntoEigenlayer(strategies, initTokenBalances);
         check_Deposit_State(staker, strategies, shares);
