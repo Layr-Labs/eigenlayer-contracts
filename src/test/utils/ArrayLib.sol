@@ -158,7 +158,6 @@ library ArrayLib {
         return array;
     }
 
-
     function setLength(uint64[] memory array, uint len) internal pure returns (uint64[] memory) {
         assembly {
             mstore(array, len)
