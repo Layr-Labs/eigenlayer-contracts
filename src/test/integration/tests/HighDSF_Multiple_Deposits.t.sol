@@ -42,6 +42,14 @@ contract Integration_HighDSF_Multiple_Deposits is IntegrationChecks {
         assertEq(slashingFactor, 1, "slashing factor should be 1");
     }
 
+    function _dealAmounts(User user, IStrategy[] memory strategies, uint[] memory amounts) internal noTracing {
+        for (uint i = 0; i < amounts.length; i++) {
+            IStrategy strategy = strategies[i];
+            if (strategy == BEACONCHAIN_ETH_STRAT) cheats.deal(address(user), amounts[i]);
+            else deal(address(strategy.underlyingToken()), address(user), amounts[i]);
+        }
+    }
+
     /// @notice Test setup with a staker with slashingFactor of 1 (maxMagnitude = 1)
     /// with repeat deposits to increase the DSF. Limiting number of fuzzed runs to speed up tests since this
     /// for loops several times.

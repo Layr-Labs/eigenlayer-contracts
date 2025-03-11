@@ -113,24 +113,7 @@ contract IntegrationUtils is IntegrationBase {
 
     /// @dev Choose a random subset of validators (selects AT LEAST ONE)
     function _choose(uint40[] memory validators) internal returns (uint40[] memory) {
-        uint _rand = _randUint({min: 1, max: (2 ** validators.length) - 1});
-
-        uint40[] memory result = new uint40[](validators.length);
-        uint newLen;
-        for (uint i = 0; i < validators.length; i++) {
-            // if bit set, add validator
-            if (_rand >> i & 1 == 1) {
-                result[newLen] = validators[i];
-                newLen++;
-            }
-        }
-
-        // Manually update length of result
-        assembly {
-            mstore(result, newLen)
-        }
-
-        return result;
+        return validators.setLength(_randUint({min: 1, max: validators.length}));
     }
 
     /// -----------------------------------------------------------------------
