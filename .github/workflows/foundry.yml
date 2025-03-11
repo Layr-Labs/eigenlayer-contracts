@@ -63,6 +63,7 @@ jobs:
 
       # Generate a fuzz seed that changes weekly to avoid burning through RPC allowance.
       - name: "Generate A Fuzz Seed Weekly"
+        if: ${{ matrix.suite == 'Fork' }}
         run: >
           echo "FOUNDRY_FUZZ_SEED=$(
             echo $(($EPOCHSECONDS - $EPOCHSECONDS % 604800))
