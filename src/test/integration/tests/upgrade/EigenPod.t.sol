@@ -20,7 +20,7 @@ contract Integration_Upgrade_EigenPod_Base is UpgradeTest {
 }
 
 contract Integration_Upgrade_EigenPod_SlashAfterUpgrade is Integration_Upgrade_EigenPod_Base {
-    function testFuzz_deposit_upgrade_slash_completeCheckpoint(uint24 _rand) public rand {
+    function testFuzz_deposit_upgrade_slash_completeCheckpoint(uint24) public {
         uint64 initBeaconBalanceGwei = uint64(initTokenBalances[0] / GWEI_TO_WEI);
 
         /// 2. Upgrade contracts
@@ -52,14 +52,14 @@ contract Integration_Upgrade_EigenPod_FullSlash is Integration_Upgrade_EigenPod_
         _upgradeEigenLayerContracts();
     }
 
-    function testFuzz_deposit_fullSlash_upgrade_delegate(uint24 _rand) public rand {
+    function testFuzz_deposit_fullSlash_upgrade_delegate(uint24) public {
         /// 4. Delegate to operator
         operator = _newRandomOperator();
         staker.delegateTo(operator);
         check_Delegation_State(staker, operator, strategies, shares);
     }
 
-    function testFuzz_deposit_fullSlash_upgrade_deposit_delegate(uint24 _rand) public rand {
+    function testFuzz_deposit_fullSlash_upgrade_deposit_delegate(uint24) public {
         // 5. Start a new validator & verify withdrawal credentials
         cheats.deal(address(staker), 32 ether);
         initTokenBalances[0] = initTokenBalances[0] + 32 ether;
@@ -100,7 +100,7 @@ contract Integration_Upgrade_EigenPod_NegativeShares is Integration_Upgrade_Eige
         _upgradeEigenLayerContracts();
     }
 
-    function testFuzz_deposit_delegate_updateBalance_upgrade_completeAsShares(uint24 _rand) public rand {
+    function testFuzz_deposit_delegate_updateBalance_upgrade_completeAsShares(uint24) public {
         /// 7. Complete the withdrawal as shares
         Withdrawal[] memory withdrawals = new Withdrawal[](1);
         withdrawals[0] = withdrawal;
@@ -118,7 +118,7 @@ contract Integration_Upgrade_EigenPod_NegativeShares is Integration_Upgrade_Eige
         assert_Snap_Delta_StakerShares(staker, strategies, expectedStakerShareDelta, "staker should have received expected shares");
     }
 
-    function testFuzz_deposit_delegate_updateBalance_upgrade_completeAsTokens(uint24 _rand) public rand {
+    function testFuzz_deposit_delegate_updateBalance_upgrade_completeAsTokens(uint24) public {
         /// 7. Complete the withdrawal as tokens
         Withdrawal[] memory withdrawals = new Withdrawal[](1);
         withdrawals[0] = withdrawal;

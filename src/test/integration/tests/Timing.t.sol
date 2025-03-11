@@ -18,7 +18,7 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
     /**
      * @notice Test that a slash works correctly just before a _partial_ withdrawal is completed
      */
-    function testFuzz_queuePartialWithdrawal_slashBeforeWithdrawalDelay_completeAsTokens(uint24 _r) public rand {
+    function testFuzz_queuePartialWithdrawal_slashBeforeWithdrawalDelay_completeAsTokens(uint24) public {
         uint[] memory depositSharesToWithdraw = new uint[](initDepositShares.length);
         /// 0. Calculate partial withdrawal amounts
         for (uint i = 0; i < initDepositShares.length; ++i) {
@@ -85,7 +85,7 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
     /**
      * @notice Test that a slash works correctly just before a _total_ withdrawal is completed
      */
-    function testFuzz_queueTotalWithdrawal_slashBeforeWithdrawalDelay_completeAsTokens(uint24 _r) public rand {
+    function testFuzz_queueTotalWithdrawal_slashBeforeWithdrawalDelay_completeAsTokens(uint24) public {
         /// 1. Queue withdrawal
         uint[] memory withdrawableShares = _calcWithdrawable(staker, strategies, initDepositShares);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, initDepositShares);
@@ -142,7 +142,7 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
     /**
      * @notice Test that a staker can still complete a partial withdrawal even after a slash has been performed
      */
-    function testFuzz_queuePartialWithdrawal_slashAfterWithdrawalDelay_completeAsTokens(uint24 _r) public rand {
+    function testFuzz_queuePartialWithdrawal_slashAfterWithdrawalDelay_completeAsTokens(uint24) public {
         uint[] memory depositSharesToWithdraw = new uint[](initDepositShares.length);
         /// 0. Calculate partial withdrawal amounts
         for (uint i = 0; i < initDepositShares.length; ++i) {
@@ -198,7 +198,7 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
     /**
      * @notice Test that a staker is unaffected by a slash after the withdrawal delay has passed
      */
-    function testFuzz_queueTotalWithdrawal_slashAfterWithdrawalDelay_completeAsTokens(uint24 _r) public rand {
+    function testFuzz_queueTotalWithdrawal_slashAfterWithdrawalDelay_completeAsTokens(uint24) public {
         /// 1. Queue withdrawal
         uint[] memory withdrawableShares = _calcWithdrawable(staker, strategies, initDepositShares);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, initDepositShares);
@@ -250,7 +250,7 @@ contract Integration_OperatorDeallocationTiming is Integration_ALMSlashBase {
     /// OPERATOR DEALLOCATION TIMING TESTS ///
     //////////////////////////////////////////
 
-    function testFuzz_deallocateFully_slashBeforeDelay(uint24 _r) public rand {
+    function testFuzz_deallocateFully_slashBeforeDelay(uint24) public {
         /// 1. Deallocate
         AllocateParams memory deallocateParams = _genDeallocation_Full(operator, operatorSet);
         operator.modifyAllocations(deallocateParams);
@@ -271,7 +271,7 @@ contract Integration_OperatorDeallocationTiming is Integration_ALMSlashBase {
         check_Base_Slashing_State(operator, allocateParams, slashParams);
     }
 
-    function testFuzz_deallocateFully_slashAfterDelay(uint24 _r) public rand {
+    function testFuzz_deallocateFully_slashAfterDelay(uint24) public {
         /// 1. Deallocate
         AllocateParams memory deallocateParams = _genDeallocation_Full(operator, operatorSet);
         operator.modifyAllocations(deallocateParams);
@@ -300,7 +300,7 @@ contract Integration_OperatorDeregistrationTiming is Integration_ALMSlashBase {
     /// OPERATOR DEREGISTRATION TIMING TESTS ///
     ////////////////////////////////////////////
 
-    function testFuzz_deregister_slashBeforeDelay(uint24 _r) public rand {
+    function testFuzz_deregister_slashBeforeDelay(uint24) public {
         /// 1. Deregister
         operator.deregisterFromOperatorSet(operatorSet);
         // Validate the deregistration
@@ -319,7 +319,7 @@ contract Integration_OperatorDeregistrationTiming is Integration_ALMSlashBase {
         check_Base_Slashing_State(operator, allocateParams, slashParams);
     }
 
-    function testFuzz_deregister_slashAfterDelay(uint24 _r) public rand {
+    function testFuzz_deregister_slashAfterDelay(uint24) public {
         /// 1. Deregister
         operator.deregisterFromOperatorSet(operatorSet);
         // Validate the deregistration
@@ -374,7 +374,7 @@ contract Integration_OperatorAllocationTiming is IntegrationChecks {
         assertTrue(allocationManager.isOperatorSet(operatorSet));
     }
 
-    function testFuzz_register_allocate_slashBeforeDelay(uint24 _r) public rand {
+    function testFuzz_register_allocate_slashBeforeDelay(uint24) public {
         /// 1. Create and register operator
         operator.registerForOperatorSet(operatorSet);
         // Validate registration
@@ -402,7 +402,7 @@ contract Integration_OperatorAllocationTiming is IntegrationChecks {
         check_Base_Slashing_State(operator, allocateParams, emptySlashParams);
     }
 
-    function testFuzz_allocate_register_slashBeforeDelay(uint24 _r) public rand {
+    function testFuzz_allocate_register_slashBeforeDelay(uint24) public {
         /// 1. Allocate
         allocateParams = _genAllocation_AllAvailable(operator, operatorSet);
         operator.modifyAllocations(allocateParams);
@@ -430,7 +430,7 @@ contract Integration_OperatorAllocationTiming is IntegrationChecks {
         check_Base_Slashing_State(operator, allocateParams, emptySlashParams);
     }
 
-    function testFuzz_register_allocate_slashAfterDelay(uint24 _r) public rand {
+    function testFuzz_register_allocate_slashAfterDelay(uint24) public {
         /// 1. Create and register operator
         operator.registerForOperatorSet(operatorSet);
         // Validate the registration
@@ -452,7 +452,7 @@ contract Integration_OperatorAllocationTiming is IntegrationChecks {
         check_Base_Slashing_State(operator, allocateParams, slashParams);
     }
 
-    function testFuzz_allocate_register_slashAfterDelay(uint24 _r) public rand {
+    function testFuzz_allocate_register_slashAfterDelay(uint24) public {
         /// 1. Allocate
         allocateParams = _genAllocation_AllAvailable(operator, operatorSet);
         operator.modifyAllocations(allocateParams);

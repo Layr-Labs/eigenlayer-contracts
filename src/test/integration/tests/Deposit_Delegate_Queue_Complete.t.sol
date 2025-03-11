@@ -17,7 +17,7 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationChecks {
     /// 2. delegates to an operator
     /// 3. queues a withdrawal for a ALL shares
     /// 4. completes the queued withdrawal as tokens
-    function testFuzz_deposit_delegate_queue_completeAsTokens(uint24 _random) public rand {
+    function testFuzz_deposit_delegate_queue_completeAsTokens(uint24) public {
         /// 0. Create an operator and a staker with:
         // - some nonzero underlying token balances
         // - corresponding to a random subset of valid strategies (StrategyManager and/or EigenPodManager)
@@ -67,7 +67,7 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationChecks {
     /// 2. delegates to an operator
     /// 3. queues a withdrawal for a ALL shares
     /// 4. completes the queued withdrawal as shares
-    function testFuzz_deposit_delegate_queue_completeAsShares(uint24 _random) public rand {
+    function testFuzz_deposit_delegate_queue_completeAsShares(uint24) public {
         /// 0. Create an operator and a staker with:
         // - some nonzero underlying token balances
         // - corresponding to a random subset of valid strategies (StrategyManager and/or EigenPodManager)
@@ -123,7 +123,7 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationChecks {
     /// 2. delegates to an operator
     ///
     /// ... we check that the final step fails
-    function testFuzz_deposit_delegate_revert_alreadyDelegated(uint24 _random) public rand {
+    function testFuzz_deposit_delegate_revert_alreadyDelegated(uint24) public {
         _configAssetTypes(NO_ASSETS | HOLDS_LST | HOLDS_ETH | HOLDS_ALL);
 
         /// 0. Create a staker and operator

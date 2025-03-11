@@ -32,7 +32,7 @@ contract Integration_FullySlashed_Operator is IntegrationChecks {
         check_Base_Slashing_State(operator, allocateParams, slashParams);
     }
 
-    function testFuzz_register_allocate_fullSlash_deposit_delegate(uint24 r) public rand {
+    function testFuzz_register_allocate_fullSlash_deposit_delegate(uint24) public {
         // 5) Staker deposits into strategies.
         staker.depositIntoEigenlayer(strategies, initTokenBalances);
         initDepositShares = _calculateExpectedShares(strategies, initTokenBalances);
@@ -43,7 +43,7 @@ contract Integration_FullySlashed_Operator is IntegrationChecks {
         staker.delegateTo(operator);
     }
 
-    function testFuzz_register_allocate_fullSlash_delegate_deposit(uint24 r) public rand {
+    function testFuzz_register_allocate_fullSlash_delegate_deposit(uint24) public {
         // 5) Staker delegates to operator who is fully slashed.
         staker.delegateTo(operator);
         // NOTE: We didn't use check_Delegation_State as it leads to division by zero.
@@ -54,7 +54,7 @@ contract Integration_FullySlashed_Operator is IntegrationChecks {
         staker.depositIntoEigenlayer(strategies, initTokenBalances);
     }
 
-    function testFuzz_register_allocate_fullSlash_delegate_redelegate_deposit(uint24 r) public rand {
+    function testFuzz_register_allocate_fullSlash_delegate_redelegate_deposit(uint24) public {
         // 5) Staker delegates to operator who is fully slashed
         staker.delegateTo(operator);
 

@@ -55,7 +55,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
     }
 
-    function testFuzz_fullSlash_undelegate_complete_redeposit(uint24 _random) public rand {
+    function testFuzz_fullSlash_undelegate_complete_redeposit(uint24) public {
         // 4. Fully slash operator
         SlashingParams memory slashParams = _genSlashing_Full(operator, operatorSet);
         avs.slashOperator(slashParams);
@@ -80,7 +80,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         check_Deposit_State(staker, strategies, depositShares);
     }
 
-    function testFuzz_undelegate_fullSlash_complete_redeposit(uint24 _random) public rand {
+    function testFuzz_undelegate_fullSlash_complete_redeposit(uint24) public {
         // 4. Undelegate from an operator
         uint[] memory shares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.undelegate();
@@ -108,7 +108,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         check_Deposit_State(staker, strategies, depositShares);
     }
 
-    function testFuzz_depositFull_fullSlash_undelegate_completeAsShares(uint24 _random) public rand {
+    function testFuzz_depositFull_fullSlash_undelegate_completeAsShares(uint24) public {
         uint[] memory depositShares = _calculateExpectedShares(strategies, numTokensRemaining);
         staker.depositIntoEigenlayer(strategies, numTokensRemaining);
         check_Deposit_State(staker, strategies, depositShares);
@@ -140,7 +140,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         }
     }
 
-    function testFuzz_deposit_delegate_allocate_partialSlash_redeposit_queue_complete(uint24 r) public rand {
+    function testFuzz_deposit_delegate_allocate_partialSlash_redeposit_queue_complete(uint24) public {
         // Partially slash operator
         SlashingParams memory slashParams = _genSlashing_Half(operator, operatorSet);
         avs.slashOperator(slashParams);
@@ -171,7 +171,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         }
     }
 
-    function testFuzz_deposit_delegate_undelegate_partialSlash_complete(uint24 r) public rand {
+    function testFuzz_deposit_delegate_undelegate_partialSlash_complete(uint24) public {
         // Undelegate from operator
         uint[] memory shares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.undelegate();
@@ -193,7 +193,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         }
     }
 
-    function testFuzz_deposit_delegate_deallocate_partialSlash_queue_complete(uint24 r) public rand {
+    function testFuzz_deposit_delegate_deallocate_partialSlash_queue_complete(uint24) public {
         // Deallocate from operator set
         AllocateParams memory deallocateParams = _genDeallocation_Full(operator, operatorSet);
         operator.modifyAllocations(deallocateParams);
@@ -220,7 +220,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         }
     }
 
-    function testFuzz_deposit_delegate_deregister_partialSlash_queue_complete(uint24 r) public rand {
+    function testFuzz_deposit_delegate_deregister_partialSlash_queue_complete(uint24) public {
         // Deregister operator from operator set
         operator.deregisterFromOperatorSet(operatorSet);
         check_Deregistration_State_ActiveAllocation(operator, operatorSet);
@@ -246,7 +246,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         }
     }
 
-    function testFuzz_delegate_zeroShares_partialSlash_deposit_undelegate_complete(uint24 r) public rand {
+    function testFuzz_delegate_zeroShares_partialSlash_deposit_undelegate_complete(uint24) public {
         // Create a new staker with 0 shares
         (User zeroSharesStaker, uint[] memory tokensToDeposit) = _newStaker(strategies);
 
@@ -279,7 +279,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         }
     }
 
-    function testFuzz_deposit_delegate_allocate_partialSlash_deallocate(uint24 r) public rand {
+    function testFuzz_deposit_delegate_allocate_partialSlash_deallocate(uint24) public {
         // Partially slash operator
         SlashingParams memory slashParams = _genSlashing_Half(operator, operatorSet);
         avs.slashOperator(slashParams);
@@ -291,7 +291,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         check_DecrAlloc_State_Slashable(operator, deallocateParams);
     }
 
-    function testFuzz_fullSlash_undelegate_redeposit_complete(uint24 _random) public rand {
+    function testFuzz_fullSlash_undelegate_redeposit_complete(uint24) public {
         initDepositShares = _getStakerDepositShares(staker, strategies);
 
         // 4. Fully slash operator
@@ -324,7 +324,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
         assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }
 
-    function testFuzz_fullSlash_redelegate_redeposit_complete(uint24 _random) public rand {
+    function testFuzz_fullSlash_redelegate_redeposit_complete(uint24) public {
         User operator2 = _newRandomOperator();
         initDepositShares = _getStakerDepositShares(staker, strategies);
 

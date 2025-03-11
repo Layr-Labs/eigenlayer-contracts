@@ -1358,14 +1358,6 @@ abstract contract IntegrationBase is IntegrationGetters {
         }
     }
 
-    function assert_Snap_WithinErrorBounds_DSF(User staker, IStrategy[] memory strategies, string memory err) internal {
-        uint[] memory curDSFs = _getDepositScalingFactors(staker, strategies);
-        uint[] memory prevDSFs = _getPrevDepositScalingFactors(staker, strategies);
-
-        for (uint i = 0; i < strategies.length; i++) {
-            assertApproxEqAbs(curDSFs[i], prevDSFs[i], 1e2, err);
-        }
-    }
 
     /// @dev Used to assert that the DSF is either increased or unchanged, depending on the slashing factor, on a deposit
     function assert_Snap_DSF_State_Deposit(User staker, IStrategy[] memory strategies, string memory err) internal {

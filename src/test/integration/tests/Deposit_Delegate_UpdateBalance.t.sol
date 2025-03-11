@@ -12,7 +12,7 @@ contract Integration_Deposit_Delegate_UpdateBalance is IntegrationChecks {
 /// 3. queues a withdrawal for a ALL shares
 /// 4. updates their balance randomly
 /// 5. completes the queued withdrawal as tokens
-// function testFuzz_deposit_delegate_updateBalance_completeAsTokens(uint24 _random) public {
+// function testFuzz_deposit_delegate_updateBalance_completeAsTokens(uint24) public {
 //     _configRand({
 //         _randomSeed: _random,
 //         _assetTypes: HOLDS_ETH, // HOLDS_LST | HOLDS_ETH | HOLDS_ALL,

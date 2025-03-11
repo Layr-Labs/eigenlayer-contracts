@@ -40,7 +40,7 @@ contract Integration_FullySlashedEigenpod_Checkpointed is Integration_FullySlash
         check_CompleteCheckpoint_FullySlashed_State(staker, validators, slashedGwei);
     }
 
-    function testFuzz_fullSlash_Delegate(uint24 _rand) public rand {
+    function testFuzz_fullSlash_Delegate(uint24) public {
         operator = _newRandomOperator();
 
         // Delegate to an operator - should succeed given that delegation only checks the operator's slashing factor
@@ -48,7 +48,7 @@ contract Integration_FullySlashedEigenpod_Checkpointed is Integration_FullySlash
         check_Delegation_State(staker, operator, strategies, initDepositShares);
     }
 
-    function testFuzz_fullSlash_Revert_Redeposit(uint24 _rand) public rand {
+    function testFuzz_fullSlash_Revert_Redeposit(uint24) public {
         // Start a new validator & verify withdrawal credentials
         cheats.deal(address(staker), 32 ether);
         (uint40[] memory newValidators,) = staker.startValidators();
@@ -59,7 +59,7 @@ contract Integration_FullySlashedEigenpod_Checkpointed is Integration_FullySlash
         staker.verifyWithdrawalCredentials(newValidators);
     }
 
-    function testFuzz_fullSlash_registerStakerAsOperator_Revert_Redeposit(uint24 _rand) public rand {
+    function testFuzz_fullSlash_registerStakerAsOperator_Revert_Redeposit(uint24) public {
         // Register staker as operator
         staker.registerAsOperator();
 
@@ -73,7 +73,7 @@ contract Integration_FullySlashedEigenpod_Checkpointed is Integration_FullySlash
         staker.verifyWithdrawalCredentials(newValidators);
     }
 
-    function testFuzz_fullSlash_registerStakerAsOperator_delegate_undelegate_completeAsShares(uint24 _rand) public rand {
+    function testFuzz_fullSlash_registerStakerAsOperator_delegate_undelegate_completeAsShares(uint24) public {
         // Register staker as operator
         staker.registerAsOperator();
         User operator = User(payable(address(staker)));
@@ -104,7 +104,7 @@ contract Integration_FullySlashedEigenpod_Checkpointed is Integration_FullySlash
 
 contract Integration_FullySlashedEigenpod_NotCheckpointed is Integration_FullySlashedEigenpod_Base {
     /// @dev Adding funds prior to checkpointing allows the pod to not be "bricked"
-    function testFuzz_proveValidator_checkpoint_queue_completeAsTokens(uint24 _rand) public rand {
+    function testFuzz_proveValidator_checkpoint_queue_completeAsTokens(uint24) public {
         // Deal ETH to staker
         uint amount = 32 ether;
         cheats.deal(address(staker), amount);
@@ -141,7 +141,7 @@ contract Integration_FullySlashedEigenpod_NotCheckpointed is Integration_FullySl
         }
     }
 
-    function testFuzz_depositMinimumAmount_checkpoint(uint24 _rand) public rand {
+    function testFuzz_depositMinimumAmount_checkpoint(uint24) public {
         // Deal ETH to staker, minimum amount to be checkpointed
         uint64 podBalanceGwei = 1;
         uint amountToDeal = 1 * GWEI_TO_WEI;

@@ -10,7 +10,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationChecks {
     /// 2. delegate to an operator
     /// 3. undelegates from the operator
     /// 4. complete their queued withdrawal as tokens
-    function testFuzz_deposit_undelegate_completeAsTokens(uint24 _random) public rand {
+    function testFuzz_deposit_undelegate_completeAsTokens(uint24) public {
         /// 0. Create an operator and a staker with:
         // - some nonzero underlying token balances
         // - corresponding to a random number of strategies
@@ -62,7 +62,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationChecks {
     /// 2. delegate to an operator
     /// 3. undelegates from the operator
     /// 4. complete their queued withdrawal as shares
-    function testFuzz_deposit_undelegate_completeAsShares(uint24 _random) public rand {
+    function testFuzz_deposit_undelegate_completeAsShares(uint24) public {
         /// 0. Create an operator and a staker with:
         // - some nonzero underlying token balances
         // - corresponding to a random number of strategies
@@ -109,7 +109,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationChecks {
         assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }
 
-    function testFuzz_deposit_delegate_forceUndelegate_completeAsTokens(uint24 _random) public rand {
+    function testFuzz_deposit_delegate_forceUndelegate_completeAsTokens(uint24) public {
         /// 0. Create an operator and a staker with:
         // - some nonzero underlying token balances
         // - corresponding to a random number of strategies
@@ -155,7 +155,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationChecks {
         assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }
 
-    function testFuzz_deposit_delegate_forceUndelegate_completeAsShares(uint24 _random) public rand {
+    function testFuzz_deposit_delegate_forceUndelegate_completeAsShares(uint24) public {
         /// 0. Create an operator and a staker with:
         // - some nonzero underlying token balances
         // - corresponding to a random number of strategies
@@ -203,7 +203,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationChecks {
 
     /// forge-config: default.fuzz.runs = 1
     /// forge-config: forktest.fuzz.runs = 1
-    function testFuzz_deposit_delegate_undelegate_completeAsTokens_Max_Strategies(uint24 _random) public rand {
+    function testFuzz_deposit_delegate_undelegate_completeAsTokens_Max_Strategies(uint24) public {
         _configAssetTypes(HOLDS_MAX);
 
         (staker, strategies, initTokenBalances) = _newRandomStaker();

@@ -28,7 +28,7 @@ During the test, the config passed into `_configRand` will randomly generate onl
 Here's an example:
 
 ```solidity
-function testFuzz_deposit_delegate_EXAMPLE(uint24 _random) public {   
+function testFuzz_deposit_delegate_EXAMPLE(uint24) public {   
     // When new Users are created, they will choose a random configuration from these params.
     // `_randomSeed` will be the starting seed for all random lookups.
     _configRand({
@@ -105,7 +105,7 @@ Speaking of, the `TimeMachine` is a global contract that controls the time, fate
 This means that tests can perform user actions with very little setup or "reading prior state", and perform all the important assertions after each action. For example:
 
 ```solidity
-function testFuzz_deposit_delegate_EXAMPLE(uint24 _random) public {   
+function testFuzz_deposit_delegate_EXAMPLE(uint24) public {   
     // ... test setup goes above here
     
     // This snapshots state before the deposit.

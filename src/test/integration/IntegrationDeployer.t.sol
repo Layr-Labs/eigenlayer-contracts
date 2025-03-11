@@ -33,9 +33,9 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     /// @notice Returns whether the contracts have been upgraded or not.
     bool public isUpgraded;
     /// @notice Returns the allowed asset types for the tests.
-    bytes public assetTypes;
+    uint public assetTypes = HOLDS_LST | HOLDS_ETH | HOLDS_ALL;
     /// @notice Returns types of users to be randomly selected during tests
-    bytes public userTypes;
+    uint public userTypes = DEFAULT | ALT_METHODS;
     /// @notice Returns the fork type, set only once in setUp if FORK_MAINNET env is set
     uint public forkType;
 
@@ -94,31 +94,16 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             forkType = LOCAL;
             _setUpLocal();
         }
+        _init();
     }
 
     /// -----------------------------------------------------------------------
     /// Helpers
     /// -----------------------------------------------------------------------
 
-    /// @dev used to configure randomness and default user/asset types
-    ///
-    /// Tests that want alternate user/asset types can still use this modifier,
-    /// and then configure user/asset types individually using the methods:
-    /// _configAssetTypes(...)
-    /// _configUserTypes(...)
-    ///
-    /// (Alternatively, this modifier can be overwritten)
-    modifier rand() virtual {
-        _configRand({_assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL, _userTypes: DEFAULT | ALT_METHODS});
-
-        // Used to create shared setups between tests
-        _init();
-
-        _;
-    }
-
-    /// @dev Used to create shared setup between tests. This method is called
-    /// when the `rand` modifier is run, before a test starts
+    /// @dev Override this method in derived test contracts to implement custom initialization logic.
+    /// This method is called at the end of the setUp() function after all contracts are deployed and initialized.
+    /// It allows test contracts to perform additional setup steps without having to override the entire setUp() function.
     function _init() internal virtual {
         return;
     }
@@ -435,14 +420,17 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     }
 
     function _configRand(uint _assetTypes, uint _userTypes) private noTracing {
-        // Convert flag bitmaps to bytes of set bits for easy use with _randUint
-        _configAssetTypes(_assetTypes);
-        _configUserTypes(_userTypes);
+        // Set asset types and user types directly
+        assetTypes = _assetTypes;
+        userTypes = _userTypes;
+
+        assertTrue(assetTypes != 0, "_configRand: no asset types selected");
+        assertTrue(userTypes != 0, "_configRand: no user types selected");
     }
 
     function _configAssetTypes(uint _assetTypes) internal {
-        assetTypes = _parseAssetTypes(_assetTypes);
-        assertTrue(assetTypes.length != 0, "_configRand: no asset types selected");
+        assetTypes = _assetTypes;
+        assertTrue(assetTypes != 0, "_configRand: no asset types selected");
     }
 
     function _configAssetAmounts(uint _maxUniqueAssetsHeld) internal {
@@ -453,8 +441,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     }
 
     function _configUserTypes(uint _userTypes) internal {
-        userTypes = _parseUserTypes(_userTypes);
-        assertTrue(userTypes.length != 0, "_configRand: no user types selected");
+        userTypes = _userTypes;
+        assertTrue(userTypes != 0, "_configRand: no user types selected");
     }
 
     /**
@@ -597,24 +585,30 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     }
 
     function _randAssetType() internal returns (uint) {
-        return uint(uint8(assetTypes[cheats.randomUint({min: 0, max: assetTypes.length - 1})]));
+        // Overflow is not possible given the constraints of the assetTypes bitmap.
+        // Underflow is only possible if the bitmap is 0, which is checked for above.
+        unchecked {
+            uint[] memory options = new uint[](5); // We have 5 possible asset types
+            uint count = 0;
+            if (assetTypes & NO_ASSETS != 0) options[count++] = NO_ASSETS;
+            if (assetTypes & HOLDS_LST != 0) options[count++] = HOLDS_LST;
+            if (assetTypes & HOLDS_ETH != 0) options[count++] = HOLDS_ETH;
+            if (assetTypes & HOLDS_ALL != 0) options[count++] = HOLDS_ALL;
+            if (assetTypes & HOLDS_MAX != 0) options[count++] = HOLDS_MAX;
+            return options[cheats.randomUint(0, count - 1)];
+        }
     }
 
     function _randUserType() internal returns (uint) {
-        return uint(uint8(userTypes[cheats.randomUint({min: 0, max: userTypes.length - 1})]));
-    }
-
-    function _parseAssetTypes(uint bitmap) internal pure returns (bytes memory bytesArray) {
-        if (bitmap & NO_ASSETS != 0) bytesArray = bytes.concat(bytesArray, bytes1(uint8(1)));
-        if (bitmap & HOLDS_LST != 0) bytesArray = bytes.concat(bytesArray, bytes1(uint8(2)));
-        if (bitmap & HOLDS_ETH != 0) bytesArray = bytes.concat(bytesArray, bytes1(uint8(4)));
-        if (bitmap & HOLDS_ALL != 0) bytesArray = bytes.concat(bytesArray, bytes1(uint8(8)));
-        if (bitmap & HOLDS_MAX != 0) bytesArray = bytes.concat(bytesArray, bytes1(uint8(16)));
-    }
-
-    function _parseUserTypes(uint bitmap) internal pure returns (bytes memory bytesArray) {
-        if (bitmap & DEFAULT != 0) bytesArray = bytes.concat(bytesArray, bytes1(uint8(1)));
-        if (bitmap & ALT_METHODS != 0) bytesArray = bytes.concat(bytesArray, bytes1(uint8(2)));
+        // Overflow is not possible given the constraints of the userTypes bitmap.
+        // Underflow is only possible if the bitmap is 0, which is checked for above.
+        unchecked {
+            uint[] memory options = new uint[](2); // We have 2 possible user types
+            uint count = 0;
+            if (userTypes & DEFAULT != 0) options[count++] = DEFAULT;
+            if (userTypes & ALT_METHODS != 0) options[count++] = ALT_METHODS;
+            return options[cheats.randomUint(0, count - 1)];
+        }
     }
 
     function _hash(string memory x) internal pure returns (bytes32) {

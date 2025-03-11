@@ -5,7 +5,7 @@ import "src/test/integration/users/User.t.sol";
 import "src/test/integration/IntegrationChecks.t.sol";
 
 contract Integration_Deposit_Register_QueueWithdrawal_Complete is IntegrationChecks {
-    function testFuzz_deposit_registerOperator_queueWithdrawal_completeAsShares(uint24 _random) public rand {
+    function testFuzz_deposit_registerOperator_queueWithdrawal_completeAsShares(uint24) public {
         // Create a staker with a nonzero balance and corresponding strategies
         (staker, strategies, initTokenBalances) = _newRandomStaker();
 
@@ -32,7 +32,7 @@ contract Integration_Deposit_Register_QueueWithdrawal_Complete is IntegrationChe
         }
     }
 
-    function testFuzz_deposit_registerOperator_queueWithdrawal_completeAsTokens(uint24 _random) public rand {
+    function testFuzz_deposit_registerOperator_queueWithdrawal_completeAsTokens(uint24) public {
         // Create a staker with a nonzero balance and corresponding strategies
         (staker, strategies, initTokenBalances) = _newRandomStaker();
         // 1. Staker deposits into strategy

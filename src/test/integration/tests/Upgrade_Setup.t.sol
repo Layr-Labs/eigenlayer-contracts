@@ -6,7 +6,7 @@ import "src/test/integration/IntegrationChecks.t.sol";
 contract IntegrationMainnetFork_UpgradeSetup is IntegrationChecks {
     // /// @notice Test upgrade setup is correct
     // /// forge-config: default.fuzz.runs = 1
-    // function test_mainnet_upgrade_setup(uint24 _random) public {
+    // function testFuzz_mainnet_upgrade_setup(uint24) public {
     //     _configRand({
     //         _randomSeed: _random,
     //         _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
@@ -32,7 +32,7 @@ contract IntegrationMainnetFork_UpgradeSetup is IntegrationChecks {
 
     // /// @notice Test upgrade setup is correct
     // /// forge-config: default.fuzz.runs = 1
-    // function test_holesky_upgrade_setup(uint24 _random) public {
+    // function testFuzz_holesky_upgrade_setup(uint24) public {
     //     _configRand({
     //         _randomSeed: _random,
     //         _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,

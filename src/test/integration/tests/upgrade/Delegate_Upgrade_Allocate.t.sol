@@ -41,7 +41,7 @@ contract Integration_Upgrade_Deposit_Delegate_Allocate is UpgradeTest {
         check_IncrAlloc_State_Slashable(state.operator, state.allocateParams);
     }
 
-    function testFuzz_deposit_delegate_upgrade_allocate(uint24 r) public rand {
+    function testFuzz_deposit_delegate_upgrade_allocate(uint24) public {
         TestState memory state = _init_();
         _upgradeEigenLayerContracts();
         state.avs = _newRandomAVS();
