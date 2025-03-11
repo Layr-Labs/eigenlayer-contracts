@@ -663,7 +663,7 @@ contract Integration_SlashedEigenpod_BC_HalfSlash is IntegrationChecks {
      * @notice Test sets up an EigenPod which has a non-WAD BCSF. After queue withdrawing all depositShares
      * which sets it to 0, they can then complete checkpoints repeatedly with 0 shares increase to increase the staker DSF each time
      */
-    function testFuzz_completeCP_withNoAddedShares(uint24) public {
+    function test_completeCP_withNoAddedShares() public {
         // 4. queue withdraw all depositShares having it set to 0
         uint withdrawableSharesBefore = _getStakerWithdrawableShares(staker, strategies)[0];
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, initDepositShares);
