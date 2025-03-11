@@ -1358,7 +1358,6 @@ abstract contract IntegrationBase is IntegrationGetters {
         }
     }
 
-
     /// @dev Used to assert that the DSF is either increased or unchanged, depending on the slashing factor, on a deposit
     function assert_Snap_DSF_State_Deposit(User staker, IStrategy[] memory strategies, string memory err) internal {
         uint[] memory curDepositShares = _getStakerDepositShares(staker, strategies);
