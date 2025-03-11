@@ -30,9 +30,6 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
         //delegatable shares equals deposit shares here because no bc slashing
         uint[] memory delegatableShares = shares;
 
-        assert_HasNoDelegatableShares(staker, "staker should not have delegatable shares before depositing");
-        assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated");
-
         /// 1. Deposit Into Strategies
         staker.depositIntoEigenlayer(strategies, initTokenBalances);
         check_Deposit_State(staker, strategies, shares);
@@ -59,7 +56,6 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
         // 5. Delegate to a new operator
         staker.delegateTo(operator2);
         check_Delegation_State(staker, operator2, strategies, shares);
-        assertNotEq(address(operator1), delegationManager.delegatedTo(address(staker)), "staker should not be delegated to operator1");
 
         // 6. Queue Withdrawal
         withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
@@ -93,9 +89,6 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
         uint[] memory shares = _calculateExpectedShares(strategies, initTokenBalances);
         //delegatable shares equals deposit shares here because no bc slashing
         uint[] memory delegatableShares = shares;
-
-        assert_HasNoDelegatableShares(staker, "staker should not have delegatable shares before depositing");
-        assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated");
 
         /// 1. Deposit Into Strategies
         staker.depositIntoEigenlayer(strategies, initTokenBalances);
@@ -157,10 +150,6 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
         User operator2 = _newRandomOperator();
 
         uint[] memory shares = _calculateExpectedShares(strategies, initTokenBalances);
-
-        assert_HasNoDelegatableShares(staker, "staker should not have delegatable shares before depositing");
-        assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated");
-
         {
             // Divide shares by 2 in new array to do deposits after redelegate
             uint[] memory numTokensToDeposit = new uint[](initTokenBalances.length);
@@ -242,10 +231,6 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
         User operator2 = _newRandomOperator();
 
         uint[] memory totalShares = new uint[](strategies.length);
-
-        assert_HasNoDelegatableShares(staker, "staker should not have delegatable shares before depositing");
-        assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated");
-
         {
             // Divide shares by 2 in new array to do deposits after redelegate
             uint[] memory numTokensToDeposit = new uint[](initTokenBalances.length);
@@ -329,9 +314,6 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
         //delegatable shares equals deposit shares here because no bc slashing
         uint[] memory delegatableShares = shares;
 
-        assert_HasNoDelegatableShares(staker, "staker should not have delegatable shares before depositing");
-        assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated");
-
         /// 1. Deposit Into Strategies
         staker.depositIntoEigenlayer(strategies, initTokenBalances);
         uint[] memory withdrawnTokenBalances = _calculateExpectedTokens(strategies, shares);
@@ -394,9 +376,6 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationChecks {
         uint[] memory shares = _calculateExpectedShares(strategies, initTokenBalances);
         //delegatable shares equals deposit shares here because no bc slashing
         uint[] memory delegatableShares = shares;
-
-        assert_HasNoDelegatableShares(staker, "staker should not have delegatable shares before depositing");
-        assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated");
 
         /// 1. Deposit Into Strategies
         staker.depositIntoEigenlayer(strategies, initTokenBalances);

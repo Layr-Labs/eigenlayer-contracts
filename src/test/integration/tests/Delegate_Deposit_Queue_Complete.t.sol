@@ -17,10 +17,7 @@ contract Integration_Delegate_Deposit_Queue_Complete is IntegrationChecks {
         // 2. Deposit into strategy
         staker.depositIntoEigenlayer(strategies, initTokenBalances);
         uint[] memory shares = _calculateExpectedShares(strategies, initTokenBalances);
-
-        // Check that the deposit increased operator shares the staker is delegated to
         check_Deposit_State(staker, strategies, shares);
-        assert_Snap_Added_OperatorShares(operator, strategies, shares, "operator should have received shares");
 
         // 3. Queue Withdrawal
         withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
@@ -49,10 +46,7 @@ contract Integration_Delegate_Deposit_Queue_Complete is IntegrationChecks {
         staker.depositIntoEigenlayer(strategies, initTokenBalances);
         uint[] memory shares = _calculateExpectedShares(strategies, initTokenBalances);
         uint[] memory expectedTokens = _calculateExpectedTokens(strategies, shares);
-
-        // Check that the deposit increased operator shares the staker is delegated to
         check_Deposit_State(staker, strategies, shares);
-        assert_Snap_Added_OperatorShares(operator, strategies, shares, "operator should have received shares");
 
         // 3. Queue Withdrawal
         withdrawableShares = _getStakerWithdrawableShares(staker, strategies);

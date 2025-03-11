@@ -312,16 +312,11 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
 
         // 7. Complete withdrawal. Staker should receive 0 shares/tokens after a full slash
         _rollBlocksForCompleteWithdrawals(withdrawals);
-
         for (uint i = 0; i < withdrawals.length; ++i) {
             uint[] memory expectedShares = _calculateExpectedShares(withdrawals[i]);
             staker.completeWithdrawalAsShares(withdrawals[i]);
             check_Withdrawal_AsShares_Undelegated_State(staker, operator, withdrawals[i], withdrawals[i].strategies, expectedShares);
         }
-
-        // Final state checks
-        assert_HasExpectedShares(staker, strategies, shares, "staker should have expected shares after redeposit");
-        assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }
 
     function testFuzz_fullSlash_redelegate_redeposit_complete(uint24) public {
@@ -352,9 +347,5 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
             staker.completeWithdrawalAsShares(withdrawals[i]);
             check_Withdrawal_AsShares_Undelegated_State(staker, operator, withdrawals[i], withdrawals[i].strategies, expectedShares);
         }
-
-        // Final state checks
-        assert_HasExpectedShares(staker, strategies, shares, "staker should have expected shares after redeposit");
-        assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }
 }

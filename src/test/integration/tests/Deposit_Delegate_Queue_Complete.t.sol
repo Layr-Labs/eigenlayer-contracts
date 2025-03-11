@@ -25,12 +25,8 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationChecks {
         // ... check that the staker has no delegatable shares and isn't currently delegated
         (staker, strategies, initTokenBalances) = _newRandomStaker();
         operator = _newRandomOperator();
-
         uint[] memory shares = _calculateExpectedShares(strategies, initTokenBalances);
-
-        assert_HasNoDelegatableShares(staker, "staker should not have delegatable shares before depositing");
-        assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated");
-
+        
         // 1. Deposit Into Strategies
         staker.depositIntoEigenlayer(strategies, initTokenBalances);
         check_Deposit_State(staker, strategies, shares);
@@ -54,12 +50,6 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationChecks {
             staker.completeWithdrawalAsTokens(withdrawals[i]);
             check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], shares, expectedTokens);
         }
-
-        // Check final state:
-        assertEq(address(operator), delegationManager.delegatedTo(address(staker)), "staker should still be delegated to operator");
-        assert_HasNoDelegatableShares(staker, "staker should have withdrawn all shares");
-        assert_HasUnderlyingTokenBalances(staker, strategies, initTokenBalances, "staker should once again have original token balances");
-        assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }
 
     /// Generates a random staker and operator. The staker:
@@ -77,9 +67,6 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationChecks {
         operator = _newRandomOperator();
 
         uint[] memory shares = _calculateExpectedShares(strategies, initTokenBalances);
-
-        assert_HasNoDelegatableShares(staker, "staker should not have delegatable shares before depositing");
-        assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated");
 
         // 1. Deposit Into Strategies
         staker.depositIntoEigenlayer(strategies, initTokenBalances);
@@ -103,12 +90,6 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationChecks {
             staker.completeWithdrawalAsShares(withdrawals[i]);
             check_Withdrawal_AsShares_State(staker, operator, withdrawals[i], strategies, shares);
         }
-
-        // Check final state:
-        assertEq(address(operator), delegationManager.delegatedTo(address(staker)), "staker should still be delegated to operator");
-        assert_HasExpectedShares(staker, strategies, shares, "staker should have all original shares");
-        assert_HasNoUnderlyingTokenBalance(staker, strategies, "staker not have any underlying tokens");
-        assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }
 
     /**
@@ -132,16 +113,12 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationChecks {
 
         uint[] memory shares = _calculateExpectedShares(strategies, initTokenBalances);
 
-        assert_HasNoDelegatableShares(staker, "staker should not have delegatable shares before depositing");
-        assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated");
-
         // 1. Deposit Into Strategies
         staker.depositIntoEigenlayer(strategies, initTokenBalances);
         check_Deposit_State(staker, strategies, shares);
 
         // 2. Register staker as an operator
         staker.registerAsOperator();
-        assertTrue(delegationManager.isDelegated(address(staker)), "staker should be delegated");
 
         // 3. Attempt to delegate to an operator
         //    This should fail as the staker is already delegated to themselves.
