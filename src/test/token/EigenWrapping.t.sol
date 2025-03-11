@@ -35,7 +35,9 @@ contract EigenWrappingTests is Test {
     /// @notice event emitted when the transfer restrictions are disabled
     event TransferRestrictionsDisabled();
 
-    modifier filterAddress(address fuzzedAddress) {
+    modifier filterAddress(
+        address fuzzedAddress
+    ) {
         vm.assume(!fuzzedOutAddresses[fuzzedAddress]);
         _;
     }
@@ -82,8 +84,7 @@ contract EigenWrappingTests is Test {
         // initial bEIGEN balance
         uint256 initialBEIGENBalanceOfEigenToken = bEIGEN.balanceOf(address(eigen));
         // initial EIGEN token supply
-        assertEq(eigen.totalSupply(), bEIGEN.totalSupply(),
-            "eigen totalSupply changed incorrectly");
+        assertEq(eigen.totalSupply(), bEIGEN.totalSupply(), "eigen totalSupply changed incorrectly");
 
         // unwrap
         // unwrap amount should be less than minter1 balance
@@ -92,10 +93,12 @@ contract EigenWrappingTests is Test {
         eigen.unwrap(unwrapAmount);
 
         // check total supply and balance changes
-        assertEq(eigen.totalSupply(), bEIGEN.totalSupply(),
-            "eigen totalSupply changed incorrectly");
-        assertEq(bEIGEN.balanceOf(address(eigen)), initialBEIGENBalanceOfEigenToken - unwrapAmount,
-            "beigen balance of EIGEN tokens changed incorrectly");
+        assertEq(eigen.totalSupply(), bEIGEN.totalSupply(), "eigen totalSupply changed incorrectly");
+        assertEq(
+            bEIGEN.balanceOf(address(eigen)),
+            initialBEIGENBalanceOfEigenToken - unwrapAmount,
+            "beigen balance of EIGEN tokens changed incorrectly"
+        );
         assertEq(eigen.balanceOf(address(unwrapper)), minter1Balance - unwrapAmount);
         assertEq(bEIGEN.balanceOf(address(unwrapper)), unwrapAmount);
     }
@@ -120,8 +123,7 @@ contract EigenWrappingTests is Test {
         vm.stopPrank();
 
         // initial EIGEN token supply
-        assertEq(eigen.totalSupply(), bEIGEN.totalSupply(),
-            "eigen totalSupply changed incorrectly");
+        assertEq(eigen.totalSupply(), bEIGEN.totalSupply(), "eigen totalSupply changed incorrectly");
 
         // wrap
         // wrap amount should be less than minter1 balance
@@ -134,14 +136,16 @@ contract EigenWrappingTests is Test {
         vm.stopPrank();
 
         // check total supply and balance changes
-        assertEq(eigen.totalSupply(), bEIGEN.totalSupply(),
-            "eigen totalSupply changed incorrectly");
+        assertEq(eigen.totalSupply(), bEIGEN.totalSupply(), "eigen totalSupply changed incorrectly");
         assertEq(bEIGEN.balanceOf(address(eigen)), initialBEIGENBalanceOfEigenToken - minter1Balance + wrapAmount);
         assertEq(eigen.balanceOf(address(wrapper)), wrapAmount);
         assertEq(bEIGEN.balanceOf(address(wrapper)), minter1Balance - wrapAmount);
     }
 
-    function test_CannotUnwrapMoreThanBalance(address unwrapper, uint256 unwrapAmount) public filterAddress(unwrapper) {
+    function test_CannotUnwrapMoreThanBalance(
+        address unwrapper,
+        uint256 unwrapAmount
+    ) public filterAddress(unwrapper) {
         _simulateMint();
         _simulateBackingAndSetTransferRestrictions();
 
@@ -185,16 +189,6 @@ contract EigenWrappingTests is Test {
         // dummy mint
         EigenHarness(address(eigen)).mint(minter1, totalSupply / 2);
         EigenHarness(address(eigen)).mint(minter2, totalSupply / 2);
-
-        // set allowed froms
-        EigenHarness(address(eigen)).setAllowedFromPermissionless(minter1, true);
-        EigenHarness(address(eigen)).setAllowedFromPermissionless(minter2, true);
-
-        // set transfer restrictions to be disabled after to max
-        EigenHarness(address(eigen)).setTransferRestrictionsDisabledAfterToMax();
-
-        // set owner to minter1
-        EigenHarness(address(eigen)).transferOwnershipPermissionless(minter1);
     }
 
     function _simulateBackingAndSetTransferRestrictions() internal {
@@ -203,6 +197,5 @@ contract EigenWrappingTests is Test {
         vm.startPrank(minter1);
         bEIGEN.setAllowedFrom(minter1, true);
         vm.stopPrank();
-
     }
 }
