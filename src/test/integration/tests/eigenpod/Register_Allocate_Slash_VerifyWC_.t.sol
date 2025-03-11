@@ -67,9 +67,8 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationChecks {
     function testFuzz_slashBC_startCompleteCP_queue_complete(uint24) public {
         // 4. slash validators on beacon chain (start/complete checkpoint)
         uint40[] memory slashedValidators = _choose(validators);
-        slashedGwei = beaconChain.slashValidators(slashedValidators, BeaconChainMock.SlashType.Minor);
+        slashedGwei = beaconChain.slashValidators(slashedValidators, BeaconChainMock.SlashType.Half);
         // ensure non zero amount slashed gwei so that we can test rounding down behavior
-        cheats.assume(slashedGwei > 0);
         beaconChain.advanceEpoch_NoWithdrawNoRewards();
         // start and complete checkpoint
         staker.startCheckpoint();
