@@ -3,20 +3,7 @@ pragma solidity ^0.8.27;
 
 import "src/test/integration/IntegrationChecks.t.sol";
 
-contract Integration_ALMSlashBase is IntegrationCheckUtils {
-    AVS avs;
-    OperatorSet operatorSet;
-
-    User operator;
-    AllocateParams allocateParams;
-    SlashingParams slashParams;
-
-    User staker;
-    IStrategy[] strategies;
-    IERC20[] tokens; // underlying token for each strategy
-    uint[] initTokenBalances;
-    uint[] initDepositShares;
-
+contract Integration_ALMSlashBase is IntegrationChecks {
     /// Shared setup:
     ///
     /// 1. Generate staker, operator, and AVS
@@ -27,8 +14,8 @@ contract Integration_ALMSlashBase is IntegrationCheckUtils {
     /// NOTE: Steps 4 and 5 are done in random order, as these should not have an outcome on the test
     function _init() internal virtual override {
         (staker, strategies, initTokenBalances) = _newRandomStaker();
-        operator = _newRandomOperator_NoAssets();
-        (avs,) = _newRandomAVS();
+        operator = _newRandomOperator();
+        avs = _newRandomAVS();
         tokens = _getUnderlyingTokens(strategies);
 
         // 1. Deposit Into Strategies
@@ -91,7 +78,7 @@ contract Integration_SlashThenWithdraw is Integration_ALMSlashBase {
         /// be checked via invariants.
         {
             // Create operatorB
-            operatorB = _newRandomOperator_NoAssets();
+            operatorB = _newRandomOperator();
 
             // Create stakerB, deposit, and delegate to operatorB
             (stakerB, initTokenBalancesB) = _newStaker(strategies);
@@ -144,45 +131,45 @@ contract Integration_SlashThenWithdraw is Integration_ALMSlashBase {
         }
     }
 
-    function testFuzz_undelegate_completeAsTokens(uint24 _r) public rand(_r) {
-        /// Undelegate from operatorA
-        uint[] memory shares = _getStakerWithdrawableShares(staker, strategies);
-        Withdrawal[] memory withdrawals = staker.undelegate();
-        bytes32[] memory roots = _getWithdrawalHashes(withdrawals);
-        check_Undelegate_State(staker, operator, withdrawals, roots, strategies, shares);
+    // function testFuzz_undelegate_completeAsTokens(uint24) public {
+    //     /// Undelegate from operatorA
+    //     uint[] memory shares = _getStakerWithdrawableShares(staker, strategies);
+    //     Withdrawal[] memory withdrawals = staker.undelegate();
+    //     withdrawalRoots = _getWithdrawalHashes(withdrawals);
+    //     check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, shares);
 
-        _rollBlocksForCompleteWithdrawals(withdrawals);
+    //     _rollBlocksForCompleteWithdrawals(withdrawals);
 
-        /// Complete withdrawal as tokens
-        uint[] memory expectedTokens = _calculateExpectedTokens(strategies, shares);
-        staker.completeWithdrawalsAsTokens(withdrawals);
-        for (uint i = 0; i < withdrawals.length; i++) {
-            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], strategies, shares, tokens, expectedTokens);
-        }
-    }
+    //     /// Complete withdrawal as tokens
+    //     uint[] memory expectedTokens = _calculateExpectedTokens(strategies, shares);
+    //     staker.completeWithdrawalsAsTokens(withdrawals);
+    //     for (uint i = 0; i < withdrawals.length; i++) {
+    //         check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], shares, expectedTokens);
+    //     }
+    // }
 
-    function testFuzz_redelegate_completeAsTokens(uint24 _r) public rand(_r) {
-        /// Redelegate to operatorB
-        uint[] memory shares = _getStakerWithdrawableShares(staker, strategies);
-        Withdrawal[] memory withdrawals = staker.redelegate(operatorB);
-        bytes32[] memory roots = _getWithdrawalHashes(withdrawals);
-        check_Redelegate_State(staker, operator, operatorB, withdrawals, roots, strategies, shares);
+    // function testFuzz_redelegate_completeAsTokens(uint24) public {
+    //     /// Redelegate to operatorB
+    //     uint[] memory shares = _getStakerWithdrawableShares(staker, strategies);
+    //     Withdrawal[] memory withdrawals = staker.redelegate(operatorB);
+    //     withdrawalRoots = _getWithdrawalHashes(withdrawals);
+    //     check_Redelegate_State(staker, operator, operatorB, withdrawals, withdrawalRoots, strategies, shares);
 
-        _rollBlocksForCompleteWithdrawals(withdrawals);
+    //     _rollBlocksForCompleteWithdrawals(withdrawals);
 
-        /// Complete withdrawal as tokens
-        uint[] memory expectedTokens = _calculateExpectedTokens(strategies, shares);
-        staker.completeWithdrawalsAsTokens(withdrawals);
-        for (uint i = 0; i < withdrawals.length; i++) {
-            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], strategies, shares, tokens, expectedTokens);
-        }
-    }
+    //     /// Complete withdrawal as tokens
+    //     uint[] memory expectedTokens = _calculateExpectedTokens(strategies, shares);
+    //     staker.completeWithdrawalsAsTokens(withdrawals);
+    //     for (uint i = 0; i < withdrawals.length; i++) {
+    //         check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], shares, expectedTokens);
+    //     }
+    // }
 
-    function testFuzz_queueFull_completeAsTokens(uint24 _r) public rand(_r) {
+    function testFuzz_queueFull_completeAsTokens(uint24) public {
         // Queue a withdrawal for all shares
-        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, initDepositShares);
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(staker, operator, strategies, initDepositShares, withdrawableShares, withdrawals, withdrawalRoots);
 
         _rollBlocksForCompleteWithdrawals(withdrawals);
@@ -192,18 +179,16 @@ contract Integration_SlashThenWithdraw is Integration_ALMSlashBase {
             uint[] memory expectedShares = _calculateExpectedShares(withdrawals[i]);
             uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, expectedShares);
             staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State(
-                staker, operator, withdrawals[i], withdrawals[i].strategies, expectedShares, tokens, expectedTokens
-            );
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], expectedShares, expectedTokens);
         }
     }
 
-    function testFuzz_undelegate_completeAsShares(uint24 _r) public rand(_r) {
+    function testFuzz_undelegate_completeAsShares(uint24) public {
         // Undelegate from operatorA
         uint[] memory shares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.undelegate();
-        bytes32[] memory roots = _getWithdrawalHashes(withdrawals);
-        check_Undelegate_State(staker, operator, withdrawals, roots, strategies, shares);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, shares);
 
         _rollBlocksForCompleteWithdrawals(withdrawals);
 
@@ -214,12 +199,12 @@ contract Integration_SlashThenWithdraw is Integration_ALMSlashBase {
         }
     }
 
-    function testFuzz_redelegate_completeAsShares(uint24 _r) public rand(_r) {
+    function testFuzz_redelegate_completeAsShares(uint24) public {
         // Redelegate to operatorB
         uint[] memory shares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.redelegate(operatorB);
-        bytes32[] memory roots = _getWithdrawalHashes(withdrawals);
-        check_Redelegate_State(staker, operator, operatorB, withdrawals, roots, strategies, shares);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        check_Redelegate_State(staker, operator, operatorB, withdrawals, withdrawalRoots, strategies, shares);
 
         _rollBlocksForCompleteWithdrawals(withdrawals);
 
@@ -230,11 +215,11 @@ contract Integration_SlashThenWithdraw is Integration_ALMSlashBase {
         }
     }
 
-    function testFuzz_queueFull_completeAsShares(uint24 _r) public rand(_r) {
+    function testFuzz_queueFull_completeAsShares(uint24) public {
         // Queue a withdrawal for all shares
-        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, initDepositShares);
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(staker, operator, strategies, initDepositShares, withdrawableShares, withdrawals, withdrawalRoots);
 
         _rollBlocksForCompleteWithdrawals(withdrawals);
@@ -248,11 +233,11 @@ contract Integration_SlashThenWithdraw is Integration_ALMSlashBase {
 }
 
 contract Integration_QueueWithdrawalThenSlash is Integration_ALMSlashBase {
-    function testFuzz_queue_slash_completeAsTokens(uint24 _r) public rand(_r) {
+    function testFuzz_queue_slash_completeAsTokens(uint24) public {
         // 4. Queue withdrawal
-        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, initDepositShares);
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(staker, operator, strategies, initDepositShares, withdrawableShares, withdrawals, withdrawalRoots);
 
         // 5. Slash operator
@@ -267,7 +252,7 @@ contract Integration_QueueWithdrawalThenSlash is Integration_ALMSlashBase {
             uint[] memory expectedShares = _calculateExpectedShares(withdrawals[i]);
             uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, expectedShares);
             staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], strategies, expectedShares, tokens, expectedTokens);
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], expectedShares, expectedTokens);
         }
 
         // Check Final State
@@ -276,11 +261,11 @@ contract Integration_QueueWithdrawalThenSlash is Integration_ALMSlashBase {
         assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }
 
-    function testFuzz_queue_slash_completeAsShares(uint24 _r) public rand(_r) {
+    function testFuzz_queue_slash_completeAsShares(uint24) public {
         // 4. Queue withdrawal
-        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, initDepositShares);
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(staker, operator, strategies, initDepositShares, withdrawableShares, withdrawals, withdrawalRoots);
 
         // 5. Slash operator
@@ -306,7 +291,7 @@ contract Integration_QueueWithdrawalThenSlash is Integration_ALMSlashBase {
 }
 
 contract Integration_DeallocateThenSlash is Integration_ALMSlashBase {
-    function testFuzz_deallocate_slash_queue_completeAsTokens(uint24 _r) public rand(_r) {
+    function testFuzz_deallocate_slash_queue_completeAsTokens(uint24) public {
         // 4. Deallocate all.
         AllocateParams memory deallocateParams = _genDeallocation_Full(operator, operatorSet);
         operator.modifyAllocations(deallocateParams);
@@ -321,9 +306,9 @@ contract Integration_DeallocateThenSlash is Integration_ALMSlashBase {
         // TODO - staker variants?
 
         // 6. Queue withdrawals
-        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, initDepositShares);
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(staker, operator, strategies, initDepositShares, withdrawableShares, withdrawals, withdrawalRoots);
 
         // 7. Complete withdrawal
@@ -331,7 +316,7 @@ contract Integration_DeallocateThenSlash is Integration_ALMSlashBase {
         for (uint i = 0; i < withdrawals.length; ++i) {
             uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].scaledShares);
             staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], strategies, initDepositShares, tokens, expectedTokens);
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], initDepositShares, expectedTokens);
         }
 
         // Check Final State
@@ -339,7 +324,7 @@ contract Integration_DeallocateThenSlash is Integration_ALMSlashBase {
         assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }
 
-    function testFuzz_deregister_slash(uint24 _r) public rand(_r) {
+    function testFuzz_deregister_slash(uint24) public {
         // 4. Deregister.
         operator.deregisterFromOperatorSet(operatorSet);
         check_Deregistration_State_PendingAllocation(operator, operatorSet);

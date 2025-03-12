@@ -8,8 +8,9 @@ import "src/contracts/libraries/Merkle.sol";
 import "src/contracts/pods/EigenPodManager.sol";
 
 import "src/test/mocks/ETHDepositMock.sol";
-import "src/test/integration/mocks/EIP_4788_Oracle_Mock.t.sol";
-import "src/test/utils/Logger.t.sol";
+import "src/test/mocks/EIP_4788_Oracle_Mock.t.sol";
+
+import "src/test/utils/Constants.t.sol";
 
 struct ValidatorFieldsProof {
     bytes32[] validatorFields;
@@ -39,9 +40,8 @@ struct StaleBalanceProofs {
     BeaconChainProofs.ValidatorProof validatorProof;
 }
 
-contract BeaconChainMock is Logger {
+contract BeaconChainMock {
     using StdStyle for *;
-    using print for *;
 
     struct Validator {
         bool isDummy;
@@ -75,18 +75,17 @@ contract BeaconChainMock is Logger {
     // see https://eth2book.info/capella/part3/containers/blocks/#beaconblock
     uint constant BEACON_BLOCK_FIELDS = 5;
 
-    uint immutable BLOCKROOT_PROOF_LEN = 32 * BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT;
-    uint immutable VAL_FIELDS_PROOF_LEN = 32 * ((BeaconChainProofs.VALIDATOR_TREE_HEIGHT + 1) + BeaconChainProofs.BEACON_STATE_TREE_HEIGHT);
-    uint immutable BALANCE_CONTAINER_PROOF_LEN =
+    uint constant BLOCKROOT_PROOF_LEN = 32 * BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT;
+    uint constant VAL_FIELDS_PROOF_LEN = 32 * ((BeaconChainProofs.VALIDATOR_TREE_HEIGHT + 1) + BeaconChainProofs.BEACON_STATE_TREE_HEIGHT);
+    uint constant BALANCE_CONTAINER_PROOF_LEN =
         32 * (BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT + BeaconChainProofs.BEACON_STATE_TREE_HEIGHT);
-    uint immutable BALANCE_PROOF_LEN = 32 * (BeaconChainProofs.BALANCE_TREE_HEIGHT + 1);
+    uint constant BALANCE_PROOF_LEN = 32 * (BeaconChainProofs.BALANCE_TREE_HEIGHT + 1);
+    uint constant GWEI_TO_WEI = 1e9;
 
     uint64 genesisTime;
     uint64 public nextTimestamp;
 
     EigenPodManager eigenPodManager;
-    IETHPOSDeposit constant DEPOSIT_CONTRACT = IETHPOSDeposit(0x00000000219ab540356cBB839Cbe05303d7705Fa);
-    EIP_4788_Oracle_Mock constant EIP_4788_ORACLE = EIP_4788_Oracle_Mock(0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02);
 
     /**
      * BeaconState containers, used for proofgen:
@@ -128,7 +127,7 @@ contract BeaconChainMock is Logger {
 
     bytes32[] zeroNodes;
 
-    constructor(EigenPodManager _eigenPodManager, uint64 _genesisTime) {
+    function initialize(EigenPodManager _eigenPodManager, uint64 _genesisTime) public {
         genesisTime = _genesisTime;
         eigenPodManager = _eigenPodManager;
 
@@ -147,10 +146,6 @@ contract BeaconChainMock is Logger {
         }
     }
 
-    function NAME() public pure override returns (string memory) {
-        return "BeaconChain";
-    }
-
     /**
      *
      *                                 EXTERNAL METHODS
@@ -162,8 +157,6 @@ contract BeaconChainMock is Logger {
     /// - Setting their current/effective balance
     /// - Assigning them a new, unique index
     function newValidator(bytes memory withdrawalCreds) public payable returns (uint40) {
-        print.method("newValidator");
-
         uint balanceWei = msg.value;
 
         // These checks mimic the checks made in the beacon chain deposit contract
@@ -198,8 +191,6 @@ contract BeaconChainMock is Logger {
     ///
     /// TODO we may need to advance a slot here to maintain the properties we want in startCheckpoint
     function exitValidator(uint40 validatorIndex) public returns (uint64 exitedBalanceGwei) {
-        print.method("exitValidator");
-
         // Update validator.exitEpoch
         Validator storage v = validators[validatorIndex];
         require(!v.isDummy, "BeaconChainMock: attempting to exit dummy validator. We need those for proofgen >:(");
@@ -218,8 +209,6 @@ contract BeaconChainMock is Logger {
     }
 
     function slashValidators(uint40[] memory _validators, SlashType _slashType) public returns (uint64 slashedBalanceGwei) {
-        print.method("slashValidators");
-
         for (uint i = 0; i < _validators.length; i++) {
             uint40 validatorIndex = _validators[i];
             Validator storage v = validators[validatorIndex];
@@ -258,8 +247,6 @@ contract BeaconChainMock is Logger {
     }
 
     function slashValidators(uint40[] memory _validators, uint64 _slashAmountGwei) public {
-        print.method("slashValidatorsAmountGwei");
-
         for (uint i = 0; i < _validators.length; i++) {
             uint40 validatorIndex = _validators[i];
             Validator storage v = validators[validatorIndex];
@@ -305,7 +292,6 @@ contract BeaconChainMock is Logger {
     /// - DOES generate consensus rewards for ALL non-exited validators
     /// - DOES withdraw in excess of 32 ETH / if validator is exited
     function advanceEpoch() public {
-        print.method("advanceEpoch");
         _generateRewards();
         _withdrawExcess();
         _advanceEpoch();
@@ -319,7 +305,6 @@ contract BeaconChainMock is Logger {
     /// - does NOT generate consensus rewards
     /// - DOES withdraw in excess of 32 ETH / if validator is exited
     function advanceEpoch_NoRewards() public {
-        print.method("advanceEpoch_NoRewards");
         _withdrawExcess();
         _advanceEpoch();
     }
@@ -333,13 +318,11 @@ contract BeaconChainMock is Logger {
     /// - does NOT withdraw in excess of 32 ETH
     /// - does NOT withdraw if validator is exited
     function advanceEpoch_NoWithdraw() public {
-        print.method("advanceEpoch_NoWithdraw");
         _generateRewards();
         _advanceEpoch();
     }
 
     function advanceEpoch_NoWithdrawNoRewards() public {
-        print.method("advanceEpoch_NoWithdrawNoRewards");
         _advanceEpoch();
     }
 
@@ -398,7 +381,7 @@ contract BeaconChainMock is Logger {
             _setCurrentBalance(uint40(i), newBalanceGwei);
         }
 
-        if (totalExcessWei != 0) console.log("- Withdrew excess balance:", totalExcessWei.asGwei());
+        if (totalExcessWei != 0) console.log("- Withdrew excess balance:", totalExcessWei);
     }
 
     function _advanceEpoch() public {
@@ -807,15 +790,6 @@ contract BeaconChainMock is Logger {
         return validators[validatorIndex].exitEpoch;
     }
 
-    function totalEffectiveBalanceWei(uint40[] memory validatorIndices) public view returns (uint) {
-        uint total;
-        for (uint i = 0; i < validatorIndices.length; i++) {
-            total += uint(validators[validatorIndices[i]].effectiveBalanceGwei * GWEI_TO_WEI);
-        }
-
-        return total;
-    }
-
     /// @dev Returns the validator's effective balance, in gwei
     function effectiveBalance(uint40 validatorIndex) public view returns (uint64) {
         return validators[validatorIndex].effectiveBalanceGwei;
@@ -859,14 +833,6 @@ contract BeaconChainMock is Logger {
     /// From EigenPod.sol
     function _nextEpochStartTimestamp(uint64 epoch) internal view returns (uint64) {
         return genesisTime + ((1 + epoch) * BeaconChainProofs.SECONDS_PER_EPOCH);
-    }
-
-    function _calcValProofIndex(uint40 validatorIndex) internal pure returns (uint) {
-        return (BeaconChainProofs.VALIDATOR_CONTAINER_INDEX << (BeaconChainProofs.VALIDATOR_TREE_HEIGHT + 1)) | uint(validatorIndex);
-    }
-
-    function _calcBalanceProofIndex(uint40 balanceRootIndex) internal pure returns (uint) {
-        return (BeaconChainProofs.BALANCE_CONTAINER_INDEX << (BeaconChainProofs.BALANCE_TREE_HEIGHT + 1)) | uint(balanceRootIndex);
     }
 
     function _getZeroNode(uint depth) internal view returns (bytes32) {
@@ -991,10 +957,6 @@ contract BeaconChainMock is Logger {
             stateRootProof: stateRootProofs[curTimestamp],
             validatorProof: BeaconChainProofs.ValidatorProof({validatorFields: vfProof.validatorFields, proof: vfProof.validatorFieldsProof})
         });
-    }
-
-    function balanceOfGwei(uint40 validatorIndex) public view returns (uint64) {
-        return validators[validatorIndex].effectiveBalanceGwei;
     }
 
     function pubkeyHash(uint40 validatorIndex) public view returns (bytes32) {
