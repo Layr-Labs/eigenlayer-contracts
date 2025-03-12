@@ -10,6 +10,8 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "src/contracts/libraries/BeaconChainProofs.sol";
 
+import {IRewardsCoordinatorTypes} from "src/contracts/interfaces/IRewardsCoordinator.sol";
+
 contract EmptyContract {}
 
 contract DeployFresh is EOADeployer {
@@ -69,7 +71,8 @@ contract DeployFresh is EOADeployer {
             deployedTo: address(new EigenPod(
                 Env.ethPOS(),
                 Env.proxy.eigenPodManager(),
-                Env.EIGENPOD_GENESIS_TIME()
+                Env.EIGENPOD_GENESIS_TIME(),
+                Env.deployToVersion()
             ))
         });
 
@@ -93,17 +96,17 @@ contract DeployFresh is EOADeployer {
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
         deployImpl({
             name: type(DelegationManager).name,
-            deployedTo: address(new DelegationManager(Env.proxy.strategyManager(), Env.proxy.eigenPodManager(), Env.proxy.allocationManager(), Env.impl.pauserRegistry(), Env.proxy.permissionController(), Env.MIN_WITHDRAWAL_DELAY()))
+            deployedTo: address(new DelegationManager(Env.proxy.strategyManager(), Env.proxy.eigenPodManager(), Env.proxy.allocationManager(), Env.impl.pauserRegistry(), Env.proxy.permissionController(), Env.MIN_WITHDRAWAL_DELAY(), Env.deployToVersion()))
         });
 
         deployImpl({
             name: type(StrategyManager).name,
-            deployedTo: address(new StrategyManager(Env.proxy.delegationManager(), Env.impl.pauserRegistry()))
+            deployedTo: address(new StrategyManager(Env.proxy.delegationManager(), Env.impl.pauserRegistry(), Env.deployToVersion()))
         });
 
         deployImpl({
             name: type(AVSDirectory).name,
-            deployedTo: address(new AVSDirectory(Env.proxy.delegationManager(), Env.impl.pauserRegistry()))
+            deployedTo: address(new AVSDirectory(Env.proxy.delegationManager(), Env.impl.pauserRegistry(), Env.deployToVersion()))
         });
 
         deployImpl({
@@ -112,43 +115,47 @@ contract DeployFresh is EOADeployer {
                 Env.ethPOS(),
                 Env.beacon.eigenPod(),
                 Env.proxy.delegationManager(),
-                Env.impl.pauserRegistry()
+                Env.impl.pauserRegistry(),
+                Env.deployToVersion()
             ))
         });
 
         deployImpl({
             name: type(RewardsCoordinator).name,
-            deployedTo: address(new RewardsCoordinator(
-                Env.proxy.delegationManager(),
-                Env.proxy.strategyManager(),
-                Env.proxy.allocationManager(),
-                Env.impl.pauserRegistry(),
-                Env.proxy.permissionController(),
-                Env.CALCULATION_INTERVAL_SECONDS(),
-                Env.MAX_REWARDS_DURATION(),
-                Env.MAX_RETROACTIVE_LENGTH(),
-                Env.MAX_FUTURE_LENGTH(),
-                Env.GENESIS_REWARDS_TIMESTAMP()
-            ))
+            deployedTo: address(new RewardsCoordinator(IRewardsCoordinatorTypes.RewardsCoordinatorConstructorParams({
+                delegationManager: Env.proxy.delegationManager(),
+                strategyManager: Env.proxy.strategyManager(),
+                allocationManager: Env.proxy.allocationManager(),
+                pauserRegistry: Env.impl.pauserRegistry(),
+                permissionController: Env.proxy.permissionController(),
+                CALCULATION_INTERVAL_SECONDS: Env.CALCULATION_INTERVAL_SECONDS(),
+                MAX_REWARDS_DURATION: Env.MAX_REWARDS_DURATION(),
+                MAX_RETROACTIVE_LENGTH: Env.MAX_RETROACTIVE_LENGTH(),
+                MAX_FUTURE_LENGTH: Env.MAX_FUTURE_LENGTH(),
+                GENESIS_REWARDS_TIMESTAMP: Env.GENESIS_REWARDS_TIMESTAMP(),
+                version: Env.deployToVersion()
+            })))
         });
 
         deployImpl({
             name: type(AllocationManager).name,
             deployedTo: address(
-                new AllocationManager(Env.proxy.delegationManager(), Env.impl.pauserRegistry(), Env.proxy.permissionController(), Env.MIN_WITHDRAWAL_DELAY(), Env.ALLOCATION_CONFIGURATION_DELAY())
+                new AllocationManager(Env.proxy.delegationManager(), Env.impl.pauserRegistry(), Env.proxy.permissionController(), Env.MIN_WITHDRAWAL_DELAY(), Env.ALLOCATION_CONFIGURATION_DELAY(), Env.deployToVersion())
             )
         });
 
         deployImpl({
             name: type(PermissionController).name,
             deployedTo: address(
-                new PermissionController()
+                new PermissionController(
+                    Env.deployToVersion()
+                )
             )
         });
 
         deployImpl({
             name: type(StrategyFactory).name,
-            deployedTo: address(new StrategyFactory(Env.impl.strategyManager(), Env.impl.pauserRegistry()))
+            deployedTo: address(new StrategyFactory(Env.impl.strategyManager(), Env.impl.pauserRegistry(), Env.deployToVersion()))
         });
         
         /// strategies/
@@ -156,7 +163,8 @@ contract DeployFresh is EOADeployer {
             name: type(StrategyBaseTVLLimits).name,
             deployedTo: address(new StrategyBaseTVLLimits({
                 _strategyManager: Env.proxy.strategyManager(),
-                _pauserRegistry: Env.impl.pauserRegistry()
+                _pauserRegistry: Env.impl.pauserRegistry(),
+                _version: Env.deployToVersion()
             }))
         });
 
@@ -164,7 +172,8 @@ contract DeployFresh is EOADeployer {
             name: type(EigenStrategy).name,
             deployedTo: address(new EigenStrategy({
                 _strategyManager: Env.proxy.strategyManager(),
-                _pauserRegistry: Env.impl.pauserRegistry()
+                _pauserRegistry: Env.impl.pauserRegistry(),
+                _version: Env.deployToVersion()
             }))
         });
 
@@ -172,7 +181,8 @@ contract DeployFresh is EOADeployer {
             name: type(StrategyFactory).name,
             deployedTo: address(new StrategyFactory({
                 _strategyManager: Env.proxy.strategyManager(),
-                _pauserRegistry: Env.impl.pauserRegistry()
+                _pauserRegistry: Env.impl.pauserRegistry(),
+                _version: Env.deployToVersion()
             }))
         });
 
@@ -181,7 +191,8 @@ contract DeployFresh is EOADeployer {
             name: type(StrategyBase).name,
             deployedTo: address(new StrategyBase({
                 _strategyManager: Env.proxy.strategyManager(),
-                _pauserRegistry: Env.impl.pauserRegistry()
+                _pauserRegistry: Env.impl.pauserRegistry(),
+                _version: Env.deployToVersion()
             }))
         });
 
