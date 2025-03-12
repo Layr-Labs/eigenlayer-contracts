@@ -1,29 +1,64 @@
-name: Certora Prover Workflow
+name: Certora
 
 on:
+  # Run when PRs from feat/* branches are merged into dev
+  pull_request:
+    types: [closed]
+    branches:
+      - dev
+  
+  # Run on any pushes to certora/* branches
   push:
     branches:
-      - dev
-  pull_request:
-    branches:
-      - dev
+      - 'certora/**'
+  
+  # Biweekly schedule (1st and 15th of each month at midnight UTC)
+  schedule:
+    - cron: '0 0 1,15 * *'
+  
+  # Manual trigger
   workflow_dispatch:
 
 jobs:
+  # First job: Compile the contracts for Certora verification
   compile:
-    runs-on: ubuntu-latest
+    name: Compile
+    # Run if it meets one of these conditions:
+    # 1. It's a merged PR from a feat/* branch to dev
+    # 2. It's a push to a certora/* branch
+    # 3. It's a scheduled run
+    # 4. It's a manually triggered run
+    if: >
+      (github.event_name == 'pull_request' && 
+       github.event.pull_request.merged == true && 
+       startsWith(github.head_ref, 'feat/')) || 
+      (github.event_name == 'push' && 
+       startsWith(github.ref, 'refs/heads/certora/')) ||
+      github.event_name == 'schedule' || 
+      github.event_name == 'workflow_dispatch'
+    runs-on: protocol-x64-16core
     steps:
+      # Checkout the repository with submodules
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+          # Use dev branch for scheduled runs, otherwise use the branch that triggered the workflow
+          ref: ${{ github.event_name == 'schedule' && 'dev' || github.ref }}
+
+      # Install the Foundry toolchain
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: stable
+
+      # Install dependencies using Forge
       - name: Install forge dependencies
         run: forge install
+
+      # Run Certora compilation step only
       - uses: Certora/certora-run-action@v1
         with:
+          # List of configuration files for different contracts to verify
           configurations: |-
             certora/confs/core/AllocationManager.conf
             certora/confs/core/AllocationManagerSanity.conf
@@ -38,25 +73,48 @@ jobs:
           solc-remove-version-prefix: "0."
           job-name: "Eigenlayer Contracts"
           certora-key: ${{ secrets.CERTORAKEY }}
+          # Only compile, don't run verification yet
           compilation-steps-only: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  # Second job: Run the actual verification after compilation succeeds
   verify:
-    runs-on: ubuntu-latest
+    name: Verify
+    runs-on: protocol-x64-16core
+    # This job depends on the compile job
     needs: compile
+    # Same conditions as the compile job
+    if: >
+      (github.event_name == 'pull_request' && 
+       github.event.pull_request.merged == true && 
+       startsWith(github.head_ref, 'feat/')) || 
+      (github.event_name == 'push' && 
+       startsWith(github.ref, 'refs/heads/certora/')) ||
+      github.event_name == 'schedule' || 
+      github.event_name == 'workflow_dispatch'
     steps:
+      # Checkout the repository with submodules
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+          # Use dev branch for scheduled runs, otherwise use the branch that triggered the workflow
+          ref: ${{ github.event_name == 'schedule' && 'dev' || github.ref }}
+          
+      # Install the Foundry toolchain.
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: nightly
+          version: stable
+
+      # Install dependencies using Forge
       - name: Install forge dependencies
         run: forge install
+
+      # Run Certora verification with the same configurations
       - uses: Certora/certora-run-action@v1
         with:
+          # List of configuration files for different contracts to verify
           configurations: |-
             certora/confs/core/AllocationManager.conf
             certora/confs/core/AllocationManagerSanity.conf
