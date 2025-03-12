@@ -156,3 +156,164 @@ As we can see, the exchange rate is now 4 tokens : 3 shares.
 We can see that Charlie's 375 shares are correctly worth 500 tokens, as 375 shares * 4 tokens / 3 shares = 500 tokens. *Note that, since the exchange rate hasn't changed, we do not need to recalculate Alice and Bob's eligible tokens.*
 
 Therefore, even though the exchange rate was not 1:1 prior to Charlie's deposit, the accounting is still correct, and he receives his intended amount of tokens. The only victim here is Alice, who effectively donated tokens to the existing depositors of the `StrategyBase` contract.
+
+### Inflation attacks
+
+An inflation attack is a more *specific* scenario that may impact depositors during the first deposits into a `StrategyBase` contract. This kind of attack is possible when the `StrategyBase` contract is first created, before or after the very first deposit. At this stage, the exchange rate of the `StrategyBase` is highly susceptible to manipulation, giving the first depositor the ability to steal funds from later depositors.
+
+Say Alice deposits 1 token into a `StrategyBase` contract, the first depositor to do so, and receives 1 share. This is an intentionally minimal amount so that she can perform an inflation attack.
+
+The current state:
+* `StrategyBase` total shares: **1**
+* `StrategyBase` token balance: **1**
+* Alice's shares: **1**
+* Alice's "deserved" token balance: **1**
+
+She notices that Bob is about to deposit 1000 tokens into the `StrategyBase` contract. She wants to manipulate the exchange rate to be so high that, due to rounding, Bob receives no shares for his deposit. In other words, she wants to set the exchange rate to some value where the number of tokens that Bob will be depositing is less than the number of tokens that would be required to receive 1 share. This would leave Bob with no shares, and no way to withdraw his tokens.
+
+For example, say that Alice sends a *million* tokens to the `StrategyBase` contract. She does not go through the `deposit` function; she does not receive any additional shares for depositing these tokens into the contract. The exchange rate is now 1e6 tokens : 1 share.
+
+The current state:
+* `StrategyBase` total shares: 1
+* `StrategyBase` token balance: **1e6 + 1**
+* Alice's shares: **1**
+* Alice's "deserved" token balance: **1e6 + 1**
+
+Note the large difference between the `StrategyBase`'s token balance and the number of shares. As mentioned before, the exchange rate is now 1e6 tokens : 1 share.
+
+When Bob deposits 1000 tokens, he is depositing less than 1e6 tokens, meaning that *he receives no shares for his deposit*. Calculating Bob's total shares:
+
+* Bob's 1000 tokens * 1 share / 1e6 tokens = 1e-3 shares = 0 shares
+
+Due to the large divisor, Bob's received shares are now 1e-3, a very small number, which is *effectively 0* due to EVM division. Thus, **Bob receives no shares for his token deposit**. This is a problem, as he is entitled to 1000 tokens, but has no shares for withdrawing it.
+
+The current state:
+* `StrategyBase` total shares: 1
+* `StrategyBase` token balance: **1e6 + 1001**
+* Alice's shares: 1
+* Alice's "deserved" token balance: 1e6 + 1
+* Bob's shares: 0
+* Bob's "deserved" token balance: **1000**
+
+As we can see, Bob's token balance increased, but his shares remained at 0, losing his deposited tokens to Alice. Alice has all the shares of the `StrategyBase` contract, and can withdraw all of the tokens, including Bob's 1000 tokens, even though she does not "deserve" those tokens as she is not the rightful owner.
+
+#### Mitigation: Virtual Shares
+
+To mitigate this, **we use a "virtual shares" mechanism**. Every created `StrategyBase` contract is initialized with a certain number of virtual shares (1e3) and virtual tokens (1e3), which simulate the "first deposit" into this `StrategyBase` contract. This prevents a first depositor from manipulating the exchange rate to their benefit, as they lose the advantages typically associated with the first depositor.
+
+Consider Alice trying to perform the same attack as before, but with the virtual shares mechanism. The virtual shares are now 1e3, and the virtual tokens are 1e3. The total shares and token balance reflect this.
+
+The current state:
+* `StrategyBase` total shares: **1,000**
+* `StrategyBase` token balance: **1,000**
+* Alice's shares: 0
+* Alice's "deserved" token balance: 0
+
+Alice deposits her 1 token into the `StrategyBase` contract. She receives 1 share, as expected.
+
+The current state:
+* `StrategyBase` total shares: **1,001**
+* `StrategyBase` token balance: **1,001**
+* Alice's shares: **1**
+* Alice's "deserved" token balance: **1**
+
+Note immediately that Alice has 1 share, which is less than 0.1% of the total shares. She no longer has 100% of the shares due to this "virtual depositor".
+
+Bob again intends to deposit 100 tokens into the `StrategyBase` contract. However, Alice beats him to it, depositing 1 million tokens into the `StrategyBase` contract. She does not receive any additional shares for depositing these tokens into the contract.
+
+The current state:
+* `StrategyBase` total shares: **1,001**
+* `StrategyBase` token balance: **1,001,001**
+* Alice's shares: **1**
+* Alice's "deserved" token balance: **1,000,001**
+
+Remember how Alice only has 1 share? Notice how she cannot withdraw the million tokens she deposited! 
+
+* Alice's 1 share * 1,000,001 tokens / 1,001 shares = 999 tokens. ***Lower* than the expected 1,000,001 tokens.**
+
+Given the virtual depositor, Alice is "donating" her tokens to the `StrategyBase` contract, and is not able to withdraw the majority of the tokens she deposited.
+
+Bob now deposits his 1000 tokens, at an exchange rate of ~1000 tokens : 1 share. Given that the exchange rate is now 1000 tokens : 1 share, Bob receives 1 share for his deposit, as he has deposited enough tokens to not have his shares rounded down to 0.
+
+The current state:
+* `StrategyBase` total shares: **1,002**
+* `StrategyBase` token balance: **1,002,001**
+* Alice's shares: 1
+* Alice's "deserved" token balance: 1,000,001
+* Bob's shares: **1**
+* Bob's "deserved" token balance: **1,000**
+
+Hilariously enough, not only is Bob able to withdraw his 1000 tokens, but Alice is also *only* able to withdraw 1000 tokens! Alice's attack is rendered unsuccessful.
+
+#### Attack Variation: Diluting the Virtual Depositor
+
+What if Alice attempts to dilute the initial 1e3 virtual shares and tokens? Clearly, since she didn't have enough shares with her minimal initial deposit, her attack's capital was dilulted by the "virtual depositor".
+
+Imagine that Alice instead deposits 1 million tokens upfront. She receives 1 million shares, as expected.
+
+The current state:
+* `StrategyBase` total shares: **1,001,000**
+* `StrategyBase` token balance: **1,001,000**
+* Alice's shares: **1,000,000**
+* Alice's "deserved" token balance: **1,000,000**
+
+As you can see here, Alice has a vast majority of the shares. She tries again to manipulate the exchange rate before Bob deposits by depositing yet *another* million tokens. Remember that she does not receive any additional shares for depositing these tokens into the contract.
+
+The current state:
+* `StrategyBase` total shares: 1,001,000
+* `StrategyBase` token balance: **2,001,000**
+* Alice's shares: 1,000,000
+* Alice's "deserved" token balance: **2,000,000**
+
+The exchange rate is now ~2 tokens : 1 share. More accurately, it is 2,001,000 tokens : 1,001,000 shares, or ~1.999 tokens : 1 share.
+
+So let's ask the question: how many tokens can Alice withdraw given her 1 million shares?
+
+* Alice's 1 million shares * 2,001,000 tokens / 1,001,000 shares = 1,999,000 tokens. **Lower* than the expected 2,000,000 tokens.**
+
+As we can see, Alice is not able to withdraw her intended amount of tokens, even though she has a vast majority of the shares. She actually *loses* 1000 tokens due to the virtual depositor.
+
+Let's see what happens when Bob deposits his 1000 tokens. Given the exchange rate of ~2 tokens : 1 share, we expect him to receive 500 shares for his deposit. We calculate this as follows:
+
+* Bob's 1000 tokens * 1,001,000 shares / 2,001,000 tokens = 500.25 shares = 500 shares (due to rounding)
+
+The current state:
+* `StrategyBase` total shares: **1,001,500**
+* `StrategyBase` token balance: **2,002,000**
+* Alice's shares: 1,000,000
+* Alice's "deserved" token balance: 2,000,000
+* Bob's shares: **500**
+* Bob's "deserved" token balance: **1,000**
+
+As we can see, Bob receives 500 shares for his deposit, as expected. If he attempts to withdraw:
+
+* Bob's 500 shares * 2,002,000 tokens / 1,001,500 shares = 999.5 tokens = 999 tokens (due to rounding). ***Correct!**
+
+Alice, the attempted attacker, is the one who loses in this scenario. Bob loses one token, but Alice loses 1000 tokens, and locks up significant capital for her troubles. An attacker **is not economically incentivized** to perform an inflation attack, as they will lose out in the end.
+
+As such, the virtual depositor is a useful mechanism to protect against inflation attacks, even when the attacker has a vast majority of the shares.
+
+#### Attack Variation: Flash Loans
+
+You may be wondering, what if Alice performs a flash loan attack? These provide large amounts of capital on demand, and perhaps enough capital can make an inflation attack profitable.
+
+First, similar to how Alice lost capital to the virtual depositor in the previous scenario, she will lose capital when performing the flash loan attack. This alone prevents her attack from being profitable, even in the best case scenario.
+
+Say that Alice is, for lack of a better term, "insane" and chooses to disobey economic incentives. Note that typical flash loans only provide capital [within a given transaction](https://aave.com/docs/developers/flash-loans#:~:text=the%20borrowed%20amount%20(and%20a%20fee)%20is%20returned%20before%20the%20end%20of%20the%20transaction), and are not able to be borrowed over any larger unit of time. As such, flash loans are not a viable route for performing this attack in the first place.
+
+#### Mitigation Side Effects
+
+The virtual depositor has a few side effects that are important to note. 
+
+* Rebase dilution: In the event of a token rebase, user token balances will typically increase by the rebase factor. However, the virtual depositor's token balance will not increase by the same factor, as it is a fixed amount. This means that user gains will be mildly diluted over time. 
+  * However, as the virtual depositor only has 1e3 shares and tokens, this effect is negligible (estimated to be 1 part in 1e20).
+* Negative rebase: In the event of a "negative rebase," where the token balance decreases, not all users may be able to withdraw. The `StrategyBase` contract will have more shares than assets due to this loss of principal. As a result, the last depositor(s) will not be able to withdraw. This is because the virtual depositor's shares and tokens are fixed, and are not subject to the loss of principal.
+  * However, this is a rare occurrence, and is not expected to happen in the near future. Moreover, this is easily mitigated by a one-off "donation" of tokens to the `StrategyBase` contract, up to 1000 tokens. Given this minimal impact, we do not consider this a significant issue.
+
+## Conclusion
+
+Shares are a useful mechanism to manage the accounting of a `StrategyBase` contract. They allow for tracking a user's proportional claim to the `StrategyBase`'s token balance, ensuring that users can withdraw their intended amount of tokens even in the presence of rebase or other token behavior.
+
+Typically, this model is vulnerable to an "inflation attack," but the virtual depositor mitigation protects against this. It is a simple and effective mechanism to prevent a first depositor from manipulating the exchange rate to their benefit, as they lose the advantages typically associated with the first depositor. 
+
+Any attacker attempting to perform an inflation attack will lose out in the end. Even if they seek to grief other users, the amount of capital required to perform the attack in the first place is extremely high. Though there are small side effects to the virtual depositor, they are negligible and do not impact the core functionality of the `StrategyBase` contract.
