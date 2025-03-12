@@ -1,5 +1,20 @@
 # StrategyBase Accounting
 
+- [StrategyBase Accounting](#strategybase-accounting)
+  - [Overview](#overview)
+  - [Why are shares needed?](#why-are-shares-needed)
+  - [Can I mess up the accounting? Say, with a direct transfer?](#can-i-mess-up-the-accounting-say-with-a-direct-transfer)
+    - [Arbitrary direct transfers](#arbitrary-direct-transfers)
+      - [Simple Scenario](#simple-scenario)
+      - [Scenario with More Depositors](#scenario-with-more-depositors)
+    - [Inflation attacks](#inflation-attacks)
+      - [Exploit Scenario](#exploit-scenario)
+      - [Mitigation: Virtual Shares](#mitigation-virtual-shares)
+      - [Attack Variation: Diluting the Virtual Depositor](#attack-variation-diluting-the-virtual-depositor)
+      - [Attack Variation: Flash Loans](#attack-variation-flash-loans)
+      - [Mitigation Side Effects](#mitigation-side-effects)
+  - [Conclusion](#conclusion)
+
 ## Overview
 
 The `StrategyBase` contract is used to manage the accounting of deposit shares for a specific token by collecting tokens and producing shares. Shares represent a proportional claim to the `StrategyBase`'s token balance, ensuring that users can withdraw their intended amount of tokens.
@@ -160,6 +175,8 @@ Therefore, even though the exchange rate was not 1:1 prior to Charlie's deposit,
 ### Inflation attacks
 
 An inflation attack is a more *specific* scenario that may impact depositors during the first deposits into a `StrategyBase` contract. This kind of attack is possible when the `StrategyBase` contract is first created, before or after the very first deposit. At this stage, the exchange rate of the `StrategyBase` is highly susceptible to manipulation, giving the first depositor the ability to steal funds from later depositors.
+
+#### Exploit Scenario
 
 Say Alice deposits 1 token into a `StrategyBase` contract, the first depositor to do so, and receives 1 share. This is an intentionally minimal amount so that she can perform an inflation attack.
 
