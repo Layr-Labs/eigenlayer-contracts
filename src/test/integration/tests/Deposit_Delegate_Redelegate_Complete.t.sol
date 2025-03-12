@@ -5,6 +5,8 @@ import "src/test/integration/users/User.t.sol";
 import "src/test/integration/IntegrationChecks.t.sol";
 
 contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUtils {
+    using ArrayLib for *;
+
     /// Randomly generates a user with different held assets. Then:
     /// 1. deposit into strategy
     /// 2. delegate to an operator
@@ -13,14 +15,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
     /// 5. delegate to a new operator
     /// 5. queueWithdrawal
     /// 7. complete their queued withdrawal as tokens
-    function testFuzz_deposit_delegate_reDelegate_completeAsTokens(uint24 _random) public {   
-        // When new Users are created, they will choose a random configuration from these params: 
-        _configRand({
-            _randomSeed: _random,
-            _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
-            _userTypes: DEFAULT | ALT_METHODS
-        });
-
+    function testFuzz_deposit_delegate_reDelegate_completeAsTokens(uint24 _random) public rand(_random) {   
         /// 0. Create an operator and a staker with:
         // - some nonzero underlying token balances
         // - corresponding to a random number of strategies
@@ -34,8 +29,6 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         ) = _newRandomStaker();
         (User operator1, ,) = _newRandomOperator();
         (User operator2, ,) = _newRandomOperator();
-        // Upgrade contracts if forkType is not local
-        _upgradeEigenLayerContracts();
         
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 
@@ -85,14 +78,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         }
     }
 
-    function testFuzz_deposit_delegate_reDelegate_completeAsShares(uint24 _random) public {   
-        // When new Users are created, they will choose a random configuration from these params: 
-        _configRand({
-            _randomSeed: _random,
-            _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
-            _userTypes: DEFAULT | ALT_METHODS
-        });
-
+    function testFuzz_deposit_delegate_reDelegate_completeAsShares(uint24 _random) public rand(_random) {   
         /// 0. Create an operator and a staker with:
         // - some nonzero underlying token balances
         // - corresponding to a random number of strategies
@@ -106,8 +92,6 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         ) = _newRandomStaker();
         (User operator1, ,) = _newRandomOperator();
         (User operator2, ,) = _newRandomOperator();
-        // Upgrade contracts if forkType is not local
-        _upgradeEigenLayerContracts();
 
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 
@@ -170,13 +154,8 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         );
     }
 
-    function testFuzz_deposit_delegate_reDelegate_depositAfterRedelegate(uint24 _random) public {
-        // When new Users are created, they will choose a random configuration from these params: 
-        _configRand({
-            _randomSeed: _random,
-            _assetTypes: HOLDS_LST, // not holding ETH since we can only deposit 32 ETH multiples
-            _userTypes: DEFAULT | ALT_METHODS
-        });
+    function testFuzz_deposit_delegate_reDelegate_depositAfterRedelegate(uint24 _random) public rand(_random) {
+        _configAssetTypes(HOLDS_LST); // not holding ETH since we can only deposit 32 ETH multiples
 
         /// 0. Create an operator and a staker with:
         // - some nonzero underlying token balances
@@ -191,8 +170,6 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         ) = _newRandomStaker();
         (User operator1, ,) = _newRandomOperator();
         (User operator2, ,) = _newRandomOperator();
-        // Upgrade contracts if forkType is not local
-        _upgradeEigenLayerContracts();
 
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 
@@ -262,13 +239,8 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         }
     }
 
-    function testFuzz_deposit_delegate_reDelegate_depositBeforeRedelegate(uint24 _random) public {
-        // When new Users are created, they will choose a random configuration from these params: 
-        _configRand({
-            _randomSeed: _random,
-            _assetTypes: HOLDS_LST, // not holding ETH since we can only deposit 32 ETH multiples
-            _userTypes: DEFAULT | ALT_METHODS
-        });
+    function testFuzz_deposit_delegate_reDelegate_depositBeforeRedelegate(uint24 _random) public rand(_random) {
+        _configAssetTypes(HOLDS_LST); // not holding ETH since we can only deposit 32 ETH multiples
 
         /// 0. Create an operator and a staker with:
         // - some nonzero underlying token balances
@@ -283,10 +255,8 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         ) = _newRandomStaker();
         (User operator1, ,) = _newRandomOperator();
         (User operator2, ,) = _newRandomOperator();
-        // Upgrade contracts if forkType is not local
-        _upgradeEigenLayerContracts();
 
-        uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
+        uint[] memory totalShares = new uint[](strategies.length);
 
         assert_HasNoDelegatableShares(staker, "staker should not have delegatable shares before depositing");
         assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated");
@@ -295,24 +265,24 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
             // Divide shares by 2 in new array to do deposits after redelegate
             uint[] memory numTokensToDeposit = new uint[](tokenBalances.length);
             uint[] memory numTokensRemaining = new uint[](tokenBalances.length);
-            for (uint i = 0; i < shares.length; i++) {
+            for (uint i = 0; i < strategies.length; i++) {
                 numTokensToDeposit[i] = tokenBalances[i] / 2;
                 numTokensRemaining[i] = tokenBalances[i] - numTokensToDeposit[i];
             }
-            uint[] memory halfShares = _calculateExpectedShares(strategies, numTokensToDeposit);
+            uint[] memory sharesFromFirstDeposit = _calculateExpectedShares(strategies, numTokensToDeposit);
 
             /// 1. Deposit Into Strategies
             staker.depositIntoEigenlayer(strategies, numTokensToDeposit);
-            check_Deposit_State_PartialDeposit(staker, strategies, halfShares, numTokensRemaining);
+            check_Deposit_State_PartialDeposit(staker, strategies, sharesFromFirstDeposit, numTokensRemaining);
 
             // 2. Delegate to an operator
             staker.delegateTo(operator1);
-            check_Delegation_State(staker, operator1, strategies, halfShares);
+            check_Delegation_State(staker, operator1, strategies, sharesFromFirstDeposit);
 
             // 3. Undelegate from an operator
             IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.undelegate();
             bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
-            check_Undelegate_State(staker, operator1, withdrawals, withdrawalRoots, strategies, halfShares);
+            check_Undelegate_State(staker, operator1, withdrawals, withdrawalRoots, strategies, sharesFromFirstDeposit);
 
             // 4. Complete withdrawal as shares
             // Fast forward to when we can complete the withdrawal
@@ -323,23 +293,27 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
             }
 
             // 5. Deposit into Strategies
-            uint[] memory sharesAdded = _calculateExpectedShares(strategies, numTokensRemaining);
+            uint[] memory sharesFromSecondDeposit = _calculateExpectedShares(strategies, numTokensRemaining);
+            for (uint i = 0; i < strategies.length; i++) {
+                totalShares[i] = sharesFromFirstDeposit[i] + sharesFromSecondDeposit[i];
+            }
+
             staker.depositIntoEigenlayer(strategies, numTokensRemaining);
-            tokenBalances = _calculateExpectedTokens(strategies, shares);
-            check_Deposit_State(staker, strategies, sharesAdded);
+            tokenBalances = _calculateExpectedTokens(strategies, totalShares);
+            check_Deposit_State(staker, strategies, sharesFromSecondDeposit);
 
             // 6. Delegate to a new operator
             staker.delegateTo(operator2);
-            check_Delegation_State(staker, operator2, strategies, shares);
+            check_Delegation_State(staker, operator2, strategies, totalShares);
             assertNotEq(address(operator1), delegationManager.delegatedTo(address(staker)), "staker should not be delegated to operator1");
         }
 
         {
             // 7. Queue Withdrawal
-            shares = _calculateExpectedShares(strategies, tokenBalances);
-            IDelegationManagerTypes.Withdrawal[] memory newWithdrawals = staker.queueWithdrawals(strategies, shares);
+            totalShares = _calculateExpectedShares(strategies, tokenBalances);
+            IDelegationManagerTypes.Withdrawal[] memory newWithdrawals = staker.queueWithdrawals(strategies, totalShares);
             bytes32[] memory newWithdrawalRoots = _getWithdrawalHashes(newWithdrawals);
-            check_QueuedWithdrawal_State(staker, operator2, strategies, shares, newWithdrawals, newWithdrawalRoots);
+            check_QueuedWithdrawal_State(staker, operator2, strategies, totalShares, newWithdrawals, newWithdrawalRoots);
 
             // 8. Complete withdrawal
             // Fast forward to when we can complete the withdrawal
@@ -349,19 +323,12 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
             for (uint i = 0; i < newWithdrawals.length; i++) {
                 uint[] memory expectedTokens = _calculateExpectedTokens(newWithdrawals[i].strategies, newWithdrawals[i].scaledShares);
                 IERC20[] memory tokens = staker.completeWithdrawalAsTokens(newWithdrawals[i]);
-                check_Withdrawal_AsTokens_State(staker, operator2, newWithdrawals[i], strategies, shares, tokens, expectedTokens);
+                check_Withdrawal_AsTokens_State(staker, operator2, newWithdrawals[i], strategies, totalShares, tokens, expectedTokens);
             }
         }
     }
 
-    function testFuzz_deposit_delegate_undelegate_withdrawAsTokens_reDelegate_completeAsTokens(uint24 _random) public {
-        // When new Users are created, they will choose a random configuration from these params: 
-        _configRand({
-            _randomSeed: _random,
-            _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
-            _userTypes: DEFAULT | ALT_METHODS
-        });
-
+    function testFuzz_deposit_delegate_undelegate_withdrawAsTokens_reDelegate_completeAsTokens(uint24 _random) public rand(_random) {
         /// 0. Create operators and a staker
         (
             User staker,
@@ -370,8 +337,6 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         ) = _newRandomStaker();
         (User operator1, ,) = _newRandomOperator();
         (User operator2, ,) = _newRandomOperator();
-        // Upgrade contracts if forkType is not local
-        _upgradeEigenLayerContracts();
 
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 
@@ -428,14 +393,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         }
     }
 
-    function testFuzz_deposit_delegate_undelegate_withdrawAsTokens_reDelegate_completeAsShares(uint24 _random) public {
-        // When new Users are created, they will choose a random configuration from these params: 
-        _configRand({
-            _randomSeed: _random,
-            _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
-            _userTypes: DEFAULT | ALT_METHODS
-        });
-
+    function testFuzz_deposit_delegate_undelegate_withdrawAsTokens_reDelegate_completeAsShares(uint24 _random) public rand(_random) {
         /// 0. Create operators and a staker
         (
             User staker,
@@ -444,8 +402,6 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         ) = _newRandomStaker();
         (User operator1, ,) = _newRandomOperator();
         (User operator2, ,) = _newRandomOperator();
-        // Upgrade contracts if forkType is not local
-        _upgradeEigenLayerContracts();
 
         uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 
@@ -475,7 +431,8 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
             check_Withdrawal_AsTokens_State(staker, operator1, withdrawals[i], withdrawals[i].strategies, withdrawals[i].scaledShares, tokens, expectedTokens);
         }
 
-        //5. Deposit into Strategies
+        // 5. Deposit into Strategies
+        shares = _calculateExpectedShares(strategies, withdrawnTokenBalances);
         staker.depositIntoEigenlayer(strategies, withdrawnTokenBalances);
         check_Deposit_State(staker, strategies, shares);
         

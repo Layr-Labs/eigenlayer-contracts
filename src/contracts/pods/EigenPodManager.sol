@@ -44,6 +44,11 @@ contract EigenPodManager is
         _;
     }
 
+    modifier onlyProofTimestampSetter() {
+        require(msg.sender == proofTimestampSetter, OnlyProofTimestampSetter());
+        _;
+    }
+
     constructor(
         IETHPOSDeposit _ethPOS,
         IBeacon _eigenPodBeacon,
@@ -217,6 +222,28 @@ contract EigenPodManager is
         if (sharesToWithdraw > 0) {
             ownerToPod[staker].withdrawRestakedBeaconChainETH(staker, sharesToWithdraw);
         }
+    }
+
+    /// @dev This is a forwards-compatible function that will be added to the ShareManager contract in v1.3.0
+    function increaseBurnableShares(IStrategy, uint256 addedSharesToBurn) external onlyDelegationManager nonReentrant {
+        burnableETHShares += addedSharesToBurn;
+        emit BurnableETHSharesIncreased(addedSharesToBurn);
+    }
+
+    /// @notice Sets the address that can set proof timestamps
+    function setProofTimestampSetter(
+        address newProofTimestampSetter
+    ) external onlyOwner {
+        proofTimestampSetter = newProofTimestampSetter;
+        emit ProofTimestampSetterSet(newProofTimestampSetter);
+    }
+
+    /// @notice Sets the pectra fork timestamp
+    function setPectraForkTimestamp(
+        uint64 timestamp
+    ) external onlyProofTimestampSetter {
+        pectraForkTimestamp = timestamp;
+        emit PectraForkTimestampSet(timestamp);
     }
 
     // INTERNAL FUNCTIONS

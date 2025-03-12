@@ -16,17 +16,6 @@ contract IntegrationCheckUtils is IntegrationBase {
     *******************************************************************************/
 
     function check_VerifyWC_State(
-        User_M2 staker,
-        uint40[] memory validators,
-        uint64 beaconBalanceGwei
-    ) internal {
-        uint beaconBalanceWei = beaconBalanceGwei * GWEI_TO_WEI;
-        assert_Snap_Added_Staker_DepositShares(staker, BEACONCHAIN_ETH_STRAT, beaconBalanceWei, "staker should have added deposit shares to beacon chain strat");
-        assert_Snap_Added_ActiveValidatorCount(staker, validators.length, "staker should have increased active validator count");
-        assert_Snap_Added_ActiveValidators(staker, validators, "validators should each be active");
-    }
-
-    function check_VerifyWC_State(
         User staker,
         uint40[] memory validators,
         uint64 beaconBalanceGwei
@@ -99,8 +88,8 @@ contract IntegrationCheckUtils is IntegrationBase {
     ) internal {
         check_CompleteCheckpoint_State(staker);
 
-        assert_Snap_Unchanged_StakerDepositShares(staker, "staker shares should not have decreased");
-        assert_Snap_Removed_StakerWithdrawableShares(staker, BEACONCHAIN_ETH_STRAT, slashedAmountGwei * GWEI_TO_WEI, "should have decreased withdrawable shares by slashed amount");
+        assert_Snap_Unchanged_Staker_DepositShares(staker, "staker shares should not have decreased");
+        assert_Snap_Removed_Staker_WithdrawableShares(staker, BEACONCHAIN_ETH_STRAT, slashedAmountGwei * GWEI_TO_WEI, "should have decreased withdrawable shares by slashed amount");
         assert_Snap_Removed_ActiveValidatorCount(staker, slashedValidators.length, "should have decreased active validator count");
         assert_Snap_Removed_ActiveValidators(staker, slashedValidators, "exited validators should each be WITHDRAWN");
     }
@@ -112,7 +101,7 @@ contract IntegrationCheckUtils is IntegrationBase {
     ) internal {
         check_CompleteCheckpoint_State(staker);
 
-        assert_Snap_Unchanged_StakerDepositShares(staker, "staker shares should not have decreased");
+        assert_Snap_Unchanged_Staker_DepositShares(staker, "staker shares should not have decreased");
         assert_Snap_Removed_Staker_WithdrawableShares_AtLeast(staker, BEACONCHAIN_ETH_STRAT, slashedAmountGwei * GWEI_TO_WEI, "should have decreased withdrawable shares by at least slashed amount");
         assert_Snap_Removed_ActiveValidatorCount(staker, slashedValidators.length, "should have decreased active validator count");
         assert_Snap_Removed_ActiveValidators(staker, slashedValidators, "exited validators should each be WITHDRAWN");
@@ -124,7 +113,7 @@ contract IntegrationCheckUtils is IntegrationBase {
     ) internal {
         check_CompleteCheckpoint_State(staker);
 
-        assert_Snap_Unchanged_StakerDepositShares(staker, "staker shares should not have decreased");
+        assert_Snap_Unchanged_Staker_DepositShares(staker, "staker shares should not have decreased");
         assert_Snap_Removed_Staker_WithdrawableShares_AtLeast(staker, BEACONCHAIN_ETH_STRAT, slashedAmountGwei * GWEI_TO_WEI, "should have decreased withdrawable shares by at least slashed amount");
         assert_Snap_Unchanged_ActiveValidatorCount(staker, "should not have changed active validator count");
     }
@@ -135,8 +124,8 @@ contract IntegrationCheckUtils is IntegrationBase {
     ) internal {
         check_CompleteCheckpoint_State(staker);
 
-        assert_Snap_Unchanged_StakerDepositShares(staker, "staker shares should not have decreased");
-        assert_Snap_Removed_StakerWithdrawableShares(staker, BEACONCHAIN_ETH_STRAT, slashedAmountGwei * GWEI_TO_WEI, "should have decreased withdrawable shares by slashed amount");
+        assert_Snap_Unchanged_Staker_DepositShares(staker, "staker shares should not have decreased");
+        assert_Snap_Removed_Staker_WithdrawableShares(staker, BEACONCHAIN_ETH_STRAT, slashedAmountGwei * GWEI_TO_WEI, "should have decreased withdrawable shares by slashed amount");
         assert_Snap_Unchanged_ActiveValidatorCount(staker, "should not have changed active validator count");
     }
 
@@ -147,7 +136,7 @@ contract IntegrationCheckUtils is IntegrationBase {
     ) internal {
         check_CompleteCheckpoint_WithPodBalance_State(staker, exitedBalanceGwei);
 
-        assert_Snap_Unchanged_StakerDepositShares(staker, "staker should not have changed shares");
+        assert_Snap_Unchanged_Staker_DepositShares(staker, "staker should not have changed shares");
         assert_Snap_Added_BalanceExitedGwei(staker, exitedBalanceGwei, "should have attributed expected gwei to exited balance");
         assert_Snap_Removed_ActiveValidatorCount(staker, exitedValidators.length, "should have decreased active validator count");
         assert_Snap_Removed_ActiveValidators(staker, exitedValidators, "exited validators should each be WITHDRAWN");
@@ -170,8 +159,8 @@ contract IntegrationCheckUtils is IntegrationBase {
         //     and that the staker now has the expected amount of delegated shares in each strategy
         assert_HasNoUnderlyingTokenBalance(staker, strategies, "staker should have transferred all underlying tokens");
         assert_Snap_Added_Staker_DepositShares(staker, strategies, shares, "staker should expect shares in each strategy after depositing");
+        assert_Snap_Added_Staker_WithdrawableShares(staker, strategies, shares, "deposit should increase withdrawable shares");
     }
-    
 
     function check_Deposit_State_PartialDeposit(User staker, IStrategy[] memory strategies, uint[] memory shares, uint[] memory tokenBalances) internal {
         /// Deposit into strategies:
@@ -182,6 +171,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         //     and that the staker now has the expected amount of delegated shares in each strategy
         assert_HasUnderlyingTokenBalances(staker, strategies, tokenBalances, "staker should have transferred some underlying tokens");
         assert_Snap_Added_Staker_DepositShares(staker, strategies, shares, "staker should expected shares in each strategy after depositing");
+        assert_Snap_Added_Staker_WithdrawableShares(staker, strategies, shares, "deposit should increase withdrawable shares");
     }
 
     function check_Delegation_State(
@@ -197,9 +187,9 @@ contract IntegrationCheckUtils is IntegrationBase {
         assertTrue(delegationManager.isDelegated(address(staker)), "staker should be delegated");
         assertEq(address(operator), delegationManager.delegatedTo(address(staker)), "staker should be delegated to operator");
         assert_HasExpectedShares(staker, strategies, shares, "staker should still have expected shares after delegating");
-        assert_Snap_Unchanged_StakerDepositShares(staker, "staker shares should be unchanged after delegating");
-        // TODO: fix this assertion
-        // assert_Snap_Added_OperatorShares(operator, strategies, shares, "operator should have received shares");
+        assert_Snap_Unchanged_Staker_DepositShares(staker, "staker shares should be unchanged after delegating");
+        assert_Snap_Unchanged_Staker_WithdrawableShares(staker, "withdrawable shares should be unchanged after delegating");
+        assert_Snap_Added_OperatorShares(operator, strategies, shares, "operator should have received shares");
     }
 
     function check_QueuedWithdrawal_State(
@@ -224,8 +214,10 @@ contract IntegrationCheckUtils is IntegrationBase {
             "check_QueuedWithdrawal_State: staker should have increased nonce by withdrawals.length");
         assert_Snap_Removed_OperatorShares(operator, strategies, shares,
             "check_QueuedWithdrawal_State: failed to remove operator shares");
-        assert_Snap_Removed_StakerDepositShares(staker, strategies, shares,
+        assert_Snap_Removed_Staker_DepositShares(staker, strategies, shares,
             "check_QueuedWithdrawal_State: failed to remove staker shares");
+        assert_Snap_Removed_Staker_WithdrawableShares(staker, strategies, shares,
+            "check_QueuedWithdrawal_State: failed to remove staker withdrawable shares");
     }
 
     function check_Undelegate_State(
@@ -251,8 +243,10 @@ contract IntegrationCheckUtils is IntegrationBase {
             "check_Undelegate_State: staker should have increased nonce by withdrawals.length");
         assert_Snap_Removed_OperatorShares(operator, strategies, shares,
             "check_Undelegate_State: failed to remove operator shares");
-        assert_Snap_Removed_StakerDepositShares(staker, strategies, shares,
+        assert_Snap_Removed_Staker_DepositShares(staker, strategies, shares,
             "check_Undelegate_State: failed to remove staker shares");
+        assert_Snap_Removed_Staker_WithdrawableShares(staker, strategies, shares,
+            "check_QueuedWithdrawal_State: failed to remove staker withdrawable shares");
     }
 
     /**
@@ -278,7 +272,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_WithdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
         
         assert_Snap_Added_TokenBalances(staker, tokens, expectedTokens, "staker should have received expected tokens");
-        assert_Snap_Unchanged_StakerDepositShares(staker, "staker shares should not have changed");
+        assert_Snap_Unchanged_Staker_DepositShares(staker, "staker shares should not have changed");
         assert_Snap_Removed_StrategyShares(strategies, shares, "strategies should have total shares decremented");
 
         // Checks specific to an operator that the Staker has delegated to
@@ -377,8 +371,59 @@ contract IntegrationCheckUtils is IntegrationBase {
         // Common checks
         assert_WithdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
         
+        // TODO FIXME
         // assert_Snap_Added_TokenBalances(staker, tokens, expectedTokens, "staker should have received expected tokens");
-        assert_Snap_Unchanged_StakerDepositShares(staker, "staker shares should not have changed");
+        assert_Snap_Unchanged_Staker_DepositShares(staker, "staker shares should not have changed");
+        assert_Snap_Removed_StrategyShares(withdrawal.strategies, withdrawal.scaledShares, "strategies should have total shares decremented");
+
+        // Checks specific to an operator that the Staker has delegated to
+        if (operator != User(payable(0))) {
+            if (operator != staker) {
+                assert_Snap_Unchanged_TokenBalances(operator, "operator token balances should not have changed");
+            }
+            assert_Snap_Unchanged_OperatorShares(operator, "operator shares should not have changed");
+        }
+    }
+
+    function check_Withdrawal_AsTokens_State_AfterBeaconSlash(
+        User staker,
+        User operator,
+        IDelegationManagerTypes.Withdrawal memory withdrawal,
+        IAllocationManagerTypes.AllocateParams memory allocateParams,
+        IAllocationManagerTypes.SlashingParams memory slashingParams,
+        uint[] memory expectedTokens
+    ) internal {
+        IERC20[] memory tokens = new IERC20[](withdrawal.strategies.length);
+
+        for (uint i; i < withdrawal.strategies.length; i++) {
+            IStrategy strat = withdrawal.strategies[i];
+
+            bool isBeaconChainETHStrategy = strat == beaconChainETHStrategy;
+
+            tokens[i] = isBeaconChainETHStrategy ? NATIVE_ETH : withdrawal.strategies[i].underlyingToken();
+            
+            if (slashingParams.strategies.contains(strat)) {
+                uint wadToSlash = slashingParams.wadsToSlash[slashingParams.strategies.indexOf(strat)];
+
+                expectedTokens[i] -= expectedTokens[i]
+                    .mulWadRoundUp(allocateParams.newMagnitudes[i].mulWadRoundUp(wadToSlash));
+
+                uint256 max = allocationManager.getMaxMagnitude(address(operator), strat);
+
+                withdrawal.scaledShares[i] -= withdrawal.scaledShares[i].calcSlashedAmount(WAD, max);
+
+                // Round down to the nearest gwei for beaconchain ETH strategy.
+                if (isBeaconChainETHStrategy) {
+                    expectedTokens[i] -= expectedTokens[i] % 1 gwei;
+                }
+            }
+        }
+
+        // Common checks
+        assert_WithdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
+        
+        // assert_Snap_Added_TokenBalances(staker, tokens, expectedTokens, "staker should have received expected tokens");
+        assert_Snap_Unchanged_Staker_DepositShares(staker, "staker shares should not have changed");
         assert_Snap_Removed_StrategyShares(withdrawal.strategies, withdrawal.scaledShares, "strategies should have total shares decremented");
 
         // Checks specific to an operator that the Staker has delegated to

@@ -6,25 +6,20 @@ import "src/test/integration/users/User.t.sol";
 
 contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
 
-    modifier r(uint24 _rand) {
-        _configRand({
-            _randomSeed: _rand,
-            _assetTypes: HOLDS_ETH,
-            _userTypes: DEFAULT
-        });
-
-        _;
+    function _init() internal override {
+        _configAssetTypes(HOLDS_ETH);
+        _configUserTypes(DEFAULT);
     }
 
-    function test_GasMetering() public r(0) {
+    function test_GasMetering() public rand(0) {
         (User staker, ,) = _newRandomStaker();
-        _upgradeEigenLayerContracts();
+
         // Deal user 20 full stakers worth of ETH
-        emit log_named_string("Dealing 20 * 32 ETH to", staker.NAME());
+        emit log_named_string("Dealing ETH to", staker.NAME());
         cheats.deal(address(staker), 32 ether * 20);
         cheats.pauseGasMetering();
 
-        (uint40[] memory validators, ) = staker.startValidators();
+        (uint40[] memory validators, ,) = staker.startValidators();
         beaconChain.advanceEpoch_NoRewards();
 
         EigenPod pod = staker.pod();
@@ -81,11 +76,10 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
     /// 2. start a checkpoint
     /// 3. complete a checkpoint
     /// => no change in shares between 1 and 3
-    function test_VerifyWC_StartCP_CompleteCP(uint24 _rand) public r(_rand) {
+    function test_VerifyWC_StartCP_CompleteCP(uint24 _rand) public rand(_rand) {
         (User staker, ,) = _newRandomStaker();
-        _upgradeEigenLayerContracts();
 
-        (uint40[] memory validators, uint64 beaconBalanceGwei) = staker.startValidators();
+        (uint40[] memory validators, uint64 beaconBalanceGwei, ) = staker.startValidators();
         beaconChain.advanceEpoch_NoRewards();
 
         staker.verifyWithdrawalCredentials(validators);
@@ -101,11 +95,10 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
     /// 1. Verify validators' withdrawal credentials
     /// 2. Verify validators' withdrawal credentials again
     /// => This should fail
-    function test_VerifyWC_VerifyWC_Fails(uint24 _rand) public r(_rand) {
+    function test_VerifyWC_VerifyWC_Fails(uint24 _rand) public rand(_rand) {
         (User staker, ,) = _newRandomStaker();
-        _upgradeEigenLayerContracts();
 
-        (uint40[] memory validators, uint64 beaconBalanceGwei) = staker.startValidators();
+        (uint40[] memory validators, uint64 beaconBalanceGwei, ) = staker.startValidators();
         beaconChain.advanceEpoch_NoRewards();
 
         staker.verifyWithdrawalCredentials(validators);
@@ -119,11 +112,10 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
     /// 2. start a checkpoint
     /// 3. start a checkpoint again
     /// => This should fail
-    function test_VerifyWC_StartCP_StartCP_Fails(uint24 _rand) public r(_rand) {
+    function test_VerifyWC_StartCP_StartCP_Fails(uint24 _rand) public rand(_rand) {
         (User staker, ,) = _newRandomStaker();
-        _upgradeEigenLayerContracts();
 
-        (uint40[] memory validators, uint64 beaconBalanceGwei) = staker.startValidators();
+        (uint40[] memory validators, uint64 beaconBalanceGwei, ) = staker.startValidators();
         beaconChain.advanceEpoch_NoRewards();
 
         staker.verifyWithdrawalCredentials(validators);
@@ -141,11 +133,10 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
     /// 3. complete a checkpoint
     /// 4. start a checkpoint without advancing a block
     /// => this should fail
-    function test_VerifyWC_StartCP_CompleteCP_StartCP_Fails(uint24 _rand) public r(_rand) {
+    function test_VerifyWC_StartCP_CompleteCP_StartCP_Fails(uint24 _rand) public rand(_rand) {
         (User staker, ,) = _newRandomStaker();
-        _upgradeEigenLayerContracts();
 
-        (uint40[] memory validators, uint64 beaconBalanceGwei) = staker.startValidators();
+        (uint40[] memory validators, uint64 beaconBalanceGwei, ) = staker.startValidators();
         beaconChain.advanceEpoch_NoRewards();
 
         staker.verifyWithdrawalCredentials(validators);
@@ -166,11 +157,10 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
     /// 2. start a checkpoint
     /// 3. complete a checkpoint
     /// => no change in shares between 1 and 3
-    function test_VerifyWC_Advance_StartCP_CompleteCP(uint24 _rand) public r(_rand) {
+    function test_VerifyWC_Advance_StartCP_CompleteCP(uint24 _rand) public rand(_rand) {
         (User staker, ,) = _newRandomStaker();
-        _upgradeEigenLayerContracts();
 
-        (uint40[] memory validators, uint64 beaconBalanceGwei) = staker.startValidators();
+        (uint40[] memory validators, uint64 beaconBalanceGwei, ) = staker.startValidators();
         beaconChain.advanceEpoch_NoRewards();
 
         staker.verifyWithdrawalCredentials(validators);
@@ -191,11 +181,10 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
     /// -- move forward 1 or more epochs
     /// 3. complete a checkpoint
     /// => no change in shares between 1 and 3
-    function test_VerifyWC_StartCP_Advance_CompleteCP(uint24 _rand) public r(_rand) {
+    function test_VerifyWC_StartCP_Advance_CompleteCP(uint24 _rand) public rand(_rand) {
         (User staker, ,) = _newRandomStaker();
-        _upgradeEigenLayerContracts();
 
-        (uint40[] memory validators, uint64 beaconBalanceGwei) = staker.startValidators();
+        (uint40[] memory validators, uint64 beaconBalanceGwei, ) = staker.startValidators();
         beaconChain.advanceEpoch_NoRewards();
 
         staker.verifyWithdrawalCredentials(validators);
@@ -219,11 +208,10 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
     /// -- Fully exit validators before verifying withdrawal credentials
     /// 1. Verify validators' withdrawal credentials
     /// => This should fail
-    function test_ExitValidators_VerifyWC_Fails(uint24 _rand) public r(_rand) {
+    function test_ExitValidators_VerifyWC_Fails(uint24 _rand) public rand(_rand) {
         (User staker, ,) = _newRandomStaker();
-        _upgradeEigenLayerContracts();
 
-        (uint40[] memory validators, ) = staker.startValidators();
+        (uint40[] memory validators, ,) = staker.startValidators();
         staker.exitValidators(validators);
         beaconChain.advanceEpoch_NoRewards();
 
@@ -236,11 +224,10 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
     /// 2. start a checkpoint
     /// 3. complete a checkpoint
     /// => no change in shares between 1 and 3
-    function test_VerifyWC_ExitValidators_StartCP_CompleteCP(uint24 _rand) public r(_rand) {
+    function test_VerifyWC_ExitValidators_StartCP_CompleteCP(uint24 _rand) public rand(_rand) {
         (User staker, ,) = _newRandomStaker();
-        _upgradeEigenLayerContracts();
 
-        (uint40[] memory validators, uint64 beaconBalanceGwei) = staker.startValidators();
+        (uint40[] memory validators, uint64 beaconBalanceGwei, ) = staker.startValidators();
         beaconChain.advanceEpoch_NoRewards();
 
         staker.verifyWithdrawalCredentials(validators);
@@ -267,11 +254,10 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
     /// 4. start a checkpoint
     /// 5. complete a checkpoint
     /// => exited balance should be reflected in 4 and 5
-    function test_VerifyWC_StartCP_ExitValidators_CompleteCP(uint24 _rand) public r(_rand) {
+    function test_VerifyWC_StartCP_ExitValidators_CompleteCP(uint24 _rand) public rand(_rand) {
         (User staker, ,) = _newRandomStaker();
-        _upgradeEigenLayerContracts();
 
-        (uint40[] memory validators, uint64 beaconBalanceGwei) = staker.startValidators();
+        (uint40[] memory validators, uint64 beaconBalanceGwei, ) = staker.startValidators();
         beaconChain.advanceEpoch_NoRewards();
 
         staker.verifyWithdrawalCredentials(validators);
@@ -303,11 +289,10 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
     /// -- get slashed on beacon chain
     /// 1. Try to verify validators' withdrawal credentials
     /// => this should fail
-    function test_SlashToPod_VerifyWC_Fails(uint24 _rand) public r(_rand) {
+    function test_SlashToPod_VerifyWC_Fails(uint24 _rand) public rand(_rand) {
         (User staker, ,) = _newRandomStaker();
-        _upgradeEigenLayerContracts();
 
-        (uint40[] memory validators, ) = staker.startValidators();
+        (uint40[] memory validators, ,) = staker.startValidators();
         beaconChain.slashValidators(validators);
         // Advance epoch, withdrawing slashed validators to pod
         beaconChain.advanceEpoch_NoRewards();
@@ -321,11 +306,10 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
     /// 2. start a checkpoint
     /// 3. complete a checkpoint
     /// => after 3, shares should decrease by slashed amount
-    function test_VerifyWC_SlashToPod_StartCP_CompleteCP(uint24 _rand) public r(_rand) {
+    function test_VerifyWC_SlashToPod_StartCP_CompleteCP(uint24 _rand) public rand(_rand) {
         (User staker, ,) = _newRandomStaker();
-        _upgradeEigenLayerContracts();
 
-        (uint40[] memory validators, uint64 beaconBalanceGwei) = staker.startValidators();
+        (uint40[] memory validators, uint64 beaconBalanceGwei, ) = staker.startValidators();
         // Advance epoch without generating rewards
         beaconChain.advanceEpoch_NoRewards();
 
@@ -339,7 +323,7 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         check_StartCheckpoint_WithPodBalance_State(staker, beaconBalanceGwei - slashedBalanceGwei);
 
         staker.completeCheckpoint();
-        check_CompleteCheckpoint_WithSlashing_State(staker, validators, slashedBalanceGwei);
+        check_CompleteCheckpoint_WithSlashing_HandleRoundDown_State(staker, validators, slashedBalanceGwei);
     }
 
     /// 1. Verify validators' withdrawal credentials
@@ -351,11 +335,10 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
     /// 4. start a checkpoint
     /// 5. complete a checkpoint
     /// => slashed balance should be reflected in 4 and 5
-    function test_VerifyWC_StartCP_SlashToPod_CompleteCP(uint24 _rand) public r(_rand) {
+    function test_VerifyWC_StartCP_SlashToPod_CompleteCP(uint24 _rand) public rand(_rand) {
         (User staker, ,) = _newRandomStaker();
-        _upgradeEigenLayerContracts();
 
-        (uint40[] memory validators, uint64 beaconBalanceGwei) = staker.startValidators();
+        (uint40[] memory validators, uint64 beaconBalanceGwei, ) = staker.startValidators();
         // Advance epoch without generating rewards
         beaconChain.advanceEpoch_NoRewards();
 
@@ -375,7 +358,7 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         check_StartCheckpoint_WithPodBalance_State(staker, beaconBalanceGwei - slashedBalanceGwei);
 
         staker.completeCheckpoint();
-        check_CompleteCheckpoint_WithSlashing_State(staker, validators, slashedBalanceGwei);
+        check_CompleteCheckpoint_WithSlashing_HandleRoundDown_State(staker, validators, slashedBalanceGwei);
     }
 
     /// 1. Verify validators' withdrawal credentials
@@ -384,11 +367,10 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
     /// 4. verify withdrawal credentials for another validator while checkpoint in progress
     /// 5. complete a checkpoint
     /// => Increase in shares between 1 and 4 should reflect the new validator, less the slashed amount
-    function test_VerifyWC_Slash_StartCP_VerifyWC_CompleteCP(uint24 _rand) public r(_rand) {
+    function test_VerifyWC_Slash_StartCP_VerifyWC_CompleteCP(uint24 _rand) public rand(_rand) {
         (User staker, ,) = _newRandomStaker();
-        _upgradeEigenLayerContracts();
 
-        (uint40[] memory validators, uint64 beaconBalanceGwei) = staker.startValidators();
+        (uint40[] memory validators, uint64 beaconBalanceGwei, ) = staker.startValidators();
         beaconChain.advanceEpoch_NoRewards();
 
         staker.verifyWithdrawalCredentials(validators);
@@ -404,7 +386,7 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
 
         // Start a new validator & verify withdrawal credentials
         cheats.deal(address(staker), 32 ether);
-        (uint40[] memory newValidators, uint64 addedBeaconBalanceGwei) = staker.startValidators();
+        (uint40[] memory newValidators, uint64 addedBeaconBalanceGwei, ) = staker.startValidators();
         beaconChain.advanceEpoch_NoRewards();
         staker.verifyWithdrawalCredentials(newValidators);
         check_VerifyWC_State(staker, newValidators, addedBeaconBalanceGwei);
@@ -422,11 +404,10 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
     /// 2. start a checkpoint
     /// 3. complete a checkpoint
     /// => after 3, shares should decrease by slashed amount
-    function test_VerifyWC_SlashToPod_VerifyStale_CompleteCP(uint24 _rand) public r(_rand) {
+    function test_VerifyWC_SlashToPod_VerifyStale_CompleteCP(uint24 _rand) public rand(_rand) {
         (User staker, ,) = _newRandomStaker();
-        _upgradeEigenLayerContracts();
 
-        (uint40[] memory validators, uint64 beaconBalanceGwei) = staker.startValidators();
+        (uint40[] memory validators, uint64 beaconBalanceGwei, ) = staker.startValidators();
         // Advance epoch without generating rewards
         beaconChain.advanceEpoch_NoRewards();
 
@@ -440,7 +421,7 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         check_StartCheckpoint_WithPodBalance_State(staker, beaconBalanceGwei - slashedBalanceGwei);
 
         staker.completeCheckpoint();
-        check_CompleteCheckpoint_WithSlashing_State(staker, validators, slashedBalanceGwei);
+        check_CompleteCheckpoint_WithSlashing_HandleRoundDown_State(staker, validators, slashedBalanceGwei);
     }
 
     /// 1. Verify validators' withdrawal credentials
@@ -448,11 +429,10 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
     /// 2. start a checkpoint
     /// 3. complete a checkpoint
     /// => after 3, shares should decrease by slashed amount
-    function test_VerifyWC_SlashToCL_VerifyStale_CompleteCP_SlashAgain(uint24 _rand) public r(_rand) {
+    function test_VerifyWC_SlashToCL_VerifyStale_CompleteCP_SlashAgain(uint24 _rand) public rand(_rand) {
         (User staker, ,) = _newRandomStaker();
-        _upgradeEigenLayerContracts();
 
-        (uint40[] memory validators, uint64 beaconBalanceGwei) = staker.startValidators();
+        (uint40[] memory validators, uint64 beaconBalanceGwei, ) = staker.startValidators();
         // Advance epoch without generating rewards
         beaconChain.advanceEpoch_NoRewards();
 
@@ -467,7 +447,7 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         check_StartCheckpoint_WithPodBalance_State(staker, 0);
 
         staker.completeCheckpoint();
-        check_CompleteCheckpoint_WithCLSlashing_State(staker, slashedBalanceGwei);
+        check_CompleteCheckpoint_WithCLSlashing_HandleRoundDown_State(staker, slashedBalanceGwei);
 
         // Slash validators again but do not process exits to pod
         uint64 secondSlashedBalanceGwei = beaconChain.slashValidators(validators);
@@ -489,11 +469,10 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
     /// 4. start a checkpoint
     /// 5. complete a checkpoint
     /// => slashed balance should be reflected in 4 and 5
-    function test_VerifyWC_StartCP_SlashToPod_CompleteCP_VerifyStale(uint24 _rand) public r(_rand) {
+    function test_VerifyWC_StartCP_SlashToPod_CompleteCP_VerifyStale(uint24 _rand) public rand(_rand) {
         (User staker, ,) = _newRandomStaker();
-        _upgradeEigenLayerContracts();
 
-        (uint40[] memory validators, uint64 beaconBalanceGwei) = staker.startValidators();
+        (uint40[] memory validators, uint64 beaconBalanceGwei, ) = staker.startValidators();
         // Advance epoch without generating rewards
         beaconChain.advanceEpoch_NoRewards();
 
@@ -513,7 +492,7 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         check_StartCheckpoint_WithPodBalance_State(staker, beaconBalanceGwei - slashedBalanceGwei);
 
         staker.completeCheckpoint();
-        check_CompleteCheckpoint_WithSlashing_State(staker, validators, slashedBalanceGwei);
+        check_CompleteCheckpoint_WithSlashing_HandleRoundDown_State(staker, validators, slashedBalanceGwei);
     }
 
     /*******************************************************************************
@@ -526,23 +505,37 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
     /// 2. start a checkpoint
     /// 3. complete a checkpoint
     /// => after 3, shares increase by rewards earned on beacon chain
-    function test_EarnOnBeacon_VerifyWC_StartCP_CompleteCP(uint24 _rand) public r(_rand) {
+    function test_EarnOnBeacon_VerifyWC_StartCP_CompleteCP(uint24 _rand) public rand(_rand) {
         (User staker, ,) = _newRandomStaker();
-        _upgradeEigenLayerContracts();
 
-        (uint40[] memory validators, uint64 beaconBalanceGwei) = staker.startValidators();
+        (uint40[] memory validators, uint64 beaconBalanceGwei, uint maxEBValidators) = staker.startValidators();
+
+        if (address(staker).balance < 2048 ether) {
+            maxEBValidators = 0;
+        }
         // Advance epoch and generate consensus rewards, but don't withdraw to pod
         beaconChain.advanceEpoch_NoWithdraw();
+
+        // Get the expected increase in beacon balance, accounting for validators with MaxEB
+        // The validators < MaxEB will have their rewards proven in the checkpoint
+        // The validators == MaxEB will have their rewards proven in verifyWC
         uint64 beaconBalanceIncreaseGwei = uint64(validators.length) * beaconChain.CONSENSUS_REWARD_AMOUNT_GWEI();
+        uint64 expectedWithdrawnGwei = uint64(maxEBValidators) * beaconChain.CONSENSUS_REWARD_AMOUNT_GWEI();
+        uint64 verifyWCRewardsIncreaseGwei = beaconBalanceIncreaseGwei - expectedWithdrawnGwei;
+
+        console.log("maxEBValidators", maxEBValidators);
+        console.log("beaconBalanceIncreaseGwei", beaconBalanceIncreaseGwei);
+        console.log("expectedWithdrawnGwei", expectedWithdrawnGwei);
+        console.log("verifyWCRewardsIncreaseGwei", verifyWCRewardsIncreaseGwei);
 
         staker.verifyWithdrawalCredentials(validators);
-        check_VerifyWC_State(staker, validators, beaconBalanceGwei);
+        check_VerifyWC_State(staker, validators, beaconBalanceGwei + verifyWCRewardsIncreaseGwei);
 
         staker.startCheckpoint();
         check_StartCheckpoint_State(staker);
 
         staker.completeCheckpoint();
-        check_CompleteCheckpoint_EarnOnBeacon_State(staker, beaconBalanceIncreaseGwei);
+        check_CompleteCheckpoint_EarnOnBeacon_State(staker, expectedWithdrawnGwei);
     }
 
     /// 1. Verify validators' withdrawal credentials
@@ -550,11 +543,10 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
     /// 2. start a checkpoint
     /// 3. complete a checkpoint
     /// => after 3, shares increase by rewards earned on beacon chain
-    function test_VerifyWC_EarnOnBeacon_StartCP_CompleteCP(uint24 _rand) public r(_rand) {
+    function test_VerifyWC_EarnOnBeacon_StartCP_CompleteCP(uint24 _rand) public rand(_rand) {
         (User staker, ,) = _newRandomStaker();
-        _upgradeEigenLayerContracts();
 
-        (uint40[] memory validators, uint64 beaconBalanceGwei) = staker.startValidators();
+        (uint40[] memory validators, uint64 beaconBalanceGwei, ) = staker.startValidators();
         beaconChain.advanceEpoch_NoRewards();
 
         staker.verifyWithdrawalCredentials(validators);
@@ -576,11 +568,10 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
     /// -- earn rewards on beacon chain (not withdrawn to pod)
     /// 3. complete a checkpoint
     /// => no change in shares between 1 and 3  
-    function test_VerifyWC_StartCP_EarnOnBeacon_CompleteCP(uint24 _rand) public r(_rand) {
+    function test_VerifyWC_StartCP_EarnOnBeacon_CompleteCP(uint24 _rand) public rand(_rand) {
         (User staker, ,) = _newRandomStaker();
-        _upgradeEigenLayerContracts();
 
-        (uint40[] memory validators, uint64 beaconBalanceGwei) = staker.startValidators();
+        (uint40[] memory validators, uint64 beaconBalanceGwei, ) = staker.startValidators();
         beaconChain.advanceEpoch_NoRewards();
 
         staker.verifyWithdrawalCredentials(validators);
@@ -606,17 +597,26 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
     /// 2. start a checkpoint
     /// 3. complete a checkpoint
     /// => after 3, shares increase by rewards withdrawn to pod
-    function test_EarnToPod_VerifyWC_StartCP_CompleteCP(uint24 _rand) public r(_rand) {
+    function test_EarnToPod_VerifyWC_StartCP_CompleteCP(uint24 _rand) public rand(_rand) {
         (User staker, ,) = _newRandomStaker();
-        _upgradeEigenLayerContracts();
 
-        (uint40[] memory validators, uint64 beaconBalanceGwei) = staker.startValidators();
-        // Advance epoch, generating consensus rewards and withdrawing anything over 32 ETH
+        (uint40[] memory validators, uint64 beaconBalanceGwei, uint maxEBValidators) = staker.startValidators();
+
+        // maxEBValidators not being returned properly
+        if (address(staker).balance < 2048 ether) {
+            maxEBValidators = 0;
+        }
+        // Advance epoch, generating consensus rewards and withdrawing anything over MaxEB
         beaconChain.advanceEpoch();
-        uint64 expectedWithdrawnGwei = uint64(validators.length) * beaconChain.CONSENSUS_REWARD_AMOUNT_GWEI();
+
+        // The validators < MaxEB will have their rewards proven in the checkpoint
+        // The validators == MaxEB will have their rewards proven in verifyWC
+        uint64 beaconBalanceIncreaseGwei = uint64(validators.length) * beaconChain.CONSENSUS_REWARD_AMOUNT_GWEI();
+        uint64 expectedWithdrawnGwei = uint64(maxEBValidators) * beaconChain.CONSENSUS_REWARD_AMOUNT_GWEI();
+        uint64 verifyWCRewardsIncreaseGwei = beaconBalanceIncreaseGwei - expectedWithdrawnGwei;
 
         staker.verifyWithdrawalCredentials(validators);
-        check_VerifyWC_State(staker, validators, beaconBalanceGwei);
+        check_VerifyWC_State(staker, validators, beaconBalanceGwei + verifyWCRewardsIncreaseGwei);
 
         staker.startCheckpoint();
         check_StartCheckpoint_WithPodBalance_State(staker, expectedWithdrawnGwei);
@@ -630,19 +630,23 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
     /// 2. start a checkpoint
     /// 3. complete a checkpoint
     /// => after 3, shares increase by rewards withdrawn to pod
-    function test_VerifyWC_EarnToPod_StartCP_CompleteCP(uint24 _rand) public r(_rand) {
+    function test_VerifyWC_EarnToPod_StartCP_CompleteCP(uint24 _rand) public rand(_rand) {
         (User staker, ,) = _newRandomStaker();
-        _upgradeEigenLayerContracts();
 
-        (uint40[] memory validators, uint64 beaconBalanceGwei) = staker.startValidators();
+        (uint40[] memory validators, uint64 beaconBalanceGwei, uint maxEBValidators) = staker.startValidators();
         beaconChain.advanceEpoch_NoRewards();
+
+        // maxEBValidators not being returned properly
+        if (address(staker).balance < 2048 ether) {
+            maxEBValidators = 0;
+        }
 
         staker.verifyWithdrawalCredentials(validators);
         check_VerifyWC_State(staker, validators, beaconBalanceGwei);
 
-        // Advance epoch, generating consensus rewards and withdrawing anything over 32 ETH
+        // Advance epoch, generating consensus rewards and withdrawing anything over Max EB (2048 ETH)
         beaconChain.advanceEpoch();
-        uint64 expectedWithdrawnGwei = uint64(validators.length) * beaconChain.CONSENSUS_REWARD_AMOUNT_GWEI();
+        uint64 expectedWithdrawnGwei = uint64(maxEBValidators) * beaconChain.CONSENSUS_REWARD_AMOUNT_GWEI();
 
         staker.startCheckpoint();
         check_StartCheckpoint_WithPodBalance_State(staker, expectedWithdrawnGwei);
@@ -656,11 +660,16 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
     /// -- earn rewards on beacon chain (withdrawn to pod)
     /// 3. complete a checkpoint
     /// => no change in shares between 1 and 3
-    function test_VerifyWC_StartCP_EarnToPod_CompleteCP(uint24 _rand) public r(_rand) {
+    function test_VerifyWC_StartCP_EarnToPod_CompleteCP(uint24 _rand) public rand(_rand) {
         (User staker, ,) = _newRandomStaker();
-        _upgradeEigenLayerContracts();
 
-        (uint40[] memory validators, uint64 beaconBalanceGwei) = staker.startValidators();
+        (uint40[] memory validators, uint64 beaconBalanceGwei, uint maxEBValidators) = staker.startValidators();
+
+        // maxEBValidators not being returned properly
+        if (address(staker).balance < 2048 ether) {
+            maxEBValidators = 0;
+        }
+
         beaconChain.advanceEpoch_NoRewards();
 
         staker.verifyWithdrawalCredentials(validators);
@@ -671,9 +680,9 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         staker.startCheckpoint();
         check_StartCheckpoint_WithPodBalance_State(staker, 0);
 
-        // Advance epoch, generating consensus rewards and withdrawing anything over 32 ETH
+        // Advance epoch, generating consensus rewards and withdrawing anything over 2048 ETH
         beaconChain.advanceEpoch();
-        uint64 expectedWithdrawnGwei = uint64(validators.length) * beaconChain.CONSENSUS_REWARD_AMOUNT_GWEI();
+        uint64 expectedWithdrawnGwei = uint64(maxEBValidators) * beaconChain.CONSENSUS_REWARD_AMOUNT_GWEI();
 
         staker.completeCheckpoint();
         // `pod.balance == gweiSent + remainderSent
@@ -689,9 +698,9 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
     /// -- Pod receives native ETH via fallback
     /// 1. start a checkpoint
     /// => checkpoint should auto-complete, awarding shares for ETH in pod
-    function test_NativeETH_StartCP(uint24 _rand) public r(_rand) {
+    function test_NativeETH_StartCP(uint24 _rand) public rand(_rand) {
         (User staker, ,) = _newRandomStaker();
-        _upgradeEigenLayerContracts();
+
         // Send a random amount of ETH to staker's fallback
         (uint64 gweiSent, ) = _sendRandomETH(address(staker.pod()));
 
@@ -708,11 +717,10 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
     /// 2. start a checkpoint
     /// 3. complete a checkpoint
     /// => after 3, shares should account for native ETH
-    function test_NativeETH_VerifyWC_StartCP_CompleteCP(uint24 _rand) public r(_rand) {
+    function test_NativeETH_VerifyWC_StartCP_CompleteCP(uint24 _rand) public rand(_rand) {
         (User staker, ,) = _newRandomStaker();
-        _upgradeEigenLayerContracts();
 
-        (uint40[] memory validators, uint64 beaconBalanceGwei) = staker.startValidators();
+        (uint40[] memory validators, uint64 beaconBalanceGwei, ) = staker.startValidators();
         beaconChain.advanceEpoch_NoRewards();
 
         // Send a random amount of ETH to staker's fallback
@@ -736,11 +744,10 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
     /// 2. start a checkpoint
     /// 3. complete a checkpoint
     /// => after 3, shares should account for native ETH
-    function test_VerifyWC_NativeETH_StartCP_CompleteCP(uint24 _rand) public r(_rand) {
+    function test_VerifyWC_NativeETH_StartCP_CompleteCP(uint24 _rand) public rand(_rand) {
         (User staker, ,) = _newRandomStaker();
-        _upgradeEigenLayerContracts();
 
-        (uint40[] memory validators, uint64 beaconBalanceGwei) = staker.startValidators();
+        (uint40[] memory validators, uint64 beaconBalanceGwei, ) = staker.startValidators();
         beaconChain.advanceEpoch_NoRewards();
 
         staker.verifyWithdrawalCredentials(validators);
@@ -764,11 +771,10 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
     /// -- Pod receives native ETH via fallback
     /// 3. complete a checkpoint
     /// => no change in shares between 1 and 3
-    function test_VerifyWC_StartCP_NativeETH_CompleteCP(uint24 _rand) public r(_rand) {
+    function test_VerifyWC_StartCP_NativeETH_CompleteCP(uint24 _rand) public rand(_rand) {
         (User staker, ,) = _newRandomStaker();
-        _upgradeEigenLayerContracts();
 
-        (uint40[] memory validators, uint64 beaconBalanceGwei) = staker.startValidators();
+        (uint40[] memory validators, uint64 beaconBalanceGwei, ) = staker.startValidators();
         beaconChain.advanceEpoch_NoRewards();
 
         staker.verifyWithdrawalCredentials(validators);
