@@ -200,6 +200,8 @@ contract DeployFresh is EOADeployer {
     }
     
     function testDeploy() public virtual {
+        ZEnvHelpers.vm.setEnv("ZEUS_DEPLOYED_TO_VERSION", "1.3.0");
+        ZEnvHelpers.vm.setEnv("ZEUS_DEPLOYED_FROM_VERSION", "0.0.1");
         _runAsEOA();
     }
 }
