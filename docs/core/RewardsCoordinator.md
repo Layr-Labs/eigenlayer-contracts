@@ -98,7 +98,7 @@ Called by an AVS to submit a list of `RewardsSubmission`s to be distributed acro
 * `uint32 duration`: the duration of the submission time range, in seconds
 * `StrategyAndMultiplier[] strategiesAndMultipliers`: an array of `StrategyAndMultiplier` structs that define a linear combination of EigenLayer strategies the AVS is considering eligible for rewards. Each `StrategyAndMultiplier` contains:
     * `IStrategy strategy`: address of the strategy against which a Staker/Operator's relative shares are weighted in order to determine their reward amount
-    * `uint96 multiplier`: the relative weighting of the strategy in the linear combination. (Recommended use here is to use 1e18 as the base multiplier and adjust the relative weightings accordingly)
+    * `uint96 multiplier`: the relative weighting of the strategy in the linear combination. Recommended use here is to use 1e18 as the base multiplier and adjust the relative weightings accordingly. Otherwise, precision can be lost when the distribution calculation multiplies and divides with small numbers.
 
 For each submitted `RewardsSubmission`, this method performs a `transferFrom` to transfer the specified reward `token` and `amount` from the caller to the `RewardsCoordinator`.
 
