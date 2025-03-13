@@ -188,7 +188,7 @@ The current state:
 
 She notices that Bob is about to deposit 1000 tokens into the `StrategyBase` contract. She wants to manipulate the exchange rate to be so high that, due to rounding, Bob receives no shares for his deposit. In other words, she wants to set the exchange rate to some value where the number of tokens that Bob will be depositing is less than the number of tokens that would be required to receive 1 share. This would leave Bob with no shares, and no way to withdraw his tokens.
 
-For example, say that Alice sends a *million* tokens to the `StrategyBase` contract. She does not go through the `deposit` function; she does not receive any additional shares for depositing these tokens into the contract. The exchange rate is now 1e6 tokens : 1 share.
+For example, say that Alice sends a *million* tokens to the `StrategyBase` contract. She does not go through the `deposit` function; she does not receive any additional shares for depositing these tokens into the contract. The exchange rate is now 1e6 + 1 tokens : 1 share.
 
 The current state:
 * `StrategyBase` total shares: 1
@@ -196,13 +196,13 @@ The current state:
 * Alice's shares: **1**
 * Alice's "deserved" token balance: **1e6 + 1**
 
-Note the large difference between the `StrategyBase`'s token balance and the number of shares. As mentioned before, the exchange rate is now 1e6 tokens : 1 share.
+Note the large difference between the `StrategyBase`'s token balance and the number of shares. As mentioned before, the exchange rate is now 1e6 + 1 tokens : 1 share.
 
 When Bob deposits 1000 tokens, he is depositing less than 1e6 tokens, meaning that *he receives no shares for his deposit*. Calculating Bob's total shares:
 
-* Bob's 1000 tokens * 1 share / 1e6 tokens = 1e-3 shares = 0 shares
+* Bob's 1000 tokens * 1 share / 1e6 + 1 tokens = 1e-3 shares = 0 shares
 
-Due to the large divisor, Bob's received shares are now 1e-3, a very small number, which is *effectively 0* due to EVM division. Thus, **Bob receives no shares for his token deposit**. This is a problem, as he is entitled to 1000 tokens, but has no shares for withdrawing it.
+Due to the large divisor, Bob's received shares are now 1e-3, a very small number, which is *rounded down to 0* due to EVM division. Thus, **Bob receives no shares for his token deposit**. This is a problem, as he is entitled to 1000 tokens, but has no shares for withdrawing it.
 
 The current state:
 * `StrategyBase` total shares: 1
