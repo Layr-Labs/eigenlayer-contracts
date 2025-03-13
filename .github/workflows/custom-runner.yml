@@ -1,0 +1,22 @@
+name: Custom Runner Test
+
+on:
+  push:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pull-requests: read
+
+env:
+  CLICOLOR: 1
+
+jobs:
+  typos:
+    name: Hello world
+    runs-on: protocol-gha-runners
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Hello world
+        run: ls -al
