@@ -23,7 +23,7 @@ contract EigenWrappingTests is Test {
     BackingEigen bEIGENImpl;
     BackingEigen bEIGEN;
 
-    uint256 totalSupply = 1.67e9 ether;
+    uint totalSupply = 1.67e9 ether;
 
     // EVENTS FROM EIGEN.sol
     /// @notice event emitted when the allowedFrom status of an address is set
@@ -31,13 +31,11 @@ contract EigenWrappingTests is Test {
     /// @notice event emitted when the allowedTo status of an address is set
     event SetAllowedTo(address indexed to, bool isAllowedTo);
     /// @notice event emitted when a minter mints
-    event Mint(address indexed minter, uint256 amount);
+    event Mint(address indexed minter, uint amount);
     /// @notice event emitted when the transfer restrictions are disabled
     event TransferRestrictionsDisabled();
 
-    modifier filterAddress(
-        address fuzzedAddress
-    ) {
+    modifier filterAddress(address fuzzedAddress) {
         vm.assume(!fuzzedOutAddresses[fuzzedAddress]);
         _;
     }
@@ -68,21 +66,21 @@ contract EigenWrappingTests is Test {
         fuzzedOutAddresses[address(0)] = true;
     }
 
-    function test_AnyoneCanUnwrap(address unwrapper, uint256 unwrapAmount) public filterAddress(unwrapper) {
+    function test_AnyoneCanUnwrap(address unwrapper, uint unwrapAmount) public filterAddress(unwrapper) {
         vm.assume(unwrapper != address(0));
 
         _simulateMint();
         _simulateBackingAndSetTransferRestrictions();
 
         // minter1 balance
-        uint256 minter1Balance = eigen.balanceOf(minter1);
+        uint minter1Balance = eigen.balanceOf(minter1);
 
         // send EIGEN to unwrapper
         vm.prank(minter1);
         eigen.transfer(unwrapper, minter1Balance);
 
         // initial bEIGEN balance
-        uint256 initialBEIGENBalanceOfEigenToken = bEIGEN.balanceOf(address(eigen));
+        uint initialBEIGENBalanceOfEigenToken = bEIGEN.balanceOf(address(eigen));
         // initial EIGEN token supply
         assertEq(eigen.totalSupply(), bEIGEN.totalSupply(), "eigen totalSupply changed incorrectly");
 
@@ -103,16 +101,16 @@ contract EigenWrappingTests is Test {
         assertEq(bEIGEN.balanceOf(address(unwrapper)), unwrapAmount);
     }
 
-    function test_AnyoneCanWrap(address wrapper, uint256 wrapAmount) public filterAddress(wrapper) {
+    function test_AnyoneCanWrap(address wrapper, uint wrapAmount) public filterAddress(wrapper) {
         vm.assume(wrapper != address(0));
 
         _simulateMint();
         _simulateBackingAndSetTransferRestrictions();
 
         // initial bEIGEN balance
-        uint256 initialBEIGENBalanceOfEigenToken = bEIGEN.balanceOf(address(eigen));
+        uint initialBEIGENBalanceOfEigenToken = bEIGEN.balanceOf(address(eigen));
         // minter1 balance
-        uint256 minter1Balance = eigen.balanceOf(minter1);
+        uint minter1Balance = eigen.balanceOf(minter1);
 
         // unwrap
         vm.startPrank(minter1);
@@ -142,10 +140,7 @@ contract EigenWrappingTests is Test {
         assertEq(bEIGEN.balanceOf(address(wrapper)), minter1Balance - wrapAmount);
     }
 
-    function test_CannotUnwrapMoreThanBalance(
-        address unwrapper,
-        uint256 unwrapAmount
-    ) public filterAddress(unwrapper) {
+    function test_CannotUnwrapMoreThanBalance(address unwrapper, uint unwrapAmount) public filterAddress(unwrapper) {
         _simulateMint();
         _simulateBackingAndSetTransferRestrictions();
 
@@ -162,7 +157,7 @@ contract EigenWrappingTests is Test {
         eigen.unwrap(unwrapAmount + 1);
     }
 
-    function test_CannotWrapMoreThanBalance(address wrapper, uint256 wrapAmount) public filterAddress(wrapper) {
+    function test_CannotWrapMoreThanBalance(address wrapper, uint wrapAmount) public filterAddress(wrapper) {
         _simulateMint();
         _simulateBackingAndSetTransferRestrictions();
 
@@ -178,7 +173,7 @@ contract EigenWrappingTests is Test {
         // wrap
         vm.startPrank(wrapper);
         // approve bEIGEN
-        bEIGEN.approve(address(eigen), type(uint256).max);
+        bEIGEN.approve(address(eigen), type(uint).max);
         // send bEIGEN to wrapper
         vm.expectRevert("ERC20: transfer amount exceeds balance");
         eigen.wrap(wrapAmount + 1);
