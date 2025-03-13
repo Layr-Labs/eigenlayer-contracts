@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "src/test/integration/UpgradeTest.t.sol";
+import "src/test/integration/tests/upgrade/UpgradeTest.t.sol";
 
 contract Integration_Upgrade_EigenPod_Base is UpgradeTest {
     uint[] shares;
