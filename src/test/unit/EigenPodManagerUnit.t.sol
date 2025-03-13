@@ -142,6 +142,56 @@ contract EigenPodManagerUnitTests_CreationTests is EigenPodManagerUnitTests {
     }
 }
 
+contract EigenPodManagerUnitTests_ProofTimestampSetterTests is EigenPodManagerUnitTests {
+    function testFuzz_setProofTimestampSetter_revert_notOwner(address notOwner) public filterFuzzedAddressInputs(notOwner) {
+        cheats.assume(notOwner != initialOwner);
+        cheats.prank(notOwner);
+        cheats.expectRevert("Ownable: caller is not the owner");
+        eigenPodManager.setProofTimestampSetter(address(1));
+    }
+
+    function test_setProofTimestampSetter() public {
+        address newSetter = address(1);
+        cheats.expectEmit(true, true, true, true);
+        emit ProofTimestampSetterSet(newSetter);
+
+        cheats.prank(initialOwner);
+        eigenPodManager.setProofTimestampSetter(newSetter);
+
+        assertEq(eigenPodManager.proofTimestampSetter(), newSetter, "Proof timestamp setter not set correctly");
+    }
+
+    function test_setPectraForkTimestamp_revert_notSetter(address notSetter) public filterFuzzedAddressInputs(notSetter) {
+        // First set a proof timestamp setter
+        address setter = address(1);
+        cheats.prank(initialOwner);
+        eigenPodManager.setProofTimestampSetter(setter);
+
+        // Try to set timestamp from non-setter address
+        cheats.assume(notSetter != setter);
+        cheats.prank(notSetter);
+        cheats.expectRevert(IEigenPodManagerErrors.OnlyProofTimestampSetter.selector);
+        eigenPodManager.setPectraForkTimestamp(1);
+    }
+
+    function test_setPectraForkTimestamp() public {
+        // First set a proof timestamp setter
+        address setter = address(1);
+        cheats.prank(initialOwner);
+        eigenPodManager.setProofTimestampSetter(setter);
+
+        // Set new timestamp
+        uint64 newTimestamp = 1;
+        cheats.expectEmit(true, true, true, true);
+        emit PectraForkTimestampSet(newTimestamp);
+
+        cheats.prank(setter);
+        eigenPodManager.setPectraForkTimestamp(newTimestamp);
+
+        assertEq(eigenPodManager.pectraForkTimestamp(), newTimestamp, "Pectra fork timestamp not set correctly");
+    }
+}
+
 contract EigenPodManagerUnitTests_StakeTests is EigenPodManagerUnitTests {
     function test_stake_podAlreadyDeployed() public deployPodForStaker(defaultStaker) {
         // Declare dummy variables

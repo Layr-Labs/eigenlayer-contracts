@@ -59,7 +59,7 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationCheckUtils {
         check_Delegation_State(staker, operator, emptyStrategies, emptyTokenBalances);
 
         // 4. deposit/verify withdrawal credentials
-        (validators, beaconBalanceGwei) = staker.startValidators();
+        (validators, beaconBalanceGwei,) = staker.startValidators();
         beaconChain.advanceEpoch_NoRewards();
         staker.verifyWithdrawalCredentials(validators);
         check_VerifyWC_State(staker, validators, beaconBalanceGwei);
@@ -141,14 +141,14 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationCheckUtils {
         // 6. redeposit (start/complete checkpoint or verifyWC)
         if (_randBool()) {
             // Verify WC
-            (validators, beaconBalanceGwei) = staker.startValidators(uint8(_randUint(3, 10)));
-            beaconChain.advanceEpoch();
+            (validators, beaconBalanceGwei,) = staker.startValidators(uint8(_randUint(3, 10)));
+            beaconChain.advanceEpoch_NoRewards();
 
             staker.verifyWithdrawalCredentials(validators);
             check_VerifyWC_State(staker, validators, beaconBalanceGwei);
         } else {
             // Start/complete CP
-            beaconChain.advanceEpoch();
+            beaconChain.advanceEpoch_NoRewards();
             staker.startCheckpoint();
             check_StartCheckpoint_State(staker);
 
@@ -224,7 +224,7 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationCheckUtils {
 
         // 7. deposit/verify withdrawal credentials
         // randomly startup 1-10 validators
-        (validators, beaconBalanceGwei) = staker.startValidators(uint8(_randUint(1, 10)));
+        (validators, beaconBalanceGwei,) = staker.startValidators(uint8(_randUint(1, 10)));
         beaconChain.advanceEpoch_NoRewards();
         staker.verifyWithdrawalCredentials(validators);
         check_VerifyWC_State(staker, validators, beaconBalanceGwei);

@@ -29,7 +29,7 @@ contract Integration_DualSlashing_Base is IntegrationCheckUtils {
         (avs,) = _newRandomAVS();
 
         // 1. Deposit into strategies
-        (validators, beaconBalanceGwei) = staker.startValidators();
+        (validators, beaconBalanceGwei,) = staker.startValidators();
         beaconChain.advanceEpoch_NoRewards();
         staker.verifyWithdrawalCredentials(validators);
         initDepositShares = _calculateExpectedShares(strategies, initTokenBalances);
@@ -65,7 +65,7 @@ contract Integration_DualSlashing_BeaconChainFirst is Integration_DualSlashing_B
         staker.startCheckpoint();
         check_StartCheckpoint_WithPodBalance_State(staker, beaconBalanceGwei - slashedAmountGwei);
         staker.completeCheckpoint();
-        check_CompleteCheckpoint_WithSlashing_State(staker, validators, slashedAmountGwei);
+        check_CompleteCheckpoint_WithSlashing_HandleRoundDown_State(staker, validators, slashedAmountGwei);
 
         // 8. Slash operator by AVS
         SlashingParams memory slashingParams;
@@ -120,7 +120,7 @@ contract Integration_DualSlashing_AVSFirst is Integration_DualSlashing_Base {
     function testFuzz_avsSlash_verifyValidator_bcSlash_checkpoint(uint24 _random) public rand(_random) {
         // 7. Verify Validator
         cheats.deal(address(staker), 32 ether);
-        (uint40[] memory newValidators, uint64 addedBeaconBalanceGwei) = staker.startValidators();
+        (uint40[] memory newValidators, uint64 addedBeaconBalanceGwei,) = staker.startValidators();
         uint beaconSharesAdded = uint(addedBeaconBalanceGwei * GWEI_TO_WEI);
         beaconChain.advanceEpoch_NoRewards();
         staker.verifyWithdrawalCredentials(newValidators);
@@ -153,7 +153,7 @@ contract Integration_DualSlashing_AVSFirst is Integration_DualSlashing_Base {
 
         // 8. Verify Validator
         cheats.deal(address(staker), 32 ether);
-        (uint40[] memory newValidators, uint64 addedBeaconBalanceGwei) = staker.startValidators();
+        (uint40[] memory newValidators, uint64 addedBeaconBalanceGwei,) = staker.startValidators();
         uint beaconSharesAdded = uint(addedBeaconBalanceGwei * GWEI_TO_WEI);
         beaconChain.advanceEpoch_NoRewards();
         staker.verifyWithdrawalCredentials(newValidators);
@@ -190,7 +190,7 @@ contract Integration_DualSlashing_AVSFirst is Integration_DualSlashing_Base {
 
         // 9. Verify Validator
         cheats.deal(address(staker), 32 ether);
-        (uint40[] memory newValidators, uint64 addedBeaconBalanceGwei) = staker.startValidators();
+        (uint40[] memory newValidators, uint64 addedBeaconBalanceGwei,) = staker.startValidators();
         uint beaconSharesAdded = uint(addedBeaconBalanceGwei * GWEI_TO_WEI);
         beaconChain.advanceEpoch_NoRewards();
         staker.verifyWithdrawalCredentials(newValidators);
@@ -308,7 +308,7 @@ contract Integration_DualSlashing_FullSlashes is Integration_DualSlashing_Base {
 
         // 9. Verify validator
         cheats.deal(address(staker), 32 ether);
-        (uint40[] memory newValidators, uint64 addedBeaconBalanceGwei) = staker.startValidators();
+        (uint40[] memory newValidators, uint64 addedBeaconBalanceGwei,) = staker.startValidators();
         beaconChain.advanceEpoch_NoRewards();
         staker.verifyWithdrawalCredentials(newValidators);
         check_VerifyWC_State(staker, newValidators, addedBeaconBalanceGwei);

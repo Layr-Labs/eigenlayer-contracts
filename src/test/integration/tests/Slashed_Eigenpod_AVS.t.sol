@@ -129,7 +129,7 @@ contract Integration_SlashedEigenpod_AVS_Withdraw is Integration_SlashedEigenpod
 
         // 10. Redeposit
         cheats.deal(address(staker), 32 ether);
-        (uint40[] memory newValidators, uint64 addedBeaconBalanceGwei) = staker.startValidators();
+        (uint40[] memory newValidators, uint64 addedBeaconBalanceGwei,) = staker.startValidators();
         beaconChain.advanceEpoch_NoRewards();
         staker.verifyWithdrawalCredentials(newValidators);
         check_VerifyWC_State(staker, newValidators, addedBeaconBalanceGwei);
@@ -152,7 +152,7 @@ contract Integration_SlashedEigenpod_AVS_Withdraw is Integration_SlashedEigenpod
 
         // 10. Redeposit
         cheats.deal(address(staker), 32 ether);
-        (uint40[] memory newValidators, uint64 addedBeaconBalanceGwei) = staker.startValidators();
+        (uint40[] memory newValidators, uint64 addedBeaconBalanceGwei,) = staker.startValidators();
         beaconChain.advanceEpoch_NoRewards();
         staker.verifyWithdrawalCredentials(newValidators);
         check_VerifyWC_State(staker, newValidators, addedBeaconBalanceGwei);
