@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "src/test/integration/TypeImporter.t.sol";
 import "src/test/integration/IntegrationDeployer.t.sol";
 
-contract IntegrationGetters is IntegrationDeployer, TypeImporter {
+contract IntegrationGetters is IntegrationDeployer, ICoreTypes {
     using ArrayLib for *;
     using SlashingLib for *;
 
