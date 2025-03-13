@@ -17,6 +17,15 @@ contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable {
     /// @dev Do not remove, deprecated storage.
     /// @notice mapping of minter addresses to the amount of tokens they are allowed to mint
     mapping(address => uint256) internal __deprecated_mintingAllowance;
+    /// @dev Do not remove, deprecated storage.
+    /// @notice the timestamp after which transfer restrictions are disabled
+    uint256 internal __deprecated_transferRestrictionsDisabledAfter;
+    /// @dev Do not remove, deprecated storage.
+    /// @notice mapping of addresses that are allowed to transfer tokens to any address
+    mapping(address => bool) internal __deprecated_allowedFrom;
+    /// @dev Do not remove, deprecated storage.
+    /// @notice mapping of addresses that are allowed to receive tokens from any address
+    mapping(address => bool) internal __deprecated_allowedTo;
 
     /// @notice event emitted when a minter mints
     event Mint(address indexed minter, uint256 amount);
