@@ -12,6 +12,7 @@ import "src/contracts/core/AllocationManager.sol";
 import "src/contracts/core/AVSDirectory.sol";
 import "src/contracts/core/DelegationManager.sol";
 import "src/contracts/core/RewardsCoordinator.sol";
+import "src/contracts/interfaces/IRewardsCoordinator.sol";
 import "src/contracts/core/StrategyManager.sol";
 
 /// permissions/
