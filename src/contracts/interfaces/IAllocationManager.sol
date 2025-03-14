@@ -362,6 +362,13 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
     ) external view returns (uint256);
 
     /**
+     * @notice Returns all operator sets for a given AVS
+     * @param avs The address of the AVS
+     * @return Array of operator set IDs
+     */
+    function getAVSOperatorSets(address avs) external view returns (uint32[] memory);
+
+    /**
      * @notice Returns the list of operator sets the operator has current or pending allocations/deallocations in
      * @param operator the operator to query
      * @return the list of operator sets the operator has current or pending allocations/deallocations in
