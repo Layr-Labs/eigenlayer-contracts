@@ -10,8 +10,8 @@ on:
 
 env:
   FOUNDRY_PROFILE: medium
-  RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
-  RPC_HOLESKY: ${{ secrets.RPC_HOLESKY }}
+  RPC_MAINNET: https://ethereum-rpc.publicnode.com
+  RPC_HOLESKY: https://ethereum-holesky-rpc.publicnode.com
   CHAIN_ID: ${{ secrets.CHAIN_ID }}
 
 jobs:
@@ -154,7 +154,7 @@ jobs:
       # Run storage diff check to detect storage layout incompatibilities.
       - name: "Mainnet Storage Diff"
         run: |
-          bash bin/storage-diff.sh --rpc-url ${{ secrets.RPC_MAINNET }} --etherscan-key ${{ secrets.ETHERSCAN_API_KEY }} --input .github/configs/storage-diff.json
+          bash bin/storage-diff.sh --rpc-url https://ethereum-rpc.publicnode.com --etherscan-key ${{ secrets.ETHERSCAN_API_KEY }} --input .github/configs/storage-diff.json
         id: storage-diff
 
   # -----------------------------------------------------------------------
