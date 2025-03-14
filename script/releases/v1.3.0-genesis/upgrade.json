@@ -1,0 +1,23 @@
+{
+    "name": "slashing-genesis",
+    "from": "0.0.1",
+    "to": "1.3.0",
+    "phases": [
+        {
+            "type": "eoa",
+            "filename": "1-deploy.s.sol"
+        },
+        {
+            "type": "multisig",
+            "filename": "2-queue.s.sol"
+        },
+        {
+            "type": "multisig",
+            "filename": "3-execute.s.sol"
+        },
+        {
+            "type": "multisig",
+            "filename": "4-disable-eigenpods.s.sol"
+        }
+    ]
+}
