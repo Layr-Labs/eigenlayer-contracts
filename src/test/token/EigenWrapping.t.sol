@@ -26,14 +26,8 @@ contract EigenWrappingTests is Test {
     uint totalSupply = 1.67e9 ether;
 
     // EVENTS FROM EIGEN.sol
-    /// @notice event emitted when the allowedFrom status of an address is set
-    event SetAllowedFrom(address indexed from, bool isAllowedFrom);
-    /// @notice event emitted when the allowedTo status of an address is set
-    event SetAllowedTo(address indexed to, bool isAllowedTo);
     /// @notice event emitted when a minter mints
     event Mint(address indexed minter, uint amount);
-    /// @notice event emitted when the transfer restrictions are disabled
-    event TransferRestrictionsDisabled();
 
     modifier filterAddress(address fuzzedAddress) {
         vm.assume(!fuzzedOutAddresses[fuzzedAddress]);
@@ -70,7 +64,9 @@ contract EigenWrappingTests is Test {
         vm.assume(unwrapper != address(0));
 
         _simulateMint();
-        _simulateBackingAndSetTransferRestrictions();
+
+        // initialize bEIGEN
+        bEIGEN.initialize(minter1);
 
         // minter1 balance
         uint minter1Balance = eigen.balanceOf(minter1);
@@ -105,7 +101,9 @@ contract EigenWrappingTests is Test {
         vm.assume(wrapper != address(0));
 
         _simulateMint();
-        _simulateBackingAndSetTransferRestrictions();
+
+        // initialize bEIGEN
+        bEIGEN.initialize(minter1);
 
         // initial bEIGEN balance
         uint initialBEIGENBalanceOfEigenToken = bEIGEN.balanceOf(address(eigen));
@@ -142,7 +140,9 @@ contract EigenWrappingTests is Test {
 
     function test_CannotUnwrapMoreThanBalance(address unwrapper, uint unwrapAmount) public filterAddress(unwrapper) {
         _simulateMint();
-        _simulateBackingAndSetTransferRestrictions();
+
+        // initialize bEIGEN
+        bEIGEN.initialize(minter1);
 
         // unwrap amount should be less than minter1 balance
         unwrapAmount = unwrapAmount % eigen.balanceOf(minter1);
@@ -159,7 +159,9 @@ contract EigenWrappingTests is Test {
 
     function test_CannotWrapMoreThanBalance(address wrapper, uint wrapAmount) public filterAddress(wrapper) {
         _simulateMint();
-        _simulateBackingAndSetTransferRestrictions();
+
+        // initialize bEIGEN
+        bEIGEN.initialize(minter1);
 
         // wrap amount should be less than minter1 balance
         wrapAmount = wrapAmount % eigen.balanceOf(minter1);
@@ -184,13 +186,5 @@ contract EigenWrappingTests is Test {
         // dummy mint
         EigenHarness(address(eigen)).mint(minter1, totalSupply / 2);
         EigenHarness(address(eigen)).mint(minter2, totalSupply / 2);
-    }
-
-    function _simulateBackingAndSetTransferRestrictions() internal {
-        bEIGEN.initialize(minter1);
-
-        vm.startPrank(minter1);
-        bEIGEN.setAllowedFrom(minter1, true);
-        vm.stopPrank();
     }
 }
