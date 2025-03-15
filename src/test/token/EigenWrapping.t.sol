@@ -140,7 +140,7 @@ contract EigenWrappingTests is Test {
 
     function test_CannotUnwrapMoreThanBalance(address unwrapper, uint unwrapAmount) public filterAddress(unwrapper) {
         _simulateMint();
-        
+
         // initialize bEIGEN
         bEIGEN.initialize(minter1);
 
@@ -159,7 +159,7 @@ contract EigenWrappingTests is Test {
 
     function test_CannotWrapMoreThanBalance(address wrapper, uint wrapAmount) public filterAddress(wrapper) {
         _simulateMint();
-        
+
         // initialize bEIGEN
         bEIGEN.initialize(minter1);
 
