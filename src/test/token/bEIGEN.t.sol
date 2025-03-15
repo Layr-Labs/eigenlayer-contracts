@@ -87,7 +87,7 @@ contract bEIGENTest is Test {
 
     function test_burn() public {
         test_setIsMinterAndMint();
-        
+
         uint amountToBurn = 1005e18;
         uint balanceBefore = bEIGEN.balanceOf(mintTo);
         vm.prank(mintTo);

@@ -105,7 +105,6 @@ contract EigenWrappingTests is Test {
         // initialize bEIGEN
         bEIGEN.initialize(minter1);
 
-
         // initial bEIGEN balance
         uint initialBEIGENBalanceOfEigenToken = bEIGEN.balanceOf(address(eigen));
         // minter1 balance
@@ -163,6 +162,7 @@ contract EigenWrappingTests is Test {
         
         // initialize bEIGEN
         bEIGEN.initialize(minter1);
+
         // wrap amount should be less than minter1 balance
         wrapAmount = wrapAmount % eigen.balanceOf(minter1);
 
