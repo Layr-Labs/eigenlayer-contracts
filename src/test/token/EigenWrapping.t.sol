@@ -184,16 +184,6 @@ contract EigenWrappingTests is Test {
         // dummy mint
         EigenHarness(address(eigen)).mint(minter1, totalSupply / 2);
         EigenHarness(address(eigen)).mint(minter2, totalSupply / 2);
-
-        // set allowed froms
-        EigenHarness(address(eigen)).setAllowedFromPermissionless(minter1, true);
-        EigenHarness(address(eigen)).setAllowedFromPermissionless(minter2, true);
-
-        // set transfer restrictions to be disabled after to max
-        EigenHarness(address(eigen)).setTransferRestrictionsDisabledAfterToMax();
-
-        // set owner to minter1
-        EigenHarness(address(eigen)).transferOwnershipPermissionless(minter1);
     }
 
     function _simulateBackingAndSetTransferRestrictions() internal {

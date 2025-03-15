@@ -11,26 +11,24 @@ contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable {
     IERC20 public immutable bEIGEN;
 
     /// STORAGE
+    /// @dev Do not remove, deprecated storage.
     /// @notice mapping of minter addresses to the timestamp after which they are allowed to mint
-    mapping(address => uint256) public mintAllowedAfter;
+    mapping(address => uint256) internal __deprecated_mintAllowedAfter;
+    /// @dev Do not remove, deprecated storage.
     /// @notice mapping of minter addresses to the amount of tokens they are allowed to mint
-    mapping(address => uint256) public mintingAllowance;
-
+    mapping(address => uint256) internal __deprecated_mintingAllowance;
+    /// @dev Do not remove, deprecated storage.
     /// @notice the timestamp after which transfer restrictions are disabled
-    uint256 public transferRestrictionsDisabledAfter;
+    uint256 internal __deprecated_transferRestrictionsDisabledAfter;
+    /// @dev Do not remove, deprecated storage.
     /// @notice mapping of addresses that are allowed to transfer tokens to any address
-    mapping(address => bool) public allowedFrom;
+    mapping(address => bool) internal __deprecated_allowedFrom;
+    /// @dev Do not remove, deprecated storage.
     /// @notice mapping of addresses that are allowed to receive tokens from any address
-    mapping(address => bool) public allowedTo;
+    mapping(address => bool) internal __deprecated_allowedTo;
 
-    /// @notice event emitted when the allowedFrom status of an address is set
-    event SetAllowedFrom(address indexed from, bool isAllowedFrom);
-    /// @notice event emitted when the allowedTo status of an address is set
-    event SetAllowedTo(address indexed to, bool isAllowedTo);
     /// @notice event emitted when a minter mints
     event Mint(address indexed minter, uint256 amount);
-    /// @notice event emitted when the transfer restrictions disabled
-    event TransferRestrictionsDisabled();
 
     constructor(
         IERC20 _bEIGEN
@@ -63,59 +61,19 @@ contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable {
             minters.length == mintAllowedAfters.length,
             "Eigen.initialize: minters and mintAllowedAfters must be the same length"
         );
-        // set minting allowances for each minter
-        for (uint256 i = 0; i < minters.length; i++) {
-            mintingAllowance[minters[i]] = mintingAllowances[i];
-            mintAllowedAfter[minters[i]] = mintAllowedAfters[i];
-            // allow each minter to transfer tokens
-            allowedFrom[minters[i]] = true;
-            emit SetAllowedFrom(minters[i], true);
-        }
-
-        // set transfer restrictions to be disabled at type(uint256).max to be set down later
-        transferRestrictionsDisabledAfter = type(uint256).max;
-    }
-
-    /**
-     * @notice This function allows the owner to set the allowedFrom status of an address
-     * @param from the address whose allowedFrom status is being set
-     * @param isAllowedFrom the new allowedFrom status
-     */
-    function setAllowedFrom(address from, bool isAllowedFrom) external onlyOwner {
-        allowedFrom[from] = isAllowedFrom;
-        emit SetAllowedFrom(from, isAllowedFrom);
-    }
-
-    /**
-     * @notice This function allows the owner to set the allowedTo status of an address
-     * @param to the address whose allowedTo status is being set
-     * @param isAllowedTo the new allowedTo status
-     */
-    function setAllowedTo(address to, bool isAllowedTo) external onlyOwner {
-        allowedTo[to] = isAllowedTo;
-        emit SetAllowedTo(to, isAllowedTo);
-    }
-
-    /**
-     * @notice Allows the owner to disable transfer restrictions
-     */
-    function disableTransferRestrictions() external onlyOwner {
-        require(
-            transferRestrictionsDisabledAfter == type(uint256).max,
-            "Eigen.disableTransferRestrictions: transfer restrictions are already disabled"
-        );
-        transferRestrictionsDisabledAfter = 0;
-        emit TransferRestrictionsDisabled();
     }
 
     /**
      * @notice This function allows minter to mint tokens
      */
     function mint() external {
-        require(mintingAllowance[msg.sender] > 0, "Eigen.mint: msg.sender has no minting allowance");
-        require(block.timestamp > mintAllowedAfter[msg.sender], "Eigen.mint: msg.sender is not allowed to mint yet");
-        uint256 amount = mintingAllowance[msg.sender];
-        mintingAllowance[msg.sender] = 0;
+        require(__deprecated_mintingAllowance[msg.sender] > 0, "Eigen.mint: msg.sender has no minting allowance");
+        require(
+            block.timestamp > __deprecated_mintAllowedAfter[msg.sender],
+            "Eigen.mint: msg.sender is not allowed to mint yet"
+        );
+        uint256 amount = __deprecated_mintingAllowance[msg.sender];
+        __deprecated_mintingAllowance[msg.sender] = 0;
         _mint(msg.sender, amount);
         emit Mint(msg.sender, amount);
     }
@@ -148,24 +106,6 @@ contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable {
         for (uint256 i = 0; i < receivers.length; i++) {
             _transfer(msg.sender, receivers[i], amounts[i]);
         }
-    }
-
-    /**
-     * @notice Overrides the beforeTokenTransfer function to enforce transfer restrictions
-     * @param from the address tokens are being transferred from
-     * @param to the address tokens are being transferred to
-     * @param amount the amount of tokens being transferred
-     */
-    function _beforeTokenTransfer(address from, address to, uint256 amount) internal override {
-        // if transfer restrictions are enabled
-        if (block.timestamp <= transferRestrictionsDisabledAfter) {
-            // if both from and to are not whitelisted
-            require(
-                from == address(0) || to == address(0) || allowedFrom[from] || allowedTo[to],
-                "Eigen._beforeTokenTransfer: from or to must be whitelisted"
-            );
-        }
-        super._beforeTokenTransfer(from, to, amount);
     }
 
     /**
