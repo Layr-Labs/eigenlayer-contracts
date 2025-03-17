@@ -27,9 +27,6 @@ contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable {
     /// @notice mapping of addresses that are allowed to receive tokens from any address
     mapping(address => bool) internal __deprecated_allowedTo;
 
-    /// @notice event emitted when a minter mints
-    event Mint(address indexed minter, uint256 amount);
-
     constructor(
         IERC20 _bEIGEN
     ) {
@@ -39,43 +36,14 @@ contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable {
 
     /**
      * @notice An initializer function that sets initial values for the contract's state variables.
-     * @param minters the addresses that are allowed to mint
-     * @param mintingAllowances the amount of tokens that each minter is allowed to mint
      */
     function initialize(
-        address initialOwner,
-        address[] memory minters,
-        uint256[] memory mintingAllowances,
-        uint256[] memory mintAllowedAfters
+        address initialOwner
     ) public initializer {
         __Ownable_init();
         __ERC20_init("Eigen", "EIGEN");
         _transferOwnership(initialOwner);
         __ERC20Permit_init("EIGEN");
-
-        require(
-            minters.length == mintingAllowances.length,
-            "Eigen.initialize: minters and mintingAllowances must be the same length"
-        );
-        require(
-            minters.length == mintAllowedAfters.length,
-            "Eigen.initialize: minters and mintAllowedAfters must be the same length"
-        );
-    }
-
-    /**
-     * @notice This function allows minter to mint tokens
-     */
-    function mint() external {
-        require(__deprecated_mintingAllowance[msg.sender] > 0, "Eigen.mint: msg.sender has no minting allowance");
-        require(
-            block.timestamp > __deprecated_mintAllowedAfter[msg.sender],
-            "Eigen.mint: msg.sender is not allowed to mint yet"
-        );
-        uint256 amount = __deprecated_mintingAllowance[msg.sender];
-        __deprecated_mintingAllowance[msg.sender] = 0;
-        _mint(msg.sender, amount);
-        emit Mint(msg.sender, amount);
     }
 
     /**
