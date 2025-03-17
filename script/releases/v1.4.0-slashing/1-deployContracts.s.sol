@@ -14,8 +14,6 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 contract Deploy is EOADeployer {
     using Env for *;
 
-    string public constant VERSION = "v1.4.0";
-
     function _runAsEOA() internal override {
         vm.startBroadcast();
 
@@ -37,7 +35,7 @@ contract Deploy is EOADeployer {
         deployImpl({
             name: type(PermissionController).name,
             deployedTo: address(new PermissionController({
-                _version: VERSION
+                _version: Env.deployVersion()
             }))
         });
 
@@ -60,7 +58,7 @@ contract Deploy is EOADeployer {
                 _permissionController: Env.proxy.permissionController(),
                 _DEALLOCATION_DELAY: Env.MIN_WITHDRAWAL_DELAY(),
                 _ALLOCATION_CONFIGURATION_DELAY: Env.ALLOCATION_CONFIGURATION_DELAY(),
-                _version: VERSION
+                _version: Env.deployVersion()
             }))
         });
 
@@ -84,7 +82,7 @@ contract Deploy is EOADeployer {
             deployedTo: address(new AVSDirectory({
                 _delegation: Env.proxy.delegationManager(),
                 _pauserRegistry: Env.impl.pauserRegistry(),
-                _version: VERSION
+                _version: Env.deployVersion()
             }))
         });
 
@@ -97,7 +95,7 @@ contract Deploy is EOADeployer {
                 _pauserRegistry: Env.impl.pauserRegistry(),
                 _permissionController: Env.proxy.permissionController(),
                 _MIN_WITHDRAWAL_DELAY: Env.MIN_WITHDRAWAL_DELAY(),
-                _version: VERSION
+                _version: Env.deployVersion()
             }))
         });
 
@@ -115,7 +113,7 @@ contract Deploy is EOADeployer {
                     MAX_RETROACTIVE_LENGTH: Env.MAX_RETROACTIVE_LENGTH(),
                     MAX_FUTURE_LENGTH: Env.MAX_FUTURE_LENGTH(),
                     GENESIS_REWARDS_TIMESTAMP: Env.GENESIS_REWARDS_TIMESTAMP(),
-                    version: VERSION
+                    version: Env.deployVersion()
                 })
             }))
         });
@@ -125,7 +123,7 @@ contract Deploy is EOADeployer {
             deployedTo: address(new StrategyManager({
                 _delegation: Env.proxy.delegationManager(),
                 _pauserRegistry: Env.impl.pauserRegistry(),
-                _version: VERSION
+                _version: Env.deployVersion()
             }))
         });
 
@@ -138,7 +136,7 @@ contract Deploy is EOADeployer {
                 _eigenPodBeacon: Env.beacon.eigenPod(),
                 _delegationManager: Env.proxy.delegationManager(),
                 _pauserRegistry: Env.impl.pauserRegistry(),
-                _version: VERSION
+                _version: Env.deployVersion()
             }))
         });
 
@@ -148,7 +146,7 @@ contract Deploy is EOADeployer {
                 _ethPOS: Env.ethPOS(),
                 _eigenPodManager: Env.proxy.eigenPodManager(),
                 _GENESIS_TIME: Env.EIGENPOD_GENESIS_TIME(),
-                _version: VERSION
+                _version: Env.deployVersion()
             }))
         });
 
@@ -159,7 +157,7 @@ contract Deploy is EOADeployer {
             deployedTo: address(new StrategyBaseTVLLimits({
                 _strategyManager: Env.proxy.strategyManager(),
                 _pauserRegistry: Env.impl.pauserRegistry(),
-                _version: VERSION
+                _version: Env.deployVersion()
             }))
         });
 
@@ -168,7 +166,7 @@ contract Deploy is EOADeployer {
             deployedTo: address(new EigenStrategy({
                 _strategyManager: Env.proxy.strategyManager(),
                 _pauserRegistry: Env.impl.pauserRegistry(),
-                _version: VERSION
+                _version: Env.deployVersion()
             }))
         });
 
@@ -177,7 +175,7 @@ contract Deploy is EOADeployer {
             deployedTo: address(new StrategyFactory({
                 _strategyManager: Env.proxy.strategyManager(),
                 _pauserRegistry: Env.impl.pauserRegistry(),
-                _version: VERSION
+                _version: Env.deployVersion()
             }))
         });
 
@@ -187,7 +185,7 @@ contract Deploy is EOADeployer {
             deployedTo: address(new StrategyBase({
                 _strategyManager: Env.proxy.strategyManager(),
                 _pauserRegistry: Env.impl.pauserRegistry(),
-                _version: VERSION
+                _version: Env.deployVersion()
             }))
         });
 
@@ -201,6 +199,7 @@ contract Deploy is EOADeployer {
         _validateProxyAdmins();
         _validateImplConstructors();
         _validateImplsInitialized();
+        _validateVersion();
     }
 
     /// @dev Validate that the `Env.impl` addresses are updated to be distinct from what the proxy
@@ -502,6 +501,33 @@ contract Deploy is EOADeployer {
             StrategyFactory strategyFactory = Env.impl.strategyFactory();
             vm.expectRevert(errInit);
             strategyFactory.initialize(address(0), 0, UpgradeableBeacon(address(0)));
+        }
+    }
+
+    function _validateVersion() internal view {
+        // On future upgrades, just tick the major/minor/patch to validate
+        string memory expected = Env.deployVersion();
+        {
+            /// core/
+            assertEq(Env.impl.allocationManager().version(), expected, "allocationManager version mismatch");
+            assertEq(Env.impl.avsDirectory().version(), expected, "avsDirectory version mismatch");
+            assertEq(Env.impl.delegationManager().version(), expected, "delegationManager version mismatch");
+            assertEq(Env.impl.rewardsCoordinator().version(), expected, "rewardsCoordinator version mismatch");
+            assertEq(Env.impl.strategyManager().version(), expected, "strategyManager version mismatch");
+        }
+
+        {
+            /// pods/
+            assertEq(Env.impl.eigenPod().version(), expected, "eigenPod version mismatch");
+            assertEq(Env.impl.eigenPodManager().version(), expected, "eigenPodManager version mismatch");
+        }
+
+        {
+            /// strategies/
+            assertEq(Env.impl.eigenStrategy().version(), expected, "eigenStrategy version mismatch");
+            assertEq(Env.impl.strategyBase().version(), expected, "strategyBase version mismatch");
+            assertEq(Env.impl.strategyBaseTVLLimits().version(), expected, "strategyBaseTVLLimits version mismatch");
+            assertEq(Env.impl.strategyFactory().version(), expected, "strategyFactory version mismatch");
         }
     }
 

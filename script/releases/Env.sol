@@ -60,6 +60,11 @@ library Env {
     /**
      * env
      */
+    
+    function deployVersion() internal view returns (string memory) {
+        return _string("ZEUS_DEPLOY_TO_VERSION");
+    }
+
     function executorMultisig() internal view returns (address) {
         return _envAddress("executorMultisig");
     }
@@ -396,5 +401,13 @@ library Env {
         string memory key
     ) private view returns (uint16) {
         return ZEnvHelpers.state().envU16(key);
+    }
+
+    address internal constant VM_ADDRESS = address(uint160(uint256(keccak256("hevm cheat code"))));
+    Vm internal constant vm = Vm(VM_ADDRESS);
+    function _string(
+        string memory key
+    ) private view returns (string memory) {
+        return vm.envString(key);
     }
 }
