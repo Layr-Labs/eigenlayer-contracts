@@ -177,15 +177,6 @@ contract DeployFresh is EOADeployer {
             }))
         });
 
-        deployImpl({
-            name: type(StrategyFactory).name,
-            deployedTo: address(new StrategyFactory({
-                _strategyManager: Env.proxy.strategyManager(),
-                _pauserRegistry: Env.impl.pauserRegistry(),
-                _version: Env.deployToVersion()
-            }))
-        });
-
         // for strategies deployed via factory
         deployImpl({
             name: type(StrategyBase).name,
@@ -195,6 +186,23 @@ contract DeployFresh is EOADeployer {
                 _version: Env.deployToVersion()
             }))
         });
+
+        /// DEFAULT STRATEGIES
+
+        if (Env.weth() != address(0)) {
+            deployInstance({
+                name: type(StrategyBaseTVLLimits).name,
+                deployedTo: address(Env.proxy.strategyFactory().deployNewStrategy(IERC20(Env.weth())))
+            });
+        }
+
+        if (Env.steth() != address(0)) {
+            deployInstance({
+                name: type(StrategyBaseTVLLimits).name,
+                deployedTo: address(Env.proxy.strategyFactory().deployNewStrategy(IERC20(Env.steth())))
+            });
+        }
+
 
         vm.stopBroadcast();
     }

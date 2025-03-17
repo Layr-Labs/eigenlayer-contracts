@@ -109,6 +109,14 @@ library Env {
         return _envAddress("communityMultisig");
     }
 
+    function weth() internal view returns (address) {
+        return _envAddress("weth");
+    }
+
+    function steth() internal view returns (address) {
+        return _envAddress("steth");
+    }
+
     function proxyAdmin() internal view returns (address) {
         return _envAddress("proxyAdmin");
     }
