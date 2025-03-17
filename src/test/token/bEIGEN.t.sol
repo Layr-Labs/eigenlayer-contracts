@@ -5,8 +5,8 @@ import "forge-std/Test.sol";
 
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import "../harnesses/EigenHarness.sol";
 
+import "../../contracts/token/Eigen.sol";
 import "../../contracts/token/BackingEigen.sol";
 
 contract bEIGENTest is Test {
@@ -18,7 +18,7 @@ contract bEIGENTest is Test {
 
     ProxyAdmin proxyAdmin;
 
-    EigenHarness eigenImpl;
+    Eigen eigenImpl;
     Eigen eigen;
 
     BackingEigen bEIGENImpl;
@@ -33,8 +33,8 @@ contract bEIGENTest is Test {
         bEIGEN = BackingEigen(address(new TransparentUpgradeableProxy(address(proxyAdmin), address(proxyAdmin), "")));
 
         // deploy impls
-        eigenImpl = new EigenHarness(IERC20(address(bEIGEN)));
-        bEIGENImpl = new BackingEigen(IERC20(address(eigen)));
+        eigenImpl = new Eigen(IERC20(address(bEIGEN)));
+        bEIGENImpl = new BackingEigen();
 
         // upgrade proxies
         proxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(eigen))), address(eigenImpl));
