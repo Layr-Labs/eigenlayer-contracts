@@ -52,7 +52,7 @@ contract Queue is MultisigBuilder, DeployFresh {
                         StrategyManager.initialize,
                         (
                             Env.executorMultisig(),
-                            Env.opsMultisig(),
+                            address(Env.proxy.strategyFactory()),
                             Env.STRATEGY_MANAGER_INIT_PAUSED_STATUS()
                         )
                     )
