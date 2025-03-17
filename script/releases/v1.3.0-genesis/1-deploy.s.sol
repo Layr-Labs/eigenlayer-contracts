@@ -3,7 +3,7 @@ pragma solidity ^0.8.12;
 
 import {EOADeployer} from "zeus-templates/templates/EOADeployer.sol";
 import "../Env.sol";
-
+import {console} from "forge-std/console.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -28,7 +28,7 @@ contract DeployFresh is EOADeployer {
         });
     }
 
-    function _runAsEOA() internal override {
+    function _runAsEOA() internal virtual override {
         vm.startBroadcast();
 
         deployBlankProxy({
@@ -38,6 +38,7 @@ contract DeployFresh is EOADeployer {
         deployBlankProxy({
             name: type(StrategyManager).name
         });
+
         deployBlankProxy({
             name: type(StrategyFactory).name
         });
@@ -76,9 +77,8 @@ contract DeployFresh is EOADeployer {
             ))
         });
 
-        // TODO: rm this in favor of a method on `EOADeployer`.
-        deployContract({
-            name: string.concat(type(EigenPod).name, "_Beacon"),
+        deployBeacon({
+            name: type(EigenPod).name,
             deployedTo: address(new UpgradeableBeacon(eigenPodImplementation))
         });
 
@@ -155,7 +155,7 @@ contract DeployFresh is EOADeployer {
 
         deployImpl({
             name: type(StrategyFactory).name,
-            deployedTo: address(new StrategyFactory(Env.impl.strategyManager(), Env.impl.pauserRegistry(), Env.deployToVersion()))
+            deployedTo: address(new StrategyFactory(Env.proxy.strategyManager(), Env.impl.pauserRegistry(), Env.deployToVersion()))
         });
         
         /// strategies/
@@ -186,24 +186,13 @@ contract DeployFresh is EOADeployer {
                 _version: Env.deployToVersion()
             }))
         });
+    
+        deployBeacon({
+            name: type(StrategyBase).name,
+            deployedTo: address(new UpgradeableBeacon(address(Env.impl.strategyBase())))
+        });
 
         /// DEFAULT STRATEGIES
-
-        if (Env.weth() != address(0)) {
-            deployInstance({
-                name: type(StrategyBaseTVLLimits).name,
-                deployedTo: address(Env.proxy.strategyFactory().deployNewStrategy(IERC20(Env.weth())))
-            });
-        }
-
-        if (Env.steth() != address(0)) {
-            deployInstance({
-                name: type(StrategyBaseTVLLimits).name,
-                deployedTo: address(Env.proxy.strategyFactory().deployNewStrategy(IERC20(Env.steth())))
-            });
-        }
-
-
         vm.stopBroadcast();
     }
     

@@ -40,6 +40,7 @@ contract Queue is MultisigBuilder, DeployFresh {
                         )
                     )
         });
+        
         executorCalls.append({
             to: Env.proxyAdmin(),
             data: abi.encodeCall(
@@ -58,6 +59,26 @@ contract Queue is MultisigBuilder, DeployFresh {
                 )
             )
         });
+
+        executorCalls.append({
+            to: Env.proxyAdmin(),
+            data: abi.encodeCall(
+                pa.upgradeAndCall,
+                (
+                    ITransparentUpgradeableProxy(payable(address(Env.proxy.strategyFactory()))),
+                    address(Env.impl.strategyFactory()),
+                    abi.encodeCall(
+                        StrategyFactory.initialize,
+                        (
+                            Env.executorMultisig(),
+                            Env.STRATEGY_MANAGER_INIT_PAUSED_STATUS(),
+                            Env.beacon.strategyBase()
+                        )
+                    )
+                )
+            )
+        });
+
         executorCalls.append({
             to: Env.proxyAdmin(),
             data: abi.encodeCall(
