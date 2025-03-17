@@ -4,12 +4,14 @@ pragma solidity ^0.8.27;
 import {Script, stdJson} from "forge-std/Script.sol";
 
 import {IRewardsCoordinator, IRewardsCoordinatorTypes} from "src/contracts/interfaces/IRewardsCoordinator.sol";
+import {IAllocationManager} from "src/contracts/interfaces/IAllocationManager.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IStrategy} from "src/contracts/interfaces/IStrategy.sol";
 import {OperatorSet} from "src/contracts/libraries/OperatorSetLib.sol";
 
 contract TestOpSetRewards is Script {
     IRewardsCoordinator rewardsCoordinator = IRewardsCoordinator(0xb22Ef643e1E067c994019A4C19e403253C05c2B0);
+    IAllocationManager allocationManager = IAllocationManager(0xFdD5749e11977D60850E06bF5B13221Ad95eb6B4);
 
     IERC20 STETH = IERC20(0x3F1c547b21f65e10480dE3ad8E19fAAC46C95034);
     IERC20 WETH = IERC20(0x94373a4919B3240D86eA41593D5eBa789FEF3848);
@@ -186,6 +188,17 @@ contract TestOpSetRewards is Script {
         vm.startBroadcast();
         STETH.approve(address(rewardsCoordinator), totalAmount);
         rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, rewardsSubmissions);
+        vm.stopBroadcast();
+    }
+
+    // Remove Strategies from Operator Set:
+    // forge script script/TestOpSetRewards.s.sol:TestOpSetRewards --rpc-url '<HOLESKY_RPC_URL>' --sig 'tx_6()' --private-key '<0x8D8A8D3f88f6a6DA2083D865062bFBE3f1cfc293_PRIV_KEY>' -vvvv --broadcast
+    function tx_6() public {
+        IStrategy[] memory strategies = new IStrategy[](1);
+        strategies[0] = STRATEGY_SLASHING_1;
+
+        vm.startBroadcast();
+        allocationManager.removeStrategiesFromOperatorSet(AVS_A, OPERATOR_SET_ID_0, strategies);
         vm.stopBroadcast();
     }
 }
