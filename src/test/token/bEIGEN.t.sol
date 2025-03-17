@@ -48,8 +48,6 @@ contract bEIGENTest is Test {
 
         // check that the owner is initialOwner
         assertEq(bEIGEN.owner(), initialOwner);
-        // check the transfer restrictions are disabled after one year in the future
-        assertEq(bEIGEN.transferRestrictionsDisabledAfter(), type(uint).max);
     }
 
     function testFuzz_CanBackTheEigenToken(uint eigenSupply) public {
@@ -89,8 +87,6 @@ contract bEIGENTest is Test {
 
     function test_burn() public {
         test_setIsMinterAndMint();
-        vm.prank(initialOwner);
-        bEIGEN.setAllowedFrom(mintTo, true);
 
         uint amountToBurn = 1005e18;
         uint balanceBefore = bEIGEN.balanceOf(mintTo);
