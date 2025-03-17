@@ -31,9 +31,9 @@ contract EigenWrappingTests is Test {
 
     // EVENTS FROM Eigen.sol
     /// @notice event emitted when bEIGEN tokens are wrapped into EIGEN
-    event TokenWrapped(address indexed account, uint256 amount);
+    event TokenWrapped(address indexed account, uint amount);
     /// @notice event emitted when EIGEN tokens are unwrapped into bEIGEN
-    event TokenUnwrapped(address indexed account, uint256 amount);
+    event TokenUnwrapped(address indexed account, uint amount);
 
     modifier filterAddress(address fuzzedAddress) {
         vm.assume(!fuzzedOutAddresses[fuzzedAddress]);
