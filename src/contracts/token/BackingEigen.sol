@@ -6,7 +6,6 @@ import "@openzeppelin-upgrades/contracts/token/ERC20/extensions/ERC20VotesUpgrad
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 
 contract BackingEigen is OwnableUpgradeable, ERC20VotesUpgradeable {
-
     /// STORAGE
     /// @dev Do not remove, deprecated storage.
     /// @notice the timestamp after which transfer restrictions are disabled
