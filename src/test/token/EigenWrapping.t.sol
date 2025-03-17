@@ -5,8 +5,8 @@ import "forge-std/Test.sol";
 
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import "../harnesses/EigenHarness.sol";
 
+import "../../contracts/token/Eigen.sol";
 import "../../contracts/token/BackingEigen.sol";
 
 contract EigenWrappingTests is Test {
@@ -17,7 +17,7 @@ contract EigenWrappingTests is Test {
 
     ProxyAdmin proxyAdmin;
 
-    EigenHarness eigenImpl;
+    Eigen eigenImpl;
     Eigen eigen;
 
     BackingEigen bEIGENImpl;
@@ -25,9 +25,9 @@ contract EigenWrappingTests is Test {
 
     uint totalSupply = 1.67e9 ether;
 
-    // EVENTS FROM EIGEN.sol
-    /// @notice event emitted when a minter mints
-    event Mint(address indexed minter, uint amount);
+    // EVENTS FROM BackingEigen.sol
+    /// @notice event emitted when a minter status is modified
+    event IsMinterModified(address indexed minterAddress, bool newStatus);
 
     modifier filterAddress(address fuzzedAddress) {
         vm.assume(!fuzzedOutAddresses[fuzzedAddress]);
@@ -43,13 +43,40 @@ contract EigenWrappingTests is Test {
         bEIGEN = BackingEigen(address(new TransparentUpgradeableProxy(address(proxyAdmin), address(proxyAdmin), "")));
 
         // deploy impls
-        eigenImpl = new EigenHarness(IERC20(address(bEIGEN)));
-        bEIGENImpl = new BackingEigen(IERC20(address(eigen)));
+        eigenImpl = new Eigen(IERC20(address(bEIGEN)));
+        bEIGENImpl = new BackingEigen();
 
         // upgrade proxies
         proxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(eigen))), address(eigenImpl));
         proxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(bEIGEN))), address(bEIGENImpl));
 
+        // initialize bEIGEN - this will mint the entire supply to the Eigen contract
+        bEIGEN.initialize(minter1);
+
+        // set minters (for future minting if needed)
+        vm.expectEmit(true, false, false, false);
+        emit IsMinterModified(minter1, true);
+        bEIGEN.setIsMinter(minter1, true);
+
+        vm.expectEmit(true, false, false, false);
+        emit IsMinterModified(minter2, true);
+        bEIGEN.setIsMinter(minter2, true);
+
+        // initialize eigen with empty arrays since we don't need minting anymore
+        eigen.initialize(minter1);
+
+        // Mint and wrap tokens for minter1
+        vm.startPrank(minter1);
+        bEIGEN.mint(minter1, totalSupply / 2);
+        bEIGEN.approve(address(eigen), totalSupply / 2);
+        eigen.wrap(totalSupply / 2);
+        vm.stopPrank();
+
+        // Mint and wrap tokens for minter2
+        vm.startPrank(minter2);
+        bEIGEN.mint(minter2, totalSupply / 2);
+        bEIGEN.approve(address(eigen), totalSupply / 2);
+        eigen.wrap(totalSupply / 2);
         vm.stopPrank();
 
         fuzzedOutAddresses[minter1] = true;
@@ -62,11 +89,6 @@ contract EigenWrappingTests is Test {
 
     function test_AnyoneCanUnwrap(address unwrapper, uint unwrapAmount) public filterAddress(unwrapper) {
         vm.assume(unwrapper != address(0));
-
-        _simulateMint();
-
-        // initialize bEIGEN
-        bEIGEN.initialize(minter1);
 
         // minter1 balance
         uint minter1Balance = eigen.balanceOf(minter1);
@@ -99,11 +121,6 @@ contract EigenWrappingTests is Test {
 
     function test_AnyoneCanWrap(address wrapper, uint wrapAmount) public filterAddress(wrapper) {
         vm.assume(wrapper != address(0));
-
-        _simulateMint();
-
-        // initialize bEIGEN
-        bEIGEN.initialize(minter1);
 
         // initial bEIGEN balance
         uint initialBEIGENBalanceOfEigenToken = bEIGEN.balanceOf(address(eigen));
@@ -139,11 +156,6 @@ contract EigenWrappingTests is Test {
     }
 
     function test_CannotUnwrapMoreThanBalance(address unwrapper, uint unwrapAmount) public filterAddress(unwrapper) {
-        _simulateMint();
-
-        // initialize bEIGEN
-        bEIGEN.initialize(minter1);
-
         // unwrap amount should be less than minter1 balance
         unwrapAmount = unwrapAmount % eigen.balanceOf(minter1);
 
@@ -158,11 +170,6 @@ contract EigenWrappingTests is Test {
     }
 
     function test_CannotWrapMoreThanBalance(address wrapper, uint wrapAmount) public filterAddress(wrapper) {
-        _simulateMint();
-
-        // initialize bEIGEN
-        bEIGEN.initialize(minter1);
-
         // wrap amount should be less than minter1 balance
         wrapAmount = wrapAmount % eigen.balanceOf(minter1);
 
@@ -180,11 +187,5 @@ contract EigenWrappingTests is Test {
         vm.expectRevert("ERC20: transfer amount exceeds balance");
         eigen.wrap(wrapAmount + 1);
         vm.stopPrank();
-    }
-
-    function _simulateMint() internal {
-        // dummy mint
-        EigenHarness(address(eigen)).mint(minter1, totalSupply / 2);
-        EigenHarness(address(eigen)).mint(minter2, totalSupply / 2);
     }
 }
