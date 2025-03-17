@@ -54,27 +54,29 @@ contract EigenWrappingTests is Test {
         bEIGEN.initialize(minter1);
 
         // set minters (for future minting if needed)
+        vm.expectEmit(true, false, false, false);
+        emit IsMinterModified(minter1, true);
         bEIGEN.setIsMinter(minter1, true);
+
+        vm.expectEmit(true, false, false, false);
+        emit IsMinterModified(minter2, true);
         bEIGEN.setIsMinter(minter2, true);
 
         // initialize eigen with empty arrays since we don't need minting anymore
         eigen.initialize(minter1);
 
-        // Mint the total supply to minter1 first
-        bEIGEN.mint(minter1, totalSupply);
-        // Transfer tokens to Eigen contract
-        bEIGEN.transfer(address(eigen), totalSupply);
+        // Mint and wrap tokens for minter1
+        vm.startPrank(minter1);
+        bEIGEN.mint(minter1, totalSupply / 2);
+        bEIGEN.approve(address(eigen), totalSupply / 2);
+        eigen.wrap(totalSupply / 2);
         vm.stopPrank();
 
-        // The Eigen contract now has all the bEIGEN tokens
-        // First approve itself to spend the tokens
-        vm.startPrank(address(eigen));
-        bEIGEN.approve(address(eigen), totalSupply);
-        // Then wrap the tokens, which will mint EIGEN tokens to itself
-        eigen.wrap(totalSupply);
-        // Finally distribute the EIGEN tokens to minters
-        eigen.transfer(minter1, totalSupply / 2);
-        eigen.transfer(minter2, totalSupply / 2);
+        // Mint and wrap tokens for minter2
+        vm.startPrank(minter2);
+        bEIGEN.mint(minter2, totalSupply / 2);
+        bEIGEN.approve(address(eigen), totalSupply / 2);
+        eigen.wrap(totalSupply / 2);
         vm.stopPrank();
 
         fuzzedOutAddresses[minter1] = true;
