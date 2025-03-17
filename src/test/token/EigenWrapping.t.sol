@@ -44,7 +44,7 @@ contract EigenWrappingTests is Test {
 
         // deploy impls
         eigenImpl = new Eigen(IERC20(address(bEIGEN)));
-        bEIGENImpl = new BackingEigen(IERC20(address(eigen)));
+        bEIGENImpl = new BackingEigen();
 
         // upgrade proxies
         proxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(eigen))), address(eigenImpl));
@@ -60,10 +60,13 @@ contract EigenWrappingTests is Test {
         // initialize eigen with empty arrays since we don't need minting anymore
         eigen.initialize(minter1);
 
-        // stop minter1 prank
+        // Mint the total supply to minter1 first
+        bEIGEN.mint(minter1, totalSupply);
+        // Transfer tokens to Eigen contract
+        bEIGEN.transfer(address(eigen), totalSupply);
         vm.stopPrank();
 
-        // The Eigen contract has all the bEIGEN tokens from initialization
+        // The Eigen contract now has all the bEIGEN tokens
         // First approve itself to spend the tokens
         vm.startPrank(address(eigen));
         bEIGEN.approve(address(eigen), totalSupply);
@@ -151,7 +154,6 @@ contract EigenWrappingTests is Test {
     }
 
     function test_CannotUnwrapMoreThanBalance(address unwrapper, uint unwrapAmount) public filterAddress(unwrapper) {
-
         // unwrap amount should be less than minter1 balance
         unwrapAmount = unwrapAmount % eigen.balanceOf(minter1);
 
@@ -166,7 +168,6 @@ contract EigenWrappingTests is Test {
     }
 
     function test_CannotWrapMoreThanBalance(address wrapper, uint wrapAmount) public filterAddress(wrapper) {
-
         // wrap amount should be less than minter1 balance
         wrapAmount = wrapAmount % eigen.balanceOf(minter1);
 

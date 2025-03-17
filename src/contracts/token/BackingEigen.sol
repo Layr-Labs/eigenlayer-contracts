@@ -6,9 +6,6 @@ import "@openzeppelin-upgrades/contracts/token/ERC20/extensions/ERC20VotesUpgrad
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 
 contract BackingEigen is OwnableUpgradeable, ERC20VotesUpgradeable {
-    /// CONSTANTS & IMMUTABLES
-    /// @notice the address of the wrapped Eigen token EIGEN
-    IERC20 public immutable EIGEN;
 
     /// STORAGE
     /// @dev Do not remove, deprecated storage.
@@ -24,14 +21,10 @@ contract BackingEigen is OwnableUpgradeable, ERC20VotesUpgradeable {
     // @notice whether or not an address is allowed to mint new bEIGEN tokens
     mapping(address => bool) public isMinter;
 
-    event Backed();
     // @notice event emitted when the `isMinter` mapping is modified
     event IsMinterModified(address indexed minterAddress, bool newStatus);
 
-    constructor(
-        IERC20 _EIGEN
-    ) {
-        EIGEN = _EIGEN;
+    constructor() {
         _disableInitializers();
     }
 
@@ -71,11 +64,6 @@ contract BackingEigen is OwnableUpgradeable, ERC20VotesUpgradeable {
         __ERC20_init("Backing Eigen", "bEIGEN");
         _transferOwnership(initialOwner);
         __ERC20Permit_init("bEIGEN");
-
-        // Mint the entire supply of EIGEN - this is a one-time event that
-        // ensures bEIGEN fully backs EIGEN.
-        _mint(address(EIGEN), 1_673_646_668_284_660_000_000_000_000);
-        emit Backed();
     }
 
     /// VIEW FUNCTIONS
