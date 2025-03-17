@@ -10,12 +10,6 @@ contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable {
     /// @notice the address of the backing Eigen token bEIGEN
     IERC20 public immutable bEIGEN;
 
-    /// EVENTS
-    /// @notice Emitted when bEIGEN tokens are wrapped into EIGEN
-    event TokenWrapped(address indexed account, uint256 amount);
-    /// @notice Emitted when EIGEN tokens are unwrapped into bEIGEN
-    event TokenUnwrapped(address indexed account, uint256 amount);
-
     /// STORAGE
     /// @dev Do not remove, deprecated storage.
     /// @notice mapping of minter addresses to the timestamp after which they are allowed to mint
@@ -32,6 +26,12 @@ contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable {
     /// @dev Do not remove, deprecated storage.
     /// @notice mapping of addresses that are allowed to receive tokens from any address
     mapping(address => bool) internal __deprecated_allowedTo;
+
+    /// EVENTS
+    /// @notice Emitted when bEIGEN tokens are wrapped into EIGEN
+    event TokenWrapped(address indexed account, uint256 amount);
+    /// @notice Emitted when EIGEN tokens are unwrapped into bEIGEN
+    event TokenUnwrapped(address indexed account, uint256 amount);
 
     constructor(
         IERC20 _bEIGEN
