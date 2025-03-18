@@ -192,7 +192,7 @@ contract Deploy is EOADeployer {
     function _validateNewImplAddresses(
         bool areMatching
     ) internal view {
-        /// core/ -- can't check AllocationManager as it didn't exist before this deploy
+        /// core/
 
         function (bool, string memory) internal pure assertion = areMatching ? _assertTrue : _assertFalse;
 
