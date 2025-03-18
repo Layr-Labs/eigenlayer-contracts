@@ -57,6 +57,32 @@ library Env {
     DeployedImpl internal constant impl = DeployedImpl.A;
     DeployedInstance internal constant instance = DeployedInstance.A;
 
+    /*
+     * If there is an inProgress deploy, these will be set to the relevant semver strings.
+     */
+    function deployFromVersion() internal view returns (string memory) {
+        return ZEnvHelpers.inProgressDeployFromSemver();
+    }
+
+    function deployToVersion() internal view returns (string memory) {
+        return ZEnvHelpers.inProgressDeployToSemver();
+    }
+
+    /**
+     * SAFE
+     */
+    function safeFactory() internal view returns (address) {
+        return _envAddress("safeFactory");
+    }
+
+    function safeSingleton() internal view returns (address) {
+        return _envAddress("safeSingleton");
+    }
+
+    function safeFallbackHandler() internal view returns (address) {
+        return _envAddress("safeFallbackHandler");
+    }
+
     /**
      * env
      */
@@ -66,6 +92,10 @@ library Env {
 
     function executorMultisig() internal view returns (address) {
         return _envAddress("executorMultisig");
+    }
+
+    function beigenExecutorMultisig() internal view returns (address) {
+        return _envAddress("beigenExecutorMultisig");
     }
 
     function opsMultisig() internal view returns (address) {
@@ -80,8 +110,28 @@ library Env {
         return _envAddress("pauserMultisig");
     }
 
+    function communityMultisig() internal view returns (address) {
+        return _envAddress("communityMultisig");
+    }
+
+    function weth() internal view returns (address) {
+        return _envAddress("weth");
+    }
+
+    function steth() internal view returns (address) {
+        return _envAddress("steth");
+    }
+
     function proxyAdmin() internal view returns (address) {
         return _envAddress("proxyAdmin");
+    }
+
+    function beigenProxyAdmin() internal view returns (address) {
+        return _envAddress("beigenProxyAdmin");
+    }
+
+    function supportsNativeEth() internal view returns (bool) {
+        return _envBool("supportsNativeEthRestaking");
     }
 
     function ethPOS() internal view returns (IETHPOSDeposit) {
@@ -92,8 +142,28 @@ library Env {
         return TimelockController(payable(_envAddress("timelockController")));
     }
 
+    function beigenTimelockController() internal view returns (TimelockController) {
+        return TimelockController(payable(_envAddress("beigenTimelockController")));
+    }
+
     function multiSendCallOnly() internal view returns (address) {
         return _envAddress("MultiSendCallOnly");
+    }
+
+    function EIGENPOD_MANAGER_INIT_PAUSED_STATUS() internal view returns (uint64) {
+        return _envU64("EIGENPOD_MANAGER_INIT_PAUSED_STATUS");
+    }
+
+    function STRATEGY_MANAGER_INIT_PAUSED_STATUS() internal view returns (uint64) {
+        return _envU64("STRATEGY_MANAGER_INIT_PAUSED_STATUS");
+    }
+
+    function DELEGATION_INIT_PAUSED_STATUS() internal view returns (uint64) {
+        return _envU64("DELEGATION_INIT_PAUSED_STATUS");
+    }
+
+    function DEALLOCATION_DELAY() internal view returns (uint32) {
+        return _envU32("DEALLOCATION_DELAY");
     }
 
     function EIGENPOD_GENESIS_TIME() internal view returns (uint64) {
@@ -142,6 +212,10 @@ library Env {
 
     function REWARDS_PAUSE_STATUS() internal view returns (uint256) {
         return _envU256("REWARDS_COORDINATOR_PAUSE_STATUS");
+    }
+
+    function ALLOCATION_MANAGER_INIT_PAUSED_STATUS() internal view returns (uint256) {
+        return _envU32("ALLOCATION_MANAGER_INIT_PAUSED_STATUS");
     }
 
     /**
@@ -388,6 +462,12 @@ library Env {
         string memory key
     ) private view returns (uint64) {
         return ZEnvHelpers.state().envU64(key);
+    }
+
+    function _envBool(
+        string memory key
+    ) private view returns (bool) {
+        return ZEnvHelpers.state().envBool(key);
     }
 
     function _envU32(

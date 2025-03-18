@@ -31,7 +31,8 @@ jobs:
           echo "PR title: $PR_TITLE"
 
           # Define the valid pattern (supports conventional commit format)
-          if [[ ! "$PR_TITLE" =~ ^(feat|fix|chore|docs|refactor|test|style|ci|perf)(\([a-z0-9-]+\))?\:\ .* ]]; then
+          # Allow version numbers in scope with dots
+          if [[ ! "$PR_TITLE" =~ ^(feat|fix|chore|docs|refactor|test|style|ci|perf)(\([a-zA-Z0-9\.-]+\))?\:\ .* ]]; then
             echo "❌ Invalid PR title: '$PR_TITLE'"
             echo "Expected format: 'type: description' or 'type(scope): description'"
             echo "Allowed types: feat, fix, chore, docs, refactor, test, style, ci, perf."
