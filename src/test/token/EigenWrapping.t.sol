@@ -5,9 +5,9 @@ import "forge-std/Test.sol";
 
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import "../harnesses/EigenHarness.sol";
+import "src/test/harnesses/EigenHarness.sol";
 
-import "../../contracts/token/BackingEigen.sol";
+import "src/contracts/token/BackingEigen.sol";
 
 contract EigenWrappingTests is Test {
     mapping(address => bool) fuzzedOutAddresses;

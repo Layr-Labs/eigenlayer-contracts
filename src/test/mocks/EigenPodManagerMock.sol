@@ -2,8 +2,8 @@
 pragma solidity ^0.8.9;
 
 import "forge-std/Test.sol";
-import "../../contracts/interfaces/IStrategy.sol";
-import "../../contracts/permissions/Pausable.sol";
+import "src/contracts/interfaces/IStrategy.sol";
+import "src/contracts/permissions/Pausable.sol";
 
 contract EigenPodManagerMock is Test, Pausable {
     receive() external payable {}

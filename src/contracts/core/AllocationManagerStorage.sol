@@ -4,10 +4,10 @@ pragma solidity ^0.8.27;
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/utils/structs/DoubleEndedQueue.sol";
 
-import "../interfaces/IAllocationManager.sol";
-import "../interfaces/IDelegationManager.sol";
+import "src/contracts/interfaces/IAllocationManager.sol";
+import "src/contracts/interfaces/IDelegationManager.sol";
 
-import {Snapshots} from "../libraries/Snapshots.sol";
+import {Snapshots} from "src/contracts/libraries/Snapshots.sol";
 
 abstract contract AllocationManagerStorage is IAllocationManager {
     using Snapshots for Snapshots.DefaultWadHistory;

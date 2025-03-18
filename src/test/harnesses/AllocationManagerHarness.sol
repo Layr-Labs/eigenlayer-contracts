@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "../../contracts/core/AllocationManager.sol";
+import "src/contracts/core/AllocationManager.sol";
 
 contract AllocationManagerHarness is AllocationManager {
     using DoubleEndedQueue for DoubleEndedQueue.Bytes32Deque;

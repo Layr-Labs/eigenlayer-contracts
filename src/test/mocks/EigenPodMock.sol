@@ -2,8 +2,8 @@
 pragma solidity ^0.8.9;
 
 import "forge-std/Test.sol";
-import "../../contracts/interfaces/IEigenPod.sol";
-import "../../contracts/mixins/SemVerMixin.sol";
+import "src/contracts/interfaces/IEigenPod.sol";
+import "src/contracts/mixins/SemVerMixin.sol";
 
 contract EigenPodMock is IEigenPod, SemVerMixin, Test {
     constructor() SemVerMixin("v9.9.9") {}

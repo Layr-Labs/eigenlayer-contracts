@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "../interfaces/IStrategyManager.sol";
-import "../permissions/Pausable.sol";
-import "../mixins/SemVerMixin.sol";
+import "src/contracts/interfaces/IStrategyManager.sol";
+import "src/contracts/permissions/Pausable.sol";
+import "src/contracts/mixins/SemVerMixin.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";

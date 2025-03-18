@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "../interfaces/IPauserRegistry.sol";
+import "src/contracts/interfaces/IPauserRegistry.sol";
 
 /**
  * @title Defines pauser & unpauser roles + modifiers to be used elsewhere.

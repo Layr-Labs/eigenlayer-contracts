@@ -3,12 +3,12 @@ pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
-import "../libraries/SlashingLib.sol";
-import "../interfaces/IDelegationManager.sol";
-import "../interfaces/IEigenPodManager.sol";
-import "../interfaces/IAllocationManager.sol";
+import "src/contracts/libraries/SlashingLib.sol";
+import "src/contracts/interfaces/IDelegationManager.sol";
+import "src/contracts/interfaces/IEigenPodManager.sol";
+import "src/contracts/interfaces/IAllocationManager.sol";
 
-import {Snapshots} from "../libraries/Snapshots.sol";
+import {Snapshots} from "src/contracts/libraries/Snapshots.sol";
 
 /**
  * @title Storage variables for the `DelegationManager` contract.

@@ -6,11 +6,11 @@ import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "../libraries/Merkle.sol";
-import "../permissions/Pausable.sol";
-import "./RewardsCoordinatorStorage.sol";
-import "../mixins/PermissionControllerMixin.sol";
-import "../mixins/SemVerMixin.sol";
+import "src/contracts/libraries/Merkle.sol";
+import "src/contracts/permissions/Pausable.sol";
+import "src/contracts/core/RewardsCoordinatorStorage.sol";
+import "src/contracts/mixins/PermissionControllerMixin.sol";
+import "src/contracts/mixins/SemVerMixin.sol";
 
 /**
  * @title RewardsCoordinator

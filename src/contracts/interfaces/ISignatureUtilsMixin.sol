@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.5.0;
 
-import "./ISemVerMixin.sol";
+import "src/contracts/interfaces/ISemVerMixin.sol";
 
 interface ISignatureUtilsMixinErrors {
     /// @notice Thrown when a signature is invalid.

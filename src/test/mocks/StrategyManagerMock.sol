@@ -3,7 +3,7 @@ pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
 
-import "../../contracts/interfaces/IDelegationManager.sol";
+import "src/contracts/interfaces/IDelegationManager.sol";
 
 contract StrategyManagerMock is Test {
     IDelegationManager public delegation;

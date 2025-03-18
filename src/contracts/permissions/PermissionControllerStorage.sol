@@ -3,7 +3,7 @@ pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
-import "../interfaces/IPermissionController.sol";
+import "src/contracts/interfaces/IPermissionController.sol";
 
 abstract contract PermissionControllerStorage is IPermissionController {
     using EnumerableSet for EnumerableSet.Bytes32Set;

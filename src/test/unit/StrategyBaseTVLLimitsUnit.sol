@@ -3,7 +3,7 @@ pragma solidity ^0.8.27;
 
 import "./StrategyBaseUnit.t.sol";
 
-import "../../contracts/strategies/StrategyBaseTVLLimits.sol";
+import "src/contracts/strategies/StrategyBaseTVLLimits.sol";
 
 contract StrategyBaseTVLLimitsUnitTests is StrategyBaseUnitTests {
     StrategyBaseTVLLimits public strategyBaseTVLLimitsImplementation;

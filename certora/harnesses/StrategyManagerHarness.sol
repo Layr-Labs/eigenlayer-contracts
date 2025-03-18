@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "../../src/contracts/core/StrategyManager.sol";
+import "src/contracts/core/StrategyManager.sol";
 
 contract StrategyManagerHarness is StrategyManager {
     constructor(

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "../../contracts/interfaces/IETHPOSDeposit.sol";
+import "src/contracts/interfaces/IETHPOSDeposit.sol";
 
 contract ETHPOSDepositMock is IETHPOSDeposit {
     function deposit(bytes calldata pubkey, bytes calldata withdrawal_credentials, bytes calldata signature, bytes32 deposit_data_root)

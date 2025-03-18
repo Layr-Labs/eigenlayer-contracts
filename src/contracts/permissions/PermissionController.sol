@@ -2,8 +2,8 @@
 pragma solidity ^0.8.27;
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
-import "../mixins/SemVerMixin.sol";
-import "./PermissionControllerStorage.sol";
+import "src/contracts/mixins/SemVerMixin.sol";
+import "src/contracts/permissions/PermissionControllerStorage.sol";
 
 contract PermissionController is Initializable, SemVerMixin, PermissionControllerStorage {
     using EnumerableSet for *;

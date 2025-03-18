@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin-upgrades/contracts/utils/math/MathUpgradeable.sol";
 
-import "./SlashingLib.sol";
+import "src/contracts/libraries/SlashingLib.sol";
 
 /**
  * @title Library for handling snapshots as part of allocating and slashing.

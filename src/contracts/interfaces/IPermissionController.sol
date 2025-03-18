@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "./ISemVerMixin.sol";
+import "src/contracts/interfaces/ISemVerMixin.sol";
 
 interface IPermissionControllerErrors {
     /// @notice Thrown when a non-admin caller attempts to perform an admin-only action.

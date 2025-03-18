@@ -5,14 +5,14 @@ import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "../libraries/BeaconChainProofs.sol";
-import "../libraries/BytesLib.sol";
+import "src/contracts/libraries/BeaconChainProofs.sol";
+import "src/contracts/libraries/BytesLib.sol";
 
-import "../mixins/SemVerMixin.sol";
+import "src/contracts/mixins/SemVerMixin.sol";
 
-import "../interfaces/IETHPOSDeposit.sol";
-import "../interfaces/IEigenPodManager.sol";
-import "../interfaces/IPausable.sol";
+import "src/contracts/interfaces/IETHPOSDeposit.sol";
+import "src/contracts/interfaces/IEigenPodManager.sol";
+import "src/contracts/interfaces/IPausable.sol";
 
 import "./EigenPodPausingConstants.sol";
 import "./EigenPodStorage.sol";

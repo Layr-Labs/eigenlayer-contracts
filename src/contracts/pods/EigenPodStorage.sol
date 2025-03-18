@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "../interfaces/IEigenPod.sol";
+import "src/contracts/interfaces/IEigenPod.sol";
 
 abstract contract EigenPodStorage is IEigenPod {
     /// @notice The owner of this EigenPod

@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.5.0;
 
-import {OperatorSet} from "../libraries/OperatorSetLib.sol";
-import "./IPauserRegistry.sol";
-import "./IStrategy.sol";
-import "./IAVSRegistrar.sol";
-import "./ISemVerMixin.sol";
+import {OperatorSet} from "src/contracts/libraries/OperatorSetLib.sol";
+import "src/contracts/interfaces/IPauserRegistry.sol";
+import "src/contracts/interfaces/IStrategy.sol";
+import "src/contracts/interfaces/IAVSRegistrar.sol";
+import "src/contracts/interfaces/ISemVerMixin.sol";
 
 interface IAllocationManagerErrors {
     /// Input Validation

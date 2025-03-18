@@ -4,8 +4,8 @@ pragma solidity ^0.8.0;
 import "@openzeppelin-upgrades/contracts/utils/ShortStringsUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/utils/cryptography/SignatureCheckerUpgradeable.sol";
 
-import "../interfaces/ISignatureUtilsMixin.sol";
-import "./SemVerMixin.sol";
+import "src/contracts/interfaces/ISignatureUtilsMixin.sol";
+import "src/contracts/mixins/SemVerMixin.sol";
 
 /// @dev The EIP-712 domain type hash used for computing the domain separator
 ///      See https://eips.ethereum.org/EIPS/eip-712#definition-of-domainseparator

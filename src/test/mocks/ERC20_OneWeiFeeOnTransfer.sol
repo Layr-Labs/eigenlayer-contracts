@@ -135,9 +135,9 @@ interface OpenZeppelin_IERC20Metadata is OpenZeppelin_IERC20 {
 
 // OpenZeppelin Contracts (last updated v4.8.0) (token/ERC20/ERC20.sol)
 
-// import "./IERC20.sol";
+// import "src/contracts/interfaces/IERC20.sol";
 // import "./extensions/IERC20Metadata.sol";
-// import "../../utils/Context.sol";
+// import "utils/Context.sol";
 
 /**
  * @dev Implementation of the {IERC20} interface.
@@ -502,7 +502,7 @@ contract OpenZeppelin_ERC20 is OpenZeppelin_Context, OpenZeppelin_IERC20, OpenZe
 // pragma solidity ^0.8.0;
 
 // import "../ERC20.sol";
-// import "../../../utils/Context.sol";
+// import "utils/Context.sol";
 
 /**
  * @dev Extension of {ERC20} that allows token holders to destroy both their own

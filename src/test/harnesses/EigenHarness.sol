@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.27;
 
-import "../../contracts/token/Eigen.sol";
+import "src/contracts/token/Eigen.sol";
 
 contract EigenHarness is Eigen {
     constructor(IERC20 _bEIGEN) Eigen(_bEIGEN) {}

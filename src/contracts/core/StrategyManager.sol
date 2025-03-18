@@ -6,10 +6,10 @@ import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "../mixins/SignatureUtilsMixin.sol";
-import "../interfaces/IEigenPodManager.sol";
-import "../permissions/Pausable.sol";
-import "./StrategyManagerStorage.sol";
+import "src/contracts/mixins/SignatureUtilsMixin.sol";
+import "src/contracts/interfaces/IEigenPodManager.sol";
+import "src/contracts/permissions/Pausable.sol";
+import "src/contracts/core/StrategyManagerStorage.sol";
 
 /**
  * @title The primary entry- and exit-point for funds into and out of EigenLayer.

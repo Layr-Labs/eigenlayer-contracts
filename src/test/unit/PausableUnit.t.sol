@@ -3,8 +3,8 @@ pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
 
-import "../../contracts/permissions/PauserRegistry.sol";
-import "../harnesses/PausableHarness.sol";
+import "src/contracts/permissions/PauserRegistry.sol";
+import "src/test/harnesses/PausableHarness.sol";
 
 contract PausableUnitTests is Test {
     Vm cheats = Vm(VM_ADDRESS);

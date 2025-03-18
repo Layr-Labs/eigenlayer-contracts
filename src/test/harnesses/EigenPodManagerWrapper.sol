@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "../../contracts/pods/EigenPodManager.sol";
+import "src/contracts/pods/EigenPodManager.sol";
 
 ///@notice This contract exposes a manual setter for podShares in order to initialize podShares as negative
 contract EigenPodManagerWrapper is EigenPodManager {

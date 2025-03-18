@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
 import "src/contracts/strategies/StrategyFactory.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
-import "../../contracts/permissions/PauserRegistry.sol";
+import "src/contracts/permissions/PauserRegistry.sol";
 
 /**
  * @notice Unit testing of the StrategyFactory contract.

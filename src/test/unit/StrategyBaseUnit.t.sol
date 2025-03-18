@@ -5,11 +5,11 @@ import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-import "../../contracts/strategies/StrategyBase.sol";
-import "../../contracts/permissions/PauserRegistry.sol";
+import "src/contracts/strategies/StrategyBase.sol";
+import "src/contracts/permissions/PauserRegistry.sol";
 
-import "../mocks/StrategyManagerMock.sol";
-import "../mocks/ERC20_SetTransferReverting_Mock.sol";
+import "src/test/mocks/StrategyManagerMock.sol";
+import "src/test/mocks/ERC20_SetTransferReverting_Mock.sol";
 
 import "forge-std/Test.sol";
 
