@@ -2,8 +2,8 @@
 
 pragma solidity ^0.8.27;
 
-import "src/contracts/libraries/Merkle.sol";
 import "src/contracts/libraries/Endian.sol";
+import "src/contracts/libraries/Merkle.sol";
 
 // DEPRECATED BeaconChainProofs at commit hash https://github.com/Layr-Labs/eigenlayer-contracts/tree/0139d6213927c0a7812578899ddd3dda58051928
 //Utility library for parsing and PHASE0 beacon chain block headers

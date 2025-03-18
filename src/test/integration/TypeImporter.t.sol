@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "src/contracts/interfaces/IAllocationManager.sol";
 import "src/contracts/interfaces/IAVSDirectory.sol";
+import "src/contracts/interfaces/IAllocationManager.sol";
 import "src/contracts/interfaces/IDelegationManager.sol";
 import "src/contracts/interfaces/IEigenPod.sol";
 import "src/contracts/interfaces/IEigenPodManager.sol";

@@ -7,8 +7,8 @@ import "src/contracts/libraries/BeaconChainProofs.sol";
 import "src/contracts/libraries/Merkle.sol";
 import "src/contracts/pods/EigenPodManager.sol";
 
-import "src/test/mocks/ETHDepositMock.sol";
 import "src/test/integration/mocks/EIP_4788_Oracle_Mock.t.sol";
+import "src/test/mocks/ETHDepositMock.sol";
 import "src/test/utils/Logger.t.sol";
 
 struct ValidatorFieldsProof {

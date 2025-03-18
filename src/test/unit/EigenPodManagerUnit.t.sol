@@ -6,10 +6,11 @@ import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import "src/contracts/pods/EigenPodManager.sol";
 import "src/contracts/pods/EigenPodPausingConstants.sol";
 
-import "src/test/utils/EigenLayerUnitTestSetup.sol";
 import "src/test/harnesses/EigenPodManagerWrapper.sol";
-import "src/test/mocks/EigenPodMock.sol";
+
 import "src/test/mocks/ETHDepositMock.sol";
+import "src/test/mocks/EigenPodMock.sol";
+import "src/test/utils/EigenLayerUnitTestSetup.sol";
 
 contract EigenPodManagerUnitTests is EigenLayerUnitTestSetup, IEigenPodManagerEvents {
     // Contracts Under Test: EigenPodManager

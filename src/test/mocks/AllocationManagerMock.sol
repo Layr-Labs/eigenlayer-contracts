@@ -3,8 +3,9 @@ pragma solidity ^0.8.9;
 
 import "forge-std/Test.sol";
 import "src/contracts/interfaces/IStrategy.sol";
-import "src/contracts/libraries/Snapshots.sol";
+
 import "src/contracts/libraries/OperatorSetLib.sol";
+import "src/contracts/libraries/Snapshots.sol";
 
 contract AllocationManagerMock is Test {
     using Snapshots for Snapshots.DefaultWadHistory;

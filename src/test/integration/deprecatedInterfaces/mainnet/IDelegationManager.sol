@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "src/contracts/interfaces/IStrategy.sol";
 import "src/contracts/interfaces/IPausable.sol";
 import "src/contracts/interfaces/ISignatureUtilsMixin.sol";
+import "src/contracts/interfaces/IStrategy.sol";
 
 /**
  * @notice M2 DEPRECATED INTERFACE at commit hash https://github.com/Layr-Labs/eigenlayer-contracts/tree/426f461c59b4f0e16f8becdffd747075edcaded8

@@ -3,13 +3,16 @@ pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/mocks/ERC1271WalletMock.sol";
 import "src/contracts/core/StrategyManager.sol";
-import "src/contracts/strategies/StrategyBase.sol";
+
 import "src/contracts/permissions/PauserRegistry.sol";
+import "src/contracts/strategies/StrategyBase.sol";
 import "src/test/mocks/ERC20Mock.sol";
 import "src/test/mocks/ERC20_SetTransferReverting_Mock.sol";
-import "src/test/mocks/Reverter.sol";
-import "src/test/mocks/Reenterer.sol";
+
 import "src/test/mocks/MockDecimals.sol";
+import "src/test/mocks/Reenterer.sol";
+import "src/test/mocks/Reverter.sol";
+
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
 
 /**

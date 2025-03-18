@@ -4,9 +4,10 @@ pragma solidity ^0.8.27;
 // NOTE: Mainnet uses the OpenZeppelin v4.9.0 contracts, but this imports the 4.7.1 version. This will be changed after an upgrade.
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
+import "src/contracts/interfaces/IEigen.sol";
 import "src/contracts/interfaces/IStrategyManager.sol";
 import "src/contracts/strategies/StrategyBase.sol";
-import "src/contracts/interfaces/IEigen.sol";
 
 /**
  * @title Eigen Strategy implementation of `IStrategy` interface, designed to be inherited from by more complex strategies.

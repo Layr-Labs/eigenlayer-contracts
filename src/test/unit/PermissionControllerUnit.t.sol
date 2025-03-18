@@ -3,8 +3,8 @@ pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
 
-import "src/contracts/permissions/PermissionController.sol";
 import "src/contracts/interfaces/IPermissionController.sol";
+import "src/contracts/permissions/PermissionController.sol";
 
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
 

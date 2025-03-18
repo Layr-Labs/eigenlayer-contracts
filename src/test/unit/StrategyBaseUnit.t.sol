@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 
-import "src/contracts/strategies/StrategyBase.sol";
 import "src/contracts/permissions/PauserRegistry.sol";
+import "src/contracts/strategies/StrategyBase.sol";
 
-import "src/test/mocks/StrategyManagerMock.sol";
 import "src/test/mocks/ERC20_SetTransferReverting_Mock.sol";
+import "src/test/mocks/StrategyManagerMock.sol";
 
 import "forge-std/Test.sol";
 

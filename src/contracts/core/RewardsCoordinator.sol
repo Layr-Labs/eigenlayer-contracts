@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
+import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "src/contracts/libraries/Merkle.sol";
-import "src/contracts/permissions/Pausable.sol";
 import "src/contracts/core/RewardsCoordinatorStorage.sol";
+import "src/contracts/libraries/Merkle.sol";
 import "src/contracts/mixins/PermissionControllerMixin.sol";
 import "src/contracts/mixins/SemVerMixin.sol";
+import "src/contracts/permissions/Pausable.sol";
 
 /**
  * @title RewardsCoordinator

@@ -5,11 +5,13 @@ import "@openzeppelin/contracts/mocks/ERC1271WalletMock.sol";
 import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 
 import "src/contracts/core/DelegationManager.sol";
-import "src/contracts/strategies/StrategyBase.sol";
-import "src/test/utils/EigenLayerUnitTestSetup.sol";
+
 import "src/contracts/libraries/SlashingLib.sol";
-import "src/test/utils/ArrayLib.sol";
+import "src/contracts/strategies/StrategyBase.sol";
+
 import "src/test/harnesses/DelegationManagerHarness.sol";
+import "src/test/utils/ArrayLib.sol";
+import "src/test/utils/EigenLayerUnitTestSetup.sol";
 
 /**
  * @notice Unit testing of the DelegationManager contract. Withdrawals are tightly coupled

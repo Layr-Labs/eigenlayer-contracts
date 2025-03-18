@@ -86,7 +86,7 @@
     # Formatting style for long function headers
     multiline_func_header = "params_first"  # Options: "attributes_first", "params_first", "all"
     # Sort import statements alphabetically
-    sort_imports = false  
+    sort_imports = true  
     # Maximum line length where formatter will wrap the line
     line_length = 120  # Default: 120
     # Number of spaces per indentation level

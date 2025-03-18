@@ -3,8 +3,8 @@ pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
 
-import "src/contracts/pods/EigenPodManager.sol";
 import "src/contracts/pods/EigenPod.sol";
+import "src/contracts/pods/EigenPodManager.sol";
 
 import "src/contracts/interfaces/IStrategy.sol";
 

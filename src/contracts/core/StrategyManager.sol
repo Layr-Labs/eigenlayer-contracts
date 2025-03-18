@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
+import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "src/contracts/mixins/SignatureUtilsMixin.sol";
-import "src/contracts/interfaces/IEigenPodManager.sol";
-import "src/contracts/permissions/Pausable.sol";
 import "src/contracts/core/StrategyManagerStorage.sol";
+import "src/contracts/interfaces/IEigenPodManager.sol";
+import "src/contracts/mixins/SignatureUtilsMixin.sol";
+import "src/contracts/permissions/Pausable.sol";
 
 /**
  * @title The primary entry- and exit-point for funds into and out of EigenLayer.

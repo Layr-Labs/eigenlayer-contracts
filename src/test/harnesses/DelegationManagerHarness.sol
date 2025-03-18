@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "src/contracts/core/DelegationManager.sol";
 import "forge-std/Test.sol";
+import "src/contracts/core/DelegationManager.sol";
 
 contract DelegationManagerHarness is DelegationManager {
     constructor(

@@ -3,8 +3,9 @@ pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "src/contracts/interfaces/IStrategy.sol";
+
 import "src/contracts/interfaces/ISemVerMixin.sol";
+import "src/contracts/interfaces/IStrategy.sol";
 
 /**
  * @title Interface for the `StrategyFactory` contract.

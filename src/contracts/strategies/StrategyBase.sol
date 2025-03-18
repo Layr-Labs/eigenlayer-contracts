@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "src/contracts/interfaces/IStrategyManager.sol";
-import "src/contracts/permissions/Pausable.sol";
-import "src/contracts/mixins/SemVerMixin.sol";
+import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
+import "src/contracts/interfaces/IStrategyManager.sol";
+import "src/contracts/mixins/SemVerMixin.sol";
+import "src/contracts/permissions/Pausable.sol";
 
 /**
  * @title Base implementation of `IStrategy` interface, designed to be inherited from by more complex strategies.

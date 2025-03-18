@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "src/test/integration/users/User.t.sol";
 import "src/test/integration/IntegrationChecks.t.sol";
+import "src/test/integration/users/User.t.sol";
 
 contract Integration_Deposit_QueueWithdrawal_Complete is IntegrationCheckUtils {
     /// Randomly generates a user with different held assets. Then:

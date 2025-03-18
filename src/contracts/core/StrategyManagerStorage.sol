@@ -3,11 +3,11 @@ pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 
-import "src/contracts/interfaces/IStrategyManager.sol";
-import "src/contracts/interfaces/IStrategy.sol";
-import "src/contracts/interfaces/IEigenPodManager.sol";
-import "src/contracts/interfaces/IDelegationManager.sol";
 import "src/contracts/interfaces/IAVSDirectory.sol";
+import "src/contracts/interfaces/IDelegationManager.sol";
+import "src/contracts/interfaces/IEigenPodManager.sol";
+import "src/contracts/interfaces/IStrategy.sol";
+import "src/contracts/interfaces/IStrategyManager.sol";
 
 /**
  * @title Storage variables for the `StrategyManager` contract.

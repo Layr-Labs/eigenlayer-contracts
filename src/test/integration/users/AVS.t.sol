@@ -7,13 +7,14 @@ import "src/contracts/core/AllocationManager.sol";
 import "src/contracts/permissions/PermissionController.sol";
 import "src/contracts/strategies/StrategyFactory.sol";
 
-import "src/test/mocks/ERC20Mock.sol";
-import "src/test/integration/users/User.t.sol";
 import "src/test/integration/TimeMachine.t.sol";
+import "src/test/integration/users/User.t.sol";
+import "src/test/mocks/ERC20Mock.sol";
+
 import "src/test/utils/Logger.t.sol";
 
-import "src/test/utils/ArrayLib.sol";
 import "src/contracts/interfaces/IAVSRegistrar.sol";
+import "src/test/utils/ArrayLib.sol";
 
 interface IAVSDeployer {
     function delegationManager() external view returns (DelegationManager);

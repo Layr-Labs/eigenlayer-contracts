@@ -3,10 +3,10 @@ pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
-import "src/contracts/libraries/SlashingLib.sol";
+import "src/contracts/interfaces/IAllocationManager.sol";
 import "src/contracts/interfaces/IDelegationManager.sol";
 import "src/contracts/interfaces/IEigenPodManager.sol";
-import "src/contracts/interfaces/IAllocationManager.sol";
+import "src/contracts/libraries/SlashingLib.sol";
 
 import {Snapshots} from "src/contracts/libraries/Snapshots.sol";
 

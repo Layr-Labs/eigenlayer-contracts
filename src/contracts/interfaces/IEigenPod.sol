@@ -3,9 +3,9 @@ pragma solidity >=0.5.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import "src/contracts/libraries/BeaconChainProofs.sol";
-import "src/contracts/interfaces/ISemVerMixin.sol";
 import "src/contracts/interfaces/IEigenPodManager.sol";
+import "src/contracts/interfaces/ISemVerMixin.sol";
+import "src/contracts/libraries/BeaconChainProofs.sol";
 
 interface IEigenPodErrors {
     /// @dev Thrown when msg.sender is not the EPM.

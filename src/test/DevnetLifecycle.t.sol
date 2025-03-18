@@ -2,10 +2,11 @@
 pragma solidity ^0.8.27;
 
 // Contracts
-import "src/contracts/core/DelegationManager.sol";
-import "src/contracts/core/StrategyManager.sol";
+
 import "src/contracts/core/AVSDirectory.sol";
 import "src/contracts/core/AllocationManager.sol";
+import "src/contracts/core/DelegationManager.sol";
+import "src/contracts/core/StrategyManager.sol";
 import "src/contracts/strategies/StrategyBase.sol";
 
 import "src/test/utils/ArrayLib.sol";

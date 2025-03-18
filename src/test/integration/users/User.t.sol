@@ -5,15 +5,18 @@ import "forge-std/Test.sol";
 
 import "src/contracts/core/AllocationManager.sol";
 import "src/contracts/core/DelegationManager.sol";
-import "src/contracts/permissions/PermissionController.sol";
+
 import "src/contracts/core/StrategyManager.sol";
-import "src/contracts/pods/EigenPodManager.sol";
+import "src/contracts/permissions/PermissionController.sol";
+
 import "src/contracts/pods/EigenPod.sol";
+import "src/contracts/pods/EigenPodManager.sol";
 
 import "src/test/integration/TimeMachine.t.sol";
 import "src/test/integration/mocks/BeaconChainMock.t.sol";
-import "src/test/utils/Logger.t.sol";
+
 import "src/test/utils/ArrayLib.sol";
+import "src/test/utils/Logger.t.sol";
 
 struct Validator {
     uint40 index;

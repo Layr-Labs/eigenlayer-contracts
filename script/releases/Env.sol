@@ -8,8 +8,9 @@ import {TimelockController} from "@openzeppelin/contracts/governance/TimelockCon
 import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
 /// core/
-import "src/contracts/core/AllocationManager.sol";
+
 import "src/contracts/core/AVSDirectory.sol";
+import "src/contracts/core/AllocationManager.sol";
 import "src/contracts/core/DelegationManager.sol";
 import "src/contracts/core/RewardsCoordinator.sol";
 import "src/contracts/core/StrategyManager.sol";
@@ -29,10 +30,12 @@ import "src/contracts/strategies/StrategyBaseTVLLimits.sol";
 import "src/contracts/strategies/StrategyFactory.sol";
 
 /// token/
-import "src/contracts/interfaces/IEigen.sol";
+
 import "src/contracts/interfaces/IBackingEigen.sol";
-import "src/contracts/token/Eigen.sol";
+import "src/contracts/interfaces/IEigen.sol";
+
 import "src/contracts/token/BackingEigen.sol";
+import "src/contracts/token/Eigen.sol";
 
 library Env {
     using ZEnvHelpers for *;

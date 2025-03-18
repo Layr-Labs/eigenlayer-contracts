@@ -13,10 +13,11 @@ import "src/contracts/strategies/StrategyBase.sol";
 
 import "src/test/mocks/AVSDirectoryMock.sol";
 import "src/test/mocks/AllocationManagerMock.sol";
-import "src/test/mocks/StrategyManagerMock.sol";
+
 import "src/test/mocks/DelegationManagerMock.sol";
 import "src/test/mocks/EigenPodManagerMock.sol";
 import "src/test/mocks/EmptyContract.sol";
+import "src/test/mocks/StrategyManagerMock.sol";
 
 import "src/test/utils/ArrayLib.sol";
 import "src/test/utils/Random.sol";

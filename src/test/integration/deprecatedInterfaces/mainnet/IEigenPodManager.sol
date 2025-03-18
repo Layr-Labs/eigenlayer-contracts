@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "./IStrategyManager.sol";
-import "./IEigenPod.sol";
 import "./IBeaconChainOracle.sol";
+import "./IEigenPod.sol";
+import "./IStrategyManager.sol";
+
 import "src/contracts/interfaces/IPausable.sol";
 
 /**

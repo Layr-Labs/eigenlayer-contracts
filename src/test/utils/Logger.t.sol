@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "forge-std/Test.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import "src/contracts/interfaces/IStrategy.sol";
+import "forge-std/Test.sol";
+
 import {IAllocationManagerTypes} from "src/contracts/interfaces/IAllocationManager.sol";
+import "src/contracts/interfaces/IStrategy.sol";
 
 Vm constant cheats = Vm(address(uint160(uint(keccak256("hevm cheat code")))));
 

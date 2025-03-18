@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.0;
 
-import "src/contracts/interfaces/ISemVerMixin.sol";
 import "@openzeppelin-upgrades/contracts/utils/ShortStringsUpgradeable.sol";
+import "src/contracts/interfaces/ISemVerMixin.sol";
 
 /// @title SemVerMixin
 /// @notice A mixin contract that provides semantic versioning functionality.

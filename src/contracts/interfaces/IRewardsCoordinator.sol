@@ -6,11 +6,13 @@ import "src/contracts/libraries/OperatorSetLib.sol";
 
 import "src/contracts/interfaces/IAllocationManager.sol";
 import "src/contracts/interfaces/IDelegationManager.sol";
-import "src/contracts/interfaces/IStrategyManager.sol";
+
 import "src/contracts/interfaces/IPauserRegistry.sol";
 import "src/contracts/interfaces/IPermissionController.sol";
-import "src/contracts/interfaces/IStrategy.sol";
+
 import "src/contracts/interfaces/ISemVerMixin.sol";
+import "src/contracts/interfaces/IStrategy.sol";
+import "src/contracts/interfaces/IStrategyManager.sol";
 
 interface IRewardsCoordinatorErrors {
     /// @dev Thrown when msg.sender is not allowed to call a function

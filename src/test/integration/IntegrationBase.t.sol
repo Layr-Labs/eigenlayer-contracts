@@ -9,9 +9,9 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "src/contracts/libraries/BeaconChainProofs.sol";
 import "src/contracts/libraries/SlashingLib.sol";
 
-import "src/test/integration/TypeImporter.t.sol";
 import "src/test/integration/IntegrationDeployer.t.sol";
 import "src/test/integration/TimeMachine.t.sol";
+import "src/test/integration/TypeImporter.t.sol";
 import "src/test/integration/users/User.t.sol";
 import "src/test/integration/users/User_M1.t.sol";
 

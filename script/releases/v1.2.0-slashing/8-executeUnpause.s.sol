@@ -3,12 +3,13 @@ pragma solidity ^0.8.12;
 
 import "../Env.sol";
 
-import {ExecuteUpgradeAndSetTimestampSubmitter} from "./5-executeUpgradeAndSetTimestampSubmitter.s.sol";
-import {QueueUnpause} from "./3-queueUnpause.s.sol";
 import {QueueUpgradeAndTimestampSetter} from "./2-queueUpgradeAndTimestampSetter.s.sol";
+import {QueueUnpause} from "./3-queueUnpause.s.sol";
 import {Pause} from "./4-pause.s.sol";
-import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
+import {ExecuteUpgradeAndSetTimestampSubmitter} from "./5-executeUpgradeAndSetTimestampSubmitter.s.sol";
+
 import {SetProofTimestamp} from "./7-setProofTimestamp.s.sol";
+import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 /**
  * Purpose: Executes the unpause transaction from step 3
  */

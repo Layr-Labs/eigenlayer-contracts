@@ -3,12 +3,15 @@ pragma solidity >=0.5.0;
 
 import "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
 import "src/contracts/interfaces/IETHPOSDeposit.sol";
-import "src/contracts/interfaces/IStrategyManager.sol";
+
 import "src/contracts/interfaces/IEigenPod.sol";
-import "src/contracts/interfaces/IShareManager.sol";
+
 import "src/contracts/interfaces/IPausable.sol";
-import "src/contracts/interfaces/IStrategy.sol";
+
 import "src/contracts/interfaces/ISemVerMixin.sol";
+import "src/contracts/interfaces/IShareManager.sol";
+import "src/contracts/interfaces/IStrategy.sol";
+import "src/contracts/interfaces/IStrategyManager.sol";
 
 interface IEigenPodManagerErrors {
     /// @dev Thrown when caller is not a EigenPod.

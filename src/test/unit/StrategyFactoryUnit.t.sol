@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
+import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 
+import "src/contracts/permissions/PauserRegistry.sol";
 import "src/contracts/strategies/StrategyFactory.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
-import "src/contracts/permissions/PauserRegistry.sol";
 
 /**
  * @notice Unit testing of the StrategyFactory contract.

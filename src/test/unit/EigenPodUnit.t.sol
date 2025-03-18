@@ -7,11 +7,12 @@ import "@openzeppelin/contracts/utils/Create2.sol";
 import "src/contracts/pods/EigenPod.sol";
 import "src/contracts/pods/EigenPodPausingConstants.sol";
 
-import "src/test/mocks/ETHDepositMock.sol";
-import "src/test/mocks/ERC20Mock.sol";
 import "src/test/harnesses/EigenPodHarness.sol";
-import "src/test/utils/ProofParsing.sol";
+import "src/test/mocks/ERC20Mock.sol";
+import "src/test/mocks/ETHDepositMock.sol";
+
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
+import "src/test/utils/ProofParsing.sol";
 
 import "src/test/integration/mocks/BeaconChainMock.t.sol";
 import "src/test/integration/mocks/BeaconChainMock_Deneb.t.sol";

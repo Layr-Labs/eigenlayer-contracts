@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "forge-std/Test.sol";
 import "forge-std/StdJson.sol";
+import "forge-std/Test.sol";
 
 contract ProofParsing is Test {
     string internal proofConfigJson;

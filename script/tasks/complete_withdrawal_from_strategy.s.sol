@@ -3,8 +3,9 @@ pragma solidity ^0.8.27;
 
 import "src/contracts/core/AllocationManager.sol";
 import "src/contracts/core/DelegationManager.sol";
-import "src/contracts/pods/EigenPodManager.sol";
+
 import "src/contracts/libraries/SlashingLib.sol";
+import "src/contracts/pods/EigenPodManager.sol";
 
 import "forge-std/Script.sol";
 import "forge-std/Test.sol";

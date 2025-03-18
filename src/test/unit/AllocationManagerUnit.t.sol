@@ -2,8 +2,9 @@
 pragma solidity ^0.8.27;
 
 import "src/test/harnesses/AllocationManagerHarness.sol";
-import "src/test/utils/EigenLayerUnitTestSetup.sol";
+
 import "src/test/mocks/MockAVSRegistrar.sol";
+import "src/test/utils/EigenLayerUnitTestSetup.sol";
 
 contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManagerErrors, IAllocationManagerEvents {
     using StdStyle for *;

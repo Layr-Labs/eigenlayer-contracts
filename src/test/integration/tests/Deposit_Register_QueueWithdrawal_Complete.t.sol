@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "src/test/integration/users/User.t.sol";
 import "src/test/integration/IntegrationChecks.t.sol";
+import "src/test/integration/users/User.t.sol";
 
 contract Integration_Deposit_Register_QueueWithdrawal_Complete is IntegrationCheckUtils {
     function testFuzz_deposit_registerOperator_queueWithdrawal_completeAsShares(uint24 _random) public rand(_random) {

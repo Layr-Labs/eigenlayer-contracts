@@ -2,8 +2,9 @@
 pragma solidity ^0.8.27;
 
 import "src/contracts/core/AVSDirectory.sol";
-import "src/contracts/interfaces/IAVSDirectory.sol";
+
 import "src/contracts/core/AllocationManager.sol";
+import "src/contracts/interfaces/IAVSDirectory.sol";
 import "src/contracts/interfaces/IAllocationManager.sol";
 
 import "forge-std/Script.sol";
