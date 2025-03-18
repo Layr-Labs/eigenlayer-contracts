@@ -10,7 +10,7 @@ import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 contract Execute is Queue {
     using Env for *;
 
-    function _runAsMultisig() prank(Env.protocolCouncilMultisig()) internal virtual override(Queue) {
+    function _runAsMultisig() internal virtual override(Queue) prank(Env.protocolCouncilMultisig()) {
         bytes memory calldata_to_executor = _getCalldataToExecutor();
 
         TimelockController timelock = Env.timelockController();
@@ -23,7 +23,7 @@ contract Execute is Queue {
         });
     }
 
-    function testScript() public virtual override(Queue){
+    function testScript() public virtual override(Queue) {
         // 0. Deploy Impls
         runAsEOA();
 

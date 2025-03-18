@@ -14,14 +14,13 @@ import "src/contracts/libraries/BeaconChainProofs.sol";
 import {Execute, Queue} from "./3-execute.s.sol";
 import {DeployFresh} from "./1-deploy.s.sol";
 
-
 /**
  * Purpose: optionally enqueue a transaction that pauses all EigenPod functionality.
  */
 contract Strategies is MultisigBuilder, Execute {
     using Env for *;
 
-    function _runAsMultisig() prank(Env.opsMultisig()) internal virtual override(Execute, MultisigBuilder) {
+    function _runAsMultisig() internal virtual override(Execute, MultisigBuilder) prank(Env.opsMultisig()) {
         console.log("StrategyBeacon", address(Env.proxy.strategyFactory().strategyBeacon()));
 
         console.log("StrategyWhitelister", address(Env.proxy.strategyManager().strategyWhitelister()));
@@ -29,10 +28,7 @@ contract Strategies is MultisigBuilder, Execute {
 
         if (Env.weth() != address(0)) {
             address wethStrategy = address(Env.proxy.strategyFactory().deployNewStrategy(IERC20(Env.weth())));
-            deployInstance({
-                name: type(StrategyBaseTVLLimits).name,
-                deployedTo: wethStrategy
-            });
+            deployInstance({name: type(StrategyBaseTVLLimits).name, deployedTo: wethStrategy});
         }
 
         if (Env.steth() != address(0)) {

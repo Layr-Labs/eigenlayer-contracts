@@ -13,24 +13,19 @@ import "src/contracts/libraries/BeaconChainProofs.sol";
 import {Execute, Queue} from "./3-execute.s.sol";
 import {DeployFresh} from "./1-deploy.s.sol";
 
-
 /**
  * Purpose: optionally enqueue a transaction that pauses all EigenPod functionality.
  */
 contract Pause is MultisigBuilder, EigenPodPausingConstants, Execute {
     using Env for *;
 
-    function _runAsMultisig() prank(Env.pauserMultisig()) internal virtual override(Execute, MultisigBuilder) {
+    function _runAsMultisig() internal virtual override(Execute, MultisigBuilder) prank(Env.pauserMultisig()) {
         if (!Env.supportsNativeEth()) {
             // disable all eigenpod functionality.
-            uint mask = (1 << PAUSED_START_CHECKPOINT) | 
-            (1 << PAUSED_NEW_EIGENPODS) | 
-            (1 << PAUSED_WITHDRAW_RESTAKED_ETH) | 
-            (1 << PAUSED_EIGENPODS_VERIFY_CREDENTIALS) | 
-            (1 << PAUSED_NON_PROOF_WITHDRAWALS) | 
-            (1 << PAUSED_START_CHECKPOINT) | 
-            (1 << PAUSED_EIGENPODS_VERIFY_CHECKPOINT_PROOFS) |
-            (1 << PAUSED_VERIFY_STALE_BALANCE);
+            uint256 mask = (1 << PAUSED_START_CHECKPOINT) | (1 << PAUSED_NEW_EIGENPODS)
+                | (1 << PAUSED_WITHDRAW_RESTAKED_ETH) | (1 << PAUSED_EIGENPODS_VERIFY_CREDENTIALS)
+                | (1 << PAUSED_NON_PROOF_WITHDRAWALS) | (1 << PAUSED_START_CHECKPOINT)
+                | (1 << PAUSED_EIGENPODS_VERIFY_CHECKPOINT_PROOFS) | (1 << PAUSED_VERIFY_STALE_BALANCE);
 
             Env.proxy.eigenPodManager().pause(mask);
         }
@@ -53,13 +48,43 @@ contract Pause is MultisigBuilder, EigenPodPausingConstants, Execute {
 
         bool shouldBePaused = !Env.supportsNativeEth();
 
-        assertEq(Env.proxy.eigenPodManager().paused(PAUSED_START_CHECKPOINT), shouldBePaused, "PAUSED_START_CHECKPOINT Not paused!");
-        assertEq(Env.proxy.eigenPodManager().paused(PAUSED_NEW_EIGENPODS), shouldBePaused, "PAUSED_NEW_EIGENPODS Not paused!");
-        assertEq(Env.proxy.eigenPodManager().paused(PAUSED_WITHDRAW_RESTAKED_ETH), shouldBePaused, "PAUSED_WITHDRAW_RESTAKED_ETH Not paused!");
-        assertEq(Env.proxy.eigenPodManager().paused(PAUSED_EIGENPODS_VERIFY_CREDENTIALS), shouldBePaused, "PAUSED_EIGENPODS_VERIFY_CREDENTIALS Not paused!");
-        assertEq(Env.proxy.eigenPodManager().paused(PAUSED_NON_PROOF_WITHDRAWALS), shouldBePaused, "PAUSED_NON_PROOF_WITHDRAWALS Not paused!");
-        assertEq(Env.proxy.eigenPodManager().paused(PAUSED_START_CHECKPOINT), shouldBePaused, "PAUSED_START_CHECKPOINT Not paused!");
-        assertEq(Env.proxy.eigenPodManager().paused(PAUSED_EIGENPODS_VERIFY_CHECKPOINT_PROOFS), shouldBePaused, "PAUSED_EIGENPODS_VERIFY_CHECKPOINT_PROOFS Not paused!");
-        assertEq(Env.proxy.eigenPodManager().paused(PAUSED_VERIFY_STALE_BALANCE), shouldBePaused, "PAUSED_VERIFY_STALE_BALANCE Not paused!");
+        assertEq(
+            Env.proxy.eigenPodManager().paused(PAUSED_START_CHECKPOINT),
+            shouldBePaused,
+            "PAUSED_START_CHECKPOINT Not paused!"
+        );
+        assertEq(
+            Env.proxy.eigenPodManager().paused(PAUSED_NEW_EIGENPODS), shouldBePaused, "PAUSED_NEW_EIGENPODS Not paused!"
+        );
+        assertEq(
+            Env.proxy.eigenPodManager().paused(PAUSED_WITHDRAW_RESTAKED_ETH),
+            shouldBePaused,
+            "PAUSED_WITHDRAW_RESTAKED_ETH Not paused!"
+        );
+        assertEq(
+            Env.proxy.eigenPodManager().paused(PAUSED_EIGENPODS_VERIFY_CREDENTIALS),
+            shouldBePaused,
+            "PAUSED_EIGENPODS_VERIFY_CREDENTIALS Not paused!"
+        );
+        assertEq(
+            Env.proxy.eigenPodManager().paused(PAUSED_NON_PROOF_WITHDRAWALS),
+            shouldBePaused,
+            "PAUSED_NON_PROOF_WITHDRAWALS Not paused!"
+        );
+        assertEq(
+            Env.proxy.eigenPodManager().paused(PAUSED_START_CHECKPOINT),
+            shouldBePaused,
+            "PAUSED_START_CHECKPOINT Not paused!"
+        );
+        assertEq(
+            Env.proxy.eigenPodManager().paused(PAUSED_EIGENPODS_VERIFY_CHECKPOINT_PROOFS),
+            shouldBePaused,
+            "PAUSED_EIGENPODS_VERIFY_CHECKPOINT_PROOFS Not paused!"
+        );
+        assertEq(
+            Env.proxy.eigenPodManager().paused(PAUSED_VERIFY_STALE_BALANCE),
+            shouldBePaused,
+            "PAUSED_VERIFY_STALE_BALANCE Not paused!"
+        );
     }
 }

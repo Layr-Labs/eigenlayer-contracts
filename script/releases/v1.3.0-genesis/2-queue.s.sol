@@ -14,7 +14,7 @@ import "src/contracts/libraries/BeaconChainProofs.sol";
 import "forge-std/console.sol";
 
 /**
- * Purpose: update the implementation contracts on the previously deployed blank proxies. 
+ * Purpose: update the implementation contracts on the previously deployed blank proxies.
  */
 contract Queue is MultisigBuilder, DeployFresh {
     using Env for *;
@@ -26,21 +26,17 @@ contract Queue is MultisigBuilder, DeployFresh {
         executorCalls.append({
             to: Env.proxyAdmin(),
             data: abi.encodeCall(
-                        pa.upgradeAndCall,
-                        (
-                            ITransparentUpgradeableProxy(payable(address(Env.proxy.delegationManager()))),
-                            address(Env.impl.delegationManager()),
-                            abi.encodeCall(
-                                DelegationManager.initialize,
-                                (
-                                    Env.executorMultisig(),
-                                    Env.DELEGATION_INIT_PAUSED_STATUS()
-                                )
-                            )
-                        )
+                pa.upgradeAndCall,
+                (
+                    ITransparentUpgradeableProxy(payable(address(Env.proxy.delegationManager()))),
+                    address(Env.impl.delegationManager()),
+                    abi.encodeCall(
+                        DelegationManager.initialize, (Env.executorMultisig(), Env.DELEGATION_INIT_PAUSED_STATUS())
                     )
+                )
+            )
         });
-        
+
         executorCalls.append({
             to: Env.proxyAdmin(),
             data: abi.encodeCall(
@@ -69,11 +65,7 @@ contract Queue is MultisigBuilder, DeployFresh {
                     address(Env.impl.strategyFactory()),
                     abi.encodeCall(
                         StrategyFactory.initialize,
-                        (
-                            Env.executorMultisig(),
-                            Env.STRATEGY_MANAGER_INIT_PAUSED_STATUS(),
-                            Env.beacon.strategyBase()
-                        )
+                        (Env.executorMultisig(), Env.STRATEGY_MANAGER_INIT_PAUSED_STATUS(), Env.beacon.strategyBase())
                     )
                 )
             )
@@ -86,13 +78,7 @@ contract Queue is MultisigBuilder, DeployFresh {
                 (
                     ITransparentUpgradeableProxy(payable(address(Env.proxy.avsDirectory()))),
                     address(Env.impl.avsDirectory()),
-                    abi.encodeCall(
-                        AVSDirectory.initialize,
-                        ( 
-                            Env.executorMultisig(),
-                            0
-                        )
-                    )
+                    abi.encodeCall(AVSDirectory.initialize, (Env.executorMultisig(), 0))
                 )
             )
         });
@@ -104,15 +90,11 @@ contract Queue is MultisigBuilder, DeployFresh {
                     ITransparentUpgradeableProxy(payable(address(Env.proxy.eigenPodManager()))),
                     address(Env.impl.eigenPodManager()),
                     abi.encodeCall(
-                        EigenPodManager.initialize,
-                        (
-                            Env.executorMultisig(),
-                            Env.EIGENPOD_MANAGER_INIT_PAUSED_STATUS()
-                        )
+                        EigenPodManager.initialize, (Env.executorMultisig(), Env.EIGENPOD_MANAGER_INIT_PAUSED_STATUS())
                     )
                 )
             )
-        });  
+        });
         executorCalls.append({
             to: Env.proxyAdmin(),
             data: abi.encodeCall(
@@ -141,11 +123,7 @@ contract Queue is MultisigBuilder, DeployFresh {
                     ITransparentUpgradeableProxy(payable(address(Env.proxy.allocationManager()))),
                     address(Env.impl.allocationManager()),
                     abi.encodeCall(
-                        AllocationManager.initialize,
-                        (
-                            Env.executorMultisig(),
-                            Env.ALLOCATION_MANAGER_INIT_PAUSED_STATUS()
-                        )
+                        AllocationManager.initialize, (Env.executorMultisig(), Env.ALLOCATION_MANAGER_INIT_PAUSED_STATUS())
                     )
                 )
             )
@@ -160,7 +138,7 @@ contract Queue is MultisigBuilder, DeployFresh {
                 )
             )
         });
-        
+
         return Encode.gnosisSafe.execTransaction({
             from: address(Env.timelockController()),
             to: address(Env.multiSendCallOnly()),
@@ -169,7 +147,7 @@ contract Queue is MultisigBuilder, DeployFresh {
         });
     }
 
-    function _runAsMultisig() prank(Env.protocolCouncilMultisig()) internal virtual override {
+    function _runAsMultisig() internal virtual override prank(Env.protocolCouncilMultisig()) {
         bytes memory calldata_to_executor = _getCalldataToExecutor();
         TimelockController timelock = Env.timelockController();
         timelock.schedule({
@@ -182,7 +160,7 @@ contract Queue is MultisigBuilder, DeployFresh {
         });
     }
 
-    function testDeploy() public override virtual {} // prevent duplicate test.
+    function testDeploy() public virtual override {} // prevent duplicate test.
 
     function testScript() public virtual {
         _runAsEOA();

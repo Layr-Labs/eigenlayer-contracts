@@ -209,7 +209,7 @@ library Env {
         return _envU256("REWARDS_COORDINATOR_PAUSE_STATUS");
     }
 
-    function ALLOCATION_MANAGER_INIT_PAUSED_STATUS() internal view returns (uint) {
+    function ALLOCATION_MANAGER_INIT_PAUSED_STATUS() internal view returns (uint256) {
         return _envU32("ALLOCATION_MANAGER_INIT_PAUSED_STATUS");
     }
 
@@ -459,11 +459,15 @@ library Env {
         return ZEnvHelpers.state().envU64(key);
     }
 
-    function _envBool(string memory key) private view returns (bool) {
+    function _envBool(
+        string memory key
+    ) private view returns (bool) {
         return ZEnvHelpers.state().envBool(key);
     }
 
-    function _envU32(string memory key) private view returns (uint32) {
+    function _envU32(
+        string memory key
+    ) private view returns (uint32) {
         return ZEnvHelpers.state().envU32(key);
     }
 
