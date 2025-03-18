@@ -35,7 +35,7 @@ contract QueueUpgrade is MultisigBuilder, Deploy {
 
     /// @dev Get the calldata to be sent from the timelock to the executor
     function _getCalldataToExecutor() internal returns (bytes memory) {
-        // Core
+        // Core - Pods - Strategies - Permissions
         MultisigCall[] storage executorCalls = Encode.newMultisigCalls().append({
             to: Env.proxyAdmin(),
             data: Encode.proxyAdmin.upgrade({
@@ -90,10 +90,8 @@ contract QueueUpgrade is MultisigBuilder, Deploy {
                 proxy: address(Env.proxy.strategyFactory()),
                 impl: address(Env.impl.strategyFactory())
             })
-        })
-            // Pods
-            // Strategies - non-longtail
-            // Permissions
+        }) // Pods
+                // Strategies - non-longtail
             .append({
             to: Env.proxyAdmin(),
             data: Encode.proxyAdmin.upgrade({
