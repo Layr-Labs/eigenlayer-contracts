@@ -60,7 +60,6 @@ library Env {
     /**
      * env
      */
-    
     function deployVersion() internal view returns (string memory) {
         return _string("ZEUS_DEPLOY_TO_VERSION");
     }
@@ -405,6 +404,7 @@ library Env {
 
     address internal constant VM_ADDRESS = address(uint160(uint256(keccak256("hevm cheat code"))));
     Vm internal constant vm = Vm(VM_ADDRESS);
+
     function _string(
         string memory key
     ) private view returns (string memory) {

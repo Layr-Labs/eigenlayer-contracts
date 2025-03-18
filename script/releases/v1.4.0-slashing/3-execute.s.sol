@@ -10,7 +10,7 @@ import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 contract Execute is QueueUpgrade {
     using Env for *;
 
-    function _runAsMultisig() prank(Env.protocolCouncilMultisig()) internal override {
+    function _runAsMultisig() internal override prank(Env.protocolCouncilMultisig()) {
         bytes memory calldata_to_executor = _getCalldataToExecutor();
 
         TimelockController timelock = Env.timelockController();
@@ -49,13 +49,13 @@ contract Execute is QueueUpgrade {
         // 2- warp past delay
         vm.warp(block.timestamp + timelock.getMinDelay()); // 1 tick after ETA
         assertEq(timelock.isOperationReady(txHash), true, "Transaction should be executable.");
-        
+
         // 3- execute
         execute();
 
         assertTrue(timelock.isOperationDone(txHash), "Transaction should be complete.");
 
-        _validateNewImplAddresses({ areMatching: true });
+        _validateNewImplAddresses({areMatching: true});
         _validateProxyAdmins();
         _validateProxyConstructors();
         _validateProxiesInitialized();
@@ -76,7 +76,7 @@ contract Execute is QueueUpgrade {
 
             /// PermissionController has no initial storage
         }
-        
+
         {
             /// core/
 
@@ -85,8 +85,11 @@ contract Execute is QueueUpgrade {
             assertTrue(allocationManager.pauserRegistry() == Env.impl.pauserRegistry(), "alm.pR invalid");
             assertTrue(allocationManager.permissionController() == Env.proxy.permissionController(), "alm.pc invalid");
             assertTrue(allocationManager.DEALLOCATION_DELAY() == Env.MIN_WITHDRAWAL_DELAY(), "alm.deallocDelay invalid");
-            assertTrue(allocationManager.ALLOCATION_CONFIGURATION_DELAY() == Env.ALLOCATION_CONFIGURATION_DELAY(), "alm.configDelay invalid");
-            
+            assertTrue(
+                allocationManager.ALLOCATION_CONFIGURATION_DELAY() == Env.ALLOCATION_CONFIGURATION_DELAY(),
+                "alm.configDelay invalid"
+            );
+
             AVSDirectory avsDirectory = Env.proxy.avsDirectory();
             assertTrue(avsDirectory.delegation() == Env.proxy.delegationManager(), "avsD.dm invalid");
             assertTrue(avsDirectory.pauserRegistry() == Env.impl.pauserRegistry(), "avsD.pR invalid");
@@ -97,7 +100,9 @@ contract Execute is QueueUpgrade {
             assertTrue(delegation.allocationManager() == Env.proxy.allocationManager(), "dm.alm invalid");
             assertTrue(delegation.pauserRegistry() == Env.impl.pauserRegistry(), "dm.pR invalid");
             assertTrue(delegation.permissionController() == Env.proxy.permissionController(), "dm.pc invalid");
-            assertTrue(delegation.minWithdrawalDelayBlocks() == Env.MIN_WITHDRAWAL_DELAY(), "dm.withdrawalDelay invalid");
+            assertTrue(
+                delegation.minWithdrawalDelayBlocks() == Env.MIN_WITHDRAWAL_DELAY(), "dm.withdrawalDelay invalid"
+            );
 
             RewardsCoordinator rewards = Env.proxy.rewardsCoordinator();
             assertTrue(rewards.delegationManager() == Env.proxy.delegationManager(), "rc.dm invalid");
@@ -105,12 +110,14 @@ contract Execute is QueueUpgrade {
             assertTrue(rewards.allocationManager() == Env.proxy.allocationManager(), "rc.alm invalid");
             assertTrue(rewards.pauserRegistry() == Env.impl.pauserRegistry(), "rc.pR invalid");
             assertTrue(rewards.permissionController() == Env.proxy.permissionController(), "rc.pc invalid");
-            assertTrue(rewards.CALCULATION_INTERVAL_SECONDS() == Env.CALCULATION_INTERVAL_SECONDS(), "rc.calcInterval invalid");
+            assertTrue(
+                rewards.CALCULATION_INTERVAL_SECONDS() == Env.CALCULATION_INTERVAL_SECONDS(), "rc.calcInterval invalid"
+            );
             assertTrue(rewards.MAX_REWARDS_DURATION() == Env.MAX_REWARDS_DURATION(), "rc.rewardsDuration invalid");
             assertTrue(rewards.MAX_RETROACTIVE_LENGTH() == Env.MAX_RETROACTIVE_LENGTH(), "rc.retroLength invalid");
             assertTrue(rewards.MAX_FUTURE_LENGTH() == Env.MAX_FUTURE_LENGTH(), "rc.futureLength invalid");
             assertTrue(rewards.GENESIS_REWARDS_TIMESTAMP() == Env.GENESIS_REWARDS_TIMESTAMP(), "rc.genesis invalid");
-            
+
             StrategyManager strategyManager = Env.proxy.strategyManager();
             assertTrue(strategyManager.delegation() == Env.proxy.delegationManager(), "sm.dm invalid");
             assertTrue(strategyManager.pauserRegistry() == Env.impl.pauserRegistry(), "sm.pR invalid");
@@ -135,10 +142,12 @@ contract Execute is QueueUpgrade {
             assertTrue(eigenStrategy.pauserRegistry() == Env.impl.pauserRegistry(), "eigStrat.pR invalid");
 
             UpgradeableBeacon strategyBeacon = Env.beacon.strategyBase();
-            assertTrue(strategyBeacon.implementation() == address(Env.impl.strategyBase()), "strategyBeacon.impl invalid");
+            assertTrue(
+                strategyBeacon.implementation() == address(Env.impl.strategyBase()), "strategyBeacon.impl invalid"
+            );
 
-            uint count = Env.instance.strategyBaseTVLLimits_Count();
-            for (uint i = 0; i < count; i++) {
+            uint256 count = Env.instance.strategyBaseTVLLimits_Count();
+            for (uint256 i = 0; i < count; i++) {
                 StrategyBaseTVLLimits strategy = Env.instance.strategyBaseTVLLimits(i);
 
                 assertTrue(strategy.strategyManager() == Env.proxy.strategyManager(), "sFact.sm invalid");
@@ -158,7 +167,7 @@ contract Execute is QueueUpgrade {
 
         /// permissions/
         // PermissionController is initializable, but does not expose the `initialize` method
-        
+
         {
             /// core/
 
@@ -167,7 +176,7 @@ contract Execute is QueueUpgrade {
             allocationManager.initialize(address(0), 0);
             assertTrue(allocationManager.owner() == Env.executorMultisig(), "alm.owner invalid");
             assertTrue(allocationManager.paused() == 0, "alm.paused invalid");
-            
+
             AVSDirectory avsDirectory = Env.proxy.avsDirectory();
             vm.expectRevert(errInit);
             avsDirectory.initialize(address(0), 0);
@@ -194,7 +203,9 @@ contract Execute is QueueUpgrade {
             strategyManager.initialize(address(0), address(0), 0);
             assertTrue(strategyManager.owner() == Env.executorMultisig(), "sm.owner invalid");
             assertTrue(strategyManager.paused() == 0, "sm.paused invalid");
-            assertTrue(strategyManager.strategyWhitelister() == address(Env.proxy.strategyFactory()), "sm.whitelister invalid");
+            assertTrue(
+                strategyManager.strategyWhitelister() == address(Env.proxy.strategyFactory()), "sm.whitelister invalid"
+            );
         }
 
         {
@@ -220,16 +231,16 @@ contract Execute is QueueUpgrade {
 
             // StrategyBase proxies are initialized when deployed by factory
 
-            uint count = Env.instance.strategyBaseTVLLimits_Count();
-            for (uint i = 0; i < count; i++) {
+            uint256 count = Env.instance.strategyBaseTVLLimits_Count();
+            for (uint256 i = 0; i < count; i++) {
                 StrategyBaseTVLLimits strategy = Env.instance.strategyBaseTVLLimits(i);
 
                 emit log_named_address("strat", address(strategy));
 
                 vm.expectRevert(errInit);
                 strategy.initialize(0, 0, IERC20(address(0)));
-                assertTrue(strategy.maxPerDeposit() == type(uint).max, "stratTVLLim.maxPerDeposit invalid");
-                assertTrue(strategy.maxTotalDeposits() == type(uint).max, "stratTVLLim.maxPerDeposit invalid");
+                assertTrue(strategy.maxPerDeposit() == type(uint256).max, "stratTVLLim.maxPerDeposit invalid");
+                assertTrue(strategy.maxTotalDeposits() == type(uint256).max, "stratTVLLim.maxPerDeposit invalid");
             }
 
             StrategyFactory strategyFactory = Env.proxy.strategyFactory();
