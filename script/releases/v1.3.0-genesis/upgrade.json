@@ -20,7 +20,7 @@
             "filename": "4-disable-eigenpods.s.sol"
         },
         {
-            "type": "eoa",
+            "type": "multisig",
             "filename": "5-strategies.s.sol"
         }
     ]
