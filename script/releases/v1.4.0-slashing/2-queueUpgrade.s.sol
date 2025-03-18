@@ -77,6 +77,18 @@ contract QueueUpgrade is MultisigBuilder, Deploy {
         }).append({
             to: address(Env.beacon.strategyBase()),
             data: Encode.upgradeableBeacon.upgradeTo({newImpl: address(Env.impl.strategyBase())})
+        }).append({
+            to: Env.proxyAdmin(),
+            data: Encode.proxyAdmin.upgrade({
+                proxy: address(Env.proxy.strategyFactory()),
+                impl: address(Env.impl.strategyFactory())
+            })
+        }).append({
+            to: Env.proxyAdmin(),
+            data: Encode.proxyAdmin.upgrade({
+                proxy: address(Env.proxy.permissionController()),
+                impl: address(Env.impl.permissionController())
+            })
         })
             /// core/
             /// pods/
@@ -84,8 +96,8 @@ contract QueueUpgrade is MultisigBuilder, Deploy {
             .append({
             to: Env.proxyAdmin(),
             data: Encode.proxyAdmin.upgrade({
-                proxy: address(Env.proxy.strategyFactory()),
-                impl: address(Env.impl.strategyFactory())
+                proxy: address(Env.proxy.allocationManager()),
+                impl: address(Env.impl.allocationManager())
             })
         });
 

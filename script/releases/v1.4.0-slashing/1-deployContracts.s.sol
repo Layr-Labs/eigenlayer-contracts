@@ -18,31 +18,9 @@ contract Deploy is EOADeployer {
         vm.startBroadcast();
 
         /// permissions/
-
-        address[] memory pausers = new address[](3);
-        pausers[0] = Env.pauserMultisig();
-        pausers[1] = Env.opsMultisig();
-        pausers[2] = Env.executorMultisig();
-
-        deployImpl({
-            name: type(PauserRegistry).name,
-            deployedTo: address(new PauserRegistry({_pausers: pausers, _unpauser: Env.executorMultisig()}))
-        });
-
         deployImpl({
             name: type(PermissionController).name,
             deployedTo: address(new PermissionController({_version: Env.deployVersion()}))
-        });
-
-        deployProxy({
-            name: type(PermissionController).name,
-            deployedTo: address(
-                new TransparentUpgradeableProxy({
-                    _logic: address(Env.impl.permissionController()),
-                    admin_: Env.proxyAdmin(),
-                    _data: ""
-                })
-            )
         });
 
         /// core/
@@ -57,23 +35,6 @@ contract Deploy is EOADeployer {
                     _DEALLOCATION_DELAY: Env.MIN_WITHDRAWAL_DELAY(),
                     _ALLOCATION_CONFIGURATION_DELAY: Env.ALLOCATION_CONFIGURATION_DELAY(),
                     _version: Env.deployVersion()
-                })
-            )
-        });
-
-        deployProxy({
-            name: type(AllocationManager).name,
-            deployedTo: address(
-                new TransparentUpgradeableProxy({
-                    _logic: address(Env.impl.allocationManager()),
-                    admin_: Env.proxyAdmin(),
-                    _data: abi.encodeCall(
-                        AllocationManager.initialize,
-                        (
-                            Env.executorMultisig(), // initialOwner
-                            0 // initialPausedStatus
-                        )
-                    )
                 })
             )
         });
@@ -255,8 +216,16 @@ contract Deploy is EOADeployer {
             "strategyManager impl failed"
         );
 
-        /// permissions/ -- can't check these because PauserRegistry has no proxy, and
-        /// PermissionController proxy didn't exist before this deploy
+        assertion(
+            _getProxyImpl(address(Env.proxy.allocationManager())) == address(Env.impl.allocationManager()),
+            "allocationManager impl failed"
+        );
+
+        /// permissions/
+        assertion(
+            _getProxyImpl(address(Env.proxy.permissionController())) == address(Env.impl.permissionController()),
+            "permissionController impl failed"
+        );
 
         /// pods/
 
@@ -269,7 +238,6 @@ contract Deploy is EOADeployer {
 
         /// strategies/
 
-        // FIXME
         assertion(
             _getProxyImpl(address(Env.proxy.eigenStrategy())) == address(Env.impl.eigenStrategy()),
             "eigenStrategy impl failed"
@@ -314,8 +282,14 @@ contract Deploy is EOADeployer {
 
         assertTrue(_getProxyAdmin(address(Env.proxy.strategyManager())) == pa, "strategyManager proxyAdmin incorrect");
 
-        /// permissions/ -- can't check these because PauserRegistry has no proxy, and
-        /// PermissionController proxy didn't exist before this deploy
+        assertTrue(
+            _getProxyAdmin(address(Env.proxy.allocationManager())) == pa, "allocationManager proxyAdmin incorrect"
+        );
+
+        /// permissions
+        assertTrue(
+            _getProxyAdmin(address(Env.proxy.permissionController())) == pa, "permissionController proxyAdmin incorrect"
+        );
 
         /// pods/
 
@@ -501,6 +475,10 @@ contract Deploy is EOADeployer {
     function _validateVersion() internal view {
         // On future upgrades, just tick the major/minor/patch to validate
         string memory expected = Env.deployVersion();
+
+        // permissions/
+        assertEq(Env.impl.permissionController().version(), expected, "permissionController version mismatch");
+
         {
             /// core/
             assertEq(Env.impl.allocationManager().version(), expected, "allocationManager version mismatch");
