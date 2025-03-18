@@ -1,0 +1,19 @@
+{
+    "name": "slashing-auditFixes-prooftra",
+    "from": "1.2.0",
+    "to": "1.4.0",
+    "phases": [
+        {
+            "type": "eoa",
+            "filename": "1-deployContracts.s.sol"
+        },
+        {
+            "type": "multisig",
+            "filename": "2-queueUpgrade.s.sol"
+        },
+        {
+            "type": "multisig",
+            "filename": "3-executeUpgrade.s.sol"
+        }
+    ]
+}
