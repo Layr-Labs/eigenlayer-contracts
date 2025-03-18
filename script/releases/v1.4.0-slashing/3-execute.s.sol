@@ -193,7 +193,7 @@ contract Execute is QueueUpgrade {
             vm.expectRevert(errInit);
             rewards.initialize(address(0), 0, address(0), 0, 0);
             assertTrue(rewards.owner() == Env.opsMultisig(), "rc.owner invalid");
-            assertTrue(rewards.paused() == 0, "rc.paused invalid");
+            assertTrue(rewards.paused() == 2, "rc.paused invalid");
             assertTrue(rewards.rewardsUpdater() == Env.REWARDS_UPDATER(), "rc.updater invalid");
             assertTrue(rewards.activationDelay() == Env.ACTIVATION_DELAY(), "rc.activationDelay invalid");
             assertTrue(rewards.defaultOperatorSplitBips() == Env.DEFAULT_SPLIT_BIPS(), "rc.splitBips invalid");
