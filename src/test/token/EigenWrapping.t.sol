@@ -29,6 +29,12 @@ contract EigenWrappingTests is Test {
     /// @notice event emitted when a minter status is modified
     event IsMinterModified(address indexed minterAddress, bool newStatus);
 
+    // EVENTS FROM Eigen.sol
+    /// @notice event emitted when bEIGEN tokens are wrapped into EIGEN
+    event TokenWrapped(address indexed account, uint amount);
+    /// @notice event emitted when EIGEN tokens are unwrapped into bEIGEN
+    event TokenUnwrapped(address indexed account, uint amount);
+
     modifier filterAddress(address fuzzedAddress) {
         vm.assume(!fuzzedOutAddresses[fuzzedAddress]);
         _;
@@ -54,11 +60,11 @@ contract EigenWrappingTests is Test {
         bEIGEN.initialize(minter1);
 
         // set minters (for future minting if needed)
-        vm.expectEmit(true, false, false, false);
+        vm.expectEmit(true, true, true, true);
         emit IsMinterModified(minter1, true);
         bEIGEN.setIsMinter(minter1, true);
 
-        vm.expectEmit(true, false, false, false);
+        vm.expectEmit(true, true, true, true);
         emit IsMinterModified(minter2, true);
         bEIGEN.setIsMinter(minter2, true);
 
@@ -69,6 +75,8 @@ contract EigenWrappingTests is Test {
         vm.startPrank(minter1);
         bEIGEN.mint(minter1, totalSupply / 2);
         bEIGEN.approve(address(eigen), totalSupply / 2);
+        vm.expectEmit(true, true, true, true);
+        emit TokenWrapped(minter1, totalSupply / 2);
         eigen.wrap(totalSupply / 2);
         vm.stopPrank();
 
@@ -76,6 +84,8 @@ contract EigenWrappingTests is Test {
         vm.startPrank(minter2);
         bEIGEN.mint(minter2, totalSupply / 2);
         bEIGEN.approve(address(eigen), totalSupply / 2);
+        vm.expectEmit(true, true, true, true);
+        emit TokenWrapped(minter2, totalSupply / 2);
         eigen.wrap(totalSupply / 2);
         vm.stopPrank();
 
@@ -106,6 +116,8 @@ contract EigenWrappingTests is Test {
         // unwrap amount should be less than minter1 balance
         unwrapAmount = unwrapAmount % minter1Balance;
         vm.prank(unwrapper);
+        vm.expectEmit(true, false, false, false);
+        emit TokenUnwrapped(unwrapper, unwrapAmount);
         eigen.unwrap(unwrapAmount);
 
         // check total supply and balance changes
@@ -145,6 +157,8 @@ contract EigenWrappingTests is Test {
         // approve bEIGEN
         bEIGEN.approve(address(eigen), wrapAmount);
         // wrap
+        vm.expectEmit(true, false, false, false);
+        emit TokenWrapped(wrapper, wrapAmount);
         eigen.wrap(wrapAmount);
         vm.stopPrank();
 
