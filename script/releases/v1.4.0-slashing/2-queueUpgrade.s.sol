@@ -90,9 +90,7 @@ contract QueueUpgrade is MultisigBuilder, Deploy {
                 proxy: address(Env.proxy.strategyFactory()),
                 impl: address(Env.impl.strategyFactory())
             })
-        }) // Pods
-                // Strategies - non-longtail
-            .append({
+        }).append({
             to: Env.proxyAdmin(),
             data: Encode.proxyAdmin.upgrade({
                 proxy: address(Env.proxy.permissionController()),
