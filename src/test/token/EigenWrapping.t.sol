@@ -60,11 +60,11 @@ contract EigenWrappingTests is Test {
         bEIGEN.initialize(minter1);
 
         // set minters (for future minting if needed)
-        vm.expectEmit(true, false, false, false);
+        vm.expectEmit(true, true, true, true);
         emit IsMinterModified(minter1, true);
         bEIGEN.setIsMinter(minter1, true);
 
-        vm.expectEmit(true, false, false, false);
+        vm.expectEmit(true, true, true, true);
         emit IsMinterModified(minter2, true);
         bEIGEN.setIsMinter(minter2, true);
 
@@ -75,7 +75,7 @@ contract EigenWrappingTests is Test {
         vm.startPrank(minter1);
         bEIGEN.mint(minter1, totalSupply / 2);
         bEIGEN.approve(address(eigen), totalSupply / 2);
-        vm.expectEmit(true, false, false, false);
+        vm.expectEmit(true, true, true, true);
         emit TokenWrapped(minter1, totalSupply / 2);
         eigen.wrap(totalSupply / 2);
         vm.stopPrank();
@@ -84,7 +84,7 @@ contract EigenWrappingTests is Test {
         vm.startPrank(minter2);
         bEIGEN.mint(minter2, totalSupply / 2);
         bEIGEN.approve(address(eigen), totalSupply / 2);
-        vm.expectEmit(true, false, false, false);
+        vm.expectEmit(true, true, true, true);
         emit TokenWrapped(minter2, totalSupply / 2);
         eigen.wrap(totalSupply / 2);
         vm.stopPrank();
