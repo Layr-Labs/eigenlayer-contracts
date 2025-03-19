@@ -215,7 +215,7 @@ contract TestOpSetRewards is Script {
             new IRewardsCoordinatorTypes.OperatorReward[](1);
         operatorRewards[0] = IRewardsCoordinatorTypes.OperatorReward({
             operator: OPERATOR_3,
-            amount: 9e16 // 0.09 stETH
+            amount: 1e17 // 0.1 WETH
         });
 
         uint256 totalAmount = _calculateTotalAmount(operatorRewards);
@@ -229,7 +229,7 @@ contract TestOpSetRewards is Script {
             token: STETH,
             operatorRewards: operatorRewards,
             startTimestamp: uint32(1_741_996_800), // 2025-03-15 00:00:00 UTC
-            duration: uint32(259_200), // 3 days
+            duration: uint32(345_600), // 4 days
             description: "test opset rewards"
         });
 
