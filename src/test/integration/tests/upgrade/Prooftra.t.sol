@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "src/test/integration/UpgradeTest.t.sol";
+import "src/test/integration/tests/upgrade/UpgradeTest.t.sol";
 
 contract Integration_Upgrade_Pectra is UpgradeTest, EigenPodPausingConstants {
     function _init() internal override {
@@ -9,7 +9,7 @@ contract Integration_Upgrade_Pectra is UpgradeTest, EigenPodPausingConstants {
         _configUserTypes(DEFAULT);
     }
 
-    function test_Upgrade_VerifyWC_StartCP_CompleteCP(uint24 _rand) public rand(_rand) {
+    function test_Upgrade_VerifyWC_StartCP_CompleteCP(uint24) public {
         // 1. Pause, Fork, and Upgrade
         _pauseForkAndUpgrade();
 
@@ -34,7 +34,7 @@ contract Integration_Upgrade_Pectra is UpgradeTest, EigenPodPausingConstants {
         check_CompleteCheckpoint_State(staker);
     }
 
-    function test_VerifyWC_StartCP_Fork_CompleteCP(uint24 _rand) public rand(_rand) {
+    function test_VerifyWC_StartCP_Fork_CompleteCP(uint24) public {
         // Initialize state
         (User staker,,) = _newRandomStaker();
         (uint40[] memory validators,,) = staker.startValidators();
@@ -57,7 +57,7 @@ contract Integration_Upgrade_Pectra is UpgradeTest, EigenPodPausingConstants {
         check_CompleteCheckpoint_State(staker);
     }
 
-    function test_VerifyWC_Fork_EarnToPod_StartCP_CompleteCP(uint24 _rand) public rand(_rand) {
+    function test_VerifyWC_Fork_EarnToPod_StartCP_CompleteCP(uint24) public {
         // Initialize state
         (User staker,,) = _newRandomStaker();
         (uint40[] memory validators,,) = staker.startValidators();

@@ -28,7 +28,7 @@ During the test, the config passed into `_configRand` will randomly generate onl
 Here's an example:
 
 ```solidity
-function testFuzz_deposit_delegate_EXAMPLE(uint24 _random) public {   
+function testFuzz_deposit_delegate_EXAMPLE(uint24) public {   
     // When new Users are created, they will choose a random configuration from these params.
     // `_randomSeed` will be the starting seed for all random lookups.
     _configRand({
@@ -105,7 +105,7 @@ Speaking of, the `TimeMachine` is a global contract that controls the time, fate
 This means that tests can perform user actions with very little setup or "reading prior state", and perform all the important assertions after each action. For example:
 
 ```solidity
-function testFuzz_deposit_delegate_EXAMPLE(uint24 _random) public {   
+function testFuzz_deposit_delegate_EXAMPLE(uint24) public {   
     // ... test setup goes above here
     
     // This snapshots state before the deposit.
@@ -145,5 +145,5 @@ Currently our mainnet fork tests spam whatever RPC we use. We can improve this i
 `anvil -f RPC_URL `
 You can use `anvil -h` for more info on what it can do.
 
-> Then in your test you use the vm.createSelectFork command in your setup with the argument to point to your local anvil node which is basically a copy of the rpc you set it up as. 
+> Then in your test you use the cheats.createSelectFork command in your setup with the argument to point to your local anvil node which is basically a copy of the rpc you set it up as. 
 >  If you want to do some setup before running your tests you can write a script file and broadcast the setup transactions to your local anvil node (make sure to use one of the private keys anvil gives you)
