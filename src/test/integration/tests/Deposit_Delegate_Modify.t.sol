@@ -3,18 +3,7 @@ pragma solidity ^0.8.27;
 
 import "src/test/integration/IntegrationChecks.t.sol";
 
-contract Integration_ALMBase is IntegrationCheckUtils {
-    AVS avs;
-    OperatorSet operatorSet;
-
-    User operator;
-    AllocateParams allocateParams;
-
-    User staker;
-    IStrategy[] strategies;
-    uint[] initTokenBalances;
-    uint[] initDepositShares;
-
+contract Integration_Deposit_Delegate_Modify is IntegrationChecks {
     /// Shared setup:
     ///
     /// 1. Generate staker with deposited assets, operator, and AVS
@@ -22,8 +11,8 @@ contract Integration_ALMBase is IntegrationCheckUtils {
     /// 3. AVS creates an operator set containing the strategies held by the staker
     function _init() internal virtual override {
         (staker, strategies, initTokenBalances) = _newRandomStaker();
-        operator = _newRandomOperator_NoAssets();
-        (avs,) = _newRandomAVS();
+        operator = _newRandomOperator();
+        avs = _newRandomAVS();
 
         // 1. Deposit Into Strategies
         staker.depositIntoEigenlayer(strategies, initTokenBalances);
@@ -37,20 +26,12 @@ contract Integration_ALMBase is IntegrationCheckUtils {
         // 3. Create an operator set containing the strategies held by the staker
         operatorSet = avs.createOperatorSet(strategies);
     }
-}
 
-contract Integration_InitRegistered is Integration_ALMBase {
-    /// @dev Integration test variants that start with the operator being registered
-    /// for the operator set
-    function _init() internal virtual override {
-        super._init();
-
+    function testFuzz_deposit_delegate_register_allocate_deallocate_deregister(uint24) public {
         // Register for operator set before allocating to any strategies
         operator.registerForOperatorSet(operatorSet);
         check_Registration_State_NoAllocation(operator, operatorSet, allStrats);
-    }
 
-    function testFuzz_allocate_deallocate_deregister(uint24 _r) public rand(_r) {
         // 1. Allocate to the operator set
         allocateParams = _genAllocation_Rand(operator, operatorSet);
         operator.modifyAllocations(allocateParams);
@@ -73,7 +54,11 @@ contract Integration_InitRegistered is Integration_ALMBase {
         check_FullyDeallocated_State(operator, allocateParams, deallocateParams);
     }
 
-    function testFuzz_allocate_deallocate_waitDeallocate_deregister(uint24 _r) public rand(_r) {
+    function testFuzz_deposit_delegate_register_allocate_deallocate_waitDeallocate_deregister(uint24) public {
+        // Register for operator set before allocating to any strategies
+        operator.registerForOperatorSet(operatorSet);
+        check_Registration_State_NoAllocation(operator, operatorSet, allStrats);
+
         // 1. Allocate to the operator set
         allocateParams = _genAllocation_Rand(operator, operatorSet);
         operator.modifyAllocations(allocateParams);
@@ -96,7 +81,11 @@ contract Integration_InitRegistered is Integration_ALMBase {
         check_Deregistration_State_NoAllocation(operator, operatorSet);
     }
 
-    function testFuzz_deregister_waitDeregister_allocate_deallocate(uint24 _r) public rand(_r) {
+    function testFuzz_deposit_delegate_register_deregister_waitDeregister_allocate_deallocate(uint24) public {
+        // Register for operator set before allocating to any strategies
+        operator.registerForOperatorSet(operatorSet);
+        check_Registration_State_NoAllocation(operator, operatorSet, allStrats);
+
         // 1. Deregister from operator set
         operator.deregisterFromOperatorSet(operatorSet);
         check_Deregistration_State_NoAllocation(operator, operatorSet);
@@ -119,7 +108,11 @@ contract Integration_InitRegistered is Integration_ALMBase {
         check_FullyDeallocated_State(operator, allocateParams, deallocateParams);
     }
 
-    function testFuzz_deregister_allocate_waitAllocate_deallocate(uint24 _r) public rand(_r) {
+    function testFuzz_deposit_delegate_register_deregister_allocate_waitAllocate_deallocate(uint24) public {
+        // Register for operator set before allocating to any strategies
+        operator.registerForOperatorSet(operatorSet);
+        check_Registration_State_NoAllocation(operator, operatorSet, allStrats);
+
         // 1. Deregister from operator set
         operator.deregisterFromOperatorSet(operatorSet);
         check_Deregistration_State_NoAllocation(operator, operatorSet);
@@ -143,7 +136,11 @@ contract Integration_InitRegistered is Integration_ALMBase {
         check_FullyDeallocated_State(operator, allocateParams, deallocateParams);
     }
 
-    function testFuzz_deregister_allocate_waitDeregister_deallocate(uint24 _r) public rand(_r) {
+    function testFuzz_deposit_delegate_register_deregister_allocate_waitDeregister_deallocate(uint24) public {
+        // Register for operator set before allocating to any strategies
+        operator.registerForOperatorSet(operatorSet);
+        check_Registration_State_NoAllocation(operator, operatorSet, allStrats);
+
         // 1. Deregister from operator set
         operator.deregisterFromOperatorSet(operatorSet);
         check_Deregistration_State_NoAllocation(operator, operatorSet);
@@ -163,21 +160,13 @@ contract Integration_InitRegistered is Integration_ALMBase {
         check_DecrAlloc_State_NotSlashable(operator, deallocateParams);
         check_FullyDeallocated_State(operator, allocateParams, deallocateParams);
     }
-}
 
-contract Integration_InitAllocated is Integration_ALMBase {
-    /// @dev Integration test variants that start with the operator being allocated
-    /// for the operator set
-    function _init() internal virtual override {
-        super._init();
-
+    function testFuzz_deposit_delegate_allocate_register_deallocate_deregister(uint24) public {
         // Allocate fully to operator set
         allocateParams = _genAllocation_AllAvailable(operator, operatorSet);
         operator.modifyAllocations(allocateParams);
         check_IncrAlloc_State_NotSlashable(operator, allocateParams);
-    }
 
-    function testFuzz_register_deallocate_deregister(uint24 _r) public rand(_r) {
         // 1. Register for the operator set
         operator.registerForOperatorSet(operatorSet);
         check_Registration_State_PendingAllocation(operator, allocateParams);
@@ -199,7 +188,12 @@ contract Integration_InitAllocated is Integration_ALMBase {
         check_FullyDeallocated_State(operator, allocateParams, deallocateParams);
     }
 
-    function testFuzz_waitAllocation_register_deallocate(uint24 _r) public rand(_r) {
+    function testFuzz_deposit_delegate_allocate_waitAllocation_register_deallocate(uint24) public {
+        // Allocate fully to operator set
+        allocateParams = _genAllocation_AllAvailable(operator, operatorSet);
+        operator.modifyAllocations(allocateParams);
+        check_IncrAlloc_State_NotSlashable(operator, allocateParams);
+
         _rollForward_AllocationDelay(operator);
 
         // 1. Register for the operator set. The allocation immediately becomes slashable

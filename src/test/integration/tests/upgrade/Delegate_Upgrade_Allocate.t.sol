@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "src/test/integration/UpgradeTest.t.sol";
+import "src/test/integration/tests/upgrade/UpgradeTest.t.sol";
 
 contract Integration_Upgrade_Deposit_Delegate_Allocate is UpgradeTest {
     struct TestState {
@@ -9,19 +9,19 @@ contract Integration_Upgrade_Deposit_Delegate_Allocate is UpgradeTest {
         User operator;
         AVS avs;
         IStrategy[] strategies;
-        uint[] tokenBalances;
+        uint[] initTokenBalances;
         OperatorSet operatorSet;
         AllocateParams allocateParams;
     }
 
     function _init_() internal returns (TestState memory state) {
-        (state.staker, state.strategies, state.tokenBalances) = _newRandomStaker();
-        (state.operator,,) = _newRandomOperator();
+        (state.staker, state.strategies, state.initTokenBalances) = _newRandomStaker();
+        state.operator = _newRandomOperator();
 
         // Pre-upgrade:
         // 1. Create staker and operator with assets, then deposit into EigenLayer
         // 2. Delegate to operator
-        state.staker.depositIntoEigenlayer(state.strategies, state.tokenBalances);
+        state.staker.depositIntoEigenlayer(state.strategies, state.initTokenBalances);
         state.staker.delegateTo(state.operator);
     }
 
@@ -36,19 +36,15 @@ contract Integration_Upgrade_Deposit_Delegate_Allocate is UpgradeTest {
         check_Registration_State_NoAllocation(state.operator, state.operatorSet, allStrats);
 
         // 5. Allocate to operator set.
-        state.allocateParams = AllocateParams({
-            operatorSet: state.operatorSet,
-            strategies: state.strategies,
-            newMagnitudes: _randMagnitudes({sum: 1 ether, len: state.strategies.length})
-        });
+        state.allocateParams = _genAllocation_Rand(state.operator, state.operatorSet);
         state.operator.modifyAllocations(state.allocateParams);
         check_IncrAlloc_State_Slashable(state.operator, state.allocateParams);
     }
 
-    function testFuzz_deposit_delegate_upgrade_allocate(uint24 r) public rand(r) {
+    function testFuzz_deposit_delegate_upgrade_allocate(uint24) public {
         TestState memory state = _init_();
         _upgradeEigenLayerContracts();
-        (state.avs,) = _newRandomAVS();
+        state.avs = _newRandomAVS();
         _setupAllocation(state);
     }
 }

@@ -18,7 +18,7 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
     /**
      * @notice Test that a slash works correctly just before a _partial_ withdrawal is completed
      */
-    function testFuzz_queuePartialWithdrawal_slashBeforeWithdrawalDelay_completeAsTokens(uint24 _r) public rand(_r) {
+    function testFuzz_queuePartialWithdrawal_slashBeforeWithdrawalDelay_completeAsTokens(uint24) public {
         uint[] memory depositSharesToWithdraw = new uint[](initDepositShares.length);
         /// 0. Calculate partial withdrawal amounts
         for (uint i = 0; i < initDepositShares.length; ++i) {
@@ -30,7 +30,7 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
         /// 1. Queue withdrawal
         uint[] memory withdrawableShares = _calcWithdrawable(staker, strategies, depositSharesToWithdraw);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, depositSharesToWithdraw);
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
 
         // Validate correctly queued withdrawals
         check_QueuedWithdrawal_State(
@@ -40,7 +40,7 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
         /// 2. Move time forward to _just before_ withdrawal block
         // Expected behavior: Withdrawals are still pending and cannot be completed, but slashes can still be performed
         _rollBlocksForCompleteWithdrawals(withdrawals);
-        vm.roll(block.number - 1);
+        cheats.roll(block.number - 1);
 
         // Verify that the withdrawals are _still_ slashable
         for (uint i = 0; i < withdrawals.length; ++i) {
@@ -56,7 +56,7 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
         check_Base_Slashing_State(operator, allocateParams, slashingParams);
 
         /// 4. Move time forward to withdrawal block
-        vm.roll(block.number + 1);
+        cheats.roll(block.number + 1);
 
         // Verify that the withdrawals are _no longer_ slashable
         for (uint i = 0; i < withdrawals.length; ++i) {
@@ -72,7 +72,7 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
 
         // Verify that the withdrawals were completed correctly
         for (uint i = 0; i < withdrawals.length; ++i) {
-            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], strategies, withdrawableShares, tokens, expectedTokens);
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], withdrawableShares, expectedTokens);
         }
 
         /// 6. Check final state
@@ -85,11 +85,11 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
     /**
      * @notice Test that a slash works correctly just before a _total_ withdrawal is completed
      */
-    function testFuzz_queueTotalWithdrawal_slashBeforeWithdrawalDelay_completeAsTokens(uint24 _r) public rand(_r) {
+    function testFuzz_queueTotalWithdrawal_slashBeforeWithdrawalDelay_completeAsTokens(uint24) public {
         /// 1. Queue withdrawal
         uint[] memory withdrawableShares = _calcWithdrawable(staker, strategies, initDepositShares);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, initDepositShares);
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
 
         // Validate correctly queued withdrawals
         check_QueuedWithdrawal_State(staker, operator, strategies, initDepositShares, withdrawableShares, withdrawals, withdrawalRoots);
@@ -97,7 +97,7 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
         /// 2. Move time forward to _just before_ withdrawal block
         // Expected behavior: Withdrawals are still pending and cannot be completed, but slashes can still be performed
         _rollBlocksForCompleteWithdrawals(withdrawals);
-        vm.roll(block.number - 1);
+        cheats.roll(block.number - 1);
 
         // Verify that the withdrawals are _still_ slashable
         for (uint i = 0; i < withdrawals.length; ++i) {
@@ -113,7 +113,7 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
         check_Base_Slashing_State(operator, allocateParams, slashingParams);
 
         /// 4. Move time forward to withdrawal block
-        vm.roll(block.number + 1);
+        cheats.roll(block.number + 1);
 
         // Verify that the withdrawals are _no longer_ slashable
         for (uint i = 0; i < withdrawals.length; ++i) {
@@ -129,7 +129,7 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
 
         // Verify that the withdrawals were completed correctly
         for (uint i = 0; i < withdrawals.length; ++i) {
-            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], strategies, withdrawableShares, tokens, expectedTokens);
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], withdrawableShares, expectedTokens);
         }
 
         /// 6. Check final state
@@ -142,7 +142,7 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
     /**
      * @notice Test that a staker can still complete a partial withdrawal even after a slash has been performed
      */
-    function testFuzz_queuePartialWithdrawal_slashAfterWithdrawalDelay_completeAsTokens(uint24 _r) public rand(_r) {
+    function testFuzz_queuePartialWithdrawal_slashAfterWithdrawalDelay_completeAsTokens(uint24) public {
         uint[] memory depositSharesToWithdraw = new uint[](initDepositShares.length);
         /// 0. Calculate partial withdrawal amounts
         for (uint i = 0; i < initDepositShares.length; ++i) {
@@ -154,7 +154,7 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
         /// 1. Queue withdrawal
         uint[] memory withdrawableShares = _calcWithdrawable(staker, strategies, depositSharesToWithdraw);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, depositSharesToWithdraw);
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
 
         // Validate correctly queued withdrawals
         check_QueuedWithdrawal_State(
@@ -185,7 +185,7 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
 
         // Verify that the withdrawals were completed correctly
         for (uint i = 0; i < withdrawals.length; ++i) {
-            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], strategies, withdrawableShares, tokens, expectedTokens);
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], withdrawableShares, expectedTokens);
         }
 
         /// 5. Check final state
@@ -198,11 +198,11 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
     /**
      * @notice Test that a staker is unaffected by a slash after the withdrawal delay has passed
      */
-    function testFuzz_queueTotalWithdrawal_slashAfterWithdrawalDelay_completeAsTokens(uint24 _r) public rand(_r) {
+    function testFuzz_queueTotalWithdrawal_slashAfterWithdrawalDelay_completeAsTokens(uint24) public {
         /// 1. Queue withdrawal
         uint[] memory withdrawableShares = _calcWithdrawable(staker, strategies, initDepositShares);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, initDepositShares);
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
 
         // Validate correctly queued withdrawals
         check_QueuedWithdrawal_State(staker, operator, strategies, initDepositShares, withdrawableShares, withdrawals, withdrawalRoots);
@@ -229,7 +229,7 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
 
         // Verify that the withdrawals were completed correctly
         for (uint i = 0; i < withdrawals.length; ++i) {
-            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], strategies, withdrawableShares, tokens, initTokenBalances);
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], withdrawableShares, initTokenBalances);
         }
 
         /// 5. Check final state
@@ -250,7 +250,7 @@ contract Integration_OperatorDeallocationTiming is Integration_ALMSlashBase {
     /// OPERATOR DEALLOCATION TIMING TESTS ///
     //////////////////////////////////////////
 
-    function testFuzz_deallocateFully_slashBeforeDelay(uint24 _r) public rand(_r) {
+    function testFuzz_deallocateFully_slashBeforeDelay(uint24) public {
         /// 1. Deallocate
         AllocateParams memory deallocateParams = _genDeallocation_Full(operator, operatorSet);
         operator.modifyAllocations(deallocateParams);
@@ -271,7 +271,7 @@ contract Integration_OperatorDeallocationTiming is Integration_ALMSlashBase {
         check_Base_Slashing_State(operator, allocateParams, slashParams);
     }
 
-    function testFuzz_deallocateFully_slashAfterDelay(uint24 _r) public rand(_r) {
+    function testFuzz_deallocateFully_slashAfterDelay(uint24) public {
         /// 1. Deallocate
         AllocateParams memory deallocateParams = _genDeallocation_Full(operator, operatorSet);
         operator.modifyAllocations(deallocateParams);
@@ -300,7 +300,7 @@ contract Integration_OperatorDeregistrationTiming is Integration_ALMSlashBase {
     /// OPERATOR DEREGISTRATION TIMING TESTS ///
     ////////////////////////////////////////////
 
-    function testFuzz_deregister_slashBeforeDelay(uint24 _r) public rand(_r) {
+    function testFuzz_deregister_slashBeforeDelay(uint24) public {
         /// 1. Deregister
         operator.deregisterFromOperatorSet(operatorSet);
         // Validate the deregistration
@@ -319,7 +319,7 @@ contract Integration_OperatorDeregistrationTiming is Integration_ALMSlashBase {
         check_Base_Slashing_State(operator, allocateParams, slashParams);
     }
 
-    function testFuzz_deregister_slashAfterDelay(uint24 _r) public rand(_r) {
+    function testFuzz_deregister_slashAfterDelay(uint24) public {
         /// 1. Deregister
         operator.deregisterFromOperatorSet(operatorSet);
         // Validate the deregistration
@@ -333,31 +333,18 @@ contract Integration_OperatorDeregistrationTiming is Integration_ALMSlashBase {
         /// 3. Slash operator
         // Note: Unlike the deallocation case, the operator is no longer registered, so a slash will revert entirely.
         slashParams = _genSlashing_Rand(operator, operatorSet);
-        vm.expectRevert(IAllocationManagerErrors.OperatorNotSlashable.selector);
+        cheats.expectRevert(IAllocationManagerErrors.OperatorNotSlashable.selector);
         avs.slashOperator(slashParams);
     }
 }
 
 /**
  * @notice These tests check for specific allocation correctness around timing
- * @dev These tests inherit from IntegrationCheckUtils instead of Integration_ALMSlashBase because they require a
+ * @dev These tests inherit from IntegrationChecks instead of Integration_ALMSlashBase because they require a
  * different initialization -- specifically, the allocation must be performed within the tests. As such, there are no
  * assumptions and many state variables are declared below.
  */
-contract Integration_OperatorAllocationTiming is IntegrationCheckUtils {
-    AVS avs;
-    User operator;
-    OperatorSet operatorSet;
-
-    AllocateParams allocateParams;
-    SlashingParams slashParams;
-
-    User staker;
-    IStrategy[] strategies;
-    IERC20[] tokens;
-    uint[] initTokenBalances;
-    uint[] initDepositShares;
-
+contract Integration_OperatorAllocationTiming is IntegrationChecks {
     ////////////////////////////////////////
     /// OPERATOR ALLOCATION TIMING TESTS ///
     ////////////////////////////////////////
@@ -366,8 +353,8 @@ contract Integration_OperatorAllocationTiming is IntegrationCheckUtils {
         /// 0. Instantiate relevant objects
         _configAssetTypes(HOLDS_LST);
         (staker, strategies, initTokenBalances) = _newRandomStaker();
-        operator = _newRandomOperator_NoAssets();
-        (avs,) = _newRandomAVS();
+        operator = _newRandomOperator();
+        avs = _newRandomAVS();
         tokens = _getUnderlyingTokens(strategies);
 
         /// 1. Deposit into strategies
@@ -387,7 +374,7 @@ contract Integration_OperatorAllocationTiming is IntegrationCheckUtils {
         assertTrue(allocationManager.isOperatorSet(operatorSet));
     }
 
-    function testFuzz_register_allocate_slashBeforeDelay(uint24 _r) public rand(_r) {
+    function testFuzz_register_allocate_slashBeforeDelay(uint24) public {
         /// 1. Create and register operator
         operator.registerForOperatorSet(operatorSet);
         // Validate registration
@@ -415,7 +402,7 @@ contract Integration_OperatorAllocationTiming is IntegrationCheckUtils {
         check_Base_Slashing_State(operator, allocateParams, emptySlashParams);
     }
 
-    function testFuzz_allocate_register_slashBeforeDelay(uint24 _r) public rand(_r) {
+    function testFuzz_allocate_register_slashBeforeDelay(uint24) public {
         /// 1. Allocate
         allocateParams = _genAllocation_AllAvailable(operator, operatorSet);
         operator.modifyAllocations(allocateParams);
@@ -443,7 +430,7 @@ contract Integration_OperatorAllocationTiming is IntegrationCheckUtils {
         check_Base_Slashing_State(operator, allocateParams, emptySlashParams);
     }
 
-    function testFuzz_register_allocate_slashAfterDelay(uint24 _r) public rand(_r) {
+    function testFuzz_register_allocate_slashAfterDelay(uint24) public {
         /// 1. Create and register operator
         operator.registerForOperatorSet(operatorSet);
         // Validate the registration
@@ -465,7 +452,7 @@ contract Integration_OperatorAllocationTiming is IntegrationCheckUtils {
         check_Base_Slashing_State(operator, allocateParams, slashParams);
     }
 
-    function testFuzz_allocate_register_slashAfterDelay(uint24 _r) public rand(_r) {
+    function testFuzz_allocate_register_slashAfterDelay(uint24) public {
         /// 1. Allocate
         allocateParams = _genAllocation_AllAvailable(operator, operatorSet);
         operator.modifyAllocations(allocateParams);
