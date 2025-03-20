@@ -50,11 +50,30 @@ library Env {
     DeployedInstance internal constant instance = DeployedInstance.A;
 
     /**
+     * SAFE
+     */
+    function safeFactory() internal view returns (address) {
+        return _envAddress("safeFactory");
+    }
+
+    function safeSingleton() internal view returns (address) {
+        return _envAddress("safeSingleton");
+    }
+
+    function safeFallbackHandler() internal view returns (address) {
+        return _envAddress("safeFallbackHandler");
+    }
+
+    /**
      * env
      */
 
     function executorMultisig() internal view returns (address) {
         return _envAddress("executorMultisig");
+    }
+
+    function beigenExecutorMultisig() internal view returns (address) {
+        return _envAddress("beigenExecutorMultisig");
     }
 
     function opsMultisig() internal view returns (address) {
@@ -69,8 +88,16 @@ library Env {
         return _envAddress("pauserMultisig");
     }
 
+    function communityMultisig() internal view returns (address) {
+        return _envAddress("communityMultisig");
+    }
+
     function proxyAdmin() internal view returns (address) {
         return _envAddress("proxyAdmin");
+    }
+
+    function beigenProxyAdmin() internal view returns (address) {
+        return _envAddress("beigenProxyAdmin");
     }
 
     function ethPOS() internal view returns (IETHPOSDeposit) {
@@ -79,6 +106,10 @@ library Env {
 
     function timelockController() internal view returns (TimelockController) {
         return TimelockController(payable(_envAddress("timelockController")));
+    }
+
+    function beigenTimelockController() internal view returns (TimelockController) {
+        return TimelockController(payable(_envAddress("beigenTimelockController")));
     }
 
     function multiSendCallOnly() internal view returns (address) {
