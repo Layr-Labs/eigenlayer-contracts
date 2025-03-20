@@ -151,6 +151,13 @@ library ArrayLib {
         return array;
     }
 
+    function setLength(uint40[] memory array, uint len) internal pure returns (uint40[] memory) {
+        assembly {
+            mstore(array, len)
+        }
+        return array;
+    }
+
     function setLength(uint64[] memory array, uint len) internal pure returns (uint64[] memory) {
         assembly {
             mstore(array, len)
@@ -372,5 +379,21 @@ library ArrayLib {
         }
 
         return array;
+    }
+
+    /// -----------------------------------------------------------------------
+    /// Typecasting
+    /// -----------------------------------------------------------------------
+
+    function toAddressArray(IStrategy[] memory array) internal pure returns (address[] memory r) {
+        assembly {
+            r := array
+        }
+    }
+
+    function toUintArray(uint64[] memory array) internal pure returns (uint[] memory r) {
+        assembly {
+            r := array
+        }
     }
 }

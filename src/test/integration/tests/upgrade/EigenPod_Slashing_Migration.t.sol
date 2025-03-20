@@ -1,25 +1,21 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "src/test/integration/UpgradeTest.t.sol";
+import "src/test/integration/tests/upgrade/UpgradeTest.t.sol";
 
 contract Integration_Upgrade_EigenPod_Slashing_Migration is UpgradeTest, EigenPodPausingConstants {
-    User staker;
-    uint40[] validators;
     uint[] shares;
-    IStrategy[] strategies;
-    uint[] tokenBalances;
 
     function _init() internal override {
         _configAssetTypes(HOLDS_ETH);
         _configUserTypes(DEFAULT);
 
         /// 0. Create a staker with underlying assets
-        (staker, strategies, tokenBalances) = _newRandomStaker();
-        shares = _calculateExpectedShares(strategies, tokenBalances);
+        (staker, strategies, initTokenBalances) = _newRandomStaker();
+        shares = _calculateExpectedShares(strategies, initTokenBalances);
 
         ///  1. Deposit into strategies
-        staker.depositIntoEigenlayer(strategies, tokenBalances);
+        staker.depositIntoEigenlayer(strategies, initTokenBalances);
         validators = staker.getActiveValidators();
     }
 
@@ -44,7 +40,7 @@ contract Integration_Upgrade_EigenPod_Slashing_Migration is UpgradeTest, EigenPo
         eigenPodManager.unpause(0);
     }
 
-    function testFuzz_earnRewards_migrate_exit(uint24 _rand) public rand(_rand) {
+    function testFuzz_earnRewards_migrate_exit(uint24) public {
         // 2. Advance epoch, generating consensus rewards and withdrawing anything over 32 ETH
         beaconChain.advanceEpoch();
 
@@ -63,10 +59,10 @@ contract Integration_Upgrade_EigenPod_Slashing_Migration is UpgradeTest, EigenPo
         check_CompleteCheckpoint_WithExits_State(staker, subset, exitedBalanceGwei);
     }
 
-    function testFuzz_slash_migrate(uint24 _rand) public rand(_rand) {
+    function testFuzz_slash_migrate(uint24) public {
         // 2. Slash validators
         uint40[] memory subset = _choose(validators);
-        uint64 slashedGwei = beaconChain.slashValidators(subset, _randSlashType());
+        uint64 slashedGwei = beaconChain.slashValidators(subset, BeaconChainMock.SlashType(_randUint({min: 0, max: 2})));
         beaconChain.advanceEpoch_NoRewards();
         shares[0] = shares[0] - slashedGwei * GWEI_TO_WEI; // Shares should decrease by slashed amount
 

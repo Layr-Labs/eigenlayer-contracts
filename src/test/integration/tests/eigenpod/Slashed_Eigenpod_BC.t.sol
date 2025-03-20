@@ -3,31 +3,21 @@ pragma solidity ^0.8.27;
 
 import "src/test/integration/IntegrationChecks.t.sol";
 
-contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
+contract Integration_SlashedEigenpod_BC is IntegrationChecks {
     using ArrayLib for *;
-
-    AVS avs;
-    OperatorSet operatorSet;
-
-    User operator;
-    AllocateParams allocateParams;
-
-    User staker;
-    IStrategy[] strategies;
-    uint[] initTokenBalances;
-    uint64 beaconBalanceGwei;
-    uint64 slashedGwei;
-    IERC20[] tokens;
-    uint40[] validators;
-    uint40[] slashedValidators;
 
     function _init() internal virtual override {
         _configAssetTypes(HOLDS_ETH);
         (staker, strategies, initTokenBalances) = _newRandomStaker();
-        (operator,,) = _newRandomOperator();
-        (avs,) = _newRandomAVS();
+        operator = _newRandomOperator();
+        avs = _newRandomAVS();
         tokens = _getUnderlyingTokens(strategies); // Should only return ETH
-        cheats.assume(initTokenBalances[0] >= 64 ether);
+
+        // Ensure the staker has at least 64 ETH to deposit.
+        if (initTokenBalances[0] < 64 ether) {
+            initTokenBalances[0] = 64 ether;
+            cheats.deal(address(staker), 64 ether);
+        }
 
         // Deposit staker
         uint[] memory shares = _calculateExpectedShares(strategies, initTokenBalances);
@@ -46,7 +36,7 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         check_CompleteCheckpoint_WithCLSlashing_HandleRoundDown_State(staker, slashedGwei);
     }
 
-    function testFuzz_delegateSlashedStaker_dsfWad(uint24 _random) public rand(_random) {
+    function testFuzz_delegateSlashedStaker_dsfWad(uint24) public {
         uint[] memory initDelegatableShares = _getWithdrawableShares(staker, strategies);
         uint[] memory initDepositShares = _getStakerDepositShares(staker, strategies);
 
@@ -55,8 +45,8 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         check_Delegation_State(staker, operator, strategies, initDepositShares);
 
         // Undelegate from an operator
-        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.undelegate();
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        Withdrawal[] memory withdrawals = staker.undelegate();
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, initDelegatableShares);
 
         // Complete withdrawal as shares
@@ -75,7 +65,7 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         );
     }
 
-    function testFuzz_delegateSlashedStaker_dsfNonWad(uint24 _random) public rand(_random) {
+    function testFuzz_delegateSlashedStaker_dsfNonWad(uint24) public {
         //Additional deposit on beacon chain so dsf is nonwad
         uint amount = 32 ether * _randUint({min: 1, max: 5});
         cheats.deal(address(staker), amount);
@@ -91,8 +81,8 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         check_Delegation_State(staker, operator, strategies, initDepositShares);
 
         // Undelegate from an operator
-        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.undelegate();
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        Withdrawal[] memory withdrawals = staker.undelegate();
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, initDelegatableShares);
 
         // Complete withdrawal as shares
@@ -111,7 +101,7 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         );
     }
 
-    function testFuzz_delegateSlashedStaker_slashedOperator(uint24 _random) public rand(_random) {
+    function testFuzz_delegateSlashedStaker_slashedOperator(uint24) public {
         (User staker2,,) = _newRandomStaker();
         (uint40[] memory validators2,,) = staker2.startValidators();
         beaconChain.advanceEpoch_NoWithdrawNoRewards();
@@ -144,9 +134,8 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
 
         //Slash operator before delegation
-        IAllocationManagerTypes.SlashingParams memory slashingParams;
-        uint wadToSlash = _randWadToSlash();
-        slashingParams = avs.slashOperator(operator, operatorSet.id, strategies, wadToSlash.toArrayU256());
+        SlashingParams memory slashingParams = _genSlashing_Half(operator, operatorSet);
+        avs.slashOperator(slashingParams);
         assert_Snap_Allocations_Slashed(slashingParams, operatorSet, true, "operator allocations should be slashed");
 
         uint[] memory initDepositShares = _getStakerDepositShares(staker, strategies);
@@ -157,8 +146,8 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         check_Delegation_State(staker, operator, strategies, initDepositShares);
 
         // Undelegate from an operator
-        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.undelegate();
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        Withdrawal[] memory withdrawals = staker.undelegate();
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, delegatedShares);
 
         // Complete withdrawal as shares
@@ -177,8 +166,8 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         );
     }
 
-    function testFuzz_delegateSlashedStaker_redelegate_complete(uint24 _random) public rand(_random) {
-        (User operator2,,) = _newRandomOperator();
+    function testFuzz_delegateSlashedStaker_redelegate_complete(uint24) public {
+        User operator2 = _newRandomOperator();
 
         //Additional deposit on beacon chain so dsf is nonwad
         uint amount = 32 ether * _randUint({min: 1, max: 5});
@@ -195,8 +184,8 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         (uint[] memory delegatedShares,) = delegationManager.getWithdrawableShares(address(staker), strategies);
 
         // Undelegate from an operator
-        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.redelegate(operator2);
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        Withdrawal[] memory withdrawals = staker.redelegate(operator2);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_Redelegate_State(staker, operator, operator2, withdrawals, withdrawalRoots, strategies, delegatedShares);
 
         // Complete withdrawal as shares
@@ -217,7 +206,7 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         );
     }
 
-    function testFuzz_delegateSlashedStaker_slashedOperator_withdrawAllShares_complete(uint24 _random) public rand(_random) {
+    function testFuzz_delegateSlashedStaker_slashedOperator_withdrawAllShares_complete(uint24) public {
         //Additional deposit on beacon chain so dsf is nonwad
         uint amount = 32 ether * _randUint({min: 1, max: 5});
         cheats.deal(address(staker), amount);
@@ -233,9 +222,8 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         check_Registration_State_NoAllocation(operator, operatorSet, strategies);
 
         // Slash operator before delegation
-        SlashingParams memory slashingParams;
-        uint wadToSlash = _randWadToSlash();
-        slashingParams = avs.slashOperator(operator, operatorSet.id, strategies, wadToSlash.toArrayU256());
+        SlashingParams memory slashingParams = _genSlashing_Full(operator, operatorSet);
+        avs.slashOperator(slashingParams);
         assert_Snap_Allocations_Slashed(slashingParams, operatorSet, true, "operator allocations should be slashed");
 
         // Delegate to an operator
@@ -250,9 +238,9 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
 
         // Withdraw all shares
-        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, initDepositShares);
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(staker, operator, strategies, initDepositShares, withdrawableShares, withdrawals, withdrawalRoots);
 
         // Complete withdrawal as shares
@@ -271,7 +259,7 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         );
     }
 
-    function testFuzz_redeposit_queue_completeAsTokens(uint24 _random) public rand(_random) {
+    function testFuzz_redeposit_queue_completeAsTokens(uint24) public {
         // Prove an additional validator
         uint amount = 32 ether * _randUint({min: 1, max: 5});
         cheats.deal(address(staker), amount);
@@ -282,9 +270,9 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
 
         // Queue withdrawal for all tokens
         uint[] memory depositShares = _getStakerDepositShares(staker, strategies);
-        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, depositShares);
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(
             staker, User(payable(address(0))), strategies, depositShares, withdrawableShares, withdrawals, withdrawalRoots
         );
@@ -295,13 +283,11 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         for (uint i = 0; i < withdrawals.length; ++i) {
             uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawableShares);
             staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State(
-                staker, operator, withdrawals[i], withdrawals[i].strategies, withdrawableShares, tokens, expectedTokens
-            );
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], withdrawableShares, expectedTokens);
         }
     }
 
-    function testFuzz_redeposit_queue_completeAsShares(uint24 _random) public rand(_random) {
+    function testFuzz_redeposit_queue_completeAsShares(uint24) public {
         // Prove an additional validator
         uint amount = 32 ether * _randUint({min: 1, max: 5});
         cheats.deal(address(staker), amount);
@@ -312,9 +298,9 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
 
         // Queue withdrawal for all
         uint[] memory depositShares = _getStakerDepositShares(staker, strategies);
-        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, depositShares);
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(
             staker, User(payable(address(0))), strategies, depositShares, withdrawableShares, withdrawals, withdrawalRoots
         );
@@ -328,7 +314,7 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         }
     }
 
-    function testFuzz_verifyAdditionalValidator_delegateSlashedStaker(uint24 _random) public rand(_random) {
+    function testFuzz_verifyAdditionalValidator_delegateSlashedStaker(uint24) public {
         // Create operatorSet
         operatorSet = avs.createOperatorSet(strategies);
 
@@ -363,25 +349,14 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
 }
 
 /// @notice This is not considered dual slashing since the operator is pre-slashed
-contract Integration_SlashedOperator_SlashedEigenpod_Base is IntegrationCheckUtils {
+contract Integration_SlashedOperator_SlashedEigenpod_Base is IntegrationChecks {
     using ArrayLib for *;
-
-    AVS avs;
-    OperatorSet operatorSet;
-    AllocateParams allocateParams;
-
-    User operator;
-
-    User staker;
-    IStrategy[] strategies;
-    uint[] initTokenBalances;
-    uint[] initDepositShares;
 
     function _init() internal virtual override {
         _configAssetTypes(HOLDS_ETH);
         (staker, strategies, initTokenBalances) = _newRandomStaker();
-        operator = _newRandomOperator_NoAssets();
-        (avs,) = _newRandomAVS();
+        operator = _newRandomOperator();
+        avs = _newRandomAVS();
 
         // 1. Deposit Into Strategies
         staker.depositIntoEigenlayer(strategies, initTokenBalances);
@@ -445,84 +420,78 @@ contract Integration_SlashedOperator_SlashedEigenpod is Integration_SlashedOpera
         initDepositShares = _getStakerDepositShares(staker, strategies); // Deposit shares increased after verifying validator
     }
 
-    function testFuzz_slashOnBC_delegate_verifyValidator_undelegate_completeAsTokens(uint24 _random) public rand(_random) {
+    function testFuzz_slashOnBC_delegate_verifyValidator_undelegate_completeAsTokens(uint24) public {
         // 9. Undelegate
-        uint[] memory stakerWithdrawableShares = _getWithdrawableShares(staker, strategies);
+        uint[] memory withdrawableShares = _getWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.undelegate();
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
-        check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, stakerWithdrawableShares);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, withdrawableShares);
 
         // 10. Complete withdrawal as tokens
         _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint i = 0; i < withdrawals.length; ++i) {
-            uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, stakerWithdrawableShares);
-            IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State(
-                staker, operator, withdrawals[i], withdrawals[i].strategies, stakerWithdrawableShares, tokens, expectedTokens
-            );
+            uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawableShares);
+            staker.completeWithdrawalAsTokens(withdrawals[i]);
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], withdrawableShares, expectedTokens);
         }
     }
 
-    function testFuzz_slashOnBC_delegate_verifyValidator_undelegate_completeAsShares(uint24 _random) public rand(_random) {
+    function testFuzz_slashOnBC_delegate_verifyValidator_undelegate_completeAsShares(uint24) public {
         // 9. Undelegate
-        uint[] memory stakerWithdrawableShares = _getWithdrawableShares(staker, strategies);
+        uint[] memory withdrawableShares = _getWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.undelegate();
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
-        check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, stakerWithdrawableShares);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, withdrawableShares);
 
         // 10. Complete withdrawal as shares
         _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint i = 0; i < withdrawals.length; ++i) {
             staker.completeWithdrawalAsShares(withdrawals[i]);
-            check_Withdrawal_AsShares_Undelegated_State(
-                staker, operator, withdrawals[i], withdrawals[i].strategies, stakerWithdrawableShares
-            );
+            check_Withdrawal_AsShares_Undelegated_State(staker, operator, withdrawals[i], withdrawals[i].strategies, withdrawableShares);
         }
     }
 
-    function testFuzz_slashOnBC_delegate_verifyValidator_redelegate_completeAsTokens(uint24 _random) public rand(_random) {
+    function testFuzz_slashOnBC_delegate_verifyValidator_redelegate_completeAsTokens(uint24) public {
         // Create new operator
-        User operator2 = _newRandomOperator_NoAssets();
+        User operator2 = _newRandomOperator();
 
         // Randomly give the operator a non-WAD magnitude
         if (_randBool()) _giveOperatorNonWadMagnitude(operator2);
 
         // 9. Redelegate
-        uint[] memory stakerWithdrawableShares = _getWithdrawableShares(staker, strategies);
+        uint[] memory withdrawableShares = _getWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.redelegate(operator2);
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
-        check_Redelegate_State(staker, operator, operator2, withdrawals, withdrawalRoots, strategies, stakerWithdrawableShares);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        check_Redelegate_State(staker, operator, operator2, withdrawals, withdrawalRoots, strategies, withdrawableShares);
 
         // 10. Complete withdrawal as tokens
         _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint i = 0; i < withdrawals.length; ++i) {
-            uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, stakerWithdrawableShares);
-            IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State(
-                staker, operator2, withdrawals[i], withdrawals[i].strategies, stakerWithdrawableShares, tokens, expectedTokens
-            );
+            uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawableShares);
+            staker.completeWithdrawalAsTokens(withdrawals[i]);
+            check_Withdrawal_AsTokens_State(staker, operator2, withdrawals[i], withdrawableShares, expectedTokens);
         }
     }
 
-    function testFuzz_slashOnBC_delegate_verifyValidator_redelegate_completeAsShares(uint24 _random) public rand(_random) {
+    function testFuzz_slashOnBC_delegate_verifyValidator_redelegate_completeAsShares(uint24) public {
         // Create new operator
-        User operator2 = _newRandomOperator_NoAssets();
+        User operator2 = _newRandomOperator();
 
         // Randomly give the operator a non-WAD magnitude
         if (_randBool()) _giveOperatorNonWadMagnitude(operator2);
 
         // 9. Redelegate
-        uint[] memory stakerWithdrawableShares = _getWithdrawableShares(staker, strategies);
+        uint[] memory withdrawableShares = _getWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.redelegate(operator2);
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
-        check_Redelegate_State(staker, operator, operator2, withdrawals, withdrawalRoots, strategies, stakerWithdrawableShares);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        check_Redelegate_State(staker, operator, operator2, withdrawals, withdrawalRoots, strategies, withdrawableShares);
 
         // 10. Complete withdrawal as shares
         _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint i = 0; i < withdrawals.length; ++i) {
             staker.completeWithdrawalAsShares(withdrawals[i]);
             check_Withdrawal_AsShares_Redelegated_State(
-                staker, operator, operator2, withdrawals[i], withdrawals[i].strategies, stakerWithdrawableShares
+                staker, operator, operator2, withdrawals[i], withdrawals[i].strategies, withdrawableShares
             );
         }
     }
@@ -533,7 +502,6 @@ contract Integration_Redelegate_SlashOperator_SlashEigenpod is Integration_Slash
 
     User operator2;
     Withdrawal withdrawal;
-    uint64 slashedGwei;
 
     function _init() internal virtual override {
         // 1-5.
@@ -544,16 +512,16 @@ contract Integration_Redelegate_SlashOperator_SlashEigenpod is Integration_Slash
         check_Delegation_State(staker, operator, strategies, initDepositShares);
 
         // 7. Create new operator & randomly give it a non-WAD magnitude
-        operator2 = _newRandomOperator_NoAssets();
+        operator2 = _newRandomOperator();
         if (_randBool()) _giveOperatorNonWadMagnitude(operator2);
 
         // 8. Redelegate
-        uint[] memory stakerWithdrawableShares = _getWithdrawableShares(staker, strategies);
+        uint[] memory withdrawableShares = _getWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.redelegate(operator2);
         require(withdrawals.length == 1, "Expected 1 withdrawal");
         withdrawal = withdrawals[0];
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
-        check_Redelegate_State(staker, operator, operator2, withdrawals, withdrawalRoots, strategies, stakerWithdrawableShares);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        check_Redelegate_State(staker, operator, operator2, withdrawals, withdrawalRoots, strategies, withdrawableShares);
 
         // 9. Slash original operator
         SlashingParams memory slashParams = _genSlashing_Half(operator, operatorSet);
@@ -569,7 +537,7 @@ contract Integration_Redelegate_SlashOperator_SlashEigenpod is Integration_Slash
         staker.completeCheckpoint();
     }
 
-    function testFuzz_delegate_redelegate_slashAVS_slashBC_verifyValidator_completeAsShares(uint24 _random) public rand(_random) {
+    function testFuzz_delegate_redelegate_slashAVS_slashBC_verifyValidator_completeAsShares(uint24) public {
         // Populate withdrawal array
         Withdrawal[] memory withdrawals = new Withdrawal[](1);
         withdrawals[0] = withdrawal;
@@ -583,17 +551,17 @@ contract Integration_Redelegate_SlashOperator_SlashEigenpod is Integration_Slash
         check_VerifyWC_State(staker, newValidators, beaconBalanceAddedGwei);
 
         // 12. Complete withdrawal as shares
-        uint[] memory stakerWithdrawableShares = _getWithdrawableSharesAfterCompletion(staker);
+        uint[] memory withdrawableShares = _getWithdrawableSharesAfterCompletion(staker);
         _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint i = 0; i < withdrawals.length; ++i) {
             staker.completeWithdrawalAsShares(withdrawals[i]);
             check_Withdrawal_AsShares_Redelegated_State(
-                staker, operator, operator2, withdrawals[i], withdrawals[i].strategies, stakerWithdrawableShares
+                staker, operator, operator2, withdrawals[i], withdrawals[i].strategies, withdrawableShares
             );
         }
     }
 
-    function testFuzz_delegate_redelegate_slashAVS_slashBC_verifyValidator_completeAsTokens(uint24 _random) public rand(_random) {
+    function testFuzz_delegate_redelegate_slashAVS_slashBC_verifyValidator_completeAsTokens(uint24) public {
         // Populate withdrawal array
         Withdrawal[] memory withdrawals = new Withdrawal[](1);
         withdrawals[0] = withdrawal;
@@ -608,28 +576,26 @@ contract Integration_Redelegate_SlashOperator_SlashEigenpod is Integration_Slash
 
         // 12. Complete withdrawal as tokens
         _rollBlocksForCompleteWithdrawals(withdrawals);
-        uint[] memory stakerWithdrawableShares = _getWithdrawableSharesAfterCompletion(staker);
+        uint[] memory withdrawableShares = _getWithdrawableSharesAfterCompletion(staker);
         for (uint i = 0; i < withdrawals.length; ++i) {
-            uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, stakerWithdrawableShares);
-            IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State(
-                staker, operator2, withdrawals[i], withdrawals[i].strategies, stakerWithdrawableShares, tokens, expectedTokens
-            );
+            uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawableShares);
+            staker.completeWithdrawalAsTokens(withdrawals[i]);
+            check_Withdrawal_AsTokens_State(staker, operator2, withdrawals[i], withdrawableShares, expectedTokens);
         }
     }
 
-    function testFuzz_delegate_redelegate_slashAVS_slashBC_completeAsShares_verifyValidator(uint24 _random) public rand(_random) {
+    function testFuzz_delegate_redelegate_slashAVS_slashBC_completeAsShares_verifyValidator(uint24) public {
         // Populate withdrawal array
         Withdrawal[] memory withdrawals = new Withdrawal[](1);
         withdrawals[0] = withdrawal;
 
         // 11. Complete withdrawal as shares
-        uint[] memory stakerWithdrawableShares = _getWithdrawableSharesAfterCompletion(staker);
+        uint[] memory withdrawableShares = _getWithdrawableSharesAfterCompletion(staker);
         _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint i = 0; i < withdrawals.length; ++i) {
             staker.completeWithdrawalAsShares(withdrawals[i]);
             check_Withdrawal_AsShares_Redelegated_State(
-                staker, operator, operator2, withdrawals[i], withdrawals[i].strategies, stakerWithdrawableShares
+                staker, operator, operator2, withdrawals[i], withdrawals[i].strategies, withdrawableShares
             );
         }
 
@@ -642,20 +608,18 @@ contract Integration_Redelegate_SlashOperator_SlashEigenpod is Integration_Slash
         check_VerifyWC_State(staker, newValidators, beaconBalanceAddedGwei);
     }
 
-    function testFuzz_delegate_redelegate_slashAVS_slashBC_completeAsTokens_verifyValidator(uint24 _random) public rand(_random) {
+    function testFuzz_delegate_redelegate_slashAVS_slashBC_completeAsTokens_verifyValidator(uint24) public {
         // Populate withdrawal array
         Withdrawal[] memory withdrawals = new Withdrawal[](1);
         withdrawals[0] = withdrawal;
 
         // 11. Complete withdrawal as tokens
         _rollBlocksForCompleteWithdrawals(withdrawals);
-        uint[] memory stakerWithdrawableShares = _getWithdrawableSharesAfterCompletion(staker);
+        uint[] memory withdrawableShares = _getWithdrawableSharesAfterCompletion(staker);
         for (uint i = 0; i < withdrawals.length; ++i) {
-            uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, stakerWithdrawableShares);
-            IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State(
-                staker, operator2, withdrawals[i], withdrawals[i].strategies, stakerWithdrawableShares, tokens, expectedTokens
-            );
+            uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawableShares);
+            staker.completeWithdrawalAsTokens(withdrawals[i]);
+            check_Withdrawal_AsTokens_State(staker, operator2, withdrawals[i], withdrawableShares, expectedTokens);
         }
 
         // 12. Verify additional validator
@@ -668,27 +632,14 @@ contract Integration_Redelegate_SlashOperator_SlashEigenpod is Integration_Slash
     }
 }
 
-contract Integration_SlashedEigenpod_BC_HalfSlash is IntegrationCheckUtils {
+contract Integration_SlashedEigenpod_BC_HalfSlash is IntegrationChecks {
     using ArrayLib for *;
-
-    AVS avs;
-    OperatorSet operatorSet;
-
-    User operator;
-    AllocateParams allocateParams;
-
-    User staker;
-    IStrategy[] strategies;
-    uint[] initTokenBalances;
-    uint[] initDepositShares;
-    uint64 slashedGwei;
-    uint40[] slashedValidators;
 
     function _init() internal override {
         _configAssetTypes(HOLDS_ETH);
         (staker, strategies, initTokenBalances) = _newRandomStaker();
-        (operator,,) = _newRandomOperator();
-        (avs,) = _newRandomAVS();
+        operator = _newRandomOperator();
+        avs = _newRandomAVS();
 
         // 1. Deposit staker
         uint[] memory shares = _calculateExpectedShares(strategies, initTokenBalances);
@@ -712,7 +663,7 @@ contract Integration_SlashedEigenpod_BC_HalfSlash is IntegrationCheckUtils {
      * @notice Test sets up an EigenPod which has a non-WAD BCSF. After queue withdrawing all depositShares
      * which sets it to 0, they can then complete checkpoints repeatedly with 0 shares increase to increase the staker DSF each time
      */
-    function test_completeCP_withNoAddedShares(uint24 _rand) public rand(_rand) {
+    function test_completeCP_withNoAddedShares() public {
         // 4. queue withdraw all depositShares having it set to 0
         uint withdrawableSharesBefore = _getStakerWithdrawableShares(staker, strategies)[0];
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, initDepositShares);
@@ -728,7 +679,7 @@ contract Integration_SlashedEigenpod_BC_HalfSlash is IntegrationCheckUtils {
         // Staker deposit shares should be 0 from queue withdrawing all depositShares
         // therefore the depositScalingFactor should also be reset WAD
         assertEq(eigenPodManager.podOwnerDepositShares(address(staker)), 0);
-        assertEq(delegationManager.depositScalingFactor(address(staker), beaconChainETHStrategy), WAD);
+        assertEq(delegationManager.depositScalingFactor(address(staker), BEACONCHAIN_ETH_STRAT), WAD);
 
         // 6. deposit: can either verify wc or start/complete cp or complete the withdrawals as shares
         _rollBlocksForCompleteWithdrawals(withdrawals);
