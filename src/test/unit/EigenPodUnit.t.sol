@@ -13,9 +13,9 @@ import "src/test/harnesses/EigenPodHarness.sol";
 import "src/test/utils/ProofParsing.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
 
-import "src/test/integration/mocks/BeaconChainMock.t.sol";
-import "src/test/integration/mocks/BeaconChainMock_Deneb.t.sol";
-import "src/test/integration/mocks/EIP_4788_Oracle_Mock.t.sol";
+import "src/test/mocks/BeaconChainMock.t.sol";
+import "src/test/mocks/BeaconChainMock_Deneb.t.sol";
+import "src/test/mocks/EIP_4788_Oracle_Mock.t.sol";
 import "src/test/utils/EigenPodUser.t.sol";
 import "src/test/utils/BytesLib.sol";
 
@@ -29,9 +29,7 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
     IBeacon public eigenPodBeacon;
 
     // BeaconChain Mock Setup
-    TimeMachine public timeMachine;
     ETHPOSDepositMock ethPOSDepositMock;
-    BeaconChainMock public beaconChain;
     EIP_4788_Oracle_Mock constant EIP_4788_ORACLE = EIP_4788_Oracle_Mock(0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02);
 
     uint public numStakers;
@@ -54,8 +52,10 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
         // beaconChainMock will also etch 4788 precompile
         ethPOSDepositMock = new ETHPOSDepositMock();
         cheats.warp(GENESIS_TIME_LOCAL);
-        timeMachine = new TimeMachine();
-        beaconChain = new BeaconChainMock(EigenPodManager(address(eigenPodManagerMock)), GENESIS_TIME_LOCAL);
+
+        cheats.etch(address(timeMachine), type(TimeMachine).runtimeCode);
+        cheats.etch(address(beaconChain), type(BeaconChainMock).runtimeCode);
+        beaconChain.initialize(EigenPodManager(address(eigenPodManagerMock)), GENESIS_TIME_LOCAL);
 
         // Deploy EigenPod
         podImplementation = new EigenPod(ethPOSDepositMock, IEigenPodManager(address(eigenPodManagerMock)), GENESIS_TIME_LOCAL, "v9.9.9");
@@ -1656,7 +1656,9 @@ contract EigenPodUnitTests_DenebProofsAgainstPectra is EigenPodUnitTests {
         EigenPodUnitTests.setUp();
 
         // Set beaconChainMock to Deneb Forkable
-        beaconChain = BeaconChainMock(new BeaconChainMock_DenebForkable(EigenPodManager(address(eigenPodManagerMock)), GENESIS_TIME_LOCAL));
+        cheats.etch(address(beaconChain), type(BeaconChainMock_DenebForkable).runtimeCode);
+        beaconChain.initialize(EigenPodManager(address(eigenPodManagerMock)), GENESIS_TIME_LOCAL);
+        eigenPodManagerMock.setPectraForkTimestamp(1 hours * 12);
     }
 
     function testFuzz_revert_verifyWC_DenebAgainstPectra(uint24 rand) public {

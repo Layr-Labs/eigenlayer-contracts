@@ -17,17 +17,17 @@ Say we want to check that withdrawals initiated before the slashing upgrade are 
 ```solidity
 contract Integration_Upgrade_Complete_PreSlashing_Withdrawal is UpgradeTest {
     
-    function testFuzz_deposit_queue_upgrade_completeAsShares(uint24 _random) public rand(_random) {
+    function testFuzz_deposit_queue_upgrade_completeAsShares(uint24) public {
         /// Pre-upgrade:
         /// 1. Create staker with some assets
         /// 2. Staker deposits into EigenLayer
         /// 3. Staker queues a withdrawal
-        (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();
+        (staker, strategies, initTokenBalances) = _newRandomStaker();
         User operator = User(payable(0));
 
-        staker.depositIntoEigenlayer(strategies, tokenBalances);
-        uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
-        IDelegationManagerTypes.Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
+        staker.depositIntoEigenlayer(strategies, initTokenBalances);
+        uint[] memory shares = _calculateExpectedShares(strategies, initTokenBalances);
+        Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
 
         /// Upgrade to slashing contracts
         _upgradeEigenLayerContracts();
