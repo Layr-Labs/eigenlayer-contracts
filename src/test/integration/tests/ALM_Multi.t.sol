@@ -3,7 +3,7 @@ pragma solidity ^0.8.27;
 
 import "src/test/integration/IntegrationChecks.t.sol";
 
-contract Integration_ALM_Multi is IntegrationCheckUtils {
+contract Integration_ALM_Multi is IntegrationChecks {
     using StdStyle for *;
 
     enum Action {
@@ -24,14 +24,8 @@ contract Integration_ALM_Multi is IntegrationCheckUtils {
         REG_FULLY_ALLOC
     }
 
-    AVS avs;
-    OperatorSet operatorSet;
-
-    IStrategy[] strategies;
-
     /// iteration idx -> list of operators in each state
     mapping(uint => mapping(State => User[])) operators;
-
     /// operator -> list of strategies they have delegated assets in
     mapping(User => IStrategy[]) allocatedStrats;
     /// Last modifyAllocations params made by the operator
@@ -44,13 +38,13 @@ contract Integration_ALM_Multi is IntegrationCheckUtils {
     function _init() internal virtual override {
         _configAssetAmounts(NUM_UNIQUE_ASSETS);
 
-        (avs,) = _newRandomAVS();
+        avs = _newRandomAVS();
         operatorSet = avs.createOperatorSet(allStrats);
 
         for (uint i = 0; i < NUM_OPERATORS; i++) {
             (User staker, IStrategy[] memory _strategies, uint[] memory initTokenBalances) = _newRandomStaker();
 
-            User operator = _newRandomOperator_NoAssets();
+            operator = _newRandomOperator();
 
             // 1. Deposit into strategies
             staker.depositIntoEigenlayer(_strategies, initTokenBalances);
@@ -67,11 +61,7 @@ contract Integration_ALM_Multi is IntegrationCheckUtils {
         }
     }
 
-    /// Reduce fuzz runs because this test is thiccc:
-    ///
-    /// forge-config: default.fuzz.runs = 10
-    /// forge-config: forktest.fuzz.runs = 3
-    function test_Multi(uint24 _r) public rand(_r) {
+    function test_Multi() public {
         // Do 20 iterations
         for (uint i = 1; i <= NUM_ITERATIONS; i++) {
             console.log("%s: %d", "iter".green().italic(), i - 1);

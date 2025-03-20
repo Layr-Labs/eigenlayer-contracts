@@ -7,7 +7,6 @@ on:
     branches:
       - "dev"
 
-
 env:
   FOUNDRY_PROFILE: medium
   RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
@@ -62,6 +61,14 @@ jobs:
           forge --version
           forge build --sizes
 
+      # Generate a fuzz seed that changes weekly to avoid burning through RPC allowance.
+      - name: "Generate A Fuzz Seed Weekly"
+        if: ${{ matrix.suite == 'Fork' }}
+        run: >
+          echo "FOUNDRY_FUZZ_SEED=$(
+            echo $(($EPOCHSECONDS - $EPOCHSECONDS % 604800))
+          )" >> $GITHUB_ENV
+
       # Run the test suite in parallel based on the matrix configuration.
       - name: Run ${{ matrix.suite }} tests
         run: |
@@ -91,7 +98,7 @@ jobs:
           submodules: recursive
 
       # Restore Forge cache
-      - name: Cache Forge Build
+      - name: "Cache Forge Build"
         uses: actions/cache@v3
         with:
           path: |
@@ -115,7 +122,7 @@ jobs:
         id: build
 
       # Run Forge Test (Intense)
-      - name: Forge Test (Intense)
+      - name: "Forge Test (Intense)"
         run: |
           echo -e "\033[1;33mWarning: This workflow may take several hours to complete.\033[0m"
           echo -e "\033[1;33mThis intense fuzzing workflow is optional but helps catch edge cases through extended testing.\033[0m"
