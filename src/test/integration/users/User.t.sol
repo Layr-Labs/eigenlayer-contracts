@@ -10,10 +10,13 @@ import "src/contracts/core/StrategyManager.sol";
 import "src/contracts/pods/EigenPodManager.sol";
 import "src/contracts/pods/EigenPod.sol";
 
-import "src/test/integration/TimeMachine.t.sol";
-import "src/test/integration/mocks/BeaconChainMock.t.sol";
-import "src/test/utils/Logger.t.sol";
+import "src/test/mocks/BeaconChainMock.t.sol";
+
 import "src/test/utils/ArrayLib.sol";
+
+import "src/test/utils/Constants.t.sol";
+import "src/test/utils/Logger.t.sol";
+import "src/test/utils/TimeMachine.t.sol";
 
 struct Validator {
     uint40 index;
@@ -35,8 +38,6 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     using ArrayLib for *;
     using print for *;
 
-    IStrategy constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
-
     // TODO: fix this and view function getters. These are newly added contracts so these are initially
     // 0 addresses for fork tests. To work around this, we read these addresses directly off the delegationManager
     // from its immutable addresses. This is a temporary solution until we can figure out a better way to handle this.
@@ -45,8 +46,6 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     DelegationManager delegationManager;
     StrategyManager strategyManager;
     EigenPodManager eigenPodManager;
-    TimeMachine timeMachine;
-    BeaconChainMock beaconChain;
 
     uint32 public allocationDelay = 1;
 
@@ -65,9 +64,6 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         delegationManager = deployer.delegationManager();
         strategyManager = deployer.strategyManager();
         eigenPodManager = deployer.eigenPodManager();
-
-        timeMachine = deployer.timeMachine();
-        beaconChain = deployer.beaconChain();
 
         _createPod();
         _NAME = name;
@@ -89,8 +85,6 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     /// Allocation Manager Methods
     /// -----------------------------------------------------------------------
 
-    /// @dev Allocates randomly across the operator set's strategies with a sum of `magnitudeSum`.
-    /// NOTE: Calling more than once will lead to deallocations...
     function modifyAllocations(AllocateParams memory params) public virtual createSnapshot {
         print.method(
             "modifyAllocations",
@@ -187,7 +181,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         for (uint i = 0; i < expectedWithdrawals.length; i++) {
             IStrategy strat = expectedWithdrawals[i].strategies[0];
 
-            string memory name = strat == beaconChainETHStrategy ? "Native ETH" : IERC20Metadata(address(strat.underlyingToken())).name();
+            string memory name = strat == BEACONCHAIN_ETH_STRAT ? "Native ETH" : IERC20Metadata(address(strat.underlyingToken())).name();
 
             console.log(
                 "   Expecting withdrawal with nonce %s of %s for %s scaled shares.",
@@ -212,7 +206,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         for (uint i = 0; i < expectedWithdrawals.length; i++) {
             IStrategy strat = expectedWithdrawals[i].strategies[0];
 
-            string memory name = strat == beaconChainETHStrategy ? "Native ETH" : IERC20Metadata(address(strat.underlyingToken())).name();
+            string memory name = strat == BEACONCHAIN_ETH_STRAT ? "Native ETH" : IERC20Metadata(address(strat.underlyingToken())).name();
 
             console.log(
                 "   Expecting withdrawal with nonce %s of %s for %s scaled shares.",
@@ -636,7 +630,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     function _getSlashingFactor(address staker, IStrategy strategy) internal view returns (uint) {
         address operator = delegationManager.delegatedTo(staker);
         uint64 maxMagnitude = allocationManager().getMaxMagnitudes(operator, strategy.toArray())[0];
-        if (strategy == beaconChainETHStrategy) return maxMagnitude.mulWad(eigenPodManager.beaconChainSlashingFactor(staker));
+        if (strategy == BEACONCHAIN_ETH_STRAT) return maxMagnitude.mulWad(eigenPodManager.beaconChainSlashingFactor(staker));
         return maxMagnitude;
     }
 

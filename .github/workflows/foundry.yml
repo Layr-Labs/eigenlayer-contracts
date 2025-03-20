@@ -7,7 +7,6 @@ on:
     branches:
       - main
 
-
 env:
   FOUNDRY_PROFILE: medium
 
@@ -58,6 +57,14 @@ jobs:
         run: |
           forge --version
           forge build --sizes
+
+      # Generate a fuzz seed that changes weekly to avoid burning through RPC allowance.
+      - name: "Generate A Fuzz Seed Weekly"
+        if: ${{ matrix.suite == 'Fork' }}
+        run: >
+          echo "FOUNDRY_FUZZ_SEED=$(
+            echo $(($EPOCHSECONDS - $EPOCHSECONDS % 604800))
+          )" >> $GITHUB_ENV
 
       # Run the test suite in parallel based on the matrix configuration.
       - name: Run ${{ matrix.suite }} tests
