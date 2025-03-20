@@ -5,23 +5,21 @@ import "forge-std/Vm.sol";
 import "zeus-templates/utils/ZEnvHelpers.sol";
 
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
+import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
-import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
-import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 /// core/
 import "src/contracts/core/AllocationManager.sol";
 import "src/contracts/core/AVSDirectory.sol";
 import "src/contracts/core/DelegationManager.sol";
 import "src/contracts/core/RewardsCoordinator.sol";
-import "src/contracts/interfaces/IRewardsCoordinator.sol";
+
 import "src/contracts/core/StrategyManager.sol";
-import "src/contracts/core/ReleaseManager.sol";
+import "src/contracts/interfaces/IRewardsCoordinator.sol";
 
 /// permissions/
 import "src/contracts/permissions/PauserRegistry.sol";
 import "src/contracts/permissions/PermissionController.sol";
-import "src/contracts/permissions/KeyRegistrar.sol";
 
 /// pods/
 import "src/contracts/pods/EigenPod.sol";
@@ -38,15 +36,6 @@ import "src/contracts/interfaces/IEigen.sol";
 import "src/contracts/interfaces/IBackingEigen.sol";
 import "src/contracts/token/Eigen.sol";
 import "src/contracts/token/BackingEigen.sol";
-
-/// multichain/
-import "src/contracts/multichain/CrossChainRegistry.sol";
-import "src/contracts/multichain/OperatorTableUpdater.sol";
-import "src/contracts/multichain/ECDSACertificateVerifier.sol";
-import "src/contracts/multichain/BN254CertificateVerifier.sol";
-
-// For destination chains
-import "src/test/mocks/EmptyContract.sol";
 
 library Env {
     using ZEnvHelpers for *;
@@ -73,10 +62,6 @@ library Env {
     /**
      * env
      */
-    function env() internal view returns (string memory) {
-        return _string("ZEUS_ENV");
-    }
-
     function deployVersion() internal view returns (string memory) {
         return _string("ZEUS_DEPLOY_TO_VERSION");
     }
@@ -89,24 +74,12 @@ library Env {
         return _envAddress("operationsMultisig");
     }
 
-    function communityMultisig() internal view returns (address) {
-        return _envAddress("communityMultisig");
-    }
-
     function protocolCouncilMultisig() internal view returns (address) {
         return _envAddress("protocolCouncilMultisig");
     }
 
     function pauserMultisig() internal view returns (address) {
         return _envAddress("pauserMultisig");
-    }
-
-    function multichainDeployerMultisig() internal view returns (address) {
-        return _envAddress("multichainDeployerMultisig");
-    }
-
-    function createX() internal view returns (address) {
-        return _envAddress("createX");
     }
 
     function proxyAdmin() internal view returns (address) {
@@ -123,6 +96,10 @@ library Env {
 
     function multiSendCallOnly() internal view returns (address) {
         return _envAddress("MultiSendCallOnly");
+    }
+
+    function EIGENPOD_GENESIS_TIME() internal view returns (uint64) {
+        return _envU64("EIGENPOD_GENESIS_TIME");
     }
 
     function MIN_WITHDRAWAL_DELAY() internal view returns (uint32) {
@@ -167,26 +144,6 @@ library Env {
 
     function REWARDS_PAUSE_STATUS() internal view returns (uint256) {
         return _envU256("REWARDS_COORDINATOR_PAUSE_STATUS");
-    }
-
-    function SLASH_ESCROW_DELAY() internal view returns (uint32) {
-        return _envU32("SLASH_ESCROW_DELAY");
-    }
-
-    function CROSS_CHAIN_REGISTRY_PAUSE_STATUS() internal view returns (uint256) {
-        return _envU256("CROSS_CHAIN_REGISTRY_INIT_PAUSE_STATUS");
-    }
-
-    function TABLE_UPDATE_CADENCE() internal view returns (uint32) {
-        return _envU32("TABLE_UPDATE_CADENCE");
-    }
-
-    function isSourceChain() internal view returns (bool) {
-        return _envBool("SOURCE_CHAIN");
-    }
-
-    function isDestinationChain() internal view returns (bool) {
-        return _envBool("DESTINATION_CHAIN");
     }
 
     /**
@@ -252,18 +209,6 @@ library Env {
         return StrategyManager(_deployedImpl(type(StrategyManager).name));
     }
 
-    function releaseManager(
-        DeployedProxy
-    ) internal view returns (ReleaseManager) {
-        return ReleaseManager(_deployedProxy(type(ReleaseManager).name));
-    }
-
-    function releaseManager(
-        DeployedImpl
-    ) internal view returns (ReleaseManager) {
-        return ReleaseManager(_deployedImpl(type(ReleaseManager).name));
-    }
-
     /**
      * permissions/
      */
@@ -283,18 +228,6 @@ library Env {
         DeployedImpl
     ) internal view returns (PermissionController) {
         return PermissionController(_deployedImpl(type(PermissionController).name));
-    }
-
-    function keyRegistrar(
-        DeployedProxy
-    ) internal view returns (KeyRegistrar) {
-        return KeyRegistrar(_deployedProxy(type(KeyRegistrar).name));
-    }
-
-    function keyRegistrar(
-        DeployedImpl
-    ) internal view returns (KeyRegistrar) {
-        return KeyRegistrar(_deployedImpl(type(KeyRegistrar).name));
     }
 
     /**
@@ -388,14 +321,14 @@ library Env {
      */
     function eigen(
         DeployedProxy
-    ) internal view returns (Eigen) {
-        return Eigen(_deployedProxy(type(Eigen).name));
+    ) internal view returns (IEigen) {
+        return IEigen(_deployedProxy(type(Eigen).name));
     }
 
     function eigen(
         DeployedImpl
-    ) internal view returns (Eigen) {
-        return Eigen(_deployedImpl(type(Eigen).name));
+    ) internal view returns (IEigen) {
+        return IEigen(_deployedImpl(type(Eigen).name));
     }
 
     function beigen(
@@ -408,63 +341,6 @@ library Env {
         DeployedImpl
     ) internal view returns (IBackingEigen) {
         return IBackingEigen(_deployedImpl(type(BackingEigen).name));
-    }
-
-    /**
-     * multichain/
-     */
-    function emptyContract(
-        DeployedImpl
-    ) internal view returns (EmptyContract) {
-        return EmptyContract(_deployedImpl(type(EmptyContract).name));
-    }
-
-    function crossChainRegistry(
-        DeployedProxy
-    ) internal view returns (CrossChainRegistry) {
-        return CrossChainRegistry(_deployedProxy(type(CrossChainRegistry).name));
-    }
-
-    function crossChainRegistry(
-        DeployedImpl
-    ) internal view returns (CrossChainRegistry) {
-        return CrossChainRegistry(_deployedImpl(type(CrossChainRegistry).name));
-    }
-
-    function operatorTableUpdater(
-        DeployedProxy
-    ) internal view returns (OperatorTableUpdater) {
-        return OperatorTableUpdater(_deployedProxy(type(OperatorTableUpdater).name));
-    }
-
-    function operatorTableUpdater(
-        DeployedImpl
-    ) internal view returns (OperatorTableUpdater) {
-        return OperatorTableUpdater(_deployedImpl(type(OperatorTableUpdater).name));
-    }
-
-    function ecdsaCertificateVerifier(
-        DeployedProxy
-    ) internal view returns (ECDSACertificateVerifier) {
-        return ECDSACertificateVerifier(_deployedProxy(type(ECDSACertificateVerifier).name));
-    }
-
-    function ecdsaCertificateVerifier(
-        DeployedImpl
-    ) internal view returns (ECDSACertificateVerifier) {
-        return ECDSACertificateVerifier(_deployedImpl(type(ECDSACertificateVerifier).name));
-    }
-
-    function bn254CertificateVerifier(
-        DeployedProxy
-    ) internal view returns (BN254CertificateVerifier) {
-        return BN254CertificateVerifier(_deployedProxy(type(BN254CertificateVerifier).name));
-    }
-
-    function bn254CertificateVerifier(
-        DeployedImpl
-    ) internal view returns (BN254CertificateVerifier) {
-        return BN254CertificateVerifier(_deployedImpl(type(BN254CertificateVerifier).name));
     }
 
     /**
@@ -528,12 +404,6 @@ library Env {
         return ZEnvHelpers.state().envU16(key);
     }
 
-    function _envBool(
-        string memory key
-    ) private view returns (bool) {
-        return ZEnvHelpers.state().envBool(key);
-    }
-
     address internal constant VM_ADDRESS = address(uint160(uint256(keccak256("hevm cheat code"))));
     Vm internal constant vm = Vm(VM_ADDRESS);
 
@@ -541,27 +411,5 @@ library Env {
         string memory key
     ) private view returns (string memory) {
         return vm.envString(key);
-    }
-
-    /**
-     * Test Helpers
-     */
-
-    /// @dev Query and return `proxyAdmin.getProxyImplementation(proxy)`
-    function _getProxyImpl(
-        address _proxy
-    ) internal view returns (address) {
-        return ProxyAdmin(Env.proxyAdmin()).getProxyImplementation(ITransparentUpgradeableProxy(_proxy));
-    }
-
-    /// @dev Query and return `proxyAdmin.getProxyAdmin(proxy)`
-    function _getProxyAdmin(
-        address _proxy
-    ) internal view returns (address) {
-        return ProxyAdmin(Env.proxyAdmin()).getProxyAdmin(ITransparentUpgradeableProxy(_proxy));
-    }
-
-    function _strEq(string memory a, string memory b) internal pure returns (bool) {
-        return keccak256(bytes(a)) == keccak256(bytes(b));
     }
 }

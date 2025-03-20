@@ -44,7 +44,7 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
 
         // Verify that the withdrawals are _still_ slashable
         for (uint i = 0; i < withdrawals.length; ++i) {
-            uint32 slashableUntil = withdrawals[i].startBlock + delegationManager.minWithdrawalDelayBlocks();
+            uint32 slashableUntil = withdrawals[i].startBlock + delegationManager().minWithdrawalDelayBlocks();
             assert(uint32(block.number) <= slashableUntil);
         }
 
@@ -60,7 +60,7 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
 
         // Verify that the withdrawals are _no longer_ slashable
         for (uint i = 0; i < withdrawals.length; ++i) {
-            uint32 slashableUntil = withdrawals[i].startBlock + delegationManager.minWithdrawalDelayBlocks();
+            uint32 slashableUntil = withdrawals[i].startBlock + delegationManager().minWithdrawalDelayBlocks();
             assert(uint32(block.number) > slashableUntil);
         }
 
@@ -78,7 +78,7 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
         /// 6. Check final state
 
         // Assert that all strategies have some shares remaining
-        (IStrategy[] memory strats,) = delegationManager.getDepositedShares(address(staker));
+        (IStrategy[] memory strats,) = delegationManager().getDepositedShares(address(staker));
         assertEq(strats.length, strategies.length, "all strategies should have some shares remaining");
     }
 
@@ -101,7 +101,7 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
 
         // Verify that the withdrawals are _still_ slashable
         for (uint i = 0; i < withdrawals.length; ++i) {
-            uint32 slashableUntil = withdrawals[i].startBlock + delegationManager.minWithdrawalDelayBlocks();
+            uint32 slashableUntil = withdrawals[i].startBlock + delegationManager().minWithdrawalDelayBlocks();
             assert(uint32(block.number) <= slashableUntil);
         }
 
@@ -117,7 +117,7 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
 
         // Verify that the withdrawals are _no longer_ slashable
         for (uint i = 0; i < withdrawals.length; ++i) {
-            uint32 slashableUntil = withdrawals[i].startBlock + delegationManager.minWithdrawalDelayBlocks();
+            uint32 slashableUntil = withdrawals[i].startBlock + delegationManager().minWithdrawalDelayBlocks();
             assert(uint32(block.number) > slashableUntil);
         }
 
@@ -135,7 +135,7 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
         /// 6. Check final state
 
         // Assert that all strategies have some shares remaining
-        (IStrategy[] memory strats,) = delegationManager.getDepositedShares(address(staker));
+        (IStrategy[] memory strats,) = delegationManager().getDepositedShares(address(staker));
         assertEq(strats.length, 0, "all strategies should have no shares remaining");
     }
 
@@ -167,7 +167,7 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
 
         // Verify that the withdrawals are _no longer_ slashable
         for (uint i = 0; i < withdrawals.length; ++i) {
-            uint32 slashableUntil = withdrawals[i].startBlock + delegationManager.minWithdrawalDelayBlocks();
+            uint32 slashableUntil = withdrawals[i].startBlock + delegationManager().minWithdrawalDelayBlocks();
             assert(uint32(block.number) > slashableUntil);
         }
 
@@ -191,7 +191,7 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
         /// 5. Check final state
 
         // Assert that all strategies have some shares remaining
-        (IStrategy[] memory strats,) = delegationManager.getDepositedShares(address(staker));
+        (IStrategy[] memory strats,) = delegationManager().getDepositedShares(address(staker));
         assertEq(strats.length, strategies.length, "all strategies should have some shares remaining");
     }
 
@@ -213,7 +213,7 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
 
         // Verify that the withdrawals are _no longer_ slashable
         for (uint i = 0; i < withdrawals.length; ++i) {
-            uint32 slashableUntil = withdrawals[i].startBlock + delegationManager.minWithdrawalDelayBlocks();
+            uint32 slashableUntil = withdrawals[i].startBlock + delegationManager().minWithdrawalDelayBlocks();
             assert(uint32(block.number) > slashableUntil);
         }
 
@@ -235,7 +235,7 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
         /// 5. Check final state
 
         // Assert that all strategies have some shares remaining
-        (IStrategy[] memory strats,) = delegationManager.getDepositedShares(address(staker));
+        (IStrategy[] memory strats,) = delegationManager().getDepositedShares(address(staker));
         assertEq(strats.length, 0, "all strategies should have no shares remaining");
     }
 }
@@ -386,7 +386,7 @@ contract Integration_OperatorAllocationTiming is IntegrationCheckUtils {
         /// 3. Create an operator set and register an operator.
         operatorSet = avs.createOperatorSet(strategies);
         // Validate that the operator set was correctly created
-        assertTrue(allocationManager.isOperatorSet(operatorSet));
+        assertTrue(allocationManager().isOperatorSet(operatorSet));
     }
 
     function testFuzz_register_allocate_slashBeforeDelay(uint24 _r) public rand(_r) {

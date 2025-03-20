@@ -134,10 +134,19 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     function setUp() public virtual {
         bool forkMainnet = isForktest();
 
-        if (forkMainnet) {
-            console.log("Forking mainnet");
-            forkType = MAINNET;
-            _setUpMainnet();
+    function _setUp(bool upgrade) internal virtual {
+        profile = FOUNDRY_PROFILE();
+        forkConfig = ConfigParser.parseForkConfig(profile);
+        emptyContract = new EmptyContract();
+
+        if (eq(profile, "default") || eq(profile, "coverage")) {
+            // Assumes nothing has been deployed yet.
+            _setUpLocal();
+        } else if (eq(profile, "forktest-zeus")) {
+            // Assumes the proxy contracts have already been deployed.
+            config = ConfigParser.parseZeus();
+            config.label();
+            _setUpFork(upgrade);
         } else {
             forkType = LOCAL;
             _setUpLocal();
@@ -587,27 +596,16 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         if (forkType == LOCAL || (forkType == MAINNET && isUpgraded)) {
             user = new User(name);
 
-            if (userType == DEFAULT) {
-                user = new User(name);
-            } else if (userType == ALT_METHODS) {
-                // User will use nonstandard methods like `depositIntoStrategyWithSignature`
-                user = User(new User_AltMethods(name));
-            } else {
-                revert("_randUser: unimplemented userType");
-            }
-            // Leaving this if statement for future upgraded users
-        } else if (forkType == MAINNET && !isUpgraded) {
-            if (userType == DEFAULT) {
-                user = new User(name);
-            } else if (userType == ALT_METHODS) {
-                // User will use nonstandard methods like `depositIntoStrategyWithSignature`
-                user = User(new User_AltMethods(name));
-            } else {
-                revert("_randUser: unimplemented userType");
-            }
-        } else {
-            revert("_randUser: unimplemented forkType");
-        }
+        // string memory profile = FOUNDRY_PROFILE();
+
+        user = userType == DEFAULT ? new User(name) : User(new User_AltMethods(name));
+
+        assertTrue(address(user) != address(0), "User is not initialized");
+        // if (eq(profile, "default") || eq(profile, "mainnet") || (eq(profile, "forktest") && isUpgraded)) {
+        //     user = userType == DEFAULT ? new User(name) : User(new User_AltMethods(name));
+        // } else if (eq(profile, "forktest") && !isUpgraded) {
+        //     user = User(new User_M2(name));
+        // }
     }
 
     function _genRandAVS(string memory name) internal returns (AVS avs) {

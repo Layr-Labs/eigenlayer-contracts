@@ -1262,6 +1262,8 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         assertEq(prevSlashingFactor.mulWad(_getBeaconChainSlashingFactor(staker)), slashingFactor, err);
         assertApproxEqAbs(prevShares.mulWad(_getBeaconChainSlashingFactor(staker)), curShares, 1e2, err);
 
+        // 1. The withdrawable shares should decrease by a factor of the BCSF
+        assertApproxEqAbs(prevShares.mulWad(_getBeaconChainSlashingFactor(staker)), curShares, 1e2, err);
         /**
          * 2. The delta in shares is given by:
          * (depositShares * operatorMag) - (depositShares * operatorMag * BCSF)
@@ -1275,6 +1277,9 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
             uint expectedDelta = withdrawableSharesAfterAVSSlash.mulWad(WAD - beaconChainSlashingFactor);
             assertApproxEqAbs(prevShares - expectedDelta, curShares, 1e2, err);
         }
+        uint withdrawableSharesAfterAVSSlash = depositShares - originalAVSSlashedShares;
+        uint expectedDelta = withdrawableSharesAfterAVSSlash.mulWad(WAD - beaconChainSlashingFactor);
+        assertApproxEqAbs(prevShares - expectedDelta, curShares, 1e2, err);
 
         /**
          * 3. The attributable avs slashed shares should decrease by a factor of the BCSF

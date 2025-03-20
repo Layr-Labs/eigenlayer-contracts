@@ -175,4 +175,5 @@
 
 [rpc_endpoints]
     mainnet = "${RPC_MAINNET}"
-    holesky = "${RPC_HOLESKY}"
+    hoodi = "${RPC_HOODI}"
+    sepolia = "${RPC_SEPOLIA}"
