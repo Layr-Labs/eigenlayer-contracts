@@ -2,22 +2,16 @@
 pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
-import "src/test/utils/Logger.t.sol";
 
-contract TimeMachine is Test, Logger {
+contract TimeMachine is Test {
     uint[] public snapshots;
-
-    function NAME() public view virtual override returns (string memory) {
-        return "TimeMachine";
-    }
 
     /// -----------------------------------------------------------------------
     /// Setters
     /// -----------------------------------------------------------------------
 
     function createSnapshot() public returns (uint snapshot) {
-        snapshots.push(snapshot = cheats.snapshotState());
-        print.method("createSnapshot", cheats.toString(snapshot));
+        snapshots.push(snapshot = vm.snapshotState());
     }
 
     function travelToLast() public returns (uint currentSnapshot) {
@@ -25,14 +19,12 @@ contract TimeMachine is Test, Logger {
         // to warp so we don't accidentally prevent our own births.
         assertTrue(pastExists(), "Global.warpToPast: invalid usage, past does not exist");
         uint last = lastSnapshot();
-        // print.method("travelToLast", cheats.toString(last));
         currentSnapshot = createSnapshot();
-        cheats.revertToState(last);
+        vm.revertToState(last);
     }
 
     function travel(uint snapshot) public {
-        // print.method("travel", cheats.toString(snapshot));
-        cheats.revertToState(snapshot);
+        vm.revertToState(snapshot);
     }
 
     /// -----------------------------------------------------------------------
