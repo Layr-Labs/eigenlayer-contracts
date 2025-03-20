@@ -31,10 +31,10 @@ jobs:
           echo "PR title: $PR_TITLE"
 
           # Define the valid pattern (supports conventional commit format)
-          if [[ ! "$PR_TITLE" =~ ^(feat|fix|chore|docs|refactor|test|style|ci|perf)(\([a-z0-9-]+\))?\:\ .* ]]; then
+          if [[ ! "$PR_TITLE" =~ ^(release|feat|fix|chore|docs|refactor|test|style|ci|perf)(\([a-z0-9-]+\))?\:\ .* ]]; then
             echo "❌ Invalid PR title: '$PR_TITLE'"
             echo "Expected format: 'type: description' or 'type(scope): description'"
-            echo "Allowed types: feat, fix, chore, docs, refactor, test, style, ci, perf."
+            echo "Allowed types: release, feat, fix, chore, docs, refactor, test, style, ci, perf."
             exit 1
           fi
 
