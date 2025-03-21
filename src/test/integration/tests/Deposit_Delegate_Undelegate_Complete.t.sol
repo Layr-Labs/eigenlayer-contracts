@@ -135,7 +135,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationChecks {
         (staker, strategies, initTokenBalances) = _newRandomStaker();
         operator = _newRandomOperator();
 
-        if (forkType == LOCAL) assertEq(strategies.length, 33, "sanity");
+        if (forkType == LOCAL) assertEq(strategies.length, 9, "sanity");
 
         uint[] memory shares = _calculateExpectedShares(strategies, initTokenBalances);
         //delegatable shares equals deposit shares here because no bc slashing
