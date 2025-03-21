@@ -7,9 +7,10 @@ import "src/contracts/libraries/BeaconChainProofs.sol";
 import "src/contracts/libraries/Merkle.sol";
 import "src/contracts/pods/EigenPodManager.sol";
 
+import "src/test/mocks/EIP_4788_Oracle_Mock.t.sol";
 import "src/test/mocks/ETHDepositMock.sol";
-import "src/test/integration/mocks/EIP_4788_Oracle_Mock.t.sol";
-import "src/test/utils/Logger.t.sol";
+
+import "src/test/utils/Constants.t.sol";
 
 struct ValidatorFieldsProof {
     bytes32[] validatorFields;
@@ -47,9 +48,8 @@ struct StaleBalanceProofs {
  * - Ceiling is Max EB, at which sweeps will be triggered
  * - No support for consolidations or any execution layer triggerable actions (exits, partial withdrawals)
  */
-contract BeaconChainMock is Logger {
+contract BeaconChainMock {
     using StdStyle for *;
-    using print for *;
 
     struct Validator {
         bool isDummy;
@@ -70,7 +70,7 @@ contract BeaconChainMock is Logger {
     }
 
     /// @dev All withdrawals are processed with index == 0
-    uint constant ZERO_NODES_LENGTH = 100;
+    uint public constant ZERO_NODES_LENGTH = 100;
 
     // Rewards given to each validator during epoch processing
     uint64 public constant CONSENSUS_REWARD_AMOUNT_GWEI = 1;
@@ -78,29 +78,25 @@ contract BeaconChainMock is Logger {
 
     // Max effective balance for a validator
     // see https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#gwei-values
-    uint public MAX_EFFECTIVE_BALANCE_WEI = 2048 ether;
-    uint64 public MAX_EFFECTIVE_BALANCE_GWEI = 2048 gwei;
+    uint public MAX_EFFECTIVE_BALANCE_WEI;
+    uint64 public MAX_EFFECTIVE_BALANCE_GWEI;
 
     /// PROOF CONSTANTS (PROOF LENGTHS, FIELD SIZES):
     /// @dev Non-constant values will change with the Pectra hard fork
 
     // see https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#beaconstate
-    uint BEACON_STATE_FIELDS = 37;
+    uint public BEACON_STATE_FIELDS;
     // see https://eth2book.info/capella/part3/containers/blocks/#beaconblock
-    uint constant BEACON_BLOCK_FIELDS = 5;
+    uint public BEACON_BLOCK_FIELDS;
+    uint public BLOCKROOT_PROOF_LEN;
+    uint public VAL_FIELDS_PROOF_LEN;
+    uint public BALANCE_CONTAINER_PROOF_LEN;
+    uint public BALANCE_PROOF_LEN;
 
-    uint immutable BLOCKROOT_PROOF_LEN = 32 * BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT;
-    uint VAL_FIELDS_PROOF_LEN = 32 * ((BeaconChainProofs.VALIDATOR_TREE_HEIGHT + 1) + BeaconChainProofs.PECTRA_BEACON_STATE_TREE_HEIGHT);
-    uint BALANCE_CONTAINER_PROOF_LEN =
-        32 * (BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT + BeaconChainProofs.PECTRA_BEACON_STATE_TREE_HEIGHT);
-    uint immutable BALANCE_PROOF_LEN = 32 * (BeaconChainProofs.BALANCE_TREE_HEIGHT + 1);
-
-    uint64 genesisTime;
+    uint64 public genesisTime;
     uint64 public nextTimestamp;
 
     EigenPodManager eigenPodManager;
-    IETHPOSDeposit constant DEPOSIT_CONTRACT = IETHPOSDeposit(0x00000000219ab540356cBB839Cbe05303d7705Fa);
-    EIP_4788_Oracle_Mock constant EIP_4788_ORACLE = EIP_4788_Oracle_Mock(0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02);
 
     /**
      * BeaconState containers, used for proofgen:
@@ -142,15 +138,23 @@ contract BeaconChainMock is Logger {
 
     bytes32[] zeroNodes;
 
-    constructor(EigenPodManager _eigenPodManager, uint64 _genesisTime) {
+    function initialize(EigenPodManager _eigenPodManager, uint64 _genesisTime) external virtual {
         genesisTime = _genesisTime;
         eigenPodManager = _eigenPodManager;
 
-        // Create mock 4788 oracle
         cheats.etch(address(DEPOSIT_CONTRACT), type(ETHPOSDepositMock).runtimeCode);
         cheats.etch(address(EIP_4788_ORACLE), type(EIP_4788_Oracle_Mock).runtimeCode);
 
-        // Calculate nodes of empty merkle tree
+        MAX_EFFECTIVE_BALANCE_WEI = 2048 ether;
+        MAX_EFFECTIVE_BALANCE_GWEI = 2048 gwei;
+        BEACON_STATE_FIELDS = 37;
+        BEACON_BLOCK_FIELDS = 5;
+        BLOCKROOT_PROOF_LEN = 32 * BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT;
+        VAL_FIELDS_PROOF_LEN = 32 * ((BeaconChainProofs.VALIDATOR_TREE_HEIGHT + 1) + BeaconChainProofs.PECTRA_BEACON_STATE_TREE_HEIGHT);
+        BALANCE_CONTAINER_PROOF_LEN =
+            32 * (BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT + BeaconChainProofs.PECTRA_BEACON_STATE_TREE_HEIGHT);
+        BALANCE_PROOF_LEN = 32 * (BeaconChainProofs.BALANCE_TREE_HEIGHT + 1);
+
         bytes32 curNode = Merkle.merkleizeSha256(new bytes32[](8));
         zeroNodes = new bytes32[](ZERO_NODES_LENGTH);
         zeroNodes[0] = curNode;
@@ -159,10 +163,6 @@ contract BeaconChainMock is Logger {
             zeroNodes[i] = sha256(abi.encodePacked(curNode, curNode));
             curNode = zeroNodes[i];
         }
-    }
-
-    function NAME() public pure virtual override returns (string memory) {
-        return "BeaconChain";
     }
 
     /**
@@ -176,7 +176,7 @@ contract BeaconChainMock is Logger {
     /// - Setting their current/effective balance
     /// - Assigning them a new, unique index
     function newValidator(bytes memory withdrawalCreds) public payable returns (uint40) {
-        print.method("newValidator");
+        console.log("BeaconChain.newValidator()");
 
         uint balanceWei = msg.value;
 
@@ -212,7 +212,7 @@ contract BeaconChainMock is Logger {
     ///
     /// TODO we may need to advance a slot here to maintain the properties we want in startCheckpoint
     function exitValidator(uint40 validatorIndex) public returns (uint64 exitedBalanceGwei) {
-        print.method("exitValidator");
+        console.log("BeaconChain.exitValidator()");
 
         // Update validator.exitEpoch
         Validator storage v = validators[validatorIndex];
@@ -232,7 +232,7 @@ contract BeaconChainMock is Logger {
     }
 
     function slashValidators(uint40[] memory _validators, SlashType _slashType) public returns (uint64 slashedBalanceGwei) {
-        print.method("slashValidators");
+        console.log("BeaconChain.slashValidators()");
 
         for (uint i = 0; i < _validators.length; i++) {
             uint40 validatorIndex = _validators[i];
@@ -272,7 +272,7 @@ contract BeaconChainMock is Logger {
     }
 
     function slashValidators(uint40[] memory _validators, uint64 _slashAmountGwei) public {
-        print.method("slashValidatorsAmountGwei");
+        console.log("BeaconChain.slashValidatorsAmountGwei()");
 
         for (uint i = 0; i < _validators.length; i++) {
             uint40 validatorIndex = _validators[i];
@@ -319,7 +319,7 @@ contract BeaconChainMock is Logger {
     /// - DOES generate consensus rewards for ALL non-exited validators
     /// - DOES withdraw in excess of Max EB / if validator is exited
     function advanceEpoch() public {
-        print.method("advanceEpoch");
+        console.log("BeaconChain.advanceEpoch()");
         _generateRewards();
         _withdrawExcess();
         _advanceEpoch();
@@ -333,7 +333,7 @@ contract BeaconChainMock is Logger {
     /// - does NOT generate consensus rewards
     /// - DOES withdraw in excess of Max EB / if validator is exited
     function advanceEpoch_NoRewards() public {
-        print.method("advanceEpoch_NoRewards");
+        console.log("BeaconChain.advanceEpoch_NoRewards()");
         _withdrawExcess();
         _advanceEpoch();
     }
@@ -347,13 +347,13 @@ contract BeaconChainMock is Logger {
     /// - does NOT withdraw in excess of Max EB
     /// - does NOT withdraw if validator is exited
     function advanceEpoch_NoWithdraw() public {
-        print.method("advanceEpoch_NoWithdraw");
+        console.log("BeaconChain.advanceEpoch_NoWithdraw()");
         _generateRewards();
         _advanceEpoch();
     }
 
     function advanceEpoch_NoWithdrawNoRewards() public {
-        print.method("advanceEpoch_NoWithdrawNoRewards");
+        console.log("BeaconChain.advanceEpoch_NoWithdrawNoRewards()");
         _advanceEpoch();
     }
 
@@ -412,7 +412,7 @@ contract BeaconChainMock is Logger {
             _setCurrentBalance(uint40(i), newBalanceGwei);
         }
 
-        if (totalExcessWei != 0) console.log("- Withdrew excess balance:", totalExcessWei.asGwei());
+        if (totalExcessWei != 0) console.log("- Withdrew excess balance:", totalExcessWei);
     }
 
     function _advanceEpoch() public virtual {
@@ -794,7 +794,7 @@ contract BeaconChainMock is Logger {
         return leaves;
     }
 
-    function _getBeaconBlockLeaves(bytes32 beaconStateRoot) internal pure returns (bytes32[] memory) {
+    function _getBeaconBlockLeaves(bytes32 beaconStateRoot) internal view returns (bytes32[] memory) {
         bytes32[] memory leaves = new bytes32[](BEACON_BLOCK_FIELDS);
 
         // Pre-populate leaves with dummy values so sibling/parent tracking is correct

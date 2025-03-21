@@ -7,34 +7,31 @@ import "src/contracts/core/AllocationManager.sol";
 import "src/contracts/permissions/PermissionController.sol";
 import "src/contracts/strategies/StrategyFactory.sol";
 
-import "src/test/mocks/ERC20Mock.sol";
 import "src/test/integration/users/User.t.sol";
-import "src/test/integration/TimeMachine.t.sol";
+import "src/test/mocks/ERC20Mock.sol";
 import "src/test/utils/Logger.t.sol";
 
 import "src/test/utils/ArrayLib.sol";
 import "src/contracts/interfaces/IAVSRegistrar.sol";
+
+import "src/test/utils/Constants.t.sol";
 
 interface IAVSDeployer {
     function delegationManager() external view returns (DelegationManager);
     function allocationManager() external view returns (AllocationManager);
     function strategyFactory() external view returns (StrategyFactory);
     function permissionController() external view returns (PermissionController);
-    function timeMachine() external view returns (TimeMachine);
 }
 
 contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
     using print for *;
     using ArrayLib for *;
 
-    IStrategy constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
-
     // TODO: fix later for same reason as User.t.sol
     AllocationManager immutable allocationManager;
     PermissionController immutable permissionController;
     DelegationManager immutable delegationManager;
     StrategyFactory immutable strategyFactory;
-    TimeMachine immutable timeMachine;
     string _NAME;
 
     uint32 totalOperatorSets;
@@ -45,7 +42,6 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
         permissionController = deployer.permissionController();
         delegationManager = deployer.delegationManager();
         strategyFactory = deployer.strategyFactory();
-        timeMachine = deployer.timeMachine();
         _NAME = name;
         cheats.label(address(this), NAME_COLORED());
     }
@@ -113,7 +109,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
 
     function slashOperator(SlashingParams memory params) public createSnapshot {
         for (uint i; i < params.strategies.length; ++i) {
-            string memory strategyName = params.strategies[i] == beaconChainETHStrategy
+            string memory strategyName = params.strategies[i] == BEACONCHAIN_ETH_STRAT
                 ? "Native ETH"
                 : IERC20Metadata(address(params.strategies[i].underlyingToken())).name();
 
@@ -153,7 +149,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
 
         for (uint i; i < strategies.length; ++i) {
             string memory strategyName =
-                strategies[i] == beaconChainETHStrategy ? "Native ETH" : IERC20Metadata(address(strategies[i].underlyingToken())).name();
+                strategies[i] == BEACONCHAIN_ETH_STRAT ? "Native ETH" : IERC20Metadata(address(strategies[i].underlyingToken())).name();
 
             print.method(
                 "slashOperator",

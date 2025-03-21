@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "src/test/integration/IntegrationDeployer.t.sol";
+import "src/test/mocks/BeaconChainMock_Deneb.t.sol";
 import "src/test/integration/IntegrationChecks.t.sol";
-import "src/test/integration/mocks/BeaconChainMock_Deneb.t.sol";
 
-abstract contract UpgradeTest is IntegrationCheckUtils {
+abstract contract UpgradeTest is IntegrationChecks {
     /// Only run upgrade tests on mainnet forks
     function setUp() public virtual override {
         if (!isForktest()) {
@@ -15,7 +14,8 @@ abstract contract UpgradeTest is IntegrationCheckUtils {
             super.setUp();
 
             // Use Deneb Beacon Chain Mock as Pectra state is not live on mainnet
-            beaconChain = BeaconChainMock(new BeaconChainMock_DenebForkable(eigenPodManager, BEACON_GENESIS_TIME));
+            cheats.etch(address(beaconChain), type(BeaconChainMock_DenebForkable).runtimeCode);
+            beaconChain.initialize(eigenPodManager, BEACON_GENESIS_TIME);
         }
     }
 
