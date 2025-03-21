@@ -51,7 +51,7 @@ uint64 constant GENESIS_TIME_MAINNET = 1_606_824_023;
 /// @dev Current value is post "Protocol Council" upgrade.
 uint constant MAINNET_FORK_BLOCK = 21_616_692;
 /// @dev Returns the number of LST strategies to deploy.
-uint8 constant NUM_LST_STRATS = 32; // TODO: See if we're deploying all 32 when we don't need them.
+uint8 constant NUM_LST_STRATS = 8;
 
 /// @dev Returns the minimum balance a user can hold.
 uint constant MIN_BALANCE = 1e6;
