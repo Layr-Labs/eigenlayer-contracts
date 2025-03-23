@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin-v4.9.0/contracts/proxy/beacon/IBeacon.sol";
+import "@openzeppelin-v4.9.0/contracts/token/ERC20/IERC20.sol";
 import "./IStrategy.sol";
 import "./ISemVerMixin.sol";
 

@@ -1,4 +1,4 @@
-import "@openzeppelin-upgrades/contracts/utils/ShortStringsUpgradeable.sol";
+import "@openzeppelin-upgrades-v4.9.0/contracts/utils/ShortStringsUpgradeable.sol";
 
 contract ShortStringsUpgradeableHarness {
     using ShortStringsUpgradeable for ShortString;
