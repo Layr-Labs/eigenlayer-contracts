@@ -113,7 +113,7 @@ contract IntegrationUtils is IntegrationBase {
 
     /// @dev Choose a random subset of validators (selects AT LEAST ONE)
     function _choose(uint40[] memory validators) internal returns (uint40[] memory) {
-        return validators.setLength(_randUint({min: 1, max: validators.length}));
+        return validators.setLength(_randUint({min: 1, max: validators.length > 1 ? validators.length - 1 : 1}));
     }
 
     /// -----------------------------------------------------------------------
