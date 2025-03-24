@@ -22,7 +22,11 @@ Libraries and Mixins:
 
 ## Overview
 
-The `AllocationManager` manages AVS metadata registration, registration and deregistration of operators to operator sets, handles allocation and slashing of operators' slashable stake, and is the entry point an AVS uses to slash an operator. The `AllocationManager's` responsibilities are broken down into the following concepts:
+The `AllocationManager` manages AVS metadata registration, registration and deregistration of operators to operator sets, handles allocation and slashing of operators' slashable stake, and is the entry point an AVS uses to slash an operator. An AVS in the context of `AllocationManager` is defined as the `address` of the contract that implements [ServiceManagerBase](https://github.com/Layr-Labs/eigenlayer-middleware/blob/mainnet/docs/ServiceManagerBase.md). For `PermissionController` purposes, this AVS address is also the AVS [account](https://github.com/Layr-Labs/eigenlayer-contracts/blob/dev/docs/permissions/PermissionController.md#accounts).
+
+
+
+The `AllocationManager's` responsibilities are broken down into the following concepts:
 
 * [AVS Metadata](#avs-metadata)
 * [Operator Sets](#operator-sets)
@@ -67,6 +71,8 @@ function updateAVSMetadataURI(
 ```
 
 _Note: this method can be called directly by an AVS, or by a caller authorized by the AVS. See [`PermissionController.md`](../permissions/PermissionController.md) for details._
+
+Invoking this function effectively "enshrines" the AVS address in the core protocol.
 
 Below is the format AVSs should use when updating their metadata URI initially. This is not validated onchain.
 
