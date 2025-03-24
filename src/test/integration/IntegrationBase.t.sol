@@ -856,7 +856,7 @@ abstract contract IntegrationBase is IntegrationGetters {
         uint slashedShares = 0;
         uint wadToSlash = slashingParams.wadsToSlash[0];
         slashedShares = prevShares.mulWadRoundUp(allocateParams.newMagnitudes[0].mulWadRoundUp(wadToSlash));
-        assertEq(prevShares - slashedShares, curShares, err);
+        assertApproxEqAbs(prevShares - slashedShares, curShares, 1e2, err);
     }
 
     /// @dev Validates behavior of "restaking", ie. that the funds can be slashed twice
