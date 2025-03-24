@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
- * Purpose: use an EOA to deploy all of the new contracts for this upgrade. 
+ * Purpose: use an EOA to deploy all of the new contracts for this upgrade.
  */
 contract Deploy is EOADeployer {
     using Env for *;
@@ -26,77 +26,82 @@ contract Deploy is EOADeployer {
 
         deployImpl({
             name: type(PauserRegistry).name,
-            deployedTo: address(new PauserRegistry({
-                _pausers: pausers,
-                _unpauser: Env.executorMultisig()
-            }))
+            deployedTo: address(new PauserRegistry({_pausers: pausers, _unpauser: Env.executorMultisig()}))
         });
 
         deployImpl({
             name: type(PermissionController).name,
-            deployedTo: address(new PermissionController({
-                _version: Env.deployToVersion()
-            }))
+            deployedTo: address(new PermissionController({_version: Env.deployToVersion()}))
         });
 
         deployProxy({
             name: type(PermissionController).name,
-            deployedTo: address(new TransparentUpgradeableProxy({
-                _logic: address(Env.impl.permissionController()),
-                admin_: Env.proxyAdmin(),
-                _data: ""
-            }))
+            deployedTo: address(
+                new TransparentUpgradeableProxy({
+                    _logic: address(Env.impl.permissionController()),
+                    admin_: Env.proxyAdmin(),
+                    _data: ""
+                })
+            )
         });
 
         /// core/
 
         deployImpl({
             name: type(AllocationManager).name,
-            deployedTo: address(new AllocationManager({
-                _delegation: Env.proxy.delegationManager(),
-                _pauserRegistry: Env.impl.pauserRegistry(),
-                _permissionController: Env.proxy.permissionController(),
-                _DEALLOCATION_DELAY: Env.MIN_WITHDRAWAL_DELAY(),
-                _ALLOCATION_CONFIGURATION_DELAY: Env.ALLOCATION_CONFIGURATION_DELAY(),
-                _version: Env.deployToVersion()
-            }))
+            deployedTo: address(
+                new AllocationManager({
+                    _delegation: Env.proxy.delegationManager(),
+                    _pauserRegistry: Env.impl.pauserRegistry(),
+                    _permissionController: Env.proxy.permissionController(),
+                    _DEALLOCATION_DELAY: Env.MIN_WITHDRAWAL_DELAY(),
+                    _ALLOCATION_CONFIGURATION_DELAY: Env.ALLOCATION_CONFIGURATION_DELAY(),
+                    _version: Env.deployToVersion()
+                })
+            )
         });
 
         deployProxy({
             name: type(AllocationManager).name,
-            deployedTo: address(new TransparentUpgradeableProxy({
-                _logic: address(Env.impl.allocationManager()),
-                admin_: Env.proxyAdmin(),
-                _data: abi.encodeCall(
-                    AllocationManager.initialize,
-                    (
-                        Env.executorMultisig(), // initialOwner
-                        0                       // initialPausedStatus
+            deployedTo: address(
+                new TransparentUpgradeableProxy({
+                    _logic: address(Env.impl.allocationManager()),
+                    admin_: Env.proxyAdmin(),
+                    _data: abi.encodeCall(
+                        AllocationManager.initialize,
+                        (
+                            Env.executorMultisig(), // initialOwner
+                            0 // initialPausedStatus
+                        )
                     )
-                )
-            }))
+                })
+            )
         });
 
         deployImpl({
             name: type(AVSDirectory).name,
-            deployedTo: address(new AVSDirectory({
-                _delegation: Env.proxy.delegationManager(),
-                _pauserRegistry: Env.impl.pauserRegistry(),
-                _version: Env.deployToVersion()
-            }))
+            deployedTo: address(
+                new AVSDirectory({
+                    _delegation: Env.proxy.delegationManager(),
+                    _pauserRegistry: Env.impl.pauserRegistry(),
+                    _version: Env.deployToVersion()
+                })
+            )
         });
 
         deployImpl({
             name: type(DelegationManager).name,
-            deployedTo: address(new DelegationManager({
-                _strategyManager: Env.proxy.strategyManager(),
-                _eigenPodManager: Env.proxy.eigenPodManager(),
-                _allocationManager: Env.proxy.allocationManager(),
-                _pauserRegistry: Env.impl.pauserRegistry(),
-                _permissionController: Env.proxy.permissionController(),
-                _MIN_WITHDRAWAL_DELAY: Env.MIN_WITHDRAWAL_DELAY(),
-                _version: Env.deployToVersion()
-            }))
+            deployedTo: address(
+                new DelegationManager({
+                    _strategyManager: Env.proxy.strategyManager(),
+                    _eigenPodManager: Env.proxy.eigenPodManager(),
+                    _allocationManager: Env.proxy.allocationManager(),
+                    _pauserRegistry: Env.impl.pauserRegistry(),
+                    _permissionController: Env.proxy.permissionController(),
+                    _MIN_WITHDRAWAL_DELAY: Env.MIN_WITHDRAWAL_DELAY(),
+                    _version: Env.deployToVersion()
+                })
+            )
         });
 
         deployImpl({
@@ -122,82 +127,96 @@ contract Deploy is EOADeployer {
 
         deployImpl({
             name: type(StrategyManager).name,
-            deployedTo: address(new StrategyManager({
-                _delegation: Env.proxy.delegationManager(),
-                _pauserRegistry: Env.impl.pauserRegistry(),
-                _version: Env.deployToVersion()
-            }))
+            deployedTo: address(
+                new StrategyManager({
+                    _delegation: Env.proxy.delegationManager(),
+                    _pauserRegistry: Env.impl.pauserRegistry(),
+                    _version: Env.deployToVersion()
+                })
+            )
         });
 
         /// pods/
 
         deployImpl({
             name: type(EigenPodManager).name,
-            deployedTo: address(new EigenPodManager({
-                _ethPOS: Env.ethPOS(),
-                _eigenPodBeacon: Env.beacon.eigenPod(),
-                _delegationManager: Env.proxy.delegationManager(),
-                _pauserRegistry: Env.impl.pauserRegistry(),
-                _version: Env.deployToVersion()
-            }))
+            deployedTo: address(
+                new EigenPodManager({
+                    _ethPOS: Env.ethPOS(),
+                    _eigenPodBeacon: Env.beacon.eigenPod(),
+                    _delegationManager: Env.proxy.delegationManager(),
+                    _pauserRegistry: Env.impl.pauserRegistry(),
+                    _version: Env.deployToVersion()
+                })
+            )
         });
 
         deployImpl({
             name: type(EigenPod).name,
-            deployedTo: address(new EigenPod({
-                _ethPOS: Env.ethPOS(),
-                _eigenPodManager: Env.proxy.eigenPodManager(),
-                _GENESIS_TIME: Env.EIGENPOD_GENESIS_TIME(),
-                _version: Env.deployToVersion()
-            }))
+            deployedTo: address(
+                new EigenPod({
+                    _ethPOS: Env.ethPOS(),
+                    _eigenPodManager: Env.proxy.eigenPodManager(),
+                    _GENESIS_TIME: Env.EIGENPOD_GENESIS_TIME(),
+                    _version: Env.deployToVersion()
+                })
+            )
         });
 
         /// strategies/
 
         deployImpl({
             name: type(StrategyBaseTVLLimits).name,
-            deployedTo: address(new StrategyBaseTVLLimits({
-                _strategyManager: Env.proxy.strategyManager(),
-                _pauserRegistry: Env.impl.pauserRegistry(),
-                _version: Env.deployToVersion()
-            }))
+            deployedTo: address(
+                new StrategyBaseTVLLimits({
+                    _strategyManager: Env.proxy.strategyManager(),
+                    _pauserRegistry: Env.impl.pauserRegistry(),
+                    _version: Env.deployToVersion()
+                })
+            )
         });
 
         deployImpl({
             name: type(EigenStrategy).name,
-            deployedTo: address(new EigenStrategy({
-                _strategyManager: Env.proxy.strategyManager(),
-                _pauserRegistry: Env.impl.pauserRegistry(),
-                _version: Env.deployToVersion()
-            }))
+            deployedTo: address(
+                new EigenStrategy({
+                    _strategyManager: Env.proxy.strategyManager(),
+                    _pauserRegistry: Env.impl.pauserRegistry(),
+                    _version: Env.deployToVersion()
+                })
+            )
         });
 
         deployImpl({
             name: type(StrategyFactory).name,
-            deployedTo: address(new StrategyFactory({
-                _strategyManager: Env.proxy.strategyManager(),
-                _pauserRegistry: Env.impl.pauserRegistry(),
-                _version: Env.deployToVersion()
-            }))
+            deployedTo: address(
+                new StrategyFactory({
+                    _strategyManager: Env.proxy.strategyManager(),
+                    _pauserRegistry: Env.impl.pauserRegistry(),
+                    _version: Env.deployToVersion()
+                })
+            )
         });
 
         // for strategies deployed via factory
         deployImpl({
             name: type(StrategyBase).name,
-            deployedTo: address(new StrategyBase({
-                _strategyManager: Env.proxy.strategyManager(),
-                _pauserRegistry: Env.impl.pauserRegistry(),
-                _version: Env.deployToVersion()
-            }))
+            deployedTo: address(
+                new StrategyBase({
+                    _strategyManager: Env.proxy.strategyManager(),
+                    _pauserRegistry: Env.impl.pauserRegistry(),
+                    _version: Env.deployToVersion()
+                })
+            )
         });
 
         vm.stopBroadcast();
     }
 
-    function testScript() public virtual {       
+    function testScript() public virtual {
         _runAsEOA();
 
-        _validateNewImplAddresses({ areMatching: false });
+        _validateNewImplAddresses({areMatching: false});
         _validateProxyAdmins();
         _validateImplConstructors();
         _validateImplsInitialized();
@@ -209,79 +228,67 @@ contract Deploy is EOADeployer {
     ///
     /// Note: The upgrade script can call this with `areMatching == true` to check that these impl
     /// addresses _are_ matches.
-    function _validateNewImplAddresses(bool areMatching) internal view {
+    function _validateNewImplAddresses(
+        bool areMatching
+    ) internal view {
         /// core/ -- can't check AllocationManager as it didn't exist before this deploy
 
-        function (bool, string memory) internal pure assertion =
-            areMatching ? _assertTrue : _assertFalse;
+        function (bool, string memory) internal pure assertion = areMatching ? _assertTrue : _assertFalse;
 
         assertion(
-            _getProxyImpl(address(Env.proxy.avsDirectory())) ==
-            address(Env.impl.avsDirectory()),
+            _getProxyImpl(address(Env.proxy.avsDirectory())) == address(Env.impl.avsDirectory()),
             "avsDirectory impl failed"
         );
 
         assertion(
-            _getProxyImpl(address(Env.proxy.delegationManager())) ==
-            address(Env.impl.delegationManager()),
+            _getProxyImpl(address(Env.proxy.delegationManager())) == address(Env.impl.delegationManager()),
             "delegationManager impl failed"
         );
 
         assertion(
-            _getProxyImpl(address(Env.proxy.rewardsCoordinator())) ==
-            address(Env.impl.rewardsCoordinator()),
+            _getProxyImpl(address(Env.proxy.rewardsCoordinator())) == address(Env.impl.rewardsCoordinator()),
             "rewardsCoordinator impl failed"
         );
 
         assertion(
-            _getProxyImpl(address(Env.proxy.strategyManager())) ==
-            address(Env.impl.strategyManager()),
+            _getProxyImpl(address(Env.proxy.strategyManager())) == address(Env.impl.strategyManager()),
             "strategyManager impl failed"
         );
-        
+
         /// permissions/ -- can't check these because PauserRegistry has no proxy, and
         /// PermissionController proxy didn't exist before this deploy
 
         /// pods/
 
-        assertion(
-            Env.beacon.eigenPod().implementation() ==
-            address(Env.impl.eigenPod()),
-            "eigenPod impl failed"
-        );
+        assertion(Env.beacon.eigenPod().implementation() == address(Env.impl.eigenPod()), "eigenPod impl failed");
 
         assertion(
-            _getProxyImpl(address(Env.proxy.eigenPodManager())) ==
-            address(Env.impl.eigenPodManager()),
+            _getProxyImpl(address(Env.proxy.eigenPodManager())) == address(Env.impl.eigenPodManager()),
             "eigenPodManager impl failed"
         );
 
         /// strategies/
 
         assertion(
-            _getProxyImpl(address(Env.proxy.eigenStrategy())) ==
-            address(Env.impl.eigenStrategy()),
+            _getProxyImpl(address(Env.proxy.eigenStrategy())) == address(Env.impl.eigenStrategy()),
             "eigenStrategy impl failed"
         );
 
         assertion(
-            Env.beacon.strategyBase().implementation() ==
-            address(Env.impl.strategyBase()),
-            "strategyBase impl failed"
+            Env.beacon.strategyBase().implementation() == address(Env.impl.strategyBase()), "strategyBase impl failed"
         );
 
-        uint count = Env.instance.strategyBaseTVLLimits_Count();
-        for (uint i = 0; i < count; i++) {
+        uint256 count = Env.instance.strategyBaseTVLLimits_Count();
+        for (uint256 i = 0; i < count; i++) {
             assertion(
-                _getProxyImpl(address(Env.instance.strategyBaseTVLLimits(i))) ==
-                address(Env.impl.strategyBaseTVLLimits()),
+                _getProxyImpl(address(Env.instance.strategyBaseTVLLimits(i)))
+                    == address(Env.impl.strategyBaseTVLLimits()),
                 "strategyBaseTVLLimits impl failed"
             );
         }
 
         assertion(
-            _getProxyImpl(address(Env.proxy.strategyFactory())) ==
-            address(Env.impl.strategyFactory()),
+            _getProxyImpl(address(Env.proxy.strategyFactory())) == address(Env.impl.strategyFactory()),
             "strategyFactory impl failed"
         );
     }
@@ -291,69 +298,45 @@ contract Deploy is EOADeployer {
         address pa = Env.proxyAdmin();
 
         assertTrue(
-            _getProxyAdmin(address(Env.proxy.allocationManager())) == pa,
-            "allocationManager proxyAdmin incorrect"
+            _getProxyAdmin(address(Env.proxy.allocationManager())) == pa, "allocationManager proxyAdmin incorrect"
+        );
+
+        assertTrue(_getProxyAdmin(address(Env.proxy.avsDirectory())) == pa, "avsDirectory proxyAdmin incorrect");
+
+        assertTrue(
+            _getProxyAdmin(address(Env.proxy.delegationManager())) == pa, "delegationManager proxyAdmin incorrect"
         );
 
         assertTrue(
-            _getProxyAdmin(address(Env.proxy.avsDirectory())) == pa,
-            "avsDirectory proxyAdmin incorrect"
+            _getProxyAdmin(address(Env.proxy.rewardsCoordinator())) == pa, "rewardsCoordinator proxyAdmin incorrect"
         );
 
-        assertTrue(
-            _getProxyAdmin(address(Env.proxy.delegationManager())) == pa,
-            "delegationManager proxyAdmin incorrect"
-        );
+        assertTrue(_getProxyAdmin(address(Env.proxy.strategyManager())) == pa, "strategyManager proxyAdmin incorrect");
 
-        assertTrue(
-            _getProxyAdmin(address(Env.proxy.rewardsCoordinator())) == pa,
-            "rewardsCoordinator proxyAdmin incorrect"
-        );
-
-        assertTrue(
-            _getProxyAdmin(address(Env.proxy.strategyManager())) == pa,
-            "strategyManager proxyAdmin incorrect"
-        );
-        
         /// permissions/ -- can't check these because PauserRegistry has no proxy, and
         /// PermissionController proxy didn't exist before this deploy
 
         /// pods/
 
-        assertTrue(
-            Env.beacon.eigenPod().owner() == Env.executorMultisig(),
-            "eigenPod beacon owner incorrect"
-        );
+        assertTrue(Env.beacon.eigenPod().owner() == Env.executorMultisig(), "eigenPod beacon owner incorrect");
 
-        assertTrue(
-            _getProxyAdmin(address(Env.proxy.eigenPodManager())) == pa,
-            "eigenPodManager proxyAdmin incorrect"
-        );
+        assertTrue(_getProxyAdmin(address(Env.proxy.eigenPodManager())) == pa, "eigenPodManager proxyAdmin incorrect");
 
         /// strategies/
 
-        assertTrue(
-            _getProxyAdmin(address(Env.proxy.eigenStrategy())) == pa,
-            "eigenStrategy proxyAdmin incorrect"
-        );
+        assertTrue(_getProxyAdmin(address(Env.proxy.eigenStrategy())) == pa, "eigenStrategy proxyAdmin incorrect");
 
-        assertTrue(
-            Env.beacon.strategyBase().owner() == Env.executorMultisig(),
-            "strategyBase beacon owner incorrect"
-        );
+        assertTrue(Env.beacon.strategyBase().owner() == Env.executorMultisig(), "strategyBase beacon owner incorrect");
 
-        uint count = Env.instance.strategyBaseTVLLimits_Count();
-        for (uint i = 0; i < count; i++) {
+        uint256 count = Env.instance.strategyBaseTVLLimits_Count();
+        for (uint256 i = 0; i < count; i++) {
             assertTrue(
                 _getProxyAdmin(address(Env.instance.strategyBaseTVLLimits(i))) == pa,
                 "strategyBaseTVLLimits proxyAdmin incorrect"
             );
         }
 
-        assertTrue(
-            _getProxyAdmin(address(Env.proxy.strategyFactory())) == pa,
-            "strategyFactory proxyAdmin incorrect"
-        );
+        assertTrue(_getProxyAdmin(address(Env.proxy.strategyFactory())) == pa, "strategyFactory proxyAdmin incorrect");
     }
 
     /// @dev Validate the immutables set in the new implementation constructors
@@ -369,7 +352,7 @@ contract Deploy is EOADeployer {
 
             /// PermissionController has no initial storage
         }
-        
+
         {
             /// core/
 
@@ -378,8 +361,11 @@ contract Deploy is EOADeployer {
             assertTrue(allocationManager.pauserRegistry() == Env.impl.pauserRegistry(), "alm.pR invalid");
             assertTrue(allocationManager.permissionController() == Env.proxy.permissionController(), "alm.pc invalid");
             assertTrue(allocationManager.DEALLOCATION_DELAY() == Env.MIN_WITHDRAWAL_DELAY(), "alm.deallocDelay invalid");
-            assertTrue(allocationManager.ALLOCATION_CONFIGURATION_DELAY() == Env.ALLOCATION_CONFIGURATION_DELAY(), "alm.configDelay invalid");
-            
+            assertTrue(
+                allocationManager.ALLOCATION_CONFIGURATION_DELAY() == Env.ALLOCATION_CONFIGURATION_DELAY(),
+                "alm.configDelay invalid"
+            );
+
             AVSDirectory avsDirectory = Env.impl.avsDirectory();
             assertTrue(avsDirectory.delegation() == Env.proxy.delegationManager(), "avsD.dm invalid");
             assertTrue(avsDirectory.pauserRegistry() == Env.impl.pauserRegistry(), "avsD.pR invalid");
@@ -390,7 +376,9 @@ contract Deploy is EOADeployer {
             assertTrue(delegation.allocationManager() == Env.proxy.allocationManager(), "dm.alm invalid");
             assertTrue(delegation.pauserRegistry() == Env.impl.pauserRegistry(), "dm.pR invalid");
             assertTrue(delegation.permissionController() == Env.proxy.permissionController(), "dm.pc invalid");
-            assertTrue(delegation.minWithdrawalDelayBlocks() == Env.MIN_WITHDRAWAL_DELAY(), "dm.withdrawalDelay invalid");
+            assertTrue(
+                delegation.minWithdrawalDelayBlocks() == Env.MIN_WITHDRAWAL_DELAY(), "dm.withdrawalDelay invalid"
+            );
 
             RewardsCoordinator rewards = Env.impl.rewardsCoordinator();
             assertTrue(rewards.delegationManager() == Env.proxy.delegationManager(), "rc.dm invalid");
@@ -398,12 +386,14 @@ contract Deploy is EOADeployer {
             assertTrue(rewards.allocationManager() == Env.proxy.allocationManager(), "rc.alm invalid");
             assertTrue(rewards.pauserRegistry() == Env.impl.pauserRegistry(), "rc.pR invalid");
             assertTrue(rewards.permissionController() == Env.proxy.permissionController(), "rc.pc invalid");
-            assertTrue(rewards.CALCULATION_INTERVAL_SECONDS() == Env.CALCULATION_INTERVAL_SECONDS(), "rc.calcInterval invalid");
+            assertTrue(
+                rewards.CALCULATION_INTERVAL_SECONDS() == Env.CALCULATION_INTERVAL_SECONDS(), "rc.calcInterval invalid"
+            );
             assertTrue(rewards.MAX_REWARDS_DURATION() == Env.MAX_REWARDS_DURATION(), "rc.rewardsDuration invalid");
             assertTrue(rewards.MAX_RETROACTIVE_LENGTH() == Env.MAX_RETROACTIVE_LENGTH(), "rc.retroLength invalid");
             assertTrue(rewards.MAX_FUTURE_LENGTH() == Env.MAX_FUTURE_LENGTH(), "rc.futureLength invalid");
             assertTrue(rewards.GENESIS_REWARDS_TIMESTAMP() == Env.GENESIS_REWARDS_TIMESTAMP(), "rc.genesis invalid");
-            
+
             StrategyManager strategyManager = Env.impl.strategyManager();
             assertTrue(strategyManager.delegation() == Env.proxy.delegationManager(), "sm.dm invalid");
             assertTrue(strategyManager.pauserRegistry() == Env.impl.pauserRegistry(), "sm.pR invalid");
@@ -434,7 +424,9 @@ contract Deploy is EOADeployer {
             assertTrue(strategyBase.pauserRegistry() == Env.impl.pauserRegistry(), "stratBase.pR invalid");
 
             StrategyBaseTVLLimits strategyBaseTVLLimits = Env.impl.strategyBaseTVLLimits();
-            assertTrue(strategyBaseTVLLimits.strategyManager() == Env.proxy.strategyManager(), "stratBaseTVL.sm invalid");
+            assertTrue(
+                strategyBaseTVLLimits.strategyManager() == Env.proxy.strategyManager(), "stratBaseTVL.sm invalid"
+            );
             assertTrue(strategyBaseTVLLimits.pauserRegistry() == Env.impl.pauserRegistry(), "stratBaseTVL.pR invalid");
 
             StrategyFactory strategyFactory = Env.impl.strategyFactory();
@@ -449,14 +441,14 @@ contract Deploy is EOADeployer {
 
         /// permissions/
         // PermissionController is initializable, but does not expose the `initialize` method
-        
+
         {
             /// core/
 
             AllocationManager allocationManager = Env.impl.allocationManager();
             vm.expectRevert(errInit);
             allocationManager.initialize(address(0), 0);
-            
+
             AVSDirectory avsDirectory = Env.impl.avsDirectory();
             vm.expectRevert(errInit);
             avsDirectory.initialize(address(0), 0);
@@ -537,12 +529,16 @@ contract Deploy is EOADeployer {
     }
 
     /// @dev Query and return `proxyAdmin.getProxyImplementation(proxy)`
-    function _getProxyImpl(address proxy) internal view returns (address) {
+    function _getProxyImpl(
+        address proxy
+    ) internal view returns (address) {
         return ProxyAdmin(Env.proxyAdmin()).getProxyImplementation(ITransparentUpgradeableProxy(proxy));
     }
 
     /// @dev Query and return `proxyAdmin.getProxyAdmin(proxy)`
-    function _getProxyAdmin(address proxy) internal view returns (address) {
+    function _getProxyAdmin(
+        address proxy
+    ) internal view returns (address) {
         return ProxyAdmin(Env.proxyAdmin()).getProxyAdmin(ITransparentUpgradeableProxy(proxy));
     }
 
