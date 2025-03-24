@@ -73,8 +73,6 @@ contract Integration_SlashBC_OneBCSF is IntegrationChecks {
         // 4. slash validators on beacon chain (start/complete checkpoint)
         uint40[] memory slashedValidators = _choose(validators);
 
-        if (slashedValidators.length >= validators.length) slashedValidators.setLength(validators.length - 1);
-
         slashedGwei = beaconChain.slashValidators(slashedValidators, BeaconChainMock.SlashType.Minor);
         beaconChain.advanceEpoch_NoWithdrawNoRewards();
 
@@ -96,6 +94,7 @@ contract Integration_SlashBC_OneBCSF is IntegrationChecks {
             // Start/complete CP
             // Ensure that not all validators were slashed so that some rewards can be generated when
             // we advance epoch
+            cheats.assume(slashedValidators.length < validators.length);
             beaconChain.advanceEpoch();
             staker.startCheckpoint();
 
