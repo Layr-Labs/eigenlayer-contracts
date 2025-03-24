@@ -20,8 +20,13 @@ At this point, you should be able to view an environment's config (try `zeus env
 
 ### Writing a Script
 
-Scripts are broken up into multiple steps TODO
+Scripts are broken up into multiple steps. Each step is implemented as a separate script file and follows a specific naming convention:
 
+1. Each script file is named with a numeric prefix to indicate execution order (e.g., `1-eoa.s.sol`, `2-multisig.s.sol`).
+2. The suffix indicates the executor type - either EOA (Externally Owned Account) or multisig.
+3. Scripts are executed sequentially, with each step potentially depending on the results of previous steps.
+
+Zeus provides an environment for these scripts via environment variables and ensures steps are run in the correct order exactly once per environment.
 
 ### EOADeployer
 
