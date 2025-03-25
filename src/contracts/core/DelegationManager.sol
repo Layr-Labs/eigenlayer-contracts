@@ -532,7 +532,7 @@ contract DelegationManager is
 
     /**
      * @dev This function completes a queued withdrawal for a staker.
-     * This will apply any slashing that has occurred since the the withdrawal was queued by multiplying the withdrawal's
+     * This will apply any slashing that has occurred since the withdrawal was queued by multiplying the withdrawal's
      * scaledShares by the operator's maxMagnitude for each strategy. This ensures that any slashing that has occurred
      * during the period the withdrawal was queued until its slashableUntil block is applied to the withdrawal amount.
      * If receiveAsTokens is true, then these shares will be withdrawn as tokens.

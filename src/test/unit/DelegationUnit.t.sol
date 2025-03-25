@@ -7182,7 +7182,7 @@ contract DelegationManagerUnitTests_Rounding is DelegationManagerUnitTests {}
  *    8. RegisterOperator, Deposit/Delegate, Undelegate, Re delegate to another operator, Mock Slash 100% (set maxMagnitudes), Complete as shares
  *     (withdrawals should have been slashed even though delegated to a new operator)
  *    9. Invariant check getWithdrawableShares = sum(deposits), Multiple deposits with operator who has never been slashed
- *    10. Invariant check getWithdrawableShares = sum(deposits), Multiple deposits with operator who HAS been been slashed
+ *    10. Invariant check getWithdrawableShares = sum(deposits), Multiple deposits with operator who HAS been slashed
  */
 contract DelegationManagerUnitTests_Lifecycle is DelegationManagerUnitTests {
     using ArrayLib for *;
