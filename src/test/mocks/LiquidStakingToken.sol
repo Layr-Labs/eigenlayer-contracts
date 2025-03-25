@@ -2,7 +2,7 @@
 // modified version of https://github.com/itstargetconfirmed/wrapped-ether/blob/master/contracts/WETH.sol
 pragma solidity >=0.4.22 <0.9.0;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin-v4.9.0/contracts/token/ERC20/ERC20.sol";
 
 /// @notice An implementation of Wrapped Ether.
 /// @author Anderson Singh.
