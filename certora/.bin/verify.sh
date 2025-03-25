@@ -24,7 +24,7 @@ module=$(basename $scriptDir)
 projectBase=$scriptDir/../../..
 confDir=$projectBase/certora/confs/$module
 
-devFlags=""
+devFlags="--solc solc"
 certoraRun="certoraRun"
 
 while [ $# -gt 0 ]; do
