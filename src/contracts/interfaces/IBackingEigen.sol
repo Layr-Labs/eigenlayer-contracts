@@ -5,25 +5,6 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface IBackingEigen is IERC20 {
     /**
-     * @notice This function allows the owner to set the allowedFrom status of an address
-     * @param from the address whose allowedFrom status is being set
-     * @param isAllowedFrom the new allowedFrom status
-     */
-    function setAllowedFrom(address from, bool isAllowedFrom) external;
-
-    /**
-     * @notice This function allows the owner to set the allowedTo status of an address
-     * @param to the address whose allowedTo status is being set
-     * @param isAllowedTo the new allowedTo status
-     */
-    function setAllowedTo(address to, bool isAllowedTo) external;
-
-    /**
-     * @notice Allows the owner to disable transfer restrictions
-     */
-    function disableTransferRestrictions() external;
-
-    /**
      * @notice An initializer function that sets initial values for the contract's state variables.
      */
     function initialize(
@@ -50,9 +31,6 @@ interface IBackingEigen is IERC20 {
 
     /// @notice the address of the wrapped Eigen token EIGEN
     function EIGEN() external view returns (IERC20);
-
-    /// @notice the timestamp after which transfer restrictions are disabled
-    function transferRestrictionsDisabledAfter() external view returns (uint256);
 
     /**
      * @dev Clock used for flagging checkpoints. Has been overridden to implement timestamp based
