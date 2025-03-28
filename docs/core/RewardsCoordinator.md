@@ -26,6 +26,8 @@ The typical user flow is as follows:
 
 This entire flow will repeat periodically as AVSs submit rewards submissions, `DistributionRoots` are submitted, and Stakers/Operators claim their accumulated earnings. Note that `DistributionRoots` contain *cumulative earnings*, meaning Stakers/Operators aren't required to claim against every root - simply claiming against the most recent root will claim anything not yet claimed.
 
+**NOTE: Use caution when using reward tokens that do not strictly conform to ERC20 standards. Please DYOR if your token falls outside of ERC20 norms.** Specific things to look out for include (but are not limited to): exotic rebasing tokens, fee-on-transfer tokens, tokens that support reentrant behavior (like ERC-777), and other nonstandard ERC20 derivatives.
+
 #### High-level Concepts
 
 This document is organized according to the following themes (click each to be taken to the relevant section):
@@ -128,6 +130,7 @@ The rewards distribution amongst the AVS's Operators and delegated Stakers is de
         * `rewardsSubmission.amount <= MAX_REWARDS_AMOUNT`
         * `rewardsSubmission.duration <= MAX_REWARDS_DURATION`
         * `rewardsSubmission.duration % calculationIntervalSeconds == 0`
+        * `rewardsSubmission.duration > 0`
         * `rewardsSubmission.startTimestamp % calculationIntervalSeconds == 0`
         * `block.timestamp - MAX_RETROACTIVE_LENGTH <= rewardsSubmission.startTimestamp`
         * `GENESIS_REWARDS_TIMESTAMP <= rewardsSubmission.startTimestamp`
@@ -234,6 +237,7 @@ AVS may make Rewards v2 submissions by calling `createOperatorDirectedAVSRewards
     * `operatorDirectedRewardsSubmission.strategiesAndMultipliers.length > 0`
     * `operatorDirectedRewardsSubmission.duration <= MAX_REWARDS_DURATION`
     * `operatorDirectedRewardsSubmission.duration % calculationIntervalSeconds == 0`
+    * `operatorDirectedRewardsSubmission.duration > 0`
     * `operatorDirectedRewardsSubmission.startTimestamp % calculationIntervalSeconds == 0`
     * `block.timestamp - MAX_RETROACTIVE_LENGTH <= operatorDirectedRewardsSubmission.startTimestamp`
     * `GENESIS_REWARDS_TIMESTAMP <= operatorDirectedRewardsSubmission.startTimestamp`
@@ -610,4 +614,4 @@ The rewards merkle tree is structured in the diagram below:
 
 Rewards are calculated via an off-chain data pipeline. The pipeline takes snapshots of core contract state at the `SNAPSHOT_CADENCE`, currently set to once per day. It then combines these snapshots with any active rewards to calculate what the single daily reward of an earner is. Every `CALCULATION_INTERVAL_SECONDS` rewards are accumulated up to `lastRewardsTimestamp + CALCULATION_INTERVAL_SECONDS` and posted on-chain by the entity with the `rewardsUpdater` role.
 
-`MAX_REWARDS_AMOUNT` is set to `1e38-1` given the precision bounds of the off-chain pipeline. An in-depth overview of the off-chain calculation can be found [here](https://hackmd.io/Fmjcckn1RoivWpPLRAPwBw)
+`MAX_REWARDS_AMOUNT` is set to `1e38-1` given the precision bounds of the off-chain pipeline. An in-depth overview of the off-chain calculation can be found [here](https://github.com/Layr-Labs/sidecar/blob/master/docs/docs/sidecar/rewards/calculation.md)

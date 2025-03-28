@@ -22,7 +22,11 @@ Libraries and Mixins:
 
 ## Overview
 
-The `AllocationManager` manages AVS metadata registration, registration and deregistration of operators to operator sets, handles allocation and slashing of operators' slashable stake, and is the entry point an AVS uses to slash an operator. The `AllocationManager's` responsibilities are broken down into the following concepts:
+The `AllocationManager` manages AVS metadata registration, registration and deregistration of operators to operator sets, handles allocation and slashing of operators' slashable stake, and is the entry point an AVS uses to slash an operator. An AVS in the context of `AllocationManager` is defined as the `address` of the contract that implements [ServiceManagerBase](https://github.com/Layr-Labs/eigenlayer-middleware/blob/mainnet/docs/ServiceManagerBase.md). For `PermissionController` purposes, this AVS address is also the AVS [account](https://github.com/Layr-Labs/eigenlayer-contracts/blob/dev/docs/permissions/PermissionController.md#accounts).
+
+
+
+The `AllocationManager's` responsibilities are broken down into the following concepts:
 
 * [AVS Metadata](#avs-metadata)
 * [Operator Sets](#operator-sets)
@@ -67,6 +71,8 @@ function updateAVSMetadataURI(
 ```
 
 _Note: this method can be called directly by an AVS, or by a caller authorized by the AVS. See [`PermissionController.md`](../permissions/PermissionController.md) for details._
+
+Invoking this function effectively "enshrines" the AVS address in the core protocol.
 
 Below is the format AVSs should use when updating their metadata URI initially. This is not validated onchain.
 
@@ -245,7 +251,7 @@ Optionally, the `avs` can provide a list of `strategies`, specifying which strat
 
 *Requirements*:
 * Caller MUST be authorized, either as the AVS itself or an admin/appointee (see [`PermissionController.md`](../permissions/PermissionController.md))
-* AVS MUST have registered metadata
+* AVS MUST have registered metadata via calling `updateAVSMetadataURI`
 * For each `CreateSetParams` element:
     * Each `params.operatorSetId` MUST NOT already exist in `_operatorSets[avs]`
     
@@ -402,8 +408,8 @@ struct DeregisterParams {
  * If the operator has any slashable stake allocated to the AVS, it remains slashable until the
  * DEALLOCATION_DELAY has passed.
  * @dev After deregistering within the ALM, this method calls the AVS Registrar's `IAVSRegistrar.
- * deregisterOperator` method to complete deregistration. Unlike when registering, this call MAY FAIL.
- * Failure is permitted to prevent AVSs from being able to maliciously prevent operators from deregistering.
+ * deregisterOperator` method to complete deregistration. This call MUST succeed in order for
+ * deregistration to be successful.
  */
 function deregisterFromOperatorSets(
     DeregisterParams calldata params
@@ -415,8 +421,8 @@ function deregisterFromOperatorSets(
 _Note: this method can be called directly by an operator/AVS, or by a caller authorized by the operator/AVS. See [`PermissionController.md`](../permissions/PermissionController.md) for details._
 
 This method may be called by EITHER an operator OR an AVS to which an operator is registered; it is intended to allow deregistration to be triggered by EITHER party. This method generally inverts the effects of `registerForOperatorSets`, with two specific exceptions:
-1. As part of deregistration, each operator set is removed from the operator's `registeredSets`. HOWEVER, **any stake allocations to that operator set will remain slashable for `DEALLOCATION_DELAY` blocks.**
-2. Once all sets have been removed, the AVS's configured `IAVSRegistrar` is called to complete deregistration on the AVS side. **Unlike registration, if this call reverts it will be ignored.** This is to stop an AVS from maliciously preventing operators from deregistering.
+1. As part of deregistration, each operator set is removed from the operator's `registeredSets`. HOWEVER, **any stake allocations to that operator set will remain slashable for `DEALLOCATION_DELAY` blocks.** The operator will not be allowed to register for the operator set again until this slashable window has passed.
+2. Once all sets have been removed, the AVS's configured `IAVSRegistrar` is called to complete deregistration on the AVS side.
 
 This method makes an external call to the `IAVSRegistrar.deregisterOperator` method, passing in the deregistering `operator` and the `operatorSetIds` being deregistered from. From [`IAVSRegistrar.sol`](../../src/contracts/interfaces/IAVSRegistrar.sol):
 
@@ -529,6 +535,13 @@ Given an `operator` and an `Allocation` from a `strategy` to an AVS's `OperatorS
 
 If ALL of these are true, the `AllocationManager` will allow the AVS to slash the `operator's` `Allocation`.
 
+#### Evaluating How Much of the Allocation is "Slashable"
+
+The `getMinimumSlashableStake` calculates the minimum amount of stake that will be slashable at a specified future block. This computation accounts for each operator’s allocated stake from different strategies within an operator set. The function considers pending allocation changes that could reduce the slashable stake over time, ensuring a minimum guaranteed value. Because this is a forecast, the slashable stake at any given moment is a discrete value, but when looking ahead to a future block, the function provides the lowest possible amount, factoring in any planned allocation adjustments that will take effect within the specified timeframe.
+
+Please see [IAllocationManager.sol:getMinimumSlashableStake](https://github.com/Layr-Labs/eigenlayer-contracts/blob/dev/src/contracts/interfaces/IAllocationManager.sol#L577) for more detail.
+
+
 #### `modifyAllocations`
 
 ```solidity
@@ -585,7 +598,9 @@ Next, _if the existing allocation IS slashable_:
 * The `allocation.pendingDiff` is set, with an `allocation.effectBlock` equal to the current block plus `DEALLOCATION_DELAY + 1`. This means the existing allocation _remains slashable_ for `DEALLOCATION_DELAY` blocks.
 * The _operator set_ is pushed to the operator's `deallocationQueue` for that strategy, denoting that there is a pending deallocation for this `(operatorSet, strategy)`. This is an ordered queue that enforces deallocations are processed sequentially and is used both in this method and in [`clearDeallocationQueue`](#cleardeallocationqueue).
 
-Finally, _if the existing allocation IS NOT slashable_, the deallocated amount is immediately **freed**. It is subtracted from the strategy's encumbered magnitude and can be used for subsequent allocations. This is the only type of update that does not result in a "pending modification." The rationale here is that if the existing allocation is not slashable, the AVS does not need it to secure tasks, and therefore does not need to enforce a deallocation delay.
+Alternatively, _if the existing allocation IS NOT slashable_, the deallocated amount is immediately **freed**. It is subtracted from the strategy's encumbered magnitude and can be used for subsequent allocations. This is the only type of update that does not result in a "pending modification." The rationale here is that if the existing allocation is not slashable, the AVS does not need it to secure tasks, and therefore does not need to enforce a deallocation delay.
+
+Another point of consideration are race conditions involving a slashing event and a deallocation occurring for an operator. Consider the following scenario with an operator having an allocation of 500 magnitude and trying to deallocate setting it to 250. However in the same block _right_ before calling `modifyAllocations` the operator is slashed 100% by the OperatorSet, setting the current magnitude to 0. Now the operator's deallocation is considered an allocation and ends up allocating 250 magnitude when they were trying to _deallocate_. This is a potential griefing vector by malicious AVSs and a known shortcoming. In such scenarios, the operator should simply deallocate all their allocations to 0 so that they don't accidentally allocate more slashable stake. In general for non malicious AVSs, slashing is deemed to be a very occasional occurrence and this race condition to not be impacting to operators.
 
 *Effects*:
 * For each `AllocateParams` element:
@@ -794,7 +809,7 @@ The allocation delay's primary purpose is to give stakers delegated to an operat
 
 *Effects*:
 * Sets the operator's `pendingDelay` to the proposed `delay`, and save the `effectBlock` at which the `pendingDelay` can be activated
-    * `effectBlock = uint32(block.number) + ALLOCATION_CONFIGURATION_DELAY`
+    * `effectBlock = uint32(block.number) + ALLOCATION_CONFIGURATION_DELAY + 1`
 * If the operator has a `pendingDelay`, and if the `effectBlock` has passed, sets the operator's `delay` to the `pendingDelay` value
     * This also sets the `isSet` boolean to `true` to indicate that the operator's `delay`, even if 0, was set intentionally
 * Emits an `AllocationDelaySet` event

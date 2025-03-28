@@ -2,7 +2,7 @@
 pragma solidity ^0.8.27;
 
 contract EmptyContract {
-    function foo() public pure returns (uint256) {
+    function foo() public pure returns (uint) {
         return 0;
     }
 }

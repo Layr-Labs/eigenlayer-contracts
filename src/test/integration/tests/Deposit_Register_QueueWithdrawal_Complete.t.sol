@@ -15,13 +15,14 @@ contract Integration_Deposit_Register_QueueWithdrawal_Complete is IntegrationChe
         check_Deposit_State(staker, strategies, shares);
 
         // 2. Staker registers as an operator
-        staker.registerAsOperator();        
+        staker.registerAsOperator();
         assertTrue(delegationManager.isOperator(address(staker)), "Staker should be registered as an operator");
 
         // 3. Queue Withdrawal
+        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
-        check_QueuedWithdrawal_State(staker, staker, strategies, shares, withdrawals, withdrawalRoots);
+        check_QueuedWithdrawal_State(staker, staker, strategies, shares, withdrawableShares, withdrawals, withdrawalRoots);
 
         // 4. Complete Queued Withdrawal as Shares
         _rollBlocksForCompleteWithdrawals(withdrawals);
@@ -44,16 +45,17 @@ contract Integration_Deposit_Register_QueueWithdrawal_Complete is IntegrationChe
         assertTrue(delegationManager.isOperator(address(staker)), "Staker should be registered as an operator");
 
         // 3. Queue Withdrawal
+        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
-        check_QueuedWithdrawal_State(staker, staker, strategies, shares, withdrawals, withdrawalRoots);
+        check_QueuedWithdrawal_State(staker, staker, strategies, shares, withdrawableShares, withdrawals, withdrawalRoots);
 
         // 4. Complete Queued Withdrawal as Tokens
         _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint i = 0; i < withdrawals.length; i++) {
             IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[i]);
             uint[] memory expectedTokens = _calculateExpectedTokens(strategies, shares);
-            
+
             check_Withdrawal_AsTokens_State(staker, staker, withdrawals[i], strategies, shares, tokens, expectedTokens);
         }
     }

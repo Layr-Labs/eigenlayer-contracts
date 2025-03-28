@@ -1,9 +1,5 @@
 
 methods {
-    // external calls to PauserRegistry
-    function _.isPauser(address) external => DISPATCHER(true);
-	function _.unpauser() external => DISPATCHER(true);
-
     // envfree functions
     function paused() external returns (uint256) envfree;
     function paused(uint8 index) external returns (bool) envfree;

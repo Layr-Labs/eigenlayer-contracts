@@ -646,6 +646,11 @@ contract DelegationManager is
         // This is to prevent a divWad by 0 when updating the depositScalingFactor
         require(slashingFactor != 0, FullySlashed());
 
+        // If `addedShares` is 0, do nothing
+        if (addedShares == 0) {
+            return;
+        }
+
         // Update the staker's depositScalingFactor. This only results in an update
         // if the slashing factor has changed for this strategy.
         DepositScalingFactor storage dsf = _depositScalingFactor[staker][strategy];

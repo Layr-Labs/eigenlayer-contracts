@@ -1,7 +1,7 @@
 [middleware-repo]: https://github.com/Layr-Labs/eigenlayer-middleware/
 [elip-002]: https://github.com/eigenfoundation/ELIPs/blob/main/ELIPs/ELIP-002.md
 
-## EigenLayer Docs - v1.0.0 Release
+## EigenLayer Docs - v1.3.0 Release
 
 This repo contains the EigenLayer core contracts, which enable restaking of liquid staking tokens (LSTs), beacon chain ETH, and permissionlessly deployed ERC20 Strategies to secure new services called AVSs (actively validated services). For more info on AVSs, check out the EigenLayer middleware contracts [here][middleware-repo].
 

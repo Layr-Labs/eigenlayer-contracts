@@ -11,7 +11,7 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, 
 
     address defaultAVS;
     address defaultOperator;
-    uint256 defaultOperatorPk;
+    uint defaultOperatorPk;
     SignatureWithSaltAndExpiry defaultOperatorSignature;
 
     function setUp() public virtual override {
@@ -26,16 +26,13 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, 
             operatorPk: defaultOperatorPk,
             avs: defaultAVS,
             salt: bytes32(cheats.randomUint()),
-            expiry: type(uint256).max
+            expiry: type(uint).max
         });
 
         delegationManagerMock.setIsOperator(defaultOperator, true);
     }
 
-    function _deployAVSD(
-        address delegationManager,
-        IPauserRegistry pauserRegistry
-    ) internal returns (AVSDirectory avsd) {
+    function _deployAVSD(address delegationManager, IPauserRegistry pauserRegistry) internal returns (AVSDirectory avsd) {
         avsd = AVSDirectory(
             address(
                 new TransparentUpgradeableProxy(
@@ -53,27 +50,21 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, 
 
         bytes memory v = bytes(avsd.version());
         bytes32 expectedDomainSeparator = keccak256(
-                abi.encode(
-                    EIP712_DOMAIN_TYPEHASH, 
-                    keccak256(bytes("EigenLayer")),
-                    keccak256(bytes.concat(v[0], v[1])),
-                    block.chainid, 
-                    address(avsd)
-                )
-            );
+            abi.encode(
+                EIP712_DOMAIN_TYPEHASH, keccak256(bytes("EigenLayer")), keccak256(bytes.concat(v[0], v[1])), block.chainid, address(avsd)
+            )
+        );
 
         assertEq(avsd.domainSeparator(), expectedDomainSeparator, "sanity check");
     }
 
-    function _newOperatorRegistrationSignature(
-        uint256 operatorPk,
-        address avs,
-        bytes32 salt,
-        uint256 expiry
-    ) internal view returns (SignatureWithSaltAndExpiry memory) {
-        (uint8 v, bytes32 r, bytes32 s) = cheats.sign(
-            operatorPk, avsDirectory.calculateOperatorAVSRegistrationDigestHash(cheats.addr(operatorPk), avs, salt, expiry)
-        );
+    function _newOperatorRegistrationSignature(uint operatorPk, address avs, bytes32 salt, uint expiry)
+        internal
+        view
+        returns (SignatureWithSaltAndExpiry memory)
+    {
+        (uint8 v, bytes32 r, bytes32 s) =
+            cheats.sign(operatorPk, avsDirectory.calculateOperatorAVSRegistrationDigestHash(cheats.addr(operatorPk), avs, salt, expiry));
         return SignatureWithSaltAndExpiry({signature: abi.encodePacked(r, s, v), salt: salt, expiry: expiry});
     }
 
@@ -154,9 +145,7 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, 
         cheats.prank(defaultAVS);
         avsDirectory.registerOperatorToAVS(defaultOperator, defaultOperatorSignature);
 
-        assertTrue(
-            avsDirectory.avsOperatorStatus(defaultAVS, defaultOperator) == OperatorAVSRegistrationStatus.REGISTERED
-        );
+        assertTrue(avsDirectory.avsOperatorStatus(defaultAVS, defaultOperator) == OperatorAVSRegistrationStatus.REGISTERED);
         assertTrue(avsDirectory.operatorSaltIsSpent(defaultOperator, defaultOperatorSignature.salt));
     }
 
@@ -181,15 +170,11 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, 
         avsDirectory.registerOperatorToAVS(defaultOperator, defaultOperatorSignature);
 
         cheats.expectEmit(true, true, true, false, address(avsDirectory));
-        emit OperatorAVSRegistrationStatusUpdated(
-            defaultOperator, defaultAVS, OperatorAVSRegistrationStatus.UNREGISTERED
-        );
+        emit OperatorAVSRegistrationStatusUpdated(defaultOperator, defaultAVS, OperatorAVSRegistrationStatus.UNREGISTERED);
 
         avsDirectory.deregisterOperatorFromAVS(defaultOperator);
         cheats.stopPrank();
 
-        assertTrue(
-            avsDirectory.avsOperatorStatus(defaultAVS, defaultOperator) == OperatorAVSRegistrationStatus.UNREGISTERED
-        );
+        assertTrue(avsDirectory.avsOperatorStatus(defaultAVS, defaultOperator) == OperatorAVSRegistrationStatus.UNREGISTERED);
     }
 }

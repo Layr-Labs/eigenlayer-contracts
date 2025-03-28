@@ -49,3 +49,6 @@ storage-report:
 
 fix-typos:
 	typos --config .github/configs/typos-cli.toml --write-changes
+
+fmt:
+	forge fmt; FOUNDRY_PROFILE=test forge fmt

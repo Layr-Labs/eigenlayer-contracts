@@ -12,7 +12,7 @@ This document describes edge cases surrounding the slashing of a staker for nati
 
 Consider a staker, Alice who is in the following state:
 
-1. Alice has verified a validator. `withdrawble: 32 ETH`
+1. Alice has verified a validator. `withdrawable: 32 ETH`
 2. Alice's operator is slashed for 75%. `withdrawable: 8 ETH`
     <details>
     <summary>Calculation</summary>
@@ -44,10 +44,9 @@ In the above scenario, let's say the Alice now proves a checkpoint.
 
 The checkpoint slash has devalued Alice's currently withdrawable assets by 50%. The AVS slashes from what's left due to the BC getting priority burning rights. Thus, AVSs must factor Native ETH (or an LST) being slashed by the beacon chain when designing their slashing conditions. The below diagram illustrates this behavior:
 
-<figure>
-<img src="../../images/avs-bc-slash.png" alt="AVS and Beacon Chain Slashing Behavior">
-<figcaption>Diagram showing how AVS slashing is applied after Beacon Chain slashing, with BC having priority burning rights</figcaption>
-</figure>
+| ![AVS and Beacon Chain Slashing Behavior](../../images/avs-bc-slash.png) |
+|:--:|
+| *Diagram showing how AVS slashing is applied after Beacon Chain slashing, with BC having priority burning rights* |
 
 Note that the portion that is marked as BC Slash and BC + AVS Slash has priority burning rights by the beacon chain. 12 ETH has been slashed "twice", but this is by design given our definition of restaking.
 
@@ -85,7 +84,7 @@ Scenario A:
     * `withdrawable = 64 * 0.25 * 0.75 * 2.5 = 30 ETH`
     </details>
 
-In this scenario, 25% of Alice’s currently proven assets are slashed. Similarly, the AVSs attributable slashed amount has been decreased by 25% (24 → 18 ETH). 
+In this scenario, 25% of Alice's currently proven assets are slashed. Similarly, the AVSs attributable slashed amount has been decreased by 25% (24 → 18 ETH). 
 
 
 Scenario B:
@@ -112,6 +111,27 @@ Scenario B:
     * `withdrawable = 64 * 0.25 * 0.5 * 4.5 = 36 ETH`
     </details>
 
-In scenario B, 50% of Alice’s currently proven assets are slashed, along with a commensurate decrease in the AVSs attributable slashed amount. In both cases Alice’s withdrawable shares and the AVSs attributable slashed amount decrease by the same percentage.
+In scenario B, 50% of Alice's currently proven assets are slashed, along with a commensurate decrease in the AVSs attributable slashed amount. In both cases Alice's withdrawable shares and the AVSs attributable slashed amount decrease by the same percentage.
 
 We acknowledge this edge case. A benefit of this system is that stakers are incentivized to immediately prove BC slashed. Eigen Labs runs an off-chain process (EigenPod Health Checker) that monitors BC slashings and starts checkpoints as needed. Conversely, when Native-ETH burning is implemented, AVSs are incentivized to immediately exit stakers from the BC to recoup the maximum possible attributable slashed amount.  
+
+This edge case also applies if Alice undelegates after being slashed on the beacon chain, and then continues along with Scenario A, exiting her position fully. See below for details:
+<details>
+<summary>Scenario</summary>
+
+1. Alice verifies a validator: `withdrawable: 32 ETH`
+2. Alice's operator is slashed for 100%. `withdrawable: 0 ETH` 
+3. Alice is slashed by 16 ETH on the beacon chain. 
+4. Alice undelegates. `depositShares = 0` 
+5. Alice verifies another validator. `withdrawable: 32 ETH`. `depositShares: 32 ETH` 
+6. Alice checkpoints her slash from step 3. `withdrawable: 24 ETH`
+    - `restakedExecutionLayerGwei = 16`. This is the AVSs attributable slashed amount, but it increases once Alice completely exits. 
+    - `BCSF= 48/64 = 0.75`
+7. Alice completes her withdrawal as shares from undelegation. No affect since the operator's magnitude was 0
+8. Alice exits her validator from step 5. `withdrawable: 24 ETH`
+    - `restakedExecutionLayerGwei = 48` 
+9. Alice queues a withdrawal for all shares. `scaledShares = 32` 
+10. Alice completes her withdrawal. Alice receives 24 ETH
+    - `scaledShares * slashingFactor = 32 * 0.75 = 24` 
+11. There is 24 ETH locked up in the pod. 
+</details>

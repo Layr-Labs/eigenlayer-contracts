@@ -23,23 +23,23 @@ contract SnapshotsHarness {
         return wadHistory.latest();
     }
 
-    function lengthWad() public view returns (uint256) {
+    function lengthWad() public view returns (uint) {
         return wadHistory.length();
     }
 
-    function pushZero(uint32 key, uint256 value) public {
+    function pushZero(uint32 key, uint value) public {
         zeroHistory.push(key, value);
     }
 
-    function upperLookupZero(uint32 key) public view returns (uint256) {
+    function upperLookupZero(uint32 key) public view returns (uint) {
         return zeroHistory.upperLookup(key);
     }
 
-    function latestZero() public view returns (uint256) {
+    function latestZero() public view returns (uint) {
         return zeroHistory.latest();
     }
 
-    function lengthZero() public view returns (uint256) {
+    function lengthZero() public view returns (uint) {
         return zeroHistory.length();
     }
 }
@@ -52,7 +52,7 @@ contract SnapshotsUnitTests is Test {
     }
 
     /// forge-config: default.allow_internal_expect_revert = true
-    function test_Revert_InvalidSnapshotOrdering(uint256 r) public {
+    function test_Revert_InvalidSnapshotOrdering(uint r) public {
         uint32 key = uint32(bound(r, 1, type(uint32).max));
         uint32 smallerKey = uint32(bound(r, 0, key - 1));
 
@@ -62,7 +62,7 @@ contract SnapshotsUnitTests is Test {
         harness.pushWad(smallerKey, 2);
     }
 
-    function test_Push_Correctness(uint256 r) public {
+    function test_Push_Correctness(uint r) public {
         uint32 key = uint32(bound(r, 0, type(uint32).max));
         uint64 value = uint32(bound(r, 0, type(uint64).max));
 
@@ -85,7 +85,7 @@ contract SnapshotsUnitTests is Test {
         assertEq(harness.lengthWad(), 0);
     }
 
-    function test_Revert_InvalidSnapshotOrdering_ZeroHistory(uint256 r) public {
+    function test_Revert_InvalidSnapshotOrdering_ZeroHistory(uint r) public {
         uint32 key = uint32(bound(r, 1, type(uint32).max));
         uint32 smallerKey = uint32(bound(r, 0, key - 1));
 
@@ -95,9 +95,9 @@ contract SnapshotsUnitTests is Test {
         harness.pushZero(smallerKey, 2);
     }
 
-    function test_Push_Correctness_ZeroHistory(uint256 r) public {
+    function test_Push_Correctness_ZeroHistory(uint r) public {
         uint32 key = uint32(bound(r, 0, type(uint32).max));
-        uint256 value = bound(r, 0, type(uint224).max);
+        uint value = bound(r, 0, type(uint224).max);
 
         harness.pushZero(key, value);
 

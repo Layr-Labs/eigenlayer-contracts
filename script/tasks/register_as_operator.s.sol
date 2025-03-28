@@ -29,13 +29,13 @@ contract RegisterAsOperator is Script, Test {
 
         // START RECORDING TRANSACTIONS FOR DEPLOYMENT
         vm.startBroadcast();
-        
+
         // Attach the delegationManager
         DelegationManager delegation = DelegationManager(delegationManager);
 
         // Register the sender as an Operator
         delegation.registerAsOperator(operator, 0, metadataURI);
-        
+
         // STOP RECORDING TRANSACTIONS FOR DEPLOYMENT
         vm.stopBroadcast();
     }
