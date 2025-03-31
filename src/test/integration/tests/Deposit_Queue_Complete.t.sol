@@ -70,7 +70,7 @@ contract Integration_Deposit_QueueWithdrawal_Complete is IntegrationCheckUtils {
         // Create a staker with a nonzero balance and corresponding strategies
         (User staker, IStrategy[] memory strategies, uint[] memory initDepositShares) = _newRandomStaker();
         cheats.assume(initDepositShares[0] >= 64 ether);
-        
+
         // Deposit staker by verifying withdrawal credentials
         (uint40[] memory validators, uint64 beaconBalanceGwei,) = staker.startValidators();
         beaconChain.advanceEpoch_NoRewards();
@@ -78,17 +78,17 @@ contract Integration_Deposit_QueueWithdrawal_Complete is IntegrationCheckUtils {
         check_VerifyWC_State(staker, validators, beaconBalanceGwei);
 
         // Queue withdrawal for depositSharesToRemove that overflows
-        int256 podOwnerDepositSharesBefore = eigenPodManager.podOwnerDepositShares(address(staker));
-        assertEq(uint256(podOwnerDepositSharesBefore), initDepositShares[0]);
+        int podOwnerDepositSharesBefore = eigenPodManager.podOwnerDepositShares(address(staker));
+        assertEq(uint(podOwnerDepositSharesBefore), initDepositShares[0]);
 
         uint[] memory depositSharesToRemove = new uint[](1);
-        depositSharesToRemove[0] = uint256(type(int256).max) + 100_000e18;
+        depositSharesToRemove[0] = uint(type(int).max) + 100_000e18;
 
         cheats.expectRevert("SafeCast: value doesn't fit in an int256");
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, depositSharesToRemove);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
-        
-        int256 podOwnerDepositSharesAfter = eigenPodManager.podOwnerDepositShares(address(staker));
+
+        int podOwnerDepositSharesAfter = eigenPodManager.podOwnerDepositShares(address(staker));
         assertEq(podOwnerDepositSharesAfter, podOwnerDepositSharesBefore);
     }
 }

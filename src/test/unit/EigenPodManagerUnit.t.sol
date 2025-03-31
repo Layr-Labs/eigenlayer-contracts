@@ -17,7 +17,7 @@ contract EigenPodManagerUnitTests is EigenLayerUnitTestSetup, IEigenPodManagerEv
     EigenPodManager public eigenPodManagerImplementation;
     EigenPodManager public eigenPodManager;
 
-    using Math for uint256;
+    using Math for uint;
     using stdStorage for StdStorage;
 
     // Mocks
@@ -332,18 +332,18 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
         eigenPodManager.removeDepositShares(defaultStaker, beaconChainETHStrategy, 0);
     }
 
-    function testFuzz_removeDepositShares_revert_depositSharesOverflow(uint256 sharesToAdd, uint256 sharesToRemove) public {
+    function testFuzz_removeDepositShares_revert_depositSharesOverflow(uint sharesToAdd, uint sharesToRemove) public {
         // bound sharesToAdd so that it can be cast to int256 and initial shares can be set in storage
-        sharesToAdd = bound(sharesToAdd, 0, uint256(type(int256).max));
+        sharesToAdd = bound(sharesToAdd, 0, uint(type(int).max));
         _initializePodWithShares(defaultStaker, int(sharesToAdd));
 
         // if sharesToRemove is greater than the max int256 and cast overflows, expect revert
-        if (sharesToRemove > uint256(type(int256).max)) {
+        if (sharesToRemove > uint(type(int).max)) {
             cheats.expectRevert("SafeCast: value doesn't fit in an int256");
-        // if sharesToRemove is greater than the sharesToAdd, expect revert from removing more depositShares than exists
+            // if sharesToRemove is greater than the sharesToAdd, expect revert from removing more depositShares than exists
         } else if (sharesToRemove > sharesToAdd) {
             cheats.expectRevert(IEigenPodManagerErrors.SharesNegative.selector);
-        // else don't expect a revert and check event emitted
+            // else don't expect a revert and check event emitted
         } else {
             cheats.expectEmit(true, true, true, true, address(eigenPodManager));
             emit NewTotalShares(defaultStaker, int(sharesToAdd) - int(sharesToRemove));
@@ -353,24 +353,21 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
         eigenPodManager.removeDepositShares(defaultStaker, beaconChainETHStrategy, sharesToRemove);
     }
 
-    function testFuzz_removeDepositShares_revert_sharesNegative(uint256 sharesToRemove) public {
+    function testFuzz_removeDepositShares_revert_sharesNegative(uint sharesToRemove) public {
         cheats.assume(sharesToRemove > 0);
 
         // if sharesToRemove is greater than the max int256 and cast overflows, expect revert
-        if (sharesToRemove > uint256(type(int256).max)) {
-            cheats.expectRevert("SafeCast: value doesn't fit in an int256");
+        if (sharesToRemove > uint(type(int).max)) cheats.expectRevert("SafeCast: value doesn't fit in an int256");
         // if sharesToRemove is valid input and existing shares is 0, expect revert from removing more depositShares than exists
-        } else {
-            cheats.expectRevert(IEigenPodManagerErrors.SharesNegative.selector);
-        }
+        else cheats.expectRevert(IEigenPodManagerErrors.SharesNegative.selector);
 
         cheats.prank(address(delegationManagerMock));
         eigenPodManager.removeDepositShares(defaultStaker, beaconChainETHStrategy, sharesToRemove);
     }
 
-    function testFuzz_removeDepositShares_revert_tooManySharesRemoved(uint256 sharesToAdd, uint256 sharesToRemove) public {
+    function testFuzz_removeDepositShares_revert_tooManySharesRemoved(uint sharesToAdd, uint sharesToRemove) public {
         // Constrain inputs
-        sharesToRemove = bound(sharesToRemove, 2, uint256(type(int256).max));
+        sharesToRemove = bound(sharesToRemove, 2, uint(type(int).max));
         sharesToAdd = bound(sharesToAdd, 1, sharesToRemove - 1);
 
         // Initialize pod with shares
@@ -382,9 +379,9 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
         eigenPodManager.removeDepositShares(defaultStaker, beaconChainETHStrategy, sharesToRemove);
     }
 
-    function testFuzz_removeShares(uint256 sharesToAdd, uint256 sharesToRemove) public {
+    function testFuzz_removeShares(uint sharesToAdd, uint sharesToRemove) public {
         // Constrain inputs
-        sharesToAdd = bound(sharesToAdd, 1, uint256(type(int256).max));
+        sharesToAdd = bound(sharesToAdd, 1, uint(type(int).max));
         sharesToRemove = bound(sharesToRemove, 1, sharesToAdd);
 
         // Initialize pod with shares
@@ -539,7 +536,7 @@ contract EigenPodManagerUnitTests_WithdrawSharesAsTokensTests is EigenPodManager
 }
 
 contract EigenPodManagerUnitTests_BeaconChainETHBalanceUpdateTests is EigenPodManagerUnitTests {
-    using Math for uint256;
+    using Math for uint;
 
     // Wrapper contract that exposes the internal `_calculateChangeInDelegatableShares` function
     EigenPodManagerWrapper public eigenPodManagerWrapper;
@@ -579,7 +576,7 @@ contract EigenPodManagerUnitTests_BeaconChainETHBalanceUpdateTests is EigenPodMa
         eigenPodManager.recordBeaconChainETHBalanceUpdate(defaultStaker, 0, sharesDelta);
     }
 
-    function testFuzz_revert_negativeDepositShares(int256 sharesBefore) public {
+    function testFuzz_revert_negativeDepositShares(int sharesBefore) public {
         cheats.assume(sharesBefore < 0);
 
         // Initialize shares
@@ -593,7 +590,7 @@ contract EigenPodManagerUnitTests_BeaconChainETHBalanceUpdateTests is EigenPodMa
 
     function testFuzz_noCall_zeroBalanceUpdate(uint sharesBefore, uint prevRestakedBalanceWei) public {
         // Constrain Inputs
-        sharesBefore = bound(sharesBefore, 0, uint256(type(int256).max));
+        sharesBefore = bound(sharesBefore, 0, uint(type(int).max));
         prevRestakedBalanceWei = bound(prevRestakedBalanceWei, 0, type(uint).max);
 
         // Initialize shares
@@ -640,10 +637,10 @@ contract EigenPodManagerUnitTests_BeaconChainETHBalanceUpdateTests is EigenPodMa
     function testFuzz_recordNegativeBalanceUpdate(int sharesBefore, int sharesDelta, uint prevRestakedBalanceWei) public {
         // Constrain inputs
         // ensure sharesBefore >= 0 to avoid LegacyWithdrawalsNotCompleted error
-        sharesBefore = bound(sharesBefore, 0, type(int256).max);
+        sharesBefore = bound(sharesBefore, 0, type(int).max);
         // bound prevRestakedBalanceWei so that it fits within int256 to avoid cast overflow
-        prevRestakedBalanceWei = bound(prevRestakedBalanceWei, 1, uint256(type(int256).max) / GWEI_TO_WEI) * GWEI_TO_WEI;
-        assertTrue(prevRestakedBalanceWei < uint256(type(int256).max), "prevRestakedBalanceWei is too large");
+        prevRestakedBalanceWei = bound(prevRestakedBalanceWei, 1, uint(type(int).max) / GWEI_TO_WEI) * GWEI_TO_WEI;
+        assertTrue(prevRestakedBalanceWei < uint(type(int).max), "prevRestakedBalanceWei is too large");
         // bound sharesDelta so that it fits within int256
         sharesDelta = bound(sharesDelta, 1, int(prevRestakedBalanceWei) / int(GWEI_TO_WEI)) * int(GWEI_TO_WEI);
 
@@ -652,7 +649,7 @@ contract EigenPodManagerUnitTests_BeaconChainETHBalanceUpdateTests is EigenPodMa
 
         uint64 prevSlashingFactor = eigenPodManager.beaconChainSlashingFactor(defaultStaker);
         uint64 newBeaconSlashingFactor =
-            uint64(uint256(prevSlashingFactor).mulDiv(prevRestakedBalanceWei - uint(sharesDelta), prevRestakedBalanceWei));
+            uint64(uint(prevSlashingFactor).mulDiv(prevRestakedBalanceWei - uint(sharesDelta), prevRestakedBalanceWei));
 
         cheats.expectEmit(true, true, true, true, address(eigenPodManager));
         emit BeaconChainSlashingFactorDecreased(defaultStaker, prevSlashingFactor, newBeaconSlashingFactor);
