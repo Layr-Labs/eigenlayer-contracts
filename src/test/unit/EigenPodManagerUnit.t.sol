@@ -612,8 +612,8 @@ contract EigenPodManagerUnitTests_BeaconChainETHBalanceUpdateTests is EigenPodMa
 
     function testFuzz_recordPositiveBalanceUpdate(uint sharesBefore, uint sharesDelta, uint prevRestakedBalanceWei) public {
         // Constrain inputs
-        sharesBefore = bound(sharesBefore, 0, uint256(type(int256).max));
-        sharesDelta = bound(sharesDelta, 1, uint256(type(int256).max));
+        sharesBefore = bound(sharesBefore, 0, type(uint224).max) * uint(GWEI_TO_WEI);
+        sharesDelta = bound(sharesDelta, 1, type(uint224).max) * uint(GWEI_TO_WEI);
         prevRestakedBalanceWei = bound(prevRestakedBalanceWei, 0, type(uint).max);
 
         // Initialize shares
