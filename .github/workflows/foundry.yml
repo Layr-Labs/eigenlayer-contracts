@@ -53,6 +53,8 @@ jobs:
       - name: "chain id"
         run: |
           echo "Chain ID: $CHAIN_ID"
+          echo "Chain ID: ${{ secrets.CHAIN_ID }}"
+          echo "Chain ID: ${{ env.CHAIN_ID }}"
           
 
       # Run Forge's formatting checker to ensure consistent code style.
