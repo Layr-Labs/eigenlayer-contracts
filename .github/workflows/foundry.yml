@@ -12,7 +12,6 @@ env:
   FOUNDRY_PROFILE: medium
   RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
   RPC_HOLESKY: ${{ secrets.RPC_HOLESKY }}
-  CHAIN_ID: ${{ secrets.CHAIN_ID }}
 
 jobs:
   # -----------------------------------------------------------------------
