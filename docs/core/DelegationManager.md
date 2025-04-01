@@ -347,6 +347,7 @@ For each strategy the staker has deposit shares in, the `DelegationManager` will
 * Delegates the caller to the `operator`
     * Tabulates any deposited shares across the `EigenPodManager` and `StrategyManager`, and delegates these shares to the `operator`
     * For each strategy in which the caller holds assets, updates the caller's `depositScalingFactor` for that strategy
+* Upon delegation, all funds of the `staker` are immediately slashable if the operator has allocated slashable stake for a staker's strategy to an operatorSet
 
 *Requirements*:
 * The caller MUST NOT already be delegated to an operator
@@ -707,7 +708,7 @@ function increaseDelegatedShares(
 
 Called by either the `StrategyManager` or `EigenPodManager` when a staker's deposit shares for one or more strategies increase.
 
-If the staker is delegated to an operator, the new deposit shares are directly added to that operator's `operatorShares`. Regardless of delegation status, the staker's deposit scaling factor is updated.
+If the staker is delegated to an operator, the new deposit shares are directly added to that operator's `operatorShares`. Regardless of delegation status, the staker's deposit scaling factor is updated. In addition, if the operator has allocated slashable stake for the strategy, the staker's deposit is immediately slashable by an operatorSet. 
 
 **Note** that if either the staker's current operator has been slashed 100% for `strategy`, OR the staker has been slashed 100% on the beacon chain such that the calculated slashing factor is 0, this method WILL REVERT. See [Shares Accounting - Fully Slashed](./accounting/SharesAccountingEdgeCases.md#fully-slashed-for-a-strategy) for details. This doesn't block delegation to an operator if the staker has 0 deposit shares for a strategy which has a slashing factor of 0, but any subsequent deposits that call `increaseDelegatedShares` will revert from the **Fully Slashed** edge case.
 
