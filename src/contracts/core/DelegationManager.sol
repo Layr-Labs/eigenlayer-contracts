@@ -504,7 +504,7 @@ contract DelegationManager is
             if (sharesAfter == 0) {
                 DepositScalingFactor storage dsf = _depositScalingFactor[staker][strategies[i]];
                 dsf.reset();
-                emit DepositScalingFactorUpdated(staker, strategies[i], dsf.scalingFactor()); 
+                emit DepositScalingFactorUpdated(staker, strategies[i], dsf.scalingFactor());
             }
         }
 
