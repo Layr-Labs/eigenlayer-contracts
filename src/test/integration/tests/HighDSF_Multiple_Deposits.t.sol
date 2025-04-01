@@ -4,21 +4,8 @@ pragma solidity ^0.8.27;
 import "src/test/integration/IntegrationChecks.t.sol";
 
 /// @notice Testing the rounding behavior when the DSF is high and there are multiple deposits
-contract Integration_HighDSF_Multiple_Deposits is IntegrationCheckUtils {
+contract Integration_HighDSF_Multiple_Deposits is IntegrationChecks {
     using ArrayLib for *;
-
-    AVS avs;
-    OperatorSet operatorSet;
-
-    User operator;
-    AllocateParams allocateParams;
-    SlashingParams slashParams;
-
-    User staker;
-    IStrategy[] strategies;
-    IERC20[] tokens; // underlying token for each strategy
-    uint[] initTokenBalances;
-    uint[] initDepositShares;
 
     /**
      * Shared setup:
@@ -31,8 +18,8 @@ contract Integration_HighDSF_Multiple_Deposits is IntegrationCheckUtils {
         // 1. create a new staker, operator, and avs
         _configAssetTypes(HOLDS_LST);
         (staker, strategies, initTokenBalances) = _newRandomStaker();
-        (operator,,) = _newRandomOperator();
-        (avs,) = _newRandomAVS();
+        operator = _newRandomOperator();
+        avs = _newRandomAVS();
 
         // 2. Create an operator set and register an operator, allocate all magnitude to the operator set
         operatorSet = avs.createOperatorSet(strategies);
@@ -55,26 +42,29 @@ contract Integration_HighDSF_Multiple_Deposits is IntegrationCheckUtils {
         assertEq(slashingFactor, 1, "slashing factor should be 1");
     }
 
+    function _dealAmounts(User user, IStrategy[] memory strategies, uint[] memory amounts) internal noTracing {
+        for (uint i = 0; i < amounts.length; i++) {
+            IStrategy strategy = strategies[i];
+            if (strategy == BEACONCHAIN_ETH_STRAT) cheats.deal(address(user), amounts[i]);
+            else deal(address(strategy.underlyingToken()), address(user), amounts[i]);
+        }
+    }
+
     /// @notice Test setup with a staker with slashingFactor of 1 (maxMagnitude = 1)
     /// with repeat deposits to increase the DSF. Limiting number of fuzzed runs to speed up tests since this
     /// for loops several times.
-    /// forge-config: default.fuzz.runs = 10
-    function test_multiple_deposits(uint24 _r) public rand(_r) {
+    function test_multiple_deposits() public {
         // deposit initial assets into strategies
         staker.depositIntoEigenlayer(strategies, initTokenBalances);
         initDepositShares = _calculateExpectedShares(strategies, initTokenBalances);
         check_Deposit_State(staker, strategies, initDepositShares);
 
         // Repeat the deposit 50 times
-        // Gas intensive so we pause gas metering for this loop
-        cheats.pauseGasMetering();
         for (uint i = 0; i < 50; i++) {
             _dealAmounts(staker, strategies, initTokenBalances);
             staker.depositIntoEigenlayer(strategies, initTokenBalances);
-            initDepositShares = _calculateExpectedShares(strategies, initTokenBalances);
             check_Deposit_State(staker, strategies, initDepositShares);
         }
-        cheats.resumeGasMetering();
 
         // Check that the DSF is still bounded without overflow
         for (uint i = 0; i < strategies.length; i++) {
