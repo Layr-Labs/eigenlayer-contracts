@@ -336,7 +336,9 @@ function delegateTo(
     nonReentrant
 ```
 
-Allows a staker to delegate their assets to an operator. Delegation is all-or-nothing: when a staker delegates to an operator, they delegate ALL their assets. Stakers can only be delegated to one operator at a time.
+Allows a staker to delegate their assets to an operator. Delegation is all-or-nothing: when a staker delegates to an operator, they delegate ALL their assets. Stakers can only be delegated to one operator at a time. 
+
+*Note: Delegating to an operator who has very low magnitudes (on the order of wei) may result in loss of funds.*
 
 For each strategy the staker has deposit shares in, the `DelegationManager` will:
 * Query the staker's deposit shares from the `StrategyManager/EigenPodManager`
