@@ -70,9 +70,7 @@ contract Execute is QueueUpgrade {
         assertTrue(delegation.allocationManager() == Env.proxy.allocationManager(), "dm.alm invalid");
         assertTrue(delegation.pauserRegistry() == Env.impl.pauserRegistry(), "dm.pR invalid");
         assertTrue(delegation.permissionController() == Env.proxy.permissionController(), "dm.pc invalid");
-        assertTrue(
-            delegation.minWithdrawalDelayBlocks() == Env.MIN_WITHDRAWAL_DELAY(), "dm.withdrawalDelay invalid"
-        );
+        assertTrue(delegation.minWithdrawalDelayBlocks() == Env.MIN_WITHDRAWAL_DELAY(), "dm.withdrawalDelay invalid");
 
         UpgradeableBeacon eigenPodBeacon = Env.beacon.eigenPod();
         assertTrue(eigenPodBeacon.implementation() == address(Env.impl.eigenPod()), "eigenPodBeacon.impl invalid");

@@ -112,7 +112,6 @@ contract Deploy is EOADeployer {
     /// @dev Validate the immutables set in the new implementation constructors
     function _validateImplConstructors() internal view {
         {
-
             DelegationManager delegation = Env.impl.delegationManager();
             assertTrue(delegation.strategyManager() == Env.proxy.strategyManager(), "dm.sm invalid");
             assertTrue(delegation.eigenPodManager() == Env.proxy.eigenPodManager(), "dm.epm invalid");
