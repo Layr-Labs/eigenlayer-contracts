@@ -452,7 +452,7 @@ function deregisterOperator(address operator, uint32[] calldata operatorSetIds) 
 * Caller MUST be authorized, either the operator/AVS themselves, or an admin/appointee (see [`PermissionController.md`](../permissions/PermissionController.md))
 * Each operator set ID MUST exist for the given AVS
 * Operator MUST be registered for the given operator sets
-* Note that, unlike `registerForOperatorSets`, the AVS's `AVSRegistrar` MAY revert and the deregistration will still succeed
+* The call to the AVS's configured `IAVSRegistrar` MUST NOT revert
 
 ---
 
