@@ -629,6 +629,8 @@ Another point of consideration are race conditions involving a slashing event an
     * New magnitudes MUST NOT match existing ones
     * New encumbered magnitude MUST NOT exceed the operator's max magnitude for the given strategy
 
+*Note: For operators who have negative shares in the `EigenPodManager` (from a pre slashing upgrade state), we recommend not allocating until shares become nonzero.*
+
 #### `clearDeallocationQueue`
 
 ```solidity
