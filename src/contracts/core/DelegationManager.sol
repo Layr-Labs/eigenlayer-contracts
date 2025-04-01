@@ -970,6 +970,7 @@ contract DelegationManager is
         return (strategies, shares);
     }
 
+    /// @inheritdoc IDelegationManager
     function queuedWithdrawals(
         bytes32 withdrawalRoot
     ) external view returns (Withdrawal memory withdrawal) {
