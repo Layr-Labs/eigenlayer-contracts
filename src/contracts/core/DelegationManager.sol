@@ -502,7 +502,9 @@ contract DelegationManager is
             uint256 sharesAfter = shareManager.removeDepositShares(staker, strategies[i], depositSharesToWithdraw[i]);
 
             if (sharesAfter == 0) {
-                _depositScalingFactor[staker][strategies[i]].reset();
+                DepositScalingFactor storage dsf = _depositScalingFactor[staker][strategies[i]];
+                dsf.reset();
+                emit DepositScalingFactorUpdated(staker, strategies[i], dsf.scalingFactor()); 
             }
         }
 
