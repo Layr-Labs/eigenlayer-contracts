@@ -573,9 +573,11 @@ If the staker chooses to receive the withdrawal _as tokens_, the withdrawable sh
 
 If the staker chooses to receive the withdrawal _as shares_, the withdrawable shares are credited to the staker via the corresponding share manager (`EigenPodManager`/`StrategyManager`). Additionally, if the caller is delegated to an operator, the new slashing factor for the given `(staker, operator, strategy)` determines how many shares are awarded to the operator (and how the staker's deposit scaling factor is updated) (See [Slashing Factors and Scaling Shares](#slashing-factors-and-scaling-shares)). In receiving the withdrawal as shares, this amount is credited as deposit shares for the staker. Due to known rounding error, the amount of withdrawable shares after completing the withdrawal may be slightly less than what was originally withdrawable.
 
-**Note:** if the staker (i) receives the withdrawal as shares, (ii) has `MAX_STAKER_STRATEGY_LIST_LENGTH` unique deposit strategies in the `StrategyManager`, and (iii) is withdrawing to a `StrategyManager` strategy in which they do not currently have shares, this will revert. The staker cannot withdraw such that their `stakerStrategyList` length exceeds the maximum; this withdrawal will have to be completed as tokens instead.
+**Note:** if the staker (i) receives the withdrawal as shares, (ii) has `MAX_STAKER_STRATEGY_LIST_LENGTH` unique deposit strategies in the `StrategyManager`, and (iii) is withdrawing to a `StrategyManager` strategy in which they do not currently have shares, this will revert. The staker cannot withdraw such that their `stakerStrategyList` length exceeds the maximum; this withdrawal will have to be completed as tokens instead. 
 
 **Note:** if the staker receives a `beaconChainETHStrategy` withdrawal as tokens, the staker's `EigenPod` MUST have sufficient `withdrawableExecutionLayerGwei` to honor the withdrawal.
+
+**Note:** if the strategy is not in the whitelist of the `StrategyManager`, the withdrawal will still succeed regardless of whether it is completed as shares or tokens. 
 
 *Effects*:
 * The hash of the `Withdrawal` is removed from the pending withdrawals
