@@ -2,7 +2,8 @@ name: Foundry
 
 on:
   workflow_dispatch:
-  pull_request:
+  pull_request_target:
+    types: [opened, synchronize, reopened, labeled]
   push:
     branches:
       - main
@@ -15,21 +16,49 @@ env:
 
 jobs:
   # -----------------------------------------------------------------------
-  # Forge Test
+  # Security Check for PR Approval
+  # -----------------------------------------------------------------------
+  
+  approval-check:
+    name: Security Approval Check
+    runs-on: ubuntu-latest
+    # Only run this job for pull_request_target events
+    if: github.event_name == 'pull_request_target'
+    outputs:
+      approved: ${{ steps.approval-check.outputs.approved }}
+    steps:
+      - id: approval-check
+        run: |
+          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'safe-to-test') }}" == "true" ]]; then
+            echo "approved=true" >> $GITHUB_OUTPUT
+          else
+            echo "approved=false" >> $GITHUB_OUTPUT
+            echo "::notice::This PR requires the 'safe-to-test' label to run tests with secrets. A maintainer must review and add this label."
+          fi
+
+  # -----------------------------------------------------------------------
+  # Basic Tests
   # -----------------------------------------------------------------------
 
-  test-suite:
-    name: Test
+  basic-tests:
+    name: Basic Tests
     runs-on: protocol-x64-16core
+    # For pull_request_target, wait for approval check
+    needs: [approval-check]
+    if: >
+      github.event_name != 'pull_request_target' || 
+      needs.approval-check.outputs.approved == 'true'
     strategy:
       matrix:
-        suite: [Unit, Integration, Fork]
+        suite: [Unit, Integration]
     
     steps:
-      # Check out repository with all submodules for complete codebase access.
+      # Important security consideration: For pull_request_target, we must explicitly checkout the PR code
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+          # Only for pull_request_target - use the PR's code instead of the base branch
+          ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || '' }}
 
       # Restore Forge cache
       - name: Cache Forge Build
@@ -66,11 +95,56 @@ jobs:
         run: |
           case "${{ matrix.suite }}" in
             Unit) forge test --no-match-contract Integration ;;
-            Integration) forge test --match-contract Integration ;;
-            Fork) forge test --match-contract Integration ;;
+            Integration) forge test --match-contract Integration --no-match-contract ForkTest ;;
           esac
+
+  # -----------------------------------------------------------------------
+  # Fork Tests
+  # -----------------------------------------------------------------------
+
+  fork-tests:
+    name: Fork Tests
+    runs-on: protocol-x64-16core
+    # For push events, always run. For pull_request_target, wait for approval
+    needs: [approval-check]
+    if: >
+      github.event_name == 'push' || 
+      github.event_name == 'workflow_dispatch' || 
+      (github.event_name == 'pull_request_target' && needs.approval-check.outputs.approved == 'true')
+    steps:
+      # Important security consideration: For pull_request_target, we must explicitly checkout the PR code
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          # Only for pull_request_target - use the PR's code instead of the base branch
+          ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || '' }}
+
+      # Restore Forge cache
+      - name: Cache Forge Build
+        uses: actions/cache@v3
+        with:
+          path: |
+            cache/
+            out/
+          key: ${{ runner.os }}-forge-${{ hashFiles('**/foundry.toml', '**/remappings.txt', 'src/**/*.sol', 'lib/**/*.sol') }}
+          restore-keys: |
+            ${{ runner.os }}-forge-
+
+      # Install the Foundry toolchain.
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      # Run Fork tests that require secrets
+      - name: Run Fork tests
+        run: forge test --match-contract ForkTest
         env:
-          FOUNDRY_PROFILE: ${{ matrix.suite == 'Fork' && 'forktest' || 'medium' }}
+          FOUNDRY_PROFILE: forktest
+          RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
+          RPC_HOLESKY: ${{ secrets.RPC_HOLESKY }}
+
+
 
   # -----------------------------------------------------------------------
   # Forge Test (Intense)
@@ -80,7 +154,7 @@ jobs:
     name: Test (Intense)
     runs-on: protocol-x64-16core
     # Only run on push events to dev branch, not on PR events
-    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     strategy:
       fail-fast: true
     steps:
@@ -127,6 +201,12 @@ jobs:
   storage-diff:
     name: Test (Storage)
     runs-on: protocol-x64-16core
+    # For push events, always run. For pull_request_target, wait for approval
+    needs: [approval-check]
+    if: >
+      github.event_name == 'push' || 
+      github.event_name == 'workflow_dispatch' || 
+      (github.event_name == 'pull_request_target' && needs.approval-check.outputs.approved == 'true')
     steps:
       # Check out repository with all submodules for complete codebase access.
       - uses: actions/checkout@v4
@@ -163,14 +243,21 @@ jobs:
   run-coverage:
     name: Coverage
     runs-on: protocol-x64-16core
-    # Only run coverage checks on dev, testnet-holesky, and mainnet branches, or PRs targeting these branches
-    if: |
-      github.ref == 'refs/heads/dev' ||
-      github.ref == 'refs/heads/testnet-holesky' ||
-      github.ref == 'refs/heads/mainnet' ||
-      github.base_ref == 'dev' ||
-      github.base_ref == 'testnet-holesky' ||
-      github.base_ref == 'mainnet'
+    # For push events, only run on specific branches. For pull_request_target, wait for approval
+    needs: [approval-check]
+    if: >
+      (github.event_name == 'push' && (
+        github.ref == 'refs/heads/dev' ||
+        github.ref == 'refs/heads/testnet-holesky' ||
+        github.ref == 'refs/heads/mainnet'
+      )) ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request_target' && 
+       needs.approval-check.outputs.approved == 'true' && (
+         github.base_ref == 'dev' ||
+         github.base_ref == 'testnet-holesky' ||
+         github.base_ref == 'mainnet'
+       ))
     strategy:
       fail-fast: true
     steps:
@@ -262,6 +349,12 @@ jobs:
   compare-contract-sizes:
     name: Size Diff
     runs-on: protocol-x64-16core
+    # For pull_request_target, wait for approval
+    needs: [approval-check]
+    if: >
+      github.event_name == 'push' || 
+      github.event_name == 'workflow_dispatch' || 
+      (github.event_name == 'pull_request_target' && needs.approval-check.outputs.approved == 'true')
     steps:
       # Check out repository with all submodules for complete codebase access.
       - uses: actions/checkout@v4
