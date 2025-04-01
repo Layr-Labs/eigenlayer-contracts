@@ -2,7 +2,7 @@ name: Foundry
 
 on:
   workflow_dispatch:
-  pull_request:
+  pull_request_target:
   push:
     branches:
       - main
@@ -21,15 +21,20 @@ jobs:
   test-suite:
     name: Test
     runs-on: protocol-x64-16core
+    # Add permissions to maintain security when using pull_request_target
+    permissions:
+      contents: read
     strategy:
       matrix:
         suite: [Unit, Integration, Fork]
     
     steps:
-      # Check out repository with all submodules for complete codebase access.
+      # Check out repository with proper ref for pull_request_target
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+          # For pull_request_target, checkout PR head instead of merge commit
+          ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.ref }}
 
       # Restore Forge cache
       - name: Cache Forge Build
@@ -81,6 +86,9 @@ jobs:
     runs-on: protocol-x64-16core
     # Only run on push events to dev branch, not on PR events
     if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+    # Add permissions to maintain security
+    permissions:
+      contents: read
     strategy:
       fail-fast: true
     steps:
@@ -127,11 +135,16 @@ jobs:
   storage-diff:
     name: Test (Storage)
     runs-on: protocol-x64-16core
+    # Add permissions to maintain security when using pull_request_target
+    permissions:
+      contents: read
     steps:
-      # Check out repository with all submodules for complete codebase access.
+      # Check out repository with proper ref for pull_request_target
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+          # For pull_request_target, checkout PR head instead of merge commit
+          ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.ref }}
 
       # Restore Forge cache
       - name: Cache Forge Build
@@ -163,21 +176,28 @@ jobs:
   run-coverage:
     name: Coverage
     runs-on: protocol-x64-16core
-    # Only run coverage checks on dev, testnet-holesky, and mainnet branches, or PRs targeting these branches
+    # Modified conditions to support pull_request_target
     if: |
       github.ref == 'refs/heads/dev' ||
       github.ref == 'refs/heads/testnet-holesky' ||
       github.ref == 'refs/heads/mainnet' ||
-      github.base_ref == 'dev' ||
-      github.base_ref == 'testnet-holesky' ||
-      github.base_ref == 'mainnet'
+      (github.event_name == 'pull_request_target' && 
+        (github.base_ref == 'dev' || 
+         github.base_ref == 'testnet-holesky' || 
+         github.base_ref == 'mainnet'))
+    # Add permissions to maintain security when using pull_request_target
+    permissions:
+      contents: read
+      actions: write # For uploading artifacts
     strategy:
       fail-fast: true
     steps:
-      # Check out repository with all submodules for complete codebase access.
+      # Check out repository with proper ref for pull_request_target
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+          # For pull_request_target, checkout PR head instead of merge commit
+          ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.ref }}
 
       # Restore Foundry and Forge cache
       - name: Cache Foundry Dependencies
@@ -262,11 +282,18 @@ jobs:
   compare-contract-sizes:
     name: Size Diff
     runs-on: protocol-x64-16core
+    # Add permissions to maintain security when using pull_request_target
+    permissions:
+      contents: read
+    # Only run on pull request events
+    if: github.event_name == 'pull_request_target'
     steps:
-      # Check out repository with all submodules for complete codebase access.
+      # Check out repository with proper ref for pull_request_target
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+          # For pull_request_target, checkout PR head instead of merge commit
+          ref: ${{ github.event.pull_request.head.sha }}
 
       # Install the Foundry toolchain.
       - name: "Install Foundry"
