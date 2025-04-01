@@ -27,8 +27,8 @@ jobs:
     outputs:
       approved: ${{ steps.approval-check.outputs.approved }}
     steps:
-      - name: Check if PR author is repository admin
-        id: check-admin
+      - name: Check if PR author has write access
+        id: check-permission
         uses: actions/github-script@v6
         with:
           script: |
@@ -36,27 +36,27 @@ jobs:
             const repo = context.repo.repo;
             const pr_author = context.payload.pull_request.user.login;
             
-            // Get repository collaborators with admin permissions
+            // Get repository collaborators with write or admin permissions
             const { data: collaborators } = await github.rest.repos.listCollaborators({
               owner,
               repo,
-              permission: 'admin'
+              permission: 'write'
             });
             
-            const admins = collaborators.map(user => user.login);
-            const is_admin = admins.includes(pr_author);
+            const authorized_users = collaborators.map(user => user.login);
+            const has_write_access = authorized_users.includes(pr_author);
             
             console.log(`PR author: ${pr_author}`);
-            console.log(`Repo admins: ${admins.join(', ')}`);
-            console.log(`Is admin: ${is_admin}`);
+            console.log(`Users with write access: ${authorized_users.join(', ')}`);
+            console.log(`Has write access: ${has_write_access}`);
             
-            return { is_admin };
+            return { has_write_access };
 
       - id: approval-check
         run: |
-          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'safe-to-test') }}" == "true" || "${{ steps.check-admin.outputs.result }}" == *"is_admin\":true"* ]]; then
+          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'safe-to-test') }}" == "true" || "${{ fromJSON(steps.check-permission.outputs.result).has_write_access }}" == "true" ]]; then
             echo "approved=true" >> $GITHUB_OUTPUT
-            echo "::notice::PR approved for testing (label or admin status)"
+            echo "::notice::PR approved for testing (has 'safe-to-test' label or author has write access)"
           else
             echo "approved=false" >> $GITHUB_OUTPUT
             echo "::notice::This PR requires the 'safe-to-test' label to run tests with secrets. A maintainer must review and add this label."
@@ -69,11 +69,6 @@ jobs:
   basic-tests:
     name: Basic Tests
     runs-on: protocol-x64-16core
-    # For pull_request_target, wait for approval check
-    needs: [approval-check]
-    if: >
-      github.event_name != 'pull_request_target' || 
-      needs.approval-check.outputs.approved == 'true'
     strategy:
       matrix:
         suite: [Unit, Integration]
@@ -269,21 +264,14 @@ jobs:
   run-coverage:
     name: Coverage
     runs-on: protocol-x64-16core
-    # For push events, only run on specific branches. For pull_request_target, wait for approval
-    needs: [approval-check]
-    if: >
-      (github.event_name == 'push' && (
-        github.ref == 'refs/heads/dev' ||
-        github.ref == 'refs/heads/testnet-holesky' ||
-        github.ref == 'refs/heads/mainnet'
-      )) ||
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'pull_request_target' && 
-       needs.approval-check.outputs.approved == 'true' && (
-         github.base_ref == 'dev' ||
-         github.base_ref == 'testnet-holesky' ||
-         github.base_ref == 'mainnet'
-       ))
+    # Only run coverage checks on dev, testnet-holesky, and mainnet branches, or PRs targeting these branches
+    if: |
+      github.ref == 'refs/heads/dev' ||
+      github.ref == 'refs/heads/testnet-holesky' ||
+      github.ref == 'refs/heads/mainnet' ||
+      github.base_ref == 'dev' ||
+      github.base_ref == 'testnet-holesky' ||
+      github.base_ref == 'mainnet'
     strategy:
       fail-fast: true
     steps:
@@ -375,12 +363,6 @@ jobs:
   compare-contract-sizes:
     name: Size Diff
     runs-on: protocol-x64-16core
-    # For pull_request_target, wait for approval
-    needs: [approval-check]
-    if: >
-      github.event_name == 'push' || 
-      github.event_name == 'workflow_dispatch' || 
-      (github.event_name == 'pull_request_target' && needs.approval-check.outputs.approved == 'true')
     steps:
       # Check out repository with all submodules for complete codebase access.
       - uses: actions/checkout@v4
