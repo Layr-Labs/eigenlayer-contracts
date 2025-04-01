@@ -59,7 +59,9 @@ contract ZeusDeploymentParser is IDeploymentParser, Script, Logger {
         return Env.strategyBase(Env.impl);
     }
 
-    function deployedStrategyArray(uint256 index) external view returns (StrategyBase) {
+    function deployedStrategyArray(
+        uint256 index
+    ) external view returns (StrategyBase) {
         return Env.strategyBaseTVLLimits(Env.instance, index);
     }
 
@@ -206,7 +208,9 @@ contract ZeusDeploymentParser is IDeploymentParser, Script, Logger {
 
     function verifyImplementations() external view {
         assertEq(
-            this.eigenLayerProxyAdmin().getProxyImplementation(ITransparentUpgradeableProxy(payable(address(this.avsDirectory())))),
+            this.eigenLayerProxyAdmin().getProxyImplementation(
+                ITransparentUpgradeableProxy(payable(address(this.avsDirectory())))
+            ),
             address(this.avsDirectoryImplementation()),
             "avsDirectory: implementation set incorrectly"
         );
@@ -225,12 +229,16 @@ contract ZeusDeploymentParser is IDeploymentParser, Script, Logger {
             "delegationManager: implementation set incorrectly"
         );
         assertEq(
-            this.eigenLayerProxyAdmin().getProxyImplementation(ITransparentUpgradeableProxy(payable(address(this.strategyManager())))),
+            this.eigenLayerProxyAdmin().getProxyImplementation(
+                ITransparentUpgradeableProxy(payable(address(this.strategyManager())))
+            ),
             address(this.strategyManagerImplementation()),
             "strategyManager: implementation set incorrectly"
         );
         assertEq(
-            this.eigenLayerProxyAdmin().getProxyImplementation(ITransparentUpgradeableProxy(payable(address(this.eigenPodManager())))),
+            this.eigenLayerProxyAdmin().getProxyImplementation(
+                ITransparentUpgradeableProxy(payable(address(this.eigenPodManager())))
+            ),
             address(this.eigenPodManagerImplementation()),
             "eigenPodManager: implementation set incorrectly"
         );
@@ -242,7 +250,9 @@ contract ZeusDeploymentParser is IDeploymentParser, Script, Logger {
         );
     }
 
-    function verifyContractsInitialized(bool isInitialDeployment) external {
+    function verifyContractsInitialized(
+        bool isInitialDeployment
+    ) external {
         // AVSDirectory
         cheats.expectRevert(bytes("Initializable: contract is already initialized"));
         this.avsDirectory().initialize(address(0), 0);
@@ -320,7 +330,9 @@ contract ZeusDeploymentParser is IDeploymentParser, Script, Logger {
             this.delegationManager().pauserRegistry() == this.pauserRegistry(),
             "delegationManager: pauser registry not set correctly"
         );
-        assertEq(this.delegationManager().owner(), this.executorMultisig(), "delegationManager: owner not set correctly");
+        assertEq(
+            this.delegationManager().owner(), this.executorMultisig(), "delegationManager: owner not set correctly"
+        );
 
         // StrategyManager
         assertTrue(
@@ -336,9 +348,7 @@ contract ZeusDeploymentParser is IDeploymentParser, Script, Logger {
         );
         assertEq(this.eigenPodManager().owner(), this.executorMultisig(), "eigenPodManager: owner not set correctly");
         assertEq(
-            address(this.eigenPodManager().ethPOS()),
-            address(Env.ethPOS()),
-            "eigenPodManager: ethPOS not set correctly"
+            address(this.eigenPodManager().ethPOS()), address(Env.ethPOS()), "eigenPodManager: ethPOS not set correctly"
         );
 
         // EigenPodBeacon
@@ -357,14 +367,23 @@ contract ZeusDeploymentParser is IDeploymentParser, Script, Logger {
         );
 
         // Pausing Permissions
-        assertTrue(this.pauserRegistry().isPauser(this.operationsMultisig()), "pauserRegistry: operationsMultisig is not pauser");
-        assertTrue(this.pauserRegistry().isPauser(this.executorMultisig()), "pauserRegistry: executorMultisig is not pauser");
-        assertTrue(this.pauserRegistry().isPauser(this.pauserMultisig()), "pauserRegistry: pauserMultisig is not pauser");
-        assertEq(this.pauserRegistry().unpauser(), this.executorMultisig(), "pauserRegistry: unpauser not set correctly");
+        assertTrue(
+            this.pauserRegistry().isPauser(this.operationsMultisig()),
+            "pauserRegistry: operationsMultisig is not pauser"
+        );
+        assertTrue(
+            this.pauserRegistry().isPauser(this.executorMultisig()), "pauserRegistry: executorMultisig is not pauser"
+        );
+        assertTrue(
+            this.pauserRegistry().isPauser(this.pauserMultisig()), "pauserRegistry: pauserMultisig is not pauser"
+        );
+        assertEq(
+            this.pauserRegistry().unpauser(), this.executorMultisig(), "pauserRegistry: unpauser not set correctly"
+        );
     }
 
     function initialize() external {
         // No initialization needed for Zeus implementation
         // All contract addresses are loaded directly from Env.sol
     }
-} 
+}

@@ -66,7 +66,9 @@ contract JsonDeploymentParser is IDeploymentParser, Script, Logger {
     uint256 private _EIGENPOD_MANAGER_INIT_PAUSED_STATUS;
     uint256 private _ALLOCATION_MANAGER_INIT_PAUSED_STATUS;
 
-    constructor(string memory _jsonPath) {
+    constructor(
+        string memory _jsonPath
+    ) {
         jsonPath = _jsonPath;
     }
 
@@ -103,19 +105,23 @@ contract JsonDeploymentParser is IDeploymentParser, Script, Logger {
 
         // Core contracts
         _allocationManager = AllocationManager(json.readAddress(".addresses.allocationManager"));
-        _allocationManagerImplementation = AllocationManager(json.readAddress(".addresses.allocationManagerImplementation"));
+        _allocationManagerImplementation =
+            AllocationManager(json.readAddress(".addresses.allocationManagerImplementation"));
         _avsDirectory = AVSDirectory(json.readAddress(".addresses.avsDirectory"));
         _avsDirectoryImplementation = AVSDirectory(json.readAddress(".addresses.avsDirectoryImplementation"));
         _delegationManager = DelegationManager(json.readAddress(".addresses.delegationManager"));
-        _delegationManagerImplementation = DelegationManager(json.readAddress(".addresses.delegationManagerImplementation"));
+        _delegationManagerImplementation =
+            DelegationManager(json.readAddress(".addresses.delegationManagerImplementation"));
         _rewardsCoordinator = RewardsCoordinator(json.readAddress(".addresses.rewardsCoordinator"));
-        _rewardsCoordinatorImplementation = RewardsCoordinator(json.readAddress(".addresses.rewardsCoordinatorImplementation"));
+        _rewardsCoordinatorImplementation =
+            RewardsCoordinator(json.readAddress(".addresses.rewardsCoordinatorImplementation"));
         _strategyManager = StrategyManager(json.readAddress(".addresses.strategyManager"));
         _strategyManagerImplementation = StrategyManager(json.readAddress(".addresses.strategyManagerImplementation"));
         _eigenPodManager = EigenPodManager(json.readAddress(".addresses.eigenPodManager"));
         _eigenPodManagerImplementation = EigenPodManager(json.readAddress(".addresses.eigenPodManagerImplementation"));
         _permissionController = PermissionController(json.readAddress(".addresses.permissionController"));
-        _permissionControllerImplementation = PermissionController(json.readAddress(".addresses.permissionControllerImplementation"));
+        _permissionControllerImplementation =
+            PermissionController(json.readAddress(".addresses.permissionControllerImplementation"));
 
         // Strategy contracts
         _strategyFactory = StrategyFactory(json.readAddress(".addresses.strategyFactory"));
@@ -198,7 +204,9 @@ contract JsonDeploymentParser is IDeploymentParser, Script, Logger {
         return _strategyBase;
     }
 
-    function deployedStrategyArray(uint256 index) external view returns (StrategyBase) {
+    function deployedStrategyArray(
+        uint256 index
+    ) external view returns (StrategyBase) {
         return _deployedStrategyArray[index];
     }
 
@@ -360,12 +368,16 @@ contract JsonDeploymentParser is IDeploymentParser, Script, Logger {
             "delegationManager: implementation set incorrectly"
         );
         assertEq(
-            _eigenLayerProxyAdmin.getProxyImplementation(ITransparentUpgradeableProxy(payable(address(_strategyManager)))),
+            _eigenLayerProxyAdmin.getProxyImplementation(
+                ITransparentUpgradeableProxy(payable(address(_strategyManager)))
+            ),
             address(_strategyManagerImplementation),
             "strategyManager: implementation set incorrectly"
         );
         assertEq(
-            _eigenLayerProxyAdmin.getProxyImplementation(ITransparentUpgradeableProxy(payable(address(_eigenPodManager)))),
+            _eigenLayerProxyAdmin.getProxyImplementation(
+                ITransparentUpgradeableProxy(payable(address(_eigenPodManager)))
+            ),
             address(_eigenPodManagerImplementation),
             "eigenPodManager: implementation set incorrectly"
         );
@@ -387,7 +399,9 @@ contract JsonDeploymentParser is IDeploymentParser, Script, Logger {
         );
     }
 
-    function verifyContractsInitialized(bool isInitialDeployment) external {
+    function verifyContractsInitialized(
+        bool isInitialDeployment
+    ) external {
         // AVSDirectory
         cheats.expectRevert(bytes("Initializable: contract is already initialized"));
         _avsDirectory.initialize(address(0), _AVS_DIRECTORY_INIT_PAUSED_STATUS);
@@ -418,10 +432,7 @@ contract JsonDeploymentParser is IDeploymentParser, Script, Logger {
 
     function verifyInitializationParams() external view {
         // AVSDirectory
-        assertTrue(
-            _avsDirectory.pauserRegistry() == _pauserRegistry,
-            "avsdirectory: pauser registry not set correctly"
-        );
+        assertTrue(_avsDirectory.pauserRegistry() == _pauserRegistry, "avsdirectory: pauser registry not set correctly");
         assertEq(_avsDirectory.owner(), _executorMultisig, "avsdirectory: owner not set correctly");
         assertEq(
             _avsDirectory.paused(),
@@ -449,8 +460,7 @@ contract JsonDeploymentParser is IDeploymentParser, Script, Logger {
 
         // StrategyManager
         assertTrue(
-            _strategyManager.pauserRegistry() == _pauserRegistry,
-            "strategyManager: pauser registry not set correctly"
+            _strategyManager.pauserRegistry() == _pauserRegistry, "strategyManager: pauser registry not set correctly"
         );
         assertEq(_strategyManager.owner(), _executorMultisig, "strategyManager: owner not set correctly");
         assertEq(
@@ -461,8 +471,7 @@ contract JsonDeploymentParser is IDeploymentParser, Script, Logger {
 
         // EigenPodManager
         assertTrue(
-            _eigenPodManager.pauserRegistry() == _pauserRegistry,
-            "eigenPodManager: pauser registry not set correctly"
+            _eigenPodManager.pauserRegistry() == _pauserRegistry, "eigenPodManager: pauser registry not set correctly"
         );
         assertEq(_eigenPodManager.owner(), _executorMultisig, "eigenPodManager: owner not set correctly");
         assertEq(
@@ -493,4 +502,4 @@ contract JsonDeploymentParser is IDeploymentParser, Script, Logger {
         assertTrue(_pauserRegistry.isPauser(_pauserMultisig), "pauserRegistry: pauserMultisig is not pauser");
         assertEq(_pauserRegistry.unpauser(), _executorMultisig, "pauserRegistry: unpauser not set correctly");
     }
-} 
+}

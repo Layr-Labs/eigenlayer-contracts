@@ -39,7 +39,9 @@ interface IDeploymentParser {
     function strategyFactory() external view returns (StrategyFactory);
     function eigenStrategy() external view returns (EigenStrategy);
     function strategyBase() external view returns (StrategyBase);
-    function deployedStrategyArray(uint256 index) external view returns (StrategyBase);
+    function deployedStrategyArray(
+        uint256 index
+    ) external view returns (StrategyBase);
 
     // Token contracts
     function EIGEN() external view returns (IEigen);
@@ -75,9 +77,11 @@ interface IDeploymentParser {
     // Verification functions
     function verifyContractPointers() external view;
     function verifyImplementations() external view;
-    function verifyContractsInitialized(bool isInitialDeployment) external;
+    function verifyContractsInitialized(
+        bool isInitialDeployment
+    ) external;
     function verifyInitializationParams() external view;
 
     // Initialization
     function initialize() external;
-} 
+}
