@@ -588,6 +588,7 @@ Finally, `modifyAllocations` does NOT require an allocation to consider whether 
 
 * The increase in magnitude is immediately added to the strategy's `encumberedMagnitude`. This ensures that subsequent _allocations to other operator sets from the same strategy_ will not go above the strategy's `maxMagnitude`.
 * The `allocation.pendingDiff` is set, with an `allocation.effectBlock` equal to the current block plus the operator's configured allocation delay.
+* Unlike for deallocations, the `effectBlock` for allocations is not incremented by 1. This is to allow for instantaneous allocations. 
 
 **If we are handling a _decrease in magnitude_ (deallocation):**
 
