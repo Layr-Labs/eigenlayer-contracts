@@ -27,10 +27,36 @@ jobs:
     outputs:
       approved: ${{ steps.approval-check.outputs.approved }}
     steps:
+      - name: Check if PR author is repository admin
+        id: check-admin
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const pr_author = context.payload.pull_request.user.login;
+            
+            // Get repository collaborators with admin permissions
+            const { data: collaborators } = await github.rest.repos.listCollaborators({
+              owner,
+              repo,
+              permission: 'admin'
+            });
+            
+            const admins = collaborators.map(user => user.login);
+            const is_admin = admins.includes(pr_author);
+            
+            console.log(`PR author: ${pr_author}`);
+            console.log(`Repo admins: ${admins.join(', ')}`);
+            console.log(`Is admin: ${is_admin}`);
+            
+            return { is_admin };
+
       - id: approval-check
         run: |
-          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'safe-to-test') }}" == "true" ]]; then
+          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'safe-to-test') }}" == "true" || "${{ steps.check-admin.outputs.result }}" == *"is_admin\":true"* ]]; then
             echo "approved=true" >> $GITHUB_OUTPUT
+            echo "::notice::PR approved for testing (label or admin status)"
           else
             echo "approved=false" >> $GITHUB_OUTPUT
             echo "::notice::This PR requires the 'safe-to-test' label to run tests with secrets. A maintainer must review and add this label."
