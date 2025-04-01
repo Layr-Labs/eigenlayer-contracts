@@ -52,7 +52,8 @@ jobs:
       # Build the project and display contract sizes.
       - name: "chain id"
         run: |
-          echo $CHAIN_ID
+          echo "Chain ID: $CHAIN_ID"
+          
 
       # Run Forge's formatting checker to ensure consistent code style.
       - name: "Forge Fmt"
