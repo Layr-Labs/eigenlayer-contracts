@@ -6,7 +6,6 @@ import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "../libraries/BeaconChainProofs.sol";
-import "../libraries/BytesLib.sol";
 
 import "../mixins/SemVerMixin.sol";
 
@@ -32,7 +31,6 @@ contract EigenPod is
     EigenPodStorage,
     SemVerMixin
 {
-    using BytesLib for bytes;
     using SafeERC20 for IERC20;
     using BeaconChainProofs for *;
 
