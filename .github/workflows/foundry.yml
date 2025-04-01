@@ -21,6 +21,7 @@ jobs:
   test-suite:
     name: Test
     runs-on: protocol-x64-16core
+    if: github.event_name == 'pull_request_target'
     # Add permissions to maintain security when using pull_request_target
     permissions:
       contents: read
