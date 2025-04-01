@@ -476,7 +476,9 @@ interface IDelegationManager is ISignatureUtilsMixin, IDelegationManagerErrors, 
      * @param withdrawalRoot The hash identifying the queued withdrawal.
      * @return withdrawal The withdrawal details.
      */
-    function queuedWithdrawals(bytes32 withdrawalRoot) external view returns (Withdrawal memory withdrawal);
+    function queuedWithdrawals(
+        bytes32 withdrawalRoot
+    ) external view returns (Withdrawal memory withdrawal);
 
     /**
      * @notice Returns the Withdrawal and corresponding shares associated with a `withdrawalRoot`
