@@ -48,6 +48,11 @@ jobs:
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: stable
+      
+      # Build the project and display contract sizes.
+      - name: "chain id"
+        run: |
+          echo $CHAIN_ID
 
       # Run Forge's formatting checker to ensure consistent code style.
       - name: "Forge Fmt"
