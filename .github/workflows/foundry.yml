@@ -79,8 +79,8 @@ jobs:
   continuous-fuzzing:
     name: Test (Intense)
     runs-on: protocol-x64-16core
-    # Only run on push events to dev branch, not on PR events
-    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+    # Only run on push events to main branch, not on PR events
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     strategy:
       fail-fast: true
     steps:
@@ -163,13 +163,15 @@ jobs:
   run-coverage:
     name: Coverage
     runs-on: protocol-x64-16core
-    # Only run coverage checks on dev, testnet-holesky, and mainnet branches, or PRs targeting these branches
+    # Only run coverage checks on main, preprod, testnet, and mainnet branches, or PRs targeting these branches
     if: |
-      github.ref == 'refs/heads/dev' ||
-      github.ref == 'refs/heads/testnet-holesky' ||
+      github.ref == 'refs/heads/main' ||
+      github.ref == 'refs/heads/preprod' ||
+      github.ref == 'refs/heads/testnet' ||
       github.ref == 'refs/heads/mainnet' ||
-      github.base_ref == 'dev' ||
-      github.base_ref == 'testnet-holesky' ||
+      github.base_ref == 'main' ||
+      github.base_ref == 'preprod' ||
+      github.base_ref == 'testnet' ||
       github.base_ref == 'mainnet'
     strategy:
       fail-fast: true
