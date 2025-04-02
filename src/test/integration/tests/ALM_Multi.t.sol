@@ -69,7 +69,7 @@ contract Integration_ALM_Multi is IntegrationCheckUtils {
 
     /// Reduce fuzz runs because this test is thiccc:
     ///
-    /// forge-config: default.fuzz.runs = 10
+    /// forge-config: default.fuzz.runs = 5
     /// forge-config: forktest.fuzz.runs = 3
     function test_Multi(uint24 _r) public rand(_r) {
         // Do 20 iterations
