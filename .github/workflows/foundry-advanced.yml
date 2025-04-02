@@ -80,7 +80,8 @@ jobs:
                 --port 8545 \
                 --chain-id 1 \
                 --block-time 12 \
-                --no-rate-limit &
+                --no-rate-limit \
+                --fork-block-number 22179220 &
 
           # Give it time to start up
           sleep 10
