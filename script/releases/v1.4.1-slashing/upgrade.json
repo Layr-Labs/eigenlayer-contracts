@@ -1,7 +1,7 @@
 {
-    "name": "slashing-auditFixes-prooftra",
-    "from": "1.2.0",
-    "to": "1.4.0",
+    "name": "slashing-auditFixes-cantina",
+    "from": "1.4.0",
+    "to": "1.4.1",
     "phases": [
         {
             "type": "eoa",
