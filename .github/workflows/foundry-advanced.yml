@@ -65,7 +65,7 @@ jobs:
       - name: Run ${{ matrix.suite }} tests
         run: |
           case "${{ matrix.suite }}" in
-            Fork) forge test --match-contract Integration ;;
+            Fork) forge test --match-contract Integration --rpc-url mainnet=${{ secrets.RPC_MAINNET }} --rpc-url holesky=${{ secrets.RPC_HOLESKY }} ;;
           esac
         env:
           FOUNDRY_PROFILE: ${{ matrix.suite == 'Fork' && 'forktest' || 'medium' }}

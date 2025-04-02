@@ -152,7 +152,7 @@ jobs:
       - name: "Mainnet Storage Diff"
         run: |
           bash bin/storage-diff.sh --rpc-url ${{ secrets.RPC_MAINNET }} --etherscan-key ${{ secrets.ETHERSCAN_API_KEY }} --input .github/configs/storage-diff.json
-        id: storage-diff  
+        id: storage-diff
 
   # -----------------------------------------------------------------------
   # Forge Coverage
