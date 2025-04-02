@@ -75,8 +75,7 @@ jobs:
           anvil --fork-url https://eth.llamarpc.com \
           --port 8545 \
           --chain-id 1 \
-          --block-time 12 \
-          --no-mining &
+          --block-time 12 &
 
           # Give it more time to start up and initialize the fork
           sleep 5
