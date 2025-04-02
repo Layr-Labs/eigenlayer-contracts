@@ -9,6 +9,8 @@ struct Governance {
     address executorMultisig;
     address operationsMultisig;
     address pauserMultisig;
+    address pauserRegistry;
+    address proxyAdmin;
     address timelock;
 }
 
@@ -20,8 +22,6 @@ struct Protocol {
     address delayedWithdrawalRouter;
     address delegationManager;
     address EIGEN;
-    address eigenLayerPauserReg;
-    address eigenLayerProxyAdmin;
     address eigenPodBeacon;
     address eigenPodManager;
     address eigenStrategy;
@@ -45,6 +45,7 @@ struct Config {
 library ConfigParser {
     using ConfigParser for *;
     using stdToml for string;
+    using StdStyle for string;
 
     Vm constant vm = Vm(address(uint160(uint(keccak256("hevm cheat code")))));
     bytes32 constant ERC1967_IMPLEMENTATION_SLOT = bytes32(uint(keccak256("eip1967.proxy.implementation")) - 1);
@@ -83,14 +84,56 @@ library ConfigParser {
     /// Logging
     /// -----------------------------------------------------------------------
 
+    function log(Config memory config) internal {
+        console2.log("block.number", block.number);
+
+        // Log governance addresses
+        console2.log("\nGovernance Addresses");
+        config.governance.communityMultisig.log("communityMultisig");
+        config.governance.executorMultisig.log("executorMultisig");
+        config.governance.operationsMultisig.log("operationsMultisig");
+        config.governance.pauserMultisig.log("pauserMultisig");
+        config.governance.pauserRegistry.log("pauserRegistry");
+        config.governance.proxyAdmin.log("proxyAdmin");
+        config.governance.timelock.log("timelock");
+
+        // Log proxy addresses
+        console2.log("\nProxy Addresses:");
+        config.protocol.allocationManager.logProxy("allocationManager");
+        config.protocol.avsDirectory.logProxy("avsDirectory");
+        // config.protocol.beaconOracle.logProxy("beaconOracle");
+        config.protocol.bEIGEN.logProxy("bEIGEN");
+        config.protocol.delayedWithdrawalRouter.logProxy("delayedWithdrawalRouter");
+        config.protocol.delegationManager.logProxy("delegationManager");
+        config.protocol.EIGEN.logProxy("EIGEN");
+        config.protocol.eigenPodBeacon.logBeaconImpl("eigenPodBeacon");
+        config.protocol.eigenPodManager.logProxy("eigenPodManager");
+        config.protocol.eigenStrategy.logProxy("eigenStrategy");
+        config.protocol.permissionController.logProxy("permissionController");
+        config.protocol.rewardsCoordinator.logProxy("rewardsCoordinator");
+        config.protocol.strategyFactory.logProxy("strategyFactory");
+        config.protocol.strategyFactoryBeacon.logBeaconImpl("strategyFactoryBeacon");
+        config.protocol.strategyManager.logProxy("strategyManager");
+
+        // Log strategy addresses
+        console2.log("\nStrategy Addresses:");
+        for (uint i = 0; i < config.strategies.addresses.length; i++) {
+            config.strategies.addresses[i].logProxy(string.concat("strategy", vm.toString(i)));
+        }
+    }
+
+    function log(address addr, string memory name) internal {
+        console2.log(name.yellow(), addr);
+    }
+
     /// @dev Logs the implementation address of a beacon with a name.
     function logBeaconImpl(address beacon, string memory name) internal {
-        console2.log(name, beacon, vm.toString(IBeacon(beacon).implementation()));
+        console2.log(name.yellow(), beacon, vm.toString(IBeacon(beacon).implementation()).dim());
     }
 
     /// @dev Logs the implementation address of a proxy with a name.
     function logProxy(address proxy, string memory name) internal {
-        console2.log(name, proxy, vm.toString(proxy.impl()));
+        console2.log(name.yellow(), proxy, vm.toString(proxy.impl()).dim());
     }
 
     function toAddress(bytes32 x) internal pure returns (address r) {
@@ -109,40 +152,6 @@ contract ParseMainnetConfigTest is Test {
         // Parse the config from the TOML file.
         Config memory config = ConfigParser.parse("./script/configs/mainnet/mainnet-addresses.config.toml");
 
-        console2.log("block.number", block.number);
-
-        // Log governance addresses
-        console2.log("\nGovernance Addresses");
-        console2.log("communityMultisig", config.governance.communityMultisig);
-        console2.log("executorMultisig", config.governance.executorMultisig);
-        console2.log("operationsMultisig", config.governance.operationsMultisig);
-        console2.log("pauserMultisig", config.governance.pauserMultisig);
-        console2.log("timelock", config.governance.timelock);
-
-        // Log proxy addresses
-        console2.log("\nProxy Addresses:");
-        config.protocol.allocationManager.logProxy("allocationManager");
-        config.protocol.avsDirectory.logProxy("avsDirectory");
-        // config.protocol.beaconOracle.logProxy("beaconOracle");
-        config.protocol.bEIGEN.logProxy("bEIGEN");
-        config.protocol.delayedWithdrawalRouter.logProxy("delayedWithdrawalRouter");
-        config.protocol.delegationManager.logProxy("delegationManager");
-        config.protocol.EIGEN.logProxy("EIGEN");
-        config.protocol.eigenLayerPauserReg.logProxy("eigenLayerPauserReg");
-        config.protocol.eigenLayerProxyAdmin.logProxy("eigenLayerProxyAdmin");
-        config.protocol.eigenPodBeacon.logBeaconImpl("eigenPodBeacon");
-        config.protocol.eigenPodManager.logProxy("eigenPodManager");
-        config.protocol.eigenStrategy.logProxy("eigenStrategy");
-        config.protocol.permissionController.logProxy("permissionController");
-        config.protocol.rewardsCoordinator.logProxy("rewardsCoordinator");
-        config.protocol.strategyFactory.logProxy("strategyFactory");
-        config.protocol.strategyFactoryBeacon.logBeaconImpl("strategyFactoryBeacon");
-        config.protocol.strategyManager.logProxy("strategyManager");
-
-        // Log strategy addresses
-        console2.log("\nStrategy Addresses:");
-        for (uint i = 0; i < config.strategies.addresses.length; i++) {
-            config.strategies.addresses[i].logProxy("strategy");
-        }
+        config.log();
     }
 }
