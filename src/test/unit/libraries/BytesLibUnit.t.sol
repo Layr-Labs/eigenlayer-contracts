@@ -2,7 +2,7 @@
 pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
-import "src/contracts/libraries/BytesLib.sol";
+import "src/test/utils/BytesLib.sol";
 
 contract BytesLibHarness {
     function concat(bytes memory a, bytes memory b) public pure returns (bytes memory) {

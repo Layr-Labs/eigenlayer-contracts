@@ -6,7 +6,6 @@ import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "../libraries/BeaconChainProofs.sol";
-import "../libraries/BytesLib.sol";
 
 import "../mixins/SemVerMixin.sol";
 
@@ -32,7 +31,6 @@ contract EigenPod is
     EigenPodStorage,
     SemVerMixin
 {
-    using BytesLib for bytes;
     using SafeERC20 for IERC20;
     using BeaconChainProofs for *;
 
@@ -411,7 +409,7 @@ contract EigenPod is
      * @notice Called by EigenPodManager to withdrawBeaconChainETH that has been added to the EigenPod's balance due to a withdrawal from the beacon chain.
      * @dev The podOwner must have already proved sufficient withdrawals, so that this pod's `restakedExecutionLayerGwei` exceeds the
      * `amountWei` input (when converted to GWEI).
-     * @dev Reverts if `amountWei` is not a whole Gwei amount
+     * @dev `amountWei` is not required to be a whole Gwei amount. Amounts less than a Gwei multiple may be unrecoverable due to Gwei conversion.
      */
     function withdrawRestakedBeaconChainETH(address recipient, uint256 amountWei) external onlyEigenPodManager {
         uint64 amountGwei = uint64(amountWei / GWEI_TO_WEI);
