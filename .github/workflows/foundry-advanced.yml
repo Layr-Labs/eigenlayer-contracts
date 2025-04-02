@@ -2,7 +2,7 @@ name: Foundry
 
 on:
   workflow_dispatch:
-  pull_request_target:
+  pull_request:
   push:
     branches:
       - main
@@ -28,6 +28,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+          # This ensures we check out the PR's code, not the base branch
+          ref: ${{ github.event.pull_request.head.sha }}
 
       # Restore Forge cache
       - name: Cache Forge Build
