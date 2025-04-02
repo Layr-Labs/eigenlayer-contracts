@@ -3,10 +3,15 @@ name: Foundry
 on:
   workflow_dispatch:
   pull_request_target:
+    types: [opened, synchronize, reopened]
   push:
     branches:
       - main
 
+# Add explicit permissions
+permissions:
+  contents: read
+  pull-requests: read
 
 env:
   FOUNDRY_PROFILE: medium
@@ -19,17 +24,30 @@ jobs:
   test-suite:
     name: Test
     runs-on: protocol-x64-16core
+    # Add this to make sure the job runs for fork PRs
+    if: ${{ github.event_name != 'pull_request_target' || github.event.pull_request.head.repo.full_name != github.repository }}
     strategy:
       matrix:
         suite: [Fork]
     
     steps:
+      # Add debugging information
+      - name: Debug Event
+        run: |
+          echo "Event name: ${{ github.event_name }}"
+          echo "PR head repo: ${{ github.event.pull_request.head.repo.full_name }}"
+          echo "Base repo: ${{ github.repository }}"
+          echo "PR number: ${{ github.event.pull_request.number }}"
+          echo "SHA: ${{ github.event.pull_request.head.sha }}"
+
       # Check out repository with all submodules for complete codebase access.
       - uses: actions/checkout@v4
         with:
           submodules: recursive
           # This ensures we check out the PR's code, not the base branch
           ref: ${{ github.event.pull_request.head.sha }}
+          # Add fetch-depth to ensure we get all history
+          fetch-depth: 0
 
       # Restore Forge cache
       - name: Cache Forge Build
