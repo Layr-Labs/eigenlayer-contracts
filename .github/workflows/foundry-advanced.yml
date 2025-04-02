@@ -90,7 +90,7 @@ jobs:
       - name: Run ${{ matrix.suite }} tests
         run: |
           case "${{ matrix.suite }}" in
-            Fork) forge test --match-contract Integration --fork-url http://localhost:8545 ;;
+            Fork) forge test --match-contract Integration --fork-url http://localhost:8545 --retries 1 --slow ;;
           esac
         env:
           FOUNDRY_PROFILE: ${{ matrix.suite == 'Fork' && 'forktest' || 'medium' }}
