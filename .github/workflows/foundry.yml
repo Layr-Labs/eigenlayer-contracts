@@ -10,7 +10,6 @@ on:
 
 env:
   FOUNDRY_PROFILE: medium
-  RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
 
 jobs:
   # -----------------------------------------------------------------------
