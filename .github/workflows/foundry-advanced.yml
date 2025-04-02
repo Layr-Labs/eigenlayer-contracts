@@ -72,7 +72,7 @@ jobs:
       - name: Start Anvil Fork
         run: |
           # Start Anvil in the background, fork from mainnet
-          anvil --fork-url wss://ethereum-rpc.publicnode.com --port 8545 &
+          anvil --fork-url https://eth.llamarpc.com --port 8545 &
           # Give it a moment to start up
           sleep 2
           # Save the PID so we can kill it later
