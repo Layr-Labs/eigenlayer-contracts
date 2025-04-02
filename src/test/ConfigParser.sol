@@ -11,8 +11,8 @@ import "script/releases/Env.sol";
 // with what's in the toml c file. See: script/configs/mainnet/mainnet-addresses.toml
 
 struct Tokens {
-    address EIGEN;
     address bEIGEN;
+    address EIGEN;
 }
 
 struct Core {
@@ -85,8 +85,8 @@ library ConfigParser {
         c.governance.timelock = address(Env.timelockController());
 
         // Token addresses
-        c.tokens.EIGEN = address(Env.eigen(Env.proxy));
         c.tokens.bEIGEN = address(Env.beigen(Env.proxy));
+        c.tokens.EIGEN = address(Env.eigen(Env.proxy));
 
         // Core addresses
         c.core.allocationManager = address(Env.allocationManager(Env.proxy));
