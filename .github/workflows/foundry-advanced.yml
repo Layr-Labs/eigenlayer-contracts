@@ -1,4 +1,4 @@
-name: Foundry Advanced
+name: Foundry
 
 on:
   workflow_dispatch:
