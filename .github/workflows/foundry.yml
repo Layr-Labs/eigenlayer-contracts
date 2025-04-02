@@ -21,7 +21,7 @@ jobs:
     runs-on: protocol-x64-16core
     strategy:
       matrix:
-        suite: [Unit, Integration]
+        suite: [Unit, Integration, Fork]
     
     steps:
       # Check out repository with all submodules for complete codebase access.
@@ -65,9 +65,11 @@ jobs:
           case "${{ matrix.suite }}" in
             Unit) forge test --no-match-contract Integration ;;
             Integration) forge test --match-contract Integration ;;
+            Fork) forge test --match-contract Integration ;;
           esac
         env:
           FOUNDRY_PROFILE: ${{ matrix.suite == 'Fork' && 'forktest' || 'medium' }}
+          RPC_MAINNET: https://billowing-capable-sound.quiknode.pro/
 
   # -----------------------------------------------------------------------
   # Forge Test (Intense)
