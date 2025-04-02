@@ -20,6 +20,8 @@ jobs:
         with:
           repo-token: "${{ secrets.PR_LABELER_TOKEN }}"
           sync-labels: true
+          configuration-path: .github/labeler.yml
+          dot: true
 
   lint-pr-title:
     runs-on: ubuntu-latest
