@@ -86,6 +86,7 @@ jobs:
           esac
         env:
           FOUNDRY_PROFILE: ${{ matrix.suite == 'Fork' && 'forktest' || 'medium' }}
+          RPC_MAINNET: "http://localhost:8545"  # Set the environment variable to point to Anvil
           
       # Clean up Anvil when done
       - name: Clean up Anvil
