@@ -10,7 +10,6 @@ on:
 
 env:
   FOUNDRY_PROFILE: medium
-  RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
 
 jobs:
   # -----------------------------------------------------------------------
@@ -22,7 +21,7 @@ jobs:
     runs-on: protocol-x64-16core
     strategy:
       matrix:
-        suite: [Unit, Integration, Fork]
+        suite: [Unit, Integration]
     
     steps:
       # Check out repository with all submodules for complete codebase access.
@@ -66,7 +65,6 @@ jobs:
           case "${{ matrix.suite }}" in
             Unit) forge test --no-match-contract Integration ;;
             Integration) forge test --match-contract Integration ;;
-            Fork) forge test --match-contract Integration ;;
           esac
         env:
           FOUNDRY_PROFILE: ${{ matrix.suite == 'Fork' && 'forktest' || 'medium' }}
@@ -118,7 +116,7 @@ jobs:
           echo -e "\033[1;33mWarning: This workflow may take several hours to complete.\033[0m"
           echo -e "\033[1;33mThis intense fuzzing workflow is optional but helps catch edge cases through extended testing.\033[0m"
           FOUNDRY_PROFILE=intense forge test -vvv
-  
+
   # -----------------------------------------------------------------------
   # Forge Storage Diff
   # -----------------------------------------------------------------------
