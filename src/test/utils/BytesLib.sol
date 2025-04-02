@@ -157,13 +157,7 @@ library BytesLib {
                 let end := add(_postBytes, mlength)
                 let mask := sub(exp(0x100, submod), 1)
 
-                sstore(
-                    sc,
-                    add(
-                        and(fslot, 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff00),
-                        and(mload(mc), mask)
-                    )
-                )
+                sstore(sc, add(and(fslot, 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff00), and(mload(mc), mask)))
 
                 for {
                     mc := add(mc, 0x20)
@@ -213,7 +207,7 @@ library BytesLib {
         }
     }
 
-    function slice(bytes memory _bytes, uint256 _start, uint256 _length) internal pure returns (bytes memory) {
+    function slice(bytes memory _bytes, uint _start, uint _length) internal pure returns (bytes memory) {
         require(_length + 31 >= _length, Overflow());
         require(_bytes.length >= _start + _length, OutOfBounds());
 
@@ -272,7 +266,7 @@ library BytesLib {
         return tempBytes;
     }
 
-    function toAddress(bytes memory _bytes, uint256 _start) internal pure returns (address) {
+    function toAddress(bytes memory _bytes, uint _start) internal pure returns (address) {
         require(_bytes.length >= _start + 20, OutOfBounds());
         address tempAddress;
 
@@ -283,7 +277,7 @@ library BytesLib {
         return tempAddress;
     }
 
-    function toUint8(bytes memory _bytes, uint256 _start) internal pure returns (uint8) {
+    function toUint8(bytes memory _bytes, uint _start) internal pure returns (uint8) {
         require(_bytes.length >= _start + 1, OutOfBounds());
         uint8 tempUint;
 
@@ -294,7 +288,7 @@ library BytesLib {
         return tempUint;
     }
 
-    function toUint16(bytes memory _bytes, uint256 _start) internal pure returns (uint16) {
+    function toUint16(bytes memory _bytes, uint _start) internal pure returns (uint16) {
         require(_bytes.length >= _start + 2, OutOfBounds());
         uint16 tempUint;
 
@@ -305,7 +299,7 @@ library BytesLib {
         return tempUint;
     }
 
-    function toUint32(bytes memory _bytes, uint256 _start) internal pure returns (uint32) {
+    function toUint32(bytes memory _bytes, uint _start) internal pure returns (uint32) {
         require(_bytes.length >= _start + 4, OutOfBounds());
         uint32 tempUint;
 
@@ -316,7 +310,7 @@ library BytesLib {
         return tempUint;
     }
 
-    function toUint64(bytes memory _bytes, uint256 _start) internal pure returns (uint64) {
+    function toUint64(bytes memory _bytes, uint _start) internal pure returns (uint64) {
         require(_bytes.length >= _start + 8, OutOfBounds());
         uint64 tempUint;
 
@@ -327,7 +321,7 @@ library BytesLib {
         return tempUint;
     }
 
-    function toUint96(bytes memory _bytes, uint256 _start) internal pure returns (uint96) {
+    function toUint96(bytes memory _bytes, uint _start) internal pure returns (uint96) {
         require(_bytes.length >= _start + 12, OutOfBounds());
         uint96 tempUint;
 
@@ -338,7 +332,7 @@ library BytesLib {
         return tempUint;
     }
 
-    function toUint128(bytes memory _bytes, uint256 _start) internal pure returns (uint128) {
+    function toUint128(bytes memory _bytes, uint _start) internal pure returns (uint128) {
         require(_bytes.length >= _start + 16, OutOfBounds());
         uint128 tempUint;
 
@@ -349,9 +343,9 @@ library BytesLib {
         return tempUint;
     }
 
-    function toUint256(bytes memory _bytes, uint256 _start) internal pure returns (uint256) {
+    function toUint256(bytes memory _bytes, uint _start) internal pure returns (uint) {
         require(_bytes.length >= _start + 32, OutOfBounds());
-        uint256 tempUint;
+        uint tempUint;
 
         assembly {
             tempUint := mload(add(add(_bytes, 0x20), _start))
@@ -360,7 +354,7 @@ library BytesLib {
         return tempUint;
     }
 
-    function toBytes32(bytes memory _bytes, uint256 _start) internal pure returns (bytes32) {
+    function toBytes32(bytes memory _bytes, uint _start) internal pure returns (bytes32) {
         require(_bytes.length >= _start + 32, OutOfBounds());
         bytes32 tempBytes32;
 
