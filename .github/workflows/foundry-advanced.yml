@@ -10,7 +10,6 @@ on:
 
 env:
   FOUNDRY_PROFILE: medium
-  RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
 
 jobs:
   # -----------------------------------------------------------------------
@@ -64,7 +63,7 @@ jobs:
       - name: Run ${{ matrix.suite }} tests
         run: |
           case "${{ matrix.suite }}" in
-            Fork) forge test --match-contract Integration --fork-url ${{ secrets.RPC_MAINNET }} ;;
+            Fork) forge test --match-contract Integration --fork-url "${{ secrets.RPC_MAINNET }}" ;;
           esac
         env:
           FOUNDRY_PROFILE: ${{ matrix.suite == 'Fork' && 'forktest' || 'medium' }}
