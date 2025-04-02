@@ -69,6 +69,7 @@ jobs:
           esac
         env:
           FOUNDRY_PROFILE: ${{ matrix.suite == 'Fork' && 'forktest' || 'medium' }}
+          RPC_MAINNET: https://billowing-capable-sound.quiknode.pro/
 
   # -----------------------------------------------------------------------
   # Forge Test (Intense)
