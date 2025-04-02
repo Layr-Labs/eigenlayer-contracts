@@ -71,10 +71,19 @@ jobs:
       # Start Anvil with a forked state from mainnet
       - name: Start Anvil Fork
         run: |
-          # Start Anvil in the background, fork from mainnet
-          anvil --fork-url https://eth.llamarpc.com --port 8545 &
-          # Give it a moment to start up
-          sleep 2
+          # Start Anvil with the latest block and public RPC endpoint
+          anvil --fork-url https://eth.llamarpc.com \
+          --port 8545 \
+          --chain-id 1 \
+          --block-time 12 \
+          --no-mining &
+
+          # Give it more time to start up and initialize the fork
+          sleep 5
+
+          # Verify Anvil is working by checking block number
+          curl -s -X POST --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' -H "Content-Type: application/json" http://localhost:8545
+
           # Save the PID so we can kill it later
           echo $! > anvil.pid
           
