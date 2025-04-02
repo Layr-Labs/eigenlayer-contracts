@@ -7,21 +7,22 @@ import "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
 
 import "script/releases/Env.sol";
 
-// WARNING: The layout and alphabetical order of these structs must be consistent
-// with what's in the toml c file. See: script/configs/mainnet/mainnet-addresses.toml
+// WARNING: We expect the layout to follow the order of the toml config file. Please see:
+// - script/configs/mainnet/mainnet-addresses.toml
+// - https://book.getfoundry.sh/cheatcodes/parse-toml?highlight=toml#decoding-toml-tables-into-solidity-structs
 
 struct Tokens {
-    address bEIGEN;
-    address EIGEN;
+    IERC20 bEIGEN;
+    IERC20 EIGEN;
 }
 
 struct Core {
-    address allocationManager;
-    address avsDirectory;
-    address delegationManager;
-    address permissionController;
-    address rewardsCoordinator;
-    address strategyManager;
+    AllocationManager allocationManager;
+    AVSDirectory avsDirectory;
+    DelegationManager delegationManager;
+    PermissionController permissionController;
+    RewardsCoordinator rewardsCoordinator;
+    StrategyManager strategyManager;
 }
 
 struct Governance {
@@ -35,15 +36,15 @@ struct Governance {
 }
 
 struct Pods {
-    address eigenPodBeacon;
-    address eigenPodManager;
-    address eigenStrategy;
+    UpgradeableBeacon eigenPodBeacon;
+    EigenPodManager eigenPodManager;
+    EigenStrategy eigenStrategy;
 }
 
 struct Strategies {
-    address[] strategyAddresses;
-    address strategyFactory;
-    address strategyFactoryBeacon;
+    IStrategy[] strategyAddresses;
+    StrategyFactory strategyFactory;
+    UpgradeableBeacon strategyFactoryBeacon;
 }
 
 struct Config {
@@ -83,33 +84,27 @@ library ConfigParser {
         c.governance.pauserRegistry = address(Env.pauserRegistry(Env.impl));
         c.governance.proxyAdmin = Env.proxyAdmin();
         c.governance.timelock = address(Env.timelockController());
-
         // Token addresses
-        c.tokens.bEIGEN = address(Env.beigen(Env.proxy));
-        c.tokens.EIGEN = address(Env.eigen(Env.proxy));
-
+        c.tokens.bEIGEN = Env.beigen(Env.proxy);
+        c.tokens.EIGEN = Env.eigen(Env.proxy);
         // Core addresses
-        c.core.allocationManager = address(Env.allocationManager(Env.proxy));
-        c.core.avsDirectory = address(Env.avsDirectory(Env.proxy));
-        c.core.delegationManager = address(Env.delegationManager(Env.proxy));
-        c.core.permissionController = address(Env.permissionController(Env.proxy));
-        c.core.rewardsCoordinator = address(Env.rewardsCoordinator(Env.proxy));
-        c.core.strategyManager = address(Env.strategyManager(Env.proxy));
-
+        c.core.allocationManager = Env.allocationManager(Env.proxy);
+        c.core.avsDirectory = Env.avsDirectory(Env.proxy);
+        c.core.delegationManager = Env.delegationManager(Env.proxy);
+        c.core.permissionController = Env.permissionController(Env.proxy);
+        c.core.rewardsCoordinator = Env.rewardsCoordinator(Env.proxy);
+        c.core.strategyManager = Env.strategyManager(Env.proxy);
         // Pod addresses
-        c.pods.eigenPodBeacon = address(Env.eigenPod(Env.beacon));
-        c.pods.eigenPodManager = address(Env.eigenPodManager(Env.proxy));
-        c.pods.eigenStrategy = address(Env.eigenStrategy(Env.proxy));
-
+        c.pods.eigenPodBeacon = Env.eigenPod(Env.beacon);
+        c.pods.eigenPodManager = Env.eigenPodManager(Env.proxy);
+        c.pods.eigenStrategy = Env.eigenStrategy(Env.proxy);
         // Strategy addresses
-        c.strategies.strategyFactory = address(Env.strategyFactory(Env.proxy));
-        c.strategies.strategyFactoryBeacon = address(Env.strategyBase(Env.beacon));
-
+        c.strategies.strategyFactory = Env.strategyFactory(Env.proxy);
+        c.strategies.strategyFactoryBeacon = Env.strategyBase(Env.beacon);
         // Get all strategy instances
-        uint strategyCount = Env.strategyBaseTVLLimits_Count(Env.instance);
-        c.strategies.strategyAddresses = new address[](strategyCount);
-        for (uint i = 0; i < strategyCount; i++) {
-            c.strategies.strategyAddresses[i] = address(Env.strategyBaseTVLLimits(Env.instance, i));
+        c.strategies.strategyAddresses = new IStrategy[](Env.strategyBaseTVLLimits_Count(Env.instance));
+        for (uint i; i < c.strategies.strategyAddresses.length; ++i) {
+            c.strategies.strategyAddresses[i] = Env.strategyBaseTVLLimits(Env.instance, i);
         }
     }
 
@@ -139,7 +134,6 @@ library ConfigParser {
     function log(Config memory c) internal {
         console2.log("Block:", block.number);
         console2.log("Timestamp:", block.timestamp);
-
         // Log governance addresses
         console2.log("\nGovernance Addresses");
         c.governance.communityMultisig.log("communityMultisig");
@@ -149,33 +143,29 @@ library ConfigParser {
         c.governance.pauserRegistry.log("pauserRegistry");
         c.governance.proxyAdmin.log("proxyAdmin");
         c.governance.timelock.log("timelock");
-
         // Log token addresses
         console2.log("\nToken Addresses:");
-        c.tokens.EIGEN.logProxy("EIGEN");
-        c.tokens.bEIGEN.logProxy("bEIGEN");
-
+        address(c.tokens.EIGEN).logProxy("EIGEN");
+        address(c.tokens.bEIGEN).logProxy("bEIGEN");
         // Log core protocol addresses
         console2.log("\nCore Addresses:");
-        c.core.allocationManager.logProxy("allocationManager");
-        c.core.avsDirectory.logProxy("avsDirectory");
-        c.core.delegationManager.logProxy("delegationManager");
-        c.core.permissionController.logProxy("permissionController");
-        c.core.rewardsCoordinator.logProxy("rewardsCoordinator");
-        c.core.strategyManager.logProxy("strategyManager");
-
+        address(c.core.allocationManager).logProxy("allocationManager");
+        address(c.core.avsDirectory).logProxy("avsDirectory");
+        address(c.core.delegationManager).logProxy("delegationManager");
+        address(c.core.permissionController).logProxy("permissionController");
+        address(c.core.rewardsCoordinator).logProxy("rewardsCoordinator");
+        address(c.core.strategyManager).logProxy("strategyManager");
         // Log pod system addresses
         console2.log("\nPod Addresses:");
-        c.pods.eigenPodBeacon.logBeaconImpl("eigenPodBeacon");
-        c.pods.eigenPodManager.logProxy("eigenPodManager");
-        c.pods.eigenStrategy.logProxy("eigenStrategy");
-
+        address(c.pods.eigenPodBeacon).logBeaconImpl("eigenPodBeacon");
+        address(c.pods.eigenPodManager).logProxy("eigenPodManager");
+        address(c.pods.eigenStrategy).logProxy("eigenStrategy");
         // Log strategy system addresses
         console2.log("\nStrategy Addresses:");
-        c.strategies.strategyFactory.logProxy("strategyFactory");
-        c.strategies.strategyFactoryBeacon.logBeaconImpl("strategyFactoryBeacon");
-        for (uint i = 0; i < c.strategies.strategyAddresses.length; i++) {
-            c.strategies.strategyAddresses[i].logProxy(string.concat("strategy", vm.toString(i)));
+        address(c.strategies.strategyFactory).logProxy("strategyFactory");
+        address(c.strategies.strategyFactoryBeacon).logBeaconImpl("strategyFactoryBeacon");
+        for (uint i; i < c.strategies.strategyAddresses.length; ++i) {
+            address(c.strategies.strategyAddresses[i]).logProxy(string.concat("strategy", vm.toString(i)));
         }
     }
 
