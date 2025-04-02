@@ -22,6 +22,7 @@ jobs:
     strategy:
       matrix:
         suite: [Fork]
+      max-parallel: 1
     
     steps:
       # Check out repository with all submodules for complete codebase access.
@@ -73,9 +74,12 @@ jobs:
         run: |
           # Start Anvil with the latest block and public RPC endpoint
           anvil --fork-url https://eth.llamarpc.com \
-          --port 8545 \
-          --chain-id 1 \
-          --block-time 12 &
+                --port 8545 \
+                --chain-id 1 \
+                --block-time 12 \
+                --tracing \
+                --accounts 2000 \
+                --block-cache-size 10 &&
 
           # Give it more time to start up and initialize the fork
           sleep 5
