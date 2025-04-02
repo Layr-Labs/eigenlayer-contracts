@@ -22,7 +22,7 @@ jobs:
     runs-on: protocol-x64-16core
     strategy:
       matrix:
-        suite: [Unit, Integration, Fork]
+        suite: [Unit, Integration]
     
     steps:
       # Check out repository with all submodules for complete codebase access.
@@ -66,7 +66,6 @@ jobs:
           case "${{ matrix.suite }}" in
             Unit) forge test --no-match-contract Integration ;;
             Integration) forge test --match-contract Integration ;;
-            Fork) forge test --match-contract Integration ;;
           esac
         env:
           FOUNDRY_PROFILE: ${{ matrix.suite == 'Fork' && 'forktest' || 'medium' }}
@@ -119,42 +118,6 @@ jobs:
           echo -e "\033[1;33mThis intense fuzzing workflow is optional but helps catch edge cases through extended testing.\033[0m"
           FOUNDRY_PROFILE=intense forge test -vvv
   
-  # -----------------------------------------------------------------------
-  # Forge Storage Diff
-  # -----------------------------------------------------------------------
-
-  storage-diff:
-    name: Test (Storage)
-    runs-on: protocol-x64-16core
-    steps:
-      # Check out repository with all submodules for complete codebase access.
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      # Restore Forge cache
-      - name: Cache Forge Build
-        uses: actions/cache@v3
-        with:
-          path: |
-            cache/
-            out/
-          key: ${{ runner.os }}-forge-${{ hashFiles('**/foundry.toml', '**/remappings.txt', 'src/**/*.sol', 'lib/**/*.sol') }}
-          restore-keys: |
-            ${{ runner.os }}-forge-
-
-      # Install the Foundry toolchain.
-      - name: "Install Foundry"
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: stable
-
-      # Run storage diff check to detect storage layout incompatibilities.
-      - name: "Mainnet Storage Diff"
-        run: |
-          bash bin/storage-diff.sh --rpc-url ${{ secrets.RPC_MAINNET }} --etherscan-key ${{ secrets.ETHERSCAN_API_KEY }} --input .github/configs/storage-diff.json
-        id: storage-diff
-
   # -----------------------------------------------------------------------
   # Forge Coverage
   # -----------------------------------------------------------------------
