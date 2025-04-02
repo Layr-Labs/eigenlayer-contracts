@@ -18,7 +18,7 @@ jobs:
         
       - uses: actions/labeler@v5
         with:
-          repo-token: "${{ secrets.GITHUB_TOKEN }}"
+          repo-token: "${{ secrets.PR_LABELER_TOKEN }}"
           sync-labels: true
 
   lint-pr-title:
