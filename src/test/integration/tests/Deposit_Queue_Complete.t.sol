@@ -61,4 +61,34 @@ contract Integration_Deposit_QueueWithdrawal_Complete is IntegrationCheckUtils {
         // Ensure staker is still not delegated to anyone post withdrawal completion
         assertFalse(delegationManager.isDelegated(address(staker)), "Staker should still not be delegated after withdrawal");
     }
+
+    /// @notice Regression test to ensure that depositSharesToRemove is not allowed to overflow. Previously
+    /// this vulnerability would allow a staker to queue a withdrawal overflowing amount of deposit shares to withdraw
+    /// resulting them in inflating their existing deposit shares. They could then inflate an operators delegated shares as much as they wanted.
+    function testFuzz_deposit_revertOverflow_queueWithdrawal(uint24 _random) public rand(_random) {
+        _configAssetTypes(HOLDS_ETH);
+        // Create a staker with a nonzero balance and corresponding strategies
+        (User staker, IStrategy[] memory strategies, uint[] memory initDepositShares) = _newRandomStaker();
+        cheats.assume(initDepositShares[0] >= 64 ether);
+
+        // Deposit staker by verifying withdrawal credentials
+        (uint40[] memory validators, uint64 beaconBalanceGwei,) = staker.startValidators();
+        beaconChain.advanceEpoch_NoRewards();
+        staker.verifyWithdrawalCredentials(validators);
+        check_VerifyWC_State(staker, validators, beaconBalanceGwei);
+
+        // Queue withdrawal for depositSharesToRemove that overflows
+        int podOwnerDepositSharesBefore = eigenPodManager.podOwnerDepositShares(address(staker));
+        assertEq(uint(podOwnerDepositSharesBefore), initDepositShares[0]);
+
+        uint[] memory depositSharesToRemove = new uint[](1);
+        depositSharesToRemove[0] = uint(type(int).max) + 100_000e18;
+
+        cheats.expectRevert("SafeCast: value doesn't fit in an int256");
+        Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, depositSharesToRemove);
+        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+
+        int podOwnerDepositSharesAfter = eigenPodManager.podOwnerDepositShares(address(staker));
+        assertEq(podOwnerDepositSharesAfter, podOwnerDepositSharesBefore);
+    }
 }
