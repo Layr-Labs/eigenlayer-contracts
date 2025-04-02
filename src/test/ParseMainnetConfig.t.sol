@@ -147,7 +147,7 @@ contract ParseMainnetConfigTest is Test {
     using ConfigParser for *;
 
     function test() public {
-        vm.createSelectFork(vm.rpcUrl("mainnet"), 22181590);
+        vm.createSelectFork(vm.rpcUrl("mainnet"), 22_181_590);
 
         // Parse the config from the TOML file.
         Config memory config = ConfigParser.parse("./script/configs/mainnet/mainnet-addresses.config.toml");
