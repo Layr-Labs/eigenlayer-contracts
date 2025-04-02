@@ -603,6 +603,8 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
             cheats.expectEmit(true, true, true, true, address(delegationManager));
             emit OperatorSharesDecreased(params.operator, params.staker, params.strategy, params.operatorSharesDecreased);
             cheats.expectEmit(true, true, true, true, address(delegationManager));
+            emit DepositScalingFactorUpdated(params.staker, params.strategy, params.depositScalingFactor);
+            cheats.expectEmit(true, true, true, true, address(delegationManager));
             emit SlashingWithdrawalQueued(params.withdrawalRoot, params.withdrawal, params.operatorSharesDecreased.toArrayU256());
         }
     }
