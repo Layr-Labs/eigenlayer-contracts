@@ -65,7 +65,7 @@ jobs:
           case "${{ matrix.suite }}" in
             Unit) forge test --no-match-contract Integration ;;
             Integration) forge test --match-contract Integration ;;
-            Fork) forge test --match-contract Integration --fork-url https://billowing-capable-sound.quiknode.pro/ ;;
+            Fork) forge test --match-contract Integration ;;
           esac
         env:
           FOUNDRY_PROFILE: ${{ matrix.suite == 'Fork' && 'forktest' || 'medium' }}
