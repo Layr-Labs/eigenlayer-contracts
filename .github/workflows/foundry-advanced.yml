@@ -79,8 +79,7 @@ jobs:
                 --block-time 12 \
                 --tracing \
                 --accounts 2000 \
-                --no-rate-limit \
-                --no-storage-caching false &
+                --no-rate-limit &
 
           # Give it more time to start up and initialize the fork
           sleep 5
