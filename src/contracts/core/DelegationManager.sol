@@ -474,7 +474,7 @@ contract DelegationManager is
         // Each of these operations fail if we attempt to remove more shares than exist
         for (uint256 i = 0; i < strategies.length; ++i) {
             IShareManager shareManager = _getShareManager(strategies[i]);
-            DepositScalingFactor storage dsf = _depositScalingFactor[staker][strategies[i]];
+            DepositScalingFactor memory dsf = _depositScalingFactor[staker][strategies[i]];
 
             // Calculate how many shares can be withdrawn after factoring in slashing
             withdrawableShares[i] = dsf.calcWithdrawable(depositSharesToWithdraw[i], slashingFactors[i]);
@@ -502,8 +502,9 @@ contract DelegationManager is
             uint256 sharesAfter = shareManager.removeDepositShares(staker, strategies[i], depositSharesToWithdraw[i]);
 
             if (sharesAfter == 0) {
-                dsf.reset();
-                emit DepositScalingFactorUpdated(staker, strategies[i], dsf.scalingFactor());
+                DepositScalingFactor storage _dsf = _depositScalingFactor[staker][strategies[i]];
+                _dsf.reset();
+                emit DepositScalingFactorUpdated(staker, strategies[i], _dsf.scalingFactor());
             }
         }
 
