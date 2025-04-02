@@ -59,11 +59,38 @@ jobs:
           forge --version
           forge build --sizes
 
-      # Run the test suite in parallel based on the matrix configuration.
+      # # Run the test suite in parallel based on the matrix configuration.
+      # - name: Run ${{ matrix.suite }} tests
+      #   run: |
+      #     case "${{ matrix.suite }}" in
+      #       Fork) forge test --match-contract Integration --fork-url "${{ secrets.RPC_MAINNET }}" ;;
+      #     esac
+      #   env:
+      #     FOUNDRY_PROFILE: ${{ matrix.suite == 'Fork' && 'forktest' || 'medium' }}
+
+      # Start Anvil with a forked state from mainnet
+      - name: Start Anvil Fork
+        run: |
+          # Start Anvil in the background, fork from mainnet
+          anvil --fork-url wss://ethereum-rpc.publicnode.com --port 8545 &
+          # Give it a moment to start up
+          sleep 2
+          # Save the PID so we can kill it later
+          echo $! > anvil.pid
+          
+      # Run the test suite with the local Anvil instance
       - name: Run ${{ matrix.suite }} tests
         run: |
           case "${{ matrix.suite }}" in
-            Fork) forge test --match-contract Integration --fork-url "${{ secrets.RPC_MAINNET }}" ;;
+            Fork) forge test --match-contract Integration --fork-url http://localhost:8545 ;;
           esac
         env:
           FOUNDRY_PROFILE: ${{ matrix.suite == 'Fork' && 'forktest' || 'medium' }}
+          
+      # Clean up Anvil when done
+      - name: Clean up Anvil
+        if: always()
+        run: |
+          if [ -f anvil.pid ]; then
+            kill $(cat anvil.pid) || true
+          fi
