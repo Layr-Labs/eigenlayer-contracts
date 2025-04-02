@@ -83,7 +83,7 @@ jobs:
                 --no-rate-limit &
 
           # Give it time to start up
-          sleep 10
+          sleep 60
           
           # Check if Anvil is running
           if ! curl -s -X POST --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' -H "Content-Type: application/json" http://localhost:8545 > /dev/null; then
