@@ -56,6 +56,17 @@ library Env {
     DeployedImpl internal constant impl = DeployedImpl.A;
     DeployedInstance internal constant instance = DeployedInstance.A;
 
+    /*
+     * If there is an inProgress deploy, these will be set to the relevant semver strings.
+     */
+    function deployFromVersion() internal view returns (string memory) {
+        return ZEnvHelpers.inProgressDeployFromSemver();
+    }
+
+    function deployToVersion() internal view returns (string memory) {
+        return ZEnvHelpers.inProgressDeployToSemver();
+    }
+
     /**
      * env
      */

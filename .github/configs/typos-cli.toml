@@ -3,7 +3,9 @@ extend-exclude = [
     "**/lib/**",
     "**/docs/images/**",
     # Not present locally, but is in remote (github).
-    "**/doc/**"
+    "**/doc/**",
+    "**/*.mod",
+    "**/*.sum"
 ]
 ignore-hidden = true
 ignore-files = true
