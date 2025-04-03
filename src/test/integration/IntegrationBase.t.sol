@@ -191,8 +191,12 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
      */
 
     function assert_HasNoDelegatableShares(User user, string memory err) internal view {
+<<<<<<< HEAD
         (IStrategy[] memory strategies, uint[] memory shares) = delegationManager.getDepositedShares(address(user));
 
+=======
+        (IStrategy[] memory strategies, uint[] memory shares) = delegationManager().getDepositedShares(address(user));
+>>>>>>> 55430b8b (feat(wip): toml based config parsing)
         assertEq(strategies.length, 0, err);
         assertEq(strategies.length, shares.length, "assert_HasNoDelegatableShares: return length mismatch");
     }
@@ -244,6 +248,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
+<<<<<<< HEAD
     function assert_HasOperatorShares(User user, IStrategy[] memory strategies, uint[] memory expectedShares, string memory err)
         internal
         view
@@ -255,13 +260,16 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     }
 
     /// @dev Asserts that ALL of the `withdrawalRoots` is in `delegationManager.pendingWithdrawals`
+=======
+    /// @dev Asserts that ALL of the `withdrawalRoots` is in `delegationManager().pendingWithdrawals`
+>>>>>>> 55430b8b (feat(wip): toml based config parsing)
     function assert_AllWithdrawalsPending(bytes32[] memory withdrawalRoots, string memory err) internal view {
         for (uint i = 0; i < withdrawalRoots.length; i++) {
             assert_WithdrawalPending(withdrawalRoots[i], err);
         }
     }
 
-    /// @dev Asserts that NONE of the `withdrawalRoots` is in `delegationManager.pendingWithdrawals`
+    /// @dev Asserts that NONE of the `withdrawalRoots` is in `delegationManager().pendingWithdrawals`
     function assert_NoWithdrawalsPending(bytes32[] memory withdrawalRoots, string memory err) internal view {
         for (uint i = 0; i < withdrawalRoots.length; i++) {
             assert_WithdrawalNotPending(withdrawalRoots[i], err);
@@ -270,11 +278,11 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
 
     /// @dev Asserts that the hash of each withdrawal corresponds to the provided withdrawal root
     function assert_WithdrawalPending(bytes32 withdrawalRoot, string memory err) internal view {
-        assertTrue(delegationManager.pendingWithdrawals(withdrawalRoot), err);
+        assertTrue(delegationManager().pendingWithdrawals(withdrawalRoot), err);
     }
 
     function assert_WithdrawalNotPending(bytes32 withdrawalRoot, string memory err) internal view {
-        assertFalse(delegationManager.pendingWithdrawals(withdrawalRoot), err);
+        assertFalse(delegationManager().pendingWithdrawals(withdrawalRoot), err);
     }
 
     function assert_ValidWithdrawalHashes(Withdrawal[] memory withdrawals, bytes32[] memory withdrawalRoots, string memory err)
@@ -287,7 +295,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     }
 
     function assert_ValidWithdrawalHash(Withdrawal memory withdrawal, bytes32 withdrawalRoot, string memory err) internal view {
-        assertEq(withdrawalRoot, delegationManager.calculateWithdrawalRoot(withdrawal), err);
+        assertEq(withdrawalRoot, delegationManager().calculateWithdrawalRoot(withdrawal), err);
     }
 
     function assert_StakerStrategyListEmpty(User staker, string memory err) internal view {
@@ -397,7 +405,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     }
 
     function assert_HasPendingDecrease(User operator, AllocateParams memory params, string memory err) internal view {
-        uint32 deallocationDelay = allocationManager.DEALLOCATION_DELAY();
+        uint32 deallocationDelay = allocationManager().DEALLOCATION_DELAY();
         Allocation[] memory allocations = _getAllocations(operator, params.operatorSet, params.strategies);
 
         for (uint i = 0; i < allocations.length; i++) {
@@ -412,15 +420,15 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     }
 
     function assert_IsSlashable(User operator, OperatorSet memory operatorSet, string memory err) internal view {
-        assertTrue(allocationManager.isOperatorSlashable(address(operator), operatorSet), err);
+        assertTrue(allocationManager().isOperatorSlashable(address(operator), operatorSet), err);
     }
 
     function assert_NotSlashable(User operator, OperatorSet memory operatorSet, string memory err) internal view {
-        assertFalse(allocationManager.isOperatorSlashable(address(operator), operatorSet), err);
+        assertFalse(allocationManager().isOperatorSlashable(address(operator), operatorSet), err);
     }
 
     function assert_IsAllocatedToSet(User operator, OperatorSet memory operatorSet, string memory err) internal view {
-        assertTrue(allocationManager.getAllocatedSets(address(operator)).contains(operatorSet), err);
+        assertTrue(allocationManager().getAllocatedSets(address(operator)).contains(operatorSet), err);
     }
 
     function assert_IsNotAllocated(User operator, OperatorSet memory operatorSet, string memory err) internal view {
@@ -431,8 +439,12 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         internal
         view
     {
+<<<<<<< HEAD
         IStrategy[] memory allocatedStrategies = allocationManager.getAllocatedStrategies(address(operator), operatorSet);
 
+=======
+        IStrategy[] memory allocatedStrategies = allocationManager().getAllocatedStrategies(address(operator), operatorSet);
+>>>>>>> 55430b8b (feat(wip): toml based config parsing)
         for (uint i = 0; i < strategies.length; i++) {
             assertTrue(allocatedStrategies.contains(strategies[i]), err);
         }
@@ -483,7 +495,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     }
 
     function assert_NoSlashableStake(User operator, OperatorSet memory operatorSet, string memory err) internal view {
-        IStrategy[] memory strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
+        IStrategy[] memory strategies = allocationManager().getStrategiesInOperatorSet(operatorSet);
         uint[] memory slashableStake = _getMinSlashableStake(operator, operatorSet, strategies);
 
         for (uint i = 0; i < slashableStake.length; i++) {
@@ -1747,7 +1759,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         uint[] memory delegatableShares,
         string memory err
     ) internal {
-        address operator = delegationManager.delegatedTo(address(staker));
+        address operator = delegationManager().delegatedTo(address(staker));
         uint64[] memory maxMags = _getMaxMagnitudes(User(payable(operator)), strategies);
 
         for (uint i = 0; i < strategies.length; i++) {
@@ -1805,8 +1817,8 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     }
 
     function assert_SlashableStake_Decrease_BCSlash(User staker) internal {
-        if (delegationManager.isDelegated(address(staker))) {
-            address operator = delegationManager.delegatedTo(address(staker));
+        if (delegationManager().isDelegated(address(staker))) {
+            address operator = delegationManager().delegatedTo(address(staker));
             (OperatorSet[] memory operatorSets, Allocation[] memory allocations) = _getStrategyAllocations(operator, BEACONCHAIN_ETH_STRAT);
             for (uint i = 0; i < operatorSets.length; i++) {
                 if (allocations[i].currentMagnitude > 0) {

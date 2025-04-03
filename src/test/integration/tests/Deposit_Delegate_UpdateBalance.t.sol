@@ -32,7 +32,7 @@ contract Integration_Deposit_Delegate_UpdateBalance is IntegrationCheckUtils {
 //     uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
 
 //     assert_HasNoDelegatableShares(staker, "staker should not have delegatable shares before depositing");
-//     assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated");
+//     assertFalse(delegationManager().isDelegated(address(staker)), "staker should not be delegated");
 
 //     /// 1. Deposit into strategies
 //     staker.depositIntoEigenlayer(strategies, tokenBalances);
@@ -68,7 +68,7 @@ contract Integration_Deposit_Delegate_UpdateBalance is IntegrationCheckUtils {
 
 //     // 5. Complete queued withdrawals as tokens
 //     staker.completeWithdrawalsAsTokens(withdrawals);
-//     assertEq(address(operator), delegationManager.delegatedTo(address(staker)), "staker should still be delegated to operator");
+//     assertEq(address(operator), delegationManager().delegatedTo(address(staker)), "staker should still be delegated to operator");
 //     assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
 //     assert_Snap_Unchanged_TokenBalances(operator, "operator token balances should not have changed");
 //     assert_Snap_Unchanged_OperatorShares(operator, "operator shares should not have changed");

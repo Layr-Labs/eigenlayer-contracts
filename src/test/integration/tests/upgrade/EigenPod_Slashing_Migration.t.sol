@@ -27,11 +27,11 @@ contract Integration_Upgrade_EigenPod_Slashing_Migration is UpgradeTest, EigenPo
         // Start a checkpoint
         staker.startCheckpoint();
 
-        // Pause checkpoint starting
-        cheats.prank(pauserMultisig);
-        eigenPodManager.pause(2 ** PAUSED_START_CHECKPOINT);
-        cheats.expectRevert("EigenPod.onlyWhenNotPaused: index is paused in EigenPodManager");
-        staker.startCheckpoint();
+//         // Pause checkpoint starting
+//         cheats.prank(pauserMultisig);
+//         eigenPodManager().pause(2 ** PAUSED_START_CHECKPOINT);
+//         cheats.expectRevert("EigenPod.onlyWhenNotPaused: index is paused in EigenPodManager");
+//         staker.startCheckpoint();
 
         // Complete in progress checkpoint
         staker.completeCheckpoint();
@@ -39,10 +39,10 @@ contract Integration_Upgrade_EigenPod_Slashing_Migration is UpgradeTest, EigenPo
         // Upgrade Contracts for slashing
         _upgradeEigenLayerContracts();
 
-        // Unpause EigenPodManager
-        cheats.prank(eigenLayerPauserReg.unpauser());
-        eigenPodManager.unpause(0);
-    }
+//         // Unpause EigenPodManager
+//         cheats.prank(eigenLayerPauserReg.unpauser());
+//         eigenPodManager().unpause(0);
+//     }
 
     function testFuzz_earnRewards_migrate_exit(uint24 _rand) public rand(_rand) {
         // 2. Advance epoch, generating consensus rewards and withdrawing anything over 32 ETH

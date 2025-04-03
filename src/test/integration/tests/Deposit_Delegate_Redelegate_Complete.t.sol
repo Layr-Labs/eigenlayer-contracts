@@ -59,7 +59,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         // 5. Delegate to a new operator
         staker.delegateTo(operator2);
         check_Delegation_State(staker, operator2, strategies, shares);
-        assertNotEq(address(operator1), delegationManager.delegatedTo(address(staker)), "staker should not be delegated to operator1");
+        assertNotEq(address(operator1), delegationManager().delegatedTo(address(staker)), "staker should not be delegated to operator1");
 
         // 6. Queue Withdrawal
         uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
@@ -208,7 +208,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
             // 5. Delegate to a new operator
             staker.delegateTo(operator2);
             check_Delegation_State(staker, operator2, strategies, halfShares);
-            assertNotEq(address(operator1), delegationManager.delegatedTo(address(staker)), "staker should not be delegated to operator1");
+            assertNotEq(address(operator1), delegationManager().delegatedTo(address(staker)), "staker should not be delegated to operator1");
 
             // 6. Deposit into Strategies
             uint[] memory sharesAdded = _calculateExpectedShares(strategies, numTokensRemaining);
@@ -305,7 +305,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
             // 6. Delegate to a new operator
             staker.delegateTo(operator2);
             check_Delegation_State(staker, operator2, strategies, totalShares);
-            assertNotEq(address(operator1), delegationManager.delegatedTo(address(staker)), "staker should not be delegated to operator1");
+            assertNotEq(address(operator1), delegationManager().delegatedTo(address(staker)), "staker should not be delegated to operator1");
         }
 
         {
@@ -374,7 +374,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         // 6. Delegate to a new operator
         staker.delegateTo(operator2);
         check_Delegation_State(staker, operator2, strategies, shares);
-        assertNotEq(address(operator1), delegationManager.delegatedTo(address(staker)), "staker should not be delegated to operator1");
+        assertNotEq(address(operator1), delegationManager().delegatedTo(address(staker)), "staker should not be delegated to operator1");
 
         {
             // 7. Queue Withdrawal
@@ -442,7 +442,7 @@ contract Integration_Deposit_Delegate_Redelegate_Complete is IntegrationCheckUti
         // 6. Delegate to a new operator
         staker.delegateTo(operator2);
         check_Delegation_State(staker, operator2, strategies, shares);
-        assertNotEq(address(operator1), delegationManager.delegatedTo(address(staker)), "staker should not be delegated to operator1");
+        assertNotEq(address(operator1), delegationManager().delegatedTo(address(staker)), "staker should not be delegated to operator1");
 
         // 7. Queue Withdrawal
         shares = _calculateExpectedShares(strategies, withdrawnTokenBalances);

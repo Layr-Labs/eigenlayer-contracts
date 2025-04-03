@@ -15,37 +15,21 @@ import "src/test/utils/Logger.t.sol";
 import "src/test/utils/ArrayLib.sol";
 import "src/contracts/interfaces/IAVSRegistrar.sol";
 
-interface IAVSDeployer {
-    function delegationManager() external view returns (DelegationManager);
-    function allocationManager() external view returns (AllocationManager);
-    function strategyFactory() external view returns (StrategyFactory);
-    function permissionController() external view returns (PermissionController);
-    function timeMachine() external view returns (TimeMachine);
-}
+import "src/test/utils/Constants.t.sol";
+import "src/test/Config.t.sol";
 
-contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
+contract AVS is Logger, ConfigGetters, IAllocationManagerTypes, IAVSRegistrar {
     using print for *;
     using ArrayLib for *;
 
     IStrategy constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 
     // TODO: fix later for same reason as User.t.sol
-    AllocationManager immutable allocationManager;
-    PermissionController immutable permissionController;
-    DelegationManager immutable delegationManager;
-    StrategyFactory immutable strategyFactory;
-    TimeMachine immutable timeMachine;
     string _NAME;
 
     uint32 totalOperatorSets;
 
     constructor(string memory name) {
-        IAVSDeployer deployer = IAVSDeployer(msg.sender);
-        allocationManager = deployer.allocationManager();
-        permissionController = deployer.permissionController();
-        delegationManager = deployer.delegationManager();
-        strategyFactory = deployer.strategyFactory();
-        timeMachine = deployer.timeMachine();
         _NAME = name;
         cheats.label(address(this), NAME_COLORED());
     }
@@ -74,7 +58,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
 
         console.log("Setting AVS metadata URI to: %s", uri);
         _tryPrankAppointee_AllocationManager(IAllocationManager.updateAVSMetadataURI.selector);
-        allocationManager.updateAVSMetadataURI(address(this), uri);
+        allocationManager().updateAVSMetadataURI(address(this), uri);
 
         print.gasUsed();
     }
@@ -94,7 +78,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
 
         print.createOperatorSets(p);
 
-        allocationManager.createOperatorSets(address(this), p);
+        allocationManager().createOperatorSets(address(this), p);
 
         print.gasUsed();
     }
@@ -107,7 +91,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
         CreateSetParams[] memory p = CreateSetParams({operatorSetId: operatorSet.id, strategies: strategies}).toArray();
 
         print.createOperatorSets(p);
-        allocationManager.createOperatorSets(address(this), p);
+        allocationManager().createOperatorSets(address(this), p);
         print.gasUsed();
     }
 
@@ -134,7 +118,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
         }
 
         _tryPrankAppointee_AllocationManager(IAllocationManager.slashOperator.selector);
-        allocationManager.slashOperator(address(this), params);
+        allocationManager().slashOperator(address(this), params);
         print.gasUsed();
     }
 
@@ -172,7 +156,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
         }
 
         _tryPrankAppointee_AllocationManager(IAllocationManager.slashOperator.selector);
-        allocationManager.slashOperator(address(this), p);
+        allocationManager().slashOperator(address(this), p);
         print.gasUsed();
     }
 
@@ -183,7 +167,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
 
         print.deregisterFromOperatorSets(p);
         _tryPrankAppointee_AllocationManager(IAllocationManager.deregisterFromOperatorSets.selector);
-        allocationManager.deregisterFromOperatorSets(p);
+        allocationManager().deregisterFromOperatorSets(p);
         print.gasUsed();
     }
 
@@ -191,7 +175,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
         print.method("setAVSRegistrar");
         console.log("Setting AVS registrar to: %s", address(registrar));
         _tryPrankAppointee_AllocationManager(IAllocationManager.setAVSRegistrar.selector);
-        allocationManager.setAVSRegistrar(address(this), registrar);
+        allocationManager().setAVSRegistrar(address(this), registrar);
         print.gasUsed();
     }
 
@@ -204,7 +188,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
             console.log("   strategy: %s", address(strategies[i]));
         }
         _tryPrankAppointee_AllocationManager(IAllocationManager.addStrategiesToOperatorSet.selector);
-        allocationManager.addStrategiesToOperatorSet(address(this), operatorSetId, strategies);
+        allocationManager().addStrategiesToOperatorSet(address(this), operatorSetId, strategies);
         print.gasUsed();
     }
 
@@ -217,7 +201,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
             console.log("   strategy: %s", address(strategies[i]));
         }
         _tryPrankAppointee_AllocationManager(IAllocationManager.removeStrategiesFromOperatorSet.selector);
-        allocationManager.removeStrategiesFromOperatorSet(address(this), operatorSetId, strategies);
+        allocationManager().removeStrategiesFromOperatorSet(address(this), operatorSetId, strategies);
         print.gasUsed();
     }
 
@@ -236,20 +220,12 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
     /// Internal Helpers
     /// -----------------------------------------------------------------------
 
-    // function allocationManager public view returns (AllocationManager) {
-    //     return AllocationManager(address(delegationManager.allocationManager));
-    // }
-
-    // function permissionController public view returns (PermissionController) {
-    //     return PermissionController(address(delegationManager.permissionController));
-    // }
-
     function _tryPrankAppointee(address target, bytes4 selector) internal {
-        address[] memory appointees = permissionController.getAppointees(address(this), target, selector);
+        address[] memory appointees = permissionController().getAppointees(address(this), target, selector);
         if (appointees.length != 0) cheats.prank(appointees[0]);
     }
 
     function _tryPrankAppointee_AllocationManager(bytes4 selector) internal {
-        return _tryPrankAppointee(address(allocationManager), selector);
+        return _tryPrankAppointee(address(allocationManager()), selector);
     }
 }

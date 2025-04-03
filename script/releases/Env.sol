@@ -5,6 +5,7 @@ import "forge-std/Vm.sol";
 import "zeus-templates/utils/ZEnvHelpers.sol";
 
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
+import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
 /// core/

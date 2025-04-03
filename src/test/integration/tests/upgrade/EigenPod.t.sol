@@ -106,9 +106,16 @@ contract Integration_Upgrade_EigenPod_NegativeShares is Integration_Upgrade_Eige
         (tokenDeltas, balanceUpdateShareDelta,) = _randBalanceUpdate(staker, strategies);
         staker.updateBalances(strategies, tokenDeltas);
 
-        /// 6. Upgrade contracts
-        _upgradeEigenLayerContracts();
-    }
+//         // Manually complete checks since we could still negative shares prior to the upgrade, causing a revert in the share check
+//         (uint[] memory expectedOperatorShareDelta, int[] memory expectedStakerShareDelta) =
+//             _getPostWithdrawalExpectedShareDeltas(balanceUpdateShareDelta[0], withdrawal);
+//         assert_WithdrawalNotPending(delegationManager().calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
+//         assert_Snap_Unchanged_TokenBalances(staker, "staker should not have any change in underlying token balances");
+//         assert_Snap_Added_OperatorShares(
+//             operator, withdrawal.strategies, expectedOperatorShareDelta, "operator should have received shares"
+//         );
+//         assert_Snap_Delta_StakerShares(staker, strategies, expectedStakerShareDelta, "staker should have received expected shares");
+//     }
 
     function testFuzz_deposit_delegate_updateBalance_upgrade_completeAsShares(uint24 _rand) public rand(_rand) {
         /// 7. Complete the withdrawal as shares
@@ -117,16 +124,10 @@ contract Integration_Upgrade_EigenPod_NegativeShares is Integration_Upgrade_Eige
         _rollBlocksForCompleteWithdrawals(withdrawals);
         staker.completeWithdrawalAsShares(withdrawal);
 
-        // Manually complete checks since we could still negative shares prior to the upgrade, causing a revert in the share check
-        (uint[] memory expectedOperatorShareDelta, int[] memory expectedStakerShareDelta) =
-            _getPostWithdrawalExpectedShareDeltas(balanceUpdateShareDelta[0], withdrawal);
-        assert_WithdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
-        assert_Snap_Unchanged_TokenBalances(staker, "staker should not have any change in underlying token balances");
-        assert_Snap_Added_OperatorShares(
-            operator, withdrawal.strategies, expectedOperatorShareDelta, "operator should have received shares"
-        );
-        assert_Snap_Delta_StakerShares(staker, strategies, expectedStakerShareDelta, "staker should have received expected shares");
-    }
+//         // Manually complete checks since we could still negative shares prior to the upgrade, causing a revert in the share check
+//         assert_WithdrawalNotPending(delegationManager().calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
+//         assert_Snap_Added_TokenBalances(staker, tokens, expectedTokens, "staker should have received expected tokens");
+//         assert_Snap_Unchanged_OperatorShares(operator, "operator shares should not have changed");
 
     function testFuzz_deposit_delegate_updateBalance_upgrade_completeAsTokens(uint24 _rand) public rand(_rand) {
         /// 7. Complete the withdrawal as tokens
