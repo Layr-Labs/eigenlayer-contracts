@@ -78,11 +78,7 @@ contract QueueAndUnpause is MultisigBuilder, Deploy {
         }).append({
             to: address(Env.beacon.strategyBase()),
             data: Encode.upgradeableBeacon.upgradeTo({newImpl: address(Env.impl.strategyBase())})
-        })
-            /// core/
-            /// pods/
-            /// strategies/
-            .append({
+        }).append({
             to: Env.proxyAdmin(),
             data: Encode.proxyAdmin.upgrade({
                 proxy: address(Env.proxy.strategyFactory()),
