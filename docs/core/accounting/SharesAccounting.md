@@ -323,7 +323,7 @@ $$
  s_{n+1} = s_n - x_n
 $$
 
-This means that when queuing a withdrawal, the staker inputs a `depositShares` amount $x_n$. The `DelegationManager` calls the the `EigenPodManager`/`StrategyManager` to decrement their `depositShares` by this amount. Additionally, the `depositShares` are converted to a withdrawable amount $w_n$, which are decremented from the operator's shares.
+This means that when queuing a withdrawal, the staker inputs a `depositShares` amount $x_n$. The `DelegationManager` calls the `EigenPodManager`/`StrategyManager` to decrement their `depositShares` by this amount. Additionally, the `depositShares` are converted to a withdrawable amount $w_n$, which are decremented from the operator's shares.
 
 We want to show that the total withdrawable shares for the staker are decreased accordingly such that $a_{n+1} = a_n - w_n$.
 

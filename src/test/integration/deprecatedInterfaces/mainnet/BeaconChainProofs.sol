@@ -284,7 +284,7 @@ library BeaconChainProofs_DeprecatedM1 {
          * Next we verify the withdrawal fields against the blockHeaderRoot:
          * First we compute the withdrawal_index relative to the blockHeaderRoot by concatenating the indexes of all the
          * intermediate root indexes from the bottom of the sub trees (the withdrawal container) to the top, the blockHeaderRoot.
-         * Then we calculate merkleize the withdrawalFields container to calculate the the withdrawalRoot.
+         * Then we calculate merkleize the withdrawalFields container to calculate the withdrawalRoot.
          * Finally we verify the withdrawalRoot against the executionPayloadRoot.
          */
         uint withdrawalIndex = WITHDRAWALS_INDEX << (WITHDRAWALS_TREE_HEIGHT + 1) | uint(proofs.withdrawalIndex);
