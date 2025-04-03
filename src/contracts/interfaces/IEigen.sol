@@ -5,25 +5,6 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface IEigen is IERC20 {
     /**
-     * @notice This function allows the owner to set the allowedFrom status of an address
-     * @param from the address whose allowedFrom status is being set
-     * @param isAllowedFrom the new allowedFrom status
-     */
-    function setAllowedFrom(address from, bool isAllowedFrom) external;
-
-    /**
-     * @notice This function allows the owner to set the allowedTo status of an address
-     * @param to the address whose allowedTo status is being set
-     * @param isAllowedTo the new allowedTo status
-     */
-    function setAllowedTo(address to, bool isAllowedTo) external;
-
-    /**
-     * @notice Allows the owner to disable transfer restrictions
-     */
-    function disableTransferRestrictions() external;
-
-    /**
      * @notice This function allows minter to mint tokens
      */
     function mint() external;
