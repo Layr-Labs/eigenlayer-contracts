@@ -61,8 +61,8 @@ contract IntegrationUtils is IntegrationBase {
             rollForward({blocks: ALLOCATION_CONFIGURATION_DELAY + 1});
         }
 
-        assertTrue(delegationManager.isOperator(address(operator)), "_newRandomOperator: operator should be registered");
-        assertEq(delegationManager.delegatedTo(address(operator)), address(operator), "_newRandomOperator: should be self-delegated");
+        assertTrue(delegationManager().isOperator(address(operator)), "_newRandomOperator: operator should be registered");
+        assertEq(delegationManager().delegatedTo(address(operator)), address(operator), "_newRandomOperator: should be self-delegated");
         return operator;
     }
 
@@ -129,7 +129,7 @@ contract IntegrationUtils is IntegrationBase {
         return _genAllocation_AllAvailable({
             operator: operator,
             operatorSet: operatorSet,
-            strategies: allocationManager.getStrategiesInOperatorSet(operatorSet)
+            strategies: allocationManager().getStrategiesInOperatorSet(operatorSet)
         });
     }
 
@@ -145,7 +145,7 @@ contract IntegrationUtils is IntegrationBase {
 
         for (uint i = 0; i < params.strategies.length; i++) {
             IStrategy strategy = params.strategies[i];
-            params.newMagnitudes[i] = allocationManager.getMaxMagnitude(address(operator), strategy);
+            params.newMagnitudes[i] = allocationManager().getMaxMagnitude(address(operator), strategy);
         }
     }
 
@@ -159,7 +159,7 @@ contract IntegrationUtils is IntegrationBase {
         return _genAllocation_HalfAvailable({
             operator: operator,
             operatorSet: operatorSet,
-            strategies: allocationManager.getStrategiesInOperatorSet(operatorSet)
+            strategies: allocationManager().getStrategiesInOperatorSet(operatorSet)
         });
     }
 
@@ -188,7 +188,7 @@ contract IntegrationUtils is IntegrationBase {
     /// will be 10% of available magnitude
     function _genAllocation_Rand(User operator, OperatorSet memory operatorSet) internal returns (AllocateParams memory params) {
         params.operatorSet = operatorSet;
-        params.strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
+        params.strategies = allocationManager().getStrategiesInOperatorSet(operatorSet);
         params.newMagnitudes = new uint64[](params.strategies.length);
 
         Allocation[] memory allocations = _getAllocations(operator, operatorSet, params.strategies);
@@ -212,7 +212,7 @@ contract IntegrationUtils is IntegrationBase {
         return _genDeallocation_HalfRemaining({
             operator: operator,
             operatorSet: operatorSet,
-            strategies: allocationManager.getStrategiesInOperatorSet(operatorSet)
+            strategies: allocationManager().getStrategiesInOperatorSet(operatorSet)
         });
     }
 
@@ -228,13 +228,13 @@ contract IntegrationUtils is IntegrationBase {
 
         for (uint i = 0; i < params.strategies.length; i++) {
             IStrategy strategy = params.strategies[i];
-            params.newMagnitudes[i] = allocationManager.getEncumberedMagnitude(address(operator), strategy) / 2;
+            params.newMagnitudes[i] = allocationManager().getEncumberedMagnitude(address(operator), strategy) / 2;
         }
     }
 
     /// @dev Generates params for a full deallocation from all strategies the operator is allocated to in the operator set
     function _genDeallocation_Full(User operator, OperatorSet memory operatorSet) internal view returns (AllocateParams memory params) {
-        return _genDeallocation_Full(operator, operatorSet, allocationManager.getStrategiesInOperatorSet(operatorSet));
+        return _genDeallocation_Full(operator, operatorSet, allocationManager().getStrategiesInOperatorSet(operatorSet));
     }
 
     /// @dev Generates params for a full deallocation from all strategies the operator is allocated to in the operator set
@@ -253,7 +253,7 @@ contract IntegrationUtils is IntegrationBase {
         params.operator = address(operator);
         params.operatorSetId = operatorSet.id;
         params.description = "genSlashing_Rand";
-        params.strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
+        params.strategies = allocationManager().getStrategiesInOperatorSet(operatorSet);
         params.wadsToSlash = new uint[](params.strategies.length);
 
         /// 1% * rand(1, 99)
@@ -268,7 +268,7 @@ contract IntegrationUtils is IntegrationBase {
         params.operator = address(operator);
         params.operatorSetId = operatorSet.id;
         params.description = "genSlashing_Half";
-        params.strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
+        params.strategies = allocationManager().getStrategiesInOperatorSet(operatorSet);
         params.wadsToSlash = new uint[](params.strategies.length);
 
         // slash 50%
@@ -281,7 +281,7 @@ contract IntegrationUtils is IntegrationBase {
         params.operator = address(operator);
         params.operatorSetId = operatorSet.id;
         params.description = "_genSlashing_Full";
-        params.strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
+        params.strategies = allocationManager().getStrategiesInOperatorSet(operatorSet);
         params.wadsToSlash = new uint[](params.strategies.length);
 
         // slash 100%
@@ -298,7 +298,7 @@ contract IntegrationUtils is IntegrationBase {
         params.operator = address(operator);
         params.operatorSetId = operatorSet.id;
         params.description = "_genSlashing_Custom";
-        params.strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
+        params.strategies = allocationManager().getStrategiesInOperatorSet(operatorSet);
         params.wadsToSlash = new uint[](params.strategies.length);
 
         for (uint i = 0; i < params.wadsToSlash.length; i++) {
@@ -363,7 +363,7 @@ contract IntegrationUtils is IntegrationBase {
         for (uint i = 0; i < withdrawals.length; ++i) {
             if (withdrawals[i].startBlock > latest) latest = withdrawals[i].startBlock;
         }
-        cheats.roll(latest + delegationManager.minWithdrawalDelayBlocks() + 1);
+        cheats.roll(latest + delegationManager().minWithdrawalDelayBlocks() + 1);
     }
 
     function _rollForward_AllocationDelay(User operator) internal {
@@ -377,18 +377,18 @@ contract IntegrationUtils is IntegrationBase {
     }
 
     function _rollForward_DeallocationDelay() internal {
-        rollForward(allocationManager.DEALLOCATION_DELAY() + 1);
+        rollForward(allocationManager().DEALLOCATION_DELAY() + 1);
     }
 
     function _rollBackward_DeallocationDelay() internal {
-        rollBackward(allocationManager.DEALLOCATION_DELAY() + 1);
+        rollBackward(allocationManager().DEALLOCATION_DELAY() + 1);
     }
 
     /// @dev Rolls forward by the default allocation delay blocks.
     function _rollBlocksForCompleteAllocation(User operator, OperatorSet memory operatorSet, IStrategy[] memory strategies) internal {
         uint latest;
         for (uint i = 0; i < strategies.length; ++i) {
-            uint effectBlock = allocationManager.getAllocation(address(operator), operatorSet, strategies[i]).effectBlock;
+            uint effectBlock = allocationManager().getAllocation(address(operator), operatorSet, strategies[i]).effectBlock;
             if (effectBlock > latest) latest = effectBlock;
         }
         cheats.roll(latest + 1);
@@ -399,7 +399,7 @@ contract IntegrationUtils is IntegrationBase {
         uint latest;
         for (uint i = 0; i < operatorSets.length; ++i) {
             for (uint j = 0; j < strategies.length; ++j) {
-                uint effectBlock = allocationManager.getAllocation(address(operator), operatorSets[i], strategies[j]).effectBlock;
+                uint effectBlock = allocationManager().getAllocation(address(operator), operatorSets[i], strategies[j]).effectBlock;
                 if (effectBlock > latest) latest = effectBlock;
             }
         }
