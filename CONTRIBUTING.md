@@ -1,20 +1,28 @@
 # Contribution Guide
 
-Thank you for considering contributing to EigenLayer! To ensure a smooth and efficient collaboration, please adhere to the following guidelines when submitting a pull request (PR):
+Thank you for considering contributing to EigenLayer! This guide will help you set up your development environment and submit high-quality pull requests (PRs).
 
-## Requirements
+## Setting Up Your Environment
 
-- Foundry  
-- Git  
-- Node.js  
+### Requirements
 
-## Setup Repo
+- Foundry
+- Git
+- Node.js
+
+### Fork and Clone the Repository
+
+1. Fork the repository following [GitHub's instructions](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo)
+2. Clone your forked repository:
 
 ```bash
-git clone https://github.com/Layr-Labs/eigenlayer-contracts.git
+git clone https://github.com/<your_github_id>/eigenlayer-contracts.git
+cd eigenlayer-contracts
 ```
 
 ### Install Dependencies
+
+Set up your local development environment:
 
 ```bash
 npm install
@@ -22,75 +30,115 @@ npx husky install
 forge install
 ```
 
-### Environment Variables
+### Run Tests
 
-Some of the tests and features of this repository require environment variables to be set up.
+Verify your setup by running the test suite:
 
-Copy the .env.example file to create a .env and populate it with the appropriate environment values that you have control over.
-
-## Development Workflow
-
-- **Testing**: Ensure that your code is well-tested. Write unit and integration tests as appropriate.
-- **Branching**: Create a feature branch from the `dev` branch for your work. The `dev` branch contains the most up-to-date code for upcoming releases.
-- **Pull Requests**: Once your feature or fix is complete and tested, submit a PR to merge your feature branch into the `dev` branch.
-- **Code Review**: After your PR is approved, squash your commits into a single commit before merging to maintain a clean and concise commit history.
-
-## Commit Message Format
-
-When squashing and merging your commits, please follow the commit message convention below:
-
-```
-<type>(<scope>): <subject> (#<PR number>)
-
-<motivation>
-
-<modifications>
-
-<result>
+```bash
+forge test
 ```
 
-- **Type**: Indicates the nature of the change.
-- **Scope**: Specifies the section or module of the codebase affected (optional).
-- **Subject**: A brief description of the change.
-- **PR Number**: Reference to the pull request associated with this change.
-- **Motivation**: Describe the context and reason for the change.
-- **Modifications**: Detail the specific changes made.
-- **Result**: Explain the outcome or effects of the change.
+Congratulations! You've successfully set up your repository and run the tests.
 
-### Example
+## Submitting a Pull Request
 
-An example of a commit message:
+### Configure Remote Repositories
+
+All PRs should be submitted from your forked repository. Add the official EigenLayer repository as your upstream remote:
+
+```bash
+git remote add upstream https://github.com/Layr-Labs/eigenlayer-contracts.git
+```
+
+Verify your configuration:
+
+```bash
+git remote -v
+```
+
+You should see:
+```
+origin    https://github.com/<your_github_id>/eigenlayer-contracts.git (fetch)
+origin    https://github.com/<your_github_id>/eigenlayer-contracts.git (push)
+upstream  https://github.com/Layr-Labs/eigenlayer-contracts.git (fetch)
+upstream  https://github.com/Layr-Labs/eigenlayer-contracts.git (push)
+```
+
+### Create Your PR
+
+1. Create a new branch from your target upstream branch
+2. Make your code changes
+3. Commit your changes
+4. Push to your forked repository
+5. Create a PR from your branch to the appropriate branch in the upstream repository
+
+### PR Title Format
+
+Format your PR title as follows:
 
 ```
-feat(StrategyManager): Implement new withdrawal flow (#123)
+<type>: <subject>
+```
+
+Where:
+- **Type**: Indicates the nature of the change
+- **Subject**: A brief description of the change
+
+Use one of these types:
+
+| Type | Description |
+|------|-------------|
+| **feat** | A new feature |
+| **fix** | A bug fix |
+| **docs** | Documentation-only changes |
+| **style** | Changes that don't affect code meaning (formatting) |
+| **refactor** | Code changes that neither fix bugs nor add features |
+| **ci** | Changes to continuous integration configuration |
+| **perf** | Performance improvements |
+| **test** | Adding or correcting tests |
+| **chore** | Changes to build process or auxiliary tools |
+| **release** | Merging a release-dev branch to `main` |
+
+Remember to set the appropriate PR label as well.
+
+### PR Description Template
+
+Use this template for your PR description:
+
+```markdown
+**Motivation:**
+- Describe the context and reason for the change
+
+**Modifications:**
+- Detail the specific changes made
+
+**Result:**
+- Explain the outcome or effects of the change
+```
+
+#### Example PR:
+
+```markdown
+feat: Implement new withdrawal flow in StrategyManager
 
 **Motivation:**
-
 The current withdrawal process is inefficient and leads to delays for users.
 
 **Modifications:**
-
-- Refactored the `withdraw` function in `StrategyManager.sol`.
-- Updated associated unit tests to reflect changes.
-- Modified documentation to explain the new withdrawal process.
+- Refactored the `withdraw` function in `StrategyManager.sol`
+- Updated associated unit tests to reflect changes
+- Modified documentation to explain the new withdrawal process
 
 **Result:**
-
 The withdrawal process is now more efficient, reducing wait times for users.
 ```
 
-### Commit Types
+## Testing and Continuous Integration
 
-Use the following types for your commit messages:
+- All PRs should include appropriate test coverage
+- Write unit and integration tests that verify your changes
+- Ensure all existing tests continue to pass
 
-- **feat**: A new feature.
-- **fix**: A bug fix.
-- **docs**: Documentation-only changes.
-- **style**: Changes that do not affect the meaning of the code (e.g., formatting).
-- **refactor**: A code change that neither fixes a bug nor adds a feature.
-- **perf**: A code change that improves performance.
-- **test**: Adding missing or correcting existing tests.
-- **chore**: Changes to the build process or auxiliary tools and libraries.
+For first-time external contributors: A maintainer will review your PR and manually approve CI to run.
 
 By following these guidelines, you help maintain the quality and readability of the EigenLayer codebase. We appreciate your contributions and look forward to collaborating with you!
-
