@@ -38,7 +38,7 @@ contract IntegrationGetters is IntegrationDeployer, ICoreTypes {
     {
         allocations = new Allocation[](strategies.length);
         for (uint i = 0; i < strategies.length; ++i) {
-            allocations[i] = allocationManager.getAllocation(address(operator), operatorSet, strategies[i]);
+            allocations[i] = allocationManager().getAllocation(address(operator), operatorSet, strategies[i]);
         }
     }
 
@@ -47,7 +47,7 @@ contract IntegrationGetters is IntegrationDeployer, ICoreTypes {
     }
 
     function _getAllocatedStrats(User operator, OperatorSet memory operatorSet) internal view returns (IStrategy[] memory) {
-        return allocationManager.getAllocatedStrategies(address(operator), operatorSet);
+        return allocationManager().getAllocatedStrategies(address(operator), operatorSet);
     }
 
     function _getPrevAllocatedSets(User operator) internal timewarp returns (OperatorSet[] memory) {
@@ -55,7 +55,7 @@ contract IntegrationGetters is IntegrationDeployer, ICoreTypes {
     }
 
     function _getAllocatedSets(User operator) internal view returns (OperatorSet[] memory) {
-        return allocationManager.getAllocatedSets(address(operator));
+        return allocationManager().getAllocatedSets(address(operator));
     }
 
     function _getPrevRegisteredSets(User operator) internal timewarp returns (OperatorSet[] memory) {
@@ -63,7 +63,7 @@ contract IntegrationGetters is IntegrationDeployer, ICoreTypes {
     }
 
     function _getRegisteredSets(User operator) internal view returns (OperatorSet[] memory) {
-        return allocationManager.getRegisteredSets(address(operator));
+        return allocationManager().getRegisteredSets(address(operator));
     }
 
     function _getPrevMembers(OperatorSet memory operatorSet) internal timewarp returns (address[] memory) {
@@ -71,7 +71,7 @@ contract IntegrationGetters is IntegrationDeployer, ICoreTypes {
     }
 
     function _getMembers(OperatorSet memory operatorSet) internal view returns (address[] memory) {
-        return allocationManager.getMembers(operatorSet);
+        return allocationManager().getMembers(operatorSet);
     }
 
     function _getPrevMagnitudes(User operator, IStrategy[] memory strategies) internal timewarp returns (Magnitudes[] memory) {
@@ -82,9 +82,9 @@ contract IntegrationGetters is IntegrationDeployer, ICoreTypes {
         magnitudes = new Magnitudes[](strategies.length);
         for (uint i = 0; i < strategies.length; ++i) {
             magnitudes[i] = Magnitudes({
-                encumbered: allocationManager.getEncumberedMagnitude(address(operator), strategies[i]),
-                allocatable: allocationManager.getAllocatableMagnitude(address(operator), strategies[i]),
-                max: allocationManager.getMaxMagnitude(address(operator), strategies[i])
+                encumbered: allocationManager().getEncumberedMagnitude(address(operator), strategies[i]),
+                allocatable: allocationManager().getAllocatableMagnitude(address(operator), strategies[i]),
+                max: allocationManager().getMaxMagnitude(address(operator), strategies[i])
             });
         }
     }
@@ -110,7 +110,7 @@ contract IntegrationGetters is IntegrationDeployer, ICoreTypes {
         view
         returns (uint[] memory)
     {
-        return allocationManager.getMinimumSlashableStake({
+        return allocationManager().getMinimumSlashableStake({
             operatorSet: operatorSet,
             operators: address(operator).toArray(),
             strategies: strategies,
@@ -123,7 +123,7 @@ contract IntegrationGetters is IntegrationDeployer, ICoreTypes {
         view
         returns (uint[] memory)
     {
-        return allocationManager.getMinimumSlashableStake({
+        return allocationManager().getMinimumSlashableStake({
             operatorSet: operatorSet,
             operators: address(operator).toArray(),
             strategies: strategies,
@@ -144,7 +144,7 @@ contract IntegrationGetters is IntegrationDeployer, ICoreTypes {
         view
         returns (uint[] memory)
     {
-        return allocationManager.getAllocatedStake({
+        return allocationManager().getAllocatedStake({
             operatorSet: operatorSet,
             operators: address(operator).toArray(),
             strategies: strategies
@@ -156,7 +156,7 @@ contract IntegrationGetters is IntegrationDeployer, ICoreTypes {
     }
 
     function _getIsSlashable(User operator, OperatorSet memory operatorSet) internal view returns (bool) {
-        return allocationManager.isOperatorSlashable(address(operator), operatorSet);
+        return allocationManager().isOperatorSlashable(address(operator), operatorSet);
     }
 
     function _getPrevIsMemberOfSet(User operator, OperatorSet memory operatorSet) internal timewarp returns (bool) {
@@ -164,7 +164,7 @@ contract IntegrationGetters is IntegrationDeployer, ICoreTypes {
     }
 
     function _getIsMemberOfSet(User operator, OperatorSet memory operatorSet) internal view returns (bool) {
-        return allocationManager.isMemberOfOperatorSet(address(operator), operatorSet);
+        return allocationManager().isMemberOfOperatorSet(address(operator), operatorSet);
     }
 
     function _getPrevBurnableShares(IStrategy[] memory strategies) internal timewarp returns (uint[] memory) {
@@ -175,8 +175,8 @@ contract IntegrationGetters is IntegrationDeployer, ICoreTypes {
         uint[] memory burnableShares = new uint[](strategies.length);
 
         for (uint i = 0; i < strategies.length; i++) {
-            if (strategies[i] == BEACONCHAIN_ETH_STRAT) burnableShares[i] = eigenPodManager.burnableETHShares();
-            else burnableShares[i] = strategyManager.getBurnableShares(strategies[i]);
+            if (strategies[i] == BEACONCHAIN_ETH_STRAT) burnableShares[i] = eigenPodManager().burnableETHShares();
+            else burnableShares[i] = strategyManager().getBurnableShares(strategies[i]);
         }
 
         return burnableShares;
@@ -190,7 +190,7 @@ contract IntegrationGetters is IntegrationDeployer, ICoreTypes {
         uint[] memory slashableShares = new uint[](strategies.length);
 
         for (uint i = 0; i < strategies.length; i++) {
-            slashableShares[i] = delegationManager.getSlashableSharesInQueue(address(operator), strategies[i]);
+            slashableShares[i] = delegationManager().getSlashableSharesInQueue(address(operator), strategies[i]);
         }
 
         return slashableShares;
@@ -204,7 +204,7 @@ contract IntegrationGetters is IntegrationDeployer, ICoreTypes {
         uint[] memory curShares = new uint[](strategies.length);
 
         for (uint i = 0; i < strategies.length; i++) {
-            curShares[i] = delegationManager.operatorShares(address(operator), strategies[i]);
+            curShares[i] = delegationManager().operatorShares(address(operator), strategies[i]);
         }
 
         return curShares;
@@ -221,13 +221,13 @@ contract IntegrationGetters is IntegrationDeployer, ICoreTypes {
             IStrategy strat = strategies[i];
 
             if (strat == BEACONCHAIN_ETH_STRAT) {
-                int shares = eigenPodManager.podOwnerDepositShares(address(staker));
+                int shares = eigenPodManager().podOwnerDepositShares(address(staker));
 
                 if (shares < 0) revert("_getStakerDepositShares: negative shares");
 
                 curShares[i] = uint(shares);
             } else {
-                curShares[i] = strategyManager.stakerDepositShares(address(staker), strat);
+                curShares[i] = strategyManager().stakerDepositShares(address(staker), strat);
             }
         }
 
@@ -244,8 +244,8 @@ contract IntegrationGetters is IntegrationDeployer, ICoreTypes {
         for (uint i = 0; i < strategies.length; i++) {
             IStrategy strat = strategies[i];
 
-            if (strat == BEACONCHAIN_ETH_STRAT) curShares[i] = eigenPodManager.podOwnerDepositShares(address(staker));
-            else curShares[i] = int(strategyManager.stakerDepositShares(address(staker), strat));
+            if (strat == BEACONCHAIN_ETH_STRAT) curShares[i] = eigenPodManager().podOwnerDepositShares(address(staker));
+            else curShares[i] = int(strategyManager().stakerDepositShares(address(staker), strat));
         }
 
         return curShares;
@@ -256,7 +256,7 @@ contract IntegrationGetters is IntegrationDeployer, ICoreTypes {
     }
 
     function _getStakerWithdrawableShares(User staker, IStrategy[] memory strategies) internal view returns (uint[] memory) {
-        (uint[] memory withdrawableShares,) = delegationManager.getWithdrawableShares(address(staker), strategies);
+        (uint[] memory withdrawableShares,) = delegationManager().getWithdrawableShares(address(staker), strategies);
         return withdrawableShares;
     }
 
@@ -265,7 +265,7 @@ contract IntegrationGetters is IntegrationDeployer, ICoreTypes {
     }
 
     function _getBeaconChainSlashingFactor(User staker) internal view returns (uint64) {
-        return eigenPodManager.beaconChainSlashingFactor(address(staker));
+        return eigenPodManager().beaconChainSlashingFactor(address(staker));
     }
 
     function _getPrevCumulativeWithdrawals(User staker) internal timewarp returns (uint) {
@@ -273,7 +273,7 @@ contract IntegrationGetters is IntegrationDeployer, ICoreTypes {
     }
 
     function _getCumulativeWithdrawals(User staker) internal view returns (uint) {
-        return delegationManager.cumulativeWithdrawalsQueued(address(staker));
+        return delegationManager().cumulativeWithdrawalsQueued(address(staker));
     }
 
     function _getPrevTokenBalances(User staker, IERC20[] memory tokens) internal timewarp returns (uint[] memory) {
@@ -314,7 +314,7 @@ contract IntegrationGetters is IntegrationDeployer, ICoreTypes {
     }
 
     function _getDepositScalingFactor(User staker, IStrategy strategy) internal view returns (uint) {
-        return delegationManager.depositScalingFactor(address(staker), strategy);
+        return delegationManager().depositScalingFactor(address(staker), strategy);
     }
 
     function _getPrevDepositScalingFactors(User staker, IStrategy[] memory strategies) internal timewarp returns (uint[] memory) {
@@ -326,11 +326,11 @@ contract IntegrationGetters is IntegrationDeployer, ICoreTypes {
     }
 
     function _getWithdrawableShares(User staker, IStrategy[] memory strategies) internal view returns (uint[] memory withdrawableShares) {
-        (withdrawableShares,) = delegationManager.getWithdrawableShares(address(staker), strategies);
+        (withdrawableShares,) = delegationManager().getWithdrawableShares(address(staker), strategies);
     }
 
     function _getWithdrawableShares(User staker, IStrategy strategy) internal view returns (uint withdrawableShares) {
-        (uint[] memory _withdrawableShares,) = delegationManager.getWithdrawableShares(address(staker), strategy.toArray());
+        (uint[] memory _withdrawableShares,) = delegationManager().getWithdrawableShares(address(staker), strategy.toArray());
         return _withdrawableShares[0];
     }
 
@@ -404,12 +404,12 @@ contract IntegrationGetters is IntegrationDeployer, ICoreTypes {
     }
 
     function _getSlashingFactors(User staker, IStrategy[] memory strategies) internal view returns (uint[] memory) {
-        address operator = delegationManager.delegatedTo(address(staker));
-        uint64[] memory maxMagnitudes = allocationManager.getMaxMagnitudes(operator, strategies);
+        address operator = delegationManager().delegatedTo(address(staker));
+        uint64[] memory maxMagnitudes = allocationManager().getMaxMagnitudes(operator, strategies);
         uint[] memory slashingFactors = new uint[](strategies.length);
         for (uint i = 0; i < strategies.length; i++) {
             if (strategies[i] == BEACONCHAIN_ETH_STRAT) {
-                slashingFactors[i] = maxMagnitudes[i].mulWad(eigenPodManager.beaconChainSlashingFactor(address(staker)));
+                slashingFactors[i] = maxMagnitudes[i].mulWad(eigenPodManager().beaconChainSlashingFactor(address(staker)));
             } else {
                 slashingFactors[i] = maxMagnitudes[i];
             }
@@ -428,8 +428,8 @@ contract IntegrationGetters is IntegrationDeployer, ICoreTypes {
     function _calcNativeETHOperatorShareDelta(User staker, int shareDelta) internal view returns (int) {
         // TODO: Maybe we update parent method to have an M2 and Slashing version?
         int curPodOwnerShares;
-        if (!isUpgraded) curPodOwnerShares = IEigenPodManager_DeprecatedM2(address(eigenPodManager)).podOwnerShares(address(staker));
-        else curPodOwnerShares = eigenPodManager.podOwnerDepositShares(address(staker));
+        if (!isUpgraded) curPodOwnerShares = IEigenPodManager_DeprecatedM2(address(eigenPodManager())).podOwnerShares(address(staker));
+        else curPodOwnerShares = eigenPodManager().podOwnerDepositShares(address(staker));
         int newPodOwnerShares = curPodOwnerShares + shareDelta;
 
         if (curPodOwnerShares <= 0) {
@@ -447,9 +447,9 @@ contract IntegrationGetters is IntegrationDeployer, ICoreTypes {
     }
 
     function _calculateExpectedShares(Withdrawal memory withdrawal) internal view returns (uint[] memory) {
-        bytes32 root = delegationManager.calculateWithdrawalRoot(withdrawal);
+        bytes32 root = delegationManager().calculateWithdrawalRoot(withdrawal);
 
-        (, uint[] memory shares) = delegationManager.getQueuedWithdrawal(root);
+        (, uint[] memory shares) = delegationManager().getQueuedWithdrawal(root);
         return shares;
     }
 
@@ -492,7 +492,7 @@ contract IntegrationGetters is IntegrationDeployer, ICoreTypes {
         bytes32[] memory withdrawalRoots = new bytes32[](withdrawals.length);
 
         for (uint i = 0; i < withdrawals.length; i++) {
-            withdrawalRoots[i] = delegationManager.calculateWithdrawalRoot(withdrawals[i]);
+            withdrawalRoots[i] = delegationManager().calculateWithdrawalRoot(withdrawals[i]);
         }
 
         return withdrawalRoots;
@@ -513,11 +513,11 @@ contract IntegrationGetters is IntegrationDeployer, ICoreTypes {
     }
 
     function _getMaxMagnitudes(User operator, IStrategy[] memory strategies) internal view returns (uint64[] memory) {
-        return allocationManager.getMaxMagnitudes(address(operator), strategies);
+        return allocationManager().getMaxMagnitudes(address(operator), strategies);
     }
 
     function _getMaxMagnitudes(User operator, IStrategy[] memory strategies, uint32 blockNum) internal view returns (uint64[] memory) {
-        return allocationManager.getMaxMagnitudesAtBlock(address(operator), strategies, blockNum);
+        return allocationManager().getMaxMagnitudesAtBlock(address(operator), strategies, blockNum);
     }
 
     function _getStrategyAllocations(User operator, IStrategy strategy)
@@ -525,7 +525,7 @@ contract IntegrationGetters is IntegrationDeployer, ICoreTypes {
         view
         returns (OperatorSet[] memory operatorSets, Allocation[] memory allocations)
     {
-        (operatorSets, allocations) = allocationManager.getStrategyAllocations(address(operator), strategy);
+        (operatorSets, allocations) = allocationManager().getStrategyAllocations(address(operator), strategy);
     }
 
     function _getStrategyAllocations(address operator, IStrategy strategy)
@@ -533,11 +533,11 @@ contract IntegrationGetters is IntegrationDeployer, ICoreTypes {
         view
         returns (OperatorSet[] memory operatorSets, Allocation[] memory allocations)
     {
-        (operatorSets, allocations) = allocationManager.getStrategyAllocations(operator, strategy);
+        (operatorSets, allocations) = allocationManager().getStrategyAllocations(operator, strategy);
     }
 
     function _getStakerStrategyList(User staker) internal view returns (IStrategy[] memory) {
-        return strategyManager.getStakerStrategyList(address(staker));
+        return strategyManager().getStakerStrategyList(address(staker));
     }
 
     function _calcWithdrawable(User staker, IStrategy[] memory strategies, uint[] memory depositSharesToWithdraw)
@@ -564,9 +564,10 @@ contract IntegrationGetters is IntegrationDeployer, ICoreTypes {
         returns (uint expectedDepositScalingFactor)
     {
         if (strategy == BEACONCHAIN_ETH_STRAT) {
-            return WAD.divWad(allocationManager.getMaxMagnitude(address(operator), strategy).mulWad(_getBeaconChainSlashingFactor(staker)));
+            return
+                WAD.divWad(allocationManager().getMaxMagnitude(address(operator), strategy).mulWad(_getBeaconChainSlashingFactor(staker)));
         } else {
-            return WAD.divWad(allocationManager.getMaxMagnitude(address(operator), strategy));
+            return WAD.divWad(allocationManager().getMaxMagnitude(address(operator), strategy));
         }
     }
 
@@ -624,26 +625,26 @@ contract IntegrationGetters is IntegrationDeployer, ICoreTypes {
     }
 
     function _getSlashingFactor(User staker, IStrategy strategy) internal view returns (uint) {
-        address operator = delegationManager.delegatedTo(address(staker));
-        uint64 maxMagnitude = allocationManager.getMaxMagnitudes(operator, strategy.toArray())[0];
-        if (strategy == BEACONCHAIN_ETH_STRAT) return maxMagnitude.mulWad(eigenPodManager.beaconChainSlashingFactor(address(staker)));
+        address operator = delegationManager().delegatedTo(address(staker));
+        uint64 maxMagnitude = allocationManager().getMaxMagnitudes(operator, strategy.toArray())[0];
+        if (strategy == BEACONCHAIN_ETH_STRAT) return maxMagnitude.mulWad(eigenPodManager().beaconChainSlashingFactor(address(staker)));
         return maxMagnitude;
     }
 
     /// @dev Assumes that the staker has one withdrawal queued
     function _getWithdrawableSharesAfterCompletion(User staker) internal view returns (uint[] memory withdrawableShares) {
-        bytes32 root = delegationManager.getQueuedWithdrawalRoots(address(staker))[0];
-        (, withdrawableShares) = delegationManager.getQueuedWithdrawal(root);
+        bytes32 root = delegationManager().getQueuedWithdrawalRoots(address(staker))[0];
+        (, withdrawableShares) = delegationManager().getQueuedWithdrawal(root);
     }
 
     function _getQueuedWithdrawals(User staker) internal view returns (Withdrawal[] memory) {
-        (Withdrawal[] memory withdrawals,) = delegationManager.getQueuedWithdrawals(address(staker));
+        (Withdrawal[] memory withdrawals,) = delegationManager().getQueuedWithdrawals(address(staker));
         return withdrawals;
     }
 
     /// @dev Fetches the opreator's allocation delay; asserts that it is set
     function _getExistingAllocationDelay(User operator) internal view returns (uint32) {
-        (bool isSet, uint32 delay) = allocationManager.getAllocationDelay(address(operator));
+        (bool isSet, uint32 delay) = allocationManager().getAllocationDelay(address(operator));
         assertTrue(isSet, "_getExistingAllocationDelay: expected allocation delay to be set");
 
         return delay;

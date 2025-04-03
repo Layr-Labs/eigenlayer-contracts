@@ -50,15 +50,15 @@ contract User_M1 is User {
             if (strat == BEACONCHAIN_ETH_STRAT) continue;
 
             IERC20 underlyingToken = strat.underlyingToken();
-            underlyingToken.approve(address(strategyManager), tokenBalance);
-            strategyManager.depositIntoStrategy(strat, underlyingToken, tokenBalance);
+            underlyingToken.approve(address(strategyManager()), tokenBalance);
+            strategyManager().depositIntoStrategy(strat, underlyingToken, tokenBalance);
         }
     }
 
     function _createPod() internal virtual override {
-        IEigenPodManager_DeprecatedM1(address(eigenPodManager)).createPod();
+        IEigenPodManager_DeprecatedM1(address(eigenPodManager())).createPod();
         // get EigenPod address
-        pod = EigenPod(payable(address(IEigenPodManager_DeprecatedM1(address(eigenPodManager)).ownerToPod(address(this)))));
+        pod = EigenPod(payable(address(IEigenPodManager_DeprecatedM1(address(eigenPodManager())).ownerToPod(address(this)))));
     }
 }
 
@@ -79,13 +79,13 @@ contract User_M1_AltMethods is User_M1 {
 
             // Approve token
             IERC20 underlyingToken = strat.underlyingToken();
-            underlyingToken.approve(address(strategyManager), tokenBalance);
+            underlyingToken.approve(address(strategyManager()), tokenBalance);
 
             // Get signature
-            uint nonceBefore = strategyManager.nonces(address(this));
+            uint nonceBefore = strategyManager().nonces(address(this));
             bytes32 structHash =
-                keccak256(abi.encode(strategyManager.DEPOSIT_TYPEHASH(), strat, underlyingToken, tokenBalance, nonceBefore, expiry));
-            bytes32 domain_separator = strategyManager.domainSeparator();
+                keccak256(abi.encode(strategyManager().DEPOSIT_TYPEHASH(), strat, underlyingToken, tokenBalance, nonceBefore, expiry));
+            bytes32 domain_separator = strategyManager().domainSeparator();
             bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", domain_separator, structHash));
             bytes memory signature = bytes(abi.encodePacked(digestHash)); // dummy sig data
 
@@ -93,7 +93,7 @@ contract User_M1_AltMethods is User_M1 {
             signedHashes[digestHash] = true;
 
             // Deposit
-            strategyManager.depositIntoStrategyWithSignature(strat, underlyingToken, tokenBalance, address(this), expiry, signature);
+            strategyManager().depositIntoStrategyWithSignature(strat, underlyingToken, tokenBalance, address(this), expiry, signature);
 
             // Mark hash as used
             signedHashes[digestHash] = false;

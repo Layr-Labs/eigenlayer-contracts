@@ -68,9 +68,9 @@ contract Integration_HighDSF_Multiple_Deposits is IntegrationChecks {
 
         // Check that the DSF is still bounded without overflow
         for (uint i = 0; i < strategies.length; i++) {
-            assertGe(delegationManager.depositScalingFactor(address(staker), strategies[i]), WAD, "DSF should be >= WAD");
+            assertGe(delegationManager().depositScalingFactor(address(staker), strategies[i]), WAD, "DSF should be >= WAD");
             // theoretical upper bound on DSF is 1e74
-            assertLt(delegationManager.depositScalingFactor(address(staker), strategies[i]), 1e74, "DSF should be < 1e74");
+            assertLt(delegationManager().depositScalingFactor(address(staker), strategies[i]), 1e74, "DSF should be < 1e74");
         }
     }
 }

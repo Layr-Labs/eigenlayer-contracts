@@ -110,7 +110,7 @@
 //         // Manually complete checks since we could still negative shares prior to the upgrade, causing a revert in the share check
 //         (uint[] memory expectedOperatorShareDelta, int[] memory expectedStakerShareDelta) =
 //             _getPostWithdrawalExpectedShareDeltas(balanceUpdateShareDelta[0], withdrawal);
-//         assert_WithdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
+//         assert_WithdrawalNotPending(delegationManager().calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
 //         assert_Snap_Unchanged_TokenBalances(staker, "staker should not have any change in underlying token balances");
 //         assert_Snap_Added_OperatorShares(
 //             operator, withdrawal.strategies, expectedOperatorShareDelta, "operator should have received shares"
@@ -127,7 +127,7 @@
 //         uint[] memory expectedTokens = _getPostWithdrawalExpectedTokenDeltas(balanceUpdateShareDelta[0], withdrawal);
 
 //         // Manually complete checks since we could still negative shares prior to the upgrade, causing a revert in the share check
-//         assert_WithdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
+//         assert_WithdrawalNotPending(delegationManager().calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
 //         assert_Snap_Added_TokenBalances(staker, tokens, expectedTokens, "staker should have received expected tokens");
 //         assert_Snap_Unchanged_OperatorShares(operator, "operator shares should not have changed");
 

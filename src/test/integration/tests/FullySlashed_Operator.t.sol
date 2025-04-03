@@ -47,7 +47,7 @@ contract Integration_FullySlashed_Operator is IntegrationChecks {
         // 5) Staker delegates to operator who is fully slashed.
         staker.delegateTo(operator);
         // NOTE: We didn't use check_Delegation_State as it leads to division by zero.
-        assertEq(address(operator), delegationManager.delegatedTo(address(staker)), "staker should be delegated to operator");
+        assertEq(address(operator), delegationManager().delegatedTo(address(staker)), "staker should be delegated to operator");
 
         // 6) Staker deposits into strategies, should fail.
         cheats.expectRevert(IDelegationManagerErrors.FullySlashed.selector);

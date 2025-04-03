@@ -15,7 +15,7 @@ abstract contract UpgradeTest is IntegrationChecks {
 
             // Use Deneb Beacon Chain Mock as Pectra state is not live on mainnet
             cheats.etch(address(beaconChain), type(BeaconChainMock_DenebForkable).runtimeCode);
-            beaconChain.initialize(eigenPodManager, BEACON_GENESIS_TIME);
+            beaconChain.initialize(eigenPodManager(), BEACON_GENESIS_TIME);
         }
     }
 
@@ -44,11 +44,11 @@ abstract contract UpgradeTest is IntegrationChecks {
     // `Prooftra.t.sol` will handle the Deneb -> Pectra transition
     function _handlePectraFork() internal {
         // 1. Set proof timestamp setter to operations multisig
-        cheats.prank(eigenPodManager.owner());
-        eigenPodManager.setProofTimestampSetter(address(operationsMultisig));
+        cheats.prank(eigenPodManager().owner());
+        eigenPodManager().setProofTimestampSetter(address(operationsMultisig()));
 
         // 2. Set Proof timestamp
-        cheats.prank(eigenPodManager.proofTimestampSetter());
-        eigenPodManager.setPectraForkTimestamp(type(uint64).max);
+        cheats.prank(eigenPodManager().proofTimestampSetter());
+        eigenPodManager().setPectraForkTimestamp(type(uint64).max);
     }
 }

@@ -88,7 +88,7 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal is Integration_Upgr
         state.withdrawals = state.staker.queueWithdrawals(state.strategies, state.withdrawalShares);
         _rollBlocksForCompleteWithdrawals(state.withdrawals);
         // We must roll forward by the delay twice since pre-upgrade delay is half as long as post-upgrade delay.
-        rollForward(delegationManager.minWithdrawalDelayBlocks() + 1);
+        rollForward(delegationManager().minWithdrawalDelayBlocks() + 1);
         _upgradeEigenLayerContracts();
         _completeWithdrawal(state);
     }

@@ -143,7 +143,7 @@ contract User_M2 is User {
             } else {
                 uint tokens = uint(delta);
                 IERC20 underlyingToken = strat.underlyingToken();
-                underlyingToken.approve(address(strategyManager), tokens);
+                underlyingToken.approve(address(strategyManager()), tokens);
                 strategyManager_M2.depositIntoStrategy(strat, underlyingToken, tokens);
             }
         }
@@ -243,7 +243,7 @@ contract User_M2_AltMethods is User_M2 {
             } else {
                 // Approve token
                 IERC20 underlyingToken = strat.underlyingToken();
-                underlyingToken.approve(address(strategyManager), tokenBalance);
+                underlyingToken.approve(address(strategyManager()), tokenBalance);
 
                 // Get signature
                 uint nonceBefore = strategyManager_M2.nonces(address(this));
