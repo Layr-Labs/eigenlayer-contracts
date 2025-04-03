@@ -16,6 +16,7 @@ import "src/test/utils/EigenLayerUnitTestSetup.sol";
 import "src/test/integration/mocks/BeaconChainMock.t.sol";
 import "src/test/integration/mocks/EIP_4788_Oracle_Mock.t.sol";
 import "src/test/utils/EigenPodUser.t.sol";
+import "src/test/utils/BytesLib.sol";
 
 contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants, IEigenPodEvents {
     using BytesLib for bytes;
