@@ -1,72 +1,164 @@
-# Maintenance
+# Maintenance Guide
 
-This document outlines basic procedures for maintenance of PRs, and releases that maintainers of the repository should follow.
+This document outlines essential procedures for repository maintenance, including PR management, branching strategies, and release processes that maintainers should follow to ensure code quality and stability.
+
+## Code Review Process
+
+Code reviewers are responsible for ensuring that PRs meet the following criteria before merging:
+
+- **Properly labeled** according to our labeling conventions
+- **Well-formatted** code adhering to our style guidelines
+- **Comprehensive test coverage** including unit and integration tests
+- **Documentation updates** where appropriate
+- **Security considerations** addressed and potential vulnerabilities mitigated
+
+For first-time external contributors, a maintainer must:
+1. Review the PR with additional scrutiny
+2. Verify the contributor has signed the CLA (Contributor License Agreement)
+3. Manually approve CI workflows to run
+4. Provide detailed feedback to help onboard the contributor
 
 
-## Enrivonment Network
+## Branching and Merge Strategy for Development
 
-Before getting into maintenance details, let's define environment network first.
+### Core Branches
+
+- **`main` (default)**: 
+  - The canonical branch where all approved code changes are merged
+  - Must remain stable and suitable for internal/external testing
+  - All CI workflows must pass on every commit
+  - Security audits are performed against specific commits on this branch
+  - All deployments originate from this branch
+
+- **`release-dev/xxx`**:
+  - Used for large features requiring multiple commits that introduce breaking changes
+  - Examples: `release-dev/slashing-v1`, `release-dev/rewards-v2`
+  - Branch from `main` for isolated development
+  - Must be regularly rebased against `main` to reduce merge conflicts
+  - Merged back into `main` as a single logical unit when complete
+  - No security audits are performed directly on these branches
+
+
+### Merge Strategies
+
+We employ different merge strategies based on PR type:
+
+#### 1. Regular PRs
+Regular PRs include bug fixes, small features, or incremental updates where each PR represents an atomic change.
+
+**Merge Strategy**: Always use **Squash and Merge**
+- Combines all commits into a single, atomic unit
+- Maintains a clean, linear history on the target branch
+- Preserves PR number in commit message for traceability
+- Example: `PR #123 -> [squash] -> main`
+
+#### 2. Release-Dev Merges
+When merging a complete `release-dev` branch into `main` after a major feature is completed.
+
+**Merge Strategy**: Always use **Merge Commit (no squash)**
+- Preserves the complete commit history of the feature branch
+- Creates a merge commit that serves as a feature completion marker
+- Simplifies cherry-picking specific changes for hotfixes
+- Example: `release-dev/feature -> [merge commit] -> main`
+
+
+### Best Practices
+
+- **Branch Hygiene**: Delete branches after merging to avoid clutter
+- **CI Validation**: Never merge code that fails CI checks
+- **Documentation**: Update documentation alongside code changes
+- **Breaking Changes**: Clearly document any breaking changes in PR descriptions
+
+
+
+## Release Management
+
+
+### Environment Networks
+
+Before diving into maintenance details, it's important to understand our environment network structure.
 
 | Environment | Environment Network | Definition and Practices |
 |-------------|---------------------|--------------------------|
-| mainnet | mainnet-ethereum | - mainnet production env on Ethereum<br>- only one single mainnet in foreseeable future<br>- external facing |
-| testnet | testnet-holesky<br>testnet-sepolia<br>testnet-hoodi | - testnet envs on Ethereum testnets like holesky or sepolia<br>- can be 1 or more testnet env networks for EigenLayer<br>- external facing, long lived for both internal and external developers to test on |
-| preprod | preprod-holesky<br>preprod-sepolia<br>preprod-hoodi | - preprod envs on Ethereum testnets like holesky or sepolia<br>- can be 1 or more preprod env networks for EigenLayer<br>- long lived for internal development and testing, before moving to testnets |
+| **mainnet** | mainnet-ethereum | - Production environment on Ethereum mainnet<br>- Single canonical mainnet instance in foreseeable future<br>- External facing with highest security requirements |
+| **testnet** | testnet-holesky<br>testnet-sepolia<br>testnet-hoodi | - Test environments on Ethereum testnets (holesky, sepolia, etc.)<br>- Multiple testnet environments may exist simultaneously<br>- External facing, long-lived environments for both internal and external developers<br>- Used for integration testing, AVS onboarding, and community engagement |
+| **preprod** | preprod-holesky<br>preprod-sepolia<br>preprod-hoodi | - Pre-production environments on Ethereum testnets<br>- Multiple preprod environments may exist simultaneously<br>- Internal facing for development team use<br>- Used for feature verification before promoting to testnet<br>- Provides safe environment for testing breaking changes |
 
-See blog [The Future of EigenLayer Testing: New & Improved Testnets & Tooling Coming Soon](https://www.blog.eigenlayer.xyz/the-future-of-eigenlayer-testing-new-and-improved-testnets-tooling-coming-soon/) for detailed motivation
-
-
-
-##  Development
-
-### Code Review
-
-Code reviewers take responsibility of making sure PRs are rigorously labeled, well formatted, well tested before merging them. 
-
-For first-time external contributors, a maintainer should review their PR carefully and then manually approve CI to run.
+For more details on our testing infrastructure strategy, see our blog post: [The Future of EigenLayer Testing: New & Improved Testnets & Tooling Coming Soon](https://www.blog.eigenlayer.xyz/the-future-of-eigenlayer-testing-new-and-improved-testnets-tooling-coming-soon/)
 
 
-### Branching Model
+### Base Branch For Environment Networks
 
-#### Development Branches
+Following are base branches to corresponding env networks
 
-- `main (default)`: 
-    - The primary development and canonical branch where all new code are merged
-    - It should remain stable enough for internal and external testing, ensuring continuous integration (CI) runs smoothly on every commit
-    - Security audit will always happen on main by a given commit
-- `release-dev/xxx`:
-    - For large features with many commits that will be breaking changes and we want to all-or-none in `main`, maintainer should create a `release-dev/xxx` branch to develop on
-        - eg. release-dev/slashing-v1, release-dev/rewards-v2
-    - These branches branch off from `main` for development, should be constantly rebased to `main` to be compatible with canonical branch, and will be merged back into `main` when the development is done and ready to deploy
-    - release-dev branches should be merged into main for auditing, no auditing will be on release-dev branches
+- `main` ⇒ canonical branch
+- `preprod` ⇒ preprod env network
+- `testnet` ⇒ testnet env network
+- `mainnet` ⇒ mainnet env network
+
+Specific release on a given env network will be forked from these base branches accordingly.
 
 
-### Merge PRs
+### Release Tags and Semver
 
-We classify PRs into two types:
+This section defines release tag.
 
-1. **Regular PRs** – Used for bug fixes, small changes, or incremental updates. Each PR is atomic itself.
-2. **Release-dev Merges** – Merging a release-dev branch into `main` after completing a major release. The release-dev branch and such a merge contains many regular PRs
+format: `<semver>_<env_network>` where `<semver>` = `<major>.<minor>.<patch>`
 
-We use different merge rules for each PR type.
+E.g.
+- v1.1.0_mainnet.ethereum
+- v1.1.0_testnet.holesky
+- v1.1.0_testnet.sepolia
 
-- For regular PRs:  
-    - Always **rebase, squash, and merge**. Since multiple commits in a PR represent a single unit of work, merging them separately can be unnecessary or even break the code. Squashing ensures atomicity and keeps the commit history clean.
-    - demonstration: PR -> squash -> `main` or `release-dev`
-
-
-- For release-dev merges:
-    - Always **rebase and create a new commit to merge, never squash**
-    - All commit history should be preserved - a release-dev branch contains multiple independent units of work, and squashing would create a massive, monolithic commit that erases history, making it difficult to track and understand individual changes.
-    - The additional commit will act as a marker in `main` as end of a release-dev merge. With each release-dev merge having its own end marker, it will significantly simplify the cherry-picking process in release creation
-    - demonstration: `release-dev` -> merge -> `main`
+`<semver>` should follow [best practices of semver definition](https://semver.org/)
 
 
+In observing semver, we define the following;
 
-## Releases
+1. A **major** upgrade
+    1. An ideologically breaking upgrade, which may require re-learning parts of the system. 
+    2. “Upgrade Required” — Major upgrades are **assumed to break** all tooling, integrations, and downstream consumers unless otherwise stated.
+    3. Major upgrades are announced ahead of time via blog posts, the ELIP process, and onchain via the Eigen timelock.
+    4. example: slashing, which changes most of our codebase
+2. A **minor** upgrade
+    1. A conceptually breaking upgrade, which require adapting break changes and APIs, upgrading tools, CLIs, or integrations with EigenLayer.
+    2. “Upgrade carefully” — Minor upgrades are **assumed not to break** any tooling, CLIs, or interactions with EigenLayer unless otherwise stated in release notes.
+3. A **patch** upgrade
+    1. A “silent” upgrade, which addresses a bug or inconsistency in the system, but does not change any interfaces.
+        1. i.e. fixes reveal the need for a rounding fix in a contract. Notably **abi** and **tooling** remains stable across patches.
+    2. “Upgrade suggested” — Patch upgrades may come with upgrades to tooling, CLIs, or other Eigen infrastructure. You are encouraged to read the patch notes and upgrade.
 
 
+### Release and Deployment Scope
 
-## Release Manager
+- a release would upgrade versions for all code, even though there's no change to a file from last release
+- a deployment would adopt a release as a whole, so all contracts would upgrade to that release, instead of "some file on release v1.3 and some on release v1.4"
+    - there's no phrasing of, for example, "all non-EigenPod contracts be on `v1.3.0` and  EigenPods contract on `v1.4.0`" - they would all be on v1.4.0, just the non-eigenpod contract are not changed at all from v1.3.0
+    - as implementation detail, we can skip upgrade the contracts that have not changed, but the codebase and releases are on new release version
+- all changes have to be deployed to testnet first, before mainnet. No skipping from preprod to mainnet directly
 
 
+### Release by Cherry-Pick
+ 
+We need a branching model that supports promoting features from `main` to `preprod` to`testnet` and then to `mainnet`, while allowing `mainnet` to have features in a different order than `testnet`. A flexible approach is to use **feature branches** and **cherry-picking** to control what gets promoted.
+
+Take testnet release and workflow for example  
+
+- **`testnet`**
+    - Rebase from `preprod`
+        - note: fast forward merge is also ok in the case, and have same effect as rebase
+    - Cut a release branch from `testnet`
+- **`release/V<x.y.z>-testnet.<network>`**
+    - Created from `testnet` and cherry-pick commits based on features to include/exclude
+
+The same applies to preprod and mainnet release
+
+We admit that there will always be edge cases in above scenario which cannot be resolved easily, especially in a large release like `slashing` which touches all code base. In that case, we have to spend extra efforts by leveraging release manager
+
+
+## Release Manager Responsibilities
+
+
+------
+
+By following these maintenance procedures, we ensure a stable, secure, and well-documented codebase that meets the high standards required for EigenLayer's infrastructure.
