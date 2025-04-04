@@ -19,8 +19,8 @@ if [ -z "$NETWORK" ] || [ -z "$CONTRACT" ] || [ -z "$ADDRESS" ]; then
 fi
 
 # Validate the network input
-if [ "$NETWORK" != "mainnet" ] && [ "$NETWORK" != "goerli" ]; then
-  echo "Invalid network. Use 'mainnet' or 'goerli'."
+if [ "$NETWORK" != "mainnet" ] ; then
+  echo "Invalid network. Use 'mainnet'."
   exit 1
 fi
 
@@ -38,9 +38,7 @@ case $CONTRACT in
 esac
 
 # Set RPC
-if [ "$NETWORK" == "goerli" ]; then
-    RPC_URL="$RPC_GOERLI"
-else
+if [ "$NETWORK" == "mainnet" ]; then
     RPC_URL="$RPC_MAINNET"
 fi
 
