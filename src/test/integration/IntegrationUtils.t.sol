@@ -4,7 +4,6 @@ pragma solidity ^0.8.27;
 import "src/test/integration/IntegrationBase.t.sol";
 
 contract IntegrationUtils is IntegrationBase {
-    using Strings for *;
     using ArrayLib for *;
 
     uint numStakers;
@@ -67,7 +66,7 @@ contract IntegrationUtils is IntegrationBase {
     }
 
     function _newRandomAVS() internal returns (AVS avs) {
-        string memory avsName = string.concat("avs", numAVSs.toString());
+        string memory avsName = string.concat("avs", cheats.toString(numAVSs));
         avs = _genRandAVS(avsName);
         avs.updateAVSMetadataURI("https://example.com");
         ++numAVSs;

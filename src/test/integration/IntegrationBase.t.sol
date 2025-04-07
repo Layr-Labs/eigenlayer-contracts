@@ -4,7 +4,6 @@ pragma solidity ^0.8.27;
 import "forge-std/Test.sol";
 
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
 
 import "src/contracts/libraries/BeaconChainProofs.sol";
 import "src/contracts/libraries/SlashingLib.sol";
