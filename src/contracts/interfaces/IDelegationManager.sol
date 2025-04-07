@@ -53,6 +53,9 @@ interface IDelegationManagerErrors {
     error WithdrawalDelayNotElapsed();
     /// @dev Thrown when withdrawer is not the current caller.
     error WithdrawerNotCaller();
+
+    /// @notice Error for when a zero address is provided as input
+    error InputAddressZero();
 }
 
 interface IDelegationManagerTypes {
