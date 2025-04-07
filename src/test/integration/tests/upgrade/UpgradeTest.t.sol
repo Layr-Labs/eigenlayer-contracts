@@ -7,7 +7,7 @@ import "src/test/integration/IntegrationChecks.t.sol";
 abstract contract UpgradeTest is IntegrationChecks {
     /// Only run upgrade tests on mainnet forks
     function setUp() public virtual override {
-        if (!isForktest()) {
+        if (!eq(FOUNDRY_PROFILE(), "forktest")) {
             cheats.skip(true);
         } else {
             isUpgraded = false;

@@ -2,9 +2,7 @@
 pragma solidity ^0.8.19;
 
 import "forge-std/Test.sol";
-
 import "script/releases/Env.sol";
-
 import "src/test/mocks/EmptyContract.sol";
 
 // WARNING: We expect the layout to follow the order of the toml config file. Please see:
@@ -104,35 +102,50 @@ library ConfigParser {
         }
     }
 
-    function parseLocal() internal returns (Config memory c) {
-        // c.governance.communityMultisig = vm.randomAddress();
-        // c.governance.executorMultisig = vm.randomAddress();
-        // c.governance.operationsMultisig = vm.randomAddress();
-        // c.governance.pauserMultisig = vm.randomAddress();
-        // c.governance.pauserRegistry = vm.randomAddress();
-        // c.governance.proxyAdmin = vm.randomAddress();
-        // c.governance.timelock = vm.randomAddress();
-
-        // //
-    }
-
     /// -----------------------------------------------------------------------
     /// Proxy Storage
     /// -----------------------------------------------------------------------
 
+    bytes32 constant ERC1967_IMPL_SLOT = bytes32(uint(keccak256("eip1967.proxy.implementation")) - 1);
+    bytes32 constant ERC1967_BEACON_SLOT = bytes32(uint(keccak256("eip1967.proxy.beacon")) - 1);
+    bytes32 constant ERC1967_ADMIN_SLOT = bytes32(uint(keccak256("eip1967.proxy.admin")) - 1);
+
     /// @dev Returns the implementation address of a ERC1967 proxy.
     function impl(address proxy) internal view returns (address) {
-        return address(uint160(uint(vm.load(proxy, bytes32(uint(keccak256("eip1967.proxy.implementation")) - 1)))));
+        return address(uint160(uint(vm.load(proxy, ERC1967_IMPL_SLOT))));
     }
 
     /// @dev Returns the beacon address of a ERC1967 proxy.
     function beacon(address proxy) internal view returns (address) {
-        return address(uint160(uint(vm.load(proxy, bytes32(uint(keccak256("eip1967.proxy.beacon")) - 1)))));
+        return address(uint160(uint(vm.load(proxy, ERC1967_BEACON_SLOT))));
     }
 
     /// @dev Returns the admin address of a ERC1967 proxy.
     function admin(address proxy) internal view returns (address) {
-        return address(uint160(uint(vm.load(proxy, bytes32(uint(keccak256("eip1967.proxy.admin")) - 1)))));
+        return address(uint160(uint(vm.load(proxy, ERC1967_ADMIN_SLOT))));
+    }
+
+    function setImpl(address proxy, address impl) internal returns (address) {
+        vm.store(proxy, ERC1967_IMPL_SLOT, bytes32(uint(uint160(impl))));
+        return proxy;
+    }
+
+    function setBeacon(address proxy, address beacon) internal returns (address) {
+        vm.store(proxy, ERC1967_BEACON_SLOT, bytes32(uint(uint160(beacon))));
+        return proxy;
+    }
+
+    function setAdmin(address proxy, address admin) internal returns (address) {
+        vm.store(proxy, ERC1967_ADMIN_SLOT, bytes32(uint(uint160(admin))));
+        return proxy;
+    }
+
+    function emptyContract() external returns (address deployed) {
+        assembly {
+            // Deploy a contract with a 1 opcode (STOP).
+            deployed := create(0x00, 0x00, 1)
+        }
+        require(deployed != address(0), "Deployment failed");
     }
 }
 

@@ -42,7 +42,7 @@ contract Integration_HighDSF_Multiple_Deposits is IntegrationChecks {
         assertEq(slashingFactor, 1, "slashing factor should be 1");
     }
 
-    function _dealAmounts(User user, IStrategy[] memory strategies, uint[] memory amounts) internal noTracing {
+    function _dealAmounts(User user, IStrategy[] memory strategies, uint[] memory amounts) internal {
         for (uint i = 0; i < amounts.length; i++) {
             IStrategy strategy = strategies[i];
             if (strategy == BEACONCHAIN_ETH_STRAT) cheats.deal(address(user), amounts[i]);
