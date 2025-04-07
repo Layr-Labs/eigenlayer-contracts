@@ -33,18 +33,18 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
 
     // TODO get rid of this storage
     /// @dev AllocationManager
-    uint32 DEALLOCATION_DELAY;
-    uint32 ALLOCATION_CONFIGURATION_DELAY;
+    uint32 constant DEALLOCATION_DELAY = 50;
+    uint32 constant ALLOCATION_CONFIGURATION_DELAY = 75;
 
     /// @dev DelegationManager
-    uint32 DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS;
+    uint32 constant DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS = 50;
 
     /// @dev RewardsCoordinator
-    uint32 REWARDS_COORDINATOR_MAX_REWARDS_DURATION;
-    uint32 REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH;
-    uint32 REWARDS_COORDINATOR_MAX_FUTURE_LENGTH;
-    uint32 REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP;
-    uint32 REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS;
+    uint32 constant REWARDS_COORDINATOR_MAX_REWARDS_DURATION = 6_048_000;
+    uint32 constant REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH = 7_776_000;
+    uint32 constant REWARDS_COORDINATOR_MAX_FUTURE_LENGTH = 2_592_000;
+    uint32 constant REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP = 1_710_979_200;
+    uint32 constant REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS = 86_400;
 
     /// -----------------------------------------------------------------------
     /// State
@@ -277,8 +277,9 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
         assertTrue((maxUniqueAssetsHeld = _maxUniqueAssetsHeld) != 0, "_configAssetAmounts: invalid 0");
     }
 
-    function FOUNDRY_PROFILE() internal view returns (string memory) {
-        return vm.envOr(string("FOUNDRY_PROFILE"), string("default"));
+    function FOUNDRY_PROFILE() internal view returns (string memory profile) {
+        profile = vm.envOr(string("FOUNDRY_PROFILE"), string("default"));
+        console.log("FOUNDRY_PROFILE: %s", profile);
     }
 
     function eq(string memory a, string memory b) internal pure returns (bool) {
@@ -297,6 +298,7 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
         config.governance.pauserRegistry = new PauserRegistry(PAUSER.toArray(), UNPAUSER);
         config.governance.executorMultisig = address(proxyAdmin().owner());
 
+<<<<<<< HEAD
         // Matching parameters to testnet
         DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS = 50;
         DEALLOCATION_DELAY = 50;
@@ -309,6 +311,8 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
         REWARDS_COORDINATOR_MAX_FUTURE_LENGTH = 2_592_000;
         REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP = 1_710_979_200;
 
+=======
+>>>>>>> abe8f954 (test: forktest passing)
         _deployProxies();
         _upgradeProxies();
         _initializeProxies();
@@ -425,6 +429,8 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
 >>>>>>> cb9c246c (test: passing)
 
         cheats.createSelectFork(cheats.rpcUrl("mainnet"), MAINNET_FORK_BLOCK);
+
+        _deployProxies(); // deploy proxies if not already deployed
 
         // Place native ETH first in `allStrats`
         // This ensures when we select a nonzero number of strategies from this array, we always
@@ -562,26 +568,33 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
     }
 
     /// @dev Upgrades a proxy to a new implementation.
-    function _upgradeProxy(address proxy, address implementation) public {
+    function _upgradeProxy(address proxy, address implementation) internal {
         proxyAdmin().upgrade(ITransparentUpgradeableProxy(payable(proxy)), implementation);
     }
 
     /// @dev Deploys a new transparent proxy without an implementation set for each contract in the system.
-    function _deployProxies() public {
+    function _deployProxies() internal {
         // Core contracts
-        config.core.allocationManager = AllocationManager(_emptyProxy());
-        config.core.avsDirectory = AVSDirectory(_emptyProxy());
-        config.core.delegationManager = DelegationManager(_emptyProxy());
-        config.core.permissionController = PermissionController(_emptyProxy());
-        config.core.rewardsCoordinator = RewardsCoordinator(_emptyProxy());
-        config.core.strategyManager = StrategyManager(_emptyProxy());
+        if (address(config.core.allocationManager) == address(0)) config.core.allocationManager = AllocationManager(_emptyProxy());
+        if (address(config.core.avsDirectory) == address(0)) config.core.avsDirectory = AVSDirectory(_emptyProxy());
+        if (address(config.core.delegationManager) == address(0)) config.core.delegationManager = DelegationManager(_emptyProxy());
+        if (address(config.core.permissionController) == address(0)) config.core.permissionController = PermissionController(_emptyProxy());
+        if (address(config.core.rewardsCoordinator) == address(0)) config.core.rewardsCoordinator = RewardsCoordinator(_emptyProxy());
+        if (address(config.core.strategyManager) == address(0)) config.core.strategyManager = StrategyManager(_emptyProxy());
         // Pod contracts
-        config.pods.eigenPodBeacon = new UpgradeableBeacon(address(emptyContract));
-        config.pods.eigenPodManager = EigenPodManager(_emptyProxy());
+        if (address(config.pods.eigenPodBeacon) == address(0)) config.pods.eigenPodBeacon = new UpgradeableBeacon(address(emptyContract));
+        if (address(config.pods.eigenPodManager) == address(0)) config.pods.eigenPodManager = EigenPodManager(_emptyProxy());
         // Strategy contracts
+<<<<<<< HEAD
         config.strategies.strategyFactory = StrategyFactory(_emptyProxy());
         config.strategies.strategyFactoryBeacon = new UpgradeableBeacon(address(emptyContract));
 >>>>>>> 55430b8b (feat(wip): toml based config parsing)
+=======
+        if (address(config.strategies.strategyFactory) == address(0)) config.strategies.strategyFactory = StrategyFactory(_emptyProxy());
+        if (address(config.strategies.strategyFactoryBeacon) == address(0)) {
+            config.strategies.strategyFactoryBeacon = new UpgradeableBeacon(address(emptyContract));
+        }
+>>>>>>> abe8f954 (test: forktest passing)
     }
 
 <<<<<<< HEAD
@@ -770,6 +783,8 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
     /// @dev Upgrades all proxies to their implementation contracts.
     function _upgradeProxies() public {
         // Core contracts
+
+        console.log("Upgrading AllocationManager");
         _upgradeProxy(
             address(allocationManager()),
             address(
@@ -783,7 +798,9 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
                 )
             )
         );
+        console.log("Upgrading AVSDirectory");
         _upgradeProxy(address(avsDirectory()), address(new AVSDirectory(delegationManager(), pauserRegistry(), SEMVER)));
+        console.log("Upgrading DelegationManager");
         _upgradeProxy(
             address(delegationManager()),
             address(
@@ -798,7 +815,9 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
                 )
             )
         );
+        console.log("Upgrading PermissionController");
         _upgradeProxy(address(permissionController()), address(new PermissionController(SEMVER)));
+        console.log("Upgrading RewardsCoordinator");
         _upgradeProxy(
             address(rewardsCoordinator()),
             address(
@@ -819,19 +838,25 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
                 )
             )
         );
+        console.log("Upgrading StrategyManager");
         _upgradeProxy(address(strategyManager()), address(new StrategyManager(delegationManager(), pauserRegistry(), SEMVER)));
 
         // Pod contracts
+        console.log("Upgrading EigenPodBeacon");
         eigenPodBeacon().upgradeTo(address(new EigenPod(DEPOSIT_CONTRACT, eigenPodManager(), BEACON_GENESIS_TIME, "v9.9.9")));
+        console.log("Upgrading EigenPodManager");
         _upgradeProxy(
             address(eigenPodManager()),
             address(new EigenPodManager(DEPOSIT_CONTRACT, eigenPodBeacon(), delegationManager(), pauserRegistry(), "v9.9.9"))
         );
 
         // Strategy contracts
+        console.log("Upgrading StrategyFactory");
         _upgradeProxy(address(strategyFactory()), address(new StrategyFactory(strategyManager(), pauserRegistry(), "v9.9.9")));
+        console.log("Upgrading StrategyFactoryBeacon");
         address baseStrategyImpl = address(new StrategyBase(strategyManager(), pauserRegistry(), "v9.9.9"));
         strategyFactoryBeacon().upgradeTo(baseStrategyImpl);
+        console.log("Upgrading Strategies");
         for (uint i = 0; i < totalStrategies(); ++i) {
             _upgradeProxy(address(strategyAddresses(i)), address(baseStrategyImpl));
         }
