@@ -50,7 +50,7 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
     /// State
     /// -----------------------------------------------------------------------
 
-    /// @dev Returns the semver for test enviorments.
+    /// @dev Returns the semver for test environments.
     string constant SEMVER = "v9.9.9-test";
 
 <<<<<<< HEAD
