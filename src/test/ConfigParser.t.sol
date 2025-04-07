@@ -68,7 +68,7 @@ library ConfigParser {
         return abi.decode(vm.readFile(path).parseRaw("."), (Config));
     }
 
-    /// @dev Returns the config from a given Zeus enviorment.
+    /// @dev Returns the config from a given Zeus environment.
     function parseZeus() internal returns (Config memory c) {
         // Governance addresses
         c.governance.communityMultisig = Env.protocolCouncilMultisig();
