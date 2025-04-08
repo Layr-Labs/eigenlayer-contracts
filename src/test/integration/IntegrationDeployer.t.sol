@@ -3,34 +3,44 @@ pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
 import {MockERC20} from "forge-std/mocks/MockERC20.sol";
-
-import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
-import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
-import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-
 import {ICoreTypes} from "src/contracts/interfaces/ICore.sol";
+import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 import "src/test/integration/users/AVS.t.sol";
 import "src/test/integration/users/User.t.sol";
 import "src/test/integration/users/User_M1.t.sol";
 import "src/test/integration/users/User_M2.t.sol";
 import "src/test/mocks/BeaconChainMock.t.sol";
-
 import "src/test/mocks/EmptyContract.sol";
 import "src/test/utils/Constants.t.sol";
+import "src/test/Config.t.sol";
 
-import "script/utils/ExistingDeploymentParser.sol";
-
-abstract contract IntegrationDeployer is ExistingDeploymentParser {
+abstract contract IntegrationDeployer is ConfigGetters, Logger {
+    using ConfigParser for *;
     using StdStyle for *;
     using ArrayLib for *;
+
+    // TODO get rid of this storage
+    /// @dev AllocationManager
+    uint32 constant DEALLOCATION_DELAY = 50;
+    uint32 constant ALLOCATION_CONFIGURATION_DELAY = 75;
+
+    /// @dev DelegationManager
+    uint32 constant DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS = 50;
+
+    /// @dev RewardsCoordinator
+    uint32 constant REWARDS_COORDINATOR_MAX_REWARDS_DURATION = 6_048_000;
+    uint32 constant REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH = 7_776_000;
+    uint32 constant REWARDS_COORDINATOR_MAX_FUTURE_LENGTH = 2_592_000;
+    uint32 constant REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP = 1_710_979_200;
+    uint32 constant REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS = 86_400;
 
     /// -----------------------------------------------------------------------
     /// State
     /// -----------------------------------------------------------------------
 
-    string constant deploymentInfoPath = "script/configs/mainnet/mainnet-addresses.config.json";
-    string constant existingDeploymentParams = "script/configs/mainnet.json";
+    /// @dev Returns the semver for test environments.
+    string constant SEMVER = "v9.9.9-test";
 
     /// @notice Returns the genesis time for the beacon chain. Depends on the fork type.
     uint64 public BEACON_GENESIS_TIME;
@@ -41,6 +51,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     uint public assetTypes = HOLDS_LST | HOLDS_ETH | HOLDS_ALL;
     /// @notice Returns types of users to be randomly selected during tests
     uint public userTypes = DEFAULT | ALT_METHODS;
+
+    // TODO REMOVE
     /// @notice Returns the fork type, set only once in setUp if FORK_MAINNET env is set
     uint public forkType;
 
@@ -56,6 +68,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     /// @dev Returns true if a token should be excluded from testing
     /// If a token is in this mapping, we will ignore this LST as it causes issues with reading balanceOf
     mapping(address => bool) public tokensNotTested;
+
+    EmptyContract public emptyContract;
 
     /// -----------------------------------------------------------------------
     /// Setup
@@ -81,17 +95,25 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
      * Note that forkIds are also created so you can make explicit fork tests using cheats.selectFork(forkId)
      */
     function setUp() public virtual {
-        SEMVER = "v9.9.9";
         emptyContract = new EmptyContract();
-        bool forkMainnet = isForktest();
+        string memory profile = FOUNDRY_PROFILE();
 
-        if (forkMainnet) {
+        if (eq(profile, "forktest")) {
+            // Assumes the proxy contracts have already been deployed.
             forkType = MAINNET;
+            config = ConfigParser.parse("./script/configs/mainnet/mainnet-addresses.toml");
+            _setUpMainnet();
+        } else if (eq(profile, "forktest-zeus")) {
+            // Assumes the proxy contracts have already been deployed.
+            forkType = MAINNET;
+            config = ConfigParser.parseZeus();
             _setUpMainnet();
         } else {
+            // Assumes nothing has been deployed yet.
             forkType = LOCAL;
             _setUpLocal();
         }
+
         _init();
     }
 
@@ -107,30 +129,33 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     }
 
     /// @dev Configures the possible asset and user types for the random users.
-    function _configRand(uint _assetTypes, uint _userTypes) private noTracing {
+    function _configRand(uint _assetTypes, uint _userTypes) internal virtual {
         _configAssetTypes(_assetTypes);
         _configUserTypes(_userTypes);
     }
 
     /// @dev Configures the possible asset types for the random users.
-    function _configAssetTypes(uint _assetTypes) internal {
+    function _configAssetTypes(uint _assetTypes) internal virtual {
         assertTrue((assetTypes = _assetTypes) != 0, "_configAssetTypes: no asset types selected");
     }
 
     /// @dev Configures the possible user types for the random users.
-    function _configUserTypes(uint _userTypes) internal {
+    function _configUserTypes(uint _userTypes) internal virtual {
         assertTrue((userTypes = _userTypes) != 0, "_configUserTypes: no user types selected");
     }
 
     /// @dev Configures the maximum number of unique assets a user can hold.
-    function _configAssetAmounts(uint _maxUniqueAssetsHeld) internal {
+    function _configAssetAmounts(uint _maxUniqueAssetsHeld) internal virtual {
         if (_maxUniqueAssetsHeld > allStrats.length) _maxUniqueAssetsHeld = allStrats.length;
         assertTrue((maxUniqueAssetsHeld = _maxUniqueAssetsHeld) != 0, "_configAssetAmounts: invalid 0");
     }
 
-    /// @dev Run `FOUNDRY_PROFILE=forktest forge t --mc Integration` for integration fork testing.
-    function isForktest() public view returns (bool) {
-        return _hash("forktest") == _hash(cheats.envOr(string("FOUNDRY_PROFILE"), string("default")));
+    function FOUNDRY_PROFILE() internal view returns (string memory) {
+        return cheats.envOr(string("FOUNDRY_PROFILE"), string("default"));
+    }
+
+    function eq(string memory a, string memory b) internal pure returns (bool) {
+        return keccak256(bytes(a)) == keccak256(bytes(b));
     }
 
     /// -----------------------------------------------------------------------
@@ -138,26 +163,14 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     /// -----------------------------------------------------------------------
 
     /// @dev Sets up the integration tests for local.
-    function _setUpLocal() public virtual noTracing {
+    function _setUpLocal() public virtual {
         console.log("Setting up `%s` integration tests:", "LOCAL".yellow().bold());
         // Deploy ProxyAdmin, PauserRegistry, and executorMultisig.
-        eigenLayerProxyAdmin = new ProxyAdmin();
-        eigenLayerPauserReg = new PauserRegistry(PAUSER.toArray(), UNPAUSER);
-        executorMultisig = address(eigenLayerProxyAdmin.owner());
-
-        // Matching parameters to testnet
-        DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS = 50;
-        DEALLOCATION_DELAY = 50;
-        ALLOCATION_CONFIGURATION_DELAY = 75;
-
-        REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS = 86_400;
-        REWARDS_COORDINATOR_MAX_REWARDS_DURATION = 6_048_000;
-        REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH = 7_776_000;
-        REWARDS_COORDINATOR_MAX_FUTURE_LENGTH = 2_592_000;
-        REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP = 1_710_979_200;
+        config.governance.proxyAdmin = new ProxyAdmin();
+        config.governance.pauserRegistry = new PauserRegistry(PAUSER.toArray(), UNPAUSER);
+        config.governance.executorMultisig = address(proxyAdmin().owner());
 
         _deployProxies();
-        _deployImplementations();
         _upgradeProxies();
         _initializeProxies();
 
@@ -174,8 +187,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         }
 
         // Whitelist the strategies
-        cheats.prank(strategyManager.strategyWhitelister());
-        strategyManager.addStrategiesToDepositWhitelist(allStrats);
+        cheats.prank(strategyManager().strategyWhitelister());
+        strategyManager().addStrategiesToDepositWhitelist(allStrats);
 
         maxUniqueAssetsHeld = allStrats.length;
 
@@ -185,21 +198,20 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         cheats.roll(10_000);
         _deployTimeMachineAndBeaconChain();
         // Set the `pectraForkTimestamp` on the EigenPodManager. Use pectra state
-        cheats.startPrank(executorMultisig);
-        eigenPodManager.setProofTimestampSetter(executorMultisig);
-        eigenPodManager.setPectraForkTimestamp(BEACON_GENESIS_TIME);
+        cheats.startPrank(executorMultisig());
+        eigenPodManager().setProofTimestampSetter(executorMultisig());
+        eigenPodManager().setPectraForkTimestamp(BEACON_GENESIS_TIME);
         cheats.stopPrank();
     }
 
     /// @dev Sets up the integration tests for mainnet.
-    function _setUpMainnet() public virtual noTracing {
+    function _setUpMainnet() public virtual {
         console.log("Setting up `%s` integration tests:", "MAINNET_FORK".green().bold());
         console.log("Block:", MAINNET_FORK_BLOCK);
 
         cheats.createSelectFork(cheats.rpcUrl("mainnet"), MAINNET_FORK_BLOCK);
 
-        _parseDeployedContracts(deploymentInfoPath);
-        _parseParamsForIntegrationUpgrade(existingDeploymentParams);
+        _deployProxies(); // deploy proxies if not already deployed
 
         // Place native ETH first in `allStrats`
         // This ensures when we select a nonzero number of strategies from this array, we always
@@ -208,8 +220,9 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         allTokens.push(NATIVE_ETH);
 
         // Add deployed strategies to lstStrats and allStrats
-        for (uint i; i < deployedStrategyArray.length; ++i) {
-            IStrategy strategy = IStrategy(deployedStrategyArray[i]);
+        uint n = totalStrategies();
+        for (uint i; i < n; ++i) {
+            IStrategy strategy = strategyAddresses(i);
 
             if (tokensNotTested[address(strategy.underlyingToken())]) continue;
 
@@ -217,6 +230,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             lstStrats.push(strategy);
             allStrats.push(strategy);
             allTokens.push(strategy.underlyingToken());
+            config.strategies.strategyAddresses.push(strategy);
         }
 
         maxUniqueAssetsHeld = allStrats.length;
@@ -231,17 +245,16 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             _upgradeMainnetContracts();
 
             // Set the `pectraForkTimestamp` on the EigenPodManager. Use pectra state
-            cheats.startPrank(executorMultisig);
-            eigenPodManager.setProofTimestampSetter(executorMultisig);
-            eigenPodManager.setPectraForkTimestamp(BEACON_GENESIS_TIME);
+            cheats.startPrank(executorMultisig());
+            eigenPodManager().setProofTimestampSetter(executorMultisig());
+            eigenPodManager().setPectraForkTimestamp(BEACON_GENESIS_TIME);
             cheats.stopPrank();
         }
     }
 
     /// @dev Upgrades the mainnet contracts.
     function _upgradeMainnetContracts() public virtual {
-        cheats.startPrank(executorMultisig);
-        _deployImplementations();
+        cheats.startPrank(executorMultisig());
         _upgradeProxies();
         cheats.stopPrank();
     }
@@ -252,101 +265,133 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
     /// @dev Returns a new transparent proxy without an implementation set.
     function _emptyProxy() internal returns (address) {
-        return address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""));
+        return address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin()), ""));
     }
 
     /// @dev Upgrades a proxy to a new implementation.
-    function _upgradeProxy(address proxy, address implementation) public {
-        eigenLayerProxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(proxy)), implementation);
+    function _upgradeProxy(address proxy, address implementation) internal {
+        proxyAdmin().upgrade(ITransparentUpgradeableProxy(payable(proxy)), implementation);
     }
 
     /// @dev Deploys a new transparent proxy without an implementation set for each contract in the system.
-    function _deployProxies() public {
-        delegationManager = DelegationManager(_emptyProxy());
-        strategyManager = StrategyManager(_emptyProxy());
-        eigenPodManager = EigenPodManager(_emptyProxy());
-        rewardsCoordinator = RewardsCoordinator(_emptyProxy());
-        avsDirectory = AVSDirectory(_emptyProxy());
-        strategyFactory = StrategyFactory(_emptyProxy());
-        allocationManager = AllocationManager(_emptyProxy());
-        permissionController = PermissionController(_emptyProxy());
-        eigenPodBeacon = new UpgradeableBeacon(address(emptyContract));
-        strategyBeacon = new UpgradeableBeacon(address(emptyContract));
-    }
-
-    /// @dev Deploys the implementation of each contract in the system.
-    function _deployImplementations() public {
-        allocationManagerImplementation = new AllocationManager(
-            delegationManager, eigenLayerPauserReg, permissionController, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY, SEMVER
-        );
-        permissionControllerImplementation = new PermissionController(SEMVER);
-        delegationManagerImplementation = new DelegationManager(
-            strategyManager,
-            eigenPodManager,
-            allocationManager,
-            eigenLayerPauserReg,
-            permissionController,
-            DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS,
-            SEMVER
-        );
-        strategyManagerImplementation = new StrategyManager(delegationManager, eigenLayerPauserReg, SEMVER);
-        rewardsCoordinatorImplementation = new RewardsCoordinator(
-            IRewardsCoordinatorTypes.RewardsCoordinatorConstructorParams({
-                delegationManager: delegationManager,
-                strategyManager: strategyManager,
-                allocationManager: allocationManager,
-                pauserRegistry: eigenLayerPauserReg,
-                permissionController: permissionController,
-                CALCULATION_INTERVAL_SECONDS: REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
-                MAX_REWARDS_DURATION: REWARDS_COORDINATOR_MAX_REWARDS_DURATION,
-                MAX_RETROACTIVE_LENGTH: REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH,
-                MAX_FUTURE_LENGTH: REWARDS_COORDINATOR_MAX_FUTURE_LENGTH,
-                GENESIS_REWARDS_TIMESTAMP: REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP,
-                version: SEMVER
-            })
-        );
-        avsDirectoryImplementation = new AVSDirectory(delegationManager, eigenLayerPauserReg, SEMVER);
-        eigenPodManagerImplementation =
-            new EigenPodManager(DEPOSIT_CONTRACT, eigenPodBeacon, delegationManager, eigenLayerPauserReg, "v9.9.9");
-        strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg, "v9.9.9");
-
-        // Beacon implementations
-        eigenPodImplementation = new EigenPod(DEPOSIT_CONTRACT, eigenPodManager, BEACON_GENESIS_TIME, "v9.9.9");
-        baseStrategyImplementation = new StrategyBase(strategyManager, eigenLayerPauserReg, "v9.9.9");
-
-        // Pre-longtail StrategyBaseTVLLimits implementation
-        // TODO - need to update ExistingDeploymentParser
+    function _deployProxies() internal {
+        // Core contracts
+        if (address(config.core.allocationManager) == address(0)) config.core.allocationManager = AllocationManager(_emptyProxy());
+        if (address(config.core.avsDirectory) == address(0)) config.core.avsDirectory = AVSDirectory(_emptyProxy());
+        if (address(config.core.delegationManager) == address(0)) config.core.delegationManager = DelegationManager(_emptyProxy());
+        if (address(config.core.permissionController) == address(0)) config.core.permissionController = PermissionController(_emptyProxy());
+        if (address(config.core.rewardsCoordinator) == address(0)) config.core.rewardsCoordinator = RewardsCoordinator(_emptyProxy());
+        if (address(config.core.strategyManager) == address(0)) config.core.strategyManager = StrategyManager(_emptyProxy());
+        // Pod contracts
+        if (address(config.pods.eigenPodBeacon) == address(0)) config.pods.eigenPodBeacon = new UpgradeableBeacon(address(emptyContract));
+        if (address(config.pods.eigenPodManager) == address(0)) config.pods.eigenPodManager = EigenPodManager(_emptyProxy());
+        // Strategy contracts
+        if (address(config.strategies.strategyFactory) == address(0)) config.strategies.strategyFactory = StrategyFactory(_emptyProxy());
+        if (address(config.strategies.strategyFactoryBeacon) == address(0)) {
+            config.strategies.strategyFactoryBeacon = new UpgradeableBeacon(address(emptyContract));
+        }
     }
 
     /// @dev Upgrades all proxies to their implementation contracts.
-    function _upgradeProxies() public noTracing {
-        _upgradeProxy(address(allocationManager), address(allocationManagerImplementation));
-        _upgradeProxy(address(avsDirectory), address(avsDirectoryImplementation));
-        _upgradeProxy(address(delegationManager), address(delegationManagerImplementation));
-        _upgradeProxy(address(eigenPodManager), address(eigenPodManagerImplementation));
-        _upgradeProxy(address(permissionController), address(permissionControllerImplementation));
-        _upgradeProxy(address(rewardsCoordinator), address(rewardsCoordinatorImplementation));
-        _upgradeProxy(address(strategyFactory), address(strategyFactoryImplementation));
-        _upgradeProxy(address(strategyManager), address(strategyManagerImplementation));
-        eigenPodBeacon.upgradeTo(address(eigenPodImplementation));
-        strategyBeacon.upgradeTo(address(baseStrategyImplementation));
-        for (uint i = 0; i < numStrategiesDeployed; ++i) {
-            _upgradeProxy(address(deployedStrategyArray[i]), address(baseStrategyImplementation));
+    function _upgradeProxies() public {
+        // Core contracts
+
+        console.log("Upgrading AllocationManager");
+        _upgradeProxy(
+            address(allocationManager()),
+            address(
+                new AllocationManager(
+                    delegationManager(),
+                    pauserRegistry(),
+                    permissionController(),
+                    DEALLOCATION_DELAY,
+                    ALLOCATION_CONFIGURATION_DELAY,
+                    SEMVER
+                )
+            )
+        );
+        console.log("Upgrading AVSDirectory");
+        _upgradeProxy(address(avsDirectory()), address(new AVSDirectory(delegationManager(), pauserRegistry(), SEMVER)));
+        console.log("Upgrading DelegationManager");
+        _upgradeProxy(
+            address(delegationManager()),
+            address(
+                new DelegationManager(
+                    strategyManager(),
+                    eigenPodManager(),
+                    allocationManager(),
+                    pauserRegistry(),
+                    permissionController(),
+                    DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS,
+                    SEMVER
+                )
+            )
+        );
+        console.log("Upgrading PermissionController");
+        _upgradeProxy(address(permissionController()), address(new PermissionController(SEMVER)));
+        console.log("Upgrading RewardsCoordinator");
+        _upgradeProxy(
+            address(rewardsCoordinator()),
+            address(
+                new RewardsCoordinator(
+                    IRewardsCoordinatorTypes.RewardsCoordinatorConstructorParams(
+                        delegationManager(),
+                        strategyManager(),
+                        allocationManager(),
+                        pauserRegistry(),
+                        permissionController(),
+                        REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
+                        REWARDS_COORDINATOR_MAX_REWARDS_DURATION,
+                        REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH,
+                        REWARDS_COORDINATOR_MAX_FUTURE_LENGTH,
+                        REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP,
+                        SEMVER
+                    )
+                )
+            )
+        );
+        console.log("Upgrading StrategyManager");
+        _upgradeProxy(address(strategyManager()), address(new StrategyManager(delegationManager(), pauserRegistry(), SEMVER)));
+
+        // Pod contracts
+        console.log("Upgrading EigenPodBeacon");
+        eigenPodBeacon().upgradeTo(address(new EigenPod(DEPOSIT_CONTRACT, eigenPodManager(), BEACON_GENESIS_TIME, "v9.9.9")));
+        console.log("Upgrading EigenPodManager");
+        _upgradeProxy(
+            address(eigenPodManager()),
+            address(new EigenPodManager(DEPOSIT_CONTRACT, eigenPodBeacon(), delegationManager(), pauserRegistry(), "v9.9.9"))
+        );
+
+        // Strategy contracts
+        console.log("Upgrading StrategyFactory");
+        _upgradeProxy(address(strategyFactory()), address(new StrategyFactory(strategyManager(), pauserRegistry(), "v9.9.9")));
+        console.log("Upgrading StrategyFactoryBeacon");
+        address baseStrategyImpl = address(new StrategyBase(strategyManager(), pauserRegistry(), "v9.9.9"));
+        strategyFactoryBeacon().upgradeTo(baseStrategyImpl);
+        console.log("Upgrading Strategies");
+        for (uint i = 0; i < totalStrategies(); ++i) {
+            _upgradeProxy(address(strategyAddresses(i)), address(baseStrategyImpl));
         }
     }
 
     /// @dev Initializes all proxies.
-    function _initializeProxies() public noTracing {
-        allocationManager.initialize({initialOwner: executorMultisig, initialPausedStatus: 0});
-        avsDirectory.initialize({initialOwner: executorMultisig, initialPausedStatus: 0});
-        delegationManager.initialize({initialOwner: executorMultisig, initialPausedStatus: 0});
-        eigenPodManager.initialize({initialOwner: executorMultisig, _initPausedStatus: 0});
-        // TODO Why is this missing?
-        // rewardsCoordinator.initialize({initialOwner: executorMultisig, initialPausedStatus: 0});
-        strategyFactory.initialize({_initialOwner: executorMultisig, _initialPausedStatus: 0, _strategyBeacon: strategyBeacon});
-        strategyManager.initialize({
+    function _initializeProxies() public {
+        address executorMultisig = executorMultisig();
+        allocationManager().initialize({initialOwner: executorMultisig, initialPausedStatus: 0});
+        avsDirectory().initialize({initialOwner: executorMultisig, initialPausedStatus: 0});
+        delegationManager().initialize({initialOwner: executorMultisig, initialPausedStatus: 0});
+        eigenPodManager().initialize({initialOwner: executorMultisig, _initPausedStatus: 0});
+        rewardsCoordinator().initialize({
             initialOwner: executorMultisig,
-            initialStrategyWhitelister: address(strategyFactory),
+            initialPausedStatus: 0,
+            _rewardsUpdater: executorMultisig,
+            _activationDelay: 0,
+            _defaultSplitBips: 0
+        });
+        strategyFactory().initialize({_initialOwner: executorMultisig, _initialPausedStatus: 0, _strategyBeacon: strategyFactoryBeacon()});
+        strategyManager().initialize({
+            initialOwner: executorMultisig,
+            initialStrategyWhitelister: address(strategyFactory()),
             initialPausedStatus: 0
         });
     }
@@ -354,7 +399,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     /// @dev Deploys a new strategy and token with given parameters.
     function _newStrategyAndToken(string memory tokenName, string memory tokenSymbol, uint initialSupply, address owner, bool useFactory)
         internal
-        noTracing
     {
         // Deploy mock token, avoid using OZ for test speed.
         MockERC20 token = new MockERC20();
@@ -363,12 +407,12 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         deal(address(underlyingToken), address(owner), initialSupply);
         // Deploy strategy using factory or directly.
         StrategyBase strategy = useFactory
-            ? StrategyBase(address(strategyFactory.deployNewStrategy(underlyingToken)))
+            ? StrategyBase(address(strategyFactory().deployNewStrategy(underlyingToken)))
             : StrategyBase(
                 address(
                     new TransparentUpgradeableProxy(
-                        address(baseStrategyImplementation),
-                        address(eigenLayerProxyAdmin),
+                        address(strategyFactoryBeacon().implementation()),
+                        address(proxyAdmin()),
                         abi.encodeWithSelector(StrategyBase.initialize.selector, underlyingToken)
                     )
                 )
@@ -377,10 +421,11 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         lstStrats.push(strategy);
         allStrats.push(strategy);
         allTokens.push(underlyingToken);
+        config.strategies.strategyAddresses.push(strategy);
     }
 
     /// @dev Deploy the time machine and beacon chain to fixed addresses.
-    function _deployTimeMachineAndBeaconChain() internal {
+    function _deployTimeMachineAndBeaconChain() internal virtual {
         cheats.pauseTracing();
         cheats.etch(address(timeMachine), type(TimeMachine).runtimeCode);
         cheats.etch(address(beaconChain), type(BeaconChainMock).runtimeCode);
@@ -388,7 +433,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         cheats.label(address(beaconChain), "BeaconChain");
         cheats.allowCheatcodes(address(timeMachine));
         cheats.allowCheatcodes(address(beaconChain));
-        beaconChain.initialize(eigenPodManager, BEACON_GENESIS_TIME);
+        beaconChain.initialize(eigenPodManager(), BEACON_GENESIS_TIME);
         cheats.resumeTracing();
     }
 
@@ -397,11 +442,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     /// -----------------------------------------------------------------------
 
     /// @dev Creates a new user with a random config.
-    function _randUser(string memory name)
-        internal
-        noTracing
-        returns (User user, IStrategy[] memory strategies, uint[] memory tokenBalances)
-    {
+    function _randUser(string memory name) internal returns (User user, IStrategy[] memory strategies, uint[] memory tokenBalances) {
         (uint userType, uint assetType) = (_randUserType(), _randAssetType());
         user = _genRandUser(name, userType);
         strategies = _selectRandAssets(assetType);
@@ -410,11 +451,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     }
 
     /// @dev Creates a new user with a random config and a given list of strategies.
-    function _randUser(string memory name, IStrategy[] memory strategies)
-        internal
-        noTracing
-        returns (User user, uint[] memory tokenBalances)
-    {
+    function _randUser(string memory name, IStrategy[] memory strategies) internal returns (User user, uint[] memory tokenBalances) {
         uint userType = _randUserType();
         user = _genRandUser(name, userType);
         tokenBalances = _dealRandAmounts(user, strategies);
@@ -422,7 +459,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     }
 
     /// @dev Creates a new user without any assets
-    function _randUser_NoAssets(string memory name) internal noTracing returns (User user) {
+    function _randUser_NoAssets(string memory name) internal returns (User user) {
         uint userType = _randUserType();
         user = _genRandUser(name, userType);
         print.user(name, NO_ASSETS, userType, new IStrategy[](0), new uint[](0));
@@ -450,7 +487,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     /// -----------------------------------------------------------------------
 
     /// Given an assetType, select strategies the user will be dealt assets in
-    function _selectRandAssets(uint assetType) internal noTracing returns (IStrategy[] memory strategies) {
+    function _selectRandAssets(uint assetType) internal returns (IStrategy[] memory strategies) {
         if (assetType == NO_ASSETS) return new IStrategy[](0);
         if (assetType == HOLDS_ETH) return BEACONCHAIN_ETH_STRAT.toArray();
         // Select number of assets:
@@ -470,7 +507,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     }
 
     /// Given an input list of strategies, deal random underlying token amounts to a user
-    function _dealRandAmounts(User user, IStrategy[] memory strategies) internal noTracing returns (uint[] memory tokenBalances) {
+    function _dealRandAmounts(User user, IStrategy[] memory strategies) internal returns (uint[] memory tokenBalances) {
         tokenBalances = new uint[](strategies.length);
         for (uint i = 0; i < tokenBalances.length; ++i) {
             IStrategy strategy = strategies[i];
@@ -524,10 +561,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             if (userTypes & ALT_METHODS != 0) options[count++] = ALT_METHODS;
             return options[cheats.randomUint(0, count - 1)];
         }
-    }
-
-    function _hash(string memory x) internal pure returns (bytes32) {
-        return keccak256(abi.encodePacked(x));
     }
 
     function NAME() public view virtual override returns (string memory) {

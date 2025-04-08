@@ -58,7 +58,7 @@ contract Integration_SlashedEigenpod_BC is IntegrationChecks {
         }
 
         (uint[] memory withdrawableSharesAfter, uint[] memory depositSharesAfter) =
-            delegationManager.getWithdrawableShares(address(staker), strategies);
+            delegationManager().getWithdrawableShares(address(staker), strategies);
         assertEq(depositSharesAfter[0], initDelegatableShares[0], "Deposit shares should reset to reflect slash(es)");
         assertApproxEqAbs(
             withdrawableSharesAfter[0], depositSharesAfter[0], 100, "Withdrawable shares should equal deposit shares after withdrawal"
@@ -94,7 +94,7 @@ contract Integration_SlashedEigenpod_BC is IntegrationChecks {
         }
 
         (uint[] memory withdrawableSharesAfter, uint[] memory depositSharesAfter) =
-            delegationManager.getWithdrawableShares(address(staker), strategies);
+            delegationManager().getWithdrawableShares(address(staker), strategies);
         assertEq(depositSharesAfter[0], initDelegatableShares[0], "Deposit shares should reset to reflect slash(es)");
         assertApproxEqAbs(
             withdrawableSharesAfter[0], depositSharesAfter[0], 1000, "Withdrawable shares should equal deposit shares after withdrawal"
@@ -142,7 +142,7 @@ contract Integration_SlashedEigenpod_BC is IntegrationChecks {
 
         // Delegate to an operator
         staker.delegateTo(operator);
-        (uint[] memory delegatedShares,) = delegationManager.getWithdrawableShares(address(staker), strategies);
+        (uint[] memory delegatedShares,) = delegationManager().getWithdrawableShares(address(staker), strategies);
         check_Delegation_State(staker, operator, strategies, initDepositShares);
 
         // Undelegate from an operator
@@ -159,7 +159,7 @@ contract Integration_SlashedEigenpod_BC is IntegrationChecks {
         }
 
         (uint[] memory withdrawableSharesAfter, uint[] memory depositSharesAfter) =
-            delegationManager.getWithdrawableShares(address(staker), strategies);
+            delegationManager().getWithdrawableShares(address(staker), strategies);
         assertEq(depositSharesAfter[0], delegatedShares[0], "Deposit shares should reset to reflect slash(es)");
         assertApproxEqAbs(
             withdrawableSharesAfter[0], depositSharesAfter[0], 1000, "Withdrawable shares should equal deposit shares after withdrawal"
@@ -181,7 +181,7 @@ contract Integration_SlashedEigenpod_BC is IntegrationChecks {
         // Delegate to an operator
         staker.delegateTo(operator);
         check_Delegation_State(staker, operator, strategies, initDepositShares);
-        (uint[] memory delegatedShares,) = delegationManager.getWithdrawableShares(address(staker), strategies);
+        (uint[] memory delegatedShares,) = delegationManager().getWithdrawableShares(address(staker), strategies);
 
         // Undelegate from an operator
         Withdrawal[] memory withdrawals = staker.redelegate(operator2);
@@ -199,7 +199,7 @@ contract Integration_SlashedEigenpod_BC is IntegrationChecks {
         }
 
         (uint[] memory withdrawableSharesAfter, uint[] memory depositSharesAfter) =
-            delegationManager.getWithdrawableShares(address(staker), strategies);
+            delegationManager().getWithdrawableShares(address(staker), strategies);
         assertEq(depositSharesAfter[0], delegatedShares[0], "Deposit shares should reset to reflect slash(es)");
         assertApproxEqAbs(
             withdrawableSharesAfter[0], depositSharesAfter[0], 1000, "Withdrawable shares should equal deposit shares after withdrawal"
@@ -229,7 +229,7 @@ contract Integration_SlashedEigenpod_BC is IntegrationChecks {
         // Delegate to an operator
         staker.delegateTo(operator);
         check_Delegation_State(staker, operator, strategies, initDepositShares);
-        (uint[] memory delegatedShares,) = delegationManager.getWithdrawableShares(address(staker), strategies);
+        (uint[] memory delegatedShares,) = delegationManager().getWithdrawableShares(address(staker), strategies);
 
         // Allocate to operator set
         allocateParams = _genAllocation_AllAvailable(operator, operatorSet, strategies);
@@ -252,7 +252,7 @@ contract Integration_SlashedEigenpod_BC is IntegrationChecks {
         }
 
         (uint[] memory withdrawableSharesAfter, uint[] memory depositSharesAfter) =
-            delegationManager.getWithdrawableShares(address(staker), strategies);
+            delegationManager().getWithdrawableShares(address(staker), strategies);
         assertEq(depositSharesAfter[0], delegatedShares[0], "Deposit shares should reset to reflect slash(es)");
         assertApproxEqAbs(
             withdrawableSharesAfter[0], depositSharesAfter[0], 1000, "Withdrawable shares should equal deposit shares after withdrawal"
@@ -678,8 +678,8 @@ contract Integration_SlashedEigenpod_BC_HalfSlash is IntegrationChecks {
 
         // Staker deposit shares should be 0 from queue withdrawing all depositShares
         // therefore the depositScalingFactor should also be reset WAD
-        assertEq(eigenPodManager.podOwnerDepositShares(address(staker)), 0);
-        assertEq(delegationManager.depositScalingFactor(address(staker), BEACONCHAIN_ETH_STRAT), WAD);
+        assertEq(eigenPodManager().podOwnerDepositShares(address(staker)), 0);
+        assertEq(delegationManager().depositScalingFactor(address(staker), BEACONCHAIN_ETH_STRAT), WAD);
 
         // 6. deposit: can either verify wc or start/complete cp or complete the withdrawals as shares
         _rollBlocksForCompleteWithdrawals(withdrawals);
@@ -690,7 +690,7 @@ contract Integration_SlashedEigenpod_BC_HalfSlash is IntegrationChecks {
         // End state: staker and operator have much higher inflated withdrawable and delegated shares respectively
         // The staker's withdrawable shares should be <= from withdrawable shares before (should be equal but could be less due to rounding)
         uint withdrawableSharesAfter = _getStakerWithdrawableShares(staker, strategies)[0];
-        uint operatorShares = delegationManager.operatorShares(address(operator), strategies[0]);
+        uint operatorShares = delegationManager().operatorShares(address(operator), strategies[0]);
         assertLe(
             withdrawableSharesAfter, withdrawableSharesBefore, "staker withdrawable shares should be <= from withdrawable shares before"
         );

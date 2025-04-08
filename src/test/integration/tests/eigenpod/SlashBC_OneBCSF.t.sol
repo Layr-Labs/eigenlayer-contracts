@@ -8,6 +8,7 @@ import "src/test/harnesses/EigenPodManagerWrapper.sol";
 /// @notice Testing the rounding behavior when beacon chain slashing factor is initially 1
 contract Integration_SlashBC_OneBCSF is IntegrationChecks {
     using ArrayLib for *;
+    using ConfigParser for *;
 
     /**
      * Shared setup:
@@ -21,8 +22,8 @@ contract Integration_SlashBC_OneBCSF is IntegrationChecks {
     function _init() internal override {
         // 1. etch a new implementation to set staker's beaconChainSlashingFactor to 1
         EigenPodManagerWrapper eigenPodManagerWrapper =
-            new EigenPodManagerWrapper(DEPOSIT_CONTRACT, eigenPodBeacon, delegationManager, eigenLayerPauserReg, "v9.9.9");
-        address targetAddr = address(eigenPodManagerImplementation);
+            new EigenPodManagerWrapper(DEPOSIT_CONTRACT, eigenPodBeacon(), delegationManager(), pauserRegistry(), "v9.9.9");
+        address targetAddr = eigenPodManagerImpl();
         cheats.etch(targetAddr, address(eigenPodManagerWrapper).code);
 
         // 2. create a new staker, operator, and avs
@@ -37,8 +38,8 @@ contract Integration_SlashBC_OneBCSF is IntegrationChecks {
             cheats.deal(address(staker), 64 ether);
         }
 
-        EigenPodManagerWrapper(address(eigenPodManager)).setBeaconChainSlashingFactor(address(staker), 1);
-        assertEq(eigenPodManager.beaconChainSlashingFactor(address(staker)), 1);
+        EigenPodManagerWrapper(address(eigenPodManager())).setBeaconChainSlashingFactor(address(staker), 1);
+        assertEq(eigenPodManager().beaconChainSlashingFactor(address(staker)), 1);
 
         // 3. start validators and verify withdrawal credentials
         (validators, beaconBalanceGwei,) = staker.startValidators();
@@ -64,7 +65,7 @@ contract Integration_SlashBC_OneBCSF is IntegrationChecks {
         check_CompleteCheckpoint_State(staker);
 
         // 6. Assert BCSF is still 1
-        assertEq(eigenPodManager.beaconChainSlashingFactor(address(staker)), 1);
+        assertEq(eigenPodManager().beaconChainSlashingFactor(address(staker)), 1);
     }
 
     /// @notice Test that a staker is slashed to 0 BCSF from a minor slash and that they can't deposit more shares
@@ -80,7 +81,7 @@ contract Integration_SlashBC_OneBCSF is IntegrationChecks {
         staker.completeCheckpoint();
         check_CompleteCheckpoint_WithCLSlashing_HandleRoundDown_State(staker, slashedGwei);
         // BCSF should be 0 now
-        assertEq(eigenPodManager.beaconChainSlashingFactor(address(staker)), 0);
+        assertEq(eigenPodManager().beaconChainSlashingFactor(address(staker)), 0);
 
         // 5. deposit expecting revert (randomly pick to verifyWC, start/complete CP)
         if (_randBool()) {
@@ -130,7 +131,7 @@ contract Integration_SlashBC_OneBCSF is IntegrationChecks {
         check_Base_Slashing_State(operator, allocateParams, slashParams);
 
         // assert operator has 1 magnitude remaining
-        assertEq(allocationManager.getMaxMagnitude(address(operator), BEACONCHAIN_ETH_STRAT), 1);
+        assertEq(allocationManager().getMaxMagnitude(address(operator), BEACONCHAIN_ETH_STRAT), 1);
 
         // 6. delegate to operator
         staker.delegateTo(operator);

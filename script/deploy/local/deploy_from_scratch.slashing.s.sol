@@ -454,7 +454,7 @@ contract DeployFromScratch is Script, Test {
         vm.serializeString(parent_object, deployed_addresses, deployed_addresses_output);
         vm.serializeString(parent_object, chain_info, chain_info_output);
         string memory finalJson = vm.serializeString(parent_object, parameters, parameters_output);
-        vm.writeJson(finalJson, "script/output/devnet/SLASHING_deploy_from_scratch_deployment_data.json");
+        console.log(finalJson);
     }
 
     function _verifyContractsPointAtOneAnother(
