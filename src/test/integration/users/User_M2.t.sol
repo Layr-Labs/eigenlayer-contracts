@@ -2,29 +2,11 @@
 pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
-
 import "src/test/integration/deprecated/mainnet/IDelegationManager.sol";
 import "src/test/integration/deprecated/mainnet/IEigenPod.sol";
 import "src/test/integration/deprecated/mainnet/IEigenPodManager.sol";
 import "src/test/integration/deprecated/mainnet/IStrategyManager.sol";
-
 import "src/test/integration/users/User.t.sol";
-import "src/test/mocks/BeaconChainMock.t.sol";
-
-import "src/test/utils/ArrayLib.sol";
-import "src/test/utils/Logger.t.sol";
-import "src/test/utils/TimeMachine.t.sol";
-
-interface IUserM2MainnetForkDeployer {
-    function delegationManager() external view returns (DelegationManager);
-    function strategyManager() external view returns (StrategyManager);
-    function eigenPodManager() external view returns (EigenPodManager);
-    function delegationManager_M2() external view returns (IDelegationManager_DeprecatedM2);
-    function strategyManager_M2() external view returns (IStrategyManager_DeprecatedM2);
-    function eigenPodManager_M2() external view returns (IEigenPodManager_DeprecatedM2);
-    function timeMachine() external view returns (TimeMachine);
-    function beaconChain() external view returns (BeaconChainMock);
-}
 
 /**
  * @dev User_M2 used for performing mainnet M2 contract methods but also inherits User
@@ -40,11 +22,10 @@ contract User_M2 is User {
     IEigenPodManager_DeprecatedM2 eigenPodManager_M2;
 
     constructor(string memory name) User(name) {
-        IUserM2MainnetForkDeployer deployer = IUserM2MainnetForkDeployer(msg.sender);
-
-        delegationManager_M2 = IDelegationManager_DeprecatedM2(address(deployer.delegationManager()));
-        strategyManager_M2 = IStrategyManager_DeprecatedM2(address(deployer.strategyManager()));
-        eigenPodManager_M2 = IEigenPodManager_DeprecatedM2(address(deployer.eigenPodManager()));
+        ConfigGetters config = ConfigGetters(msg.sender);
+        delegationManager_M2 = IDelegationManager_DeprecatedM2(address(config.delegationManager()));
+        strategyManager_M2 = IStrategyManager_DeprecatedM2(address(config.strategyManager()));
+        eigenPodManager_M2 = IEigenPodManager_DeprecatedM2(address(config.eigenPodManager()));
         cheats.label(address(this), NAME_COLORED());
     }
 
@@ -143,7 +124,7 @@ contract User_M2 is User {
             } else {
                 uint tokens = uint(delta);
                 IERC20 underlyingToken = strat.underlyingToken();
-                underlyingToken.approve(address(strategyManager), tokens);
+                underlyingToken.approve(address(config.strategyManager()), tokens);
                 strategyManager_M2.depositIntoStrategy(strat, underlyingToken, tokens);
             }
         }
@@ -243,7 +224,7 @@ contract User_M2_AltMethods is User_M2 {
             } else {
                 // Approve token
                 IERC20 underlyingToken = strat.underlyingToken();
-                underlyingToken.approve(address(strategyManager), tokenBalance);
+                underlyingToken.approve(address(config.strategyManager()), tokenBalance);
 
                 // Get signature
                 uint nonceBefore = strategyManager_M2.nonces(address(this));
