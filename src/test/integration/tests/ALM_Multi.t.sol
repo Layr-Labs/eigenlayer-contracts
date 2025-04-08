@@ -3,7 +3,7 @@ pragma solidity ^0.8.27;
 
 import "src/test/integration/IntegrationChecks.t.sol";
 
-contract Integration_ALM_Multi is IntegrationCheckUtils {
+contract Integration_ALM_Multi is IntegrationChecks {
     using StdStyle for *;
 
     enum Action {

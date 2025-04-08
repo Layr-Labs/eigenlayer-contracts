@@ -7,9 +7,10 @@ import "src/contracts/libraries/BeaconChainProofs.sol";
 import "src/contracts/libraries/Merkle.sol";
 import "src/contracts/pods/EigenPodManager.sol";
 
+import "src/test/mocks/EIP_4788_Oracle_Mock.t.sol";
 import "src/test/mocks/ETHDepositMock.sol";
-import "src/test/integration/mocks/EIP_4788_Oracle_Mock.t.sol";
-import "src/test/utils/Logger.t.sol";
+
+import "src/test/utils/Constants.t.sol";
 
 struct ValidatorFieldsProof {
     bytes32[] validatorFields;
@@ -39,9 +40,8 @@ struct StaleBalanceProofs {
     BeaconChainProofs.ValidatorProof validatorProof;
 }
 
-contract BeaconChainMock is Logger {
+contract BeaconChainMock {
     using StdStyle for *;
-    using print for *;
 
     struct Validator {
         bool isDummy;
@@ -162,7 +162,7 @@ contract BeaconChainMock is Logger {
     /// - Setting their current/effective balance
     /// - Assigning them a new, unique index
     function newValidator(bytes memory withdrawalCreds) public payable returns (uint40) {
-        print.method("newValidator");
+        console.log("newValidator");
 
         uint balanceWei = msg.value;
 
@@ -198,7 +198,7 @@ contract BeaconChainMock is Logger {
     ///
     /// TODO we may need to advance a slot here to maintain the properties we want in startCheckpoint
     function exitValidator(uint40 validatorIndex) public returns (uint64 exitedBalanceGwei) {
-        print.method("exitValidator");
+        console.log("exitValidator");
 
         // Update validator.exitEpoch
         Validator storage v = validators[validatorIndex];
@@ -218,7 +218,7 @@ contract BeaconChainMock is Logger {
     }
 
     function slashValidators(uint40[] memory _validators, SlashType _slashType) public returns (uint64 slashedBalanceGwei) {
-        print.method("slashValidators");
+        console.log("slashValidators");
 
         for (uint i = 0; i < _validators.length; i++) {
             uint40 validatorIndex = _validators[i];
@@ -258,7 +258,7 @@ contract BeaconChainMock is Logger {
     }
 
     function slashValidators(uint40[] memory _validators, uint64 _slashAmountGwei) public {
-        print.method("slashValidatorsAmountGwei");
+        console.log("slashValidatorsAmountGwei");
 
         for (uint i = 0; i < _validators.length; i++) {
             uint40 validatorIndex = _validators[i];
@@ -305,7 +305,7 @@ contract BeaconChainMock is Logger {
     /// - DOES generate consensus rewards for ALL non-exited validators
     /// - DOES withdraw in excess of 32 ETH / if validator is exited
     function advanceEpoch() public {
-        print.method("advanceEpoch");
+        console.log("advanceEpoch");
         _generateRewards();
         _withdrawExcess();
         _advanceEpoch();
@@ -319,7 +319,7 @@ contract BeaconChainMock is Logger {
     /// - does NOT generate consensus rewards
     /// - DOES withdraw in excess of 32 ETH / if validator is exited
     function advanceEpoch_NoRewards() public {
-        print.method("advanceEpoch_NoRewards");
+        console.log("advanceEpoch_NoRewards");
         _withdrawExcess();
         _advanceEpoch();
     }
@@ -333,13 +333,13 @@ contract BeaconChainMock is Logger {
     /// - does NOT withdraw in excess of 32 ETH
     /// - does NOT withdraw if validator is exited
     function advanceEpoch_NoWithdraw() public {
-        print.method("advanceEpoch_NoWithdraw");
+        console.log("advanceEpoch_NoWithdraw");
         _generateRewards();
         _advanceEpoch();
     }
 
     function advanceEpoch_NoWithdrawNoRewards() public {
-        print.method("advanceEpoch_NoWithdrawNoRewards");
+        console.log("advanceEpoch_NoWithdrawNoRewards");
         _advanceEpoch();
     }
 

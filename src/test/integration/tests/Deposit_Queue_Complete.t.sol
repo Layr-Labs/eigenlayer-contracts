@@ -4,7 +4,7 @@ pragma solidity ^0.8.27;
 import "src/test/integration/users/User.t.sol";
 import "src/test/integration/IntegrationChecks.t.sol";
 
-contract Integration_Deposit_QueueWithdrawal_Complete is IntegrationCheckUtils {
+contract Integration_Deposit_QueueWithdrawal_Complete is IntegrationChecks {
     /// Randomly generates a user with different held assets. Then:
     /// 1. deposit into strategy
     /// 2. queueWithdrawal

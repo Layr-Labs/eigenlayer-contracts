@@ -10,8 +10,11 @@ import "src/contracts/core/StrategyManager.sol";
 import "src/contracts/pods/EigenPodManager.sol";
 import "src/contracts/pods/EigenPod.sol";
 
-import "src/test/integration/TimeMachine.t.sol";
-import "src/test/integration/mocks/BeaconChainMock.t.sol";
+import "src/test/mocks/BeaconChainMock.t.sol";
+
+import "src/test/utils/ArrayLib.sol";
+
+import "src/test/utils/Constants.t.sol";
 import "src/test/utils/Logger.t.sol";
 
 import "src/test/Config.t.sol";
@@ -40,6 +43,13 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     constructor(string memory name) {
         deployer = ConfigGetters(address(msg.sender));
         _createPod();
+    }
+
+    modifier createSnapshot() virtual {
+        timeMachine.createSnapshot();
+        _;
+    }
+
     /// -----------------------------------------------------------------------
     /// Allocation Manager Methods
     /// -----------------------------------------------------------------------
@@ -142,7 +152,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         for (uint i = 0; i < expectedWithdrawals.length; i++) {
             IStrategy strat = expectedWithdrawals[i].strategies[0];
 
-            string memory name = strat == beaconChainETHStrategy ? "Native ETH" : IERC20Metadata(address(strat.underlyingToken())).name();
+            string memory name = strat == BEACONCHAIN_ETH_STRAT ? "Native ETH" : IERC20Metadata(address(strat.underlyingToken())).name();
 
             console.log(
                 "   Expecting withdrawal with nonce %s of %s for %s scaled shares.",
@@ -167,7 +177,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         for (uint i = 0; i < expectedWithdrawals.length; i++) {
             IStrategy strat = expectedWithdrawals[i].strategies[0];
 
-            string memory name = strat == beaconChainETHStrategy ? "Native ETH" : IERC20Metadata(address(strat.underlyingToken())).name();
+            string memory name = strat == BEACONCHAIN_ETH_STRAT ? "Native ETH" : IERC20Metadata(address(strat.underlyingToken())).name();
 
             console.log(
                 "   Expecting withdrawal with nonce %s of %s for %s scaled shares.",

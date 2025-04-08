@@ -9,7 +9,7 @@ import "src/contracts/strategies/StrategyFactory.sol";
 
 import "src/test/mocks/ERC20Mock.sol";
 import "src/test/integration/users/User.t.sol";
-import "src/test/integration/TimeMachine.t.sol";
+import "src/test/utils/TimeMachine.t.sol";
 import "src/test/utils/Logger.t.sol";
 
 import "src/test/utils/ArrayLib.sol";

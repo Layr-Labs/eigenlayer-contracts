@@ -4,7 +4,7 @@ pragma solidity ^0.8.27;
 import "src/test/integration/IntegrationChecks.t.sol";
 import "src/test/integration/users/User.t.sol";
 
-contract Integration_Delegate_Deposit_Queue_Complete is IntegrationCheckUtils {
+contract Integration_Delegate_Deposit_Queue_Complete is IntegrationChecks {
     function testFuzz_delegate_deposit_queue_completeAsShares(uint24 _random) public rand(_random) {
         // Create a staker and an operator with a nonzero balance and corresponding strategies
         (User staker, IStrategy[] memory strategies, uint[] memory tokenBalances) = _newRandomStaker();

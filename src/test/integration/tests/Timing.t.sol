@@ -344,7 +344,7 @@ contract Integration_OperatorDeregistrationTiming is Integration_ALMSlashBase {
  * different initialization -- specifically, the allocation must be performed within the tests. As such, there are no
  * assumptions and many state variables are declared below.
  */
-contract Integration_OperatorAllocationTiming is IntegrationCheckUtils {
+contract Integration_OperatorAllocationTiming is IntegrationChecks {
     AVS avs;
     User operator;
     OperatorSet operatorSet;

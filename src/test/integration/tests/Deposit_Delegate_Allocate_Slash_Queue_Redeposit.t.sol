@@ -5,7 +5,7 @@ import "src/test/integration/IntegrationChecks.t.sol";
 import "src/test/integration/users/User.t.sol";
 import {console} from "forge-std/console.sol";
 
-contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is IntegrationCheckUtils {
+contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is IntegrationChecks {
     AVS avs;
     OperatorSet operatorSet;
 
