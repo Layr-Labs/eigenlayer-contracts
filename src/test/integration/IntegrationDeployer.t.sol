@@ -256,6 +256,12 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         timeMachine = new TimeMachine();
         beaconChain = new BeaconChainMock(eigenPodManager, BEACON_GENESIS_TIME);
 
+        // Since we haven't done the slashing upgrade on mainnet yet, upgrade mainnet contracts
+        // prior to test. `isUpgraded` is true by default, but is set to false in `UpgradeTest.t.sol`
+        if (isUpgraded) _upgradeMainnetContracts();
+    }
+
+    function _upgradeMainnetContracts() public virtual {
         // Set the AllocationManager & PermissionController
         allocationManager = AllocationManager(0x948a420b8CC1d6BFd0B6087C2E7c344a2CD0bc39);
         permissionController = PermissionController(0x25E5F8B1E7aDf44518d35D5B2271f114e081f0E5);
@@ -272,30 +278,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         cheats.stopPrank();
 
         console.log("Slashing upgrade executed after queue");
-    }
-
-    function _upgradeMainnetContracts() public virtual {
-        cheats.startPrank(address(executorMultisig));
-
-        // First, deploy the new contracts as empty contracts
-        emptyContract = new EmptyContract();
-        allocationManager =
-            AllocationManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
-        permissionController =
-            PermissionController(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
-
-        emit log_named_uint("EPM pause status", eigenPodManager.paused());
-
-        // Deploy new implementation contracts and upgrade all proxies to point to them
-        _deployImplementations();
-        _upgradeProxies();
-
-        emit log_named_uint("EPM pause status", eigenPodManager.paused());
-
-        // Initialize the newly-deployed proxy
-        allocationManager.initialize({initialOwner: executorMultisig, initialPausedStatus: 0});
-
-        cheats.stopPrank();
     }
 
     function _deployProxies() public {
