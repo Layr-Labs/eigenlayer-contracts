@@ -3,8 +3,9 @@ pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
 import {MockERC20} from "forge-std/mocks/MockERC20.sol";
-import {ICoreTypes} from "src/contracts/interfaces/ICore.sol";
+
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import "@openzeppelin/contracts/governance/TimelockController.sol";
 
 import "src/test/integration/users/AVS.t.sol";
 import "src/test/integration/users/User.t.sol";
@@ -71,6 +72,9 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
 
     EmptyContract public emptyContract;
 
+    bool isTimelockUpgrade;
+    bytes timelockPayload;
+
     /// -----------------------------------------------------------------------
     /// Setup
     /// -----------------------------------------------------------------------
@@ -97,6 +101,8 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
     function setUp() public virtual {
         emptyContract = new EmptyContract();
         string memory profile = FOUNDRY_PROFILE();
+        timelockPayload = cheats.envOr(string("TIMELOCK_PAYLOAD"), bytes(""));
+        isTimelockUpgrade = timelockPayload.length > 0;
 
         if (eq(profile, "forktest")) {
             // Assumes the proxy contracts have already been deployed.
@@ -105,6 +111,7 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
             _setUpMainnet();
         } else if (eq(profile, "forktest-zeus")) {
             // Assumes the proxy contracts have already been deployed.
+            // Assumes the upgrade is currently queued in the timelock.
             forkType = MAINNET;
             config = ConfigParser.parseZeus();
             _setUpMainnet();
@@ -207,11 +214,22 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
     /// @dev Sets up the integration tests for mainnet.
     function _setUpMainnet() public virtual {
         console.log("Setting up `%s` integration tests:", "MAINNET_FORK".green().bold());
-        console.log("Block:", MAINNET_FORK_BLOCK);
-
         cheats.createSelectFork(cheats.rpcUrl("mainnet"), MAINNET_FORK_BLOCK);
+        console.log("Block:", block.number);
 
-        _deployProxies(); // deploy proxies if not already deployed
+        if (isTimelockUpgrade) {
+            // Warp forward to elapse the timelock queue.
+            cheats.warp(block.timestamp + 21 days);
+
+            // Execute the timelock upgrade.
+            cheats.startPrank(protocolCouncil());
+            timelock().execute({target: executorMultisig(), value: 0, payload: timelockPayload, predecessor: 0, salt: 0});
+            cheats.stopPrank();
+
+            console.log("SIMULATED TIMELOCK UPGRADE".yellow().bold());
+        } else {
+            _deployProxies();
+        }
 
         // Place native ETH first in `allStrats`
         // This ensures when we select a nonzero number of strategies from this array, we always
