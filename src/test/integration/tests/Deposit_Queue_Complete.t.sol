@@ -19,7 +19,7 @@ contract Integration_Deposit_QueueWithdrawal_Complete is IntegrationChecks {
         check_Deposit_State(staker, strategies, shares);
 
         // Ensure staker is not delegated to anyone post deposit
-        assertFalse(delegationManager.isDelegated(address(staker)), "Staker should not be delegated after deposit");
+        assertFalse(delegationManager().isDelegated(address(staker)), "Staker should not be delegated after deposit");
 
         // 2. Queue Withdrawal
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
@@ -33,7 +33,7 @@ contract Integration_Deposit_QueueWithdrawal_Complete is IntegrationChecks {
         }
 
         // Ensure staker is still not delegated to anyone post withdrawal completion
-        assertFalse(delegationManager.isDelegated(address(staker)), "Staker should still not be delegated after withdrawal");
+        assertFalse(delegationManager().isDelegated(address(staker)), "Staker should still not be delegated after withdrawal");
     }
 
     function testFuzz_deposit_queueWithdrawal_completeAsShares(uint24) public {
@@ -46,7 +46,7 @@ contract Integration_Deposit_QueueWithdrawal_Complete is IntegrationChecks {
         check_Deposit_State(staker, strategies, shares);
 
         // Ensure staker is not delegated to anyone post deposit
-        assertFalse(delegationManager.isDelegated(address(staker)), "Staker should not be delegated after deposit");
+        assertFalse(delegationManager().isDelegated(address(staker)), "Staker should not be delegated after deposit");
 
         // 2. Queue Withdrawal
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
@@ -59,7 +59,7 @@ contract Integration_Deposit_QueueWithdrawal_Complete is IntegrationChecks {
         }
 
         // Ensure staker is still not delegated to anyone post withdrawal completion
-        assertFalse(delegationManager.isDelegated(address(staker)), "Staker should still not be delegated after withdrawal");
+        assertFalse(delegationManager().isDelegated(address(staker)), "Staker should still not be delegated after withdrawal");
     }
 
     /// @notice Regression test to ensure that depositSharesToRemove is not allowed to overflow. Previously
