@@ -106,18 +106,15 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
 
         if (eq(profile, "forktest")) {
             // Assumes the proxy contracts have already been deployed.
-            forkType = MAINNET;
             config = ConfigParser.parse("./script/configs/mainnet/mainnet-addresses.toml");
-            _setUpMainnet();
+            _setUpFork();
         } else if (eq(profile, "forktest-zeus")) {
             // Assumes the proxy contracts have already been deployed.
             // Assumes the upgrade is currently queued in the timelock.
-            forkType = MAINNET;
             config = ConfigParser.parseZeus();
-            _setUpMainnet();
+            _setUpFork();
         } else {
             // Assumes nothing has been deployed yet.
-            forkType = LOCAL;
             _setUpLocal();
         }
 
@@ -172,6 +169,9 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
     /// @dev Sets up the integration tests for local.
     function _setUpLocal() public virtual {
         console.log("Setting up `%s` integration tests:", "LOCAL".yellow().bold());
+
+        forkType = LOCAL;
+
         // Deploy ProxyAdmin, PauserRegistry, and executorMultisig.
         config.governance.proxyAdmin = new ProxyAdmin();
         config.governance.pauserRegistry = new PauserRegistry(PAUSER.toArray(), UNPAUSER);
@@ -212,10 +212,12 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
     }
 
     /// @dev Sets up the integration tests for mainnet.
-    function _setUpMainnet() public virtual {
+    function _setUpFork() public virtual {
         console.log("Setting up `%s` integration tests:", "MAINNET_FORK".green().bold());
         cheats.createSelectFork(cheats.rpcUrl("mainnet"), MAINNET_FORK_BLOCK);
         console.log("Block:", block.number);
+
+        forkType = MAINNET;
 
         if (isTimelockUpgrade) {
             // Warp forward to elapse the timelock queue.
