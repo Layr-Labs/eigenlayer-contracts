@@ -47,8 +47,8 @@ function testFuzz_deposit_delegate_EXAMPLE(uint24) public {
     (User operator, ,) = _newRandomOperator();
 
     // Because of the `userTypes` flags above, this user might be using either:
-    // - `strategyManager.depositIntoStrategy`
-    // - `strategyManager.depositIntoStrategyWithSignature`
+    // - `strategyManager().depositIntoStrategy`
+    // - `strategyManager().depositIntoStrategyWithSignature`
     staker.depositIntoEigenlayer(strategies, tokenBalances);
     // assertions go here
 }

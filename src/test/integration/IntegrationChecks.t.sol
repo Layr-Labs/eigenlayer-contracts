@@ -251,8 +251,8 @@ contract IntegrationChecks is IntegrationUtils {
         assert_Snap_Added_Staker_DepositShares(staker, strategies, shares, "staker should expect shares in each strategy after depositing");
         assert_StrategiesInStakerStrategyList(staker, strategies, "staker strategy list should contain all strategies");
 
-        if (delegationManager.isDelegated(address(staker))) {
-            User operator = User(payable(delegationManager.delegatedTo(address(staker))));
+        if (delegationManager().isDelegated(address(staker))) {
+            User operator = User(payable(delegationManager().delegatedTo(address(staker))));
             assert_Snap_Expected_Staker_WithdrawableShares_Deposit(
                 staker, operator, strategies, shares, "staker should have received expected withdrawable shares"
             );
@@ -283,8 +283,8 @@ contract IntegrationChecks is IntegrationUtils {
             staker, strategies, shares, "staker should expected shares in each strategy after depositing"
         );
 
-        if (delegationManager.isDelegated(address(staker))) {
-            User operator = User(payable(delegationManager.delegatedTo(address(staker))));
+        if (delegationManager().isDelegated(address(staker))) {
+            User operator = User(payable(delegationManager().delegatedTo(address(staker))));
             assert_Snap_Expected_Staker_WithdrawableShares_Deposit(
                 staker, operator, strategies, shares, "staker should have received expected withdrawable shares"
             );
@@ -299,8 +299,8 @@ contract IntegrationChecks is IntegrationUtils {
         //
         // ... check that the staker is now delegated to the operator, and that the operator
         //     was awarded the staker shares
-        assertTrue(delegationManager.isDelegated(address(staker)), "staker should be delegated");
-        assertEq(address(operator), delegationManager.delegatedTo(address(staker)), "staker should be delegated to operator");
+        assertTrue(delegationManager().isDelegated(address(staker)), "staker should be delegated");
+        assertEq(address(operator), delegationManager().delegatedTo(address(staker)), "staker should be delegated to operator");
         assert_HasExpectedShares(staker, strategies, depositShares, "staker should still have expected shares after delegating");
         assert_DepositShares_GTE_WithdrawableShares(
             staker, strategies, "deposit shares should be greater than or equal to withdrawable shares"
@@ -344,7 +344,7 @@ contract IntegrationChecks is IntegrationUtils {
         //     reduced shares.
         _check_QueuedWithdrawal_State_NotDelegated(staker, strategies, depositShares, withdrawableShares, withdrawals, withdrawalRoots);
 
-        if (delegationManager.isDelegated(address(staker))) {
+        if (delegationManager().isDelegated(address(staker))) {
             assert_Snap_Removed_OperatorShares(
                 operator, strategies, withdrawableShares, "check_QueuedWithdrawal_State: failed to remove operator shares"
             );
@@ -433,7 +433,7 @@ contract IntegrationChecks is IntegrationUtils {
         //     that the returned root matches the hashes for each strategy and share amounts, and that the staker
         //     and operator have reduced shares
         assert_HasNoDelegatableShares(staker, "staker should have withdrawn all shares");
-        assertFalse(delegationManager.isDelegated(address(staker)), "check_Undelegate_State: staker should not be delegated");
+        assertFalse(delegationManager().isDelegated(address(staker)), "check_Undelegate_State: staker should not be delegated");
         assert_ValidWithdrawalHashes(
             withdrawals, withdrawalRoots, "check_Undelegate_State: calculated withdrawal should match returned root"
         );
@@ -466,8 +466,8 @@ contract IntegrationChecks is IntegrationUtils {
         // ... check that the staker is delegated to new operator, all strategies from which the staker is deposited are unqueued,
         //     that the returned root matches the hashes for each strategy and share amounts, and that the staker
         //     and operator have reduced shares
-        assertTrue(delegationManager.isDelegated(address(staker)), "check_Redelegate_State: staker should not be delegated");
-        assertEq(address(newOperator), delegationManager.delegatedTo(address(staker)), "staker should be delegated to operator");
+        assertTrue(delegationManager().isDelegated(address(staker)), "check_Redelegate_State: staker should not be delegated");
+        assertEq(address(newOperator), delegationManager().delegatedTo(address(staker)), "staker should be delegated to operator");
         assert_HasExpectedShares(
             staker, strategies, new uint[](strategies.length), "staker should not have deposit shares after redelegation"
         );
@@ -507,7 +507,9 @@ contract IntegrationChecks is IntegrationUtils {
         uint[] memory expectedTokens
     ) public {
         // Common checks
-        assert_WithdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
+        assert_WithdrawalNotPending(
+            delegationManager().calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending"
+        );
         assert_DepositShares_GTE_WithdrawableShares(
             staker, withdrawal.strategies, "deposit shares should be greater than or equal to withdrawable shares"
         );
@@ -532,7 +534,9 @@ contract IntegrationChecks is IntegrationUtils {
         uint[] memory withdrawableShares
     ) public {
         // Common checks applicable to both user and non-user operator types
-        assert_WithdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
+        assert_WithdrawalNotPending(
+            delegationManager().calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending"
+        );
         assert_DepositShares_GTE_WithdrawableShares(
             staker, strategies, "deposit shares should be greater than or equal to withdrawable shares"
         );
@@ -567,7 +571,9 @@ contract IntegrationChecks is IntegrationUtils {
         // ... check that the withdrawal is not pending, that the token balances of the staker and operator are unchanged,
         //     that the withdrawer received the expected shares, and that that the total shares of each o
         //     strategy withdrawn remains unchanged
-        assert_WithdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
+        assert_WithdrawalNotPending(
+            delegationManager().calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending"
+        );
         assert_DepositShares_GTE_WithdrawableShares(
             staker, strategies, "deposit shares should be greater than or equal to withdrawable shares"
         );
@@ -599,7 +605,9 @@ contract IntegrationChecks is IntegrationUtils {
         // ... check that the withdrawal is not pending, that the token balances of the staker and operator are unchanged,
         //     that the withdrawer received the expected shares, and that that the total shares of each o
         //     strategy withdrawn remains unchanged
-        assert_WithdrawalNotPending(delegationManager.calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending");
+        assert_WithdrawalNotPending(
+            delegationManager().calculateWithdrawalRoot(withdrawal), "staker withdrawal should no longer be pending"
+        );
         assert_DepositShares_GTE_WithdrawableShares(
             staker, strategies, "deposit shares should be greater than or equal to withdrawable shares"
         );
@@ -692,7 +700,7 @@ contract IntegrationChecks is IntegrationUtils {
     /// If you add invariants here, consider adding them there (and vice-versa)
     function check_Base_Registration_State(User operator, OperatorSet memory operatorSet) public {
         check_MaxMag_Invariants(operator);
-        check_IsSlashable_State(operator, operatorSet, allocationManager.getStrategiesInOperatorSet(operatorSet));
+        check_IsSlashable_State(operator, operatorSet, allocationManager().getStrategiesInOperatorSet(operatorSet));
 
         // Registration SHOULD register the operator, making them slashable and adding them as a member of the set
         assert_Snap_Became_Registered(operator, operatorSet, "operator should not have been registered before, and is now registered");

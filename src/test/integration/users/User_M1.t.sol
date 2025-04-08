@@ -5,17 +5,6 @@ import "src/test/integration/deprecated/mainnet/IEigenPod.sol";
 import "src/test/integration/deprecated/mainnet/IEigenPodManager.sol";
 import "src/test/integration/deprecated/mainnet/IStrategyManager.sol";
 import "src/test/integration/users/User.t.sol";
-import "src/contracts/mixins/SignatureUtilsMixin.sol";
-
-interface IUserM1MainnetForkDeployer {
-    function delegationManager() external view returns (DelegationManager);
-    function strategyManager() external view returns (StrategyManager);
-    function eigenPodManager() external view returns (EigenPodManager);
-    function timeMachine() external view returns (TimeMachine);
-    function beaconChain() external view returns (BeaconChainMock);
-    function strategyManager_M1() external view returns (IStrategyManager_DeprecatedM1);
-    function eigenPodManager_M1() external view returns (IEigenPodManager_DeprecatedM1);
-}
 
 /**
  * @dev User_M1 used for performing mainnet M1 contract methods but also inherits User
@@ -26,10 +15,9 @@ contract User_M1 is User {
     IEigenPodManager_DeprecatedM1 eigenPodManager_M1;
 
     constructor(string memory name) User(name) {
-        IUserM1MainnetForkDeployer deployer = IUserM1MainnetForkDeployer(msg.sender);
-
-        strategyManager_M1 = IStrategyManager_DeprecatedM1(address(deployer.strategyManager()));
-        eigenPodManager_M1 = IEigenPodManager_DeprecatedM1(address(deployer.eigenPodManager()));
+        ConfigGetters config = ConfigGetters(msg.sender);
+        strategyManager_M1 = IStrategyManager_DeprecatedM1(address(config.strategyManager()));
+        eigenPodManager_M1 = IEigenPodManager_DeprecatedM1(address(config.eigenPodManager()));
         cheats.label(address(this), NAME_COLORED());
     }
 
@@ -50,15 +38,15 @@ contract User_M1 is User {
             if (strat == BEACONCHAIN_ETH_STRAT) continue;
 
             IERC20 underlyingToken = strat.underlyingToken();
-            underlyingToken.approve(address(strategyManager), tokenBalance);
-            strategyManager.depositIntoStrategy(strat, underlyingToken, tokenBalance);
+            underlyingToken.approve(address(config.strategyManager()), tokenBalance);
+            config.strategyManager().depositIntoStrategy(strat, underlyingToken, tokenBalance);
         }
     }
 
     function _createPod() internal virtual override {
-        IEigenPodManager_DeprecatedM1(address(eigenPodManager)).createPod();
+        IEigenPodManager_DeprecatedM1(address(config.eigenPodManager())).createPod();
         // get EigenPod address
-        pod = EigenPod(payable(address(IEigenPodManager_DeprecatedM1(address(eigenPodManager)).ownerToPod(address(this)))));
+        pod = EigenPod(payable(address(IEigenPodManager_DeprecatedM1(address(config.eigenPodManager())).ownerToPod(address(this)))));
     }
 }
 
@@ -79,13 +67,14 @@ contract User_M1_AltMethods is User_M1 {
 
             // Approve token
             IERC20 underlyingToken = strat.underlyingToken();
-            underlyingToken.approve(address(strategyManager), tokenBalance);
+            underlyingToken.approve(address(config.strategyManager()), tokenBalance);
 
             // Get signature
-            uint nonceBefore = strategyManager.nonces(address(this));
-            bytes32 structHash =
-                keccak256(abi.encode(strategyManager.DEPOSIT_TYPEHASH(), strat, underlyingToken, tokenBalance, nonceBefore, expiry));
-            bytes32 domain_separator = strategyManager.domainSeparator();
+            uint nonceBefore = config.strategyManager().nonces(address(this));
+            bytes32 structHash = keccak256(
+                abi.encode(config.strategyManager().DEPOSIT_TYPEHASH(), strat, underlyingToken, tokenBalance, nonceBefore, expiry)
+            );
+            bytes32 domain_separator = config.strategyManager().domainSeparator();
             bytes32 digestHash = keccak256(abi.encodePacked("\x19\x01", domain_separator, structHash));
             bytes memory signature = bytes(abi.encodePacked(digestHash)); // dummy sig data
 
@@ -93,7 +82,9 @@ contract User_M1_AltMethods is User_M1 {
             signedHashes[digestHash] = true;
 
             // Deposit
-            strategyManager.depositIntoStrategyWithSignature(strat, underlyingToken, tokenBalance, address(this), expiry, signature);
+            config.strategyManager().depositIntoStrategyWithSignature(
+                strat, underlyingToken, tokenBalance, address(this), expiry, signature
+            );
 
             // Mark hash as used
             signedHashes[digestHash] = false;

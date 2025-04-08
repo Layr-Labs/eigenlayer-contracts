@@ -42,7 +42,7 @@ contract Integration_HighDSF_Multiple_Deposits is IntegrationChecks {
         assertEq(slashingFactor, 1, "slashing factor should be 1");
     }
 
-    function _dealAmounts(User user, IStrategy[] memory strategies, uint[] memory amounts) internal noTracing {
+    function _dealAmounts(User user, IStrategy[] memory strategies, uint[] memory amounts) internal {
         for (uint i = 0; i < amounts.length; i++) {
             IStrategy strategy = strategies[i];
             if (strategy == BEACONCHAIN_ETH_STRAT) cheats.deal(address(user), amounts[i]);
@@ -68,9 +68,9 @@ contract Integration_HighDSF_Multiple_Deposits is IntegrationChecks {
 
         // Check that the DSF is still bounded without overflow
         for (uint i = 0; i < strategies.length; i++) {
-            assertGe(delegationManager.depositScalingFactor(address(staker), strategies[i]), WAD, "DSF should be >= WAD");
+            assertGe(delegationManager().depositScalingFactor(address(staker), strategies[i]), WAD, "DSF should be >= WAD");
             // theoretical upper bound on DSF is 1e74
-            assertLt(delegationManager.depositScalingFactor(address(staker), strategies[i]), 1e74, "DSF should be < 1e74");
+            assertLt(delegationManager().depositScalingFactor(address(staker), strategies[i]), 1e74, "DSF should be < 1e74");
         }
     }
 }
