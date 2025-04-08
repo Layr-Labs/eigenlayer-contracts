@@ -65,7 +65,7 @@ contract Integration_Deposit_QueueWithdrawal_Complete is IntegrationChecks {
     /// @notice Regression test to ensure that depositSharesToRemove is not allowed to overflow. Previously
     /// this vulnerability would allow a staker to queue a withdrawal overflowing amount of deposit shares to withdraw
     /// resulting them in inflating their existing deposit shares. They could then inflate an operators delegated shares as much as they wanted.
-    function testFuzz_deposit_revertOverflow_queueWithdrawal(uint24 _random) public rand(_random) {
+    function testFuzz_deposit_revertOverflow_queueWithdrawal(uint24) public {
         _configAssetTypes(HOLDS_ETH);
         // Create a staker with a nonzero balance and corresponding strategies
         (User staker, IStrategy[] memory strategies, uint[] memory initDepositShares) = _newRandomStaker();
@@ -78,7 +78,7 @@ contract Integration_Deposit_QueueWithdrawal_Complete is IntegrationChecks {
         check_VerifyWC_State(staker, validators, beaconBalanceGwei);
 
         // Queue withdrawal for depositSharesToRemove that overflows
-        int podOwnerDepositSharesBefore = eigenPodManager.podOwnerDepositShares(address(staker));
+        int podOwnerDepositSharesBefore = eigenPodManager().podOwnerDepositShares(address(staker));
         assertEq(uint(podOwnerDepositSharesBefore), initDepositShares[0]);
 
         uint[] memory depositSharesToRemove = new uint[](1);
@@ -88,7 +88,7 @@ contract Integration_Deposit_QueueWithdrawal_Complete is IntegrationChecks {
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, depositSharesToRemove);
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
 
-        int podOwnerDepositSharesAfter = eigenPodManager.podOwnerDepositShares(address(staker));
+        int podOwnerDepositSharesAfter = eigenPodManager().podOwnerDepositShares(address(staker));
         assertEq(podOwnerDepositSharesAfter, podOwnerDepositSharesBefore);
     }
 }
