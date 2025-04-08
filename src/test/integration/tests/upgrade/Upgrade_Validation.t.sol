@@ -4,7 +4,6 @@ pragma solidity ^0.8.27;
 import "src/test/integration/UpgradeTest.t.sol";
 
 contract Integration_ValidateMainnetUpgrade is UpgradeTest {
-    
     string constant EXPECTED_VERSION = "1.3.0";
 
     StrategyBase pepeStrategy = StrategyBase(0x99A05F4e3Fa886A5104630e8a4b01159867ad9a1);
@@ -81,10 +80,7 @@ contract Integration_ValidateMainnetUpgrade is UpgradeTest {
             assertTrue(allocationManager.pauserRegistry() == eigenLayerPauserReg, "alm.pR invalid");
             assertTrue(allocationManager.permissionController() == permissionController, "alm.pc invalid");
             assertTrue(allocationManager.DEALLOCATION_DELAY() == DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS, "alm.deallocDelay invalid");
-            assertTrue(
-                allocationManager.ALLOCATION_CONFIGURATION_DELAY() == ALLOCATION_CONFIGURATION_DELAY,
-                "alm.configDelay invalid"
-            );
+            assertTrue(allocationManager.ALLOCATION_CONFIGURATION_DELAY() == ALLOCATION_CONFIGURATION_DELAY, "alm.configDelay invalid");
 
             assertTrue(avsDirectory.delegation() == delegationManager, "avsD.dm invalid");
             assertTrue(avsDirectory.pauserRegistry() == eigenLayerPauserReg, "avsD.pR invalid");
@@ -104,12 +100,15 @@ contract Integration_ValidateMainnetUpgrade is UpgradeTest {
             assertTrue(rewardsCoordinator.pauserRegistry() == eigenLayerPauserReg, "rc.pR invalid");
             assertTrue(rewardsCoordinator.permissionController() == permissionController, "rc.pc invalid");
             assertTrue(
-                rewardsCoordinator.CALCULATION_INTERVAL_SECONDS() == REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS, "rc.calcInterval invalid"
+                rewardsCoordinator.CALCULATION_INTERVAL_SECONDS() == REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
+                "rc.calcInterval invalid"
             );
             assertTrue(rewardsCoordinator.MAX_REWARDS_DURATION() == REWARDS_COORDINATOR_MAX_REWARDS_DURATION, "rc.rewardsDuration invalid");
             assertTrue(rewardsCoordinator.MAX_RETROACTIVE_LENGTH() == REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH, "rc.retroLength invalid");
             assertTrue(rewardsCoordinator.MAX_FUTURE_LENGTH() == REWARDS_COORDINATOR_MAX_FUTURE_LENGTH, "rc.futureLength invalid");
-            assertTrue(rewardsCoordinator.GENESIS_REWARDS_TIMESTAMP() == REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP, "rc.genesis invalid");
+            assertTrue(
+                rewardsCoordinator.GENESIS_REWARDS_TIMESTAMP() == REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP, "rc.genesis invalid"
+            );
 
             assertTrue(strategyManager.delegation() == delegationManager, "sm.dm invalid");
             assertTrue(strategyManager.pauserRegistry() == eigenLayerPauserReg, "sm.pR invalid");
@@ -134,9 +133,7 @@ contract Integration_ValidateMainnetUpgrade is UpgradeTest {
             assertTrue(strategyFactoryBeaconImplementation.strategyManager() == strategyManager, "stratBase.sm invalid");
             assertTrue(strategyFactoryBeaconImplementation.pauserRegistry() == eigenLayerPauserReg, "stratBase.pR invalid");
 
-            assertTrue(
-                baseStrategyImplementation.strategyManager() == strategyManager, "stratBaseTVL.sm invalid"
-            );
+            assertTrue(baseStrategyImplementation.strategyManager() == strategyManager, "stratBaseTVL.sm invalid");
             assertTrue(baseStrategyImplementation.pauserRegistry() == eigenLayerPauserReg, "stratBaseTVL.pR invalid");
 
             assertTrue(strategyFactory.strategyManager() == strategyManager, "sFact.sm invalid");
