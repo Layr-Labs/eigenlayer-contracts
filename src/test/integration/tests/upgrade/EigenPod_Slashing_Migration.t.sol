@@ -25,7 +25,7 @@
 
 //         // Pause checkpoint starting
 //         cheats.prank(pauserMultisig);
-//         eigenPodManager.pause(2 ** PAUSED_START_CHECKPOINT);
+//         eigenPodManager().pause(2 ** PAUSED_START_CHECKPOINT);
 //         cheats.expectRevert("EigenPod.onlyWhenNotPaused: index is paused in EigenPodManager");
 //         staker.startCheckpoint();
 
@@ -37,7 +37,7 @@
 
 //         // Unpause EigenPodManager
 //         cheats.prank(eigenLayerPauserReg.unpauser());
-//         eigenPodManager.unpause(0);
+//         eigenPodManager().unpause(0);
 //     }
 
 //     function testFuzz_earnRewards_migrate_exit(uint24) public {

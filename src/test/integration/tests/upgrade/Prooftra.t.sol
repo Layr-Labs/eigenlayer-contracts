@@ -88,8 +88,8 @@ contract Integration_Upgrade_Pectra is UpgradeTest, EigenPodPausingConstants {
 
     function _pauseForkAndUpgrade() internal {
         // 1. Pause starting checkpoint, completing, and credential proofs
-        cheats.prank(pauserMultisig);
-        eigenPodManager.pause(
+        cheats.prank(pauserMultisig());
+        eigenPodManager().pause(
             2 ** PAUSED_START_CHECKPOINT | 2 ** PAUSED_EIGENPODS_VERIFY_CREDENTIALS | 2 ** PAUSED_VERIFY_STALE_BALANCE
                 | 2 ** PAUSED_EIGENPODS_VERIFY_CHECKPOINT_PROOFS
         );
@@ -102,14 +102,14 @@ contract Integration_Upgrade_Pectra is UpgradeTest, EigenPodPausingConstants {
         _upgradeEigenLayerContracts();
 
         // 4. Set proof timestamp setter to operations multisig
-        cheats.prank(eigenPodManager.owner());
-        eigenPodManager.setProofTimestampSetter(address(operationsMultisig));
+        cheats.prank(eigenPodManager().owner());
+        eigenPodManager().setProofTimestampSetter(address(operationsMultisig()));
     }
 
     function _setTimestampAndUnpause() internal {
         // 1. Set Timestamp
-        cheats.startPrank(eigenPodManager.proofTimestampSetter());
-        eigenPodManager.setPectraForkTimestamp(BeaconChainMock_DenebForkable(address(beaconChain)).pectraForkTimestamp());
+        cheats.startPrank(eigenPodManager().proofTimestampSetter());
+        eigenPodManager().setPectraForkTimestamp(BeaconChainMock_DenebForkable(address(beaconChain)).pectraForkTimestamp());
         cheats.stopPrank();
 
         // 2. Randomly warp to just after the fork timestamp
@@ -120,7 +120,7 @@ contract Integration_Upgrade_Pectra is UpgradeTest, EigenPodPausingConstants {
         }
 
         // 3. Unpause
-        cheats.prank(eigenLayerPauserReg.unpauser());
-        eigenPodManager.unpause(0);
+        cheats.prank(pauserRegistry().unpauser());
+        eigenPodManager().unpause(0);
     }
 }

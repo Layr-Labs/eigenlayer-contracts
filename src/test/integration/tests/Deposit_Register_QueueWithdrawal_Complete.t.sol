@@ -16,7 +16,7 @@ contract Integration_Deposit_Register_QueueWithdrawal_Complete is IntegrationChe
 
         // 2. Staker registers as an operator
         staker.registerAsOperator();
-        assertTrue(delegationManager.isOperator(address(staker)), "Staker should be registered as an operator");
+        assertTrue(delegationManager().isOperator(address(staker)), "Staker should be registered as an operator");
 
         // 3. Queue Withdrawal
         withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
@@ -42,7 +42,7 @@ contract Integration_Deposit_Register_QueueWithdrawal_Complete is IntegrationChe
 
         // 2. Staker registers as an operator
         staker.registerAsOperator();
-        assertTrue(delegationManager.isOperator(address(staker)), "Staker should be registered as an operator");
+        assertTrue(delegationManager().isOperator(address(staker)), "Staker should be registered as an operator");
 
         // 3. Queue Withdrawal
         withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
