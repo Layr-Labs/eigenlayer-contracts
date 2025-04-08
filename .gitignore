@@ -55,3 +55,5 @@ populate_src*
 
 # cerota
 .certora_internal/*
+
+cache/solidity-files-cache.json
