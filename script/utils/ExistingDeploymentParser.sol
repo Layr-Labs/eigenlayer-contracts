@@ -783,7 +783,8 @@ contract ExistingDeploymentParser is Script, Logger {
         DEALLOCATION_DELAY = uint32(json.readUint(".config.params.MIN_WITHDRAWAL_DELAY_BLOCKS"));
         ALLOCATION_CONFIGURATION_DELAY = uint32(json.readUint(".config.params.ALLOCATION_CONFIGURATION_DELAY"));
         REWARDS_COORDINATOR_ACTIVATION_DELAY = uint32(json.readUint(".config.params.ACTIVATION_DELAY"));
-        REWARDS_COORDINATOR_DEFAULT_OPERATOR_SPLIT_BIPS = uint32(json.readUint(".config.params.GLOBAL_OPERATOR_COMMISSION_BIPS"));
+        REWARDS_COORDINATOR_DEFAULT_OPERATOR_SPLIT_BIPS =
+            uint32(json.readUint(".config.params.GLOBAL_OPERATOR_COMMISSION_BIPS"));
         DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS =
             uint32(json.readUint(".config.params.MIN_WITHDRAWAL_DELAY_BLOCKS"));
     }
