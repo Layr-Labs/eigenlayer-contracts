@@ -69,11 +69,6 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
     /// If a token is in this mapping, we will ignore this LST as it causes issues with reading balanceOf
     mapping(address => bool) public tokensNotTested;
 
-    // TODO: Use assembly to deploy an actual empty contract, `EmptyContract` has like 100+ bytes of code.
-    // We could deploy a truly empty contract with assembly like:
-    // assembly {
-    //     let deployed := create(0, 0, 1) // Deploys a contract with a single STOP opcode.
-    // }
     EmptyContract public emptyContract;
 
     /// -----------------------------------------------------------------------
@@ -103,11 +98,7 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
         emptyContract = new EmptyContract();
         string memory profile = FOUNDRY_PROFILE();
 
-        if (eq(profile, "default")) {
-            // Assumes nothing has been deployed yet.
-            forkType = LOCAL;
-            _setUpLocal();
-        } else if (eq(profile, "forktest")) {
+        if (eq(profile, "forktest")) {
             // Assumes the proxy contracts have already been deployed.
             forkType = MAINNET;
             config = ConfigParser.parse("./script/configs/mainnet/mainnet-addresses.toml");
@@ -117,7 +108,12 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
             forkType = MAINNET;
             config = ConfigParser.parseZeus();
             _setUpMainnet();
+        } else {
+            // Assumes nothing has been deployed yet.
+            forkType = LOCAL;
+            _setUpLocal();
         }
+
         _init();
     }
 
@@ -154,9 +150,8 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
         assertTrue((maxUniqueAssetsHeld = _maxUniqueAssetsHeld) != 0, "_configAssetAmounts: invalid 0");
     }
 
-    function FOUNDRY_PROFILE() internal view returns (string memory profile) {
-        profile = vm.envOr(string("FOUNDRY_PROFILE"), string("default"));
-        console.log("FOUNDRY_PROFILE: %s", profile);
+    function FOUNDRY_PROFILE() internal view returns (string memory) {
+        return cheats.envOr(string("FOUNDRY_PROFILE"), string("default"));
     }
 
     function eq(string memory a, string memory b) internal pure returns (bool) {
@@ -184,7 +179,6 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
         allStrats.push(BEACONCHAIN_ETH_STRAT);
         allTokens.push(NATIVE_ETH);
 
-        // TODO use config
         // Deploy and configure strategies and tokens, deploy half of them using the strategy factory.
         for (uint i = 1; i < NUM_LST_STRATS + 1; ++i) {
             string memory name = string.concat("LST-Strat", cheats.toString(i), " token");

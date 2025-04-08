@@ -1,15 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
 import "src/contracts/interfaces/IETHPOSDeposit.sol";
+import "src/contracts/interfaces/IStrategy.sol";
 
 import "src/test/mocks/BeaconChainMock.t.sol";
 import "src/test/mocks/EIP_4788_Oracle_Mock.t.sol";
 import "src/test/utils/TimeMachine.t.sol";
-
-import "src/contracts/interfaces/IStrategy.sol";
 
 /// -----------------------------------------------------------------------
 /// General Constants
