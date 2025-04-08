@@ -1,35 +1,43 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "src/test/integration/mocks/BeaconChainMock.t.sol";
+import "src/test/mocks/BeaconChainMock.t.sol";
 
 /// @notice A backwards-compatible BeaconChain Mock that updates containers & proofs from Deneb to Pectra
 contract BeaconChainMock_DenebForkable is BeaconChainMock {
     using StdStyle for *;
-    using print for *;
 
     // Denotes whether the beacon chain has been forked to Pectra
-    bool isPectra;
+    bool public isPectra;
 
     // The timestamp of the Pectra hard fork
     uint64 public pectraForkTimestamp;
 
-    constructor(EigenPodManager _eigenPodManager, uint64 _genesisTime) BeaconChainMock(_eigenPodManager, _genesisTime) {
+    function initialize(EigenPodManager _eigenPodManager, uint64 _genesisTime) external virtual override {
+        genesisTime = _genesisTime;
+        eigenPodManager = _eigenPodManager;
+
+        // Create mock 4788 oracle
+        cheats.etch(address(DEPOSIT_CONTRACT), type(ETHPOSDepositMock).runtimeCode);
+        cheats.etch(address(EIP_4788_ORACLE), type(EIP_4788_Oracle_Mock).runtimeCode);
+
+        // Calculate nodes of empty merkle tree
+        bytes32 curNode = Merkle.merkleizeSha256(new bytes32[](8));
+        zeroNodes = new bytes32[](ZERO_NODES_LENGTH);
+        zeroNodes[0] = curNode;
+
+        for (uint i = 1; i < zeroNodes.length; i++) {
+            zeroNodes[i] = sha256(abi.encodePacked(curNode, curNode));
+            curNode = zeroNodes[i];
+        }
+
         /// DENEB SPECIFIC CONSTANTS (PROOF LENGTHS, FIELD SIZES):
-        // see https://eth2book.info/capella/part3/containers/state/#beaconstate
         BEACON_STATE_FIELDS = 32;
-
         VAL_FIELDS_PROOF_LEN = 32 * ((BeaconChainProofs.VALIDATOR_TREE_HEIGHT + 1) + BeaconChainProofs.DENEB_BEACON_STATE_TREE_HEIGHT);
-
         BALANCE_CONTAINER_PROOF_LEN =
             32 * (BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT + BeaconChainProofs.DENEB_BEACON_STATE_TREE_HEIGHT);
-
         MAX_EFFECTIVE_BALANCE_GWEI = 32 gwei;
         MAX_EFFECTIVE_BALANCE_WEI = 32 ether;
-    }
-
-    function NAME() public pure override returns (string memory) {
-        return "BeaconChain_PectraForkable";
     }
 
     /**

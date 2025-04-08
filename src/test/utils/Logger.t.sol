@@ -2,36 +2,17 @@
 pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
+
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import "src/contracts/interfaces/IStrategy.sol";
+
 import {IAllocationManagerTypes} from "src/contracts/interfaces/IAllocationManager.sol";
+import "src/contracts/interfaces/IStrategy.sol";
+import "src/contracts/interfaces/IStrategy.sol";
 
-Vm constant cheats = Vm(address(uint160(uint(keccak256("hevm cheat code")))));
+import "src/test/mocks/BeaconChainMock.t.sol";
+import "src/test/utils/TimeMachine.t.sol";
 
-IStrategy constant BEACONCHAIN_ETH_STRAT = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
-IERC20 constant NATIVE_ETH = IERC20(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
-
-uint constant MIN_BALANCE = 1e6;
-uint constant MAX_BALANCE = 5e6;
-uint constant GWEI_TO_WEI = 1e9;
-
-uint constant FLAG = 1;
-
-/// @dev Types representing the different types of assets a ranomized users can hold.
-uint constant NO_ASSETS = (FLAG << 0); // will have no assets
-uint constant HOLDS_LST = (FLAG << 1); // will hold some random amount of LSTs
-uint constant HOLDS_ETH = (FLAG << 2); // will hold some random amount of ETH
-uint constant HOLDS_ALL = (FLAG << 3); // will always hold ETH, and some LSTs
-uint constant HOLDS_MAX = (FLAG << 4); // will hold every LST and ETH (used for testing max strategies)
-
-/// @dev Types representing the different types of users that can be created.
-uint constant DEFAULT = (FLAG << 0);
-uint constant ALT_METHODS = (FLAG << 1);
-
-/// @dev Types representing the different types of forks that can be simulated.
-uint constant LOCAL = (FLAG << 0);
-uint constant MAINNET = (FLAG << 1);
-uint constant HOLESKY = (FLAG << 2);
+import "src/test/utils/Constants.t.sol";
 
 abstract contract Logger is Test {
     using StdStyle for *;
@@ -46,25 +27,10 @@ abstract contract Logger is Test {
     /// Modifiers
     /// -----------------------------------------------------------------------
 
-    // Address used to store a trace counter to allow us to use noTracing
-    // across any contract that inherits Logger
-    address constant LOG_STATE_ADDR = address(0xDEADBEEF);
-    bytes32 constant LOG_STATE_SLOT = bytes32(0);
-
     modifier noTracing() {
-        uint traceCounter = _getTraceCounter();
-        if (traceCounter == 0) cheats.pauseTracing();
-
-        traceCounter++;
-        _setTraceCounter(traceCounter);
-
+        cheats.pauseTracing();
         _;
-
-        traceCounter = _getTraceCounter();
-        traceCounter--;
-        _setTraceCounter(traceCounter);
-
-        if (traceCounter == 0) cheats.resumeTracing();
+        cheats.resumeTracing();
     }
 
     modifier noLogging() {
@@ -128,24 +94,14 @@ abstract contract Logger is Test {
         logging = !logging;
         console.log("\n%s logging %s...", NAME_COLORED(), logging ? "enabled" : "disabled");
     }
-
-    /// -----------------------------------------------------------------------
-    /// Trace Counter get/set
-    /// -----------------------------------------------------------------------
-
-    function _getTraceCounter() internal view returns (uint) {
-        return uint(cheats.load(LOG_STATE_ADDR, LOG_STATE_SLOT));
-    }
-
-    function _setTraceCounter(uint _newValue) internal {
-        cheats.store(LOG_STATE_ADDR, LOG_STATE_SLOT, bytes32(_newValue));
-    }
 }
 
 /// @dev Assumes the user is a `Logger`.
 library print {
     using print for *;
     using StdStyle for *;
+
+    Vm constant vm = Vm(address(uint160(uint(keccak256("hevm cheat code")))));
 
     /// -----------------------------------------------------------------------
     /// Logging
