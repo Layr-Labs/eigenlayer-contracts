@@ -35,8 +35,7 @@ contract Integration_SlashBC_OneBCSF is IntegrationCheckUtils {
         // 1. etch a new implementation to set staker's beaconChainSlashingFactor to 1
         EigenPodManagerWrapper eigenPodManagerWrapper =
             new EigenPodManagerWrapper(DEPOSIT_CONTRACT, eigenPodBeacon, delegationManager, eigenLayerPauserReg, "v9.9.9");
-        address targetAddr = address(eigenPodManagerImplementation);
-        cheats.etch(targetAddr, address(eigenPodManagerWrapper).code);
+        cheats.etch(address(eigenPodManager), address(eigenPodManagerWrapper).code);
 
         // 2. create a new staker, operator, and avs
         _configAssetTypes(HOLDS_ETH);
