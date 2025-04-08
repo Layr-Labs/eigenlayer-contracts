@@ -4,6 +4,7 @@ pragma solidity ^0.8.27;
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
+import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 
 import "../../src/contracts/core/StrategyManager.sol";
 import "../../src/contracts/core/DelegationManager.sol";
@@ -160,9 +161,10 @@ contract ExistingDeploymentParser is Script, Logger {
 
     address executorMultisig;
     address operationsMultisig;
+    address protocolCouncilMultisig;
     address communityMultisig;
     address pauserMultisig;
-    address timelock;
+    TimelockController timelockController;
 
     // strategies deployed
     uint256 numStrategiesDeployed;
@@ -206,38 +208,13 @@ contract ExistingDeploymentParser is Script, Logger {
         // read all of the deployed addresses
         executorMultisig = json.readAddress(".parameters.executorMultisig");
         operationsMultisig = json.readAddress(".parameters.operationsMultisig");
+        protocolCouncilMultisig = json.readAddress(".parameters.protocolCouncilMultisig");
         communityMultisig = json.readAddress(".parameters.communityMultisig");
         pauserMultisig = json.readAddress(".parameters.pauserMultisig");
-        timelock = json.readAddress(".parameters.timelock");
+        timelockController = TimelockController(payable(json.readAddress(".parameters.timelockController")));
 
         eigenLayerProxyAdmin = ProxyAdmin(json.readAddress(".addresses.eigenLayerProxyAdmin"));
         eigenLayerPauserReg = PauserRegistry(json.readAddress(".addresses.eigenLayerPauserReg"));
-
-        // FIXME: hotfix - remove later...
-        permissionControllerImplementation = new PermissionController(SEMVER);
-        permissionController = PermissionController(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(permissionControllerImplementation), address(eigenLayerProxyAdmin), ""
-                )
-            )
-        );
-
-        allocationManagerImplementation = new AllocationManager(
-            delegationManager,
-            eigenLayerPauserReg,
-            permissionController,
-            DEALLOCATION_DELAY,
-            ALLOCATION_CONFIGURATION_DELAY,
-            SEMVER
-        );
-        allocationManager = AllocationManager(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(allocationManagerImplementation), address(eigenLayerProxyAdmin), ""
-                )
-            )
-        );
 
         // // AllocationManager
         // allocationManager = AllocationManager(json.readAddress(".addresses.allocationManager"));
@@ -757,9 +734,10 @@ contract ExistingDeploymentParser is Script, Logger {
         string memory parameters = "parameters";
         parameters.serialize("executorMultisig", executorMultisig);
         parameters.serialize("operationsMultisig", operationsMultisig);
+        parameters.serialize("protocolCouncilMultisig", protocolCouncilMultisig);
         parameters.serialize("communityMultisig", communityMultisig);
         parameters.serialize("pauserMultisig", pauserMultisig);
-        parameters.serialize("timelock", timelock);
+        parameters.serialize("timelockController", address(timelockController));
         string memory parameters_output = parameters.serialize("operationsMultisig", operationsMultisig);
 
         string memory chain_info = "chainInfo";
@@ -800,8 +778,12 @@ contract ExistingDeploymentParser is Script, Logger {
         REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP =
             uint32(json.readUint(".config.params.GENESIS_REWARDS_TIMESTAMP"));
 
+        ETHPOSDepositAddress = address(json.readAddress(".config.params.ethPOS"));
+        EIGENPOD_GENESIS_TIME = uint64(json.readUint(".config.params.EIGENPOD_GENESIS_TIME"));
         DEALLOCATION_DELAY = uint32(json.readUint(".config.params.MIN_WITHDRAWAL_DELAY_BLOCKS"));
         ALLOCATION_CONFIGURATION_DELAY = uint32(json.readUint(".config.params.ALLOCATION_CONFIGURATION_DELAY"));
+        REWARDS_COORDINATOR_ACTIVATION_DELAY = uint32(json.readUint(".config.params.ACTIVATION_DELAY"));
+        REWARDS_COORDINATOR_DEFAULT_OPERATOR_SPLIT_BIPS = uint32(json.readUint(".config.params.GLOBAL_OPERATOR_COMMISSION_BIPS"));
         DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS =
             uint32(json.readUint(".config.params.MIN_WITHDRAWAL_DELAY_BLOCKS"));
     }
