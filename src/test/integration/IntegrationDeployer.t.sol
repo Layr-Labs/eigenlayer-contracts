@@ -3,8 +3,9 @@ pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
 import {MockERC20} from "forge-std/mocks/MockERC20.sol";
-import {ICoreTypes} from "src/contracts/interfaces/ICore.sol";
+
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import "@openzeppelin/contracts/governance/TimelockController.sol";
 
 import "src/test/integration/users/AVS.t.sol";
 import "src/test/integration/users/User.t.sol";
@@ -71,11 +72,15 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
 
     EmptyContract public emptyContract;
 
+    bool isTimelockUpgrade;
+    bytes timelockPayload;
+
     /// -----------------------------------------------------------------------
     /// Setup
     /// -----------------------------------------------------------------------
 
     constructor() {
+        // QUESTION: Why is this needed? Shouldn't we have coverage for weird ERC20s?
         tokensNotTested[address(0x3F1c547b21f65e10480dE3ad8E19fAAC46C95034)] = true; // stETH holesky
         tokensNotTested[address(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84)] = true; // stETH mainnet
         tokensNotTested[address(0x856c4Efb76C1D1AE02e20CEB03A2A6a08b0b8dC3)] = true; // oETH mainnet
@@ -95,22 +100,25 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
      * Note that forkIds are also created so you can make explicit fork tests using cheats.selectFork(forkId)
      */
     function setUp() public virtual {
+        _setUp(true);
+    }
+
+    function _setUp(bool shouldExecuteTimelock) internal virtual {
         emptyContract = new EmptyContract();
         string memory profile = FOUNDRY_PROFILE();
+        timelockPayload = cheats.envOr(string("TIMELOCK_PAYLOAD"), bytes(""));
+        isTimelockUpgrade = timelockPayload.length > 0;
 
         if (eq(profile, "forktest")) {
             // Assumes the proxy contracts have already been deployed.
-            forkType = MAINNET;
-            config = ConfigParser.parse("./script/configs/mainnet/mainnet-addresses.toml");
-            _setUpMainnet();
+            config = ConfigParser.parse(cheats.envOr(string("FORKTEST_TOML"), string("./script/configs/mainnet/mainnet-addresses.toml")));
+            _setUpFork(shouldExecuteTimelock);
         } else if (eq(profile, "forktest-zeus")) {
             // Assumes the proxy contracts have already been deployed.
-            forkType = MAINNET;
             config = ConfigParser.parseZeus();
-            _setUpMainnet();
+            _setUpFork(shouldExecuteTimelock);
         } else {
             // Assumes nothing has been deployed yet.
-            forkType = LOCAL;
             _setUpLocal();
         }
 
@@ -165,6 +173,9 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
     /// @dev Sets up the integration tests for local.
     function _setUpLocal() public virtual {
         console.log("Setting up `%s` integration tests:", "LOCAL".yellow().bold());
+
+        forkType = LOCAL;
+
         // Deploy ProxyAdmin, PauserRegistry, and executorMultisig.
         config.governance.proxyAdmin = new ProxyAdmin();
         config.governance.pauserRegistry = new PauserRegistry(PAUSER.toArray(), UNPAUSER);
@@ -204,14 +215,20 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
         cheats.stopPrank();
     }
 
+    function _setUpFork() public virtual {
+        _setUpFork(true);
+    }
+
     /// @dev Sets up the integration tests for mainnet.
-    function _setUpMainnet() public virtual {
+    function _setUpFork(bool shouldExecuteTimelock) public virtual {
         console.log("Setting up `%s` integration tests:", "MAINNET_FORK".green().bold());
-        console.log("Block:", MAINNET_FORK_BLOCK);
+        cheats.createSelectFork(cheats.rpcUrl("mainnet"), MAINNET_FORK_BLOCK); // TODO: need to inject RPC URL rather than assuming mainnet
+        console.log("Block:", block.number);
 
-        cheats.createSelectFork(cheats.rpcUrl("mainnet"), MAINNET_FORK_BLOCK);
+        forkType = MAINNET;
 
-        _deployProxies(); // deploy proxies if not already deployed
+        if (isTimelockUpgrade && shouldExecuteTimelock) _executeTimelockPayload();
+        else _deployProxies();
 
         // Place native ETH first in `allStrats`
         // This ensures when we select a nonzero number of strategies from this array, we always
@@ -242,13 +259,14 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
         // Since we haven't done the slashing upgrade on mainnet yet, upgrade mainnet contracts
         // prior to test. `isUpgraded` is true by default, but is set to false in `UpgradeTest.t.sol`
         if (isUpgraded) {
-            _upgradeMainnetContracts();
-
-            // Set the `pectraForkTimestamp` on the EigenPodManager. Use pectra state
-            cheats.startPrank(executorMultisig());
-            eigenPodManager().setProofTimestampSetter(executorMultisig());
-            eigenPodManager().setPectraForkTimestamp(BEACON_GENESIS_TIME);
-            cheats.stopPrank();
+            if (!isTimelockUpgrade) _upgradeMainnetContracts();
+            if (shouldExecuteTimelock) {
+                // Set the `pectraForkTimestamp` on the EigenPodManager. Use pectra state
+                cheats.startPrank(executorMultisig());
+                eigenPodManager().setProofTimestampSetter(executorMultisig());
+                eigenPodManager().setPectraForkTimestamp(BEACON_GENESIS_TIME);
+                cheats.stopPrank();
+            }
         }
     }
 
@@ -257,6 +275,20 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
         cheats.startPrank(executorMultisig());
         _upgradeProxies();
         cheats.stopPrank();
+    }
+
+    function _executeTimelockPayload() internal {
+        // Warp forward to elapse the timelock queue.
+        cheats.warp(block.timestamp + 21 days);
+
+        // Execute the timelock upgrade.
+        cheats.startPrank(protocolCouncil());
+        timelock().execute({target: executorMultisig(), value: 0, payload: timelockPayload, predecessor: 0, salt: 0});
+        cheats.stopPrank();
+
+        console.log("SIMULATED TIMELOCK UPGRADE".yellow().bold());
+
+        isUpgraded = true;
     }
 
     /// -----------------------------------------------------------------------

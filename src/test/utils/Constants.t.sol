@@ -45,8 +45,8 @@ uint64 constant GENESIS_TIME_LOCAL = 1 hours * 12;
 /// @dev Returns the genesis time for the beacon chain when forking mainnet.
 uint64 constant GENESIS_TIME_MAINNET = 1_606_824_023;
 /// @dev Returns the block number to fork from mainnet.
-/// @dev Current value is post "Protocol Council" upgrade.
-uint constant MAINNET_FORK_BLOCK = 21_616_692;
+/// @dev Current value is post "Protocol Council" upgrade queued in timelock.
+uint constant MAINNET_FORK_BLOCK = 22_225_622;
 /// @dev Returns the number of LST strategies to deploy.
 uint8 constant NUM_LST_STRATS = 8;
 

@@ -29,6 +29,7 @@ struct Governance {
     address operationsMultisig;
     address pauserMultisig;
     PauserRegistry pauserRegistry;
+    address protocolCouncil;
     ProxyAdmin proxyAdmin;
     TimelockController timelock;
 }
@@ -76,6 +77,7 @@ library ConfigParser {
         c.governance.operationsMultisig = Env.opsMultisig();
         c.governance.pauserMultisig = Env.pauserMultisig();
         c.governance.pauserRegistry = Env.pauserRegistry(Env.impl);
+        c.governance.protocolCouncil = Env.protocolCouncilMultisig();
         c.governance.proxyAdmin = ProxyAdmin(Env.proxyAdmin());
         c.governance.timelock = Env.timelockController();
         // Token addresses
@@ -161,16 +163,17 @@ contract ConfigParserTest is Test {
         assertEq(c.governance.operationsMultisig, 0xBE1685C81aA44FF9FB319dD389addd9374383e90);
         assertEq(c.governance.pauserMultisig, 0x5050389572f2d220ad927CcbeA0D406831012390);
         assertEq(address(c.governance.pauserRegistry), 0x0c431C66F4dE941d089625E5B423D00707977060);
+        assertEq(address(c.governance.protocolCouncil), 0x461854d84Ee845F905e0eCf6C288DDEEb4A9533F);
         assertEq(address(c.governance.proxyAdmin), 0x8b9566AdA63B64d1E1dcF1418b43fd1433b72444);
-        assertEq(address(c.governance.timelock), 0xA6Db1A8C5a981d1536266D2a393c5F8dDb210EAF);
+        assertEq(address(c.governance.timelock), 0xC06Fd4F821eaC1fF1ae8067b36342899b57BAa2d);
 
         assertEq(address(c.tokens.bEIGEN), 0x83E9115d334D248Ce39a6f36144aEaB5b3456e75);
         assertEq(address(c.tokens.EIGEN), 0xec53bF9167f50cDEB3Ae105f56099aaaB9061F83);
 
-        assertEq(address(c.core.allocationManager), 0x0000000000000000000000000000000000000000);
+        assertEq(address(c.core.allocationManager), 0x948a420b8CC1d6BFd0B6087C2E7c344a2CD0bc39);
         assertEq(address(c.core.avsDirectory), 0x135DDa560e946695d6f155dACaFC6f1F25C1F5AF);
         assertEq(address(c.core.delegationManager), 0x39053D51B77DC0d36036Fc1fCc8Cb819df8Ef37A);
-        assertEq(address(c.core.permissionController), 0x0000000000000000000000000000000000000000);
+        assertEq(address(c.core.permissionController), 0x25E5F8B1E7aDf44518d35D5B2271f114e081f0E5);
         assertEq(address(c.core.rewardsCoordinator), 0x7750d328b314EfFa365A0402CcfD489B80B0adda);
         assertEq(address(c.core.strategyManager), 0x858646372CC42E1A627fcE94aa7A7033e7CF075A);
 
