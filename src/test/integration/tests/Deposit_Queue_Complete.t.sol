@@ -72,7 +72,7 @@ contract Integration_Deposit_QueueWithdrawal_Complete is IntegrationCheckUtils {
         cheats.assume(initDepositShares[0] >= 64 ether);
 
         // Deposit staker by verifying withdrawal credentials
-        (uint40[] memory validators, uint64 beaconBalanceGwei) = staker.startValidators();
+        (uint40[] memory validators, uint64 beaconBalanceGwei,) = staker.startValidators();
         beaconChain.advanceEpoch_NoRewards();
         staker.verifyWithdrawalCredentials(validators);
         check_VerifyWC_State(staker, validators, beaconBalanceGwei);
