@@ -15,8 +15,6 @@ contract Integration_Upgrade_Deposit_Delegate_Allocate is UpgradeTest {
     }
 
     function _init_() internal returns (TestState memory state) {
-        if (isTimelockUpgrade) cheats.skip(true);
-
         (state.staker, state.strategies, state.initTokenBalances) = _newRandomStaker();
         state.operator = _newRandomOperator();
 

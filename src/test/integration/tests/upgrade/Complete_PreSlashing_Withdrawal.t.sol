@@ -18,8 +18,6 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal_Base is UpgradeTest
     }
 
     function _init_(bool withOperator, bool withDelegation) internal virtual returns (TestState memory state) {
-        if (isTimelockUpgrade) cheats.skip(true);
-
         // Create staker
         (state.staker, state.strategies, state.initTokenBalances) = _newRandomStaker();
         state.shares = _calculateExpectedShares(state.strategies, state.initTokenBalances);
@@ -100,8 +98,6 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal_Slash is Integratio
     using ArrayLib for *;
 
     function _init_(bool withOperator, bool withDelegation) internal override returns (TestState memory state) {
-        if (isTimelockUpgrade) cheats.skip(true);
-
         // Initialize state, queue a full withdrawal
         state = super._init_({withOperator: withOperator, withDelegation: withDelegation});
 

@@ -7,11 +7,12 @@ import "src/test/integration/IntegrationChecks.t.sol";
 abstract contract UpgradeTest is IntegrationChecks {
     /// Only run upgrade tests on mainnet forks
     function setUp() public virtual override {
-        if (!eq(FOUNDRY_PROFILE(), "forktest")) {
+        string memory profile = FOUNDRY_PROFILE();
+        if (!eq(profile, "forktest") && !eq(profile, "forktest-zeus")) {
             cheats.skip(true);
         } else {
             isUpgraded = false;
-            super.setUp();
+            _setUp(false);
 
             // Use Deneb Beacon Chain Mock as Pectra state is not live on mainnet
             cheats.etch(address(beaconChain), type(BeaconChainMock_DenebForkable).runtimeCode);
