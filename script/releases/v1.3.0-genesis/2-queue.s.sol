@@ -139,6 +139,17 @@ contract Queue is MultisigBuilder, DeployFresh {
             )
         });
 
+        executorCalls.append({
+            to: Env.proxyAdmin(),
+            data: abi.encodeCall(
+                pa.upgrade,
+                (
+                    ITransparentUpgradeableProxy(payable(address(Env.proxy.eigenStrategy()))),
+                    address(Env.impl.eigenStrategy())
+                )
+            )
+        });
+
         return Encode.gnosisSafe.execTransaction({
             from: address(Env.timelockController()),
             to: address(Env.multiSendCallOnly()),

@@ -47,6 +47,8 @@ contract DeployFresh is EOADeployer {
 
         deployBlankProxy({name: type(PermissionController).name});
 
+        deployBlankProxy({name: type(EigenStrategy).name});
+
         address eigenPodImplementation = deployImpl({
             name: type(EigenPod).name,
             deployedTo: address(
@@ -169,16 +171,17 @@ contract DeployFresh is EOADeployer {
             )
         });
 
+        EigenStrategy eigenStrategyImpl = new EigenStrategy({
+            _strategyManager: Env.proxy.strategyManager(),
+            _pauserRegistry: Env.impl.pauserRegistry(),
+            _version: Env.deployToVersion()
+        });
+
         deployImpl({
             name: type(EigenStrategy).name,
-            deployedTo: address(
-                new EigenStrategy({
-                    _strategyManager: Env.proxy.strategyManager(),
-                    _pauserRegistry: Env.impl.pauserRegistry(),
-                    _version: Env.deployToVersion()
-                })
-            )
+            deployedTo: address(eigenStrategyImpl)
         });
+
 
         // for strategies deployed via factory
         deployImpl({
