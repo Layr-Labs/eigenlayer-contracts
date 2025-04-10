@@ -4,7 +4,7 @@ pragma solidity ^0.8.27;
 import "src/test/integration/IntegrationChecks.t.sol";
 import "src/test/integration/users/User.t.sol";
 
-contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationChecks {
+contract Integration_EigenPod_VerifyWC_StartCP_CompleteCP is IntegrationChecks {
     function _init() internal override {
         _configAssetTypes(HOLDS_ETH);
         _configUserTypes(DEFAULT);

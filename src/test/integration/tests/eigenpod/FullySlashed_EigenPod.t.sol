@@ -3,7 +3,7 @@ pragma solidity ^0.8.27;
 
 import "src/test/integration/IntegrationChecks.t.sol";
 
-contract Integration_FullySlashedEigenpod_Base is IntegrationChecks {
+contract Integration_EigenPod_FullySlashedEigenpod_Base is IntegrationChecks {
     using ArrayLib for *;
 
     function _init() internal virtual override {
@@ -29,7 +29,7 @@ contract Integration_FullySlashedEigenpod_Base is IntegrationChecks {
     }
 }
 
-contract Integration_FullySlashedEigenpod_Checkpointed is Integration_FullySlashedEigenpod_Base {
+contract Integration_EigenPod_FullySlashedEigenpod_Checkpointed is Integration_EigenPod_FullySlashedEigenpod_Base {
     function _init() internal override {
         super._init();
 
@@ -102,7 +102,7 @@ contract Integration_FullySlashedEigenpod_Checkpointed is Integration_FullySlash
     }
 }
 
-contract Integration_FullySlashedEigenpod_NotCheckpointed is Integration_FullySlashedEigenpod_Base {
+contract Integration_EigenPod_FullySlashedEigenpod_NotCheckpointed is Integration_EigenPod_FullySlashedEigenpod_Base {
     /// @dev Adding funds prior to checkpointing allows the pod to not be "bricked"
     function testFuzz_proveValidator_checkpoint_queue_completeAsTokens(uint24) public {
         // Deal ETH to staker

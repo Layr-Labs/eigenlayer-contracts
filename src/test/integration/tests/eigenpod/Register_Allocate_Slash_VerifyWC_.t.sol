@@ -5,7 +5,7 @@ import "src/test/mocks/BeaconChainMock.t.sol";
 import "src/test/integration/IntegrationChecks.t.sol";
 
 /// @notice Testing the rounding behavior when operator magnitude is initially 1
-contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationChecks {
+contract Integration_EigenPod_Register_Allocate_Slash_VerifyWC is IntegrationChecks {
     using ArrayLib for *;
 
     /**
