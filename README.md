@@ -11,6 +11,15 @@ EigenLayer is a set of smart contracts deployed on Ethereum that enable restakin
 * [Building and Running Tests](#building-and-running-tests)
 * [Deployments](#deployments)
 
+## Deployment Matrix
+The deployments on `mainnet`, `holesky`, and `sepolia` are on the below versions:
+
+| Environment | Version | Notes |
+| -------- | -------- | -------- |
+| Mainnet | [`v0.5.4`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v0.5.4) | |
+| Holesky | [`v1.4.1`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.4.1-testnet-holeksy) | |
+| Sepolia | [`v1.3.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.3.0) | |
+
 ## Branching
 
 The main branches we use are:
@@ -271,7 +280,7 @@ The following strategies differ significantly from the other strategies deployed
 | -------- | -------- | -------- | -------- |
 | [`DelegationManager`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/slashing-magnitudes/src/contracts/core/DelegationManager.sol) | [`0xD4A7E1Bd8015057293f0D0A557088c286942e84b`](https://sepolia.etherscan.io/address/0xD4A7E1Bd8015057293f0D0A557088c286942e84b) | [`0xa722...67f3`](https://sepolia.etherscan.io/address/0xa7227485e6C693AC4566fe168C5E3647c5c267f3) | Proxy: [`TUP@4.7.1`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 | [`StrategyManager`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/slashing-magnitudes/src/contracts/core/StrategyManager.sol) | [`0x2E3D6c0744b10eb0A4e6F679F71554a39Ec47a5D`](https://sepolia.etherscan.io/address/0x2E3D6c0744b10eb0A4e6F679F71554a39Ec47a5D) | [`0x8845...EB1b`](https://sepolia.etherscan.io/address/0x88457741E1bDE012a36Fc154B9004384C1eAEB1b) | Proxy: [`TUP@4.7.1`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
-| [`EigenPodManager`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/slashing-magnitudes/src/contracts/pods/EigenPodManager.sol) | [`0x56BfEb94879F4543E756d26103976c567256034a`](https://sepolia.etherscan.io/address/0x56BfEb94879F4543E756d26103976c567256034a) | [`0x8b1D...11a0`](https://sepolia.etherscan.io/address/0x8b1DBbAa79507CD6b6e1d9FBe90E3FB18EFf11a0) | Proxy: [`TUP@4.7.1`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+| [`EigenPodManager`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/slashing-magnitudes/src/contracts/pods/EigenPodManager.sol) | [`0x56BfEb94879F4543E756d26103976c567256034a`](https://sepolia.etherscan.io/address/0x56BfEb94879F4543E756d26103976c567256034a) | [`0x8b1D...11a0`](https://sepolia.etherscan.io/address/0x8b1DBbAa79507CD6b6e1d9FBe90E3FB18EFf11a0) | Proxy: [`TUP@4.7.1`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) | All EigenPod functionality is paused on Holesky | 
 | [`AVSDirectory`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/slashing-magnitudes/src/contracts/core/AVSDirectory.sol) | [`0xa789c91ECDdae96865913130B786140Ee17aF545`](https://sepolia.etherscan.io/address/0xa789c91ECDdae96865913130B786140Ee17aF545) | [`0xD88b...C188`](https://sepolia.etherscan.io/address/0xD88b96998325c3e74A74a0B0938BBFeA1395C188) | Proxy: [`TUP@4.7.1`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 | [`RewardsCoordinator`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/slashing-magnitudes/src/contracts/core/RewardsCoordinator.sol) | [`0x5ae8152fb88c26ff9ca5C014c94fca3c68029349`](https://sepolia.etherscan.io/address/0x5ae8152fb88c26ff9ca5C014c94fca3c68029349) | [`0xcC30...7940`](https://sepolia.etherscan.io/address/0xcC305562B01bec562D13A40ef8781e313AFE7940) | Proxy: [`TUP@4.7.1`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 | [`AllocationManager`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/slashing-magnitudes/src/contracts/core/AllocationManager.sol) | [`0x42583067658071247ec8CE0A516A58f682002d07`](https://sepolia.etherscan.io/address/0x42583067658071247ec8CE0A516A58f682002d07) | [`0x742A...927b`](https://sepolia.etherscan.io/address/0x742A228482701d693061BfE9C5B3Eb3959Ea927b) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
@@ -299,6 +308,8 @@ The following strategies differ significantly from the other strategies deployed
 | `Beacon Chain ETH` | `0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0` | - | - Used for Beacon Chain ETH shares <br />- Not a real contract! |
 
 ###### EigenPods
+
+**NOTE: Due to the permissioned validator set on Sepolia, all EigenPod funcionality is *PAUSED*.**
 
 | Name | Proxy | Implementation | Notes |
 | -------- | -------- | -------- | -------- | 
