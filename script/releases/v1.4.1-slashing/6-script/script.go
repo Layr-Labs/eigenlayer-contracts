@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/attestantio/go-eth2-client/api"
 	attestantio "github.com/attestantio/go-eth2-client/http"
@@ -52,6 +53,13 @@ func panicOnError(msg string, err error) {
 	}
 }
 
+func isSlotNotFoundError(err error) bool {
+	// Check if the error is a "not found" error (typically HTTP 404)
+	errStr := err.Error()
+	return strings.Contains(errStr, "404") ||
+		strings.Contains(errStr, "NOT_FOUND: beacon block at slot")
+}
+
 func runScript(args TArgs) error {
 	ctx := context.Background()
 
@@ -64,19 +72,43 @@ func runScript(args TArgs) error {
 	// Start checking from fork slot
 	slotNum := args.ForkSlot
 
-	for {
-		opts := &api.BeaconBlockHeaderOpts{Block: strconv.FormatUint(slotNum, 10)}
-		_, err := httpClient.BeaconBlockHeader(ctx, opts)
-		if err != nil {
-			fmt.Printf("Slot %d was missed, checking next slot...\n", slotNum)
-			slotNum++
-			continue
-		}
+	const maxRetries = 10
 
-		fmt.Printf("Found first non-missed slot at slot %d\n", slotNum)
-		break
+	for {
+		retryCount := 0
+
+		for retryCount < maxRetries {
+			opts := &api.BeaconBlockHeaderOpts{Block: strconv.FormatUint(slotNum, 10)}
+			_, err := httpClient.BeaconBlockHeader(ctx, opts)
+
+			if err == nil {
+				// No error, we found a valid slot
+				fmt.Printf("Found first non-missed slot at slot %d\n", slotNum)
+				goto SlotFound
+			}
+
+			// If error is a "slot not found error"
+			if isSlotNotFoundError(err) {
+				// We found a missed slot, increment slot and break retry loop
+				fmt.Printf("Slot %d was missed, checking next slot...\n", slotNum)
+				slotNum++
+				break
+			}
+
+			// Some other error (network, transient, etc.), retry the same slot
+			retryCount++
+			if retryCount < maxRetries {
+				fmt.Printf("Encountered transient error for slot %d (attempt %d/%d): %v. Retrying...\n",
+					slotNum, retryCount, maxRetries, err)
+				time.Sleep(time.Second * time.Duration(retryCount)) // Backoff with each retry
+			} else {
+				fmt.Printf("Max retries exceeded for slot %d, moving to next slot: %v\n", slotNum, err)
+				slotNum++
+			}
+		}
 	}
 
+SlotFound:
 	// Get the slot timestamp. We don't need to use the beacon api because it returns a versioned state. Just use the vanilla endpoint
 	url := fmt.Sprintf("%s/eth/v2/beacon/blocks/%d", args.BeaconNode, slotNum)
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
@@ -99,7 +131,7 @@ func runScript(args TArgs) error {
 	timestamp := strings.TrimSpace(blockResponse.Data.Message.Body.ExecutionPayload.Timestamp)
 	fmt.Printf("Slot timestamp: %s\n", timestamp)
 
-	// Write timestamp to file in the parent directory (v1.2.0-slashing)
+	// Write timestamp to file in the parent directory (v1.4.2-slashing)
 	outputPath := filepath.Join("..", "forkTimestamp.txt")
 	err = os.WriteFile(outputPath, []byte(timestamp), 0644)
 	if err != nil {
