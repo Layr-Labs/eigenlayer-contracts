@@ -1,0 +1,19 @@
+{
+    "name": "transfer-da-ownership",
+    "from": "1.4.1",
+    "to": "1.4.1",
+    "phases": [
+        {
+            "type": "multisig",
+            "filename": "1-queueTransferProxyAdmin.s.sol"
+        },
+        {
+            "type": "multisig",
+            "filename": "2-transferOwnership.s.sol"
+        },
+        {
+            "type": "multisig",
+            "filename": "3-executeTransferProxyAdmin.s.sol"
+        }
+    ]
+}
