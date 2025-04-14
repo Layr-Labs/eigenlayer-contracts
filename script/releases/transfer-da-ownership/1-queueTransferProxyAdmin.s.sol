@@ -12,9 +12,9 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * Purpose:
- *      * enqueue a multisig transaction which;
+ *      * enqueue a multisig transaction to the timelock which:
  *             - transfers DA Proxy Admin ownership to the EigenDA ops multisig
- *  This should be run via the protocol council multisig.
+ *  This should be run via the core ops multisig.
  */
 contract QueueTransferProxyAdmin is MultisigBuilder {
     using Env for *;
