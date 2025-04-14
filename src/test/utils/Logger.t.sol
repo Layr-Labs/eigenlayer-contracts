@@ -180,12 +180,6 @@ library print {
         else if (t == ALT_METHODS) s = "ALT_METHODS";
     }
 
-    function asForkType(uint t) internal pure returns (string memory s) {
-        if (t == LOCAL) s = "LOCAL";
-        else if (t == MAINNET) s = "MAINNET";
-        else if (t == HOLESKY) s = "HOLESKY";
-    }
-
     function asGwei(uint x) internal pure returns (string memory) {
         return x.asDecimal(9, " gwei");
     }

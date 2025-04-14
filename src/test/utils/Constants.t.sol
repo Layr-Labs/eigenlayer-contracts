@@ -71,4 +71,3 @@ uint constant ALT_METHODS = (1 << 1);
 /// @dev Types representing the different types of forks that can be simulated.
 uint constant LOCAL = (1 << 0);
 uint constant MAINNET = (1 << 1);
-uint constant HOLESKY = (1 << 2);
