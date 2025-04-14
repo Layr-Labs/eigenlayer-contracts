@@ -72,6 +72,7 @@ jobs:
       # Run the test suite in parallel based on the matrix configuration.
       - name: Run ${{ matrix.suite }} tests
         run: |
+          export CHAIN="mainnet"
           case "${{ matrix.suite }}" in
             Unit) forge test --no-match-contract Integration ;;
             Integration) forge test --match-contract Integration ;;
