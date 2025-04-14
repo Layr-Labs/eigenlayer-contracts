@@ -111,7 +111,7 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
 
         if (eq(profile, "forktest")) {
             // Assumes the proxy contracts have already been deployed.
-            config = ConfigParser.parse(cheats.envOr(string("FORKTEST_TOML"), string("./script/configs/mainnet/mainnet-addresses.toml")));
+            config = ConfigParser.parse(string.concat("script/configs/", cheats.envString("CHAIN"), ".toml"));
             _setUpFork(shouldExecuteTimelock);
         } else if (eq(profile, "forktest-zeus")) {
             // Assumes the proxy contracts have already been deployed.
