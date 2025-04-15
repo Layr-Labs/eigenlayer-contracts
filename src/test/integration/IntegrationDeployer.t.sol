@@ -111,7 +111,7 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
 
         if (eq(profile, "forktest")) {
             // Assumes the proxy contracts have already been deployed.
-            config = ConfigParser.parse(string.concat("script/configs/", cheats.envString("CHAIN"), ".toml"));
+            config = ConfigParser.parse(string.concat("script/configs/", cheats.envString("FORK_CHAIN"), ".toml"));
             _setUpFork(shouldExecuteTimelock);
         } else if (eq(profile, "forktest-zeus")) {
             // Assumes the proxy contracts have already been deployed.
@@ -221,8 +221,14 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
 
     /// @dev Sets up the integration tests for mainnet.
     function _setUpFork(bool shouldExecuteTimelock) public virtual {
-        console.log("Setting up `%s` integration tests:", "MAINNET_FORK".green().bold());
-        cheats.createSelectFork(cheats.rpcUrl("mainnet"), MAINNET_FORK_BLOCK); // TODO: need to inject RPC URL rather than assuming mainnet
+        string memory chain = cheats.envString("FORK_CHAIN");
+        uint forkBlock = cheats.envOr(string("FORK_BLOCK"), uint(0));
+
+        if (forkBlock != 0) cheats.createSelectFork(cheats.rpcUrl(chain), forkBlock);
+        else cheats.createSelectFork(cheats.rpcUrl(chain)); // TODO: need to inject RPC URL rather than assuming mainnet
+
+        console.log("Setting up integration `%s` for `%s`:", FOUNDRY_PROFILE(), chain.green().bold());
+        console.log("RPC:", cheats.rpcUrl(chain));
         console.log("Block:", block.number);
 
         forkType = MAINNET;
