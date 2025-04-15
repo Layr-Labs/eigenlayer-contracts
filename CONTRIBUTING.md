@@ -94,7 +94,7 @@ Now `main` in your fork repository should match the `main` in EigenLayer reposit
 
 ### Create Your PR
 
-1. Create a new branch from your target upstream branch
+1. Create a new branch from your target upstream branch in your fork repository
 2. Make your code changes
 3. Commit your changes
 4. Push to your forked repository
