@@ -26,9 +26,8 @@ For first-time external contributors, a maintainer must:
 - **`main` (default)**: 
   - The canonical branch where all approved code changes are merged
   - Must remain stable and suitable for internal/external testing
-  - All CI workflows must pass on every commit
+  - All CI workflows must pass before and after every commit
   - Security audits are performed against specific commits on this branch
-  - All deployments originate from this branch
 
 - **`release-dev/xxx`**:
   - Used for large features requiring multiple commits that introduce breaking changes
@@ -37,7 +36,6 @@ For first-time external contributors, a maintainer must:
   - Must be regularly rebased against `main` to reduce merge conflicts
   - Merged back into `main` as a single logical unit when complete
   - No security audits are performed directly on these branches
-
 
 ### Merge Strategies
 
@@ -87,28 +85,13 @@ Before diving into maintenance details, it's important to understand our environ
 For more details on our testing infrastructure strategy, see our blog post: [The Future of EigenLayer Testing: New & Improved Testnets & Tooling Coming Soon](https://www.blog.eigenlayer.xyz/the-future-of-eigenlayer-testing-new-and-improved-testnets-tooling-coming-soon/)
 
 
-### Base Branch For Environment Networks
-
-Following are base branches to corresponding env networks
-
-- `main` ⇒ canonical branch
-- `preprod` ⇒ preprod env network
-- `testnet` ⇒ testnet env network
-- `mainnet` ⇒ mainnet env network
-
-Specific release on a given env network will be forked from these base branches accordingly.
-
-
 ### Release Tags and Semver
 
-This section defines release tag.
-
-format: `<semver>_<env_network>` where `<semver>` = `<major>.<minor>.<patch>`
+This section defines release tag semver where `<semver>` = `<major>.<minor>.<patch>`
 
 E.g.
-- v1.1.0_mainnet.ethereum
-- v1.1.0_testnet.holesky
-- v1.1.0_testnet.sepolia
+- v1.1.0
+- v1.1.1
 
 `<semver>` should follow [best practices of semver definition](https://semver.org/)
 
@@ -129,6 +112,27 @@ In observing semver, we define the following;
     2. “Upgrade suggested” — Patch upgrades may come with upgrades to tooling, CLIs, or other Eigen infrastructure. You are encouraged to read the patch notes and upgrade.
 
 
+### Release Base and Cherry Pick
+
+All releases will be cut from `main` the base branch, to ensure global consistency, clean legibility, and high code quality with no env-network specific code
+
+Each env_network deployment will pick one release above.
+
+
+During release, release manager can cherry pick to exclude certain commits, especially in case of a non-sequential feature deployment
+
+
+#### Non Sequential Feature Release
+
+In smart contracts, there is a common scenario for non sequential feature deployment due to Ethereum hardforks, whose time we cannot control.
+
+E.g. say we have features A, B, and Ethereum hardfork X,  where B is an upgrade to adapt to X. The deployment sequence for testnet is A, B, X. While that of mainnet has to be B, X, A, because 1/ we don’t control the time of X, 2/ B must happen before X, and 3/ A is not ready for mainnet yet which can’t be deployed before B
+
+Concrete example just happened is A = slashing V1, B = prooftra, X = pectra
+
+So our release branch and model must be flexible enough to solve it via cherry picking
+
+
 ### Release and Deployment Scope
 
 - a release would upgrade versions for all code, even though there's no change to a file from last release
@@ -138,27 +142,94 @@ In observing semver, we define the following;
 - all changes have to be deployed to testnet first, before mainnet. No skipping from preprod to mainnet directly
 
 
-### Release by Cherry-Pick
- 
-We need a branching model that supports promoting features from `main` to `preprod` to`testnet` and then to `mainnet`, while allowing `mainnet` to have features in a different order than `testnet`. A flexible approach is to use **feature branches** and **cherry-picking** to control what gets promoted.
 
-Take testnet release and workflow for example  
+### Changelog, Release Note, Release Announcement Blog
 
-- **`testnet`**
-    - Rebase from `preprod`
-        - note: fast forward merge is also ok in the case, and have same effect as rebase
-    - Cut a release branch from `testnet`
-- **`release/V<x.y.z>-testnet.<network>`**
-    - Created from `testnet` and cherry-pick commits based on features to include/exclude
+Each release in testnet and mainnet must have corresponding release note, changelog, and announcement blog
 
-The same applies to preprod and mainnet release
+- Changelog
+    - lives in the repo `/CHANGELOG` dir
+    - exact commit history diff from last release
+    - See examples in Kubernetes https://github.com/kubernetes/kubernetes/tree/master/CHANGELOG
+- Release note:
+    - lives in the repo as part of release description under “[Releases](https://github.com/Layr-Labs/eigenlayer-contracts/releases)”
+    - high level summary of key changes users need to be aware of
+    - See template below
+    - Owner: release manager and PM
+- Release announcement blog
+    - published to [blog.eigenlayer.xyz](http://blog.eigenlayer.xyz)
+    - an announcement with polished language to introduce the release to users. It will include content in both release notes and changelog
+    - See examples in Golang https://tip.golang.org/doc/go1.24
+    - Owner: release manager and PM
 
-We admit that there will always be edge cases in above scenario which cannot be resolved easily, especially in a large release like `slashing` which touches all code base. In that case, we have to spend extra efforts by leveraging release manager
+Release Note must follow template:
+
+```jsx
+<release-version>
+
+🚀 New Features – Highlight major new functionality.
+	- ...
+	- ...
+
+⛔ Breaking Changes – Call out backward-incompatible changes.
+	- ...
+	- ...
+
+📌 Deprecations – Mention features that are being phased out.
+	- ...
+	- ...
+
+🛠️ Security Fixes – Specify patched vulnerabilities.
+	- ...
+	- ...
+
+🔧 Improvements – Enhancements to existing features.
+	- ...
+	- ...
+
+🐛 Bug Fixes – List resolved issues.
+	- ...
+	- ...
+```
+
+When writing **release notes** and **changelog entries**, follow these best practices to ensure clarity, usefulness, and professionalism.
+
+**Required Best Practices**
+
+1. **Be Clear and Concise** – Use simple, direct language. Avoid jargon unless necessary.
+2. **Categorize Changes** – Use standard sectioned template above.
+3. **Provide Context** – Briefly explain why the change was made, not just what changed.
+4. **Use a Consistent Format** – Follow a structured template for every release.
+5. **Include Relevant Links** – Link to issue trackers, PRs, or documentation for more details.
+6. **Highlight User Impact** – Mention how the update affects users and any required actions.
+7. **Keep It Versioned** – Use semantic versioning (e.g., `v2.3.1`) and list versions in descending order.
+8. **Avoid Internal-Only Details** – Don't include internal project discussions that aren’t relevant to users.
+9. **Maintain a Single Source of Truth** – Store changelogs in a `CHANGELOG.md` file or an equivalent documentation system.
 
 
 ## Release Manager Responsibilities
 
+We introduce a new critical role called release manager (RM)
 
-------
+Each release should have a primary RM and a secondary RM. RM is on rotating base, not necessarily always be the tech lead of the project, so we can amortize the cost and onboard all developers with same standards
+
+Primary Release Manager is responsible for
+
+- Managing the release-dev branch during development phase
+    - create it from `main` and eventually merge back to `main`
+    - constantly rebasing to `main` to resolve conflict early, without required efforts from other developers working on the release-dev branch
+    - holding high bar for quality:
+        - code quality
+        - PR templating
+        - test quality (e.g. no flaky or failed tests, keep test runtime under control)
+- Manage release branches and deployment
+    - create and manage corresponding release branches `Vx.y.z`
+    - author and publish release notes and changelog
+    - author and publish release blog with PM and marketing team
+    - lead communication with marketing and BD team to inform stakerholders for preparation
+    - lead deployment to env network
+- Mentoring and knowledge sharing
+    - mentor and train secondary release manager, who will be the primary manager for next release
+
 
 By following these maintenance procedures, we ensure a stable, secure, and well-documented codebase that meets the high standards required for EigenLayer's infrastructure.
