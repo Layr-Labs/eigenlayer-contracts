@@ -64,6 +64,34 @@ upstream  https://github.com/Layr-Labs/eigenlayer-contracts.git (fetch)
 upstream  https://github.com/Layr-Labs/eigenlayer-contracts.git (push)
 ```
 
+### Make Sure Your Fork Is In Sync With Upstream
+
+Go to `main` branch in your fork repository
+
+```
+git checkout main
+```
+
+Fetch latest update from upstream
+
+```
+git fetch upstream
+```
+
+Rebase your `main` to the upstream `main`
+
+```
+git rebase upstream/main
+```
+
+Push to your fork repository
+
+```
+git push
+```
+
+Now `main` in your fork repository should match the `main` in EigenLayer repository.
+
 ### Create Your PR
 
 1. Create a new branch from your target upstream branch
