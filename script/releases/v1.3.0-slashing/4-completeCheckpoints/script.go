@@ -103,6 +103,7 @@ func runScript(args TArgs) error {
 	panicOnError("error initializing mc", err)
 
 	podManagerAddress := os.Getenv("ZEUS_DEPLOYED_EigenPodManager_Proxy")
+	fmt.Printf("podManagerAddress: %s\n", podManagerAddress)
 
 	// fetch latest beacon state.
 	_validators := (func() *map[phase0.ValidatorIndex]*v1.Validator {
@@ -180,7 +181,15 @@ func runScript(args TArgs) error {
 	for i := 0; i < len(results); i++ {
 		fmt.Printf("Completing [%d/%d]...", i+1, len(results))
 		fmt.Printf("NOTE: this is expensive, and may take several minutes.")
-		completeCheckpointForEigenpod(ctx, results[i].Address, eth, chainId, coreBeaconClient, args.Sender)
+
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					fmt.Printf("Error completing checkpoint for %s: %v\n", results[i].Address, r)
+				}
+			}()
+			completeCheckpointForEigenpod(ctx, results[i].Address, eth, chainId, coreBeaconClient, args.Sender)
+		}()
 	}
 
 	checkpointTimestamps, err = fetchCurrentCheckpointTimestamps(allEigenpods, &eigenpodAbi, mc)
@@ -273,21 +282,39 @@ func internalQueryAllEigenpodsOnNetwork(args TQueryAllEigenpodsOnNetworkArgs) ([
 
 	fmt.Printf("Querying %d addresses on (EigenPodManager=%s) to see if it knows about these eigenpods\n", len(addressesWithPodOwners), args.PodManagerAddress)
 
-	eigenpodForOwner, err := multicall.DoMany(
-		args.Mc,
-		lo.Map(addressesWithPodOwners, func(address string, i int) *multicall.MultiCallMetaData[common.Address] {
-			claimedOwner := *podToPodOwner[address]
-			call, err := multicall.Describe[common.Address](
-				common.HexToAddress(args.PodManagerAddress),
-				args.PodManagerAbi,
-				"ownerToPod",
-				claimedOwner,
-			)
-			panicOnError("failed to form multicall", err)
-			return call
-		})...,
-	)
-	panicOnError("failed to query", err)
+	calls := lo.Map(addressesWithPodOwners, func(address string, i int) *multicall.MultiCallMetaData[common.Address] {
+		claimedOwner := *podToPodOwner[address]
+		call, callErr := multicall.Describe[common.Address](
+			common.HexToAddress(args.PodManagerAddress),
+			args.PodManagerAbi,
+			"ownerToPod",
+			claimedOwner,
+		)
+		panicOnError("failed to form multicall", callErr)
+		return call
+	})
+
+	maxRetries := 3
+	var eigenpodForOwner *[]*common.Address
+
+	for retry := 0; retry < maxRetries; retry++ {
+		if retry > 0 {
+			fmt.Printf("Retrying multicall (attempt %d/%d)...\n", retry+1, maxRetries)
+			time.Sleep(2 * time.Second) // Add delay between retries
+		}
+
+		eigenpodForOwner, err = multicall.DoMany(args.Mc, calls...)
+		if err == nil {
+			break
+		}
+
+		fmt.Printf("Multicall attempt %d failed: %v\n", retry+1, err)
+
+		// If we've exhausted all retries, panic
+		if retry == maxRetries-1 {
+			panicOnError("failed to query after multiple attempts", err)
+		}
+	}
 
 	// now, see which are properly eigenpods
 	return lo.Filter(addressesWithPodOwners, func(address string, i int) bool {
