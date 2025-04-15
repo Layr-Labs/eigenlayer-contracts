@@ -22,10 +22,10 @@ The deployments on `mainnet`, `holesky`, and `sepolia` are on the below versions
 
 ## Branching
 
-The main branches we use are:
-* [`dev (default)`](https://github.com/Layr-Labs/eigenlayer-contracts/tree/dev): The most up-to-date branch, containing the work-in-progress code for upcoming releases
-* [`testnet-holesky`](https://github.com/Layr-Labs/eigenlayer-contracts/tree/testnet-holesky): Our current testnet deployment
-* [`mainnet`](https://github.com/Layr-Labs/eigenlayer-contracts/tree/mainnet): Our current mainnet deloyment
+Branches we use:
+* `main`: The canonical, most up-to-date branch, containing the work-in-progress code for upcoming releases
+* `release-dev/xxx`: A development branch for a large feature to be released, the branch should eventually be deleted after merge to `main`
+* `Vx.y.z`: Release branch with version `x.y.z` that matches a release of EigenLayer, release branch is always cut from `main` via cherry-picking
 
 ## Documentation
 
