@@ -222,14 +222,12 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
     /// @dev Sets up the integration tests for mainnet.
     function _setUpFork(bool shouldExecuteTimelock) public virtual {
         string memory chain = cheats.envString("FORK_CHAIN");
-        uint forkBlock = cheats.envOr(string("FORK_BLOCK"), uint(0));
+        uint forkBlock = cheats.envOr(string.concat("FORK_BLOCK_", cheats.toUppercase(chain)), uint(0));
+
+        console.log("Setting up integration `%s` for `%s`:", FOUNDRY_PROFILE().yellow().bold(), chain.green().bold());
 
         if (forkBlock != 0) cheats.createSelectFork(cheats.rpcUrl(chain), forkBlock);
         else cheats.createSelectFork(cheats.rpcUrl(chain)); // TODO: need to inject RPC URL rather than assuming mainnet
-
-        console.log("Setting up integration `%s` for `%s`:", FOUNDRY_PROFILE(), chain.green().bold());
-        console.log("RPC:", cheats.rpcUrl(chain));
-        console.log("Block:", block.number);
 
         forkType = MAINNET;
 
