@@ -22,7 +22,11 @@ Libraries and Mixins:
 
 ## Overview
 
-The `AllocationManager` manages AVS metadata registration, registration and deregistration of operators to operator sets, handles allocation and slashing of operators' slashable stake, and is the entry point an AVS uses to slash an operator. The `AllocationManager's` responsibilities are broken down into the following concepts:
+The `AllocationManager` manages AVS metadata registration, registration and deregistration of operators to operator sets, handles allocation and slashing of operators' slashable stake, and is the entry point an AVS uses to slash an operator. An AVS in the context of `AllocationManager` is defined as the `address` of the contract that implements [ServiceManagerBase](https://github.com/Layr-Labs/eigenlayer-middleware/blob/mainnet/docs/ServiceManagerBase.md). For `PermissionController` purposes, this AVS address is also the AVS [account](https://github.com/Layr-Labs/eigenlayer-contracts/blob/dev/docs/permissions/PermissionController.md#accounts).
+
+
+
+The `AllocationManager's` responsibilities are broken down into the following concepts:
 
 * [AVS Metadata](#avs-metadata)
 * [Operator Sets](#operator-sets)
@@ -67,6 +71,8 @@ function updateAVSMetadataURI(
 ```
 
 _Note: this method can be called directly by an AVS, or by a caller authorized by the AVS. See [`PermissionController.md`](../permissions/PermissionController.md) for details._
+
+Invoking this function effectively "enshrines" the AVS address in the core protocol.
 
 Below is the format AVSs should use when updating their metadata URI initially. This is not validated onchain.
 
@@ -446,7 +452,7 @@ function deregisterOperator(address operator, uint32[] calldata operatorSetIds) 
 * Caller MUST be authorized, either the operator/AVS themselves, or an admin/appointee (see [`PermissionController.md`](../permissions/PermissionController.md))
 * Each operator set ID MUST exist for the given AVS
 * Operator MUST be registered for the given operator sets
-* Note that, unlike `registerForOperatorSets`, the AVS's `AVSRegistrar` MAY revert and the deregistration will still succeed
+* The call to the AVS's configured `IAVSRegistrar` MUST NOT revert
 
 ---
 
@@ -582,6 +588,7 @@ Finally, `modifyAllocations` does NOT require an allocation to consider whether 
 
 * The increase in magnitude is immediately added to the strategy's `encumberedMagnitude`. This ensures that subsequent _allocations to other operator sets from the same strategy_ will not go above the strategy's `maxMagnitude`.
 * The `allocation.pendingDiff` is set, with an `allocation.effectBlock` equal to the current block plus the operator's configured allocation delay.
+* Unlike for deallocations, the `effectBlock` for allocations is not incremented by 1. This is to allow for instantaneous allocations. 
 
 **If we are handling a _decrease in magnitude_ (deallocation):**
 
@@ -592,7 +599,9 @@ Next, _if the existing allocation IS slashable_:
 * The `allocation.pendingDiff` is set, with an `allocation.effectBlock` equal to the current block plus `DEALLOCATION_DELAY + 1`. This means the existing allocation _remains slashable_ for `DEALLOCATION_DELAY` blocks.
 * The _operator set_ is pushed to the operator's `deallocationQueue` for that strategy, denoting that there is a pending deallocation for this `(operatorSet, strategy)`. This is an ordered queue that enforces deallocations are processed sequentially and is used both in this method and in [`clearDeallocationQueue`](#cleardeallocationqueue).
 
-Alternatively, _if the existing allocation IS NOT slashable_, the deallocated amount is immediately **freed**. It is subtracted from the strategy's encumbered magnitude and can be used for subsequent allocations. This is the only type of update that does not result in a "pending modification." The rationale here is that if the existing allocation is not slashable, the AVS does not need it to secure tasks, and therefore does not need to enforce a deallocation delay.
+Alternatively, _if the existing allocation IS NOT slashable_, the deallocated amount is immediately **freed**. It is subtracted from the strategy's encumbered magnitude and can be used for subsequent allocations. This is the only type of update that does not result in a "pending modification." The rationale here is that if the existing allocation is not slashable, the AVS does not need it to secure tasks, and therefore does not need to enforce a deallocation delay. 
+
+*Note: If a strategy is removed from an operatorSet AFTER a deallocation is queued, the deallocation still has to go through the entire `DEALLOCATION_DELAY` blocks. The deallocation will not be instantly completable in this case*
 
 Another point of consideration are race conditions involving a slashing event and a deallocation occurring for an operator. Consider the following scenario with an operator having an allocation of 500 magnitude and trying to deallocate setting it to 250. However in the same block _right_ before calling `modifyAllocations` the operator is slashed 100% by the OperatorSet, setting the current magnitude to 0. Now the operator's deallocation is considered an allocation and ends up allocating 250 magnitude when they were trying to _deallocate_. This is a potential griefing vector by malicious AVSs and a known shortcoming. In such scenarios, the operator should simply deallocate all their allocations to 0 so that they don't accidentally allocate more slashable stake. In general for non malicious AVSs, slashing is deemed to be a very occasional occurrence and this race condition to not be impacting to operators.
 
@@ -619,6 +628,8 @@ Another point of consideration are race conditions involving a slashing event an
     * Operator MUST NOT have pending, non-completable modifications for any given strategy
     * New magnitudes MUST NOT match existing ones
     * New encumbered magnitude MUST NOT exceed the operator's max magnitude for the given strategy
+
+*Note: For operators who have negative shares in the `EigenPodManager` (from a pre slashing upgrade state), we recommend not allocating until shares become nonzero.*
 
 #### `clearDeallocationQueue`
 

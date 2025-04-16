@@ -19,7 +19,7 @@
 
 The `StrategyBase` contract is used to manage the accounting of deposit shares for a specific token by collecting tokens and producing shares. Shares represent a proportional claim to the `StrategyBase`'s token balance, ensuring that users can withdraw their intended amount of tokens.
 
-This document serves *specifically* to describe the accounting behavior for the `StrategyBase` contract. General documentation on the `StrategyBase` contract can be found [here](../StrategyManager.md#strategybase). 
+This document serves *specifically* to describe the accounting behavior for the `StrategyBase` contract. General documentation on the `StrategyBase` contract can be found [here](../StrategyManager.md#strategybase).
 
 ## Why are shares needed?
 
@@ -27,11 +27,11 @@ At first glance, one may wonder why we need shares to be minted and burned when 
 
 The primary reason is **rebase tokens**. Rebase tokens are tokens whose supply can change. An example of a rebase token's behavior is as follows:
 
-* A user holds 1000 tokens  
+* A user holds 1000 tokens
 * The token undergoes a 2x rebase (doubling what `balanceOf` returns)
 * The token balance of the user is now 2000 tokens
 
-If we were to track the token balance directly, then this 2x increase would not be reflected by the user's withdrawable amount. 
+If we were to track the token balance directly, then this 2x increase would not be reflected by the user's withdrawable amount.
 
 Consider the following scenario, where a user deposits a rebase token into EigenLayer:
 
@@ -40,7 +40,7 @@ Consider the following scenario, where a user deposits a rebase token into Eigen
 * The user's original 1000 tokens are now worth 2000 tokens
 * The user *can only withdraw 1000 tokens*, as the recorded deposit is 1000 tokens
 
-**This is where shares come in.** Shares represent a proportional claim to the `StrategyBase`'s token balance, ensuring that users can withdraw their intended amount of tokens. 
+**This is where shares come in.** Shares represent a proportional claim to the `StrategyBase`'s token balance, ensuring that users can withdraw their intended amount of tokens.
 
 When a user deposits tokens, they receive shares proportional to the amount of tokens they deposited. Similarly, when a user withdraws tokens, they receive tokens proportional to the amount of shares they burned. Even though the underlying token balance may change, the number of shares a user holds will always represent their proportion of the underlying `StrategyBase` token balance.
 
@@ -146,7 +146,7 @@ The current state:
 * Charlie's shares: 0
 * Charlie's "deserved" token balance: 0
 
-As we can see, the exchange rate is now 4 tokens : 3 shares. 
+As we can see, the exchange rate is now 4 tokens : 3 shares.
 
 As such:
 * Alice's 500 shares * 4 tokens / 3 shares = 666 tokens. ***Lower* than the expected 1000 tokens.**
@@ -166,7 +166,7 @@ The current state:
 * Charlie's shares: **375**
 * Charlie's "deserved" token balance: **500**
 
-As we can see, the exchange rate is now 4 tokens : 3 shares. 
+As we can see, the exchange rate is now 4 tokens : 3 shares.
 
 We can see that Charlie's 375 shares are correctly worth 500 tokens, as 375 shares * 4 tokens / 3 shares = 500 tokens. *Note that, since the exchange rate hasn't changed, we do not need to recalculate Alice and Bob's eligible tokens.*
 
@@ -244,7 +244,7 @@ The current state:
 * Alice's shares: **1**
 * Alice's "deserved" token balance: **1,000,001**
 
-Remember how Alice only has 1 share? Notice how she cannot withdraw the million tokens she deposited! 
+Remember how Alice only has 1 share? Notice how she cannot withdraw the million tokens she deposited!
 
 * Alice's 1 share * 1,000,001 tokens / 1,001 shares = 999 tokens. ***Lower* than the expected 1,000,001 tokens.**
 
@@ -320,17 +320,17 @@ Say that Alice is, for lack of a better term, "insane" and chooses to disobey ec
 
 #### Mitigation Side Effects
 
-The virtual depositor has a few side effects that are important to note. 
+The virtual depositor has a few side effects that are important to note.
 
-* Rebase dilution: In the event of a token rebase, user token balances will typically increase by the rebase factor. However, the virtual depositor's token balance will not increase by the same factor, as it is a fixed amount. This means that user gains will be mildly diluted over time. 
+* **Rebase dilution:** In the event of a token rebase, user token balances will typically increase by the rebase factor. However, the virtual depositor's token balance will not increase by the same factor, as it is a fixed amount. This means that user gains will be mildly diluted over time.
   * However, as the virtual depositor only has 1e3 shares and tokens, this effect is negligible (estimated to be 1 part in 1e20).
-* Negative rebase: In the event of a "negative rebase," where the token balance decreases, not all users may be able to withdraw. The `StrategyBase` contract will have more shares than assets due to this loss of principal. As a result, the last depositor(s) will not be able to withdraw. This is because the virtual depositor's shares and tokens are fixed, and are not subject to the loss of principal.
-  * However, this is a rare occurrence, and is not expected to happen in the near future. Moreover, this is easily mitigated by a one-off "donation" of tokens to the `StrategyBase` contract, up to 1000 tokens. Given this minimal impact, we do not consider this a significant issue.
+* **Negative rebase:** In the event of a "negative rebase," where the token balance decreases, not all users may be able to withdraw. The `StrategyBase` contract will have more shares than assets due to this loss of principal. As a result, the last depositor(s) will not be able to withdraw. This is because the virtual depositor's shares and tokens are fixed, and are not subject to the loss of principal. Thus, the last withdrawal(s) will attempt to withdraw more tokens than the `StrategyBase` contract has.
+  * However, this is expected to occur infrequently, if ever. For example, many rebasing tokens such as LSTs only undergo negative rebases in the event of a beacon chain slash, which is a rare event. Given this minimal impact, we do not consider this a significant issue.
 
 ## Conclusion
 
 Shares are a useful mechanism to manage the accounting of a `StrategyBase` contract. They allow for tracking a user's proportional claim to the `StrategyBase`'s token balance, ensuring that users can withdraw their intended amount of tokens even in the presence of rebase or other token behavior.
 
-Typically, this model is vulnerable to an "inflation attack," but the virtual depositor mitigation protects against this. It is a simple and effective mechanism to prevent a first depositor from manipulating the exchange rate to their benefit, as they lose the advantages typically associated with the first depositor. 
+Typically, this model is vulnerable to an "inflation attack," but the virtual depositor mitigation protects against this. It is a simple and effective mechanism to prevent a first depositor from manipulating the exchange rate to their benefit, as they lose the advantages typically associated with the first depositor.
 
 Any attacker attempting to perform an inflation attack will lose out in the end. Even if they seek to grief other users, the amount of capital required to perform the attack in the first place is extremely high. Though there are small side effects to the virtual depositor, they are negligible and do not impact the core functionality of the `StrategyBase` contract.

@@ -99,18 +99,21 @@ invariant podOwnerDepositSharesRemainPositive(address podOwner)
 /// @property Remove Deposit Shares Integrity 
 rule integrityOfRemoveDepositShares(address staker, address strategy, uint256 depositSharesToRemove) {
     env e;
-
+    // max int256 is 2^255 - 1 since first bit is the sign bit
+    int256 maxInt256 = (1 << 255) - 1;
     int256 depositedSharesPre = EigenPodManager.podOwnerDepositShares[staker];
-
-    // avoid overflows and underflows
-    require depositedSharesPre - depositSharesToRemove > -max_uint128;
-    require depositSharesToRemove + depositedSharesPre < max_uint128;
 
         removeDepositShares(e, staker, strategy, depositSharesToRemove);
 
     int256 depositedSharesPost = EigenPodManager.podOwnerDepositShares[staker];
 
-    assert depositedSharesPost == depositedSharesPre - depositSharesToRemove;
+    if (depositSharesToRemove > maxInt256 || depositedSharesPre < depositSharesToRemove) {
+        // invalid depositSharesToRemove should revert and not affect depositShares
+        assert depositedSharesPost == depositedSharesPre;
+    } else {
+        // valid depositSharesToRemove should decrease depositShares
+        assert depositedSharesPost == depositedSharesPre - depositSharesToRemove;
+    }
 }
 
 /// @title 

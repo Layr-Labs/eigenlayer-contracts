@@ -2,6 +2,7 @@
 pragma solidity ^0.8.27;
 
 import "@openzeppelin-v4.9.0/contracts/utils/Create2.sol";
+import "@openzeppelin-v4.9.0/contracts/utils/math/SafeCast.sol";
 import "@openzeppelin-upgrades-v4.9.0/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades-v4.9.0/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades-v4.9.0/contracts/security/ReentrancyGuardUpgradeable.sol";
@@ -33,6 +34,7 @@ contract EigenPodManager is
 {
     using SlashingLib for *;
     using Math for *;
+    using SafeCast for *;
 
     modifier onlyEigenPod(
         address podOwner
@@ -155,7 +157,7 @@ contract EigenPodManager is
         uint256 depositSharesToRemove
     ) external onlyDelegationManager nonReentrant returns (uint256) {
         require(strategy == beaconChainETHStrategy, InvalidStrategy());
-        int256 updatedShares = podOwnerDepositShares[staker] - int256(depositSharesToRemove);
+        int256 updatedShares = podOwnerDepositShares[staker] - depositSharesToRemove.toInt256();
         require(updatedShares >= 0, SharesNegative());
         podOwnerDepositShares[staker] = updatedShares;
 
