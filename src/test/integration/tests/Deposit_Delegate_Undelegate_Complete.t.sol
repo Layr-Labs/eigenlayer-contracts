@@ -135,7 +135,7 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationChecks {
         (staker, strategies, initTokenBalances) = _newRandomStaker();
         operator = _newRandomOperator();
 
-        if (eq(FOUNDRY_PROFILE(), "default"))  {
+        if (eq(FOUNDRY_PROFILE(), "default")) {
             assertEq(strategies.length, 9, "sanity");
 
             uint[] memory shares = _calculateExpectedShares(strategies, initTokenBalances);
