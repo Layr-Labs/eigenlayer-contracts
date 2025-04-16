@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-import "@openzeppelin-upgrades/contracts/utils/math/MathUpgradeable.sol";
+import "@openzeppelin-upgrades-v4.9.0/contracts/utils/math/MathUpgradeable.sol";
 
 import "./SlashingLib.sol";
 
