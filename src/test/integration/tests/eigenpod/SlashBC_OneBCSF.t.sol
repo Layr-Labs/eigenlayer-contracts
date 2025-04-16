@@ -2,11 +2,11 @@
 pragma solidity ^0.8.27;
 
 import "src/test/mocks/BeaconChainMock.t.sol";
-import "src/test/integration/IntegrationChecks.t.sol";
 import "src/test/harnesses/EigenPodManagerWrapper.sol";
+import "src/test/integration/tests/eigenpod/EigenPod.t.sol";
 
 /// @notice Testing the rounding behavior when beacon chain slashing factor is initially 1
-contract Integration_EigenPod_SlashBC_OneBCSF is IntegrationChecks {
+contract Integration_EigenPod_SlashBC_OneBCSF is EigenPodTest {
     using ArrayLib for *;
     using ConfigParser for *;
 
@@ -20,6 +20,8 @@ contract Integration_EigenPod_SlashBC_OneBCSF is IntegrationChecks {
      * 3. start validators and verify withdrawal credentials
      */
     function _init() internal override {
+        super._init();
+
         // 1. etch a new implementation to set staker's beaconChainSlashingFactor to 1
         EigenPodManagerWrapper eigenPodManagerWrapper =
             new EigenPodManagerWrapper(DEPOSIT_CONTRACT, eigenPodBeacon(), delegationManager(), pauserRegistry(), "v9.9.9");

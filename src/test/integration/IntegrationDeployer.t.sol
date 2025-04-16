@@ -53,10 +53,6 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
     /// @notice Returns types of users to be randomly selected during tests
     uint public userTypes = DEFAULT | ALT_METHODS;
 
-    // TODO REMOVE
-    /// @notice Returns the fork type, set only once in setUp if FORK_MAINNET env is set
-    uint public forkType;
-
     /// @notice Returns an array of deployed LST strategies.
     IStrategy[] public lstStrats;
     /// @notice Returns an array of all deployed strategies.
@@ -81,12 +77,9 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
 
     constructor() {
         // QUESTION: Why is this needed? Shouldn't we have coverage for weird ERC20s?
-        tokensNotTested[address(0x3F1c547b21f65e10480dE3ad8E19fAAC46C95034)] = true; // stETH holesky
         tokensNotTested[address(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84)] = true; // stETH mainnet
         tokensNotTested[address(0x856c4Efb76C1D1AE02e20CEB03A2A6a08b0b8dC3)] = true; // oETH mainnet
-        tokensNotTested[address(0xF603c5A3F774F05d4D848A9bB139809790890864)] = true; // osETH holesky
         tokensNotTested[address(0xf1C9acDc66974dFB6dEcB12aA385b9cD01190E38)] = true; // osETH mainnet
-        tokensNotTested[address(0x8720095Fa5739Ab051799211B146a2EEE4Dd8B37)] = true; // cbETH holesky
         // Use current contracts by default. Upgrade tests are only run with mainnet fork tests
         // using the `UpgradeTest.t.sol` mixin.
         isUpgraded = true;
@@ -174,8 +167,6 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
     function _setUpLocal() public virtual {
         console.log("Setting up `%s` integration tests:", "LOCAL".yellow().bold());
 
-        forkType = LOCAL;
-
         // Deploy ProxyAdmin, PauserRegistry, and executorMultisig.
         config.governance.proxyAdmin = new ProxyAdmin();
         config.governance.pauserRegistry = new PauserRegistry(PAUSER.toArray(), UNPAUSER);
@@ -227,18 +218,10 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
         console.log("Setting up integration `%s` for `%s`:", FOUNDRY_PROFILE().yellow().bold(), chain.green().bold());
 
         if (forkBlock != 0) cheats.createSelectFork(cheats.rpcUrl(chain), forkBlock);
-        else cheats.createSelectFork(cheats.rpcUrl(chain)); // TODO: need to inject RPC URL rather than assuming mainnet
-
-        forkType = MAINNET;
+        else cheats.createSelectFork(cheats.rpcUrl(chain));
 
         if (isTimelockUpgrade && shouldExecuteTimelock) _executeTimelockPayload();
         else _deployProxies();
-
-        // Place native ETH first in `allStrats`
-        // This ensures when we select a nonzero number of strategies from this array, we always
-        // have beacon chain ETH
-        allStrats.push(BEACONCHAIN_ETH_STRAT);
-        allTokens.push(NATIVE_ETH);
 
         // Add deployed strategies to lstStrats and allStrats
         uint n = totalStrategies();
@@ -251,7 +234,15 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
             lstStrats.push(strategy);
             allStrats.push(strategy);
             allTokens.push(strategy.underlyingToken());
-            config.strategies.strategyAddresses.push(strategy);
+        }
+
+        // Place native ETH first in `allStrats`
+        // This ensures when we select a nonzero number of strategies from this array, we always
+        // have beacon chain ETH
+        if (eq(chain, "mainnet")) {
+            allStrats.push(BEACONCHAIN_ETH_STRAT);
+            allTokens.push(NATIVE_ETH);
+            config.strategies.strategyAddresses.push(BEACONCHAIN_ETH_STRAT);
         }
 
         maxUniqueAssetsHeld = allStrats.length;
@@ -263,13 +254,16 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
         // Since we haven't done the slashing upgrade on mainnet yet, upgrade mainnet contracts
         // prior to test. `isUpgraded` is true by default, but is set to false in `UpgradeTest.t.sol`
         if (isUpgraded) {
-            if (!isTimelockUpgrade) _upgradeMainnetContracts();
-            if (shouldExecuteTimelock) {
-                // Set the `pectraForkTimestamp` on the EigenPodManager. Use pectra state
-                cheats.startPrank(executorMultisig());
-                eigenPodManager().setProofTimestampSetter(executorMultisig());
-                eigenPodManager().setPectraForkTimestamp(BEACON_GENESIS_TIME);
-                cheats.stopPrank();
+            if (eq(chain, "mainnet")) {
+                if (!isTimelockUpgrade) _upgradeMainnetContracts();
+            } else {
+                if (shouldExecuteTimelock) {
+                    // Set the `pectraForkTimestamp` on the EigenPodManager. Use pectra state
+                    cheats.startPrank(executorMultisig());
+                    eigenPodManager().setProofTimestampSetter(executorMultisig());
+                    eigenPodManager().setPectraForkTimestamp(BEACON_GENESIS_TIME);
+                    cheats.stopPrank();
+                }
             }
         }
     }
@@ -331,8 +325,6 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
     /// @dev Upgrades all proxies to their implementation contracts.
     function _upgradeProxies() public {
         // Core contracts
-
-        console.log("Upgrading AllocationManager");
         _upgradeProxy(
             address(allocationManager()),
             address(
@@ -346,9 +338,7 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
                 )
             )
         );
-        console.log("Upgrading AVSDirectory");
         _upgradeProxy(address(avsDirectory()), address(new AVSDirectory(delegationManager(), pauserRegistry(), SEMVER)));
-        console.log("Upgrading DelegationManager");
         _upgradeProxy(
             address(delegationManager()),
             address(
@@ -363,9 +353,7 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
                 )
             )
         );
-        console.log("Upgrading PermissionController");
         _upgradeProxy(address(permissionController()), address(new PermissionController(SEMVER)));
-        console.log("Upgrading RewardsCoordinator");
         _upgradeProxy(
             address(rewardsCoordinator()),
             address(
@@ -386,25 +374,19 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
                 )
             )
         );
-        console.log("Upgrading StrategyManager");
         _upgradeProxy(address(strategyManager()), address(new StrategyManager(delegationManager(), pauserRegistry(), SEMVER)));
 
         // Pod contracts
-        console.log("Upgrading EigenPodBeacon");
         eigenPodBeacon().upgradeTo(address(new EigenPod(DEPOSIT_CONTRACT, eigenPodManager(), BEACON_GENESIS_TIME, "v9.9.9")));
-        console.log("Upgrading EigenPodManager");
         _upgradeProxy(
             address(eigenPodManager()),
             address(new EigenPodManager(DEPOSIT_CONTRACT, eigenPodBeacon(), delegationManager(), pauserRegistry(), "v9.9.9"))
         );
 
         // Strategy contracts
-        console.log("Upgrading StrategyFactory");
         _upgradeProxy(address(strategyFactory()), address(new StrategyFactory(strategyManager(), pauserRegistry(), "v9.9.9")));
-        console.log("Upgrading StrategyFactoryBeacon");
         address baseStrategyImpl = address(new StrategyBase(strategyManager(), pauserRegistry(), "v9.9.9"));
         strategyFactoryBeacon().upgradeTo(baseStrategyImpl);
-        console.log("Upgrading Strategies");
         for (uint i = 0; i < totalStrategies(); ++i) {
             _upgradeProxy(address(strategyAddresses(i)), address(baseStrategyImpl));
         }
@@ -503,18 +485,18 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
 
     /// @dev Generates a new user with a given name and user type.
     function _genRandUser(string memory name, uint userType) internal returns (User user) {
-        assertTrue(forkType == LOCAL || forkType == MAINNET, "_randUser: unimplemented forkType");
         assertTrue(userType == DEFAULT || userType == ALT_METHODS, "_randUser: unimplemented userType");
-        if (forkType == LOCAL || (forkType == MAINNET && isUpgraded)) {
+
+        string memory profile = FOUNDRY_PROFILE();
+        if (eq(profile, "default") || (eq(profile, "forktest") && isUpgraded)) {
             user = userType == DEFAULT ? new User(name) : User(new User_AltMethods(name));
-        } else if (forkType == MAINNET && !isUpgraded) {
+        } else if (eq(profile, "forktest") && !isUpgraded) {
             user = User(new User_M2(name));
         }
     }
 
     /// @dev Generates a new AVS.
     function _genRandAVS(string memory name) internal returns (AVS) {
-        assertTrue(forkType == LOCAL || forkType == MAINNET, "_genRandAVS: unimplemented forkType");
         return new AVS(name);
     }
 
@@ -576,13 +558,20 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
         // Overflow is not possible given the constraints of the assetTypes bitmap.
         // Underflow is only possible if the bitmap is 0, which is checked for above.
         unchecked {
-            uint[] memory options = new uint[](5); // We have 5 possible asset types
+            string memory chain = cheats.envOr(string("FORK_CHAIN"), string("local"));
+            bool supportsEth = eq(chain, "mainnet") || eq(chain, "local");
+
+            uint[] memory options = new uint[](supportsEth ? 5 : 2); // We have 2-5 possible asset types
             uint count = 0;
+
             if (assetTypes & NO_ASSETS != 0) options[count++] = NO_ASSETS;
             if (assetTypes & HOLDS_LST != 0) options[count++] = HOLDS_LST;
-            if (assetTypes & HOLDS_ETH != 0) options[count++] = HOLDS_ETH;
-            if (assetTypes & HOLDS_ALL != 0) options[count++] = HOLDS_ALL;
-            if (assetTypes & HOLDS_MAX != 0) options[count++] = HOLDS_MAX;
+            if (supportsEth) {
+                if (assetTypes & HOLDS_ETH != 0) options[count++] = HOLDS_ETH;
+                if (assetTypes & HOLDS_ALL != 0) options[count++] = HOLDS_ALL;
+                if (assetTypes & HOLDS_MAX != 0) options[count++] = HOLDS_MAX;
+            }
+
             return options[cheats.randomUint(0, count - 1)];
         }
     }

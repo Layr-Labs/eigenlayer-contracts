@@ -2,10 +2,10 @@
 pragma solidity ^0.8.27;
 
 import "src/test/mocks/BeaconChainMock.t.sol";
-import "src/test/integration/IntegrationChecks.t.sol";
+import "src/test/integration/tests/eigenpod/EigenPod.t.sol";
 
 /// @notice Testing the rounding behavior when operator magnitude is initially 1
-contract Integration_EigenPod_Register_Allocate_Slash_VerifyWC is IntegrationChecks {
+contract Integration_EigenPod_Register_Allocate_Slash_VerifyWC is EigenPodTest {
     using ArrayLib for *;
 
     /**
@@ -15,6 +15,8 @@ contract Integration_EigenPod_Register_Allocate_Slash_VerifyWC is IntegrationChe
      * 4. deposit (verify withdrawal credentials)
      */
     function _init() internal override {
+        super._init();
+
         _configAssetTypes(HOLDS_ETH);
         (staker, strategies, initDepositShares) = _newRandomStaker();
         operator = _newRandomOperator();

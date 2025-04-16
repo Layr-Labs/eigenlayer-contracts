@@ -94,7 +94,7 @@ contract AVS is Logger, IAllocationManagerTypes {
                     ", strategy: ",
                     strategyName,
                     ", wadToSlash: ",
-                    params.wadsToSlash[i].asWad(),
+                    cheats.toString(params.wadsToSlash[i]),
                     "}"
                 )
             );
@@ -132,7 +132,7 @@ contract AVS is Logger, IAllocationManagerTypes {
                     ", strategy: ",
                     strategyName,
                     ", wadToSlash: ",
-                    wadsToSlash[i].asWad(),
+                    cheats.toString(wadsToSlash[i]),
                     "}"
                 )
             );

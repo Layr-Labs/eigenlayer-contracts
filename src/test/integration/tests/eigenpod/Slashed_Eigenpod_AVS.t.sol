@@ -1,14 +1,16 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "src/test/integration/IntegrationChecks.t.sol";
+import "src/test/integration/tests/eigenpod/EigenPod.t.sol";
 
-contract Integration_EigenPod_SlashedEigenpod_AVS_Base is IntegrationChecks {
+contract Integration_EigenPod_SlashedEigenpod_AVS_Base is EigenPodTest {
     using ArrayLib for *;
     using SlashingLib for *;
     using Math for uint;
 
     function _init() internal virtual override {
+        super._init();
+
         _configAssetTypes(HOLDS_ETH);
         (staker, strategies, initTokenBalances) = _newRandomStaker();
         operator = _newRandomOperator();

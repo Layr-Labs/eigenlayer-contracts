@@ -27,9 +27,17 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
 
     ConfigGetters public config;
 
+    function eq(string memory a, string memory b) internal pure returns (bool) {
+        return keccak256(bytes(a)) == keccak256(bytes(b));
+    }
+
     constructor(string memory name) {
         config = ConfigGetters(address(msg.sender));
-        _createPod();
+
+        string memory chain = cheats.envOr(string("FORK_CHAIN"), string("local"));
+
+        if (eq(chain, "mainnet") || eq(chain, "local")) _createPod();
+
         _NAME = name;
         cheats.label(address(this), NAME_COLORED());
     }

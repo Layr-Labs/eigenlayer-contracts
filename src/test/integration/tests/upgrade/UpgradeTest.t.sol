@@ -8,37 +8,30 @@ abstract contract UpgradeTest is IntegrationChecks {
     /// Only run upgrade tests on mainnet forks
     function setUp() public virtual override {
         string memory profile = FOUNDRY_PROFILE();
-        if (!eq(profile, "forktest") && !eq(profile, "forktest-zeus")) {
+        string memory chain = cheats.envString("FORK_CHAIN");
+
+        // We do not run upgrade tests on local envs or non-mainnet forks...
+        if (eq(profile, "default") || (eq(profile, "forktest") && !eq(chain, "mainnet"))) {
             cheats.skip(true);
         } else {
             isUpgraded = false;
             _setUp(false);
 
-            // Use Deneb Beacon Chain Mock as Pectra state is not live on mainnet
             cheats.etch(address(beaconChain), type(BeaconChainMock_DenebForkable).runtimeCode);
             beaconChain.initialize(eigenPodManager(), BEACON_GENESIS_TIME);
         }
     }
 
-    /// Deploy current implementation contracts and upgrade existing proxies
     function _upgradeEigenLayerContracts() public virtual {
-        require(forkType == MAINNET, "_upgradeEigenLayerContracts: somehow running upgrade test locally");
         require(!isUpgraded, "_upgradeEigenLayerContracts: already performed upgrade");
-
-        emit log("_upgradeEigenLayerContracts: upgrading mainnet to slashing");
 
         _upgradeMainnetContracts();
         _handlePectraFork();
 
         // Bump block.timestamp forward to allow verifyWC proofs for migrated pods
-        emit log("advancing block time to start of next epoch:");
-
         beaconChain.advanceEpoch_NoRewards();
 
-        emit log("======");
-
         isUpgraded = true;
-        emit log("_upgradeEigenLayerContracts: slashing upgrade complete");
     }
 
     // Set the fork timestamp sufficiently in the future to keep using Deneb proofs
