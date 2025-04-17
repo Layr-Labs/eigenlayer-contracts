@@ -37,7 +37,7 @@ To get an idea of how users interact with these contracts, check out our integra
 
 ## Deployments
 
-### Deployment Matrix
+### Deployment Version By Environments
 
 The deployments on `mainnet`, `holesky`, and `sepolia` are on the below versions:
 
@@ -48,8 +48,11 @@ The deployments on `mainnet`, `holesky`, and `sepolia` are on the below versions
 | Testnet Sepolia | [`v1.3.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.3.0) |
 
 
+### Current Deployment Contracts
 
-### Current Mainnet Ethereum Deployment
+<details>
+    <summary>Mainnet Ethereum</summary>
+
 
 ###### Core
 
@@ -123,9 +126,14 @@ The following strategies differ significantly from the other strategies deployed
 | [`Compound: Timelock`](https://github.com/compound-finance/compound-protocol/blob/a3214f67b73310d547e00fc578e8355911c9d376/contracts/Timelock.sol) | - | [`0xA6Db...0EAF`](https://etherscan.io/address/0xA6Db1A8C5a981d1536266D2a393c5F8dDb210EAF) | |
 | [`OZ: Proxy Admin`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/ProxyAdmin.sol) | - | [`0x8b95...2444`](https://etherscan.io/address/0x8b9566AdA63B64d1E1dcF1418b43fd1433b72444) | |
 
----
 
-### Current Testnet Holesky Deployment
+</details>
+
+
+
+<details>
+    <summary>Testnet Holesky</summary>
+
 
 You can view the deployed contract addresses below, or check out the code itself on the [`testnet-holesky`](https://github.com/Layr-Labs/eigenlayer-contracts/tree/testnet-holesky) branch.
 
@@ -197,9 +205,12 @@ The following strategies differ significantly from the other strategies deployed
 | [`OZ: TimelockController`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v4.7/contracts/governance/TimelockController.sol) | - | [`0x5e83...F6fD`](https://holesky.etherscan.io/address/0x5e83c7d195318A5acf46B29E5810DdC323b2F6fD) | |
 | [`OZ: Proxy Admin`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/ProxyAdmin.sol) | - | [`0xDB02...A6cf`](https://holesky.etherscan.io/address/0xDB023566064246399b4AE851197a97729C93A6cf) | |
 
----
+</details>
 
-### Current Testnet Sepolia Deployment
+
+
+<details>
+    <summary>Testnet Sepolia</summary>
 
 ###### Core
 
@@ -255,3 +266,5 @@ The following strategies differ significantly from the other strategies deployed
 | [`PauserRegistry`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/slashing-magnitudes/src/contracts/permissions/PauserRegistry.sol) | - | [`0x63AA...20f3`](https://sepolia.etherscan.io/address/0x63AAe451780090f50Ad323aAEF155F63a29D20f3) | |
 | [`OZ: TimelockController`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v4.7/contracts/governance/TimelockController.sol) | - | [`0x1BEF...1b5B`](https://sepolia.etherscan.io/address/0x1BEF05C7303d44e0E2FCD2A19d993eDEd4c51b5B) | |
 | [`OZ: Proxy Admin`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/ProxyAdmin.sol) | - | [`0x56E8...6Fa1`](https://sepolia.etherscan.io/address/0x56E88cb4f0136fC27D95499dE4BE2acf47946Fa1) | |
+
+</details>
