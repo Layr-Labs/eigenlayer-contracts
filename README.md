@@ -2,30 +2,22 @@
 
 # EigenLayer
 
-EigenLayer is a set of smart contracts deployed on Ethereum that enable restaking of assets to secure new services. This repo contains the EigenLayer core contracts, whose currently-supported assets include beacon chain ETH and several liquid staking tokens (LSTs). Users use these contracts to deposit and withdraw these assets, as well as delegate them to operators providing services to AVSs.
+EigenLayer is a set of smart contracts deployed on Ethereum that enable restaking of assets to secure new services (AVSs).
 
-## Getting Started
 
-* [Branching](#branching)
-* [Documentation](#documentation)
-* [Building and Running Tests](#building-and-running-tests)
-* [Deployments](#deployments)
+## Get Started
 
-## Deployment Matrix
-The deployments on `mainnet`, `holesky`, and `sepolia` are on the below versions:
+See [CONTRIBUTING](CONTRIBUTING.md)
 
-| Environment | Version | Notes |
-| -------- | -------- | -------- |
-| Mainnet | [`v0.5.4`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v0.5.4) | |
-| Holesky | [`v1.4.1`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.4.1-testnet-holeksy) | |
-| Sepolia | [`v1.3.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.3.0) | |
+
 
 ## Branching
 
 Branches we use:
 * `main`: The canonical, most up-to-date branch, containing the work-in-progress code for upcoming releases
-* `release-dev/xxx`: A development branch for a large feature to be released, the branch should eventually be deleted after merge to `main`
 * `Vx.y.z`: Release branch with version `x.y.z` that matches a release of EigenLayer, release branch is always cut from `main` via cherry-picking
+* `release-dev/xxx`: A development branch for a large feature to be released, the branch should eventually be deleted after merge to `main`
+
 
 ## Documentation
 
@@ -41,89 +33,23 @@ The most up-to-date and technical documentation can be found in [/docs](/docs). 
 
 To get an idea of how users interact with these contracts, check out our integration tests: [/src/test/integration](./src/test/integration/).
 
-## Building and Running Tests
 
-This repository uses Foundry. See the [Foundry docs](https://book.getfoundry.sh/) for more info on installation and usage. If you already have foundry, you can build this project and run tests with these commands:
-
-```
-foundryup
-
-forge build
-forge test
-```
-
-### Contributor Setup
-
-To set up this repo for the first time, run:
-
-```bash
-make deps
-```
-
-This will:
-* Install the pre-commit hook
-* Install foundry and its tools
-* Install abigen
-
-### Running Fork Tests
-
-We have a few fork tests against ETH mainnet. Passing these requires the environment variable `RPC_MAINNET` to be set. See `.env.example` for an example. Once you've set up your environment, `forge test` should show these fork tests passing.
-
-Additionally, to run all tests in a forked environment, [install yq](https://mikefarah.gitbook.io/yq/v/v3.x/). Then, set up your environment by running the following command.
-
-`source bin/source-env.sh [local]`
-
-Then run the tests:
-
-`forge test --fork-url [RPC_URL]`
-
-### Running Static Analysis
-
-1. Install [solhint](https://github.com/protofire/solhint), then run:
-
-`solhint 'src/contracts/**/*.sol'`
-
-2. Install [slither](https://github.com/crytic/slither), then run:
-
-`slither .`
-
-### Generate Inheritance and Control-Flow Graphs
-
-1. Install [surya](https://github.com/ConsenSys/surya/) and graphviz:
-
-```
-npm i -g surya
-
-apt install graphviz
-```
-
-2. Then, run:
-
-```
-surya inheritance ./src/contracts/**/*.sol | dot -Tpng > InheritanceGraph.png
-
-surya mdreport surya_report.md ./src/contracts/**/*.sol
-```
-
-### Generate Go bindings
-
-```bash
-make bindings
-```
-
-### Generate updated Storage Report
-
-To update the storage reports in `/docs/storage-report` run:
-
-```bash
-make storage-report
-```
 
 ## Deployments
 
-### Current Mainnet Deployment
+### Deployment Matrix
 
-The current mainnet deployment is our M2 release. You can view the deployed contract addresses below, or check out the code itself on the [`mainnet`](https://github.com/Layr-Labs/eigenlayer-contracts/tree/mainnet) branch.
+The deployments on `mainnet`, `holesky`, and `sepolia` are on the below versions:
+
+| Environment | Version |
+| -------- | -------- |
+| Mainnet Ethereum | [`v0.5.4`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v0.5.4) |
+| Testnet Holesky | [`v1.4.1`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.4.1-testnet-holeksy) |
+| Testnet Sepolia | [`v1.3.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.3.0) |
+
+
+
+### Current Mainnet Ethereum Deployment
 
 ###### Core
 
