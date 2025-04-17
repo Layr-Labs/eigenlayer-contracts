@@ -5,7 +5,7 @@ on:
   pull_request:
     types: [closed]
     branches:
-      - dev
+      - main
   
   # Run on any pushes to certora/* branches
   push:
