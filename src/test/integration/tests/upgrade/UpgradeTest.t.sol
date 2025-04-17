@@ -7,11 +7,8 @@ import "src/test/integration/IntegrationChecks.t.sol";
 abstract contract UpgradeTest is IntegrationChecks {
     /// Only run upgrade tests on mainnet forks
     function setUp() public virtual override {
-        string memory profile = FOUNDRY_PROFILE();
-        string memory chain = cheats.envString("FORK_CHAIN");
-
         // We do not run upgrade tests on local envs or non-mainnet forks...
-        if (eq(profile, "default") || (eq(profile, "forktest") && !eq(chain, "mainnet"))) {
+        if (!forkConfig.supportUpgradeTests) {
             cheats.skip(true);
         } else {
             isUpgraded = false;

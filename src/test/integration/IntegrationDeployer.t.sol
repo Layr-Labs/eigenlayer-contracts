@@ -68,8 +68,9 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
 
     EmptyContract public emptyContract;
 
-    bool isTimelockUpgrade;
-    bytes timelockPayload;
+    string public profile;
+
+    ForkConfig public forkConfig;
 
     /// -----------------------------------------------------------------------
     /// Setup
@@ -96,24 +97,25 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
         _setUp(true);
     }
 
-    function _setUp(bool shouldExecuteTimelock) internal virtual {
+    function _setUp(bool upgrade) internal virtual {
+        profile = FOUNDRY_PROFILE();
+        forkConfig = ConfigParser.parseForkConfig(profile);
         emptyContract = new EmptyContract();
-        string memory profile = FOUNDRY_PROFILE();
-        timelockPayload = cheats.envOr(string("TIMELOCK_PAYLOAD"), bytes(""));
-        isTimelockUpgrade = timelockPayload.length > 0;
 
-        if (eq(profile, "forktest")) {
-            // Assumes the proxy contracts have already been deployed.
-            config = ConfigParser.parse(string.concat("script/configs/", cheats.envString("FORK_CHAIN"), ".toml"));
-            _setUpFork(shouldExecuteTimelock);
+        if (eq(profile, "default")) {
+            // Assumes nothing has been deployed yet.
+            _setUpLocal();
         } else if (eq(profile, "forktest-zeus")) {
             // Assumes the proxy contracts have already been deployed.
             config = ConfigParser.parseZeus();
-            _setUpFork(shouldExecuteTimelock);
+            _setUpFork(upgrade);
         } else {
-            // Assumes nothing has been deployed yet.
-            _setUpLocal();
+            // Assumes the proxy contracts have already been deployed.
+            config = ConfigParser.parse(string.concat("script/configs/", profile, ".toml"));
+            _setUpFork(upgrade);
         }
+
+        ConfigParser.label(config);
 
         _init();
     }
@@ -211,38 +213,37 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
     }
 
     /// @dev Sets up the integration tests for mainnet.
-    function _setUpFork(bool shouldExecuteTimelock) public virtual {
-        string memory chain = cheats.envString("FORK_CHAIN");
-        uint forkBlock = cheats.envOr(string.concat("FORK_BLOCK_", cheats.toUppercase(chain)), uint(0));
+    function _setUpFork(bool upgrade) public virtual {
+        if (forkConfig.forkBlock != 0) cheats.createSelectFork(cheats.rpcUrl(profile), forkConfig.forkBlock);
+        else cheats.createSelectFork(cheats.rpcUrl(profile));
 
-        console.log("Setting up integration `%s` for `%s`:", FOUNDRY_PROFILE().yellow().bold(), chain.green().bold());
+        if (forkConfig.upgradeBeforeTesting && upgrade) {
+            if (forkConfig.timelockPayload.length > 0 && eq(profile, "mainnet")) {
+                _executeTimelockUpgrade();
+            } else {
+                _deployProxies(); // Only deploys what doesn't exist.
+                _upgradeProxies();
+            }
+        }
 
-        if (forkBlock != 0) cheats.createSelectFork(cheats.rpcUrl(chain), forkBlock);
-        else cheats.createSelectFork(cheats.rpcUrl(chain));
+        if (forkConfig.supportEigenPodTests) {
+            allStrats.push(BEACONCHAIN_ETH_STRAT);
+            allTokens.push(NATIVE_ETH);
+            config.strategies.strategyAddresses.push(BEACONCHAIN_ETH_STRAT);
+        }
 
-        if (isTimelockUpgrade && shouldExecuteTimelock) _executeTimelockPayload();
-        else _deployProxies();
-
-        // Add deployed strategies to lstStrats and allStrats
         uint n = totalStrategies();
         for (uint i; i < n; ++i) {
             IStrategy strategy = strategyAddresses(i);
 
-            if (tokensNotTested[address(strategy.underlyingToken())]) continue;
+            if (strategy == BEACONCHAIN_ETH_STRAT) continue;
+            IERC20 token = strategy.underlyingToken();
+            if (tokensNotTested[address(token)]) continue;
 
             // Add to lstStrats and allStrats
             lstStrats.push(strategy);
             allStrats.push(strategy);
-            allTokens.push(strategy.underlyingToken());
-        }
-
-        // Place native ETH first in `allStrats`
-        // This ensures when we select a nonzero number of strategies from this array, we always
-        // have beacon chain ETH
-        if (eq(chain, "mainnet")) {
-            allStrats.push(BEACONCHAIN_ETH_STRAT);
-            allTokens.push(NATIVE_ETH);
-            config.strategies.strategyAddresses.push(BEACONCHAIN_ETH_STRAT);
+            allTokens.push(token);
         }
 
         maxUniqueAssetsHeld = allStrats.length;
@@ -251,21 +252,18 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
         BEACON_GENESIS_TIME = GENESIS_TIME_MAINNET;
         _deployTimeMachineAndBeaconChain();
 
-        // Since we haven't done the slashing upgrade on mainnet yet, upgrade mainnet contracts
-        // prior to test. `isUpgraded` is true by default, but is set to false in `UpgradeTest.t.sol`
-        if (isUpgraded) {
-            if (eq(chain, "mainnet")) {
-                if (!isTimelockUpgrade) _upgradeMainnetContracts();
-            } else {
-                if (shouldExecuteTimelock) {
-                    // Set the `pectraForkTimestamp` on the EigenPodManager. Use pectra state
-                    cheats.startPrank(executorMultisig());
-                    eigenPodManager().setProofTimestampSetter(executorMultisig());
-                    eigenPodManager().setPectraForkTimestamp(BEACON_GENESIS_TIME);
-                    cheats.stopPrank();
-                }
-            }
+        // Mainnet doesn't yet support this.
+        if (isUpgraded && forkConfig.supportEigenPodTests && !eq(profile, "mainnet")) {
+            // Set the `pectraForkTimestamp` on the EigenPodManager. Use pectra state
+            cheats.startPrank(executorMultisig());
+            eigenPodManager().setProofTimestampSetter(executorMultisig());
+            eigenPodManager().setPectraForkTimestamp(BEACON_GENESIS_TIME);
+            cheats.stopPrank();
         }
+
+        // if (eq(profile, "mainnet") && isUpgraded) {
+        //     _upgradeMainnetContracts();
+        // }
     }
 
     /// @dev Upgrades the mainnet contracts.
@@ -275,13 +273,13 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
         cheats.stopPrank();
     }
 
-    function _executeTimelockPayload() internal {
+    function _executeTimelockUpgrade() internal {
         // Warp forward to elapse the timelock queue.
         cheats.warp(block.timestamp + 21 days);
 
         // Execute the timelock upgrade.
         cheats.startPrank(protocolCouncil());
-        timelock().execute({target: executorMultisig(), value: 0, payload: timelockPayload, predecessor: 0, salt: 0});
+        timelock().execute({target: executorMultisig(), value: 0, payload: forkConfig.timelockPayload, predecessor: 0, salt: 0});
         cheats.stopPrank();
 
         console.log("SIMULATED TIMELOCK UPGRADE".yellow().bold());
@@ -388,8 +386,12 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
         address baseStrategyImpl = address(new StrategyBase(strategyManager(), pauserRegistry(), "v9.9.9"));
         strategyFactoryBeacon().upgradeTo(baseStrategyImpl);
         for (uint i = 0; i < totalStrategies(); ++i) {
-            _upgradeProxy(address(strategyAddresses(i)), address(baseStrategyImpl));
+            IStrategy strategy = strategyAddresses(i);
+            if (strategy == BEACONCHAIN_ETH_STRAT) continue;
+            _upgradeProxy(address(strategy), address(baseStrategyImpl));
         }
+
+        isUpgraded = true;
     }
 
     /// @dev Initializes all proxies.
@@ -488,11 +490,14 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
         assertTrue(userType == DEFAULT || userType == ALT_METHODS, "_randUser: unimplemented userType");
 
         string memory profile = FOUNDRY_PROFILE();
-        if (eq(profile, "default") || (eq(profile, "forktest") && isUpgraded)) {
-            user = userType == DEFAULT ? new User(name) : User(new User_AltMethods(name));
-        } else if (eq(profile, "forktest") && !isUpgraded) {
-            user = User(new User_M2(name));
-        }
+
+        user = userType == DEFAULT ? new User(name) : User(new User_AltMethods(name));
+
+        // if (eq(profile, "default") || eq(profile, "mainnet") || (eq(profile, "forktest") && isUpgraded)) {
+        //     user = userType == DEFAULT ? new User(name) : User(new User_AltMethods(name));
+        // } else if (eq(profile, "forktest") && !isUpgraded) {
+        //     user = User(new User_M2(name));
+        // }
     }
 
     /// @dev Generates a new AVS.
@@ -526,6 +531,7 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
 
     /// Given an input list of strategies, deal random underlying token amounts to a user
     function _dealRandAmounts(User user, IStrategy[] memory strategies) internal returns (uint[] memory tokenBalances) {
+        assertTrue(address(user) != address(0), "User is not initialized");
         tokenBalances = new uint[](strategies.length);
         for (uint i = 0; i < tokenBalances.length; ++i) {
             IStrategy strategy = strategies[i];
@@ -559,13 +565,14 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
         // Underflow is only possible if the bitmap is 0, which is checked for above.
         unchecked {
             string memory chain = cheats.envOr(string("FORK_CHAIN"), string("local"));
-            bool supportsEth = eq(chain, "mainnet") || eq(chain, "local");
+            bool supportsEth = !eq(chain, "sepolia") && !eq(chain, "hoodi");
 
             uint[] memory options = new uint[](supportsEth ? 5 : 2); // We have 2-5 possible asset types
             uint count = 0;
 
             if (assetTypes & NO_ASSETS != 0) options[count++] = NO_ASSETS;
             if (assetTypes & HOLDS_LST != 0) options[count++] = HOLDS_LST;
+
             if (supportsEth) {
                 if (assetTypes & HOLDS_ETH != 0) options[count++] = HOLDS_ETH;
                 if (assetTypes & HOLDS_ALL != 0) options[count++] = HOLDS_ALL;

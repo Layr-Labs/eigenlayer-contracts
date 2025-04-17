@@ -27,17 +27,10 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
 
     ConfigGetters public config;
 
-    function eq(string memory a, string memory b) internal pure returns (bool) {
-        return keccak256(bytes(a)) == keccak256(bytes(b));
-    }
-
     constructor(string memory name) {
         config = ConfigGetters(address(msg.sender));
-
-        string memory chain = cheats.envOr(string("FORK_CHAIN"), string("local"));
-
-        if (eq(chain, "mainnet") || eq(chain, "local")) _createPod();
-
+        ForkConfig memory forkConfig = ConfigParser.parseForkConfig(cheats.envOr("FOUNDRY_PROFILE", string("default")));
+        if (forkConfig.supportEigenPodTests) _createPod();
         _NAME = name;
         cheats.label(address(this), NAME_COLORED());
     }

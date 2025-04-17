@@ -160,7 +160,7 @@ abstract contract ConfigGetters {
 contract ConfigGettersTest is ConfigGetters, Test {
     function setUp() public {
         vm.createSelectFork(vm.rpcUrl("mainnet"), 22_181_590);
-        config = ConfigParser.parse("./script/configs/mainnet/mainnet-addresses.toml");
+        config = ConfigParser.parse("./script/configs/mainnet.toml");
     }
 
     function test_parseTOML() public {
