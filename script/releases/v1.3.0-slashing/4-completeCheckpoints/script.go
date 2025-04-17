@@ -177,6 +177,7 @@ func runScript(args TArgs) error {
 	coreBeaconClient, _, err := proofgen.NewBeaconClient(args.BeaconNode, true /* verbose */)
 	panicOnError("failed to instantiate beaconClient", err)
 
+	args.Sender = args.Sender[2:]
 	for i := 0; i < len(results); i++ {
 		fmt.Printf("Completing [%d/%d]...", i+1, len(results))
 		fmt.Printf("NOTE: this is expensive, and may take several minutes.")
@@ -198,16 +199,22 @@ func runScript(args TArgs) error {
 
 func completeCheckpointForEigenpod(ctx context.Context, eigenpodAddress string, eth *ethclient.Client, chainId *big.Int, coreBeaconClient proofgen.BeaconClient, sender string) {
 	res, err := proofgen.GenerateCheckpointProof(ctx, eigenpodAddress, eth, chainId, coreBeaconClient, true)
-	panicOnError(fmt.Sprintf("failed to generate checkpoint proof for eigenpod:%s", eigenpodAddress), err)
-
-	txns, err := proofgen.SubmitCheckpointProof(ctx, sender, eigenpodAddress, chainId, res, eth, 80 /* ideal checkpoint proof batch size */, true /* noPrompt */, false /* noSend */, true /* verbose */)
-	panicOnError(fmt.Sprintf("failed to submit checkpoint proof for eigenpod:%s", eigenpodAddress), err)
-	if txns == nil {
-		panic("submitting checkpoint proof generated no transactions. this is a bug.")
+	if err != nil {
+		fmt.Printf("Failed to generate checkpoint proof for eigenpod:%s \n", eigenpodAddress)
+		return
 	}
 
-	for i, txn := range txns {
-		fmt.Printf("[%d/%d] %s\n", i+1, len(txns), txn.Hash())
+	txns, err := proofgen.SubmitCheckpointProof(ctx, sender, eigenpodAddress, chainId, res, eth, 80 /* ideal checkpoint proof batch size */, true /* noPrompt */, false /* noSend */, true /* verbose */)
+	if err != nil {
+		fmt.Printf("Failed to submit checkpoint proof for eigenpod:%s \n", eigenpodAddress)
+		return
+	}
+	if txns == nil {
+		fmt.Printf("Submitting checkpoint proof generated no transactions. this is a bug. \n")
+	} else {
+		for i, txn := range txns {
+			fmt.Printf("[%d/%d] %s\n", i+1, len(txns), txn.Hash())
+		}
 	}
 }
 
