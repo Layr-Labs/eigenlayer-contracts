@@ -74,7 +74,8 @@ func runScript(args TArgs) error {
 
 	const maxRetries = 10
 
-	for {
+	foundSlot := false
+	for !foundSlot {
 		retryCount := 0
 
 		for retryCount < maxRetries {
@@ -84,6 +85,8 @@ func runScript(args TArgs) error {
 			if err == nil {
 				// No error, we found a valid slot
 				fmt.Printf("Found first non-missed slot at slot %d\n", slotNum)
+				foundSlot = true
+				break
 			}
 
 			// If error is a "slot not found error"
@@ -106,6 +109,7 @@ func runScript(args TArgs) error {
 		}
 	}
 
+	// We have found a valid slot, get the timestamp
 	// Get the slot timestamp. We don't need to use the beacon api because it returns a versioned state. Just use the vanilla endpoint
 	url := fmt.Sprintf("%s/eth/v2/beacon/blocks/%d", args.BeaconNode, slotNum)
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
