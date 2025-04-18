@@ -4,6 +4,8 @@
 '🐞 Bug':
   - head-branch: ['bug']
 
+  
+
 # Applies when PR branch name contains "chore"
 '📜 Chore':
   - head-branch: ['chore']
