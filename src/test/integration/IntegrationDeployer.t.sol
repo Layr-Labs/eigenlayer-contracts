@@ -261,9 +261,9 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
             cheats.stopPrank();
         }
 
-        // if (eq(profile, "mainnet") && isUpgraded) {
-        //     _upgradeMainnetContracts();
-        // }
+        if (eq(profile, "mainnet") && isUpgraded) {
+            _upgradeMainnetContracts();
+        }
     }
 
     /// @dev Upgrades the mainnet contracts.
@@ -387,8 +387,8 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
         strategyFactoryBeacon().upgradeTo(baseStrategyImpl);
         for (uint i = 0; i < totalStrategies(); ++i) {
             IStrategy strategy = strategyAddresses(i);
-            if (strategy == BEACONCHAIN_ETH_STRAT) continue;
-            _upgradeProxy(address(strategy), address(baseStrategyImpl));
+            if (strategyAddresses(i) == BEACONCHAIN_ETH_STRAT) continue;
+            _upgradeProxy(address(strategyAddresses(i)), address(baseStrategyImpl));
         }
 
         isUpgraded = true;
