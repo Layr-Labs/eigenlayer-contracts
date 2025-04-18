@@ -108,14 +108,14 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
         } else if (eq(profile, "forktest-zeus")) {
             // Assumes the proxy contracts have already been deployed.
             config = ConfigParser.parseZeus();
+            config.label();
             _setUpFork(upgrade);
         } else {
             // Assumes the proxy contracts have already been deployed.
             config = ConfigParser.parse(string.concat("script/configs/", profile, ".toml"));
+            config.label();
             _setUpFork(upgrade);
         }
-
-        ConfigParser.label(config);
 
         _init();
     }
@@ -491,6 +491,8 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
 
         user = userType == DEFAULT ? new User(name) : User(new User_AltMethods(name));
 
+
+        assertTrue(address(user) != address(0), "User is not initialized");
         // if (eq(profile, "default") || eq(profile, "mainnet") || (eq(profile, "forktest") && isUpgraded)) {
         //     user = userType == DEFAULT ? new User(name) : User(new User_AltMethods(name));
         // } else if (eq(profile, "forktest") && !isUpgraded) {
