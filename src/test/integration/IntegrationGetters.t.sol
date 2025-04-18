@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
+import {ICoreTypes} from "src/contracts/interfaces/ICore.sol";
+
 import "src/test/integration/IntegrationDeployer.t.sol";
 
 contract IntegrationGetters is IntegrationDeployer, ICoreTypes {

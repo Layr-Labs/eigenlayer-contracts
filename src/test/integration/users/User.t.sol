@@ -29,7 +29,8 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
 
     constructor(string memory name) {
         config = ConfigGetters(address(msg.sender));
-        _createPod();
+        ForkConfig memory forkConfig = ConfigParser.parseForkConfig(cheats.envOr("FOUNDRY_PROFILE", string("default")));
+        if (forkConfig.supportEigenPodTests) _createPod();
         _NAME = name;
         cheats.label(address(this), NAME_COLORED());
     }
