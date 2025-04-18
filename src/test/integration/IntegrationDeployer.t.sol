@@ -252,17 +252,17 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
         BEACON_GENESIS_TIME = GENESIS_TIME_MAINNET;
         _deployTimeMachineAndBeaconChain();
 
+        if (eq(profile, "mainnet") && isUpgraded) {
+            _upgradeMainnetContracts();
+        }
+
         // Mainnet doesn't yet support this.
-        if (isUpgraded && forkConfig.supportEigenPodTests && !eq(profile, "mainnet")) {
+        if (isUpgraded && forkConfig.supportEigenPodTests) {
             // Set the `pectraForkTimestamp` on the EigenPodManager. Use pectra state
             cheats.startPrank(executorMultisig());
             eigenPodManager().setProofTimestampSetter(executorMultisig());
             eigenPodManager().setPectraForkTimestamp(BEACON_GENESIS_TIME);
             cheats.stopPrank();
-        }
-
-        if (eq(profile, "mainnet") && isUpgraded) {
-            _upgradeMainnetContracts();
         }
     }
 
@@ -489,7 +489,7 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
     function _genRandUser(string memory name, uint userType) internal returns (User user) {
         assertTrue(userType == DEFAULT || userType == ALT_METHODS, "_randUser: unimplemented userType");
 
-        string memory profile = FOUNDRY_PROFILE();
+        // string memory profile = FOUNDRY_PROFILE();
 
         user = userType == DEFAULT ? new User(name) : User(new User_AltMethods(name));
 
@@ -561,38 +561,29 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
     }
 
     function _randAssetType() internal returns (uint) {
-        // Overflow is not possible given the constraints of the assetTypes bitmap.
-        // Underflow is only possible if the bitmap is 0, which is checked for above.
-        unchecked {
-            string memory chain = cheats.envOr(string("FORK_CHAIN"), string("local"));
-            bool supportsEth = !eq(chain, "sepolia") && !eq(chain, "hoodi");
+        bool supportsEth = !eq(profile, "sepolia") && !eq(profile, "hoodi");
 
-            uint[] memory options = new uint[](supportsEth ? 5 : 2); // We have 2-5 possible asset types
-            uint count = 0;
+        uint[] memory options = new uint[](supportsEth ? 5 : 2); // We have 2-5 possible asset types
+        uint count = 0;
 
-            if (assetTypes & NO_ASSETS != 0) options[count++] = NO_ASSETS;
-            if (assetTypes & HOLDS_LST != 0) options[count++] = HOLDS_LST;
+        if (assetTypes & NO_ASSETS != 0) options[count++] = NO_ASSETS;
+        if (assetTypes & HOLDS_LST != 0) options[count++] = HOLDS_LST;
 
-            if (supportsEth) {
-                if (assetTypes & HOLDS_ETH != 0) options[count++] = HOLDS_ETH;
-                if (assetTypes & HOLDS_ALL != 0) options[count++] = HOLDS_ALL;
-                if (assetTypes & HOLDS_MAX != 0) options[count++] = HOLDS_MAX;
-            }
-
-            return options[cheats.randomUint(0, count - 1)];
+        if (supportsEth) {
+            if (assetTypes & HOLDS_ETH != 0) options[count++] = HOLDS_ETH;
+            if (assetTypes & HOLDS_ALL != 0) options[count++] = HOLDS_ALL;
+            if (assetTypes & HOLDS_MAX != 0) options[count++] = HOLDS_MAX;
         }
+
+        return options[cheats.randomUint(0, count - 1)];
     }
 
     function _randUserType() internal returns (uint) {
-        // Overflow is not possible given the constraints of the userTypes bitmap.
-        // Underflow is only possible if the bitmap is 0, which is checked for above.
-        unchecked {
-            uint[] memory options = new uint[](2); // We have 2 possible user types
-            uint count = 0;
-            if (userTypes & DEFAULT != 0) options[count++] = DEFAULT;
-            if (userTypes & ALT_METHODS != 0) options[count++] = ALT_METHODS;
-            return options[cheats.randomUint(0, count - 1)];
-        }
+        uint[] memory options = new uint[](2); // We have 2 possible user types
+        uint count = 0;
+        if (userTypes & DEFAULT != 0) options[count++] = DEFAULT;
+        if (userTypes & ALT_METHODS != 0) options[count++] = ALT_METHODS;
+        return options[cheats.randomUint(0, count - 1)];
     }
 
     function NAME() public view virtual override returns (string memory) {

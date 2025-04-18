@@ -72,14 +72,13 @@ jobs:
       # Run the test suite in parallel based on the matrix configuration.
       - name: Run ${{ matrix.suite }} tests
         run: |
-          export FORK_CHAIN="mainnet"
           case "${{ matrix.suite }}" in
             Unit) forge test --no-match-contract Integration ;;
             Integration) forge test --match-contract Integration ;;
             Fork) forge test --match-contract Integration ;;
           esac
         env:
-          FOUNDRY_PROFILE: ${{ matrix.suite == 'Fork' && 'forktest' || 'medium' }}
+          FOUNDRY_PROFILE: ${{ matrix.suite == 'Fork' && 'mainnet' || 'medium' }}
 
   # -----------------------------------------------------------------------
   # Forge Test (Intense)
