@@ -39,7 +39,7 @@ jobs:
         shell: bash
 
       - name: Delete unauthorized branch
-        if: steps.check-user.outputs.continue == 'false'
+        if: steps.check-branch.outputs.continue == 'false'
         run: |
           BRANCH="${{ steps.branch.outputs.branch }}"
           echo "Deleting unauthorized branch: $BRANCH"
