@@ -7,9 +7,7 @@ EigenLayer is a set of smart contracts deployed on Ethereum that enable restakin
 
 ## Get Started
 
-See [CONTRIBUTING](CONTRIBUTING.md)
-
-
+See [CONTRIBUTING](CONTRIBUTING.md). Contributions that do not follow our fork base PR practices will be automatically immediately closed and deleted, preventing branch pollution, keeping our repository clean, tidy, more readable and searchable.
 
 ## Branching
 
