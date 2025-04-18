@@ -1,0 +1,49 @@
+name: Delete Unauthorized Branches
+
+# Due to internal reasons, we cannot disable default write access for the repo.
+# As an alternative, this workflow is used to delete unauthorized branches that are created 
+# without following the branch policy.
+
+on:
+  push:
+    branches:
+      - '**'
+
+jobs:
+  enforce-branch-policy:
+    runs-on: ubuntu-latest
+
+    # Run only for push events in the main repo (not forks)
+    if: github.event.repository.fork == false && github.event_name == 'push'
+
+    steps:
+      - name: Extract branch name
+        id: branch
+        run: |
+          BRANCH_REF="${GITHUB_REF#refs/heads/}"
+          echo "branch=$BRANCH_REF" >> $GITHUB_OUTPUT
+
+      - name: Check if branch is legit
+        id: check-branch
+        run: |
+          BRANCH="${{ steps.branch.outputs.branch }}"
+
+          # Allow release-dev/* and vx.y.z pattern
+          if [[ "$BRANCH" =~ ^release-dev\/.* ]] || [[ "$BRANCH" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Legit branch: $BRANCH"
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "Custom branch: $BRANCH"
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+        shell: bash
+
+      - name: Delete unauthorized branch
+        if: steps.check-branch.outputs.skip == 'false'
+        run: |
+          BRANCH="${{ steps.branch.outputs.branch }}"
+          echo "Deleting unauthorized branch: $BRANCH"
+          curl -s -X DELETE \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/${{ github.repository }}/git/refs/heads/$BRANCH
