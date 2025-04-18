@@ -55,7 +55,7 @@ contract SetProofTimestamp is ExecuteUpgradeAndSetTimestampSubmitter {
 
     function _getProofTimestamp() internal view returns (uint64) {
         string memory timestampPath =
-            string.concat(vm.projectRoot(), "/script/releases/v1.2.0-slashing/forkTimestamp.txt");
+            string.concat(vm.projectRoot(), "/script/releases/v1.4.1-slashing/forkTimestamp.txt");
         string memory timestamp = vm.readFile(timestampPath);
         return uint64(vm.parseUint(timestamp));
     }
