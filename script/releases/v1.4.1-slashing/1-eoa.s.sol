@@ -52,6 +52,7 @@ contract Deploy is EOADeployer {
         _validateProxyAdmins();
         _validateImplConstructors();
         _validateImplsInitialized();
+        _validateImplVersions();
     }
 
     /// @dev Validate that the `Env.impl` addresses are updated to be distinct from what the proxy
@@ -111,6 +112,14 @@ contract Deploy is EOADeployer {
         EigenPodManager eigenPodManager = Env.impl.eigenPodManager();
         vm.expectRevert(errInit);
         eigenPodManager.initialize(address(0), 0);
+    }
+
+    function _validateImplVersions() internal view {
+        EigenPod eigenPod = Env.impl.eigenPod();
+        assertEq(eigenPod.version(), "1.4.1");
+
+        EigenPodManager eigenPodManager = Env.impl.eigenPodManager();
+        assertEq(eigenPodManager.version(), "1.4.1");
     }
 
     /// @dev Query and return `proxyAdmin.getProxyImplementation(proxy)`
