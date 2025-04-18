@@ -4,6 +4,7 @@ Thank you for considering contributing to EigenLayer! This guide will help you s
 
 ## Setting Up Your Environment
 
+We use fork base PR mechanism. Contributions that do not follow our fork base PR practices will be automatically immediately closed and deleted, preventing branch pollution, keeping our repository clean, tidy, more readable and searchable.
 
 ### Fork and Clone the Repository
 
