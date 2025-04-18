@@ -252,9 +252,7 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
         BEACON_GENESIS_TIME = GENESIS_TIME_MAINNET;
         _deployTimeMachineAndBeaconChain();
 
-        if (eq(profile, "mainnet") && isUpgraded) {
-            _upgradeMainnetContracts();
-        }
+        if (eq(profile, "mainnet") && isUpgraded) _upgradeMainnetContracts();
 
         // Mainnet doesn't yet support this.
         if (isUpgraded && forkConfig.supportEigenPodTests) {
