@@ -35,6 +35,7 @@ jobs:
           else
             echo "Custom branch: $BRANCH"
             echo "skip=false" >> $GITHUB_OUTPUT
+          fi
         shell: bash
 
       - name: Delete unauthorized branch
