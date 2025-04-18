@@ -84,7 +84,6 @@ func runScript(args TArgs) error {
 			if err == nil {
 				// No error, we found a valid slot
 				fmt.Printf("Found first non-missed slot at slot %d\n", slotNum)
-				break
 			}
 
 			// If error is a "slot not found error"
@@ -102,8 +101,7 @@ func runScript(args TArgs) error {
 					slotNum, retryCount, maxRetries, err)
 				time.Sleep(time.Second * time.Duration(retryCount)) // Backoff with each retry
 			} else {
-				fmt.Printf("Max retries exceeded for slot %d, moving to next slot: %v\n", slotNum, err)
-				slotNum++
+				panicOnError("Max retries exceeded for slot", err)
 			}
 		}
 	}
