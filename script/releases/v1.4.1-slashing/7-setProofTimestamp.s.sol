@@ -21,6 +21,10 @@ contract SetProofTimestamp is ExecuteUpgradeAndSetTimestampSubmitter {
 
     function _runAsMultisig() internal virtual override prank(Env.opsMultisig()) {
         proofTimestamp = _getProofTimestamp();
+
+        // Sanity check that the timestamp is nonzero
+        require(proofTimestamp > 0, "proofTimestamp is zero");
+
         // Assert that timestamp from script is >= the actual fork timestamp
         require(proofTimestamp >= ZEnvHelpers.state().envU64("PECTRA_FORK_TIMESTAMP"), "proofTimestamp invalid");
 
@@ -55,7 +59,7 @@ contract SetProofTimestamp is ExecuteUpgradeAndSetTimestampSubmitter {
 
     function _getProofTimestamp() internal view returns (uint64) {
         string memory timestampPath =
-            string.concat(vm.projectRoot(), "/script/releases/v1.2.0-slashing/forkTimestamp.txt");
+            string.concat(vm.projectRoot(), "/script/releases/v1.4.1-slashing/forkTimestamp.txt");
         string memory timestamp = vm.readFile(timestampPath);
         return uint64(vm.parseUint(timestamp));
     }
