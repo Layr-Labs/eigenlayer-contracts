@@ -24,7 +24,7 @@ contract SetProofTimestamp is ExecuteUpgradeAndSetTimestampSubmitter {
 
         // Sanity check that the timestamp is nonzero
         require(proofTimestamp > 0, "proofTimestamp is zero");
-        
+
         // Assert that timestamp from script is >= the actual fork timestamp
         require(proofTimestamp >= ZEnvHelpers.state().envU64("PECTRA_FORK_TIMESTAMP"), "proofTimestamp invalid");
 
