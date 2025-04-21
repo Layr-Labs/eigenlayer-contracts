@@ -35,6 +35,12 @@ contract EigenWrappingTests is Test {
     /// @notice event emitted when the transfer restrictions are disabled
     event TransferRestrictionsDisabled();
 
+    // EVENTS FROM Eigen.sol
+    /// @notice event emitted when bEIGEN tokens are wrapped into EIGEN
+    event TokenWrapped(address indexed account, uint amount);
+    /// @notice event emitted when EIGEN tokens are unwrapped into bEIGEN
+    event TokenUnwrapped(address indexed account, uint amount);
+
     modifier filterAddress(address fuzzedAddress) {
         vm.assume(!fuzzedOutAddresses[fuzzedAddress]);
         _;
@@ -56,6 +62,40 @@ contract EigenWrappingTests is Test {
         proxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(eigen))), address(eigenImpl));
         proxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(bEIGEN))), address(bEIGENImpl));
 
+<<<<<<< HEAD
+=======
+        // initialize bEIGEN - this will mint the entire supply to the Eigen contract
+        bEIGEN.initialize(minter1);
+
+        // set minters (for future minting if needed)
+        vm.expectEmit(true, true, true, true);
+        emit IsMinterModified(minter1, true);
+        bEIGEN.setIsMinter(minter1, true);
+
+        vm.expectEmit(true, true, true, true);
+        emit IsMinterModified(minter2, true);
+        bEIGEN.setIsMinter(minter2, true);
+
+        // initialize eigen with empty arrays since we don't need minting anymore
+        eigen.initialize(minter1);
+
+        // Mint and wrap tokens for minter1
+        vm.startPrank(minter1);
+        bEIGEN.mint(minter1, totalSupply / 2);
+        bEIGEN.approve(address(eigen), totalSupply / 2);
+        vm.expectEmit(true, true, true, true);
+        emit TokenWrapped(minter1, totalSupply / 2);
+        eigen.wrap(totalSupply / 2);
+        vm.stopPrank();
+
+        // Mint and wrap tokens for minter2
+        vm.startPrank(minter2);
+        bEIGEN.mint(minter2, totalSupply / 2);
+        bEIGEN.approve(address(eigen), totalSupply / 2);
+        vm.expectEmit(true, true, true, true);
+        emit TokenWrapped(minter2, totalSupply / 2);
+        eigen.wrap(totalSupply / 2);
+>>>>>>> cb0df903 (feat: add TokenWrapped and TokenUnwrapped events in Eigen for observability (#1331))
         vm.stopPrank();
 
         fuzzedOutAddresses[minter1] = true;
@@ -88,6 +128,8 @@ contract EigenWrappingTests is Test {
         // unwrap amount should be less than minter1 balance
         unwrapAmount = unwrapAmount % minter1Balance;
         vm.prank(unwrapper);
+        vm.expectEmit(true, false, false, false);
+        emit TokenUnwrapped(unwrapper, unwrapAmount);
         eigen.unwrap(unwrapAmount);
 
         // check total supply and balance changes
@@ -130,6 +172,8 @@ contract EigenWrappingTests is Test {
         // approve bEIGEN
         bEIGEN.approve(address(eigen), wrapAmount);
         // wrap
+        vm.expectEmit(true, false, false, false);
+        emit TokenWrapped(wrapper, wrapAmount);
         eigen.wrap(wrapAmount);
         vm.stopPrank();
 
