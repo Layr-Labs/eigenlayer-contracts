@@ -1,0 +1,37 @@
+name: Rebase release-dev/* onto main
+
+on:
+  schedule:
+    - cron: "0 20 * * *"  # 8pm UTC daily, 1pm EST daily
+  workflow_dispatch:     # Allow manual trigger
+
+jobs:
+  rebase-release-dev:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Git
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+
+      - name: Fetch all branches
+        run: git fetch origin "+refs/heads/*:refs/remotes/origin/*"
+
+      - name: Rebase each release-dev/* branch onto main
+        run: |
+          for branch in $(git for-each-ref --format='%(refname:short)' refs/remotes/origin/release-dev/*); do
+            echo "Processing $branch"
+            bname=$(basename $branch)
+            git checkout -B $bname origin/$bname
+            git rebase origin/main || {
+              echo "Rebase failed for $bname. Skipping push."
+              continue
+            }
+            git push origin $bname
+          done
