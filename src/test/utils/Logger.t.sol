@@ -136,12 +136,6 @@ library print {
         }
     }
 
-    function gasUsed() internal {
-        uint used = cheats.snapshotGasLastCall("gasUsed");
-        if (!_logging()) return;
-        console.log("   Gas used: %d".dim().bold(), used);
-    }
-
     /// -----------------------------------------------------------------------
     /// Logging
     /// -----------------------------------------------------------------------
