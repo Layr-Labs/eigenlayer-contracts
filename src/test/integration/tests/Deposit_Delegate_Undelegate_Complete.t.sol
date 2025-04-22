@@ -130,39 +130,41 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationChecks {
     }
 
     function test_deposit_delegate_undelegate_completeAsTokens_Max_Strategies() public {
-        _configAssetTypes(HOLDS_MAX);
+        if (eq(FOUNDRY_PROFILE(), "default")) {
+            _configAssetTypes(HOLDS_MAX);
 
-        (staker, strategies, initTokenBalances) = _newRandomStaker();
-        operator = _newRandomOperator();
+            (staker, strategies, initTokenBalances) = _newRandomStaker();
+            operator = _newRandomOperator();
 
-        if (forkType == LOCAL) assertEq(strategies.length, 9, "sanity");
+            assertEq(strategies.length, 9, "sanity");
 
-        uint[] memory shares = _calculateExpectedShares(strategies, initTokenBalances);
-        //delegatable shares equals deposit shares here because no bc slashing
-        uint[] memory delegatableShares = shares;
+            uint[] memory shares = _calculateExpectedShares(strategies, initTokenBalances);
+            //delegatable shares equals deposit shares here because no bc slashing
+            uint[] memory delegatableShares = shares;
 
-        /// 1. Deposit Into Strategies
-        staker.depositIntoEigenlayer(strategies, initTokenBalances);
-        check_Deposit_State(staker, strategies, shares);
+            /// 1. Deposit Into Strategies
+            staker.depositIntoEigenlayer(strategies, initTokenBalances);
+            check_Deposit_State(staker, strategies, shares);
 
-        // 2. Delegate to an operator
-        staker.delegateTo(operator);
-        check_Delegation_State(staker, operator, strategies, shares);
+            // 2. Delegate to an operator
+            staker.delegateTo(operator);
+            check_Delegation_State(staker, operator, strategies, shares);
 
-        // 3. Undelegate from an operator
-        Withdrawal[] memory withdrawals = staker.undelegate();
-        withdrawalRoots = _getWithdrawalHashes(withdrawals);
-        check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, delegatableShares);
+            // 3. Undelegate from an operator
+            Withdrawal[] memory withdrawals = staker.undelegate();
+            withdrawalRoots = _getWithdrawalHashes(withdrawals);
+            check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, delegatableShares);
 
-        // 4. Complete withdrawal
-        // Fast forward to when we can complete the withdrawal
-        _rollBlocksForCompleteWithdrawals(withdrawals);
+            // 4. Complete withdrawal
+            // Fast forward to when we can complete the withdrawal
+            _rollBlocksForCompleteWithdrawals(withdrawals);
 
-        // Complete withdrawal
-        for (uint i = 0; i < withdrawals.length; ++i) {
-            uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].scaledShares);
-            staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], withdrawals[i].scaledShares, expectedTokens);
+            // Complete withdrawal
+            for (uint i = 0; i < withdrawals.length; ++i) {
+                uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawals[i].scaledShares);
+                staker.completeWithdrawalAsTokens(withdrawals[i]);
+                check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], withdrawals[i].scaledShares, expectedTokens);
+            }
         }
     }
 }

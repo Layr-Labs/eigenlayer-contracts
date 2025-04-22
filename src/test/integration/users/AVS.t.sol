@@ -42,8 +42,6 @@ contract AVS is Logger, IAllocationManagerTypes {
         console.log("Setting AVS metadata URI to: %s", uri);
         _tryPrankAppointee_AllocationManager(IAllocationManager.updateAVSMetadataURI.selector);
         config.allocationManager().updateAVSMetadataURI(address(this), uri);
-
-        print.gasUsed();
     }
 
     function createOperatorSets(IStrategy[][] memory strategies) public createSnapshot returns (OperatorSet[] memory operatorSets) {
@@ -62,8 +60,6 @@ contract AVS is Logger, IAllocationManagerTypes {
         print.createOperatorSets(p);
 
         config.allocationManager().createOperatorSets(address(this), p);
-
-        print.gasUsed();
     }
 
     function createOperatorSet(IStrategy[] memory strategies) public createSnapshot returns (OperatorSet memory operatorSet) {
@@ -75,7 +71,6 @@ contract AVS is Logger, IAllocationManagerTypes {
 
         print.createOperatorSets(p);
         config.allocationManager().createOperatorSets(address(this), p);
-        print.gasUsed();
     }
 
     function slashOperator(SlashingParams memory params) public createSnapshot {
@@ -94,7 +89,7 @@ contract AVS is Logger, IAllocationManagerTypes {
                     ", strategy: ",
                     strategyName,
                     ", wadToSlash: ",
-                    params.wadsToSlash[i].asWad(),
+                    cheats.toString(params.wadsToSlash[i]),
                     "}"
                 )
             );
@@ -102,7 +97,6 @@ contract AVS is Logger, IAllocationManagerTypes {
 
         _tryPrankAppointee_AllocationManager(IAllocationManager.slashOperator.selector);
         config.allocationManager().slashOperator(address(this), params);
-        print.gasUsed();
     }
 
     function slashOperator(User operator, uint32 operatorSetId, IStrategy[] memory strategies, uint[] memory wadsToSlash)
@@ -132,7 +126,7 @@ contract AVS is Logger, IAllocationManagerTypes {
                     ", strategy: ",
                     strategyName,
                     ", wadToSlash: ",
-                    wadsToSlash[i].asWad(),
+                    cheats.toString(wadsToSlash[i]),
                     "}"
                 )
             );
@@ -140,7 +134,6 @@ contract AVS is Logger, IAllocationManagerTypes {
 
         _tryPrankAppointee_AllocationManager(IAllocationManager.slashOperator.selector);
         config.allocationManager().slashOperator(address(this), p);
-        print.gasUsed();
     }
 
     function deregisterFromOperatorSets(User operator, uint32[] memory operatorSetIds) public createSnapshot {
@@ -151,7 +144,6 @@ contract AVS is Logger, IAllocationManagerTypes {
         print.deregisterFromOperatorSets(p);
         _tryPrankAppointee_AllocationManager(IAllocationManager.deregisterFromOperatorSets.selector);
         config.allocationManager().deregisterFromOperatorSets(p);
-        print.gasUsed();
     }
 
     function setAVSRegistrar(IAVSRegistrar registrar) public createSnapshot {
@@ -159,7 +151,6 @@ contract AVS is Logger, IAllocationManagerTypes {
         console.log("Setting AVS registrar to: %s", address(registrar));
         _tryPrankAppointee_AllocationManager(IAllocationManager.setAVSRegistrar.selector);
         config.allocationManager().setAVSRegistrar(address(this), registrar);
-        print.gasUsed();
     }
 
     function addStrategiesToOperatorSet(uint32 operatorSetId, IStrategy[] memory strategies) public createSnapshot {
@@ -172,7 +163,6 @@ contract AVS is Logger, IAllocationManagerTypes {
         }
         _tryPrankAppointee_AllocationManager(IAllocationManager.addStrategiesToOperatorSet.selector);
         config.allocationManager().addStrategiesToOperatorSet(address(this), operatorSetId, strategies);
-        print.gasUsed();
     }
 
     function removeStrategiesFromOperatorSet(uint32 operatorSetId, IStrategy[] memory strategies) public createSnapshot {
@@ -185,7 +175,6 @@ contract AVS is Logger, IAllocationManagerTypes {
         }
         _tryPrankAppointee_AllocationManager(IAllocationManager.removeStrategiesFromOperatorSet.selector);
         config.allocationManager().removeStrategiesFromOperatorSet(address(this), operatorSetId, strategies);
-        print.gasUsed();
     }
 
     /// -----------------------------------------------------------------------
