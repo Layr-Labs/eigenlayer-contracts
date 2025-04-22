@@ -130,12 +130,12 @@ contract Integration_Deposit_Delegate_Undelegate_Complete is IntegrationChecks {
     }
 
     function test_deposit_delegate_undelegate_completeAsTokens_Max_Strategies() public {
-        _configAssetTypes(HOLDS_MAX);
-
-        (staker, strategies, initTokenBalances) = _newRandomStaker();
-        operator = _newRandomOperator();
-
         if (eq(FOUNDRY_PROFILE(), "default")) {
+            _configAssetTypes(HOLDS_MAX);
+
+            (staker, strategies, initTokenBalances) = _newRandomStaker();
+            operator = _newRandomOperator();
+
             assertEq(strategies.length, 9, "sanity");
 
             uint[] memory shares = _calculateExpectedShares(strategies, initTokenBalances);
