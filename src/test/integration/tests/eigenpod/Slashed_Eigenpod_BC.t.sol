@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "src/test/integration/IntegrationChecks.t.sol";
+import "src/test/integration/tests/eigenpod/EigenPod.t.sol";
 
-contract Integration_SlashedEigenpod_BC is IntegrationChecks {
+contract Integration_EigenPod_SlashedEigenpod_BC is EigenPodTest {
     using ArrayLib for *;
 
     function _init() internal virtual override {
+        super._init();
+
         _configAssetTypes(HOLDS_ETH);
         (staker, strategies, initTokenBalances) = _newRandomStaker();
         operator = _newRandomOperator();
@@ -349,10 +351,12 @@ contract Integration_SlashedEigenpod_BC is IntegrationChecks {
 }
 
 /// @notice This is not considered dual slashing since the operator is pre-slashed
-contract Integration_SlashedOperator_SlashedEigenpod_Base is IntegrationChecks {
+contract Integration_EigenPod_SlashedOperator_SlashedEigenpod_Base is EigenPodTest {
     using ArrayLib for *;
 
     function _init() internal virtual override {
+        super._init();
+
         _configAssetTypes(HOLDS_ETH);
         (staker, strategies, initTokenBalances) = _newRandomStaker();
         operator = _newRandomOperator();
@@ -392,7 +396,7 @@ contract Integration_SlashedOperator_SlashedEigenpod_Base is IntegrationChecks {
     }
 }
 
-contract Integration_SlashedOperator_SlashedEigenpod is Integration_SlashedOperator_SlashedEigenpod_Base {
+contract Integration_EigenPod_SlashedOperator_SlashedEigenpod is Integration_EigenPod_SlashedOperator_SlashedEigenpod_Base {
     function _init() internal virtual override {
         // 1-5
         super._init();
@@ -497,7 +501,7 @@ contract Integration_SlashedOperator_SlashedEigenpod is Integration_SlashedOpera
     }
 }
 
-contract Integration_Redelegate_SlashOperator_SlashEigenpod is Integration_SlashedOperator_SlashedEigenpod_Base {
+contract Integration_EigenPod_Redelegate_SlashOperator_SlashEigenpod is Integration_EigenPod_SlashedOperator_SlashedEigenpod_Base {
     using ArrayLib for *;
 
     User operator2;
@@ -632,10 +636,12 @@ contract Integration_Redelegate_SlashOperator_SlashEigenpod is Integration_Slash
     }
 }
 
-contract Integration_SlashedEigenpod_BC_HalfSlash is IntegrationChecks {
+contract Integration_EigenPod_SlashedEigenpod_BC_HalfSlash is EigenPodTest {
     using ArrayLib for *;
 
     function _init() internal override {
+        super._init();
+
         _configAssetTypes(HOLDS_ETH);
         (staker, strategies, initTokenBalances) = _newRandomStaker();
         operator = _newRandomOperator();

@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "src/test/integration/IntegrationChecks.t.sol";
+import "src/test/integration/tests/eigenpod/EigenPod.t.sol";
 
 /// @notice Tests where we slash native eth on the Beacon Chain and by an OperatorSet
-contract Integration_DualSlashing_Base is IntegrationChecks {
+contract Integration_EigenPod_DualSlashing_Base is EigenPodTest {
     using ArrayLib for *;
 
     function _init() internal virtual override {
+        super._init();
+
         _configAssetTypes(HOLDS_ETH);
 
         // Create staker, operator, and avs
@@ -42,7 +44,7 @@ contract Integration_DualSlashing_Base is IntegrationChecks {
     }
 }
 
-contract Integration_DualSlashing_BeaconChainFirst is Integration_DualSlashing_Base {
+contract Integration_DualSlashing_BeaconChainFirst is Integration_EigenPod_DualSlashing_Base {
     function testFuzz_bcSlash_checkpoint_avsSlash(uint24) public {
         // 6. Slash staker on BC
         uint64 slashedAmountGwei = beaconChain.slashValidators(validators, BeaconChainMock.SlashType.Minor);
@@ -68,7 +70,7 @@ contract Integration_DualSlashing_BeaconChainFirst is Integration_DualSlashing_B
     }
 }
 
-contract Integration_DualSlashing_AVSFirst is Integration_DualSlashing_Base {
+contract Integration_DualSlashing_AVSFirst is Integration_EigenPod_DualSlashing_Base {
     using ArrayLib for *;
 
     function _init() internal virtual override {
@@ -239,7 +241,7 @@ contract Integration_DualSlashing_AVSFirst is Integration_DualSlashing_Base {
     }
 }
 
-contract Integration_DualSlashing_FullSlashes is Integration_DualSlashing_Base {
+contract Integration_DualSlashing_FullSlashes is Integration_EigenPod_DualSlashing_Base {
     using ArrayLib for *;
     using SlashingLib for *;
     using Math for uint;

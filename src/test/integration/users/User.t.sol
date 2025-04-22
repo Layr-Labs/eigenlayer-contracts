@@ -29,7 +29,8 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
 
     constructor(string memory name) {
         config = ConfigGetters(address(msg.sender));
-        _createPod();
+        ForkConfig memory forkConfig = ConfigParser.parseForkConfig(cheats.envOr("FOUNDRY_PROFILE", string("default")));
+        if (forkConfig.supportEigenPodTests) _createPod();
         _NAME = name;
         cheats.label(address(this), NAME_COLORED());
     }
@@ -59,7 +60,6 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
 
         _tryPrankAppointee_AllocationManager(IAllocationManager.modifyAllocations.selector);
         config.allocationManager().modifyAllocations(address(this), params.toArray());
-        print.gasUsed();
     }
 
     function deallocateAll(OperatorSet memory operatorSet) public virtual returns (AllocateParams memory) {
@@ -89,7 +89,6 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         config.allocationManager().registerForOperatorSets(
             address(this), RegisterParams({avs: operatorSet.avs, operatorSetIds: operatorSet.id.toArrayU32(), data: ""})
         );
-        print.gasUsed();
     }
 
     function deregisterFromOperatorSet(OperatorSet memory operatorSet) public virtual createSnapshot {
@@ -102,14 +101,12 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         config.allocationManager().deregisterFromOperatorSets(
             DeregisterParams({operator: address(this), avs: operatorSet.avs, operatorSetIds: operatorSet.id.toArrayU32()})
         );
-        print.gasUsed();
     }
 
     function setAllocationDelay(uint32 delay) public virtual createSnapshot {
         print.method("setAllocationDelay");
         _tryPrankAppointee_AllocationManager(IAllocationManager.setAllocationDelay.selector);
         config.allocationManager().setAllocationDelay(address(this), delay);
-        print.gasUsed();
 
         allocationDelay = delay;
     }
@@ -121,7 +118,6 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     function registerAsOperator() public virtual createSnapshot {
         print.method("registerAsOperator");
         config.delegationManager().registerAsOperator(address(0), allocationDelay, "metadata");
-        print.gasUsed();
     }
 
     /// @dev Delegate to the operator without a signature
@@ -130,7 +126,6 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
 
         ISignatureUtilsMixinTypes.SignatureWithExpiry memory emptySig;
         config.delegationManager().delegateTo(address(operator), emptySig, bytes32(0));
-        print.gasUsed();
     }
 
     /// @dev Undelegate from operator
@@ -140,7 +135,6 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         Withdrawal[] memory expectedWithdrawals = _getExpectedWithdrawalStructsForStaker(address(this));
         _tryPrankAppointee_DelegationManager(IDelegationManager.undelegate.selector);
         config.delegationManager().undelegate(address(this));
-        print.gasUsed();
 
         for (uint i = 0; i < expectedWithdrawals.length; i++) {
             IStrategy strat = expectedWithdrawals[i].strategies[0];
@@ -165,7 +159,6 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         ISignatureUtilsMixinTypes.SignatureWithExpiry memory emptySig;
         _tryPrankAppointee_DelegationManager(IDelegationManager.redelegate.selector);
         config.delegationManager().redelegate(address(newOperator), emptySig, bytes32(0));
-        print.gasUsed();
 
         for (uint i = 0; i < expectedWithdrawals.length; i++) {
             IStrategy strat = expectedWithdrawals[i].strategies[0];
@@ -188,7 +181,6 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
 
         Withdrawal[] memory expectedWithdrawals = _getExpectedWithdrawalStructsForStaker(address(staker));
         config.delegationManager().undelegate(address(staker));
-        print.gasUsed();
 
         return expectedWithdrawals;
     }
@@ -230,7 +222,6 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         });
 
         bytes32[] memory withdrawalRoots = config.delegationManager().queueWithdrawals(params);
-        print.gasUsed();
 
         // Basic sanity check - we do all other checks outside this file
         assertEq(withdrawals.length, withdrawalRoots.length, "User.queueWithdrawals: length mismatch");
@@ -365,7 +356,6 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
                 IERC20 underlyingToken = strat.underlyingToken();
                 underlyingToken.approve(address(config.strategyManager()), tokenBalance);
                 config.strategyManager().depositIntoStrategy(strat, underlyingToken, tokenBalance);
-                print.gasUsed();
             }
         }
     }
@@ -386,7 +376,6 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
                 IERC20 underlyingToken = strat.underlyingToken();
                 underlyingToken.approve(address(config.strategyManager()), tokens);
                 config.strategyManager().depositIntoStrategy(strat, underlyingToken, tokens);
-                print.gasUsed();
             }
         }
     }
@@ -429,7 +418,6 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         }
 
         config.delegationManager().completeQueuedWithdrawal(withdrawal, tokens, receiveAsTokens);
-        print.gasUsed();
 
         return tokens;
     }

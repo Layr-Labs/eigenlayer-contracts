@@ -75,7 +75,7 @@ jobs:
             Fork) forge test --match-contract Integration ;;
           esac
         env:
-          FOUNDRY_PROFILE: ${{ matrix.suite == 'Fork' && 'forktest' || 'medium' }}
+          FOUNDRY_PROFILE: ${{ matrix.suite == 'Fork' && 'mainnet' || 'medium' }}
           RPC_MAINNET: https://billowing-capable-sound.quiknode.pro/
 
   # -----------------------------------------------------------------------
