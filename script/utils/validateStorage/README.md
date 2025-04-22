@@ -7,7 +7,7 @@ To validate the storage of an upgradeable deployed contract against a local one,
 bash script/upgrade/validateUpgrade.sh -n <network> -c <contract> -a <implementation address>
 ```
 
-The supported networks are `goerli` and `mainnet`. The supported contracts are `strategyManager`, `delegation`, `eigenPod`, `eigenPodManager`, and `slasher`.
+The supported networks are `mainnet`. The supported contracts are `strategyManager`, `delegation`, `eigenPod`, `eigenPodManager`, and `slasher`.
 
 The above script generates two csv files, `localLayout.csv` and `onChainLayout.csv`. To keep these csv files after validating storage, add a `-k` flag to the above command
 

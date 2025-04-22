@@ -2,30 +2,20 @@
 
 # EigenLayer
 
-EigenLayer is a set of smart contracts deployed on Ethereum that enable restaking of assets to secure new services. This repo contains the EigenLayer core contracts, whose currently-supported assets include beacon chain ETH and several liquid staking tokens (LSTs). Users use these contracts to deposit and withdraw these assets, as well as delegate them to operators providing services to AVSs.
+EigenLayer is a set of smart contracts deployed on Ethereum that enable restaking of assets to secure new services (AVSs).
 
-## Getting Started
 
-* [Branching](#branching)
-* [Documentation](#documentation)
-* [Building and Running Tests](#building-and-running-tests)
-* [Deployments](#deployments)
+## Get Started
 
-## Deployment Matrix
-The deployments on `mainnet`, `holesky`, and `sepolia` are on the below versions:
-
-| Environment | Version | Notes |
-| -------- | -------- | -------- |
-| Mainnet | [`v0.5.4`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v0.5.4) | |
-| Holesky | [`v1.4.1`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.4.1-testnet-holeksy) | |
-| Sepolia | [`v1.3.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.3.0) | |
+See [CONTRIBUTING](CONTRIBUTING.md). Contributions that do not follow our fork base PR practices will be automatically immediately closed and deleted, preventing branch pollution, keeping our repository clean, tidy, more readable and searchable.
 
 ## Branching
 
-The main branches we use are:
-* [`dev (default)`](https://github.com/Layr-Labs/eigenlayer-contracts/tree/dev): The most up-to-date branch, containing the work-in-progress code for upcoming releases
-* [`testnet-holesky`](https://github.com/Layr-Labs/eigenlayer-contracts/tree/testnet-holesky): Our current testnet deployment
-* [`mainnet`](https://github.com/Layr-Labs/eigenlayer-contracts/tree/mainnet): Our current mainnet deloyment
+Branches we use:
+* `main`: The canonical, most up-to-date branch, containing the work-in-progress code for upcoming releases
+* `Vx.y.z`: Release branch with version `x.y.z` that matches a release of EigenLayer, release branch is always cut from `main` via cherry-picking
+* `release-dev/xxx`: A development branch for a large feature to be released, the branch should eventually be deleted after merge to `main`
+
 
 ## Documentation
 
@@ -41,89 +31,26 @@ The most up-to-date and technical documentation can be found in [/docs](/docs). 
 
 To get an idea of how users interact with these contracts, check out our integration tests: [/src/test/integration](./src/test/integration/).
 
-## Building and Running Tests
 
-This repository uses Foundry. See the [Foundry docs](https://book.getfoundry.sh/) for more info on installation and usage. If you already have foundry, you can build this project and run tests with these commands:
-
-```
-foundryup
-
-forge build
-forge test
-```
-
-### Contributor Setup
-
-To set up this repo for the first time, run:
-
-```bash
-make deps
-```
-
-This will:
-* Install the pre-commit hook
-* Install foundry and its tools
-* Install abigen
-
-### Running Fork Tests
-
-We have a few fork tests against ETH mainnet. Passing these requires the environment variable `RPC_MAINNET` to be set. See `.env.example` for an example. Once you've set up your environment, `forge test` should show these fork tests passing.
-
-Additionally, to run all tests in a forked environment, [install yq](https://mikefarah.gitbook.io/yq/v/v3.x/). Then, set up your environment by running the following command.
-
-`source bin/source-env.sh [goerli|local]`
-
-Then run the tests:
-
-`forge test --fork-url [RPC_URL]`
-
-### Running Static Analysis
-
-1. Install [solhint](https://github.com/protofire/solhint), then run:
-
-`solhint 'src/contracts/**/*.sol'`
-
-2. Install [slither](https://github.com/crytic/slither), then run:
-
-`slither .`
-
-### Generate Inheritance and Control-Flow Graphs
-
-1. Install [surya](https://github.com/ConsenSys/surya/) and graphviz:
-
-```
-npm i -g surya
-
-apt install graphviz
-```
-
-2. Then, run:
-
-```
-surya inheritance ./src/contracts/**/*.sol | dot -Tpng > InheritanceGraph.png
-
-surya mdreport surya_report.md ./src/contracts/**/*.sol
-```
-
-### Generate Go bindings
-
-```bash
-make bindings
-```
-
-### Generate updated Storage Report
-
-To update the storage reports in `/docs/storage-report` run:
-
-```bash
-make storage-report
-```
 
 ## Deployments
 
-### Current Mainnet Deployment
+### Deployment Version By Environments
 
-The current mainnet deployment is our M2 release. You can view the deployed contract addresses below, or check out the code itself on the [`mainnet`](https://github.com/Layr-Labs/eigenlayer-contracts/tree/mainnet) branch.
+The deployments on `mainnet`, `holesky`, and `sepolia` are on the below versions:
+
+| Environment | Version |
+| -------- | -------- |
+| Mainnet Ethereum | [`v0.5.4`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v0.5.4) |
+| Testnet Holesky | [`v1.4.1`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.4.1-testnet-holeksy) |
+| Testnet Sepolia | [`v1.3.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.3.0) |
+
+
+### Current Deployment Contracts
+
+<details>
+    <summary>Mainnet Ethereum</summary>
+
 
 ###### Core
 
@@ -197,9 +124,14 @@ The following strategies differ significantly from the other strategies deployed
 | [`Compound: Timelock`](https://github.com/compound-finance/compound-protocol/blob/a3214f67b73310d547e00fc578e8355911c9d376/contracts/Timelock.sol) | - | [`0xA6Db...0EAF`](https://etherscan.io/address/0xA6Db1A8C5a981d1536266D2a393c5F8dDb210EAF) | |
 | [`OZ: Proxy Admin`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/ProxyAdmin.sol) | - | [`0x8b95...2444`](https://etherscan.io/address/0x8b9566AdA63B64d1E1dcF1418b43fd1433b72444) | |
 
----
 
-### Current Testnet Holesky Deployment
+</details>
+
+
+
+<details>
+    <summary>Testnet Holesky</summary>
+
 
 You can view the deployed contract addresses below, or check out the code itself on the [`testnet-holesky`](https://github.com/Layr-Labs/eigenlayer-contracts/tree/testnet-holesky) branch.
 
@@ -271,9 +203,12 @@ The following strategies differ significantly from the other strategies deployed
 | [`OZ: TimelockController`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v4.7/contracts/governance/TimelockController.sol) | - | [`0x5e83...F6fD`](https://holesky.etherscan.io/address/0x5e83c7d195318A5acf46B29E5810DdC323b2F6fD) | |
 | [`OZ: Proxy Admin`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/ProxyAdmin.sol) | - | [`0xDB02...A6cf`](https://holesky.etherscan.io/address/0xDB023566064246399b4AE851197a97729C93A6cf) | |
 
----
+</details>
 
-### Current Testnet Sepolia Deployment
+
+
+<details>
+    <summary>Testnet Sepolia</summary>
 
 ###### Core
 
@@ -329,3 +264,5 @@ The following strategies differ significantly from the other strategies deployed
 | [`PauserRegistry`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/slashing-magnitudes/src/contracts/permissions/PauserRegistry.sol) | - | [`0x63AA...20f3`](https://sepolia.etherscan.io/address/0x63AAe451780090f50Ad323aAEF155F63a29D20f3) | |
 | [`OZ: TimelockController`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v4.7/contracts/governance/TimelockController.sol) | - | [`0x1BEF...1b5B`](https://sepolia.etherscan.io/address/0x1BEF05C7303d44e0E2FCD2A19d993eDEd4c51b5B) | |
 | [`OZ: Proxy Admin`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/ProxyAdmin.sol) | - | [`0x56E8...6Fa1`](https://sepolia.etherscan.io/address/0x56E88cb4f0136fC27D95499dE4BE2acf47946Fa1) | |
+
+</details>

@@ -5,21 +5,21 @@ on:
     types: [opened, edited, synchronize]
 
 jobs:
-  triage:
-    runs-on: protocol-x64-16core
-    name: Labels
-    permissions:
-      contents: read
-      pull-requests: write
+  # triage:
+  #   runs-on: protocol-x64-16core
+  #   name: Labels
+  #   permissions:
+  #     contents: read
+  #     pull-requests: write
     
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
         
-      - uses: actions/labeler@v5
-        with:
-          repo-token: "${{ secrets.GITHUB_TOKEN }}"
-          sync-labels: true
+  #     - uses: actions/labeler@v5
+  #       with:
+  #         repo-token: "${{ secrets.GITHUB_TOKEN }}"
+  #         sync-labels: true
 
   lint-pr-title:
     runs-on: ubuntu-latest

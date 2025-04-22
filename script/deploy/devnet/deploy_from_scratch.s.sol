@@ -443,7 +443,6 @@ contract DeployFromScratch is Script, Test {
         vm.serializeString(parent_object, chain_info, chain_info_output);
         string memory finalJson = vm.serializeString(parent_object, parameters, parameters_output);
         // TODO: should output to different file depending on configFile passed to run()
-        //       so that we don't override mainnet output by deploying to goerli for eg.
         vm.writeJson(finalJson, "script/output/devnet/slashing_output.json");
     }
 
