@@ -59,6 +59,19 @@ interface IEigenPodErrors {
     /// @dev Thrown when a validator has not been slashed on the beacon chain.
     error ValidatorNotSlashedOnBeaconChain();
 
+    /// Consolidation and Withdrawal Requests
+
+    /// @dev Thrown when a consolidation request is initiated where src == target
+    error SourceEqualsTarget();
+    /// @dev Thrown when a predeploy request is initiated with insufficient msg.value
+    error InsufficientFunds();
+    /// @dev Thrown when refunding excess fees from a predeploy fails
+    error RefundFailed();
+    /// @dev Thrown when calling the predeploy fails
+    error PredeployFailed();
+    /// @dev Thrown when querying a predeploy for its current fee fails
+    error FeeQueryFailed();
+
     /// Misc
 
     /// @dev Thrown when an invalid block root is returned by the EIP-4788 oracle.
@@ -96,6 +109,16 @@ interface IEigenPodTypes {
         uint64 podBalanceGwei;
         int64 balanceDeltasGwei;
         uint64 prevBeaconBalanceGwei;
+    }
+
+    struct ConsolidationRequest {
+        bytes srcPubkey;
+        bytes targetPubkey;
+    }
+
+    struct WithdrawalRequest {
+        bytes pubkey;
+        uint64 amount;
     }
 }
 
@@ -249,6 +272,42 @@ interface IEigenPod is IEigenPodErrors, IEigenPodEvents, ISemVerMixin {
         BeaconChainProofs.ValidatorProof calldata proof
     ) external;
 
+    /// @notice Allows the owner or proof submitter to initiate one or more requests to
+    /// consolidate their validators on the beacon chain.
+    /// @param requests An array of requests consisting of the source and target pubkeys
+    /// of the validators to be consolidated
+    /// @dev Both the source and target validator MUST have active withdrawal credentials
+    /// pointed at the pod
+    /// @dev The consolidation request predeploy requires a fee is sent with each request;
+    /// this is pulled from msg.value. After submitting all requests, any remaining fee is
+    /// refunded to the caller by calling its fallback function.
+    /// @dev This contract exposes `getConsolidationRequestFee` to query the current fee for
+    /// a single request. If submitting multiple requests, be aware that the predeploy uses
+    /// an exponential to calculate subsequent fees. You will have to calculate the total cost
+    /// for all requests offchain.
+    ///
+    /// (See https://eips.ethereum.org/EIPS/eip-7251#fee-calculation for reference)
+    function requestConsolidation(
+        ConsolidationRequest[] calldata requests
+    ) external payable;
+
+    /// @notice Allows the owner or proof submitter to initiate one or more requests to
+    /// withdraw funds from validators on the beacon chain.
+    /// @param requests An array of requests consisting of the source validator and an
+    /// amount to withdraw
+    /// @dev The withdrawal request predeploy requires a fee is sent with each request;
+    /// this is pulled from msg.value. After submitting all requests, any remaining fee is
+    /// refunded to the caller by calling its fallback function.
+    /// @dev This contract exposes `getWithdrawalRequestFee` to query the current fee for
+    /// a single request. If submitting multiple requests, be aware that the predeploy uses
+    /// an exponential to calculate subsequent fees. You will have to calculate the total cost
+    /// for all requests offchain.
+    ///
+    /// (See https://eips.ethereum.org/EIPS/eip-7002#fee-update-rule for reference)
+    function requestWithdrawal(
+        WithdrawalRequest[] calldata requests
+    ) external payable;
+
     /// @notice called by owner of a pod to remove any ERC20s deposited in the pod
     function recoverTokens(IERC20[] memory tokenList, uint256[] memory amountsToWithdraw, address recipient) external;
 
@@ -355,4 +414,14 @@ interface IEigenPod is IEigenPodErrors, IEigenPodEvents, ISemVerMixin {
     function getParentBlockRoot(
         uint64 timestamp
     ) external view returns (bytes32);
+
+    /// @notice Returns the current fee required to add a consolidation request to the EIP-7251 predeploy.
+    /// @dev Note that this getter only returns the fee required to perform a single request. For multiple
+    /// requests, see https://eips.ethereum.org/EIPS/eip-7251#fee-calculation
+    function getConsolidationRequestFee() external view returns (uint256);
+
+    /// @notice Returns the current fee required to add a withdrawal request to the EIP-7002 predeploy.
+    /// @dev Note that this getter only returns the fee required to perform a single request. For multiple
+    /// requests, see https://eips.ethereum.org/EIPS/eip-7002#fee-update-rule
+    function getWithdrawalRequestFee() external view returns (uint256);
 }

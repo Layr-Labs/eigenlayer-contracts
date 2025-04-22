@@ -47,6 +47,14 @@ contract EigenPod is
     /// (See https://eips.ethereum.org/EIPS/eip-4788)
     address internal constant BEACON_ROOTS_ADDRESS = 0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02;
 
+    /// @notice The address of the EIP-7002 withdrawal request predeploy
+    /// (See https://eips.ethereum.org/EIPS/eip-7002)
+    address internal constant WITHDRAWAL_REQUEST_ADDRESS = 0x00000961Ef480Eb55e80D19ad83579A64c007002;
+
+    /// @notice The address of the EIP-7251 consolidation request predeploy
+    /// (See https://eips.ethereum.org/EIPS/eip-7251)
+    address internal constant CONSOLIDATION_REQUEST_ADDRESS = 0x0000BBdDc7CE488642fb579F8B00f3a590007251;
+
     /// @notice The length of the EIP-4788 beacon block root ring buffer
     uint256 internal constant BEACON_ROOTS_HISTORY_BUFFER_LENGTH = 8191;
 
@@ -365,6 +373,62 @@ contract EigenPod is
         _startCheckpoint(false);
     }
 
+    /// @dev Input is the concatenated src and target pubkeys: [srcPubkey | targetPubkey]
+    /// Since each pubkey is 48 bytes, total length should be 96 bytes
+    function requestConsolidation(
+        ConsolidationRequest[] calldata requests
+    ) external payable onlyWhenNotPaused(PAUSED_CONSOLIDATIONS) onlyOwnerOrProofSubmitter {
+        uint256 fundsAvailable = msg.value;
+
+        for (uint256 i = 0; i < requests.length; i++) {
+            ConsolidationRequest calldata request = requests[i];
+            /// Validate pubkeys are unique and well-formed
+            require(request.srcPubkey.length == 48, InvalidPubKeyLength());
+            require(request.targetPubkey.length == 48, InvalidPubKeyLength());
+            require(keccak256(request.srcPubkey) != keccak256(request.targetPubkey), SourceEqualsTarget());
+
+            /// Ensure both src and target have verified withdrawal credentials pointed at this pod
+            ValidatorInfo memory src = validatorPubkeyToInfo(request.srcPubkey);
+            ValidatorInfo memory target = validatorPubkeyToInfo(request.targetPubkey);
+            require(src.status == VALIDATOR_STATUS.ACTIVE, ValidatorNotActiveInPod());
+            require(target.status == VALIDATOR_STATUS.ACTIVE, ValidatorNotActiveInPod());
+
+            fundsAvailable = _callPredeploy({
+                predeploy: CONSOLIDATION_REQUEST_ADDRESS,
+                callData: bytes.concat(request.srcPubkey, request.targetPubkey),
+                fundsAvailable: fundsAvailable
+            });
+        }
+
+        /// Refund remainder of fundsAvailable
+        (bool ok,) = msg.sender.call{value: fundsAvailable}("");
+        require(ok, RefundFailed());
+    }
+
+    function requestWithdrawal(
+        WithdrawalRequest[] calldata requests
+    ) external payable onlyWhenNotPaused(PAUSED_WITHDRAWAL_REQUESTS) onlyOwnerOrProofSubmitter {
+        uint256 fundsAvailable = msg.value;
+
+        /// Initiate each withdrawal request, decrementing available funds each time
+        for (uint256 i = 0; i < requests.length; i++) {
+            WithdrawalRequest calldata request = requests[i];
+            /// Validate pubkey is well-formed. It's not necessary to perform any additional validation,
+            /// as the worst-case scenario is just that the request does not go through.
+            require(request.pubkey.length == 48, InvalidPubKeyLength());
+
+            fundsAvailable = _callPredeploy({
+                predeploy: WITHDRAWAL_REQUEST_ADDRESS,
+                callData: abi.encodePacked(request.pubkey, request.amount),
+                fundsAvailable: fundsAvailable
+            });
+        }
+
+        /// Refund remainder of fundsAvailable
+        (bool ok,) = msg.sender.call{value: fundsAvailable}("");
+        require(ok, RefundFailed());
+    }
+
     /// @notice called by owner of a pod to remove any ERC20s deposited in the pod
     function recoverTokens(
         IERC20[] memory tokenList,
@@ -679,6 +743,29 @@ contract EigenPod is
         });
     }
 
+    /// @dev Call a predeploy with the given calldata
+    /// @param predeploy the address of either the EIP-7002 or EIP-7251 predeploy
+    /// @param callData the data to send to the predeploy
+    /// @param fundsAvailable the amount of funds available to cover the predeploy fee
+    /// @return remainder the amount of funds left over after paying the predeploy fee
+    function _callPredeploy(
+        address predeploy,
+        bytes memory callData,
+        uint256 fundsAvailable
+    ) internal returns (uint256 remainder) {
+        /// Ensure fundsAvailable is enough to satisfy the current predeploy fee
+        uint256 fee = _getFee(predeploy);
+        require(fundsAvailable >= fee, InsufficientFunds());
+        remainder = fundsAvailable - fee;
+
+        /// Call predeploy
+        (bool ok,) = predeploy.call{value: fee}(callData);
+        require(ok, PredeployFailed());
+
+        /// Return unspent funds
+        return remainder;
+    }
+
     function _podWithdrawalCredentials() internal view returns (bytes memory) {
         return abi.encodePacked(bytes1(uint8(1)), bytes11(0), address(this));
     }
@@ -688,11 +775,37 @@ contract EigenPod is
     }
 
     ///@notice Calculates the pubkey hash of a validator's pubkey as per SSZ spec
-    function _calculateValidatorPubkeyHash(
+    function _calcPubkeyHash(
         bytes memory validatorPubkey
     ) internal pure returns (bytes32) {
         require(validatorPubkey.length == 48, InvalidPubKeyLength());
         return sha256(abi.encodePacked(validatorPubkey, bytes16(0)));
+    }
+
+    /// @dev Returns the current fee required to query either the EIP-7002 or EIP-7251 predeploy
+    function _getFee(
+        address predeploy
+    ) internal view returns (uint256) {
+        (bool success, bytes memory result) = predeploy.staticcall("");
+        require(success && result.length == 32, FeeQueryFailed());
+
+        return uint256(bytes32(result));
+    }
+
+    /// @notice Returns the PROOF_TYPE depending on the `proofTimestamp` in relation to the fork timestamp.
+    function _getProofVersion(
+        uint64 proofTimestamp
+    ) internal view returns (BeaconChainProofs.ProofVersion) {
+        /// Get the timestamp of the Pectra fork, read from the `EigenPodManager`
+        /// This returns the timestamp of the first non-missed slot at or after the Pectra hard fork
+        uint64 forkTimestamp = eigenPodManager.pectraForkTimestamp();
+        require(forkTimestamp != 0, ForkTimestampZero());
+
+        /// We check if the proofTimestamp is <= pectraForkTimestamp because a `proofTimestamp` at the `pectraForkTimestamp`
+        /// is considered to be Pre-Pectra given the EIP-4788 oracle returns the parent block.
+        return proofTimestamp <= forkTimestamp
+            ? BeaconChainProofs.ProofVersion.DENEB
+            : BeaconChainProofs.ProofVersion.PECTRA;
     }
 
     /**
@@ -716,8 +829,8 @@ contract EigenPod is
     /// @notice Returns the validatorInfo for a given validatorPubkey
     function validatorPubkeyToInfo(
         bytes calldata validatorPubkey
-    ) external view returns (ValidatorInfo memory) {
-        return _validatorPubkeyHashToInfo[_calculateValidatorPubkeyHash(validatorPubkey)];
+    ) public view returns (ValidatorInfo memory) {
+        return _validatorPubkeyHashToInfo[_calcPubkeyHash(validatorPubkey)];
     }
 
     function validatorStatus(
@@ -730,7 +843,7 @@ contract EigenPod is
     function validatorStatus(
         bytes calldata validatorPubkey
     ) external view returns (VALIDATOR_STATUS) {
-        bytes32 validatorPubkeyHash = _calculateValidatorPubkeyHash(validatorPubkey);
+        bytes32 validatorPubkeyHash = _calcPubkeyHash(validatorPubkey);
         return _validatorPubkeyHashToInfo[validatorPubkeyHash].status;
     }
 
@@ -754,19 +867,11 @@ contract EigenPod is
         return abi.decode(result, (bytes32));
     }
 
-    /// @notice Returns the PROOF_TYPE depending on the `proofTimestamp` in relation to the fork timestamp.
-    function _getProofVersion(
-        uint64 proofTimestamp
-    ) internal view returns (BeaconChainProofs.ProofVersion) {
-        /// Get the timestamp of the Pectra fork, read from the `EigenPodManager`
-        /// This returns the timestamp of the first non-missed slot at or after the Pectra hard fork
-        uint64 forkTimestamp = eigenPodManager.pectraForkTimestamp();
-        require(forkTimestamp != 0, ForkTimestampZero());
+    function getConsolidationRequestFee() external view returns (uint256) {
+        return _getFee(CONSOLIDATION_REQUEST_ADDRESS);
+    }
 
-        /// We check if the proofTimestamp is <= pectraForkTimestamp because a `proofTimestamp` at the `pectraForkTimestamp`
-        /// is considered to be Pre-Pectra given the EIP-4788 oracle returns the parent block.
-        return proofTimestamp <= forkTimestamp
-            ? BeaconChainProofs.ProofVersion.DENEB
-            : BeaconChainProofs.ProofVersion.PECTRA;
+    function getWithdrawalRequestFee() external view returns (uint256) {
+        return _getFee(WITHDRAWAL_REQUEST_ADDRESS);
     }
 }
