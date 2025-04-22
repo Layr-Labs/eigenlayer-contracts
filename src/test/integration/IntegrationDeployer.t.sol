@@ -491,7 +491,6 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
 
         user = userType == DEFAULT ? new User(name) : User(new User_AltMethods(name));
 
-
         assertTrue(address(user) != address(0), "User is not initialized");
         // if (eq(profile, "default") || eq(profile, "mainnet") || (eq(profile, "forktest") && isUpgraded)) {
         //     user = userType == DEFAULT ? new User(name) : User(new User_AltMethods(name));
@@ -574,6 +573,9 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
             if (assetTypes & HOLDS_ALL != 0) options[count++] = HOLDS_ALL;
             if (assetTypes & HOLDS_MAX != 0) options[count++] = HOLDS_MAX;
         }
+
+        // If there are no options, skip the test.
+        if (count == 0) cheats.skip(true);
 
         return options[cheats.randomUint(0, count - 1)];
     }

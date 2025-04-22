@@ -149,8 +149,8 @@ library ConfigParser {
     function parseForkConfig(string memory profile) internal view returns (ForkConfig memory) {
         return ForkConfig({
             forkBlock: vm.envOr(string.concat("FORK_BLOCK_", vm.toUppercase(profile)), uint(0)),
-            upgradeBeforeTesting: vm.envOr(string.concat("UPGRADE_BEFORE_TEST_", vm.toUppercase(profile)), false),
-            supportEigenPodTests: vm.envOr(string.concat("TEST_EIGEN_PODS_", vm.toUppercase(profile)), false),
+            upgradeBeforeTesting: vm.envOr(string.concat("UPGRADE_BEFORE_TEST_", vm.toUppercase(profile)), true),
+            supportEigenPodTests: vm.envOr(string.concat("TEST_EIGEN_PODS_", vm.toUppercase(profile)), true),
             supportUpgradeTests: vm.envOr(string.concat("TEST_UPGRADES_", vm.toUppercase(profile)), false),
             timelockPayload: vm.envOr("TIMELOCK_PAYLOAD", bytes(""))
         });
