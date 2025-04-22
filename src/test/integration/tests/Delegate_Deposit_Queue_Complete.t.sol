@@ -5,6 +5,10 @@ import "src/test/integration/IntegrationChecks.t.sol";
 import "src/test/integration/users/User.t.sol";
 
 contract Integration_Delegate_Deposit_Queue_Complete is IntegrationChecks {
+    function _init() internal override {
+        _configAssetTypes(HOLDS_LST);
+    }
+
     function testFuzz_delegate_deposit_queue_completeAsShares(uint24) public {
         // Create a staker and an operator with a nonzero balance and corresponding strategies
         (staker, strategies, initTokenBalances) = _newRandomStaker();

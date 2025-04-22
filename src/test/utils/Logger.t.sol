@@ -128,18 +128,12 @@ library print {
         for (uint i = 0; i < strategies.length; i++) {
             IStrategy strat = strategies[i];
             if (strat == BEACONCHAIN_ETH_STRAT) {
-                console.log("       Native ETH: %s", print.asWad(tokenBalances[i]));
+                console.log("       Native ETH: %s", tokenBalances[i]);
             } else {
                 IERC20 underlyingToken = strat.underlyingToken();
-                console.log("       %s: %s", IERC20Metadata(address(underlyingToken)).name(), print.asGwei(tokenBalances[i]));
+                console.log("       %s: %s", IERC20Metadata(address(underlyingToken)).name(), tokenBalances[i]);
             }
         }
-    }
-
-    function gasUsed() internal {
-        uint used = cheats.snapshotGasLastCall("gasUsed");
-        if (!_logging()) return;
-        console.log("   Gas used: %d".dim().bold(), used);
     }
 
     /// -----------------------------------------------------------------------
@@ -178,43 +172,6 @@ library print {
     function asUserType(uint t) internal pure returns (string memory s) {
         if (t == DEFAULT) s = "DEFAULT";
         else if (t == ALT_METHODS) s = "ALT_METHODS";
-    }
-
-    function asForkType(uint t) internal pure returns (string memory s) {
-        if (t == LOCAL) s = "LOCAL";
-        else if (t == MAINNET) s = "MAINNET";
-        else if (t == HOLESKY) s = "HOLESKY";
-    }
-
-    function asGwei(uint x) internal pure returns (string memory) {
-        return x.asDecimal(9, " gwei");
-    }
-
-    function asWad(uint x) internal pure returns (string memory) {
-        return x.asDecimal(18, " wad");
-    }
-
-    function asDecimal(uint x, uint8 decimals, string memory denomination) internal pure returns (string memory s) {
-        if (x == 0) return string.concat("0.0", denomination);
-
-        s = cheats.toString(x);
-
-        while (bytes(s).length < decimals) s = string.concat("0", s);
-
-        uint len = bytes(s).length;
-        bytes memory b = bytes(s);
-        bytes memory left = new bytes(len > decimals ? len - decimals : 0);
-        bytes memory right = new bytes(decimals);
-
-        for (uint i; i < left.length; ++i) {
-            left[i] = b[i];
-        }
-
-        for (uint i; i < decimals; ++i) {
-            right[i] = b[len - decimals + i];
-        }
-
-        return string.concat(left.length > 0 ? string(left) : "0", ".", string(right), denomination);
     }
 
     /// -----------------------------------------------------------------------
