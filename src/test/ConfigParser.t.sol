@@ -29,6 +29,7 @@ struct Governance {
     address operationsMultisig;
     address pauserMultisig;
     PauserRegistry pauserRegistry;
+    address protocolCouncil;
     ProxyAdmin proxyAdmin;
     TimelockController timelock;
 }
@@ -51,6 +52,14 @@ struct Config {
     Pods pods;
     Strategies strategies;
     Tokens tokens;
+}
+
+struct ForkConfig {
+    uint forkBlock;
+    bool upgradeBeforeTesting;
+    bool supportEigenPodTests;
+    bool supportUpgradeTests;
+    bytes timelockPayload;
 }
 
 library ConfigParser {
@@ -76,6 +85,7 @@ library ConfigParser {
         c.governance.operationsMultisig = Env.opsMultisig();
         c.governance.pauserMultisig = Env.pauserMultisig();
         c.governance.pauserRegistry = Env.pauserRegistry(Env.impl);
+        c.governance.protocolCouncil = Env.protocolCouncilMultisig();
         c.governance.proxyAdmin = ProxyAdmin(Env.proxyAdmin());
         c.governance.timelock = Env.timelockController();
         // Token addresses
@@ -100,6 +110,50 @@ library ConfigParser {
         for (uint i; i < c.strategies.strategyAddresses.length; ++i) {
             c.strategies.strategyAddresses[i] = Env.strategyBaseTVLLimits(Env.instance, i);
         }
+    }
+
+    function label(Config memory c) internal {
+        // Governance
+        vm.label(address(c.governance.communityMultisig), "CommunityMultisig");
+        vm.label(address(c.governance.executorMultisig), "ExecutorMultisig");
+        vm.label(address(c.governance.operationsMultisig), "OperationsMultisig");
+        vm.label(address(c.governance.pauserMultisig), "PauserMultisig");
+        vm.label(address(c.governance.pauserRegistry), "PauserRegistry");
+        vm.label(address(c.governance.protocolCouncil), "ProtocolCouncil");
+        vm.label(address(c.governance.proxyAdmin), "ProxyAdmin");
+        vm.label(address(c.governance.timelock), "Timelock");
+        // Tokens
+        vm.label(address(c.tokens.bEIGEN), "bEIGEN");
+        vm.label(address(c.tokens.EIGEN), "EIGEN");
+        // Core
+        vm.label(address(c.core.allocationManager), "AllocationManager");
+        vm.label(address(c.core.avsDirectory), "AVSDirectory");
+        vm.label(address(c.core.delegationManager), "DelegationManager");
+        vm.label(address(c.core.permissionController), "PermissionController");
+        vm.label(address(c.core.rewardsCoordinator), "RewardsCoordinator");
+        vm.label(address(c.core.strategyManager), "StrategyManager");
+        // Pods
+        vm.label(address(c.pods.eigenPodBeacon), "EigenPodBeacon");
+        vm.label(address(c.pods.eigenPodManager), "EigenPodManager");
+        vm.label(address(c.pods.eigenStrategy), "EigenStrategy");
+        // Strategies
+        vm.label(address(c.strategies.strategyFactory), "StrategyFactory");
+        vm.label(address(c.strategies.strategyFactoryBeacon), "StrategyFactoryBeacon");
+        // Label all the strategy addresses
+        for (uint i; i < c.strategies.strategyAddresses.length; ++i) {
+            vm.label(address(c.strategies.strategyAddresses[i]), string.concat("Strategy", vm.toString(i)));
+        }
+    }
+
+    /// @dev Returns the fork config from a given profile.
+    function parseForkConfig(string memory profile) internal view returns (ForkConfig memory) {
+        return ForkConfig({
+            forkBlock: vm.envOr(string.concat("FORK_BLOCK_", vm.toUppercase(profile)), uint(0)),
+            upgradeBeforeTesting: vm.envOr(string.concat("UPGRADE_BEFORE_TEST_", vm.toUppercase(profile)), true),
+            supportEigenPodTests: vm.envOr(string.concat("TEST_EIGEN_PODS_", vm.toUppercase(profile)), true),
+            supportUpgradeTests: vm.envOr(string.concat("TEST_UPGRADES_", vm.toUppercase(profile)), false),
+            timelockPayload: vm.envOr("TIMELOCK_PAYLOAD", bytes(""))
+        });
     }
 
     /// -----------------------------------------------------------------------
@@ -154,23 +208,24 @@ contract ConfigParserTest is Test {
 
     function test_ParseTOML() public {
         vm.createSelectFork(vm.rpcUrl("mainnet"), 22_181_590);
-        Config memory c = ConfigParser.parse("./script/configs/mainnet/mainnet-addresses.toml");
+        Config memory c = ConfigParser.parse("./script/configs/mainnet.toml");
 
         assertEq(c.governance.communityMultisig, 0xFEA47018D632A77bA579846c840d5706705Dc598);
         assertEq(c.governance.executorMultisig, 0x369e6F597e22EaB55fFb173C6d9cD234BD699111);
         assertEq(c.governance.operationsMultisig, 0xBE1685C81aA44FF9FB319dD389addd9374383e90);
         assertEq(c.governance.pauserMultisig, 0x5050389572f2d220ad927CcbeA0D406831012390);
         assertEq(address(c.governance.pauserRegistry), 0x0c431C66F4dE941d089625E5B423D00707977060);
+        assertEq(address(c.governance.protocolCouncil), 0x461854d84Ee845F905e0eCf6C288DDEEb4A9533F);
         assertEq(address(c.governance.proxyAdmin), 0x8b9566AdA63B64d1E1dcF1418b43fd1433b72444);
-        assertEq(address(c.governance.timelock), 0xA6Db1A8C5a981d1536266D2a393c5F8dDb210EAF);
+        assertEq(address(c.governance.timelock), 0xC06Fd4F821eaC1fF1ae8067b36342899b57BAa2d);
 
         assertEq(address(c.tokens.bEIGEN), 0x83E9115d334D248Ce39a6f36144aEaB5b3456e75);
         assertEq(address(c.tokens.EIGEN), 0xec53bF9167f50cDEB3Ae105f56099aaaB9061F83);
 
-        assertEq(address(c.core.allocationManager), 0x0000000000000000000000000000000000000000);
+        assertEq(address(c.core.allocationManager), 0x948a420b8CC1d6BFd0B6087C2E7c344a2CD0bc39);
         assertEq(address(c.core.avsDirectory), 0x135DDa560e946695d6f155dACaFC6f1F25C1F5AF);
         assertEq(address(c.core.delegationManager), 0x39053D51B77DC0d36036Fc1fCc8Cb819df8Ef37A);
-        assertEq(address(c.core.permissionController), 0x0000000000000000000000000000000000000000);
+        assertEq(address(c.core.permissionController), 0x25E5F8B1E7aDf44518d35D5B2271f114e081f0E5);
         assertEq(address(c.core.rewardsCoordinator), 0x7750d328b314EfFa365A0402CcfD489B80B0adda);
         assertEq(address(c.core.strategyManager), 0x858646372CC42E1A627fcE94aa7A7033e7CF075A);
 

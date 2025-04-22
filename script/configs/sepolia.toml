@@ -1,0 +1,39 @@
+# WARNING: The layout and alphabetical order of this file must be consistent with what's in the `ConfigParser` library.
+# https://book.getfoundry.sh/cheatcodes/parse-toml?highlight=toml#decoding-toml-tables-into-solidity-structs
+
+# NOTE: Use address(0) for any null/undeployed addresses.
+
+[governance]
+communityMultisig = "0x6f8459810197cc9fE123BBeB918451757a4fBAc6"
+executorMultisig = "0x4FDA8998EC3b7d4b4A612d45FeB8fB36734470f2"
+operationsMultisig = "0xb094Ba769b4976Dc37fC689A76675f31bc4923b0"
+pauserMultisig = "0x0B415f75980D863872C3eb8caa76E6eC8Bc81536"
+pauserRegistry = "0x63AAe451780090f50Ad323aAEF155F63a29D20f3"
+protocolCouncil = "0x8eA6C3Cca1c96967F7B164FfaA5fabede10311A9"
+proxyAdmin = "0x56E88cb4f0136fC27D95499dE4BE2acf47946Fa1"
+timelock = "0x1BEF05C7303d44e0E2FCD2A19d993eDEd4c51b5B"
+
+[tokens]
+beigen = "0xc5B857A92245f64e9D90cCc5b096Db82eB77eB5c"
+eigen = "0x0011FA2c512063C495f77296Af8d195F33A8Dd38"
+
+[core]
+allocationManager = "0x42583067658071247ec8CE0A516A58f682002d07"
+avsDirectory = "0xa789c91ECDdae96865913130B786140Ee17aF545"
+delegationManager = "0xD4A7E1Bd8015057293f0D0A557088c286942e84b"
+permissionController = "0x44632dfBdCb6D3E21EF613B0ca8A6A0c618F5a37"
+rewardsCoordinator = "0x5ae8152fb88c26ff9ca5C014c94fca3c68029349"
+strategyManager = "0x2E3D6c0744b10eb0A4e6F679F71554a39Ec47a5D"
+
+[pods]
+eigenPodBeacon = "0x0e19E56E41D42137d00dD4f51EC2F613E50cAcf4"
+eigenPodManager = "0x56BfEb94879F4543E756d26103976c567256034a"
+eigenStrategy = "0x8E93249a6C37a32024756aaBd813E6139b17D1d5"
+
+[strategies]
+strategyFactory = "0x066cF95c1bf0927124DFB8B02B401bc23A79730D"
+strategyFactoryBeacon = "0x427e627Bc7E83cac0f84337d3Ad94230C32697D3"
+strategyAddresses = [
+    "0x424246ef71b01ee33aa33ac590fd9a0855f5efbc",  # wETH
+    "0x8b29d91e67b013e855eafe0ad704ac4ab086a574",  # stETH
+] 
