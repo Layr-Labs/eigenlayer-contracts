@@ -69,6 +69,7 @@ contract ExecuteUpgradeAndSetTimestampSubmitter is QueueUnpause, Pause {
         _validateProxyAdmins();
         _validateProxyConstructors();
         _validateProxiesInitialized();
+        _validateProxyVersions();
     }
 
     /// @dev Mirrors the checks done in 1-deployContracts, but now we check each contract's
@@ -93,6 +94,12 @@ contract ExecuteUpgradeAndSetTimestampSubmitter is QueueUnpause, Pause {
         vm.expectRevert(errInit);
         eigenPodManager.initialize(address(0), 0);
         assertTrue(eigenPodManager.owner() == Env.executorMultisig(), "epm.owner invalid");
+    }
+
+    /// @dev Validate the versions of the new proxy contracts
+    function _validateProxyVersions() internal view {
+        EigenPodManager eigenPodManager = Env.proxy.eigenPodManager();
+        assertEq(eigenPodManager.version(), "1.4.1");
     }
 
     function _completeSteps1_4() internal {
