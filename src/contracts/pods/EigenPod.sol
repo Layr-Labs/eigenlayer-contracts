@@ -373,12 +373,13 @@ contract EigenPod is
         _startCheckpoint(false);
     }
 
-    /// @dev Input is the concatenated src and target pubkeys: [srcPubkey | targetPubkey]
-    /// Since each pubkey is 48 bytes, total length should be 96 bytes
+    /// @inheritdoc: IEigenPod
     function requestConsolidation(
         ConsolidationRequest[] calldata requests
     ) external payable onlyWhenNotPaused(PAUSED_CONSOLIDATIONS) onlyOwnerOrProofSubmitter {
-        uint256 fundsAvailable = msg.value;
+        uint256 fee = getConsolidationRequestFee();
+        require(msg.value >= fee * requests.length, InsufficientFunds());
+        uint256 remainder = msg.value - (fee * requests.length);
 
         for (uint256 i = 0; i < requests.length; i++) {
             ConsolidationRequest calldata request = requests[i];
@@ -393,22 +394,25 @@ contract EigenPod is
             require(src.status == VALIDATOR_STATUS.ACTIVE, ValidatorNotActiveInPod());
             require(target.status == VALIDATOR_STATUS.ACTIVE, ValidatorNotActiveInPod());
 
-            fundsAvailable = _callPredeploy({
-                predeploy: CONSOLIDATION_REQUEST_ADDRESS,
-                callData: bytes.concat(request.srcPubkey, request.targetPubkey),
-                fundsAvailable: fundsAvailable
-            });
+            /// Call the predeploy
+            bytes memory callData = bytes.concat(request.srcPubkey, request.targetPubkey);
+            (bool ok,) = CONSOLIDATION_REQUEST_ADDRESS.call{value: fee}(callData);
+            require(ok, PredeployFailed());
         }
 
-        /// Refund remainder of fundsAvailable
-        (bool ok,) = msg.sender.call{value: fundsAvailable}("");
-        require(ok, RefundFailed());
+        /// Refund remainder of msg.value
+        if (remainder > 0) {
+            Address.sendValue(payable(msg.sender), remainder);
+        }
     }
 
+    /// @inheritdoc: IEigenPod
     function requestWithdrawal(
         WithdrawalRequest[] calldata requests
     ) external payable onlyWhenNotPaused(PAUSED_WITHDRAWAL_REQUESTS) onlyOwnerOrProofSubmitter {
-        uint256 fundsAvailable = msg.value;
+        uint256 fee = getWithdrawalRequestFee();
+        require(msg.value >= fee * requests.length, InsufficientFunds());
+        uint256 remainder = msg.value - (fee * requests.length);
 
         /// Initiate each withdrawal request, decrementing available funds each time
         for (uint256 i = 0; i < requests.length; i++) {
@@ -417,16 +421,16 @@ contract EigenPod is
             /// as the worst-case scenario is just that the request does not go through.
             require(request.pubkey.length == 48, InvalidPubKeyLength());
 
-            fundsAvailable = _callPredeploy({
-                predeploy: WITHDRAWAL_REQUEST_ADDRESS,
-                callData: abi.encodePacked(request.pubkey, request.amount),
-                fundsAvailable: fundsAvailable
-            });
+            /// Call the predeploy
+            bytes memory callData = abi.encodePacked(request.pubkey, request.amount);
+            (bool ok,) = CONSOLIDATION_REQUEST_ADDRESS.call{value: fee}(callData);
+            require(ok, PredeployFailed());
         }
 
-        /// Refund remainder of fundsAvailable
-        (bool ok,) = msg.sender.call{value: fundsAvailable}("");
-        require(ok, RefundFailed());
+        /// Refund remainder of msg.value
+        if (remainder > 0) {
+            Address.sendValue(payable(msg.sender), remainder);
+        }
     }
 
     /// @notice called by owner of a pod to remove any ERC20s deposited in the pod
@@ -743,29 +747,6 @@ contract EigenPod is
         });
     }
 
-    /// @dev Call a predeploy with the given calldata
-    /// @param predeploy the address of either the EIP-7002 or EIP-7251 predeploy
-    /// @param callData the data to send to the predeploy
-    /// @param fundsAvailable the amount of funds available to cover the predeploy fee
-    /// @return remainder the amount of funds left over after paying the predeploy fee
-    function _callPredeploy(
-        address predeploy,
-        bytes memory callData,
-        uint256 fundsAvailable
-    ) internal returns (uint256 remainder) {
-        /// Ensure fundsAvailable is enough to satisfy the current predeploy fee
-        uint256 fee = _getFee(predeploy);
-        require(fundsAvailable >= fee, InsufficientFunds());
-        remainder = fundsAvailable - fee;
-
-        /// Call predeploy
-        (bool ok,) = predeploy.call{value: fee}(callData);
-        require(ok, PredeployFailed());
-
-        /// Return unspent funds
-        return remainder;
-    }
-
     function _podWithdrawalCredentials() internal view returns (bytes memory) {
         return abi.encodePacked(bytes1(uint8(1)), bytes11(0), address(this));
     }
@@ -867,11 +848,11 @@ contract EigenPod is
         return abi.decode(result, (bytes32));
     }
 
-    function getConsolidationRequestFee() external view returns (uint256) {
+    function getConsolidationRequestFee() public view returns (uint256) {
         return _getFee(CONSOLIDATION_REQUEST_ADDRESS);
     }
 
-    function getWithdrawalRequestFee() external view returns (uint256) {
+    function getWithdrawalRequestFee() public view returns (uint256) {
         return _getFee(WITHDRAWAL_REQUEST_ADDRESS);
     }
 }

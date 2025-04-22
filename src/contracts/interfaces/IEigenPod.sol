@@ -282,11 +282,10 @@ interface IEigenPod is IEigenPodErrors, IEigenPodEvents, ISemVerMixin {
     /// this is pulled from msg.value. After submitting all requests, any remaining fee is
     /// refunded to the caller by calling its fallback function.
     /// @dev This contract exposes `getConsolidationRequestFee` to query the current fee for
-    /// a single request. If submitting multiple requests, be aware that the predeploy uses
-    /// an exponential to calculate subsequent fees. You will have to calculate the total cost
-    /// for all requests offchain.
+    /// a single request. If submitting multiple requests in a single block, the total fee
+    /// is equal to fee * requests.length. This fee is updated at the end of each block.
     ///
-    /// (See https://eips.ethereum.org/EIPS/eip-7251#fee-calculation for reference)
+    /// (See https://eips.ethereum.org/EIPS/eip-7251#fee-calculation for details)
     function requestConsolidation(
         ConsolidationRequest[] calldata requests
     ) external payable;
@@ -299,11 +298,10 @@ interface IEigenPod is IEigenPodErrors, IEigenPodEvents, ISemVerMixin {
     /// this is pulled from msg.value. After submitting all requests, any remaining fee is
     /// refunded to the caller by calling its fallback function.
     /// @dev This contract exposes `getWithdrawalRequestFee` to query the current fee for
-    /// a single request. If submitting multiple requests, be aware that the predeploy uses
-    /// an exponential to calculate subsequent fees. You will have to calculate the total cost
-    /// for all requests offchain.
+    /// a single request. If submitting multiple requests in a single block, the total fee
+    /// is equal to fee * requests.length. This fee is updated at the end of each block.
     ///
-    /// (See https://eips.ethereum.org/EIPS/eip-7002#fee-update-rule for reference)
+    /// (See https://eips.ethereum.org/EIPS/eip-7002#fee-update-rule for details)
     function requestWithdrawal(
         WithdrawalRequest[] calldata requests
     ) external payable;
