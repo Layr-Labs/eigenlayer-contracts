@@ -1,0 +1,286 @@
+name: Foundry
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - main
+
+
+env:
+  FOUNDRY_PROFILE: medium
+
+jobs:
+  # -----------------------------------------------------------------------
+  # Forge Test
+  # -----------------------------------------------------------------------
+
+  test-suite:
+    name: Test
+    runs-on: protocol-x64-16core
+    strategy:
+      matrix:
+        suite: [Unit, Integration, Fork]
+    
+    steps:
+      # Check out repository with all submodules for complete codebase access.
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # Restore Forge cache
+      - name: Cache Forge Build
+        uses: actions/cache@v3
+        with:
+          path: |
+            cache/
+            out/
+          key: ${{ runner.os }}-forge-${{ hashFiles('**/foundry.toml', '**/remappings.txt', 'src/**/*.sol', 'lib/**/*.sol') }}
+          restore-keys: |
+            ${{ runner.os }}-forge-
+
+      # Install the Foundry toolchain.
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      # Run Forge's formatting checker to ensure consistent code style.
+      - name: "Forge Fmt"
+        run: |
+          forge fmt --check
+          FOUNDRY_PROFILE=test forge fmt --check
+        id: fmt
+
+      # Build the project and display contract sizes.
+      - name: Forge Build
+        run: |
+          forge --version
+          forge build --sizes
+
+      # Run the test suite in parallel based on the matrix configuration.
+      - name: Run ${{ matrix.suite }} tests
+        run: |
+          case "${{ matrix.suite }}" in
+            Unit) forge test --no-match-contract Integration ;;
+            Integration) forge test --match-contract Integration ;;
+            Fork) forge test --match-contract Integration ;;
+          esac
+        env:
+          FOUNDRY_PROFILE: ${{ matrix.suite == 'Fork' && 'forktest' || 'medium' }}
+          RPC_MAINNET: https://billowing-capable-sound.quiknode.pro/
+
+  # -----------------------------------------------------------------------
+  # Forge Storage Diff
+  # -----------------------------------------------------------------------
+
+  storage-diff:
+    name: Test (Storage)
+    runs-on: protocol-x64-16core
+    steps:
+      # Check out repository with all submodules for complete codebase access.
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # Restore Forge cache
+      - name: Cache Forge Build
+        uses: actions/cache@v3
+        with:
+          path: |
+            cache/
+            out/
+          key: ${{ runner.os }}-forge-${{ hashFiles('**/foundry.toml', '**/remappings.txt', 'src/**/*.sol', 'lib/**/*.sol') }}
+          restore-keys: |
+            ${{ runner.os }}-forge-
+
+      # Install the Foundry toolchain.
+      - name: "Install Foundry"
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      # Run storage diff check to detect storage layout incompatibilities.
+      - name: "Mainnet Storage Diff"
+        run: |
+          bash bin/storage-diff.sh --rpc-url ${{ secrets.RPC_MAINNET }} --etherscan-key ${{ secrets.ETHERSCAN_API_KEY }} --input .github/configs/storage-diff.json
+        id: storage-diff
+
+  # -----------------------------------------------------------------------
+  # Forge Coverage
+  # -----------------------------------------------------------------------
+
+  run-coverage:
+    name: Coverage
+    runs-on: protocol-x64-16core
+    # Only run coverage checks on main, preprod, testnet, and mainnet branches, or PRs targeting these branches
+    if: |
+      github.ref == 'refs/heads/main' ||
+      github.ref == 'refs/heads/preprod' ||
+      github.ref == 'refs/heads/testnet' ||
+      github.ref == 'refs/heads/mainnet' ||
+      github.base_ref == 'main' ||
+      github.base_ref == 'preprod' ||
+      github.base_ref == 'testnet' ||
+      github.base_ref == 'mainnet'
+    strategy:
+      fail-fast: true
+    steps:
+      # Check out repository with all submodules for complete codebase access.
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # Restore Foundry and Forge cache
+      - name: Cache Foundry Dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo
+            ~/.foundry
+            out/
+            cache/
+          key: ${{ runner.os }}-forge-${{ hashFiles('**/foundry.toml', '**/remappings.txt', 'src/**/*.sol', 'lib/**/*.sol', '**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-foundry-
+        
+      # Install the Foundry toolchain.
+      - name: "Install Foundry"
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      # Install LCOV for coverage report generation.
+      - name: Install LCOV (Prebuilt)
+        run: |
+          curl -L https://github.com/linux-test-project/lcov/releases/download/v1.16/lcov-1.16.tar.gz | tar xz
+          sudo cp lcov-1.16/bin/* /usr/local/bin/
+          sudo cp -r lcov-1.16/man/* /usr/share/man/
+
+      # Build the project and display contract sizes.
+      - name: "Forge Build"
+        run: |
+          forge --version
+          forge build --sizes
+        id: build
+
+      # Run Forge coverage with LCOV report format, excluding test and script files
+      - name: Forge Coverage
+        run: |
+          FOUNDRY_DENY_WARNINGS=false \
+          FOUNDRY_PROFILE=coverage \
+          FOUNDRY_CACHE=true \
+          FOUNDRY_CACHE_PATH=cache \
+          forge coverage --report lcov --report summary --no-match-coverage "script|test" -j $(nproc)
+          genhtml -q -o report ./lcov.info
+
+      # Upload coverage report as artifact before potential failure
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-coverage-report
+          path: report/*
+          if-no-files-found: error
+
+      # Check coverage threshold after uploading report
+      - name: Check Coverage Threshold
+        run: |
+          LINES_PCT=$(lcov --summary lcov.info | grep "lines" | cut -d ':' -f 2 | cut -d '%' -f 1 | tr -d '[:space:]')
+          FUNCTIONS_PCT=$(lcov --summary lcov.info | grep "functions" | cut -d ':' -f 2 | cut -d '%' -f 1 | tr -d '[:space:]')          
+          FAILED=0
+          
+          if (( $(echo "$LINES_PCT < 90" | bc -l) )); then
+            echo -e "\033[1;31m❌ Lines coverage ($LINES_PCT%) is below minimum threshold of 90%\033[0m"
+            FAILED=1
+          else
+            echo -e "\033[1;32m✅ Lines coverage ($LINES_PCT%) meets minimum threshold of 90%\033[0m"
+          fi
+          
+          if (( $(echo "$FUNCTIONS_PCT < 90" | bc -l) )); then
+            echo -e "\033[1;31m❌ Functions coverage ($FUNCTIONS_PCT%) is below minimum threshold of 90%\033[0m"
+            FAILED=1
+          else
+            echo -e "\033[1;32m✅ Functions coverage ($FUNCTIONS_PCT%) meets minimum threshold of 90%\033[0m"
+          fi
+          
+          if [ $FAILED -eq 1 ]; then
+            exit 1
+          fi
+
+  # -----------------------------------------------------------------------
+  # Forge Size Diff
+  # -----------------------------------------------------------------------
+
+  compare-contract-sizes:
+    name: Size Diff
+    runs-on: protocol-x64-16core
+    steps:
+      # Check out repository with all submodules for complete codebase access.
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # Install the Foundry toolchain.
+      - name: "Install Foundry"
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - name: Build contracts on PR branch
+        run: |
+          forge build --json --sizes | jq '.' > pr_sizes.json
+
+      - name: Checkout target branch
+        run: |
+          git fetch origin ${{ github.base_ref }}
+          git checkout ${{ github.base_ref }}
+
+      - name: Build contracts on target branch
+        run: |
+          forge build --json --sizes | jq '.' > target_sizes.json
+
+      - name: Compare contract sizes using Bash
+        run: |
+          # Extract contract names
+          contracts=$(jq -r 'keys[]' pr_sizes.json)
+
+          # Track if there are any differences
+          has_differences=0
+
+          echo -e "\n📊 \033[1;34mContract Size Comparison Report\033[0m 📊\n"
+
+          # Iterate through contracts and compare sizes
+          for contract in $contracts; do
+            pr_runtime=$(jq -r --arg contract "$contract" '.[$contract].runtime_size // 0' pr_sizes.json)
+            pr_init=$(jq -r --arg contract "$contract" '.[$contract].init_size // 0' pr_sizes.json)
+
+            target_runtime=$(jq -r --arg contract "$contract" '.[$contract].runtime_size // 0' target_sizes.json)
+            target_init=$(jq -r --arg contract "$contract" '.[$contract].init_size // 0' target_sizes.json)
+
+            runtime_diff=$((pr_runtime - target_runtime))
+            init_diff=$((pr_init - target_init))
+
+            if [ "$runtime_diff" -ne 0 ] || [ "$init_diff" -ne 0 ]; then
+              echo -e "\033[1;36m📝 $contract:\033[0m"
+              if [ "$runtime_diff" -ne 0 ]; then
+                if [ "$runtime_diff" -gt 0 ]; then
+                  echo -e "   Runtime: \033[1;31m+$runtime_diff bytes\033[0m 📈"
+                else
+                  echo -e "   Runtime: \033[1;32m$runtime_diff bytes\033[0m 📉"
+                fi
+              fi
+              if [ "$init_diff" -ne 0 ]; then
+                if [ "$init_diff" -gt 0 ]; then
+                  echo -e "   Init:    \033[1;31m+$init_diff bytes\033[0m 📈"
+                else
+                  echo -e "   Init:    \033[1;32m$init_diff bytes\033[0m 📉"
+                fi
+              fi
+              has_differences=1
+            fi
+          done
+
+          if [ "$has_differences" -eq 0 ]; then
+            echo -e "\033[1;32m✨ No contract size changes detected ✨\033[0m"
+          fi
