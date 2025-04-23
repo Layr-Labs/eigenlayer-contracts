@@ -102,7 +102,7 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
         forkConfig = ConfigParser.parseForkConfig(profile);
         emptyContract = new EmptyContract();
 
-        if (eq(profile, "default")) {
+        if (eq(profile, "default") || eq(profile, "coverage")) {
             // Assumes nothing has been deployed yet.
             _setUpLocal();
         } else if (eq(profile, "forktest-zeus")) {
@@ -490,6 +490,7 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
         // string memory profile = FOUNDRY_PROFILE();
 
         user = userType == DEFAULT ? new User(name) : User(new User_AltMethods(name));
+
 
         assertTrue(address(user) != address(0), "User is not initialized");
         // if (eq(profile, "default") || eq(profile, "mainnet") || (eq(profile, "forktest") && isUpgraded)) {
