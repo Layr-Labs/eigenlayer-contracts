@@ -1,7 +1,6 @@
 name: Delete Unauthorized Branches
 
-# Due to internal reasons, we cannot disable default write access for the repo.
-# As an alternative, this workflow is used to delete unauthorized branches that are created 
+# This workflow deletes unauthorized branches that are created 
 # without following the branch policy.
 
 on:
@@ -43,7 +42,7 @@ jobs:
         run: |
           BRANCH="${{ steps.branch.outputs.branch }}"
           echo "Deleting unauthorized branch: $BRANCH"
-#          curl -s -X DELETE \
-#            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-#            -H "Accept: application/vnd.github+json" \
-#            https://api.github.com/repos/${{ github.repository }}/git/refs/heads/$BRANCH
+          curl -s -X DELETE \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/${{ github.repository }}/git/refs/heads/$BRANCH
