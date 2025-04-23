@@ -149,8 +149,8 @@ Once release are created, corresponding release branches will live forever for f
 Together with “**Fork-based PR**” defined in CONTRIBUTING.md, it means there are only 3 categories of branches in the repository:
 
 1. `main`: live forever, never delete 
-2. release-dev branches `release-dev/*`e: long living branch for a period of time but will be deleted once their commits are merged back to `main`
-3. release branches `vx.y.z`: live forever, never delete after a release is officially create
+2. release-dev branches `release-dev/*`: long living branch for release development with commits that should be all-or-nothing in `main`. They a period of time but will be deleted once their commits are merged back to `main`
+3. official release branches `vx.y.z`: live forever, never delete after a release is officially create
 
 
 ### Changelog, Release Note, Release Announcement Blog
