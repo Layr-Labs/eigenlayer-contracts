@@ -49,10 +49,9 @@ contract EIP_7002_Mock {
 
         withdrawalRequestCount++;
 
-        bytes memory pubkey = new bytes(48);
+        bytes memory pubkey = msg.data[0:48];
         uint64 amount;
         assembly {
-            calldatacopy(add(32, pubkey), 0, 48) // copy bytes48 pubkey into memory
             calldatacopy(24, 48, 8)              // copy uint64 amount to memory[0]
             amount := mload(0)
         }

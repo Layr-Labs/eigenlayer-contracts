@@ -373,7 +373,7 @@ contract EigenPod is
         _startCheckpoint(false);
     }
 
-    /// @inheritdoc: IEigenPod
+    /// @inheritdoc IEigenPod
     function requestConsolidation(
         ConsolidationRequest[] calldata requests
     ) external payable onlyWhenNotPaused(PAUSED_CONSOLIDATIONS) onlyOwnerOrProofSubmitter {
@@ -383,15 +383,17 @@ contract EigenPod is
 
         for (uint256 i = 0; i < requests.length; i++) {
             ConsolidationRequest calldata request = requests[i];
-            /// Validate pubkeys are unique and well-formed
+            /// Validate pubkeys are well-formed
             require(request.srcPubkey.length == 48, InvalidPubKeyLength());
             require(request.targetPubkey.length == 48, InvalidPubKeyLength());
-            require(keccak256(request.srcPubkey) != keccak256(request.targetPubkey), SourceEqualsTarget());
 
             /// Ensure both src and target have verified withdrawal credentials pointed at this pod
-            ValidatorInfo memory src = validatorPubkeyToInfo(request.srcPubkey);
+            /// TODO - I'm fairly certain we don't need this check. verifyWC rejects validators
+            /// who have a nonzero exit epoch, so it shouldn't be possible to double-count shares
+            /// using a checkpoint + verifyWC.
+            // ValidatorInfo memory src = validatorPubkeyToInfo(request.srcPubkey);
+            // require(src.status == VALIDATOR_STATUS.ACTIVE, ValidatorNotActiveInPod());
             ValidatorInfo memory target = validatorPubkeyToInfo(request.targetPubkey);
-            require(src.status == VALIDATOR_STATUS.ACTIVE, ValidatorNotActiveInPod());
             require(target.status == VALIDATOR_STATUS.ACTIVE, ValidatorNotActiveInPod());
 
             /// Call the predeploy
@@ -406,7 +408,7 @@ contract EigenPod is
         }
     }
 
-    /// @inheritdoc: IEigenPod
+    /// @inheritdoc IEigenPod
     function requestWithdrawal(
         WithdrawalRequest[] calldata requests
     ) external payable onlyWhenNotPaused(PAUSED_WITHDRAWAL_REQUESTS) onlyOwnerOrProofSubmitter {
@@ -414,11 +416,11 @@ contract EigenPod is
         require(msg.value >= fee * requests.length, InsufficientFunds());
         uint256 remainder = msg.value - (fee * requests.length);
 
-        /// Initiate each withdrawal request, decrementing available funds each time
         for (uint256 i = 0; i < requests.length; i++) {
             WithdrawalRequest calldata request = requests[i];
-            /// Validate pubkey is well-formed. It's not necessary to perform any additional validation,
-            /// as the worst-case scenario is just that the request does not go through.
+            /// Validate pubkey is well-formed.
+            /// It's not necessary to perform any additional validation; the worst-case
+            /// as the worst-case scenario is just that the request
             require(request.pubkey.length == 48, InvalidPubKeyLength());
 
             /// Call the predeploy
