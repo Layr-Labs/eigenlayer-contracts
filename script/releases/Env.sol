@@ -104,6 +104,10 @@ library Env {
         return _envU32("MIN_WITHDRAWAL_DELAY");
     }
 
+    function DEALLOCATION_DELAY() internal view returns (uint32) {
+        return _envU32("DEALLOCATION_DELAY");
+    }
+
     function ALLOCATION_CONFIGURATION_DELAY() internal view returns (uint32) {
         return _envU32("ALLOCATION_CONFIGURATION_DELAY");
     }
