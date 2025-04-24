@@ -102,7 +102,7 @@ abstract contract IntegrationDeployer is ConfigGetters, Logger {
         forkConfig = ConfigParser.parseForkConfig(profile);
         emptyContract = new EmptyContract();
 
-        if (eq(profile, "default") || eq(profile, "coverage")) {
+        if (eq(profile, "default") || eq(profile, "coverage") || eq(profile, "medium")) {
             // Assumes nothing has been deployed yet.
             _setUpLocal();
         } else if (eq(profile, "forktest-zeus")) {
