@@ -10,6 +10,9 @@ on:
 
 env:
   FOUNDRY_PROFILE: medium
+  UPGRADE_BEFORE_TEST_MAINNET: false
+  TEST_EIGEN_PODS_MAINNET: true
+  TEST_UPGRADES_MAINNET: true
 
 jobs:
   # -----------------------------------------------------------------------
