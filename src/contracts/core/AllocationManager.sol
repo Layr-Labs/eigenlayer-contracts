@@ -338,16 +338,55 @@ contract AllocationManager is
     }
 
     /// @inheritdoc IAllocationManager
-    function createOperatorSets(address avs, CreateSetParams[] calldata params) external checkCanCall(avs) {
+    function createOperatorSets(
+        address avs,
+        CreateSetParams[] calldata params
+    ) external checkCanCall(avs) returns (uint32[] memory operatorSetIds) {
         // Check that the AVS exists and has registered metadata
         require(_avsRegisteredMetadata[avs], NonexistentAVSMetadata());
 
+        operatorSetIds = new uint32[](params.length);
+
         for (uint256 i = 0; i < params.length; i++) {
+            operatorSetIds[i] = params[i].operatorSetId;
+
             OperatorSet memory operatorSet = OperatorSet(avs, params[i].operatorSetId);
 
             // Create the operator set, ensuring it does not already exist
             require(_operatorSets[avs].add(operatorSet.id), InvalidOperatorSet());
             emit OperatorSetCreated(OperatorSet(avs, operatorSet.id));
+
+            // Add strategies to the operator set
+            bytes32 operatorSetKey = operatorSet.key();
+            for (uint256 j = 0; j < params[i].strategies.length; j++) {
+                _operatorSetStrategies[operatorSetKey].add(address(params[i].strategies[j]));
+                emit StrategyAddedToOperatorSet(operatorSet, params[i].strategies[j]);
+            }
+        }
+    }
+
+    /// @inheritdoc IAllocationManager
+    function createRedistributingOperatorSets(
+        address avs,
+        CreateSetParams[] calldata params,
+        address[] calldata redistributionRecipients
+    ) external checkCanCall(avs) returns (uint32[] memory operatorSetIds) {
+        require(params.length == redistributionRecipients.length, InputArrayLengthMismatch());
+
+        operatorSetIds = new uint32[](params.length);
+
+        // Check that the AVS exists and has registered metadata
+        require(_avsRegisteredMetadata[avs], NonexistentAVSMetadata());
+
+        for (uint256 i = 0; i < params.length; i++) {
+            operatorSetIds[i] = params[i].operatorSetId;
+
+            OperatorSet memory operatorSet = OperatorSet(avs, params[i].operatorSetId);
+
+            // Create the operator set, ensuring it does not already exist
+            require(_operatorSets[avs].add(operatorSet.id), InvalidOperatorSet());
+            _redistributionRecipients[operatorSet.key()] = redistributionRecipients[i];
+            emit RedistributingOperatorSetCreated(OperatorSet(avs, operatorSet.id), redistributionRecipients[i]);
 
             // Add strategies to the operator set
             bytes32 operatorSetKey = operatorSet.key();
@@ -904,5 +943,21 @@ contract AllocationManager is
         // slashableUntil returns the last block the operator is slashable in so we check for
         // less than or equal to
         return status.registered || block.number <= status.slashableUntil;
+    }
+
+    /// @inheritdoc IAllocationManager
+    function getRedistributionRecipient(
+        OperatorSet memory operatorSet
+    ) external view returns (address) {
+        // Load the redistribution recipient and return it if set, otherwise return the default burn address.
+        address redistributionRecipient = _redistributionRecipients[operatorSet.key()];
+        return redistributionRecipient == address(0) ? DEFAULT_BURN_ADDRESS : redistributionRecipient;
+    }
+
+    /// @inheritdoc IAllocationManager
+    function isRedistributingOperatorSet(
+        OperatorSet memory operatorSet
+    ) external view returns (bool) {
+        return _redistributionRecipients[operatorSet.key()] != address(0);
     }
 }

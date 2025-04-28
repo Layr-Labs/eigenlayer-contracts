@@ -14,6 +14,9 @@ abstract contract AllocationManagerStorage is IAllocationManager {
 
     // Constants
 
+    /// @dev The default burn address for EigenLayer
+    address internal constant DEFAULT_BURN_ADDRESS = 0x00000000000000000000000000000000000E16E4;
+
     /// @dev Index for flag that pauses operator allocations/deallocations when set.
     uint8 internal constant PAUSED_MODIFY_ALLOCATIONS = 0;
 
@@ -92,6 +95,15 @@ abstract contract AllocationManagerStorage is IAllocationManager {
     /// @dev Lists the AVSs who has registered metadata and claimed itself as an AVS
     /// @notice bool is not used and is always true if the avs has registered metadata
     mapping(address avs => bool) internal _avsRegisteredMetadata;
+
+    /// @notice Returns the number of slashes for a given operator set.
+    /// @dev This is also used as a unique slash identifier.
+    mapping(bytes32 operatorSetKey => uint256 slashId) public slashCount;
+
+    /// @notice Returns the address where slashed funds will be sent for a given operator set.
+    /// @dev For redistributing Operator Sets, returns the configured redistribution address set during Operator Set creation.
+    ///      For non-redistributing operator sets, returns the `DEFAULT_BURN_ADDRESS`.
+    mapping(bytes32 operatorSetKey => address redistributionAddr) internal _redistributionRecipients;
 
     // Construction
 

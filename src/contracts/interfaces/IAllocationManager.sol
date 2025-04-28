@@ -209,6 +209,9 @@ interface IAllocationManagerEvents is IAllocationManagerTypes {
     /// @notice Emitted when an operator is removed from an operator set.
     event OperatorRemovedFromOperatorSet(address indexed operator, OperatorSet operatorSet);
 
+    /// @notice Emitted when a redistributing operator set is created by an AVS.
+    event RedistributingOperatorSetCreated(OperatorSet operatorSet, address redistributionRecipient);
+
     /// @notice Emitted when a strategy is added to an operator set.
     event StrategyAddedToOperatorSet(OperatorSet operatorSet, IStrategy strategy);
 
@@ -323,7 +326,24 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
     /**
      * @notice Allows an AVS to create new operator sets, defining strategies that the operator set uses
      */
-    function createOperatorSets(address avs, CreateSetParams[] calldata params) external;
+    function createOperatorSets(
+        address avs,
+        CreateSetParams[] calldata params
+    ) external returns (uint32[] memory operatorSetIds);
+
+    /**
+     * @notice Allows an AVS to create new Redistribution operator sets.
+     * @param avs The AVS creating the new operator sets.
+     * @param params An array of operator set creation parameters.
+     * @param redistributionRecipients An array of addresses that will receive redistributed funds when operators are slashed.
+     * @dev Same logic as `createOperatorSets`, except `redistributionRecipients` corresponding to each operator set are stored.
+     *      Additionally, emits `RedistributionOperatorSetCreated` event instead of `OperatorSetCreated` for each created operator set.
+     */
+    function createRedistributingOperatorSets(
+        address avs,
+        CreateSetParams[] calldata params,
+        address[] calldata redistributionRecipients
+    ) external returns (uint32[] memory operatorSetIds);
 
     /**
      * @notice Allows an AVS to add strategies to an operator set
@@ -601,4 +621,25 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
      * @param operatorSet the operator set to check slashability for
      */
     function isOperatorSlashable(address operator, OperatorSet memory operatorSet) external view returns (bool);
+
+    /**
+     * @notice Returns the address where slashed funds will be sent for a given operator set.
+     * @param operatorSet The Operator Set to query.
+     * @return For redistributing Operator Sets, returns the configured redistribution address set during Operator Set creation.
+     *         For non-redistributing operator sets, returns the `DEFAULT_BURN_ADDRESS`.
+     */
+    function getRedistributionRecipient(
+        OperatorSet memory operatorSet
+    ) external view returns (address);
+
+    /**
+     * @notice Returns whether a given operator set supports redistribution
+     * or not when funds are slashed and burned from EigenLayer.
+     * @param operatorSet The Operator Set to query.
+     * @return For redistributing Operator Sets, returns true.
+     *         For non-redistributing Operator Sets, returns false.
+     */
+    function isRedistributingOperatorSet(
+        OperatorSet memory operatorSet
+    ) external view returns (bool);
 }
