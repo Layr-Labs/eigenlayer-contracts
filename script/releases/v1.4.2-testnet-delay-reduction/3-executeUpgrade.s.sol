@@ -73,6 +73,14 @@ contract Execute is QueueUpgrade {
             allocationManager.ALLOCATION_CONFIGURATION_DELAY() == Env.ALLOCATION_CONFIGURATION_DELAY(),
             "am.configDelay invalid"
         );
+
+        DelegationManager delegation = Env.proxy.delegationManager();
+        assertTrue(delegation.strategyManager() == Env.proxy.strategyManager(), "dm.sm invalid");
+        assertTrue(delegation.eigenPodManager() == Env.proxy.eigenPodManager(), "dm.epm invalid");
+        assertTrue(delegation.allocationManager() == Env.proxy.allocationManager(), "dm.alm invalid");
+        assertTrue(delegation.pauserRegistry() == Env.impl.pauserRegistry(), "dm.pR invalid");
+        assertTrue(delegation.permissionController() == Env.proxy.permissionController(), "dm.pc invalid");
+        assertTrue(delegation.minWithdrawalDelayBlocks() == Env.MIN_WITHDRAWAL_DELAY(), "dm.withdrawalDelay invalid");
     }
 
     /// @dev Call initialize on all proxies to ensure they are initialized
@@ -85,5 +93,11 @@ contract Execute is QueueUpgrade {
         allocationManager.initialize(address(0), 0);
         assertTrue(allocationManager.owner() == Env.executorMultisig(), "am.owner invalid");
         assertTrue(allocationManager.paused() == 0, "am.paused invalid");
+
+        DelegationManager delegation = Env.proxy.delegationManager();
+        vm.expectRevert(errInit);
+        delegation.initialize(address(0), 0);
+        assertTrue(delegation.owner() == Env.executorMultisig(), "dm.owner invalid");
+        assertTrue(delegation.paused() == 0, "dm.paused invalid");
     }
 }

@@ -42,6 +42,12 @@ contract QueueUpgrade is MultisigBuilder, Deploy {
                 proxy: address(Env.proxy.allocationManager()),
                 impl: address(Env.impl.allocationManager())
             })
+        }).append({
+            to: Env.proxyAdmin(),
+            data: Encode.proxyAdmin.upgrade({
+                proxy: address(Env.proxy.delegationManager()),
+                impl: address(Env.impl.delegationManager())
+            })
         });
 
         return Encode.gnosisSafe.execTransaction({

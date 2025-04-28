@@ -1,5 +1,5 @@
 {
-    "name": "reduce-allocation-delay",
+    "name": "testnet-delay-reduction",
     "from": "1.4.1",
     "to": "1.4.2",
     "phases": [

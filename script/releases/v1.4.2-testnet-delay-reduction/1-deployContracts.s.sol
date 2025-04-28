@@ -17,7 +17,7 @@ contract Deploy is EOADeployer {
     function _runAsEOA() internal override {
         vm.startBroadcast();
 
-        // We are upgrading 1 contract: AllocationManager
+        // We are upgrading 2 contracts: AllocationManager and DelegationManager
         deployImpl({
             name: type(AllocationManager).name,
             deployedTo: address(
@@ -27,6 +27,21 @@ contract Deploy is EOADeployer {
                     _permissionController: Env.proxy.permissionController(),
                     _DEALLOCATION_DELAY: Env.MIN_WITHDRAWAL_DELAY(),
                     _ALLOCATION_CONFIGURATION_DELAY: Env.ALLOCATION_CONFIGURATION_DELAY(),
+                    _version: Env.deployVersion()
+                })
+            )
+        });
+
+        deployImpl({
+            name: type(DelegationManager).name,
+            deployedTo: address(
+                new DelegationManager({
+                    _strategyManager: Env.proxy.strategyManager(),
+                    _eigenPodManager: Env.proxy.eigenPodManager(),
+                    _allocationManager: Env.proxy.allocationManager(),
+                    _pauserRegistry: Env.impl.pauserRegistry(),
+                    _permissionController: Env.proxy.permissionController(),
+                    _MIN_WITHDRAWAL_DELAY: Env.MIN_WITHDRAWAL_DELAY(),
                     _version: Env.deployVersion()
                 })
             )
@@ -61,6 +76,11 @@ contract Deploy is EOADeployer {
             _getProxyImpl(address(Env.proxy.allocationManager())) == address(Env.impl.allocationManager()),
             "allocationManager impl failed"
         );
+
+        assertion(
+            _getProxyImpl(address(Env.proxy.delegationManager())) == address(Env.impl.delegationManager()),
+            "delegationManager impl failed"
+        );
     }
 
     /// @dev Ensure each deployed TUP/beacon is owned by the proxyAdmin/executorMultisig
@@ -69,6 +89,10 @@ contract Deploy is EOADeployer {
 
         assertTrue(
             _getProxyAdmin(address(Env.proxy.allocationManager())) == pa, "allocationManager proxyAdmin incorrect"
+        );
+
+        assertTrue(
+            _getProxyAdmin(address(Env.proxy.delegationManager())) == pa, "delegationManager proxyAdmin incorrect"
         );
     }
 
@@ -83,6 +107,14 @@ contract Deploy is EOADeployer {
             allocationManager.ALLOCATION_CONFIGURATION_DELAY() == Env.ALLOCATION_CONFIGURATION_DELAY(),
             "am.configDelay invalid"
         );
+
+        DelegationManager delegation = Env.impl.delegationManager();
+        assertTrue(delegation.strategyManager() == Env.proxy.strategyManager(), "dm.sm invalid");
+        assertTrue(delegation.eigenPodManager() == Env.proxy.eigenPodManager(), "dm.epm invalid");
+        assertTrue(delegation.allocationManager() == Env.proxy.allocationManager(), "dm.alm invalid");
+        assertTrue(delegation.pauserRegistry() == Env.impl.pauserRegistry(), "dm.pR invalid");
+        assertTrue(delegation.permissionController() == Env.proxy.permissionController(), "dm.pc invalid");
+        assertTrue(delegation.minWithdrawalDelayBlocks() == Env.MIN_WITHDRAWAL_DELAY(), "dm.withdrawalDelay invalid");
     }
 
     /// @dev Call initialize on all deployed implementations to ensure initializers are disabled
@@ -92,6 +124,10 @@ contract Deploy is EOADeployer {
         AllocationManager allocationManager = Env.impl.allocationManager();
         vm.expectRevert(errInit);
         allocationManager.initialize(address(0), 0);
+
+        DelegationManager delegation = Env.impl.delegationManager();
+        vm.expectRevert(errInit);
+        delegation.initialize(address(0), 0);
     }
 
     function _validateVersion() internal view {
@@ -99,6 +135,7 @@ contract Deploy is EOADeployer {
         string memory expected = Env.deployVersion();
 
         assertEq(Env.impl.allocationManager().version(), expected, "allocationManager version mismatch");
+        assertEq(Env.impl.delegationManager().version(), expected, "delegationManager version mismatch");
     }
 
     /// @dev Query and return `proxyAdmin.getProxyImplementation(proxy)`
