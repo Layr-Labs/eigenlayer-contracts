@@ -383,26 +383,21 @@ contract EigenPod is
 
         for (uint256 i = 0; i < requests.length; i++) {
             ConsolidationRequest calldata request = requests[i];
-            /// Validate pubkeys are well-formed
+            // Validate pubkeys are well-formed
             require(request.srcPubkey.length == 48, InvalidPubKeyLength());
             require(request.targetPubkey.length == 48, InvalidPubKeyLength());
 
-            /// Ensure both src and target have verified withdrawal credentials pointed at this pod
-            /// TODO - I'm fairly certain we don't need this check. verifyWC rejects validators
-            /// who have a nonzero exit epoch, so it shouldn't be possible to double-count shares
-            /// using a checkpoint + verifyWC.
-            // ValidatorInfo memory src = validatorPubkeyToInfo(request.srcPubkey);
-            // require(src.status == VALIDATOR_STATUS.ACTIVE, ValidatorNotActiveInPod());
+            // Ensure target has verified withdrawal credentials pointed at this pod
             ValidatorInfo memory target = validatorPubkeyToInfo(request.targetPubkey);
             require(target.status == VALIDATOR_STATUS.ACTIVE, ValidatorNotActiveInPod());
 
-            /// Call the predeploy
+            // Call the predeploy
             bytes memory callData = bytes.concat(request.srcPubkey, request.targetPubkey);
             (bool ok,) = CONSOLIDATION_REQUEST_ADDRESS.call{value: fee}(callData);
             require(ok, PredeployFailed());
         }
 
-        /// Refund remainder of msg.value
+        // Refund remainder of msg.value
         if (remainder > 0) {
             Address.sendValue(payable(msg.sender), remainder);
         }
@@ -418,18 +413,19 @@ contract EigenPod is
 
         for (uint256 i = 0; i < requests.length; i++) {
             WithdrawalRequest calldata request = requests[i];
-            /// Validate pubkey is well-formed.
-            /// It's not necessary to perform any additional validation; the worst-case
-            /// as the worst-case scenario is just that the request
+            // Validate pubkey is well-formed.
+            //
+            // It's not necessary to perform any additional validation; the worst-case
+            // scenario is just that the consensus layer skips an invalid request.
             require(request.pubkey.length == 48, InvalidPubKeyLength());
 
-            /// Call the predeploy
+            // Call the predeploy
             bytes memory callData = abi.encodePacked(request.pubkey, request.amount);
             (bool ok,) = CONSOLIDATION_REQUEST_ADDRESS.call{value: fee}(callData);
             require(ok, PredeployFailed());
         }
 
-        /// Refund remainder of msg.value
+        // Refund remainder of msg.value
         if (remainder > 0) {
             Address.sendValue(payable(msg.sender), remainder);
         }

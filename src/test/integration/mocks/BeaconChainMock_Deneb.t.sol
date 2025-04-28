@@ -37,7 +37,7 @@ contract BeaconChainMock_DenebForkable is BeaconChainMock {
      *                             INTERNAL FUNCTIONS
      *
      */
-    function _advanceEpoch() public override {
+    function _advanceEpoch() internal override {
         cheats.pauseTracing();
 
         // Update effective balances for each validator
