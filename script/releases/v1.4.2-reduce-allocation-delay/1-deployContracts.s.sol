@@ -25,7 +25,7 @@ contract Deploy is EOADeployer {
                     _delegation: Env.proxy.delegationManager(),
                     _pauserRegistry: Env.impl.pauserRegistry(),
                     _permissionController: Env.proxy.permissionController(),
-                    _DEALLOCATION_DELAY: Env.DEALLOCATION_DELAY(),
+                    _DEALLOCATION_DELAY: Env.MIN_WITHDRAWAL_DELAY(),
                     _ALLOCATION_CONFIGURATION_DELAY: Env.ALLOCATION_CONFIGURATION_DELAY(),
                     _version: Env.deployVersion()
                 })
@@ -78,7 +78,7 @@ contract Deploy is EOADeployer {
         assertTrue(allocationManager.delegation() == Env.proxy.delegationManager(), "am.dm invalid");
         assertTrue(allocationManager.pauserRegistry() == Env.impl.pauserRegistry(), "am.pr invalid");
         assertTrue(allocationManager.permissionController() == Env.proxy.permissionController(), "am.pc invalid");
-        assertTrue(allocationManager.DEALLOCATION_DELAY() == Env.DEALLOCATION_DELAY(), "am.deallocDelay invalid");
+        assertTrue(allocationManager.DEALLOCATION_DELAY() == Env.MIN_WITHDRAWAL_DELAY(), "am.deallocDelay invalid");
         assertTrue(
             allocationManager.ALLOCATION_CONFIGURATION_DELAY() == Env.ALLOCATION_CONFIGURATION_DELAY(),
             "am.configDelay invalid"

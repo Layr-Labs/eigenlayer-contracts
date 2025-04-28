@@ -68,7 +68,7 @@ contract Execute is QueueUpgrade {
         assertTrue(allocationManager.delegation() == Env.proxy.delegationManager(), "am.dm invalid");
         assertTrue(allocationManager.pauserRegistry() == Env.impl.pauserRegistry(), "am.pr invalid");
         assertTrue(allocationManager.permissionController() == Env.proxy.permissionController(), "am.pc invalid");
-        assertTrue(allocationManager.DEALLOCATION_DELAY() == Env.DEALLOCATION_DELAY(), "am.deallocDelay invalid");
+        assertTrue(allocationManager.DEALLOCATION_DELAY() == Env.MIN_WITHDRAWAL_DELAY(), "am.deallocDelay invalid");
         assertTrue(
             allocationManager.ALLOCATION_CONFIGURATION_DELAY() == Env.ALLOCATION_CONFIGURATION_DELAY(),
             "am.configDelay invalid"
