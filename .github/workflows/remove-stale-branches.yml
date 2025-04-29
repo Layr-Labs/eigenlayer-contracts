@@ -20,9 +20,6 @@ jobs:
           days-before-branch-stale: 90
           days-before-branch-delete: 7
           operations-per-run: 100
-          excluded-branches: |
-            main
-            release-dev/**
-            v*
+          exclude-branches-regex: "^(main|release-dev/.*|v[0-9]+\\.[0-9]+\\.[0-9]+)$"
           ignore-unknown-authors: true
           default-recipient: "bowenli86"
