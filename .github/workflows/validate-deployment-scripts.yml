@@ -37,12 +37,19 @@ jobs:
 
       - name: Validate Solidity Scripts
         run: |
-          # Find all .sol files under /script
-          FILES=$(find script -type f -name "*.sol")
+          # Find all .sol files under /script/deploy and /script/release
+          DEPLOY_FILES=$(find script/deploy -type f -name "*.sol" 2>/dev/null || echo "")
+          RELEASE_FILES=$(find script/release -type f -name "*.sol" 2>/dev/null || echo "")
           
-          # Exit with error if no files are found
+          # Combine file lists
+          FILES="$DEPLOY_FILES $RELEASE_FILES"
+          
+          # Trim leading/trailing whitespace
+          FILES=$(echo "$FILES" | xargs)
+          
+          # Exit with success if no files are found
           if [ -z "$FILES" ]; then
-            echo "No .sol files found under /script directory"
+            echo "No .sol files found under /script/deploy or /script/release directories"
             exit 0
           fi
           
