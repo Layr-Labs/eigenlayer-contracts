@@ -5,9 +5,11 @@ on:
   push:
     paths:
       - 'script/**'
+      - '.github/workflows/validate-deployment-scripts.yml'
   pull_request:
     paths:
       - 'script/**'
+      - '.github/workflows/validate-deployment-scripts.yml'
 
 
 jobs:
