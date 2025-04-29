@@ -5,6 +5,9 @@ on:
   push:
     paths:
       - 'script/**'
+  pull_request:
+    paths:
+      - 'script/**'
 
 
 jobs:
