@@ -36,7 +36,7 @@ The `DelegationManager's` responsibilities can be broken down into the following
 
 * `MIN_WITHDRAWAL_DELAY_BLOCKS`: The delay in blocks before withdrawals can be completed.
     * Mainnet: `100800 blocks` (14 days).
-    * Testnet: `50 blocks` (10 minutes).
+    * Testnet: `25 blocks` (5 minutes).
 * `beaconChainETHStrategy`: a pseudo strategy used to represent beacon chain ETH internally. This is not a real contract!
     * Value: `0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0`
 

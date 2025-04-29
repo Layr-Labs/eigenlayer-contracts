@@ -1,0 +1,19 @@
+{
+    "name": "testnet-delay-reduction",
+    "from": "1.4.1",
+    "to": "1.4.2",
+    "phases": [
+        {
+            "type": "eoa",
+            "filename": "1-deployContracts.s.sol"
+        },
+        {
+            "type": "multisig",
+            "filename": "2-queueUpgrade.s.sol"
+        },
+        {
+            "type": "multisig",
+            "filename": "3-executeUpgrade.s.sol"
+        }
+    ]
+}
