@@ -3,6 +3,7 @@ name: Remove Stale Branches
 on:
   schedule:
     - cron: "0 0 * * *" # Everday at midnight
+  workflow_dispatch:     # Allows manual trigger from GitHub UI
 
 jobs:
   remove-stale-branches:
