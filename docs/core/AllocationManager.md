@@ -37,10 +37,10 @@ The `AllocationManager's` responsibilities are broken down into the following co
 
 * `ALLOCATION_CONFIGURATION_DELAY`: The delay in blocks before allocations take effect.
     * Mainnet: `126000 blocks` (17.5 days).
-    * Testnet: `75 blocks` (15 minutes).
+    * Testnet: `30 blocks` (6 minutes).
 * `DEALLOCATION_DELAY`: The delay in blocks before deallocations take effect.
     * Mainnet: `100800 blocks` (14 days).
-    * Testnet: `50 blocks` (10 minutes).
+    * Testnet: `25 blocks` (5 minutes).
 
 ---
 

@@ -69,6 +69,12 @@ contract Deploy is EOADeployer {
         _validateImplConstructors();
         _validateImplsInitialized();
         _validateVersion();
+
+        // Validate that ALLOCATION_CONFIGURATION_DELAY is set to 30
+        assertEq(Env.ALLOCATION_CONFIGURATION_DELAY(), 30, "ALLOCATION_CONFIGURATION_DELAY should be 30");
+
+        // Validate that MIN_WITHDRAWAL_DELAY is set to 25
+        assertEq(Env.MIN_WITHDRAWAL_DELAY(), 25, "MIN_WITHDRAWAL_DELAY should be 25");
     }
 
     /// @dev Validate that the `Env.impl` addresses are updated to be distinct from what the proxy
