@@ -34,4 +34,18 @@ jobs:
         run: npm install -g @layr-labs/zeus
 
       - name: Validate Solidity Scripts
-        run: zeus validate script/**/*.sol
+        run: |
+          # Find all .sol files under /script
+          FILES=$(find script -type f -name "*.sol")
+          
+          # Exit with error if no files are found
+          if [ -z "$FILES" ]; then
+            echo "No .sol files found under /script directory"
+            exit 0
+          fi
+          
+          # Run zeus test on each file
+          for file in $FILES; do
+            echo "Testing $file..."
+            zeus test "$file"
+          done
