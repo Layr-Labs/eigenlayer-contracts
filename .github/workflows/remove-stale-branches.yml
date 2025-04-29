@@ -21,3 +21,4 @@ jobs:
             main
             release-dev/**
             v[0-9]+\.[0-9]+\.[0-9]+
+          ignore-unknown-authors: true
