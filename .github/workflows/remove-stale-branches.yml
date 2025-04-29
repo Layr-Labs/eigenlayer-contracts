@@ -16,6 +16,7 @@ jobs:
           exempt-authors-regex: "^dependabot"
           days-before-branch-stale: 90
           days-before-branch-delete: 7
+          operations-per-run: 100
           excluded-branches: |
             main
             release-dev/**
