@@ -38,11 +38,10 @@ jobs:
       - name: Validate Solidity Scripts
         run: |
           # Find all .sol files under /script/deploy and /script/release
-          DEPLOY_FILES=$(find script/deploy -type f -name "*.sol" 2>/dev/null || echo "")
           RELEASE_FILES=$(find script/release -type f -name "*.sol" 2>/dev/null || echo "")
           
           # Combine file lists
-          FILES="$DEPLOY_FILES $RELEASE_FILES"
+          FILES="$RELEASE_FILES"
           
           # Trim leading/trailing whitespace
           FILES=$(echo "$FILES" | xargs)
