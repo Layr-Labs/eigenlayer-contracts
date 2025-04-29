@@ -1,0 +1,32 @@
+name: Validate Deployment Scripts
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'script/**'
+
+
+jobs:
+
+  validate-scripts:
+    name: Test (Intense)
+    runs-on: protocol-x64-16core
+    strategy:
+      fail-fast: true
+    steps:
+      # Check out repository with all submodules for complete codebase access.
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install Zeus
+        run: npm install -g @layr-labs/zeus
+
+      - name: Validate Solidity Scripts
+        run: zeus validate script/**/*.sol
