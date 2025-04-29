@@ -23,6 +23,6 @@ jobs:
           excluded-branches: |
             main
             release-dev/**
-            v*.*.*
+            v*
           ignore-unknown-authors: true
           default-recipient: "bowenli86"
