@@ -14,11 +14,13 @@ on:
 
 jobs:
 
-  validate-scripts:
-    name: Test (Intense)
+  test:
     runs-on: protocol-x64-16core
     strategy:
       fail-fast: true
+      matrix:
+        env: [preprod, testnet, mainnet]
+
     steps:
       # Check out repository with all submodules for complete codebase access.
       - uses: actions/checkout@v4
@@ -44,8 +46,8 @@ jobs:
             exit 0
           fi
           
-          # Run zeus test on each file
+          # Run zeus test on each file with the specified environment
           for file in $FILES; do
-            echo "Testing $file..."
-            zeus test "$file"
+            echo "Testing $file in ${{ matrix.env }} environment..."
+            zeus test --env ${{ matrix.env }} "$file"
           done
