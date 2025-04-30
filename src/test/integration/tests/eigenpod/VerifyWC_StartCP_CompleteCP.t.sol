@@ -24,7 +24,7 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         EigenPod pod = staker.pod();
         CredentialProofs memory proofs = beaconChain.getCredentialProofs(validators);
 
-        cheats.startPrank(address(staker));
+        cheats.prank(address(staker));
         cheats.resumeGasMetering();
 
         uint startGas = gasleft();
@@ -51,6 +51,7 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
 
         CheckpointProofs memory cpProofs = beaconChain.getCheckpointProofs(validators, pod.currentCheckpointTimestamp());
 
+        cheats.prank(address(staker));
         cheats.resumeGasMetering();
         startGas = gasleft();
         pod.verifyCheckpointProofs({balanceContainerProof: cpProofs.balanceContainerProof, proofs: cpProofs.balanceProofs});

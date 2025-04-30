@@ -15,10 +15,6 @@ import "src/test/integration/mocks/BeaconChainMock.t.sol";
 import "src/test/utils/Logger.t.sol";
 import "src/test/utils/ArrayLib.sol";
 
-struct Validator {
-    uint40 index;
-}
-
 interface IUserDeployer {
     function allocationManager() external view returns (AllocationManager);
     function delegationManager() external view returns (DelegationManager);
@@ -517,12 +513,18 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
                 else break;
             }
 
-            // Track validators with maximum effective balance
-            if (validatorEth == 2048 ether) maxEBValidators++;
-
             // Create the validator
             bytes memory withdrawalCredentials =
                 validatorEth == 32 ether ? _podWithdrawalCredentials() : _podCompoundingWithdrawalCredentials();
+
+            // Track validators with max effective balance
+            // - For 0x01 validators, this is 32 ETH
+            // - For 0x02 validators, this is 2048 ETH
+            if (withdrawalCredentials[0] == 0x01 && validatorEth == 32 ether) {
+                maxEBValidators++;
+            } else if (withdrawalCredentials[0] == 0x02 && validatorEth == 2048 ether) {
+                maxEBValidators++;
+            }
 
             uint40 validatorIndex = beaconChain.newValidator{value: validatorEth}(withdrawalCredentials);
 

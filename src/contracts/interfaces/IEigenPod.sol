@@ -61,8 +61,6 @@ interface IEigenPodErrors {
 
     /// Consolidation and Withdrawal Requests
 
-    /// @dev Thrown when a consolidation request is initiated where src == target
-    error SourceEqualsTarget();
     /// @dev Thrown when a predeploy request is initiated with insufficient msg.value
     error InsufficientFunds();
     /// @dev Thrown when refunding excess fees from a predeploy fails
@@ -92,14 +90,16 @@ interface IEigenPodTypes {
 
     }
 
+    /**
+     * @param validatorIndex index of the validator on the beacon chain
+     * @param restakedBalanceGwei amount of beacon chain ETH restaked on EigenLayer in gwei
+     * @param lastCheckpointedAt timestamp of the validator's most recent balance update
+     * @param status last recorded status of the validator
+     */
     struct ValidatorInfo {
-        // index of the validator in the beacon chain
         uint64 validatorIndex;
-        // amount of beacon chain ETH restaked on EigenLayer in gwei
         uint64 restakedBalanceGwei;
-        //timestamp of the validator's most recent balance update
         uint64 lastCheckpointedAt;
-        // status of the validator
         VALIDATOR_STATUS status;
     }
 
@@ -111,14 +111,28 @@ interface IEigenPodTypes {
         uint64 prevBeaconBalanceGwei;
     }
 
+    /**
+     * @param srcPubkey the pubkey of the source validator for the consolidation
+     * @param targetPubkey the pubkey of the target validator for the consolidation
+     * @dev Note that if srcPubkey == targetPubkey, this is a "switch request," and will
+     * change the validator's withdrawal credential type from 0x01 to 0x02.
+     * For more notes on usage, see `requestConsolidation`
+     */
     struct ConsolidationRequest {
         bytes srcPubkey;
         bytes targetPubkey;
     }
 
+    /**
+     * @param pubkey the pubkey of the validator to withdraw from
+     * @param amountGwei the amount (in gwei) to withdraw from the beacon chain to the pod
+     * @dev Note that if amountGwei == 0, this is a "full exit request," and will fully exit
+     * the validator to the pod.
+     * For more notes on usage, see `requestWithdrawal`
+     */
     struct WithdrawalRequest {
         bytes pubkey;
-        uint64 amount;
+        uint64 amountGwei;
     }
 }
 
@@ -155,6 +169,18 @@ interface IEigenPodEvents is IEigenPodTypes {
 
     /// @notice Emitted when a validaor is proven to have 0 balance at a given checkpoint
     event ValidatorWithdrawn(uint64 indexed checkpointTimestamp, uint40 indexed validatorIndex);
+
+    /// @notice Emitted when a consolidation request is initiated where source == target
+    event SwitchToCompoundingRequested(bytes32 indexed validatorPubkeyHash);
+
+    /// @notice Emitted when a standard consolidation request is initiated
+    event ConsolidationRequested(bytes32 indexed sourcePubkeyHash, bytes32 indexed targetPubkeyHash);
+
+    /// @notice Emitted when a withdrawal request is initiated where request.amountGwei == 0
+    event ExitRequested(bytes32 indexed validatorPubkeyHash);
+
+    /// @notice Emitted when a partial withdrawal request is initiated
+    event WithdrawalRequested(bytes32 indexed validatorPubkeyHash, uint64 withdrawalAmountGwei);
 }
 
 /**

@@ -388,13 +388,19 @@ contract EigenPod is
             require(request.targetPubkey.length == 48, InvalidPubKeyLength());
 
             // Ensure target has verified withdrawal credentials pointed at this pod
-            ValidatorInfo memory target = validatorPubkeyToInfo(request.targetPubkey);
+            bytes32 sourcePubkeyHash = _calcPubkeyHash(request.srcPubkey);
+            bytes32 targetPubkeyHash = _calcPubkeyHash(request.targetPubkey);
+            ValidatorInfo memory target = validatorPubkeyHashToInfo(targetPubkeyHash);
             require(target.status == VALIDATOR_STATUS.ACTIVE, ValidatorNotActiveInPod());
 
             // Call the predeploy
             bytes memory callData = bytes.concat(request.srcPubkey, request.targetPubkey);
             (bool ok,) = CONSOLIDATION_REQUEST_ADDRESS.call{value: fee}(callData);
             require(ok, PredeployFailed());
+
+            // Emit event depending on whether this is a switch to 0x02, or a regular consolidation
+            if (sourcePubkeyHash == targetPubkeyHash) emit SwitchToCompoundingRequested(sourcePubkeyHash);
+            else emit ConsolidationRequested(sourcePubkeyHash, targetPubkeyHash);
         }
 
         // Refund remainder of msg.value
@@ -420,9 +426,14 @@ contract EigenPod is
             require(request.pubkey.length == 48, InvalidPubKeyLength());
 
             // Call the predeploy
-            bytes memory callData = abi.encodePacked(request.pubkey, request.amount);
+            bytes memory callData = abi.encodePacked(request.pubkey, request.amountGwei);
             (bool ok,) = CONSOLIDATION_REQUEST_ADDRESS.call{value: fee}(callData);
             require(ok, PredeployFailed());
+
+            // Emit event depending on whether the request is a full exit or a partial withdrawal
+            bytes32 pubkeyHash = _calcPubkeyHash(request.pubkey);
+            if (request.amountGwei == 0) emit ExitRequested(pubkeyHash);
+            else emit WithdrawalRequested(pubkeyHash, request.amountGwei);
         }
 
         // Refund remainder of msg.value
@@ -801,7 +812,7 @@ contract EigenPod is
     /// @notice Returns the validatorInfo for a given validatorPubkeyHash
     function validatorPubkeyHashToInfo(
         bytes32 validatorPubkeyHash
-    ) external view returns (ValidatorInfo memory) {
+    ) public view returns (ValidatorInfo memory) {
         return _validatorPubkeyHashToInfo[validatorPubkeyHash];
     }
 

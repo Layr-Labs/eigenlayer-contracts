@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
-
 struct WithdrawalRequest {
     address source;
     bytes validatorPubkey;
-    uint64 amount;
+    uint64 amountGwei;
 }
 
 contract EIP_7002_Mock {
@@ -50,16 +49,16 @@ contract EIP_7002_Mock {
         withdrawalRequestCount++;
 
         bytes memory pubkey = msg.data[0:48];
-        uint64 amount;
+        uint64 amountGwei;
         assembly {
-            calldatacopy(24, 48, 8)              // copy uint64 amount to memory[0]
-            amount := mload(0)
+            calldatacopy(24, 48, 8)              // copy uint64 amountGwei to memory[0]
+            amountGwei := mload(0)
         }
 
         WithdrawalRequest storage request = requestQueue[queueTail];
         request.source = msg.sender;
         request.validatorPubkey = pubkey;
-        request.amount = amount;
+        request.amountGwei = amountGwei;
 
         queueTail++;
     }

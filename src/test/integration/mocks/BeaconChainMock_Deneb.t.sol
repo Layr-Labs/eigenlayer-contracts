@@ -7,6 +7,7 @@ import "src/test/integration/mocks/BeaconChainMock.t.sol";
 contract BeaconChainMock_DenebForkable is BeaconChainMock {
     using StdStyle for *;
     using print for *;
+    using LibValidator for *;
 
     // Denotes whether the beacon chain has been forked to Pectra
     bool isPectra;
@@ -128,7 +129,7 @@ contract BeaconChainMock_DenebForkable is BeaconChainMock {
         // Calculate credential proofs for each validator
         for (uint i = 0; i < validators.length; i++) {
             bytes memory proof = new bytes(VAL_FIELDS_PROOF_LEN);
-            bytes32[] memory validatorFields = _getValidatorFields(uint40(i));
+            bytes32[] memory validatorFields = validators[i].getValidatorFields();
             bytes32 curNode = Merkle.merkleizeSha256(validatorFields);
 
             // Validator fields leaf -> validator container root

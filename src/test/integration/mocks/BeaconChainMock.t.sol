@@ -11,6 +11,7 @@ import "src/test/mocks/ETHDepositMock.sol";
 import "src/test/integration/mocks/EIP_4788_Oracle_Mock.t.sol";
 import "src/test/integration/mocks/EIP_7002_Mock.t.sol";
 import "src/test/integration/mocks/EIP_7251_Mock.t.sol";
+import "src/test/integration/mocks/LibValidator.t.sol";
 import "src/test/utils/Logger.t.sol";
 
 struct ValidatorFieldsProof {
@@ -52,19 +53,7 @@ struct StaleBalanceProofs {
 contract BeaconChainMock is Logger {
     using StdStyle for *;
     using print for *;
-
-    struct Validator {
-        bool isDummy;
-        bool isSlashed;
-        bytes32 pubkeyHash;
-        bytes withdrawalCreds;
-        uint64 effectiveBalanceGwei;
-        uint64 activationEpoch;
-        uint64 exitEpoch;
-
-        // cumulative unprocessed withdraw requests
-        uint64 pendingBalanceToWithdrawGwei;
-    }
+    using LibValidator for *;
 
     /// @dev The type of slash to apply to a validator
     enum SlashType {
@@ -81,10 +70,11 @@ contract BeaconChainMock is Logger {
     uint64 public constant CONSENSUS_REWARD_AMOUNT_GWEI = 1;
     uint64 public constant MINOR_SLASH_AMOUNT_GWEI = 10;
 
-    // Max effective balance for a validator
+    // Min/max balances for valdiators
     // see https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#gwei-values
     uint public MAX_EFFECTIVE_BALANCE_WEI = 2048 ether;
     uint64 public MAX_EFFECTIVE_BALANCE_GWEI = 2048 gwei;
+    uint constant MIN_ACTIVATION_BALANCE_WEI = 32 ether;
     uint64 constant MIN_ACTIVATION_BALANCE_GWEI = 32 gwei;
 
     /// PROOF CONSTANTS (PROOF LENGTHS, FIELD SIZES):
@@ -240,7 +230,7 @@ contract BeaconChainMock is Logger {
         _setCurrentBalance(validatorIndex, 0);
 
         // Send current balance to pod
-        address destination = _toAddress(validators[validatorIndex].withdrawalCreds);
+        address destination = v.withdrawalAddress();
         cheats.deal(destination, address(destination).balance + uint(uint(exitedBalanceGwei) * GWEI_TO_WEI));
 
         return exitedBalanceGwei;
@@ -321,6 +311,12 @@ contract BeaconChainMock is Logger {
         }
     }
 
+    modifier onEpoch() {
+        _updateCurrentEpoch();
+        _;
+        _advanceEpoch();
+    }
+
     /// @dev Move forward one epoch on the beacon chain, taking care of important epoch processing:
     /// - Award ALL validators CONSENSUS_REWARD_AMOUNT
     /// - Process any pending partial withdrawals (new in Pectra)
@@ -334,13 +330,11 @@ contract BeaconChainMock is Logger {
     /// Note:
     /// - DOES generate consensus rewards for ALL non-exited validators
     /// - DOES withdraw in excess of Max EB / if validator is exited
-    function advanceEpoch() public {
+    function advanceEpoch() public onEpoch {
         print.method("advanceEpoch");
-        _updateCurrentEpoch();
+
         _generateRewards();
         _processWithdrawals();
-        _withdrawExcess();
-        _advanceEpoch();
     }
 
     /// @dev Like `advanceEpoch`, but does NOT generate consensus rewards for validators.
@@ -350,11 +344,10 @@ contract BeaconChainMock is Logger {
     /// Note:
     /// - does NOT generate consensus rewards
     /// - DOES withdraw in excess of Max EB / if validator is exited
-    function advanceEpoch_NoRewards() public {
+    function advanceEpoch_NoRewards() public onEpoch {
         print.method("advanceEpoch_NoRewards");
-        _updateCurrentEpoch();
+
         _processWithdrawals();
-        _advanceEpoch();
     }
 
     /// @dev Like `advanceEpoch`, but explicitly does NOT withdraw if balances
@@ -365,17 +358,14 @@ contract BeaconChainMock is Logger {
     /// - DOES generate consensus rewards for ALL non-exited validators
     /// - does NOT withdraw in excess of Max EB
     /// - does NOT withdraw if validator is exited
-    function advanceEpoch_NoWithdraw() public {
+    function advanceEpoch_NoWithdraw() public onEpoch {
         print.method("advanceEpoch_NoWithdraw");
-        _updateCurrentEpoch();
+
         _generateRewards();
-        _advanceEpoch();
     }
 
-    function advanceEpoch_NoWithdrawNoRewards() public {
+    function advanceEpoch_NoWithdrawNoRewards() public onEpoch {
         print.method("advanceEpoch_NoWithdrawNoRewards");
-        _updateCurrentEpoch();
-        _advanceEpoch();
     }
 
     /// @dev Iterate over all validators. If the validator is still active,
@@ -399,109 +389,211 @@ contract BeaconChainMock is Logger {
         console.log("   - Generated rewards for %s of %s validators.", totalRewarded, validators.length);
     }
 
+    /// @dev Process EIP-7002 partial withdrawal requests and any withdrawals from the beacon chain
     function _processWithdrawals() internal {
         _process_EIP_7002_Requests();
+        _process_EIP_7521_Requests();
+        _withdrawFromBeaconChain();
+    }
 
-        // TODO - update this to also withdraw/reset pending amounts
-        _withdrawExcess();
+    /// @dev Handle consolidation requests
+    function _process_EIP_7521_Requests() internal {
+        // Call EIP-7521 predeploy and dequeue any consolidation requests
+        cheats.prank(SYSTEM_ADDRESS);
+        (bool ok, bytes memory data) = address(CONSOLIDATION_PREDEPLOY).call("");
+        require(ok, "BeaconChainMock._process_EIP_7521_Requests: CONSOLIDATION_PREDEPLOY failed");
+
+        ConsolidationRequest[] memory requests = abi.decode(data, (ConsolidationRequest[]));
+        console.log("   - Dequeued %d consolidation requests.", requests.length);
+
+        for (uint i = 0; i < requests.length; i++) {
+            ConsolidationRequest memory request = requests[i];
+            uint40 sourceIndex = request.sourcePubkey.toIndex();
+            uint40 targetIndex = request.targetPubkey.toIndex();
+
+            if (sourceIndex >= validators.length || targetIndex >= validators.length) {
+                _logSkip("source or target does not exist");
+                continue;
+            }
+            
+            Validator storage source = validators[sourceIndex];
+            Validator storage target = validators[targetIndex];
+
+            if (source.isDummy || target.isDummy) {
+                _logSkip("dummy validator");
+            } else if (request.source != source.withdrawalAddress()) {
+                _logSkip("incorrect source address");
+            } else if (source.hasBLSWC()) {
+                _logSkip("source has BLS withdrawal credentials");
+            } else if (!source.isActiveAt(currentEpoch())) {
+                _logSkip("source is not active at current epoch");
+            } else if (source.isExiting()) {
+                _logSkip("source validator is exiting");
+            } else if (sourceIndex == targetIndex) {
+                // Handle switch to 0x02 request
+                if (source.hasCompoundingWC()) {
+                    _logSkip("switch request source already has 0x02 credentials");
+                } else {
+                    console.log("   -- Switching validator to 0x02 creds (idx: %d).", sourceIndex);
+                
+                    // The beacon chain would queue excess balance here as a "pending deposit", but
+                    // we don't follow the spec that closely.
+                    source.withdrawalCreds[0] = 0x02;
+                }
+            } else if (!target.hasCompoundingWC()) {
+                _logSkip("target does not have compounding withdrawal credentials");
+            } else if (!target.isActiveAt(currentEpoch())) {
+                _logSkip("target is not active at current epoch");
+            } else if (target.isExiting()) {
+                _logSkip("target validator is exiting");
+            } else if (source.pendingBalanceToWithdrawGwei != 0) {
+                _logSkip("source has pending withdrawals in queue");
+            } else if (source.isSlashed) {
+                _logSkip("source validator is slashed");
+            } else {
+                console.log("   -- Consolidating source (%d) to target (%d).", sourceIndex, targetIndex);
+
+                // Mark source validator exited
+                source.exitEpoch = currentEpoch();
+
+                // Transfer balance from source to target
+                // Note the beacon chain would cap this transfer to the effective balance,
+                // and withdraw the rest. Our effective balances aren't using hysteresis, so
+                // we approximate this behavior by withdrawing anything over 32 ETH.
+                uint64 transferAmtGwei = _currentBalanceGwei(sourceIndex);
+                uint64 withdrawAmtGwei;
+                if (transferAmtGwei > MIN_ACTIVATION_BALANCE_GWEI) {
+                    withdrawAmtGwei = transferAmtGwei - MIN_ACTIVATION_BALANCE_GWEI;
+                    transferAmtGwei = MIN_ACTIVATION_BALANCE_GWEI;
+                }
+
+                uint64 targetBalanceGwei = _currentBalanceGwei(targetIndex);
+                _setCurrentBalance(sourceIndex, 0);
+                _setCurrentBalance(targetIndex, targetBalanceGwei + transferAmtGwei);
+
+                // Withdraw excess balance
+                address destination = source.withdrawalAddress();
+                cheats.deal(destination, address(destination).balance + uint(withdrawAmtGwei * GWEI_TO_WEI));
+            }
+        }
     }
 
     /// @dev Handle pending partial withdrawals AND withdraw excess validator balance
     function _process_EIP_7002_Requests() internal {
         // Call EIP-7002 predeploy and dequeue any withdrawal requests
         cheats.prank(SYSTEM_ADDRESS);
-        (bool ok, bytes memory data) = WITHDRAWAL_PREDEPLOY.call();
-        require(ok, "BeaconChainMock._processWithdrawals: WITHDRAWAL_PREDEPLOY failed");
+        (bool ok, bytes memory data) = address(WITHDRAWAL_PREDEPLOY).call("");
+        require(ok, "BeaconChainMock._process_EIP_7002_Requests: WITHDRAWAL_PREDEPLOY failed");
 
         WithdrawalRequest[] memory requests = abi.decode(data, (WithdrawalRequest[]));
         console.log("   - Dequeued %d withdrawal requests.", requests.length);
+
         for (uint i = 0; i < requests.length; i++) {
             WithdrawalRequest memory request = requests[i];
-            // _createValidator sets each validator's pubkey to its index, so we can use it to look up here
-            bytes memory pubkey = request.validatorPubkey;
-            uint validatorIndex;
-            assembly { validatorIndex := mload(add(48, pubkey)) }
+            uint40 validatorIndex = request.validatorPubkey.toIndex();
 
-            // The CL would just skip this request, but we revert since it shouldn't be possible
-            // to have a validator with an invalid pubkey.
-            require(validatorIndex < validators.length, "BeaconChainMock._processWithdrawals: invalid pubkey");
+            if (validatorIndex >= validators.length) {
+                _logSkip("validator does not exist");
+                continue;
+            }
+
             Validator storage v = validators[validatorIndex];
-            address destination = _toAddress(v.withdrawalCreds);
 
-            bool isFullExitRequest = request.amount == 0;
-            bool isCorrectSourceAddress = request.source == destination;
+            bool isFullExitRequest = request.amountGwei == 0;
 
             uint64 balanceGwei = _currentBalanceGwei(validatorIndex);
             bool hasExcessBalance = balanceGwei > MIN_ACTIVATION_BALANCE_GWEI + v.pendingBalanceToWithdrawGwei;
 
-            string memory skipReason;
             if (v.isDummy) {
-                skipReason = "dummy validator";
-            } else if (!isCorrectSourceAddress) {
-                skipReason = "incorrect source address";
-            } else if (!_isActiveAt(v, currentEpoch())) {
-                skipReason = "inactive validator";
-            } else if (v.exitEpoch != FAR_FUTURE_EPOCH) {
-                skipReason = "exit in progress";
+                _logSkip("dummy validator");
+            } else if (request.source != v.withdrawalAddress()) {
+                _logSkip("incorrect source address");
+            } else if (!v.isActiveAt(currentEpoch())) {
+                _logSkip("inactive validator");
+            } else if (v.isExiting()) {
+                _logSkip("exit in progress");
             } else if (isFullExitRequest && v.pendingBalanceToWithdrawGwei != 0) {
-                skipReason = "attempted full exit while pending withdrawal in queue";
+                _logSkip("attempted full exit while pending withdrawal in queue");
             } else if (isFullExitRequest) {
+                // TODO - swap to internal method
                 exitValidator(validatorIndex);
-                continue;
-            } else if (!_hasCompoundingWithdrawalCredentials(v)) {
-                skipReason = "attempted partial exit without 0x02 credentials";
+            } else if (!v.hasCompoundingWC()) {
+                _logSkip("attempted partial exit without 0x02 credentials");
             } else if (!hasExcessBalance) {
-                skipReason = "validator does not have excess balance";
+                _logSkip("validator does not have excess balance");
+            } else {
+                // Partial withdrawal - only withdraw down to 32 ETH
+                uint64 toWithdrawGwei = balanceGwei - MIN_ACTIVATION_BALANCE_GWEI - v.pendingBalanceToWithdrawGwei;
+                toWithdrawGwei = toWithdrawGwei > request.amountGwei ? request.amountGwei : toWithdrawGwei;
+
+                v.pendingBalanceToWithdrawGwei += toWithdrawGwei;
             }
-
-            if (skipReason.length != 0) {
-                console.log("   -- Skipping request with reason: %s.", skipReason);
-                continue;
-            }
-
-            // Partial withdrawal - only withdraw down to 32 ETH
-            uint64 toWithdrawGwei = balanceGwei - MIN_ACTIVATION_BALANCE_GWEI - v.pendingBalanceToWithdrawGwei;
-            toWithdrawGwei = toWithdrawGwei > request.amountGwei ? request.amountGwei : toWithdrawGwei;
-
-            v.pendingBalanceToWithdrawGwei += toWithdrawGwei;
         }
     }
 
-    /// @dev Iterate over all validators. If the validator has > Max EB current balance
-    /// OR is exited, withdraw the excess to the validator's withdrawal address.
-    function _withdrawExcess() internal {
-        uint totalExcessWei;
+    function _logSkip(string memory reason) internal {
+        console.log("   -- Skipping request with reason: %s.", reason);
+    }
+
+    /// @dev Iterate over all validators. If the validator:
+    /// - has > than Max EB current balance
+    /// - is exited
+    /// - has a pending partial withdrawal
+    ///
+    /// ... withdraw the appropriate amount to the validator's withdrawal credentials
+    function _withdrawFromBeaconChain() internal {
+        uint64 totalWithdrawnGwei;
         for (uint i = 0; i < validators.length; i++) {
             Validator storage v = validators[i];
             if (v.isDummy) continue; // don't process dummy validators
 
-            uint balanceWei = uint(_currentBalanceGwei(uint40(i))) * GWEI_TO_WEI;
-            address destination = _toAddress(v.withdrawalCreds);
-            uint excessBalanceWei;
-            uint64 newBalanceGwei = uint64(balanceWei / GWEI_TO_WEI);
+            uint64 withdrawAmtGwei;
+            uint64 curBalanceGwei = _currentBalanceGwei(uint40(i));
+            // If the validator has nothing to withdraw, continue
+            if (curBalanceGwei == 0) continue;
 
-            // If the validator has exited, withdraw any existing balance
-            //
-            // If the validator has > Max EB, withdraw anything over that
             if (v.exitEpoch != BeaconChainProofs.FAR_FUTURE_EPOCH) {
-                if (balanceWei == 0) continue;
+                // Process full withdrawal for exited validator
+                withdrawAmtGwei = curBalanceGwei;
+            } else {
+                // If the validator has a pending withdrawal request, withdraw (but do not go below 32 eth)
+                // Note that these reqs are only fulfilled for 0x02 validators (this is enforced elsewhere)
+                if (v.pendingBalanceToWithdrawGwei != 0 && curBalanceGwei > MIN_ACTIVATION_BALANCE_GWEI) {
+                    uint64 excessBalanceGwei = curBalanceGwei - MIN_ACTIVATION_BALANCE_GWEI;
 
-                excessBalanceWei = balanceWei;
-                newBalanceGwei = 0;
-            } else if (balanceWei > MAX_EFFECTIVE_BALANCE_WEI) {
-                excessBalanceWei = balanceWei - MAX_EFFECTIVE_BALANCE_WEI;
-                newBalanceGwei = MAX_EFFECTIVE_BALANCE_GWEI;
+                    withdrawAmtGwei = v.pendingBalanceToWithdrawGwei;
+                    if (withdrawAmtGwei > excessBalanceGwei) withdrawAmtGwei = excessBalanceGwei;
+
+                    // Reduce balance and set pending to 0
+                    curBalanceGwei -= withdrawAmtGwei;
+                    v.pendingBalanceToWithdrawGwei = 0;
+                }
+                 
+                // Withdraw any amount above the max effective balance:
+                // - For 0x01 validators, this is 32 ETH
+                // - For 0x02 validators, this is 2048 ETH
+                uint64 maxEBGwei = _getMaxEffectiveBalanceGwei(v);
+                if (curBalanceGwei > maxEBGwei) {
+                    uint64 excessBalanceGwei = curBalanceGwei - maxEBGwei;
+
+                    withdrawAmtGwei += excessBalanceGwei;
+                }
             }
 
+            uint64 newBalanceGwei = curBalanceGwei - withdrawAmtGwei;
+
             // Send ETH to withdrawal address
-            cheats.deal(destination, address(destination).balance + excessBalanceWei);
-            totalExcessWei += excessBalanceWei;
+            address destination = v.withdrawalAddress();
+            uint withdrawAmtWei = withdrawAmtGwei * GWEI_TO_WEI;
+
+            cheats.deal(destination, address(destination).balance + withdrawAmtWei);
+            totalWithdrawnGwei += withdrawAmtGwei;
 
             // Update validator's current balance
             _setCurrentBalance(uint40(i), newBalanceGwei);
         }
 
-        if (totalExcessWei != 0) console.log("- Withdrew excess balance:", totalExcessWei.asGwei());
+        if (totalWithdrawnGwei != 0) console.log("- Total withdrawals from CL (gwei):", totalWithdrawnGwei);
     }
 
     function _updateCurrentEpoch() internal {
@@ -601,16 +693,12 @@ contract BeaconChainMock is Logger {
         if (validatorIndex % 4 == 0) {
             uint64 dummyBalanceGwei = type(uint64).max - uint64(validators.length);
 
-            bytes memory _dummyPubkey = new bytes(48);
-            assembly {
-                mstore(add(48, _dummyPubkey), validatorIndex)
-            }
             validators.push(
                 Validator({
                     isDummy: true,
                     isSlashed: false,
-                    pubkeyHash: sha256(abi.encodePacked(_dummyPubkey, bytes16(0))),
-                    withdrawalCreds: "",
+                    pubkeyHash: validatorIndex.toPubkey().pubkeyHash(),
+                    withdrawalCreds: new bytes(1),
                     effectiveBalanceGwei: dummyBalanceGwei,
                     activationEpoch: BeaconChainProofs.FAR_FUTURE_EPOCH,
                     exitEpoch: BeaconChainProofs.FAR_FUTURE_EPOCH,
@@ -622,16 +710,11 @@ contract BeaconChainMock is Logger {
             validatorIndex++;
         }
 
-        // Use pubkey format from `EigenPod._calculateValidatorPubkeyHash`
-        bytes memory _pubkey = new bytes(48);
-        assembly {
-            mstore(add(48, _pubkey), validatorIndex)
-        }
         validators.push(
             Validator({
                 isDummy: false,
                 isSlashed: false,
-                pubkeyHash: sha256(abi.encodePacked(_pubkey, bytes16(0))),
+                pubkeyHash: validatorIndex.toPubkey().pubkeyHash(),
                 withdrawalCreds: withdrawalCreds,
                 effectiveBalanceGwei: balanceGwei,
                 activationEpoch: currentEpoch(),
@@ -774,7 +857,7 @@ contract BeaconChainMock is Logger {
         // Calculate credential proofs for each validator
         for (uint i = 0; i < validators.length; i++) {
             bytes memory proof = new bytes(VAL_FIELDS_PROOF_LEN);
-            bytes32[] memory validatorFields = _getValidatorFields(uint40(i));
+            bytes32[] memory validatorFields = validators[i].getValidatorFields();
             bytes32 curNode = Merkle.merkleizeSha256(validatorFields);
 
             // Validator fields leaf -> validator container root
@@ -843,7 +926,7 @@ contract BeaconChainMock is Logger {
 
         // Place each validator's validatorFields into tree
         for (uint i = 0; i < validators.length; i++) {
-            leaves[i] = Merkle.merkleizeSha256(_getValidatorFields(uint40(i)));
+            leaves[i] = Merkle.merkleizeSha256(validators[i].getValidatorFields());
         }
 
         return leaves;
@@ -933,20 +1016,6 @@ contract BeaconChainMock is Logger {
         return validatorIndex / 4;
     }
 
-    function _getValidatorFields(uint40 validatorIndex) internal view returns (bytes32[] memory) {
-        bytes32[] memory vFields = new bytes32[](8);
-        Validator memory v = validators[validatorIndex];
-
-        vFields[BeaconChainProofs.VALIDATOR_PUBKEY_INDEX] = v.pubkeyHash;
-        vFields[BeaconChainProofs.VALIDATOR_WITHDRAWAL_CREDENTIALS_INDEX] = bytes32(v.withdrawalCreds);
-        vFields[BeaconChainProofs.VALIDATOR_BALANCE_INDEX] = _toLittleEndianUint64(v.effectiveBalanceGwei);
-        vFields[BeaconChainProofs.VALIDATOR_SLASHED_INDEX] = bytes32(abi.encode(v.isSlashed));
-        vFields[BeaconChainProofs.VALIDATOR_ACTIVATION_EPOCH_INDEX] = _toLittleEndianUint64(v.activationEpoch);
-        vFields[BeaconChainProofs.VALIDATOR_EXIT_EPOCH_INDEX] = _toLittleEndianUint64(v.exitEpoch);
-
-        return vFields;
-    }
-
     /// @dev Update the validator's current balance
     function _setCurrentBalance(uint40 validatorIndex, uint64 newBalanceGwei) internal {
         bytes32 balanceRoot = balances[validatorIndex / 4];
@@ -974,24 +1043,6 @@ contract BeaconChainMock is Logger {
         return zeroNodes[depth];
     }
 
-    /// @dev Opposite of Endian.fromLittleEndianUint64
-    function _toLittleEndianUint64(uint64 num) internal pure returns (bytes32) {
-        uint lenum;
-
-        // Rearrange the bytes from big-endian to little-endian format
-        lenum |= uint((num & 0xFF) << 56);
-        lenum |= uint((num & 0xFF00) << 40);
-        lenum |= uint((num & 0xFF0000) << 24);
-        lenum |= uint((num & 0xFF000000) << 8);
-        lenum |= uint((num & 0xFF00000000) >> 8);
-        lenum |= uint((num & 0xFF0000000000) >> 24);
-        lenum |= uint((num & 0xFF000000000000) >> 40);
-        lenum |= uint((num & 0xFF00000000000000) >> 56);
-
-        // Shift the little-endian bytes to the end of the bytes32 value
-        return bytes32(lenum << 192);
-    }
-
     /// @dev Opposite of BeaconChainProofs.getBalanceAtIndex, calculates a new balance
     /// root by updating the balance at validatorIndex
     /// @return The new, updated balance root
@@ -1002,20 +1053,10 @@ contract BeaconChainMock is Logger {
         uint clearedRoot = uint(balanceRoot) & mask;
 
         // Convert validator balance to little endian and shift to correct position
-        uint leBalance = uint(_toLittleEndianUint64(newBalanceGwei));
+        uint leBalance = uint(newBalanceGwei.toLittleEndianUint64());
         uint shiftedBalance = leBalance >> (192 - bitShiftAmount);
 
         return bytes32(clearedRoot | shiftedBalance);
-    }
-
-    /// @dev Helper to convert 32-byte withdrawal credentials to an address
-    function _toAddress(bytes memory withdrawalCreds) internal pure returns (address a) {
-        bytes32 creds = bytes32(withdrawalCreds);
-        uint160 mask = type(uint160).max;
-
-        assembly {
-            a := and(creds, mask)
-        }
     }
 
     /**
@@ -1096,16 +1137,16 @@ contract BeaconChainMock is Logger {
         return validators[validatorIndex].effectiveBalanceGwei;
     }
 
+    function _getMaxEffectiveBalanceGwei(Validator storage v) internal view returns (uint64) {
+        return v.hasCompoundingWC() ? MAX_EFFECTIVE_BALANCE_GWEI : MIN_ACTIVATION_BALANCE_GWEI;
+    }
+
     function pubkeyHash(uint40 validatorIndex) public view returns (bytes32) {
         return validators[validatorIndex].pubkeyHash;
     }
 
     function pubkey(uint40 validatorIndex) public pure returns (bytes memory) {
-        bytes memory _pubkey = new bytes(48);
-        assembly {
-            mstore(add(48, _pubkey), validatorIndex)
-        }
-        return _pubkey;
+        return validatorIndex.toPubkey();
     }
 
     function getPubkeyHashes(uint40[] memory _validators) public view returns (bytes32[] memory) {
@@ -1119,10 +1160,6 @@ contract BeaconChainMock is Logger {
     }
 
     function isActive(uint40 validatorIndex) public view returns (bool) {
-        return _isActiveAt(validators[validatorIndex], currentEpoch());
-    }
-
-    function _isActiveAt(Validator storage self, uint64 epoch) internal view returns (bool) {
-        return self.activationEpoch <= epoch && epoch < self.exitEpoch;
+        return validators[validatorIndex].isActiveAt(currentEpoch());
     }
 }
