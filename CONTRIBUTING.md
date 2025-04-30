@@ -4,18 +4,6 @@ Thank you for considering contributing to EigenLayer! This guide will help you s
 
 ## Setting Up Your Environment
 
-We use fork base PR mechanism. Contributions that do not follow our fork base PR practices will be automatically immediately closed and deleted, preventing branch pollution, keeping our repository clean, tidy, more readable and searchable.
-
-### Fork and Clone the Repository
-
-1. Fork the repository following [GitHub's instructions](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo)
-2. Clone your forked repository:
-
-```bash
-git clone https://github.com/<your_github_id>/eigenlayer-contracts.git
-cd eigenlayer-contracts
-```
-
 ### Install Dependencies
 
 To set up this repo for the first time, run:
@@ -110,86 +98,7 @@ make storage-report
 ------
 
 
-
 ## Submitting a Pull Request
-
-
-### Configure Remote Repositories
-
-All PRs should be submitted from your forked repository. Add the official EigenLayer repository as your upstream remote:
-
-```bash
-git remote add upstream https://github.com/Layr-Labs/eigenlayer-contracts.git
-```
-
-Verify your configuration:
-
-```bash
-git remote -v
-```
-
-You should see:
-```
-origin    https://github.com/<your_github_id>/eigenlayer-contracts.git (fetch)
-origin    https://github.com/<your_github_id>/eigenlayer-contracts.git (push)
-upstream  https://github.com/Layr-Labs/eigenlayer-contracts.git (fetch)
-upstream  https://github.com/Layr-Labs/eigenlayer-contracts.git (push)
-```
-
-
-### Create Your PR to Upstream Branches
-
-The following applies if you submit a PR to upstream branch of either `main` or `release-dev/*`, which will refer to as `<upstream-target-branch>`
-
-Create a local branch from the upstream branch:
-
-```
-git checkout -B <my-local-feature-branch> upstream/<upstream-target-branch>
-```
-
-Make your changes, then commit:
-
-```
-git add .
-git commit -m "your message"
-```
-
-Push to your fork:
-
-```
-git push -u origin <my-local-feature-branch>
-```
-
-Go to GitHub, and open a PR from:
-
-```
-your-fork:<my-local-feature-branch>
-**to**
-Layr-Labs/eigenlayer-contracts:<upstream-target-branch>
-```
-
-GitHub should auto-detect this if branches match.
-
-If you already have an open PR for this branch, just push more commits to `<my-local-feature-branch>`, and the PR will update.
-
-
-### Keeping Your Branch Updated With Upstream
-
-To stay in sync with upstream's `<upstream-target-branch>`, whether it's `main` or `release-dev/*`:
-
-```
-git fetch upstream
-git checkout <my-local-feature-branch>
-git rebase upstream/<upstream-target-branch>
-
-# or use merge if you prefer
-# git merge upstream/<upstream-target-branch>
-
-git push -f origin <my-local-feature-branch>
-```
-
-Use --force only if you're rebasing (not with merges).
-
 
 ### PR Title Format
 
