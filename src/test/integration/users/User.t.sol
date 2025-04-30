@@ -333,11 +333,10 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     /// @return The amount of wei sent to the beacon chain
     function startValidators(uint8 numValidators) public virtual createSnapshot returns (uint40[] memory, uint64, uint) {
         require(numValidators > 0 && numValidators <= 10, "startValidators: numValidators must be between 1 and 10");
+    
+        // Deal ETH for the new validators
         uint balanceWei = address(this).balance;
-
-        // given a number of validators, the current balance, calculate the amount of ETH needed to start that many validators
-        uint ethNeeded = numValidators * 32 ether - balanceWei;
-        cheats.deal(address(this), ethNeeded);
+        cheats.deal(address(this), balanceWei + (numValidators * 32 ether));
 
         print.method("startValidators");
         return _startValidators();

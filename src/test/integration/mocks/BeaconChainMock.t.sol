@@ -612,7 +612,8 @@ contract BeaconChainMock is Logger {
 
             // Get current balance and trim anything over MAX EB
             uint64 balanceGwei = _currentBalanceGwei(uint40(i));
-            if (balanceGwei > MAX_EFFECTIVE_BALANCE_GWEI) balanceGwei = MAX_EFFECTIVE_BALANCE_GWEI;
+            uint64 maxEBGwei = _getMaxEffectiveBalanceGwei(v);
+            if (balanceGwei > maxEBGwei) balanceGwei = maxEBGwei;
 
             v.effectiveBalanceGwei = balanceGwei;
         }
