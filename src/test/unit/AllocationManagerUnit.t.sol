@@ -137,6 +137,35 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
         allocationManager.createOperatorSets(operatorSets[0].avs, createSetParams);
     }
 
+    function _createRedistributingOperatorSet(
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies,
+        address redistributionRecipient
+    ) internal returns (OperatorSet memory) {
+        cheats.prank(operatorSet.avs);
+        allocationManager.createRedistributingOperatorSets(
+            operatorSet.avs,
+            CreateSetParams({operatorSetId: operatorSet.id, strategies: strategies}).toArray(),
+            redistributionRecipient.toArray()
+        );
+        return operatorSet;
+    }
+
+    function _createRedistributingOperatorSets(
+        OperatorSet[] memory operatorSets,
+        IStrategy[] memory strategies,
+        address[] memory redistributionRecipients
+    ) internal {
+        CreateSetParams[] memory createSetParams = new CreateSetParams[](operatorSets.length);
+
+        for (uint i; i < operatorSets.length; ++i) {
+            createSetParams[i] = CreateSetParams({operatorSetId: operatorSets[i].id, strategies: strategies});
+        }
+
+        cheats.prank(operatorSets[0].avs);
+        allocationManager.createRedistributingOperatorSets(operatorSets[0].avs, createSetParams, redistributionRecipients);
+    }
+
     function _registerForOperatorSet(address operator, OperatorSet memory operatorSet) internal {
         cheats.prank(operator);
         allocationManager.registerForOperatorSets(
@@ -4204,5 +4233,21 @@ contract AllocationManagerUnitTests_getAllocatedStake is AllocationManagerUnitTe
         uint[][] memory allocatedStake =
             allocationManager.getAllocatedStake(defaultOperatorSet, defaultOperator.toArray(), defaultStrategies);
         assertEq(allocatedStake[0][0], DEFAULT_OPERATOR_SHARES.mulWad(5e17), "allocated stake should remain same after deregistration");
+    }
+}
+
+contract AllocationManagerUnitTests_isRedistributingOperatorSet is AllocationManagerUnitTests {
+    function testFuzz_isRedistributingOperatorSet(Randomness r) public rand(r) {
+        assertEq(allocationManager.isRedistributingOperatorSet(defaultOperatorSet), false, "operator set should not be redistributing");
+
+        OperatorSet memory redistributingOpSet = OperatorSet(defaultAVS, defaultOperatorSet.id + 1);
+        address redistributionRecipient = r.Address();
+        _createRedistributingOperatorSet(redistributingOpSet, defaultStrategies, redistributionRecipient);
+        assertEq(allocationManager.isRedistributingOperatorSet(redistributingOpSet), true, "operator set should be redistributing");
+        assertEq(
+            allocationManager.getRedistributionRecipient(redistributingOpSet),
+            redistributionRecipient,
+            "redistribution recipient should be correct"
+        );
     }
 }
