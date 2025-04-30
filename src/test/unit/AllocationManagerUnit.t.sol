@@ -3691,7 +3691,7 @@ contract AllocationManagerUnitTests_createRedistributingOperatorSets is Allocati
             createSetParams[i].operatorSetId = r.Uint32(1, type(uint32).max);
             createSetParams[i].strategies = r.StrategyArray(numStrategies);
             redistributionRecipients[i] = r.Address();
-            
+
             cheats.expectEmit(true, true, true, true, address(allocationManager));
             emit RedistributingOperatorSetCreated(OperatorSet(avs, createSetParams[i].operatorSetId), redistributionRecipients[i]);
             for (uint j; j < numStrategies; ++j) {
@@ -3708,7 +3708,9 @@ contract AllocationManagerUnitTests_createRedistributingOperatorSets is Allocati
             assertTrue(allocationManager.isOperatorSet(opSet), "should be operator set");
             assertTrue(allocationManager.isRedistributingOperatorSet(opSet), "should be redistributing operator set");
             assertEq(
-                allocationManager.getRedistributionRecipient(opSet), redistributionRecipients[k], "should have correct redistribution recipient"
+                allocationManager.getRedistributionRecipient(opSet),
+                redistributionRecipients[k],
+                "should have correct redistribution recipient"
             );
 
             IStrategy[] memory strategiesInSet = allocationManager.getStrategiesInOperatorSet(opSet);
