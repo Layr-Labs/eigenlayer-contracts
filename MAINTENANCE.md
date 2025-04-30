@@ -68,6 +68,26 @@ When merging a complete `release-dev` branch into `main` after a major feature i
 - **Breaking Changes**: Clearly document any breaking changes in PR descriptions
 
 
+### Auto Remove Stale Branches
+
+Many stale branches lives in the repo and never got cleaned up. to balance developer convenience vs being organized/legible, we have implemented a CI workflow to identify and remove stable branches.
+
+The CI workflow will:
+
+- scan stale branches that not hv new commits since 90 days ago, and notify owner if there's one
+- if still no changes coming in, delete the stable branch 7 days later
+
+Following branches and regex are excluded
+
+- `main`
+- `release-dev/*` (release development branches)
+- `v*.*.*` (release branches)
+
+Regex rules can be changed by modifying `exempt-branches-regex` config in the [yml](https://github.com/Layr-Labs/eigenlayer-contracts/blob/main/.github/workflows/remove-stale-branches.yml)
+
+
+------
+
 
 ## Release Management
 
