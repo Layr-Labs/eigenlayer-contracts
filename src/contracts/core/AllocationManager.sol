@@ -330,10 +330,7 @@ contract AllocationManager is
 
     /// @inheritdoc IAllocationManager
     function updateAVSMetadataURI(address avs, string calldata metadataURI) external checkCanCall(avs) {
-        if (!_avsRegisteredMetadata[avs]) {
-            _avsRegisteredMetadata[avs] = true;
-        }
-
+        if (!_avsRegisteredMetadata[avs]) _avsRegisteredMetadata[avs] = true;
         emit AVSMetadataURIUpdated(avs, metadataURI);
     }
 
@@ -342,26 +339,11 @@ contract AllocationManager is
         address avs,
         CreateSetParams[] calldata params
     ) external checkCanCall(avs) returns (uint32[] memory operatorSetIds) {
-        // Check that the AVS exists and has registered metadata
         require(_avsRegisteredMetadata[avs], NonexistentAVSMetadata());
-
         operatorSetIds = new uint32[](params.length);
-
         for (uint256 i = 0; i < params.length; i++) {
             operatorSetIds[i] = params[i].operatorSetId;
-
-            OperatorSet memory operatorSet = OperatorSet(avs, params[i].operatorSetId);
-
-            // Create the operator set, ensuring it does not already exist
-            require(_operatorSets[avs].add(operatorSet.id), InvalidOperatorSet());
-            emit OperatorSetCreated(OperatorSet(avs, operatorSet.id));
-
-            // Add strategies to the operator set
-            bytes32 operatorSetKey = operatorSet.key();
-            for (uint256 j = 0; j < params[i].strategies.length; j++) {
-                _operatorSetStrategies[operatorSetKey].add(address(params[i].strategies[j]));
-                emit StrategyAddedToOperatorSet(operatorSet, params[i].strategies[j]);
-            }
+            _createOperatorSet(avs, params[i], address(0));
         }
     }
 
@@ -372,28 +354,11 @@ contract AllocationManager is
         address[] calldata redistributionRecipients
     ) external checkCanCall(avs) returns (uint32[] memory operatorSetIds) {
         require(params.length == redistributionRecipients.length, InputArrayLengthMismatch());
-
-        operatorSetIds = new uint32[](params.length);
-
-        // Check that the AVS exists and has registered metadata
         require(_avsRegisteredMetadata[avs], NonexistentAVSMetadata());
-
+        operatorSetIds = new uint32[](params.length);
         for (uint256 i = 0; i < params.length; i++) {
             operatorSetIds[i] = params[i].operatorSetId;
-
-            OperatorSet memory operatorSet = OperatorSet(avs, params[i].operatorSetId);
-
-            // Create the operator set, ensuring it does not already exist
-            require(_operatorSets[avs].add(operatorSet.id), InvalidOperatorSet());
-            _redistributionRecipients[operatorSet.key()] = redistributionRecipients[i];
-            emit RedistributingOperatorSetCreated(OperatorSet(avs, operatorSet.id), redistributionRecipients[i]);
-
-            // Add strategies to the operator set
-            bytes32 operatorSetKey = operatorSet.key();
-            for (uint256 j = 0; j < params[i].strategies.length; j++) {
-                _operatorSetStrategies[operatorSetKey].add(address(params[i].strategies[j]));
-                emit StrategyAddedToOperatorSet(operatorSet, params[i].strategies[j]);
-            }
+            _createOperatorSet(avs, params[i], redistributionRecipients[i]);
         }
     }
 
@@ -435,6 +400,39 @@ contract AllocationManager is
      *                         INTERNAL FUNCTIONS
      *
      */
+
+    /**
+     * @notice Creates a new operator set for an AVS.
+     * @param avs The AVS address that owns the operator set.
+     * @param params The parameters for creating the operator set.
+     * @param redistributionRecipient Address to receive redistributed funds when operators are slashed.
+     * @dev If `redistributionRecipient` is address(0), the operator set is considered non-redistributing
+     * and slashed funds are sent to the `DEFAULT_BURN_ADDRESS`.
+     */
+    function _createOperatorSet(
+        address avs,
+        CreateSetParams calldata params,
+        address redistributionRecipient
+    ) internal {
+        OperatorSet memory operatorSet = OperatorSet(avs, params.operatorSetId);
+
+        // Create the operator set, ensuring it does not already exist.
+        require(_operatorSets[avs].add(operatorSet.id), InvalidOperatorSet());
+
+        if (redistributionRecipient != address(0)) {
+            _redistributionRecipients[operatorSet.key()] = redistributionRecipient;
+            emit RedistributingOperatorSetCreated(operatorSet, redistributionRecipient);
+        } else {
+            emit OperatorSetCreated(operatorSet);
+        }
+
+        // Add strategies to the operator set
+        bytes32 operatorSetKey = operatorSet.key();
+        for (uint256 j = 0; j < params.strategies.length; j++) {
+            _operatorSetStrategies[operatorSetKey].add(address(params.strategies[j]));
+            emit StrategyAddedToOperatorSet(operatorSet, params.strategies[j]);
+        }
+    }
 
     /**
      * @dev Clear one or more pending deallocations to a strategy's allocated magnitude
