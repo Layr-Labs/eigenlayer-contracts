@@ -4,7 +4,6 @@ on:
   schedule:
     - cron: "0 0 * * *" # Everday at midnight
   workflow_dispatch:     # Allows manual trigger from GitHub UI
-  pull_request:
 
 permissions:
   contents: write
