@@ -1,0 +1,59 @@
+name: Validate Deployment Scripts
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'script/**'
+      - '.github/workflows/validate-deployment-scripts.yml'
+  pull_request:
+    paths:
+      - 'script/**'
+      - '.github/workflows/validate-deployment-scripts.yml'
+
+
+jobs:
+
+  test:
+    runs-on: protocol-x64-16core
+    strategy:
+      fail-fast: true
+      matrix:
+        env: [preprod, testnet, mainnet, testnet-sepolia, testnet-hoodi]
+
+    steps:
+      # Check out repository with all submodules for complete codebase access.
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install Zeus
+        run: npm install -g @layr-labs/zeus
+
+      - name: Validate Solidity Scripts
+        run: |
+          # Find all .sol files under /script/deploy and /script/release
+          RELEASE_FILES=$(find script/release -type f -name "*.sol" 2>/dev/null || echo "")
+          
+          # Combine file lists
+          FILES="$RELEASE_FILES"
+          
+          # Trim leading/trailing whitespace
+          FILES=$(echo "$FILES" | xargs)
+          
+          # Exit with success if no files are found
+          if [ -z "$FILES" ]; then
+            echo "No .sol files found under /script/deploy or /script/release directories"
+            exit 0
+          fi
+          
+          # Run zeus test on each file with the specified environment
+          for file in $FILES; do
+            echo "Testing $file in ${{ matrix.env }} environment..."
+            zeus test --env ${{ matrix.env }} "$file"
+          done
