@@ -33,6 +33,36 @@ jobs:
 
       - name: Install Zeus
         run: npm install -g @layr-labs/zeus
+      
+        # Restore Forge cache
+      - name: Cache Forge Build
+        uses: actions/cache@v3
+        with:
+          path: |
+            cache/
+            out/
+          key: ${{ runner.os }}-forge-${{ hashFiles('**/foundry.toml', '**/remappings.txt', 'src/**/*.sol', 'lib/**/*.sol') }}
+          restore-keys: |
+            ${{ runner.os }}-forge-
+
+      # Install the Foundry toolchain.
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      # Run Forge's formatting checker to ensure consistent code style.
+      - name: "Forge Fmt"
+        run: |
+          forge fmt --check
+          FOUNDRY_PROFILE=test forge fmt --check
+        id: fmt
+
+      # Build the project and display contract sizes.
+      - name: Forge Build
+        run: |
+          forge --version
+          forge build --sizes
 
       - name: Validate Solidity Scripts
         run: |
