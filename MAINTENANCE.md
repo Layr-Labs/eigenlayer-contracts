@@ -142,17 +142,6 @@ So our release branch and model must be flexible enough to solve it via cherry p
 - all changes have to be deployed to testnet first, before mainnet. No skipping from preprod to mainnet directly
 
 
-### Release Branches
-
-Once release are created, corresponding release branches will live forever for future reference and NEVER be deleted. 
-
-Together with “**Fork-based PR**” defined in CONTRIBUTING.md, it means there are only 3 categories of branches in the repository:
-
-1. `main`: live forever, never delete 
-2. release-dev branches `release-dev/*`: long living branch for release development with commits that should be all-or-nothing in `main`. They a period of time but will be deleted once their commits are merged back to `main`
-3. official release branches `vx.y.z`: live forever, never delete after a release is officially create
-
-
 ### Changelog, Release Note, Release Announcement Blog
 
 Each release in testnet and mainnet must have corresponding release note, changelog, and announcement blog
