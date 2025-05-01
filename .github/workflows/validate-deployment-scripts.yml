@@ -36,8 +36,8 @@ jobs:
 
       - name: Validate Solidity Scripts
         run: |
-          # Find all .sol files under /script/deploy and /script/release
-          RELEASE_FILES=$(find script/release -type f -name "*.sol" 2>/dev/null || echo "")
+          # Find all .sol files under /script/releases
+          RELEASE_FILES=$(find script/releases -type f -name "*.sol" 2>/dev/null || echo "")
           
           # Combine file lists
           FILES="$RELEASE_FILES"
@@ -47,7 +47,7 @@ jobs:
           
           # Exit with success if no files are found
           if [ -z "$FILES" ]; then
-            echo "No .sol files found under /script/deploy or /script/release directories"
+            echo "No .sol files found under /script/releases directories"
             exit 0
           fi
           
