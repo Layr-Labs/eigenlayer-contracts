@@ -427,7 +427,7 @@ contract EigenPod is
 
             // Call the predeploy
             bytes memory callData = abi.encodePacked(request.pubkey, request.amountGwei);
-            (bool ok,) = CONSOLIDATION_REQUEST_ADDRESS.call{value: fee}(callData);
+            (bool ok,) = WITHDRAWAL_REQUEST_ADDRESS.call{value: fee}(callData);
             require(ok, PredeployFailed());
 
             // Emit event depending on whether the request is a full exit or a partial withdrawal

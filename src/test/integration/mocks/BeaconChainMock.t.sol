@@ -12,17 +12,8 @@ import "src/test/integration/mocks/EIP_4788_Oracle_Mock.t.sol";
 import "src/test/integration/mocks/EIP_7002_Mock.t.sol";
 import "src/test/integration/mocks/EIP_7251_Mock.t.sol";
 import "src/test/integration/mocks/LibValidator.t.sol";
+import "src/test/integration/mocks/LibProofGen.t.sol";
 import "src/test/utils/Logger.t.sol";
-
-struct ValidatorFieldsProof {
-    bytes32[] validatorFields;
-    bytes validatorFieldsProof;
-}
-
-struct BalanceRootProof {
-    bytes32 balanceRoot;
-    bytes proof;
-}
 
 struct CheckpointProofs {
     BeaconChainProofs.BalanceContainerProof balanceContainerProof;
@@ -63,9 +54,6 @@ contract BeaconChainMock is Logger {
 
     }
 
-    /// @dev All withdrawals are processed with index == 0
-    uint constant ZERO_NODES_LENGTH = 100;
-
     // Rewards given to each validator during epoch processing
     uint64 public constant CONSENSUS_REWARD_AMOUNT_GWEI = 1;
     uint64 public constant MINOR_SLASH_AMOUNT_GWEI = 10;
@@ -76,20 +64,6 @@ contract BeaconChainMock is Logger {
     uint64 public MAX_EFFECTIVE_BALANCE_GWEI = 2048 gwei;
     uint constant MIN_ACTIVATION_BALANCE_WEI = 32 ether;
     uint64 constant MIN_ACTIVATION_BALANCE_GWEI = 32 gwei;
-
-    /// PROOF CONSTANTS (PROOF LENGTHS, FIELD SIZES):
-    /// @dev Non-constant values will change with the Pectra hard fork
-
-    // see https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#beaconstate
-    uint BEACON_STATE_FIELDS = 37;
-    // see https://eth2book.info/capella/part3/containers/blocks/#beaconblock
-    uint constant BEACON_BLOCK_FIELDS = 5;
-
-    uint immutable BLOCKROOT_PROOF_LEN = 32 * BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT;
-    uint VAL_FIELDS_PROOF_LEN = 32 * ((BeaconChainProofs.VALIDATOR_TREE_HEIGHT + 1) + BeaconChainProofs.PECTRA_BEACON_STATE_TREE_HEIGHT);
-    uint BALANCE_CONTAINER_PROOF_LEN =
-        32 * (BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT + BeaconChainProofs.PECTRA_BEACON_STATE_TREE_HEIGHT);
-    uint immutable BALANCE_PROOF_LEN = 32 * (BeaconChainProofs.BALANCE_TREE_HEIGHT + 1);
 
     uint64 genesisTime;
     uint64 public nextTimestamp;
@@ -131,20 +105,6 @@ contract BeaconChainMock is Logger {
     uint lastIndexProcessed;
     uint64 curTimestamp;
 
-    // Maps block.timestamp -> beacon state root and proof
-    mapping(uint64 => BeaconChainProofs.StateRootProof) stateRootProofs;
-
-    // Maps block.timestamp -> balance container root and proof
-    mapping(uint64 => BeaconChainProofs.BalanceContainerProof) balanceContainerProofs;
-
-    // Maps block.timestamp -> validatorIndex -> credential proof for that timestamp
-    mapping(uint64 => mapping(uint40 => ValidatorFieldsProof)) validatorFieldsProofs;
-
-    // Maps block.timestamp -> balanceRootIndex -> balance proof for that timestamp
-    mapping(uint64 => mapping(uint40 => BalanceRootProof)) balanceRootProofs;
-
-    bytes32[] zeroNodes;
-
     constructor(EigenPodManager _eigenPodManager, uint64 _genesisTime) {
         genesisTime = _genesisTime;
         eigenPodManager = _eigenPodManager;
@@ -154,16 +114,6 @@ contract BeaconChainMock is Logger {
         cheats.etch(address(EIP_4788_ORACLE), type(EIP_4788_Oracle_Mock).runtimeCode);
         cheats.etch(address(CONSOLIDATION_PREDEPLOY), type(EIP_7251_Mock).runtimeCode);
         cheats.etch(address(WITHDRAWAL_PREDEPLOY), type(EIP_7002_Mock).runtimeCode);
-
-        // Calculate nodes of empty merkle tree
-        bytes32 curNode = Merkle.merkleizeSha256(new bytes32[](8));
-        zeroNodes = new bytes32[](ZERO_NODES_LENGTH);
-        zeroNodes[0] = curNode;
-
-        for (uint i = 1; i < zeroNodes.length; i++) {
-            zeroNodes[i] = sha256(abi.encodePacked(curNode, curNode));
-            curNode = zeroNodes[i];
-        }
     }
 
     function NAME() public pure virtual override returns (string memory) {
@@ -601,6 +551,8 @@ contract BeaconChainMock is Logger {
         cheats.warp(_nextEpochStartTimestamp(curEpoch));
     }
 
+    mapping(uint64 => StateProofs) proofs;
+
     function _advanceEpoch() internal virtual {
         cheats.pauseTracing();
         curTimestamp = uint64(block.timestamp);
@@ -631,47 +583,13 @@ contract BeaconChainMock is Logger {
             return;
         }
 
-        // Build merkle tree for validators
-        bytes32 validatorsRoot = _buildMerkleTree({
-            leaves: _getValidatorLeaves(),
-            treeHeight: BeaconChainProofs.VALIDATOR_TREE_HEIGHT + 1,
-            tree: trees[curTimestamp].validatorTree
+        bytes32 beaconBlockRoot = proofs[curTimestamp].generate({
+            validators: validators,
+            balances: balances
         });
-        // console.log("-- validator container root", validatorsRoot);
-
-        // Build merkle tree for current balances
-        bytes32 balanceContainerRoot = _buildMerkleTree({
-            leaves: _getBalanceLeaves(),
-            treeHeight: BeaconChainProofs.BALANCE_TREE_HEIGHT + 1,
-            tree: trees[curTimestamp].balancesTree
-        });
-        // console.log("-- balances container root", balanceContainerRoot);
-
-        // Build merkle tree for BeaconState
-        bytes32 beaconStateRoot = _buildMerkleTree({
-            leaves: _getBeaconStateLeaves(validatorsRoot, balanceContainerRoot),
-            treeHeight: BeaconChainProofs.PECTRA_BEACON_STATE_TREE_HEIGHT,
-            tree: trees[curTimestamp].stateTree
-        });
-        // console.log("-- beacon state root", beaconStateRoot);
-
-        // Build merkle tree for BeaconBlock
-        bytes32 beaconBlockRoot = _buildMerkleTree({
-            leaves: _getBeaconBlockLeaves(beaconStateRoot),
-            treeHeight: BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT,
-            tree: trees[curTimestamp].blockTree
-        });
-
-        // console.log("-- beacon block root", cheats.toString(beaconBlockRoot));
 
         // Push new block root to oracle
         EIP_4788_ORACLE.setBlockRoot(curTimestamp, beaconBlockRoot);
-
-        // Pre-generate proofs to pass to EigenPod methods
-        _genStateRootProof(beaconStateRoot);
-        _genBalanceContainerProof(balanceContainerRoot);
-        _genCredentialProofs();
-        _genBalanceProofs();
 
         cheats.resumeTracing();
     }
@@ -728,253 +646,7 @@ contract BeaconChainMock is Logger {
         cheats.resumeTracing();
 
         return validatorIndex;
-    }
-
-    struct Tree {
-        mapping(bytes32 => bytes32) siblings;
-        mapping(bytes32 => bytes32) parents;
-    }
-
-    struct MerkleTrees {
-        Tree validatorTree;
-        Tree balancesTree;
-        Tree stateTree;
-        Tree blockTree;
-    }
-
-    /// Timestamp -> merkle trees constructed at that timestamp
-    /// Used to generate proofs
-    mapping(uint64 => MerkleTrees) trees;
-
-    /// @dev Builds a merkle tree using the given leaves and height
-    /// -- if the leaves given are not complete (i.e. the depth should have more leaves),
-    ///    a pre-calculated zero-node is used to complete the tree.
-    /// -- each pair of nodes is stored in `siblings`, and their parent in `parents`.
-    ///    These mappings are used to build proofs for any individual leaf
-    /// @return The root of the merkle tree
-    ///
-    /// HACK: this sibling/parent method of tree construction relies on all passed-in leaves
-    /// being unique, so that we don't overwrite siblings/parents. This is simple for trees
-    /// like the validator tree, as each leaf is a validator's unique validatorFields.
-    /// However, for the balances tree, the leaves may not be distinct. To get around this,
-    /// _createValidator adds "dummy" validators every 4 validators created, with a unique
-    /// balance value. This ensures each balance root is unique.
-    function _buildMerkleTree(bytes32[] memory leaves, uint treeHeight, Tree storage tree) internal returns (bytes32) {
-        for (uint depth = 0; depth < treeHeight; depth++) {
-            uint newLength = (leaves.length + 1) / 2;
-            bytes32[] memory newLeaves = new bytes32[](newLength);
-
-            // Hash each pair of nodes in this level of the tree
-            for (uint i = 0; i < newLength; i++) {
-                uint leftIdx = 2 * i;
-                uint rightIdx = leftIdx + 1;
-
-                // Get left leaf
-                bytes32 leftLeaf = leaves[leftIdx];
-
-                // Calculate right leaf
-                bytes32 rightLeaf;
-                if (rightIdx < leaves.length) rightLeaf = leaves[rightIdx];
-                else rightLeaf = _getZeroNode(depth);
-
-                // Hash left and right
-                bytes32 result = sha256(abi.encodePacked(leftLeaf, rightLeaf));
-                newLeaves[i] = result;
-
-                // Record results, used to generate individual proofs later:
-                // Record left and right as siblings
-                tree.siblings[leftLeaf] = rightLeaf;
-                tree.siblings[rightLeaf] = leftLeaf;
-                // Record the result as the parent of left and right
-                tree.parents[leftLeaf] = result;
-                tree.parents[rightLeaf] = result;
-            }
-
-            // Move up one level
-            leaves = newLeaves;
-        }
-
-        require(leaves.length == 1, "BeaconChainMock._buildMerkleTree: invalid tree somehow");
-        return leaves[0];
-    }
-
-    function _genStateRootProof(bytes32 beaconStateRoot) internal {
-        bytes memory proof = new bytes(BLOCKROOT_PROOF_LEN);
-        bytes32 curNode = beaconStateRoot;
-
-        uint depth = 0;
-        for (uint i = 0; i < BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT; i++) {
-            bytes32 sibling = trees[curTimestamp].blockTree.siblings[curNode];
-
-            // proof[j] = sibling;
-            assembly {
-                mstore(add(proof, add(32, mul(32, i))), sibling)
-            }
-
-            curNode = trees[curTimestamp].blockTree.parents[curNode];
-            depth++;
-        }
-
-        stateRootProofs[curTimestamp] = BeaconChainProofs.StateRootProof({beaconStateRoot: beaconStateRoot, proof: proof});
-    }
-
-    function _genBalanceContainerProof(bytes32 balanceContainerRoot) internal virtual {
-        bytes memory proof = new bytes(BALANCE_CONTAINER_PROOF_LEN);
-        bytes32 curNode = balanceContainerRoot;
-
-        uint totalHeight = BALANCE_CONTAINER_PROOF_LEN / 32;
-        uint depth = 0;
-        for (uint i = 0; i < BeaconChainProofs.PECTRA_BEACON_STATE_TREE_HEIGHT; i++) {
-            bytes32 sibling = trees[curTimestamp].stateTree.siblings[curNode];
-
-            // proof[j] = sibling;
-            assembly {
-                mstore(add(proof, add(32, mul(32, i))), sibling)
-            }
-
-            curNode = trees[curTimestamp].stateTree.parents[curNode];
-            depth++;
-        }
-
-        for (uint i = depth; i < totalHeight; i++) {
-            bytes32 sibling = trees[curTimestamp].blockTree.siblings[curNode];
-
-            // proof[j] = sibling;
-            assembly {
-                mstore(add(proof, add(32, mul(32, i))), sibling)
-            }
-
-            curNode = trees[curTimestamp].blockTree.parents[curNode];
-            depth++;
-        }
-
-        balanceContainerProofs[curTimestamp] =
-            BeaconChainProofs.BalanceContainerProof({balanceContainerRoot: balanceContainerRoot, proof: proof});
-    }
-
-    function _genCredentialProofs() internal virtual {
-        mapping(uint40 => ValidatorFieldsProof) storage vfProofs = validatorFieldsProofs[curTimestamp];
-
-        // Calculate credential proofs for each validator
-        for (uint i = 0; i < validators.length; i++) {
-            bytes memory proof = new bytes(VAL_FIELDS_PROOF_LEN);
-            bytes32[] memory validatorFields = validators[i].getValidatorFields();
-            bytes32 curNode = Merkle.merkleizeSha256(validatorFields);
-
-            // Validator fields leaf -> validator container root
-            uint depth = 0;
-            for (uint j = 0; j < 1 + BeaconChainProofs.VALIDATOR_TREE_HEIGHT; j++) {
-                bytes32 sibling = trees[curTimestamp].validatorTree.siblings[curNode];
-
-                // proof[j] = sibling;
-                assembly {
-                    mstore(add(proof, add(32, mul(32, j))), sibling)
-                }
-
-                curNode = trees[curTimestamp].validatorTree.parents[curNode];
-                depth++;
-            }
-
-            // Validator container root -> beacon state root
-            for (uint j = depth; j < 1 + BeaconChainProofs.VALIDATOR_TREE_HEIGHT + BeaconChainProofs.PECTRA_BEACON_STATE_TREE_HEIGHT; j++) {
-                bytes32 sibling = trees[curTimestamp].stateTree.siblings[curNode];
-
-                // proof[j] = sibling;
-                assembly {
-                    mstore(add(proof, add(32, mul(32, j))), sibling)
-                }
-
-                curNode = trees[curTimestamp].stateTree.parents[curNode];
-                depth++;
-            }
-
-            vfProofs[uint40(i)].validatorFields = validatorFields;
-            vfProofs[uint40(i)].validatorFieldsProof = proof;
-        }
-    }
-
-    function _genBalanceProofs() internal {
-        mapping(uint40 => BalanceRootProof) storage brProofs = balanceRootProofs[curTimestamp];
-
-        // Calculate current balance proofs for each balance root
-        uint numBalanceRoots = _numBalanceRoots();
-        for (uint i = 0; i < numBalanceRoots; i++) {
-            bytes memory proof = new bytes(BALANCE_PROOF_LEN);
-            bytes32 balanceRoot = balances[uint40(i)];
-            bytes32 curNode = balanceRoot;
-
-            // Balance root leaf -> balances container root
-            uint depth = 0;
-            for (uint j = 0; j < 1 + BeaconChainProofs.BALANCE_TREE_HEIGHT; j++) {
-                bytes32 sibling = trees[curTimestamp].balancesTree.siblings[curNode];
-
-                // proof[j] = sibling;
-                assembly {
-                    mstore(add(proof, add(32, mul(32, j))), sibling)
-                }
-
-                curNode = trees[curTimestamp].balancesTree.parents[curNode];
-                depth++;
-            }
-
-            brProofs[uint40(i)].balanceRoot = balanceRoot;
-            brProofs[uint40(i)].proof = proof;
-        }
-    }
-
-    function _getValidatorLeaves() internal view returns (bytes32[] memory) {
-        bytes32[] memory leaves = new bytes32[](validators.length);
-
-        // Place each validator's validatorFields into tree
-        for (uint i = 0; i < validators.length; i++) {
-            leaves[i] = Merkle.merkleizeSha256(validators[i].getValidatorFields());
-        }
-
-        return leaves;
-    }
-
-    function _getBalanceLeaves() internal view returns (bytes32[] memory) {
-        // Place each validator's current balance into tree
-        bytes32[] memory leaves = new bytes32[](_numBalanceRoots());
-        for (uint i = 0; i < leaves.length; i++) {
-            leaves[i] = balances[uint40(i)];
-        }
-
-        return leaves;
-    }
-
-    function _numBalanceRoots() internal view returns (uint) {
-        // Each balance leaf is shared by 4 validators. This uses div_ceil
-        // to calculate the number of balance leaves
-        return (validators.length == 0) ? 0 : ((validators.length - 1) / 4) + 1;
-    }
-
-    function _getBeaconStateLeaves(bytes32 validatorsRoot, bytes32 balancesRoot) internal view returns (bytes32[] memory) {
-        bytes32[] memory leaves = new bytes32[](BEACON_STATE_FIELDS);
-
-        // Pre-populate leaves with dummy values so sibling/parent tracking is correct
-        for (uint i = 0; i < leaves.length; i++) {
-            leaves[i] = bytes32(i + 1);
-        }
-
-        // Place validatorsRoot and balancesRoot into tree
-        leaves[BeaconChainProofs.VALIDATOR_CONTAINER_INDEX] = validatorsRoot;
-        leaves[BeaconChainProofs.BALANCE_CONTAINER_INDEX] = balancesRoot;
-        return leaves;
-    }
-
-    function _getBeaconBlockLeaves(bytes32 beaconStateRoot) internal pure returns (bytes32[] memory) {
-        bytes32[] memory leaves = new bytes32[](BEACON_BLOCK_FIELDS);
-
-        // Pre-populate leaves with dummy values so sibling/parent tracking is correct
-        for (uint i = 0; i < leaves.length; i++) {
-            leaves[i] = bytes32(i + 1);
-        }
-
-        // Place beaconStateRoot into tree
-        leaves[BeaconChainProofs.STATE_ROOT_INDEX] = beaconStateRoot;
-        return leaves;
-    }
+    }  
 
     function _currentBalanceGwei(uint40 validatorIndex) internal view returns (uint64) {
         return currentBalance(validatorIndex);
@@ -1038,12 +710,6 @@ contract BeaconChainMock is Logger {
         return (BeaconChainProofs.BALANCE_CONTAINER_INDEX << (BeaconChainProofs.BALANCE_TREE_HEIGHT + 1)) | uint(balanceRootIndex);
     }
 
-    function _getZeroNode(uint depth) internal view returns (bytes32) {
-        require(depth < ZERO_NODES_LENGTH, "_getZeroNode: invalid depth");
-
-        return zeroNodes[depth];
-    }
-
     /// @dev Opposite of BeaconChainProofs.getBalanceAtIndex, calculates a new balance
     /// root by updating the balance at validatorIndex
     /// @return The new, updated balance root
@@ -1076,21 +742,24 @@ contract BeaconChainMock is Logger {
             );
         }
 
-        CredentialProofs memory proofs = CredentialProofs({
+        StateProofs storage p = proofs[curTimestamp];
+
+        CredentialProofs memory credentialProofs = CredentialProofs({
             beaconTimestamp: curTimestamp,
-            stateRootProof: stateRootProofs[curTimestamp],
+            stateRootProof: p.stateRootProof,
             validatorFieldsProofs: new bytes[](_validators.length),
             validatorFields: new bytes32[][](_validators.length)
         });
 
         // Get proofs for each validator
         for (uint i = 0; i < _validators.length; i++) {
-            ValidatorFieldsProof memory proof = validatorFieldsProofs[curTimestamp][_validators[i]];
-            proofs.validatorFieldsProofs[i] = proof.validatorFieldsProof;
-            proofs.validatorFields[i] = proof.validatorFields;
+            ValidatorFieldsProof memory proof = p.validatorFieldsProofs[_validators[i]];
+
+            credentialProofs.validatorFieldsProofs[i] = proof.validatorFieldsProof;
+            credentialProofs.validatorFields[i] = proof.validatorFields;
         }
 
-        return proofs;
+        return credentialProofs;
     }
 
     function getCheckpointProofs(uint40[] memory _validators, uint64 timestamp) public view returns (CheckpointProofs memory) {
@@ -1100,12 +769,14 @@ contract BeaconChainMock is Logger {
         for (uint i = 0; i < _validators.length; i++) {
             require(
                 _validators[i] <= lastIndexProcessed,
-                "BeaconChain.getCredentialProofs: no checkpoint proof found (did you call advanceEpoch yet?)"
+                "BeaconChain.getCheckpointProofs: no checkpoint proof found (did you call advanceEpoch yet?)"
             );
         }
 
-        CheckpointProofs memory proofs = CheckpointProofs({
-            balanceContainerProof: balanceContainerProofs[timestamp],
+        StateProofs storage p = proofs[curTimestamp];
+
+        CheckpointProofs memory checkpointProofs = CheckpointProofs({
+            balanceContainerProof: p.balanceContainerProof,
             balanceProofs: new BeaconChainProofs.BalanceProof[](_validators.length)
         });
 
@@ -1113,23 +784,30 @@ contract BeaconChainMock is Logger {
         for (uint i = 0; i < _validators.length; i++) {
             uint40 validatorIndex = _validators[i];
             uint40 balanceRootIndex = _getBalanceRootIndex(validatorIndex);
-            BalanceRootProof memory proof = balanceRootProofs[timestamp][balanceRootIndex];
+            BalanceRootProof memory proof = p.balanceRootProofs[balanceRootIndex];
 
-            proofs.balanceProofs[i] = BeaconChainProofs.BalanceProof({
+            checkpointProofs.balanceProofs[i] = BeaconChainProofs.BalanceProof({
                 pubkeyHash: validators[validatorIndex].pubkeyHash,
                 balanceRoot: proof.balanceRoot,
                 proof: proof.proof
             });
         }
 
-        return proofs;
+        return checkpointProofs;
     }
 
     function getStaleBalanceProofs(uint40 validatorIndex) public view returns (StaleBalanceProofs memory) {
-        ValidatorFieldsProof memory vfProof = validatorFieldsProofs[curTimestamp][validatorIndex];
+        // If we have not advanced an epoch since a validator was created, no proofs have been
+        // generated for that validator. We check this here and revert early so we don't return
+        // empty proofs.
+        require(validatorIndex <= lastIndexProcessed, "BeaconChain.getStaleBalanceProofs: no proof found (did you call advanceEpoch yet?)");
+
+        StateProofs storage p = proofs[curTimestamp];
+
+        ValidatorFieldsProof memory vfProof = p.validatorFieldsProofs[validatorIndex];
         return StaleBalanceProofs({
             beaconTimestamp: curTimestamp,
-            stateRootProof: stateRootProofs[curTimestamp],
+            stateRootProof: p.stateRootProof,
             validatorProof: BeaconChainProofs.ValidatorProof({validatorFields: vfProof.validatorFields, proof: vfProof.validatorFieldsProof})
         });
     }
