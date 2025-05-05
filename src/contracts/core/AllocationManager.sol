@@ -67,7 +67,7 @@ contract AllocationManager is
     ) external onlyWhenNotPaused(PAUSED_OPERATOR_SLASHING) checkCanCall(avs) {
         // Check that the operator set exists and the operator is registered to it
         OperatorSet memory operatorSet = OperatorSet(avs, params.operatorSetId);
-        require(params.strategies.length == params.wadsToSlash.length, InputArrayLengthMismatch());
+        _checkArrayLengthsMatch(params.strategies.length, params.wadsToSlash.length);
         _checkIsOperatorSet(operatorSet);
         require(isOperatorSlashable(params.operator, operatorSet), OperatorNotSlashable());
 
@@ -166,7 +166,7 @@ contract AllocationManager is
         }
 
         for (uint256 i = 0; i < params.length; i++) {
-            require(params[i].strategies.length == params[i].newMagnitudes.length, InputArrayLengthMismatch());
+            _checkArrayLengthsMatch(params[i].strategies.length, params[i].newMagnitudes.length);
 
             // Check that the operator set exists and get the operator's registration status
             // Operators do not need to be registered for an operator set in order to allocate
@@ -246,8 +246,7 @@ contract AllocationManager is
         IStrategy[] calldata strategies,
         uint16[] calldata numToClear
     ) external onlyWhenNotPaused(PAUSED_MODIFY_ALLOCATIONS) {
-        require(strategies.length == numToClear.length, InputArrayLengthMismatch());
-
+        _checkArrayLengthsMatch(strategies.length, numToClear.length);
         for (uint256 i = 0; i < strategies.length; ++i) {
             _clearDeallocationQueue({operator: operator, strategy: strategies[i], numToClear: numToClear[i]});
         }
@@ -353,7 +352,7 @@ contract AllocationManager is
         CreateSetParams[] calldata params,
         address[] calldata redistributionRecipients
     ) external checkCanCall(avs) returns (uint32[] memory operatorSetIds) {
-        require(params.length == redistributionRecipients.length, InputArrayLengthMismatch());
+        _checkArrayLengthsMatch(params.length, redistributionRecipients.length);
         require(_avsRegisteredMetadata[avs], NonexistentAVSMetadata());
         operatorSetIds = new uint32[](params.length);
         for (uint256 i = 0; i < params.length; i++) {
@@ -643,6 +642,10 @@ contract AllocationManager is
 
     function _checkIsOperatorSet(OperatorSet memory operatorSet) internal view {
         require(_operatorSets[operatorSet.avs].contains(operatorSet.id), InvalidOperatorSet());
+    }
+
+    function _checkArrayLengthsMatch(uint256 left, uint256 right) internal pure {
+        require(left == right, InputArrayLengthMismatch());
     }
 
     /**
