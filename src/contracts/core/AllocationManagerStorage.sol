@@ -98,6 +98,7 @@ abstract contract AllocationManagerStorage is IAllocationManager {
 
     /// @notice Returns the number of slashes for a given operator set.
     /// @dev This is also used as a unique slash identifier.
+    /// @dev This tracks the number of slashes after the redistribution release.
     mapping(bytes32 operatorSetKey => uint256 slashId) public slashCount;
 
     /// @notice Returns the address where slashed funds will be sent for a given operator set.
