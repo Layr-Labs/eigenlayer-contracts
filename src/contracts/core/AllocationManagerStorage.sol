@@ -102,7 +102,7 @@ abstract contract AllocationManagerStorage is IAllocationManager {
 
     /// @notice Returns the address where slashed funds will be sent for a given operator set.
     /// @dev For redistributing Operator Sets, returns the configured redistribution address set during Operator Set creation.
-    ///      For non-redistributing operator sets, returns the `DEFAULT_BURN_ADDRESS`.
+    ///      For non-redistributing or non-existing operator sets, returns `address(0)`.
     mapping(bytes32 operatorSetKey => address redistributionAddr) internal _redistributionRecipients;
 
     // Construction
