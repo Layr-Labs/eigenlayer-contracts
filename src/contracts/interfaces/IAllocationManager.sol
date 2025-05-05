@@ -20,8 +20,6 @@ interface IAllocationManagerErrors {
 
     /// Caller
 
-    /// @dev Thrown when caller is not authorized to call a function.
-    error InvalidCaller();
     /// @dev Thrown when an invalid strategy is provided.
     error InvalidStrategy();
 
@@ -249,7 +247,10 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
      *      rounding, which will result in small amounts of tokens locked in the contract
      *      rather than fully burning through the burn mechanism.
      */
-    function slashOperator(address avs, SlashingParams calldata params) external;
+    function slashOperator(
+        address avs,
+        SlashingParams calldata params
+    ) external returns (uint256 slashId, uint256[] memory shares);
 
     /**
      * @notice Modifies the proportions of slashable stake allocated to an operator set from a list of strategies
@@ -331,7 +332,7 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
     function createOperatorSets(
         address avs,
         CreateSetParams[] calldata params
-    ) external returns (uint32[] memory operatorSetIds);
+    ) external;
 
     /**
      * @notice Allows an AVS to create new Redistribution operator sets.
@@ -345,7 +346,7 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
         address avs,
         CreateSetParams[] calldata params,
         address[] calldata redistributionRecipients
-    ) external returns (uint32[] memory operatorSetIds);
+    ) external;
 
     /**
      * @notice Allows an AVS to add strategies to an operator set
@@ -644,4 +645,13 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
     function isRedistributingOperatorSet(
         OperatorSet memory operatorSet
     ) external view returns (bool);
+
+    /**
+     * @notice Returns the number of slashes for a given operator set.
+     * @param operatorSet The operator set to query.
+     * @return The number of slashes for the operator set.
+     */
+    function getSlashCount(
+        OperatorSet memory operatorSet
+    ) external view returns (uint256);
 }
