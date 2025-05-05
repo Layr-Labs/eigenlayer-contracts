@@ -404,6 +404,7 @@ contract AllocationManager is
      * @param redistributionRecipient Address to receive redistributed funds when operators are slashed.
      * @dev If `redistributionRecipient` is address(0), the operator set is considered non-redistributing
      * and slashed funds are sent to the `DEFAULT_BURN_ADDRESS`.
+     * @dev Providing `BEACONCHAIN_ETH_STRAT` as a strategy will revert since it's not currently supported.
      */
     function _createOperatorSet(
         address avs,
