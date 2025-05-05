@@ -158,7 +158,7 @@ contract DelegationManager is
         if (msg.sender != staker) {
             address operator = delegatedTo[staker];
 
-            require(_checkCanCall(operator) || msg.sender == delegationApprover(operator), CallerCannotUndelegate());
+            require(_canCall(operator) || msg.sender == delegationApprover(operator), CallerCannotUndelegate());
             emit StakerForceUndelegated(staker, operator);
         }
 
