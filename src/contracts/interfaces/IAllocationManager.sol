@@ -329,10 +329,7 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
     /**
      * @notice Allows an AVS to create new operator sets, defining strategies that the operator set uses
      */
-    function createOperatorSets(
-        address avs,
-        CreateSetParams[] calldata params
-    ) external;
+    function createOperatorSets(address avs, CreateSetParams[] calldata params) external;
 
     /**
      * @notice Allows an AVS to create new Redistribution operator sets.

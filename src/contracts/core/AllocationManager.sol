@@ -344,10 +344,7 @@ contract AllocationManager is
     }
 
     /// @inheritdoc IAllocationManager
-    function createOperatorSets(
-        address avs,
-        CreateSetParams[] calldata params
-    ) external checkCanCall(avs) {
+    function createOperatorSets(address avs, CreateSetParams[] calldata params) external checkCanCall(avs) {
         require(_avsRegisteredMetadata[avs], NonexistentAVSMetadata());
         for (uint256 i = 0; i < params.length; i++) {
             _createOperatorSet(avs, params[i], DEFAULT_BURN_ADDRESS);
@@ -659,7 +656,9 @@ contract AllocationManager is
     }
 
     /// @dev Reverts if the operator is not registered.
-    function _checkIsOperator(address operator) internal view {
+    function _checkIsOperator(
+        address operator
+    ) internal view {
         require(delegation.isOperator(operator), InvalidOperator());
     }
 
