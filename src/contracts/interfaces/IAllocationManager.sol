@@ -22,6 +22,8 @@ interface IAllocationManagerErrors {
 
     /// @dev Thrown when caller is not authorized to call a function.
     error InvalidCaller();
+    /// @dev Thrown when an invalid strategy is provided.
+    error InvalidStrategy();
 
     /// Operator Status
 

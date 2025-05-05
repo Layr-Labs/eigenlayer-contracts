@@ -68,7 +68,7 @@ contract AllocationManager is
         // Check that the operator set exists and the operator is registered to it
         OperatorSet memory operatorSet = OperatorSet(avs, params.operatorSetId);
         require(params.strategies.length == params.wadsToSlash.length, InputArrayLengthMismatch());
-        require(_operatorSets[operatorSet.avs].contains(operatorSet.id), InvalidOperatorSet());
+        _checkIsOperatorSet(operatorSet);
         require(isOperatorSlashable(params.operator, operatorSet), OperatorNotSlashable());
 
         uint256[] memory wadSlashed = new uint256[](params.strategies.length);
@@ -174,7 +174,7 @@ contract AllocationManager is
             // allocate magnitude before registering, as AVS's will likely only accept
             // registrations from operators that are already slashable.
             OperatorSet memory operatorSet = params[i].operatorSet;
-            require(_operatorSets[operatorSet.avs].contains(operatorSet.id), InvalidOperatorSet());
+            _checkIsOperatorSet(operatorSet);
 
             bool _isOperatorSlashable = isOperatorSlashable(operator, operatorSet);
 
@@ -264,7 +264,7 @@ contract AllocationManager is
         for (uint256 i = 0; i < params.operatorSetIds.length; i++) {
             // Check the operator set exists and the operator is not currently registered to it
             OperatorSet memory operatorSet = OperatorSet(params.avs, params.operatorSetIds[i]);
-            require(_operatorSets[operatorSet.avs].contains(operatorSet.id), InvalidOperatorSet());
+            _checkIsOperatorSet(operatorSet);
             require(!isOperatorSlashable(operator, operatorSet), AlreadyMemberOfSet());
 
             // Add operator to operator set
@@ -290,7 +290,7 @@ contract AllocationManager is
         for (uint256 i = 0; i < params.operatorSetIds.length; i++) {
             // Check the operator set exists and the operator is registered to it
             OperatorSet memory operatorSet = OperatorSet(params.avs, params.operatorSetIds[i]);
-            require(_operatorSets[params.avs].contains(operatorSet.id), InvalidOperatorSet());
+            _checkIsOperatorSet(operatorSet);
             require(registrationStatus[params.operator][operatorSet.key()].registered, NotMemberOfSet());
 
             // Remove operator from operator set
@@ -369,10 +369,8 @@ contract AllocationManager is
         IStrategy[] calldata strategies
     ) external checkCanCall(avs) {
         OperatorSet memory operatorSet = OperatorSet(avs, operatorSetId);
+        _checkIsOperatorSet(operatorSet);
         bytes32 operatorSetKey = operatorSet.key();
-
-        require(_operatorSets[avs].contains(operatorSet.id), InvalidOperatorSet());
-
         for (uint256 i = 0; i < strategies.length; i++) {
             require(_operatorSetStrategies[operatorSetKey].add(address(strategies[i])), StrategyAlreadyInOperatorSet());
             emit StrategyAddedToOperatorSet(operatorSet, strategies[i]);
@@ -386,8 +384,7 @@ contract AllocationManager is
         IStrategy[] calldata strategies
     ) external checkCanCall(avs) {
         OperatorSet memory operatorSet = OperatorSet(avs, operatorSetId);
-        require(_operatorSets[avs].contains(operatorSet.id), InvalidOperatorSet());
-
+        _checkIsOperatorSet(operatorSet);
         bytes32 operatorSetKey = operatorSet.key();
         for (uint256 i = 0; i < strategies.length; i++) {
             require(_operatorSetStrategies[operatorSetKey].remove(address(strategies[i])), StrategyNotInOperatorSet());
@@ -420,7 +417,9 @@ contract AllocationManager is
         require(_operatorSets[avs].add(operatorSet.id), InvalidOperatorSet());
         emit OperatorSetCreated(operatorSet);
 
-        if (redistributionRecipient != DEFAULT_BURN_ADDRESS) {
+        bool isRedistributing = redistributionRecipient != DEFAULT_BURN_ADDRESS;
+
+        if (isRedistributing) {
             _redistributionRecipients[operatorSet.key()] = redistributionRecipient;
             emit RedistributionAddressSet(operatorSet, redistributionRecipient);
         }
@@ -428,6 +427,7 @@ contract AllocationManager is
         // Add strategies to the operator set
         bytes32 operatorSetKey = operatorSet.key();
         for (uint256 j = 0; j < params.strategies.length; j++) {
+            if (isRedistributing && params.strategies[j] == BEACONCHAIN_ETH_STRAT) revert InvalidStrategy();
             _operatorSetStrategies[operatorSetKey].add(address(params.strategies[j]));
             emit StrategyAddedToOperatorSet(operatorSet, params.strategies[j]);
         }
@@ -639,6 +639,10 @@ contract AllocationManager is
     /// @dev Use safe casting when downcasting to uint64
     function _addInt128(uint64 a, int128 b) internal pure returns (uint64) {
         return uint256(int256(int128(uint128(a)) + b)).toUint64();
+    }
+
+    function _checkIsOperatorSet(OperatorSet memory operatorSet) internal view {
+        require(_operatorSets[operatorSet.avs].contains(operatorSet.id), InvalidOperatorSet());
     }
 
     /**

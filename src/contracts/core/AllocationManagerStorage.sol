@@ -14,8 +14,11 @@ abstract contract AllocationManagerStorage is IAllocationManager {
 
     // Constants
 
-    /// @dev The default burn address for EigenLayer
+    /// @dev The default burn address for slashed funds.
     address internal constant DEFAULT_BURN_ADDRESS = 0x00000000000000000000000000000000000E16E4;
+
+    /// @dev The beacon chain ETH strategy.
+    IStrategy internal constant BEACONCHAIN_ETH_STRAT = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 
     /// @dev Index for flag that pauses operator allocations/deallocations when set.
     uint8 internal constant PAUSED_MODIFY_ALLOCATIONS = 0;
