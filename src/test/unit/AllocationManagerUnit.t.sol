@@ -3722,7 +3722,9 @@ contract AllocationManagerUnitTests_createRedistributingOperatorSets is Allocati
             redistributionRecipients[i] = r.Address();
 
             cheats.expectEmit(true, true, true, true, address(allocationManager));
-            emit RedistributingOperatorSetCreated(OperatorSet(avs, createSetParams[i].operatorSetId), redistributionRecipients[i]);
+            emit OperatorSetCreated(OperatorSet(avs, createSetParams[i].operatorSetId));
+            cheats.expectEmit(true, true, true, true, address(allocationManager));
+            emit RedistributionAddressSet(OperatorSet(avs, createSetParams[i].operatorSetId), redistributionRecipients[i]);
             for (uint j; j < numStrategies; ++j) {
                 cheats.expectEmit(true, true, true, true, address(allocationManager));
                 emit StrategyAddedToOperatorSet(OperatorSet(avs, createSetParams[i].operatorSetId), createSetParams[i].strategies[j]);

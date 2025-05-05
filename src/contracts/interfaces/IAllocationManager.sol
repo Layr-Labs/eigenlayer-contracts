@@ -210,7 +210,7 @@ interface IAllocationManagerEvents is IAllocationManagerTypes {
     event OperatorRemovedFromOperatorSet(address indexed operator, OperatorSet operatorSet);
 
     /// @notice Emitted when a redistributing operator set is created by an AVS.
-    event RedistributingOperatorSetCreated(OperatorSet operatorSet, address redistributionRecipient);
+    event RedistributionAddressSet(OperatorSet operatorSet, address redistributionRecipient);
 
     /// @notice Emitted when a strategy is added to an operator set.
     event StrategyAddedToOperatorSet(OperatorSet operatorSet, IStrategy strategy);

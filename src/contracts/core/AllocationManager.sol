@@ -343,7 +343,7 @@ contract AllocationManager is
         operatorSetIds = new uint32[](params.length);
         for (uint256 i = 0; i < params.length; i++) {
             operatorSetIds[i] = params[i].operatorSetId;
-            _createOperatorSet(avs, params[i], address(0));
+            _createOperatorSet(avs, params[i], DEFAULT_BURN_ADDRESS);
         }
     }
 
@@ -418,12 +418,11 @@ contract AllocationManager is
 
         // Create the operator set, ensuring it does not already exist.
         require(_operatorSets[avs].add(operatorSet.id), InvalidOperatorSet());
+        emit OperatorSetCreated(operatorSet);
 
-        if (redistributionRecipient != address(0)) {
+        if (redistributionRecipient != DEFAULT_BURN_ADDRESS) {
             _redistributionRecipients[operatorSet.key()] = redistributionRecipient;
-            emit RedistributingOperatorSetCreated(operatorSet, redistributionRecipient);
-        } else {
-            emit OperatorSetCreated(operatorSet);
+            emit RedistributionAddressSet(operatorSet, redistributionRecipient);
         }
 
         // Add strategies to the operator set
