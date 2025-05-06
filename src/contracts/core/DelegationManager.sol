@@ -207,7 +207,7 @@ contract DelegationManager is
 
     /// @inheritdoc IDelegationManager
     function completeQueuedWithdrawal(
-        Withdrawal calldata withdrawal,
+        Withdrawal memory withdrawal,
         IERC20[] calldata tokens,
         bool receiveAsTokens
     ) external onlyWhenNotPaused(PAUSED_EXIT_WITHDRAWAL_QUEUE) nonReentrant {
@@ -302,7 +302,7 @@ contract DelegationManager is
             newMaxMagnitude: newMaxMagnitude
         });
 
-        // Calculate the total deposit shares to burn - slashed operator shares plus still-slashable
+        // Calculate the total deposit shares to slash (burn or redistribute) - slashed operator shares plus still-slashable
         // shares sitting in the withdrawal queue.
         totalDepositSharesToSlash = operatorSharesSlashed + scaledSharesSlashedFromQueue;
 

@@ -49,18 +49,19 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
     function initialize(address initialOwner, uint256 initialPausedStatus, uint32 initialGlobalDelayBlocks) external;
 
     /**
-     * @notice Locks up a escrow.
+     * @notice Initiates a slash escrow.
      * @param operatorSet The operator set whose escrow is being locked up.
      * @param slashId The slash ID of the escrow that is being locked up.
      * @param strategy The strategy that whose underlying tokens are being redistributed.
+     * @dev This function can be called multiple times for a given `operatorSet` and `slashId`.
      */
     function initiateSlashEscrow(OperatorSet calldata operatorSet, uint256 slashId, IStrategy strategy) external;
 
     /**
-     * @notice Releases an escrow for all strategies in a slash.
+     * @notice Releases an escrow by transferring tokens from the `SlashEscrow` to the operator set's redistribution recipient.
      * @param operatorSet The operator set whose escrow is being released.
      * @param slashId The slash ID of the escrow that is being released.
-     * @dev The caller must be the redistribution recipient, unless the redistribution recipient
+     * @dev The caller must be the escrow recipient, unless the escrow recipient
      * is the default burn address in which case anyone can call.
      * @dev The slash escrow is released once the delay for ALL strategies has elapsed.
      */
@@ -104,7 +105,7 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
     function setStrategyEscrowDelay(IStrategy strategy, uint32 delay) external;
 
     /**
-     * @notice Sets the delay for the escrow of all strategies underlying tokens globally.
+     * @notice Sets a global delay applicable to all strategies.
      * @param delay The delay for the escrow.
      */
     function setGlobalEscrowDelay(

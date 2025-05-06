@@ -11,6 +11,7 @@ Libraries and Mixins:
 | File | Notes |
 | -------- | -------- |
 | [`PermissionControllerMixin.sol`](../../src/contracts/mixins/PermissionControllerMixin.sol) | account delegation |
+| [`Deprecated_OwnableUpgradeable`](../../src/contracts/mixins/Deprecated_OwnableUpgradeable.sol) | deprecated ownable logic |
 | [`Pausable.sol`](../../src/contracts/permissions/Pausable.sol) | |
 | [`SlashingLib.sol`](../../src/contracts/libraries/SlashingLib.sol) | slashing math |
 | [`OperatorSetLib.sol`](../../src/contracts/libraries/OperatorSetLib.sol) | encode/decode operator sets |
@@ -170,13 +171,14 @@ mapping(address avs => EnumerableSet.UintSet) internal _operatorSets;
 mapping(bytes32 operatorSetKey => EnumerableSet.AddressSet) internal _operatorSetMembers;
 ```
 
-Every `OperatorSet` corresponds to a single AVS, as indicated by the `avs` parameter. On creation, the AVS provides an `id` (unique to that AVS), as well as a list of `strategies` the `OperatorSet` includes. Together, the `avs` and `id` form the `key` that uniquely identifies a given `OperatorSet`. Operators can register to and deregister from operator sets. In combination with allocating slashable magnitude, operator set registration forms the basis of operator slashability (discussed further in [Allocations and Slashing](#allocations-and-slashing)).
+Every `OperatorSet` corresponds to a single AVS, as indicated by the `avs` parameter. On creation, the AVS provides an `id` (unique to that AVS), as well as a list of `strategies` the `OperatorSet` includes. Together, the `avs` and `id` form the `key` that uniquely identifies a given `OperatorSet`. Operators can register to and deregister from operator sets. In combination with allocating slashable magnitude, operator set registration forms the basis of operator slashability (discussed further in [Allocations and Slashing](#allocations-and-slashing)). There are two types of operatorSets, redistributing and non-redistributing. 
 
 **Concepts:**
 * [Registration Status](#registration-status)
 
 **Methods:**
 * [`createOperatorSets`](#createoperatorsets)
+* [`createRedistributingOperatorSets`](#createredistributingoperatorsets)
 * [`addStrategiesToOperatorSet`](#addstrategiestooperatorset)
 * [`removeStrategiesFromOperatorSet`](#removestrategiesfromoperatorset)
 * [`registerForOperatorSets`](#registerforoperatorsets)
@@ -237,7 +239,7 @@ function createOperatorSets(
 
 _Note: this method can be called directly by an AVS, or by a caller authorized by the AVS. See [`PermissionController.md`](../permissions/PermissionController.md) for details._
 
-AVSs use this method to create new operator sets. An AVS can create as many operator sets as they desire, depending on their needs. Once created, operators can [allocate slashable stake to](#modifyallocations) and [register for](#registerforoperatorsets) these operator sets.
+AVSs use this method to create new operator sets. An AVS can create as many operator sets as they desire, depending on their needs. Once created, operators can [allocate slashable stake to](#modifyallocations) and [register for](#registerforoperatorsets) these operator sets. The `redistributionRecipient` is the `DEFAULT_BURN_ADDRESS`, where slashed funds are sent.
 
 On creation, the `avs` specifies an `operatorSetId` unique to the AVS. Together, the `avs` address and `operatorSetId` create a `key` that uniquely identifies this operator set throughout the `AllocationManager`.
 
@@ -252,6 +254,38 @@ Optionally, the `avs` can provide a list of `strategies`, specifying which strat
 *Requirements*:
 * Caller MUST be authorized, either as the AVS itself or an admin/appointee (see [`PermissionController.md`](../permissions/PermissionController.md))
 * AVS MUST have registered metadata via calling `updateAVSMetadataURI`
+* For each `CreateSetParams` element:
+    * Each `params.operatorSetId` MUST NOT already exist in `_operatorSets[avs]`
+
+#### `createRedistributingOperatorSets`
+
+```solidity
+/**
+ * @notice Allows an AVS to create new redistributing operator sets, defining strategies and the redistribution recipient the operator set uses
+ */
+function createRedistributingOperatorSets(
+    address avs,
+    CreateSetParams[] calldata params,
+    address[] calldata redistributionRecipients
+)
+    external
+    checkCanCall(avs)
+```
+
+AVSs use this method to create new redistributing operatorSets. Unlike the previous function, slashed funds for this operatorSet are sent to a `redistributionRecipient`. This value is set only once, upon creation. Note that redistributing operatorSets may not have Native ETH, as the protocol does not support native eth redistribution. See [ELIP-006](https://github.com/eigenfoundation/ELIPs/blob/main/ELIPs/ELIP-006.md) for additional context. 
+
+*Effects*:
+* For each `CreateSetParams` element:
+    * For each `params.strategies` element:
+        * Add `strategy` to `_operatorSetStrategies[operatorSetKey]`
+        * Emits `StrategyAddedToOperatorSet` event
+    * Sets the `redistributionRecipient` of the operatorSet
+        * Emits the `RedistributionAddressSet`
+
+*Requirements*:
+* Caller MUST be authorized, either as the AVS itself or an admin/appointee (see [`PermissionController.md`](../permissions/PermissionController.md))
+* AVS MUST have registered metadata via calling `updateAVSMetadataURI`
+* The `redistributionRecipient` MUST NOT  be the 0 address
 * For each `CreateSetParams` element:
     * Each `params.operatorSetId` MUST NOT already exist in `_operatorSets[avs]`
     
@@ -287,6 +321,7 @@ This function allows an AVS to add slashable strategies to a given operator set.
 * Caller MUST be authorized, either as the AVS itself or an admin/appointee (see [`PermissionController.md`](../permissions/PermissionController.md))
 * The operator set MUST be registered for the AVS
 * Each proposed strategy MUST NOT be registered for the operator set
+* If the operatorSet is redistributing, the `BEACONCHAIN_ETH_STRAT` may not be added, since redistribution is not supported for native eth
 
 #### `removeStrategiesFromOperatorSet`
 
@@ -717,6 +752,9 @@ struct SlashingParams {
  *  - wadsToSlash: Array of proportions to slash from each strategy (must be between 0 and 1e18).
  *  - description: Description of why the operator was slashed.
  *
+ * @return slashId The ID of the slash.
+ * @return shares The amount of shares that were slashed for each strategy.
+ * 
  * @dev For each strategy:
  *      1. Reduces the operator's current allocation magnitude by wadToSlash proportion.
  *      2. Reduces the strategy's max and encumbered magnitudes proportionally.
@@ -734,6 +772,7 @@ function slashOperator(
     external
     onlyWhenNotPaused(PAUSED_OPERATOR_SLASHING)
     checkCanCall(avs)
+    returns (uint256, uint256[] memory)
 ```
 
 _Note: this method can be called directly by an AVS, or by a caller authorized by the AVS. See [`PermissionController.md`](../permissions/PermissionController.md) for details._
@@ -748,7 +787,7 @@ There are two edge cases to note for this method:
 1. In the process of slashing an `operator` for a given `strategy`, if the `Allocation` being slashed has a `currentMagnitude` of 0, the call will NOT revert. Instead, the `strategy` is skipped and slashing continues with the next `strategy` listed. This is to prevent an edge case where slashing occurs on or around a deallocation's `effectBlock` -- if the call reverted, the entire slash would fail. Skipping allows any valid slashes to be processed without requiring resubmission.
 2. If the `operator` has a pending, non-completable deallocation, the deallocation's `pendingDiff` is reduced proportional to the slash. This ensures that when the deallocation is completed, less `encumberedMagnitude` is freed.
 
-Once slashing is processed for a strategy, [slashed stake is burned via the `DelegationManager`](https://github.com/eigenfoundation/ELIPs/blob/main/ELIPs/ELIP-002.md#burning-of-slashed-funds).
+Once slashing is processed for a strategy, [slashed stake is burned or redistributed via the `DelegationManager`](https://github.com/eigenfoundation/ELIPs/blob/main/ELIPs/ELIP-002.md#burning-of-slashed-funds).
 
 *Effects*:
 * Given an `operator` and `operatorSet`, then for each `params.strategies` element and its corresponding `allocation`:
@@ -765,6 +804,8 @@ Once slashing is processed for a strategy, [slashed stake is burned via the `Del
         * If this list now has a length of 0, remove `operatorSetKey` from `allocatedSets[operator]`
     * Calls [`DelegationManager.slashOperatorShares`](./DelegationManager.md#slashoperatorshares)
 * Emit an `OperatorSlashed` event
+* Increments the `slashId` for the operatorSet
+* Returns `slashId` and the number of shares slashed for each strategy
 
 *Requirements*:
 * Pause status MUST NOT be set: `PAUSED_OPERATOR_SLASHING`
