@@ -62,40 +62,6 @@ contract EigenWrappingTests is Test {
         proxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(eigen))), address(eigenImpl));
         proxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(bEIGEN))), address(bEIGENImpl));
 
-<<<<<<< HEAD
-=======
-        // initialize bEIGEN - this will mint the entire supply to the Eigen contract
-        bEIGEN.initialize(minter1);
-
-        // set minters (for future minting if needed)
-        vm.expectEmit(true, true, true, true);
-        emit IsMinterModified(minter1, true);
-        bEIGEN.setIsMinter(minter1, true);
-
-        vm.expectEmit(true, true, true, true);
-        emit IsMinterModified(minter2, true);
-        bEIGEN.setIsMinter(minter2, true);
-
-        // initialize eigen with empty arrays since we don't need minting anymore
-        eigen.initialize(minter1);
-
-        // Mint and wrap tokens for minter1
-        vm.startPrank(minter1);
-        bEIGEN.mint(minter1, totalSupply / 2);
-        bEIGEN.approve(address(eigen), totalSupply / 2);
-        vm.expectEmit(true, true, true, true);
-        emit TokenWrapped(minter1, totalSupply / 2);
-        eigen.wrap(totalSupply / 2);
-        vm.stopPrank();
-
-        // Mint and wrap tokens for minter2
-        vm.startPrank(minter2);
-        bEIGEN.mint(minter2, totalSupply / 2);
-        bEIGEN.approve(address(eigen), totalSupply / 2);
-        vm.expectEmit(true, true, true, true);
-        emit TokenWrapped(minter2, totalSupply / 2);
-        eigen.wrap(totalSupply / 2);
->>>>>>> cb0df903 (feat: add TokenWrapped and TokenUnwrapped events in Eigen for observability (#1331))
         vm.stopPrank();
 
         fuzzedOutAddresses[minter1] = true;
@@ -156,6 +122,8 @@ contract EigenWrappingTests is Test {
 
         // unwrap
         vm.startPrank(minter1);
+        vm.expectEmit(true, false, false, false);
+        emit TokenUnwrapped(minter1, minter1Balance);
         eigen.unwrap(minter1Balance);
 
         // send bEIGEN to wrapper
@@ -210,6 +178,8 @@ contract EigenWrappingTests is Test {
 
         // unwrap
         vm.startPrank(minter1);
+        vm.expectEmit(true, false, false, false);
+        emit TokenUnwrapped(minter1, wrapAmount);
         eigen.unwrap(wrapAmount);
         bEIGEN.transfer(wrapper, wrapAmount);
         vm.stopPrank();
