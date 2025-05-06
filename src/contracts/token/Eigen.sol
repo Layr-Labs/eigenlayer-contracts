@@ -32,6 +32,12 @@ contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable {
     /// @notice event emitted when the transfer restrictions disabled
     event TransferRestrictionsDisabled();
 
+    /// EVENTS
+    /// @notice Emitted when bEIGEN tokens are wrapped into EIGEN
+    event TokenWrapped(address indexed account, uint256 amount);
+    /// @notice Emitted when EIGEN tokens are unwrapped into bEIGEN
+    event TokenUnwrapped(address indexed account, uint256 amount);
+
     constructor(
         IERC20 _bEIGEN
     ) {
@@ -128,6 +134,7 @@ contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable {
     ) external {
         require(bEIGEN.transferFrom(msg.sender, address(this), amount), "Eigen.wrap: bEIGEN transfer failed");
         _mint(msg.sender, amount);
+        emit TokenWrapped(msg.sender, amount);
     }
 
     /**
@@ -138,6 +145,7 @@ contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable {
     ) external {
         _burn(msg.sender, amount);
         require(bEIGEN.transfer(msg.sender, amount), "Eigen.unwrap: bEIGEN transfer failed");
+        emit TokenUnwrapped(msg.sender, amount);
     }
 
     /**
