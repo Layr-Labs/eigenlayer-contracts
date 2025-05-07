@@ -37,10 +37,7 @@ contract QueueUpgrade is MultisigBuilder, Deploy {
     function _getCalldataToExecutor() internal returns (bytes memory) {
         MultisigCall[] storage executorCalls = Encode.newMultisigCalls().append({
             to: Env.proxyAdmin(),
-            data: Encode.proxyAdmin.upgrade({
-                proxy: address(Env.proxy.eigen()),
-                impl: address(Env.impl.eigen())
-            })
+            data: Encode.proxyAdmin.upgrade({proxy: address(Env.proxy.eigen()), impl: address(Env.impl.eigen())})
         });
 
         return Encode.gnosisSafe.execTransaction({

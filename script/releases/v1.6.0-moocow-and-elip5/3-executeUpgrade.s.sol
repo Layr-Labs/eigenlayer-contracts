@@ -72,16 +72,10 @@ contract Execute is QueueUpgrade {
     function _validateProxiesInitialized() internal {
         bytes memory errInit = "Initializable: contract is already initialized";
 
-        DelegationManager delegation = Env.proxy.delegationManager();
+        Eigen eigen = Env.proxy.eigen();
         vm.expectRevert(errInit);
-        delegation.initialize(address(0), 0);
-        assertTrue(delegation.owner() == Env.executorMultisig(), "dm.owner invalid");
-        assertTrue(delegation.paused() == 0, "dm.paused invalid");
-
-        EigenPodManager eigenPodManager = Env.proxy.eigenPodManager();
-        vm.expectRevert(errInit);
-        eigenPodManager.initialize(address(0), 0);
-        assertTrue(eigenPodManager.owner() == Env.executorMultisig(), "epm.owner invalid");
-        assertTrue(eigenPodManager.paused() == 0, "epm.paused invalid");
+        eigen.initialize(address(0), new address[](0), new uint256[](0), new uint256[](0));
+        assertTrue(eigen.owner() == Env.executorMultisig(), "dm.owner invalid");
+        assertTrue(eigen.paused() == 0, "dm.paused invalid");
     }
 }
