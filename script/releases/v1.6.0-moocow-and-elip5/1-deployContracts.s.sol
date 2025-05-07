@@ -17,43 +17,13 @@ contract Deploy is EOADeployer {
     function _runAsEOA() internal override {
         vm.startBroadcast();
 
-        // We are upgrading 1 contract: Eigen
+        // We are upgrading contracts: Eigen
+        // TODO: add moocow contracts
         deployImpl({
-            name: type(DelegationManager).name,
+            name: type(Eigen).name,
             deployedTo: address(
-                new DelegationManager({
-                    _strategyManager: Env.proxy.strategyManager(),
-                    _eigenPodManager: Env.proxy.eigenPodManager(),
-                    _allocationManager: Env.proxy.allocationManager(),
-                    _pauserRegistry: Env.impl.pauserRegistry(),
-                    _permissionController: Env.proxy.permissionController(),
-                    _MIN_WITHDRAWAL_DELAY: Env.MIN_WITHDRAWAL_DELAY(),
-                    _version: Env.deployVersion()
-                })
-            )
-        });
-
-        deployImpl({
-            name: type(EigenPodManager).name,
-            deployedTo: address(
-                new EigenPodManager({
-                    _ethPOS: Env.ethPOS(),
-                    _eigenPodBeacon: Env.beacon.eigenPod(),
-                    _delegationManager: Env.proxy.delegationManager(),
-                    _pauserRegistry: Env.impl.pauserRegistry(),
-                    _version: Env.deployVersion()
-                })
-            )
-        });
-
-        deployImpl({
-            name: type(EigenPod).name,
-            deployedTo: address(
-                new EigenPod({
-                    _ethPOS: Env.ethPOS(),
-                    _eigenPodManager: Env.proxy.eigenPodManager(),
-                    _GENESIS_TIME: Env.EIGENPOD_GENESIS_TIME(),
-                    _version: Env.deployVersion()
+                new Eigen({
+                    _bEIGEN: Env.proxy.beigen()
                 })
             )
         });
@@ -68,7 +38,6 @@ contract Deploy is EOADeployer {
         _validateProxyAdmins();
         _validateImplConstructors();
         _validateImplsInitialized();
-        _validateVersion();
     }
 
     /// @dev Validate that the `Env.impl` addresses are updated to be distinct from what the proxy
@@ -84,15 +53,8 @@ contract Deploy is EOADeployer {
         function (bool, string memory) internal pure assertion = areMatching ? _assertTrue : _assertFalse;
 
         assertion(
-            _getProxyImpl(address(Env.proxy.delegationManager())) == address(Env.impl.delegationManager()),
-            "delegationManager impl failed"
-        );
-
-        assertion(Env.beacon.eigenPod().implementation() == address(Env.impl.eigenPod()), "eigenPod impl failed");
-
-        assertion(
-            _getProxyImpl(address(Env.proxy.eigenPodManager())) == address(Env.impl.eigenPodManager()),
-            "eigenPodManager impl failed"
+            _getProxyImpl(address(Env.proxy.eigen())) == address(Env.impl.eigen()),
+            "eigen impl failed"
         );
     }
 
@@ -101,40 +63,15 @@ contract Deploy is EOADeployer {
         address pa = Env.proxyAdmin();
 
         assertTrue(
-            _getProxyAdmin(address(Env.proxy.delegationManager())) == pa, "delegationManager proxyAdmin incorrect"
+            _getProxyAdmin(address(Env.proxy.eigen())) == pa, "eigen proxyAdmin incorrect"
         );
-
-        assertTrue(Env.beacon.eigenPod().owner() == Env.executorMultisig(), "eigenPod beacon owner incorrect");
-
-        assertTrue(_getProxyAdmin(address(Env.proxy.eigenPodManager())) == pa, "eigenPodManager proxyAdmin incorrect");
     }
 
     /// @dev Validate the immutables set in the new implementation constructors
     function _validateImplConstructors() internal view {
         {
-            DelegationManager delegation = Env.impl.delegationManager();
-            assertTrue(delegation.strategyManager() == Env.proxy.strategyManager(), "dm.sm invalid");
-            assertTrue(delegation.eigenPodManager() == Env.proxy.eigenPodManager(), "dm.epm invalid");
-            assertTrue(delegation.allocationManager() == Env.proxy.allocationManager(), "dm.alm invalid");
-            assertTrue(delegation.pauserRegistry() == Env.impl.pauserRegistry(), "dm.pR invalid");
-            assertTrue(delegation.permissionController() == Env.proxy.permissionController(), "dm.pc invalid");
-            assertTrue(
-                delegation.minWithdrawalDelayBlocks() == Env.MIN_WITHDRAWAL_DELAY(), "dm.withdrawalDelay invalid"
-            );
-        }
-
-        {
-            /// pods/
-            EigenPod eigenPod = Env.impl.eigenPod();
-            assertTrue(eigenPod.ethPOS() == Env.ethPOS(), "ep.ethPOS invalid");
-            assertTrue(eigenPod.eigenPodManager() == Env.proxy.eigenPodManager(), "ep.epm invalid");
-            assertTrue(eigenPod.GENESIS_TIME() == Env.EIGENPOD_GENESIS_TIME(), "ep.genesis invalid");
-
-            EigenPodManager eigenPodManager = Env.impl.eigenPodManager();
-            assertTrue(eigenPodManager.ethPOS() == Env.ethPOS(), "epm.ethPOS invalid");
-            assertTrue(eigenPodManager.eigenPodBeacon() == Env.beacon.eigenPod(), "epm.epBeacon invalid");
-            assertTrue(eigenPodManager.delegationManager() == Env.proxy.delegationManager(), "epm.dm invalid");
-            assertTrue(eigenPodManager.pauserRegistry() == Env.impl.pauserRegistry(), "epm.pR invalid");
+            Eigen eigen = Env.impl.eigen();
+            assertTrue(eigen.bEIGEN() == Env.proxy.beigen(), "eigen.bEIGEN invalid");
         }
     }
 
@@ -142,27 +79,9 @@ contract Deploy is EOADeployer {
     function _validateImplsInitialized() internal {
         bytes memory errInit = "Initializable: contract is already initialized";
 
-        DelegationManager delegation = Env.impl.delegationManager();
+        Eigen eigen = Env.impl.eigen();
         vm.expectRevert(errInit);
-        delegation.initialize(address(0), 0);
-
-        /// pods/
-        EigenPod eigenPod = Env.impl.eigenPod();
-        vm.expectRevert(errInit);
-        eigenPod.initialize(address(0));
-
-        EigenPodManager eigenPodManager = Env.impl.eigenPodManager();
-        vm.expectRevert(errInit);
-        eigenPodManager.initialize(address(0), 0);
-    }
-
-    function _validateVersion() internal view {
-        // On future upgrades, just tick the major/minor/patch to validate
-        string memory expected = Env.deployVersion();
-
-        assertEq(Env.impl.delegationManager().version(), expected, "delegationManager version mismatch");
-        assertEq(Env.impl.eigenPod().version(), expected, "eigenPod version mismatch");
-        assertEq(Env.impl.eigenPodManager().version(), expected, "eigenPodManager version mismatch");
+        eigen.initialize(address(0));
     }
 
     /// @dev Query and return `proxyAdmin.getProxyImplementation(proxy)`
