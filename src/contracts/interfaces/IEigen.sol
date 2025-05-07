@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.5.0;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin-v4.9.0/contracts/token/ERC20/IERC20.sol";
 
 interface IEigen is IERC20 {
     /**

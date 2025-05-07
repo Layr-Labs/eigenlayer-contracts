@@ -4,8 +4,8 @@ pragma solidity ^0.8.12;
 import "forge-std/Vm.sol";
 import "zeus-templates/utils/ZEnvHelpers.sol";
 
-import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
-import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
+import {TimelockController} from "@openzeppelin-v4.9.0/contracts/governance/TimelockController.sol";
+import "@openzeppelin-v4.9.0/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
 /// core/
 import "src/contracts/core/AllocationManager.sol";
