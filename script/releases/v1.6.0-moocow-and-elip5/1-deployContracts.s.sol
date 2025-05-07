@@ -58,7 +58,7 @@ contract Deploy is EOADeployer {
     // TODO: add interface to IEigen to expose bEIGEN in next deployment of ELIP5
     /// @dev Validate the immutables set in the new implementation constructors
     // function _validateImplConstructors() internal view {
-    //     {        
+    //     {
     //         Eigen eigen = Env.impl.eigen();
     //         assertTrue(eigen.bEIGEN() == Env.proxy.beigen(), "eigen.bEIGEN invalid");
     //     }
