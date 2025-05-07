@@ -39,6 +39,16 @@ struct StateProofs {
     mapping(uint40 => BalanceRootProof) balanceRootProofs;
 }
 
+struct Config {
+    uint BEACON_STATE_TREE_HEIGHT;
+    uint BEACON_STATE_FIELDS;
+    uint BEACON_BLOCK_FIELDS;
+    uint BLOCKROOT_PROOF_LEN;
+    uint VAL_FIELDS_PROOF_LEN;
+    uint BALANCE_CONTAINER_PROOF_LEN;
+    uint BALANCE_PROOF_LEN;
+}
+
 library LibProofGen {
 
     using LibProofGen for *;
@@ -58,22 +68,43 @@ library LibProofGen {
     // /// height and we forget to update this value.
     // uint constant MAX_TREE_HEIGHT = 50; TODO
 
-    /// PROOF CONSTANTS (PROOF LENGTHS, FIELD SIZES):
-    /// @dev Non-constant values will change with the Pectra hard fork
-    
-    /// TODO - non-constant because this changed during the fork
-    /// Can probably fix this by adding a "config" struct somewhere?
-    // see https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#beaconstate
-    uint constant BEACON_STATE_FIELDS = 37;
+    bytes32 constant CONFIG_SLOT = keccak256("LibProofGen.config");
 
-    // see https://eth2book.info/capella/part3/containers/blocks/#beaconblock
-    uint constant BEACON_BLOCK_FIELDS = 5;
+    function config() internal view returns (Config storage) {
+        Config storage cfg;
+        bytes32 _CONFIG_SLOT = CONFIG_SLOT;
+        assembly { cfg.slot := _CONFIG_SLOT }
 
-    uint immutable BLOCKROOT_PROOF_LEN = 32 * BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT;
-    uint VAL_FIELDS_PROOF_LEN = 32 * ((BeaconChainProofs.VALIDATOR_TREE_HEIGHT + 1) + BeaconChainProofs.PECTRA_BEACON_STATE_TREE_HEIGHT);
-    uint BALANCE_CONTAINER_PROOF_LEN =
-        32 * (BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT + BeaconChainProofs.PECTRA_BEACON_STATE_TREE_HEIGHT);
-    uint immutable BALANCE_PROOF_LEN = 32 * (BeaconChainProofs.BALANCE_TREE_HEIGHT + 1);
+        return cfg;
+    }
+
+    /// @dev Dencun-specific config
+    /// See (https://eth2book.info/capella/part3/containers/state/#beaconstate)
+    function useDencun() internal {
+        Config storage cfg = config();
+
+        cfg.BEACON_STATE_TREE_HEIGHT = BeaconChainProofs.DENEB_BEACON_STATE_TREE_HEIGHT;
+        cfg.BEACON_STATE_FIELDS = 32;
+        cfg.BEACON_BLOCK_FIELDS = 5;
+        cfg.BLOCKROOT_PROOF_LEN = 32 * BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT;
+        cfg.VAL_FIELDS_PROOF_LEN = 32 * ((BeaconChainProofs.VALIDATOR_TREE_HEIGHT + 1) + BeaconChainProofs.DENEB_BEACON_STATE_TREE_HEIGHT);
+        cfg.BALANCE_CONTAINER_PROOF_LEN = 32 * (BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT + BeaconChainProofs.DENEB_BEACON_STATE_TREE_HEIGHT);
+        cfg.BALANCE_PROOF_LEN = 32 * (BeaconChainProofs.BALANCE_TREE_HEIGHT + 1);
+    }
+
+    /// @dev Pectra-specific config
+    /// See (see https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#beaconstate)
+    function usePectra() internal {
+        Config storage cfg = config();
+
+        cfg.BEACON_STATE_TREE_HEIGHT = BeaconChainProofs.PECTRA_BEACON_STATE_TREE_HEIGHT;
+        cfg.BEACON_STATE_FIELDS = 37;
+        cfg.BEACON_BLOCK_FIELDS = 5;
+        cfg.BLOCKROOT_PROOF_LEN = 32 * BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT;
+        cfg.VAL_FIELDS_PROOF_LEN = 32 * ((BeaconChainProofs.VALIDATOR_TREE_HEIGHT + 1) + BeaconChainProofs.PECTRA_BEACON_STATE_TREE_HEIGHT);
+        cfg.BALANCE_CONTAINER_PROOF_LEN = 32 * (BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT + BeaconChainProofs.PECTRA_BEACON_STATE_TREE_HEIGHT);
+        cfg.BALANCE_PROOF_LEN = 32 * (BeaconChainProofs.BALANCE_TREE_HEIGHT + 1);
+    }
 
     /**
      *
@@ -131,7 +162,7 @@ library LibProofGen {
         // Build merkle tree for BeaconState
         bytes32 beaconStateRoot = trees.stateTree.build({
             leaves: _getBeaconStateLeaves(validatorsRoot, balanceContainerRoot),
-            height: BeaconChainProofs.PECTRA_BEACON_STATE_TREE_HEIGHT
+            height: config().BEACON_STATE_TREE_HEIGHT
         });
 
         // Build merkle tree for BeaconBlock
@@ -160,7 +191,7 @@ library LibProofGen {
     ///    a pre-calculated zero-node is used to complete the tree.
     /// -- each pair of nodes is stored in `siblings`, and their parent in `parents`.
     ///    These mappings are used to build proofs for any individual leaf
-    /// @return The root of the merkle tree
+    /// @return root the root of the merkle tree
     ///
     /// HACK: this sibling/parent method of tree construction relies on all passed-in leaves
     /// being unique, so that we don't overwrite siblings/parents. This is simple for trees
@@ -242,7 +273,7 @@ library LibProofGen {
     /// @dev Generate global proof of beaconStateRoot -> beaconBlockRoot
     /// Used in verifyWithdrawalCredentials and verifyStaleBalance
     function genStateRootProof(StateProofs storage p, bytes32 beaconStateRoot) internal {
-        bytes memory proof = new bytes(BLOCKROOT_PROOF_LEN);
+        bytes memory proof = new bytes(config().BLOCKROOT_PROOF_LEN);
         bytes32 curNode = beaconStateRoot;
 
         uint depth = 0;
@@ -264,13 +295,13 @@ library LibProofGen {
 
     /// @dev Generate global proof of balanceContainerRoot -> beaconStateRoot -> beaconBlockRoot
     /// Used in verifyCheckpointProofs
-    function genBalanceContainerProof(StateProofs storage p, bytes32 balanceContainerRoot) internal virtual {
-        bytes memory proof = new bytes(BALANCE_CONTAINER_PROOF_LEN);
+    function genBalanceContainerProof(StateProofs storage p, bytes32 balanceContainerRoot) internal {
+        bytes memory proof = new bytes(config().BALANCE_CONTAINER_PROOF_LEN);
         bytes32 curNode = balanceContainerRoot;
 
-        uint totalHeight = BALANCE_CONTAINER_PROOF_LEN / 32;
+        uint totalHeight = config().BALANCE_CONTAINER_PROOF_LEN / 32;
         uint depth = 0;
-        for (uint i = 0; i < BeaconChainProofs.PECTRA_BEACON_STATE_TREE_HEIGHT; i++) {
+        for (uint i = 0; i < config().BEACON_STATE_TREE_HEIGHT; i++) {
             bytes32 sibling = p.trees.stateTree.siblings[curNode];
 
             // proof[j] = sibling;
@@ -300,39 +331,39 @@ library LibProofGen {
 
     /// @dev Generate per-validator proofs of their validator -> validatorsRoot
     /// Used in verifyWithdrawalCredentials and verifyStaleBalance
-    function genCredentialProofs(StateProofs storage p, Validator[] memory validators) internal virtual {
+    function genCredentialProofs(StateProofs storage p, Validator[] memory validators) internal {
         mapping(uint40 => ValidatorFieldsProof) storage vfProofs = p.validatorFieldsProofs;
 
         // Calculate credential proofs for each validator
         for (uint i = 0; i < validators.length; i++) {
-            bytes memory proof = new bytes(VAL_FIELDS_PROOF_LEN);
+            bytes memory proof = new bytes(config().VAL_FIELDS_PROOF_LEN);
             bytes32[] memory validatorFields = validators[i].getValidatorFields();
             bytes32 curNode = Merkle.merkleizeSha256(validatorFields);
 
             // Validator fields leaf -> validator container root
             uint depth = 0;
             for (uint j = 0; j < 1 + BeaconChainProofs.VALIDATOR_TREE_HEIGHT; j++) {
-                bytes32 sibling = p.validatorTree.siblings[curNode];
+                bytes32 sibling = p.trees.validatorTree.siblings[curNode];
 
                 // proof[j] = sibling;
                 assembly {
                     mstore(add(proof, add(32, mul(32, j))), sibling)
                 }
 
-                curNode = p.validatorTree.parents[curNode];
+                curNode = p.trees.validatorTree.parents[curNode];
                 depth++;
             }
 
             // Validator container root -> beacon state root
-            for (uint j = depth; j < 1 + BeaconChainProofs.VALIDATOR_TREE_HEIGHT + BeaconChainProofs.PECTRA_BEACON_STATE_TREE_HEIGHT; j++) {
-                bytes32 sibling = p.stateTree.siblings[curNode];
+            for (uint j = depth; j < 1 + BeaconChainProofs.VALIDATOR_TREE_HEIGHT + config().BEACON_STATE_TREE_HEIGHT; j++) {
+                bytes32 sibling = p.trees.stateTree.siblings[curNode];
 
                 // proof[j] = sibling;
                 assembly {
                     mstore(add(proof, add(32, mul(32, j))), sibling)
                 }
 
-                curNode = p.stateTree.parents[curNode];
+                curNode = p.trees.stateTree.parents[curNode];
                 depth++;
             }
 
@@ -348,21 +379,21 @@ library LibProofGen {
 
         // Calculate current balance proofs for each balance root
         for (uint i = 0; i < balanceLeaves.length; i++) {
-            bytes memory proof = new bytes(BALANCE_PROOF_LEN);
+            bytes memory proof = new bytes(config().BALANCE_PROOF_LEN);
             bytes32 balanceRoot = balanceLeaves[i];
             bytes32 curNode = balanceRoot;
 
             // Balance root leaf -> balances container root
             uint depth = 0;
             for (uint j = 0; j < 1 + BeaconChainProofs.BALANCE_TREE_HEIGHT; j++) {
-                bytes32 sibling = p.balancesTree.siblings[curNode];
+                bytes32 sibling = p.trees.balancesTree.siblings[curNode];
 
                 // proof[j] = sibling;
                 assembly {
                     mstore(add(proof, add(32, mul(32, j))), sibling)
                 }
 
-                curNode = p.balancesTree.parents[curNode];
+                curNode = p.trees.balancesTree.parents[curNode];
                 depth++;
             }
 
@@ -378,8 +409,8 @@ library LibProofGen {
      */
 
     /// @dev Get the leaves of the beacon block tree
-    function _getBeaconBlockLeaves(bytes32 beaconStateRoot) internal pure returns (bytes32[] memory) {
-        bytes32[] memory leaves = new bytes32[](BEACON_BLOCK_FIELDS);
+    function _getBeaconBlockLeaves(bytes32 beaconStateRoot) internal view returns (bytes32[] memory) {
+        bytes32[] memory leaves = new bytes32[](config().BEACON_BLOCK_FIELDS);
 
         // Pre-populate leaves with dummy values so sibling/parent tracking is correct
         for (uint i = 0; i < leaves.length; i++) {
@@ -392,8 +423,8 @@ library LibProofGen {
     }
 
     /// @dev Get the leaves of the beacon state tree
-    function _getBeaconStateLeaves(bytes32 validatorsRoot, bytes32 balancesRoot) internal pure returns (bytes32[] memory) {
-        bytes32[] memory leaves = new bytes32[](BEACON_STATE_FIELDS);
+    function _getBeaconStateLeaves(bytes32 validatorsRoot, bytes32 balancesRoot) internal view returns (bytes32[] memory) {
+        bytes32[] memory leaves = new bytes32[](config().BEACON_STATE_FIELDS);
 
         // Pre-populate leaves with dummy values so sibling/parent tracking is correct
         for (uint i = 0; i < leaves.length; i++) {

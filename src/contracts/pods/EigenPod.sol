@@ -857,10 +857,12 @@ contract EigenPod is
         return abi.decode(result, (bytes32));
     }
 
+    /// @inheritdoc IEigenPod
     function getConsolidationRequestFee() public view returns (uint256) {
         return _getFee(CONSOLIDATION_REQUEST_ADDRESS);
     }
 
+    /// @inheritdoc IEigenPod
     function getWithdrawalRequestFee() public view returns (uint256) {
         return _getFee(WITHDRAWAL_REQUEST_ADDRESS);
     }

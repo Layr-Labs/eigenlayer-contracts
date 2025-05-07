@@ -45,6 +45,7 @@ contract BeaconChainMock is Logger {
     using StdStyle for *;
     using print for *;
     using LibValidator for *;
+    using LibProofGen for *;
 
     /// @dev The type of slash to apply to a validator
     enum SlashType {
@@ -60,8 +61,8 @@ contract BeaconChainMock is Logger {
 
     // Min/max balances for valdiators
     // see https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#gwei-values
-    uint public MAX_EFFECTIVE_BALANCE_WEI = 2048 ether;
-    uint64 public MAX_EFFECTIVE_BALANCE_GWEI = 2048 gwei;
+    uint constant MAX_EFFECTIVE_BALANCE_WEI = 2048 ether;
+    uint64 constant MAX_EFFECTIVE_BALANCE_GWEI = 2048 gwei;
     uint constant MIN_ACTIVATION_BALANCE_WEI = 32 ether;
     uint64 constant MIN_ACTIVATION_BALANCE_GWEI = 32 gwei;
 
@@ -114,6 +115,8 @@ contract BeaconChainMock is Logger {
         cheats.etch(address(EIP_4788_ORACLE), type(EIP_4788_Oracle_Mock).runtimeCode);
         cheats.etch(address(CONSOLIDATION_PREDEPLOY), type(EIP_7251_Mock).runtimeCode);
         cheats.etch(address(WITHDRAWAL_PREDEPLOY), type(EIP_7002_Mock).runtimeCode);
+
+        LibProofGen.usePectra();
     }
 
     function NAME() public pure virtual override returns (string memory) {
@@ -766,6 +769,7 @@ contract BeaconChainMock is Logger {
         // If we have not advanced an epoch since a validator was created, no proofs have been
         // generated for that validator. We check this here and revert early so we don't return
         // empty proofs.
+        require(timestamp <= curTimestamp, "BeaconChain.getCheckpointProofs: future timestamp provided (did you call advanceEpoch yet?)");
         for (uint i = 0; i < _validators.length; i++) {
             require(
                 _validators[i] <= lastIndexProcessed,
@@ -773,7 +777,7 @@ contract BeaconChainMock is Logger {
             );
         }
 
-        StateProofs storage p = proofs[curTimestamp];
+        StateProofs storage p = proofs[timestamp];
 
         CheckpointProofs memory checkpointProofs = CheckpointProofs({
             balanceContainerProof: p.balanceContainerProof,
@@ -816,7 +820,7 @@ contract BeaconChainMock is Logger {
         return validators[validatorIndex].effectiveBalanceGwei;
     }
 
-    function _getMaxEffectiveBalanceGwei(Validator storage v) internal view returns (uint64) {
+    function _getMaxEffectiveBalanceGwei(Validator storage v) internal virtual view returns (uint64) {
         return v.hasCompoundingWC() ? MAX_EFFECTIVE_BALANCE_GWEI : MIN_ACTIVATION_BALANCE_GWEI;
     }
 

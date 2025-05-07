@@ -497,13 +497,13 @@ interface IEigenPod is IEigenPodErrors, IEigenPodEvents, ISemVerMixin {
         uint64 timestamp
     ) external view returns (bytes32);
 
-    /// @notice Returns the current fee required to add a consolidation request to the EIP-7251 predeploy.
-    /// @dev Note that this getter only returns the fee required to perform a single request. For multiple
-    /// requests, see https://eips.ethereum.org/EIPS/eip-7251#fee-calculation
+    /// @notice Returns the fee required to add a consolidation request to the EIP-7251 predeploy this block.
+    /// @dev Note that the predeploy updates its fee every block according to https://eips.ethereum.org/EIPS/eip-7251#fee-calculation
+    /// Consider overestimating the amount sent to ensure the fee does not update before your transaction.
     function getConsolidationRequestFee() external view returns (uint256);
 
     /// @notice Returns the current fee required to add a withdrawal request to the EIP-7002 predeploy.
-    /// @dev Note that this getter only returns the fee required to perform a single request. For multiple
-    /// requests, see https://eips.ethereum.org/EIPS/eip-7002#fee-update-rule
+    /// @dev Note that the predeploy updates its fee every block according to https://eips.ethereum.org/EIPS/eip-7002#fee-update-rule
+    /// Consider overestimating the amount sent to ensure the fee does not update before your transaction.
     function getWithdrawalRequestFee() external view returns (uint256);
 }
