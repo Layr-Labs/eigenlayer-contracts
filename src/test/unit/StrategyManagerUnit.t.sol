@@ -19,6 +19,8 @@ import "src/test/utils/EigenLayerUnitTestSetup.sol";
  * Contracts not mocked: StrategyBase, PauserRegistry
  */
 contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEvents {
+    address constant DEFAULT_BURN_ADDRESS = address(0x00000000000000000000000000000000000E16E4);
+
     StrategyManager public strategyManagerImplementation;
     StrategyManager public strategyManager;
 
@@ -37,7 +39,9 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEv
 
     function setUp() public override {
         EigenLayerUnitTestSetup.setUp();
-        strategyManagerImplementation = new StrategyManager(IDelegationManager(address(delegationManagerMock)), pauserRegistry, "v9.9.9");
+        strategyManagerImplementation = new StrategyManager(
+            IAllocationManager(address(allocationManagerMock)), IDelegationManager(address(delegationManagerMock)), pauserRegistry, "v9.9.9"
+        );
         strategyManager = StrategyManager(
             address(
                 new TransparentUpgradeableProxy(
@@ -1062,19 +1066,22 @@ contract StrategyManagerUnitTests_withdrawSharesAsTokens is StrategyManagerUnitT
 
 contract StrategyManagerUnitTests_increaseBurnableShares is StrategyManagerUnitTests {
     function test_Revert_DelegationManagerModifier() external {
+        OperatorSet memory dummySet = OperatorSet(address(this), 0);
+        uint slashId = 0;
         DelegationManagerMock invalidDelegationManager = new DelegationManagerMock();
         cheats.prank(address(invalidDelegationManager));
         cheats.expectRevert(IStrategyManagerErrors.OnlyDelegationManager.selector);
-        strategyManager.increaseBurnableShares(dummyStrat, 1);
+        strategyManager.increaseBurnableShares(dummySet, slashId, dummyStrat, 1);
     }
 
     function testFuzz_increaseBurnableShares(uint addedSharesToBurn) external {
+        OperatorSet memory dummySet = OperatorSet(address(this), 0);
+        uint slashId = 0;
         IStrategy strategy = dummyStrat;
-
         cheats.expectEmit(true, true, true, true, address(strategyManager));
-        emit BurnableSharesIncreased(strategy, addedSharesToBurn);
+        emit BurnableSharesIncreased(dummySet, slashId, strategy, addedSharesToBurn);
         cheats.prank(address(delegationManagerMock));
-        strategyManager.increaseBurnableShares(strategy, addedSharesToBurn);
+        strategyManager.increaseBurnableShares(dummySet, slashId, strategy, addedSharesToBurn);
         assertEq(
             strategyManager.getBurnableShares(strategy), addedSharesToBurn, "strategyManager.burnableShares(strategy) != addedSharesToBurn"
         );
@@ -1086,11 +1093,13 @@ contract StrategyManagerUnitTests_increaseBurnableShares is StrategyManagerUnitT
         existingBurnableShares = bound(existingBurnableShares, 1, type(uint).max / 2);
         addedSharesToBurn = bound(addedSharesToBurn, 1, type(uint).max / 2);
 
+        OperatorSet memory dummySet = OperatorSet(address(this), 0);
+        uint slashId = 0;
         IStrategy strategy = dummyStrat;
         cheats.prank(address(delegationManagerMock));
         cheats.expectEmit(true, true, true, true, address(strategyManager));
-        emit BurnableSharesIncreased(strategy, existingBurnableShares);
-        strategyManager.increaseBurnableShares(strategy, existingBurnableShares);
+        emit BurnableSharesIncreased(dummySet, slashId, strategy, addedSharesToBurn);
+        strategyManager.increaseBurnableShares(dummySet, slashId, strategy, existingBurnableShares);
         assertEq(
             strategyManager.getBurnableShares(strategy),
             existingBurnableShares,
@@ -1099,8 +1108,8 @@ contract StrategyManagerUnitTests_increaseBurnableShares is StrategyManagerUnitT
 
         cheats.prank(address(delegationManagerMock));
         cheats.expectEmit(true, true, true, true, address(strategyManager));
-        emit BurnableSharesIncreased(strategy, addedSharesToBurn);
-        strategyManager.increaseBurnableShares(strategy, addedSharesToBurn);
+        emit BurnableSharesIncreased(dummySet, slashId, strategy, addedSharesToBurn);
+        strategyManager.increaseBurnableShares(dummySet, slashId, strategy, addedSharesToBurn);
 
         assertEq(
             strategyManager.getBurnableShares(strategy),
@@ -1118,6 +1127,8 @@ contract StrategyManagerUnitTests_burnShares is StrategyManagerUnitTests {
         cheats.assume(staker != address(0));
         cheats.assume(staker != address(dummyStrat));
         cheats.assume(sharesToBurn > 0 && sharesToBurn < dummyToken.totalSupply() && depositAmount >= sharesToBurn);
+        OperatorSet memory dummySet = OperatorSet(address(this), 0);
+        uint slashId = 0;
         IStrategy strategy = dummyStrat;
         IERC20 token = dummyToken;
         _depositIntoStrategySuccessfully(strategy, staker, depositAmount);
@@ -1125,14 +1136,16 @@ contract StrategyManagerUnitTests_burnShares is StrategyManagerUnitTests {
         // slash shares and increase amount to burn from DelegationManager
         cheats.prank(address(delegationManagerMock));
         cheats.expectEmit(true, true, true, true, address(strategyManager));
-        emit BurnableSharesIncreased(strategy, sharesToBurn);
-        strategyManager.increaseBurnableShares(strategy, sharesToBurn);
+        emit BurnableSharesIncreased(dummySet, slashId, strategy, sharesToBurn);
+        strategyManager.increaseBurnableShares(dummySet, slashId, strategy, sharesToBurn);
 
         uint strategyBalanceBefore = token.balanceOf(address(strategy));
         uint burnAddressBalanceBefore = token.balanceOf(strategyManager.DEFAULT_BURN_ADDRESS());
         cheats.prank(address(delegationManagerMock));
         cheats.expectEmit(true, true, true, true, address(strategyManager));
-        emit BurnableSharesDecreased(strategy, sharesToBurn);
+        emit BurnableSharesDecreased(
+            OperatorSet(address(strategyManager), type(uint32).max), type(uint).max, strategy, DEFAULT_BURN_ADDRESS, sharesToBurn
+        );
         strategyManager.burnShares(strategy);
         uint strategyBalanceAfter = token.balanceOf(address(strategy));
         uint burnAddressBalanceAfter = token.balanceOf(strategyManager.DEFAULT_BURN_ADDRESS());
@@ -1153,6 +1166,8 @@ contract StrategyManagerUnitTests_burnShares is StrategyManagerUnitTests {
     {
         cheats.assume(staker != address(0));
         cheats.assume(sharesToBurn > 0 && sharesToBurn < dummyToken.totalSupply() && depositAmount >= sharesToBurn);
+        OperatorSet memory dummySet = OperatorSet(address(this), 0);
+        uint slashId = 0;
         IStrategy strategy = dummyStrat;
         IERC20 token = dummyToken;
         _depositIntoStrategySuccessfully(strategy, staker, depositAmount);
@@ -1160,8 +1175,8 @@ contract StrategyManagerUnitTests_burnShares is StrategyManagerUnitTests {
         // slash shares and increase amount to burn from DelegationManager
         cheats.prank(address(delegationManagerMock));
         cheats.expectEmit(true, true, true, true, address(strategyManager));
-        emit BurnableSharesIncreased(strategy, sharesToBurn);
-        strategyManager.increaseBurnableShares(strategy, sharesToBurn);
+        emit BurnableSharesIncreased(dummySet, slashId, strategy, sharesToBurn);
+        strategyManager.increaseBurnableShares(dummySet, slashId, strategy, sharesToBurn);
 
         // Now set token to be contract that reverts simulating an upgrade
         cheats.etch(address(token), address(revertToken).code);

@@ -3,6 +3,7 @@ pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 
+import "../interfaces/IAllocationManager.sol";
 import "../interfaces/IStrategyManager.sol";
 import "../interfaces/IStrategy.sol";
 import "../interfaces/IEigenPodManager.sol";
@@ -32,6 +33,8 @@ abstract contract StrategyManagerStorage is IStrategyManager {
     address public constant DEFAULT_BURN_ADDRESS = 0x00000000000000000000000000000000000E16E4;
 
     // Immutables
+
+    IAllocationManager public immutable allocationManager;
 
     IDelegationManager public immutable delegation;
 
@@ -71,17 +74,22 @@ abstract contract StrategyManagerStorage is IStrategyManager {
     /// @dev Do not remove, deprecated storage.
     mapping(IStrategy strategy => bool) private __deprecated_thirdPartyTransfersForbidden;
 
-    /// @notice Returns the amount of `shares` that have been slashed on EigenLayer but not burned yet. Takes 3 storage slots.
-    EnumerableMap.AddressToUintMap internal burnableShares;
+    /// @dev Returns the amount of `shares` that have been slashed on EigenLayer but not burned yet. Takes 3 storage slots.
+    /// NOTE: Only tracks pre-distribution burns, in the future this mapping will be deprecated.
+    EnumerableMap.AddressToUintMap internal _burnableShares;
+
+    /// @dev Given an operator set and slashId, returns an enumerable mapping of strategies to the amount
+    /// of shares for each strategy that have been slashed but not burned/redistributed yet.
+    mapping(bytes32 operatorSetKey => mapping(uint256 slashId => EnumerableMap.AddressToUintMap)) internal
+        _operatorSetBurnableShares;
 
     // Construction
 
     /**
      * @param _delegation The delegation contract of EigenLayer.
      */
-    constructor(
-        IDelegationManager _delegation
-    ) {
+    constructor(IAllocationManager _allocationManager, IDelegationManager _delegation) {
+        allocationManager = _allocationManager;
         delegation = _delegation;
     }
 
@@ -90,5 +98,5 @@ abstract contract StrategyManagerStorage is IStrategyManager {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[36] private __gap;
+    uint256[35] private __gap;
 }

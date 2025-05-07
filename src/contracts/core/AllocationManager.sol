@@ -60,6 +60,8 @@ contract AllocationManager is
         _transferOwnership(initialOwner);
     }
 
+    // TODO: properly return shares slashed
+
     /// @inheritdoc IAllocationManager
     function slashOperator(
         address avs,
@@ -149,6 +151,8 @@ contract AllocationManager is
             // 6. Slash operators shares in the DelegationManager
             delegation.slashOperatorShares({
                 operator: params.operator,
+                operatorSet: operatorSet,
+                slashId: slashId,
                 strategy: params.strategies[i],
                 prevMaxMagnitude: prevMaxMagnitude,
                 newMaxMagnitude: info.maxMagnitude
