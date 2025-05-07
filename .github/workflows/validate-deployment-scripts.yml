@@ -91,5 +91,5 @@ jobs:
           # Run zeus test on each file with the specified environment and RPC URL
           for file in $FILES; do
             echo "Testing $file in ${{ matrix.env }} environment with RPC $RPC_URL..."
-            zeus test --env ${{ matrix.env }} "$file" --rpc-url "$RPC_URL"
+            zeus test --env ${{ matrix.env }} --rpcUrl "$RPC_URL" "$file" 
           done
