@@ -119,6 +119,22 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
     ) external returns (uint256 depositShares);
 
     /**
+     * @notice Increase the amount of burnable shares for a given Strategy. This is called by the DelegationManager
+     * when an operator is slashed in EigenLayer.
+     * @param operatorSet The operatorSet to burn shares from.
+     * @param slashId The identifier associated with the slash.
+     * @param strategy The strategy to burn shares from.
+     * @param addedSharesToBurn The amount of added shares to burn.
+     * @dev This function is only called by the DelegationManager when an operator is slashed.
+     */
+    function increaseBurnableShares(
+        OperatorSet calldata operatorSet,
+        uint256 slashId,
+        IStrategy strategy,
+        uint256 addedSharesToBurn
+    ) external;
+
+    /**
      * @notice Burns Strategy shares for the given strategy by calling into the strategy to transfer to the default burn address.
      * @param strategy The strategy to burn shares in.
      * @dev This only allows pre-distribution burns, in the future this method will be deprecated along with the `_burnableShares` mapping.

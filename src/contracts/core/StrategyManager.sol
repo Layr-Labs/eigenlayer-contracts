@@ -144,16 +144,17 @@ contract StrategyManager is
         strategy.withdraw(staker, token, shares);
     }
 
-    /// @inheritdoc IShareManager
+    // /// @inheritdoc IShareManager
     function increaseBurnableShares(
         OperatorSet calldata operatorSet,
         uint256 slashId,
         IStrategy strategy,
         uint256 addedSharesToBurn
     ) external onlyDelegationManager nonReentrant {
-        EnumerableMap.AddressToUintMap storage ptr = _operatorSetBurnableShares[operatorSet.key()][slashId];
-        (, uint256 currentShares) = EnumerableMap.tryGet(ptr, address(strategy));
-        EnumerableMap.set(ptr, address(strategy), currentShares + addedSharesToBurn);
+        EnumerableMap.AddressToUintMap storage operatorSetBurnableShares =
+            _operatorSetBurnableShares[operatorSet.key()][slashId];
+        (, uint256 currentShares) = operatorSetBurnableShares.tryGet(address(strategy));
+        operatorSetBurnableShares.set(address(strategy), currentShares + addedSharesToBurn);
 
         emit BurnableSharesIncreased(operatorSet, slashId, strategy, addedSharesToBurn);
     }
