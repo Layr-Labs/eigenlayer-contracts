@@ -81,8 +81,15 @@ jobs:
             exit 0
           fi
           
-          # Run zeus test on each file with the specified environment
+          # Set RPC URL based on environment
+          if [ "${{ matrix.env }}" = "mainnet" ]; then
+            RPC_URL="${{ secrets.RPC_MAINNET }}"
+          else
+            RPC_URL="${{ secrets.RPC_HOLESKY }}"
+          fi
+          
+          # Run zeus test on each file with the specified environment and RPC URL
           for file in $FILES; do
-            echo "Testing $file in ${{ matrix.env }} environment..."
-            zeus test --env ${{ matrix.env }} "$file"
+            echo "Testing $file in ${{ matrix.env }} environment with RPC $RPC_URL..."
+            zeus test --env ${{ matrix.env }} "$file" --rpc-url "$RPC_URL"
           done
