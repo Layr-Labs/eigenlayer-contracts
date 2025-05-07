@@ -282,6 +282,8 @@ contract DelegationManager is
     /// @inheritdoc IDelegationManager
     function slashOperatorShares(
         address operator,
+        OperatorSet calldata operatorSet,
+        uint256 slashId,
         IStrategy strategy,
         uint64 prevMaxMagnitude,
         uint64 newMaxMagnitude
@@ -317,7 +319,7 @@ contract DelegationManager is
 
         IShareManager shareManager = _getShareManager(strategy);
         // NOTE: for beaconChainETHStrategy, increased burnable shares currently have no mechanism for burning
-        shareManager.increaseBurnableShares(strategy, totalDepositSharesToBurn);
+        shareManager.increaseBurnableShares(operatorSet, slashId, strategy, totalDepositSharesToBurn);
     }
 
     /**
