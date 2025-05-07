@@ -1,0 +1,24 @@
+name: Remove Stale Branches
+
+on:
+  schedule:
+    - cron: "0 0 * * *" # Everday at midnight
+  workflow_dispatch:     # Allows manual trigger from GitHub UI
+
+permissions:
+  contents: write
+
+jobs:
+  remove-stale-branches:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: fpicalausa/remove-stale-branches@v1.6.0
+        with:
+          dry-run: false # Check out the console output before setting this to false
+          exempt-authors-regex: "^dependabot"
+          days-before-branch-stale: 90
+          days-before-branch-delete: 7
+          operations-per-run: 100
+          exempt-branches-regex: "^(main|release-dev/.*|v[0-9]+\\.[0-9]+\\.[0-9]+)$"
+          ignore-unknown-authors: true
+          default-recipient: "bowenli86"
