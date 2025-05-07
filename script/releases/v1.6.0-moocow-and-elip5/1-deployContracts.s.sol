@@ -19,15 +19,7 @@ contract Deploy is EOADeployer {
 
         // We are upgrading contracts: Eigen
         // TODO: add moocow contracts
-        deployImpl({
-            name: type(Eigen).name,
-            deployedTo: address(
-                new Eigen({
-                    _bEIGEN: Env.proxy.beigen()
-                })
-            )
-        });
-
+        deployImpl({name: type(Eigen).name, deployedTo: address(new Eigen({_bEIGEN: Env.proxy.beigen()}))});
         vm.stopBroadcast();
     }
 
@@ -52,19 +44,14 @@ contract Deploy is EOADeployer {
 
         function (bool, string memory) internal pure assertion = areMatching ? _assertTrue : _assertFalse;
 
-        assertion(
-            _getProxyImpl(address(Env.proxy.eigen())) == address(Env.impl.eigen()),
-            "eigen impl failed"
-        );
+        assertion(_getProxyImpl(address(Env.proxy.eigen())) == address(Env.impl.eigen()), "eigen impl failed");
     }
 
     /// @dev Ensure each deployed TUP/beacon is owned by the proxyAdmin/executorMultisig
     function _validateProxyAdmins() internal view {
         address pa = Env.proxyAdmin();
 
-        assertTrue(
-            _getProxyAdmin(address(Env.proxy.eigen())) == pa, "eigen proxyAdmin incorrect"
-        );
+        assertTrue(_getProxyAdmin(address(Env.proxy.eigen())) == pa, "eigen proxyAdmin incorrect");
     }
 
     /// @dev Validate the immutables set in the new implementation constructors
