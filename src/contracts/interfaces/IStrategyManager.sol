@@ -223,17 +223,31 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
         IStrategy strategy
     ) external view returns (uint256);
 
+    /// @notice Returns the post-distribution burnable shares of a strategy for a specific operator set and slash ID.
+    function getBurnableSharesForOperatorSet(
+        OperatorSet calldata operatorSet,
+        uint256 slashId,
+        IStrategy strategy
+    ) external view returns (uint256 shares);
+
     /**
      * @notice Gets every strategy with pre-distribution burnable shares and the amount of burnable shares in each said strategy.
      *
      * @dev This will be deprecated in the future.
      *
-     * WARNING: This operation can copy the entire storage to memory, which can be quite expensive. This is designed
-     * to mostly be used by view accessors that are queried without any gas fees. Users should keep in mind that
-     * this function has an unbounded cost, and using it as part of a state-changing function may render the function
-     * uncallable if the map grows to a point where copying to memory consumes too much gas to fit in a block.
+     * WARNING: Iterates over all storage entries and copies to memory. Gas cost scales with number of strategies.
      */
     function getStrategiesWithBurnableShares() external view returns (address[] memory, uint256[] memory);
+
+    /**
+     * @notice Returns the post-distribution burnable shares of a strategy for a specific operator set and slash ID.
+     *
+     * WARNING: Iterates over all storage entries and copies to memory. Gas cost scales with number of strategies.
+     */
+    function getStrategiesWithBurnableSharesForOperatorSet(
+        OperatorSet calldata operatorSet,
+        uint256 slashId
+    ) external view returns (address[] memory, uint256[] memory);
 
     /**
      * @param staker The address of the staker.
