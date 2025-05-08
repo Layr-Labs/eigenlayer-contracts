@@ -63,6 +63,15 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         return (staker, tokenBalances);
     }
 
+    /// @dev Creates a blank slate user with no assets
+    function _newEmptyStaker() internal returns (User) {
+        User staker = _randUser_NoAssets(_getStakerName());
+
+        if (!isUpgraded) stakersToMigrate.push(staker);
+
+        return staker;
+    }
+
     /**
      * @dev Create a new operator according to configured random variants.
      * This user will immediately deposit their randomized assets into eigenlayer.

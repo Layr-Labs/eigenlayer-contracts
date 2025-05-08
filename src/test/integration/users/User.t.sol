@@ -15,10 +15,6 @@ import "src/test/integration/mocks/BeaconChainMock.t.sol";
 import "src/test/utils/Logger.t.sol";
 import "src/test/utils/ArrayLib.sol";
 
-struct Validator {
-    uint40 index;
-}
-
 interface IUserDeployer {
     function allocationManager() external view returns (AllocationManager);
     function delegationManager() external view returns (DelegationManager);
@@ -337,11 +333,10 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     /// @return The amount of wei sent to the beacon chain
     function startValidators(uint8 numValidators) public virtual createSnapshot returns (uint40[] memory, uint64, uint) {
         require(numValidators > 0 && numValidators <= 10, "startValidators: numValidators must be between 1 and 10");
+    
+        // Deal ETH for the new validators
         uint balanceWei = address(this).balance;
-
-        // given a number of validators, the current balance, calculate the amount of ETH needed to start that many validators
-        uint ethNeeded = numValidators * 32 ether - balanceWei;
-        cheats.deal(address(this), ethNeeded);
+        cheats.deal(address(this), balanceWei + (numValidators * 32 ether));
 
         print.method("startValidators");
         return _startValidators();
@@ -350,6 +345,87 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     function exitValidators(uint40[] memory _validators) public virtual createSnapshot returns (uint64 exitedBalanceGwei) {
         print.method("exitValidators");
         return _exitValidators(_validators);
+    }
+
+    // uint consolidationIdx;
+    /// @dev Helper storage to calculate max consolidations
+    /// - The main thing we're interested in is the internal mapping, which maps
+    ///   a target validator to the list of source validators we're going to consolidate
+    /// - The first uint key is just an "id" to allow us to write to a clean inner mapping
+    ///   across contract calls
+    // mapping(uint => mapping(uint40 => uint40[])) consolidations;
+
+    struct ConsolidationHelper {
+        uint40[] targets;
+        uint40[] sources;
+
+        mapping(uint40 => bool) used;
+        IEigenPodTypes.ConsolidationRequest[] requests;
+    }
+
+    ConsolidationHelper[] helpers;
+
+    /// @dev Determines the maximally-compact consolidation for the given validators
+    /// - Requests the consolidation via EigenPod.requestConsolidation
+    /// - Advances beacon chain state so the consolidations are processed
+    /// @return newValidators the remaining active validators after consolidation
+    /// @return consolidated the now-inactive validators who were consolidated into newValidators
+    function maxConsolidation(
+        uint40[] memory _validators
+    ) public virtual createSnapshot returns (uint40[] memory newValidators, uint40[] memory consolidated) {
+        print.method("maxConsolidation");
+        require(_validators.length > 1, "User.maxConsolidation: only one validator provided");
+
+        // Get helper storage space to track what validators we've consolidated, and what requests we'll make
+        ConsolidationHelper storage helper = helpers.push();
+        
+        for (uint i = 0; i < _validators.length; i++) {
+            // Select the next target validator. If they're already a source/target, skip.
+            uint40 targetValidator = _validators[i];
+            if (helper.used[targetValidator]) continue;
+            
+            uint64 targetBalanceGwei = beaconChain.effectiveBalance(targetValidator);
+            bytes memory targetPubkey = beaconChain.pubkey(targetValidator);
+            helper.used[targetValidator] = true;
+            helper.targets.push(targetValidator);
+
+            // If the target validator does not have 0x02 credentials, add a switch request
+            if (!beaconChain.hasCompoundingCreds(targetValidator)) {
+                helper.requests.push(IEigenPodTypes.ConsolidationRequest({
+                    srcPubkey: targetPubkey,
+                    targetPubkey: targetPubkey
+                }));
+            }
+
+            // Add as many source validators as we can without going over 2048 ETH
+            for (uint j = i + 1; j < _validators.length; j++) {
+                // Select the next source validator. If they're already a source/target, skip.
+                uint40 sourceValidator = _validators[j];
+                if (helper.used[sourceValidator]) continue;
+                
+                // Skip if this would push the target's balance above 2048 ETH
+                uint64 sourceBalanceGwei = beaconChain.effectiveBalance(sourceValidator);
+                if (targetBalanceGwei + sourceBalanceGwei > MAX_EFFECTIVE_BALANCE_GWEI) continue;
+
+                // Add consolidation
+                targetBalanceGwei += sourceBalanceGwei;
+                helper.used[sourceValidator] = true;
+                helper.sources.push(sourceValidator);
+                helper.requests.push(IEigenPodTypes.ConsolidationRequest({
+                    srcPubkey: beaconChain.pubkey(sourceValidator),
+                    targetPubkey: targetPubkey
+                }));
+            }
+        }
+        
+        uint fee = pod.getConsolidationRequestFee() * helper.requests.length;
+        cheats.deal(address(this), address(this).balance + fee);
+        pod.requestConsolidation{ value: fee }(helper.requests);
+
+        // Advance beacon chain
+        beaconChain.advanceEpoch_NoRewards();
+
+        return (helper.targets, helper.sources);
     }
 
     /// -----------------------------------------------------------------------
@@ -399,8 +475,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
 
             if (strat == BEACONCHAIN_ETH_STRAT) {
                 (uint40[] memory newValidators,,) = _startValidators();
-                // Advance forward one epoch and generate credential and balance proofs for each validator
-                beaconChain.advanceEpoch_NoRewards();
+
                 _verifyWithdrawalCredentials(newValidators);
             } else {
                 IERC20 underlyingToken = strat.underlyingToken();
@@ -490,12 +565,14 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     /// @dev Uses any ETH held by the User to start validators on the beacon chain
     /// @dev Creates validators between 32 and 2048 ETH
     /// @return A list of created validator indices
-    /// @return The amount of wei sent to the beacon chain
+    /// @return The amount of gwei sent to the beacon chain
     /// @return The number of validators that have the MaxEB
     /// Note: If the user does not have enough ETH to start a validator, this method reverts
     /// Note: This method also advances one epoch forward on the beacon chain, so that
     /// withdrawal credential proofs are generated for each validator.
     function _startValidators() internal virtual returns (uint40[] memory, uint64, uint) {
+        cheats.pauseTracing();
+
         uint originalBalance = address(this).balance;
         uint balanceWei = address(this).balance;
         uint numValidators = 0;
@@ -517,12 +594,18 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
                 else break;
             }
 
-            // Track validators with maximum effective balance
-            if (validatorEth == 2048 ether) maxEBValidators++;
-
             // Create the validator
             bytes memory withdrawalCredentials =
                 validatorEth == 32 ether ? _podWithdrawalCredentials() : _podCompoundingWithdrawalCredentials();
+
+            // Track validators with max effective balance
+            // - For 0x01 validators, this is 32 ETH
+            // - For 0x02 validators, this is 2048 ETH
+            if (withdrawalCredentials[0] == 0x01 && validatorEth == 32 ether) {
+                maxEBValidators++;
+            } else if (withdrawalCredentials[0] == 0x02 && validatorEth == 2048 ether) {
+                maxEBValidators++;
+            }
 
             uint40 validatorIndex = beaconChain.newValidator{value: validatorEth}(withdrawalCredentials);
 
@@ -558,6 +641,8 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         uint64 totalBeaconBalanceGwei = uint64((originalBalance - balanceWei) / GWEI_TO_WEI);
         console.log("- created new validators", newValidators.length);
         console.log("- deposited balance to beacon chain (gwei)", totalBeaconBalanceGwei);
+
+        cheats.resumeTracing();
 
         // Advance forward one epoch and generate withdrawal and balance proofs for each validator
         beaconChain.advanceEpoch_NoRewards();

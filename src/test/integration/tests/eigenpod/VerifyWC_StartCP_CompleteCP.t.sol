@@ -24,7 +24,7 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         EigenPod pod = staker.pod();
         CredentialProofs memory proofs = beaconChain.getCredentialProofs(validators);
 
-        cheats.startPrank(address(staker));
+        cheats.prank(address(staker));
         cheats.resumeGasMetering();
 
         uint startGas = gasleft();
@@ -51,6 +51,7 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
 
         CheckpointProofs memory cpProofs = beaconChain.getCheckpointProofs(validators, pod.currentCheckpointTimestamp());
 
+        cheats.prank(address(staker));
         cheats.resumeGasMetering();
         startGas = gasleft();
         pod.verifyCheckpointProofs({balanceContainerProof: cpProofs.balanceContainerProof, proofs: cpProofs.balanceProofs});
@@ -517,22 +518,24 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         (uint40[] memory validators, uint64 beaconBalanceGwei, uint maxEBValidators) = staker.startValidators();
         // Advance epoch and generate consensus rewards, but don't withdraw to pod
         beaconChain.advanceEpoch_NoWithdraw();
-
-        // Get the expected increase in beacon balance, accounting for validators with MaxEB
-        // The validators < MaxEB will have their rewards proven in the checkpoint
-        // The validators == MaxEB will have their rewards proven in verifyWC
-        uint64 beaconBalanceIncreaseGwei = uint64(validators.length) * beaconChain.CONSENSUS_REWARD_AMOUNT_GWEI();
-        uint64 expectedWithdrawnGwei = uint64(maxEBValidators) * beaconChain.CONSENSUS_REWARD_AMOUNT_GWEI();
-        uint64 verifyWCRewardsIncreaseGwei = beaconBalanceIncreaseGwei - expectedWithdrawnGwei;
+        
+        /// "Expected effective balance increase gwei":
+        // For verifyWithdrawalCredentials, we expect beacon chain rewards to be reflected in effective balance
+        // for any validator NOT at max effective balance.
+        uint64 expectedEBIncreaseGwei = uint64((validators.length - maxEBValidators) * beaconChain.CONSENSUS_REWARD_AMOUNT_GWEI());
+        /// "Expected current balance increase gwei":
+        // For checkpointing, we expect additional beacon chain rewards to be reflected in current balance
+        // for any validator at max effective balance
+        uint64 expectedCBIncreaseGwei = uint64(maxEBValidators) * beaconChain.CONSENSUS_REWARD_AMOUNT_GWEI();
 
         staker.verifyWithdrawalCredentials(validators);
-        check_VerifyWC_State(staker, validators, beaconBalanceGwei + verifyWCRewardsIncreaseGwei);
+        check_VerifyWC_State(staker, validators, beaconBalanceGwei + expectedEBIncreaseGwei);
 
         staker.startCheckpoint();
         check_StartCheckpoint_State(staker);
 
         staker.completeCheckpoint();
-        check_CompleteCheckpoint_EarnOnBeacon_State(staker, expectedWithdrawnGwei);
+        check_CompleteCheckpoint_EarnOnBeacon_State(staker, expectedCBIncreaseGwei);
     }
 
     /// 1. Verify validators' withdrawal credentials
