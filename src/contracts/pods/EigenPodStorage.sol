@@ -45,7 +45,8 @@ abstract contract EigenPodStorage is IEigenPod {
     /// has been fully exited, it is possible that the magnitude of this change does not capture what is
     /// typically thought of as a "full exit."
     ///
-    /// For example:
+    ///
+    /// Example A: (deposits)
     /// 1. Consider a validator was last checkpointed at 32 ETH before exiting. Once the exit has been processed,
     /// it is expected that the validator's exited balance is calculated to be `32 ETH`.
     /// 2. However, before `startCheckpoint` is called, a deposit is made to the validator for 1 ETH. The beacon
@@ -56,9 +57,18 @@ abstract contract EigenPodStorage is IEigenPod {
     /// 4. After the exit is processed by the beacon chain, a subsequent `startCheckpoint` and checkpoint proof
     /// will calculate a balance delta of `-1 ETH` and attribute a 1 ETH exit to the validator.
     ///
-    /// If this edge case impacts your usecase, it should be possible to mitigate this by monitoring for deposits
-    /// to your exited validators, and waiting to call `startCheckpoint` until those deposits have been automatically
-    /// exited.
+    /// Example B: (consolidation)
+    /// 1. Consider 2 validators (a and b), each last checkpointed at 32 ETH.
+    /// 2. EigenPod.requestConsolidation is called, requesting a consolidation of b -> a
+    /// 3. When the beacon chain processes this consolidation, b's entire balance is transferred to a, and
+    ///    b is left with 0 balance.
+    /// 4. Post-consolidation, start+completeCheckpoint will show validator a now has 64 ETH, and validator b has 0 ETH.
+    ///    b's state is set to WITHDRAWN, and `checkpointBalanceExitedGwei` will show 32 ETH, even though this balance
+    ///    did not exit the beacon chain.
+    ///
+    /// Unfortunately, these edge cases can't be fully accounted for within an EigenPod. Please keep in mind that this
+    /// mapping is intended to be an approximation, and ensure your offchain tooling can account for these edge cases
+    /// before relying on the value for important operations.
     ///
     /// Additional edge cases this mapping does not cover:
     /// - If a validator is slashed, their balance exited will reflect their original balance rather than the slashed amount

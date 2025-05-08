@@ -31,4 +31,8 @@ abstract contract EigenPodPausingConstants {
     uint8 internal constant PAUSED_EIGENPODS_VERIFY_CHECKPOINT_PROOFS = 7;
 
     uint8 internal constant PAUSED_VERIFY_STALE_BALANCE = 8;
+
+    uint8 internal constant PAUSED_CONSOLIDATIONS = 9;
+
+    uint8 internal constant PAUSED_WITHDRAWAL_REQUESTS = 10;
 }
