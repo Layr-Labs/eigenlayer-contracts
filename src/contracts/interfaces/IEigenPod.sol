@@ -59,6 +59,17 @@ interface IEigenPodErrors {
     /// @dev Thrown when a validator has not been slashed on the beacon chain.
     error ValidatorNotSlashedOnBeaconChain();
 
+    /// Consolidation and Withdrawal Requests
+
+    /// @dev Thrown when a predeploy request is initiated with insufficient msg.value
+    error InsufficientFunds();
+    /// @dev Thrown when refunding excess fees from a predeploy fails
+    error RefundFailed();
+    /// @dev Thrown when calling the predeploy fails
+    error PredeployFailed();
+    /// @dev Thrown when querying a predeploy for its current fee fails
+    error FeeQueryFailed();
+
     /// Misc
 
     /// @dev Thrown when an invalid block root is returned by the EIP-4788 oracle.
@@ -79,14 +90,16 @@ interface IEigenPodTypes {
 
     }
 
+    /**
+     * @param validatorIndex index of the validator on the beacon chain
+     * @param restakedBalanceGwei amount of beacon chain ETH restaked on EigenLayer in gwei
+     * @param lastCheckpointedAt timestamp of the validator's most recent balance update
+     * @param status last recorded status of the validator
+     */
     struct ValidatorInfo {
-        // index of the validator in the beacon chain
         uint64 validatorIndex;
-        // amount of beacon chain ETH restaked on EigenLayer in gwei
         uint64 restakedBalanceGwei;
-        //timestamp of the validator's most recent balance update
         uint64 lastCheckpointedAt;
-        // status of the validator
         VALIDATOR_STATUS status;
     }
 
@@ -96,6 +109,30 @@ interface IEigenPodTypes {
         uint64 podBalanceGwei;
         int64 balanceDeltasGwei;
         uint64 prevBeaconBalanceGwei;
+    }
+
+    /**
+     * @param srcPubkey the pubkey of the source validator for the consolidation
+     * @param targetPubkey the pubkey of the target validator for the consolidation
+     * @dev Note that if srcPubkey == targetPubkey, this is a "switch request," and will
+     * change the validator's withdrawal credential type from 0x01 to 0x02.
+     * For more notes on usage, see `requestConsolidation`
+     */
+    struct ConsolidationRequest {
+        bytes srcPubkey;
+        bytes targetPubkey;
+    }
+
+    /**
+     * @param pubkey the pubkey of the validator to withdraw from
+     * @param amountGwei the amount (in gwei) to withdraw from the beacon chain to the pod
+     * @dev Note that if amountGwei == 0, this is a "full exit request," and will fully exit
+     * the validator to the pod.
+     * For more notes on usage, see `requestWithdrawal`
+     */
+    struct WithdrawalRequest {
+        bytes pubkey;
+        uint64 amountGwei;
     }
 }
 
@@ -132,6 +169,18 @@ interface IEigenPodEvents is IEigenPodTypes {
 
     /// @notice Emitted when a validaor is proven to have 0 balance at a given checkpoint
     event ValidatorWithdrawn(uint64 indexed checkpointTimestamp, uint40 indexed validatorIndex);
+
+    /// @notice Emitted when a consolidation request is initiated where source == target
+    event SwitchToCompoundingRequested(bytes32 indexed validatorPubkeyHash);
+
+    /// @notice Emitted when a standard consolidation request is initiated
+    event ConsolidationRequested(bytes32 indexed sourcePubkeyHash, bytes32 indexed targetPubkeyHash);
+
+    /// @notice Emitted when a withdrawal request is initiated where request.amountGwei == 0
+    event ExitRequested(bytes32 indexed validatorPubkeyHash);
+
+    /// @notice Emitted when a partial withdrawal request is initiated
+    event WithdrawalRequested(bytes32 indexed validatorPubkeyHash, uint64 withdrawalAmountGwei);
 }
 
 /**
@@ -249,6 +298,98 @@ interface IEigenPod is IEigenPodErrors, IEigenPodEvents, ISemVerMixin {
         BeaconChainProofs.ValidatorProof calldata proof
     ) external;
 
+    /// @notice Allows the owner or proof submitter to initiate one or more requests to
+    /// consolidate their validators on the beacon chain.
+    /// @param requests An array of requests consisting of the source and target pubkeys
+    /// of the validators to be consolidated
+    /// @dev Both the source and target validator MUST have active withdrawal credentials
+    /// pointed at the pod
+    /// @dev The consolidation request predeploy requires a fee is sent with each request;
+    /// this is pulled from msg.value. After submitting all requests, any remaining fee is
+    /// refunded to the caller by calling its fallback function.
+    /// @dev This contract exposes `getConsolidationRequestFee` to query the current fee for
+    /// a single request. If submitting multiple requests in a single block, the total fee
+    /// is equal to (fee * requests.length). This fee is updated at the end of each block.
+    ///
+    /// (See https://eips.ethereum.org/EIPS/eip-7251#fee-calculation for details)
+    ///
+    /// @dev Note on beacon chain behavior:
+    /// - If request.srcPubkey == request.targetPubkey, this is a "switch" consolidation. Once
+    ///   processed on the beacon chain, the validator's withdrawal credentials will be changed
+    ///   to compounding (0x02).
+    /// - The rest of the notes assume src != target.
+    /// - The target validator MUST already have 0x02 credentials. The source validator can have either.
+    /// - Consoldiation sets the source validator's exit_epoch and withdrawable_epoch, similar to an exit.
+    ///   When the exit epoch is reached, an epoch sweep will process the consolidation and transfer balance
+    ///   from the source to the target validator.
+    /// - Consolidation transfers min(srcValidator.effective_balance, state.balance[srcIndex]) to the target.
+    ///   This may not be the entirety of the source validator's balance; any remainder will be moved to the
+    ///   pod when hit by a subsequent withdrawal sweep.
+    ///
+    /// @dev Note that consolidation requests CAN FAIL for a variety of reasons. Failures occur when the request
+    /// is processed on the beacon chain, and are invisible to the pod. The pod and predeploy cannot guarantee
+    /// a request will succeed; it's up to the pod owner to determine this for themselves. If your request fails,
+    /// you can retry by initiating another request via this method.
+    ///
+    /// Some requirements that are NOT checked by the pod:
+    /// - If request.srcPubkey == request.targetPubkey, the validator MUST have 0x01 credentials
+    /// - If request.srcPubkey != request.targetPubkey, the target validator MUST have 0x02 credentials
+    /// - Both the source and target validators MUST be active and MUST NOT have initiated exits
+    /// - The source validator MUST NOT have pending partial withdrawal requests (via `requestWithdrawal`)
+    /// - If the source validator is slashed after requesting consolidation (but before processing),
+    ///   the consolidation will be skipped.
+    ///
+    /// For further reference, see consolidation processing at block and epoch boundaries:
+    /// - Block: https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#new-process_consolidation_request
+    /// - Epoch: https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#new-process_pending_consolidations
+    function requestConsolidation(
+        ConsolidationRequest[] calldata requests
+    ) external payable;
+
+    /// @notice Allows the owner or proof submitter to initiate one or more requests to
+    /// withdraw funds from validators on the beacon chain.
+    /// @param requests An array of requests consisting of the source validator and an
+    /// amount to withdraw
+    /// @dev The withdrawal request predeploy requires a fee is sent with each request;
+    /// this is pulled from msg.value. After submitting all requests, any remaining fee is
+    /// refunded to the caller by calling its fallback function.
+    /// @dev This contract exposes `getWithdrawalRequestFee` to query the current fee for
+    /// a single request. If submitting multiple requests in a single block, the total fee
+    /// is equal to (fee * requests.length). This fee is updated at the end of each block.
+    ///
+    /// (See https://eips.ethereum.org/EIPS/eip-7002#fee-update-rule for details)
+    ///
+    /// @dev Note on beacon chain behavior:
+    /// - Withdrawal requests have two types: full exit requests, and partial exit requests.
+    ///   Partial exit requests will be skipped if the validator has 0x01 withdrawal credentials.
+    ///   If you want your validators to have access to partial exits, use `requestConsolidation`
+    ///   to change their withdrawal credentials to compounding (0x02).
+    /// - If request.amount == 0, this is a FULL exit request. A full exit request initiates a
+    ///   standard validator exit.
+    /// - Other amounts are treated as PARTIAL exit requests. A partial exit request will NOT result
+    ///   in a validator with less than 32 ETH balance. Any requested amount above this is ignored.
+    /// - The actual amount withdrawn for a partial exit is given by the formula:
+    ///   min(request.amount, state.balances[vIdx] - 32 ETH - pending_balance_to_withdraw)
+    ///   (where `pending_balance_to_withdraw` is the sum of any outstanding partial exit requests)
+    ///   (Note that this means you may request more than is actually withdrawn!)
+    ///
+    /// @dev Note that withdrawal requests CAN FAIL for a variety of reasons. Failures occur when the request
+    /// is processed on the beacon chain, and are invisible to the pod. The pod and predeploy cannot guarantee
+    /// a request will succeed; it's up to the pod owner to determine this for themselves. If your request fails,
+    /// you can retry by initiating another request via this method.
+    ///
+    /// Some requirements that are NOT checked by the pod:
+    /// - request.pubkey MUST be a valid validator pubkey
+    /// - request.pubkey MUST belong to a validator whose withdrawal credentials are this pod
+    /// - If request.amount is for a partial exit, the validator MUST have 0x02 withdrawal credentials
+    /// - If request.amount is for a full exit, the validator MUST NOT have any pending partial exits
+    /// - The validator MUST be active and MUST NOT have initiated exit
+    ///
+    /// For further reference: https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#new-process_withdrawal_request
+    function requestWithdrawal(
+        WithdrawalRequest[] calldata requests
+    ) external payable;
+
     /// @notice called by owner of a pod to remove any ERC20s deposited in the pod
     function recoverTokens(IERC20[] memory tokenList, uint256[] memory amountsToWithdraw, address recipient) external;
 
@@ -355,4 +496,14 @@ interface IEigenPod is IEigenPodErrors, IEigenPodEvents, ISemVerMixin {
     function getParentBlockRoot(
         uint64 timestamp
     ) external view returns (bytes32);
+
+    /// @notice Returns the fee required to add a consolidation request to the EIP-7251 predeploy this block.
+    /// @dev Note that the predeploy updates its fee every block according to https://eips.ethereum.org/EIPS/eip-7251#fee-calculation
+    /// Consider overestimating the amount sent to ensure the fee does not update before your transaction.
+    function getConsolidationRequestFee() external view returns (uint256);
+
+    /// @notice Returns the current fee required to add a withdrawal request to the EIP-7002 predeploy.
+    /// @dev Note that the predeploy updates its fee every block according to https://eips.ethereum.org/EIPS/eip-7002#fee-update-rule
+    /// Consider overestimating the amount sent to ensure the fee does not update before your transaction.
+    function getWithdrawalRequestFee() external view returns (uint256);
 }

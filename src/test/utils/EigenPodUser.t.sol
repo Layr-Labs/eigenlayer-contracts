@@ -12,10 +12,6 @@ import "src/test/integration/TimeMachine.t.sol";
 import "src/test/integration/mocks/BeaconChainMock.t.sol";
 import "src/test/utils/Logger.t.sol";
 
-struct Validator {
-    uint40 index;
-}
-
 interface IUserDeployer {
     function timeMachine() external view returns (TimeMachine);
     function beaconChain() external view returns (BeaconChainMock);
