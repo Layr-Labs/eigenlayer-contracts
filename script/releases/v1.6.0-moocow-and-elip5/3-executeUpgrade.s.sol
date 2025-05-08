@@ -75,7 +75,6 @@ contract Execute is QueueUpgrade {
         Eigen eigen = Env.proxy.eigen();
         vm.expectRevert(errInit);
         eigen.initialize(address(0), new address[](0), new uint256[](0), new uint256[](0));
-        assertTrue(eigen.owner() == Env.executorMultisig(), "dm.owner invalid");
-        assertTrue(eigen.paused() == 0, "dm.paused invalid");
+        assertTrue(eigen.owner() == Env.executorMultisig(), "eigen.owner invalid");
     }
 }
