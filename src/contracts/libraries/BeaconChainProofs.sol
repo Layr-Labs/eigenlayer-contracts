@@ -18,14 +18,14 @@ library BeaconChainProofs {
     error InvalidValidatorFieldsLength();
 
     /// @notice Heights of various merkle trees in the beacon chain
-    /// - beaconBlockRoot
-    /// |                                             HEIGHT: BEACON_BLOCK_HEADER_TREE_HEIGHT
-    /// -- beaconStateRoot
-    /// |                                             HEIGHT: BEACON_STATE_TREE_HEIGHT
+    ///         beaconBlockRoot
+    ///                |                              HEIGHT: BEACON_BLOCK_HEADER_TREE_HEIGHT
+    ///         beaconStateRoot
+    ///        /               \                      HEIGHT: BEACON_STATE_TREE_HEIGHT
     /// validatorContainerRoot, balanceContainerRoot
-    /// |                       |                     HEIGHT: BALANCE_TREE_HEIGHT
-    /// |                       individual balances
-    /// |                                             HEIGHT: VALIDATOR_TREE_HEIGHT
+    ///          |                       |            HEIGHT: BALANCE_TREE_HEIGHT
+    ///          |              individual balances
+    ///          |                                    HEIGHT: VALIDATOR_TREE_HEIGHT
     /// individual validators
     uint256 internal constant BEACON_BLOCK_HEADER_TREE_HEIGHT = 3;
     uint256 internal constant DENEB_BEACON_STATE_TREE_HEIGHT = 5;

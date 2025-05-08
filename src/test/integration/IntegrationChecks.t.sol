@@ -182,6 +182,15 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Removed_ActiveValidators(staker, exitedValidators, "exited validators should each be WITHDRAWN");
     }
 
+    function check_CompleteCheckpoint_WithConsolidations_State(User staker, uint40[] memory consolidatedValidators) internal {
+        check_CompleteCheckpoint_State(staker);
+
+        assert_Snap_Unchanged_Staker_DepositShares(staker, "staker should not have changed shares");
+        assert_Snap_Unchanged_WithdrawableGwei(staker, "withdrawal gwei should not have increased");
+        assert_Snap_Removed_ActiveValidatorCount(staker, consolidatedValidators.length, "should have decreased active validator count");
+        assert_Snap_Removed_ActiveValidators(staker, consolidatedValidators, "consolidated validators should each be WITHDRAWN");
+    }
+
     function check_CompleteCheckpoint_ZeroBalanceDelta_State(User staker) internal {
         check_CompleteCheckpoint_State(staker);
 
