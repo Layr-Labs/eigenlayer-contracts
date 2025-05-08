@@ -143,7 +143,7 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationCheckUtils {
         // 6. redeposit (start/complete checkpoint or verifyWC)
         if (_randBool()) {
             // Verify WC
-            (validators, beaconBalanceGwei,) = staker.startValidators(uint8(_randUint(3, 10)));
+            (validators, beaconBalanceGwei) = staker.startETH1Validators(uint8(_randUint(3, 10)));
             beaconChain.advanceEpoch_NoRewards();
 
             staker.verifyWithdrawalCredentials(validators);
@@ -226,7 +226,7 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationCheckUtils {
 
         // 7. deposit/verify withdrawal credentials
         // randomly startup 1-10 validators
-        (validators, beaconBalanceGwei,) = staker.startValidators(uint8(_randUint(1, 10)));
+        (validators, beaconBalanceGwei) = staker.startETH1Validators(uint8(_randUint(1, 10)));
         beaconChain.advanceEpoch_NoRewards();
         staker.verifyWithdrawalCredentials(validators);
         check_VerifyWC_State(staker, validators, beaconBalanceGwei);
