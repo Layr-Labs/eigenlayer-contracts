@@ -5,10 +5,6 @@ permissions:
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - 'script/**'
-      - '.github/workflows/validate-deployment-scripts.yml'
   pull_request:
     paths:
       - 'script/**'
