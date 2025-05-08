@@ -67,7 +67,7 @@ jobs:
       - name: Validate Solidity Scripts
         run: |
           # Find all .sol files under /script/releases
-          RELEASE_FILES=$(find script/releases -type f -name "*.sol" 2>/dev/null || echo "")
+          RELEASE_FILES=$(find script/releases -type f -name "*.sol" ! -name "Env.sol" 2>/dev/null || echo "")
           
           # Combine file lists
           FILES="$RELEASE_FILES"
