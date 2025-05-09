@@ -1094,7 +1094,7 @@ contract StrategyManagerUnitTests_increaseBurnableShares is StrategyManagerUnitT
         IStrategy strategy = dummyStrat;
         cheats.prank(address(delegationManagerMock));
         cheats.expectEmit(true, true, true, true, address(strategyManager));
-        emit BurnableSharesIncreased(defaultOperatorSet, defaultSlashId, strategy, addedSharesToBurn);
+        emit BurnableSharesIncreased(defaultOperatorSet, defaultSlashId, strategy, existingBurnableShares);
         strategyManager.increaseBurnableShares(defaultOperatorSet, defaultSlashId, strategy, existingBurnableShares);
         assertEq(
             strategyManager.getBurnableShares(strategy),

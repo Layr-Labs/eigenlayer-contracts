@@ -74,10 +74,10 @@ contract AllocationManager is
     {
         // Check that the operator set exists and the operator is registered to it
         OperatorSet memory operatorSet = OperatorSet(avs, params.operatorSetId);
-        
+
         _checkArrayLengthsMatch(params.strategies.length, params.wadsToSlash.length);
         _checkIsOperatorSet(operatorSet);
-        
+
         require(isOperatorSlashable(params.operator, operatorSet), OperatorNotSlashable());
 
         // Increment the slash count for the operator set, first `slashId` equals 1.
@@ -330,7 +330,6 @@ contract AllocationManager is
      *                         INTERNAL FUNCTIONS
      *
      */
-
     function _slashOperator(
         SlashingParams calldata params,
         OperatorSet memory operatorSet,
@@ -355,6 +354,9 @@ contract AllocationManager is
                 _operatorSetStrategies[operatorSet.key()].contains(address(params.strategies[i])),
                 StrategyNotInOperatorSet()
             );
+
+            _burnOrRedistributionTimestamp[operatorSet.key()][params.strategies[i]][slashId] =
+                uint32(block.timestamp) + BURN_OR_REDISTRIBUTION_DELAY;
 
             // 1. Get the operator's allocation info for the strategy and operator set
             (StrategyInfo memory info, Allocation memory allocation) =
@@ -1002,5 +1004,13 @@ contract AllocationManager is
         OperatorSet memory operatorSet
     ) external view returns (uint256) {
         return _slashCount[operatorSet.key()];
+    }
+
+    function getBurnOrRedistributionTimestamp(
+        OperatorSet calldata operatorSet,
+        IStrategy strategy,
+        uint256 slashId
+    ) external view returns (uint32) {
+        return _burnOrRedistributionTimestamp[operatorSet.key()][strategy][slashId];
     }
 }

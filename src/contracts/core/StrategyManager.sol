@@ -151,9 +151,14 @@ contract StrategyManager is
         IStrategy strategy,
         uint256 addedSharesToBurn
     ) external onlyDelegationManager nonReentrant {
+        // NOTE: If we plan to deprecate `burnableShares`, this should be removed.
+        EnumerableMap.AddressToUintMap storage burnableShares = _burnableShares;
+        (, uint256 currentShares) = burnableShares.tryGet(address(strategy));
+        burnableShares.set(address(strategy), currentShares + addedSharesToBurn);
+
         EnumerableMap.AddressToUintMap storage operatorSetBurnableShares =
             _operatorSetBurnableShares[operatorSet.key()][slashId];
-        (, uint256 currentShares) = operatorSetBurnableShares.tryGet(address(strategy));
+        (, currentShares) = operatorSetBurnableShares.tryGet(address(strategy));
         operatorSetBurnableShares.set(address(strategy), currentShares + addedSharesToBurn);
 
         emit BurnableSharesIncreased(operatorSet, slashId, strategy, addedSharesToBurn);
@@ -188,6 +193,11 @@ contract StrategyManager is
             _operatorSetBurnableShares[operatorSet.key()][slashId];
         (, uint256 sharesToBurn) = operatorSetBurnableShares.tryGet(address(strategy));
         operatorSetBurnableShares.remove(address(strategy));
+
+        require(
+            block.timestamp >= allocationManager.getBurnOrRedistributionTimestamp(operatorSet, strategy, slashId),
+            BurnOrRedistributionDelayNotElapsed()
+        );
 
         _burnShares({
             operatorSet: operatorSet,

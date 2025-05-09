@@ -9,6 +9,8 @@ import "./ISemVerMixin.sol";
 import {OperatorSet} from "../libraries/OperatorSetLib.sol";
 
 interface IStrategyManagerErrors {
+    /// @dev Thrown when attempting to burn or redistribute shares before the delay period has elapsed
+    error BurnOrRedistributionDelayNotElapsed();
     /// @dev Thrown when total strategies deployed exceeds max.
     error MaxStrategiesExceeded();
     /// @dev Thrown when call attempted from address that's not delegation manager.
