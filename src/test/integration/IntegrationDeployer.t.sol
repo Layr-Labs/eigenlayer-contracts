@@ -1,126 +1,89 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-// Imports
-import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
-import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
-import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
-import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import "forge-std/Test.sol";
+import {MockERC20} from "forge-std/mocks/MockERC20.sol";
 
-import "src/contracts/core/DelegationManager.sol";
-import "src/contracts/core/AllocationManager.sol";
-import "src/contracts/core/StrategyManager.sol";
-import "src/contracts/strategies/StrategyFactory.sol";
-import "src/contracts/strategies/StrategyBase.sol";
-import "src/contracts/strategies/StrategyBaseTVLLimits.sol";
-import "src/contracts/pods/EigenPodManager.sol";
-import "src/contracts/pods/EigenPod.sol";
-import "src/contracts/permissions/PauserRegistry.sol";
-import "src/contracts/permissions/PermissionController.sol";
-
-import "src/test/mocks/EmptyContract.sol";
-import "src/test/mocks/ETHDepositMock.sol";
-import "src/test/integration/mocks/BeaconChainMock.t.sol";
+import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import "@openzeppelin/contracts/governance/TimelockController.sol";
 
 import "src/test/integration/users/AVS.t.sol";
 import "src/test/integration/users/User.t.sol";
 import "src/test/integration/users/User_M1.t.sol";
 import "src/test/integration/users/User_M2.t.sol";
+import "src/test/mocks/BeaconChainMock.t.sol";
+import "src/test/mocks/EmptyContract.sol";
+import "src/test/utils/Constants.t.sol";
+import "src/test/Config.t.sol";
 
-import "script/utils/ExistingDeploymentParser.sol";
-
-IStrategy constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
-
-abstract contract IntegrationDeployer is ExistingDeploymentParser {
+abstract contract IntegrationDeployer is ConfigGetters, Logger {
+    using ConfigParser for *;
     using StdStyle for *;
     using ArrayLib for *;
 
-    // Fork ids for specific fork tests
-    bool isUpgraded;
-    uint mainnetForkBlock = 21_616_692; // Post Protocol Council upgrade
+    // TODO get rid of this storage
+    /// @dev AllocationManager
+    uint32 constant DEALLOCATION_DELAY = 50;
+    uint32 constant ALLOCATION_CONFIGURATION_DELAY = 75;
 
-    string version = "v9.9.9";
+    /// @dev DelegationManager
+    uint32 constant DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS = 50;
 
-    // Beacon chain genesis time when running locally
-    // Multiple of 12 for sanity's sake
-    uint64 constant GENESIS_TIME_LOCAL = 1 hours * 12;
-    uint64 constant GENESIS_TIME_MAINNET = 1_606_824_023;
-    uint64 BEACON_GENESIS_TIME; // set after forkType is decided
+    /// @dev RewardsCoordinator
+    uint32 constant REWARDS_COORDINATOR_MAX_REWARDS_DURATION = 6_048_000;
+    uint32 constant REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH = 7_776_000;
+    uint32 constant REWARDS_COORDINATOR_MAX_FUTURE_LENGTH = 2_592_000;
+    uint32 constant REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP = 1_710_979_200;
+    uint32 constant REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS = 86_400;
 
-    // Beacon chain deposit contract. The BeaconChainMock contract etchs ETHPOSDepositMock code here.
-    IETHPOSDeposit constant DEPOSIT_CONTRACT = IETHPOSDeposit(0x00000000219ab540356cBB839Cbe05303d7705Fa);
+    /// -----------------------------------------------------------------------
+    /// State
+    /// -----------------------------------------------------------------------
 
-    uint8 constant NUM_LST_STRATS = 32;
-    // Lists of strategies used in the system
-    //
-    // When we select random user assets, we use the `assetType` to determine
-    // which of these lists to select user assets from.
-    IStrategy[] lstStrats;
-    IStrategy[] ethStrats; // only has one strat tbh
-    IStrategy[] allStrats; // just a combination of the above 2 lists
-    IERC20[] allTokens; // `allStrats`, but contains all of the underlying tokens instead
-    uint maxUniqueAssetsHeld;
+    /// @dev Returns the semver for test environments.
+    string constant SEMVER = "v9.9.9-test";
 
-    // If a token is in this mapping, then we will ignore this LST as it causes issues with reading balanceOf
+    /// @notice Returns the genesis time for the beacon chain. Depends on the fork type.
+    uint64 public BEACON_GENESIS_TIME;
+
+    /// @notice Returns whether the contracts have been upgraded or not.
+    bool public isUpgraded;
+    /// @notice Returns the allowed asset types for the tests.
+    uint public assetTypes = HOLDS_LST | HOLDS_ETH | HOLDS_ALL;
+    /// @notice Returns types of users to be randomly selected during tests
+    uint public userTypes = DEFAULT | ALT_METHODS;
+
+    /// @notice Returns an array of deployed LST strategies.
+    IStrategy[] public lstStrats;
+    /// @notice Returns an array of all deployed strategies.
+    IStrategy[] public allStrats;
+    /// @notice Returns an array of all underlying tokens corresponding to strategies in `allStrats`.
+    IERC20[] public allTokens;
+
+    /// @notice Returns the maximum number of unique assets a user holds.
+    uint public maxUniqueAssetsHeld;
+    /// @dev Returns true if a token should be excluded from testing
+    /// If a token is in this mapping, we will ignore this LST as it causes issues with reading balanceOf
     mapping(address => bool) public tokensNotTested;
 
-    // Mock Contracts to deploy
-    TimeMachine public timeMachine;
-    BeaconChainMock public beaconChain;
+    EmptyContract public emptyContract;
 
-    // Admin Addresses
-    address constant pauser = address(555);
-    address constant unpauser = address(556);
+    string public profile;
 
-    // Randomness state vars
-    bytes32 random;
-    // After calling `_configRand`, these are the allowed "variants" on users that will
-    // be returned from `_randUser`.
-    bytes assetTypes;
-    bytes userTypes;
-    // Set only once in setUp, if FORK_MAINNET env is set
-    uint forkType;
+    ForkConfig public forkConfig;
 
-    /// @dev used to configure randomness and default user/asset types
-    ///
-    /// Tests that want alternate user/asset types can still use this modifier,
-    /// and then configure user/asset types individually using the methods:
-    /// _configAssetTypes(...)
-    /// _configUserTypes(...)
-    ///
-    /// (Alternatively, this modifier can be overwritten)
-    modifier rand(uint24 r) virtual {
-        _configRand({_randomSeed: r, _assetTypes: HOLDS_LST | HOLDS_ETH | HOLDS_ALL, _userTypes: DEFAULT | ALT_METHODS});
-
-        // Used to create shared setups between tests
-        _init();
-
-        _;
-    }
+    /// -----------------------------------------------------------------------
+    /// Setup
+    /// -----------------------------------------------------------------------
 
     constructor() {
-        address stETH_Holesky = 0x3F1c547b21f65e10480dE3ad8E19fAAC46C95034;
-        address stETH_Mainnet = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
-        address OETH_Mainnet = 0x856c4Efb76C1D1AE02e20CEB03A2A6a08b0b8dC3;
-        address osETH_Holesky = 0xF603c5A3F774F05d4D848A9bB139809790890864;
-        address osETH_Mainnet = 0xf1C9acDc66974dFB6dEcB12aA385b9cD01190E38;
-        address cbETH_Holesky = 0x8720095Fa5739Ab051799211B146a2EEE4Dd8B37;
-        tokensNotTested[stETH_Holesky] = true;
-        tokensNotTested[stETH_Mainnet] = true;
-        tokensNotTested[OETH_Mainnet] = true;
-        tokensNotTested[osETH_Holesky] = true;
-        tokensNotTested[osETH_Mainnet] = true;
-        tokensNotTested[cbETH_Holesky] = true;
-
+        // QUESTION: Why is this needed? Shouldn't we have coverage for weird ERC20s?
+        tokensNotTested[address(0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84)] = true; // stETH mainnet
+        tokensNotTested[address(0x856c4Efb76C1D1AE02e20CEB03A2A6a08b0b8dC3)] = true; // oETH mainnet
+        tokensNotTested[address(0xf1C9acDc66974dFB6dEcB12aA385b9cD01190E38)] = true; // osETH mainnet
         // Use current contracts by default. Upgrade tests are only run with mainnet fork tests
         // using the `UpgradeTest.t.sol` mixin.
         isUpgraded = true;
-    }
-
-    function NAME() public view virtual override returns (string memory) {
-        return "Integration Deployer";
     }
 
     /**
@@ -131,79 +94,105 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
      * Note that forkIds are also created so you can make explicit fork tests using cheats.selectFork(forkId)
      */
     function setUp() public virtual {
-        bool forkMainnet = isForktest();
-
-        if (forkMainnet) {
-            forkType = MAINNET;
-            _setUpMainnet();
-        } else {
-            forkType = LOCAL;
-            _setUpLocal();
-        }
+        _setUp(true);
     }
 
-    /// @dev Used to create shared setup between tests. This method is called
-    /// when the `rand` modifier is run, before a test starts
+    function _setUp(bool upgrade) internal virtual {
+        profile = FOUNDRY_PROFILE();
+        forkConfig = ConfigParser.parseForkConfig(profile);
+        emptyContract = new EmptyContract();
+
+        if (eq(profile, "default") || eq(profile, "coverage") || eq(profile, "medium")) {
+            // Assumes nothing has been deployed yet.
+            _setUpLocal();
+        } else if (eq(profile, "forktest-zeus")) {
+            // Assumes the proxy contracts have already been deployed.
+            config = ConfigParser.parseZeus();
+            config.label();
+            _setUpFork(upgrade);
+        } else {
+            // Assumes the proxy contracts have already been deployed.
+            config = ConfigParser.parse(string.concat("script/configs/", profile, ".toml"));
+            config.label();
+            _setUpFork(upgrade);
+        }
+
+        _init();
+    }
+
+    /// -----------------------------------------------------------------------
+    /// Helpers
+    /// -----------------------------------------------------------------------
+
+    /// @dev Override this method in derived test contracts to implement custom initialization logic.
+    /// This method is called at the end of the setUp() function after all contracts are deployed and initialized.
+    /// It allows test contracts to perform additional setup steps without having to override the entire setUp() function.
     function _init() internal virtual {
         return;
     }
 
-    /**
-     * env FOUNDRY_PROFILE=forktest forge t --mc Integration
-     *
-     * Running foundry like this will trigger the fork test profile,
-     * lowering fuzz runs and using a remote RPC to test against mainnet state
-     */
-    function isForktest() public view returns (bool) {
-        return _hash("forktest") == _hash(cheats.envOr(string("FOUNDRY_PROFILE"), string("default")));
+    /// @dev Configures the possible asset and user types for the random users.
+    function _configRand(uint _assetTypes, uint _userTypes) internal virtual {
+        _configAssetTypes(_assetTypes);
+        _configUserTypes(_userTypes);
     }
 
-    /// Deploy EigenLayer locally
-    function _setUpLocal() public virtual noTracing {
+    /// @dev Configures the possible asset types for the random users.
+    function _configAssetTypes(uint _assetTypes) internal virtual {
+        assertTrue((assetTypes = _assetTypes) != 0, "_configAssetTypes: no asset types selected");
+    }
+
+    /// @dev Configures the possible user types for the random users.
+    function _configUserTypes(uint _userTypes) internal virtual {
+        assertTrue((userTypes = _userTypes) != 0, "_configUserTypes: no user types selected");
+    }
+
+    /// @dev Configures the maximum number of unique assets a user can hold.
+    function _configAssetAmounts(uint _maxUniqueAssetsHeld) internal virtual {
+        if (_maxUniqueAssetsHeld > allStrats.length) _maxUniqueAssetsHeld = allStrats.length;
+        assertTrue((maxUniqueAssetsHeld = _maxUniqueAssetsHeld) != 0, "_configAssetAmounts: invalid 0");
+    }
+
+    function FOUNDRY_PROFILE() internal view returns (string memory) {
+        return cheats.envOr(string("FOUNDRY_PROFILE"), string("default"));
+    }
+
+    function eq(string memory a, string memory b) internal pure returns (bool) {
+        return keccak256(bytes(a)) == keccak256(bytes(b));
+    }
+
+    /// -----------------------------------------------------------------------
+    /// Environment Setup
+    /// -----------------------------------------------------------------------
+
+    /// @dev Sets up the integration tests for local.
+    function _setUpLocal() public virtual {
         console.log("Setting up `%s` integration tests:", "LOCAL".yellow().bold());
 
-        // Deploy ProxyAdmin
-        eigenLayerProxyAdmin = new ProxyAdmin();
-        executorMultisig = address(eigenLayerProxyAdmin.owner());
-
-        // Deploy PauserRegistry
-        address[] memory pausers = new address[](1);
-        pausers[0] = pauser;
-        eigenLayerPauserReg = new PauserRegistry(pausers, unpauser);
-
-        // Deploy mocks
-        emptyContract = new EmptyContract();
-
-        // Matching parameters to testnet
-        DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS = 50;
-        DEALLOCATION_DELAY = 50;
-        ALLOCATION_CONFIGURATION_DELAY = 75;
-
-        REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS = 86_400;
-        REWARDS_COORDINATOR_MAX_REWARDS_DURATION = 6_048_000;
-        REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH = 7_776_000;
-        REWARDS_COORDINATOR_MAX_FUTURE_LENGTH = 2_592_000;
-        REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP = 1_710_979_200;
+        // Deploy ProxyAdmin, PauserRegistry, and executorMultisig.
+        config.governance.proxyAdmin = new ProxyAdmin();
+        config.governance.pauserRegistry = new PauserRegistry(PAUSER.toArray(), UNPAUSER);
+        config.governance.executorMultisig = address(proxyAdmin().owner());
 
         _deployProxies();
-        _deployImplementations();
         _upgradeProxies();
         _initializeProxies();
 
         // Place native ETH first in `allStrats`
-        // This ensures when we select a nonzero number of strategies from this array, we always
-        // have beacon chain ETH
-        ethStrats.push(BEACONCHAIN_ETH_STRAT);
+        // This ensures when we select a nonzero number of strategies from this array, we always have beacon chain ETH.
         allStrats.push(BEACONCHAIN_ETH_STRAT);
         allTokens.push(NATIVE_ETH);
 
-        // Deploy and configure strategies and tokens
+        // Deploy and configure strategies and tokens, deploy half of them using the strategy factory.
         for (uint i = 1; i < NUM_LST_STRATS + 1; ++i) {
             string memory name = string.concat("LST-Strat", cheats.toString(i), " token");
             string memory symbol = string.concat("lstStrat", cheats.toString(i));
-            // Deploy half of the strategies using the factory.
             _newStrategyAndToken(name, symbol, 10e50, address(this), i % 2 == 0);
         }
+
+        // Whitelist the strategies
+        cheats.prank(strategyManager().strategyWhitelister());
+        strategyManager().addStrategiesToDepositWhitelist(allStrats);
 
         maxUniqueAssetsHeld = allStrats.length;
 
@@ -211,423 +200,339 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         BEACON_GENESIS_TIME = GENESIS_TIME_LOCAL;
         cheats.warp(BEACON_GENESIS_TIME);
         cheats.roll(10_000);
-        timeMachine = new TimeMachine();
-        beaconChain = new BeaconChainMock(eigenPodManager, BEACON_GENESIS_TIME);
-
+        _deployTimeMachineAndBeaconChain();
         // Set the `pectraForkTimestamp` on the EigenPodManager. Use pectra state
-        cheats.startPrank(executorMultisig);
-        eigenPodManager.setProofTimestampSetter(executorMultisig);
-        eigenPodManager.setPectraForkTimestamp(BEACON_GENESIS_TIME);
+        cheats.startPrank(executorMultisig());
+        eigenPodManager().setProofTimestampSetter(executorMultisig());
+        eigenPodManager().setPectraForkTimestamp(BEACON_GENESIS_TIME);
         cheats.stopPrank();
     }
 
-    /// Parse existing contracts from mainnet
-    function _setUpMainnet() public virtual noTracing {
-        console.log("Setting up `%s` integration tests:", "MAINNET_FORK".green().bold());
-        console.log("RPC:", cheats.rpcUrl("mainnet"));
-        console.log("Block:", mainnetForkBlock);
+    function _setUpFork() public virtual {
+        _setUpFork(true);
+    }
 
-        cheats.createSelectFork(cheats.rpcUrl("mainnet"), mainnetForkBlock);
+    /// @dev Sets up the integration tests for mainnet.
+    function _setUpFork(bool upgrade) public virtual {
+        if (forkConfig.forkBlock != 0) cheats.createSelectFork(cheats.rpcUrl(profile), forkConfig.forkBlock);
+        else cheats.createSelectFork(cheats.rpcUrl(profile));
 
-        string memory deploymentInfoPath = "script/configs/mainnet/mainnet-addresses.config.json";
-        _parseDeployedContracts(deploymentInfoPath);
-        string memory existingDeploymentParams = "script/configs/mainnet.json";
-        _parseParamsForIntegrationUpgrade(existingDeploymentParams);
+        if (forkConfig.upgradeBeforeTesting && upgrade) {
+            if (forkConfig.timelockPayload.length > 0 && eq(profile, "mainnet")) {
+                _executeTimelockUpgrade();
+            } else {
+                _deployProxies(); // Only deploys what doesn't exist.
+                _upgradeProxies();
+            }
+        }
 
-        // Place native ETH first in `allStrats`
-        // This ensures when we select a nonzero number of strategies from this array, we always
-        // have beacon chain ETH
-        ethStrats.push(BEACONCHAIN_ETH_STRAT);
-        allStrats.push(BEACONCHAIN_ETH_STRAT);
-        allTokens.push(NATIVE_ETH);
+        if (forkConfig.supportEigenPodTests) {
+            allStrats.push(BEACONCHAIN_ETH_STRAT);
+            allTokens.push(NATIVE_ETH);
+            config.strategies.strategyAddresses.push(BEACONCHAIN_ETH_STRAT);
+        }
 
-        // Add deployed strategies to lstStrats and allStrats
-        for (uint i; i < deployedStrategyArray.length; i++) {
-            IStrategy strategy = IStrategy(deployedStrategyArray[i]);
+        uint n = totalStrategies();
+        for (uint i; i < n; ++i) {
+            IStrategy strategy = strategyAddresses(i);
 
-            if (tokensNotTested[address(strategy.underlyingToken())]) continue;
+            if (strategy == BEACONCHAIN_ETH_STRAT) continue;
+            IERC20 token = strategy.underlyingToken();
+            if (tokensNotTested[address(token)]) continue;
 
             // Add to lstStrats and allStrats
             lstStrats.push(strategy);
             allStrats.push(strategy);
-            allTokens.push(strategy.underlyingToken());
+            allTokens.push(token);
         }
 
         maxUniqueAssetsHeld = allStrats.length;
 
         // Create time machine and mock beacon chain
         BEACON_GENESIS_TIME = GENESIS_TIME_MAINNET;
-        timeMachine = new TimeMachine();
-        beaconChain = new BeaconChainMock(eigenPodManager, BEACON_GENESIS_TIME);
+        _deployTimeMachineAndBeaconChain();
 
-        // Since we haven't done the slashing upgrade on mainnet yet, upgrade mainnet contracts
-        // prior to test. `isUpgraded` is true by default, but is set to false in `UpgradeTest.t.sol`
-        if (isUpgraded) {
-            _upgradeMainnetContracts();
+        if (eq(profile, "mainnet") && isUpgraded) _upgradeMainnetContracts();
 
+        // Mainnet doesn't yet support this.
+        if (isUpgraded && forkConfig.supportEigenPodTests) {
             // Set the `pectraForkTimestamp` on the EigenPodManager. Use pectra state
-            cheats.startPrank(executorMultisig);
-            eigenPodManager.setProofTimestampSetter(executorMultisig);
-            eigenPodManager.setPectraForkTimestamp(BEACON_GENESIS_TIME);
+            cheats.startPrank(executorMultisig());
+            eigenPodManager().setProofTimestampSetter(executorMultisig());
+            eigenPodManager().setPectraForkTimestamp(BEACON_GENESIS_TIME);
             cheats.stopPrank();
         }
     }
 
+    /// @dev Upgrades the mainnet contracts.
     function _upgradeMainnetContracts() public virtual {
-        cheats.startPrank(address(executorMultisig));
-
-        // First, deploy the new contracts as empty contracts
-        emptyContract = new EmptyContract();
-        allocationManager =
-            AllocationManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
-        permissionController =
-            PermissionController(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
-
-        emit log_named_uint("EPM pause status", eigenPodManager.paused());
-
-        // Deploy new implementation contracts and upgrade all proxies to point to them
-        _deployImplementations();
+        cheats.startPrank(executorMultisig());
         _upgradeProxies();
-
-        emit log_named_uint("EPM pause status", eigenPodManager.paused());
-
-        // Initialize the newly-deployed proxy
-        allocationManager.initialize({initialOwner: executorMultisig, initialPausedStatus: 0});
-
         cheats.stopPrank();
     }
 
-    function _deployProxies() public {
-        delegationManager =
-            DelegationManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
-        strategyManager =
-            StrategyManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
-        eigenPodManager =
-            EigenPodManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
-        rewardsCoordinator =
-            RewardsCoordinator(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
-        avsDirectory = AVSDirectory(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
-        strategyFactory =
-            StrategyFactory(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
-        allocationManager =
-            AllocationManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
-        permissionController =
-            PermissionController(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
-        eigenPodBeacon = new UpgradeableBeacon(address(emptyContract));
-        strategyBeacon = new UpgradeableBeacon(address(emptyContract));
+    function _executeTimelockUpgrade() internal {
+        // Warp forward to elapse the timelock queue.
+        cheats.warp(block.timestamp + 21 days);
+
+        // Execute the timelock upgrade.
+        cheats.startPrank(protocolCouncil());
+        timelock().execute({target: executorMultisig(), value: 0, payload: forkConfig.timelockPayload, predecessor: 0, salt: 0});
+        cheats.stopPrank();
+
+        console.log("SIMULATED TIMELOCK UPGRADE".yellow().bold());
+
+        isUpgraded = true;
     }
 
-    /// Deploy an implementation contract for each contract in the system
-    function _deployImplementations() public {
-        allocationManagerImplementation = new AllocationManager(
-            delegationManager, eigenLayerPauserReg, permissionController, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY, version
-        );
-        permissionControllerImplementation = new PermissionController(version);
-        delegationManagerImplementation = new DelegationManager(
-            strategyManager,
-            eigenPodManager,
-            allocationManager,
-            eigenLayerPauserReg,
-            permissionController,
-            DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS,
-            version
-        );
-        strategyManagerImplementation = new StrategyManager(delegationManager, eigenLayerPauserReg, version);
-        rewardsCoordinatorImplementation = new RewardsCoordinator(
-            IRewardsCoordinatorTypes.RewardsCoordinatorConstructorParams({
-                delegationManager: delegationManager,
-                strategyManager: strategyManager,
-                allocationManager: allocationManager,
-                pauserRegistry: eigenLayerPauserReg,
-                permissionController: permissionController,
-                CALCULATION_INTERVAL_SECONDS: REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
-                MAX_REWARDS_DURATION: REWARDS_COORDINATOR_MAX_REWARDS_DURATION,
-                MAX_RETROACTIVE_LENGTH: REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH,
-                MAX_FUTURE_LENGTH: REWARDS_COORDINATOR_MAX_FUTURE_LENGTH,
-                GENESIS_REWARDS_TIMESTAMP: REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP,
-                version: version
-            })
-        );
-        avsDirectoryImplementation = new AVSDirectory(delegationManager, eigenLayerPauserReg, version);
-        eigenPodManagerImplementation =
-            new EigenPodManager(DEPOSIT_CONTRACT, eigenPodBeacon, delegationManager, eigenLayerPauserReg, "v9.9.9");
-        strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg, "v9.9.9");
+    /// -----------------------------------------------------------------------
+    ///
+    /// -----------------------------------------------------------------------
 
-        // Beacon implementations
-        eigenPodImplementation = new EigenPod(DEPOSIT_CONTRACT, eigenPodManager, BEACON_GENESIS_TIME, "v9.9.9");
-        baseStrategyImplementation = new StrategyBase(strategyManager, eigenLayerPauserReg, "v9.9.9");
-
-        // Pre-longtail StrategyBaseTVLLimits implementation
-        // TODO - need to update ExistingDeploymentParser
+    /// @dev Returns a new transparent proxy without an implementation set.
+    function _emptyProxy() internal returns (address) {
+        return address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin()), ""));
     }
 
-    function _upgradeProxies() public noTracing {
-        // DelegationManager
-        eigenLayerProxyAdmin.upgrade(
-            ITransparentUpgradeableProxy(payable(address(delegationManager))), address(delegationManagerImplementation)
-        );
+    /// @dev Upgrades a proxy to a new implementation.
+    function _upgradeProxy(address proxy, address implementation) internal {
+        proxyAdmin().upgrade(ITransparentUpgradeableProxy(payable(proxy)), implementation);
+    }
 
-        // StrategyManager
-        eigenLayerProxyAdmin.upgrade(
-            ITransparentUpgradeableProxy(payable(address(strategyManager))), address(strategyManagerImplementation)
-        );
-
-        // EigenPodManager
-        eigenLayerProxyAdmin.upgrade(
-            ITransparentUpgradeableProxy(payable(address(eigenPodManager))), address(eigenPodManagerImplementation)
-        );
-
-        // RewardsCoordinator
-        eigenLayerProxyAdmin.upgrade(
-            ITransparentUpgradeableProxy(payable(address(rewardsCoordinator))), address(rewardsCoordinatorImplementation)
-        );
-
-        // AVSDirectory
-        eigenLayerProxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(avsDirectory))), address(avsDirectoryImplementation));
-
-        // AllocationManager
-        eigenLayerProxyAdmin.upgrade(
-            ITransparentUpgradeableProxy(payable(address(allocationManager))), address(allocationManagerImplementation)
-        );
-
-        // PermissionController
-        eigenLayerProxyAdmin.upgrade(
-            ITransparentUpgradeableProxy(payable(address(permissionController))), address(permissionControllerImplementation)
-        );
-
-        // StrategyFactory
-        eigenLayerProxyAdmin.upgrade(
-            ITransparentUpgradeableProxy(payable(address(strategyFactory))), address(strategyFactoryImplementation)
-        );
-
-        // EigenPod beacon
-        eigenPodBeacon.upgradeTo(address(eigenPodImplementation));
-
-        // StrategyBase Beacon
-        strategyBeacon.upgradeTo(address(baseStrategyImplementation));
-
-        // Upgrade All deployed strategy contracts to new base strategy
-        for (uint i = 0; i < numStrategiesDeployed; i++) {
-            // Upgrade existing strategy
-            eigenLayerProxyAdmin.upgrade(
-                ITransparentUpgradeableProxy(payable(address(deployedStrategyArray[i]))), address(baseStrategyImplementation)
-            );
+    /// @dev Deploys a new transparent proxy without an implementation set for each contract in the system.
+    function _deployProxies() internal {
+        // Core contracts
+        if (address(config.core.allocationManager) == address(0)) config.core.allocationManager = AllocationManager(_emptyProxy());
+        if (address(config.core.avsDirectory) == address(0)) config.core.avsDirectory = AVSDirectory(_emptyProxy());
+        if (address(config.core.delegationManager) == address(0)) config.core.delegationManager = DelegationManager(_emptyProxy());
+        if (address(config.core.permissionController) == address(0)) config.core.permissionController = PermissionController(_emptyProxy());
+        if (address(config.core.rewardsCoordinator) == address(0)) config.core.rewardsCoordinator = RewardsCoordinator(_emptyProxy());
+        if (address(config.core.strategyManager) == address(0)) config.core.strategyManager = StrategyManager(_emptyProxy());
+        // Pod contracts
+        if (address(config.pods.eigenPodBeacon) == address(0)) config.pods.eigenPodBeacon = new UpgradeableBeacon(address(emptyContract));
+        if (address(config.pods.eigenPodManager) == address(0)) config.pods.eigenPodManager = EigenPodManager(_emptyProxy());
+        // Strategy contracts
+        if (address(config.strategies.strategyFactory) == address(0)) config.strategies.strategyFactory = StrategyFactory(_emptyProxy());
+        if (address(config.strategies.strategyFactoryBeacon) == address(0)) {
+            config.strategies.strategyFactoryBeacon = new UpgradeableBeacon(address(emptyContract));
         }
     }
 
-    function _initializeProxies() public noTracing {
-        delegationManager.initialize({initialOwner: executorMultisig, initialPausedStatus: 0});
+    /// @dev Upgrades all proxies to their implementation contracts.
+    function _upgradeProxies() public {
+        // Core contracts
+        _upgradeProxy(
+            address(allocationManager()),
+            address(
+                new AllocationManager(
+                    delegationManager(),
+                    pauserRegistry(),
+                    permissionController(),
+                    DEALLOCATION_DELAY,
+                    ALLOCATION_CONFIGURATION_DELAY,
+                    SEMVER
+                )
+            )
+        );
+        _upgradeProxy(address(avsDirectory()), address(new AVSDirectory(delegationManager(), pauserRegistry(), SEMVER)));
+        _upgradeProxy(
+            address(delegationManager()),
+            address(
+                new DelegationManager(
+                    strategyManager(),
+                    eigenPodManager(),
+                    allocationManager(),
+                    pauserRegistry(),
+                    permissionController(),
+                    DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS,
+                    SEMVER
+                )
+            )
+        );
+        _upgradeProxy(address(permissionController()), address(new PermissionController(SEMVER)));
+        _upgradeProxy(
+            address(rewardsCoordinator()),
+            address(
+                new RewardsCoordinator(
+                    IRewardsCoordinatorTypes.RewardsCoordinatorConstructorParams(
+                        delegationManager(),
+                        strategyManager(),
+                        allocationManager(),
+                        pauserRegistry(),
+                        permissionController(),
+                        REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
+                        REWARDS_COORDINATOR_MAX_REWARDS_DURATION,
+                        REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH,
+                        REWARDS_COORDINATOR_MAX_FUTURE_LENGTH,
+                        REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP,
+                        SEMVER
+                    )
+                )
+            )
+        );
+        _upgradeProxy(address(strategyManager()), address(new StrategyManager(delegationManager(), pauserRegistry(), SEMVER)));
 
-        strategyManager.initialize({
-            initialOwner: executorMultisig,
-            initialStrategyWhitelister: address(strategyFactory),
-            initialPausedStatus: 0
-        });
+        // Pod contracts
+        eigenPodBeacon().upgradeTo(address(new EigenPod(DEPOSIT_CONTRACT, eigenPodManager(), BEACON_GENESIS_TIME, "v9.9.9")));
+        _upgradeProxy(
+            address(eigenPodManager()),
+            address(new EigenPodManager(DEPOSIT_CONTRACT, eigenPodBeacon(), delegationManager(), pauserRegistry(), "v9.9.9"))
+        );
 
-        eigenPodManager.initialize({initialOwner: executorMultisig, _initPausedStatus: 0});
+        // Strategy contracts
+        _upgradeProxy(address(strategyFactory()), address(new StrategyFactory(strategyManager(), pauserRegistry(), "v9.9.9")));
+        address baseStrategyImpl = address(new StrategyBase(strategyManager(), pauserRegistry(), "v9.9.9"));
+        strategyFactoryBeacon().upgradeTo(baseStrategyImpl);
+        for (uint i = 0; i < totalStrategies(); ++i) {
+            IStrategy strategy = strategyAddresses(i);
+            if (strategyAddresses(i) == BEACONCHAIN_ETH_STRAT) continue;
+            _upgradeProxy(address(strategyAddresses(i)), address(baseStrategyImpl));
+        }
 
-        avsDirectory.initialize({initialOwner: executorMultisig, initialPausedStatus: 0});
-
-        allocationManager.initialize({initialOwner: executorMultisig, initialPausedStatus: 0});
-
-        strategyFactory.initialize({_initialOwner: executorMultisig, _initialPausedStatus: 0, _strategyBeacon: strategyBeacon});
+        isUpgraded = true;
     }
 
-    /// @dev Deploy a strategy and its underlying token, push to global lists of tokens/strategies, and whitelist
-    /// strategy in strategyManager
+    /// @dev Initializes all proxies.
+    function _initializeProxies() public {
+        address executorMultisig = executorMultisig();
+        allocationManager().initialize({initialOwner: executorMultisig, initialPausedStatus: 0});
+        avsDirectory().initialize({initialOwner: executorMultisig, initialPausedStatus: 0});
+        delegationManager().initialize({initialOwner: executorMultisig, initialPausedStatus: 0});
+        eigenPodManager().initialize({initialOwner: executorMultisig, _initPausedStatus: 0});
+        rewardsCoordinator().initialize({
+            initialOwner: executorMultisig,
+            initialPausedStatus: 0,
+            _rewardsUpdater: executorMultisig,
+            _activationDelay: 0,
+            _defaultSplitBips: 0
+        });
+        strategyFactory().initialize({_initialOwner: executorMultisig, _initialPausedStatus: 0, _strategyBeacon: strategyFactoryBeacon()});
+        strategyManager().initialize({
+            initialOwner: executorMultisig,
+            initialStrategyWhitelister: address(strategyFactory()),
+            initialPausedStatus: 0
+        });
+    }
+
+    /// @dev Deploys a new strategy and token with given parameters.
     function _newStrategyAndToken(string memory tokenName, string memory tokenSymbol, uint initialSupply, address owner, bool useFactory)
         internal
-        noTracing
     {
-        IERC20 underlyingToken = new ERC20PresetFixedSupply(tokenName, tokenSymbol, initialSupply, owner);
-
-        StrategyBase strategy;
-
-        if (useFactory) {
-            strategy = StrategyBase(address(strategyFactory.deployNewStrategy(underlyingToken)));
-        } else {
-            strategy = StrategyBase(
+        // Deploy mock token, avoid using OZ for test speed.
+        MockERC20 token = new MockERC20();
+        token.initialize(tokenName, tokenSymbol, 18);
+        IERC20 underlyingToken = IERC20(address(token));
+        deal(address(underlyingToken), address(owner), initialSupply);
+        // Deploy strategy using factory or directly.
+        StrategyBase strategy = useFactory
+            ? StrategyBase(address(strategyFactory().deployNewStrategy(underlyingToken)))
+            : StrategyBase(
                 address(
                     new TransparentUpgradeableProxy(
-                        address(baseStrategyImplementation),
-                        address(eigenLayerProxyAdmin),
+                        address(strategyFactoryBeacon().implementation()),
+                        address(proxyAdmin()),
                         abi.encodeWithSelector(StrategyBase.initialize.selector, underlyingToken)
                     )
                 )
             );
-        }
-
-        // Whitelist strategy
-        IStrategy[] memory strategies = new IStrategy[](1);
-        strategies[0] = strategy;
-
-        cheats.prank(strategyManager.strategyWhitelister());
-        strategyManager.addStrategiesToDepositWhitelist(strategies);
-
         // Add to lstStrats and allStrats
         lstStrats.push(strategy);
         allStrats.push(strategy);
         allTokens.push(underlyingToken);
+        config.strategies.strategyAddresses.push(strategy);
     }
 
-    function _configRand(uint24 _randomSeed, uint _assetTypes, uint _userTypes) private noTracing {
-        // Using uint24 for the seed type so that if a test fails, it's easier
-        // to manually use the seed to replay the same test.
-        random = _hash(_randomSeed);
-
-        // Convert flag bitmaps to bytes of set bits for easy use with _randUint
-        _configAssetTypes(_assetTypes);
-        _configUserTypes(_userTypes);
+    /// @dev Deploy the time machine and beacon chain to fixed addresses.
+    function _deployTimeMachineAndBeaconChain() internal virtual {
+        cheats.pauseTracing();
+        cheats.etch(address(timeMachine), type(TimeMachine).runtimeCode);
+        cheats.etch(address(beaconChain), type(BeaconChainMock).runtimeCode);
+        cheats.label(address(timeMachine), "TimeMachine");
+        cheats.label(address(beaconChain), "BeaconChain");
+        cheats.allowCheatcodes(address(timeMachine));
+        cheats.allowCheatcodes(address(beaconChain));
+        beaconChain.initialize(eigenPodManager(), BEACON_GENESIS_TIME);
+        cheats.resumeTracing();
     }
 
-    function _configAssetTypes(uint _assetTypes) internal {
-        assetTypes = _bitmapToBytes(_assetTypes);
-        assertTrue(assetTypes.length != 0, "_configRand: no asset types selected");
-    }
+    /// -----------------------------------------------------------------------
+    ///
+    /// -----------------------------------------------------------------------
 
-    function _configAssetAmounts(uint _maxUniqueAssetsHeld) internal {
-        if (_maxUniqueAssetsHeld > allStrats.length) _maxUniqueAssetsHeld = allStrats.length;
-
-        maxUniqueAssetsHeld = _maxUniqueAssetsHeld;
-        require(maxUniqueAssetsHeld != 0, "_configAssetAmounts: invalid 0");
-    }
-
-    function _configUserTypes(uint _userTypes) internal {
-        userTypes = _bitmapToBytes(_userTypes);
-        assertTrue(userTypes.length != 0, "_configRand: no user types selected");
-    }
-
-    /**
-     * @dev Create a new User with a random config using the range defined in `_configRand`
-     *
-     * Assets are pulled from `strategies` based on a random staker/operator `assetType`
-     */
-    function _randUser(string memory name) internal noTracing returns (User, IStrategy[] memory, uint[] memory) {
-        // Deploy new User contract
-        uint userType = _randUserType();
-        User user = _genRandUser(name, userType);
-
-        // For the specific asset selection we made, get a random assortment of strategies
-        // and deal the user some corresponding underlying token balances
-        uint assetType = _randAssetType();
-        IStrategy[] memory strategies = _selectRandAssets(assetType);
-        uint[] memory tokenBalances = _dealRandAmounts(user, strategies);
-
+    /// @dev Creates a new user with a random config.
+    function _randUser(string memory name) internal returns (User user, IStrategy[] memory strategies, uint[] memory tokenBalances) {
+        (uint userType, uint assetType) = (_randUserType(), _randAssetType());
+        user = _genRandUser(name, userType);
+        strategies = _selectRandAssets(assetType);
+        tokenBalances = _dealRandAmounts(user, strategies);
         print.user(name, assetType, userType, strategies, tokenBalances);
-        return (user, strategies, tokenBalances);
     }
 
-    function _randUser(string memory name, IStrategy[] memory strategies) internal noTracing returns (User, uint[] memory) {
-        // Deploy new User contract
+    /// @dev Creates a new user with a random config and a given list of strategies.
+    function _randUser(string memory name, IStrategy[] memory strategies) internal returns (User user, uint[] memory tokenBalances) {
         uint userType = _randUserType();
-        User user = _genRandUser(name, userType);
-
-        // Deal the user some corresponding underlying token balances
-        uint[] memory tokenBalances = _dealRandAmounts(user, strategies);
-
+        user = _genRandUser(name, userType);
+        tokenBalances = _dealRandAmounts(user, strategies);
         print.user(name, HOLDS_ALL, userType, strategies, tokenBalances);
-        return (user, tokenBalances);
-    }
-
-    /// @dev Create a new user without native ETH. See _randUser above for standard usage
-    function _randUser_NoETH(string memory name) internal noTracing returns (User, IStrategy[] memory, uint[] memory) {
-        // Deploy new User contract
-        uint userType = _randUserType();
-        User user = _genRandUser(name, userType);
-
-        // Pick the user's asset distribution, removing "native ETH" as an option
-        // I'm sorry if this eventually leads to a bug that's really hard to track down
-        uint assetType = _randAssetType();
-        if (assetType == HOLDS_ETH) assetType = NO_ASSETS;
-        else if (assetType == HOLDS_ALL || assetType == HOLDS_MAX) assetType = HOLDS_LST;
-
-        // For the specific asset selection we made, get a random assortment of strategies
-        // and deal the user some corresponding underlying token balances
-        IStrategy[] memory strategies = _selectRandAssets(assetType);
-        uint[] memory tokenBalances = _dealRandAmounts(user, strategies);
-
-        print.user(name, assetType, userType, strategies, tokenBalances);
-        return (user, strategies, tokenBalances);
     }
 
     /// @dev Creates a new user without any assets
-    function _randUser_NoAssets(string memory name) internal noTracing returns (User) {
-        // Deploy new User contract
+    function _randUser_NoAssets(string memory name) internal returns (User user) {
         uint userType = _randUserType();
-        User user = _genRandUser(name, userType);
-
+        user = _genRandUser(name, userType);
         print.user(name, NO_ASSETS, userType, new IStrategy[](0), new uint[](0));
-        return user;
     }
 
+    /// @dev Generates a new user with a given name and user type.
     function _genRandUser(string memory name, uint userType) internal returns (User user) {
-        // Create User contract based on userType:
-        if (forkType == LOCAL || (forkType == MAINNET && isUpgraded)) {
-            user = new User(name);
+        assertTrue(userType == DEFAULT || userType == ALT_METHODS, "_randUser: unimplemented userType");
 
-            if (userType == DEFAULT) {
-                user = new User(name);
-            } else if (userType == ALT_METHODS) {
-                // User will use nonstandard methods like `depositIntoStrategyWithSignature`
-                user = User(new User_AltMethods(name));
-            } else {
-                revert("_randUser: unimplemented userType");
-            }
-        } else if (forkType == MAINNET && !isUpgraded) {
-            if (userType == DEFAULT) {
-                user = User(new User_M2(name));
-            } else if (userType == ALT_METHODS) {
-                // User will use nonstandard methods like `depositIntoStrategyWithSignature`
-                user = User(new User_M2(name));
-            } else {
-                revert("_randUser: unimplemented userType");
-            }
-        } else {
-            revert("_randUser: unimplemented forkType");
-        }
+        // string memory profile = FOUNDRY_PROFILE();
+
+        user = userType == DEFAULT ? new User(name) : User(new User_AltMethods(name));
+
+        assertTrue(address(user) != address(0), "User is not initialized");
+        // if (eq(profile, "default") || eq(profile, "mainnet") || (eq(profile, "forktest") && isUpgraded)) {
+        //     user = userType == DEFAULT ? new User(name) : User(new User_AltMethods(name));
+        // } else if (eq(profile, "forktest") && !isUpgraded) {
+        //     user = User(new User_M2(name));
+        // }
     }
 
-    function _genRandAVS(string memory name) internal returns (AVS avs) {
-        if (forkType == LOCAL) avs = new AVS(name);
-        else if (forkType == MAINNET) avs = new AVS(name);
-        else revert("_genRandAVS: unimplemented forkType");
+    /// @dev Generates a new AVS.
+    function _genRandAVS(string memory name) internal returns (AVS) {
+        return new AVS(name);
     }
+
+    /// -----------------------------------------------------------------------
+    ///
+    /// -----------------------------------------------------------------------
 
     /// Given an assetType, select strategies the user will be dealt assets in
-    function _selectRandAssets(uint assetType) internal noTracing returns (IStrategy[] memory) {
+    function _selectRandAssets(uint assetType) internal returns (IStrategy[] memory strategies) {
         if (assetType == NO_ASSETS) return new IStrategy[](0);
-
-        /// Select only ETH
-        if (assetType == HOLDS_ETH) return beaconChainETHStrategy.toArray();
-
-        /// Select multiple LSTs, and maybe add ETH:
-
+        if (assetType == HOLDS_ETH) return BEACONCHAIN_ETH_STRAT.toArray();
         // Select number of assets:
         // HOLDS_LST can hold at most all LSTs. HOLDS_ALL and HOLDS_MAX also hold ETH.
         // Clamp number of assets to maxUniqueAssetsHeld (guaranteed to be at least 1)
         uint assetPoolSize = assetType == HOLDS_LST ? lstStrats.length : allStrats.length;
         uint maxAssets = assetPoolSize > maxUniqueAssetsHeld ? maxUniqueAssetsHeld : assetPoolSize;
-
         uint numAssets = assetType == HOLDS_MAX ? maxAssets : _randUint(1, maxAssets);
 
-        IStrategy[] memory strategies = new IStrategy[](numAssets);
-        for (uint i = 0; i < strategies.length; i++) {
-            if (assetType == HOLDS_LST) {
-                strategies[i] = lstStrats[i];
-            } else {
-                // allStrats[0] is the beaconChainETHStrategy
-                strategies[i] = allStrats[i];
-            }
+        strategies = new IStrategy[](numAssets);
+
+        for (uint i = 0; i < numAssets; ++i) {
+            strategies[i] = assetType == HOLDS_LST ? lstStrats[i] : allStrats[i];
         }
 
-        return strategies;
+        return strategies.sort();
     }
 
     /// Given an input list of strategies, deal random underlying token amounts to a user
-    function _dealRandAmounts(User user, IStrategy[] memory strategies) internal noTracing returns (uint[] memory) {
-        uint[] memory tokenBalances = new uint[](strategies.length);
-
-        for (uint i = 0; i < tokenBalances.length; i++) {
+    function _dealRandAmounts(User user, IStrategy[] memory strategies) internal returns (uint[] memory tokenBalances) {
+        assertTrue(address(user) != address(0), "User is not initialized");
+        tokenBalances = new uint[](strategies.length);
+        for (uint i = 0; i < tokenBalances.length; ++i) {
             IStrategy strategy = strategies[i];
             uint balance;
 
@@ -638,128 +543,52 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
                 balance = 32 ether * _randUint({min: 1, max: 5});
                 cheats.deal(address(user), balance);
             } else {
-                IERC20 underlyingToken = strategy.underlyingToken();
                 balance = _randUint({min: MIN_BALANCE, max: MAX_BALANCE});
-
-                StdCheats.deal(address(underlyingToken), address(user), balance);
+                StdCheats.deal(address(strategy.underlyingToken()), address(user), balance);
             }
 
             tokenBalances[i] = balance;
         }
-
-        return tokenBalances;
     }
 
-    /// Given an array of strategies and an array of amounts, deal the amounts to the user
-    function _dealAmounts(User user, IStrategy[] memory strategies, uint[] memory amounts) internal noTracing {
-        for (uint i = 0; i < amounts.length; i++) {
-            IStrategy strategy = strategies[i];
-
-            if (strategy == BEACONCHAIN_ETH_STRAT) {
-                cheats.deal(address(user), amounts[i]);
-            } else {
-                IERC20 underlyingToken = strategy.underlyingToken();
-                StdCheats.deal(address(underlyingToken), address(user), amounts[i]);
-            }
-        }
-    }
-
-    /// @dev Uses `random` to return a random uint, with a range given by `min` and `max` (inclusive)
-    /// @return `min` <= result <= `max`
     function _randUint(uint min, uint max) internal returns (uint) {
-        uint range = max - min + 1;
-
-        // calculate the number of bits needed for the range
-        uint bitsNeeded = 0;
-        uint tempRange = range;
-        while (tempRange > 0) {
-            bitsNeeded++;
-            tempRange >>= 1;
-        }
-
-        // create a mask for the required number of bits
-        // and extract the value from the hash
-        uint mask = (1 << bitsNeeded) - 1;
-        uint value = uint(random) & mask;
-
-        // in case value is out of range, wrap around or retry
-        while (value >= range) value = (value - range) & mask;
-
-        // Hash `random` with itself so the next value we generate is different
-        random = _hash(uint(random));
-        return min + value;
+        return cheats.randomUint(min, max);
     }
 
     function _randBool() internal returns (bool) {
-        return _randUint({min: 0, max: 1}) == 0;
+        return cheats.randomBool();
     }
 
     function _randAssetType() internal returns (uint) {
-        uint idx = _randUint({min: 0, max: assetTypes.length - 1});
-        uint assetType = uint(uint8(assetTypes[idx]));
+        bool supportsEth = !eq(profile, "sepolia") && !eq(profile, "hoodi");
 
-        return assetType;
+        uint[] memory options = new uint[](supportsEth ? 5 : 2); // We have 2-5 possible asset types
+        uint count = 0;
+
+        if (assetTypes & NO_ASSETS != 0) options[count++] = NO_ASSETS;
+        if (assetTypes & HOLDS_LST != 0) options[count++] = HOLDS_LST;
+
+        if (supportsEth) {
+            if (assetTypes & HOLDS_ETH != 0) options[count++] = HOLDS_ETH;
+            if (assetTypes & HOLDS_ALL != 0) options[count++] = HOLDS_ALL;
+            if (assetTypes & HOLDS_MAX != 0) options[count++] = HOLDS_MAX;
+        }
+
+        // If there are no options, skip the test.
+        if (count == 0) cheats.skip(true);
+
+        return options[cheats.randomUint(0, count - 1)];
     }
 
     function _randUserType() internal returns (uint) {
-        uint idx = _randUint({min: 0, max: userTypes.length - 1});
-        uint userType = uint(uint8(userTypes[idx]));
-
-        return userType;
+        uint[] memory options = new uint[](2); // We have 2 possible user types
+        uint count = 0;
+        if (userTypes & DEFAULT != 0) options[count++] = DEFAULT;
+        if (userTypes & ALT_METHODS != 0) options[count++] = ALT_METHODS;
+        return options[cheats.randomUint(0, count - 1)];
     }
 
-    function _shuffle(IStrategy[] memory strats) internal returns (IStrategy[] memory) {
-        // Fisher-Yates shuffle algorithm
-        for (uint i = strats.length - 1; i > 0; i--) {
-            uint randomIndex = _randUint({min: 0, max: i});
-
-            // Swap elements
-            IStrategy temp = strats[i];
-            strats[i] = strats[randomIndex];
-            strats[randomIndex] = temp;
-        }
-
-        return strats;
-    }
-
-    function _randomStrategies() internal returns (IStrategy[][] memory strategies) {
-        uint numOpSets = _randUint({min: 1, max: 5});
-
-        strategies = new IStrategy[][](numOpSets);
-
-        for (uint i; i < numOpSets; ++i) {
-            IStrategy[] memory randomStrategies = _shuffle(allStrats);
-            uint numStrategies = _randUint({min: 1, max: maxUniqueAssetsHeld});
-
-            // Modify the length of the array in memory (thus ignoring remaining elements).
-            assembly {
-                mstore(randomStrategies, numStrategies)
-            }
-
-            strategies[i] = randomStrategies;
-        }
-    }
-
-    /**
-     * @dev Converts a bitmap into an array of bytes
-     * @dev Each byte in the input is processed as indicating a single bit to flip in the bitmap
-     */
-    function _bitmapToBytes(uint bitmap) internal pure returns (bytes memory bytesArray) {
-        for (uint i = 0; i < 256; ++i) {
-            // Mask for i-th bit
-            uint mask = uint(1 << i);
-
-            // If the i-th bit is flipped, add a byte to the return array
-            if (bitmap & mask != 0) bytesArray = bytes.concat(bytesArray, bytes1(uint8(1 << i)));
-        }
-        return bytesArray;
-    }
-
-    function _hash(string memory x) internal pure returns (bytes32) {
-        return keccak256(abi.encodePacked(x));
-    }
-
-    function _hash(uint x) internal pure returns (bytes32) {
-        return keccak256(abi.encodePacked(x));
+    function NAME() public view virtual override returns (string memory) {
+        return "Integration Deployer";
     }
 }

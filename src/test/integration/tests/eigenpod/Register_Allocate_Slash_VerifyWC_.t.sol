@@ -1,26 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "src/test/integration/mocks/BeaconChainMock.t.sol";
-import "src/test/integration/IntegrationChecks.t.sol";
+import "src/test/mocks/BeaconChainMock.t.sol";
+import "src/test/integration/tests/eigenpod/EigenPod.t.sol";
 
 /// @notice Testing the rounding behavior when operator magnitude is initially 1
-contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationCheckUtils {
+contract Integration_EigenPod_Register_Allocate_Slash_VerifyWC is EigenPodTest {
     using ArrayLib for *;
-
-    AVS avs;
-    OperatorSet operatorSet;
-
-    User operator;
-    IAllocationManagerTypes.AllocateParams allocateParams;
-
-    User staker;
-    IStrategy[] strategies;
-    // uint[] initTokenBalances;
-    uint[] initDepositShares;
-    uint40[] validators;
-    uint64 beaconBalanceGwei;
-    uint64 slashedGwei;
 
     /**
      * 1. Create an operatorSet and register the operator allocating all magnitude
@@ -29,12 +15,18 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationCheckUtils {
      * 4. deposit (verify withdrawal credentials)
      */
     function _init() internal override {
+        super._init();
+
         _configAssetTypes(HOLDS_ETH);
         (staker, strategies, initDepositShares) = _newRandomStaker();
-        (operator,,) = _newRandomOperator();
-        (avs,) = _newRandomAVS();
+        operator = _newRandomOperator();
+        avs = _newRandomAVS();
 
-        cheats.assume(initDepositShares[0] >= 64 ether);
+        // Ensure the staker has at least 64 ETH to deposit.
+        if (initDepositShares[0] < 64 ether) {
+            initDepositShares[0] = 64 ether;
+            cheats.deal(address(staker), 64 ether);
+        }
 
         // 1. Create an operator set and register an operator
         operatorSet = avs.createOperatorSet(strategies);
@@ -53,7 +45,7 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationCheckUtils {
 
         // 3. Delegate to an operator
         staker.delegateTo(operator);
-        // delegate staker without any depositShares in beaconChainETHStrategy yet
+        // delegate staker without any depositShares in BEACONCHAIN_ETH_STRAT yet
         IStrategy[] memory emptyStrategies;
         uint[] memory emptyTokenBalances;
         check_Delegation_State(staker, operator, emptyStrategies, emptyTokenBalances);
@@ -74,12 +66,11 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationCheckUtils {
      * and calculating a non-WAD BCSF, their slashing factor should be rounded down to 0. Resulting in
      * the staker having 0 withdrawable shares.
      */
-    function test_slashBC_startCompleteCP_queue_complete(uint24 _r) public rand(_r) {
+    function testFuzz_slashBC_startCompleteCP_queue_complete(uint24) public {
         // 4. slash validators on beacon chain (start/complete checkpoint)
         uint40[] memory slashedValidators = _choose(validators);
-        slashedGwei = beaconChain.slashValidators(slashedValidators, BeaconChainMock.SlashType.Minor);
+        slashedGwei = beaconChain.slashValidators(slashedValidators, BeaconChainMock.SlashType.Half);
         // ensure non zero amount slashed gwei so that we can test rounding down behavior
-        cheats.assume(slashedGwei > 0);
         beaconChain.advanceEpoch_NoWithdrawNoRewards();
         // start and complete checkpoint
         staker.startCheckpoint();
@@ -89,10 +80,9 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationCheckUtils {
         check_CompleteCheckPoint_WithSlashing_LowMagnitude_State(staker, slashedGwei);
 
         // 5. queue withdrawal
-        (, uint[] memory withdrawShares) = _randWithdrawal(strategies, initDepositShares);
-
+        uint[] memory withdrawShares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, withdrawShares);
-        bytes32[] memory roots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State({
             staker: staker,
             operator: operator,
@@ -100,16 +90,16 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationCheckUtils {
             depositShares: withdrawShares, // amount of deposit shares to withdraw
             withdrawableShares: 0.toArrayU256(), // amount of withdrawable shares is 0 due to slashing factor being 0
             withdrawals: withdrawals,
-            withdrawalRoots: roots
+            withdrawalRoots: withdrawalRoots
         });
 
         // Operator's maxMagnitude is 1 and staker was slashed to non-WAD BCSF. Therefore
         // staker should have been rounded down to 0
-        uint slashingFactor = staker.getSlashingFactor(beaconChainETHStrategy);
+        uint slashingFactor = staker.getSlashingFactor(BEACONCHAIN_ETH_STRAT);
         assertEq(slashingFactor, 0, "slashing factor should be rounded down to 0");
 
         // 6. complete withdrawal
-        // only strategy is beaconChainETHStrategy
+        // only strategy is BEACONCHAIN_ETH_STRAT
         _rollBlocksForCompleteWithdrawals(withdrawals);
 
         staker.completeWithdrawalAsShares(withdrawals[0]);
@@ -124,7 +114,7 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationCheckUtils {
      * This is testing when an operator is fully slashed with 0 magnitude, the staker can still undelegate
      * and "redeposit" to Eigenlayer.
      */
-    function test_slash_undelegate_redeposit(uint24 _r) public rand(_r) {
+    function testFuzz_slash_undelegate_redeposit(uint24) public {
         // 4. AVS slashes operator again to 0 magnitude and fully slashed
         SlashingParams memory slashParams = _genSlashing_Full(operator, operatorSet);
         slashParams.wadsToSlash[0] = WAD;
@@ -132,9 +122,9 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationCheckUtils {
         check_Base_Slashing_State(operator, allocateParams, slashParams);
 
         // 5. undelegate results in 0 delegated shares removed since operator has 0 magnitude and staker is fully slashed too
-        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.undelegate();
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
 
         check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, withdrawableShares);
 
@@ -166,7 +156,7 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationCheckUtils {
      * This is testing when an operator is fully slashed with 0 magnitude, the staker can still undelegate,
      * complete withdrawals as shares(0 shares though), and redeposit to Eigenlayer.
      */
-    function test_slash_undelegate_completeAsShares_startCompleteCP(uint24 _r) public rand(_r) {
+    function testFuzz_slash_undelegate_completeAsShares_startCompleteCP(uint24) public {
         // 4. AVS slashes operator again to 0 magnitude and fully slashed
         SlashingParams memory slashParams = _genSlashing_Full(operator, operatorSet);
         slashParams.wadsToSlash[0] = WAD;
@@ -174,9 +164,9 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationCheckUtils {
         check_Base_Slashing_State(operator, allocateParams, slashParams);
 
         // 5. undelegate results in 0 delegated shares removed since operator has 0 magnitude and staker is fully slashed too
-        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.undelegate();
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, withdrawableShares);
 
         // 6. complete withdrawals as shares(although amount 0 from fully slashed operator)
@@ -203,7 +193,7 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationCheckUtils {
      * This is testing when an operator is fully slashed with 0 magnitude, the staker can still undelegate,
      * complete withdrawals as tokens(0 tokens though), and redeposit to Eigenlayer.
      */
-    function test_slash_undelegate_completeAsTokens_verifyWC(uint24 _r) public rand(_r) {
+    function testFuzz_slash_undelegate_completeAsTokens_verifyWC(uint24) public {
         // 4. AVS slashes operator again to 0 magnitude and fully slashed
         SlashingParams memory slashParams = _genSlashing_Full(operator, operatorSet);
         slashParams.wadsToSlash[0] = WAD;
@@ -211,16 +201,16 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationCheckUtils {
         check_Base_Slashing_State(operator, allocateParams, slashParams);
 
         // 5. undelegate results in 0 delegated shares removed since operator has 0 magnitude and staker is fully slashed too
-        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.undelegate();
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_Undelegate_State(staker, operator, withdrawals, withdrawalRoots, strategies, withdrawableShares);
 
         // 6. complete withdrawals as tokens(although amount 0 from fully slashed operator)
         // This also exits validators on the beacon chain
         _rollBlocksForCompleteWithdrawals(withdrawals);
         IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[0]);
-        check_Withdrawal_AsTokens_State(staker, operator, withdrawals[0], strategies, 0.toArrayU256(), tokens, 0.toArrayU256());
+        check_Withdrawal_AsTokens_State(staker, operator, withdrawals[0], 0.toArrayU256(), 0.toArrayU256());
 
         // 7. deposit/verify withdrawal credentials
         // randomly startup 1-10 validators
@@ -237,11 +227,11 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationCheckUtils {
      * This is testing a staker can queue a withdrawal and complete as tokens even
      * though the operator has 1 maxMagnitude
      */
-    function test_queueAllShares_completeAsTokens(uint24 _r) public rand(_r) {
+    function testFuzz_queueAllShares_completeAsTokens(uint24) public {
         // 4. queue withdrawal
         // ( , uint[] memory withdrawShares) = _randWithdrawal(strategies, initDepositShares);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, initDepositShares);
-        bytes32[] memory roots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State({
             staker: staker,
             operator: operator,
@@ -249,7 +239,7 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationCheckUtils {
             depositShares: initDepositShares,
             withdrawableShares: initDepositShares,
             withdrawals: withdrawals,
-            withdrawalRoots: roots
+            withdrawalRoots: withdrawalRoots
         });
 
         // 5. complete withdrawal as tokens
@@ -258,6 +248,6 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationCheckUtils {
         // - starts/completes checkpoint
         _rollBlocksForCompleteWithdrawals(withdrawals);
         IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[0]);
-        check_Withdrawal_AsTokens_State(staker, operator, withdrawals[0], strategies, initDepositShares, tokens, initDepositShares);
+        check_Withdrawal_AsTokens_State(staker, operator, withdrawals[0], initDepositShares, initDepositShares);
     }
 }

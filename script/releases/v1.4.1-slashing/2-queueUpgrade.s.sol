@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
-import {Deploy} from "./1-deployContracts.s.sol";
 import "../Env.sol";
+import {Deploy} from "./1-deployContracts.s.sol";
 
 import {MultisigBuilder} from "zeus-templates/templates/MultisigBuilder.sol";
 import "zeus-templates/utils/Encode.sol";

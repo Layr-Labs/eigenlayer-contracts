@@ -14,9 +14,10 @@ script/output/eigenpods.json
 cache_hardhat
 artifacts
 *.lock
+
 #Foundry files
 out
-cache
+snapshots
 
 *.DS_Store
 
@@ -54,3 +55,5 @@ populate_src*
 
 # cerota
 .certora_internal/*
+
+cache/solidity-files-cache.json

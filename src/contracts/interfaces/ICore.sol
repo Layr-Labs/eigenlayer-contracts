@@ -15,4 +15,10 @@ import "src/contracts/interfaces/IStrategyManager.sol";
 /// `AllocateParams memory params;`
 /// vs
 /// `IAllocationManagerTypes.AllocateParams memory params;`
-interface TypeImporter is IAllocationManagerTypes, IAVSDirectoryTypes, IDelegationManagerTypes, IEigenPodManagerTypes, IEigenPodTypes {}
+interface ICoreTypes is
+    IAllocationManagerTypes,
+    IAVSDirectoryTypes,
+    IDelegationManagerTypes,
+    IEigenPodManagerTypes,
+    IEigenPodTypes
+{}
