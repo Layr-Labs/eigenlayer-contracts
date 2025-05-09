@@ -282,6 +282,8 @@ contract DelegationManager is
     /// @inheritdoc IDelegationManager
     function slashOperatorShares(
         address operator,
+        OperatorSet calldata operatorSet,
+        uint256 slashId,
         IStrategy strategy,
         uint64 prevMaxMagnitude,
         uint64 newMaxMagnitude
@@ -315,9 +317,13 @@ contract DelegationManager is
         // Emit event for operator shares being slashed
         emit OperatorSharesSlashed(operator, strategy, totalDepositSharesToBurn);
 
-        IShareManager shareManager = _getShareManager(strategy);
-        // NOTE: for beaconChainETHStrategy, increased burnable shares currently have no mechanism for burning
-        shareManager.increaseBurnableShares(strategy, totalDepositSharesToBurn);
+        // This conditional is needed since EigenPodManager will not support redistribution initially.
+        if (address(_getShareManager(strategy)) == address(eigenPodManager)) {
+            eigenPodManager.increaseBurnableShares(strategy, totalDepositSharesToBurn);
+        } else {
+            // NOTE: for beaconChainETHStrategy, increased burnable shares currently have no mechanism for burning
+            strategyManager.increaseBurnableShares(operatorSet, slashId, strategy, totalDepositSharesToBurn);
+        }
     }
 
     /**

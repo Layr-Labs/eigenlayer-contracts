@@ -651,4 +651,17 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
     function getSlashCount(
         OperatorSet memory operatorSet
     ) external view returns (uint256);
+
+    /**
+     * @notice Returns the timestamp a burn or redistribution can occur after a given an operator set, strategy, and slash ID.
+     * @param operatorSet The operator set to query.
+     * @param strategy The strategy to query.
+     * @param slashId The slash ID to query.
+     * @return The timestamp a burn or redistribution can occur after a given an operator set, strategy, and slash ID.
+     */
+    function getBurnOrRedistributionTimestamp(
+        OperatorSet calldata operatorSet,
+        IStrategy strategy,
+        uint256 slashId
+    ) external view returns (uint32);
 }

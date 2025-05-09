@@ -130,6 +130,15 @@ interface IEigenPodManager is
         int256 balanceDeltaWei
     ) external;
 
+    /**
+     * @notice Increase the amount of burnable shares for a given Strategy. This is called by the DelegationManager
+     * when an operator is slashed in EigenLayer.
+     * @param strategy The strategy to burn shares in.
+     * @param addedSharesToBurn The amount of added shares to burn.
+     * @dev This function is only called by the DelegationManager when an operator is slashed.
+     */
+    function increaseBurnableShares(IStrategy strategy, uint256 addedSharesToBurn) external;
+
     /// @notice Sets the address that can set proof timestamps
     function setProofTimestampSetter(
         address newProofTimestampSetter

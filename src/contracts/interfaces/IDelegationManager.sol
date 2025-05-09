@@ -5,6 +5,7 @@ import "./IStrategy.sol";
 import "./IPauserRegistry.sol";
 import "./ISignatureUtilsMixin.sol";
 import "../libraries/SlashingLib.sol";
+import "../libraries/OperatorSetLib.sol";
 
 interface IDelegationManagerErrors {
     /// @dev Thrown when caller is neither the StrategyManager or EigenPodManager contract.
@@ -351,18 +352,22 @@ interface IDelegationManager is ISignatureUtilsMixin, IDelegationManagerErrors, 
     ) external;
 
     /**
-     * @notice Decreases the operators shares in storage after a slash and increases the burnable shares by calling
+     * @notice Decreases the operator's shares in storage after a slash and increases the burnable shares by calling
      * into either the StrategyManager or EigenPodManager (if the strategy is beaconChainETH).
-     * @param operator The operator to decrease shares for
-     * @param strategy The strategy to decrease shares for
-     * @param prevMaxMagnitude the previous maxMagnitude of the operator
-     * @param newMaxMagnitude the new maxMagnitude of the operator
-     * @dev Callable only by the AllocationManager
+     * @param operator The operator to decrease shares for.
+     * @param operatorSet The operator set to decrease shares for.
+     * @param slashId The slash id to decrease shares for.
+     * @param strategy The strategy to decrease shares for.
+     * @param prevMaxMagnitude The previous maxMagnitude of the operator.
+     * @param newMaxMagnitude The new maxMagnitude of the operator.
+     * @dev Callable only by the AllocationManager.
      * @dev Note: Assumes `prevMaxMagnitude <= newMaxMagnitude`. This invariant is maintained in
      * the AllocationManager.
      */
     function slashOperatorShares(
         address operator,
+        OperatorSet calldata operatorSet,
+        uint256 slashId,
         IStrategy strategy,
         uint64 prevMaxMagnitude,
         uint64 newMaxMagnitude
