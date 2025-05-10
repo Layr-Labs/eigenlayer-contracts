@@ -20,8 +20,13 @@ At this point, you should be able to view an environment's config (try `zeus env
 
 ### Writing a Script
 
-Scripts are broken up into multiple steps TODO
+Scripts are broken up into multiple steps where each step represents a single transaction in the release process. These steps are:
 
+1. **Deployment steps**: Scripts with the format `#-eoa.s.sol` that inherit from `EOADeployer` to deploy new contract implementations.
+2. **Queue steps**: Scripts with the format `#-multisig.s.sol` that inherit from `OpsTimelockBuilder` to queue transactions in the Timelock.
+3. **Execution steps**: Scripts with the format `#-multisig.s.sol` that inherit from `MultisigBuilder` to execute previously queued transactions.
+
+Each step is intended to be run in numerical order (`1-eoa.s.sol`, then `2-multisig.s.sol`, etc.) and only once per environment. Zeus tracks the progress of each step to ensure completion in the correct order.
 
 ### EOADeployer
 
