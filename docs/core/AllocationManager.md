@@ -22,7 +22,7 @@ Libraries and Mixins:
 
 ## Overview
 
-The `AllocationManager` manages AVS metadata registration, registration and deregistration of operators to operator sets, handles allocation and slashing of operators' slashable stake, and is the entry point an AVS uses to slash an operator. An AVS in the context of `AllocationManager` is defined as the `address` of the contract that implements [ServiceManagerBase](https://github.com/Layr-Labs/eigenlayer-middleware/blob/mainnet/docs/ServiceManagerBase.md). For `PermissionController` purposes, this AVS address is also the AVS [account](https://github.com/Layr-Labs/eigenlayer-contracts/blob/dev/docs/permissions/PermissionController.md#accounts).
+The `AllocationManager` manages AVS metadata registration, registration and deregistration of operators to operator sets, handles allocation and slashing of operators' slashable stake, and is the entry point an AVS uses to slash an operator. An AVS in the context of `AllocationManager` is defined as the `address` of the contract that implements [ServiceManagerBase](https://github.com/Layr-Labs/eigenlayer-middleware/blob/mainnet/docs/ServiceManagerBase.md). For `PermissionController` purposes, this AVS address is also the AVS [account](https://github.com/Layr-Labs/eigenlayer-contracts/blob/main/docs/permissions/PermissionController.md#accounts).
 
 
 
@@ -539,7 +539,7 @@ If ALL of these are true, the `AllocationManager` will allow the AVS to slash th
 
 The `getMinimumSlashableStake` calculates the minimum amount of stake that will be slashable at a specified future block. This computation accounts for each operator’s allocated stake from different strategies within an operator set. The function considers pending allocation changes that could reduce the slashable stake over time, ensuring a minimum guaranteed value. Because this is a forecast, the slashable stake at any given moment is a discrete value, but when looking ahead to a future block, the function provides the lowest possible amount, factoring in any planned allocation adjustments that will take effect within the specified timeframe.
 
-Please see [IAllocationManager.sol:getMinimumSlashableStake](https://github.com/Layr-Labs/eigenlayer-contracts/blob/dev/src/contracts/interfaces/IAllocationManager.sol#L577) for more detail.
+Please see [IAllocationManager.sol:getMinimumSlashableStake](https://github.com/Layr-Labs/eigenlayer-contracts/blob/main/src/contracts/interfaces/IAllocationManager.sol#L577) for more detail.
 
 
 #### `modifyAllocations`
