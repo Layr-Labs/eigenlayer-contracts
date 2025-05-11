@@ -1404,18 +1404,23 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
-    function assert_Snap_Increased_BurnableShares(User operator, SlashingParams memory params, string memory err) internal {
-        uint[] memory curBurnable = _getBurnableShares(params.strategies);
-        uint[] memory prevBurnable = _getPrevBurnableShares(params.strategies);
+    function assert_Snap_Increased_BurnableShares(
+        OperatorSet memory operatorSet,
+        User operator,
+        SlashingParams memory params,
+        string memory err
+    ) internal {
+        uint slashId = allocationManager.getSlashCount(operatorSet);
 
         uint[] memory curShares = _getOperatorShares(operator, params.strategies);
         uint[] memory prevShares = _getPrevOperatorShares(operator, params.strategies);
 
         for (uint i = 0; i < params.strategies.length; i++) {
+            uint curBurnable = _getBurnableShares(operatorSet, slashId, params.strategies[i]);
+            uint prevBurnable = _getPrevBurnableShares(operatorSet, slashId, params.strategies[i]);
             uint slashedAtLeast = prevShares[i] - curShares[i];
-
             // Not factoring in slashable shares in queue here, because that gets more complex (TODO)
-            assertTrue(curBurnable[i] >= (prevBurnable[i] + slashedAtLeast), err);
+            assertTrue(curBurnable >= (prevBurnable + slashedAtLeast), err);
         }
     }
 
@@ -2708,19 +2713,14 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         return allocationManager.isMemberOfOperatorSet(address(operator), operatorSet);
     }
 
-    function _getPrevBurnableShares(IStrategy[] memory strategies) internal timewarp returns (uint[] memory) {
-        return _getBurnableShares(strategies);
+    function _getPrevBurnableShares(OperatorSet memory operatorSet, uint slashId, IStrategy strategy) internal timewarp returns (uint) {
+        return _getBurnableShares(operatorSet, slashId, strategy);
     }
 
-    function _getBurnableShares(IStrategy[] memory strategies) internal view returns (uint[] memory) {
-        uint[] memory burnableShares = new uint[](strategies.length);
-
-        for (uint i = 0; i < strategies.length; i++) {
-            if (strategies[i] == beaconChainETHStrategy) burnableShares[i] = eigenPodManager.burnableETHShares();
-            else burnableShares[i] = strategyManager.getBurnableShares(strategies[i]);
-        }
-
-        return burnableShares;
+    function _getBurnableShares(OperatorSet memory operatorSet, uint slashId, IStrategy strategy) internal view returns (uint) {
+        return strategy == beaconChainETHStrategy
+            ? eigenPodManager.burnableETHShares()
+            : strategyManager.getOperatorSetBurnableShares(operatorSet, slashId, strategy);
     }
 
     function _getPrevSlashableSharesInQueue(User operator, IStrategy[] memory strategies) internal timewarp returns (uint[] memory) {

@@ -78,15 +78,7 @@ contract AllocationManager is
         _checkArrayLengthsMatch(params.strategies.length, params.wadsToSlash.length);
         _checkIsOperatorSet(operatorSet);
 
-        require(isOperatorSlashable(params.operator, operatorSet), OperatorNotSlashable());
-
-        // Increment the slash count for the operator set, first `slashId` equals 1.
-        slashId = ++_slashCount[operatorSet.key()];
-
-        // Slash the operator.
-        shares = _slashOperator(params, operatorSet, slashId);
-
-        return (slashId, shares);
+        return _slashOperator(params, operatorSet);
     }
 
     /// @inheritdoc IAllocationManager
@@ -170,7 +162,7 @@ contract AllocationManager is
                 _updateAllocationInfo(operator, operatorSet.key(), strategy, info, allocation);
 
                 // 6. Emit an event for the updated allocation
-                emit AllocationUpdated(
+                _emitAllocationUpdated(
                     operator,
                     operatorSet,
                     strategy,
@@ -276,7 +268,7 @@ contract AllocationManager is
 
     /// @inheritdoc IAllocationManager
     function createOperatorSets(address avs, CreateSetParams[] calldata params) external checkCanCall(avs) {
-        require(_avsRegisteredMetadata[avs], NonexistentAVSMetadata());
+        _checkAVSMetadata(avs);
         for (uint256 i = 0; i < params.length; i++) {
             _createOperatorSet(avs, params[i], DEFAULT_BURN_ADDRESS);
         }
@@ -289,7 +281,7 @@ contract AllocationManager is
         address[] calldata redistributionRecipients
     ) external checkCanCall(avs) {
         _checkArrayLengthsMatch(params.length, redistributionRecipients.length);
-        require(_avsRegisteredMetadata[avs], NonexistentAVSMetadata());
+        _checkAVSMetadata(avs);
         for (uint256 i = 0; i < params.length; i++) {
             _createOperatorSet(avs, params[i], redistributionRecipients[i]);
         }
@@ -303,10 +295,8 @@ contract AllocationManager is
     ) external checkCanCall(avs) {
         OperatorSet memory operatorSet = OperatorSet(avs, operatorSetId);
         _checkIsOperatorSet(operatorSet);
-        bytes32 operatorSetKey = operatorSet.key();
         for (uint256 i = 0; i < strategies.length; i++) {
-            require(_operatorSetStrategies[operatorSetKey].add(address(strategies[i])), StrategyAlreadyInOperatorSet());
-            emit StrategyAddedToOperatorSet(operatorSet, strategies[i]);
+            _addStrategyToOperatorSet(operatorSet, strategies[i]);
         }
     }
 
@@ -332,10 +322,16 @@ contract AllocationManager is
      */
     function _slashOperator(
         SlashingParams calldata params,
-        OperatorSet memory operatorSet,
-        uint256 slashId
-    ) internal returns (uint256[] memory shares) {
+        OperatorSet memory operatorSet
+    ) internal returns (uint256 slashId, uint256[] memory shares) {
+        require(isOperatorSlashable(params.operator, operatorSet), OperatorNotSlashable());
+
         uint256[] memory wadSlashed = new uint256[](params.strategies.length);
+
+        // Cannot realistically overflow, would require 2^256 slashes.
+        unchecked {
+            slashId = ++_slashCount[operatorSet.key()];
+        }
 
         // Initialize the shares array.
         shares = new uint256[](params.strategies.length);
@@ -387,7 +383,7 @@ contract AllocationManager is
                     uint64(uint256(uint128(-allocation.pendingDiff)).mulWadRoundUp(params.wadsToSlash[i]));
                 allocation.pendingDiff += int128(uint128(slashedPending));
 
-                emit AllocationUpdated(
+                _emitAllocationUpdated(
                     params.operator,
                     operatorSet,
                     params.strategies[i],
@@ -399,8 +395,7 @@ contract AllocationManager is
             // 5. Update state
             _updateAllocationInfo(params.operator, operatorSet.key(), params.strategies[i], info, allocation);
 
-            // Emit an event for the updated allocation
-            emit AllocationUpdated(
+            _emitAllocationUpdated(
                 params.operator, operatorSet, params.strategies[i], allocation.currentMagnitude, uint32(block.number)
             );
 
@@ -418,6 +413,11 @@ contract AllocationManager is
         }
 
         emit OperatorSlashed(params.operator, operatorSet, params.strategies, wadSlashed, params.description);
+    }
+
+    function _addStrategyToOperatorSet(OperatorSet memory operatorSet, IStrategy strategy) internal {
+        require(_operatorSetStrategies[operatorSet.key()].add(address(strategy)), StrategyAlreadyInOperatorSet());
+        emit StrategyAddedToOperatorSet(operatorSet, strategy);
     }
 
     /**
@@ -447,11 +447,9 @@ contract AllocationManager is
             emit RedistributionAddressSet(operatorSet, redistributionRecipient);
         }
 
-        // Add strategies to the operator set
         for (uint256 j = 0; j < params.strategies.length; j++) {
-            if (isRedistributing && params.strategies[j] == BEACONCHAIN_ETH_STRAT) revert InvalidStrategy();
-            _operatorSetStrategies[operatorSet.key()].add(address(params.strategies[j]));
-            emit StrategyAddedToOperatorSet(operatorSet, params.strategies[j]);
+            require(!isRedistributing || params.strategies[j] != BEACONCHAIN_ETH_STRAT, InvalidStrategy());
+            _addStrategyToOperatorSet(operatorSet, params.strategies[j]);
         }
     }
 
@@ -680,6 +678,22 @@ contract AllocationManager is
         address operator
     ) internal view {
         require(delegation.isOperator(operator), InvalidOperator());
+    }
+
+    function _checkAVSMetadata(
+        address avs
+    ) internal view {
+        require(_avsRegisteredMetadata[avs], NonexistentAVSMetadata());
+    }
+
+    function _emitAllocationUpdated(
+        address operator,
+        OperatorSet memory operatorSet,
+        IStrategy strategy,
+        uint64 currentMagnitude,
+        uint32 effectBlock
+    ) internal {
+        emit AllocationUpdated(operator, operatorSet, strategy, currentMagnitude, effectBlock);
     }
 
     /**
@@ -1007,7 +1021,7 @@ contract AllocationManager is
     }
 
     function getBurnOrRedistributionTimestamp(
-        OperatorSet calldata operatorSet,
+        OperatorSet memory operatorSet,
         IStrategy strategy,
         uint256 slashId
     ) external view returns (uint32) {

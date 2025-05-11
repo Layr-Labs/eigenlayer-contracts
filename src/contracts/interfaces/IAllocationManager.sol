@@ -660,7 +660,7 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
      * @return The timestamp a burn or redistribution can occur after a given an operator set, strategy, and slash ID.
      */
     function getBurnOrRedistributionTimestamp(
-        OperatorSet calldata operatorSet,
+        OperatorSet memory operatorSet,
         IStrategy strategy,
         uint256 slashId
     ) external view returns (uint32);

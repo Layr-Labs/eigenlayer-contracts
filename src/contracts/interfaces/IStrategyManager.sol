@@ -226,7 +226,7 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
     ) external view returns (uint256);
 
     /// @notice Returns the post-distribution burnable shares of a strategy for a specific operator set and slash ID.
-    function getBurnableSharesForOperatorSet(
+    function getOperatorSetBurnableShares(
         OperatorSet calldata operatorSet,
         uint256 slashId,
         IStrategy strategy
@@ -246,7 +246,7 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
      *
      * WARNING: Iterates over all storage entries and copies to memory. Gas cost scales with number of strategies.
      */
-    function getStrategiesWithBurnableSharesForOperatorSet(
+    function getOperatorSetStrategiesWithBurnableShares(
         OperatorSet calldata operatorSet,
         uint256 slashId
     ) external view returns (address[] memory, uint256[] memory);
