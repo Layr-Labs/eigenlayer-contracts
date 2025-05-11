@@ -1118,8 +1118,6 @@ contract StrategyManagerUnitTests_increaseBurnableShares is StrategyManagerUnitT
 }
 
 contract StrategyManagerUnitTests_burnShares is StrategyManagerUnitTests {
-    // TODO: failing
-
     function testFuzz_SingleStrategyDeposited(address staker, uint depositAmount, uint sharesToBurn)
         external
         filterFuzzedAddressInputs(staker)
@@ -1161,8 +1159,6 @@ contract StrategyManagerUnitTests_burnShares is StrategyManagerUnitTests {
             "getBurnableShares should return 0 after burning"
         );
     }
-
-    // TODO: failing
 
     /// @notice check that balances are unchanged with a reverting token but burnShares doesn't revert
     function testFuzz_BurnableSharesUnchangedWithRevertToken(address staker, uint depositAmount, uint sharesToBurn)
