@@ -318,7 +318,7 @@ contract DelegationManager is
         emit OperatorSharesSlashed(operator, strategy, totalDepositSharesToBurn);
 
         // This conditional is needed since EigenPodManager will not support redistribution initially.
-        if (address(_getShareManager(strategy)) == address(eigenPodManager)) {
+        if (strategy == beaconChainETHStrategy) {
             eigenPodManager.increaseBurnableShares(strategy, totalDepositSharesToBurn);
         } else {
             // NOTE: for beaconChainETHStrategy, increased burnable shares currently have no mechanism for burning

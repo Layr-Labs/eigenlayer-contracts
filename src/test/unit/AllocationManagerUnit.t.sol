@@ -740,6 +740,8 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         });
     }
 
+    // TODO: failing
+
     /**
      * Allocates all magnitude to for a single strategy to an operatorSet. Slashes 25%
      * Validates:
@@ -796,6 +798,8 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         });
     }
 
+    // TODO: failing
+
     /// @notice Same test as above, but fuzzes the allocation
     function testFuzz_slashPostAllocation(Randomness r) public rand(r) {
         AllocateParams[] memory allocateParams = _randAllocateParams_DefaultOpSet();
@@ -845,6 +849,8 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
             expectedSlashableStake: (DEFAULT_OPERATOR_SHARES - slashedStake).mulWad(expectedCurrentMag.divWad(expectedMaxMag))
         });
     }
+
+    // TODO: failing
 
     /**
      * Allocates half of magnitude for a single strategy to an operatorSet. Then allocates again. Slashes 50%
@@ -1359,6 +1365,8 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
             })
         });
     }
+
+    // TODO: failing
 
     /**
      * Allocates to multiple operatorSets for a strategy. Only slashes from one operatorSet.
@@ -3950,6 +3958,8 @@ contract AllocationManagerUnitTests_getSlashableStake is AllocationManagerUnitTe
             expectedSlashableStake: DEFAULT_OPERATOR_SHARES.mulWad(secondMod)
         });
     }
+
+    // TODO: failing
 
     /**
      * Allocates all of magnitude to a single strategy to an operatorSet.

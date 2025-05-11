@@ -1118,6 +1118,8 @@ contract StrategyManagerUnitTests_increaseBurnableShares is StrategyManagerUnitT
 }
 
 contract StrategyManagerUnitTests_burnShares is StrategyManagerUnitTests {
+    // TODO: failing
+
     function testFuzz_SingleStrategyDeposited(address staker, uint depositAmount, uint sharesToBurn)
         external
         filterFuzzedAddressInputs(staker)
@@ -1142,7 +1144,7 @@ contract StrategyManagerUnitTests_burnShares is StrategyManagerUnitTests {
         // emit BurnableSharesDecreased(
         //     OperatorSet(address(strategyManager), type(uint32).max), type(uint).max, strategy, DEFAULT_BURN_ADDRESS, sharesToBurn
         // );
-        strategyManager.burnShares(strategy);
+        strategyManager.burnOrDistributeShares(defaultOperatorSet, defaultSlashId, strategy);
         uint strategyBalanceAfter = token.balanceOf(address(strategy));
         uint burnAddressBalanceAfter = token.balanceOf(strategyManager.DEFAULT_BURN_ADDRESS());
 
@@ -1159,6 +1161,8 @@ contract StrategyManagerUnitTests_burnShares is StrategyManagerUnitTests {
             "getBurnableShares should return 0 after burning"
         );
     }
+
+    // TODO: failing
 
     /// @notice check that balances are unchanged with a reverting token but burnShares doesn't revert
     function testFuzz_BurnableSharesUnchangedWithRevertToken(address staker, uint depositAmount, uint sharesToBurn)
@@ -1183,7 +1187,7 @@ contract StrategyManagerUnitTests_burnShares is StrategyManagerUnitTests {
 
         cheats.expectRevert("SafeERC20: low-level call failed");
         cheats.prank(address(delegationManagerMock));
-        strategyManager.burnShares(strategy);
+        strategyManager.burnOrDistributeShares(defaultOperatorSet, defaultSlashId, strategy);
 
         assertEq(
             strategyManager.getOperatorSetBurnableShares(defaultOperatorSet, defaultSlashId, strategy),
