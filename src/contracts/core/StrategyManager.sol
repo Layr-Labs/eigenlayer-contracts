@@ -168,7 +168,6 @@ contract StrategyManager is
         burnableShares.remove(address(strategy));
 
         // NOTE: We use max values for the operatorSet and slashId to indicate that this is a pre-distribution burn.
-        // QUESTION: Is there a cleaner way to do this?
         _burnShares({
             operatorSet: OperatorSet(address(this), type(uint32).max),
             slashId: type(uint256).max,

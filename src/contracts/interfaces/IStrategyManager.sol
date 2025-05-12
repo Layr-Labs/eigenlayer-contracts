@@ -140,6 +140,8 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
      * @notice Burns Strategy shares for the given strategy by calling into the strategy to transfer to the default burn address.
      * @param strategy The strategy to burn shares in.
      * @dev This only allows pre-distribution burns, in the future this method will be deprecated along with the `_burnableShares` mapping.
+     * @dev Emits a `BurnableSharesDecreased` with `OperatorSet(address(this), type(uint32).max)` and `slashId` of `type(uint256).max`
+     * to denote a non-redistributing withdrawal.
      */
     function burnShares(
         IStrategy strategy
