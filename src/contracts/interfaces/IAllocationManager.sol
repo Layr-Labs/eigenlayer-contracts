@@ -659,7 +659,7 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
      * @param slashId The slash ID to query.
      * @return The timestamp a burn or redistribution can occur after a given an operator set, strategy, and slash ID.
      */
-    function getBurnOrRedistributionTimestamp(
+    function getBurnOrRedistributionBlock(
         OperatorSet memory operatorSet,
         IStrategy strategy,
         uint256 slashId

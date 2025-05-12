@@ -19,8 +19,8 @@ contract AllocationManagerMock is Test {
     mapping(address avs => uint) public getOperatorSetCount;
     mapping(address => mapping(IStrategy => Snapshots.DefaultWadHistory)) internal _maxMagnitudeHistory;
     mapping(bytes32 operatorSetKey => address) public _getRedistributionRecipient;
-    mapping(bytes32 operatorSetKey => mapping(IStrategy strategy => mapping(uint slashId => uint32 timestamp))) public
-        _burnOrRedistributionTimestamp;
+    mapping(bytes32 operatorSetKey => mapping(IStrategy strategy => mapping(uint slashId => uint32 blockNumber))) public
+        _burnOrRedistributionBlock;
 
     function getRedistributionRecipient(OperatorSet memory operatorSet) external view returns (address recipient) {
         recipient = _getRedistributionRecipient[operatorSet.key()];
@@ -31,15 +31,15 @@ contract AllocationManagerMock is Test {
     function setBurnOrRedistributionTimestamp(OperatorSet memory operatorSet, IStrategy strategy, uint slashId, uint32 timestamp)
         external
     {
-        _burnOrRedistributionTimestamp[operatorSet.key()][strategy][slashId] = timestamp;
+        _burnOrRedistributionBlock[operatorSet.key()][strategy][slashId] = timestamp;
     }
 
-    function getBurnOrRedistributionTimestamp(OperatorSet memory operatorSet, IStrategy strategy, uint slashId)
+    function getBurnOrRedistributionBlock(OperatorSet memory operatorSet, IStrategy strategy, uint slashId)
         external
         view
         returns (uint32)
     {
-        return _burnOrRedistributionTimestamp[operatorSet.key()][strategy][slashId];
+        return _burnOrRedistributionBlock[operatorSet.key()][strategy][slashId];
     }
 
     function setRedistributionRecipient(OperatorSet memory operatorSet, address recipient) external {

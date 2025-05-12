@@ -14,8 +14,8 @@ abstract contract AllocationManagerStorage is IAllocationManager {
 
     // Constants
 
-    /// @dev The delay before a burn or redistribution can occur.
-    uint32 internal constant BURN_OR_REDISTRIBUTION_DELAY = 3.5 days;
+    /// @dev The delay before a burn or redistribution can occur, denominated in blocks.
+    uint32 internal constant BURN_OR_REDISTRIBUTION_DELAY = 36_000; // 3.5 days assuming 12s blocks.
 
     /// @dev The default burn address for slashed funds.
     address internal constant DEFAULT_BURN_ADDRESS = 0x00000000000000000000000000000000000E16E4;
@@ -112,9 +112,9 @@ abstract contract AllocationManagerStorage is IAllocationManager {
     ///      For non-redistributing or non-existing operator sets, returns `address(0)`.
     mapping(bytes32 operatorSetKey => address redistributionAddr) internal _redistributionRecipients;
 
-    /// @notice Returns the timestamp a burn or redistribution can occur after a given an operator set, strategy, and slash ID.
-    mapping(bytes32 operatorSetKey => mapping(IStrategy strategy => mapping(uint256 slashId => uint32 timestamp)))
-        public _burnOrRedistributionTimestamp;
+    /// @notice Returns the block number a burn or redistribution can occur after a given an operator set, strategy, and slash ID.
+    mapping(bytes32 operatorSetKey => mapping(IStrategy strategy => mapping(uint256 slashId => uint32 blockNumber)))
+        public _burnOrRedistributionBlock;
 
     // Construction
 

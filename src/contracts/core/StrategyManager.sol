@@ -429,7 +429,7 @@ contract StrategyManager is
         uint256 slashId
     ) internal view {
         require(
-            block.timestamp >= allocationManager.getBurnOrRedistributionTimestamp(operatorSet, strategy, slashId),
+            block.timestamp >= allocationManager.getBurnOrRedistributionBlock(operatorSet, strategy, slashId),
             BurnOrRedistributionDelayNotElapsed()
         );
     }
