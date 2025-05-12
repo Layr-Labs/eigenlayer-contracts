@@ -201,4 +201,12 @@ contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable {
     function CLOCK_MODE() public pure override returns (string memory) {
         return "mode=timestamp";
     }
+
+    /**
+     * @notice Returns the bEIGEN token
+     * @return The bEIGEN token
+     */
+    function beigen() public view returns (IERC20) {
+        return bEIGEN;
+    }
 }
