@@ -232,7 +232,7 @@ d \space\cdot\space
 \rfloor
 $$
 
-Each floor operation can introduce a rounding error of at most 1 wei. Because there are nested divisions however, this error can result in a total error thats larger than just off by 1 wei.
+Each floor operation can introduce a rounding error of at most 1 wei. Because there are nested divisions however, this error can result in a total error that's larger than just off by 1 wei.
 We can rewrite parts of above with epsilon $e$ which is in the range of [0,1].
 
 1. First inner rounded term
