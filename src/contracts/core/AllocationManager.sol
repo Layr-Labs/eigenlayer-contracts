@@ -328,10 +328,8 @@ contract AllocationManager is
     ) internal returns (uint256 slashId, uint256[] memory shares) {
         uint256[] memory wadSlashed = new uint256[](params.strategies.length);
 
-        // Cannot realistically overflow, would require 2^256 slashes.
-        unchecked {
-            slashId = ++_slashCount[operatorSet.key()];
-        }
+        // Increment the slash count for the operator set.
+        slashId = ++_slashCount[operatorSet.key()];
 
         // Initialize the shares array.
         shares = new uint256[](params.strategies.length);
