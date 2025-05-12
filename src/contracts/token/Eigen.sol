@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin-upgrades/contracts/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 
-contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable {
+contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable, IEigen {
     /// CONSTANTS & IMMUTABLES
     /// @notice the address of the backing Eigen token bEIGEN
     IERC20 public immutable bEIGEN;
