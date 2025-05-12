@@ -185,38 +185,29 @@ contract StrategyManager is
     ) external nonReentrant {
         EnumerableMap.AddressToUintMap storage operatorSetBurnableShares =
             _operatorSetBurnableShares[operatorSet.key()][slashId];
+
         (, uint256 sharesToBurn) = operatorSetBurnableShares.tryGet(address(strategy));
-        operatorSetBurnableShares.remove(address(strategy));
 
-        _checkBurnOrRedistributionDelay(operatorSet, strategy, slashId);
+        address recipient = allocationManager.getRedistributionRecipient(operatorSet);
 
-        _burnShares({
-            operatorSet: operatorSet,
-            slashId: slashId,
-            strategy: strategy,
-            recipient: _getRedistributionRecipient(operatorSet),
-            sharesToBurn: sharesToBurn
-        });
+        _burnOrDistributeShares(operatorSetBurnableShares, operatorSet, strategy, slashId, sharesToBurn, recipient);
     }
 
     /// @inheritdoc IStrategyManager
     function burnOrDistributeShares(OperatorSet calldata operatorSet, uint256 slashId) external nonReentrant {
         EnumerableMap.AddressToUintMap storage operatorSetBurnableShares =
             _operatorSetBurnableShares[operatorSet.key()][slashId];
+
         uint256 totalEntries = operatorSetBurnableShares.length();
+
+        address recipient = allocationManager.getRedistributionRecipient(operatorSet);
 
         for (uint256 i = 0; i < totalEntries; ++i) {
             (address strategy, uint256 sharesToBurn) = operatorSetBurnableShares.at(i);
 
-            _checkBurnOrRedistributionDelay(operatorSet, IStrategy(strategy), slashId);
-
-            _burnShares({
-                operatorSet: operatorSet,
-                slashId: slashId,
-                strategy: IStrategy(strategy),
-                recipient: _getRedistributionRecipient(operatorSet),
-                sharesToBurn: sharesToBurn
-            });
+            _burnOrDistributeShares(
+                operatorSetBurnableShares, operatorSet, IStrategy(strategy), slashId, sharesToBurn, recipient
+            );
         }
     }
 
@@ -382,6 +373,38 @@ contract StrategyManager is
     }
 
     /**
+     * @notice Burns `sharesToBurn` shares from `strategy` and sends the underlying tokens to redistribution recipient or `DEFAULT_BURN_ADDRESS`.
+     * @param ptr The pointer to the operator set burnable shares map.
+     * @param operatorSet The operator set associated with this burn/redistribution.
+     * @param slashId The unique identifier for the slashing event relative to the operator set.
+     * @param strategy The strategy contract from which shares will be burned.
+     * @param sharesToBurn The number of shares to burn from the strategy.
+     */
+    function _burnOrDistributeShares(
+        EnumerableMap.AddressToUintMap storage ptr,
+        OperatorSet calldata operatorSet,
+        IStrategy strategy,
+        uint256 slashId,
+        uint256 sharesToBurn,
+        address recipient
+    ) internal {
+        require(
+            block.timestamp >= allocationManager.getBurnOrRedistributionBlock(operatorSet, strategy, slashId),
+            BurnOrRedistributionDelayNotElapsed()
+        );
+
+        ptr.remove(address(strategy));
+
+        _burnShares({
+            operatorSet: operatorSet,
+            slashId: slashId,
+            strategy: IStrategy(strategy),
+            recipient: recipient,
+            sharesToBurn: sharesToBurn
+        });
+    }
+
+    /**
      * @notice Removes `strategy` from `staker`'s dynamic array of strategies, i.e. from `stakerStrategyList[staker]`
      * @param staker The user whose array will have an entry removed
      * @param strategy The Strategy to remove from `stakerStrategyList[staker]`
@@ -412,25 +435,6 @@ contract StrategyManager is
     ) internal {
         emit StrategyWhitelisterChanged(strategyWhitelister, newStrategyWhitelister);
         strategyWhitelister = newStrategyWhitelister;
-    }
-
-    /// @notice Returns the redistribution recipient for a given operator set.
-    function _getRedistributionRecipient(
-        OperatorSet memory operatorSet
-    ) internal view returns (address) {
-        return allocationManager.getRedistributionRecipient(operatorSet);
-    }
-
-    /// @notice Checks if the burn or redistribution delay has elapsed for a given operator set and strategy.
-    function _checkBurnOrRedistributionDelay(
-        OperatorSet calldata operatorSet,
-        IStrategy strategy,
-        uint256 slashId
-    ) internal view {
-        require(
-            block.timestamp >= allocationManager.getBurnOrRedistributionBlock(operatorSet, strategy, slashId),
-            BurnOrRedistributionDelayNotElapsed()
-        );
     }
 
     // VIEW FUNCTIONS
