@@ -1020,11 +1020,27 @@ contract AllocationManager is
         return _slashCount[operatorSet.key()];
     }
 
+    /// @inheritdoc IAllocationManager
     function getBurnOrRedistributionTimestamp(
         OperatorSet memory operatorSet,
         IStrategy strategy,
         uint256 slashId
     ) external view returns (uint32) {
         return _burnOrRedistributionTimestamp[operatorSet.key()][strategy][slashId];
+    }
+
+    /// @inheritdoc IAllocationManager
+    function isOperatorRedistributable(
+        address operator
+    ) external view returns (bool) {
+        EnumerableSet.Bytes32Set storage sets = allocatedSets[operator];
+        uint256 length = sets.length();
+        for (uint256 i = 0; i < length; ++i) {
+            bytes32 operatorSetKey = sets.at(i);
+            if (_redistributionRecipients[operatorSetKey] != address(0)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

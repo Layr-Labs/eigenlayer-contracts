@@ -664,4 +664,12 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
         IStrategy strategy,
         uint256 slashId
     ) external view returns (uint32);
+
+    /**
+     * @notice Returns whether an operator is in a redistribution operator set.
+     * @param operator The operator to query.
+     */
+    function isOperatorRedistributable(
+        address operator
+    ) external view returns (bool);
 }
