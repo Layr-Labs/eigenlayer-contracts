@@ -18,6 +18,10 @@ Additionally, when running validator node software, a validator is configured wi
 
 **An `EigenPod` may serve as EITHER/BOTH the withdrawal credentials OR the fee recipient for your validators.** In prior releases, it was only possible to use an `EigenPod` for withdrawal credentials. However, this is no longer the case!
 
+`EigenPods` support validators with BOTH 0x01 and 0x02 withdrawal credentials, as well as validators up to (and beyond) 2048 ETH.
+
+For more background and history on `EigenPod` design, check out [this HackMD](https://hackmd.io/U36dE9lnQha3tbf7D0GtKw).
+
 ---
 
 The **primary goal** of the `EigenPod` system is to **ensure that shares are backed 1:1** with ETH that is _either already in the `EigenPod`, or will eventually flow through the `EigenPod`._ To support this goal, `EigenPods`: 
@@ -32,6 +36,7 @@ Because beacon chain proofs are processed asynchronously from the beacon chain i
 * [Restaking Beacon Chain ETH](#restaking-beacon-chain-eth)
 * [Checkpointing Validators](#checkpointing-validators)
 * [Staleness Proofs](#staleness-proofs)
+* [Consolidations and Withdrawals](#consolidations-and-withdrawals)
 * [Other Methods](#other-methods)
 
 #### Important Definitions
@@ -41,7 +46,7 @@ Because beacon chain proofs are processed asynchronously from the beacon chain i
 * _Pod Owners_ can delegate their `EigenPodManager` shares to Operators (via `DelegationManager`).
 * These shares correspond to the amount of restaked beacon chain ETH held by the _Pod Owner_ via their `EigenPod`.
 
-**_Proof Submitter_**: An address designated by the Pod Owner with permissions to call certain `EigenPod` methods. This role is provided to allow Pod Owners to manage their day-to-day `EigenPod` tasks via hot wallets, rather than the Pod Owner address which controls all funds. The Proof Submitter can call `verifyWithdrawalCredentials` and `startCheckpoint`. See [`setProofSubmitter` docs](#setproofsubmitter) for more details.
+**_Proof Submitter_**: An address designated by the Pod Owner with permissions to call certain `EigenPod` methods. This role is provided to allow Pod Owners to manage their day-to-day `EigenPod` tasks via hot wallets, rather than the Pod Owner address which controls all funds. The Proof Submitter can call several `EigenPod` methods. See [`setProofSubmitter` docs](#setproofsubmitter) for more details.
 
 **_Active validator set_**: This term is used frequently in this document to describe the set of validators whose withdrawal credentials have been verified to be pointed at an `EigenPod`. The _active validator set_ is used to determine the number of proofs required to complete a checkpoint (see [Checkpointing Validators](#checkpointing-validators)).
 * A validator enters the _active validator set_ when their withdrawal credentials are verified (see [`verifyWithdrawalCredentials`](#verifywithdrawalcredentials))
@@ -61,10 +66,11 @@ Only one _checkpoint_ can be active at a time in a given `EigenPod`. The pod's _
 
 ```solidity
 struct Checkpoint {
-    bytes32 beaconBlockRoot;  // proofs are verified against a beacon block root
-    uint24 proofsRemaining;   // number of proofs remaining before the checkpoint is completed
-    uint64 podBalanceGwei;    // native ETH that will be awarded shares when the checkpoint is completed
-    int128 balanceDeltasGwei; // total change in beacon chain balance tracked across submitted proofs
+    bytes32 beaconBlockRoot;      // proofs are verified against a beacon block root
+    uint24 proofsRemaining;       // number of proofs remaining before the checkpoint is completed
+    uint64 podBalanceGwei;        // native ETH that will be awarded shares when the checkpoint is completed
+    int64 balanceDeltasGwei;      // total change in beacon chain balance tracked across submitted proofs
+    uint64 prevBeaconBalanceGwei; // total recorded beacon chain balance as of the last checkpoint
 }
 ```
 
@@ -105,7 +111,7 @@ This method first verifies a beacon state root against a beacon block root retur
 
 A withdrawal credential proof uses a validator's [`ValidatorIndex`][custom-types] and a merkle proof to prove the existence of a [`Validator` container][validator-container] at a given block. The beacon chain `Validator` container holds important information used in this method:
 * `pubkey`: A BLS pubkey hash, used to uniquely identify the validator within the `EigenPod`
-* `withdrawal_credentials`: Used to verify that the validator will withdraw its principal to this `EigenPod` if it exits the beacon chain
+* `withdrawal_credentials`: Used to verify that the validator will withdraw its principal to this `EigenPod` if it exits the beacon chain. Can have EITHER the 0x01 or 0x02 prefix.
 * `effective_balance`: The balance of the validator, updated once per epoch and capped at 32 ETH. Used to award shares to the Pod Owner
 * `activation_epoch`: Initially set to `type(uint64).max`, this value is updated when a validator reaches a balance of at least 32 ETH, designating the validator is ready to become active on the beacon chain. **This method requires that a validator is either already active, or in the process of activating on the beacon chain.**
 * `exit_epoch`: Initially set to `type(uint64).max`, this value is updated when a validator initiates exit from the beacon chain. **This method requires that a validator has not initiated an exit from the beacon chain.**
@@ -149,6 +155,7 @@ Checkpoint proofs comprise the bulk of proofs submitted to an `EigenPod`. Comple
 * when validators have exited from the beacon chain, leaving the pod's _active validator set_
 * when the pod has accumulated fees / partial withdrawals from validators
 * whether any validators on the beacon chain have increased/decreased in balance
+* when consolidation requests have been completed
 
 When a checkpoint is completed, shares are updated accordingly for each of these events. OwnedShares can be withdrawn via the `DelegationManager` withdrawal queue (see [DelegationManager: Undelegating and Withdrawing](./DelegationManager.md#undelegating-and-withdrawing)), which means an `EigenPod's` checkpoint proofs also play an important role in allowing Pod Owners to exit funds from the system.
 
@@ -238,13 +245,14 @@ If either of these two conditions is not met, _the proof will be skipped but exe
 Each valid proof submitted decreases the _current checkpoint's_ `proofsRemaining` by 1. If `proofsRemaining` hits 0 the checkpoint is automatically completed, updating the Pod Owner's shares accordingly.
 
 *Effects*:
+* Update `_currentCheckpoint` in storage
 * For each validator successfully checkpointed:
     * The number of proofs remaining in the checkpoint is decreased (`checkpoint.proofsRemaining--`)
     * A balance delta is calculated using the validator's previous `restakedBalanceGwei`. This delta is added to `checkpoint.balanceDeltasGwei` to track the total beacon chain balance delta.
     * The validator's `restakedBalanceGwei` and `lastCheckpointedAt` fields are updated. Additionally, if the proof shows that the validator has a balance of 0, the validator's status is moved to `VALIDATOR_STATUS.WITHDRAWN` and the pod's `activeValidatorCount` is decreased.
 * If the checkpoint's `proofsRemaining` drops to 0, the checkpoint is automatically completed:
     * `checkpoint.podBalanceGwei` is added to `withdrawableRestakedExecutionLayerGwei`, rendering it accounted for in future checkpoints
-    * `lastCheckpointTimestamp` is set to `currentCheckpointTimestamp`, and both `_currentCheckpoint` and `currentCheckpointTimestamp` are deleted.
+    * `lastCheckpointTimestamp` is set to `currentCheckpointTimestamp`, and `currentCheckpointTimestamp` is set to 0.
     * The Pod Owner's total share delta is calculated as the sum of `checkpoint.podBalanceGwei` and `checkpoint.balanceDeltasGwei`, and forwarded to the `EigenPodManager` (see [`EigenPodManager.recordBeaconChainETHBalanceUpdate`](./EigenPodManager.md#recordbeaconchainethbalanceupdate))
 
 *Requirements*:
@@ -312,6 +320,121 @@ If these requirements are met and the proofs are valid against a beacon block ro
 
 ---
 
+### Consolidations and Withdrawals
+
+Methods for interacting with predeploys introduced in Pectra. See supplemental docs [here](https://hackmd.io/uijo9RSnSMOmejK1aKH0vw?view):
+* [`requestConsolidation`](#requestconsolidation)
+* [`requestWithdrawal`](#requestwithdrawal)
+
+
+#### `requestConsolidation`
+
+```solidity
+/// SEE FULL METHOD DOCS IN IEigenPod.sol
+function requestConsolidation(
+    ConsolidationRequest[] calldata requests
+) external payable onlyOwnerOrProofSubmitter;
+
+/**
+ * @param srcPubkey the pubkey of the source validator for the consolidation
+ * @param targetPubkey the pubkey of the target validator for the consolidation
+ * @dev Note that if srcPubkey == targetPubkey, this is a "switch request," and will
+ * change the validator's withdrawal credential type from 0x01 to 0x02.
+ * For more notes on usage, see `requestConsolidation`
+ */
+struct ConsolidationRequest {
+    bytes srcPubkey;
+    bytes targetPubkey;
+}
+
+/// @notice Returns the fee required to add a consolidation request to the EIP-7251 predeploy this block.
+/// @dev Note that the predeploy updates its fee every block according to https://eips.ethereum.org/EIPS/eip-7251#fee-calculation
+/// Consider overestimating the amount sent to ensure the fee does not update before your transaction.
+function getConsolidationRequestFee() external view returns (uint256);
+```
+
+This method allows the pod owner or proof submitter to submit validator consolidation requests via the [EIP-7521](https://eips.ethereum.org/EIPS/eip-7251) predeploy. Consolidation requests come in two forms:
+* "Switch requests" will switch a validator's withdrawal credentials from the 0x01 "eth1" prefix to the 0x02 "compounding" prefix. For a switch request, `srcPubkey == targetPubkey`.
+* Standard requests will consolidate a source validator's balance _into_ a target 0x02 validator. For a standard request, `srcPubkey != targetPubkey`.
+
+In order to initiate a consolidation request ([basic how-to guide here]((https://hackmd.io/uijo9RSnSMOmejK1aKH0vw?view#How-to-use-these-methods))):
+* The predeploy requires a fee for each request. The current fee for the block can be queried using `getConsolidationRequestFee`. This should be multiplied for each request in the passed-in `requests` array and provided as `msg.value`. The predeploy updates its fee each block depending on how many consolidation requests are queued vs how many are processed.
+    * Note that any unused fee is transferred back to `msg.sender` at the end of this method.
+* The `target` validator MUST have verified withdrawal credentials (`getValidatorStatus` returns `ACTIVE`)
+* For standard requests, the `target` validator MUST have 0x02 withdrawal credentials on the beacon chain.
+
+When a standard consolidation is completed on the beacon chain, the source validator's balance will be transferred to the target validator. For all intents and purposes, the source validator will appear to have "exited" - its exit epoch and withdrawable epoch are set, and its balance drops to zero. When processed by a checkpoint, this 0 balance will cause the _source_ validator to be marked as `WITHDRAWN`, exempting it from future checkpoint proofs.
+
+Note that the beacon chain may "skip" a consolidation request for many reasons. This skip is inherently invisible to the `EigenPod`. See [the `process_consolidation_request` spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#new-process_consolidation_request) for a complete list of conditions that may cause a request to be skipped.
+
+*Effects*:
+* Queue each `request` in the EIP 7521 predeploy, sending the current consolidation request fee each time.
+* If excess `msg.value` was provided, transfer the remainder back to `msg.sender`
+
+*Requirements*:
+* Caller MUST be EITHER the Pod Owner or Proof Submitter
+* Pause status MUST NOT be set: `PAUSED_CONSOLIDATIONS`
+* `msg.value` MUST be at least `getConsolidationRequestFee() * requests.length`
+* For each `request` in `requests`:
+    * `request.srcPubkey` and `request.targetPubkey` MUST have a length of 48
+    * `request.targetPubkey` MUST correspond to a validator whose withdrawal credentials are proven to point at the pod (`VALIDATOR_STATUS.ACTIVE`)
+* If excess `msg.value` was provided, the transfer of the excess back to `msg.sender` MUST succeed.
+
+#### `requestWithdrawal`
+
+```solidity
+/// SEE FULL METHOD DOCS IN IEigenPod.sol
+function requestWithdrawal(
+    WithdrawalRequest[] calldata requests
+) external payable onlyOwnerOrProofSubmitter;
+
+/**
+ * @param pubkey the pubkey of the validator to withdraw from
+ * @param amountGwei the amount (in gwei) to withdraw from the beacon chain to the pod
+ * @dev Note that if amountGwei == 0, this is a "full exit request," and will fully exit
+ * the validator to the pod.
+ * For more notes on usage, see `requestWithdrawal`
+ */
+struct WithdrawalRequest {
+    bytes pubkey;
+    uint64 amountGwei;
+}
+
+/// @notice Returns the current fee required to add a withdrawal request to the EIP-7002 predeploy.
+/// @dev Note that the predeploy updates its fee every block according to https://eips.ethereum.org/EIPS/eip-7002#fee-update-rule
+/// Consider overestimating the amount sent to ensure the fee does not update before your transaction.
+function getWithdrawalRequestFee() external view returns (uint256);
+```
+
+This method allows the pod owner or proof submitter to submit validator withdrawal requests via the [EIP-7002](https://eips.ethereum.org/EIPS/eip-7002) predeploy. Withdrawal requests come in two forms:
+* "Full withdrawals" will completely exit a validator from the beacon chain. For a full withdrawal, `request.amountGwei == 0`.
+* "Partial withdrawals" will exit a portion of a validator's balance from the beacon chain, down to 32 ETH. Any amount requested that would bring a validator's balance below 32 ETH is ignored.
+
+In order to initiate a withdrawal request:
+* The predeploy requires a fee for each request. The current fee for the block can be queried using `getWithdrawalRequestFee`. This should be multiplied for each request in the passed-in `requests` array and provided as `msg.value`. The predeploy updates its fee each block depending on how many withdrawal requests are queued vs how many are processed.
+    * Note that any unused fee is transferred back to `msg.sender` at the end of this method.
+* For partial withdrawals, note that the beacon chain will only process these if the validator has 0x02 withdrawal credentials.
+
+When a withdrawal request is completed on the beacon chain, the requested amount will be withdrawn from the validator's beacon chain balance and exited to the pod. Note that at no point can a partial withdrawal request cause a validator to drop below 32 ETH balance. This is especially important if you're planning to use requests to track withdrawn balance: _it's possible that the amount you request is not equal to the amount withdrawn_. For example, my validator has 33 ETH and I request a withdrawal of 2 ETH, the withdrawal request will only result in 1 ETH being withdrawn.
+
+Note that the beacon chain may "skip" a withdrawal request for many reasons. This skip is inherently invisible to the `EigenPod`. See [the `process_withdrawal_request` spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#new-process_withdrawal_request) for a complete list of conditions that may cause a request to be skipped.
+
+**Finally,** note that if a validator has pending partial/full withdrawals initiated via this predeploy, it becomes _ineligible_ to be the _source_ validator in a standard consolidation until those requests are completed. There is no such requirement for _target_ validators.
+
+*Effects*:
+* Queue each `request` in the EIP 7002 predeploy, sending the current withdrawal request fee each time.
+* If excess `msg.value` was provided, transfer the remainder back to `msg.sender`
+
+*Requirements*:
+* Caller MUST be EITHER the Pod Owner or Proof Submitter
+* Pause status MUST NOT be set: `PAUSED_WITHDRAWAL_REQUESTS`
+* `msg.value` MUST be at least `getWithdrawalRequestFee() * requests.length`
+* For each `request` in `requests`:
+    * `request.pubkey` MUST have a length of 48
+* If excess `msg.value` was provided, the transfer of the excess back to `msg.sender` MUST succeed.
+
+---
+
 ### Other Methods
 
 Minor methods that do not fit well into other sections:
@@ -326,11 +449,17 @@ Minor methods that do not fit well into other sections:
 function setProofSubmitter(address newProofSubmitter) external onlyEigenPodOwner
 ```
 
-Allows the Pod Owner to update the Proof Submitter address for the `EigenPod`. The Proof Submitter can call `verifyWithdrawalCredentials` and `startCheckpoint` just like the Pod Owner. This is intended to allow the Pod Owner to create a hot wallet to manage calls to these methods.
+Allows the Pod Owner to update the Proof Submitter address for the `EigenPod`. The Proof Submitter is a secondary address that can call various validator and proof-related `EigenPod` methods, but has no permissions outside of the `EigenPod` contract (e.g. this address cannot manage delegation or queue withdrawals via the `DelegationManager`). 
 
-If set, EITHER the Pod Owner OR Proof Submitter may call `verifyWithdrawalCredentials`/`startCheckpoint`.
+This method/role is intended to allow the Pod Owner to create a hot wallet to perform validator and proof-related tasks without exposing access to funds.
 
-The Pod Owner can call this with `newProofSubmitter == 0` to remove the current Proof Submitter. If there is no designated Proof Submitter, ONLY the Pod Owner can call `verifyWithdrawalCredentials`/`startCheckpoint`.
+If set, EITHER the Pod Owner OR Proof Submitter may call:
+* `verifyWithdrawalCredentials`
+* `startCheckpoint`
+* `requestConsolidation`
+* `requestWithdrawal`
+
+The Pod Owner can call this with `newProofSubmitter == 0` to remove the current Proof Submitter. If there is no designated Proof Submitter, ONLY the Pod Owner can call the above methods.
 
 *Effects*:
 * Updates `proofSubmitter` to `newProofSubmitter`
@@ -353,6 +482,8 @@ function stake(
 
 Handles the call to the beacon chain deposit contract. Only called via `EigenPodManager.stake`.
 
+Note that this method only supports deposits to 0x01 withdrawal credentials. For 0x02 credentials, pod owners should interact with the deposit contract directly.
+
 *Effects*:
 * Deposits 32 ETH into the beacon chain deposit contract, and provides the pod's address as the deposit's withdrawal credentials
 
@@ -374,17 +505,18 @@ function withdrawRestakedBeaconChainETH(
 
 The `EigenPodManager` calls this method when withdrawing a Pod Owner's shares as tokens (native ETH). The input `amountWei` is converted to Gwei and subtracted from `withdrawableRestakedExecutionLayerGwei`, which tracks native ETH balance that has been accounted for in a checkpoint (see [Checkpointing Validators](#checkpointing-validators)).
 
-If the `EigenPod` does not have `amountWei` available to transfer, this method will revert
+If the `EigenPod` does not have `amountWei` available to transfer, this method will revert.
+
+Note that if `amountWei` is not a whole gwei amount, the sub-gwei portion is truncated and may not be recoverable.
 
 *Effects*:
 * Decreases the pod's `withdrawableRestakedExecutionLayerGwei` by `amountWei / GWEI_TO_WEI`
-* Sends `amountWei` ETH to `recipient`
+* Converts `amountWei` to gwei, then sends that amount to `recipient`
 
 *Requirements*:
 * `amountWei / GWEI_TO_WEI` MUST NOT be greater than the proven `withdrawableRestakedExecutionLayerGwei`
 * Pod MUST have at least `amountWei` ETH balance
 * `recipient` MUST NOT revert when transferred `amountWei`
-* `amountWei` MUST be a whole Gwei amount
 
 #### `recoverTokens`
 

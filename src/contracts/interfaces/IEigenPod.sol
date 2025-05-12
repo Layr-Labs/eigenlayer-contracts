@@ -201,11 +201,9 @@ interface IEigenPod is IEigenPodErrors, IEigenPodEvents, ISemVerMixin {
     function stake(bytes calldata pubkey, bytes calldata signature, bytes32 depositDataRoot) external payable;
 
     /**
-     * @notice Transfers `amountWei` in ether from this contract to the specified `recipient` address
-     * @notice Called by EigenPodManager to withdrawBeaconChainETH that has been added to the EigenPod's balance due to a withdrawal from the beacon chain.
-     * @dev The podOwner must have already proved sufficient withdrawals, so that this pod's `restakedExecutionLayerGwei` exceeds the
-     * `amountWei` input (when converted to GWEI).
-     * @dev Reverts if `amountWei` is not a whole Gwei amount
+     * @notice Transfers `amountWei` from this contract to the `recipient`. Only callable by the EigenPodManager as part
+     * of the DelegationManager's withdrawal flow.
+     * @dev `amountWei` is not required to be a whole Gwei amount. Amounts less than a Gwei multiple may be unrecoverable due to Gwei conversion.
      */
     function withdrawRestakedBeaconChainETH(address recipient, uint256 amount) external;
 
@@ -394,12 +392,13 @@ interface IEigenPod is IEigenPodErrors, IEigenPodEvents, ISemVerMixin {
     function recoverTokens(IERC20[] memory tokenList, uint256[] memory amountsToWithdraw, address recipient) external;
 
     /// @notice Allows the owner of a pod to update the proof submitter, a permissioned
-    /// address that can call `startCheckpoint` and `verifyWithdrawalCredentials`.
+    /// address that can call various EigenPod methods, but cannot trigger asset withdrawals
+    /// from the DelegationManager.
     /// @dev Note that EITHER the podOwner OR proofSubmitter can access these methods,
     /// so it's fine to set your proofSubmitter to 0 if you want the podOwner to be the
     /// only address that can call these methods.
     /// @param newProofSubmitter The new proof submitter address. If set to 0, only the
-    /// pod owner will be able to call `startCheckpoint` and `verifyWithdrawalCredentials`
+    /// pod owner will be able to call EigenPod methods.
     function setProofSubmitter(
         address newProofSubmitter
     ) external;
@@ -416,7 +415,8 @@ interface IEigenPod is IEigenPodErrors, IEigenPodEvents, ISemVerMixin {
     /// @dev If this address is NOT set, only the podOwner can call `startCheckpoint` and `verifyWithdrawalCredentials`
     function proofSubmitter() external view returns (address);
 
-    /// @notice the amount of execution layer ETH in this contract that is staked in EigenLayer (i.e. withdrawn from beaconchain but not EigenLayer),
+    /// @notice Native ETH in the pod that has been accounted for in a checkpoint (denominated in gwei).
+    /// This amount is withdrawable from the pod via the DelegationManager withdrawal flow.
     function withdrawableRestakedExecutionLayerGwei() external view returns (uint64);
 
     /// @notice The single EigenPodManager for EigenLayer
@@ -435,12 +435,12 @@ interface IEigenPod is IEigenPodErrors, IEigenPodEvents, ISemVerMixin {
         bytes calldata validatorPubkey
     ) external view returns (ValidatorInfo memory);
 
-    /// @notice This returns the status of a given validator
+    /// @notice Returns the validator status for a given validator pubkey hash
     function validatorStatus(
         bytes32 pubkeyHash
     ) external view returns (VALIDATOR_STATUS);
 
-    /// @notice This returns the status of a given validator pubkey
+    /// @notice Returns the validator status for a given validator pubkey
     function validatorStatus(
         bytes calldata validatorPubkey
     ) external view returns (VALIDATOR_STATUS);
@@ -455,6 +455,7 @@ interface IEigenPod is IEigenPodErrors, IEigenPodEvents, ISemVerMixin {
     function currentCheckpointTimestamp() external view returns (uint64);
 
     /// @notice Returns the currently-active checkpoint
+    /// If there's not an active checkpoint, this method returns the checkpoint that was last active.
     function currentCheckpoint() external view returns (Checkpoint memory);
 
     /// @notice For each checkpoint, the total balance attributed to exited validators, in gwei

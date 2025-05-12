@@ -120,7 +120,7 @@ contract EigenPod is
         _disableInitializers();
     }
 
-    /// @notice Used to initialize the pointers to addresses crucial to the pod's functionality. Called on construction by the EigenPodManager.
+    /// @inheritdoc IEigenPod
     function initialize(
         address _podOwner
     ) external initializer {
@@ -134,39 +134,19 @@ contract EigenPod is
      *
      */
 
-    /// @notice payable fallback function that receives ether deposited to the eigenpods contract
+    /// @notice payable fallback function used to receive ETH sent directly to the pod
     receive() external payable {
         emit NonBeaconChainETHReceived(msg.value);
     }
 
-    /**
-     * @dev Create a checkpoint used to prove this pod's active validator set. Checkpoints are completed
-     * by submitting one checkpoint proof per ACTIVE validator. During the checkpoint process, the total
-     * change in ACTIVE validator balance is tracked, and any validators with 0 balance are marked `WITHDRAWN`.
-     * @dev Once finalized, the pod owner is awarded shares corresponding to:
-     * - the total change in their ACTIVE validator balances
-     * - any ETH in the pod not already awarded shares
-     * @dev A checkpoint cannot be created if the pod already has an outstanding checkpoint. If
-     * this is the case, the pod owner MUST complete the existing checkpoint before starting a new one.
-     * @param revertIfNoBalance Forces a revert if the pod ETH balance is 0. This allows the pod owner
-     * to prevent accidentally starting a checkpoint that will not increase their shares
-     */
+    /// @inheritdoc IEigenPod
     function startCheckpoint(
         bool revertIfNoBalance
     ) external onlyOwnerOrProofSubmitter onlyWhenNotPaused(PAUSED_START_CHECKPOINT) {
         _startCheckpoint(revertIfNoBalance);
     }
 
-    /**
-     * @dev Progress the current checkpoint towards completion by submitting one or more validator
-     * checkpoint proofs. Anyone can call this method to submit proofs towards the current checkpoint.
-     * For each validator proven, the current checkpoint's `proofsRemaining` decreases.
-     * @dev If the checkpoint's `proofsRemaining` reaches 0, the checkpoint is finalized.
-     * (see `_updateCheckpoint` for more details)
-     * @dev This method can only be called when there is a currently-active checkpoint.
-     * @param balanceContainerProof proves the beacon's current balance container root against a checkpoint's `beaconBlockRoot`
-     * @param proofs Proofs for one or more validator current balances against the `balanceContainerRoot`
-     */
+    /// @inheritdoc IEigenPod
     function verifyCheckpointProofs(
         BeaconChainProofs.BalanceContainerProof calldata balanceContainerProof,
         BeaconChainProofs.BalanceProof[] calldata proofs
@@ -231,20 +211,7 @@ contract EigenPod is
         _updateCheckpoint(checkpoint);
     }
 
-    /**
-     * @dev Verify one or more validators have their withdrawal credentials pointed at this EigenPod, and award
-     * shares based on their effective balance. Proven validators are marked `ACTIVE` within the EigenPod, and
-     * future checkpoint proofs will need to include them.
-     * @dev Withdrawal credential proofs MUST NOT be older than `currentCheckpointTimestamp`.
-     * @dev Validators proven via this method MUST NOT have an exit epoch set already.
-     * @param beaconTimestamp the beacon chain timestamp sent to the 4788 oracle contract. Corresponds
-     * to the parent beacon block root against which the proof is verified.
-     * @param stateRootProof proves a beacon state root against a beacon block root
-     * @param validatorIndices a list of validator indices being proven
-     * @param validatorFieldsProofs proofs of each validator's `validatorFields` against the beacon state root
-     * @param validatorFields the fields of the beacon chain "Validator" container. See consensus specs for
-     * details: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
-     */
+    /// @inheritdoc IEigenPod
     function verifyWithdrawalCredentials(
         uint64 beaconTimestamp,
         BeaconChainProofs.StateRootProof calldata stateRootProof,
@@ -290,36 +257,7 @@ contract EigenPod is
         });
     }
 
-    /**
-     * @dev Prove that one of this pod's active validators was slashed on the beacon chain. A successful
-     * staleness proof allows the caller to start a checkpoint.
-     *
-     * @dev Note that in order to start a checkpoint, any existing checkpoint must already be completed!
-     * (See `_startCheckpoint` for details)
-     *
-     * @dev Note that this method allows anyone to start a checkpoint as soon as a slashing occurs on the beacon
-     * chain. This is intended to make it easier to external watchers to keep a pod's balance up to date.
-     *
-     * @dev Note too that beacon chain slashings are not instant. There is a delay between the initial slashing event
-     * and the validator's final exit back to the execution layer. During this time, the validator's balance may or
-     * may not drop further due to a correlation penalty. This method allows proof of a slashed validator
-     * to initiate a checkpoint for as long as the validator remains on the beacon chain. Once the validator
-     * has exited and been checkpointed at 0 balance, they are no longer "checkpoint-able" and cannot be proven
-     * "stale" via this method.
-     * See https://eth2book.info/capella/part3/transition/epoch/#slashings for more info.
-     *
-     * @param beaconTimestamp the beacon chain timestamp sent to the 4788 oracle contract. Corresponds
-     * to the parent beacon block root against which the proof is verified.
-     * @param stateRootProof proves a beacon state root against a beacon block root
-     * @param proof the fields of the beacon chain "Validator" container, along with a merkle proof against
-     * the beacon state root. See the consensus specs for more details:
-     * https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
-     *
-     * @dev Staleness conditions:
-     * - Validator's last checkpoint is older than `beaconTimestamp`
-     * - Validator MUST be in `ACTIVE` status in the pod
-     * - Validator MUST be slashed on the beacon chain
-     */
+    /// @inheritdoc IEigenPod
     function verifyStaleBalance(
         uint64 beaconTimestamp,
         BeaconChainProofs.StateRootProof calldata stateRootProof,
@@ -442,7 +380,7 @@ contract EigenPod is
         }
     }
 
-    /// @notice called by owner of a pod to remove any ERC20s deposited in the pod
+    /// @inheritdoc IEigenPod
     function recoverTokens(
         IERC20[] memory tokenList,
         uint256[] memory amountsToWithdraw,
@@ -454,13 +392,7 @@ contract EigenPod is
         }
     }
 
-    /// @notice Allows the owner of a pod to update the proof submitter, a permissioned
-    /// address that can call `startCheckpoint` and `verifyWithdrawalCredentials`.
-    /// @dev Note that EITHER the podOwner OR proofSubmitter can access these methods,
-    /// so it's fine to set your proofSubmitter to 0 if you want the podOwner to be the
-    /// only address that can call these methods.
-    /// @param newProofSubmitter The new proof submitter address. If set to 0, only the
-    /// pod owner will be able to call `startCheckpoint` and `verifyWithdrawalCredentials`
+    /// @inheritdoc IEigenPod
     function setProofSubmitter(
         address newProofSubmitter
     ) external onlyEigenPodOwner {
@@ -468,8 +400,7 @@ contract EigenPod is
         proofSubmitter = newProofSubmitter;
     }
 
-    /// @notice Called by EigenPodManager when the owner wants to create another ETH validator.
-    /// @dev This function only supports staking to a 0x01 validator. For compounding validators, please interact directly with the deposit contract.
+    /// @inheritdoc IEigenPod
     function stake(
         bytes calldata pubkey,
         bytes calldata signature,
@@ -481,13 +412,7 @@ contract EigenPod is
         emit EigenPodStaked(pubkey);
     }
 
-    /**
-     * @notice Transfers `amountWei` in ether from this contract to the specified `recipient` address
-     * @notice Called by EigenPodManager to withdrawBeaconChainETH that has been added to the EigenPod's balance due to a withdrawal from the beacon chain.
-     * @dev The podOwner must have already proved sufficient withdrawals, so that this pod's `restakedExecutionLayerGwei` exceeds the
-     * `amountWei` input (when converted to GWEI).
-     * @dev `amountWei` is not required to be a whole Gwei amount. Amounts less than a Gwei multiple may be unrecoverable due to Gwei conversion.
-     */
+    /// @inheritdoc IEigenPod
     function withdrawRestakedBeaconChainETH(address recipient, uint256 amountWei) external onlyEigenPodManager {
         uint64 amountGwei = uint64(amountWei / GWEI_TO_WEI);
         amountWei = amountGwei * GWEI_TO_WEI;
@@ -716,13 +641,13 @@ contract EigenPod is
      * - a share delta is calculated and sent to the `EigenPodManager`
      * - the checkpointed `podBalanceGwei` is added to `restakedExecutionLayerGwei`
      * - `lastCheckpointTimestamp` is updated
-     * - `_currentCheckpoint` and `currentCheckpointTimestamp` are deleted
+     * - `currentCheckpointTimestamp` is set to zero
      */
     function _updateCheckpoint(
         Checkpoint memory checkpoint
     ) internal {
+        _currentCheckpoint = checkpoint;
         if (checkpoint.proofsRemaining != 0) {
-            _currentCheckpoint = checkpoint;
             return;
         }
 
@@ -738,8 +663,6 @@ contract EigenPod is
         restakedExecutionLayerGwei += checkpoint.podBalanceGwei;
 
         // Finalize the checkpoint by resetting `currentCheckpointTimestamp`.
-        // Note: `_currentCheckpoint` is not deleted, as it is overwritten
-        // when a new checkpoint is started
         lastCheckpointTimestamp = currentCheckpointTimestamp;
         delete currentCheckpointTimestamp;
 
@@ -809,27 +732,28 @@ contract EigenPod is
         return restakedExecutionLayerGwei;
     }
 
-    /// @notice Returns the validatorInfo for a given validatorPubkeyHash
+    /// @inheritdoc IEigenPod
     function validatorPubkeyHashToInfo(
         bytes32 validatorPubkeyHash
     ) public view returns (ValidatorInfo memory) {
         return _validatorPubkeyHashToInfo[validatorPubkeyHash];
     }
 
-    /// @notice Returns the validatorInfo for a given validatorPubkey
+    /// @inheritdoc IEigenPod
     function validatorPubkeyToInfo(
         bytes calldata validatorPubkey
     ) public view returns (ValidatorInfo memory) {
         return _validatorPubkeyHashToInfo[_calcPubkeyHash(validatorPubkey)];
     }
 
+    /// @inheritdoc IEigenPod
     function validatorStatus(
         bytes32 pubkeyHash
     ) external view returns (VALIDATOR_STATUS) {
         return _validatorPubkeyHashToInfo[pubkeyHash].status;
     }
 
-    /// @notice Returns the validator status for a given validatorPubkey
+    /// @inheritdoc IEigenPod
     function validatorStatus(
         bytes calldata validatorPubkey
     ) external view returns (VALIDATOR_STATUS) {
@@ -837,15 +761,12 @@ contract EigenPod is
         return _validatorPubkeyHashToInfo[validatorPubkeyHash].status;
     }
 
-    /// @notice Returns the currently-active checkpoint
+    /// @inheritdoc IEigenPod
     function currentCheckpoint() public view returns (Checkpoint memory) {
         return _currentCheckpoint;
     }
 
-    /// @notice Query the 4788 oracle to get the parent block root of the slot with the given `timestamp`
-    /// @param timestamp of the block for which the parent block root will be returned. MUST correspond
-    /// to an existing slot within the last 24 hours. If the slot at `timestamp` was skipped, this method
-    /// will revert.
+    /// @inheritdoc IEigenPod
     function getParentBlockRoot(
         uint64 timestamp
     ) public view returns (bytes32) {

@@ -31,9 +31,9 @@ contract Integration_Pectra_Features_Base is IntegrationCheckUtils {
 
         staker.verifyWithdrawalCredentials(validators);
         check_Deposit_State(staker, beaconChainETHStrategy.toArray(), (totalBalanceGwei * GWEI_TO_WEI).toArrayU256());
-        
+
         (uint40[] memory newValidators, uint40[] memory consolidated) = staker.maxConsolidation(validators);
-        
+
         staker.startCheckpoint();
         check_StartCheckpoint_State(staker);
 
