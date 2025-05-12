@@ -78,6 +78,8 @@ contract AllocationManager is
         _checkArrayLengthsMatch(params.strategies.length, params.wadsToSlash.length);
         _checkIsOperatorSet(operatorSet);
 
+        require(isOperatorSlashable(params.operator, operatorSet), OperatorNotSlashable());
+
         return _slashOperator(params, operatorSet);
     }
 
@@ -324,8 +326,6 @@ contract AllocationManager is
         SlashingParams calldata params,
         OperatorSet memory operatorSet
     ) internal returns (uint256 slashId, uint256[] memory shares) {
-        require(isOperatorSlashable(params.operator, operatorSet), OperatorNotSlashable());
-
         uint256[] memory wadSlashed = new uint256[](params.strategies.length);
 
         // Cannot realistically overflow, would require 2^256 slashes.
