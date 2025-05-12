@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity >=0.5.0;
+pragma solidity ^0.8.27;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin-upgrades/contracts/token/ERC20/IERC20Upgradeable.sol";
 
-interface IEigen is IERC20 {
+interface IEigen is IERC20Upgradeable {
     /**
      * @notice This function allows the owner to set the allowedFrom status of an address
      * @param from the address whose allowedFrom status is being set

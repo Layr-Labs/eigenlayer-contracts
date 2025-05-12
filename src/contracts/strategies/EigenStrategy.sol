@@ -56,9 +56,9 @@ contract EigenStrategy is StrategyBase {
      * @param amount deposit amount
      */
     function _beforeDeposit(IERC20 token, uint256 amount) internal virtual override {
-        require(token == underlyingToken || token == EIGEN, OnlyUnderlyingToken());
+        require(token == underlyingToken || token == IERC20(address(EIGEN)), OnlyUnderlyingToken());
 
-        if (token == EIGEN) {
+        if (token == IERC20(address(EIGEN))) {
             // unwrap EIGEN into bEIGEN assuming a 1-1 unwrapping amount
             // the strategy will then hold `amount` of bEIGEN
             EIGEN.unwrap(amount);
@@ -76,7 +76,7 @@ contract EigenStrategy is StrategyBase {
         IERC20 token,
         uint256 /*amountShares*/
     ) internal virtual override {
-        require(token == underlyingToken || token == EIGEN, OnlyUnderlyingToken());
+        require(token == underlyingToken || token == IERC20(address(EIGEN)), OnlyUnderlyingToken());
     }
 
     /**
@@ -89,7 +89,7 @@ contract EigenStrategy is StrategyBase {
      * @param amountToSend amount of tokens to transfer
      */
     function _afterWithdrawal(address recipient, IERC20 token, uint256 amountToSend) internal virtual override {
-        if (token == EIGEN) {
+        if (token == IERC20(address(EIGEN))) {
             // wrap bEIGEN into EIGEN assuming a 1-1 wrapping amount
             // the strategy will then hold `amountToSend` of EIGEN
             underlyingToken.approve(address(token), amountToSend);

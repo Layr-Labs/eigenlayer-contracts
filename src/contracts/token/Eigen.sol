@@ -1,14 +1,16 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin-upgrades/contracts/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin-upgrades/contracts/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
+
+import "../interfaces/IEigen.sol";
 
 contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable, IEigen {
     /// CONSTANTS & IMMUTABLES
     /// @notice the address of the backing Eigen token bEIGEN
-    IERC20 public immutable bEIGEN;
+    IERC20Upgradeable public immutable bEIGEN;
 
     /// STORAGE
     /// @notice mapping of minter addresses to the timestamp after which they are allowed to mint
@@ -39,7 +41,7 @@ contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable, IEigen {
     event TokenUnwrapped(address indexed account, uint256 amount);
 
     constructor(
-        IERC20 _bEIGEN
+        IERC20Upgradeable _bEIGEN
     ) {
         bEIGEN = _bEIGEN;
         _disableInitializers();
@@ -181,7 +183,7 @@ contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable, IEigen {
      * @dev The issued supply of EIGEN should match the bEIGEN balance of this contract,
      * less any bEIGEN tokens that were sent directly to the contract (rather than being wrapped)
      */
-    function totalSupply() public view override returns (uint256) {
+    function totalSupply() public view override(ERC20Upgradeable, IERC20Upgradeable) returns (uint256) {
         return bEIGEN.totalSupply();
     }
 
@@ -189,7 +191,7 @@ contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable, IEigen {
      * @dev Clock used for flagging checkpoints. Has been overridden to implement timestamp based
      * checkpoints (and voting).
      */
-    function clock() public view override returns (uint48) {
+    function clock() public view override(ERC20VotesUpgradeable, IEigen) returns (uint48) {
         return SafeCastUpgradeable.toUint48(block.timestamp);
     }
 
@@ -198,7 +200,28 @@ contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable, IEigen {
      * Has been overridden to inform callers that this contract uses timestamps instead of block numbers, to match `clock()`
      */
     // solhint-disable-next-line func-name-mixedcase
-    function CLOCK_MODE() public pure override returns (string memory) {
+    function CLOCK_MODE() public pure override(ERC20VotesUpgradeable, IEigen) returns (string memory) {
         return "mode=timestamp";
+    }
+
+    // Override ERC20 functions to resolve inheritance conflicts
+    function allowance(address owner, address spender) public view override(ERC20Upgradeable, IERC20Upgradeable) returns (uint256) {
+        return super.allowance(owner, spender);
+    }
+
+    function approve(address spender, uint256 amount) public override(ERC20Upgradeable, IERC20Upgradeable) returns (bool) {
+        return super.approve(spender, amount);
+    }
+
+    function balanceOf(address account) public view override(ERC20Upgradeable, IERC20Upgradeable) returns (uint256) {
+        return super.balanceOf(account);
+    }
+
+    function transfer(address to, uint256 amount) public override(ERC20Upgradeable, IERC20Upgradeable) returns (bool) {
+        return super.transfer(to, amount);
+    }
+
+    function transferFrom(address from, address to, uint256 amount) public override(ERC20Upgradeable, IERC20Upgradeable) returns (bool) {
+        return super.transferFrom(from, to, amount);
     }
 }

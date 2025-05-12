@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.27;
 
+import "@openzeppelin-upgrades/contracts/token/ERC20/IERC20Upgradeable.sol";
+
 import "../../contracts/token/Eigen.sol";
 
 contract EigenHarness is Eigen {
-    constructor(IERC20 _bEIGEN) Eigen(_bEIGEN) {}
+    constructor(IERC20Upgradeable _bEIGEN) Eigen(_bEIGEN) {}
 
     /// expose internal mint function
     function mint(address to, uint amount) public {
