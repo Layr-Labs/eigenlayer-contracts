@@ -144,7 +144,7 @@ contract StrategyManager is
         strategy.withdraw(staker, token, shares);
     }
 
-    // /// @inheritdoc IShareManager
+    /// @inheritdoc IShareManager
     function increaseBurnableShares(
         OperatorSet calldata operatorSet,
         uint256 slashId,
