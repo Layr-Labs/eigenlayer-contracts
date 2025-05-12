@@ -518,7 +518,7 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         (uint40[] memory validators, uint64 beaconBalanceGwei, uint maxEBValidators) = staker.startValidators();
         // Advance epoch and generate consensus rewards, but don't withdraw to pod
         beaconChain.advanceEpoch_NoWithdraw();
-        
+
         /// "Expected effective balance increase gwei":
         // For verifyWithdrawalCredentials, we expect beacon chain rewards to be reflected in effective balance
         // for any validator NOT at max effective balance.

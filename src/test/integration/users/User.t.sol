@@ -332,9 +332,12 @@ contract User is Logger, TypeImporter {
     /// @param count The number of validators to start
     /// @return newValidators A list of created validator indices
     /// @return totalBalanceGwei The amount of gwei sent to the beacon chain
-    function startETH1Validators(
-        uint8 count
-    ) public virtual createSnapshot returns (uint40[] memory newValidators, uint64 totalBalanceGwei) {
+    function startETH1Validators(uint8 count)
+        public
+        virtual
+        createSnapshot
+        returns (uint40[] memory newValidators, uint64 totalBalanceGwei)
+    {
         print.method("startETH1Validators");
         require(count > 0, "startETH1Validators: must create at least 1 validator");
 
@@ -359,9 +362,12 @@ contract User is Logger, TypeImporter {
     /// @param count The number of validators to start
     /// @return newValidators A list of created validator indices
     /// @return totalBalanceGwei The amount of gwei sent to the beacon chain
-    function startCompoundingValidators(
-        uint8 count
-    ) public virtual createSnapshot returns (uint40[] memory newValidators, uint64 totalBalanceGwei) {
+    function startCompoundingValidators(uint8 count)
+        public
+        virtual
+        createSnapshot
+        returns (uint40[] memory newValidators, uint64 totalBalanceGwei)
+    {
         print.method("startCompoundingValidators");
         require(count > 0, "startCompoundingValidators: must create at least 1 validator");
 
@@ -386,7 +392,6 @@ contract User is Logger, TypeImporter {
     struct ConsolidationHelper {
         uint40[] targets;
         uint40[] sources;
-
         mapping(uint40 => bool) used;
         ConsolidationRequest[] requests;
     }
@@ -401,20 +406,23 @@ contract User is Logger, TypeImporter {
     /// - Advances beacon chain state so the consolidations are processed
     /// @return newValidators the remaining active validators after consolidation
     /// @return consolidated the now-inactive validators who were consolidated into newValidators
-    function maxConsolidation(
-        uint40[] memory _validators
-    ) public virtual createSnapshot returns (uint40[] memory newValidators, uint40[] memory consolidated) {
+    function maxConsolidation(uint40[] memory _validators)
+        public
+        virtual
+        createSnapshot
+        returns (uint40[] memory newValidators, uint40[] memory consolidated)
+    {
         print.method("maxConsolidation");
         require(_validators.length > 1, "User.maxConsolidation: only one validator provided");
 
         // Get helper storage space to track what validators we've consolidated, and what requests we'll make
         ConsolidationHelper storage helper = cHelpers.push();
-        
+
         for (uint i = 0; i < _validators.length; i++) {
             // Select the next target validator. If they're already a source/target, skip.
             uint40 targetValidator = _validators[i];
             if (helper.used[targetValidator]) continue;
-            
+
             uint64 targetBalanceGwei = beaconChain.effectiveBalance(targetValidator);
             bytes memory targetPubkey = beaconChain.pubkey(targetValidator);
             helper.used[targetValidator] = true;
@@ -422,10 +430,7 @@ contract User is Logger, TypeImporter {
 
             // If the target validator does not have 0x02 credentials, add a switch request
             if (!beaconChain.hasCompoundingCreds(targetValidator)) {
-                helper.requests.push(ConsolidationRequest({
-                    srcPubkey: targetPubkey,
-                    targetPubkey: targetPubkey
-                }));
+                helper.requests.push(ConsolidationRequest({srcPubkey: targetPubkey, targetPubkey: targetPubkey}));
             }
 
             // Add as many source validators as we can without going over 2048 ETH
@@ -433,7 +438,7 @@ contract User is Logger, TypeImporter {
                 // Select the next source validator. If they're already a source/target, skip.
                 uint40 sourceValidator = _validators[j];
                 if (helper.used[sourceValidator]) continue;
-                
+
                 // Skip if this would push the target's balance above 2048 ETH
                 uint64 sourceBalanceGwei = beaconChain.effectiveBalance(sourceValidator);
                 if (targetBalanceGwei + sourceBalanceGwei > MAX_EFFECTIVE_BALANCE_GWEI) continue;
@@ -442,16 +447,13 @@ contract User is Logger, TypeImporter {
                 targetBalanceGwei += sourceBalanceGwei;
                 helper.used[sourceValidator] = true;
                 helper.sources.push(sourceValidator);
-                helper.requests.push(ConsolidationRequest({
-                    srcPubkey: beaconChain.pubkey(sourceValidator),
-                    targetPubkey: targetPubkey
-                }));
+                helper.requests.push(ConsolidationRequest({srcPubkey: beaconChain.pubkey(sourceValidator), targetPubkey: targetPubkey}));
             }
         }
-        
+
         uint fee = pod.getConsolidationRequestFee() * helper.requests.length;
         cheats.deal(address(this), address(this).balance + fee);
-        pod.requestConsolidation{ value: fee }(helper.requests);
+        pod.requestConsolidation{value: fee}(helper.requests);
 
         // Advance beacon chain
         beaconChain.advanceEpoch_NoRewards();
@@ -656,11 +658,8 @@ contract User is Logger, TypeImporter {
             // Track validators with max effective balance
             // - For 0x01 validators, this is 32 ETH
             // - For 0x02 validators, this is 2048 ETH
-            if (withdrawalCredentials[0] == 0x01 && validatorEth == 32 ether) {
-                maxEBValidators++;
-            } else if (withdrawalCredentials[0] == 0x02 && validatorEth == 2048 ether) {
-                maxEBValidators++;
-            }
+            if (withdrawalCredentials[0] == 0x01 && validatorEth == 32 ether) maxEBValidators++;
+            else if (withdrawalCredentials[0] == 0x02 && validatorEth == 2048 ether) maxEBValidators++;
 
             uint40 validatorIndex = beaconChain.newValidator{value: validatorEth}(withdrawalCredentials);
 
@@ -882,8 +881,7 @@ contract User_AltMethods is User {
 
             if (strat == BEACONCHAIN_ETH_STRAT) {
                 (uint40[] memory newValidators,,) = _startValidators();
-                // Advance forward one epoch and generate credential and balance proofs for each validator
-                beaconChain.advanceEpoch_NoRewards();
+
                 _verifyWithdrawalCredentials(newValidators);
             } else {
                 // Approve token

@@ -32,7 +32,6 @@ struct MerkleTrees {
 
 struct StateProofs {
     MerkleTrees trees;
-
     BeaconChainProofs.StateRootProof stateRootProof;
     BeaconChainProofs.BalanceContainerProof balanceContainerProof;
     mapping(uint40 => ValidatorFieldsProof) validatorFieldsProofs;
@@ -50,7 +49,6 @@ struct Config {
 }
 
 library LibProofGen {
-
     using LibProofGen for *;
     using LibValidator for *;
 
@@ -73,7 +71,9 @@ library LibProofGen {
     function config() internal view returns (Config storage) {
         Config storage cfg;
         bytes32 _CONFIG_SLOT = CONFIG_SLOT;
-        assembly { cfg.slot := _CONFIG_SLOT }
+        assembly {
+            cfg.slot := _CONFIG_SLOT
+        }
 
         return cfg;
     }
@@ -88,7 +88,8 @@ library LibProofGen {
         cfg.BEACON_BLOCK_FIELDS = 5;
         cfg.BLOCKROOT_PROOF_LEN = 32 * BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT;
         cfg.VAL_FIELDS_PROOF_LEN = 32 * ((BeaconChainProofs.VALIDATOR_TREE_HEIGHT + 1) + BeaconChainProofs.DENEB_BEACON_STATE_TREE_HEIGHT);
-        cfg.BALANCE_CONTAINER_PROOF_LEN = 32 * (BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT + BeaconChainProofs.DENEB_BEACON_STATE_TREE_HEIGHT);
+        cfg.BALANCE_CONTAINER_PROOF_LEN =
+            32 * (BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT + BeaconChainProofs.DENEB_BEACON_STATE_TREE_HEIGHT);
         cfg.BALANCE_PROOF_LEN = 32 * (BeaconChainProofs.BALANCE_TREE_HEIGHT + 1);
     }
 
@@ -102,7 +103,8 @@ library LibProofGen {
         cfg.BEACON_BLOCK_FIELDS = 5;
         cfg.BLOCKROOT_PROOF_LEN = 32 * BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT;
         cfg.VAL_FIELDS_PROOF_LEN = 32 * ((BeaconChainProofs.VALIDATOR_TREE_HEIGHT + 1) + BeaconChainProofs.PECTRA_BEACON_STATE_TREE_HEIGHT);
-        cfg.BALANCE_CONTAINER_PROOF_LEN = 32 * (BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT + BeaconChainProofs.PECTRA_BEACON_STATE_TREE_HEIGHT);
+        cfg.BALANCE_CONTAINER_PROOF_LEN =
+            32 * (BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT + BeaconChainProofs.PECTRA_BEACON_STATE_TREE_HEIGHT);
         cfg.BALANCE_PROOF_LEN = 32 * (BeaconChainProofs.BALANCE_TREE_HEIGHT + 1);
     }
 
@@ -118,7 +120,7 @@ library LibProofGen {
     /// OUTPUT: the beacon block root calculated from the input. The mock beacon chain will inject this root
     /// into the EIP-4788 beacon block root oracle, as EigenPods query this oracle during proof verification.
     ///
-    /// Proofs against the beacon block root are also generated and stored in StateProofs; these proofs can 
+    /// Proofs against the beacon block root are also generated and stored in StateProofs; these proofs can
     /// be fetched before calling an EigenPod method.
     ///
     /// This process is broken into 2 steps:
@@ -139,25 +141,19 @@ library LibProofGen {
     /// only as much of the tree as we need for our tests. See `build` for details.
     ///
     /// 2. Once the merkle trees are built, we pre-generate proofs for EigenPod methods.
-    function generate(
-        StateProofs storage p,
-        Validator[] memory validators,
-        mapping(uint40 => bytes32) storage balances
-    ) internal returns (bytes32 beaconBlockRoot) {
+    function generate(StateProofs storage p, Validator[] memory validators, mapping(uint40 => bytes32) storage balances)
+        internal
+        returns (bytes32 beaconBlockRoot)
+    {
         MerkleTrees storage trees = p.trees;
 
         // Build merkle tree for validators
-        bytes32 validatorsRoot = trees.validatorTree.build({
-            leaves: _getValidatorLeaves(validators),
-            height: BeaconChainProofs.VALIDATOR_TREE_HEIGHT + 1
-        });
+        bytes32 validatorsRoot =
+            trees.validatorTree.build({leaves: _getValidatorLeaves(validators), height: BeaconChainProofs.VALIDATOR_TREE_HEIGHT + 1});
 
         // Build merkle tree for current balances
         bytes32[] memory balanceLeaves = _getBalanceLeaves(balances, validators.length);
-        bytes32 balanceContainerRoot = trees.balancesTree.build({
-            leaves: balanceLeaves,
-            height: BeaconChainProofs.BALANCE_TREE_HEIGHT + 1
-        });
+        bytes32 balanceContainerRoot = trees.balancesTree.build({leaves: balanceLeaves, height: BeaconChainProofs.BALANCE_TREE_HEIGHT + 1});
 
         // Build merkle tree for BeaconState
         bytes32 beaconStateRoot = trees.stateTree.build({
@@ -454,7 +450,7 @@ library LibProofGen {
         // Each balance leaf is shared by 4 validators. This uses div_ceil
         // to calculate the number of balance leaves
         uint numBalanceRoots = numValidators == 0 ? 0 : ((numValidators - 1) / 4) + 1;
-        
+
         // Place each validator's current balance into tree
         bytes32[] memory leaves = new bytes32[](numBalanceRoots);
         for (uint i = 0; i < leaves.length; i++) {

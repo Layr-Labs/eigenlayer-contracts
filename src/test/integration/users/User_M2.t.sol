@@ -200,6 +200,9 @@ contract User_M2 is User {
             validators.push(validatorIndex);
         }
 
+        // Advance forward one epoch and generate withdrawal and balance proofs for each validator
+        beaconChain.advanceEpoch_NoRewards();
+
         return (newValidators, totalBeaconBalanceGwei, numValidators);
     }
 
@@ -303,8 +306,7 @@ contract User_M2_AltMethods is User_M2 {
 
             if (strat == BEACONCHAIN_ETH_STRAT) {
                 (uint40[] memory newValidators,,) = _startValidators();
-                // Advance forward one epoch and generate credential and balance proofs for each validator
-                beaconChain.advanceEpoch_NoRewards();
+
                 _verifyWithdrawalCredentials(newValidators);
             } else {
                 // Approve token
