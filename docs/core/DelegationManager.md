@@ -11,7 +11,7 @@ Libraries and Mixins:
 | File | Notes |
 | -------- | -------- |
 | [`PermissionControllerMixin.sol`](../../src/contracts/mixins/PermissionControllerMixin.sol) | account delegation |
-| [`SignatureUtils.sol`](../../src/contracts/mixins/SignatureUtils.sol) | signature validation |
+| [`SignatureUtilsMixin.sol`](../../src/contracts/mixins/SignatureUtilsMixin.sol) | signature validation |
 | [`Pausable.sol`](../../src/contracts/permissions/Pausable.sol) | |
 | [`SlashingLib.sol`](../../src/contracts/libraries/SlashingLib.sol) | slashing math |
 | [`Snapshots.sol`](../../src/contracts/libraries/Snapshots.sol) | historical state |
