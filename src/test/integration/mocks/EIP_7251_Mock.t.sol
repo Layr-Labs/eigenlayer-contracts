@@ -8,7 +8,6 @@ struct ConsolidationReq {
 }
 
 contract EIP_7251_Mock {
-
     address constant SYSTEM_ADDRESS = 0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE;
 
     uint constant EXCESS_INHIBITOR = type(uint).max;
@@ -25,15 +24,10 @@ contract EIP_7251_Mock {
     mapping(uint => ConsolidationReq) requestQueue;
 
     fallback() external payable {
-        if (msg.sender == SYSTEM_ADDRESS) {
-            _doReadRequests();
-        } else if (msg.data.length == 0) {
-            _doGetFee();
-        } else if (msg.data.length == 96) {
-            _doAddRequest();
-        } else {
-            revert("EIP_7251_Mock: unknown function");
-        }
+        if (msg.sender == SYSTEM_ADDRESS) _doReadRequests();
+        else if (msg.data.length == 0) _doGetFee();
+        else if (msg.data.length == 96) _doAddRequest();
+        else revert("EIP_7251_Mock: unknown function");
     }
 
     /**
@@ -41,7 +35,6 @@ contract EIP_7251_Mock {
      *                            "PUBLIC" METHODS
      *
      */
-
     function _doAddRequest() internal {
         uint fee = _getFee();
         require(msg.value >= fee, "EIP_7251_Mock: insufficient value for fee");
@@ -75,7 +68,9 @@ contract EIP_7251_Mock {
         _resetConsolidationRequestCount();
 
         bytes memory returnData = abi.encode(reqs);
-        assembly { return(add(32, returnData), mload(returnData)) }
+        assembly {
+            return(add(32, returnData), mload(returnData))
+        }
     }
 
     /**
@@ -83,7 +78,6 @@ contract EIP_7251_Mock {
      *                            PRIVATE METHODS
      *
      */
-
     function _dequeueConsolidationRequests() internal returns (ConsolidationReq[] memory reqs) {
         uint numInQueue = queueTail - queueHead;
         // The actual spec caps this to MAX_CONSOLIDATION_REQUESTS_PER_BLOCK, but that's not super useful for tests
@@ -107,9 +101,7 @@ contract EIP_7251_Mock {
 
     function _updateExcessConsolidationRequests() internal {
         uint prevExcess = excessRequests;
-        if (prevExcess == EXCESS_INHIBITOR) {
-            prevExcess = 0;
-        }
+        if (prevExcess == EXCESS_INHIBITOR) prevExcess = 0;
 
         uint newExcess = 0;
         if (prevExcess + consolidationRequestCount > TARGET_CONSOLIDATION_REQUESTS_PER_BLOCK) {
