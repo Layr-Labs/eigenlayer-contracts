@@ -1031,11 +1031,14 @@ contract AllocationManager is
     function isOperatorRedistributable(
         address operator
     ) external view returns (bool) {
-        EnumerableSet.Bytes32Set storage sets = allocatedSets[operator];
-        uint256 length = sets.length();
-        for (uint256 i = 0; i < length; ++i) {
-            bytes32 operatorSetKey = sets.at(i);
-            if (_redistributionRecipients[operatorSetKey] != address(0)) {
+        EnumerableSet.Bytes32Set storage allocatedSets = allocatedSets[operator];
+        EnumerableSet.Bytes32Set storage registeredSets = registeredSets[operator];
+
+        uint256 allocatedLength = allocatedSets.length();
+        for (uint256 i = 0; i < allocatedLength; ++i) {
+            bytes32 operatorSetKey = allocatedSets.at(i);
+            // Check if the operator is both allocated and registered to this set
+            if (registeredSets.contains(operatorSetKey) && _redistributionRecipients[operatorSetKey] != address(0)) {
                 return true;
             }
         }
