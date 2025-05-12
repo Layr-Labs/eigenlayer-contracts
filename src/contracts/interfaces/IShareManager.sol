@@ -3,7 +3,7 @@ pragma solidity ^0.8.27;
 
 import "../libraries/SlashingLib.sol";
 import "./IStrategy.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin-v4.9.0/contracts/token/ERC20/IERC20.sol";
 
 /**
  * @title Interface for a `IShareManager` contract.

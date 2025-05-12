@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin-upgrades/contracts/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
-import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
+import "@openzeppelin-v4.9.0/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin-upgrades-v4.9.0/contracts/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
+import "@openzeppelin-upgrades-v4.9.0/contracts/access/OwnableUpgradeable.sol";
 
 contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable {
     /// CONSTANTS & IMMUTABLES
