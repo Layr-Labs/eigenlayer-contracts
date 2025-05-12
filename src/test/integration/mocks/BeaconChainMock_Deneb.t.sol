@@ -17,9 +17,7 @@ contract BeaconChainMock_DenebForkable is BeaconChainMock {
     // The timestamp of the Pectra hard fork
     uint64 public pectraForkTimestamp;
 
-    constructor(EigenPodManager _eigenPodManager, uint64 _genesisTime) 
-        BeaconChainMock(_eigenPodManager, _genesisTime) 
-    {
+    constructor(EigenPodManager _eigenPodManager, uint64 _genesisTime) BeaconChainMock(_eigenPodManager, _genesisTime) {
         LibProofGen.useDencun();
     }
 
@@ -28,7 +26,7 @@ contract BeaconChainMock_DenebForkable is BeaconChainMock {
     }
 
     /// @dev Always return 32 ETH in gwei
-    function _getMaxEffectiveBalanceGwei(Validator storage v) internal override view returns (uint64) {
+    function _getMaxEffectiveBalanceGwei(Validator storage v) internal view override returns (uint64) {
         return isPectra ? super._getMaxEffectiveBalanceGwei(v) : MIN_ACTIVATION_BALANCE_GWEI;
     }
 

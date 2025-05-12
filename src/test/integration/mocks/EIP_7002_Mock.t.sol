@@ -8,7 +8,6 @@ struct WithdrawalReq {
 }
 
 contract EIP_7002_Mock {
-
     address constant SYSTEM_ADDRESS = 0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE;
 
     uint constant EXCESS_INHIBITOR = type(uint).max;
@@ -25,15 +24,10 @@ contract EIP_7002_Mock {
     mapping(uint => WithdrawalReq) requestQueue;
 
     fallback() external payable {
-        if (msg.sender == SYSTEM_ADDRESS) {
-            _doReadRequests();
-        } else if (msg.data.length == 0) {
-            _doGetFee();
-        } else if (msg.data.length == 56) {
-            _doAddRequest();
-        } else {
-            revert("EIP_7002_Mock: unknown function");
-        }
+        if (msg.sender == SYSTEM_ADDRESS) _doReadRequests();
+        else if (msg.data.length == 0) _doGetFee();
+        else if (msg.data.length == 56) _doAddRequest();
+        else revert("EIP_7002_Mock: unknown function");
     }
 
     /**
@@ -41,7 +35,6 @@ contract EIP_7002_Mock {
      *                            "PUBLIC" METHODS
      *
      */
-
     function _doAddRequest() internal {
         uint fee = _getFee();
         require(msg.value >= fee, "EIP_7002_Mock: insufficient value for fee");
@@ -51,7 +44,7 @@ contract EIP_7002_Mock {
         bytes memory pubkey = msg.data[0:48];
         uint64 amountGwei;
         assembly {
-            calldatacopy(24, 48, 8)              // copy uint64 amountGwei to memory[0]
+            calldatacopy(24, 48, 8) // copy uint64 amountGwei to memory[0]
             amountGwei := mload(0)
         }
 
@@ -79,7 +72,9 @@ contract EIP_7002_Mock {
         _resetWithdrawalRequestCount();
 
         bytes memory returnData = abi.encode(reqs);
-        assembly { return(add(32, returnData), mload(returnData)) }
+        assembly {
+            return(add(32, returnData), mload(returnData))
+        }
     }
 
     /**
@@ -87,7 +82,6 @@ contract EIP_7002_Mock {
      *                            PRIVATE METHODS
      *
      */
-
     function _dequeueWithdrawalRequests() internal returns (WithdrawalReq[] memory reqs) {
         uint numInQueue = queueTail - queueHead;
         // The actual spec caps this to MAX_WITHDRAWAL_REQUESTS_PER_BLOCK, but that's not super useful for tests
@@ -111,9 +105,7 @@ contract EIP_7002_Mock {
 
     function _updateExcessWithdrawalRequests() internal {
         uint prevExcess = excessRequests;
-        if (prevExcess == EXCESS_INHIBITOR) {
-            prevExcess = 0;
-        }
+        if (prevExcess == EXCESS_INHIBITOR) prevExcess = 0;
 
         uint newExcess = 0;
         if (prevExcess + withdrawalRequestCount > TARGET_WITHDRAWAL_REQUESTS_PER_BLOCK) {

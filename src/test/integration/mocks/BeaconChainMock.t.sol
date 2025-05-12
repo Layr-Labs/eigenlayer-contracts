@@ -79,7 +79,7 @@ contract BeaconChainMock is Logger {
     EIP_4788_Oracle_Mock constant EIP_4788_ORACLE = EIP_4788_Oracle_Mock(0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02);
     EIP_7002_Mock constant WITHDRAWAL_PREDEPLOY = EIP_7002_Mock(payable(0x00000961Ef480Eb55e80D19ad83579A64c007002));
     EIP_7251_Mock constant CONSOLIDATION_PREDEPLOY = EIP_7251_Mock(payable(0x0000BBdDc7CE488642fb579F8B00f3a590007251));
-    
+
     /**
      * BeaconState containers, used for proofgen:
      * https://eth2book.info/capella/part3/containers/state/#beaconstate
@@ -368,7 +368,7 @@ contract BeaconChainMock is Logger {
                 _logSkip("source or target does not exist");
                 continue;
             }
-            
+
             Validator storage source = validators[sourceIndex];
             Validator storage target = validators[targetIndex];
 
@@ -388,7 +388,7 @@ contract BeaconChainMock is Logger {
                     _logSkip("switch request source already has 0x02 credentials");
                 } else {
                     console.log("   -- Switching validator to 0x02 creds (idx: %d).", sourceIndex);
-                
+
                     // The beacon chain would queue excess balance here as a "pending deposit", but
                     // we don't follow the spec that closely.
                     source.withdrawalCreds[0] = 0x02;
@@ -521,7 +521,7 @@ contract BeaconChainMock is Logger {
                     curBalanceGwei -= withdrawAmtGwei;
                     v.pendingBalanceToWithdrawGwei = 0;
                 }
-                 
+
                 // Withdraw any amount above the max effective balance:
                 // - For 0x01 validators, this is 32 ETH
                 // - For 0x02 validators, this is 2048 ETH
@@ -586,10 +586,7 @@ contract BeaconChainMock is Logger {
             return;
         }
 
-        bytes32 beaconBlockRoot = proofs[curTimestamp].generate({
-            validators: validators,
-            balances: balances
-        });
+        bytes32 beaconBlockRoot = proofs[curTimestamp].generate({validators: validators, balances: balances});
 
         // Push new block root to oracle
         EIP_4788_ORACLE.setBlockRoot(curTimestamp, beaconBlockRoot);
@@ -649,7 +646,7 @@ contract BeaconChainMock is Logger {
         cheats.resumeTracing();
 
         return validatorIndex;
-    }  
+    }
 
     function _currentBalanceGwei(uint40 validatorIndex) internal view returns (uint64) {
         return currentBalance(validatorIndex);
@@ -829,7 +826,7 @@ contract BeaconChainMock is Logger {
         return validators[validatorIndex].effectiveBalanceGwei;
     }
 
-    function _getMaxEffectiveBalanceGwei(Validator storage v) internal virtual view returns (uint64) {
+    function _getMaxEffectiveBalanceGwei(Validator storage v) internal view virtual returns (uint64) {
         return v.hasCompoundingWC() ? MAX_EFFECTIVE_BALANCE_GWEI : MIN_ACTIVATION_BALANCE_GWEI;
     }
 
