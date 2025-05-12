@@ -13,23 +13,25 @@ struct Validator {
     uint64 effectiveBalanceGwei;
     uint64 activationEpoch;
     uint64 exitEpoch;
-
     // cumulative unprocessed withdraw requests
     uint64 pendingBalanceToWithdrawGwei;
 }
 
 library LibValidator {
-
     /// @dev Generates a faux-pubkey from a uint40 validator index
     function toPubkey(uint40 index) internal pure returns (bytes memory pubkey) {
         pubkey = new bytes(48);
-        assembly { mstore(add(48, pubkey), index) }
+        assembly {
+            mstore(add(48, pubkey), index)
+        }
     }
 
     /// @dev Converts a validator pubkey to the index it uses in BeaconChainMock
     /// NOTE this assumes a valid size pubkey
     function toIndex(bytes memory pubkey) internal pure returns (uint40 validatorIndex) {
-        assembly { validatorIndex := mload(add(48, pubkey)) }
+        assembly {
+            validatorIndex := mload(add(48, pubkey))
+        }
     }
 
     /// @dev Computes a pubkey hash from a validator's pubkey
@@ -65,7 +67,9 @@ library LibValidator {
         bytes32 creds = bytes32(self.withdrawalCreds);
         uint160 mask = type(uint160).max;
 
-        assembly { addr := and(creds, mask) }
+        assembly {
+            addr := and(creds, mask)
+        }
     }
 
     /// @dev Returns true if the validator does not have 0x01/0x02 withdrawal credentials

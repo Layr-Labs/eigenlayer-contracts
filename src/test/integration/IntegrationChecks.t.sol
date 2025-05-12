@@ -55,6 +55,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_DepositShares_GTE_WithdrawableShares(
             staker, BEACONCHAIN_ETH_STRAT.toArray(), "deposit shares should be greater than or equal to withdrawable shares"
         );
+        assert_Snap_Unchanged_CheckpointBlockRoot(staker, "completed checkpoint should still have block root");
         assert_Snap_Removed_Checkpoint(staker, "should have deleted active checkpoint");
         assert_Snap_Updated_LastCheckpoint(staker, "last checkpoint timestamp should be updated");
         assert_Snap_Added_PodBalanceToWithdrawable(staker, "pod balance should have been added to withdrawable restaked exec layer gwei");

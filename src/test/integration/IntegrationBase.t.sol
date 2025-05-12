@@ -1965,8 +1965,13 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         uint64 curCheckpointTimestamp = _getCheckpointTimestamp(staker);
         uint64 prevCheckpointTimestamp = _getPrevCheckpointTimestamp(staker);
 
+        uint curProofsRemaining = _getProofsRemaining(staker);
+        uint prevProofsRemaining = _getPrevProofsRemaining(staker);
+
         assertEq(curCheckpointTimestamp, 0, err);
         assertTrue(prevCheckpointTimestamp != 0, err);
+        assertEq(curProofsRemaining, 0, err);
+        assertTrue(prevProofsRemaining != 0, err);
     }
 
     function assert_Snap_Unchanged_Checkpoint(User staker, string memory err) internal {
@@ -1974,6 +1979,13 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         uint64 prevCheckpointTimestamp = _getPrevCheckpointTimestamp(staker);
 
         assertEq(curCheckpointTimestamp, prevCheckpointTimestamp, err);
+    }
+
+    function assert_Snap_Unchanged_CheckpointBlockRoot(User staker, string memory err) internal {
+        bytes32 curBlockRoot = _getCheckpointBlockRoot(staker);
+        bytes32 prevBlockRoot = _getPrevCheckpointBlockRoot(staker);
+
+        assertEq(curBlockRoot, prevBlockRoot, err);
     }
 
     function assert_Snap_Updated_LastCheckpoint(User staker, string memory err) internal {
@@ -3054,6 +3066,22 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
 
     function _getPrevValidatorStatuses(User staker, bytes32[] memory pubkeyHashes) internal timewarp returns (VALIDATOR_STATUS[] memory) {
         return _getValidatorStatuses(staker, pubkeyHashes);
+    }
+
+    function _getProofsRemaining(User staker) internal view returns (uint) {
+        return staker.pod().currentCheckpoint().proofsRemaining;
+    }
+
+    function _getPrevProofsRemaining(User staker) internal timewarp returns (uint) {
+        return _getProofsRemaining(staker);
+    }
+
+    function _getCheckpointBlockRoot(User staker) internal view returns (bytes32) {
+        return staker.pod().currentCheckpoint().beaconBlockRoot;
+    }
+
+    function _getPrevCheckpointBlockRoot(User staker) internal timewarp returns (bytes32) {
+        return _getCheckpointBlockRoot(staker);
     }
 
     function _getCheckpointTimestamp(User staker) internal view returns (uint64) {
