@@ -198,7 +198,7 @@ contract EigenPod is
 
             // Record the updated validator in state
             _validatorPubkeyHashToInfo[proof.pubkeyHash] = validatorInfo;
-            emit ValidatorCheckpointed(checkpointTimestamp, uint40(validatorInfo.validatorIndex));
+            emit ValidatorCheckpointed(checkpointTimestamp, proof.pubkeyHash);
         }
 
         // Update the checkpoint and the total amount attributed to exited validators
@@ -404,7 +404,7 @@ contract EigenPod is
         // stake on ethpos
         require(msg.value == 32 ether, MsgValueNot32ETH());
         ethPOS.deposit{value: 32 ether}(pubkey, _podWithdrawalCredentials(), signature, depositDataRoot);
-        emit EigenPodStaked(pubkey);
+        emit EigenPodStaked(_calcPubkeyHash(pubkey));
     }
 
     /// @inheritdoc IEigenPod
@@ -526,8 +526,8 @@ contract EigenPod is
         // the validator's restaked balance during the checkpoint process
         _currentCheckpoint.prevBeaconBalanceGwei += restakedBalanceGwei;
 
-        emit ValidatorRestaked(validatorIndex);
-        emit ValidatorBalanceUpdated(validatorIndex, lastCheckpointedAt, restakedBalanceGwei);
+        emit ValidatorRestaked(pubkeyHash);
+        emit ValidatorBalanceUpdated(pubkeyHash, lastCheckpointedAt, restakedBalanceGwei);
         return restakedBalanceGwei * GWEI_TO_WEI;
     }
 
@@ -537,20 +537,18 @@ contract EigenPod is
         bytes32 balanceContainerRoot,
         BeaconChainProofs.BalanceProof calldata proof
     ) internal returns (uint64 prevBalanceGwei, int64 balanceDeltaGwei, uint64 exitedBalanceGwei) {
-        uint40 validatorIndex = uint40(validatorInfo.validatorIndex);
-
         // Verify validator balance against `balanceContainerRoot`
         prevBalanceGwei = validatorInfo.restakedBalanceGwei;
         uint64 newBalanceGwei = BeaconChainProofs.verifyValidatorBalance({
             balanceContainerRoot: balanceContainerRoot,
-            validatorIndex: validatorIndex,
+            validatorIndex: uint40(validatorInfo.validatorIndex),
             proof: proof
         });
 
         // Calculate change in the validator's balance since the last proof
         if (newBalanceGwei != prevBalanceGwei) {
             balanceDeltaGwei = int64(newBalanceGwei) - int64(prevBalanceGwei);
-            emit ValidatorBalanceUpdated(validatorIndex, checkpointTimestamp, newBalanceGwei);
+            emit ValidatorBalanceUpdated(proof.pubkeyHash, checkpointTimestamp, newBalanceGwei);
         }
 
         validatorInfo.restakedBalanceGwei = newBalanceGwei;
@@ -564,7 +562,7 @@ contract EigenPod is
             // so this should be a safe conversion
             exitedBalanceGwei = uint64(-balanceDeltaGwei);
 
-            emit ValidatorWithdrawn(checkpointTimestamp, validatorIndex);
+            emit ValidatorWithdrawn(checkpointTimestamp, proof.pubkeyHash);
         }
 
         return (prevBalanceGwei, balanceDeltaGwei, exitedBalanceGwei);
