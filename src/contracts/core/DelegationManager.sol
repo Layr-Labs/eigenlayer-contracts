@@ -93,7 +93,7 @@ contract DelegationManager is
     function registerAsOperator(
         address initDelegationApprover,
         uint32 allocationDelay,
-        string calldata metadataURI
+        string memory metadataURI
     ) external nonReentrant {
         _checkStakerNotDelegated(msg.sender);
 
@@ -117,7 +117,7 @@ contract DelegationManager is
     }
 
     /// @inheritdoc IDelegationManager
-    function updateOperatorMetadataURI(address operator, string calldata metadataURI) external checkCanCall(operator) {
+    function updateOperatorMetadataURI(address operator, string memory metadataURI) external checkCanCall(operator) {
         _checkOperatorRegistered(operator);
         emit OperatorMetadataURIUpdated(operator, metadataURI);
     }
@@ -176,7 +176,7 @@ contract DelegationManager is
 
     /// @inheritdoc IDelegationManager
     function queueWithdrawals(
-        QueuedWithdrawalParams[] calldata params
+        QueuedWithdrawalParams[] memory params
     ) external onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE) nonReentrant returns (bytes32[] memory) {
         bytes32[] memory withdrawalRoots = new bytes32[](params.length);
         address operator = delegatedTo[msg.sender];
@@ -204,8 +204,8 @@ contract DelegationManager is
 
     /// @inheritdoc IDelegationManager
     function completeQueuedWithdrawal(
-        Withdrawal calldata withdrawal,
-        IERC20[] calldata tokens,
+        Withdrawal memory withdrawal,
+        IERC20[] memory tokens,
         bool receiveAsTokens
     ) external onlyWhenNotPaused(PAUSED_EXIT_WITHDRAWAL_QUEUE) nonReentrant {
         _completeQueuedWithdrawal(withdrawal, tokens, receiveAsTokens);
@@ -213,9 +213,9 @@ contract DelegationManager is
 
     /// @inheritdoc IDelegationManager
     function completeQueuedWithdrawals(
-        Withdrawal[] calldata withdrawals,
-        IERC20[][] calldata tokens,
-        bool[] calldata receiveAsTokens
+        Withdrawal[] memory withdrawals,
+        IERC20[][] memory tokens,
+        bool[] memory receiveAsTokens
     ) external onlyWhenNotPaused(PAUSED_EXIT_WITHDRAWAL_QUEUE) nonReentrant {
         uint256 n = withdrawals.length;
         for (uint256 i; i < n; ++i) {
@@ -280,7 +280,7 @@ contract DelegationManager is
     /// @inheritdoc IDelegationManager
     function slashOperatorShares(
         address operator,
-        OperatorSet calldata operatorSet,
+        OperatorSet memory operatorSet,
         uint256 slashId,
         IStrategy strategy,
         uint64 prevMaxMagnitude,
@@ -539,8 +539,8 @@ contract DelegationManager is
      * and added back to the operator's delegatedShares.
      */
     function _completeQueuedWithdrawal(
-        Withdrawal calldata withdrawal,
-        IERC20[] calldata tokens,
+        Withdrawal memory withdrawal,
+        IERC20[] memory tokens,
         bool receiveAsTokens
     ) internal {
         _checkInputArrayLengths(tokens.length, withdrawal.strategies.length);
