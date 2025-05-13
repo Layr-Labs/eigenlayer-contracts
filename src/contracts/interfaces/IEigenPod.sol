@@ -138,17 +138,17 @@ interface IEigenPodTypes {
 
 interface IEigenPodEvents is IEigenPodTypes {
     /// @notice Emitted when an ETH validator stakes via this eigenPod
-    event EigenPodStaked(bytes pubkey);
+    event EigenPodStaked(bytes32 pubkeyHash);
 
     /// @notice Emitted when a pod owner updates the proof submitter address
     event ProofSubmitterUpdated(address prevProofSubmitter, address newProofSubmitter);
 
     /// @notice Emitted when an ETH validator's withdrawal credentials are successfully verified to be pointed to this eigenPod
-    event ValidatorRestaked(uint40 validatorIndex);
+    event ValidatorRestaked(bytes32 pubkeyHash);
 
     /// @notice Emitted when an ETH validator's  balance is proven to be updated.  Here newValidatorBalanceGwei
     //  is the validator's balance that is credited on EigenLayer.
-    event ValidatorBalanceUpdated(uint40 validatorIndex, uint64 balanceTimestamp, uint64 newValidatorBalanceGwei);
+    event ValidatorBalanceUpdated(bytes32 pubkeyHash, uint64 balanceTimestamp, uint64 newValidatorBalanceGwei);
 
     /// @notice Emitted when restaked beacon chain ETH is withdrawn from the eigenPod.
     event RestakedBeaconChainETHWithdrawn(address indexed recipient, uint256 amount);
@@ -165,10 +165,10 @@ interface IEigenPodEvents is IEigenPodTypes {
     event CheckpointFinalized(uint64 indexed checkpointTimestamp, int256 totalShareDeltaWei);
 
     /// @notice Emitted when a validator is proven for a given checkpoint
-    event ValidatorCheckpointed(uint64 indexed checkpointTimestamp, uint40 indexed validatorIndex);
+    event ValidatorCheckpointed(uint64 indexed checkpointTimestamp, bytes32 indexed pubkeyHash);
 
     /// @notice Emitted when a validaor is proven to have 0 balance at a given checkpoint
-    event ValidatorWithdrawn(uint64 indexed checkpointTimestamp, uint40 indexed validatorIndex);
+    event ValidatorWithdrawn(uint64 indexed checkpointTimestamp, bytes32 indexed pubkeyHash);
 
     /// @notice Emitted when a consolidation request is initiated where source == target
     event SwitchToCompoundingRequested(bytes32 indexed validatorPubkeyHash);
@@ -317,7 +317,7 @@ interface IEigenPod is IEigenPodErrors, IEigenPodEvents, ISemVerMixin {
     ///   to compounding (0x02).
     /// - The rest of the notes assume src != target.
     /// - The target validator MUST already have 0x02 credentials. The source validator can have either.
-    /// - Consoldiation sets the source validator's exit_epoch and withdrawable_epoch, similar to an exit.
+    /// - Consolidation sets the source validator's exit_epoch and withdrawable_epoch, similar to an exit.
     ///   When the exit epoch is reached, an epoch sweep will process the consolidation and transfer balance
     ///   from the source to the target validator.
     /// - Consolidation transfers min(srcValidator.effective_balance, state.balance[srcIndex]) to the target.
