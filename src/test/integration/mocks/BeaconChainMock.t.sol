@@ -266,6 +266,8 @@ contract BeaconChainMock is Logger {
 
     modifier onEpoch() {
         _updateCurrentEpoch();
+        _process_EIP_7002_Requests();
+        _process_EIP_7521_Requests();
         _;
         _advanceEpoch();
     }
@@ -342,13 +344,6 @@ contract BeaconChainMock is Logger {
         console.log("   - Generated rewards for %s of %s validators.", totalRewarded, validators.length);
     }
 
-    /// @dev Process EIP-7002 partial withdrawal requests and any withdrawals from the beacon chain
-    function _processWithdrawals() internal {
-        _process_EIP_7002_Requests();
-        _process_EIP_7521_Requests();
-        _withdrawFromBeaconChain();
-    }
-
     /// @dev Handle consolidation requests
     function _process_EIP_7521_Requests() internal {
         // Call EIP-7521 predeploy and dequeue any consolidation requests
@@ -372,6 +367,8 @@ contract BeaconChainMock is Logger {
             Validator storage source = validators[sourceIndex];
             Validator storage target = validators[targetIndex];
 
+            // The beacon chain performs a lot of validation on requests. We do most of
+            // the same checks here, and log and requests we skip for debugging.
             if (source.isDummy || target.isDummy) {
                 _logSkip("dummy validator");
             } else if (request.source != source.withdrawalAddress()) {
@@ -457,6 +454,8 @@ contract BeaconChainMock is Logger {
             uint64 balanceGwei = _currentBalanceGwei(validatorIndex);
             bool hasExcessBalance = balanceGwei > MIN_ACTIVATION_BALANCE_GWEI + v.pendingBalanceToWithdrawGwei;
 
+            // The beacon chain performs a lot of validation on requests. We do most of
+            // the same checks here, and log and requests we skip for debugging.
             if (v.isDummy) {
                 _logSkip("dummy validator");
             } else if (request.source != v.withdrawalAddress()) {
@@ -494,7 +493,7 @@ contract BeaconChainMock is Logger {
     /// - has a pending partial withdrawal
     ///
     /// ... withdraw the appropriate amount to the validator's withdrawal credentials
-    function _withdrawFromBeaconChain() internal {
+    function _processWithdrawals() internal {
         uint64 totalWithdrawnGwei;
         for (uint i = 0; i < validators.length; i++) {
             Validator storage v = validators[i];
@@ -517,8 +516,7 @@ contract BeaconChainMock is Logger {
                     withdrawAmtGwei = v.pendingBalanceToWithdrawGwei;
                     if (withdrawAmtGwei > excessBalanceGwei) withdrawAmtGwei = excessBalanceGwei;
 
-                    // Reduce balance and set pending to 0
-                    curBalanceGwei -= withdrawAmtGwei;
+                    // Set pending to 0
                     v.pendingBalanceToWithdrawGwei = 0;
                 }
 
@@ -526,8 +524,8 @@ contract BeaconChainMock is Logger {
                 // - For 0x01 validators, this is 32 ETH
                 // - For 0x02 validators, this is 2048 ETH
                 uint64 maxEBGwei = _getMaxEffectiveBalanceGwei(v);
-                if (curBalanceGwei > maxEBGwei) {
-                    uint64 excessBalanceGwei = curBalanceGwei - maxEBGwei;
+                if (curBalanceGwei - withdrawAmtGwei > maxEBGwei) {
+                    uint64 excessBalanceGwei = curBalanceGwei - withdrawAmtGwei - maxEBGwei;
 
                     withdrawAmtGwei += excessBalanceGwei;
                 }

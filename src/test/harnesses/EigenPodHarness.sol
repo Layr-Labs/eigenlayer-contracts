@@ -5,8 +5,8 @@ import "../../contracts/pods/EigenPod.sol";
 import "forge-std/Test.sol";
 
 contract EigenPodHarness is EigenPod {
-    constructor(IETHPOSDeposit _ethPOS, IEigenPodManager _eigenPodManager, uint64 _GENESIS_TIME, string memory _version)
-        EigenPod(_ethPOS, _eigenPodManager, _GENESIS_TIME, _version)
+    constructor(IETHPOSDeposit _ethPOS, IEigenPodManager _eigenPodManager, string memory _version)
+        EigenPod(_ethPOS, _eigenPodManager, _version)
     {}
 
     function getActiveValidatorCount() public view returns (uint) {
