@@ -112,10 +112,6 @@ library Env {
         return _envAddress("MultiSendCallOnly");
     }
 
-    function EIGENPOD_GENESIS_TIME() internal view returns (uint64) {
-        return _envU64("EIGENPOD_GENESIS_TIME");
-    }
-
     function MIN_WITHDRAWAL_DELAY() internal view returns (uint32) {
         return _envU32("MIN_WITHDRAWAL_DELAY");
     }

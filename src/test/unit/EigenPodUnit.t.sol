@@ -16,6 +16,7 @@ import "src/test/utils/EigenLayerUnitTestSetup.sol";
 import "src/test/integration/mocks/BeaconChainMock.t.sol";
 import "src/test/integration/mocks/BeaconChainMock_Deneb.t.sol";
 import "src/test/integration/mocks/EIP_4788_Oracle_Mock.t.sol";
+import "src/test/integration/mocks/LibValidator.t.sol";
 import "src/test/utils/EigenPodUser.t.sol";
 import "src/test/utils/BytesLib.sol";
 
@@ -58,7 +59,7 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
         beaconChain = new BeaconChainMock(EigenPodManager(address(eigenPodManagerMock)), GENESIS_TIME_LOCAL);
 
         // Deploy EigenPod
-        podImplementation = new EigenPod(ethPOSDepositMock, IEigenPodManager(address(eigenPodManagerMock)), GENESIS_TIME_LOCAL, "9.9.9");
+        podImplementation = new EigenPod(ethPOSDepositMock, IEigenPodManager(address(eigenPodManagerMock)), "v9.9.9");
 
         // Deploy Beacon
         eigenPodBeacon = new UpgradeableBeacon(address(podImplementation));
@@ -74,9 +75,6 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
                 )
             )
         );
-
-        // Etch 4788 precompile
-        cheats.etch(address(EIP_4788_ORACLE), type(EIP_4788_Oracle_Mock).runtimeCode);
 
         // Store the eigenPodBeacon address in the eigenPod beacon proxy
         bytes32 beaconSlot = 0xa3f0ad74e5423aebfd80d3ef4346578335a9a72aeaee59ff6cb3582b35133d50;
@@ -306,7 +304,6 @@ contract EigenPodUnitTests_Initialization is EigenPodUnitTests {
 
         assertTrue(pod.ethPOS() == ethPOSDepositMock, "should have set ethPOS correctly");
         assertTrue(address(pod.eigenPodManager()) == address(eigenPodManagerMock), "should have set eigenpodmanager correctly");
-        assertTrue(pod.GENESIS_TIME() == GENESIS_TIME_LOCAL, "should have set genesis time correctly");
     }
 
     function test_initialization() public {
@@ -318,7 +315,6 @@ contract EigenPodUnitTests_Initialization is EigenPodUnitTests {
         // Check immutable storage
         assertEq(address(pod.ethPOS()), address(ethPOSDepositMock), "EthPOS incorrectly set");
         assertEq(address(pod.eigenPodManager()), address(eigenPodManagerMock), "EigenPodManager incorrectly set");
-        assertEq(pod.GENESIS_TIME(), GENESIS_TIME_LOCAL, "LOCAL genesis time incorrectly set");
     }
 
     function test_initialize_revert_alreadyInitialized() public {
@@ -330,7 +326,11 @@ contract EigenPodUnitTests_Initialization is EigenPodUnitTests {
     }
 
     function test_initialize_revert_emptyPodOwner() public {
+<<<<<<< HEAD
         EigenPod pod = new EigenPod(ethPOSDepositMock, IEigenPodManager(address(eigenPodManagerMock)), GENESIS_TIME_LOCAL, "9.9.9");
+=======
+        EigenPod pod = new EigenPod(ethPOSDepositMock, IEigenPodManager(address(eigenPodManagerMock)), "v9.9.9");
+>>>>>>> 207c0536 (feat: release scripts for moocow and elip5)
         // un-initialize pod
         cheats.store(address(pod), 0, 0);
 
@@ -1701,6 +1701,222 @@ contract EigenPodUnitTests_DenebProofsAgainstPectra is EigenPodUnitTests {
     }
 }
 
+contract EigenPodUnitTests_PectraFeatures is EigenPodUnitTests {
+    using LibValidator for *;
+
+    /// @notice revert when requestConsolidation and requestWithdrawal are called by an invalid caller
+    function testFuzz_revert_callerIsNotPodOwnerOrProofSubmitter(address invalidCaller) public {
+        (EigenPodUser staker,) = _newEigenPodStaker(32 ether);
+
+        EigenPod pod = staker.pod();
+        address podOwner = pod.podOwner();
+        address proofSubmitter = pod.proofSubmitter();
+        cheats.assume(invalidCaller != podOwner && invalidCaller != proofSubmitter);
+
+        cheats.prank(invalidCaller);
+        cheats.expectRevert(IEigenPodErrors.OnlyEigenPodOwnerOrProofSubmitter.selector);
+        pod.requestConsolidation(new ConsolidationRequest[](0));
+
+        cheats.prank(invalidCaller);
+        cheats.expectRevert(IEigenPodErrors.OnlyEigenPodOwnerOrProofSubmitter.selector);
+        pod.requestWithdrawal(new WithdrawalRequest[](0));
+    }
+
+    /// @notice revert when requestConsolidation and requestWithdrawal are paused
+    function testFuzz_revert_consolidationsAndWithdrawalsPaused() public {
+        (EigenPodUser staker,) = _newEigenPodStaker(32 ether);
+
+        EigenPod pod = staker.pod();
+        address podOwner = pod.podOwner();
+
+        cheats.startPrank(pauser);
+        uint pauseStatus = (2 ** PAUSED_CONSOLIDATIONS) + (2 ** PAUSED_WITHDRAWAL_REQUESTS);
+        eigenPodManagerMock.pause(pauseStatus);
+        cheats.stopPrank();
+
+        cheats.prank(podOwner);
+        cheats.expectRevert(IEigenPodErrors.CurrentlyPaused.selector);
+        pod.requestConsolidation(new ConsolidationRequest[](0));
+
+        cheats.prank(podOwner);
+        cheats.expectRevert(IEigenPodErrors.CurrentlyPaused.selector);
+        pod.requestWithdrawal(new WithdrawalRequest[](0));
+    }
+
+    /// @notice Revert when the caller does not supply enough msg.value for the fee
+    function testFuzz_revert_insufficientFunds(uint randConsolidations, uint randWithdrawals) public {
+        randConsolidations = bound(randConsolidations, 2, 10);
+        randWithdrawals = bound(randWithdrawals, 2, 10);
+
+        (EigenPodUser staker,) = _newEigenPodStaker(32 ether);
+
+        EigenPod pod = staker.pod();
+        address podOwner = pod.podOwner();
+
+        uint curConsolidationFee = pod.getConsolidationRequestFee();
+        uint curWithdrawalFee = pod.getWithdrawalRequestFee();
+
+        cheats.prank(podOwner);
+        cheats.expectRevert(IEigenPodErrors.InsufficientFunds.selector);
+        pod.requestConsolidation{value: curConsolidationFee}(new ConsolidationRequest[](randConsolidations));
+
+        cheats.prank(podOwner);
+        cheats.expectRevert(IEigenPodErrors.InsufficientFunds.selector);
+        pod.requestWithdrawal{value: curWithdrawalFee}(new WithdrawalRequest[](randWithdrawals));
+    }
+
+    /// @notice Revert when requestConsolidation or requestWithdrawal are sent invalid length pubkeys
+    function testFuzz_revert_invalidPubkeyLength(uint pubkeyLength) public {
+        (EigenPodUser staker,) = _newEigenPodStaker(32 ether);
+        pubkeyLength = bound(pubkeyLength, 0, 1000);
+        cheats.assume(pubkeyLength != 48);
+
+        EigenPod pod = staker.pod();
+        address podOwner = pod.podOwner();
+
+        ConsolidationRequest[] memory cReqs = new ConsolidationRequest[](1);
+        WithdrawalRequest[] memory wReqs = new WithdrawalRequest[](1);
+        uint cFee = pod.getConsolidationRequestFee();
+        uint wFee = pod.getWithdrawalRequestFee();
+
+        // Bad srcPubkey
+        cReqs[0] = ConsolidationRequest({srcPubkey: new bytes(pubkeyLength), targetPubkey: new bytes(48)});
+        cheats.prank(podOwner);
+        cheats.expectRevert(IEigenPodErrors.InvalidPubKeyLength.selector);
+        pod.requestConsolidation{value: cFee}(cReqs);
+
+        // Bad targetPubkey
+        cReqs[0] = ConsolidationRequest({srcPubkey: new bytes(48), targetPubkey: new bytes(pubkeyLength)});
+        cheats.prank(podOwner);
+        cheats.expectRevert(IEigenPodErrors.InvalidPubKeyLength.selector);
+        pod.requestConsolidation{value: cFee}(cReqs);
+
+        // Bad withdrawal pubkey
+        wReqs[0] = WithdrawalRequest({pubkey: new bytes(pubkeyLength), amountGwei: 0});
+        cheats.prank(podOwner);
+        cheats.expectRevert(IEigenPodErrors.InvalidPubKeyLength.selector);
+        pod.requestWithdrawal{value: wFee}(wReqs);
+    }
+
+    /// @notice Revert when the target for consolidation is an INACTIVE validator
+    function testFuzz_revert_consolidationTargetInactive(uint40 srcIndex, uint40 targetIndex) public {
+        (EigenPodUser staker,) = _newEigenPodStaker(32 ether);
+
+        EigenPod pod = staker.pod();
+        address podOwner = pod.podOwner();
+
+        uint fee = pod.getConsolidationRequestFee();
+        ConsolidationRequest[] memory cReqs = new ConsolidationRequest[](1);
+        cReqs[0] = ConsolidationRequest({srcPubkey: srcIndex.toPubkey(), targetPubkey: targetIndex.toPubkey()});
+
+        cheats.prank(podOwner);
+        cheats.expectRevert(IEigenPodErrors.ValidatorNotActiveInPod.selector);
+        pod.requestConsolidation{value: fee}(cReqs);
+    }
+
+    /// @notice Revert when the target for consolidation is a WITHDRAWN validator
+    function testFuzz_revert_consolidationTargetWithdrawn(uint rand) public {
+        (EigenPodUser staker,) = _newEigenPodStaker(rand);
+        EigenPod pod = staker.pod();
+        address podOwner = pod.podOwner();
+
+        // Create an ACTIVE validator
+        (uint40[] memory validators,,) = staker.startValidators();
+        staker.verifyWithdrawalCredentials(validators);
+
+        // Exit from the beacon chain
+        staker.exitValidators(validators);
+        beaconChain.advanceEpoch_NoRewards();
+
+        // Checkpoint, setting the validator to INACTIVE
+        staker.startCheckpoint();
+        staker.completeCheckpoint();
+
+        uint fee = pod.getConsolidationRequestFee();
+        ConsolidationRequest[] memory cReqs = new ConsolidationRequest[](1);
+        cReqs[0] = ConsolidationRequest({srcPubkey: validators[0].toPubkey(), targetPubkey: validators[0].toPubkey()});
+
+        cheats.deal(podOwner, address(podOwner).balance + fee);
+        cheats.prank(podOwner);
+        cheats.expectRevert(IEigenPodErrors.ValidatorNotActiveInPod.selector);
+        pod.requestConsolidation{value: fee}(cReqs);
+    }
+
+    function testFuzz_consolidationRequest(uint rand) public {
+        (EigenPodUser staker,) = _newEigenPodStaker(rand);
+        EigenPod pod = staker.pod();
+        address podOwner = pod.podOwner();
+
+        (uint40[] memory validators,,) = staker.startValidators();
+        staker.verifyWithdrawalCredentials(validators);
+
+        ConsolidationRequest[] memory requests = new ConsolidationRequest[](validators.length);
+        uint fee = pod.getConsolidationRequestFee() * requests.length;
+
+        // Form consolidation requests for each validator
+        for (uint i = 0; i < validators.length; i++) {
+            // Half switch requests, half standard
+            if (i % 2 == 0) {
+                bytes memory pubkey = validators[i].toPubkey();
+
+                requests[i] = ConsolidationRequest({srcPubkey: pubkey, targetPubkey: pubkey});
+
+                cheats.expectEmit(true, true, true, true, address(pod));
+                emit SwitchToCompoundingRequested(pubkey.pubkeyHash());
+            } else {
+                bytes memory srcPubkey = uint40(1).toPubkey();
+                bytes memory targetPubkey = validators[i].toPubkey();
+
+                requests[i] = ConsolidationRequest({srcPubkey: srcPubkey, targetPubkey: targetPubkey});
+
+                cheats.expectEmit(true, true, true, true, address(pod));
+                emit ConsolidationRequested(srcPubkey.pubkeyHash(), targetPubkey.pubkeyHash());
+            }
+        }
+
+        cheats.deal(podOwner, address(podOwner).balance + fee);
+        cheats.prank(podOwner);
+        pod.requestConsolidation{value: fee}(requests);
+    }
+
+    function testFuzz_withdrawalRequest(uint rand) public {
+        (EigenPodUser staker,) = _newEigenPodStaker(rand);
+        EigenPod pod = staker.pod();
+        address podOwner = pod.podOwner();
+
+        (uint40[] memory validators,,) = staker.startValidators();
+        staker.verifyWithdrawalCredentials(validators);
+
+        WithdrawalRequest[] memory requests = new WithdrawalRequest[](validators.length);
+        uint fee = pod.getWithdrawalRequestFee() * requests.length;
+
+        for (uint i = 0; i < validators.length; i++) {
+            bytes memory pubkey = validators[i].toPubkey();
+
+            // Half full exits, half partial withdrawals
+            if (i % 2 == 0) {
+                bytes memory pubkey = validators[i].toPubkey();
+
+                requests[i] = WithdrawalRequest({pubkey: pubkey, amountGwei: 0});
+
+                cheats.expectEmit(true, true, true, true, address(pod));
+                emit ExitRequested(pubkey.pubkeyHash());
+            } else {
+                uint64 amountGwei = uint64(validators[i]);
+
+                requests[i] = WithdrawalRequest({pubkey: pubkey, amountGwei: amountGwei});
+
+                cheats.expectEmit(true, true, true, true, address(pod));
+                emit WithdrawalRequested(pubkey.pubkeyHash(), amountGwei);
+            }
+        }
+
+        cheats.deal(podOwner, address(podOwner).balance + fee);
+        cheats.prank(podOwner);
+        pod.requestWithdrawal{value: fee}(requests);
+    }
+}
+
 contract EigenPodHarnessSetup is EigenPodUnitTests {
     // Harness that exposes internal functions for test
     EigenPodHarness public eigenPodHarnessImplementation;
@@ -1710,8 +1926,7 @@ contract EigenPodHarnessSetup is EigenPodUnitTests {
         EigenPodUnitTests.setUp();
 
         // Deploy EP Harness
-        eigenPodHarnessImplementation =
-            new EigenPodHarness(ethPOSDepositMock, IEigenPodManager(address(eigenPodManagerMock)), GENESIS_TIME_LOCAL, "9.9.9");
+        eigenPodHarnessImplementation = new EigenPodHarness(ethPOSDepositMock, IEigenPodManager(address(eigenPodManagerMock)), "v9.9.9");
 
         // Upgrade eigenPod to harness
         UpgradeableBeacon(address(eigenPodBeacon)).upgradeTo(address(eigenPodHarnessImplementation));
