@@ -341,12 +341,8 @@ contract User is Logger, TypeImporter {
         print.method("startETH1Validators");
         require(count > 0, "startETH1Validators: must create at least 1 validator");
 
-        console.log("count %d", count);
-
         newValidators = new uint40[](count);
         totalBalanceGwei = 32 gwei * uint64(count);
-
-        console.log("balance %d", address(this).balance);
 
         cheats.deal(address(this), address(this).balance + (totalBalanceGwei * GWEI_TO_WEI));
 
@@ -459,6 +455,32 @@ contract User is Logger, TypeImporter {
         beaconChain.advanceEpoch_NoRewards();
 
         return (helper.targets, helper.sources);
+    }
+
+    /// @dev Creates EIP-7002 withdrawal requests for each validator, requesting withdrawals down to 32 ETH
+    function withdrawExcess(uint40[] memory _validators) public virtual createSnapshot returns (uint64 amountWithdrawnGwei) {
+        WithdrawalRequest[] memory requests = new WithdrawalRequest[](_validators.length);
+
+        for (uint i = 0; i < _validators.length; i++) {
+            uint64 balanceGwei = beaconChain.currentBalance(_validators[i]);
+
+            // Despite looking like this will result in a full withdrawal, the beacon chain
+            // only performs a full withdrawal if amountGwei == 0. This is just a lazy way
+            // to request "withdraw anything above 32 ETH."
+            requests[i] = WithdrawalRequest({pubkey: beaconChain.pubkey(_validators[i]), amountGwei: balanceGwei});
+
+            // amountToWithdraw: any balance above 32 ETH
+            amountWithdrawnGwei += balanceGwei < 32 gwei ? 0 : balanceGwei - 32 gwei;
+        }
+
+        // Request withdrawals via pod
+        uint fee = pod.getWithdrawalRequestFee() * requests.length;
+        cheats.deal(address(this), address(this).balance + fee);
+        pod.requestWithdrawal{value: fee}(requests);
+
+        // Advance beacon chain
+        beaconChain.advanceEpoch_NoRewards();
+        return amountWithdrawnGwei;
     }
 
     /// -----------------------------------------------------------------------
@@ -613,7 +635,7 @@ contract User is Logger, TypeImporter {
     /// @return the new validator index
     function _startCompoundingValidator(uint balanceWei) internal returns (uint40) {
         require(address(this).balance >= balanceWei, "_startCompoundingValidator: insufficient funds");
-        require(balanceWei >= 32 ether && balanceWei <= 2048, "_startCompoundingValidator: invalid validator balance");
+        require(balanceWei >= 32 ether && balanceWei <= 2048 ether, "_startCompoundingValidator: invalid validator balance");
 
         uint40 validatorIndex = beaconChain.newValidator{value: balanceWei}(_podCompoundingWithdrawalCredentials());
         validators.push(validatorIndex);
@@ -703,13 +725,22 @@ contract User is Logger, TypeImporter {
     }
 
     function _exitValidators(uint40[] memory _validators) internal returns (uint64 exitedBalanceGwei) {
-        console.log("- exiting num validators", _validators.length);
+        console.log("- requesting exit for num validators", _validators.length);
+
+        WithdrawalRequest[] memory requests = new WithdrawalRequest[](_validators.length);
 
         for (uint i = 0; i < _validators.length; i++) {
-            exitedBalanceGwei += beaconChain.exitValidator(_validators[i]);
+            exitedBalanceGwei += beaconChain.currentBalance(_validators[i]);
+
+            requests[i] = WithdrawalRequest({pubkey: beaconChain.pubkey(_validators[i]), amountGwei: 0});
         }
 
-        console.log("- exited balance to pod (gwei)", exitedBalanceGwei);
+        // Send withdrawal requests to pod
+        uint fee = pod.getWithdrawalRequestFee() * requests.length;
+        cheats.deal(address(this), address(this).balance + fee);
+        pod.requestWithdrawal{value: fee}(requests);
+
+        console.log("- balance to be exited to pod (gwei)", exitedBalanceGwei);
 
         return exitedBalanceGwei;
     }
