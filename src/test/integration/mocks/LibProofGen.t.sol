@@ -57,15 +57,6 @@ library LibProofGen {
      *              CONSTANTS AND CONFIG
      *
      */
-
-    // /// @dev Maximum height of a merkle tree used for proofs. We use the max height
-    // /// to pre-generate filler nodes so we don't need to store entire merkle trees in memory
-    // ///
-    // /// As of Pectra, the max tree height we need is BALANCE_TREE_HEIGHT + 1, which is 41.
-    // /// This constant is set to 50 on the off chance a future hard fork uses a different tree
-    // /// height and we forget to update this value.
-    // uint constant MAX_TREE_HEIGHT = 50; TODO
-
     bytes32 constant CONFIG_SLOT = keccak256("LibProofGen.config");
 
     function config() internal view returns (Config storage) {
@@ -244,21 +235,6 @@ library LibProofGen {
 
         return curNode;
     }
-
-    // /// @dev Pre-generate filler nodes used to fill in incomplete merkle trees at various depths
-    // function _calcZeroNodes() internal pure returns (bytes32[] memory) {
-    //     // Calculate nodes of empty merkle tree
-    //     bytes32 curNode = Merkle.merkleizeSha256(new bytes32[](8));
-    //     bytes32[] memory zeroNodes = new bytes32[](MAX_TREE_HEIGHT);
-    //     zeroNodes[0] = curNode;
-
-    //     for (uint i = 1; i < zeroNodes.length; i++) {
-    //         zeroNodes[i] = sha256(abi.encodePacked(curNode, curNode));
-    //         curNode = zeroNodes[i];
-    //     }
-
-    //     return zeroNodes;
-    // } TODO
 
     /**
      *

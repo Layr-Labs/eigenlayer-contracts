@@ -138,6 +138,11 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
         return bytes32(lenum << 192);
     }
 
+    /// From EigenPod._calcPubkeyHash
+    function _calcPubkeyHash(bytes memory pubkey) internal view returns (bytes32) {
+        return sha256(abi.encodePacked(pubkey, bytes16(0)));
+    }
+
     /**
      *
      *                     verifyWithdrawalCredentials Assertions
@@ -274,16 +279,16 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
             int128 balanceDeltaGwei = _calcBalanceDelta({newAmountGwei: newBalanceGwei, previousAmountGwei: prevBalanceGwei});
             if (newBalanceGwei != prevBalanceGwei) {
                 cheats.expectEmit(true, true, true, true, address(pod));
-                emit ValidatorBalanceUpdated(validators[i], checkpointTimestamp, newBalanceGwei);
+                emit ValidatorBalanceUpdated(proofs[i].pubkeyHash, checkpointTimestamp, newBalanceGwei);
             }
 
             if (newBalanceGwei == 0) {
                 cheats.expectEmit(true, true, true, true, address(pod));
-                emit ValidatorWithdrawn(checkpointTimestamp, validators[i]);
+                emit ValidatorWithdrawn(checkpointTimestamp, proofs[i].pubkeyHash);
             }
 
             cheats.expectEmit(true, true, true, true, address(pod));
-            emit ValidatorCheckpointed(checkpointTimestamp, validators[i]);
+            emit ValidatorCheckpointed(checkpointTimestamp, proofs[i].pubkeyHash);
 
             totalBalanceDeltaGWei += balanceDeltaGwei;
         }
@@ -393,7 +398,7 @@ contract EigenPodUnitTests_EPMFunctions is EigenPodUnitTests {
 
         // Expect emit
         vm.expectEmit(true, true, true, true);
-        emit EigenPodStaked(pubkey);
+        emit EigenPodStaked(_calcPubkeyHash(pubkey));
 
         // Stake
         cheats.prank(address(eigenPodManagerMock));
@@ -917,9 +922,11 @@ contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, Pro
 
         for (uint i; i < validators.length; i++) {
             cheats.expectEmit(true, true, true, true, address(pod));
-            emit ValidatorRestaked(validators[i]);
+            emit ValidatorRestaked(beaconChain.pubkeyHash(validators[i]));
             cheats.expectEmit(true, true, true, true, address(pod));
-            emit ValidatorBalanceUpdated(validators[i], pod.lastCheckpointTimestamp(), beaconChain.effectiveBalance(validators[i]));
+            emit ValidatorBalanceUpdated(
+                beaconChain.pubkeyHash(validators[i]), pod.lastCheckpointTimestamp(), beaconChain.effectiveBalance(validators[i])
+            );
         }
         // staker.verifyWithdrawalCredentials(validators);
         // Prank either the staker or proof submitter
