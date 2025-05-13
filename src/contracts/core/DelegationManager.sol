@@ -204,8 +204,8 @@ contract DelegationManager is
 
     /// @inheritdoc IDelegationManager
     function completeQueuedWithdrawal(
-        Withdrawal memory withdrawal,
-        IERC20[] memory tokens,
+        Withdrawal calldata withdrawal,
+        IERC20[] calldata tokens,
         bool receiveAsTokens
     ) external onlyWhenNotPaused(PAUSED_EXIT_WITHDRAWAL_QUEUE) nonReentrant {
         _completeQueuedWithdrawal(withdrawal, tokens, receiveAsTokens);
@@ -213,9 +213,9 @@ contract DelegationManager is
 
     /// @inheritdoc IDelegationManager
     function completeQueuedWithdrawals(
-        Withdrawal[] memory withdrawals,
-        IERC20[][] memory tokens,
-        bool[] memory receiveAsTokens
+        Withdrawal[] calldata withdrawals,
+        IERC20[][] calldata tokens,
+        bool[] calldata receiveAsTokens
     ) external onlyWhenNotPaused(PAUSED_EXIT_WITHDRAWAL_QUEUE) nonReentrant {
         uint256 n = withdrawals.length;
         for (uint256 i; i < n; ++i) {
@@ -539,8 +539,8 @@ contract DelegationManager is
      * and added back to the operator's delegatedShares.
      */
     function _completeQueuedWithdrawal(
-        Withdrawal memory withdrawal,
-        IERC20[] memory tokens,
+        Withdrawal calldata withdrawal,
+        IERC20[] calldata tokens,
         bool receiveAsTokens
     ) internal {
         _checkInputArrayLengths(tokens.length, withdrawal.strategies.length);
