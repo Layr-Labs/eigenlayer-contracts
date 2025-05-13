@@ -18,7 +18,6 @@ contract Deploy is EOADeployer {
     function _runAsEOA() internal override {
         vm.startBroadcast();
 
-
         // We are upgrading 2 contracts: EigenPod and the Eigen token
         deployImpl({
             name: type(EigenPod).name,
@@ -35,8 +34,12 @@ contract Deploy is EOADeployer {
             name: type(Eigen).name,
             deployedTo: address(
                 new Eigen({
+<<<<<<< HEAD
                    _bEIGEN: Env.proxy.beigen(),
                    _version: Env.deployVersion()
+=======
+                   _bEIGEN: Env.proxy.beigen() 
+>>>>>>> db0e54e4 (feat: release scripts for moocow and elip5)
                 })
             )
         });

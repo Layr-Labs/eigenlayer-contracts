@@ -331,8 +331,16 @@ contract EigenPodUnitTests_Initialization is EigenPodUnitTests {
     }
 
     function test_initialize_revert_emptyPodOwner() public {
+<<<<<<< HEAD
         EigenPod pod = new EigenPod(ethPOSDepositMock, IEigenPodManager(address(eigenPodManagerMock)), "v9.9.9");
 
+=======
+<<<<<<< HEAD
+        EigenPod pod = new EigenPod(ethPOSDepositMock, IEigenPodManager(address(eigenPodManagerMock)), GENESIS_TIME_LOCAL, "9.9.9");
+=======
+        EigenPod pod = new EigenPod(ethPOSDepositMock, IEigenPodManager(address(eigenPodManagerMock)), "v9.9.9");
+>>>>>>> 207c0536 (feat: release scripts for moocow and elip5)
+>>>>>>> db0e54e4 (feat: release scripts for moocow and elip5)
         // un-initialize pod
         cheats.store(address(pod), 0, 0);
 
