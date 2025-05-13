@@ -64,9 +64,6 @@ contract EigenPod is
     /// @notice The single EigenPodManager for EigenLayer
     IEigenPodManager public immutable eigenPodManager;
 
-    /// @notice This is the genesis time of the beacon state, to help us calculate conversions between slot and timestamp
-    uint64 public immutable GENESIS_TIME;
-
     /**
      *
      *                                  MODIFIERS
@@ -111,12 +108,10 @@ contract EigenPod is
     constructor(
         IETHPOSDeposit _ethPOS,
         IEigenPodManager _eigenPodManager,
-        uint64 _GENESIS_TIME,
         string memory _version
     ) SemVerMixin(_version) {
         ethPOS = _ethPOS;
         eigenPodManager = _eigenPodManager;
-        GENESIS_TIME = _GENESIS_TIME;
         _disableInitializers();
     }
 
