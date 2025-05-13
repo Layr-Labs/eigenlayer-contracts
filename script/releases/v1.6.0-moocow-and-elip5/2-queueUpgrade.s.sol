@@ -35,21 +35,17 @@ contract QueueUpgrade is MultisigBuilder, Deploy {
 
     /// @dev Get the calldata to be sent from the timelock to the executor
     function _getCalldataToExecutor() internal returns (bytes memory) {
-        // Core - Pods - Strategies - Permissions
+        /// forgefmt: disable-next-item
         MultisigCall[] storage executorCalls = Encode.newMultisigCalls().append({
-            to: Env.proxyAdmin(),
-            data: Encode.proxyAdmin.upgrade({
-                proxy: address(Env.proxy.delegationManager()),
-                impl: address(Env.impl.delegationManager())
+            to: address(Env.beacon.eigenPod()),
+            data: Encode.upgradeableBeacon.upgradeTo({
+                newImpl: address(Env.impl.eigenPod())
             })
         }).append({
-            to: address(Env.beacon.eigenPod()),
-            data: Encode.upgradeableBeacon.upgradeTo({newImpl: address(Env.impl.eigenPod())})
-        }).append({
             to: Env.proxyAdmin(),
             data: Encode.proxyAdmin.upgrade({
-                proxy: address(Env.proxy.eigenPodManager()),
-                impl: address(Env.impl.eigenPodManager())
+                proxy: address(Env.proxy.eigen()),
+                impl: address(Env.impl.eigen())
             })
         });
 
