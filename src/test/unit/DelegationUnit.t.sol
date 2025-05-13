@@ -107,7 +107,6 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
             address(delegationManagerImplementation),
             abi.encodeWithSelector(
                 DelegationManager.initialize.selector,
-                address(this),
                 0 // 0 is initial paused status
             )
         );
