@@ -2,9 +2,8 @@
 pragma solidity ^0.8.27;
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
-import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
-
+import "../mixins/Deprecated_OwnableUpgradeable.sol";
 import "../mixins/PermissionControllerMixin.sol";
 import "../mixins/SemVerMixin.sol";
 import "../permissions/Pausable.sol";
@@ -14,7 +13,7 @@ import "./AllocationManagerStorage.sol";
 
 contract AllocationManager is
     Initializable,
-    OwnableUpgradeable,
+    Deprecated_OwnableUpgradeable,
     Pausable,
     AllocationManagerStorage,
     ReentrancyGuardUpgradeable,
@@ -55,9 +54,10 @@ contract AllocationManager is
     }
 
     /// @inheritdoc IAllocationManager
-    function initialize(address initialOwner, uint256 initialPausedStatus) external initializer {
+    function initialize(
+        uint256 initialPausedStatus
+    ) external initializer {
         _setPausedStatus(initialPausedStatus);
-        _transferOwnership(initialOwner);
     }
 
     // TODO: properly return shares slashed

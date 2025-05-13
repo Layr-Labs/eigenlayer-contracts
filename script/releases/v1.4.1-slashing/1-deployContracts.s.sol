@@ -144,7 +144,7 @@ contract Deploy is EOADeployer {
 
         DelegationManager delegation = Env.impl.delegationManager();
         vm.expectRevert(errInit);
-        delegation.initialize(address(0), 0);
+        delegation.initialize(0);
 
         /// pods/
         EigenPod eigenPod = Env.impl.eigenPod();

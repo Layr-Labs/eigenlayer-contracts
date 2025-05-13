@@ -555,7 +555,7 @@ contract AllocationManagerUnitTests_Initialization_Setters is AllocationManagerU
 
         // Assert that the contract can only be initialized once.
         vm.expectRevert("Initializable: contract is already initialized");
-        alm.initialize(expectedInitialOwner, initialPausedStatus);
+        alm.initialize(initialPausedStatus);
 
         // Assert immutable state
         assertEq(address(alm.delegation()), address(delegationManagerMock));
@@ -563,7 +563,7 @@ contract AllocationManagerUnitTests_Initialization_Setters is AllocationManagerU
         assertEq(alm.ALLOCATION_CONFIGURATION_DELAY(), ALLOCATION_CONFIGURATION_DELAY);
 
         // Assert initialization state
-        assertEq(alm.owner(), expectedInitialOwner);
+        // assertEq(alm.owner(), expectedInitialOwner);
         assertEq(alm.paused(), initialPausedStatus);
     }
 }

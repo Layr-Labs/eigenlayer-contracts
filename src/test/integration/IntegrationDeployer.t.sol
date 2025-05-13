@@ -292,7 +292,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         emit log_named_uint("EPM pause status", eigenPodManager.paused());
 
         // Initialize the newly-deployed proxy
-        allocationManager.initialize({initialOwner: executorMultisig, initialPausedStatus: 0});
+        allocationManager.initialize({initialPausedStatus: 0});
 
         cheats.stopPrank();
     }
@@ -416,7 +416,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     }
 
     function _initializeProxies() public noTracing {
-        delegationManager.initialize({initialOwner: executorMultisig, initialPausedStatus: 0});
+        delegationManager.initialize({initialPausedStatus: 0});
 
         strategyManager.initialize({
             initialOwner: executorMultisig,
@@ -428,7 +428,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
         avsDirectory.initialize({initialOwner: executorMultisig, initialPausedStatus: 0});
 
-        allocationManager.initialize({initialOwner: executorMultisig, initialPausedStatus: 0});
+        allocationManager.initialize({initialPausedStatus: 0});
 
         strategyFactory.initialize({_initialOwner: executorMultisig, _initialPausedStatus: 0, _strategyBeacon: strategyBeacon});
     }

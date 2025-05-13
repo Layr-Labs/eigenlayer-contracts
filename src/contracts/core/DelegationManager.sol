@@ -2,11 +2,11 @@
 pragma solidity ^0.8.27;
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
-import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 
 import "../mixins/SignatureUtilsMixin.sol";
 import "../mixins/PermissionControllerMixin.sol";
+import "../mixins/Deprecated_OwnableUpgradeable.sol";
 import "../permissions/Pausable.sol";
 import "../libraries/SlashingLib.sol";
 import "../libraries/Snapshots.sol";
@@ -24,7 +24,7 @@ import "./DelegationManagerStorage.sol";
  */
 contract DelegationManager is
     Initializable,
-    OwnableUpgradeable,
+    Deprecated_OwnableUpgradeable,
     Pausable,
     DelegationManagerStorage,
     ReentrancyGuardUpgradeable,
@@ -77,9 +77,10 @@ contract DelegationManager is
         _disableInitializers();
     }
 
-    function initialize(address initialOwner, uint256 initialPausedStatus) external initializer {
+    function initialize(
+        uint256 initialPausedStatus
+    ) external initializer {
         _setPausedStatus(initialPausedStatus);
-        _transferOwnership(initialOwner);
     }
 
     /**
@@ -203,8 +204,8 @@ contract DelegationManager is
 
     /// @inheritdoc IDelegationManager
     function completeQueuedWithdrawal(
-        Withdrawal calldata withdrawal,
-        IERC20[] calldata tokens,
+        Withdrawal memory withdrawal,
+        IERC20[] memory tokens,
         bool receiveAsTokens
     ) external onlyWhenNotPaused(PAUSED_EXIT_WITHDRAWAL_QUEUE) nonReentrant {
         _completeQueuedWithdrawal(withdrawal, tokens, receiveAsTokens);
@@ -212,9 +213,9 @@ contract DelegationManager is
 
     /// @inheritdoc IDelegationManager
     function completeQueuedWithdrawals(
-        Withdrawal[] calldata withdrawals,
-        IERC20[][] calldata tokens,
-        bool[] calldata receiveAsTokens
+        Withdrawal[] memory withdrawals,
+        IERC20[][] memory tokens,
+        bool[] memory receiveAsTokens
     ) external onlyWhenNotPaused(PAUSED_EXIT_WITHDRAWAL_QUEUE) nonReentrant {
         uint256 n = withdrawals.length;
         for (uint256 i; i < n; ++i) {
@@ -539,7 +540,7 @@ contract DelegationManager is
      */
     function _completeQueuedWithdrawal(
         Withdrawal memory withdrawal,
-        IERC20[] calldata tokens,
+        IERC20[] memory tokens,
         bool receiveAsTokens
     ) internal {
         _checkInputArrayLengths(tokens.length, withdrawal.strategies.length);

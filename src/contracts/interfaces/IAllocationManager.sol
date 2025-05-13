@@ -223,7 +223,9 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
     /**
      * @dev Initializes the initial owner and paused status.
      */
-    function initialize(address initialOwner, uint256 initialPausedStatus) external;
+    function initialize(
+        uint256 initialPausedStatus
+    ) external;
 
     /**
      * @notice Called by an AVS to slash an operator in a given operator set. The operator must be registered

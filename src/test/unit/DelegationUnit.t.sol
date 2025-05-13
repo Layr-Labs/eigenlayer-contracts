@@ -1153,7 +1153,7 @@ contract DelegationManagerUnitTests_Initialization_Setters is DelegationManagerU
             MIN_WITHDRAWAL_DELAY_BLOCKS,
             "constructor / initializer incorrect, MIN_WITHDRAWAL_DELAY set wrong"
         );
-        assertEq(delegationManager.owner(), address(this), "constructor / initializer incorrect, owner set wrong");
+        // assertEq(delegationManager.owner(), address(this), "constructor / initializer incorrect, owner set wrong");
         assertEq(delegationManager.paused(), 0, "constructor / initializer incorrect, paused status set wrong");
 
         bytes memory v = bytes(delegationManager.version());
@@ -1173,7 +1173,7 @@ contract DelegationManagerUnitTests_Initialization_Setters is DelegationManagerU
     /// @notice Verifies that the DelegationManager cannot be initialized multiple times
     function test_initialize_revert_reinitialization() public {
         cheats.expectRevert("Initializable: contract is already initialized");
-        delegationManager.initialize(address(this), 0);
+        delegationManager.initialize(0);
     }
 }
 

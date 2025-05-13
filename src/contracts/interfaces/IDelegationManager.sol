@@ -190,7 +190,9 @@ interface IDelegationManager is ISignatureUtilsMixin, IDelegationManagerErrors, 
     /**
      * @dev Initializes the initial owner and paused status.
      */
-    function initialize(address initialOwner, uint256 initialPausedStatus) external;
+    function initialize(
+        uint256 initialPausedStatus
+    ) external;
 
     /**
      * @notice Registers the caller as an operator in EigenLayer.
