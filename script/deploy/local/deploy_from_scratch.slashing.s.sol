@@ -241,7 +241,7 @@ contract DeployFromScratch is Script, Test {
             MIN_WITHDRAWAL_DELAY,
             SEMVER
         );
-        strategyManagerImplementation = new StrategyManager(allocationManager, delegation, eigenLayerPauserReg, SEMVER);
+        strategyManagerImplementation = new StrategyManager(delegation, eigenLayerPauserReg, SEMVER);
         avsDirectoryImplementation = new AVSDirectory(delegation, eigenLayerPauserReg, SEMVER);
         eigenPodManagerImplementation =
             new EigenPodManager(ethPOSDeposit, eigenPodBeacon, delegation, eigenLayerPauserReg, SEMVER);

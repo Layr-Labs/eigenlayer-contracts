@@ -6,11 +6,8 @@ import "./IShareManager.sol";
 import "./IDelegationManager.sol";
 import "./IEigenPodManager.sol";
 import "./ISemVerMixin.sol";
-import {OperatorSet} from "../libraries/OperatorSetLib.sol";
 
 interface IStrategyManagerErrors {
-    /// @dev Thrown when attempting to burn or redistribute shares before the delay period has elapsed
-    error BurnOrRedistributionDelayNotElapsed();
     /// @dev Thrown when total strategies deployed exceeds max.
     error MaxStrategiesExceeded();
     /// @dev Thrown when call attempted from address that's not delegation manager.
@@ -47,13 +44,11 @@ interface IStrategyManagerEvents {
     /// @notice Emitted when a strategy is removed from the approved list of strategies for deposit
     event StrategyRemovedFromDepositWhitelist(IStrategy strategy);
 
-    /// @notice Emitted when an operator is slashed and shares to be burned/redistributed are increased
+    /// @notice Emitted when an operator is slashed and shares to be burned are increased
     event BurnableSharesIncreased(OperatorSet operatorSet, uint256 slashId, IStrategy strategy, uint256 shares);
 
-    /// @notice Emitted when shares are burned/redistributed
-    event BurnableSharesDecreased(
-        OperatorSet operatorSet, uint256 slashId, IStrategy strategy, address recipient, uint256 shares
-    );
+    /// @notice Emitted when shares are burned
+    event BurnableSharesDecreased(OperatorSet operatorSet, uint256 slashId, IStrategy strategy, uint256 shares);
 }
 
 /**
@@ -121,50 +116,13 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
     ) external returns (uint256 depositShares);
 
     /**
-     * @notice Increase the amount of burnable shares for a given Strategy. This is called by the DelegationManager
-     * when an operator is slashed in EigenLayer.
-     * @param operatorSet The operatorSet to burn shares from.
-     * @param slashId The identifier associated with the slash.
-     * @param strategy The strategy to burn shares from.
-     * @param addedSharesToBurn The amount of added shares to burn.
-     * @dev This function is only called by the DelegationManager when an operator is slashed.
-     */
-    function increaseBurnableShares(
-        OperatorSet calldata operatorSet,
-        uint256 slashId,
-        IStrategy strategy,
-        uint256 addedSharesToBurn
-    ) external;
-
-    /**
-     * @notice Burns Strategy shares for the given strategy by calling into the strategy to transfer to the default burn address.
+     * @notice Burns Strategy shares for the given strategy by calling into the strategy to transfer
+     * to the default burn address.
      * @param strategy The strategy to burn shares in.
-     * @dev This only allows pre-distribution burns, in the future this method will be deprecated along with the `_burnableShares` mapping.
-     * @dev Emits a `BurnableSharesDecreased` with `OperatorSet(address(this), type(uint32).max)` and `slashId` of `type(uint256).max`
-     * to denote a non-redistributing withdrawal.
      */
     function burnShares(
         IStrategy strategy
     ) external;
-
-    /**
-     * @notice Burns/Redistributes Strategy shares for the given strategy and slashId by calling into the strategy to transfer
-     * to the operatorSet's burn address.
-     * @param operatorSet The operatorSet to burn or redistribute shares for.
-     * @param slashId The identifier associated with the slash.
-     * @param strategy The strategy to burn shares in.
-     * @dev This is a permissionless function that can be called by anyone.
-     */
-    function burnOrDistributeShares(OperatorSet calldata operatorSet, uint256 slashId, IStrategy strategy) external;
-
-    /**
-     * @notice Burns/Redistributes Strategy shares for all strategies by calling into the strategy to transfer
-     * to the operatorSet's burn address. This is an arrayified version of the above.
-     * @param operatorSet The operatorSet to burn or redistribute shares for.
-     * @param slashId The identifier associated with the slash.
-     * @dev This is a permissionless function that can be called by anyone.
-     */
-    function burnOrDistributeShares(OperatorSet calldata operatorSet, uint256 slashId) external;
 
     /**
      * @notice Owner-only function to change the `strategyWhitelister` address.
@@ -221,37 +179,20 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
     /// @notice Returns the address of the `strategyWhitelister`
     function strategyWhitelister() external view returns (address);
 
-    /// @notice Returns the pre-distribution burnable shares of a strategy.
-    /// @dev This will be deprecated in the future.
+    /// @notice Returns the burnable shares of a strategy
     function getBurnableShares(
         IStrategy strategy
     ) external view returns (uint256);
 
-    /// @notice Returns the post-distribution burnable shares of a strategy for a specific operator set and slash ID.
-    function getOperatorSetBurnableShares(
-        OperatorSet calldata operatorSet,
-        uint256 slashId,
-        IStrategy strategy
-    ) external view returns (uint256 shares);
-
     /**
-     * @notice Gets every strategy with pre-distribution burnable shares and the amount of burnable shares in each said strategy.
+     * @notice Gets every strategy with burnable shares and the amount of burnable shares in each said strategy
      *
-     * @dev This will be deprecated in the future.
-     *
-     * WARNING: Iterates over all storage entries and copies to memory. Gas cost scales with number of strategies.
+     * WARNING: This operation can copy the entire storage to memory, which can be quite expensive. This is designed
+     * to mostly be used by view accessors that are queried without any gas fees. Users should keep in mind that
+     * this function has an unbounded cost, and using it as part of a state-changing function may render the function
+     * uncallable if the map grows to a point where copying to memory consumes too much gas to fit in a block.
      */
     function getStrategiesWithBurnableShares() external view returns (address[] memory, uint256[] memory);
-
-    /**
-     * @notice Returns the post-distribution burnable shares of a strategy for a specific operator set and slash ID.
-     *
-     * WARNING: Iterates over all storage entries and copies to memory. Gas cost scales with number of strategies.
-     */
-    function getOperatorSetStrategiesWithBurnableShares(
-        OperatorSet calldata operatorSet,
-        uint256 slashId
-    ) external view returns (address[] memory, uint256[] memory);
 
     /**
      * @param staker The address of the staker.

@@ -32,7 +32,7 @@ contract DelegationManagerMock is Test {
         IStrategy strategy,
         uint64 prevMaxMagnitude,
         uint64 newMaxMagnitude
-    ) external {
+    ) external returns (uint) {
         uint amountSlashed = SlashingLib.calcSlashedAmount({
             operatorShares: operatorShares[operator][strategy],
             prevMaxMagnitude: prevMaxMagnitude,
@@ -40,6 +40,8 @@ contract DelegationManagerMock is Test {
         });
 
         operatorShares[operator][strategy] -= amountSlashed;
+
+        return amountSlashed;
     }
 
     /// @notice returns the total number of shares in `strategy` that are delegated to `operator`.

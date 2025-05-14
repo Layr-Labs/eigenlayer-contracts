@@ -174,6 +174,9 @@ interface IDelegationManagerEvents is IDelegationManagerTypes {
 
     /// @notice Emitted whenever an operator's shares are slashed for a given strategy
     event OperatorSharesSlashed(address indexed operator, IStrategy strategy, uint256 totalSlashedShares);
+
+    /// @notice Emitted when a redistribution is queued
+    event RedistributionQueued(bytes32 withdrawalRoot, Withdrawal withdrawal);
 }
 
 /**
@@ -365,6 +368,7 @@ interface IDelegationManager is ISignatureUtilsMixin, IDelegationManagerErrors, 
      * @dev Callable only by the AllocationManager.
      * @dev Note: Assumes `prevMaxMagnitude <= newMaxMagnitude`. This invariant is maintained in
      * the AllocationManager.
+     * @return totalDepositSharesToBurn The total deposit shares to burn.
      */
     function slashOperatorShares(
         address operator,
@@ -373,7 +377,7 @@ interface IDelegationManager is ISignatureUtilsMixin, IDelegationManagerErrors, 
         IStrategy strategy,
         uint64 prevMaxMagnitude,
         uint64 newMaxMagnitude
-    ) external;
+    ) external returns (uint256);
 
     /**
      *

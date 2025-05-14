@@ -400,7 +400,7 @@ contract AllocationManager is
             _updateMaxMagnitude(params.operator, params.strategies[i], info.maxMagnitude);
 
             // 6. Slash operators shares in the DelegationManager
-            delegation.slashOperatorShares({
+            shares[i] = delegation.slashOperatorShares({
                 operator: params.operator,
                 operatorSet: operatorSet,
                 slashId: slashId,
