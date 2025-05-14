@@ -18,6 +18,7 @@ contract Deploy is EOADeployer {
     function _runAsEOA() internal override {
         vm.startBroadcast();
 
+
         // We are upgrading 2 contracts: EigenPod and the Eigen token
         deployImpl({
             name: type(EigenPod).name,
@@ -34,7 +35,8 @@ contract Deploy is EOADeployer {
             name: type(Eigen).name,
             deployedTo: address(
                 new Eigen({
-                   _bEIGEN: Env.proxy.beigen() 
+                   _bEIGEN: Env.proxy.beigen(),
+                   _version: Env.deployVersion()
                 })
             )
         });
@@ -110,9 +112,10 @@ contract Deploy is EOADeployer {
 
     function _validateVersion() internal view {
         // On future upgrades, just tick the major/minor/patch to validate
-        string memory expected = "1.6.0";
+        string memory expected = Env.deployVersion();
 
         assertEq(Env.impl.eigenPod().version(), expected, "eigenPod version mismatch");
+        assertEq(Env.impl.eigen().version(), expected, "eigen version mismatch");
     }
 
     /// @dev Query and return `proxyAdmin.getProxyImplementation(proxy)`
