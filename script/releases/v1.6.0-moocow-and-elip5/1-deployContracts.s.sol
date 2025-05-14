@@ -20,8 +20,9 @@ contract Deploy is EOADeployer {
         // We are upgrading contracts: Eigen
         // TODO: add moocow contracts
         deployImpl({
-            name: type(Eigen).name, 
-            deployedTo: address(new Eigen({_bEIGEN: Env.proxy.beigen(), _version: Env.deployVersion()}))});
+            name: type(Eigen).name,
+            deployedTo: address(new Eigen({_bEIGEN: Env.proxy.beigen(), _version: Env.deployVersion()}))
+        });
         vm.stopBroadcast();
     }
 

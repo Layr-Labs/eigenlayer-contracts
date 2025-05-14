@@ -40,10 +40,7 @@ contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable, SemVerMixin {
     /// @notice Emitted when EIGEN tokens are unwrapped into bEIGEN
     event TokenUnwrapped(address indexed account, uint256 amount);
 
-    constructor(
-        IERC20 _bEIGEN,
-        string memory _version
-    ) SemVerMixin(_version) {
+    constructor(IERC20 _bEIGEN, string memory _version) SemVerMixin(_version) {
         bEIGEN = _bEIGEN;
         _disableInitializers();
     }
