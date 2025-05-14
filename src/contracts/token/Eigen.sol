@@ -5,7 +5,9 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin-upgrades/contracts/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 
-contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable {
+import "../mixins/SemVerMixin.sol";
+
+contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable, SemVerMixin {
     /// CONSTANTS & IMMUTABLES
     /// @notice the address of the backing Eigen token bEIGEN
     IERC20 public immutable bEIGEN;
@@ -39,8 +41,9 @@ contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable {
     event TokenUnwrapped(address indexed account, uint256 amount);
 
     constructor(
-        IERC20 _bEIGEN
-    ) {
+        IERC20 _bEIGEN,
+        string memory _version
+    ) SemVerMixin(_version) {
         bEIGEN = _bEIGEN;
         _disableInitializers();
     }
