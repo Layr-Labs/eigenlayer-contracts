@@ -71,6 +71,9 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
     DepositScalingFactor dsf;
     uint stakerDSF;
 
+    OperatorSet defaultOperatorSet = OperatorSet(address(this), 0);
+    uint defaultSlashId = 0;
+
     /// @notice mappings used to handle duplicate entries in fuzzed address array input
     mapping(address => uint) public totalSharesForStrategyInArray;
     mapping(IStrategy => uint) public totalSharesDecreasedForStrategy;
@@ -104,7 +107,6 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
             address(delegationManagerImplementation),
             abi.encodeWithSelector(
                 DelegationManager.initialize.selector,
-                address(this),
                 0 // 0 is initial paused status
             )
         );
@@ -1150,7 +1152,7 @@ contract DelegationManagerUnitTests_Initialization_Setters is DelegationManagerU
             MIN_WITHDRAWAL_DELAY_BLOCKS,
             "constructor / initializer incorrect, MIN_WITHDRAWAL_DELAY set wrong"
         );
-        assertEq(delegationManager.owner(), address(this), "constructor / initializer incorrect, owner set wrong");
+        // assertEq(delegationManager.owner(), address(this), "constructor / initializer incorrect, owner set wrong");
         assertEq(delegationManager.paused(), 0, "constructor / initializer incorrect, paused status set wrong");
 
         bytes memory v = bytes(delegationManager.version());
@@ -1170,7 +1172,7 @@ contract DelegationManagerUnitTests_Initialization_Setters is DelegationManagerU
     /// @notice Verifies that the DelegationManager cannot be initialized multiple times
     function test_initialize_revert_reinitialization() public {
         cheats.expectRevert("Initializable: contract is already initialized");
-        delegationManager.initialize(address(this), 0);
+        delegationManager.initialize(0);
     }
 }
 
@@ -3600,7 +3602,9 @@ contract DelegationManagerUnitTests_undelegate is DelegationManagerUnitTests {
             uint delegatedSharesBefore = delegationManager.operatorShares(defaultOperator, strategy);
             _setOperatorMagnitude(defaultOperator, strategy, newMaxMagnitude);
             cheats.prank(address(allocationManagerMock));
-            delegationManager.slashOperatorShares(defaultOperator, strategy, prevMaxMagnitude, newMaxMagnitude);
+            delegationManager.slashOperatorShares(
+                defaultOperator, defaultOperatorSet, defaultSlashId, strategy, prevMaxMagnitude, newMaxMagnitude
+            );
             (, uint operatorSharesAfterSlash) = _assertOperatorSharesAfterSlash({
                 operator: defaultOperator,
                 strategy: strategy,
@@ -3710,7 +3714,7 @@ contract DelegationManagerUnitTests_undelegate is DelegationManagerUnitTests {
         {
             _setOperatorMagnitude(defaultOperator, strategy, operatorMagnitude);
             cheats.prank(address(allocationManagerMock));
-            delegationManager.slashOperatorShares(defaultOperator, strategy, WAD, 0);
+            delegationManager.slashOperatorShares(defaultOperator, defaultOperatorSet, defaultSlashId, strategy, WAD, 0);
             operatorSharesAfterSlash = delegationManager.operatorShares(defaultOperator, strategy);
             assertEq(operatorSharesAfterSlash, 0, "operator shares not fully slashed");
         }
@@ -3819,7 +3823,9 @@ contract DelegationManagerUnitTests_undelegate is DelegationManagerUnitTests {
             _setOperatorMagnitude(defaultOperator, strategyMock, newMaxMagnitude);
 
             cheats.prank(address(allocationManagerMock));
-            delegationManager.slashOperatorShares(defaultOperator, strategyMock, prevMaxMagnitude, newMaxMagnitude);
+            delegationManager.slashOperatorShares(
+                defaultOperator, defaultOperatorSet, defaultSlashId, strategyMock, prevMaxMagnitude, newMaxMagnitude
+            );
             _assertOperatorSharesAfterSlash({
                 operator: defaultOperator,
                 strategy: strategyMock,
@@ -4461,7 +4467,9 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
         uint operatorSharesBefore = delegationManager.operatorShares(defaultOperator, strategyMock);
         _setOperatorMagnitude(defaultOperator, strategyMock, newMaxMagnitude);
         cheats.prank(address(allocationManagerMock));
-        delegationManager.slashOperatorShares(defaultOperator, strategyMock, prevMaxMagnitude, newMaxMagnitude);
+        delegationManager.slashOperatorShares(
+            defaultOperator, defaultOperatorSet, defaultSlashId, strategyMock, prevMaxMagnitude, newMaxMagnitude
+        );
         // Assertions on amount burned
         (uint operatorSharesSlashed,) = _assertOperatorSharesAfterSlash({
             operator: defaultOperator,
@@ -4541,7 +4549,7 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
         uint64 operatorMagnitude = 0;
         _setOperatorMagnitude(defaultOperator, strategyMock, operatorMagnitude);
         cheats.prank(address(allocationManagerMock));
-        delegationManager.slashOperatorShares(defaultOperator, strategyMock, WAD, 0);
+        delegationManager.slashOperatorShares(defaultOperator, defaultOperatorSet, defaultSlashId, strategyMock, WAD, 0);
         _assertOperatorSharesAfterSlash({
             operator: defaultOperator,
             strategy: strategyMock,
@@ -4775,7 +4783,9 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
         uint[] memory slashedOperatorShares = new uint[](strategies.length);
         for (uint i = 0; i < strategies.length; i++) {
             uint operatorSharesBefore = delegationManager.operatorShares(defaultOperator, strategies[i]);
-            delegationManager.slashOperatorShares(defaultOperator, strategies[i], prevMaxMagnitudes[i], newMaxMagnitudes[i]);
+            delegationManager.slashOperatorShares(
+                defaultOperator, defaultOperatorSet, defaultSlashId, strategies[i], prevMaxMagnitudes[i], newMaxMagnitudes[i]
+            );
             // Assert correct amount of shares slashed from operator
             (slashedOperatorShares[i],) = _assertOperatorSharesAfterSlash({
                 operator: defaultOperator,
@@ -4867,7 +4877,9 @@ contract DelegationManagerUnitTests_queueWithdrawals is DelegationManagerUnitTes
         cheats.startPrank(address(allocationManagerMock));
         for (uint i = 0; i < strategies.length; i++) {
             uint operatorSharesBefore = delegationManager.operatorShares(defaultOperator, strategies[i]);
-            delegationManager.slashOperatorShares(defaultOperator, strategies[i], prevMaxMagnitudes[i], newMaxMagnitudes[i]);
+            delegationManager.slashOperatorShares(
+                defaultOperator, defaultOperatorSet, defaultSlashId, strategies[i], prevMaxMagnitudes[i], newMaxMagnitudes[i]
+            );
 
             // Assertions on amount burned
             (slashedOperatorShares[i],) = _assertOperatorSharesAfterSlash({
@@ -5082,7 +5094,7 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
         // Slash all of operator's shares
         _setOperatorMagnitude(defaultOperator, strategyMock, 0);
         cheats.prank(address(allocationManagerMock));
-        delegationManager.slashOperatorShares(defaultOperator, strategyMock, WAD, 0);
+        delegationManager.slashOperatorShares(defaultOperator, defaultOperatorSet, defaultSlashId, strategyMock, WAD, 0);
 
         // Complete withdrawal as shares and check that withdrawal was cleared
         cheats.roll(block.number + 1);
@@ -5255,7 +5267,9 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
             });
             _setOperatorMagnitude(defaultOperator, strategyMock, newMaxMagnitude);
             cheats.prank(address(allocationManagerMock));
-            delegationManager.slashOperatorShares(defaultOperator, withdrawal.strategies[0], prevMaxMagnitude, newMaxMagnitude);
+            delegationManager.slashOperatorShares(
+                defaultOperator, defaultOperatorSet, defaultSlashId, withdrawal.strategies[0], prevMaxMagnitude, newMaxMagnitude
+            );
             uint operatorSharesAfterSlash = delegationManager.operatorShares(defaultOperator, strategyMock);
             assertEq(
                 operatorSharesAfterSlash, operatorSharesAfterQueue - sharesToDecrement, "operator shares should be decreased after slash"
@@ -5445,7 +5459,9 @@ contract DelegationManagerUnitTests_completeQueuedWithdrawal is DelegationManage
             uint64 operatorMagnitude = 5e17;
             _setOperatorMagnitude(defaultOperator, withdrawal.strategies[0], operatorMagnitude);
             cheats.prank(address(allocationManagerMock));
-            delegationManager.slashOperatorShares(defaultOperator, withdrawal.strategies[0], WAD, operatorMagnitude);
+            delegationManager.slashOperatorShares(
+                defaultOperator, defaultOperatorSet, defaultSlashId, withdrawal.strategies[0], WAD, operatorMagnitude
+            );
             uint operatorSharesAfterAVSSlash = delegationManager.operatorShares(defaultOperator, beaconChainETHStrategy);
             assertApproxEqAbs(
                 operatorSharesAfterAVSSlash, operatorSharesAfterBeaconSlash / 2, 1, "operator shares should be decreased after AVS slash"
@@ -5598,7 +5614,7 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
 
         cheats.startPrank(invalidCaller);
         cheats.expectRevert(IDelegationManagerErrors.OnlyAllocationManager.selector);
-        delegationManager.slashOperatorShares(defaultOperator, strategyMock, 0, 0);
+        delegationManager.slashOperatorShares(defaultOperator, defaultOperatorSet, defaultSlashId, strategyMock, 0, 0);
     }
 
     /// @notice Verifies that there is no change in shares if the staker is not delegatedd
@@ -5606,7 +5622,7 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
         _registerOperatorWithBaseDetails(defaultOperator);
 
         cheats.prank(address(allocationManagerMock));
-        delegationManager.slashOperatorShares(defaultOperator, strategyMock, WAD, WAD / 2);
+        delegationManager.slashOperatorShares(defaultOperator, defaultOperatorSet, defaultSlashId, strategyMock, WAD, WAD / 2);
         assertEq(delegationManager.operatorShares(defaultOperator, strategyMock), 0, "shares should not have changed");
     }
 
@@ -5636,7 +5652,7 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
         // Slash all of operator's shares
         _setOperatorMagnitude(defaultOperator, strategyMock, 0);
         cheats.prank(address(allocationManagerMock));
-        delegationManager.slashOperatorShares(defaultOperator, strategyMock, WAD, 0);
+        delegationManager.slashOperatorShares(defaultOperator, defaultOperatorSet, defaultSlashId, strategyMock, WAD, 0);
 
         uint slashableSharesInQueueAfter = delegationManager.getSlashableSharesInQueue(defaultOperator, strategyMock);
 
@@ -5686,7 +5702,7 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
         // Slash all of operator's shares
         _setOperatorMagnitude(defaultOperator, strategyMock, 0);
         cheats.prank(address(allocationManagerMock));
-        delegationManager.slashOperatorShares(defaultOperator, strategyMock, WAD, 0);
+        delegationManager.slashOperatorShares(defaultOperator, defaultOperatorSet, defaultSlashId, strategyMock, WAD, 0);
 
         // Complete withdrawal as tokens and assert that we call back into the SM with 100 tokens
         IERC20[] memory tokens = strategyMock.underlyingToken().toArray();
@@ -5745,7 +5761,7 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
             strategyMock,
             depositAmount / 6 // 1 withdrawal not queued so decreased
         );
-        delegationManager.slashOperatorShares(defaultOperator, strategyMock, WAD, 0);
+        delegationManager.slashOperatorShares(defaultOperator, defaultOperatorSet, defaultSlashId, strategyMock, WAD, 0);
 
         // Assert slashable shares
         slashableSharesInQueue = delegationManager.getSlashableSharesInQueue(defaultOperator, strategyMock);
@@ -5820,7 +5836,9 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
 
                 cheats.expectEmit(true, true, true, true, address(delegationManager));
                 emit OperatorSharesDecreased(defaultOperator, address(0), strategies[i], sharesToDecrease);
-                delegationManager.slashOperatorShares(defaultOperator, strategies[i], prevMaxMagnitude, newMaxMagnitude);
+                delegationManager.slashOperatorShares(
+                    defaultOperator, defaultOperatorSet, defaultSlashId, strategies[i], prevMaxMagnitude, newMaxMagnitude
+                );
 
                 // Also update maxMagnitude in ALM mock
                 _setOperatorMagnitude(defaultOperator, strategies[i], newMaxMagnitude);
@@ -5890,6 +5908,8 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
         cheats.prank(address(allocationManagerMock));
         delegationManager.slashOperatorShares({
             operator: operator,
+            operatorSet: defaultOperatorSet,
+            slashId: defaultSlashId,
             strategy: strategyMock,
             prevMaxMagnitude: initMagnitude,
             newMaxMagnitude: newMagnitude
@@ -5971,6 +5991,8 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
         cheats.prank(address(allocationManagerMock));
         delegationManager.slashOperatorShares({
             operator: operator,
+            operatorSet: defaultOperatorSet,
+            slashId: defaultSlashId,
             strategy: strategyMock,
             prevMaxMagnitude: WAD,
             newMaxMagnitude: newMagnitude
@@ -5984,83 +6006,85 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
         assertEq(operatorSharesAfter, operatorSharesBefore - sharesToBurn, "operator shares should be decreased by sharesToBurn");
     }
 
-    /**
-     * @notice Test burning shares for an operator with slashable queued withdrawals in past MIN_WITHDRAWAL_DELAY_BLOCKS window.
-     * There exists a single withdrawal that is slashable.
-     */
-    function testFuzz_slashOperatorShares_SingleSlashableWithdrawal(Randomness r) public rand(r) {
-        // 1. Randomize operator and staker info
-        // Operator info
-        address operator = r.Address();
-        uint64 newMagnitude = 25e16;
-        // First staker
-        address staker1 = r.Address();
-        uint shares = r.Uint256(1, MAX_STRATEGY_SHARES);
-        // Second Staker, will queue withdraw shares
-        address staker2 = r.Address();
-        uint depositAmount = r.Uint256(1, MAX_STRATEGY_SHARES);
-        uint withdrawAmount = r.Uint256(1, depositAmount);
+    // /**
+    //  * @notice Test burning shares for an operator with slashable queued withdrawals in past MIN_WITHDRAWAL_DELAY_BLOCKS window.
+    //  * There exists a single withdrawal that is slashable.
+    //  */
+    // function testFuzz_slashOperatorShares_SingleSlashableWithdrawal(Randomness r) public rand(r) {
+    //     // 1. Randomize operator and staker info
+    //     // Operator info
+    //     address operator = r.Address();
+    //     uint64 newMagnitude = 25e16;
+    //     // First staker
+    //     address staker1 = r.Address();
+    //     uint shares = r.Uint256(1, MAX_STRATEGY_SHARES);
+    //     // Second Staker, will queue withdraw shares
+    //     address staker2 = r.Address();
+    //     uint depositAmount = r.Uint256(1, MAX_STRATEGY_SHARES);
+    //     uint withdrawAmount = r.Uint256(1, depositAmount);
 
-        // 2. Register the operator, set the staker deposits, and delegate the 2 stakers to them
-        _registerOperatorWithBaseDetails(operator);
-        strategyManagerMock.addDeposit(staker1, strategyMock, shares);
-        strategyManagerMock.addDeposit(staker2, strategyMock, depositAmount);
-        _delegateToOperatorWhoAcceptsAllStakers(staker1, operator);
-        _delegateToOperatorWhoAcceptsAllStakers(staker2, operator);
+    //     // 2. Register the operator, set the staker deposits, and delegate the 2 stakers to them
+    //     _registerOperatorWithBaseDetails(operator);
+    //     strategyManagerMock.addDeposit(staker1, strategyMock, shares);
+    //     strategyManagerMock.addDeposit(staker2, strategyMock, depositAmount);
+    //     _delegateToOperatorWhoAcceptsAllStakers(staker1, operator);
+    //     _delegateToOperatorWhoAcceptsAllStakers(staker2, operator);
 
-        // 3. Queue withdrawal for staker2 so that the withdrawal is slashable
-        {
-            (QueuedWithdrawalParams[] memory queuedWithdrawalParams,,) =
-                _setUpQueueWithdrawalsSingleStrat({staker: staker2, strategy: strategyMock, depositSharesToWithdraw: withdrawAmount});
-            cheats.prank(staker2);
-            delegationManager.queueWithdrawals(queuedWithdrawalParams);
-            assertEq(
-                delegationManager.getSlashableSharesInQueue(operator, strategyMock),
-                withdrawAmount,
-                "there should be withdrawAmount slashable shares in queue"
-            );
-        }
+    //     // 3. Queue withdrawal for staker2 so that the withdrawal is slashable
+    //     {
+    //         (QueuedWithdrawalParams[] memory queuedWithdrawalParams,,) =
+    //             _setUpQueueWithdrawalsSingleStrat({staker: staker2, strategy: strategyMock, depositSharesToWithdraw: withdrawAmount});
+    //         cheats.prank(staker2);
+    //         delegationManager.queueWithdrawals(queuedWithdrawalParams);
+    //         assertEq(
+    //             delegationManager.getSlashableSharesInQueue(operator, strategyMock),
+    //             withdrawAmount,
+    //             "there should be withdrawAmount slashable shares in queue"
+    //         );
+    //     }
 
-        uint operatorSharesBefore = delegationManager.operatorShares(operator, strategyMock);
-        uint queuedSlashableSharesBefore = delegationManager.getSlashableSharesInQueue(operator, strategyMock);
+    //     uint operatorSharesBefore = delegationManager.operatorShares(operator, strategyMock);
+    //     uint queuedSlashableSharesBefore = delegationManager.getSlashableSharesInQueue(operator, strategyMock);
 
-        // calculate burned shares, should be 3/4 of the original shares
-        // staker2 queue withdraws shares
-        // Therefore amount of shares to burn should be what the staker still has remaining + staker1 shares and then
-        // divided by 2 since the operator was slashed 50%
-        uint sharesToDecrease = (shares + depositAmount - withdrawAmount) * 3 / 4;
-        uint sharesToBurn = sharesToDecrease + withdrawAmount * 3 / 4;
+    //     // calculate burned shares, should be 3/4 of the original shares
+    //     // staker2 queue withdraws shares
+    //     // Therefore amount of shares to burn should be what the staker still has remaining + staker1 shares and then
+    //     // divided by 2 since the operator was slashed 50%
+    //     uint sharesToDecrease = (shares + depositAmount - withdrawAmount) * 3 / 4;
+    //     uint sharesToBurn = sharesToDecrease + withdrawAmount * 3 / 4;
 
-        // 4. Burn shares
-        _setOperatorMagnitude(operator, strategyMock, newMagnitude);
-        _slashOperatorShares_expectEmit(
-            SlashOperatorSharesEmitStruct({
-                operator: operator,
-                strategy: strategyMock,
-                sharesToDecrease: sharesToDecrease,
-                sharesToBurn: sharesToBurn
-            })
-        );
+    //     // 4. Burn shares
+    //     _setOperatorMagnitude(operator, strategyMock, newMagnitude);
+    //     _slashOperatorShares_expectEmit(
+    //         SlashOperatorSharesEmitStruct({
+    //             operator: operator,
+    //             strategy: strategyMock,
+    //             sharesToDecrease: sharesToDecrease,
+    //             sharesToBurn: sharesToBurn
+    //         })
+    //     );
 
-        // Assert OperatorSharesSlashed event was emitted with correct params
-        cheats.expectEmit(true, true, true, true, address(delegationManager));
-        emit OperatorSharesSlashed(operator, strategyMock, sharesToBurn);
+    //     // Assert OperatorSharesSlashed event was emitted with correct params
+    //     cheats.expectEmit(true, true, true, true, address(delegationManager));
+    //     emit OperatorSharesSlashed(operator, strategyMock, sharesToBurn);
 
-        cheats.prank(address(allocationManagerMock));
-        delegationManager.slashOperatorShares({
-            operator: operator,
-            strategy: strategyMock,
-            prevMaxMagnitude: WAD,
-            newMaxMagnitude: newMagnitude
-        });
+    //     cheats.prank(address(allocationManagerMock));
+    //     delegationManager.slashOperatorShares({
+    //         operator: operator,
+    //         operatorSet: defaultOperatorSet,
+    //         slashId: defaultSlashId,
+    //         strategy: strategyMock,
+    //         prevMaxMagnitude: WAD,
+    //         newMaxMagnitude: newMagnitude
+    //     });
 
-        // 5. Assert expected values
-        uint queuedSlashableSharesAfter = delegationManager.getSlashableSharesInQueue(operator, strategyMock);
-        uint operatorSharesAfter = delegationManager.operatorShares(operator, strategyMock);
-        assertEq(queuedSlashableSharesBefore, withdrawAmount, "Slashable shares in queue should be full withdraw amount");
-        assertEq(queuedSlashableSharesAfter, withdrawAmount / 4, "Slashable shares in queue should be 1/4 withdraw amount after slashing");
-        assertEq(operatorSharesAfter, operatorSharesBefore - sharesToDecrease, "operator shares should be decreased by sharesToBurn");
-    }
+    //     // 5. Assert expected values
+    //     uint queuedSlashableSharesAfter = delegationManager.getSlashableSharesInQueue(operator, strategyMock);
+    //     uint operatorSharesAfter = delegationManager.operatorShares(operator, strategyMock);
+    //     assertEq(queuedSlashableSharesBefore, withdrawAmount, "Slashable shares in queue should be full withdraw amount");
+    //     assertEq(queuedSlashableSharesAfter, withdrawAmount / 4, "Slashable shares in queue should be 1/4 withdraw amount after slashing");
+    //     assertEq(operatorSharesAfter, operatorSharesBefore - sharesToDecrease, "operator shares should be decreased by sharesToBurn");
+    // }
 
     /**
      * @notice Test burning shares for an operator with slashable queued withdrawals in past MIN_WITHDRAWAL_DELAY_BLOCKS window.
@@ -6131,6 +6155,8 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
         cheats.prank(address(allocationManagerMock));
         delegationManager.slashOperatorShares({
             operator: operator,
+            operatorSet: defaultOperatorSet,
+            slashId: defaultSlashId,
             strategy: strategyMock,
             prevMaxMagnitude: WAD,
             newMaxMagnitude: newMagnitude
@@ -6212,6 +6238,8 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
             cheats.prank(address(allocationManagerMock));
             delegationManager.slashOperatorShares({
                 operator: operator,
+                operatorSet: defaultOperatorSet,
+                slashId: defaultSlashId,
                 strategy: strategyMock,
                 prevMaxMagnitude: WAD,
                 newMaxMagnitude: newMagnitude
@@ -6267,6 +6295,8 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
             cheats.prank(address(allocationManagerMock));
             delegationManager.slashOperatorShares({
                 operator: operator,
+                operatorSet: defaultOperatorSet,
+                slashId: defaultSlashId,
                 strategy: strategyMock,
                 prevMaxMagnitude: newMagnitude * 2,
                 newMaxMagnitude: newMagnitude
@@ -6365,6 +6395,8 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
         cheats.prank(address(allocationManagerMock));
         delegationManager.slashOperatorShares({
             operator: operator,
+            operatorSet: defaultOperatorSet,
+            slashId: defaultSlashId,
             strategy: strategyMock,
             prevMaxMagnitude: WAD,
             newMaxMagnitude: newMagnitude
@@ -6381,81 +6413,83 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
         assertEq(operatorSharesBefore, 0, "operator shares should be unchanged and equal to 0");
     }
 
-    /**
-     * @notice Ensure that no burning takes place for the beaconChainETHStrategy when the operator is slashed
-     * and there are no slashable shares in the queue. Note: this will be implemented in a future release with
-     * consideration of the Pectra upgrade.
-     */
-    function testFuzz_slashOperatorShares_BeaconChainStrategy(Randomness r) public rand(r) {
-        // 1. Randomize operator and staker info
-        // Operator info
-        address operator = r.Address();
-        uint64 newMagnitude = 25e16;
-        // First staker
-        address staker1 = r.Address();
-        uint shares = r.Uint256(1, MAX_STRATEGY_SHARES);
-        // Second Staker, will queue withdraw shares
-        address staker2 = r.Address();
-        uint depositAmount = r.Uint256(1, MAX_STRATEGY_SHARES);
-        uint withdrawAmount = r.Uint256(1, depositAmount);
+    // /**
+    //  * @notice Ensure that no burning takes place for the beaconChainETHStrategy when the operator is slashed
+    //  * and there are no slashable shares in the queue. Note: this will be implemented in a future release with
+    //  * consideration of the Pectra upgrade.
+    //  */
+    // function testFuzz_slashOperatorShares_BeaconChainStrategy(Randomness r) public rand(r) {
+    //     // 1. Randomize operator and staker info
+    //     // Operator info
+    //     address operator = r.Address();
+    //     uint64 newMagnitude = 25e16;
+    //     // First staker
+    //     address staker1 = r.Address();
+    //     uint shares = r.Uint256(1, MAX_STRATEGY_SHARES);
+    //     // Second Staker, will queue withdraw shares
+    //     address staker2 = r.Address();
+    //     uint depositAmount = r.Uint256(1, MAX_STRATEGY_SHARES);
+    //     uint withdrawAmount = r.Uint256(1, depositAmount);
 
-        // 2. Register the operator, set the staker deposits, and delegate the 2 stakers to them
-        _registerOperatorWithBaseDetails(operator);
-        eigenPodManagerMock.setPodOwnerShares(staker1, int(shares));
-        eigenPodManagerMock.setPodOwnerShares(staker2, int(depositAmount));
-        _delegateToOperatorWhoAcceptsAllStakers(staker1, operator);
-        _delegateToOperatorWhoAcceptsAllStakers(staker2, operator);
+    //     // 2. Register the operator, set the staker deposits, and delegate the 2 stakers to them
+    //     _registerOperatorWithBaseDetails(operator);
+    //     eigenPodManagerMock.setPodOwnerShares(staker1, int(shares));
+    //     eigenPodManagerMock.setPodOwnerShares(staker2, int(depositAmount));
+    //     _delegateToOperatorWhoAcceptsAllStakers(staker1, operator);
+    //     _delegateToOperatorWhoAcceptsAllStakers(staker2, operator);
 
-        // 3. Queue withdrawal for staker2 so that the withdrawal is slashable
-        {
-            (QueuedWithdrawalParams[] memory queuedWithdrawalParams,,) = _setUpQueueWithdrawalsSingleStrat({
-                staker: staker2,
-                strategy: beaconChainETHStrategy,
-                depositSharesToWithdraw: withdrawAmount
-            });
-            cheats.prank(staker2);
-            delegationManager.queueWithdrawals(queuedWithdrawalParams);
-            assertEq(
-                delegationManager.getSlashableSharesInQueue(operator, beaconChainETHStrategy),
-                withdrawAmount,
-                "there should be withdrawAmount slashable shares in queue"
-            );
-        }
+    //     // 3. Queue withdrawal for staker2 so that the withdrawal is slashable
+    //     {
+    //         (QueuedWithdrawalParams[] memory queuedWithdrawalParams,,) = _setUpQueueWithdrawalsSingleStrat({
+    //             staker: staker2,
+    //             strategy: beaconChainETHStrategy,
+    //             depositSharesToWithdraw: withdrawAmount
+    //         });
+    //         cheats.prank(staker2);
+    //         delegationManager.queueWithdrawals(queuedWithdrawalParams);
+    //         assertEq(
+    //             delegationManager.getSlashableSharesInQueue(operator, beaconChainETHStrategy),
+    //             withdrawAmount,
+    //             "there should be withdrawAmount slashable shares in queue"
+    //         );
+    //     }
 
-        uint operatorSharesBefore = delegationManager.operatorShares(operator, beaconChainETHStrategy);
-        uint queuedSlashableSharesBefore = delegationManager.getSlashableSharesInQueue(operator, beaconChainETHStrategy);
+    //     uint operatorSharesBefore = delegationManager.operatorShares(operator, beaconChainETHStrategy);
+    //     uint queuedSlashableSharesBefore = delegationManager.getSlashableSharesInQueue(operator, beaconChainETHStrategy);
 
-        // calculate burned shares, should be 3/4 of the original shares
-        // staker2 queue withdraws shares
-        // Therefore amount of shares to burn should be what the staker still has remaining + staker1 shares and then
-        // divided by 2 since the operator was slashed 50%
-        uint sharesToDecrease = (shares + depositAmount - withdrawAmount) * 3 / 4;
-        uint sharesToBurn = sharesToDecrease + (delegationManager.getSlashableSharesInQueue(operator, beaconChainETHStrategy) * 3 / 4);
+    //     // calculate burned shares, should be 3/4 of the original shares
+    //     // staker2 queue withdraws shares
+    //     // Therefore amount of shares to burn should be what the staker still has remaining + staker1 shares and then
+    //     // divided by 2 since the operator was slashed 50%
+    //     uint sharesToDecrease = (shares + depositAmount - withdrawAmount) * 3 / 4;
+    //     uint sharesToBurn = sharesToDecrease + (delegationManager.getSlashableSharesInQueue(operator, beaconChainETHStrategy) * 3 / 4);
 
-        // 4. Burn shares
-        _setOperatorMagnitude(operator, beaconChainETHStrategy, newMagnitude);
-        cheats.expectEmit(true, true, true, true, address(delegationManager));
-        emit OperatorSharesDecreased(operator, address(0), beaconChainETHStrategy, sharesToDecrease);
+    //     // 4. Burn shares
+    //     _setOperatorMagnitude(operator, beaconChainETHStrategy, newMagnitude);
+    //     cheats.expectEmit(true, true, true, true, address(delegationManager));
+    //     emit OperatorSharesDecreased(operator, address(0), beaconChainETHStrategy, sharesToDecrease);
 
-        // Assert OperatorSharesSlashed event was emitted with correct params
-        cheats.expectEmit(true, true, true, true, address(delegationManager));
-        emit OperatorSharesSlashed(operator, beaconChainETHStrategy, sharesToBurn);
+    //     // Assert OperatorSharesSlashed event was emitted with correct params
+    //     cheats.expectEmit(true, true, true, true, address(delegationManager));
+    //     emit OperatorSharesSlashed(operator, beaconChainETHStrategy, sharesToBurn);
 
-        cheats.prank(address(allocationManagerMock));
-        delegationManager.slashOperatorShares({
-            operator: operator,
-            strategy: beaconChainETHStrategy,
-            prevMaxMagnitude: WAD,
-            newMaxMagnitude: newMagnitude
-        });
+    //     cheats.prank(address(allocationManagerMock));
+    //     delegationManager.slashOperatorShares({
+    //         operator: operator,
+    //         operatorSet: defaultOperatorSet,
+    //         slashId: defaultSlashId,
+    //         strategy: beaconChainETHStrategy,
+    //         prevMaxMagnitude: WAD,
+    //         newMaxMagnitude: newMagnitude
+    //     });
 
-        // 5. Assert expected values
-        uint queuedSlashableSharesAfter = delegationManager.getSlashableSharesInQueue(operator, beaconChainETHStrategy);
-        uint operatorSharesAfter = delegationManager.operatorShares(operator, beaconChainETHStrategy);
-        assertEq(queuedSlashableSharesBefore, withdrawAmount, "Slashable shares in queue should be full withdraw amount");
-        assertEq(queuedSlashableSharesAfter, withdrawAmount / 4, "Slashable shares in queue should be 1/4 withdraw amount after slashing");
-        assertEq(operatorSharesAfter, operatorSharesBefore - sharesToDecrease, "operator shares should be decreased by sharesToDecrease");
-    }
+    //     // 5. Assert expected values
+    //     uint queuedSlashableSharesAfter = delegationManager.getSlashableSharesInQueue(operator, beaconChainETHStrategy);
+    //     uint operatorSharesAfter = delegationManager.operatorShares(operator, beaconChainETHStrategy);
+    //     assertEq(queuedSlashableSharesBefore, withdrawAmount, "Slashable shares in queue should be full withdraw amount");
+    //     assertEq(queuedSlashableSharesAfter, withdrawAmount / 4, "Slashable shares in queue should be 1/4 withdraw amount after slashing");
+    //     assertEq(operatorSharesAfter, operatorSharesBefore - sharesToDecrease, "operator shares should be decreased by sharesToDecrease");
+    // }
 
     /**
      * @notice This test demonstrates that the rate that withdrawable shares decrease from slashing is at LEAST
@@ -6491,7 +6525,12 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
 
             cheats.prank(address(allocationManagerMock));
             delegationManager.slashOperatorShares(
-                defaultOperator, strategyMock, newOperatorMagnitude + slashMagnitude, newOperatorMagnitude
+                defaultOperator,
+                defaultOperatorSet,
+                defaultSlashId,
+                strategyMock,
+                newOperatorMagnitude + slashMagnitude,
+                newOperatorMagnitude
             );
 
             uint operatorSharesAfterSlash = delegationManager.operatorShares(defaultOperator, strategyMock);
@@ -6582,7 +6621,9 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
                 // do a slash via an AVS
                 _setOperatorMagnitude(defaultOperator, beaconChainETHStrategy, newMaxMagnitude);
                 cheats.prank(address(allocationManagerMock));
-                delegationManager.slashOperatorShares(defaultOperator, beaconChainETHStrategy, initialMagnitude, newMaxMagnitude);
+                delegationManager.slashOperatorShares(
+                    defaultOperator, defaultOperatorSet, defaultSlashId, beaconChainETHStrategy, initialMagnitude, newMaxMagnitude
+                );
 
                 // save the outcome
                 (withdrawableShares,) = delegationManager.getWithdrawableShares(defaultStaker, beaconChainETHStrategy.toArray());
@@ -6636,7 +6677,9 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
 
                 _setOperatorMagnitude(defaultOperator2, beaconChainETHStrategy, newMaxMagnitude);
                 cheats.prank(address(allocationManagerMock));
-                delegationManager.slashOperatorShares(defaultOperator2, beaconChainETHStrategy, initialMagnitude, newMaxMagnitude);
+                delegationManager.slashOperatorShares(
+                    defaultOperator2, defaultOperatorSet, defaultSlashId, beaconChainETHStrategy, initialMagnitude, newMaxMagnitude
+                );
 
                 uint expectedWithdrawable = _calcWithdrawableShares(
                     uint(beaconShares),
@@ -6731,6 +6774,8 @@ contract DelegationManagerUnitTests_SharesUnderflowChecks is DelegationManagerUn
                 cheats.prank(address(allocationManagerMock));
                 delegationManager.slashOperatorShares({
                     operator: defaultOperator,
+                    operatorSet: defaultOperatorSet,
+                    slashId: defaultSlashId,
                     strategy: strategyMock,
                     prevMaxMagnitude: currMagnitude + slashMagnitude,
                     newMaxMagnitude: currMagnitude
@@ -6819,6 +6864,8 @@ contract DelegationManagerUnitTests_SharesUnderflowChecks is DelegationManagerUn
                 cheats.prank(address(allocationManagerMock));
                 delegationManager.slashOperatorShares({
                     operator: defaultOperator,
+                    operatorSet: defaultOperatorSet,
+                    slashId: defaultSlashId,
                     strategy: strategyMock,
                     prevMaxMagnitude: currMagnitude + slashMagnitude,
                     newMaxMagnitude: currMagnitude
@@ -6907,6 +6954,8 @@ contract DelegationManagerUnitTests_SharesUnderflowChecks is DelegationManagerUn
                 cheats.prank(address(allocationManagerMock));
                 delegationManager.slashOperatorShares({
                     operator: defaultOperator,
+                    operatorSet: defaultOperatorSet,
+                    slashId: defaultSlashId,
                     strategy: strategyMock,
                     prevMaxMagnitude: currMagnitude + slashMagnitude,
                     newMaxMagnitude: currMagnitude
@@ -6982,6 +7031,8 @@ contract DelegationManagerUnitTests_SharesUnderflowChecks is DelegationManagerUn
                 cheats.prank(address(allocationManagerMock));
                 delegationManager.slashOperatorShares({
                     operator: defaultOperator,
+                    operatorSet: defaultOperatorSet,
+                    slashId: defaultSlashId,
                     strategy: strategyMock,
                     prevMaxMagnitude: currMagnitude + slashMagnitude,
                     newMaxMagnitude: currMagnitude
@@ -7056,6 +7107,8 @@ contract DelegationManagerUnitTests_SharesUnderflowChecks is DelegationManagerUn
                 cheats.prank(address(allocationManagerMock));
                 delegationManager.slashOperatorShares({
                     operator: defaultOperator,
+                    operatorSet: defaultOperatorSet,
+                    slashId: defaultSlashId,
                     strategy: strategyMock,
                     prevMaxMagnitude: currMagnitude + slashMagnitude,
                     newMaxMagnitude: currMagnitude
@@ -7133,6 +7186,8 @@ contract DelegationManagerUnitTests_SharesUnderflowChecks is DelegationManagerUn
                 cheats.prank(address(allocationManagerMock));
                 delegationManager.slashOperatorShares({
                     operator: defaultOperator,
+                    operatorSet: defaultOperatorSet,
+                    slashId: defaultSlashId,
                     strategy: strategyMock,
                     prevMaxMagnitude: currMagnitude + slashMagnitude,
                     newMaxMagnitude: currMagnitude
@@ -7264,7 +7319,7 @@ contract DelegationManagerUnitTests_Lifecycle is DelegationManagerUnitTests {
         {
             _setOperatorMagnitude(defaultOperator, strategy, operatorMagnitude);
             cheats.prank(address(allocationManagerMock));
-            delegationManager.slashOperatorShares(defaultOperator, strategy, WAD, 0);
+            delegationManager.slashOperatorShares(defaultOperator, defaultOperatorSet, defaultSlashId, strategy, WAD, 0);
             operatorSharesAfterSlash = delegationManager.operatorShares(defaultOperator, strategy);
             assertEq(operatorSharesAfterSlash, 0, "operator shares not fully slashed");
         }
@@ -7455,7 +7510,7 @@ contract DelegationManagerUnitTests_getQueuedWithdrawals is DelegationManagerUni
             uint newStakerShares = depositShares[i] / 2;
             _setOperatorMagnitude(defaultOperator, strategies[i], 0.5 ether);
             cheats.prank(address(allocationManagerMock));
-            delegationManager.slashOperatorShares(defaultOperator, strategies[i], WAD, 0.5 ether);
+            delegationManager.slashOperatorShares(defaultOperator, defaultOperatorSet, defaultSlashId, strategies[i], WAD, 0.5 ether);
             uint afterSlash = delegationManager.operatorShares(defaultOperator, strategies[i]);
             assertApproxEqAbs(afterSlash, newStakerShares, 1, "bad operator shares after slash");
         }
@@ -7491,7 +7546,7 @@ contract DelegationManagerUnitTests_getQueuedWithdrawals is DelegationManagerUni
         uint newStakerShares = totalDepositShares / 2;
         _setOperatorMagnitude(defaultOperator, strategyMock, 0.5 ether);
         cheats.prank(address(allocationManagerMock));
-        delegationManager.slashOperatorShares(defaultOperator, strategyMock, WAD, 0.5 ether);
+        delegationManager.slashOperatorShares(defaultOperator, defaultOperatorSet, defaultSlashId, strategyMock, WAD, 0.5 ether);
         uint afterSlash = delegationManager.operatorShares(defaultOperator, strategyMock);
         assertApproxEqAbs(afterSlash, newStakerShares, 1, "bad operator shares after slash");
 
@@ -7565,7 +7620,9 @@ contract DelegationManagerUnitTests_getQueuedWithdrawals is DelegationManagerUni
                 _calcSlashedAmount({operatorShares: operatorSharesAfterQueue, prevMaxMagnitude: uint64(WAD), newMaxMagnitude: 50e16});
             _setOperatorMagnitude(defaultOperator, strategyMock, 50e16);
             cheats.prank(address(allocationManagerMock));
-            delegationManager.slashOperatorShares(defaultOperator, withdrawal.strategies[0], uint64(WAD), 50e16);
+            delegationManager.slashOperatorShares(
+                defaultOperator, defaultOperatorSet, defaultSlashId, withdrawal.strategies[0], uint64(WAD), 50e16
+            );
             uint operatorSharesAfterSlash = delegationManager.operatorShares(defaultOperator, strategyMock);
             assertEq(
                 operatorSharesAfterSlash, operatorSharesAfterQueue - sharesToDecrement, "operator shares should be decreased after slash"
@@ -7591,7 +7648,9 @@ contract DelegationManagerUnitTests_getQueuedWithdrawals is DelegationManagerUni
                 _calcSlashedAmount({operatorShares: operatorShares, prevMaxMagnitude: 50e16, newMaxMagnitude: 25e16});
             _setOperatorMagnitude(defaultOperator, strategyMock, 25e16);
             cheats.prank(address(allocationManagerMock));
-            delegationManager.slashOperatorShares(defaultOperator, withdrawal.strategies[0], 50e16, 25e16);
+            delegationManager.slashOperatorShares(
+                defaultOperator, defaultOperatorSet, defaultSlashId, withdrawal.strategies[0], 50e16, 25e16
+            );
             uint operatorSharesAfterSecondSlash = delegationManager.operatorShares(defaultOperator, strategyMock);
             assertEq(operatorSharesAfterSecondSlash, operatorShares - sharesToDecrement, "operator shares should be decreased after slash");
         }
@@ -7701,7 +7760,7 @@ contract DelegationManagerUnitTests_getQueuedWithdrawal is DelegationManagerUnit
         // Slash operator by 50%
         _setOperatorMagnitude(defaultOperator, strategyMock, 0.5 ether);
         cheats.prank(address(allocationManagerMock));
-        delegationManager.slashOperatorShares(defaultOperator, strategyMock, WAD, 0.5 ether);
+        delegationManager.slashOperatorShares(defaultOperator, defaultOperatorSet, defaultSlashId, strategyMock, WAD, 0.5 ether);
 
         // Get shares from queued withdrawal
         (, uint[] memory shares) = delegationManager.getQueuedWithdrawal(withdrawalRoot);

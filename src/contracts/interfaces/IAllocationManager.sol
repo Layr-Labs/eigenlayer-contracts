@@ -223,7 +223,9 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
     /**
      * @dev Initializes the initial owner and paused status.
      */
-    function initialize(address initialOwner, uint256 initialPausedStatus) external;
+    function initialize(
+        uint256 initialPausedStatus
+    ) external;
 
     /**
      * @notice Called by an AVS to slash an operator in a given operator set. The operator must be registered
@@ -651,4 +653,25 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
     function getSlashCount(
         OperatorSet memory operatorSet
     ) external view returns (uint256);
+
+    /**
+     * @notice Returns the timestamp a burn or redistribution can occur after a given an operator set, strategy, and slash ID.
+     * @param operatorSet The operator set to query.
+     * @param strategy The strategy to query.
+     * @param slashId The slash ID to query.
+     * @return The timestamp a burn or redistribution can occur after a given an operator set, strategy, and slash ID.
+     */
+    function getBurnOrRedistributionBlock(
+        OperatorSet memory operatorSet,
+        IStrategy strategy,
+        uint256 slashId
+    ) external view returns (uint32);
+
+    /**
+     * @notice Returns whether an operator is in a redistribution operator set.
+     * @param operator The operator to query.
+     */
+    function isOperatorRedistributable(
+        address operator
+    ) external view returns (bool);
 }

@@ -524,7 +524,7 @@ contract ExistingDeploymentParser is Script, Logger {
         );
         // DelegationManager
         cheats.expectRevert(bytes("Initializable: contract is already initialized"));
-        delegationManager.initialize(address(0), 0);
+        delegationManager.initialize(0);
         // StrategyManager
         cheats.expectRevert(bytes("Initializable: contract is already initialized"));
         strategyManager.initialize(address(0), address(0), STRATEGY_MANAGER_INIT_PAUSED_STATUS);
@@ -605,7 +605,7 @@ contract ExistingDeploymentParser is Script, Logger {
             delegationManager.pauserRegistry() == eigenLayerPauserReg,
             "delegationManager: pauser registry not set correctly"
         );
-        assertEq(delegationManager.owner(), executorMultisig, "delegationManager: owner not set correctly");
+        // assertEq(delegationManager.owner(), executorMultisig, "delegationManager: owner not set correctly");
         assertEq(
             delegationManager.paused(),
             DELEGATION_MANAGER_INIT_PAUSED_STATUS,

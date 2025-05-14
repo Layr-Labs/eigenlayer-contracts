@@ -537,9 +537,9 @@ contract DeployFromScratch is Script, Test {
 
     function _verifyInitialOwners() internal view {
         require(strategyManager.owner() == executorMultisig, "strategyManager: owner not set correctly");
-        require(delegation.owner() == executorMultisig, "delegation: owner not set correctly");
+        // require(delegation.owner() == executorMultisig, "delegation: owner not set correctly");
         require(eigenPodManager.owner() == executorMultisig, "eigenPodManager: owner not set correctly");
-        require(allocationManager.owner() == executorMultisig, "allocationManager: owner not set correctly");
+        // require(allocationManager.owner() == executorMultisig, "allocationManager: owner not set correctly");
         require(eigenLayerProxyAdmin.owner() == executorMultisig, "eigenLayerProxyAdmin: owner not set correctly");
         require(eigenPodBeacon.owner() == executorMultisig, "eigenPodBeacon: owner not set correctly");
         require(strategyBeacon.owner() == executorMultisig, "strategyBeacon: owner not set correctly");

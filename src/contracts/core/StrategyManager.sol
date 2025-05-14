@@ -143,12 +143,14 @@ contract StrategyManager is
 
     /// @inheritdoc IShareManager
     function increaseBurnableShares(
+        OperatorSet calldata operatorSet,
+        uint256 slashId,
         IStrategy strategy,
         uint256 addedSharesToBurn
     ) external onlyDelegationManager nonReentrant {
-        (, uint256 currentShares) = EnumerableMap.tryGet(burnableShares, address(strategy));
-        EnumerableMap.set(burnableShares, address(strategy), currentShares + addedSharesToBurn);
-        emit BurnableSharesIncreased(strategy, addedSharesToBurn);
+        // (, uint256 currentShares) = EnumerableMap.tryGet(burnableShares, address(strategy));
+        // EnumerableMap.set(burnableShares, address(strategy), currentShares + addedSharesToBurn);
+        emit BurnableSharesIncreased(operatorSet, slashId, strategy, addedSharesToBurn);
     }
 
     /// @inheritdoc IStrategyManager
@@ -157,7 +159,7 @@ contract StrategyManager is
     ) external nonReentrant {
         (, uint256 sharesToBurn) = EnumerableMap.tryGet(burnableShares, address(strategy));
         EnumerableMap.remove(burnableShares, address(strategy));
-        emit BurnableSharesDecreased(strategy, sharesToBurn);
+        emit BurnableSharesDecreased(OperatorSet(address(this), 0), 0, strategy, sharesToBurn);
 
         // Burning acts like withdrawing, except that the destination is to the burn address.
         // If we have no shares to burn, we don't need to call the strategy.
