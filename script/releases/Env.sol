@@ -356,14 +356,14 @@ library Env {
      */
     function eigen(
         DeployedProxy
-    ) internal view returns (IEigen) {
-        return IEigen(_deployedProxy(type(Eigen).name));
+    ) internal view returns (Eigen) {
+        return Eigen(_deployedProxy(type(Eigen).name));
     }
 
     function eigen(
         DeployedImpl
-    ) internal view returns (IEigen) {
-        return IEigen(_deployedImpl(type(Eigen).name));
+    ) internal view returns (Eigen) {
+        return Eigen(_deployedImpl(type(Eigen).name));
     }
 
     function beigen(
