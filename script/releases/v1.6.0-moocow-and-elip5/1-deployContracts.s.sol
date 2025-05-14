@@ -19,7 +19,10 @@ contract Deploy is EOADeployer {
 
         // We are upgrading contracts: Eigen
         // TODO: add moocow contracts
-        deployImpl({name: type(Eigen).name, deployedTo: address(new Eigen({_bEIGEN: Env.proxy.beigen()}))});
+        deployImpl({
+            name: type(Eigen).name,
+            deployedTo: address(new Eigen({_bEIGEN: Env.proxy.beigen(), _version: Env.deployVersion()}))
+        });
         vm.stopBroadcast();
     }
 
@@ -28,8 +31,9 @@ contract Deploy is EOADeployer {
 
         _validateNewImplAddresses({areMatching: false});
         _validateProxyAdmins();
-        // _validateImplConstructors();
+        _validateImplConstructors();
         _validateImplsInitialized();
+        _validateVersion();
     }
 
     /// @dev Validate that the `Env.impl` addresses are updated to be distinct from what the proxy
@@ -69,6 +73,13 @@ contract Deploy is EOADeployer {
         Eigen eigen = Env.impl.eigen();
         vm.expectRevert(errInit);
         eigen.initialize(address(0), new address[](0), new uint256[](0), new uint256[](0));
+    }
+
+    function _validateVersion() internal view {
+        // On future upgrades, just tick the major/minor/patch to validate
+        string memory expected = Env.deployVersion();
+
+        assertEq(Env.impl.eigen().version(), expected, "eigen version mismatch");
     }
 
     /// @dev Query and return `proxyAdmin.getProxyImplementation(proxy)`
