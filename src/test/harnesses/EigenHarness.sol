@@ -4,7 +4,7 @@ pragma solidity ^0.8.27;
 import "../../contracts/token/Eigen.sol";
 
 contract EigenHarness is Eigen {
-    constructor(IERC20 _bEIGEN) Eigen(_bEIGEN) {}
+    constructor(IERC20 _bEIGEN) Eigen(_bEIGEN, "1.6.0") {}
 
     /// expose internal mint function
     function mint(address to, uint amount) public {
