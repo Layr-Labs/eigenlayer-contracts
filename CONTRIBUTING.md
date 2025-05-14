@@ -26,6 +26,11 @@ foundryup
 forge build
 ```
 
+### Set Up and Update Remappings
+
+If any dependencies are updated, run `forge remappings > remappings.txt` to explicitly declare them.
+
+
 
 ### Run Unit and Integration Tests
 
