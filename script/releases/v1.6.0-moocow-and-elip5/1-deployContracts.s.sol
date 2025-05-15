@@ -110,7 +110,7 @@ contract Deploy is EOADeployer {
 
     function _validateVersion() internal view {
         // On future upgrades, just tick the major/minor/patch to validate
-        string memory expected = "v1.6.0";
+        string memory expected = "1.6.0";
 
         assertEq(Env.impl.eigenPod().version(), expected, "eigenPod version mismatch");
     }
