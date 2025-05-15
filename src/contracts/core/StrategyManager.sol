@@ -118,8 +118,7 @@ contract StrategyManager is
         IStrategy strategy,
         uint256 depositSharesToRemove
     ) external onlyDelegationManager nonReentrant returns (uint256) {
-        (, uint256 sharesAfter) = _removeDepositShares(staker, strategy, depositSharesToRemove);
-        return sharesAfter;
+        return _removeDepositShares(staker, strategy, depositSharesToRemove);
     }
 
     /// @inheritdoc IShareManager
@@ -280,7 +279,7 @@ contract StrategyManager is
         address staker,
         IStrategy strategy,
         uint256 depositSharesToRemove
-    ) internal returns (bool, uint256) {
+    ) internal returns (uint256) {
         // sanity checks on inputs
         require(depositSharesToRemove != 0, SharesAmountZero());
 
@@ -298,12 +297,9 @@ contract StrategyManager is
         // if no existing shares, remove the strategy from the staker's dynamic array of strategies
         if (userDepositShares == 0) {
             _removeStrategyFromStakerStrategyList(staker, strategy);
-
-            // return true in the event that the strategy was removed from stakerStrategyList[staker]
-            return (true, userDepositShares);
         }
-        // return false in the event that the strategy was *not* removed from stakerStrategyList[staker]
-        return (false, userDepositShares);
+
+        return userDepositShares;
     }
 
     /**
