@@ -92,6 +92,7 @@ contract Deploy is EOADeployer {
             /// Eigen
             Eigen eigen = Eigen(address(Env.impl.eigen()));
             assertTrue(address(eigen.bEIGEN()) == address(Env.proxy.beigen()), "eigen.beigen invalid");
+            assertTrue(_strEq(eigen.version(), Env.deployVersion()), "eigen.version failed");
         }
     }
 
