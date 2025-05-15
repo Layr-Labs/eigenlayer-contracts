@@ -354,7 +354,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg, "v9.9.9");
 
         // Beacon implementations
-        eigenPodImplementation = new EigenPod(DEPOSIT_CONTRACT, eigenPodManager, BEACON_GENESIS_TIME, "v9.9.9");
+        eigenPodImplementation = new EigenPod(DEPOSIT_CONTRACT, eigenPodManager, "v9.9.9");
         baseStrategyImplementation = new StrategyBase(strategyManager, eigenLayerPauserReg, "v9.9.9");
 
         // Pre-longtail StrategyBaseTVLLimits implementation
