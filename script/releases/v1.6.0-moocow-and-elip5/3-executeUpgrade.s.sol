@@ -79,6 +79,7 @@ contract Execute is QueueUpgrade {
             /// Eigen
             Eigen eigen = Eigen(address(Env.proxy.eigen()));
             assertTrue(address(eigen.bEIGEN()) == address(Env.proxy.beigen()), "eigen.beigen invalid");
+            assertEq(eigen.version(), Env.deployVersion(), "eigen.version failed");
         }
     }
 

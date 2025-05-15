@@ -3,6 +3,7 @@ pragma solidity ^0.8.27;
 
 import "../../contracts/core/DelegationManager.sol";
 import "forge-std/Test.sol";
+import "../TestConstants.sol";
 
 contract DelegationManagerHarness is DelegationManager {
     constructor(
@@ -13,15 +14,16 @@ contract DelegationManagerHarness is DelegationManager {
         IPermissionController _permissionController,
         uint32 _MIN_WITHDRAWAL_DELAY
     )
-        DelegationManager(
-            _strategyManager,
-            _eigenPodManager,
-            _allocationManager,
-            _pauserRegistry,
-            _permissionController,
-            _MIN_WITHDRAWAL_DELAY,
-            "9.9.9"
-        )
+    
+    DelegationManager(
+        _strategyManager,
+        _eigenPodManager,
+        _allocationManager,
+        _pauserRegistry,
+        _permissionController,
+        _MIN_WITHDRAWAL_DELAY,
+        TestConstants.TEST_VERSION
+    )
     {}
 
     function getSlashingFactor(address staker, IStrategy strategy, uint64 operatorMaxMagnitude) external view returns (uint) {
