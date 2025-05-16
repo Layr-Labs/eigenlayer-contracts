@@ -2,12 +2,11 @@
 
 # EigenLayer
 
-EigenLayer is a set of smart contracts deployed on Ethereum that enable restaking of assets to secure new services (AVSs).
+**EigenLayer** is a protocol built on Ethereum that introduces Restaking, a primitive for app and service builders to make verifiable commitments to their users.
 
+EigenLayer brings together Restakers, Operators, and Autonomous Verifiable Services (AVSs) to extend Ethereum's cryptoeconomic security with penalty and reward commitments (like slashing) on staked assets acting as security. The protocol supports permissionless security; EIGEN, Native ETH, LSTs, and ERC-20s. 
 
 ## Deployments
-
-### Deployment Version By Environments
 
 The deployments on `mainnet`, `holesky`, and `sepolia` are on the below versions:
 
@@ -240,14 +239,6 @@ The following strategies differ significantly from the other strategies deployed
 
 </details>
 
-
-## Get Started
-
-See [CONTRIBUTING](CONTRIBUTING.md). 
-
-Contributions that do not follow our fork base PR practices will be either rejected or immediately deleted based on your role, preventing branch pollution, keeping our repository clean, make it more readable and searchable.
-
-
 ## Branching
 
 Branches we use:
@@ -255,18 +246,28 @@ Branches we use:
 * `Vx.y.z`: Release branch with version `x.y.z` that matches a release of EigenLayer, release branch is always cut from `main` via cherry-picking
 * `release-dev/xxx`: A development branch for a large feature to be released, the branch should eventually be deleted after merge to `main`
 
+## Building Apps & Services on EigenLayer
 
-## Documentation
+### Developer & User Basics
 
-### Basics
+[Our documentation](https://docs.eigenlayer.xyz/) is a great place to start to understand EigenLayer and the Eigen ecosystem. If you are an audio/visual learner, check out the "[You Could've Invented EigenLayer](https://www.blog.eigenlayer.xyz/ycie/)" video. 
 
-To get a basic understanding of EigenLayer, check out [You Could've Invented EigenLayer](https://www.blog.eigenlayer.xyz/ycie/). Note that some of the document's content describes features that do not exist yet (like the Slasher). To understand more about how restakers and operators interact with EigenLayer, check out these guides:
-* [Restaking User Guide](https://docs.eigenlayer.xyz/eigenlayer/restaking-guides/overview)
-* [Operator Guide](https://docs.eigenlayer.xyz/operator-guides/operator-introduction)
+To understand more about how our ecosystem and its participants work, checkout the guides below. These are split out by who you are: AVS developers, restakers and Operators. All have different roles and interactioons with EigenLayer:
 
-### Deep Dive
+* [AVS Developer Guide](https://docs.eigenlayer.xyz/developers/Concepts/avs-developer-guide)
+* [Operator Guide](https://docs.eigenlayer.xyz/operators/concepts/operator-introduction)
+* [Restaker Guide](https://docs.eigenlayer.xyz/restakers/concepts/overview)
 
-The most up-to-date and technical documentation can be found in [/docs](/docs). If you're a shadowy super coder, this is a great place to get an overview of the contracts before diving into the code.
+### Contract Docs & Deep Dive
+
+The most up-to-date and technical documentation on our core contracts can be found in [/docs](/docs). If you're a shadowy super coder, this is a great place to get an overview of the contracts before diving into the code.
+
+To learn more about interfacing with the EigenLayer core contracts onchain, see our [middleware repo.](https://github.com/Layr-Labs/eigenlayer-middleware)
 
 To get an idea of how users interact with these contracts, check out our integration tests: [/src/test/integration](./src/test/integration/).
 
+## Contribute to the Core
+
+See [CONTRIBUTING](CONTRIBUTING.md). 
+
+Contributions that do not follow our fork base PR practices will be either rejected or immediately deleted based on your role, preventing branch pollution, keeping our repository clean, make it more readable and searchable.
