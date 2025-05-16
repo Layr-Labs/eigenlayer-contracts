@@ -60,6 +60,15 @@ When merging a complete `release-dev` branch into `main` after a major feature i
 - Example: `release-dev/feature -> [merge commit] -> main`
 
 
+#### 3. Merge multiple release-dev branches
+
+A release may contain multiple features that each is developed on its own `release-dev/*` branch. 
+
+When merging to `main`, atomic commits on each `release-dev/*` branch should be preserved, in order to track commit history of each individual feature scope in the release.
+
+This can be achieved by either merge commit each `release-dev/*` branch into `main` respectively, or merge commit into a single `release-dev/*` branch (consolidation) then commit merge the single one into `main`.
+
+
 ### Best Practices
 
 - **Branch Hygiene**: Delete branches after merging to avoid clutter
