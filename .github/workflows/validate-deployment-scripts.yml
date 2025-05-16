@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        env: [preprod, testnet, mainnet]
+        env: [preprod, testnet, mainnet, testnet-sepolia, testnet-hoodi]
 
     steps:
       # Check out repository with all submodules for complete codebase access.
