@@ -64,22 +64,22 @@ contract Execute is QueueUpgrade {
     /// @dev Mirrors the checks done in 1-deployContracts, but now we check each contract's
     /// proxy, as the upgrade should mean that each proxy can see these methods/immutables
     function _validateProxyConstructors() internal view {
-        DelegationManager delegation = Env.proxy.delegationManager();
-        assertTrue(delegation.strategyManager() == Env.proxy.strategyManager(), "dm.sm invalid");
-        assertTrue(delegation.eigenPodManager() == Env.proxy.eigenPodManager(), "dm.epm invalid");
-        assertTrue(delegation.allocationManager() == Env.proxy.allocationManager(), "dm.alm invalid");
-        assertTrue(delegation.pauserRegistry() == Env.impl.pauserRegistry(), "dm.pR invalid");
-        assertTrue(delegation.permissionController() == Env.proxy.permissionController(), "dm.pc invalid");
-        assertTrue(delegation.minWithdrawalDelayBlocks() == Env.MIN_WITHDRAWAL_DELAY(), "dm.withdrawalDelay invalid");
+        {
+            UpgradeableBeacon eigenPodBeacon = Env.beacon.eigenPod();
+            assertTrue(eigenPodBeacon.implementation() == address(Env.impl.eigenPod()), "eigenPodBeacon.impl invalid");
 
-        UpgradeableBeacon eigenPodBeacon = Env.beacon.eigenPod();
-        assertTrue(eigenPodBeacon.implementation() == address(Env.impl.eigenPod()), "eigenPodBeacon.impl invalid");
+            /// EigenPod
+            EigenPod eigenPod = Env.impl.eigenPod();
+            assertTrue(eigenPod.ethPOS() == Env.ethPOS(), "ep.ethPOS invalid");
+            assertTrue(eigenPod.eigenPodManager() == Env.proxy.eigenPodManager(), "ep.epm invalid");
+            assertEq(eigenPod.version(), Env.deployVersion(), "ep.version failed");
+        }
 
-        EigenPodManager eigenPodManager = Env.proxy.eigenPodManager();
-        assertTrue(eigenPodManager.ethPOS() == Env.ethPOS(), "epm.ethPOS invalid");
-        assertTrue(eigenPodManager.eigenPodBeacon() == Env.beacon.eigenPod(), "epm.epBeacon invalid");
-        assertTrue(eigenPodManager.delegationManager() == Env.proxy.delegationManager(), "epm.dm invalid");
-        assertTrue(eigenPodManager.pauserRegistry() == Env.impl.pauserRegistry(), "epm.pR invalid");
+        {
+            /// Eigen
+            Eigen eigen = Eigen(address(Env.proxy.eigen()));
+            assertTrue(address(eigen.bEIGEN()) == address(Env.proxy.beigen()), "eigen.beigen invalid");
+        }
     }
 
     /// @dev Call initialize on all proxies to ensure they are initialized
@@ -87,16 +87,9 @@ contract Execute is QueueUpgrade {
     function _validateProxiesInitialized() internal {
         bytes memory errInit = "Initializable: contract is already initialized";
 
-        DelegationManager delegation = Env.proxy.delegationManager();
+        /// Eigen
+        Eigen eigen = Eigen(address(Env.proxy.eigen()));
         vm.expectRevert(errInit);
-        delegation.initialize(address(0), 0);
-        assertTrue(delegation.owner() == Env.executorMultisig(), "dm.owner invalid");
-        assertTrue(delegation.paused() == 0, "dm.paused invalid");
-
-        EigenPodManager eigenPodManager = Env.proxy.eigenPodManager();
-        vm.expectRevert(errInit);
-        eigenPodManager.initialize(address(0), 0);
-        assertTrue(eigenPodManager.owner() == Env.executorMultisig(), "epm.owner invalid");
-        assertTrue(eigenPodManager.paused() == 0, "epm.paused invalid");
+        eigen.initialize(address(0), new address[](0), new uint256[](0), new uint256[](0));
     }
 }
