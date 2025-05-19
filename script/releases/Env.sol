@@ -60,7 +60,7 @@ library Env {
     /**
      * env
      */
-    function deployEnv() internal view returns (string memory) {
+    function env() internal view returns (string memory) {
         return _string("ZEUS_ENV");
     }
 
