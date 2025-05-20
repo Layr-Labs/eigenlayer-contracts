@@ -20,8 +20,35 @@ At this point, you should be able to view an environment's config (try `zeus env
 
 ### Writing a Script
 
-Scripts are broken up into multiple steps TODO
+Scripts are broken up into multiple steps, typically following a deploy-queue-execute pattern:
 
+1. **Deploy (1-deployContracts.s.sol)**
+   - Inherits from `EOADeployer`
+   - Deploys new contract implementations
+   - Validates deployments through extensive checks:
+     - Implementation addresses
+     - Proxy admin ownership
+     - Constructor parameters
+     - Initialization state
+     - Version numbers
+
+2. **Queue (2-queueUpgrade.s.sol)**
+   - Inherits from `MultisigBuilder`
+   - Prepares upgrade transaction for the Timelock
+   - Constructs calldata for the Executor Multisig
+   - Schedules the transaction in the Timelock
+   - Includes validation to ensure proper queuing
+
+3. **Execute (3-executeUpgrade.s.sol)**
+   - Inherits from the Queue script
+   - Executes the queued transaction after the timelock delay
+   - Performs final validation of the upgrade:
+     - Proxy implementation addresses
+     - Proxy admin ownership
+     - Constructor parameters
+     - Initialization state
+
+Each step should include comprehensive test functions to validate the changes at each stage of the upgrade process.
 
 ### EOADeployer
 
