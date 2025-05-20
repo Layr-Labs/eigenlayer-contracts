@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "@openzeppelin/contracts/mocks/ERC1271WalletMock.sol";
+import "@openzeppelin-v4.9.0/contracts/mocks/ERC1271WalletMock.sol";
 import "src/contracts/core/StrategyManager.sol";
 import "src/contracts/strategies/StrategyBase.sol";
 import "src/contracts/permissions/PauserRegistry.sol";

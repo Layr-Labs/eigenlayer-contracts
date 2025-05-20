@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import "@openzeppelin/contracts/utils/structs/DoubleEndedQueue.sol";
+import "@openzeppelin-v4.9.0/contracts/utils/structs/EnumerableSet.sol";
+import "@openzeppelin-v4.9.0/contracts/utils/structs/DoubleEndedQueue.sol";
 
 import "../interfaces/IAllocationManager.sol";
 import "../interfaces/IDelegationManager.sol";

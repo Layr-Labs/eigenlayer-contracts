@@ -4,10 +4,10 @@ pragma solidity ^0.8.27;
 import "../interfaces/IStrategyManager.sol";
 import "../permissions/Pausable.sol";
 import "../mixins/SemVerMixin.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin-v4.9.0/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin-v4.9.0/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "@openzeppelin-v4.9.0/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin-upgrades-v4.9.0/contracts/proxy/utils/Initializable.sol";
 
 /**
  * @title Base implementation of `IStrategy` interface, designed to be inherited from by more complex strategies.

@@ -137,7 +137,7 @@ pragma solidity ^0.8.12;
 
 import "zeus-templates/templates/OpsTimelockBuilder.sol";
 
-import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
+import {ProxyAdmin} from "@openzeppelin-v4.9.0/contracts/proxy/transparent/ProxyAdmin.sol";
 import {IUpgradeableBeacon} from "script/interfaces/IUpgradeableBeacon.sol";
 import "src/contracts/pods/EigenPodManager.sol";
 

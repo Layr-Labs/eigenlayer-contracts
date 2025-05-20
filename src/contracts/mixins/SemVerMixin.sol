@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "../interfaces/ISemVerMixin.sol";
-import "@openzeppelin-upgrades/contracts/utils/ShortStringsUpgradeable.sol";
+import "@openzeppelin-upgrades-v4.9.0/contracts/utils/ShortStringsUpgradeable.sol";
 
 /// @title SemVerMixin
 /// @notice A mixin contract that provides semantic versioning functionality.

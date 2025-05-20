@@ -2,7 +2,7 @@
 pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "@openzeppelin-v4.9.0/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "src/contracts/interfaces/IStrategy.sol";
 import {IAllocationManagerTypes} from "src/contracts/interfaces/IAllocationManager.sol";
 
