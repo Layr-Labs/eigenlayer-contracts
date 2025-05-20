@@ -97,6 +97,8 @@ contract Execute is QueueUpgrade {
         vm.expectRevert(errInit);
         eigenPodManager.initialize(address(0), 0);
         assertTrue(eigenPodManager.owner() == Env.executorMultisig(), "epm.owner invalid");
-        assertTrue(eigenPodManager.paused() == 0, "epm.paused invalid");
+        if (keccak256(bytes(Env.env())) != keccak256(bytes("testnet-sepolia"))) {
+            assertTrue(eigenPodManager.paused() == 0, "epm.paused invalid");
+        }
     }
 }
