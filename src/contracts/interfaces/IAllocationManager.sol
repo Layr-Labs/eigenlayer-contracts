@@ -355,6 +355,7 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
      * @notice Allows an AVS to create new Redistribution operator sets.
      * @param avs The AVS creating the new operator sets.
      * @param params An array of operator set creation parameters.
+     * @param slashers An array of addresses that will be added as slashers to the operator set.
      * @param redistributionRecipients An array of addresses that will receive redistributed funds when operators are slashed.
      * @dev Same logic as `createOperatorSets`, except `redistributionRecipients` corresponding to each operator set are stored.
      *      Additionally, emits `RedistributionOperatorSetCreated` event instead of `OperatorSetCreated` for each created operator set.
@@ -362,6 +363,7 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
     function createRedistributingOperatorSets(
         address avs,
         CreateSetParams[] calldata params,
+        address[] calldata slashers,
         address[] calldata redistributionRecipients
     ) external;
 
@@ -704,5 +706,5 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
      */
     function getSlashers(
         OperatorSet memory operatorSet
-    ) external view returns (address[] memory slashers, bool[] memory activeStatus);
+    ) external view returns (address[] memory slashers, uint32[] memory effectBlocks);
 }

@@ -4,6 +4,7 @@ pragma solidity ^0.8.27;
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import "@openzeppelin/contracts/utils/structs/DoubleEndedQueue.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 
 import "../interfaces/IAllocationManager.sol";
 import "../interfaces/IDelegationManager.sol";
@@ -11,14 +12,6 @@ import {Snapshots} from "../libraries/Snapshots.sol";
 
 abstract contract AllocationManagerStorage is IAllocationManager {
     using Snapshots for Snapshots.DefaultWadHistory;
-
-    // Storage Structs
-    struct OperatorSetSlashers {
-        /// @notice The slashers in the operator set
-        EnumerableSet.AddressSet slashers;
-        /// @notice The effect block of each slasher
-        mapping(address slasher => uint32 effectBlock) slasherEffectBlock;
-    }
 
     // Constants
 
@@ -119,7 +112,7 @@ abstract contract AllocationManagerStorage is IAllocationManager {
 
     /// @notice Returns the slashers for a given operator set
     /// @dev This mapping will eventually supercede any PermissionController-set slashers
-    mapping(bytes32 operatorSetKey => OperatorSetSlashers) internal _slashers;
+    mapping(bytes32 operatorSetKey => EnumerableMap.AddressToUintMap) internal _slashers;
 
     // Construction
 
