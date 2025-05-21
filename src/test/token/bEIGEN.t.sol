@@ -5,8 +5,8 @@ import "forge-std/Test.sol";
 
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import "../harnesses/EigenHarness.sol";
 
+import "../../contracts/token/Eigen.sol";
 import "../../contracts/token/BackingEigen.sol";
 
 contract bEIGENTest is Test {
@@ -18,7 +18,7 @@ contract bEIGENTest is Test {
 
     ProxyAdmin proxyAdmin;
 
-    EigenHarness eigenImpl;
+    Eigen eigenImpl;
     Eigen eigen;
 
     BackingEigen bEIGENImpl;
@@ -33,8 +33,8 @@ contract bEIGENTest is Test {
         bEIGEN = BackingEigen(address(new TransparentUpgradeableProxy(address(proxyAdmin), address(proxyAdmin), "")));
 
         // deploy impls
-        eigenImpl = new EigenHarness(IERC20(address(bEIGEN)));
-        bEIGENImpl = new BackingEigen(IERC20(address(eigen)));
+        eigenImpl = new Eigen(IERC20(address(bEIGEN)));
+        bEIGENImpl = new BackingEigen();
 
         // upgrade proxies
         proxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(eigen))), address(eigenImpl));
@@ -48,8 +48,6 @@ contract bEIGENTest is Test {
 
         // check that the owner is initialOwner
         assertEq(bEIGEN.owner(), initialOwner);
-        // check the transfer restrictions are disabled after one year in the future
-        assertEq(bEIGEN.transferRestrictionsDisabledAfter(), type(uint).max);
     }
 
     function testFuzz_CanBackTheEigenToken(uint eigenSupply) public {
@@ -89,8 +87,6 @@ contract bEIGENTest is Test {
 
     function test_burn() public {
         test_setIsMinterAndMint();
-        vm.prank(initialOwner);
-        bEIGEN.setAllowedFrom(mintTo, true);
 
         uint amountToBurn = 1005e18;
         uint balanceBefore = bEIGEN.balanceOf(mintTo);

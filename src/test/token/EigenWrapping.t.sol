@@ -5,8 +5,8 @@ import "forge-std/Test.sol";
 
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import "../harnesses/EigenHarness.sol";
 
+import "../../contracts/token/Eigen.sol";
 import "../../contracts/token/BackingEigen.sol";
 
 contract EigenWrappingTests is Test {
@@ -17,7 +17,7 @@ contract EigenWrappingTests is Test {
 
     ProxyAdmin proxyAdmin;
 
-    EigenHarness eigenImpl;
+    Eigen eigenImpl;
     Eigen eigen;
 
     BackingEigen bEIGENImpl;
@@ -25,15 +25,15 @@ contract EigenWrappingTests is Test {
 
     uint totalSupply = 1.67e9 ether;
 
-    // EVENTS FROM EIGEN.sol
-    /// @notice event emitted when the allowedFrom status of an address is set
-    event SetAllowedFrom(address indexed from, bool isAllowedFrom);
-    /// @notice event emitted when the allowedTo status of an address is set
-    event SetAllowedTo(address indexed to, bool isAllowedTo);
-    /// @notice event emitted when a minter mints
-    event Mint(address indexed minter, uint amount);
-    /// @notice event emitted when the transfer restrictions are disabled
-    event TransferRestrictionsDisabled();
+    // EVENTS FROM BackingEigen.sol
+    /// @notice event emitted when a minter status is modified
+    event IsMinterModified(address indexed minterAddress, bool newStatus);
+
+    // EVENTS FROM Eigen.sol
+    /// @notice event emitted when bEIGEN tokens are wrapped into EIGEN
+    event TokenWrapped(address indexed account, uint amount);
+    /// @notice event emitted when EIGEN tokens are unwrapped into bEIGEN
+    event TokenUnwrapped(address indexed account, uint amount);
 
     modifier filterAddress(address fuzzedAddress) {
         vm.assume(!fuzzedOutAddresses[fuzzedAddress]);
@@ -49,13 +49,44 @@ contract EigenWrappingTests is Test {
         bEIGEN = BackingEigen(address(new TransparentUpgradeableProxy(address(proxyAdmin), address(proxyAdmin), "")));
 
         // deploy impls
-        eigenImpl = new EigenHarness(IERC20(address(bEIGEN)));
-        bEIGENImpl = new BackingEigen(IERC20(address(eigen)));
+        eigenImpl = new Eigen(IERC20(address(bEIGEN)));
+        bEIGENImpl = new BackingEigen();
 
         // upgrade proxies
         proxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(eigen))), address(eigenImpl));
         proxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(bEIGEN))), address(bEIGENImpl));
 
+        // initialize bEIGEN - this will mint the entire supply to the Eigen contract
+        bEIGEN.initialize(minter1);
+
+        // set minters (for future minting if needed)
+        vm.expectEmit(true, true, true, true);
+        emit IsMinterModified(minter1, true);
+        bEIGEN.setIsMinter(minter1, true);
+
+        vm.expectEmit(true, true, true, true);
+        emit IsMinterModified(minter2, true);
+        bEIGEN.setIsMinter(minter2, true);
+
+        // initialize eigen with empty arrays since we don't need minting anymore
+        eigen.initialize(minter1);
+
+        // Mint and wrap tokens for minter1
+        vm.startPrank(minter1);
+        bEIGEN.mint(minter1, totalSupply / 2);
+        bEIGEN.approve(address(eigen), totalSupply / 2);
+        vm.expectEmit(true, true, true, true);
+        emit TokenWrapped(minter1, totalSupply / 2);
+        eigen.wrap(totalSupply / 2);
+        vm.stopPrank();
+
+        // Mint and wrap tokens for minter2
+        vm.startPrank(minter2);
+        bEIGEN.mint(minter2, totalSupply / 2);
+        bEIGEN.approve(address(eigen), totalSupply / 2);
+        vm.expectEmit(true, true, true, true);
+        emit TokenWrapped(minter2, totalSupply / 2);
+        eigen.wrap(totalSupply / 2);
         vm.stopPrank();
 
         fuzzedOutAddresses[minter1] = true;
@@ -68,9 +99,6 @@ contract EigenWrappingTests is Test {
 
     function test_AnyoneCanUnwrap(address unwrapper, uint unwrapAmount) public filterAddress(unwrapper) {
         vm.assume(unwrapper != address(0));
-
-        _simulateMint();
-        _simulateBackingAndSetTransferRestrictions();
 
         // minter1 balance
         uint minter1Balance = eigen.balanceOf(minter1);
@@ -88,6 +116,8 @@ contract EigenWrappingTests is Test {
         // unwrap amount should be less than minter1 balance
         unwrapAmount = unwrapAmount % minter1Balance;
         vm.prank(unwrapper);
+        vm.expectEmit(true, false, false, false);
+        emit TokenUnwrapped(unwrapper, unwrapAmount);
         eigen.unwrap(unwrapAmount);
 
         // check total supply and balance changes
@@ -103,9 +133,6 @@ contract EigenWrappingTests is Test {
 
     function test_AnyoneCanWrap(address wrapper, uint wrapAmount) public filterAddress(wrapper) {
         vm.assume(wrapper != address(0));
-
-        _simulateMint();
-        _simulateBackingAndSetTransferRestrictions();
 
         // initial bEIGEN balance
         uint initialBEIGENBalanceOfEigenToken = bEIGEN.balanceOf(address(eigen));
@@ -130,6 +157,8 @@ contract EigenWrappingTests is Test {
         // approve bEIGEN
         bEIGEN.approve(address(eigen), wrapAmount);
         // wrap
+        vm.expectEmit(true, false, false, false);
+        emit TokenWrapped(wrapper, wrapAmount);
         eigen.wrap(wrapAmount);
         vm.stopPrank();
 
@@ -141,9 +170,6 @@ contract EigenWrappingTests is Test {
     }
 
     function test_CannotUnwrapMoreThanBalance(address unwrapper, uint unwrapAmount) public filterAddress(unwrapper) {
-        _simulateMint();
-        _simulateBackingAndSetTransferRestrictions();
-
         // unwrap amount should be less than minter1 balance
         unwrapAmount = unwrapAmount % eigen.balanceOf(minter1);
 
@@ -158,9 +184,6 @@ contract EigenWrappingTests is Test {
     }
 
     function test_CannotWrapMoreThanBalance(address wrapper, uint wrapAmount) public filterAddress(wrapper) {
-        _simulateMint();
-        _simulateBackingAndSetTransferRestrictions();
-
         // wrap amount should be less than minter1 balance
         wrapAmount = wrapAmount % eigen.balanceOf(minter1);
 
@@ -177,30 +200,6 @@ contract EigenWrappingTests is Test {
         // send bEIGEN to wrapper
         vm.expectRevert("ERC20: transfer amount exceeds balance");
         eigen.wrap(wrapAmount + 1);
-        vm.stopPrank();
-    }
-
-    function _simulateMint() internal {
-        // dummy mint
-        EigenHarness(address(eigen)).mint(minter1, totalSupply / 2);
-        EigenHarness(address(eigen)).mint(minter2, totalSupply / 2);
-
-        // set allowed froms
-        EigenHarness(address(eigen)).setAllowedFromPermissionless(minter1, true);
-        EigenHarness(address(eigen)).setAllowedFromPermissionless(minter2, true);
-
-        // set transfer restrictions to be disabled after to max
-        EigenHarness(address(eigen)).setTransferRestrictionsDisabledAfterToMax();
-
-        // set owner to minter1
-        EigenHarness(address(eigen)).transferOwnershipPermissionless(minter1);
-    }
-
-    function _simulateBackingAndSetTransferRestrictions() internal {
-        bEIGEN.initialize(minter1);
-
-        vm.startPrank(minter1);
-        bEIGEN.setAllowedFrom(minter1, true);
         vm.stopPrank();
     }
 }
