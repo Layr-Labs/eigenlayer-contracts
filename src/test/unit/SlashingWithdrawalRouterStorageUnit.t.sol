@@ -53,7 +53,7 @@ contract SlashingWithdrawalRouterUnitTests is EigenLayerUnitTestSetup, ISlashing
     }
 
     function _rollForwardDefaultBurnOrRedistributionDelay() internal {
-        cheats.roll(block.number + 3.5 days / 12 seconds);
+        cheats.roll(block.number + 3.5 days / 12 seconds + 1);
     }
 
     /// @dev Sets the return value for the next call to `strategy.underlyingToken()`.
@@ -174,7 +174,7 @@ contract SlashingWithdrawalRouterUnitTests_burnOrRedistributeShares is SlashingW
     /// @dev Tests that multiple strategies can be burned or redistributed in a single call
     function testFuzz_burnOrRedistributeShares_multipleStrategies_sameDelay(uint r) public {
         // Initialize arrays to store test data for multiple strategies
-        uint numStrategies = bound(r, 1, 10);
+        uint numStrategies = bound(r, 2, 10);
         IStrategy[] memory strategies = new IStrategy[](numStrategies);
         MockERC20[] memory tokens = new MockERC20[](numStrategies);
         uint[] memory underlyingAmounts = new uint[](numStrategies);
@@ -294,5 +294,85 @@ contract SlashingWithdrawalRouterUnitTests_burnOrRedistributeShares is SlashingW
 
         // Verify that the start block is cleared
         assertEq(router.getBurnOrRedistributionStartBlock(defaultOperatorSet, defaultSlashId), 0);
+    }
+}
+
+contract SlashingWithdrawalRouterUnitTests_pauseRedistribution is SlashingWithdrawalRouterUnitTests {
+    function test_pauseRedistribution_onlyPauser() public {
+        cheats.prank(cheats.randomAddress());
+        cheats.expectRevert(IPausable.OnlyPauser.selector);
+        router.pauseRedistribution(defaultOperatorSet, defaultSlashId);
+    }
+
+    function test_pauseRedistribution_correctness() public {
+        _startBurnOrRedistributeShares(defaultOperatorSet, defaultSlashId, defaultStrategy, defaultToken, 100);
+        
+        cheats.prank(pauser);
+        router.pauseRedistribution(defaultOperatorSet, defaultSlashId);
+        assertTrue(router.isBurnOrRedistributionPaused(defaultOperatorSet, defaultSlashId));
+
+        _rollForwardDefaultBurnOrRedistributionDelay();
+
+        cheats.prank(defaultRedistributionRecipient);
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
+        router.burnOrRedistributeShares(defaultOperatorSet, defaultSlashId);
+    }
+}
+
+contract SlashingWithdrawalRouterUnitTests_unpauseRedistribution is SlashingWithdrawalRouterUnitTests {
+    function test_unpauseRedistribution_onlyUnpauser() public {
+        cheats.prank(cheats.randomAddress());
+        cheats.expectRevert(IPausable.OnlyUnpauser.selector);
+        router.unpauseRedistribution(defaultOperatorSet, defaultSlashId);
+    }
+
+    function test_unpauseRedistribution_correctness() public {
+        _startBurnOrRedistributeShares(defaultOperatorSet, defaultSlashId, defaultStrategy, defaultToken, 100);
+        
+        cheats.prank(pauser);
+        router.pauseRedistribution(defaultOperatorSet, defaultSlashId);
+        assertTrue(router.isBurnOrRedistributionPaused(defaultOperatorSet, defaultSlashId));
+
+        _rollForwardDefaultBurnOrRedistributionDelay();
+
+        cheats.prank(defaultRedistributionRecipient);
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
+        router.burnOrRedistributeShares(defaultOperatorSet, defaultSlashId);
+
+        cheats.prank(unpauser);
+        router.unpauseRedistribution(defaultOperatorSet, defaultSlashId);
+        assertFalse(router.isBurnOrRedistributionPaused(defaultOperatorSet, defaultSlashId));
+
+        // Should not revert...
+        _mockStrategyUnderlyingTokenCall(defaultStrategy, address(defaultToken));
+        _burnOrRedistributeShares(defaultOperatorSet, defaultSlashId);
+    }
+}
+
+contract SlashingWithdrawalRouterUnitTests_setStrategyBurnOrRedistributionDelay is SlashingWithdrawalRouterUnitTests {
+    function test_setStrategyBurnOrRedistributionDelay_onlyOwner() public {
+        cheats.prank(cheats.randomAddress());
+        cheats.expectRevert("Ownable: caller is not the owner");
+        router.setStrategyBurnOrRedistributionDelay(defaultStrategy, 100);
+    }
+
+    function test_setStrategyBurnOrRedistributionDelay_correctness() public {
+        cheats.prank(defaultOwner);
+        router.setStrategyBurnOrRedistributionDelay(defaultStrategy, 10 days / 12 seconds);
+        // Returns global delay since strategy delay is larger than global delay.
+        assertEq(router.getStrategyBurnOrRedistributionDelay(defaultStrategy), 3.5 days / 12 seconds);
+
+        cheats.prank(defaultOwner);
+        router.setStrategyBurnOrRedistributionDelay(defaultStrategy, 1 days / 12 seconds);
+        // Returns strategy delay since strategy delay is smaller than global delay.
+        assertEq(router.getStrategyBurnOrRedistributionDelay(defaultStrategy), 1 days / 12 seconds);
+    }
+}
+
+contract SlashingWithdrawalRouterUnitTests_setGlobalBurnOrRedistributionDelay is SlashingWithdrawalRouterUnitTests {
+    function test_setGlobalBurnOrRedistributionDelay_onlyOwner() public {
+        cheats.prank(cheats.randomAddress());
+        cheats.expectRevert("Ownable: caller is not the owner");
+        router.setGlobalBurnOrRedistributionDelay(100);
     }
 }
