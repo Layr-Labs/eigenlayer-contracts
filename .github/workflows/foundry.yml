@@ -114,18 +114,6 @@ jobs:
   run-coverage:
     name: Coverage
     runs-on: protocol-x64-16core
-    # Only run coverage checks on main, preprod, testnet, and mainnet branches, or PRs targeting these branches
-    if: |
-      github.ref == 'refs/heads/main' ||
-      github.ref == 'refs/heads/preprod' ||
-      github.ref == 'refs/heads/testnet' ||
-      github.ref == 'refs/heads/mainnet' ||
-      github.base_ref == 'main' ||
-      github.base_ref == 'preprod' ||
-      github.base_ref == 'testnet' ||
-      github.base_ref == 'mainnet'
-    strategy:
-      fail-fast: true
     steps:
       # Check out repository with all submodules for complete codebase access.
       - uses: actions/checkout@v4
