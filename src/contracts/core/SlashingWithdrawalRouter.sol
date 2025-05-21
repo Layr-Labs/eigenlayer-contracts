@@ -77,9 +77,7 @@ contract SlashingWithdrawalRouter is
         pendingSlashIds.add(slashId);
 
         // Add the operator set to the pending operator sets set.
-        if (!pendingOperatorSets.contains(operatorSet.key())) {
-            pendingOperatorSets.add(operatorSet.key());
-        }
+        pendingOperatorSets.add(operatorSet.key());
 
         // Add the strategy and underlying amount to the pending burn or redistributions map.
         pendingBurnOrRedistributions.set(address(strategy), underlyingAmount);
