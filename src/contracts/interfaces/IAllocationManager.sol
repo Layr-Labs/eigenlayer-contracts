@@ -37,7 +37,7 @@ interface IAllocationManagerErrors {
     error AlreadyMemberOfSet();
     /// @dev Thrown when trying to slash/remove an operator from a set they are not a member of
     error NotMemberOfSet();
-    
+
     /// Operator Set Status
 
     /// @dev Thrown when an invalid operator set is provided.
@@ -360,10 +360,7 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
     /**
      * @notice Allows an AVS to create new operator sets, defining strategies, and slashers.
      */
-    function createOperatorSets(
-        address avs,
-        CreateSetParamsWithSlashers[] calldata params
-    ) external;
+    function createOperatorSets(address avs, CreateSetParamsWithSlashers[] calldata params) external;
 
     /**
      * @notice Allows an AVS to create new Redistribution operator sets.
@@ -408,11 +405,7 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
      * @param slashers the slashers to add
      * @dev Adding a slasher undergoes an `ALLOCATION_CONFIGURATION_DELAY` delay before being active.
      */
-    function addSlashersToOperatorSet(
-        address avs,
-        uint32 operatorSetId,
-        address[] calldata slashers
-    ) external;
+    function addSlashersToOperatorSet(address avs, uint32 operatorSetId, address[] calldata slashers) external;
 
     /**
      * @notice Allows an AVS to remove slashers from an operator set.
@@ -421,12 +414,8 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
      * @param slashers the slashers to remove
      * @dev Removing a slasher instantly removes it from the operator set.
      */
-    function removeSlashersFromOperatorSet(
-        address avs,
-        uint32 operatorSetId,
-        address[] calldata slashers
-    ) external;
-    
+    function removeSlashersFromOperatorSet(address avs, uint32 operatorSetId, address[] calldata slashers) external;
+
     /**
      *                         VIEW FUNCTIONS
      *
@@ -724,5 +713,7 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
      * @param operatorSet The operator set to query.
      * @dev For each slasher, returns a boolean indicating if they are active.
      */
-    function getSlashers(OperatorSet memory operatorSet) external view returns (address[] memory slashers, bool[] memory activeStatus);
+    function getSlashers(
+        OperatorSet memory operatorSet
+    ) external view returns (address[] memory slashers, bool[] memory activeStatus);
 }

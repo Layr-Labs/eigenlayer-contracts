@@ -63,11 +63,7 @@ contract AllocationManager is
     function slashOperator(
         address avs,
         SlashingParams calldata params
-    )
-        external
-        onlyWhenNotPaused(PAUSED_OPERATOR_SLASHING)
-        returns (uint256 slashId, uint256[] memory shares)
-    {   
+    ) external onlyWhenNotPaused(PAUSED_OPERATOR_SLASHING) returns (uint256 slashId, uint256[] memory shares) {
         // Check that the operator set exists and the operator is registered to it
         OperatorSet memory operatorSet = OperatorSet(avs, params.operatorSetId);
 
@@ -275,7 +271,10 @@ contract AllocationManager is
         }
     }
 
-    function createOperatorSets(address avs, CreateSetParamsWithSlashers[] calldata params) external checkCanCall(avs) {
+    function createOperatorSets(
+        address avs,
+        CreateSetParamsWithSlashers[] calldata params
+    ) external checkCanCall(avs) {
         _checkAVSMetadata(avs);
         for (uint256 i = 0; i < params.length; i++) {
             _createOperatorSet(avs, params[i].createSetParams, DEFAULT_BURN_ADDRESS);
@@ -335,6 +334,7 @@ contract AllocationManager is
         _addSlashersToOperatorSet(operatorSet, slashers);
     }
 
+    /// @inheritdoc IAllocationManager
     function removeSlashersFromOperatorSet(
         address avs,
         uint32 operatorSetId,
@@ -499,7 +499,10 @@ contract AllocationManager is
      * @param operatorSet the operator set to remove slashers from
      * @param slashersToRemove the slashers to remove
      */
-    function _removeSlashersFromOperatorSet(OperatorSet memory operatorSet, address[] calldata slashersToRemove) internal {
+    function _removeSlashersFromOperatorSet(
+        OperatorSet memory operatorSet,
+        address[] calldata slashersToRemove
+    ) internal {
         EnumerableSet.AddressSet storage slashers = _slashers[operatorSet.key()].slashers;
         for (uint256 i = 0; i < slashersToRemove.length; i++) {
             require(slashers.remove(slashersToRemove[i]), SlasherNotInOperatorSet());
@@ -1108,9 +1111,10 @@ contract AllocationManager is
         return false;
     }
 
-
     /// @inheritdoc IAllocationManager
-    function getAllSlashers(OperatorSet memory operatorSet) external view returns (address[] memory, bool[] memory) {
+    function getAllSlashers(
+        OperatorSet memory operatorSet
+    ) external view returns (address[] memory, bool[] memory) {
         address[] memory slashers = _slashers[operatorSet.key()].slashers.values();
         bool[] memory activeStatus = new bool[](slashers.length);
         for (uint256 i = 0; i < slashers.length; i++) {
