@@ -2,6 +2,7 @@
 pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import "@openzeppelin/contracts/utils/structs/DoubleEndedQueue.sol";
 
 import "../interfaces/IAllocationManager.sol";
@@ -10,6 +11,14 @@ import {Snapshots} from "../libraries/Snapshots.sol";
 
 abstract contract AllocationManagerStorage is IAllocationManager {
     using Snapshots for Snapshots.DefaultWadHistory;
+
+    // Storage Structs
+    struct OperatorSetSlashers {
+        /// @notice The slashers in the operator set
+        EnumerableSet.AddressSet slashers;
+        /// @notice The effect block of each slasher
+        mapping(address slasher => uint32 effectBlock) slasherEffectBlock;
+    }
 
     // Constants
 
@@ -37,7 +46,7 @@ abstract contract AllocationManagerStorage is IAllocationManager {
     /// In this window, deallocations still remain slashable by the operatorSet they were allocated to.
     uint32 public immutable DEALLOCATION_DELAY;
 
-    /// @notice Delay before alloaction delay modifications take effect.
+    /// @notice Delay before allocation delay modifications take effect.
     uint32 public immutable ALLOCATION_CONFIGURATION_DELAY;
 
     // Mutatables
@@ -108,6 +117,10 @@ abstract contract AllocationManagerStorage is IAllocationManager {
     ///      For non-redistributing or non-existing operator sets, returns `address(0)`.
     mapping(bytes32 operatorSetKey => address redistributionAddr) internal _redistributionRecipients;
 
+    /// @notice Returns the slashers for a given operator set
+    /// @dev This mapping will eventually supercede any PermissionController-set slashers
+    mapping(bytes32 operatorSetKey => OperatorSetSlashers) internal _slashers;
+
     // Construction
 
     constructor(IDelegationManager _delegation, uint32 _DEALLOCATION_DELAY, uint32 _ALLOCATION_CONFIGURATION_DELAY) {
@@ -121,5 +134,5 @@ abstract contract AllocationManagerStorage is IAllocationManager {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[34] private __gap;
+    uint256[33] private __gap;
 }
