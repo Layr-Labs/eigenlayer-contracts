@@ -25,14 +25,27 @@ contract DelegationManagerMock is Test {
         isOperator[operator] = _isOperatorReturnValue;
     }
 
-    function slashOperatorShares(address operator, IStrategy strategy, uint64 prevMaxMagnitude, uint64 newMaxMagnitude) external {
-        uint amountSlashed = SlashingLib.calcSlashedAmount({
-            operatorShares: operatorShares[operator][strategy],
-            prevMaxMagnitude: prevMaxMagnitude,
-            newMaxMagnitude: newMaxMagnitude
-        });
+    function slashOperatorShares(
+        address operator,
+        OperatorSet memory,
+        uint,
+        IStrategy[] memory strategies,
+        uint64[] memory prevMaxMagnitudes,
+        uint64[] memory newMaxMagnitudes
+    ) external returns (uint[] memory) {
+        uint[] memory amountSlashed = new uint[](strategies.length);
 
-        operatorShares[operator][strategy] -= amountSlashed;
+        for (uint i = 0; i < strategies.length; i++) {
+            amountSlashed[i] = SlashingLib.calcSlashedAmount({
+                operatorShares: operatorShares[operator][strategies[i]],
+                prevMaxMagnitude: prevMaxMagnitudes[i],
+                newMaxMagnitude: newMaxMagnitudes[i]
+            });
+
+            operatorShares[operator][strategies[i]] -= amountSlashed[i];
+        }
+
+        return amountSlashed;
     }
 
     /// @notice returns the total number of shares in `strategy` that are delegated to `operator`.

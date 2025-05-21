@@ -53,9 +53,14 @@ contract StrategyManager is
      */
     constructor(
         IDelegationManager _delegation,
+        ISlashingWithdrawalRouter _slashingWithdrawalRouter,
         IPauserRegistry _pauserRegistry,
         string memory _version
-    ) StrategyManagerStorage(_delegation) Pausable(_pauserRegistry) SignatureUtilsMixin(_version) {
+    )
+        StrategyManagerStorage(_delegation, _slashingWithdrawalRouter)
+        Pausable(_pauserRegistry)
+        SignatureUtilsMixin(_version)
+    {
         _disableInitializers();
     }
 
@@ -142,12 +147,21 @@ contract StrategyManager is
 
     /// @inheritdoc IShareManager
     function increaseBurnableShares(
+        OperatorSet calldata operatorSet,
+        uint256 slashId,
         IStrategy strategy,
-        uint256 addedSharesToBurn
+        uint256 sharesToBurn
     ) external onlyDelegationManager nonReentrant {
-        (, uint256 currentShares) = EnumerableMap.tryGet(burnableShares, address(strategy));
-        EnumerableMap.set(burnableShares, address(strategy), currentShares + addedSharesToBurn);
-        emit BurnableSharesIncreased(strategy, addedSharesToBurn);
+        emit BurnableSharesIncreased(operatorSet, slashId, strategy, sharesToBurn);
+
+        if (sharesToBurn != 0) {
+            // Withdraw the shares to the EigenLayer `SlashingWithdrawalRouter` contract.
+            uint256 amountOut =
+                strategy.withdraw(address(slashingWithdrawalRouter), strategy.underlyingToken(), sharesToBurn);
+
+            // Notify the `SlashingWithdrawalRouter` contract that it received underlying tokens to burn or redistribute.
+            slashingWithdrawalRouter.startBurnOrRedistributeShares(operatorSet, slashId, strategy, amountOut);
+        }
     }
 
     /// @inheritdoc IStrategyManager
@@ -156,7 +170,7 @@ contract StrategyManager is
     ) external nonReentrant {
         (, uint256 sharesToBurn) = EnumerableMap.tryGet(burnableShares, address(strategy));
         EnumerableMap.remove(burnableShares, address(strategy));
-        emit BurnableSharesDecreased(strategy, sharesToBurn);
+        emit BurnableSharesDecreased(OperatorSet(address(this), 0), 0, strategy, sharesToBurn);
 
         // Burning acts like withdrawing, except that the destination is to the burn address.
         // If we have no shares to burn, we don't need to call the strategy.

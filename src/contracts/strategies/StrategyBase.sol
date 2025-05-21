@@ -154,7 +154,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy, SemVerMixin {
         address recipient,
         IERC20 token,
         uint256 amountShares
-    ) external virtual override onlyWhenNotPaused(PAUSED_WITHDRAWALS) onlyStrategyManager {
+    ) external virtual override onlyWhenNotPaused(PAUSED_WITHDRAWALS) onlyStrategyManager returns (uint256 amountOut) {
         // call hook to allow for any pre-withdrawal logic
         _beforeWithdrawal(recipient, token, amountShares);
 
@@ -163,22 +163,24 @@ contract StrategyBase is Initializable, Pausable, IStrategy, SemVerMixin {
         require(amountShares <= priorTotalShares, WithdrawalAmountExceedsTotalDeposits());
 
         /**
-         * @notice calculation of amountToSend *mirrors* `sharesToUnderlying(amountShares)`, but is different since the `totalShares` has already
+         * @notice calculation of amountOut *mirrors* `sharesToUnderlying(amountShares)`, but is different since the `totalShares` has already
          * been decremented. Specifically, notice how we use `priorTotalShares` here instead of `totalShares`.
          */
         // account for virtual shares and balance
         uint256 virtualPriorTotalShares = priorTotalShares + SHARES_OFFSET;
         uint256 virtualTokenBalance = _tokenBalance() + BALANCE_OFFSET;
         // calculate ratio based on virtual shares and balance, being careful to multiply before dividing
-        uint256 amountToSend = (virtualTokenBalance * amountShares) / virtualPriorTotalShares;
+        amountOut = (virtualTokenBalance * amountShares) / virtualPriorTotalShares;
 
         // Decrease the `totalShares` value to reflect the withdrawal
         totalShares = priorTotalShares - amountShares;
 
         // emit exchange rate
-        _emitExchangeRate(virtualTokenBalance - amountToSend, totalShares + SHARES_OFFSET);
+        _emitExchangeRate(virtualTokenBalance - amountOut, totalShares + SHARES_OFFSET);
 
-        _afterWithdrawal(recipient, token, amountToSend);
+        _afterWithdrawal(recipient, token, amountOut);
+
+        return amountOut;
     }
 
     /**
