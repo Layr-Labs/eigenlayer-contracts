@@ -416,6 +416,11 @@ contract SlashingWithdrawalRouter is
         uint256 globalDelay = _globalBurnOrRedistributionDelayBlocks;
         uint256 strategyDelay = _strategyBurnOrRedistributionDelayBlocks[address(strategy)];
 
+        // If the strategy delay is not set, return the global delay.
+        if (strategyDelay == 0) {
+            return globalDelay;
+        }
+
         // If the strategy delay is less than the global delay, return the strategy delay.
         // Otherwise, return the global delay.
         return strategyDelay < globalDelay ? strategyDelay : globalDelay;
