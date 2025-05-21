@@ -25,6 +25,7 @@ contract AllocationManager is
     using OperatorSetLib for OperatorSet;
     using SlashingLib for uint256;
     using EnumerableSet for *;
+    using EnumerableMap for *;
     using SafeCast for *;
 
     /**
@@ -63,14 +64,12 @@ contract AllocationManager is
     function slashOperator(
         address avs,
         SlashingParams calldata params
-    )
-        external
-        onlyWhenNotPaused(PAUSED_OPERATOR_SLASHING)
-        checkCanCall(avs)
-        returns (uint256 slashId, uint256[] memory shares)
-    {
+    ) external onlyWhenNotPaused(PAUSED_OPERATOR_SLASHING) returns (uint256 slashId, uint256[] memory shares) {
         // Check that the operator set exists and the operator is registered to it
         OperatorSet memory operatorSet = OperatorSet(avs, params.operatorSetId);
+
+        // Assert that the caller is valid
+        require(_canCall(avs) || _isValidSlasher(operatorSet, msg.sender), InvalidPermissions());
 
         _checkArrayLengthsMatch(params.strategies.length, params.wadsToSlash.length);
         _checkIsOperatorSet(operatorSet);
@@ -277,12 +276,15 @@ contract AllocationManager is
     function createRedistributingOperatorSets(
         address avs,
         CreateSetParams[] calldata params,
+        address[] calldata slashers,
         address[] calldata redistributionRecipients
     ) external checkCanCall(avs) {
         _checkArrayLengthsMatch(params.length, redistributionRecipients.length);
+        _checkArrayLengthsMatch(params.length, slashers.length);
         _checkAVSMetadata(avs);
         for (uint256 i = 0; i < params.length; i++) {
             _createOperatorSet(avs, params[i], redistributionRecipients[i]);
+            _addSlashersToOperatorSet(OperatorSet(avs, params[i].operatorSetId), slashers, false);
         }
     }
 
@@ -312,6 +314,26 @@ contract AllocationManager is
             require(_operatorSetStrategies[operatorSetKey].remove(address(strategies[i])), StrategyNotInOperatorSet());
             emit StrategyRemovedFromOperatorSet(operatorSet, strategies[i]);
         }
+    }
+
+    /// @inheritdoc IAllocationManager
+    function addSlashersToOperatorSet(
+        address avs,
+        uint32 operatorSetId,
+        address[] calldata slashers
+    ) external checkCanCall(avs) {
+        OperatorSet memory operatorSet = OperatorSet(avs, operatorSetId);
+        _addSlashersToOperatorSet(operatorSet, slashers, true);
+    }
+
+    /// @inheritdoc IAllocationManager
+    function removeSlashersFromOperatorSet(
+        address avs,
+        uint32 operatorSetId,
+        address[] calldata slashers
+    ) external checkCanCall(avs) {
+        OperatorSet memory operatorSet = OperatorSet(avs, operatorSetId);
+        _removeSlashersFromOperatorSet(operatorSet, slashers);
     }
 
     /**
@@ -445,6 +467,43 @@ contract AllocationManager is
         for (uint256 j = 0; j < params.strategies.length; j++) {
             require(!isRedistributing || params.strategies[j] != BEACONCHAIN_ETH_STRAT, InvalidStrategy());
             _addStrategyToOperatorSet(operatorSet, params.strategies[j]);
+        }
+    }
+
+    /**
+     * @notice Adds slashers to an operator set.
+     * @param operatorSet the operator set to add slashers to
+     * @param slashersToAdd the slashers to add
+     * @param withDelay whether to add the slashers with a delay
+     * @dev Adding a slasher undergoes an `ALLOCATION_CONFIGURATION_DELAY` delay before being active.
+     */
+    function _addSlashersToOperatorSet(
+        OperatorSet memory operatorSet,
+        address[] calldata slashersToAdd,
+        bool withDelay
+    ) internal {
+        EnumerableMap.AddressToUintMap storage slashers = _slashers[operatorSet.key()];
+        uint32 effectBlock =
+            withDelay ? uint32(block.number) + ALLOCATION_CONFIGURATION_DELAY + 1 : uint32(block.number);
+        for (uint256 i = 0; i < slashersToAdd.length; i++) {
+            require(slashers.set(slashersToAdd[i], effectBlock), SlasherAlreadyInOperatorSet());
+            emit SlasherAddedToOperatorSet(operatorSet, slashersToAdd[i], effectBlock);
+        }
+    }
+
+    /**
+     * @notice Removes slashers from an operator set.
+     * @param operatorSet the operator set to remove slashers from
+     * @param slashersToRemove the slashers to remove
+     */
+    function _removeSlashersFromOperatorSet(
+        OperatorSet memory operatorSet,
+        address[] calldata slashersToRemove
+    ) internal {
+        EnumerableMap.AddressToUintMap storage slashers = _slashers[operatorSet.key()];
+        for (uint256 i = 0; i < slashersToRemove.length; i++) {
+            slashers.remove(slashersToRemove[i]);
+            emit SlasherRemovedFromOperatorSet(operatorSet, slashersToRemove[i]);
         }
     }
 
@@ -654,6 +713,22 @@ contract AllocationManager is
     /// @dev Use safe casting when downcasting to uint64
     function _addInt128(uint64 a, int128 b) internal pure returns (uint64) {
         return uint256(int256(int128(uint128(a)) + b)).toUint64();
+    }
+
+    /**
+     * @notice Returns whether a slasher is valid for an operator set.
+     * @param operatorSet The operator set to query.
+     * @param slasher The address to query slash status for.
+     * @dev If the slasher is not `active`, this will return false, even if they have been added as a slasher.
+     */
+    function _isValidSlasher(OperatorSet memory operatorSet, address slasher) internal view returns (bool) {
+        // Check that the slasher is in the operatorSet
+        if (!_slashers[operatorSet.key()].contains(slasher)) {
+            return false;
+        }
+
+        // Return true if the slasher is active, false otherwise
+        return block.number >= _slashers[operatorSet.key()].get(slasher);
     }
 
     /// @dev Reverts if the operator set does not exist.
@@ -1019,17 +1094,28 @@ contract AllocationManager is
     function isOperatorRedistributable(
         address operator
     ) external view returns (bool) {
-        EnumerableSet.Bytes32Set storage allocatedSets = allocatedSets[operator];
         EnumerableSet.Bytes32Set storage registeredSets = registeredSets[operator];
 
-        uint256 allocatedLength = allocatedSets.length();
-        for (uint256 i = 0; i < allocatedLength; ++i) {
-            bytes32 operatorSetKey = allocatedSets.at(i);
-            // Check if the operator is both allocated and registered to this set
-            if (registeredSets.contains(operatorSetKey) && _redistributionRecipients[operatorSetKey] != address(0)) {
+        uint256 registeredLength = registeredSets.length();
+        for (uint256 i = 0; i < registeredLength; ++i) {
+            bytes32 operatorSetKey = registeredSets.at(i);
+            // Check if the operator is registered to this set
+            if (_redistributionRecipients[operatorSetKey] != address(0)) {
                 return true;
             }
         }
         return false;
+    }
+
+    /// @inheritdoc IAllocationManager
+    function getSlashers(
+        OperatorSet memory operatorSet
+    ) external view returns (address[] memory, uint32[] memory) {
+        address[] memory slashers = _slashers[operatorSet.key()].keys();
+        uint32[] memory effectBlocks = new uint32[](slashers.length);
+        for (uint256 i = 0; i < slashers.length; i++) {
+            effectBlocks[i] = uint32(_slashers[operatorSet.key()].get(slashers[i]));
+        }
+        return (slashers, effectBlocks);
     }
 }

@@ -48,6 +48,10 @@ interface IAllocationManagerErrors {
     error StrategyAlreadyInOperatorSet();
     /// @dev Thrown when a strategy is referenced that does not belong to an operator set.
     error StrategyNotInOperatorSet();
+    /// @dev Thrown when a slasher is not in an operator set.
+    error SlasherNotInOperatorSet();
+    /// @dev Thrown when a slasher is already in an operator set.
+    error SlasherAlreadyInOperatorSet();
 
     /// Modifying Allocations
 
@@ -178,6 +182,12 @@ interface IAllocationManagerEvents is IAllocationManagerTypes {
 
     /// @notice Emitted when an AVS updates the redistribution delay for a given strategy.
     event RedistributionDelaySet(address avs, IStrategy strategy, uint32 delay);
+
+    /// @notice Emitted when an AVS adds slashers to an operator set.
+    event SlasherAddedToOperatorSet(OperatorSet operatorSet, address slasher, uint32 effectBlock);
+
+    /// @notice Emitted when an AVS removes slashers to an operator set.
+    event SlasherRemovedFromOperatorSet(OperatorSet operatorSet, address slasher);
 
     /// @notice Emitted when an operator's magnitude is updated for a given operatorSet and strategy
     event AllocationUpdated(
@@ -336,10 +346,16 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
      */
     function createOperatorSets(address avs, CreateSetParams[] calldata params) external;
 
+    // /**
+    //  * @notice Allows an AVS to create new operator sets, defining strategies, and slashers.
+    //  */
+    // function createOperatorSets(address avs, CreateSetParamsWithSlashers[] calldata params) external;
+
     /**
      * @notice Allows an AVS to create new Redistribution operator sets.
      * @param avs The AVS creating the new operator sets.
      * @param params An array of operator set creation parameters.
+     * @param slashers An array of addresses that will be added as slashers to the operator set.
      * @param redistributionRecipients An array of addresses that will receive redistributed funds when operators are slashed.
      * @dev Same logic as `createOperatorSets`, except `redistributionRecipients` corresponding to each operator set are stored.
      *      Additionally, emits `RedistributionOperatorSetCreated` event instead of `OperatorSetCreated` for each created operator set.
@@ -347,6 +363,7 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
     function createRedistributingOperatorSets(
         address avs,
         CreateSetParams[] calldata params,
+        address[] calldata slashers,
         address[] calldata redistributionRecipients
     ) external;
 
@@ -373,7 +390,24 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
     ) external;
 
     /**
-     *
+     * @notice Allows an AVS to add slashers to an operator set.
+     * @param avs the avs to add slashers to
+     * @param operatorSetId the operator set to add slashers to
+     * @param slashers the slashers to add
+     * @dev Adding a slasher undergoes an `ALLOCATION_CONFIGURATION_DELAY` delay before being active.
+     */
+    function addSlashersToOperatorSet(address avs, uint32 operatorSetId, address[] calldata slashers) external;
+
+    /**
+     * @notice Allows an AVS to remove slashers from an operator set.
+     * @param avs the avs to remove slashers from
+     * @param operatorSetId the operator set to remove slashers from
+     * @param slashers the slashers to remove
+     * @dev Removing a slasher instantly removes it from the operator set.
+     */
+    function removeSlashersFromOperatorSet(address avs, uint32 operatorSetId, address[] calldata slashers) external;
+
+    /**
      *                         VIEW FUNCTIONS
      *
      */
@@ -664,4 +698,13 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
     function isOperatorRedistributable(
         address operator
     ) external view returns (bool);
+
+    /**
+     * @notice Returns all the slashers for an operator set.
+     * @param operatorSet The operator set to query.
+     * @dev For each slasher, returns a boolean indicating if they are active.
+     */
+    function getSlashers(
+        OperatorSet memory operatorSet
+    ) external view returns (address[] memory slashers, uint32[] memory effectBlocks);
 }
