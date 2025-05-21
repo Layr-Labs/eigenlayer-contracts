@@ -355,7 +355,7 @@ library ArrayLib {
     /// -----------------------------------------------------------------------
 
     function sort(IStrategy[] memory strategies) internal returns (IStrategy[] memory) {
-        uint256[] memory casted;
+        uint[] memory casted;
 
         assembly {
             casted := strategies

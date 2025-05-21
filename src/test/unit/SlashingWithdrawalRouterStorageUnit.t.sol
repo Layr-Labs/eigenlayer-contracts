@@ -52,6 +52,10 @@ contract SlashingWithdrawalRouterUnitTests is EigenLayerUnitTestSetup, ISlashing
         );
     }
 
+    function _rollForwardDefaultBurnOrRedistributionDelay() internal {
+        cheats.roll(block.number + 3.5 days / 12 seconds);
+    }
+
     /// @dev Sets the return value for the next call to `strategy.underlyingToken()`.
     function _mockStrategyUnderlyingTokenCall(IStrategy strategy, address underlyingToken) internal {
         cheats.mockCall(address(strategy), abi.encodeWithSelector(IStrategy.underlyingToken.selector), abi.encode(underlyingToken));
@@ -73,6 +77,20 @@ contract SlashingWithdrawalRouterUnitTests is EigenLayerUnitTestSetup, ISlashing
         emit StartBurnOrRedistribution(operatorSet, slashId, strategy, underlyingAmount, uint32(block.number));
         router.startBurnOrRedistributeShares(defaultOperatorSet, defaultSlashId, strategy, underlyingAmount);
         deal(address(token), address(router), underlyingAmount);
+    }
+
+    /// @dev Calls the `burnOrRedistributeShares` function as the redistribution recipient.
+    /// - Asserts that the `BurnOrRedistribution` event is emitted for each strategy.
+    function _burnOrRedistributeShares(OperatorSet memory operatorSet, uint slashId) internal {
+        (IStrategy[] memory strategies, uint[] memory underlyingAmounts) = router.getPendingBurnOrRedistributions(operatorSet, slashId);
+
+        for (uint i = strategies.length; i > 0; i--) {
+            cheats.expectEmit(true, true, true, true);
+            emit BurnOrRedistribution(operatorSet, slashId, strategies[i - 1], underlyingAmounts[i - 1], defaultRedistributionRecipient);
+        }
+
+        cheats.prank(defaultRedistributionRecipient);
+        router.burnOrRedistributeShares(operatorSet, slashId);
     }
 
     /// @dev Asserts that the operator set and slash ID are pending, and that the strategy and underlying amount are in the pending burn or redistributions.
@@ -153,57 +171,55 @@ contract SlashingWithdrawalRouterUnitTests_burnOrRedistributeShares is SlashingW
         assertFalse(router.isPendingSlashId(defaultOperatorSet, defaultSlashId));
     }
 
-    function testFuzz_burnOrRedistributeShares_correctness(uint underlyingAmount, uint underlyingAmount2) public {
-        // Create a second token and strategy for testing multiple redistributions.
-        MockERC20 token2 = new MockERC20();
-        IStrategy strategy2 = IStrategy(cheats.randomAddress());
+    /// @dev Tests that multiple strategies can be burned or redistributed in a single call
+    function testFuzz_burnOrRedistributeShares_multipleStrategies_sameDelay(uint r) public {
+        // Initialize arrays to store test data for multiple strategies
+        uint numStrategies = bound(r, 1, 10);
+        IStrategy[] memory strategies = new IStrategy[](numStrategies);
+        MockERC20[] memory tokens = new MockERC20[](numStrategies);
+        uint[] memory underlyingAmounts = new uint[](numStrategies);
 
-        // Start redistribution process for both strategies.
-        _startBurnOrRedistributeShares(defaultOperatorSet, defaultSlashId, defaultStrategy, defaultToken, underlyingAmount);
-        _checkStartBurnOrRedistributions(defaultOperatorSet, defaultSlashId, defaultStrategy, underlyingAmount, 1);
+        // Set up each strategy with random data and start burn/redistribution
+        for (uint i = 0; i < numStrategies; i++) {
+            // Generate random strategy address and token
+            strategies[i] = IStrategy(cheats.randomAddress());
+            tokens[i] = new MockERC20();
+            underlyingAmounts[i] = cheats.randomUint();
 
-        _startBurnOrRedistributeShares(defaultOperatorSet, defaultSlashId, strategy2, token2, underlyingAmount2);
-        _checkStartBurnOrRedistributions(defaultOperatorSet, defaultSlashId, strategy2, underlyingAmount2, 2);
+            // Start burn/redistribution for this strategy
+            _startBurnOrRedistributeShares(defaultOperatorSet, defaultSlashId, strategies[i], tokens[i], underlyingAmounts[i]);
+            // Verify the burn/redistribution was started correctly
+            _checkStartBurnOrRedistributions(defaultOperatorSet, defaultSlashId, strategies[i], underlyingAmounts[i], i + 1);
+        }
 
-        // Check redistribution pause status
-        bool isPaused = router.isBurnOrRedistributionPaused(defaultOperatorSet, defaultSlashId);
-        assertFalse(isPaused);
+        // Advance time to allow burn/redistribution to occur
+        _rollForwardDefaultBurnOrRedistributionDelay();
 
-        // Execute the redistribution as the authorized recipient.
-        cheats.prank(defaultRedistributionRecipient);
-        _mockStrategyUnderlyingTokenCall(defaultStrategy, address(defaultToken));
-        _mockStrategyUnderlyingTokenCall(strategy2, address(token2));
+        // Set up mock calls for each strategy's underlying token
+        for (uint i = numStrategies; i > 0; i--) {
+            _mockStrategyUnderlyingTokenCall(strategies[i - 1], address(tokens[i - 1]));
+        }
 
-        cheats.roll(block.number + 3.5 days / 12 seconds);
+        // Execute the burn/redistribution
+        _burnOrRedistributeShares(defaultOperatorSet, defaultSlashId);
 
-        // Verify correct events are emitted for both strategies.
-        cheats.expectEmit(true, true, true, true);
-        emit BurnOrRedistribution(defaultOperatorSet, defaultSlashId, strategy2, underlyingAmount2, defaultRedistributionRecipient);
-        cheats.expectEmit(true, true, true, true);
-        emit BurnOrRedistribution(defaultOperatorSet, defaultSlashId, defaultStrategy, underlyingAmount, defaultRedistributionRecipient);
-        router.burnOrRedistributeShares(defaultOperatorSet, defaultSlashId);
+        // Checks
 
-        // // Verify tokens were correctly transferred to the redistribution recipient.
-        // assertEq(defaultToken.balanceOf(defaultRedistributionRecipient), underlyingAmount);
-        // assertEq(token2.balanceOf(defaultRedistributionRecipient), underlyingAmount2);
+        // Assert that the operator set and slash ID are no longer pending.
+        assertFalse(router.isPendingOperatorSet(defaultOperatorSet));
+        assertFalse(router.isPendingSlashId(defaultOperatorSet, defaultSlashId));
+        assertEq(router.getTotalPendingOperatorSets(), 0);
+        assertEq(router.getTotalPendingSlashIds(defaultOperatorSet), 0);
 
-        // // Check pending burn/redistributions are cleared
-        // (strategies, amounts) = router.getPendingBurnOrRedistributions(defaultOperatorSet, defaultSlashId);
-        // assertEq(strategies.length, 0);
-        // assertEq(amounts.length, 0);
+        // Assert that the strategies and underlying amounts are no longer in the pending burn or redistributions.
+        assertEq(router.getPendingBurnOrRedistributionsCount(defaultOperatorSet, defaultSlashId), 0);
 
-        // // Check pending burn/redistributions count is zero
-        // count = router.getPendingBurnOrRedistributionsCount(defaultOperatorSet, defaultSlashId);
-        // assertEq(count, 0);
+        // Assert that the underlying amounts are no longer set.
+        for (uint i = numStrategies; i > 0; i--) {
+            assertEq(router.getPendingUnderlyingAmountForStrategy(defaultOperatorSet, defaultSlashId, strategies[i - 1]), 0);
+        }
 
-        // // Check pending underlying amounts are zero for both strategies
-        // amount1 = router.getPendingUnderlyingAmountForStrategy(defaultOperatorSet, defaultSlashId, defaultStrategy);
-        // amount2 = router.getPendingUnderlyingAmountForStrategy(defaultOperatorSet, defaultSlashId, strategy2);
-        // assertEq(amount1, 0);
-        // assertEq(amount2, 0);
-
-        // // Check redistribution pause status remains unchanged
-        // isPaused = router.isBurnOrRedistributionPaused(defaultOperatorSet, defaultSlashId);
-        // assertFalse(isPaused);
+        // Assert that the start block for the (operator set, slash ID) is no longer set.
+        assertEq(router.getBurnOrRedistributionStartBlock(defaultOperatorSet, defaultSlashId), 0);
     }
 }

@@ -718,8 +718,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     }
 
     function _shuffle(IStrategy[] memory strats) internal returns (IStrategy[] memory) {
-        uint256[] memory casted;
-        
+        uint[] memory casted;
+
         assembly {
             casted := strats
         }
