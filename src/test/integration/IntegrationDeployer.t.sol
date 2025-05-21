@@ -292,7 +292,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         emit log_named_uint("EPM pause status", eigenPodManager.paused());
 
         // Initialize the newly-deployed proxy
-        allocationManager.initialize({initialOwner: executorMultisig, initialPausedStatus: 0});
+        allocationManager.initialize({initialPausedStatus: 0});
 
         cheats.stopPrank();
     }
@@ -313,6 +313,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             AllocationManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
         permissionController =
             PermissionController(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
+        slashingWithdrawalRouter =
+            SlashingWithdrawalRouter(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
         eigenPodBeacon = new UpgradeableBeacon(address(emptyContract));
         strategyBeacon = new UpgradeableBeacon(address(emptyContract));
     }
@@ -332,7 +334,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS,
             version
         );
-        strategyManagerImplementation = new StrategyManager(delegationManager, eigenLayerPauserReg, version);
+        strategyManagerImplementation = new StrategyManager(delegationManager, slashingWithdrawalRouter, eigenLayerPauserReg, version);
         rewardsCoordinatorImplementation = new RewardsCoordinator(
             IRewardsCoordinatorTypes.RewardsCoordinatorConstructorParams({
                 delegationManager: delegationManager,
@@ -416,7 +418,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     }
 
     function _initializeProxies() public noTracing {
-        delegationManager.initialize({initialOwner: executorMultisig, initialPausedStatus: 0});
+        delegationManager.initialize({initialPausedStatus: 0});
 
         strategyManager.initialize({
             initialOwner: executorMultisig,
@@ -428,7 +430,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
         avsDirectory.initialize({initialOwner: executorMultisig, initialPausedStatus: 0});
 
-        allocationManager.initialize({initialOwner: executorMultisig, initialPausedStatus: 0});
+        allocationManager.initialize({initialPausedStatus: 0});
 
         strategyFactory.initialize({_initialOwner: executorMultisig, _initialPausedStatus: 0, _strategyBeacon: strategyBeacon});
     }

@@ -176,6 +176,9 @@ interface IAllocationManagerEvents is IAllocationManagerTypes {
     /// @notice Emitted when operator updates their allocation delay.
     event AllocationDelaySet(address operator, uint32 delay, uint32 effectBlock);
 
+    /// @notice Emitted when an AVS updates the redistribution delay for a given strategy.
+    event RedistributionDelaySet(address avs, IStrategy strategy, uint32 delay);
+
     /// @notice Emitted when an operator's magnitude is updated for a given operatorSet and strategy
     event AllocationUpdated(
         address operator, OperatorSet operatorSet, IStrategy strategy, uint64 magnitude, uint32 effectBlock
@@ -223,7 +226,9 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
     /**
      * @dev Initializes the initial owner and paused status.
      */
-    function initialize(address initialOwner, uint256 initialPausedStatus) external;
+    function initialize(
+        uint256 initialPausedStatus
+    ) external;
 
     /**
      * @notice Called by an AVS to slash an operator in a given operator set. The operator must be registered
@@ -651,4 +656,12 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
     function getSlashCount(
         OperatorSet memory operatorSet
     ) external view returns (uint256);
+
+    /**
+     * @notice Returns whether an operator is in a redistribution operator set.
+     * @param operator The operator to query.
+     */
+    function isOperatorRedistributable(
+        address operator
+    ) external view returns (bool);
 }
