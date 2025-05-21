@@ -173,66 +173,19 @@ So our release branch and model must be flexible enough to solve it via cherry p
 
 ### Changelog, Release Note, Release Announcement Blog
 
-Each release in testnet and mainnet must have corresponding release note, changelog, and announcement blog
+Each release in testnet and mainnet must have corresponding changelog, release note, and announcement blog
 
-- Changelog
+- Changelog and release notes
     - lives in the repo `/CHANGELOG` dir
-    - exact commit history diff from last release
+    - release note: high level summary of key changes users need to be aware of
+    - changelog: exact commit history diff from last release
     - See examples in Kubernetes https://github.com/kubernetes/kubernetes/tree/master/CHANGELOG
-- Release note:
-    - lives in the repo as part of release description under “[Releases](https://github.com/Layr-Labs/eigenlayer-contracts/releases)”
-    - high level summary of key changes users need to be aware of
-    - See template below
-    - Owner: release manager and PM
 - Release announcement blog
     - published to [blog.eigenlayer.xyz](http://blog.eigenlayer.xyz)
     - an announcement with polished language to introduce the release to users. It will include content in both release notes and changelog
     - See examples in Golang https://tip.golang.org/doc/go1.24
     - Owner: release manager and PM
 
-Release Note must follow template:
-
-```jsx
-<release-version>
-
-🚀 New Features – Highlight major new functionality.
-	- ...
-	- ...
-
-⛔ Breaking Changes – Call out backward-incompatible changes.
-	- ...
-	- ...
-
-📌 Deprecations – Mention features that are being phased out.
-	- ...
-	- ...
-
-🛠️ Security Fixes – Specify patched vulnerabilities.
-	- ...
-	- ...
-
-🔧 Improvements – Enhancements to existing features.
-	- ...
-	- ...
-
-🐛 Bug Fixes – List resolved issues.
-	- ...
-	- ...
-```
-
-When writing **release notes** and **changelog entries**, follow these best practices to ensure clarity, usefulness, and professionalism.
-
-**Required Best Practices**
-
-1. **Be Clear and Concise** – Use simple, direct language. Avoid jargon unless necessary.
-2. **Categorize Changes** – Use standard sectioned template above.
-3. **Provide Context** – Briefly explain why the change was made, not just what changed.
-4. **Use a Consistent Format** – Follow a structured template for every release.
-5. **Include Relevant Links** – Link to issue trackers, PRs, or documentation for more details.
-6. **Highlight User Impact** – Mention how the update affects users and any required actions.
-7. **Keep It Versioned** – Use semantic versioning (e.g., `v2.3.1`) and list versions in descending order.
-8. **Avoid Internal-Only Details** – Don't include internal project discussions that aren’t relevant to users.
-9. **Maintain a Single Source of Truth** – Store changelogs in a `CHANGELOG.md` file or an equivalent documentation system.
 
 
 ## Release Manager Responsibilities
