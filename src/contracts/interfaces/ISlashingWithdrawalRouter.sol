@@ -110,6 +110,12 @@ interface ISlashingWithdrawalRouter is ISlashingWithdrawalRouterErrors, ISlashin
     function getPendingOperatorSets() external view returns (OperatorSet[] memory operatorSets);
 
     /**
+     * @notice Returns the total number of operator sets with pending burn or redistributions.
+     * @return The total number of operator sets with pending burn or redistributions.
+     */
+    function getTotalPendingOperatorSets() external view returns (uint256);
+
+    /**
      * @notice Returns whether an operator set has pending burn or redistributions.
      * @param operatorSet The operator set whose pending burn or redistributions are being queried.
      * @return Whether the operator set has pending burn or redistributions.
@@ -125,6 +131,15 @@ interface ISlashingWithdrawalRouter is ISlashingWithdrawalRouterErrors, ISlashin
     function getPendingSlashIds(
         OperatorSet calldata operatorSet
     ) external view returns (uint256[] memory);
+
+    /**
+     * @notice Returns the total number of slash IDs for an operator set.
+     * @param operatorSet The operator set whose total slash IDs are being queried.
+     * @return The total number of slash IDs for the operator set.
+     */
+    function getTotalPendingSlashIds(
+        OperatorSet calldata operatorSet
+    ) external view returns (uint256);
 
     /**
      * @notice Returns whether a slash ID is pending for an operator set.

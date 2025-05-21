@@ -287,6 +287,11 @@ contract SlashingWithdrawalRouter is
     }
 
     /// @inheritdoc ISlashingWithdrawalRouter
+    function getTotalPendingOperatorSets() external view returns (uint256) {
+        return _pendingOperatorSets.length();
+    }
+
+    /// @inheritdoc ISlashingWithdrawalRouter
     function isPendingOperatorSet(
         OperatorSet calldata operatorSet
     ) external view returns (bool) {
@@ -298,6 +303,13 @@ contract SlashingWithdrawalRouter is
         OperatorSet calldata operatorSet
     ) external view returns (uint256[] memory) {
         return _pendingSlashIds[operatorSet.key()].values();
+    }
+
+    /// @inheritdoc ISlashingWithdrawalRouter
+    function getTotalPendingSlashIds(
+        OperatorSet calldata operatorSet
+    ) external view returns (uint256) {
+        return _pendingSlashIds[operatorSet.key()].length();
     }
 
     /// @inheritdoc ISlashingWithdrawalRouter
