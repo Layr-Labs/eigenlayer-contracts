@@ -14,6 +14,7 @@ import "../../../src/contracts/core/AVSDirectory.sol";
 import "../../../src/contracts/core/RewardsCoordinator.sol";
 import "../../../src/contracts/core/AllocationManager.sol";
 import "../../../src/contracts/permissions/PermissionController.sol";
+import "../../../src/contracts/core/SlashingWithdrawalRouter.sol";
 
 import "../../../src/contracts/strategies/StrategyBaseTVLLimits.sol";
 
@@ -66,6 +67,8 @@ contract DeployFromScratch is Script, Test {
     AllocationManager public allocationManager;
     PermissionController public permissionControllerImplementation;
     PermissionController public permissionController;
+    SlashingWithdrawalRouter public slashingWithdrawalRouter;
+    SlashingWithdrawalRouter public slashingWithdrawalRouterImplementation;
 
     EmptyContract public emptyContract;
 
@@ -221,6 +224,9 @@ contract DeployFromScratch is Script, Test {
         permissionController = PermissionController(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
+        slashingWithdrawalRouter = SlashingWithdrawalRouter(
+            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
+        );
 
         // if on mainnet, use the ETH2 deposit contract address
         if (chainId == 1) ethPOSDeposit = IETHPOSDeposit(0x00000000219ab540356cBB839Cbe05303d7705Fa);
@@ -241,7 +247,8 @@ contract DeployFromScratch is Script, Test {
             MIN_WITHDRAWAL_DELAY,
             SEMVER
         );
-        strategyManagerImplementation = new StrategyManager(delegation, eigenLayerPauserReg, SEMVER);
+        strategyManagerImplementation =
+            new StrategyManager(delegation, slashingWithdrawalRouter, eigenLayerPauserReg, SEMVER);
         avsDirectoryImplementation = new AVSDirectory(delegation, eigenLayerPauserReg, SEMVER);
         eigenPodManagerImplementation =
             new EigenPodManager(ethPOSDeposit, eigenPodBeacon, delegation, eigenLayerPauserReg, SEMVER);
@@ -269,6 +276,8 @@ contract DeployFromScratch is Script, Test {
             SEMVER
         );
         permissionControllerImplementation = new PermissionController(SEMVER);
+        slashingWithdrawalRouterImplementation =
+            new SlashingWithdrawalRouter(allocationManager, strategyManager, eigenLayerPauserReg, SEMVER);
 
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
         {
@@ -538,7 +547,7 @@ contract DeployFromScratch is Script, Test {
 
     function _verifyInitialOwners() internal view {
         require(strategyManager.owner() == executorMultisig, "strategyManager: owner not set correctly");
-        require(delegation.owner() == executorMultisig, "delegation: owner not set correctly");
+        // require(delegation.owner() == executorMultisig, "delegation: owner not set correctly");
         require(eigenPodManager.owner() == executorMultisig, "eigenPodManager: owner not set correctly");
 
         require(eigenLayerProxyAdmin.owner() == executorMultisig, "eigenLayerProxyAdmin: owner not set correctly");

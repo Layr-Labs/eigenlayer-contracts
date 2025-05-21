@@ -667,7 +667,7 @@ contract EigenPodManagerUnitTests_increaseBurnableShares is EigenPodManagerUnitT
         cheats.assume(invalidCaller != address(delegationManagerMock));
         cheats.prank(invalidCaller);
         cheats.expectRevert(IEigenPodManagerErrors.OnlyDelegationManager.selector);
-        eigenPodManager.increaseBurnableShares(beaconChainETHStrategy, 1 ether);
+        eigenPodManager.increaseBurnableShares(OperatorSet(address(0), 0), 0, beaconChainETHStrategy, 1 ether);
     }
 
     function testFuzz_singleDeposit(uint increasedBurnableShares) public {
@@ -675,7 +675,7 @@ contract EigenPodManagerUnitTests_increaseBurnableShares is EigenPodManagerUnitT
         emit BurnableETHSharesIncreased(increasedBurnableShares);
 
         cheats.prank(address(delegationManagerMock));
-        eigenPodManager.increaseBurnableShares(beaconChainETHStrategy, increasedBurnableShares);
+        eigenPodManager.increaseBurnableShares(OperatorSet(address(0), 0), 0, beaconChainETHStrategy, increasedBurnableShares);
 
         assertEq(eigenPodManager.burnableETHShares(), increasedBurnableShares, "Burnable shares not updated correctly");
     }
@@ -687,14 +687,14 @@ contract EigenPodManagerUnitTests_increaseBurnableShares is EigenPodManagerUnitT
         cheats.expectEmit(true, true, true, true, address(eigenPodManager));
         emit BurnableETHSharesIncreased(existingBurnableShares);
         cheats.prank(address(delegationManagerMock));
-        eigenPodManager.increaseBurnableShares(beaconChainETHStrategy, existingBurnableShares);
+        eigenPodManager.increaseBurnableShares(OperatorSet(address(0), 0), 0, beaconChainETHStrategy, existingBurnableShares);
 
         assertEq(eigenPodManager.burnableETHShares(), existingBurnableShares, "Burnable shares not setup correctly");
 
         cheats.expectEmit(true, true, true, true, address(eigenPodManager));
         emit BurnableETHSharesIncreased(increasedBurnableShares);
         cheats.prank(address(delegationManagerMock));
-        eigenPodManager.increaseBurnableShares(beaconChainETHStrategy, increasedBurnableShares);
+        eigenPodManager.increaseBurnableShares(OperatorSet(address(0), 0), 0, beaconChainETHStrategy, increasedBurnableShares);
 
         assertEq(
             eigenPodManager.burnableETHShares(), existingBurnableShares + increasedBurnableShares, "Burnable shares not updated correctly"

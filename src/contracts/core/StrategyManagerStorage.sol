@@ -3,11 +3,12 @@ pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 
-import "../interfaces/IStrategyManager.sol";
-import "../interfaces/IStrategy.sol";
-import "../interfaces/IEigenPodManager.sol";
-import "../interfaces/IDelegationManager.sol";
 import "../interfaces/IAVSDirectory.sol";
+import "../interfaces/IDelegationManager.sol";
+import "../interfaces/IEigenPodManager.sol";
+import "../interfaces/ISlashingWithdrawalRouter.sol";
+import "../interfaces/IStrategy.sol";
+import "../interfaces/IStrategyManager.sol";
 
 /**
  * @title Storage variables for the `StrategyManager` contract.
@@ -34,6 +35,8 @@ abstract contract StrategyManagerStorage is IStrategyManager {
     // Immutables
 
     IDelegationManager public immutable delegation;
+
+    ISlashingWithdrawalRouter public immutable slashingWithdrawalRouter;
 
     // Mutatables
 
@@ -79,10 +82,9 @@ abstract contract StrategyManagerStorage is IStrategyManager {
     /**
      * @param _delegation The delegation contract of EigenLayer.
      */
-    constructor(
-        IDelegationManager _delegation
-    ) {
+    constructor(IDelegationManager _delegation, ISlashingWithdrawalRouter _slashingWithdrawalRouter) {
         delegation = _delegation;
+        slashingWithdrawalRouter = _slashingWithdrawalRouter;
     }
 
     /**

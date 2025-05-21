@@ -6,7 +6,6 @@ import "@openzeppelin/contracts/utils/structs/DoubleEndedQueue.sol";
 
 import "../interfaces/IAllocationManager.sol";
 import "../interfaces/IDelegationManager.sol";
-
 import {Snapshots} from "../libraries/Snapshots.sol";
 
 abstract contract AllocationManagerStorage is IAllocationManager {
@@ -102,7 +101,7 @@ abstract contract AllocationManagerStorage is IAllocationManager {
     /// @notice Returns the number of slashes for a given operator set.
     /// @dev This is also used as a unique slash identifier.
     /// @dev This tracks the number of slashes after the redistribution release.
-    mapping(bytes32 operatorSetKey => uint256 slashId) public _slashCount;
+    mapping(bytes32 operatorSetKey => uint256 slashId) internal _slashCount;
 
     /// @notice Returns the address where slashed funds will be sent for a given operator set.
     /// @dev For redistributing Operator Sets, returns the configured redistribution address set during Operator Set creation.
