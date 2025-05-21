@@ -718,14 +718,16 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     }
 
     function _shuffle(IStrategy[] memory strats) internal returns (IStrategy[] memory) {
-        // Fisher-Yates shuffle algorithm
-        for (uint i = strats.length - 1; i > 0; i--) {
-            uint randomIndex = _randUint({min: 0, max: i});
+        uint256[] memory casted;
+        
+        assembly {
+            casted := strats
+        }
 
-            // Swap elements
-            IStrategy temp = strats[i];
-            strats[i] = strats[randomIndex];
-            strats[randomIndex] = temp;
+        casted = vm.shuffle(casted);
+
+        assembly {
+            strats := casted
         }
 
         return strats;

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import {MockERC20} from "forge-std/mocks/MockERC20.sol";
+import {MockERC20} from "src/test/mocks/MockERC20.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
 import "src/contracts/core/SlashingWithdrawalRouter.sol";
 
