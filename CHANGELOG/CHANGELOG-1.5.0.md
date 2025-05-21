@@ -2,6 +2,7 @@
 
 **Use this template to draft changelog and submit PR to review by the team**
 
+
 ## Highlights
 
 🚀 New Features – Highlight major new functionality.
@@ -37,4 +38,3 @@ Copy the one that's auto generated from github by default to here, and submit PR
 - merged PRs in diff from last release
 - contributors
 - etc
-
