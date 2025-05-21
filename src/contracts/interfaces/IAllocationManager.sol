@@ -174,17 +174,6 @@ interface IAllocationManagerTypes {
         uint32 operatorSetId;
         IStrategy[] strategies;
     }
-
-    /**
-     * @notice Parameters used by an AVS to create new operator sets, defining strategies, and slashers.
-     * @param operatorSetId the id of the operator set to create
-     * @param strategies the strategies to add as slashable to the operator set
-     * @param slashers the slashers to add to the operator set
-     */
-    struct CreateSetParamsWithSlashers {
-        CreateSetParams createSetParams;
-        address[] slashers;
-    }
 }
 
 interface IAllocationManagerEvents is IAllocationManagerTypes {
@@ -357,10 +346,10 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
      */
     function createOperatorSets(address avs, CreateSetParams[] calldata params) external;
 
-    /**
-     * @notice Allows an AVS to create new operator sets, defining strategies, and slashers.
-     */
-    function createOperatorSets(address avs, CreateSetParamsWithSlashers[] calldata params) external;
+    // /**
+    //  * @notice Allows an AVS to create new operator sets, defining strategies, and slashers.
+    //  */
+    // function createOperatorSets(address avs, CreateSetParamsWithSlashers[] calldata params) external;
 
     /**
      * @notice Allows an AVS to create new Redistribution operator sets.
@@ -372,7 +361,7 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
      */
     function createRedistributingOperatorSets(
         address avs,
-        CreateSetParamsWithSlashers[] calldata params,
+        CreateSetParams[] calldata params,
         address[] calldata redistributionRecipients
     ) external;
 

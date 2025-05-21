@@ -106,15 +106,6 @@ library ArrayLib {
         array[0] = createSetParams;
     }
 
-    function toArray(IAllocationManagerTypes.CreateSetParamsWithSlashers memory createSetParamsWithSlashers)
-        internal
-        pure
-        returns (IAllocationManagerTypes.CreateSetParamsWithSlashers[] memory array)
-    {
-        array = new IAllocationManagerTypes.CreateSetParamsWithSlashers[](1);
-        array[0] = createSetParamsWithSlashers;
-    }
-
     function toArray(IAllocationManagerTypes.AllocateParams memory allocateParams)
         internal
         pure

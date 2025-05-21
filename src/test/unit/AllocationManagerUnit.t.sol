@@ -147,10 +147,7 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
         cheats.prank(operatorSet.avs);
         allocationManager.createRedistributingOperatorSets(
             operatorSet.avs,
-            CreateSetParamsWithSlashers({
-                createSetParams: CreateSetParams({operatorSetId: operatorSet.id, strategies: strategies}),
-                slashers: operatorSet.avs.toArray()
-            }).toArray(),
+            CreateSetParams({operatorSetId: operatorSet.id, strategies: strategies}).toArray(),
             redistributionRecipient.toArray()
         );
         return operatorSet;
@@ -161,17 +158,14 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
         IStrategy[] memory strategies,
         address[] memory redistributionRecipients
     ) internal {
-        CreateSetParamsWithSlashers[] memory createSetParamsWithSlashers = new CreateSetParamsWithSlashers[](operatorSets.length);
+        CreateSetParams[] memory createSetParams = new CreateSetParams[](operatorSets.length);
 
         for (uint i; i < operatorSets.length; ++i) {
-            createSetParamsWithSlashers[i] = CreateSetParamsWithSlashers({
-                createSetParams: CreateSetParams({operatorSetId: operatorSets[i].id, strategies: strategies}),
-                slashers: operatorSets[i].avs.toArray()
-            });
+            createSetParams[i] = CreateSetParams({operatorSetId: operatorSets[i].id, strategies: strategies});
         }
 
         cheats.prank(operatorSets[0].avs);
-        allocationManager.createRedistributingOperatorSets(operatorSets[0].avs, createSetParamsWithSlashers, redistributionRecipients);
+        allocationManager.createRedistributingOperatorSets(operatorSets[0].avs, createSetParams, redistributionRecipients);
     }
 
     function _registerForOperatorSet(address operator, OperatorSet memory operatorSet) internal {
@@ -3698,10 +3692,7 @@ contract AllocationManagerUnitTests_createRedistributingOperatorSets is Allocati
         cheats.prank(defaultAVS);
         cheats.expectRevert(InvalidOperatorSet.selector);
         allocationManager.createRedistributingOperatorSets(
-            defaultAVS, CreateSetParamsWithSlashers({
-                createSetParams: CreateSetParams(defaultOperatorSet.id, defaultStrategies),
-                slashers: defaultAVS.toArray()
-            }).toArray(), address(this).toArray()
+            defaultAVS, CreateSetParams(defaultOperatorSet.id, defaultStrategies).toArray(), address(this).toArray()
         );
     }
 
@@ -3711,10 +3702,7 @@ contract AllocationManagerUnitTests_createRedistributingOperatorSets is Allocati
         cheats.expectRevert(NonexistentAVSMetadata.selector);
         cheats.prank(avs);
         allocationManager.createRedistributingOperatorSets(
-            avs, CreateSetParamsWithSlashers({
-                createSetParams: CreateSetParams(defaultOperatorSet.id, defaultStrategies),
-                slashers: defaultAVS.toArray()
-            }).toArray(), redistributionRecipient.toArray()
+            avs, CreateSetParams(defaultOperatorSet.id, defaultStrategies).toArray(), redistributionRecipient.toArray()
         );
     }
 
@@ -3726,30 +3714,29 @@ contract AllocationManagerUnitTests_createRedistributingOperatorSets is Allocati
         cheats.prank(avs);
         allocationManager.updateAVSMetadataURI(avs, "https://example.com");
 
-        CreateSetParamsWithSlashers[] memory createSetParamsWithSlashers = new CreateSetParamsWithSlashers[](numOpSets);
+        CreateSetParams[] memory createSetParams = new CreateSetParams[](numOpSets);
         address[] memory redistributionRecipients = new address[](numOpSets);
 
         for (uint i; i < numOpSets; ++i) {
-            createSetParamsWithSlashers[i].createSetParams.operatorSetId = r.Uint32(1, type(uint32).max);
-            createSetParamsWithSlashers[i].createSetParams.strategies = r.StrategyArray(numStrategies);
-            createSetParamsWithSlashers[i].slashers = avs.toArray();
+            createSetParams[i].operatorSetId = r.Uint32(1, type(uint32).max);
+            createSetParams[i].strategies = r.StrategyArray(numStrategies);
             redistributionRecipients[i] = r.Address();
 
             cheats.expectEmit(true, true, true, true, address(allocationManager));
-            emit OperatorSetCreated(OperatorSet(avs, createSetParamsWithSlashers[i].createSetParams.operatorSetId));
+            emit OperatorSetCreated(OperatorSet(avs, createSetParams[i].operatorSetId));
             cheats.expectEmit(true, true, true, true, address(allocationManager));
-            emit RedistributionAddressSet(OperatorSet(avs, createSetParamsWithSlashers[i].createSetParams.operatorSetId), redistributionRecipients[i]);
+            emit RedistributionAddressSet(OperatorSet(avs, createSetParams[i].operatorSetId), redistributionRecipients[i]);
             for (uint j; j < numStrategies; ++j) {
                 cheats.expectEmit(true, true, true, true, address(allocationManager));
-                emit StrategyAddedToOperatorSet(OperatorSet(avs, createSetParamsWithSlashers[i].createSetParams.operatorSetId), createSetParamsWithSlashers[i].createSetParams.strategies[j]);
+                emit StrategyAddedToOperatorSet(OperatorSet(avs, createSetParams[i].operatorSetId), createSetParams[i].strategies[j]);
             }
         }
 
         cheats.prank(avs);
-        allocationManager.createRedistributingOperatorSets(avs, createSetParamsWithSlashers, redistributionRecipients);
+        allocationManager.createRedistributingOperatorSets(avs, createSetParams, redistributionRecipients);
 
         for (uint k; k < numOpSets; ++k) {
-            OperatorSet memory opSet = OperatorSet(avs, createSetParamsWithSlashers[k].createSetParams.operatorSetId);
+            OperatorSet memory opSet = OperatorSet(avs, createSetParams[k].operatorSetId);
             assertTrue(allocationManager.isOperatorSet(opSet), "should be operator set");
             assertTrue(allocationManager.isRedistributingOperatorSet(opSet), "should be redistributing operator set");
             assertEq(
@@ -3762,12 +3749,12 @@ contract AllocationManagerUnitTests_createRedistributingOperatorSets is Allocati
             assertEq(strategiesInSet.length, numStrategies, "strategiesInSet length should be numStrategies");
             for (uint l; l < numStrategies; ++l) {
                 assertTrue(
-                    allocationManager.getStrategiesInOperatorSet(opSet)[l] == createSetParamsWithSlashers[k].createSetParams.strategies[l], "should be strat of set"
+                    allocationManager.getStrategiesInOperatorSet(opSet)[l] == createSetParams[k].strategies[l], "should be strat of set"
                 );
             }
         }
 
-        assertEq(createSetParamsWithSlashers.length, allocationManager.getOperatorSetCount(avs), "should be correct number of sets");
+        assertEq(createSetParams.length, allocationManager.getOperatorSetCount(avs), "should be correct number of sets");
     }
 }
 

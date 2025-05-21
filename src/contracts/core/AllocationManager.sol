@@ -275,25 +275,16 @@ contract AllocationManager is
         }
     }
 
-    function createOperatorSets(address avs, CreateSetParamsWithSlashers[] calldata params) external checkCanCall(avs) {
-        _checkAVSMetadata(avs);
-        for (uint256 i = 0; i < params.length; i++) {
-            _createOperatorSet(avs, params[i].createSetParams, DEFAULT_BURN_ADDRESS);
-            _addSlashersToOperatorSet(OperatorSet(avs, params[i].createSetParams.operatorSetId), params[i].slashers);
-        }
-    }
-
     /// @inheritdoc IAllocationManager
     function createRedistributingOperatorSets(
         address avs,
-        CreateSetParamsWithSlashers[] calldata params,
+        CreateSetParams[] calldata params,
         address[] calldata redistributionRecipients
     ) external checkCanCall(avs) {
         _checkArrayLengthsMatch(params.length, redistributionRecipients.length);
         _checkAVSMetadata(avs);
         for (uint256 i = 0; i < params.length; i++) {
-            _createOperatorSet(avs, params[i].createSetParams, redistributionRecipients[i]);
-            _addSlashersToOperatorSet(OperatorSet(avs, params[i].createSetParams.operatorSetId), params[i].slashers);
+            _createOperatorSet(avs, params[i], redistributionRecipients[i]);
         }
     }
 
