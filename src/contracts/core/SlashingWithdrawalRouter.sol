@@ -287,10 +287,22 @@ contract SlashingWithdrawalRouter is
     }
 
     /// @inheritdoc ISlashingWithdrawalRouter
+    function isPendingOperatorSet(
+        OperatorSet calldata operatorSet
+    ) external view returns (bool) {
+        return _pendingOperatorSets.contains(operatorSet.key());
+    }
+
+    /// @inheritdoc ISlashingWithdrawalRouter
     function getPendingSlashIds(
         OperatorSet calldata operatorSet
     ) external view returns (uint256[] memory) {
         return _pendingSlashIds[operatorSet.key()].values();
+    }
+
+    /// @inheritdoc ISlashingWithdrawalRouter
+    function isPendingSlashId(OperatorSet calldata operatorSet, uint256 slashId) external view returns (bool) {
+        return _pendingSlashIds[operatorSet.key()].contains(slashId);
     }
 
     /// @inheritdoc ISlashingWithdrawalRouter
