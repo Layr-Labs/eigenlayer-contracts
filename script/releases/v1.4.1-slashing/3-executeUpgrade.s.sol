@@ -89,8 +89,8 @@ contract Execute is QueueUpgrade {
 
         DelegationManager delegation = Env.proxy.delegationManager();
         vm.expectRevert(errInit);
-        delegation.initialize(address(0), 0);
-        assertTrue(delegation.owner() == Env.executorMultisig(), "dm.owner invalid");
+        delegation.initialize(0);
+        // assertTrue(delegation.owner() == Env.executorMultisig(), "dm.owner invalid");
         assertTrue(delegation.paused() == 0, "dm.paused invalid");
 
         EigenPodManager eigenPodManager = Env.proxy.eigenPodManager();

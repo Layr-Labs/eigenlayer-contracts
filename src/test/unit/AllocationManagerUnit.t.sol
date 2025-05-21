@@ -59,7 +59,7 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
 
     function setUp() public virtual override {
         EigenLayerUnitTestSetup.setUp();
-        _initializeAllocationManager(address(this), pauserRegistry, 0);
+        _initializeAllocationManager(pauserRegistry, 0);
         tokenMock = new ERC20PresetFixedSupply("Mock Token", "MOCK", type(uint).max, address(this));
         strategyMock = StrategyBase(
             address(
@@ -87,7 +87,7 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
     /// Internal Helpers
     /// -----------------------------------------------------------------------
 
-    function _initializeAllocationManager(address _initialOwner, IPauserRegistry _pauserRegistry, uint _initialPausedStatus)
+    function _initializeAllocationManager(IPauserRegistry _pauserRegistry, uint _initialPausedStatus)
         internal
         returns (AllocationManagerHarness)
     {
@@ -104,7 +104,7 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
                         )
                     ),
                     address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(AllocationManager.initialize.selector, _initialOwner, _initialPausedStatus)
+                    abi.encodeWithSelector(AllocationManager.initialize.selector, _initialPausedStatus)
                 )
             )
         );
@@ -546,16 +546,15 @@ contract AllocationManagerUnitTests_Initialization_Setters is AllocationManagerU
     /// 2. The fn initializes the contract state correctly (owner, pauserRegistry, and initialPausedStatus).
     function testFuzz_Initialize(Randomness r) public rand(r) {
         // Generate random values for the expected initial state of the contract.
-        address expectedInitialOwner = r.Address();
         IPauserRegistry expectedPauserRegistry = IPauserRegistry(r.Address());
 
         // Deploy the contract with the expected initial state.
         uint initialPausedStatus = r.Uint256();
-        AllocationManager alm = _initializeAllocationManager(expectedInitialOwner, expectedPauserRegistry, initialPausedStatus);
+        AllocationManager alm = _initializeAllocationManager(expectedPauserRegistry, initialPausedStatus);
 
         // Assert that the contract can only be initialized once.
         vm.expectRevert("Initializable: contract is already initialized");
-        alm.initialize(expectedInitialOwner, initialPausedStatus);
+        alm.initialize(initialPausedStatus);
 
         // Assert immutable state
         assertEq(address(alm.delegation()), address(delegationManagerMock));
@@ -563,7 +562,7 @@ contract AllocationManagerUnitTests_Initialization_Setters is AllocationManagerU
         assertEq(alm.ALLOCATION_CONFIGURATION_DELAY(), ALLOCATION_CONFIGURATION_DELAY);
 
         // Assert initialization state
-        assertEq(alm.owner(), expectedInitialOwner);
+        // assertEq(alm.owner(), expectedInitialOwner);
         assertEq(alm.paused(), initialPausedStatus);
     }
 }
