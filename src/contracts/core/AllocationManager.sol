@@ -21,12 +21,11 @@ contract AllocationManager is
     SemVerMixin
 {
     using DoubleEndedQueue for DoubleEndedQueue.Bytes32Deque;
-    using EnumerableSet for *;
-    using SafeCast for *;
-
     using Snapshots for Snapshots.DefaultWadHistory;
     using OperatorSetLib for OperatorSet;
     using SlashingLib for uint256;
+    using EnumerableSet for *;
+    using SafeCast for *;
 
     /**
      *
@@ -59,8 +58,6 @@ contract AllocationManager is
     ) external initializer {
         _setPausedStatus(initialPausedStatus);
     }
-
-    // TODO: properly return shares slashed
 
     /// @inheritdoc IAllocationManager
     function slashOperator(
@@ -331,8 +328,8 @@ contract AllocationManager is
         // Increment the slash count for the operator set.
         slashId = ++_slashCount[operatorSet.key()];
 
-        // Initialize the shares array.
-        shares = new uint256[](params.strategies.length);
+        uint64[] memory prevMaxMagnitudes = new uint64[](params.strategies.length);
+        uint64[] memory newMaxMagnitudes = new uint64[](params.strategies.length);
 
         // For each strategy in the operator set, slash any existing allocation
         for (uint256 i = 0; i < params.strategies.length; i++) {
@@ -348,9 +345,6 @@ contract AllocationManager is
                 _operatorSetStrategies[operatorSet.key()].contains(address(params.strategies[i])),
                 StrategyNotInOperatorSet()
             );
-
-            _burnOrRedistributionBlock[operatorSet.key()][params.strategies[i]][slashId] =
-                uint32(block.number) + BURN_OR_REDISTRIBUTION_DELAY;
 
             // 1. Get the operator's allocation info for the strategy and operator set
             (StrategyInfo memory info, Allocation memory allocation) =
@@ -399,16 +393,19 @@ contract AllocationManager is
 
             _updateMaxMagnitude(params.operator, params.strategies[i], info.maxMagnitude);
 
-            // 6. Slash operators shares in the DelegationManager
-            shares[i] = delegation.slashOperatorShares({
-                operator: params.operator,
-                operatorSet: operatorSet,
-                slashId: slashId,
-                strategy: params.strategies[i],
-                prevMaxMagnitude: prevMaxMagnitude,
-                newMaxMagnitude: info.maxMagnitude
-            });
+            prevMaxMagnitudes[i] = prevMaxMagnitude;
+            newMaxMagnitudes[i] = info.maxMagnitude;
         }
+
+        // 6. Slash operators shares in the DelegationManager
+        shares = delegation.slashOperatorShares({
+            operator: params.operator,
+            operatorSet: operatorSet,
+            slashId: slashId,
+            strategies: params.strategies,
+            prevMaxMagnitudes: prevMaxMagnitudes,
+            newMaxMagnitudes: newMaxMagnitudes
+        });
 
         emit OperatorSlashed(params.operator, operatorSet, params.strategies, wadSlashed, params.description);
     }
@@ -998,7 +995,7 @@ contract AllocationManager is
     /// @inheritdoc IAllocationManager
     function getRedistributionRecipient(
         OperatorSet memory operatorSet
-    ) external view returns (address) {
+    ) public view returns (address) {
         // Load the redistribution recipient and return it if set, otherwise return the default burn address.
         address redistributionRecipient = _redistributionRecipients[operatorSet.key()];
         return redistributionRecipient == address(0) ? DEFAULT_BURN_ADDRESS : redistributionRecipient;
@@ -1016,15 +1013,6 @@ contract AllocationManager is
         OperatorSet memory operatorSet
     ) external view returns (uint256) {
         return _slashCount[operatorSet.key()];
-    }
-
-    /// @inheritdoc IAllocationManager
-    function getBurnOrRedistributionBlock(
-        OperatorSet memory operatorSet,
-        IStrategy strategy,
-        uint256 slashId
-    ) external view returns (uint32) {
-        return _burnOrRedistributionBlock[operatorSet.key()][strategy][slashId];
     }
 
     /// @inheritdoc IAllocationManager

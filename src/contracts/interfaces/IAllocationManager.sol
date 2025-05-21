@@ -176,6 +176,9 @@ interface IAllocationManagerEvents is IAllocationManagerTypes {
     /// @notice Emitted when operator updates their allocation delay.
     event AllocationDelaySet(address operator, uint32 delay, uint32 effectBlock);
 
+    /// @notice Emitted when an AVS updates the redistribution delay for a given strategy.
+    event RedistributionDelaySet(address avs, IStrategy strategy, uint32 delay);
+
     /// @notice Emitted when an operator's magnitude is updated for a given operatorSet and strategy
     event AllocationUpdated(
         address operator, OperatorSet operatorSet, IStrategy strategy, uint64 magnitude, uint32 effectBlock
@@ -653,19 +656,6 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
     function getSlashCount(
         OperatorSet memory operatorSet
     ) external view returns (uint256);
-
-    /**
-     * @notice Returns the timestamp a burn or redistribution can occur after a given an operator set, strategy, and slash ID.
-     * @param operatorSet The operator set to query.
-     * @param strategy The strategy to query.
-     * @param slashId The slash ID to query.
-     * @return The timestamp a burn or redistribution can occur after a given an operator set, strategy, and slash ID.
-     */
-    function getBurnOrRedistributionBlock(
-        OperatorSet memory operatorSet,
-        IStrategy strategy,
-        uint256 slashId
-    ) external view returns (uint32);
 
     /**
      * @notice Returns whether an operator is in a redistribution operator set.

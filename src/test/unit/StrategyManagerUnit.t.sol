@@ -42,7 +42,12 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEv
 
     function setUp() public override {
         EigenLayerUnitTestSetup.setUp();
-        strategyManagerImplementation = new StrategyManager(IDelegationManager(address(delegationManagerMock)), pauserRegistry, "v9.9.9");
+        strategyManagerImplementation = new StrategyManager(
+            IDelegationManager(address(delegationManagerMock)),
+            ISlashingWithdrawalRouter(address(slashingWithdrawalRouterMock)),
+            pauserRegistry,
+            "v9.9.9"
+        );
         strategyManager = StrategyManager(
             address(
                 new TransparentUpgradeableProxy(

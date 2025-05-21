@@ -6,16 +6,12 @@ import "@openzeppelin/contracts/utils/structs/DoubleEndedQueue.sol";
 
 import "../interfaces/IAllocationManager.sol";
 import "../interfaces/IDelegationManager.sol";
-
 import {Snapshots} from "../libraries/Snapshots.sol";
 
 abstract contract AllocationManagerStorage is IAllocationManager {
     using Snapshots for Snapshots.DefaultWadHistory;
 
     // Constants
-
-    /// @dev The delay before a burn or redistribution can occur, denominated in blocks.
-    uint32 internal constant BURN_OR_REDISTRIBUTION_DELAY = 36_000; // 3.5 days assuming 12s blocks.
 
     /// @dev The default burn address for slashed funds.
     address internal constant DEFAULT_BURN_ADDRESS = 0x00000000000000000000000000000000000E16E4;
@@ -112,10 +108,6 @@ abstract contract AllocationManagerStorage is IAllocationManager {
     ///      For non-redistributing or non-existing operator sets, returns `address(0)`.
     mapping(bytes32 operatorSetKey => address redistributionAddr) internal _redistributionRecipients;
 
-    /// @notice Returns the block number a burn or redistribution can occur after a given an operator set, strategy, and slash ID.
-    mapping(bytes32 operatorSetKey => mapping(IStrategy strategy => mapping(uint256 slashId => uint32 blockNumber)))
-        public _burnOrRedistributionBlock;
-
     // Construction
 
     constructor(IDelegationManager _delegation, uint32 _DEALLOCATION_DELAY, uint32 _ALLOCATION_CONFIGURATION_DELAY) {
@@ -129,5 +121,5 @@ abstract contract AllocationManagerStorage is IAllocationManager {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[33] private __gap;
+    uint256[34] private __gap;
 }
