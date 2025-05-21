@@ -75,19 +75,25 @@ contract SlashingWithdrawalRouterUnitTests is EigenLayerUnitTestSetup, ISlashing
         cheats.prank(address(strategyManagerMock));
         cheats.expectEmit(true, true, true, true);
         emit StartBurnOrRedistribution(operatorSet, slashId, strategy, underlyingAmount, uint32(block.number));
-        router.startBurnOrRedistributeShares(defaultOperatorSet, defaultSlashId, strategy, underlyingAmount);
+        router.startBurnOrRedistributeShares(operatorSet, slashId, strategy, underlyingAmount);
         deal(address(token), address(router), underlyingAmount);
     }
 
     /// @dev Calls the `burnOrRedistributeShares` function as the redistribution recipient.
-    /// - Asserts that the `BurnOrRedistribution` event is emitted for each strategy.
+    /// - Asserts that the `BurnOrRedistribution` event is emitted only for strategies whose delay has elapsed.
     function _burnOrRedistributeShares(OperatorSet memory operatorSet, uint slashId) internal {
         (IStrategy[] memory strategies, uint[] memory underlyingAmounts) = router.getPendingBurnOrRedistributions(operatorSet, slashId);
 
-        // for (uint i = strategies.length; i > 0; i--) {
-        //     cheats.expectEmit(true, true, true, true);
-        //     emit BurnOrRedistribution(operatorSet, slashId, strategies[i - 1], underlyingAmounts[i - 1], defaultRedistributionRecipient);
-        // }
+        address redistributionRecipient = allocationManagerMock.getRedistributionRecipient(operatorSet);
+        uint startBlock = router.getBurnOrRedistributionStartBlock(operatorSet, slashId);
+
+        for (uint i = strategies.length; i > 0; i--) {
+            uint strategyDelay = router.getStrategyBurnOrRedistributionDelay(strategies[i - 1]);
+            if (block.number > startBlock + strategyDelay) {
+                cheats.expectEmit(true, true, true, true);
+                emit BurnOrRedistribution(operatorSet, slashId, strategies[i - 1], underlyingAmounts[i - 1], redistributionRecipient);
+            }
+        }
 
         cheats.prank(defaultRedistributionRecipient);
         router.burnOrRedistributeShares(operatorSet, slashId);
@@ -238,10 +244,10 @@ contract SlashingWithdrawalRouterUnitTests_burnOrRedistributeShares is SlashingW
             strategies[i] = IStrategy(cheats.randomAddress());
             tokens[i] = new MockERC20();
             underlyingAmounts[i] = cheats.randomUint();
-            
+
             // Set different delays for each strategy (increasing delays)
             delays[i] = (i + 1) * 1 days / 12 seconds; // 1 day, 2 days, 3 days, etc.
-            
+
             // Set the strategy-specific delay
             cheats.prank(defaultOwner);
             router.setStrategyBurnOrRedistributionDelay(strategies[i], delays[i]);
@@ -270,7 +276,9 @@ contract SlashingWithdrawalRouterUnitTests_burnOrRedistributeShares is SlashingW
                 assertEq(router.getPendingUnderlyingAmountForStrategy(defaultOperatorSet, defaultSlashId, strategies[i]), 0);
             } else {
                 // Strategy should still be pending
-                assertEq(router.getPendingUnderlyingAmountForStrategy(defaultOperatorSet, defaultSlashId, strategies[i]), underlyingAmounts[i]);
+                assertEq(
+                    router.getPendingUnderlyingAmountForStrategy(defaultOperatorSet, defaultSlashId, strategies[i]), underlyingAmounts[i]
+                );
             }
         }
 
@@ -306,7 +314,7 @@ contract SlashingWithdrawalRouterUnitTests_pauseRedistribution is SlashingWithdr
 
     function test_pauseRedistribution_correctness() public {
         _startBurnOrRedistributeShares(defaultOperatorSet, defaultSlashId, defaultStrategy, defaultToken, 100);
-        
+
         cheats.prank(pauser);
         router.pauseRedistribution(defaultOperatorSet, defaultSlashId);
         assertTrue(router.isBurnOrRedistributionPaused(defaultOperatorSet, defaultSlashId));
@@ -328,7 +336,7 @@ contract SlashingWithdrawalRouterUnitTests_unpauseRedistribution is SlashingWith
 
     function test_unpauseRedistribution_correctness() public {
         _startBurnOrRedistributeShares(defaultOperatorSet, defaultSlashId, defaultStrategy, defaultToken, 100);
-        
+
         cheats.prank(pauser);
         router.pauseRedistribution(defaultOperatorSet, defaultSlashId);
         assertTrue(router.isBurnOrRedistributionPaused(defaultOperatorSet, defaultSlashId));
@@ -374,5 +382,135 @@ contract SlashingWithdrawalRouterUnitTests_setGlobalBurnOrRedistributionDelay is
         cheats.prank(cheats.randomAddress());
         cheats.expectRevert("Ownable: caller is not the owner");
         router.setGlobalBurnOrRedistributionDelay(100);
+    }
+}
+
+contract SlashingWithdrawalRouterUnitTests_getPendingBurnOrRedistributions is SlashingWithdrawalRouterUnitTests {
+    function test_getPendingBurnOrRedistributions_singleSlashId() public {
+        // Start burn/redistribution for a single strategy
+        _startBurnOrRedistributeShares(defaultOperatorSet, defaultSlashId, defaultStrategy, defaultToken, 100);
+
+        // Get pending burn/redistributions for the specific slash ID
+        (IStrategy[] memory strategies, uint[] memory underlyingAmounts) =
+            router.getPendingBurnOrRedistributions(defaultOperatorSet, defaultSlashId);
+
+        // Verify results
+        assertEq(strategies.length, 1);
+        assertEq(underlyingAmounts.length, 1);
+        assertEq(address(strategies[0]), address(defaultStrategy));
+        assertEq(underlyingAmounts[0], 100);
+    }
+
+    function test_getPendingBurnOrRedistributions_multipleStrategies() public {
+        // Create multiple strategies and start burn/redistributions
+        IStrategy strategy1 = IStrategy(cheats.randomAddress());
+        IStrategy strategy2 = IStrategy(cheats.randomAddress());
+        MockERC20 token1 = new MockERC20();
+        MockERC20 token2 = new MockERC20();
+
+        _startBurnOrRedistributeShares(defaultOperatorSet, defaultSlashId, strategy1, token1, 100);
+        _startBurnOrRedistributeShares(defaultOperatorSet, defaultSlashId, strategy2, token2, 200);
+
+        // Get pending burn/redistributions for the specific slash ID
+        (IStrategy[] memory strategies, uint[] memory underlyingAmounts) =
+            router.getPendingBurnOrRedistributions(defaultOperatorSet, defaultSlashId);
+
+        // Verify results
+        assertEq(strategies.length, 2);
+        assertEq(underlyingAmounts.length, 2);
+        assertEq(address(strategies[0]), address(strategy1));
+        assertEq(address(strategies[1]), address(strategy2));
+        assertEq(underlyingAmounts[0], 100);
+        assertEq(underlyingAmounts[1], 200);
+    }
+
+    function test_getPendingBurnOrRedistributions_multipleSlashIds() public {
+        // Create multiple slash IDs and strategies
+        uint slashId1 = 1;
+        uint slashId2 = 2;
+        IStrategy strategy1 = IStrategy(cheats.randomAddress());
+        IStrategy strategy2 = IStrategy(cheats.randomAddress());
+        MockERC20 token1 = new MockERC20();
+        MockERC20 token2 = new MockERC20();
+
+        // Start burn/redistributions for different slash IDs
+        _startBurnOrRedistributeShares(defaultOperatorSet, slashId1, strategy1, token1, 100);
+        _startBurnOrRedistributeShares(defaultOperatorSet, slashId2, strategy2, token2, 200);
+
+        // Get pending burn/redistributions for all slash IDs of the operator set
+        (IStrategy[][] memory strategies, uint[][] memory underlyingAmounts) = router.getPendingBurnOrRedistributions(defaultOperatorSet);
+
+        // Verify results
+        assertEq(strategies.length, 2);
+        assertEq(underlyingAmounts.length, 2);
+
+        // Check first slash ID
+        assertEq(strategies[0].length, 1);
+        assertEq(underlyingAmounts[0].length, 1);
+        assertEq(address(strategies[0][0]), address(strategy1));
+        assertEq(underlyingAmounts[0][0], 100);
+
+        // Check second slash ID
+        assertEq(strategies[1].length, 1);
+        assertEq(underlyingAmounts[1].length, 1);
+        assertEq(address(strategies[1][0]), address(strategy2));
+        assertEq(underlyingAmounts[1][0], 200);
+    }
+
+    function test_getPendingBurnOrRedistributions_multipleOperatorSets() public {
+        // Create multiple operator sets and strategies
+        OperatorSet memory operatorSet1 = OperatorSet(cheats.randomAddress(), 0);
+        OperatorSet memory operatorSet2 = OperatorSet(cheats.randomAddress(), 0);
+        IStrategy strategy1 = IStrategy(cheats.randomAddress());
+        IStrategy strategy2 = IStrategy(cheats.randomAddress());
+        MockERC20 token1 = new MockERC20();
+        MockERC20 token2 = new MockERC20();
+
+        // Set redistribution recipients for the operator sets
+        allocationManagerMock.setRedistributionRecipient(operatorSet1, defaultRedistributionRecipient);
+        allocationManagerMock.setRedistributionRecipient(operatorSet2, defaultRedistributionRecipient);
+
+        // Start burn/redistributions for different operator sets
+        _startBurnOrRedistributeShares(operatorSet1, defaultSlashId, strategy1, token1, 100);
+        _startBurnOrRedistributeShares(operatorSet2, defaultSlashId, strategy2, token2, 200);
+
+        // Get pending burn/redistributions for all operator sets
+        (IStrategy[][][] memory strategies, uint[][][] memory underlyingAmounts) = router.getPendingBurnOrRedistributions();
+
+        // Verify results
+        assertEq(strategies.length, 2);
+        assertEq(underlyingAmounts.length, 2);
+
+        // Check first operator set
+        assertEq(strategies[0].length, 1);
+        assertEq(underlyingAmounts[0].length, 1);
+        assertEq(strategies[0][0].length, 1);
+        assertEq(underlyingAmounts[0][0].length, 1);
+        assertEq(address(strategies[0][0][0]), address(strategy1));
+        assertEq(underlyingAmounts[0][0][0], 100);
+
+        // Check second operator set
+        assertEq(strategies[1].length, 1);
+        assertEq(underlyingAmounts[1].length, 1);
+        assertEq(strategies[1][0].length, 1);
+        assertEq(underlyingAmounts[1][0].length, 1);
+        assertEq(address(strategies[1][0][0]), address(strategy2));
+        assertEq(underlyingAmounts[1][0][0], 200);
+    }
+
+    function test_getPendingBurnOrRedistributions_empty() public {
+        // Test with no pending burn/redistributions
+        (IStrategy[] memory strategies, uint[] memory underlyingAmounts) =
+            router.getPendingBurnOrRedistributions(defaultOperatorSet, defaultSlashId);
+        assertEq(strategies.length, 0);
+        assertEq(underlyingAmounts.length, 0);
+
+        (IStrategy[][] memory strategies2, uint[][] memory underlyingAmounts2) = router.getPendingBurnOrRedistributions(defaultOperatorSet);
+        assertEq(strategies2.length, 0);
+        assertEq(underlyingAmounts2.length, 0);
+
+        (IStrategy[][][] memory strategies3, uint[][][] memory underlyingAmounts3) = router.getPendingBurnOrRedistributions();
+        assertEq(strategies3.length, 0);
+        assertEq(underlyingAmounts3.length, 0);
     }
 }
