@@ -2,6 +2,9 @@
 
 **Use this template to draft changelog and submit PR to review by the team**
 
+## Release Manager
+
+github handle of release manager
 
 ## Highlights
 
