@@ -7,6 +7,8 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
 
 env:
   FOUNDRY_PROFILE: medium
