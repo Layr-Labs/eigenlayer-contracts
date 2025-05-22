@@ -18,6 +18,7 @@ import "../../../src/contracts/core/SlashEscrowFactory.sol";
 import "../../../src/contracts/strategies/StrategyBaseTVLLimits.sol";
 import "../../../src/contracts/strategies/StrategyFactory.sol";
 import "../../../src/contracts/strategies/StrategyBase.sol";
+import "../../../src/contracts/core/SlashEscrow.sol";
 
 import "../../../src/contracts/pods/EigenPod.sol";
 import "../../../src/contracts/pods/EigenPodManager.sol";
@@ -270,7 +271,7 @@ contract DeployFromScratch is Script, Test {
         permissionControllerImplementation = new PermissionController(SEMVER);
         strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg, SEMVER);
         slashEscrowFactoryImplementation =
-            new SlashEscrowFactory(allocationManager, strategyManager, eigenLayerPauserReg, SEMVER);
+            new SlashEscrowFactory(allocationManager, strategyManager, eigenLayerPauserReg, new SlashEscrow(), SEMVER);
 
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
         {

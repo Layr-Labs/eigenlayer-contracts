@@ -3,6 +3,7 @@ pragma solidity >=0.5.0;
 
 import "../interfaces/IStrategy.sol";
 import "../libraries/OperatorSetLib.sol";
+import "../interfaces/ISlashEscrow.sol";
 
 interface ISlashEscrowFactoryErrors {
     /// @notice Thrown when a caller is not the strategy manager.
@@ -71,7 +72,10 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
      * @dev The caller must be the redistribution recipient, unless the redistribution recipient
      * is the default burn address in which case anyone can call.
      */
-    function burnOrRedistributeShares(OperatorSet calldata operatorSet, uint256 slashId) external;
+    function burnOrRedistributeShares(
+        OperatorSet calldata operatorSet,
+        uint256 slashId
+    ) external;
 
     /**
      * @notice Pauses a redistribution.
@@ -244,4 +248,40 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
      * @return The global burn or redistribution delay.
      */
     function getGlobalBurnOrRedistributionDelay() external view returns (uint256);
+
+    /**
+     * @notice Returns the salt for a slash escrow.
+     * @param operatorSet The operator set whose slash escrow is being queried.
+     * @param slashId The slash ID of the slash escrow that is being queried.
+     * @return The salt for the slash escrow.
+     */
+    function computeSlashEscrowSalt(
+        OperatorSet calldata operatorSet,
+        uint256 slashId
+    ) external pure returns (bytes32);
+
+    /**
+     * @notice Returns whether a slash escrow is deployed or still counterfactual.
+     * @param operatorSet The operator set whose slash escrow is being queried.
+     * @param slashId The slash ID of the slash escrow that is being queried.
+     * @return Whether the slash escrow is deployed.
+     */
+    function isDeployedSlashEscrow(OperatorSet calldata operatorSet, uint256 slashId) external view returns (bool);
+
+    /**
+     * @notice Returns whether a slash escrow is deployed.
+     * @param slashEscrow The slash escrow that is being queried.
+     * @return Whether the slash escrow is deployed.
+     */
+    function isDeployedSlashEscrow(
+        ISlashEscrow slashEscrow
+    ) external view returns (bool);
+
+    /**
+     * @notice Returns the slash escrow for an operator set and slash ID.
+     * @param operatorSet The operator set whose slash escrow is being queried.
+     * @param slashId The slash ID of the slash escrow that is being queried.
+     * @return The slash escrow.
+     */
+    function getSlashEscrow(OperatorSet calldata operatorSet, uint256 slashId) external view returns (ISlashEscrow);
 }

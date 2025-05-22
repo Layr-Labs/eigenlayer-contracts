@@ -4,6 +4,7 @@ pragma solidity ^0.8.27;
 import {MockERC20} from "src/test/mocks/MockERC20.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
 import "src/contracts/core/SlashEscrowFactory.sol";
+import "src/contracts/core/SlashEscrow.sol";
 
 contract SlashEscrowFactoryUnitTests is EigenLayerUnitTestSetup, ISlashEscrowFactoryEvents {
     /// @notice default address for burning slashed shares and transferring underlying tokens
@@ -42,6 +43,7 @@ contract SlashEscrowFactoryUnitTests is EigenLayerUnitTestSetup, ISlashEscrowFac
                             IAllocationManager(address(allocationManagerMock)),
                             IStrategyManager(address(strategyManagerMock)),
                             IPauserRegistry(address(pauserRegistry)),
+                            ISlashEscrow(address(new SlashEscrow())),
                             "1.0.0"
                         )
                     ),
