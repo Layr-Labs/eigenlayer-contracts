@@ -354,6 +354,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         eigenPodManagerImplementation =
             new EigenPodManager(DEPOSIT_CONTRACT, eigenPodBeacon, delegationManager, eigenLayerPauserReg, "v9.9.9");
         strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg, "v9.9.9");
+        slashingWithdrawalRouterImplementation =
+            new SlashingWithdrawalRouter(allocationManager, strategyManager, eigenLayerPauserReg, "v9.9.9");
 
         // Beacon implementations
         eigenPodImplementation = new EigenPod(DEPOSIT_CONTRACT, eigenPodManager, BEACON_GENESIS_TIME, "v9.9.9");
@@ -400,6 +402,11 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         // StrategyFactory
         eigenLayerProxyAdmin.upgrade(
             ITransparentUpgradeableProxy(payable(address(strategyFactory))), address(strategyFactoryImplementation)
+        );
+
+        // SlashingWithdrawalRouter
+        eigenLayerProxyAdmin.upgrade(
+            ITransparentUpgradeableProxy(payable(address(slashingWithdrawalRouter))), address(slashingWithdrawalRouterImplementation)
         );
 
         // EigenPod beacon
@@ -711,14 +718,16 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     }
 
     function _shuffle(IStrategy[] memory strats) internal returns (IStrategy[] memory) {
-        // Fisher-Yates shuffle algorithm
-        for (uint i = strats.length - 1; i > 0; i--) {
-            uint randomIndex = _randUint({min: 0, max: i});
+        uint[] memory casted;
 
-            // Swap elements
-            IStrategy temp = strats[i];
-            strats[i] = strats[randomIndex];
-            strats[randomIndex] = temp;
+        assembly {
+            casted := strats
+        }
+
+        casted = vm.shuffle(casted);
+
+        assembly {
+            strats := casted
         }
 
         return strats;
