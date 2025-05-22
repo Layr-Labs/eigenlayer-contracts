@@ -7,6 +7,7 @@ import "./PermissionControllerStorage.sol";
 
 contract PermissionController is Initializable, SemVerMixin, PermissionControllerStorage {
     using EnumerableSet for *;
+    using EnumerableMap for *;
 
     modifier onlyAdmin(
         address account
@@ -103,6 +104,11 @@ contract PermissionController is Initializable, SemVerMixin, PermissionControlle
         permissions.appointeePermissions[appointee].add(targetSelector);
         permissions.permissionAppointees[targetSelector].add(appointee);
 
+        // Set the effect block for the appointee
+        // If the target selector is not delayed, the effect block is the current block number
+        uint256 delay = _permissionEffectBlock.get(targetSelector);
+        permissions.appointeeEffectBlock[targetSelector].set(appointee, block.number + delay);
+
         emit AppointeeSet(account, appointee, target, selector);
     }
 
@@ -123,6 +129,24 @@ contract PermissionController is Initializable, SemVerMixin, PermissionControlle
         permissions.permissionAppointees[targetSelector].remove(appointee);
 
         emit AppointeeRemoved(account, appointee, target, selector);
+    }
+
+    function setPermissionEffectBlock(
+        address target,
+        bytes4 selector,
+        uint256 delay
+    ) external {
+        bytes32 targetSelector = _encodeTargetSelector(target, selector);
+
+        _permissionEffectBlock.set(targetSelector, delay);
+    }
+
+    function adminCannotCall(
+        address target,
+        bytes4 selector
+    ) external {
+        bytes32 targetSelector = _encodeTargetSelector(target, selector);
+        _adminCannotCall[targetSelector] = true;
     }
 
     /**
@@ -153,6 +177,22 @@ contract PermissionController is Initializable, SemVerMixin, PermissionControlle
         bytes4 selector = bytes4(uint32(uint256(targetSelector) >> 64));
 
         return (target, selector);
+    }
+
+    function _isAppointee(address account, address caller, bytes32 targetSelector) internal view returns (bool) {
+        return _permissions[account].appointeePermissions[caller].contains(targetSelector);
+    }
+
+    /// @dev Checks if the caller is an active appointee for a delayed target selector
+    function _isAppointeeActive(address account, address caller, bytes32 targetSelector) internal view returns (bool) {
+        // If the caller is not an appointee, they cannot call the target selector
+        if (!_isAppointee(account, caller, targetSelector)) {
+            return false;
+        }
+
+        // Check if the appointee is active
+        uint256 effectBlock = _permissions[account].appointeeEffectBlock[targetSelector].get(caller);
+        return effectBlock >= block.number;
     }
 
     /**
@@ -199,8 +239,15 @@ contract PermissionController is Initializable, SemVerMixin, PermissionControlle
 
     /// @inheritdoc IPermissionController
     function canCall(address account, address caller, address target, bytes4 selector) external view returns (bool) {
-        return isAdmin(account, caller)
-            || _permissions[account].appointeePermissions[caller].contains(_encodeTargetSelector(target, selector));
+        bytes32 targetSelector = _encodeTargetSelector(target, selector);
+
+        // If the admin cannot call the target selector, check if the caller is an appointee
+        if (_adminCannotCall[targetSelector]) {
+            return _isAppointeeActive(account, caller, targetSelector);
+        } else {
+            // Otherwise, the admin can call the target selector
+            return isAdmin(account, caller) || _isAppointeeActive(account, caller, targetSelector);
+        }
     }
 
     /// @inheritdoc IPermissionController
@@ -223,8 +270,41 @@ contract PermissionController is Initializable, SemVerMixin, PermissionControlle
     }
 
     /// @inheritdoc IPermissionController
-    function getAppointees(address account, address target, bytes4 selector) external view returns (address[] memory) {
+    function getAppointees(address account, address target, bytes4 selector) public view returns (address[] memory) {
         bytes32 targetSelector = _encodeTargetSelector(target, selector);
         return _permissions[account].permissionAppointees[targetSelector].values();
+    }
+
+    function getAppointeesAndEffectBlocks(address account, address target, bytes4 selector) external view returns (address[] memory, uint256[] memory) {
+        bytes32 targetSelector = _encodeTargetSelector(target, selector);
+        EnumerableSet.AddressSet storage appointees = _permissions[account].permissionAppointees[targetSelector];
+
+        address[] memory appointeeAddresses = new address[](appointees.length());
+        uint256[] memory effectBlocks = new uint256[](appointees.length());
+
+        for (uint256 i = 0; i < appointees.length(); ++i) {
+            appointeeAddresses[i] = appointees.at(i);
+            effectBlocks[i] = _permissions[account].appointeeEffectBlock[targetSelector].get(appointeeAddresses[i]);
+        }
+
+        return (appointeeAddresses, effectBlocks);
+    }
+
+    function setAppointeeWithoutDelay(address account, address appointee, address target, bytes4 selector) external {
+        AccountPermissions storage permissions = _permissions[account];
+
+        bytes32 targetSelector = _encodeTargetSelector(target, selector);
+        require(!permissions.appointeePermissions[appointee].contains(targetSelector), AppointeeAlreadySet());
+
+        // Add the appointee to the account's permissions
+        permissions.appointeePermissions[appointee].add(targetSelector);
+        permissions.permissionAppointees[targetSelector].add(appointee);
+
+        // Set the effect block for the appointee
+        // If the target selector is not delayed, the effect block is the current block number
+        uint256 delay = _permissionEffectBlock.get(targetSelector);
+        permissions.appointeeEffectBlock[targetSelector].set(appointee, block.number);
+
+        emit AppointeeSet(account, appointee, target, selector);
     }
 }
