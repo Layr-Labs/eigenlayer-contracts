@@ -32,7 +32,7 @@ Upon discussing with team, we propose a simple, practical manner to balance revi
 - all external contributions, and all smart contract changes (both internal or external) MUST get explicit approval
 - docs, CIs, or other non-smart-contract changes, engineers in Protocol can merge PR on their own to unblock themselves and maximize speed
 
-While the automony offers maximum velocity, mistakes can occur, e.g. you pushed something wrong and realized later. In such case, best practice is to commit a new change to either revert the last commit or fix it. DO NOT force push to overwrite the problematic commit, because overwrite commit history will disrupt others who may have pulled the commit.
+While the autonomy offers maximum velocity, mistakes can occur, e.g. you pushed something wrong and realized later. In such case, best practice is to commit a new change to either revert the last commit or fix it. DO NOT force push to overwrite the problematic commit, because overwrite commit history will disrupt others who may have pulled the commit.
 
 
 ## Branching and Merge Strategy for Development
