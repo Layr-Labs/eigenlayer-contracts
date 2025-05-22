@@ -684,37 +684,37 @@ contract DelegationManager is
         uint64 newMaxMagnitude
     ) internal returns (uint256 totalDepositSharesToBurn) {
         // Avoid emitting events if nothing has changed for sanitization.
-        if (prevMaxMagnitude != newMaxMagnitude) {
-            uint256 operatorSharesSlashed = SlashingLib.calcSlashedAmount({
-                operatorShares: operatorShares[operator][strategy],
-                prevMaxMagnitude: prevMaxMagnitude,
-                newMaxMagnitude: newMaxMagnitude
-            });
+        if (prevMaxMagnitude == newMaxMagnitude) return 0;
 
-            uint256 scaledSharesSlashedFromQueue = _getSlashableSharesInQueue({
-                operator: operator,
-                strategy: strategy,
-                prevMaxMagnitude: prevMaxMagnitude,
-                newMaxMagnitude: newMaxMagnitude
-            });
+        uint256 operatorSharesSlashed = SlashingLib.calcSlashedAmount({
+            operatorShares: operatorShares[operator][strategy],
+            prevMaxMagnitude: prevMaxMagnitude,
+            newMaxMagnitude: newMaxMagnitude
+        });
 
-            // Calculate the total deposit shares to burn - slashed operator shares plus still-slashable
-            // shares sitting in the withdrawal queue.
-            totalDepositSharesToBurn = operatorSharesSlashed + scaledSharesSlashedFromQueue;
+        uint256 scaledSharesSlashedFromQueue = _getSlashableSharesInQueue({
+            operator: operator,
+            strategy: strategy,
+            prevMaxMagnitude: prevMaxMagnitude,
+            newMaxMagnitude: newMaxMagnitude
+        });
 
-            // Remove shares from operator
-            _decreaseDelegation({
-                operator: operator,
-                staker: address(0), // we treat this as a decrease for the 0-staker (only used for events)
-                strategy: strategy,
-                sharesToDecrease: operatorSharesSlashed
-            });
+        // Calculate the total deposit shares to burn - slashed operator shares plus still-slashable
+        // shares sitting in the withdrawal queue.
+        totalDepositSharesToBurn = operatorSharesSlashed + scaledSharesSlashedFromQueue;
 
-            // Emit event for operator shares being slashed
-            emit OperatorSharesSlashed(operator, strategy, totalDepositSharesToBurn);
+        // Remove shares from operator
+        _decreaseDelegation({
+            operator: operator,
+            staker: address(0), // we treat this as a decrease for the 0-staker (only used for events)
+            strategy: strategy,
+            sharesToDecrease: operatorSharesSlashed
+        });
 
-            _getShareManager(strategy).increaseBurnableShares(operatorSet, slashId, strategy, totalDepositSharesToBurn);
-        }
+        // Emit event for operator shares being slashed
+        emit OperatorSharesSlashed(operator, strategy, totalDepositSharesToBurn);
+
+        _getShareManager(strategy).increaseBurnableShares(operatorSet, slashId, strategy, totalDepositSharesToBurn);
 
         return totalDepositSharesToBurn;
     }
