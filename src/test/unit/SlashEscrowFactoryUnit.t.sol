@@ -6,7 +6,7 @@ import "src/test/utils/EigenLayerUnitTestSetup.sol";
 import "src/contracts/core/SlashEscrowFactory.sol";
 import "src/contracts/core/SlashEscrow.sol";
 
-contract SlashingWithdrawalRouterUnitTests is EigenLayerUnitTestSetup, ISlashingWithdrawalRouterEvents {
+contract SlashEscrowFactoryUnitTests is EigenLayerUnitTestSetup, ISlashEscrowFactoryEvents {
     /// @notice default address for burning slashed shares and transferring underlying tokens
     address public constant DEFAULT_BURN_ADDRESS = 0x00000000000000000000000000000000000E16E4;
 
@@ -14,7 +14,7 @@ contract SlashingWithdrawalRouterUnitTests is EigenLayerUnitTestSetup, ISlashing
     /// @dev Allows all burn or redistribution outflows to be temporarily halted.
     uint8 public constant PAUSED_BURN_OR_REDISTRIBUTE_SHARES = 0;
 
-    SlashingWithdrawalRouter router;
+    SlashEscrowFactory router;
 
     OperatorSet defaultOperatorSet;
     IStrategy defaultStrategy;
@@ -35,11 +35,11 @@ contract SlashingWithdrawalRouterUnitTests is EigenLayerUnitTestSetup, ISlashing
 
         allocationManagerMock.setRedistributionRecipient(defaultOperatorSet, defaultRedistributionRecipient);
 
-        router = SlashingWithdrawalRouter(
+        router = SlashEscrowFactory(
             address(
                 new TransparentUpgradeableProxy(
                     address(
-                        new SlashingWithdrawalRouter(
+                        new SlashEscrowFactory(
                             IAllocationManager(address(allocationManagerMock)),
                             IStrategyManager(address(strategyManagerMock)),
                             IPauserRegistry(address(pauserRegistry)),
@@ -48,7 +48,7 @@ contract SlashingWithdrawalRouterUnitTests is EigenLayerUnitTestSetup, ISlashing
                         )
                     ),
                     address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(SlashingWithdrawalRouter.initialize.selector, defaultOwner, 0)
+                    abi.encodeWithSelector(SlashEscrowFactory.initialize.selector, defaultOwner, 0)
                 )
             )
         );
@@ -128,7 +128,7 @@ contract SlashingWithdrawalRouterUnitTests is EigenLayerUnitTestSetup, ISlashing
     }
 }
 
-contract SlashingWithdrawalRouterUnitTests_initialize is SlashingWithdrawalRouterUnitTests {
+contract SlashEscrowFactoryUnitTests_initialize is SlashEscrowFactoryUnitTests {
     function test_initialize() public {
         assertEq(address(router.allocationManager()), address(allocationManagerMock));
         assertEq(address(router.strategyManager()), address(strategyManagerMock));
@@ -137,12 +137,12 @@ contract SlashingWithdrawalRouterUnitTests_initialize is SlashingWithdrawalRoute
     }
 }
 
-contract SlashingWithdrawalRouterUnitTests_startBurnOrRedistributeShares is SlashingWithdrawalRouterUnitTests {
+contract SlashEscrowFactoryUnitTests_startBurnOrRedistributeShares is SlashEscrowFactoryUnitTests {
     /// @dev Asserts only the `StrategyManager` can call `startBurnOrRedistributeShares`.
     function test_startBurnOrRedistributeShares_onlyStrategyManager() public {
         cheats.prank(pauser);
         router.pause(PAUSED_BURN_OR_REDISTRIBUTE_SHARES);
-        cheats.expectRevert(ISlashingWithdrawalRouterErrors.OnlyStrategyManager.selector);
+        cheats.expectRevert(ISlashEscrowFactoryErrors.OnlyStrategyManager.selector);
         router.startBurnOrRedistributeShares(defaultOperatorSet, defaultSlashId, defaultStrategy, 0);
     }
 
@@ -152,11 +152,11 @@ contract SlashingWithdrawalRouterUnitTests_startBurnOrRedistributeShares is Slas
     }
 }
 
-contract SlashingWithdrawalRouterUnitTests_burnOrRedistributeShares is SlashingWithdrawalRouterUnitTests {
+contract SlashEscrowFactoryUnitTests_burnOrRedistributeShares is SlashEscrowFactoryUnitTests {
     /// @dev Asserts that the function reverts if the caller is not the redistribution recipient.
     function testFuzz_burnOrRedistributeShares_onlyRedistributionRecipient(uint underlyingAmount) public {
         _startBurnOrRedistributeShares(defaultOperatorSet, defaultSlashId, defaultStrategy, defaultToken, underlyingAmount);
-        cheats.expectRevert(ISlashingWithdrawalRouterErrors.OnlyRedistributionRecipient.selector);
+        cheats.expectRevert(ISlashEscrowFactoryErrors.OnlyRedistributionRecipient.selector);
         router.burnOrRedistributeShares(defaultOperatorSet, defaultSlashId);
     }
 
@@ -307,7 +307,7 @@ contract SlashingWithdrawalRouterUnitTests_burnOrRedistributeShares is SlashingW
     }
 }
 
-contract SlashingWithdrawalRouterUnitTests_pauseRedistribution is SlashingWithdrawalRouterUnitTests {
+contract SlashEscrowFactoryUnitTests_pauseRedistribution is SlashEscrowFactoryUnitTests {
     function test_pauseRedistribution_onlyPauser() public {
         cheats.prank(cheats.randomAddress());
         cheats.expectRevert(IPausable.OnlyPauser.selector);
@@ -329,7 +329,7 @@ contract SlashingWithdrawalRouterUnitTests_pauseRedistribution is SlashingWithdr
     }
 }
 
-contract SlashingWithdrawalRouterUnitTests_unpauseRedistribution is SlashingWithdrawalRouterUnitTests {
+contract SlashEscrowFactoryUnitTests_unpauseRedistribution is SlashEscrowFactoryUnitTests {
     function test_unpauseRedistribution_onlyUnpauser() public {
         cheats.prank(cheats.randomAddress());
         cheats.expectRevert(IPausable.OnlyUnpauser.selector);
@@ -359,7 +359,7 @@ contract SlashingWithdrawalRouterUnitTests_unpauseRedistribution is SlashingWith
     }
 }
 
-contract SlashingWithdrawalRouterUnitTests_setStrategyBurnOrRedistributionDelay is SlashingWithdrawalRouterUnitTests {
+contract SlashEscrowFactoryUnitTests_setStrategyBurnOrRedistributionDelay is SlashEscrowFactoryUnitTests {
     function test_setStrategyBurnOrRedistributionDelay_onlyOwner() public {
         cheats.prank(cheats.randomAddress());
         cheats.expectRevert("Ownable: caller is not the owner");
@@ -379,7 +379,7 @@ contract SlashingWithdrawalRouterUnitTests_setStrategyBurnOrRedistributionDelay 
     }
 }
 
-contract SlashingWithdrawalRouterUnitTests_setGlobalBurnOrRedistributionDelay is SlashingWithdrawalRouterUnitTests {
+contract SlashEscrowFactoryUnitTests_setGlobalBurnOrRedistributionDelay is SlashEscrowFactoryUnitTests {
     function test_setGlobalBurnOrRedistributionDelay_onlyOwner() public {
         cheats.prank(cheats.randomAddress());
         cheats.expectRevert("Ownable: caller is not the owner");
@@ -387,7 +387,7 @@ contract SlashingWithdrawalRouterUnitTests_setGlobalBurnOrRedistributionDelay is
     }
 }
 
-contract SlashingWithdrawalRouterUnitTests_getPendingBurnOrRedistributions is SlashingWithdrawalRouterUnitTests {
+contract SlashEscrowFactoryUnitTests_getPendingBurnOrRedistributions is SlashEscrowFactoryUnitTests {
     function test_getPendingBurnOrRedistributions_singleSlashId() public {
         // Start burn/redistribution for a single strategy
         _startBurnOrRedistributeShares(defaultOperatorSet, defaultSlashId, defaultStrategy, defaultToken, 100);

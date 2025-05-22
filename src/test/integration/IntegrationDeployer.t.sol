@@ -313,8 +313,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             AllocationManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
         permissionController =
             PermissionController(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
-        slashingWithdrawalRouter =
-            SlashingWithdrawalRouter(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
+        slashEscrowFactory =
+            SlashEscrowFactory(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
         eigenPodBeacon = new UpgradeableBeacon(address(emptyContract));
         strategyBeacon = new UpgradeableBeacon(address(emptyContract));
     }
@@ -334,7 +334,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS,
             version
         );
-        strategyManagerImplementation = new StrategyManager(delegationManager, slashingWithdrawalRouter, eigenLayerPauserReg, version);
+        strategyManagerImplementation = new StrategyManager(delegationManager, slashEscrowFactory, eigenLayerPauserReg, version);
         rewardsCoordinatorImplementation = new RewardsCoordinator(
             IRewardsCoordinatorTypes.RewardsCoordinatorConstructorParams({
                 delegationManager: delegationManager,
@@ -404,9 +404,9 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             ITransparentUpgradeableProxy(payable(address(strategyFactory))), address(strategyFactoryImplementation)
         );
 
-        // SlashingWithdrawalRouter
+        // SlashEscrowFactory
         eigenLayerProxyAdmin.upgrade(
-            ITransparentUpgradeableProxy(payable(address(slashingWithdrawalRouter))), address(slashingWithdrawalRouterImplementation)
+            ITransparentUpgradeableProxy(payable(address(slashEscrowFactory))), address(slashEscrowFactoryImplementation)
         );
 
         // EigenPod beacon

@@ -5,7 +5,7 @@ import "../interfaces/IStrategy.sol";
 import "../libraries/OperatorSetLib.sol";
 import "../interfaces/ISlashEscrow.sol";
 
-interface ISlashingWithdrawalRouterErrors {
+interface ISlashEscrowFactoryErrors {
     /// @notice Thrown when a caller is not the strategy manager.
     error OnlyStrategyManager();
 
@@ -19,7 +19,7 @@ interface ISlashingWithdrawalRouterErrors {
     error BurnOrRedistributionDelayLessThanMinimum();
 }
 
-interface ISlashingWithdrawalRouterEvents {
+interface ISlashEscrowFactoryEvents {
     /// @notice Emitted when a redistribution is initiated.
     event StartBurnOrRedistribution(
         OperatorSet operatorSet, uint256 slashId, IStrategy strategy, uint256 underlyingAmount, uint32 startBlock
@@ -43,7 +43,7 @@ interface ISlashingWithdrawalRouterEvents {
     event StrategyBurnOrRedistributionDelaySet(IStrategy strategy, uint256 delay);
 }
 
-interface ISlashingWithdrawalRouter is ISlashingWithdrawalRouterErrors, ISlashingWithdrawalRouterEvents {
+interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryEvents {
     /**
      * @notice Initializes the initial owner and paused status.
      * @param initialOwner The initial owner of the router.

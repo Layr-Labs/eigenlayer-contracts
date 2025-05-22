@@ -53,11 +53,11 @@ contract StrategyManager is
      */
     constructor(
         IDelegationManager _delegation,
-        ISlashingWithdrawalRouter _slashingWithdrawalRouter,
+        ISlashEscrowFactory _slashEscrowFactory,
         IPauserRegistry _pauserRegistry,
         string memory _version
     )
-        StrategyManagerStorage(_delegation, _slashingWithdrawalRouter)
+        StrategyManagerStorage(_delegation, _slashEscrowFactory)
         Pausable(_pauserRegistry)
         SignatureUtilsMixin(_version)
     {
@@ -155,12 +155,11 @@ contract StrategyManager is
         emit BurnableSharesIncreased(operatorSet, slashId, strategy, sharesToBurn);
 
         if (sharesToBurn != 0) {
-            // Withdraw the shares to the EigenLayer `SlashingWithdrawalRouter` contract.
-            uint256 amountOut =
-                strategy.withdraw(address(slashingWithdrawalRouter), strategy.underlyingToken(), sharesToBurn);
+            // Withdraw the shares to the EigenLayer `SlashEscrowFactory` contract.
+            uint256 amountOut = strategy.withdraw(address(slashEscrowFactory), strategy.underlyingToken(), sharesToBurn);
 
-            // Notify the `SlashingWithdrawalRouter` contract that it received underlying tokens to burn or redistribute.
-            slashingWithdrawalRouter.startBurnOrRedistributeShares(operatorSet, slashId, strategy, amountOut);
+            // Notify the `SlashEscrowFactory` contract that it received underlying tokens to burn or redistribute.
+            slashEscrowFactory.startBurnOrRedistributeShares(operatorSet, slashId, strategy, amountOut);
         }
     }
 

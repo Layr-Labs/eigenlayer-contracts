@@ -138,9 +138,9 @@ contract ExistingDeploymentParser is Script, Logger {
     StrategyBase public baseStrategyImplementation;
     StrategyBase public strategyFactoryBeaconImplementation;
 
-    /// @dev SlashingWithdrawalRouter
-    SlashingWithdrawalRouter public slashingWithdrawalRouter;
-    SlashingWithdrawalRouter public slashingWithdrawalRouterImplementation;
+    /// @dev SlashEscrowFactory
+    SlashEscrowFactory public slashEscrowFactory;
+    SlashEscrowFactory public slashEscrowFactoryImplementation;
 
     // Token
     ProxyAdmin public tokenProxyAdmin;

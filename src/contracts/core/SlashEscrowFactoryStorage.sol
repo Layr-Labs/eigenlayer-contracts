@@ -3,13 +3,13 @@ pragma solidity ^0.8.27;
 
 import "@openzeppelin-upgrades/contracts/utils/structs/EnumerableMapUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/utils/structs/EnumerableSetUpgradeable.sol";
-import "../interfaces/ISlashingWithdrawalRouter.sol";
+import "../interfaces/ISlashEscrowFactory.sol";
 import "../interfaces/IAllocationManager.sol";
 import "../interfaces/IStrategyManager.sol";
 import "../interfaces/IStrategy.sol";
 import "../interfaces/ISlashEscrow.sol";
 
-abstract contract SlashingWithdrawalRouterStorage is ISlashingWithdrawalRouter {
+abstract contract SlashEscrowFactoryStorage is ISlashEscrowFactory {
     // Constants
 
     /// @dev The default burn address for slashed funds.

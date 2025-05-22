@@ -14,7 +14,7 @@ import "../../../src/contracts/core/AVSDirectory.sol";
 import "../../../src/contracts/core/RewardsCoordinator.sol";
 import "../../../src/contracts/core/AllocationManager.sol";
 import "../../../src/contracts/permissions/PermissionController.sol";
-import "../../../src/contracts/core/SlashingWithdrawalRouter.sol";
+import "../../../src/contracts/core/SlashEscrowFactory.sol";
 import "../../../src/contracts/strategies/StrategyBaseTVLLimits.sol";
 import "../../../src/contracts/strategies/StrategyFactory.sol";
 import "../../../src/contracts/strategies/StrategyBase.sol";
@@ -64,8 +64,8 @@ contract DeployFromScratch is Script, Test {
     AllocationManager public allocationManager;
     PermissionController public permissionController;
     PermissionController public permissionControllerImplementation;
-    SlashingWithdrawalRouter public slashingWithdrawalRouter;
-    SlashingWithdrawalRouter public slashingWithdrawalRouterImplementation;
+    SlashEscrowFactory public slashEscrowFactory;
+    SlashEscrowFactory public slashEscrowFactoryImplementation;
 
     EmptyContract public emptyContract;
 
@@ -217,7 +217,7 @@ contract DeployFromScratch is Script, Test {
         permissionController = PermissionController(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
-        slashingWithdrawalRouter = SlashingWithdrawalRouter(
+        slashEscrowFactory = SlashEscrowFactory(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
 
@@ -241,8 +241,7 @@ contract DeployFromScratch is Script, Test {
             SEMVER
         );
 
-        strategyManagerImplementation =
-            new StrategyManager(delegation, slashingWithdrawalRouter, eigenLayerPauserReg, SEMVER);
+        strategyManagerImplementation = new StrategyManager(delegation, slashEscrowFactory, eigenLayerPauserReg, SEMVER);
         avsDirectoryImplementation = new AVSDirectory(delegation, eigenLayerPauserReg, SEMVER);
         eigenPodManagerImplementation =
             new EigenPodManager(ethPOSDeposit, eigenPodBeacon, delegation, eigenLayerPauserReg, SEMVER);

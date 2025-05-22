@@ -7,15 +7,9 @@ import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "../permissions/Pausable.sol";
 import "../mixins/SemVerMixin.sol";
-import "./SlashingWithdrawalRouterStorage.sol";
+import "./SlashEscrowFactoryStorage.sol";
 
-contract SlashingWithdrawalRouter is
-    Initializable,
-    SlashingWithdrawalRouterStorage,
-    OwnableUpgradeable,
-    Pausable,
-    SemVerMixin
-{
+contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, OwnableUpgradeable, Pausable, SemVerMixin {
     using SafeERC20 for IERC20;
     using OperatorSetLib for *;
     using EnumerableSetUpgradeable for *;
@@ -41,7 +35,7 @@ contract SlashingWithdrawalRouter is
         _disableInitializers();
     }
 
-    /// @inheritdoc ISlashingWithdrawalRouter
+    /// @inheritdoc ISlashEscrowFactory
     function initialize(address initialOwner, uint256 initialPausedStatus) external initializer {
         _transferOwnership(initialOwner);
         _setPausedStatus(initialPausedStatus);
@@ -56,7 +50,7 @@ contract SlashingWithdrawalRouter is
      *
      */
 
-    /// @inheritdoc ISlashingWithdrawalRouter
+    /// @inheritdoc ISlashEscrowFactory
     function startBurnOrRedistributeShares(
         OperatorSet calldata operatorSet,
         uint256 slashId,
@@ -92,7 +86,7 @@ contract SlashingWithdrawalRouter is
         emit StartBurnOrRedistribution(operatorSet, slashId, strategy, underlyingAmount, uint32(block.number));
     }
 
-    /// @inheritdoc ISlashingWithdrawalRouter
+    /// @inheritdoc ISlashEscrowFactory
     function burnOrRedistributeShares(
         OperatorSet calldata operatorSet,
         uint256 slashId
@@ -134,7 +128,7 @@ contract SlashingWithdrawalRouter is
      *
      */
 
-    /// @inheritdoc ISlashingWithdrawalRouter
+    /// @inheritdoc ISlashEscrowFactory
     function pauseRedistribution(OperatorSet calldata operatorSet, uint256 slashId) external virtual onlyPauser {
         // Check that the new paused status is not the same as the current paused status.
         _checkNewPausedStatus(operatorSet, slashId, true);
@@ -146,7 +140,7 @@ contract SlashingWithdrawalRouter is
         emit RedistributionPaused(operatorSet, slashId);
     }
 
-    /// @inheritdoc ISlashingWithdrawalRouter
+    /// @inheritdoc ISlashEscrowFactory
     function unpauseRedistribution(OperatorSet calldata operatorSet, uint256 slashId) external virtual onlyUnpauser {
         // Check that the new paused status is not the same as the current paused status.
         _checkNewPausedStatus(operatorSet, slashId, false);
@@ -164,7 +158,7 @@ contract SlashingWithdrawalRouter is
      *
      */
 
-    /// @inheritdoc ISlashingWithdrawalRouter
+    /// @inheritdoc ISlashEscrowFactory
     function setGlobalBurnOrRedistributionDelay(
         uint256 delay
     ) external onlyOwner {
@@ -175,7 +169,7 @@ contract SlashingWithdrawalRouter is
         emit GlobalBurnOrRedistributionDelaySet(delay);
     }
 
-    /// @inheritdoc ISlashingWithdrawalRouter
+    /// @inheritdoc ISlashEscrowFactory
     function setStrategyBurnOrRedistributionDelay(IStrategy strategy, uint256 delay) external onlyOwner {
         // Set the burn or redistribution delay.
         _strategyBurnOrRedistributionDelayBlocks[address(strategy)] = uint32(delay);
@@ -300,7 +294,7 @@ contract SlashingWithdrawalRouter is
      *
      */
 
-    /// @inheritdoc ISlashingWithdrawalRouter
+    /// @inheritdoc ISlashEscrowFactory
     function getPendingOperatorSets() external view returns (OperatorSet[] memory operatorSets) {
         bytes32[] memory operatorSetKeys = _pendingOperatorSets.values();
 
@@ -313,38 +307,38 @@ contract SlashingWithdrawalRouter is
         return operatorSets;
     }
 
-    /// @inheritdoc ISlashingWithdrawalRouter
+    /// @inheritdoc ISlashEscrowFactory
     function getTotalPendingOperatorSets() external view returns (uint256) {
         return _pendingOperatorSets.length();
     }
 
-    /// @inheritdoc ISlashingWithdrawalRouter
+    /// @inheritdoc ISlashEscrowFactory
     function isPendingOperatorSet(
         OperatorSet calldata operatorSet
     ) external view returns (bool) {
         return _pendingOperatorSets.contains(operatorSet.key());
     }
 
-    /// @inheritdoc ISlashingWithdrawalRouter
+    /// @inheritdoc ISlashEscrowFactory
     function getPendingSlashIds(
         OperatorSet calldata operatorSet
     ) external view returns (uint256[] memory) {
         return _pendingSlashIds[operatorSet.key()].values();
     }
 
-    /// @inheritdoc ISlashingWithdrawalRouter
+    /// @inheritdoc ISlashEscrowFactory
     function getTotalPendingSlashIds(
         OperatorSet calldata operatorSet
     ) external view returns (uint256) {
         return _pendingSlashIds[operatorSet.key()].length();
     }
 
-    /// @inheritdoc ISlashingWithdrawalRouter
+    /// @inheritdoc ISlashEscrowFactory
     function isPendingSlashId(OperatorSet calldata operatorSet, uint256 slashId) external view returns (bool) {
         return _pendingSlashIds[operatorSet.key()].contains(slashId);
     }
 
-    /// @inheritdoc ISlashingWithdrawalRouter
+    /// @inheritdoc ISlashEscrowFactory
     function getPendingBurnOrRedistributions(
         OperatorSet memory operatorSet,
         uint256 slashId
@@ -365,7 +359,7 @@ contract SlashingWithdrawalRouter is
         }
     }
 
-    /// @inheritdoc ISlashingWithdrawalRouter
+    /// @inheritdoc ISlashEscrowFactory
     function getPendingBurnOrRedistributions(
         OperatorSet memory operatorSet
     ) public view returns (IStrategy[][] memory strategies, uint256[][] memory underlyingAmounts) {
@@ -381,7 +375,7 @@ contract SlashingWithdrawalRouter is
         }
     }
 
-    /// @inheritdoc ISlashingWithdrawalRouter
+    /// @inheritdoc ISlashEscrowFactory
     function getPendingBurnOrRedistributions()
         public
         view
@@ -399,7 +393,7 @@ contract SlashingWithdrawalRouter is
         }
     }
 
-    /// @inheritdoc ISlashingWithdrawalRouter
+    /// @inheritdoc ISlashEscrowFactory
     function getPendingBurnOrRedistributionsCount(
         OperatorSet calldata operatorSet,
         uint256 slashId
@@ -407,7 +401,7 @@ contract SlashingWithdrawalRouter is
         return _pendingBurnOrRedistributions[operatorSet.key()][slashId].length();
     }
 
-    /// @inheritdoc ISlashingWithdrawalRouter
+    /// @inheritdoc ISlashEscrowFactory
     function getPendingUnderlyingAmountForStrategy(
         OperatorSet calldata operatorSet,
         uint256 slashId,
@@ -419,7 +413,7 @@ contract SlashingWithdrawalRouter is
         return underlyingAmount;
     }
 
-    /// @inheritdoc ISlashingWithdrawalRouter
+    /// @inheritdoc ISlashEscrowFactory
     function isBurnOrRedistributionPaused(
         OperatorSet calldata operatorSet,
         uint256 slashId
@@ -427,7 +421,7 @@ contract SlashingWithdrawalRouter is
         return _paused[operatorSet.key()][slashId];
     }
 
-    /// @inheritdoc ISlashingWithdrawalRouter
+    /// @inheritdoc ISlashEscrowFactory
     function getBurnOrRedistributionStartBlock(
         OperatorSet calldata operatorSet,
         uint256 slashId
@@ -435,7 +429,7 @@ contract SlashingWithdrawalRouter is
         return _slashIdToStartBlock[operatorSet.key()][slashId];
     }
 
-    /// @inheritdoc ISlashingWithdrawalRouter
+    /// @inheritdoc ISlashEscrowFactory
     function getStrategyBurnOrRedistributionDelay(
         IStrategy strategy
     ) public view returns (uint256) {
@@ -453,7 +447,7 @@ contract SlashingWithdrawalRouter is
         return strategyDelay < globalDelay ? strategyDelay : globalDelay;
     }
 
-    /// @inheritdoc ISlashingWithdrawalRouter
+    /// @inheritdoc ISlashEscrowFactory
     function getGlobalBurnOrRedistributionDelay() external view returns (uint256) {
         return _globalBurnOrRedistributionDelayBlocks;
     }

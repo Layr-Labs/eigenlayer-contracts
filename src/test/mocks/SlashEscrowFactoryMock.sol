@@ -3,7 +3,7 @@ pragma solidity ^0.8.9;
 
 import "forge-std/Test.sol";
 
-contract SlashingWithdrawalRouterMock is Test {
+contract SlashEscrowFactoryMock is Test {
     receive() external payable {}
     fallback() external payable {}
 }

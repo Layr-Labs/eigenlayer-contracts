@@ -68,8 +68,8 @@ contract DeployFromScratch is Script, Test {
     AllocationManager public allocationManager;
     PermissionController public permissionControllerImplementation;
     PermissionController public permissionController;
-    SlashingWithdrawalRouter public slashingWithdrawalRouter;
-    SlashingWithdrawalRouter public slashingWithdrawalRouterImplementation;
+    SlashEscrowFactory public slashEscrowFactory;
+    SlashEscrowFactory public slashEscrowFactoryImplementation;
 
     EmptyContract public emptyContract;
 
@@ -225,7 +225,7 @@ contract DeployFromScratch is Script, Test {
         permissionController = PermissionController(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
-        slashingWithdrawalRouter = SlashingWithdrawalRouter(
+        slashEscrowFactory = SlashEscrowFactory(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
 
@@ -248,8 +248,7 @@ contract DeployFromScratch is Script, Test {
             MIN_WITHDRAWAL_DELAY,
             SEMVER
         );
-        strategyManagerImplementation =
-            new StrategyManager(delegation, slashingWithdrawalRouter, eigenLayerPauserReg, SEMVER);
+        strategyManagerImplementation = new StrategyManager(delegation, slashEscrowFactory, eigenLayerPauserReg, SEMVER);
         avsDirectoryImplementation = new AVSDirectory(delegation, eigenLayerPauserReg, SEMVER);
         eigenPodManagerImplementation =
             new EigenPodManager(ethPOSDeposit, eigenPodBeacon, delegation, eigenLayerPauserReg, SEMVER);
