@@ -130,7 +130,7 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
      * @param operatorSet The operator set to burn shares in.
      * @param slashId The slash ID to burn shares in.
      */
-    function burnOperatorSetShares(OperatorSet calldata operatorSet, uint256 slashId) external;
+    function burnShares(OperatorSet calldata operatorSet, uint256 slashId) external;
 
     /**
      * @notice Owner-only function to change the `strategyWhitelister` address.
