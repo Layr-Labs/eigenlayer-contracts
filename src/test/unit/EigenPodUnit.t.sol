@@ -58,7 +58,7 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
         beaconChain = new BeaconChainMock(EigenPodManager(address(eigenPodManagerMock)), GENESIS_TIME_LOCAL);
 
         // Deploy EigenPod
-        podImplementation = new EigenPod(ethPOSDepositMock, IEigenPodManager(address(eigenPodManagerMock)), GENESIS_TIME_LOCAL, "v9.9.9");
+        podImplementation = new EigenPod(ethPOSDepositMock, IEigenPodManager(address(eigenPodManagerMock)), GENESIS_TIME_LOCAL, "9.9.9");
 
         // Deploy Beacon
         eigenPodBeacon = new UpgradeableBeacon(address(podImplementation));
@@ -302,7 +302,7 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
 
 contract EigenPodUnitTests_Initialization is EigenPodUnitTests {
     function test_constructor() public {
-        EigenPod pod = new EigenPod(ethPOSDepositMock, IEigenPodManager(address(eigenPodManagerMock)), GENESIS_TIME_LOCAL, "v9.9.9");
+        EigenPod pod = new EigenPod(ethPOSDepositMock, IEigenPodManager(address(eigenPodManagerMock)), GENESIS_TIME_LOCAL, "9.9.9");
 
         assertTrue(pod.ethPOS() == ethPOSDepositMock, "should have set ethPOS correctly");
         assertTrue(address(pod.eigenPodManager()) == address(eigenPodManagerMock), "should have set eigenpodmanager correctly");
@@ -330,7 +330,7 @@ contract EigenPodUnitTests_Initialization is EigenPodUnitTests {
     }
 
     function test_initialize_revert_emptyPodOwner() public {
-        EigenPod pod = new EigenPod(ethPOSDepositMock, IEigenPodManager(address(eigenPodManagerMock)), GENESIS_TIME_LOCAL, "v9.9.9");
+        EigenPod pod = new EigenPod(ethPOSDepositMock, IEigenPodManager(address(eigenPodManagerMock)), GENESIS_TIME_LOCAL, "9.9.9");
         // un-initialize pod
         cheats.store(address(pod), 0, 0);
 
@@ -1711,7 +1711,7 @@ contract EigenPodHarnessSetup is EigenPodUnitTests {
 
         // Deploy EP Harness
         eigenPodHarnessImplementation =
-            new EigenPodHarness(ethPOSDepositMock, IEigenPodManager(address(eigenPodManagerMock)), GENESIS_TIME_LOCAL, "v9.9.9");
+            new EigenPodHarness(ethPOSDepositMock, IEigenPodManager(address(eigenPodManagerMock)), GENESIS_TIME_LOCAL, "9.9.9");
 
         // Upgrade eigenPod to harness
         UpgradeableBeacon(address(eigenPodBeacon)).upgradeTo(address(eigenPodHarnessImplementation));

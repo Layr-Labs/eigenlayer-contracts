@@ -113,7 +113,7 @@ contract DelegationManagerUnitTests is EigenLayerUnitTestSetup, IDelegationManag
 
         // Deploy mock token and strategy
         tokenMock = new ERC20PresetFixedSupply("Mock Token", "MOCK", tokenMockInitialSupply, address(this));
-        strategyImplementation = new StrategyBase(IStrategyManager(address(strategyManagerMock)), pauserRegistry, "v9.9.9");
+        strategyImplementation = new StrategyBase(IStrategyManager(address(strategyManagerMock)), pauserRegistry, "9.9.9");
         strategyMock = StrategyBase(
             address(
                 new TransparentUpgradeableProxy(
@@ -1160,7 +1160,7 @@ contract DelegationManagerUnitTests_Initialization_Setters is DelegationManagerU
             abi.encode(
                 EIP712_DOMAIN_TYPEHASH,
                 keccak256(bytes("EigenLayer")),
-                keccak256(bytes.concat(v[0], v[1])),
+                keccak256(abi.encodePacked(v[0])),
                 block.chainid,
                 address(delegationManager)
             )

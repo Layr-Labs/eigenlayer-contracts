@@ -18,12 +18,12 @@ contract SemVerMixinTest is Test {
     SemVerMixinMock public semVer;
 
     function test_version_returnsCorrectVersion() public {
-        semVer = new SemVerMixinMock("v1.2.3");
-        assertEq(semVer.version(), "v1.2.3");
+        semVer = new SemVerMixinMock("1.2.3");
+        assertEq(semVer.version(), "1.2.3");
     }
 
     function test_majorVersion_returnsCorrectMajorVersion() public {
-        semVer = new SemVerMixinMock("v1.2.3");
-        assertEq(semVer.majorVersion(), "v1");
+        semVer = new SemVerMixinMock("1.2.3");
+        assertEq(semVer.majorVersion(), "1");
     }
 }
