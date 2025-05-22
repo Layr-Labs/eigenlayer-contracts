@@ -162,7 +162,7 @@ contract StrategyManager is
             operatorSetBurnableShares.set(address(strategy), sharesToBurn);
 
             // Notify the `SlashEscrowFactory` contract that it received underlying tokens to burn or redistribute.
-            slashEscrowFactory.startBurnOrRedistributeShares(operatorSet, slashId, strategy);
+            slashEscrowFactory.initiateSlashEscrow(operatorSet, slashId, strategy);
         }
     }
 

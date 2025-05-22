@@ -51,7 +51,7 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
      */
 
     /// @inheritdoc ISlashEscrowFactory
-    function startBurnOrRedistributeShares(
+    function initiateSlashEscrow(
         OperatorSet calldata operatorSet,
         uint256 slashId,
         IStrategy strategy
@@ -86,7 +86,7 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
     }
 
     /// @inheritdoc ISlashEscrowFactory
-    function burnOrRedistributeShares(
+    function releaseSlashEscrow(
         OperatorSet calldata operatorSet,
         uint256 slashId
     ) external virtual onlyWhenNotPaused(PAUSED_BURN_OR_REDISTRIBUTE_SHARES) {

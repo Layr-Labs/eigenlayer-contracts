@@ -10,7 +10,7 @@ contract SlashEscrowFactoryUnitTests is EigenLayerUnitTestSetup, ISlashEscrowFac
     /// @notice default address for burning slashed shares and transferring underlying tokens
     address public constant DEFAULT_BURN_ADDRESS = 0x00000000000000000000000000000000000E16E4;
 
-    /// @notice The pause status for the `burnOrRedistributeShares` function.
+    /// @notice The pause status for the `releaseSlashEscrow` function.
     /// @dev Allows all burn or redistribution outflows to be temporarily halted.
     uint8 public constant PAUSED_BURN_OR_REDISTRIBUTE_SHARES = 0;
 
@@ -76,23 +76,19 @@ contract SlashEscrowFactoryUnitTests is EigenLayerUnitTestSetup, ISlashEscrowFac
     /// - Calls as the `StrategyManager`.
     /// - Asserts that the `StartBurnOrRedistribution` event is emitted.
     /// - Mocks the strategy sending the underlying token to the `SlashEscrow`.
-    function _startBurnOrRedistributeShares(
-        OperatorSet memory operatorSet,
-        uint slashId,
-        IStrategy strategy,
-        MockERC20 token,
-        uint underlyingAmount
-    ) internal {
+    function _initiateSlashEscrow(OperatorSet memory operatorSet, uint slashId, IStrategy strategy, MockERC20 token, uint underlyingAmount)
+        internal
+    {
         cheats.prank(address(strategyManagerMock));
         cheats.expectEmit(true, true, true, true);
         emit StartBurnOrRedistribution(operatorSet, slashId, strategy, uint32(block.number));
-        router.startBurnOrRedistributeShares(operatorSet, slashId, strategy);
+        router.initiateSlashEscrow(operatorSet, slashId, strategy);
         deal(address(token), address(router.getSlashEscrow(operatorSet, slashId)), underlyingAmount);
     }
 
-    /// @dev Calls the `burnOrRedistributeShares` function as the redistribution recipient.
+    /// @dev Calls the `releaseSlashEscrow` function as the redistribution recipient.
     /// - Asserts that the `BurnOrRedistribution` event is emitted only for strategies whose delay has elapsed.
-    function _burnOrRedistributeShares(OperatorSet memory operatorSet, uint slashId) internal {
+    function _releaseSlashEscrow(OperatorSet memory operatorSet, uint slashId) internal {
         (IStrategy[] memory strategies) = router.getPendingStrategiesForSlashId(operatorSet, slashId);
 
         address redistributionRecipient = allocationManagerMock.getRedistributionRecipient(operatorSet);
@@ -107,7 +103,7 @@ contract SlashEscrowFactoryUnitTests is EigenLayerUnitTestSetup, ISlashEscrowFac
         }
 
         cheats.prank(defaultRedistributionRecipient);
-        router.burnOrRedistributeShares(operatorSet, slashId);
+        router.releaseSlashEscrow(operatorSet, slashId);
     }
 
     /// @dev Asserts that the operator set and slash ID are pending, and that the strategy and underlying amount are in the pending burn or redistributions.
@@ -146,50 +142,50 @@ contract SlashEscrowFactoryUnitTests_initialize is SlashEscrowFactoryUnitTests {
     }
 }
 
-contract SlashEscrowFactoryUnitTests_startBurnOrRedistributeShares is SlashEscrowFactoryUnitTests {
-    /// @dev Asserts only the `StrategyManager` can call `startBurnOrRedistributeShares`.
-    function test_startBurnOrRedistributeShares_onlyStrategyManager() public {
+contract SlashEscrowFactoryUnitTests_initiateSlashEscrow is SlashEscrowFactoryUnitTests {
+    /// @dev Asserts only the `StrategyManager` can call `initiateSlashEscrow`.
+    function test_initiateSlashEscrow_onlyStrategyManager() public {
         cheats.prank(pauser);
         router.pause(PAUSED_BURN_OR_REDISTRIBUTE_SHARES);
         cheats.expectRevert(ISlashEscrowFactoryErrors.OnlyStrategyManager.selector);
-        router.startBurnOrRedistributeShares(defaultOperatorSet, defaultSlashId, defaultStrategy);
+        router.initiateSlashEscrow(defaultOperatorSet, defaultSlashId, defaultStrategy);
     }
 
-    function test_startBurnOrRedistributeShares_correctness(uint underlyingAmount) public {
-        _startBurnOrRedistributeShares(defaultOperatorSet, defaultSlashId, defaultStrategy, defaultToken, underlyingAmount);
+    function test_initiateSlashEscrow_correctness(uint underlyingAmount) public {
+        _initiateSlashEscrow(defaultOperatorSet, defaultSlashId, defaultStrategy, defaultToken, underlyingAmount);
         _checkStartBurnOrRedistributions(defaultOperatorSet, defaultSlashId, defaultStrategy, defaultToken, underlyingAmount, 1);
     }
 }
 
-contract SlashEscrowFactoryUnitTests_burnOrRedistributeShares is SlashEscrowFactoryUnitTests {
+contract SlashEscrowFactoryUnitTests_releaseSlashEscrow is SlashEscrowFactoryUnitTests {
     /// @dev Asserts that the function reverts if the caller is not the redistribution recipient.
-    function testFuzz_burnOrRedistributeShares_onlyRedistributionRecipient(uint underlyingAmount) public {
-        _startBurnOrRedistributeShares(defaultOperatorSet, defaultSlashId, defaultStrategy, defaultToken, underlyingAmount);
+    function testFuzz_releaseSlashEscrow_onlyRedistributionRecipient(uint underlyingAmount) public {
+        _initiateSlashEscrow(defaultOperatorSet, defaultSlashId, defaultStrategy, defaultToken, underlyingAmount);
         cheats.expectRevert(ISlashEscrowFactoryErrors.OnlyRedistributionRecipient.selector);
-        router.burnOrRedistributeShares(defaultOperatorSet, defaultSlashId);
+        router.releaseSlashEscrow(defaultOperatorSet, defaultSlashId);
     }
 
     /// @dev Asserts that the function reverts if the redistribution is paused.
-    function testFuzz_burnOrRedistributeShares_paused(uint underlyingAmount) public {
-        _startBurnOrRedistributeShares(defaultOperatorSet, defaultSlashId, defaultStrategy, defaultToken, underlyingAmount);
+    function testFuzz_releaseSlashEscrow_paused(uint underlyingAmount) public {
+        _initiateSlashEscrow(defaultOperatorSet, defaultSlashId, defaultStrategy, defaultToken, underlyingAmount);
         cheats.prank(pauser);
         router.pauseRedistribution(defaultOperatorSet, defaultSlashId);
         cheats.prank(defaultRedistributionRecipient);
         cheats.expectRevert(IPausable.CurrentlyPaused.selector);
-        router.burnOrRedistributeShares(defaultOperatorSet, defaultSlashId);
+        router.releaseSlashEscrow(defaultOperatorSet, defaultSlashId);
     }
 
     /// @dev Asserts that the function reverts if the operator set and slash ID do not exist.
-    /// NOTE: `burnOrRedistributeShares` does not revert when a slash ID does not exist for an operator set.
-    function testFuzz_burnOrRedistributeShares_nonexistentSlashIdForOperatorSet(uint underlyingAmount) public {
+    /// NOTE: `releaseSlashEscrow` does not revert when a slash ID does not exist for an operator set.
+    function testFuzz_releaseSlashEscrow_nonexistentSlashIdForOperatorSet(uint underlyingAmount) public {
         cheats.prank(defaultRedistributionRecipient);
-        router.burnOrRedistributeShares(defaultOperatorSet, defaultSlashId);
+        router.releaseSlashEscrow(defaultOperatorSet, defaultSlashId);
         assertFalse(router.isPendingOperatorSet(defaultOperatorSet));
         assertFalse(router.isPendingSlashId(defaultOperatorSet, defaultSlashId));
     }
 
     /// @dev Tests that multiple strategies can be burned or redistributed in a single call
-    function testFuzz_burnOrRedistributeShares_multipleStrategies_sameDelay(uint r) public {
+    function testFuzz_releaseSlashEscrow_multipleStrategies_sameDelay(uint r) public {
         // Initialize arrays to store test data for multiple strategies
         uint numStrategies = bound(r, 2, 10);
         IStrategy[] memory strategies = new IStrategy[](numStrategies);
@@ -204,7 +200,7 @@ contract SlashEscrowFactoryUnitTests_burnOrRedistributeShares is SlashEscrowFact
             underlyingAmounts[i] = cheats.randomUint();
 
             // Start burn/redistribution for this strategy
-            _startBurnOrRedistributeShares(defaultOperatorSet, defaultSlashId, strategies[i], tokens[i], underlyingAmounts[i]);
+            _initiateSlashEscrow(defaultOperatorSet, defaultSlashId, strategies[i], tokens[i], underlyingAmounts[i]);
             // Verify the burn/redistribution was started correctly
             _checkStartBurnOrRedistributions(defaultOperatorSet, defaultSlashId, strategies[i], tokens[i], underlyingAmounts[i], i + 1);
         }
@@ -218,7 +214,7 @@ contract SlashEscrowFactoryUnitTests_burnOrRedistributeShares is SlashEscrowFact
         }
 
         // Execute the burn/redistribution
-        _burnOrRedistributeShares(defaultOperatorSet, defaultSlashId);
+        _releaseSlashEscrow(defaultOperatorSet, defaultSlashId);
 
         // Checks
 
@@ -241,7 +237,7 @@ contract SlashEscrowFactoryUnitTests_burnOrRedistributeShares is SlashEscrowFact
     }
 
     /// @dev Tests that multiple strategies with different delays are processed correctly
-    function testFuzz_burnOrRedistributeShares_multipleStrategies_differentDelays(uint r) public {
+    function testFuzz_releaseSlashEscrow_multipleStrategies_differentDelays(uint r) public {
         // Initialize arrays to store test data for multiple strategies
         uint numStrategies = bound(r, 2, 10);
         IStrategy[] memory strategies = new IStrategy[](numStrategies);
@@ -264,7 +260,7 @@ contract SlashEscrowFactoryUnitTests_burnOrRedistributeShares is SlashEscrowFact
             router.setStrategyBurnOrRedistributionDelay(strategies[i], delays[i]);
 
             // Start burn/redistribution for this strategy
-            _startBurnOrRedistributeShares(defaultOperatorSet, defaultSlashId, strategies[i], tokens[i], underlyingAmounts[i]);
+            _initiateSlashEscrow(defaultOperatorSet, defaultSlashId, strategies[i], tokens[i], underlyingAmounts[i]);
             // Verify the burn/redistribution was started correctly
             _checkStartBurnOrRedistributions(defaultOperatorSet, defaultSlashId, strategies[i], tokens[i], underlyingAmounts[i], i + 1);
         }
@@ -278,7 +274,7 @@ contract SlashEscrowFactoryUnitTests_burnOrRedistributeShares is SlashEscrowFact
         }
 
         // Execute the burn/redistribution
-        _burnOrRedistributeShares(defaultOperatorSet, defaultSlashId);
+        _releaseSlashEscrow(defaultOperatorSet, defaultSlashId);
 
         // Verify that only strategies with delays < 2 days were processed
         for (uint i = 0; i < numStrategies; i++) {
@@ -298,7 +294,7 @@ contract SlashEscrowFactoryUnitTests_burnOrRedistributeShares is SlashEscrowFact
         cheats.roll(block.number + 2 days / 12 seconds);
 
         // Execute the burn/redistribution again
-        _burnOrRedistributeShares(defaultOperatorSet, defaultSlashId);
+        _releaseSlashEscrow(defaultOperatorSet, defaultSlashId);
 
         // Verify that all strategies have been processed
         assertFalse(router.isPendingOperatorSet(defaultOperatorSet));
@@ -325,7 +321,7 @@ contract SlashEscrowFactoryUnitTests_pauseRedistribution is SlashEscrowFactoryUn
     }
 
     function test_pauseRedistribution_correctness() public {
-        _startBurnOrRedistributeShares(defaultOperatorSet, defaultSlashId, defaultStrategy, defaultToken, 100);
+        _initiateSlashEscrow(defaultOperatorSet, defaultSlashId, defaultStrategy, defaultToken, 100);
 
         cheats.prank(pauser);
         router.pauseRedistribution(defaultOperatorSet, defaultSlashId);
@@ -335,7 +331,7 @@ contract SlashEscrowFactoryUnitTests_pauseRedistribution is SlashEscrowFactoryUn
 
         cheats.prank(defaultRedistributionRecipient);
         cheats.expectRevert(IPausable.CurrentlyPaused.selector);
-        router.burnOrRedistributeShares(defaultOperatorSet, defaultSlashId);
+        router.releaseSlashEscrow(defaultOperatorSet, defaultSlashId);
     }
 }
 
@@ -347,7 +343,7 @@ contract SlashEscrowFactoryUnitTests_unpauseRedistribution is SlashEscrowFactory
     }
 
     function test_unpauseRedistribution_correctness() public {
-        _startBurnOrRedistributeShares(defaultOperatorSet, defaultSlashId, defaultStrategy, defaultToken, 100);
+        _initiateSlashEscrow(defaultOperatorSet, defaultSlashId, defaultStrategy, defaultToken, 100);
 
         cheats.prank(pauser);
         router.pauseRedistribution(defaultOperatorSet, defaultSlashId);
@@ -357,7 +353,7 @@ contract SlashEscrowFactoryUnitTests_unpauseRedistribution is SlashEscrowFactory
 
         cheats.prank(defaultRedistributionRecipient);
         cheats.expectRevert(IPausable.CurrentlyPaused.selector);
-        router.burnOrRedistributeShares(defaultOperatorSet, defaultSlashId);
+        router.releaseSlashEscrow(defaultOperatorSet, defaultSlashId);
 
         cheats.prank(unpauser);
         router.unpauseRedistribution(defaultOperatorSet, defaultSlashId);
@@ -365,7 +361,7 @@ contract SlashEscrowFactoryUnitTests_unpauseRedistribution is SlashEscrowFactory
 
         // Should not revert...
         _mockStrategyUnderlyingTokenCall(defaultStrategy, address(defaultToken));
-        _burnOrRedistributeShares(defaultOperatorSet, defaultSlashId);
+        _releaseSlashEscrow(defaultOperatorSet, defaultSlashId);
     }
 }
 
@@ -400,7 +396,7 @@ contract SlashEscrowFactoryUnitTests_setGlobalBurnOrRedistributionDelay is Slash
 contract SlashEscrowFactoryUnitTests_getPendingBurnOrRedistributions is SlashEscrowFactoryUnitTests {
     function test_getPendingBurnOrRedistributions_singleSlashId() public {
         // Start burn/redistribution for a single strategy
-        _startBurnOrRedistributeShares(defaultOperatorSet, defaultSlashId, defaultStrategy, defaultToken, 100);
+        _initiateSlashEscrow(defaultOperatorSet, defaultSlashId, defaultStrategy, defaultToken, 100);
 
         // Get pending burn/redistributions for the specific slash ID
         (IStrategy[] memory strategies) = router.getPendingStrategiesForSlashId(defaultOperatorSet, defaultSlashId);
@@ -417,8 +413,8 @@ contract SlashEscrowFactoryUnitTests_getPendingBurnOrRedistributions is SlashEsc
         MockERC20 token1 = new MockERC20();
         MockERC20 token2 = new MockERC20();
 
-        _startBurnOrRedistributeShares(defaultOperatorSet, defaultSlashId, strategy1, token1, 100);
-        _startBurnOrRedistributeShares(defaultOperatorSet, defaultSlashId, strategy2, token2, 200);
+        _initiateSlashEscrow(defaultOperatorSet, defaultSlashId, strategy1, token1, 100);
+        _initiateSlashEscrow(defaultOperatorSet, defaultSlashId, strategy2, token2, 200);
 
         // Get pending burn/redistributions for the specific slash ID
         (IStrategy[] memory strategies) = router.getPendingStrategiesForSlashId(defaultOperatorSet, defaultSlashId);
@@ -441,8 +437,8 @@ contract SlashEscrowFactoryUnitTests_getPendingBurnOrRedistributions is SlashEsc
         MockERC20 token2 = new MockERC20();
 
         // Start burn/redistributions for different slash IDs
-        _startBurnOrRedistributeShares(defaultOperatorSet, slashId1, strategy1, token1, 100);
-        _startBurnOrRedistributeShares(defaultOperatorSet, slashId2, strategy2, token2, 200);
+        _initiateSlashEscrow(defaultOperatorSet, slashId1, strategy1, token1, 100);
+        _initiateSlashEscrow(defaultOperatorSet, slashId2, strategy2, token2, 200);
 
         // Get pending burn/redistributions for all slash IDs of the operator set
         (IStrategy[][] memory strategies) = router.getPendingStrategiesForSlashIds(defaultOperatorSet);
@@ -475,8 +471,8 @@ contract SlashEscrowFactoryUnitTests_getPendingBurnOrRedistributions is SlashEsc
         allocationManagerMock.setRedistributionRecipient(operatorSet2, defaultRedistributionRecipient);
 
         // Start burn/redistributions for different operator sets
-        _startBurnOrRedistributeShares(operatorSet1, defaultSlashId, strategy1, token1, 100);
-        _startBurnOrRedistributeShares(operatorSet2, defaultSlashId, strategy2, token2, 200);
+        _initiateSlashEscrow(operatorSet1, defaultSlashId, strategy1, token1, 100);
+        _initiateSlashEscrow(operatorSet2, defaultSlashId, strategy2, token2, 200);
 
         // Get pending burn/redistributions for all operator sets
         (IStrategy[][][] memory strategies) = router.getPendingStrategiesForSlashIds();

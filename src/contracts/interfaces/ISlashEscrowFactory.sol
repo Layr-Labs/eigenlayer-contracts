@@ -53,11 +53,7 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
      * @param slashId The slash ID of the redistribution that is being locked up.
      * @param strategy The strategy that whose underlying tokens are being redistributed.
      */
-    function startBurnOrRedistributeShares(
-        OperatorSet calldata operatorSet,
-        uint256 slashId,
-        IStrategy strategy
-    ) external;
+    function initiateSlashEscrow(OperatorSet calldata operatorSet, uint256 slashId, IStrategy strategy) external;
 
     /**
      * @notice Releases a redistribution.
@@ -66,7 +62,7 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
      * @dev The caller must be the redistribution recipient, unless the redistribution recipient
      * is the default burn address in which case anyone can call.
      */
-    function burnOrRedistributeShares(OperatorSet calldata operatorSet, uint256 slashId) external;
+    function releaseSlashEscrow(OperatorSet calldata operatorSet, uint256 slashId) external;
 
     /**
      * @notice Pauses a redistribution.
