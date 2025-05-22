@@ -43,7 +43,7 @@ contract EigenPodManagerUnitTests is EigenLayerUnitTestSetup, IEigenPodManagerEv
 
         // Deploy EPM Implementation & Proxy
         eigenPodManagerImplementation =
-            new EigenPodManager(ethPOSMock, eigenPodBeacon, IDelegationManager(address(delegationManagerMock)), pauserRegistry, "v9.9.9");
+            new EigenPodManager(ethPOSMock, eigenPodBeacon, IDelegationManager(address(delegationManagerMock)), pauserRegistry, "9.9.9");
         eigenPodManager = EigenPodManager(
             address(
                 new TransparentUpgradeableProxy(
@@ -234,7 +234,7 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
 
         // Upgrade eigenPodManager to wrapper
         eigenPodManagerWrapper = new EigenPodManagerWrapper(
-            ethPOSMock, eigenPodBeacon, IDelegationManager(address(delegationManagerMock)), pauserRegistry, "v9.9.9"
+            ethPOSMock, eigenPodBeacon, IDelegationManager(address(delegationManagerMock)), pauserRegistry, "9.9.9"
         );
         eigenLayerProxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(eigenPodManager))), address(eigenPodManagerWrapper));
     }
@@ -425,7 +425,7 @@ contract EigenPodManagerUnitTests_WithdrawSharesAsTokensTests is EigenPodManager
 
         // Upgrade eigenPodManager to wrapper
         eigenPodManagerWrapper = new EigenPodManagerWrapper(
-            ethPOSMock, eigenPodBeacon, IDelegationManager(address(delegationManagerMock)), pauserRegistry, "v9.9.9"
+            ethPOSMock, eigenPodBeacon, IDelegationManager(address(delegationManagerMock)), pauserRegistry, "9.9.9"
         );
         eigenLayerProxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(eigenPodManager))), address(eigenPodManagerWrapper));
     }
@@ -546,7 +546,7 @@ contract EigenPodManagerUnitTests_BeaconChainETHBalanceUpdateTests is EigenPodMa
 
         // Upgrade eigenPodManager to wrapper
         eigenPodManagerWrapper = new EigenPodManagerWrapper(
-            ethPOSMock, eigenPodBeacon, IDelegationManager(address(delegationManagerMock)), pauserRegistry, "v9.9.9"
+            ethPOSMock, eigenPodBeacon, IDelegationManager(address(delegationManagerMock)), pauserRegistry, "9.9.9"
         );
         eigenLayerProxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(eigenPodManager))), address(eigenPodManagerWrapper));
     }

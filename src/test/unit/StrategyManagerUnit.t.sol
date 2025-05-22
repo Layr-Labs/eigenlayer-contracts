@@ -46,7 +46,7 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEv
             IDelegationManager(address(delegationManagerMock)),
             ISlashingWithdrawalRouter(address(slashingWithdrawalRouterMock)),
             pauserRegistry,
-            "v9.9.9"
+            "9.9.9"
         );
         strategyManager = StrategyManager(
             address(
@@ -84,7 +84,7 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEv
         public
         returns (StrategyBase)
     {
-        StrategyBase newStrategyImplementation = new StrategyBase(_strategyManager, _pauserRegistry, "v9.9.9");
+        StrategyBase newStrategyImplementation = new StrategyBase(_strategyManager, _pauserRegistry, "9.9.9");
         StrategyBase newStrategy =
             StrategyBase(address(new TransparentUpgradeableProxy(address(newStrategyImplementation), address(admin), "")));
         newStrategy.initialize(_token);
@@ -243,7 +243,7 @@ contract StrategyManagerUnitTests_initialize is StrategyManagerUnitTests {
             abi.encode(
                 EIP712_DOMAIN_TYPEHASH,
                 keccak256(bytes("EigenLayer")),
-                keccak256(bytes(bytes.concat(v[0], v[1]))),
+                keccak256(abi.encodePacked(v[0])),
                 block.chainid,
                 address(strategyManager)
             )

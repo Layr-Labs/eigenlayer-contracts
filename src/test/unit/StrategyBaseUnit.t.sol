@@ -55,7 +55,7 @@ contract StrategyBaseUnitTests is Test {
 
         underlyingToken = new ERC20PresetFixedSupply("Test Token", "TEST", initialSupply, initialOwner);
 
-        strategyImplementation = new StrategyBase(strategyManager, pauserRegistry, "v9.9.9");
+        strategyImplementation = new StrategyBase(strategyManager, pauserRegistry, "9.9.9");
 
         strategy = StrategyBase(
             address(
@@ -160,7 +160,7 @@ contract StrategyBaseUnitTests is Test {
         // Deploy token with 1e39 total supply
         underlyingToken = new ERC20PresetFixedSupply("Test Token", "TEST", 1e39, initialOwner);
 
-        strategyImplementation = new StrategyBase(strategyManager, pauserRegistry, "v9.9.9");
+        strategyImplementation = new StrategyBase(strategyManager, pauserRegistry, "9.9.9");
 
         strategy = StrategyBase(
             address(
