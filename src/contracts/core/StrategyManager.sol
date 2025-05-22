@@ -167,7 +167,7 @@ contract StrategyManager is
     }
 
     /// @inheritdoc IStrategyManager
-    function burnShares(OperatorSet calldata operatorSet, uint256 slashId) external nonReentrant {
+    function decreaseBurnableShares(OperatorSet calldata operatorSet, uint256 slashId) external nonReentrant {
         EnumerableMap.AddressToUintMap storage operatorSetBurnableShares =
             _operatorSetBurnableShares[operatorSet.key()][slashId];
 

@@ -40,8 +40,8 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
         _transferOwnership(initialOwner);
         _setPausedStatus(initialPausedStatus);
 
-        // Set the global burn or redistribution delay to 3.5 days in blocks assuming 12 second blocks.
-        _globalBurnOrRedistributionDelayBlocks = 3.5 days / 12 seconds;
+        // Set the global burn or redistribution delay to 4 days in blocks assuming 12 second blocks.
+        _globalBurnOrRedistributionDelayBlocks = 4 days / 12 seconds;
     }
 
     /**
@@ -101,6 +101,9 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
 
         // Assert that the escrow is not paused.
         require(!_paused[operatorSet.key()][slashId], IPausable.CurrentlyPaused());
+
+        // Assert that funds have been sent to the `SlashEscrow` before clearing storage.
+        strategyManager.decreaseBurnableShares(operatorSet, slashId);
 
         // Create a storage pointer to `_pendingOperatorSets`.
         EnumerableSetUpgradeable.Bytes32Set storage pendingOperatorSets = _pendingOperatorSets;

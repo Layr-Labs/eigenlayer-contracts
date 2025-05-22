@@ -125,12 +125,11 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
     ) external;
 
     /**
-     * @notice Burns Strategy shares for the operator set and slash ID by calling into the strategy to transfer
-     * the underlying token of the strategy to the slash escrow.
+     * @notice Removes burned shares from storage and transfers the underlying tokens for the slashId to the slash escrow.
      * @param operatorSet The operator set to burn shares in.
      * @param slashId The slash ID to burn shares in.
      */
-    function burnShares(OperatorSet calldata operatorSet, uint256 slashId) external;
+    function decreaseBurnableShares(OperatorSet calldata operatorSet, uint256 slashId) external;
 
     /**
      * @notice Owner-only function to change the `strategyWhitelister` address.

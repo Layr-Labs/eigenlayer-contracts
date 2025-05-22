@@ -1118,7 +1118,7 @@ contract StrategyManagerUnitTests_increaseBurnableShares is StrategyManagerUnitT
     // }
 }
 
-contract StrategyManagerUnitTests_burnShares is StrategyManagerUnitTests {
+contract StrategyManagerUnitTests_decreaseBurnableShares is StrategyManagerUnitTests {
 // function testFuzz_SingleStrategyDeposited(address staker, uint depositAmount, uint sharesToBurn)
 //     external
 //     filterFuzzedAddressInputs(staker)

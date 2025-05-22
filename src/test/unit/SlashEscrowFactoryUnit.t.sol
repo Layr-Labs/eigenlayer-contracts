@@ -55,7 +55,7 @@ contract SlashEscrowFactoryUnitTests is EigenLayerUnitTestSetup, ISlashEscrowFac
     }
 
     function _rollForwardDefaultBurnOrRedistributionDelay() internal {
-        cheats.roll(block.number + 3.5 days / 12 seconds + 1);
+        cheats.roll(block.number + 4 days / 12 seconds + 1);
     }
 
     /// @dev Sets the return value for the next call to `strategy.underlyingToken()`.
@@ -380,7 +380,7 @@ contract SlashEscrowFactoryUnitTests_setStrategyBurnOrRedistributionDelay is Sla
         cheats.prank(defaultOwner);
         router.setStrategyBurnOrRedistributionDelay(defaultStrategy, 10 days / 12 seconds);
         // Returns global delay since strategy delay is larger than global delay.
-        assertEq(router.getStrategyBurnOrRedistributionDelay(defaultStrategy), 3.5 days / 12 seconds);
+        assertEq(router.getStrategyBurnOrRedistributionDelay(defaultStrategy), 4 days / 12 seconds);
 
         cheats.prank(defaultOwner);
         router.setStrategyBurnOrRedistributionDelay(defaultStrategy, 1 days / 12 seconds);
