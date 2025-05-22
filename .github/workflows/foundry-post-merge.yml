@@ -47,7 +47,7 @@ jobs:
       - name: "Install Foundry"
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: v1.2.1
+          version: v1.2.0
 
       # Build the project and display contract sizes.
       - name: "Forge Build"

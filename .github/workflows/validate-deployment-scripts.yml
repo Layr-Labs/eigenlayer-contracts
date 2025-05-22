@@ -49,7 +49,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: v1.2.1
+          version: v1.2.0
 
       # Run Forge's formatting checker to ensure consistent code style.
       - name: "Forge Fmt"
