@@ -10,10 +10,6 @@ contract SlashEscrow is ISlashEscrow {
     using OperatorSetLib for *;
     using SafeERC20 for IERC20;
 
-    error InvalidDeploymentParameters();
-
-    error OnlySlashEscrowFactory();
-
     /// @inheritdoc ISlashEscrow
     function burnOrRedistributeUnderlyingTokens(
         ISlashEscrowFactory slashEscrowFactory,
