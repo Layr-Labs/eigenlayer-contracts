@@ -41,7 +41,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     bool isUpgraded;
     uint mainnetForkBlock = 21_616_692; // Post Protocol Council upgrade
 
-    string version = "v9.9.9";
+    string version = "9.9.9";
 
     // Beacon chain genesis time when running locally
     // Multiple of 12 for sanity's sake
@@ -352,14 +352,14 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         );
         avsDirectoryImplementation = new AVSDirectory(delegationManager, eigenLayerPauserReg, version);
         eigenPodManagerImplementation =
-            new EigenPodManager(DEPOSIT_CONTRACT, eigenPodBeacon, delegationManager, eigenLayerPauserReg, "v9.9.9");
-        strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg, "v9.9.9");
+            new EigenPodManager(DEPOSIT_CONTRACT, eigenPodBeacon, delegationManager, eigenLayerPauserReg, "9.9.9");
+        strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg, "9.9.9");
         slashingWithdrawalRouterImplementation =
-            new SlashingWithdrawalRouter(allocationManager, strategyManager, eigenLayerPauserReg, "v9.9.9");
+            new SlashingWithdrawalRouter(allocationManager, strategyManager, eigenLayerPauserReg, "9.9.9");
 
         // Beacon implementations
-        eigenPodImplementation = new EigenPod(DEPOSIT_CONTRACT, eigenPodManager, BEACON_GENESIS_TIME, "v9.9.9");
-        baseStrategyImplementation = new StrategyBase(strategyManager, eigenLayerPauserReg, "v9.9.9");
+        eigenPodImplementation = new EigenPod(DEPOSIT_CONTRACT, eigenPodManager, BEACON_GENESIS_TIME, "9.9.9");
+        baseStrategyImplementation = new StrategyBase(strategyManager, eigenLayerPauserReg, "9.9.9");
 
         // Pre-longtail StrategyBaseTVLLimits implementation
         // TODO - need to update ExistingDeploymentParser
