@@ -21,7 +21,7 @@ abstract contract SignatureUtilsMixin is ISignatureUtilsMixin, SemVerMixin {
     using SignatureCheckerUpgradeable for address;
 
     /// @notice Initializes the contract with a semantic version string.
-    /// @param _version The SemVer-formatted version string (e.g., "v1.1.1") to use for this contract's domain separator.
+    /// @param _version The SemVer-formatted version string (e.g., "1.1.1") to use for this contract's domain separator.
     /// @dev Version should follow SemVer 2.0.0 format with 'v' prefix: vMAJOR.MINOR.PATCH.
     ///      Only the major version component is used in the domain separator to maintain signature compatibility
     ///      across minor and patch version updates.
