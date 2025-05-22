@@ -44,7 +44,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: stable
+          version: v1.2.1
 
       # Run Forge's formatting checker to ensure consistent code style.
       - name: "Forge Fmt"
@@ -99,7 +99,7 @@ jobs:
       - name: "Install Foundry"
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: stable
+          version: v1.2.1
 
       # Run storage diff check to detect storage layout incompatibilities.
       - name: "Mainnet Storage Diff"
@@ -137,7 +137,7 @@ jobs:
       - name: "Install Foundry"
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: stable
+          version: v1.2.1
 
       # Install LCOV for coverage report generation.
       - name: Install LCOV (Prebuilt)
@@ -213,7 +213,7 @@ jobs:
       - name: "Install Foundry"
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: stable
+          version: v1.2.1
 
       - name: Build contracts on PR branch
         run: |
