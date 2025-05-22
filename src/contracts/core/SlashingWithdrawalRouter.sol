@@ -2,6 +2,7 @@
 pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin-upgrades/contracts/proxy/ClonesUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "../permissions/Pausable.sol";
@@ -19,19 +20,21 @@ contract SlashingWithdrawalRouter is
     using OperatorSetLib for *;
     using EnumerableSetUpgradeable for *;
     using EnumerableMapUpgradeable for EnumerableMapUpgradeable.AddressToUintMap;
-
+    using ClonesUpgradeable for address;
     /**
      *
      *                         INITIALIZATION
      *
      */
+
     constructor(
         IAllocationManager _allocationManager,
         IStrategyManager _strategyManager,
         IPauserRegistry _pauserRegistry,
+        ISlashEscrow _slashEscrowImplementation,
         string memory _version
     )
-        SlashingWithdrawalRouterStorage(_allocationManager, _strategyManager)
+        SlashEscrowFactoryStorage(_allocationManager, _strategyManager, _slashEscrowImplementation)
         Pausable(_pauserRegistry)
         SemVerMixin(_version)
     {
@@ -202,6 +205,9 @@ contract SlashingWithdrawalRouter is
         // Fetch the start block for the slash ID.
         uint256 startBlock = getBurnOrRedistributionStartBlock(operatorSet, slashId);
 
+        // Deploy the counterfactual `SlashEscrow` if code hasn't already been deployed.
+        ISlashEscrow slashEscrow = _deploySlashEscrow(operatorSet, slashId);
+
         // Iterate over the escrow array in reverse order and pop the processed entries from storage.
         for (uint256 i = totalPendingForSlashId; i > 0; --i) {
             (address strategy, uint256 underlyingAmount) = pendingBurnOrRedistributions.at(i - 1);
@@ -214,17 +220,38 @@ contract SlashingWithdrawalRouter is
                 continue;
             }
 
+            // Burn or redistribute the underlying tokens.
+            slashEscrow.burnOrRedistributeUnderlyingTokens(
+                ISlashEscrowFactory(address(this)),
+                slashEscrowImplementation,
+                operatorSet,
+                slashId,
+                redistributionRecipient,
+                IStrategy(strategy)
+            );
+
             // Remove the strategy and underlying amount from the pending burn or redistributions map.
             pendingBurnOrRedistributions.remove(strategy);
-
-            // Transfer the escrowed tokens to the caller.
-            IStrategy(strategy).underlyingToken().safeTransfer(redistributionRecipient, underlyingAmount);
 
             // Emit an event to notify that a burn or redistribution has occurred.
             emit BurnOrRedistribution(
                 operatorSet, slashId, IStrategy(strategy), underlyingAmount, redistributionRecipient
             );
         }
+    }
+
+    /// @notice Deploys a counterfactual `SlashEscrow` if code hasn't already been deployed.
+    /// @dev Returns the deployed `SlashEscrow` if it already exists.
+    function _deploySlashEscrow(OperatorSet calldata operatorSet, uint256 slashId) internal returns (ISlashEscrow) {
+        ISlashEscrow slashEscrow = getSlashEscrow(operatorSet, slashId);
+
+        if (!isDeployedSlashEscrow(slashEscrow)) {
+            return ISlashEscrow(
+                address(slashEscrowImplementation).cloneDeterministic(computeSlashEscrowSalt(operatorSet, slashId))
+            );
+        }
+
+        return slashEscrow;
     }
 
     /// @notice Attempts to clear the pending operator sets and slash IDs if no more strategies remain to be processed.
@@ -429,5 +456,32 @@ contract SlashingWithdrawalRouter is
     /// @inheritdoc ISlashingWithdrawalRouter
     function getGlobalBurnOrRedistributionDelay() external view returns (uint256) {
         return _globalBurnOrRedistributionDelayBlocks;
+    }
+
+    /// @inheritdoc ISlashEscrowFactory
+    function computeSlashEscrowSalt(OperatorSet calldata operatorSet, uint256 slashId) public pure returns (bytes32) {
+        return keccak256(abi.encodePacked(operatorSet.key(), slashId));
+    }
+
+    /// @inheritdoc ISlashEscrowFactory
+    function isDeployedSlashEscrow(OperatorSet calldata operatorSet, uint256 slashId) public view returns (bool) {
+        return isDeployedSlashEscrow(getSlashEscrow(operatorSet, slashId));
+    }
+
+    /// @inheritdoc ISlashEscrowFactory
+    function isDeployedSlashEscrow(
+        ISlashEscrow slashEscrow
+    ) public view returns (bool) {
+        return address(slashEscrow).code.length != 0;
+    }
+
+    /// @inheritdoc ISlashEscrowFactory
+    function getSlashEscrow(OperatorSet calldata operatorSet, uint256 slashId) public view returns (ISlashEscrow) {
+        return ISlashEscrow(
+            address(slashEscrowImplementation).predictDeterministicAddress({
+                salt: computeSlashEscrowSalt(operatorSet, slashId),
+                deployer: address(this)
+            })
+        );
     }
 }

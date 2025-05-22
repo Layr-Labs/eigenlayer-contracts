@@ -11,7 +11,8 @@ import "../../src/contracts/core/AVSDirectory.sol";
 import "../../src/contracts/core/RewardsCoordinator.sol";
 import "../../src/contracts/core/AllocationManager.sol";
 import "../../src/contracts/permissions/PermissionController.sol";
-import "../../src/contracts/core/SlashingWithdrawalRouter.sol";
+import "../../src/contracts/core/SlashEscrowFactory.sol";
+import "../../src/contracts/core/SlashEscrow.sol";
 
 import "../../src/contracts/strategies/StrategyFactory.sol";
 import "../../src/contracts/strategies/StrategyBase.sol";

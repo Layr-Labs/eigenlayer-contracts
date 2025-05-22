@@ -7,6 +7,7 @@ import "../interfaces/ISlashingWithdrawalRouter.sol";
 import "../interfaces/IAllocationManager.sol";
 import "../interfaces/IStrategyManager.sol";
 import "../interfaces/IStrategy.sol";
+import "../interfaces/ISlashEscrow.sol";
 
 abstract contract SlashingWithdrawalRouterStorage is ISlashingWithdrawalRouter {
     // Constants
@@ -25,6 +26,10 @@ abstract contract SlashingWithdrawalRouterStorage is ISlashingWithdrawalRouter {
 
     /// @notice Returns the EigenLayer `StrategyManager` address.
     IStrategyManager public immutable strategyManager;
+
+    /// @notice Returns the implementation contract for the slash escrow.
+    /// @dev This value should not be changed on future upgrades.
+    ISlashEscrow public immutable slashEscrowImplementation;
 
     // Mutable Storage
 
@@ -52,9 +57,14 @@ abstract contract SlashingWithdrawalRouterStorage is ISlashingWithdrawalRouter {
 
     // Constructor
 
-    constructor(IAllocationManager _allocationManager, IStrategyManager _strategyManager) {
+    constructor(
+        IAllocationManager _allocationManager,
+        IStrategyManager _strategyManager,
+        ISlashEscrow _slashEscrowImplementation
+    ) {
         allocationManager = _allocationManager;
         strategyManager = _strategyManager;
+        slashEscrowImplementation = _slashEscrowImplementation;
     }
 
     /**

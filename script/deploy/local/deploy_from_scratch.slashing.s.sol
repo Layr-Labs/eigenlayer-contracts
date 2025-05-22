@@ -14,7 +14,8 @@ import "../../../src/contracts/core/AVSDirectory.sol";
 import "../../../src/contracts/core/RewardsCoordinator.sol";
 import "../../../src/contracts/core/AllocationManager.sol";
 import "../../../src/contracts/permissions/PermissionController.sol";
-import "../../../src/contracts/core/SlashingWithdrawalRouter.sol";
+import "../../../src/contracts/core/SlashEscrowFactory.sol";
+import "../../../src/contracts/core/SlashEscrow.sol";
 
 import "../../../src/contracts/strategies/StrategyBaseTVLLimits.sol";
 
@@ -276,8 +277,8 @@ contract DeployFromScratch is Script, Test {
             SEMVER
         );
         permissionControllerImplementation = new PermissionController(SEMVER);
-        slashingWithdrawalRouterImplementation =
-            new SlashingWithdrawalRouter(allocationManager, strategyManager, eigenLayerPauserReg, SEMVER);
+        slashEscrowFactoryImplementation =
+            new SlashEscrowFactory(allocationManager, strategyManager, eigenLayerPauserReg, new SlashEscrow(), SEMVER);
 
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
         {

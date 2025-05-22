@@ -354,8 +354,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         eigenPodManagerImplementation =
             new EigenPodManager(DEPOSIT_CONTRACT, eigenPodBeacon, delegationManager, eigenLayerPauserReg, "9.9.9");
         strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg, "9.9.9");
-        slashingWithdrawalRouterImplementation =
-            new SlashingWithdrawalRouter(allocationManager, strategyManager, eigenLayerPauserReg, "9.9.9");
+        slashEscrowFactoryImplementation =
+            new SlashEscrowFactory(allocationManager, strategyManager, eigenLayerPauserReg, new SlashEscrow(), "9.9.9");
 
         // Beacon implementations
         eigenPodImplementation = new EigenPod(DEPOSIT_CONTRACT, eigenPodManager, BEACON_GENESIS_TIME, "9.9.9");
