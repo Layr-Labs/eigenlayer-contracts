@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import "../interfaces/IAVSDirectory.sol";
 import "../interfaces/IDelegationManager.sol";
 import "../interfaces/IEigenPodManager.sol";
-import "../interfaces/ISlashingWithdrawalRouter.sol";
+import "../interfaces/ISlashEscrowFactory.sol";
 import "../interfaces/IStrategy.sol";
 import "../interfaces/IStrategyManager.sol";
 
@@ -36,7 +36,7 @@ abstract contract StrategyManagerStorage is IStrategyManager {
 
     IDelegationManager public immutable delegation;
 
-    ISlashingWithdrawalRouter public immutable slashingWithdrawalRouter;
+    ISlashEscrowFactory public immutable slashEscrowFactory;
 
     // Mutatables
 
@@ -82,9 +82,9 @@ abstract contract StrategyManagerStorage is IStrategyManager {
     /**
      * @param _delegation The delegation contract of EigenLayer.
      */
-    constructor(IDelegationManager _delegation, ISlashingWithdrawalRouter _slashingWithdrawalRouter) {
+    constructor(IDelegationManager _delegation, ISlashEscrowFactory _slashEscrowFactory) {
         delegation = _delegation;
-        slashingWithdrawalRouter = _slashingWithdrawalRouter;
+        slashEscrowFactory = _slashEscrowFactory;
     }
 
     /**

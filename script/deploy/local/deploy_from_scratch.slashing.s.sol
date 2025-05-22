@@ -14,7 +14,7 @@ import "../../../src/contracts/core/AVSDirectory.sol";
 import "../../../src/contracts/core/RewardsCoordinator.sol";
 import "../../../src/contracts/core/AllocationManager.sol";
 import "../../../src/contracts/permissions/PermissionController.sol";
-import "../../../src/contracts/core/SlashingWithdrawalRouter.sol";
+import "../../../src/contracts/core/SlashEscrowFactory.sol";
 
 import "../../../src/contracts/strategies/StrategyBaseTVLLimits.sol";
 
@@ -67,8 +67,8 @@ contract DeployFromScratch is Script, Test {
     AllocationManager public allocationManager;
     PermissionController public permissionControllerImplementation;
     PermissionController public permissionController;
-    SlashingWithdrawalRouter public slashingWithdrawalRouter;
-    SlashingWithdrawalRouter public slashingWithdrawalRouterImplementation;
+    SlashEscrowFactory public slashEscrowFactory;
+    SlashEscrowFactory public slashEscrowFactoryImplementation;
 
     EmptyContract public emptyContract;
 
@@ -224,7 +224,7 @@ contract DeployFromScratch is Script, Test {
         permissionController = PermissionController(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
-        slashingWithdrawalRouter = SlashingWithdrawalRouter(
+        slashEscrowFactory = SlashEscrowFactory(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
 
@@ -247,8 +247,7 @@ contract DeployFromScratch is Script, Test {
             MIN_WITHDRAWAL_DELAY,
             SEMVER
         );
-        strategyManagerImplementation =
-            new StrategyManager(delegation, slashingWithdrawalRouter, eigenLayerPauserReg, SEMVER);
+        strategyManagerImplementation = new StrategyManager(delegation, slashEscrowFactory, eigenLayerPauserReg, SEMVER);
         avsDirectoryImplementation = new AVSDirectory(delegation, eigenLayerPauserReg, SEMVER);
         eigenPodManagerImplementation =
             new EigenPodManager(ethPOSDeposit, eigenPodBeacon, delegation, eigenLayerPauserReg, SEMVER);
@@ -276,8 +275,8 @@ contract DeployFromScratch is Script, Test {
             SEMVER
         );
         permissionControllerImplementation = new PermissionController(SEMVER);
-        slashingWithdrawalRouterImplementation =
-            new SlashingWithdrawalRouter(allocationManager, strategyManager, eigenLayerPauserReg, SEMVER);
+        slashEscrowFactoryImplementation =
+            new SlashEscrowFactory(allocationManager, strategyManager, eigenLayerPauserReg, SEMVER);
 
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
         {

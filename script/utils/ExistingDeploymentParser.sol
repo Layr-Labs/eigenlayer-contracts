@@ -11,7 +11,7 @@ import "../../src/contracts/core/AVSDirectory.sol";
 import "../../src/contracts/core/RewardsCoordinator.sol";
 import "../../src/contracts/core/AllocationManager.sol";
 import "../../src/contracts/permissions/PermissionController.sol";
-import "../../src/contracts/core/SlashingWithdrawalRouter.sol";
+import "../../src/contracts/core/SlashEscrowFactory.sol";
 
 import "../../src/contracts/strategies/StrategyFactory.sol";
 import "../../src/contracts/strategies/StrategyBase.sol";
@@ -137,9 +137,9 @@ contract ExistingDeploymentParser is Script, Logger {
     StrategyBase public baseStrategyImplementation;
     StrategyBase public strategyFactoryBeaconImplementation;
 
-    /// @dev SlashingWithdrawalRouter
-    SlashingWithdrawalRouter public slashingWithdrawalRouter;
-    SlashingWithdrawalRouter public slashingWithdrawalRouterImplementation;
+    /// @dev SlashEscrowFactory
+    SlashEscrowFactory public slashEscrowFactory;
+    SlashEscrowFactory public slashEscrowFactoryImplementation;
 
     // Token
     ProxyAdmin public tokenProxyAdmin;
