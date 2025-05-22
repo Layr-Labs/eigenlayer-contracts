@@ -30,6 +30,7 @@ contract StrategyManager is
 {
     using SlashingLib for *;
     using SafeERC20 for IERC20;
+    using EnumerableMap for EnumerableMap.AddressToUintMap;
 
     modifier onlyStrategyWhitelister() {
         require(msg.sender == strategyWhitelister, OnlyStrategyWhitelister());
@@ -154,12 +155,14 @@ contract StrategyManager is
     ) external onlyDelegationManager nonReentrant {
         emit BurnableSharesIncreased(operatorSet, slashId, strategy, sharesToBurn);
 
+        EnumerableMap.AddressToUintMap storage operatorSetBurnableShares =
+            _operatorSetBurnableShares[operatorSet.key()][slashId];
+
         if (sharesToBurn != 0) {
-            // Withdraw the shares to the EigenLayer `SlashEscrowFactory` contract.
-            uint256 amountOut = strategy.withdraw(address(slashEscrowFactory), strategy.underlyingToken(), sharesToBurn);
+            operatorSetBurnableShares.set(address(strategy), sharesToBurn);
 
             // Notify the `SlashEscrowFactory` contract that it received underlying tokens to burn or redistribute.
-            slashEscrowFactory.startBurnOrRedistributeShares(operatorSet, slashId, strategy, amountOut);
+            slashEscrowFactory.startBurnOrRedistributeShares(operatorSet, slashId, strategy);
         }
     }
 

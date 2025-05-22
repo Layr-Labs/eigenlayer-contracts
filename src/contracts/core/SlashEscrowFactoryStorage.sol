@@ -40,8 +40,8 @@ abstract contract SlashEscrowFactoryStorage is ISlashEscrowFactory {
     mapping(bytes32 operatorSetKey => EnumerableSetUpgradeable.UintSet) internal _pendingSlashIds;
 
     /// @dev Returns an enumerable mapping of strategies to their underlying amounts for a given slash ID.
-    mapping(bytes32 operatorSetKey => mapping(uint256 slashId => EnumerableMapUpgradeable.AddressToUintMap)) internal
-        _pendingBurnOrRedistributions;
+    mapping(bytes32 operatorSetKey => mapping(uint256 slashId => EnumerableSetUpgradeable.AddressSet)) internal
+        _pendingStrategiesForSlashId;
 
     /// @dev Returns the start block for a given slash ID.
     mapping(bytes32 operatorSetKey => mapping(uint256 slashId => uint32 startBlock)) internal _slashIdToStartBlock;

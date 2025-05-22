@@ -77,6 +77,10 @@ abstract contract StrategyManagerStorage is IStrategyManager {
     /// @notice Returns the amount of `shares` that have been slashed on EigenLayer but not burned yet. Takes 3 storage slots.
     EnumerableMap.AddressToUintMap internal burnableShares;
 
+    /// @notice Returns the amount of `shares` that have been slashed on EigenLayer but not burned yet. Takes 3 storage slots.
+    mapping(bytes32 operatorSetKey => mapping(uint256 slashId => EnumerableMap.AddressToUintMap)) internal
+        _operatorSetBurnableShares;
+
     // Construction
 
     /**
@@ -92,5 +96,5 @@ abstract contract StrategyManagerStorage is IStrategyManager {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[36] private __gap;
+    uint256[33] private __gap;
 }

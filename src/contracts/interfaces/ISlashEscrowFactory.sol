@@ -21,14 +21,10 @@ interface ISlashEscrowFactoryErrors {
 
 interface ISlashEscrowFactoryEvents {
     /// @notice Emitted when a redistribution is initiated.
-    event StartBurnOrRedistribution(
-        OperatorSet operatorSet, uint256 slashId, IStrategy strategy, uint256 underlyingAmount, uint32 startBlock
-    );
+    event StartBurnOrRedistribution(OperatorSet operatorSet, uint256 slashId, IStrategy strategy, uint32 startBlock);
 
     /// @notice Emitted when a redistribution is released.
-    event BurnOrRedistribution(
-        OperatorSet operatorSet, uint256 slashId, IStrategy strategy, uint256 underlyingAmount, address recipient
-    );
+    event BurnOrRedistribution(OperatorSet operatorSet, uint256 slashId, IStrategy strategy, address recipient);
 
     /// @notice Emitted when a redistribution is paused.
     event RedistributionPaused(OperatorSet operatorSet, uint256 slashId);
@@ -56,13 +52,11 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
      * @param operatorSet The operator set whose redistribution is being locked up.
      * @param slashId The slash ID of the redistribution that is being locked up.
      * @param strategy The strategy that whose underlying tokens are being redistributed.
-     * @param underlyingAmount The amount of underlying tokens that are being redistributed.
      */
     function startBurnOrRedistributeShares(
         OperatorSet calldata operatorSet,
         uint256 slashId,
-        IStrategy strategy,
-        uint256 underlyingAmount
+        IStrategy strategy
     ) external;
 
     /**
@@ -72,10 +66,7 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
      * @dev The caller must be the redistribution recipient, unless the redistribution recipient
      * is the default burn address in which case anyone can call.
      */
-    function burnOrRedistributeShares(
-        OperatorSet calldata operatorSet,
-        uint256 slashId
-    ) external;
+    function burnOrRedistributeShares(OperatorSet calldata operatorSet, uint256 slashId) external;
 
     /**
      * @notice Pauses a redistribution.
@@ -154,47 +145,41 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
     function isPendingSlashId(OperatorSet calldata operatorSet, uint256 slashId) external view returns (bool);
 
     /**
-     * @notice Returns the pending burn or redistributions for an operator set and slash ID.
-     * @dev This is a variant that returns the pending burn or redistributions for an operator set and slash ID.
-     * @param operatorSet The operator set whose pending burn or redistributions are being queried.
-     * @param slashId The slash ID of the burn or redistribution that is being queried.
-     * @return strategies The strategies that are pending burn or redistribution.
-     * @return underlyingAmounts The underlying amounts that are pending burn or redistribution.
+     * @notice Returns the pending strategies for a slash ID for an operator set.
+     * @dev This is a variant that returns the pending strategies for a slash ID for an operator set.
+     * @param operatorSet The operator set whose pending strategies are being queried.
+     * @param slashId The slash ID of the strategies that are being queried.
+     * @return strategies The strategies that are pending strategies.
      */
-    function getPendingBurnOrRedistributions(
+    function getPendingStrategiesForSlashId(
         OperatorSet calldata operatorSet,
         uint256 slashId
-    ) external view returns (IStrategy[] memory strategies, uint256[] memory underlyingAmounts);
+    ) external view returns (IStrategy[] memory strategies);
 
     /**
-     * @notice Returns all pending burn or redistributions for an operator set.
-     * @dev This is a variant that returns all pending burn or redistributions for an operator set.
-     * @param operatorSet The operator set whose pending burn or redistributions are being queried.
-     * @return strategies The nested list of strategies that are pending burn or redistribution.
-     * @return underlyingAmounts The nested list of underlying amounts that are pending burn or redistribution.
+     * @notice Returns all pending strategies for all slash IDs for an operator set.
+     * @dev This is a variant that returns all pending strategies for all slash IDs for an operator set.
+     * @param operatorSet The operator set whose pending strategies are being queried.
+     * @return strategies The strategies that are pending strategies.
      */
-    function getPendingBurnOrRedistributions(
+    function getPendingStrategiesForSlashIds(
         OperatorSet calldata operatorSet
-    ) external view returns (IStrategy[][] memory strategies, uint256[][] memory underlyingAmounts);
+    ) external view returns (IStrategy[][] memory strategies);
 
     /**
-     * @notice Returns all pending burn or redistributions for all operator sets.
-     * @dev This is a variant that returns all pending burn or redistributions for all operator sets.
-     * @return strategies The nested list of strategies that are pending burn or redistribution.
-     * @return underlyingAmounts The nested list of underlying amounts that are pending burn or redistribution.
+     * @notice Returns all pending strategies for all slash IDs for all operator sets.
+     * @dev This is a variant that returns all pending strategies for all slash IDs for all operator sets.
+     * @return strategies The nested list of strategies that are pending strategies.
      */
-    function getPendingBurnOrRedistributions()
-        external
-        view
-        returns (IStrategy[][][] memory strategies, uint256[][][] memory underlyingAmounts);
+    function getPendingStrategiesForSlashIds() external view returns (IStrategy[][][] memory strategies);
 
     /**
-     * @notice Returns the number of pending burn or redistributions for an operator set and slash ID.
-     * @param operatorSet The operator set whose pending burn or redistributions are being queried.
-     * @param slashId The slash ID of the burn or redistribution that is being queried.
-     * @return The number of pending burn or redistributions.
+     * @notice Returns the number of pending strategies for a slash ID for an operator set.
+     * @param operatorSet The operator set whose pending strategies are being queried.
+     * @param slashId The slash ID of the strategies that are being queried.
+     * @return The number of pending strategies.
      */
-    function getPendingBurnOrRedistributionsCount(
+    function getPendingStrategiesForSlashIdCount(
         OperatorSet calldata operatorSet,
         uint256 slashId
     ) external view returns (uint256);
