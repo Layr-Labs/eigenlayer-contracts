@@ -77,9 +77,7 @@ contract SlashingWithdrawalRouter is
         pendingSlashIds.add(slashId);
 
         // Add the operator set to the pending operator sets set.
-        if (!pendingOperatorSets.contains(operatorSet.key())) {
-            pendingOperatorSets.add(operatorSet.key());
-        }
+        pendingOperatorSets.add(operatorSet.key());
 
         // Add the strategy and underlying amount to the pending burn or redistributions map.
         pendingBurnOrRedistributions.set(address(strategy), underlyingAmount);
@@ -289,10 +287,34 @@ contract SlashingWithdrawalRouter is
     }
 
     /// @inheritdoc ISlashingWithdrawalRouter
+    function getTotalPendingOperatorSets() external view returns (uint256) {
+        return _pendingOperatorSets.length();
+    }
+
+    /// @inheritdoc ISlashingWithdrawalRouter
+    function isPendingOperatorSet(
+        OperatorSet calldata operatorSet
+    ) external view returns (bool) {
+        return _pendingOperatorSets.contains(operatorSet.key());
+    }
+
+    /// @inheritdoc ISlashingWithdrawalRouter
     function getPendingSlashIds(
         OperatorSet calldata operatorSet
     ) external view returns (uint256[] memory) {
         return _pendingSlashIds[operatorSet.key()].values();
+    }
+
+    /// @inheritdoc ISlashingWithdrawalRouter
+    function getTotalPendingSlashIds(
+        OperatorSet calldata operatorSet
+    ) external view returns (uint256) {
+        return _pendingSlashIds[operatorSet.key()].length();
+    }
+
+    /// @inheritdoc ISlashingWithdrawalRouter
+    function isPendingSlashId(OperatorSet calldata operatorSet, uint256 slashId) external view returns (bool) {
+        return _pendingSlashIds[operatorSet.key()].contains(slashId);
     }
 
     /// @inheritdoc ISlashingWithdrawalRouter
@@ -393,6 +415,11 @@ contract SlashingWithdrawalRouter is
         // Fetch the global and strategy burn or redistribution delay.
         uint256 globalDelay = _globalBurnOrRedistributionDelayBlocks;
         uint256 strategyDelay = _strategyBurnOrRedistributionDelayBlocks[address(strategy)];
+
+        // If the strategy delay is not set, return the global delay.
+        if (strategyDelay == 0) {
+            return globalDelay;
+        }
 
         // If the strategy delay is less than the global delay, return the strategy delay.
         // Otherwise, return the global delay.

@@ -44,7 +44,7 @@ interface ISlashingWithdrawalRouterEvents {
 
 interface ISlashingWithdrawalRouter is ISlashingWithdrawalRouterErrors, ISlashingWithdrawalRouterEvents {
     /**
-     * @notice Initializes initial admin, pauser, and unpauser roles.
+     * @notice Initializes the initial owner and paused status.
      * @param initialOwner The initial owner of the router.
      * @param initialPausedStatus The initial paused status of the router.
      */
@@ -110,12 +110,44 @@ interface ISlashingWithdrawalRouter is ISlashingWithdrawalRouterErrors, ISlashin
     function getPendingOperatorSets() external view returns (OperatorSet[] memory operatorSets);
 
     /**
+     * @notice Returns the total number of operator sets with pending burn or redistributions.
+     * @return The total number of operator sets with pending burn or redistributions.
+     */
+    function getTotalPendingOperatorSets() external view returns (uint256);
+
+    /**
+     * @notice Returns whether an operator set has pending burn or redistributions.
+     * @param operatorSet The operator set whose pending burn or redistributions are being queried.
+     * @return Whether the operator set has pending burn or redistributions.
+     */
+    function isPendingOperatorSet(
+        OperatorSet calldata operatorSet
+    ) external view returns (bool);
+
+    /**
      * @notice Returns the pending slash IDs for an operator set.
      * @param operatorSet The operator set whose pending slash IDs are being queried.
      */
     function getPendingSlashIds(
         OperatorSet calldata operatorSet
     ) external view returns (uint256[] memory);
+
+    /**
+     * @notice Returns the total number of slash IDs for an operator set.
+     * @param operatorSet The operator set whose total slash IDs are being queried.
+     * @return The total number of slash IDs for the operator set.
+     */
+    function getTotalPendingSlashIds(
+        OperatorSet calldata operatorSet
+    ) external view returns (uint256);
+
+    /**
+     * @notice Returns whether a slash ID is pending for an operator set.
+     * @param operatorSet The operator set whose pending slash IDs are being queried.
+     * @param slashId The slash ID of the slash that is being queried.
+     * @return Whether the slash ID is pending for the operator set.
+     */
+    function isPendingSlashId(OperatorSet calldata operatorSet, uint256 slashId) external view returns (bool);
 
     /**
      * @notice Returns the pending burn or redistributions for an operator set and slash ID.

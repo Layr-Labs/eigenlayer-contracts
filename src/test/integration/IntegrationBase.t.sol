@@ -2189,7 +2189,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
-    function _genSlashing_Half(User operator, OperatorSet memory operatorSet) internal view returns (SlashingParams memory params) {
+    function _genSlashing_Half(User operator, OperatorSet memory operatorSet) internal returns (SlashingParams memory params) {
         params.operator = address(operator);
         params.operatorSetId = operatorSet.id;
         params.description = "genSlashing_Half";
@@ -2202,7 +2202,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
-    function _genSlashing_Full(User operator, OperatorSet memory operatorSet) internal view returns (SlashingParams memory params) {
+    function _genSlashing_Full(User operator, OperatorSet memory operatorSet) internal returns (SlashingParams memory params) {
         params.operator = address(operator);
         params.operatorSetId = operatorSet.id;
         params.description = "_genSlashing_Full";
@@ -2217,7 +2217,6 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
 
     function _genSlashing_Custom(User operator, OperatorSet memory operatorSet, uint wadsToSlash)
         internal
-        view
         returns (SlashingParams memory params)
     {
         params.operator = address(operator);
@@ -2237,7 +2236,6 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
 
     function _strategiesAndWadsForFullSlash(OperatorSet memory operatorSet)
         internal
-        view
         returns (IStrategy[] memory strategies, uint[] memory wadsToSlash)
     {
         // Get list of all strategies in an operator set.
