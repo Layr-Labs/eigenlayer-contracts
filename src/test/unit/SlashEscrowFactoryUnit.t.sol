@@ -63,6 +63,15 @@ contract SlashEscrowFactoryUnitTests is EigenLayerUnitTestSetup, ISlashEscrowFac
         cheats.mockCall(address(strategy), abi.encodeWithSelector(IStrategy.underlyingToken.selector), abi.encode(underlyingToken));
     }
 
+    /// @dev Returns the pending underlying amount for a given strategy and token.
+    function _getPendingUnderlyingAmountForStrategy(OperatorSet memory operatorSet, uint slashId, IStrategy strategy, MockERC20 token)
+        internal
+        returns (uint)
+    {
+        _mockStrategyUnderlyingTokenCall(strategy, address(token));
+        return router.getPendingUnderlyingAmountForStrategy(operatorSet, slashId, strategy);
+    }
+
     /// @dev Starts a burn or redistribution for a given strategy and token.
     /// - Calls as the `StrategyManager`.
     /// - Asserts that the `StartBurnOrRedistribution` event is emitted.
@@ -106,6 +115,7 @@ contract SlashEscrowFactoryUnitTests is EigenLayerUnitTestSetup, ISlashEscrowFac
         OperatorSet memory operatorSet,
         uint slashId,
         IStrategy strategy,
+        MockERC20 token,
         uint expectedUnderlyingAmount,
         uint expectedCount
     ) internal {
@@ -114,7 +124,7 @@ contract SlashEscrowFactoryUnitTests is EigenLayerUnitTestSetup, ISlashEscrowFac
         assertTrue(router.isPendingSlashId(operatorSet, slashId));
 
         // Assert that the underlying amount in escrow for the (operator set, slash ID, strategy) is correct.
-        assertEq(router.getPendingUnderlyingAmountForStrategy(operatorSet, slashId, strategy), expectedUnderlyingAmount);
+        assertEq(_getPendingUnderlyingAmountForStrategy(operatorSet, slashId, strategy, token), expectedUnderlyingAmount);
 
         // Assert that the number of pending burn or redistributions is correct.
         (IStrategy[] memory strategies) = router.getPendingStrategiesForSlashId(operatorSet, slashId);
@@ -147,7 +157,7 @@ contract SlashEscrowFactoryUnitTests_startBurnOrRedistributeShares is SlashEscro
 
     function test_startBurnOrRedistributeShares_correctness(uint underlyingAmount) public {
         _startBurnOrRedistributeShares(defaultOperatorSet, defaultSlashId, defaultStrategy, defaultToken, underlyingAmount);
-        _checkStartBurnOrRedistributions(defaultOperatorSet, defaultSlashId, defaultStrategy, underlyingAmount, 1);
+        _checkStartBurnOrRedistributions(defaultOperatorSet, defaultSlashId, defaultStrategy, defaultToken, underlyingAmount, 1);
     }
 }
 
@@ -196,7 +206,7 @@ contract SlashEscrowFactoryUnitTests_burnOrRedistributeShares is SlashEscrowFact
             // Start burn/redistribution for this strategy
             _startBurnOrRedistributeShares(defaultOperatorSet, defaultSlashId, strategies[i], tokens[i], underlyingAmounts[i]);
             // Verify the burn/redistribution was started correctly
-            _checkStartBurnOrRedistributions(defaultOperatorSet, defaultSlashId, strategies[i], underlyingAmounts[i], i + 1);
+            _checkStartBurnOrRedistributions(defaultOperatorSet, defaultSlashId, strategies[i], tokens[i], underlyingAmounts[i], i + 1);
         }
 
         // Advance time to allow burn/redistribution to occur
@@ -223,7 +233,7 @@ contract SlashEscrowFactoryUnitTests_burnOrRedistributeShares is SlashEscrowFact
 
         // Assert that the underlying amounts are no longer set.
         for (uint i = numStrategies; i > 0; i--) {
-            assertEq(router.getPendingUnderlyingAmountForStrategy(defaultOperatorSet, defaultSlashId, strategies[i - 1]), 0);
+            assertEq(_getPendingUnderlyingAmountForStrategy(defaultOperatorSet, defaultSlashId, strategies[i - 1], tokens[i - 1]), 0);
         }
 
         // Assert that the start block for the (operator set, slash ID) is no longer set.
@@ -256,7 +266,7 @@ contract SlashEscrowFactoryUnitTests_burnOrRedistributeShares is SlashEscrowFact
             // Start burn/redistribution for this strategy
             _startBurnOrRedistributeShares(defaultOperatorSet, defaultSlashId, strategies[i], tokens[i], underlyingAmounts[i]);
             // Verify the burn/redistribution was started correctly
-            _checkStartBurnOrRedistributions(defaultOperatorSet, defaultSlashId, strategies[i], underlyingAmounts[i], i + 1);
+            _checkStartBurnOrRedistributions(defaultOperatorSet, defaultSlashId, strategies[i], tokens[i], underlyingAmounts[i], i + 1);
         }
 
         // Advance time to allow some strategies to be processed (2 days worth of blocks)
@@ -274,11 +284,12 @@ contract SlashEscrowFactoryUnitTests_burnOrRedistributeShares is SlashEscrowFact
         for (uint i = 0; i < numStrategies; i++) {
             if (delays[i] < 2 days / 12 seconds) {
                 // Strategy should have been processed
-                assertEq(router.getPendingUnderlyingAmountForStrategy(defaultOperatorSet, defaultSlashId, strategies[i]), 0);
+                assertEq(_getPendingUnderlyingAmountForStrategy(defaultOperatorSet, defaultSlashId, strategies[i], tokens[i]), 0);
             } else {
                 // Strategy should still be pending
                 assertEq(
-                    router.getPendingUnderlyingAmountForStrategy(defaultOperatorSet, defaultSlashId, strategies[i]), underlyingAmounts[i]
+                    _getPendingUnderlyingAmountForStrategy(defaultOperatorSet, defaultSlashId, strategies[i], tokens[i]),
+                    underlyingAmounts[i]
                 );
             }
         }
@@ -298,7 +309,7 @@ contract SlashEscrowFactoryUnitTests_burnOrRedistributeShares is SlashEscrowFact
 
         // Verify that all underlying amounts are cleared
         for (uint i = 0; i < numStrategies; i++) {
-            assertEq(router.getPendingUnderlyingAmountForStrategy(defaultOperatorSet, defaultSlashId, strategies[i]), 0);
+            assertEq(_getPendingUnderlyingAmountForStrategy(defaultOperatorSet, defaultSlashId, strategies[i], tokens[i]), 0);
         }
 
         // Verify that the start block is cleared
@@ -416,8 +427,8 @@ contract SlashEscrowFactoryUnitTests_getPendingBurnOrRedistributions is SlashEsc
         assertEq(strategies.length, 2);
         assertEq(address(strategies[0]), address(strategy1));
         assertEq(address(strategies[1]), address(strategy2));
-        assertEq(router.getPendingUnderlyingAmountForStrategy(defaultOperatorSet, defaultSlashId, strategy1), 100);
-        assertEq(router.getPendingUnderlyingAmountForStrategy(defaultOperatorSet, defaultSlashId, strategy2), 200);
+        assertEq(_getPendingUnderlyingAmountForStrategy(defaultOperatorSet, defaultSlashId, strategy1, token1), 100);
+        assertEq(_getPendingUnderlyingAmountForStrategy(defaultOperatorSet, defaultSlashId, strategy2, token2), 200);
     }
 
     function test_getPendingBurnOrRedistributions_multipleSlashIds() public {
@@ -442,12 +453,12 @@ contract SlashEscrowFactoryUnitTests_getPendingBurnOrRedistributions is SlashEsc
         // Check first slash ID
         assertEq(strategies[0].length, 1);
         assertEq(address(strategies[0][0]), address(strategy1));
-        assertEq(router.getPendingUnderlyingAmountForStrategy(defaultOperatorSet, slashId1, strategy1), 100);
+        assertEq(_getPendingUnderlyingAmountForStrategy(defaultOperatorSet, slashId1, strategy1, token1), 100);
 
         // Check second slash ID
         assertEq(strategies[1].length, 1);
         assertEq(address(strategies[1][0]), address(strategy2));
-        assertEq(router.getPendingUnderlyingAmountForStrategy(defaultOperatorSet, slashId2, strategy2), 200);
+        assertEq(_getPendingUnderlyingAmountForStrategy(defaultOperatorSet, slashId2, strategy2, token2), 200);
     }
 
     function test_getPendingBurnOrRedistributions_multipleOperatorSets() public {
@@ -477,13 +488,13 @@ contract SlashEscrowFactoryUnitTests_getPendingBurnOrRedistributions is SlashEsc
         assertEq(strategies[0].length, 1);
         assertEq(strategies[0][0].length, 1);
         assertEq(address(strategies[0][0][0]), address(strategy1));
-        assertEq(router.getPendingUnderlyingAmountForStrategy(operatorSet1, defaultSlashId, strategy1), 100);
+        assertEq(_getPendingUnderlyingAmountForStrategy(operatorSet1, defaultSlashId, strategy1, token1), 100);
 
         // Check second operator set
         assertEq(strategies[1].length, 1);
         assertEq(strategies[1][0].length, 1);
         assertEq(address(strategies[1][0][0]), address(strategy2));
-        assertEq(router.getPendingUnderlyingAmountForStrategy(operatorSet2, defaultSlashId, strategy2), 200);
+        assertEq(_getPendingUnderlyingAmountForStrategy(operatorSet2, defaultSlashId, strategy2, token2), 200);
     }
 
     function test_getPendingBurnOrRedistributions_empty() public {
