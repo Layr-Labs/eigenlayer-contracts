@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin-upgrades/contracts/utils/ContextUpgradeable.sol";
 
 /**
  * @title Deprecated_OwnableUpgradeable
@@ -16,7 +17,7 @@ import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
  * - It keeps the `_owner` storage variable in the same slot
  * - It maintains the same storage gap for future upgrades
  */
-abstract contract Deprecated_OwnableUpgradeable is Initializable {
+abstract contract Deprecated_OwnableUpgradeable is Initializable, ContextUpgradeable {
     address private _owner;
 
     /**
