@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.0;
 
+import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
+
 /**
  * @title Deprecated_OwnableUpgradeable
  * @dev This contract can be inherited in place of OpenZeppelin's OwnableUpgradeable
@@ -14,7 +16,7 @@ pragma solidity ^0.8.0;
  * - It keeps the `_owner` storage variable in the same slot
  * - It maintains the same storage gap for future upgrades
  */
-abstract contract Deprecated_OwnableUpgradeable {
+abstract contract Deprecated_OwnableUpgradeable is Initializable {
     address private _owner;
 
     /**

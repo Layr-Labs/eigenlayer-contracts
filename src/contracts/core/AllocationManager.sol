@@ -267,7 +267,7 @@ contract AllocationManager is
 
     /// @inheritdoc IAllocationManager
     function createOperatorSets(address avs, CreateSetParams[] calldata params) external checkCanCall(avs) {
-        _checkAVSMetadata(avs);
+        _checkAVSExists(avs);
         for (uint256 i = 0; i < params.length; i++) {
             _createOperatorSet(avs, params[i], DEFAULT_BURN_ADDRESS);
         }
@@ -280,8 +280,9 @@ contract AllocationManager is
         address[] calldata redistributionRecipients
     ) external checkCanCall(avs) {
         _checkArrayLengthsMatch(params.length, redistributionRecipients.length);
-        _checkAVSMetadata(avs);
+        _checkAVSExists(avs);
         for (uint256 i = 0; i < params.length; i++) {
+            require(redistributionRecipients[i] != address(0), InputAddressZero());
             _createOperatorSet(avs, params[i], redistributionRecipients[i]);
         }
     }
@@ -295,7 +296,9 @@ contract AllocationManager is
         OperatorSet memory operatorSet = OperatorSet(avs, operatorSetId);
         _checkIsOperatorSet(operatorSet);
         for (uint256 i = 0; i < strategies.length; i++) {
-            _addStrategyToOperatorSet(operatorSet, strategies[i]);
+            _addStrategyToOperatorSet(
+                operatorSet, strategies[i], isRedistributingOperatorSet(OperatorSet(avs, operatorSetId))
+            );
         }
     }
 
@@ -410,7 +413,22 @@ contract AllocationManager is
         emit OperatorSlashed(params.operator, operatorSet, params.strategies, wadSlashed, params.description);
     }
 
-    function _addStrategyToOperatorSet(OperatorSet memory operatorSet, IStrategy strategy) internal {
+    /**
+     * @dev Adds a strategy to an operator set.
+     * @param operatorSet The operator set to add the strategy to.
+     * @param strategy The strategy to add to the operator set.
+     * @param isRedistributing Whether the operator set is redistributing.
+     */
+    function _addStrategyToOperatorSet(
+        OperatorSet memory operatorSet,
+        IStrategy strategy,
+        bool isRedistributing
+    ) internal {
+        // We do not currently support redistributing beaconchain ETH.
+        if (isRedistributing) {
+            require(strategy != BEACONCHAIN_ETH_STRAT, InvalidStrategy());
+        }
+
         require(_operatorSetStrategies[operatorSet.key()].add(address(strategy)), StrategyAlreadyInOperatorSet());
         emit StrategyAddedToOperatorSet(operatorSet, strategy);
     }
@@ -443,8 +461,7 @@ contract AllocationManager is
         }
 
         for (uint256 j = 0; j < params.strategies.length; j++) {
-            require(!isRedistributing || params.strategies[j] != BEACONCHAIN_ETH_STRAT, InvalidStrategy());
-            _addStrategyToOperatorSet(operatorSet, params.strategies[j]);
+            _addStrategyToOperatorSet(operatorSet, params.strategies[j], isRedistributing);
         }
     }
 
@@ -675,7 +692,7 @@ contract AllocationManager is
         require(delegation.isOperator(operator), InvalidOperator());
     }
 
-    function _checkAVSMetadata(
+    function _checkAVSExists(
         address avs
     ) internal view {
         require(_avsRegisteredMetadata[avs], NonexistentAVSMetadata());
@@ -1004,7 +1021,7 @@ contract AllocationManager is
     /// @inheritdoc IAllocationManager
     function isRedistributingOperatorSet(
         OperatorSet memory operatorSet
-    ) external view returns (bool) {
+    ) public view returns (bool) {
         return _redistributionRecipients[operatorSet.key()] != address(0);
     }
 
