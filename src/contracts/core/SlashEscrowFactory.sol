@@ -45,6 +45,7 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
 
         // Set the global burn or redistribution delay.
         _globalBurnOrRedistributionDelayBlocks = initialGlobalDelayBlocks;
+        emit GlobalBurnOrRedistributionDelaySet(initialGlobalDelayBlocks);
     }
 
     /**
