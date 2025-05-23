@@ -45,10 +45,14 @@ interface IStrategyManagerEvents {
     event StrategyRemovedFromDepositWhitelist(IStrategy strategy);
 
     /// @notice Emitted when an operator is slashed and shares to be burned are increased
-    event BurnableSharesIncreased(OperatorSet operatorSet, uint256 slashId, IStrategy strategy, uint256 shares);
+    event BurnOrRedistributableSharesIncreased(
+        OperatorSet operatorSet, uint256 slashId, IStrategy strategy, uint256 shares
+    );
 
     /// @notice Emitted when shares are burned
-    event BurnableSharesDecreased(OperatorSet operatorSet, uint256 slashId, IStrategy strategy, uint256 shares);
+    event BurnOrRedistributableSharesDecreased(
+        OperatorSet operatorSet, uint256 slashId, IStrategy strategy, uint256 shares
+    );
 }
 
 /**
@@ -123,6 +127,13 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
     function burnShares(
         IStrategy strategy
     ) external;
+
+    /**
+     * @notice Removes burned shares from storage and transfers the underlying tokens for the slashId to the slash escrow.
+     * @param operatorSet The operator set to burn shares in.
+     * @param slashId The slash ID to burn shares in.
+     */
+    function decreaseBurnableShares(OperatorSet calldata operatorSet, uint256 slashId) external;
 
     /**
      * @notice Owner-only function to change the `strategyWhitelister` address.
