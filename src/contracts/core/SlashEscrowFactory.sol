@@ -102,7 +102,10 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
         // Assert that the escrow is not paused.
         require(!_paused[operatorSet.key()][slashId], IPausable.CurrentlyPaused());
 
-        // Assert that funds have been sent to the `SlashEscrow` before clearing storage.
+        // Calling `decreaseBurnableShares` will transfer the underlying tokens to the `SlashEscrow`.
+        // NOTE: While `decreaseBurnableShares` may have already been called, we call it again to ensure that the
+        // underlying tokens are actually in escrow before processing and removing storage (which would otherwise prevent
+        // the tokens from being released).
         strategyManager.decreaseBurnableShares(operatorSet, slashId);
 
         // Create a storage pointer to `_pendingOperatorSets`.
