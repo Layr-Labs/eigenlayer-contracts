@@ -42,10 +42,7 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
     ) external initializer {
         _transferOwnership(initialOwner);
         _setPausedStatus(initialPausedStatus);
-
-        // Set the global burn or redistribution delay.
-        _globalBurnOrRedistributionDelayBlocks = initialGlobalDelayBlocks;
-        emit GlobalBurnOrRedistributionDelaySet(initialGlobalDelayBlocks);
+        _setGlobalBurnOrRedistributionDelay(initialGlobalDelayBlocks);
     }
 
     /**
@@ -143,8 +140,7 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
     function setGlobalBurnOrRedistributionDelay(
         uint256 delay
     ) external onlyOwner {
-        _globalBurnOrRedistributionDelayBlocks = uint32(delay);
-        emit GlobalBurnOrRedistributionDelaySet(delay);
+        _setGlobalBurnOrRedistributionDelay(delay);
     }
 
     /// @inheritdoc ISlashEscrowFactory
@@ -239,6 +235,13 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
                 pendingOperatorSets.remove(operatorSet.key());
             }
         }
+    }
+
+    function _setGlobalBurnOrRedistributionDelay(
+        uint256 delay
+    ) internal {
+        _globalBurnOrRedistributionDelayBlocks = uint32(delay);
+        emit GlobalBurnOrRedistributionDelaySet(delay);
     }
 
     /// @notice Checks that the new paused status is not the same as the current paused status.
