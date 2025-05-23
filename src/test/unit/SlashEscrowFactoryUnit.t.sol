@@ -291,7 +291,7 @@ contract SlashEscrowFactoryUnitTests_releaseSlashEscrow is SlashEscrowFactoryUni
         }
 
         // Advance time further to process remaining strategies (4 days worth of blocks)
-        cheats.roll(block.number + 2 days / 12 seconds);
+        cheats.roll(block.number + 2 days / 12 seconds + 1);
 
         // Execute the burn/redistribution again
         _releaseSlashEscrow(defaultOperatorSet, defaultSlashId);
