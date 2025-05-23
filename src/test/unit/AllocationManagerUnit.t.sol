@@ -3725,6 +3725,20 @@ contract AllocationManagerUnitTests_createRedistributingOperatorSets is Allocati
         );
     }
 
+    function testRevert_createRedistributingOperatorSets_ZeroAddress(Randomness r) public rand(r) {
+        address avs = r.Address();
+        address[] memory redistributionRecipients = new address[](1);
+        redistributionRecipients[0] = address(0);
+
+        cheats.prank(avs);
+        allocationManager.updateAVSMetadataURI(avs, "https://example.com");
+
+        cheats.expectRevert(IPausable.InputAddressZero.selector);
+        allocationManager.createRedistributingOperatorSets(
+            avs, CreateSetParams(defaultOperatorSet.id, defaultStrategies).toArray(), redistributionRecipients
+        );
+    }
+
     function testFuzz_createRedistributingOperatorSets_Correctness(Randomness r) public rand(r) {
         address avs = r.Address();
         uint numOpSets = r.Uint256(1, FUZZ_MAX_OP_SETS);

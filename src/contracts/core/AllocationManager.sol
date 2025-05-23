@@ -282,6 +282,7 @@ contract AllocationManager is
         _checkArrayLengthsMatch(params.length, redistributionRecipients.length);
         _checkAVSExists(avs);
         for (uint256 i = 0; i < params.length; i++) {
+            require(redistributionRecipients[i] != address(0), InputAddressZero());
             _createOperatorSet(avs, params[i], redistributionRecipients[i]);
         }
     }
