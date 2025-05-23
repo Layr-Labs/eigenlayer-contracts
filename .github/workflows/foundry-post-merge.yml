@@ -12,6 +12,9 @@ on:
       - 'foundry.toml'
       - '**/*.sol'
 
+permissions:
+  contents: read
+  pull-requests: read
 
 env:
   FOUNDRY_PROFILE: medium
