@@ -260,7 +260,7 @@ contract Deploy is EOADeployer {
             );
         }
 
-        // SlashEscrowProxyAdmin - proxyAdmin is the community multisig
+        // SlashEscrowProxyAdmin - proxyAdmin is unique and its admin is the community multisig
         assertTrue(
             _getSlashEscrowProxyAdmin(address(Env.proxy.slashEscrowFactory())) == slashEscrowProxyAdmin,
             "slashEscrowFactory proxyAdmin incorrect"
