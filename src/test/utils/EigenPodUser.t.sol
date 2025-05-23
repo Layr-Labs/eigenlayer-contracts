@@ -8,13 +8,10 @@ import "src/contracts/pods/EigenPod.sol";
 
 import "src/contracts/interfaces/IStrategy.sol";
 
+import "src/test/integration/TypeImporter.t.sol";
 import "src/test/integration/TimeMachine.t.sol";
 import "src/test/integration/mocks/BeaconChainMock.t.sol";
 import "src/test/utils/Logger.t.sol";
-
-struct Validator {
-    uint40 index;
-}
 
 interface IUserDeployer {
     function timeMachine() external view returns (TimeMachine);
@@ -22,7 +19,7 @@ interface IUserDeployer {
     function eigenPodBeacon() external view returns (IBeacon);
 }
 
-contract EigenPodUser is Logger {
+contract EigenPodUser is Logger, TypeImporter {
     TimeMachine timeMachine;
     BeaconChainMock beaconChain;
     IBeacon public eigenPodBeacon;
@@ -84,6 +81,32 @@ contract EigenPodUser is Logger {
     function startValidators() public virtual createSnapshot returns (uint40[] memory, uint64, uint) {
         print.method("startValidators");
         return _startValidators();
+    }
+
+    /// @dev Starts a specified number of 0x01 validators for 32 ETH each on the beacon chain
+    /// @param count The number of validators to start
+    /// @return newValidators A list of created validator indices
+    /// @return totalBalanceGwei The amount of gwei sent to the beacon chain
+    function startETH1Validators(uint8 count)
+        public
+        virtual
+        createSnapshot
+        returns (uint40[] memory newValidators, uint64 totalBalanceGwei)
+    {
+        print.method("startETH1Validators");
+        require(count > 0, "startETH1Validators: must create at least 1 validator");
+
+        newValidators = new uint40[](count);
+        totalBalanceGwei = 32 gwei * uint64(count);
+
+        cheats.deal(address(this), address(this).balance + (totalBalanceGwei * GWEI_TO_WEI));
+
+        for (uint i = 0; i < count; i++) {
+            newValidators[i] = _startETH1Validator();
+        }
+
+        beaconChain.advanceEpoch_NoWithdrawNoRewards();
+        return (newValidators, totalBalanceGwei);
     }
 
     function exitValidators(uint40[] memory _validators) public virtual createSnapshot returns (uint64 exitedBalanceGwei) {
@@ -151,12 +174,15 @@ contract EigenPodUser is Logger {
                 else break;
             }
 
-            // Track validators with maximum effective balance
-            if (validatorEth == 2048 ether) maxEBValidators++;
-
             // Create the validator
             bytes memory withdrawalCredentials =
                 validatorEth == 32 ether ? _podWithdrawalCredentials() : _podCompoundingWithdrawalCredentials();
+
+            // Track validators with max effective balance
+            // - For 0x01 validators, this is 32 ETH
+            // - For 0x02 validators, this is 2048 ETH
+            if (withdrawalCredentials[0] == 0x01 && validatorEth == 32 ether) maxEBValidators++;
+            else if (withdrawalCredentials[0] == 0x02 && validatorEth == 2048 ether) maxEBValidators++;
 
             uint40 validatorIndex = beaconChain.newValidator{value: validatorEth}(withdrawalCredentials);
 
@@ -199,14 +225,35 @@ contract EigenPodUser is Logger {
         return (newValidators, totalBeaconBalanceGwei, maxEBValidators);
     }
 
+    /// @dev Starts a 32 ETH validator with 0x01 withdrawal credentials
+    /// - Reverts if the user does not hold sufficient balance
+    /// @return the new validator index
+    function _startETH1Validator() internal returns (uint40) {
+        require(address(this).balance >= 32 ether, "_startETH1Validator: insufficient funds");
+
+        uint40 validatorIndex = beaconChain.newValidator{value: 32 ether}(_podWithdrawalCredentials());
+        validators.push(validatorIndex);
+
+        return validatorIndex;
+    }
+
     function _exitValidators(uint40[] memory _validators) internal returns (uint64 exitedBalanceGwei) {
-        console.log("- exiting num validators", _validators.length);
+        console.log("- requesting exit for num validators", _validators.length);
+
+        WithdrawalRequest[] memory requests = new WithdrawalRequest[](_validators.length);
 
         for (uint i = 0; i < _validators.length; i++) {
-            exitedBalanceGwei += beaconChain.exitValidator(_validators[i]);
+            exitedBalanceGwei += beaconChain.currentBalance(_validators[i]);
+
+            requests[i] = WithdrawalRequest({pubkey: beaconChain.pubkey(_validators[i]), amountGwei: 0});
         }
 
-        console.log("- exited balance to pod (gwei)", exitedBalanceGwei);
+        // Send withdrawal requests to pod
+        uint fee = pod.getWithdrawalRequestFee() * requests.length;
+        cheats.deal(address(this), address(this).balance + fee);
+        pod.requestWithdrawal{value: fee}(requests);
+
+        console.log("- balance to be exited to pod (gwei)", exitedBalanceGwei);
 
         return exitedBalanceGwei;
     }
