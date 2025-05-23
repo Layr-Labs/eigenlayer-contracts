@@ -12,7 +12,7 @@ import "./SlashEscrowFactoryStorage.sol";
 contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, OwnableUpgradeable, Pausable, SemVerMixin {
     using SafeERC20 for IERC20;
     using OperatorSetLib for *;
-    using EnumerableSetUpgradeable for *;
+    using EnumerableSet for *;
     using EnumerableMapUpgradeable for EnumerableMapUpgradeable.AddressToUintMap;
     using ClonesUpgradeable for address;
     /**
@@ -63,9 +63,9 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
         require(msg.sender == address(strategyManager), OnlyStrategyManager());
 
         // Create storage pointers for readability.
-        EnumerableSetUpgradeable.Bytes32Set storage pendingOperatorSets = _pendingOperatorSets;
-        EnumerableSetUpgradeable.UintSet storage pendingSlashIds = _pendingSlashIds[operatorSet.key()];
-        EnumerableSetUpgradeable.AddressSet storage pendingStrategiesForSlashId =
+        EnumerableSet.Bytes32Set storage pendingOperatorSets = _pendingOperatorSets;
+        EnumerableSet.UintSet storage pendingSlashIds = _pendingSlashIds[operatorSet.key()];
+        EnumerableSet.AddressSet storage pendingStrategiesForSlashId =
             _pendingStrategiesForSlashId[operatorSet.key()][slashId];
 
         // Add the slash ID, operator set, and strategy to their respective pending sets.
@@ -99,9 +99,9 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
         strategyManager.decreaseBurnableShares(operatorSet, slashId);
 
         // Create storage pointers for readability.
-        EnumerableSetUpgradeable.Bytes32Set storage pendingOperatorSets = _pendingOperatorSets;
-        EnumerableSetUpgradeable.UintSet storage pendingSlashIds = _pendingSlashIds[operatorSet.key()];
-        EnumerableSetUpgradeable.AddressSet storage pendingStrategiesForSlashId =
+        EnumerableSet.Bytes32Set storage pendingOperatorSets = _pendingOperatorSets;
+        EnumerableSet.UintSet storage pendingSlashIds = _pendingSlashIds[operatorSet.key()];
+        EnumerableSet.AddressSet storage pendingStrategiesForSlashId =
             _pendingStrategiesForSlashId[operatorSet.key()][slashId];
 
         // Process the burn or redistribution.
@@ -163,7 +163,7 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
     /// @dev Iterates through pending burn/redistributions in reverse order, checking if each strategy's delay period has elapsed.
     /// If delay has passed, transfers underlying tokens to redistribution recipient and removes from pending map.
     function _processBurnOrRedistribution(
-        EnumerableSetUpgradeable.AddressSet storage pendingStrategiesForSlashId,
+        EnumerableSet.AddressSet storage pendingStrategiesForSlashId,
         OperatorSet calldata operatorSet,
         uint256 slashId,
         address redistributionRecipient
@@ -219,9 +219,9 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
     /// @dev Removes slash ID from pending slash IDs set and deletes start block for slash ID if no more strategies remain.
     /// Also removes operator set from pending operator sets set if no more slash IDs exist for it.
     function _tryClearPendingOperatorSetsAndSlashIds(
-        EnumerableSetUpgradeable.Bytes32Set storage pendingOperatorSets,
-        EnumerableSetUpgradeable.UintSet storage pendingSlashIds,
-        EnumerableSetUpgradeable.AddressSet storage pendingStrategiesForSlashId,
+        EnumerableSet.Bytes32Set storage pendingOperatorSets,
+        EnumerableSet.UintSet storage pendingSlashIds,
+        EnumerableSet.AddressSet storage pendingStrategiesForSlashId,
         OperatorSet calldata operatorSet,
         uint256 slashId
     ) internal {
@@ -306,7 +306,7 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
         OperatorSet memory operatorSet,
         uint256 slashId
     ) public view returns (IStrategy[] memory strategies) {
-        EnumerableSetUpgradeable.AddressSet storage pendingStrategiesForSlashId =
+        EnumerableSet.AddressSet storage pendingStrategiesForSlashId =
             _pendingStrategiesForSlashId[operatorSet.key()][slashId];
 
         uint256 length = pendingStrategiesForSlashId.length();
@@ -324,7 +324,7 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
     function getPendingStrategiesForSlashIds(
         OperatorSet memory operatorSet
     ) public view returns (IStrategy[][] memory strategies) {
-        EnumerableSetUpgradeable.UintSet storage pendingSlashIds = _pendingSlashIds[operatorSet.key()];
+        EnumerableSet.UintSet storage pendingSlashIds = _pendingSlashIds[operatorSet.key()];
 
         uint256 length = pendingSlashIds.length();
 

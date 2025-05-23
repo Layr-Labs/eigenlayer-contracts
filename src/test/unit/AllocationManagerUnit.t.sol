@@ -3573,10 +3573,7 @@ contract AllocationManagerUnitTests_addStrategiesToOperatorSet is AllocationMana
     function test_addStrategiesToOperatorSet_BeaconChainStratInRedistributingSet() public {
         // Create a redistributing operator set
         CreateSetParams[] memory createSetParams = new CreateSetParams[](1);
-        createSetParams[0] = CreateSetParams({
-            operatorSetId: 1,
-            strategies: new IStrategy[](0)
-        });
+        createSetParams[0] = CreateSetParams({operatorSetId: 1, strategies: new IStrategy[](0)});
         address[] memory redistributionRecipients = new address[](1);
         redistributionRecipients[0] = address(0x123);
 

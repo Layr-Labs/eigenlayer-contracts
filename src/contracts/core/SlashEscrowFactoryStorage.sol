@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "@openzeppelin-upgrades/contracts/utils/structs/EnumerableMapUpgradeable.sol";
-import "@openzeppelin-upgrades/contracts/utils/structs/EnumerableSetUpgradeable.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "../interfaces/ISlashEscrowFactory.sol";
 import "../interfaces/IAllocationManager.sol";
 import "../interfaces/IStrategyManager.sol";
@@ -34,13 +33,13 @@ abstract contract SlashEscrowFactoryStorage is ISlashEscrowFactory {
     // Mutable Storage
 
     /// @dev Returns a list of operator sets that have pending slash IDs.
-    EnumerableSetUpgradeable.Bytes32Set internal _pendingOperatorSets;
+    EnumerableSet.Bytes32Set internal _pendingOperatorSets;
 
     /// @dev Returns a list of pending slash IDs for a given operator set.
-    mapping(bytes32 operatorSetKey => EnumerableSetUpgradeable.UintSet) internal _pendingSlashIds;
+    mapping(bytes32 operatorSetKey => EnumerableSet.UintSet) internal _pendingSlashIds;
 
     /// @dev Returns an enumerable mapping of strategies to their underlying amounts for a given slash ID.
-    mapping(bytes32 operatorSetKey => mapping(uint256 slashId => EnumerableSetUpgradeable.AddressSet)) internal
+    mapping(bytes32 operatorSetKey => mapping(uint256 slashId => EnumerableSet.AddressSet)) internal
         _pendingStrategiesForSlashId;
 
     /// @dev Returns the start block for a given slash ID.
