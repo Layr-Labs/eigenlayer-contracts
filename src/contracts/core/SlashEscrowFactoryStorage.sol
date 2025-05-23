@@ -3,18 +3,19 @@ pragma solidity ^0.8.27;
 
 import "@openzeppelin-upgrades/contracts/utils/structs/EnumerableMapUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/utils/structs/EnumerableSetUpgradeable.sol";
-import "../interfaces/ISlashingWithdrawalRouter.sol";
+import "../interfaces/ISlashEscrowFactory.sol";
 import "../interfaces/IAllocationManager.sol";
 import "../interfaces/IStrategyManager.sol";
 import "../interfaces/IStrategy.sol";
+import "../interfaces/ISlashEscrow.sol";
 
-abstract contract SlashingWithdrawalRouterStorage is ISlashingWithdrawalRouter {
+abstract contract SlashEscrowFactoryStorage is ISlashEscrowFactory {
     // Constants
 
     /// @dev The default burn address for slashed funds.
     address internal constant DEFAULT_BURN_ADDRESS = 0x00000000000000000000000000000000000E16E4;
 
-    /// @notice The pause status for the `burnOrRedistributeShares` function.
+    /// @notice The pause status for the `releaseSlashEscrow` function.
     /// @dev Allows all burn or redistribution outflows to be temporarily halted.
     uint8 public constant PAUSED_BURN_OR_REDISTRIBUTE_SHARES = 0;
 
@@ -26,6 +27,10 @@ abstract contract SlashingWithdrawalRouterStorage is ISlashingWithdrawalRouter {
     /// @notice Returns the EigenLayer `StrategyManager` address.
     IStrategyManager public immutable strategyManager;
 
+    /// @notice Returns the implementation contract for the slash escrow.
+    /// @dev This value should not be changed on future upgrades.
+    ISlashEscrow public immutable slashEscrowImplementation;
+
     // Mutable Storage
 
     /// @dev Returns a list of operator sets that have pending slash IDs.
@@ -35,8 +40,8 @@ abstract contract SlashingWithdrawalRouterStorage is ISlashingWithdrawalRouter {
     mapping(bytes32 operatorSetKey => EnumerableSetUpgradeable.UintSet) internal _pendingSlashIds;
 
     /// @dev Returns an enumerable mapping of strategies to their underlying amounts for a given slash ID.
-    mapping(bytes32 operatorSetKey => mapping(uint256 slashId => EnumerableMapUpgradeable.AddressToUintMap)) internal
-        _pendingBurnOrRedistributions;
+    mapping(bytes32 operatorSetKey => mapping(uint256 slashId => EnumerableSetUpgradeable.AddressSet)) internal
+        _pendingStrategiesForSlashId;
 
     /// @dev Returns the start block for a given slash ID.
     mapping(bytes32 operatorSetKey => mapping(uint256 slashId => uint32 startBlock)) internal _slashIdToStartBlock;
@@ -52,9 +57,14 @@ abstract contract SlashingWithdrawalRouterStorage is ISlashingWithdrawalRouter {
 
     // Constructor
 
-    constructor(IAllocationManager _allocationManager, IStrategyManager _strategyManager) {
+    constructor(
+        IAllocationManager _allocationManager,
+        IStrategyManager _strategyManager,
+        ISlashEscrow _slashEscrowImplementation
+    ) {
         allocationManager = _allocationManager;
         strategyManager = _strategyManager;
+        slashEscrowImplementation = _slashEscrowImplementation;
     }
 
     /**

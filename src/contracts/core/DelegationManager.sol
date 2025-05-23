@@ -540,10 +540,9 @@ contract DelegationManager is
 
         uint256[] memory prevSlashingFactors;
         {
-            // slashableUntil is block inclusive so we need to check if the current block is strictly greater than the slashableUntil block
-            // meaning the withdrawal can be completed.
-            // TODO: update delay blocks for redistribution + EIGEN_REDISTRIBUTION_DELAY_BLOCKS
-            uint32 delayBlocks = withdrawal.delegatedTo == address(this) ? 3.5 days : MIN_WITHDRAWAL_DELAY_BLOCKS;
+            // The slashableUntil block is inclusive, so we verify that the current block number exceeds it
+            // before allowing the withdrawal to be completed.
+            uint32 delayBlocks = withdrawal.delegatedTo == address(this) ? 4 days : MIN_WITHDRAWAL_DELAY_BLOCKS;
             uint32 slashableUntil = withdrawal.startBlock + delayBlocks;
             require(uint32(block.number) > slashableUntil, WithdrawalDelayNotElapsed());
 

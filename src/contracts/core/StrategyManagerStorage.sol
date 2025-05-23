@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import "../interfaces/IAVSDirectory.sol";
 import "../interfaces/IDelegationManager.sol";
 import "../interfaces/IEigenPodManager.sol";
-import "../interfaces/ISlashingWithdrawalRouter.sol";
+import "../interfaces/ISlashEscrowFactory.sol";
 import "../interfaces/IStrategy.sol";
 import "../interfaces/IStrategyManager.sol";
 
@@ -36,7 +36,7 @@ abstract contract StrategyManagerStorage is IStrategyManager {
 
     IDelegationManager public immutable delegation;
 
-    ISlashingWithdrawalRouter public immutable slashingWithdrawalRouter;
+    ISlashEscrowFactory public immutable slashEscrowFactory;
 
     // Mutatables
 
@@ -77,14 +77,18 @@ abstract contract StrategyManagerStorage is IStrategyManager {
     /// @notice Returns the amount of `shares` that have been slashed on EigenLayer but not burned yet. Takes 3 storage slots.
     EnumerableMap.AddressToUintMap internal burnableShares;
 
+    /// @notice Returns the amount of `shares` that have been slashed on EigenLayer but not burned yet. Takes 3 storage slots.
+    mapping(bytes32 operatorSetKey => mapping(uint256 slashId => EnumerableMap.AddressToUintMap)) internal
+        _operatorSetBurnableShares;
+
     // Construction
 
     /**
      * @param _delegation The delegation contract of EigenLayer.
      */
-    constructor(IDelegationManager _delegation, ISlashingWithdrawalRouter _slashingWithdrawalRouter) {
+    constructor(IDelegationManager _delegation, ISlashEscrowFactory _slashEscrowFactory) {
         delegation = _delegation;
-        slashingWithdrawalRouter = _slashingWithdrawalRouter;
+        slashEscrowFactory = _slashEscrowFactory;
     }
 
     /**
@@ -92,5 +96,5 @@ abstract contract StrategyManagerStorage is IStrategyManager {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[36] private __gap;
+    uint256[33] private __gap;
 }

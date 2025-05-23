@@ -176,9 +176,6 @@ interface IAllocationManagerEvents is IAllocationManagerTypes {
     /// @notice Emitted when operator updates their allocation delay.
     event AllocationDelaySet(address operator, uint32 delay, uint32 effectBlock);
 
-    /// @notice Emitted when an AVS updates the redistribution delay for a given strategy.
-    event RedistributionDelaySet(address avs, IStrategy strategy, uint32 delay);
-
     /// @notice Emitted when an operator's magnitude is updated for a given operatorSet and strategy
     event AllocationUpdated(
         address operator, OperatorSet operatorSet, IStrategy strategy, uint64 magnitude, uint32 effectBlock
