@@ -233,7 +233,7 @@ contract EigenPodManager is
     }
 
     /// @inheritdoc IShareManager
-    function increaseBurnableShares(
+    function increaseBurnOrRedistributableShares(
         OperatorSet calldata,
         uint256,
         IStrategy,

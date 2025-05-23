@@ -713,7 +713,7 @@ contract DelegationManager is
         // Emit event for operator shares being slashed
         emit OperatorSharesSlashed(operator, strategy, totalDepositSharesToBurn);
 
-        _getShareManager(strategy).increaseBurnableShares(operatorSet, slashId, strategy, totalDepositSharesToBurn);
+        _getShareManager(strategy).increaseBurnOrRedistributableShares(operatorSet, slashId, strategy, totalDepositSharesToBurn);
 
         return totalDepositSharesToBurn;
     }
