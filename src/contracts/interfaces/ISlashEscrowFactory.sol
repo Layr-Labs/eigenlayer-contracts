@@ -3,8 +3,9 @@ pragma solidity >=0.5.0;
 
 import "../interfaces/IStrategy.sol";
 import "../libraries/OperatorSetLib.sol";
+import "../interfaces/ISlashEscrow.sol";
 
-interface ISlashingWithdrawalRouterErrors {
+interface ISlashEscrowFactoryErrors {
     /// @notice Thrown when a caller is not the strategy manager.
     error OnlyStrategyManager();
 
@@ -18,16 +19,12 @@ interface ISlashingWithdrawalRouterErrors {
     error BurnOrRedistributionDelayLessThanMinimum();
 }
 
-interface ISlashingWithdrawalRouterEvents {
+interface ISlashEscrowFactoryEvents {
     /// @notice Emitted when a redistribution is initiated.
-    event StartBurnOrRedistribution(
-        OperatorSet operatorSet, uint256 slashId, IStrategy strategy, uint256 underlyingAmount, uint32 startBlock
-    );
+    event StartBurnOrRedistribution(OperatorSet operatorSet, uint256 slashId, IStrategy strategy, uint32 startBlock);
 
     /// @notice Emitted when a redistribution is released.
-    event BurnOrRedistribution(
-        OperatorSet operatorSet, uint256 slashId, IStrategy strategy, uint256 underlyingAmount, address recipient
-    );
+    event BurnOrRedistribution(OperatorSet operatorSet, uint256 slashId, IStrategy strategy, address recipient);
 
     /// @notice Emitted when a redistribution is paused.
     event RedistributionPaused(OperatorSet operatorSet, uint256 slashId);
@@ -42,27 +39,22 @@ interface ISlashingWithdrawalRouterEvents {
     event StrategyBurnOrRedistributionDelaySet(IStrategy strategy, uint256 delay);
 }
 
-interface ISlashingWithdrawalRouter is ISlashingWithdrawalRouterErrors, ISlashingWithdrawalRouterEvents {
+interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryEvents {
     /**
      * @notice Initializes the initial owner and paused status.
      * @param initialOwner The initial owner of the router.
      * @param initialPausedStatus The initial paused status of the router.
+     * @param initialGlobalDelayBlocks The initial global burn or redistribution delay.
      */
-    function initialize(address initialOwner, uint256 initialPausedStatus) external;
+    function initialize(address initialOwner, uint256 initialPausedStatus, uint32 initialGlobalDelayBlocks) external;
 
     /**
      * @notice Locks up a redistribution.
      * @param operatorSet The operator set whose redistribution is being locked up.
      * @param slashId The slash ID of the redistribution that is being locked up.
      * @param strategy The strategy that whose underlying tokens are being redistributed.
-     * @param underlyingAmount The amount of underlying tokens that are being redistributed.
      */
-    function startBurnOrRedistributeShares(
-        OperatorSet calldata operatorSet,
-        uint256 slashId,
-        IStrategy strategy,
-        uint256 underlyingAmount
-    ) external;
+    function initiateSlashEscrow(OperatorSet calldata operatorSet, uint256 slashId, IStrategy strategy) external;
 
     /**
      * @notice Releases a redistribution.
@@ -71,7 +63,7 @@ interface ISlashingWithdrawalRouter is ISlashingWithdrawalRouterErrors, ISlashin
      * @dev The caller must be the redistribution recipient, unless the redistribution recipient
      * is the default burn address in which case anyone can call.
      */
-    function burnOrRedistributeShares(OperatorSet calldata operatorSet, uint256 slashId) external;
+    function releaseSlashEscrow(OperatorSet calldata operatorSet, uint256 slashId) external;
 
     /**
      * @notice Pauses a redistribution.
@@ -150,47 +142,41 @@ interface ISlashingWithdrawalRouter is ISlashingWithdrawalRouterErrors, ISlashin
     function isPendingSlashId(OperatorSet calldata operatorSet, uint256 slashId) external view returns (bool);
 
     /**
-     * @notice Returns the pending burn or redistributions for an operator set and slash ID.
-     * @dev This is a variant that returns the pending burn or redistributions for an operator set and slash ID.
-     * @param operatorSet The operator set whose pending burn or redistributions are being queried.
-     * @param slashId The slash ID of the burn or redistribution that is being queried.
-     * @return strategies The strategies that are pending burn or redistribution.
-     * @return underlyingAmounts The underlying amounts that are pending burn or redistribution.
+     * @notice Returns the pending strategies for a slash ID for an operator set.
+     * @dev This is a variant that returns the pending strategies for a slash ID for an operator set.
+     * @param operatorSet The operator set whose pending strategies are being queried.
+     * @param slashId The slash ID of the strategies that are being queried.
+     * @return strategies The strategies that are pending strategies.
      */
-    function getPendingBurnOrRedistributions(
+    function getPendingStrategiesForSlashId(
         OperatorSet calldata operatorSet,
         uint256 slashId
-    ) external view returns (IStrategy[] memory strategies, uint256[] memory underlyingAmounts);
+    ) external view returns (IStrategy[] memory strategies);
 
     /**
-     * @notice Returns all pending burn or redistributions for an operator set.
-     * @dev This is a variant that returns all pending burn or redistributions for an operator set.
-     * @param operatorSet The operator set whose pending burn or redistributions are being queried.
-     * @return strategies The nested list of strategies that are pending burn or redistribution.
-     * @return underlyingAmounts The nested list of underlying amounts that are pending burn or redistribution.
+     * @notice Returns all pending strategies for all slash IDs for an operator set.
+     * @dev This is a variant that returns all pending strategies for all slash IDs for an operator set.
+     * @param operatorSet The operator set whose pending strategies are being queried.
+     * @return strategies The strategies that are pending strategies.
      */
-    function getPendingBurnOrRedistributions(
+    function getPendingStrategiesForSlashIds(
         OperatorSet calldata operatorSet
-    ) external view returns (IStrategy[][] memory strategies, uint256[][] memory underlyingAmounts);
+    ) external view returns (IStrategy[][] memory strategies);
 
     /**
-     * @notice Returns all pending burn or redistributions for all operator sets.
-     * @dev This is a variant that returns all pending burn or redistributions for all operator sets.
-     * @return strategies The nested list of strategies that are pending burn or redistribution.
-     * @return underlyingAmounts The nested list of underlying amounts that are pending burn or redistribution.
+     * @notice Returns all pending strategies for all slash IDs for all operator sets.
+     * @dev This is a variant that returns all pending strategies for all slash IDs for all operator sets.
+     * @return strategies The nested list of strategies that are pending strategies.
      */
-    function getPendingBurnOrRedistributions()
-        external
-        view
-        returns (IStrategy[][][] memory strategies, uint256[][][] memory underlyingAmounts);
+    function getPendingStrategiesForSlashIds() external view returns (IStrategy[][][] memory strategies);
 
     /**
-     * @notice Returns the number of pending burn or redistributions for an operator set and slash ID.
-     * @param operatorSet The operator set whose pending burn or redistributions are being queried.
-     * @param slashId The slash ID of the burn or redistribution that is being queried.
-     * @return The number of pending burn or redistributions.
+     * @notice Returns the number of pending strategies for a slash ID for an operator set.
+     * @param operatorSet The operator set whose pending strategies are being queried.
+     * @param slashId The slash ID of the strategies that are being queried.
+     * @return The number of pending strategies.
      */
-    function getPendingBurnOrRedistributionsCount(
+    function getPendingStrategiesForSlashIdCount(
         OperatorSet calldata operatorSet,
         uint256 slashId
     ) external view returns (uint256);
@@ -244,4 +230,40 @@ interface ISlashingWithdrawalRouter is ISlashingWithdrawalRouterErrors, ISlashin
      * @return The global burn or redistribution delay.
      */
     function getGlobalBurnOrRedistributionDelay() external view returns (uint256);
+
+    /**
+     * @notice Returns the salt for a slash escrow.
+     * @param operatorSet The operator set whose slash escrow is being queried.
+     * @param slashId The slash ID of the slash escrow that is being queried.
+     * @return The salt for the slash escrow.
+     */
+    function computeSlashEscrowSalt(
+        OperatorSet calldata operatorSet,
+        uint256 slashId
+    ) external pure returns (bytes32);
+
+    /**
+     * @notice Returns whether a slash escrow is deployed or still counterfactual.
+     * @param operatorSet The operator set whose slash escrow is being queried.
+     * @param slashId The slash ID of the slash escrow that is being queried.
+     * @return Whether the slash escrow is deployed.
+     */
+    function isDeployedSlashEscrow(OperatorSet calldata operatorSet, uint256 slashId) external view returns (bool);
+
+    /**
+     * @notice Returns whether a slash escrow is deployed.
+     * @param slashEscrow The slash escrow that is being queried.
+     * @return Whether the slash escrow is deployed.
+     */
+    function isDeployedSlashEscrow(
+        ISlashEscrow slashEscrow
+    ) external view returns (bool);
+
+    /**
+     * @notice Returns the slash escrow for an operator set and slash ID.
+     * @param operatorSet The operator set whose slash escrow is being queried.
+     * @param slashId The slash ID of the slash escrow that is being queried.
+     * @return The slash escrow.
+     */
+    function getSlashEscrow(OperatorSet calldata operatorSet, uint256 slashId) external view returns (ISlashEscrow);
 }

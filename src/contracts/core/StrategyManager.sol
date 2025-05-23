@@ -30,6 +30,7 @@ contract StrategyManager is
 {
     using SlashingLib for *;
     using SafeERC20 for IERC20;
+    using EnumerableMap for EnumerableMap.AddressToUintMap;
 
     modifier onlyStrategyWhitelister() {
         require(msg.sender == strategyWhitelister, OnlyStrategyWhitelister());
@@ -53,11 +54,11 @@ contract StrategyManager is
      */
     constructor(
         IDelegationManager _delegation,
-        ISlashingWithdrawalRouter _slashingWithdrawalRouter,
+        ISlashEscrowFactory _slashEscrowFactory,
         IPauserRegistry _pauserRegistry,
         string memory _version
     )
-        StrategyManagerStorage(_delegation, _slashingWithdrawalRouter)
+        StrategyManagerStorage(_delegation, _slashEscrowFactory)
         Pausable(_pauserRegistry)
         SignatureUtilsMixin(_version)
     {
@@ -152,15 +153,43 @@ contract StrategyManager is
         IStrategy strategy,
         uint256 sharesToBurn
     ) external onlyDelegationManager nonReentrant {
-        emit BurnableSharesIncreased(operatorSet, slashId, strategy, sharesToBurn);
+        emit BurnOrRedistributableSharesIncreased(operatorSet, slashId, strategy, sharesToBurn);
+
+        EnumerableMap.AddressToUintMap storage operatorSetBurnableShares =
+            _operatorSetBurnableShares[operatorSet.key()][slashId];
 
         if (sharesToBurn != 0) {
-            // Withdraw the shares to the EigenLayer `SlashingWithdrawalRouter` contract.
-            uint256 amountOut =
-                strategy.withdraw(address(slashingWithdrawalRouter), strategy.underlyingToken(), sharesToBurn);
+            operatorSetBurnableShares.set(address(strategy), sharesToBurn);
 
-            // Notify the `SlashingWithdrawalRouter` contract that it received underlying tokens to burn or redistribute.
-            slashingWithdrawalRouter.startBurnOrRedistributeShares(operatorSet, slashId, strategy, amountOut);
+            // Notify the `SlashEscrowFactory` contract that it received underlying tokens to burn or redistribute.
+            slashEscrowFactory.initiateSlashEscrow(operatorSet, slashId, strategy);
+        }
+    }
+
+    /// @inheritdoc IStrategyManager
+    function decreaseBurnableShares(OperatorSet calldata operatorSet, uint256 slashId) external nonReentrant {
+        EnumerableMap.AddressToUintMap storage operatorSetBurnableShares =
+            _operatorSetBurnableShares[operatorSet.key()][slashId];
+
+        // Cache length to avoid sloads.
+        uint256 length = operatorSetBurnableShares.length();
+
+        // Iterate over all strategies that have burnable shares.
+        for (uint256 i = 0; i < length; ++i) {
+            (address strategy, uint256 sharesToBurn) = operatorSetBurnableShares.at(i);
+
+            // Remove the strategy from the operator set burnable shares.
+            operatorSetBurnableShares.remove(address(strategy));
+
+            // Withdraw the shares to the slash escrow.
+            IStrategy(strategy).withdraw({
+                recipient: address(slashEscrowFactory.getSlashEscrow(operatorSet, slashId)),
+                token: IStrategy(strategy).underlyingToken(),
+                amountShares: sharesToBurn
+            });
+
+            // Emit an event to notify the that burnable shares have been decreased.
+            emit BurnOrRedistributableSharesDecreased(operatorSet, slashId, IStrategy(strategy), sharesToBurn);
         }
     }
 
@@ -170,7 +199,7 @@ contract StrategyManager is
     ) external nonReentrant {
         (, uint256 sharesToBurn) = EnumerableMap.tryGet(burnableShares, address(strategy));
         EnumerableMap.remove(burnableShares, address(strategy));
-        emit BurnableSharesDecreased(OperatorSet(address(this), 0), 0, strategy, sharesToBurn);
+        emit BurnOrRedistributableSharesDecreased(OperatorSet(address(this), 0), 0, strategy, sharesToBurn);
 
         // Burning acts like withdrawing, except that the destination is to the burn address.
         // If we have no shares to burn, we don't need to call the strategy.
