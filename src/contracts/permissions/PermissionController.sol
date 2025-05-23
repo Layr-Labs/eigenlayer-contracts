@@ -61,15 +61,15 @@ contract PermissionController is Initializable, SemVerMixin, PermissionControlle
     function acceptAdmin(
         address account
     ) external {
-        AccountPermissions storage permissions = _permissions[account];
+        // AccountPermissions storage permissions = _permissions[account];
 
         // Remove the admin from the pending list
         // Revert if the admin is not pending
-        require(permissions.pendingAdmins.remove(msg.sender), AdminNotPending());
+        require(_permissions[account].pendingAdmins.remove(msg.sender), AdminNotPending());
 
         // Add the admin to the account's admins
         // Not wrapped in a require since it must be the case the admin is not one
-        permissions.admins.add(msg.sender);
+        _permissions[account].admins.add(msg.sender);
 
         emit AdminSet(account, msg.sender);
     }
