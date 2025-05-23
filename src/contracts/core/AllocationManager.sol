@@ -267,7 +267,7 @@ contract AllocationManager is
 
     /// @inheritdoc IAllocationManager
     function createOperatorSets(address avs, CreateSetParams[] calldata params) external checkCanCall(avs) {
-        _checkAVSMetadata(avs);
+        _checkAVSExists(avs);
         for (uint256 i = 0; i < params.length; i++) {
             _createOperatorSet(avs, params[i], DEFAULT_BURN_ADDRESS);
         }
@@ -280,7 +280,7 @@ contract AllocationManager is
         address[] calldata redistributionRecipients
     ) external checkCanCall(avs) {
         _checkArrayLengthsMatch(params.length, redistributionRecipients.length);
-        _checkAVSMetadata(avs);
+        _checkAVSExists(avs);
         for (uint256 i = 0; i < params.length; i++) {
             _createOperatorSet(avs, params[i], redistributionRecipients[i]);
         }
@@ -687,7 +687,7 @@ contract AllocationManager is
         require(delegation.isOperator(operator), InvalidOperator());
     }
 
-    function _checkAVSMetadata(
+    function _checkAVSExists(
         address avs
     ) internal view {
         require(_avsRegisteredMetadata[avs], NonexistentAVSMetadata());

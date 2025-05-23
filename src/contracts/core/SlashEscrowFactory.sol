@@ -13,7 +13,6 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
     using SafeERC20 for IERC20;
     using OperatorSetLib for *;
     using EnumerableSet for *;
-    using EnumerableMapUpgradeable for EnumerableMapUpgradeable.AddressToUintMap;
     using ClonesUpgradeable for address;
     /**
      *
