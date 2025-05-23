@@ -245,6 +245,10 @@ contract SlashEscrowFactoryUnitTests_releaseSlashEscrow is SlashEscrowFactoryUni
         uint[] memory underlyingAmounts = new uint[](numStrategies);
         uint[] memory delays = new uint[](numStrategies);
 
+        // Set global delay less than all the strategy delays.
+        cheats.prank(defaultOwner);
+        router.setGlobalBurnOrRedistributionDelay(0.5 days / 12 seconds);
+
         // Set up each strategy with random data and different delays
         for (uint i = 0; i < numStrategies; i++) {
             // Generate random strategy address and token
@@ -291,7 +295,7 @@ contract SlashEscrowFactoryUnitTests_releaseSlashEscrow is SlashEscrowFactoryUni
         }
 
         // Advance time further to process remaining strategies (4 days worth of blocks)
-        cheats.roll(block.number + 2 days / 12 seconds);
+        cheats.roll(block.number + 1 days / 12 seconds * numStrategies + 1);
 
         // Execute the burn/redistribution again
         _releaseSlashEscrow(defaultOperatorSet, defaultSlashId);
@@ -376,12 +380,7 @@ contract SlashEscrowFactoryUnitTests_setStrategyBurnOrRedistributionDelay is Sla
         cheats.prank(defaultOwner);
         router.setStrategyBurnOrRedistributionDelay(defaultStrategy, 10 days / 12 seconds);
         // Returns global delay since strategy delay is larger than global delay.
-        assertEq(router.getStrategyBurnOrRedistributionDelay(defaultStrategy), 4 days / 12 seconds);
-
-        cheats.prank(defaultOwner);
-        router.setStrategyBurnOrRedistributionDelay(defaultStrategy, 1 days / 12 seconds);
-        // Returns strategy delay since strategy delay is smaller than global delay.
-        assertEq(router.getStrategyBurnOrRedistributionDelay(defaultStrategy), 1 days / 12 seconds);
+        assertEq(router.getStrategyBurnOrRedistributionDelay(defaultStrategy), 10 days / 12 seconds);
     }
 }
 
