@@ -36,12 +36,16 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
     }
 
     /// @inheritdoc ISlashEscrowFactory
-    function initialize(address initialOwner, uint256 initialPausedStatus) external initializer {
+    function initialize(
+        address initialOwner,
+        uint256 initialPausedStatus,
+        uint32 initialGlobalDelayBlocks
+    ) external initializer {
         _transferOwnership(initialOwner);
         _setPausedStatus(initialPausedStatus);
 
-        // Set the global burn or redistribution delay to 4 days in blocks assuming 12 second blocks.
-        _globalBurnOrRedistributionDelayBlocks = 4 days / 12 seconds;
+        // Set the global burn or redistribution delay.
+        _globalBurnOrRedistributionDelayBlocks = initialGlobalDelayBlocks;
     }
 
     /**

@@ -48,7 +48,7 @@ contract SlashEscrowFactoryUnitTests is EigenLayerUnitTestSetup, ISlashEscrowFac
                         )
                     ),
                     address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(SlashEscrowFactory.initialize.selector, defaultOwner, 0)
+                    abi.encodeWithSelector(SlashEscrowFactory.initialize.selector, defaultOwner, 0, uint32(4 days / 12 seconds))
                 )
             )
         );

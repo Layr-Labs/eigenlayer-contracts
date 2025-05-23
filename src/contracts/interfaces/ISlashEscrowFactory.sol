@@ -44,8 +44,9 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
      * @notice Initializes the initial owner and paused status.
      * @param initialOwner The initial owner of the router.
      * @param initialPausedStatus The initial paused status of the router.
+     * @param initialGlobalDelayBlocks The initial global burn or redistribution delay.
      */
-    function initialize(address initialOwner, uint256 initialPausedStatus) external;
+    function initialize(address initialOwner, uint256 initialPausedStatus, uint32 initialGlobalDelayBlocks) external;
 
     /**
      * @notice Locks up a redistribution.
