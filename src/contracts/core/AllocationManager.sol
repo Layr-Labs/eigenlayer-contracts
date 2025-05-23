@@ -424,7 +424,11 @@ contract AllocationManager is
         IStrategy strategy,
         bool isRedistributing
     ) internal {
-        require(!isRedistributing || strategy != BEACONCHAIN_ETH_STRAT, InvalidStrategy());
+        // We do not currently support redistributing beaconchain ETH.
+        if (isRedistributing) {
+            require(strategy != BEACONCHAIN_ETH_STRAT, InvalidStrategy());
+        }
+
         require(_operatorSetStrategies[operatorSet.key()].add(address(strategy)), StrategyAlreadyInOperatorSet());
         emit StrategyAddedToOperatorSet(operatorSet, strategy);
     }
