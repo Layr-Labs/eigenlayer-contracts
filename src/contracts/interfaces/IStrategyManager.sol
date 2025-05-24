@@ -56,9 +56,7 @@ interface IStrategyManagerEvents {
 
     /// @notice Emitted when shares are burnt
     /// @dev This event is only emitted in the pre-redistribution slash path
-    event BurnableSharesDecreased(
-        IStrategy strategy, uint256 shares
-    );
+    event BurnableSharesDecreased(IStrategy strategy, uint256 shares);
 }
 
 /**

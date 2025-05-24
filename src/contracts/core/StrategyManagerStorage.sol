@@ -79,7 +79,8 @@ abstract contract StrategyManagerStorage is IStrategyManager {
     EnumerableMap.AddressToUintMap internal burnableShares;
 
     /// @notice Returns the amount of `shares` that have been slashed on EigenLayer but not marked for burning or redistribution yet.
-    mapping(bytes32 operatorSetKey => mapping(uint256 slashId => EnumerableMap.AddressToUintMap)) internal _burnOrRedistributableShares;
+    mapping(bytes32 operatorSetKey => mapping(uint256 slashId => EnumerableMap.AddressToUintMap)) internal
+        _burnOrRedistributableShares;
 
     // Construction
 
