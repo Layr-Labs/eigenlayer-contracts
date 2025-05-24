@@ -28,24 +28,21 @@ contract DelegationManagerMock is Test {
     function slashOperatorShares(
         address operator,
         OperatorSet memory,
-        uint,
-        IStrategy[] memory strategies,
-        uint64[] memory prevMaxMagnitudes,
-        uint64[] memory newMaxMagnitudes
-    ) external returns (uint[] memory) {
-        uint[] memory amountSlashed = new uint[](strategies.length);
+        /**
+         * operatorSet
+         */
+        uint, /*slashId*/
+        IStrategy strategy,
+        uint64 prevMaxMagnitude,
+        uint64 newMaxMagnitude
+    ) external returns (uint totalDepositSharesToBurn) {
+        uint amountSlashed = SlashingLib.calcSlashedAmount({
+            operatorShares: operatorShares[operator][strategy],
+            prevMaxMagnitude: prevMaxMagnitude,
+            newMaxMagnitude: newMaxMagnitude
+        });
 
-        for (uint i = 0; i < strategies.length; i++) {
-            if (prevMaxMagnitudes[i] == newMaxMagnitudes[i]) continue;
-
-            amountSlashed[i] = SlashingLib.calcSlashedAmount({
-                operatorShares: operatorShares[operator][strategies[i]],
-                prevMaxMagnitude: prevMaxMagnitudes[i],
-                newMaxMagnitude: newMaxMagnitudes[i]
-            });
-
-            operatorShares[operator][strategies[i]] -= amountSlashed[i];
-        }
+        operatorShares[operator][strategy] -= amountSlashed;
 
         return amountSlashed;
     }
