@@ -3833,6 +3833,7 @@ contract AllocationManagerUnitTests_createRedistributingOperatorSets is Allocati
         cheats.prank(avs);
         allocationManager.updateAVSMetadataURI(avs, "https://example.com");
 
+        cheats.prank(avs);
         cheats.expectRevert(IPausable.InputAddressZero.selector);
         cheats.prank(avs);
         allocationManager.createRedistributingOperatorSets(
