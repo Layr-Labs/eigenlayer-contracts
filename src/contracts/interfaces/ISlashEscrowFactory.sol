@@ -164,19 +164,12 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
     ) external view returns (IStrategy[][] memory strategies);
 
     /**
-     * @notice Returns all pending strategies for all slash IDs for all operator sets.
-     * @dev This is a variant that returns all pending strategies for all slash IDs for all operator sets.
-     * @return strategies The nested list of strategies that are pending strategies.
-     */
-    function getPendingStrategiesForSlashIds() external view returns (IStrategy[][][] memory strategies);
-
-    /**
      * @notice Returns the number of pending strategies for a slash ID for an operator set.
      * @param operatorSet The operator set whose pending strategies are being queried.
      * @param slashId The slash ID of the strategies that are being queried.
      * @return The number of pending strategies.
      */
-    function getPendingStrategiesForSlashIdCount(
+    function getTotalPendingStrategiesForSlashId(
         OperatorSet calldata operatorSet,
         uint256 slashId
     ) external view returns (uint256);
