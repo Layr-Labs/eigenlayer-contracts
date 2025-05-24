@@ -63,12 +63,7 @@ contract AllocationManager is
     function slashOperator(
         address avs,
         SlashingParams calldata params
-    )
-        external
-        onlyWhenNotPaused(PAUSED_OPERATOR_SLASHING)
-        checkCanCall(avs)
-        returns (uint256, uint256[] memory)
-    {
+    ) external onlyWhenNotPaused(PAUSED_OPERATOR_SLASHING) checkCanCall(avs) returns (uint256, uint256[] memory) {
         // Check that the operator set exists and the operator is registered to it
         OperatorSet memory operatorSet = OperatorSet(avs, params.operatorSetId);
         require(params.strategies.length == params.wadsToSlash.length, InputArrayLengthMismatch());
@@ -320,7 +315,6 @@ contract AllocationManager is
      *                         INTERNAL FUNCTIONS
      *
      */
-
     function _slashOperator(
         SlashingParams calldata params,
         OperatorSet memory operatorSet
