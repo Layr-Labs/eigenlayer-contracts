@@ -655,7 +655,7 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
     ) external view returns (uint256);
 
     /**
-     * @notice Returns whether an operator is in a redistribution operator set.
+     * @notice Returns whether an operator is slashable by a redistributing operator set.
      * @param operator The operator to query.
      */
     function isOperatorRedistributable(
