@@ -456,42 +456,6 @@ contract SlashEscrowFactoryUnitTests_getPendingBurnOrRedistributions is SlashEsc
         assertEq(_getPendingUnderlyingAmountForStrategy(defaultOperatorSet, slashId2, strategy2, token2), 200);
     }
 
-    function test_getPendingBurnOrRedistributions_multipleOperatorSets() public {
-        // Create multiple operator sets and strategies
-        OperatorSet memory operatorSet1 = OperatorSet(cheats.randomAddress(), 0);
-        OperatorSet memory operatorSet2 = OperatorSet(cheats.randomAddress(), 0);
-        IStrategy strategy1 = IStrategy(cheats.randomAddress());
-        IStrategy strategy2 = IStrategy(cheats.randomAddress());
-        MockERC20 token1 = new MockERC20();
-        MockERC20 token2 = new MockERC20();
-
-        // Set redistribution recipients for the operator sets
-        allocationManagerMock.setRedistributionRecipient(operatorSet1, defaultRedistributionRecipient);
-        allocationManagerMock.setRedistributionRecipient(operatorSet2, defaultRedistributionRecipient);
-
-        // Start burn/redistributions for different operator sets
-        _initiateSlashEscrow(operatorSet1, defaultSlashId, strategy1, token1, 100);
-        _initiateSlashEscrow(operatorSet2, defaultSlashId, strategy2, token2, 200);
-
-        // Get pending burn/redistributions for all operator sets
-        (IStrategy[][][] memory strategies) = router.getPendingStrategiesForSlashIds();
-
-        // Verify results
-        assertEq(strategies.length, 2);
-
-        // Check first operator set
-        assertEq(strategies[0].length, 1);
-        assertEq(strategies[0][0].length, 1);
-        assertEq(address(strategies[0][0][0]), address(strategy1));
-        assertEq(_getPendingUnderlyingAmountForStrategy(operatorSet1, defaultSlashId, strategy1, token1), 100);
-
-        // Check second operator set
-        assertEq(strategies[1].length, 1);
-        assertEq(strategies[1][0].length, 1);
-        assertEq(address(strategies[1][0][0]), address(strategy2));
-        assertEq(_getPendingUnderlyingAmountForStrategy(operatorSet2, defaultSlashId, strategy2, token2), 200);
-    }
-
     function test_getPendingBurnOrRedistributions_empty() public {
         // Test with no pending burn/redistributions
         (IStrategy[] memory strategies) = router.getPendingStrategiesForSlashId(defaultOperatorSet, defaultSlashId);
@@ -499,8 +463,6 @@ contract SlashEscrowFactoryUnitTests_getPendingBurnOrRedistributions is SlashEsc
 
         (IStrategy[][] memory strategies2) = router.getPendingStrategiesForSlashIds(defaultOperatorSet);
         assertEq(strategies2.length, 0);
-
-        (IStrategy[][][] memory strategies3) = router.getPendingStrategiesForSlashIds();
-        assertEq(strategies3.length, 0);
+        assertEq(router.getTotalPendingStrategiesForSlashId(defaultOperatorSet, defaultSlashId), 0);
     }
 }
