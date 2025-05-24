@@ -36,8 +36,6 @@ contract DelegationManagerMock is Test {
         uint[] memory amountSlashed = new uint[](strategies.length);
 
         for (uint i = 0; i < strategies.length; i++) {
-            if (prevMaxMagnitudes[i] == newMaxMagnitudes[i]) continue;
-
             amountSlashed[i] = SlashingLib.calcSlashedAmount({
                 operatorShares: operatorShares[operator][strategies[i]],
                 prevMaxMagnitude: prevMaxMagnitudes[i],
