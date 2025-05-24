@@ -75,11 +75,12 @@ abstract contract StrategyManagerStorage is IStrategyManager {
     mapping(IStrategy strategy => bool) private __deprecated_thirdPartyTransfersForbidden;
 
     /// @notice Returns the amount of `shares` that have been slashed on EigenLayer but not burned yet. Takes 3 storage slots.
+    /// @dev After the redistribution upgrade, this storage variable is no longer used, and will be deprecated.
     EnumerableMap.AddressToUintMap internal burnableShares;
 
-    /// @notice Returns the amount of `shares` that have been slashed on EigenLayer but not burned yet. Takes 3 storage slots.
+    /// @notice Returns the amount of `shares` that have been slashed on EigenLayer but not marked for burning or redistribution yet.
     mapping(bytes32 operatorSetKey => mapping(uint256 slashId => EnumerableMap.AddressToUintMap)) internal
-        _operatorSetBurnableShares;
+        _burnOrRedistributableShares;
 
     // Construction
 
@@ -96,5 +97,5 @@ abstract contract StrategyManagerStorage is IStrategyManager {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[33] private __gap;
+    uint256[35] private __gap;
 }

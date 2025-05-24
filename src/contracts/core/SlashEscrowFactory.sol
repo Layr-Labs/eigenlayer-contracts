@@ -89,11 +89,11 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
 
         require(!_paused[operatorSet.key()][slashId], IPausable.CurrentlyPaused());
 
-        // Calling `decreaseBurnableShares` will transfer the underlying tokens to the `SlashEscrow`.
-        // NOTE: While `decreaseBurnableShares` may have already been called, we call it again to ensure that the
+        // Calling `decreaseBurnOrRedistributableShares` will transfer the underlying tokens to the `SlashEscrow`.
+        // NOTE: While `decreaseBurnOrRedistributableShares` may have already been called, we call it again to ensure that the
         // underlying tokens are actually in escrow before processing and removing storage (which would otherwise prevent
         // the tokens from being released).
-        strategyManager.decreaseBurnableShares(operatorSet, slashId);
+        strategyManager.decreaseBurnOrRedistributableShares(operatorSet, slashId);
 
         // Create storage pointers for readability.
         EnumerableSet.Bytes32Set storage pendingOperatorSets = _pendingOperatorSets;
