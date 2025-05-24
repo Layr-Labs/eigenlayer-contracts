@@ -171,29 +171,35 @@ contract StrategyManager is
         OperatorSet calldata operatorSet,
         uint256 slashId
     ) external nonReentrant {
-        EnumerableMap.AddressToUintMap storage burnOrRedistributableShares =
-            _burnOrRedistributableShares[operatorSet.key()][slashId];
+        // Iterate over burnable shares backwards. Iterating with an increasing index can cause
+        // elements to be missed as the item to remove is swapped and popped with the last element.
+        uint256 length = _burnOrRedistributableShares[operatorSet.key()][slashId].length();
 
-        // Cache length to avoid sloads.
-        uint256 length = burnOrRedistributableShares.length();
-
-        // Iterate over all strategies that have burnable shares.
-        for (uint256 i = 0; i < length; ++i) {
-            (address strategy, uint256 sharesToBurn) = burnOrRedistributableShares.at(i);
-
-            // Remove the strategy from the operator set burnable shares.
-            burnOrRedistributableShares.remove(address(strategy));
-
-            // Withdraw the shares to the slash escrow.
-            IStrategy(strategy).withdraw({
-                recipient: address(slashEscrowFactory.getSlashEscrow(operatorSet, slashId)),
-                token: IStrategy(strategy).underlyingToken(),
-                amountShares: sharesToBurn
-            });
-
-            // Emit an event to notify the that burnable shares have been decreased.
-            emit BurnOrRedistributableSharesDecreased(operatorSet, slashId, IStrategy(strategy), sharesToBurn);
+        for (uint256 i = length; i >= 0; --i) {
+            decreaseBurnableShares(operatorSet, slashId, i - 1);
         }
+    }
+    
+    /// @inheritdoc IStrategyManager
+    function decreaseBurnableShares(OperatorSet calldata operatorSet, uint256 slashId, uint256 index) public returns (uint256) {
+        EnumerableMap.AddressToUintMap storage operatorSetBurnableShares =
+            _operatorSetBurnableShares[operatorSet.key()][slashId];
+
+        (address strategy, uint256 sharesToBurn) = operatorSetBurnableShares.at(index);
+
+        // Withdraw the shares to the slash escrow.
+        IStrategy(strategy).withdraw({
+            recipient: address(slashEscrowFactory.getSlashEscrow(operatorSet, slashId)),
+            token: IStrategy(strategy).underlyingToken(),
+            amountShares: sharesToBurn
+        });
+
+        operatorSetBurnableShares.remove(address(strategy));
+
+        // Emit an event to notify the that burnable shares have been decreased.
+        emit BurnOrRedistributableSharesDecreased(operatorSet, slashId, IStrategy(strategy), sharesToBurn);
+
+        return sharesToBurn;
     }
 
     /// @inheritdoc IStrategyManager
@@ -209,6 +215,21 @@ contract StrategyManager is
         if (sharesToBurn != 0) {
             strategy.withdraw(DEFAULT_BURN_ADDRESS, strategy.underlyingToken(), sharesToBurn);
         }
+    }
+
+    /// @inheritdoc IStrategyManager
+    function getBurnOrRedistributableShares(
+        OperatorSet calldata operatorSet,
+        uint256 slashId
+    ) external view returns (IStrategy[] memory) {
+        address[] memory keys = _operatorSetBurnableShares[operatorSet.key()][slashId].keys();
+        IStrategy[] memory strategies = new IStrategy[](keys.length);
+
+        for (uint256 i = 0; i < keys.length; ++i) {
+            strategies[i] = IStrategy(keys[i]);
+        }
+
+        return strategies;
     }
 
     /// @inheritdoc IStrategyManager
