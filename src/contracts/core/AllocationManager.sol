@@ -714,7 +714,10 @@ contract AllocationManager is
      * @param operatorSets The list of operator sets to check
      * @return True if the operator is redistributable from any of the operator sets, false otherwise
      */
-    function _isOperatorRedistributable(address operator, OperatorSet[] memory operatorSets) internal view returns (bool) {
+    function _isOperatorRedistributable(
+        address operator,
+        OperatorSet[] memory operatorSets
+    ) internal view returns (bool) {
         for (uint256 i = 0; i < operatorSets.length; ++i) {
             if (isOperatorSlashable(operator, operatorSets[i]) && isRedistributingOperatorSet(operatorSets[i])) {
                 return true;
@@ -1051,12 +1054,13 @@ contract AllocationManager is
     function isOperatorRedistributable(
         address operator
     ) external view returns (bool) {
-        // Get the registered and allocated sets for the operator. 
+        // Get the registered and allocated sets for the operator.
         // We get both sets, since upon deregistration the operator is removed from RegisteredSets, but is still allocated.
         OperatorSet[] memory registeredSets = getRegisteredSets(operator);
         OperatorSet[] memory allocatedSets = getAllocatedSets(operator);
 
         // Check if the operator is redistributable from any of the registered or allocated sets
-        return _isOperatorRedistributable(operator, registeredSets) || _isOperatorRedistributable(operator, allocatedSets);
+        return
+            _isOperatorRedistributable(operator, registeredSets) || _isOperatorRedistributable(operator, allocatedSets);
     }
 }

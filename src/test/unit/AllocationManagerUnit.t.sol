@@ -4397,20 +4397,20 @@ contract AllocationManagerUnitTests_isOperatorRedistributable is AllocationManag
         // Assert defaultOperator is not redistributable
         assertFalse(allocationManager.isOperatorRedistributable(defaultOperator), "operator should not be redistributable");
     }
-    
+
     function testFuzz_registered_notAllocated(Randomness r) public rand(r) {
         // Create redistributing operatorSet
         OperatorSet memory redistributingOpSet = OperatorSet(defaultAVS, defaultOperatorSet.id + 1);
         address redistributionRecipient = r.Address();
         _createRedistributingOperatorSet(redistributingOpSet, defaultStrategies, redistributionRecipient);
-        
+
         // Register operator to redistributing operatorSet
         _registerOperator(defaultOperator);
         cheats.prank(defaultOperator);
         uint32[] memory operatorSetIds = new uint32[](1);
         operatorSetIds[0] = redistributingOpSet.id;
         allocationManager.registerForOperatorSets(defaultOperator, RegisterParams(defaultAVS, operatorSetIds, ""));
-        
+
         // Operator should not be redistributable since it's not allocated
         assertTrue(allocationManager.isOperatorRedistributable(defaultOperator), "operator should be redistributable");
     }
@@ -4420,13 +4420,13 @@ contract AllocationManagerUnitTests_isOperatorRedistributable is AllocationManag
         OperatorSet memory redistributingOpSet = OperatorSet(defaultAVS, defaultOperatorSet.id + 1);
         address redistributionRecipient = r.Address();
         _createRedistributingOperatorSet(redistributingOpSet, defaultStrategies, redistributionRecipient);
-        
+
         // Allocate to redistributing operatorSet
         AllocateParams[] memory allocateParams = _newAllocateParams(redistributingOpSet, 5e17);
         cheats.prank(defaultOperator);
         allocationManager.modifyAllocations(defaultOperator, allocateParams);
         cheats.roll(block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY);
-        
+
         // Operator should not be redistributable since it's not slashable
         assertFalse(allocationManager.isOperatorRedistributable(defaultOperator), "operator should not be redistributable");
     }
@@ -4436,26 +4436,24 @@ contract AllocationManagerUnitTests_isOperatorRedistributable is AllocationManag
         OperatorSet memory redistributingOpSet = OperatorSet(defaultAVS, defaultOperatorSet.id + 1);
         address redistributionRecipient = r.Address();
         _createRedistributingOperatorSet(redistributingOpSet, defaultStrategies, redistributionRecipient);
-        
+
         // Allocate to redistributing operatorSet
         AllocateParams[] memory allocateParams = _newAllocateParams(redistributingOpSet, 5e17);
         cheats.prank(defaultOperator);
         allocationManager.modifyAllocations(defaultOperator, allocateParams);
         cheats.roll(block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY);
-        
+
         // Register operator to redistributing operatorSet
         _registerOperator(defaultOperator);
         cheats.prank(defaultOperator);
         uint32[] memory operatorSetIds = new uint32[](1);
         operatorSetIds[0] = redistributingOpSet.id;
         allocationManager.registerForOperatorSets(defaultOperator, RegisterParams(defaultAVS, operatorSetIds, ""));
-        
+
         // Deregister operator from redistributing operatorSet
         cheats.prank(defaultOperator);
-        allocationManager.deregisterFromOperatorSets(
-            DeregisterParams(defaultOperator, defaultAVS, operatorSetIds)
-        );
-        
+        allocationManager.deregisterFromOperatorSets(DeregisterParams(defaultOperator, defaultAVS, operatorSetIds));
+
         // Operator should be redistributable
         assertTrue(allocationManager.isOperatorRedistributable(defaultOperator), "operator should be redistributable");
 
@@ -4471,27 +4469,27 @@ contract AllocationManagerUnitTests_isOperatorRedistributable is AllocationManag
         OperatorSet memory redistributingOpSet = OperatorSet(defaultAVS, defaultOperatorSet.id + 1);
         address redistributionRecipient = r.Address();
         _createRedistributingOperatorSet(redistributingOpSet, defaultStrategies, redistributionRecipient);
-        
+
         // Allocate to redistributing operatorSet
         AllocateParams[] memory allocateParams = _newAllocateParams(redistributingOpSet, 5e17);
         cheats.prank(defaultOperator);
         allocationManager.modifyAllocations(defaultOperator, allocateParams);
         cheats.roll(block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY);
-        
+
         // Register operator to redistributing operatorSet
         _registerOperator(defaultOperator);
         cheats.prank(defaultOperator);
         uint32[] memory operatorSetIds = new uint32[](1);
         operatorSetIds[0] = redistributingOpSet.id;
         allocationManager.registerForOperatorSets(defaultOperator, RegisterParams(defaultAVS, operatorSetIds, ""));
-        
+
         // Deallocate from redistributing operatorSet
         cheats.prank(defaultOperator);
         allocationManager.modifyAllocations(defaultOperator, _newAllocateParams(redistributingOpSet, 0));
-        
+
         // Operator should be redistributable
         assertTrue(allocationManager.isOperatorRedistributable(defaultOperator), "operator should be redistributable");
-        
+
         // Warp past deallocation delay
         cheats.roll(block.number + DEALLOCATION_DELAY + 1);
 
