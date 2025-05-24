@@ -709,6 +709,24 @@ contract AllocationManager is
     }
 
     /**
+     * @notice Helper function to check if an operator is redistributable from a list of operator sets
+     * @param operator The operator to check
+     * @param operatorSets The list of operator sets to check
+     * @return True if the operator is redistributable from any of the operator sets, false otherwise
+     */
+    function _isOperatorRedistributable(
+        address operator,
+        OperatorSet[] memory operatorSets
+    ) internal view returns (bool) {
+        for (uint256 i = 0; i < operatorSets.length; ++i) {
+            if (isOperatorSlashable(operator, operatorSets[i]) && isRedistributingOperatorSet(operatorSets[i])) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      *
      *                         VIEW FUNCTIONS
      *
@@ -724,7 +742,7 @@ contract AllocationManager is
     /// @inheritdoc IAllocationManager
     function getAllocatedSets(
         address operator
-    ) external view returns (OperatorSet[] memory) {
+    ) public view returns (OperatorSet[] memory) {
         uint256 length = allocatedSets[operator].length();
 
         OperatorSet[] memory operatorSets = new OperatorSet[](length);
@@ -1022,7 +1040,7 @@ contract AllocationManager is
     function isRedistributingOperatorSet(
         OperatorSet memory operatorSet
     ) public view returns (bool) {
-        return _redistributionRecipients[operatorSet.key()] != address(0);
+        return getRedistributionRecipient(operatorSet) != DEFAULT_BURN_ADDRESS;
     }
 
     /// @inheritdoc IAllocationManager
@@ -1036,17 +1054,13 @@ contract AllocationManager is
     function isOperatorRedistributable(
         address operator
     ) external view returns (bool) {
-        EnumerableSet.Bytes32Set storage allocatedSets = allocatedSets[operator];
-        EnumerableSet.Bytes32Set storage registeredSets = registeredSets[operator];
+        // Get the registered and allocated sets for the operator.
+        // We get both sets, since upon deregistration the operator is removed from RegisteredSets, but is still allocated.
+        OperatorSet[] memory registeredSets = getRegisteredSets(operator);
+        OperatorSet[] memory allocatedSets = getAllocatedSets(operator);
 
-        uint256 allocatedLength = allocatedSets.length();
-        for (uint256 i = 0; i < allocatedLength; ++i) {
-            bytes32 operatorSetKey = allocatedSets.at(i);
-            // Check if the operator is both allocated and registered to this set
-            if (registeredSets.contains(operatorSetKey) && _redistributionRecipients[operatorSetKey] != address(0)) {
-                return true;
-            }
-        }
-        return false;
+        // Check if the operator is redistributable from any of the registered or allocated sets
+        return
+            _isOperatorRedistributable(operator, registeredSets) || _isOperatorRedistributable(operator, allocatedSets);
     }
 }
