@@ -30,6 +30,7 @@ contract StrategyManager is
 {
     using SlashingLib for *;
     using SafeERC20 for IERC20;
+    using EnumerableMap for EnumerableMap.AddressToUintMap;
 
     modifier onlyStrategyWhitelister() {
         require(msg.sender == strategyWhitelister, OnlyStrategyWhitelister());
@@ -53,9 +54,14 @@ contract StrategyManager is
      */
     constructor(
         IDelegationManager _delegation,
+        ISlashEscrowFactory _slashEscrowFactory,
         IPauserRegistry _pauserRegistry,
         string memory _version
-    ) StrategyManagerStorage(_delegation) Pausable(_pauserRegistry) SignatureUtilsMixin(_version) {
+    )
+        StrategyManagerStorage(_delegation, _slashEscrowFactory)
+        Pausable(_pauserRegistry)
+        SignatureUtilsMixin(_version)
+    {
         _disableInitializers();
     }
 
@@ -118,8 +124,7 @@ contract StrategyManager is
         IStrategy strategy,
         uint256 depositSharesToRemove
     ) external onlyDelegationManager nonReentrant returns (uint256) {
-        (, uint256 sharesAfter) = _removeDepositShares(staker, strategy, depositSharesToRemove);
-        return sharesAfter;
+        return _removeDepositShares(staker, strategy, depositSharesToRemove);
     }
 
     /// @inheritdoc IShareManager
@@ -142,13 +147,53 @@ contract StrategyManager is
     }
 
     /// @inheritdoc IShareManager
-    function increaseBurnableShares(
+    function increaseBurnOrRedistributableShares(
+        OperatorSet calldata operatorSet,
+        uint256 slashId,
         IStrategy strategy,
-        uint256 addedSharesToBurn
+        uint256 sharesToBurn
     ) external onlyDelegationManager nonReentrant {
-        (, uint256 currentShares) = EnumerableMap.tryGet(burnableShares, address(strategy));
-        EnumerableMap.set(burnableShares, address(strategy), currentShares + addedSharesToBurn);
-        emit BurnableSharesIncreased(strategy, addedSharesToBurn);
+        EnumerableMap.AddressToUintMap storage operatorSetBurnableShares =
+            _burnOrRedistributableShares[operatorSet.key()][slashId];
+
+        if (sharesToBurn != 0) {
+            operatorSetBurnableShares.set(address(strategy), sharesToBurn);
+
+            // Notify the `SlashEscrowFactory` contract that it received underlying tokens to burn or redistribute.
+            slashEscrowFactory.initiateSlashEscrow(operatorSet, slashId, strategy);
+
+            emit BurnOrRedistributableSharesIncreased(operatorSet, slashId, strategy, sharesToBurn);
+        }
+    }
+
+    /// @inheritdoc IStrategyManager
+    function decreaseBurnOrRedistributableShares(
+        OperatorSet calldata operatorSet,
+        uint256 slashId
+    ) external nonReentrant {
+        EnumerableMap.AddressToUintMap storage burnOrRedistributableShares =
+            _burnOrRedistributableShares[operatorSet.key()][slashId];
+
+        // Cache length to avoid sloads.
+        uint256 length = burnOrRedistributableShares.length();
+
+        // Iterate over all strategies that have burnable shares.
+        for (uint256 i = 0; i < length; ++i) {
+            (address strategy, uint256 sharesToBurn) = burnOrRedistributableShares.at(i);
+
+            // Remove the strategy from the operator set burnable shares.
+            burnOrRedistributableShares.remove(address(strategy));
+
+            // Withdraw the shares to the slash escrow.
+            IStrategy(strategy).withdraw({
+                recipient: address(slashEscrowFactory.getSlashEscrow(operatorSet, slashId)),
+                token: IStrategy(strategy).underlyingToken(),
+                amountShares: sharesToBurn
+            });
+
+            // Emit an event to notify the that burnable shares have been decreased.
+            emit BurnOrRedistributableSharesDecreased(operatorSet, slashId, IStrategy(strategy), sharesToBurn);
+        }
     }
 
     /// @inheritdoc IStrategyManager
@@ -280,7 +325,7 @@ contract StrategyManager is
         address staker,
         IStrategy strategy,
         uint256 depositSharesToRemove
-    ) internal returns (bool, uint256) {
+    ) internal returns (uint256) {
         // sanity checks on inputs
         require(depositSharesToRemove != 0, SharesAmountZero());
 
@@ -298,12 +343,9 @@ contract StrategyManager is
         // if no existing shares, remove the strategy from the staker's dynamic array of strategies
         if (userDepositShares == 0) {
             _removeStrategyFromStakerStrategyList(staker, strategy);
-
-            // return true in the event that the strategy was removed from stakerStrategyList[staker]
-            return (true, userDepositShares);
         }
-        // return false in the event that the strategy was *not* removed from stakerStrategyList[staker]
-        return (false, userDepositShares);
+
+        return userDepositShares;
     }
 
     /**

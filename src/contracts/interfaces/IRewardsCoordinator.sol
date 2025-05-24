@@ -258,7 +258,7 @@ interface IRewardsCoordinatorTypes {
      * @param MAX_RETROACTIVE_LENGTH The maximum retroactive length of a rewards submission
      * @param MAX_FUTURE_LENGTH The maximum future length of a rewards submission
      * @param GENESIS_REWARDS_TIMESTAMP The timestamp at which rewards are first calculated
-     * @param version The semantic version of the contract (e.g. "v1.2.3")
+     * @param version The semantic version of the contract (e.g. "1.2.3")
      * @dev Needed to avoid stack-too-deep errors
      */
     struct RewardsCoordinatorConstructorParams {

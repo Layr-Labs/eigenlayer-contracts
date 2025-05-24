@@ -11,12 +11,12 @@ abstract contract SemVerMixin is ISemVerMixin {
     using ShortStringsUpgradeable for *;
 
     /// @notice The semantic version string for this contract, stored as a ShortString for gas efficiency.
-    /// @dev Follows SemVer 2.0.0 specification (https://semver.org/). Prefixed with 'v' (e.g., "v1.2.3").
+    /// @dev Follows SemVer 2.0.0 specification (https://semver.org/).
     ShortString internal immutable _VERSION;
 
     /// @notice Initializes the contract with a semantic version string.
-    /// @param _version The SemVer-formatted version string (e.g., "v1.2.3")
-    /// @dev Version should follow SemVer 2.0.0 format with 'v' prefix: vMAJOR.MINOR.PATCH
+    /// @param _version The SemVer-formatted version string (e.g., "1.2.3")
+    /// @dev Version should follow SemVer 2.0.0 format: MAJOR.MINOR.PATCH
     constructor(
         string memory _version
     ) {
@@ -29,10 +29,10 @@ abstract contract SemVerMixin is ISemVerMixin {
     }
 
     /// @notice Returns the major version of the contract.
-    /// @dev Supports single digit major versions (e.g., "v1" for version "v1.2.3")
-    /// @return The major version string (e.g., "v1" for version "v1.2.3")
+    /// @dev Supports single digit major versions (e.g., "1" for version "1.2.3")
+    /// @return The major version string (e.g., "1" for version "1.2.3")
     function _majorVersion() internal view returns (string memory) {
         bytes memory v = bytes(_VERSION.toString());
-        return string(bytes.concat(v[0], v[1]));
+        return string(abi.encodePacked(v[0]));
     }
 }

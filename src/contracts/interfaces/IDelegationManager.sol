@@ -5,6 +5,7 @@ import "./IStrategy.sol";
 import "./IPauserRegistry.sol";
 import "./ISignatureUtilsMixin.sol";
 import "../libraries/SlashingLib.sol";
+import "../libraries/OperatorSetLib.sol";
 
 interface IDelegationManagerErrors {
     /// @dev Thrown when caller is neither the StrategyManager or EigenPodManager contract.
@@ -173,6 +174,9 @@ interface IDelegationManagerEvents is IDelegationManagerTypes {
 
     /// @notice Emitted whenever an operator's shares are slashed for a given strategy
     event OperatorSharesSlashed(address indexed operator, IStrategy strategy, uint256 totalSlashedShares);
+
+    /// @notice Emitted when a redistribution is queued
+    event RedistributionQueued(bytes32 withdrawalRoot, Withdrawal withdrawal);
 }
 
 /**
@@ -189,7 +193,9 @@ interface IDelegationManager is ISignatureUtilsMixin, IDelegationManagerErrors, 
     /**
      * @dev Initializes the initial owner and paused status.
      */
-    function initialize(address initialOwner, uint256 initialPausedStatus) external;
+    function initialize(
+        uint256 initialPausedStatus
+    ) external;
 
     /**
      * @notice Registers the caller as an operator in EigenLayer.
@@ -351,22 +357,27 @@ interface IDelegationManager is ISignatureUtilsMixin, IDelegationManagerErrors, 
     ) external;
 
     /**
-     * @notice Decreases the operators shares in storage after a slash and increases the burnable shares by calling
+     * @notice Decreases the operator's shares in storage after a slash and increases the burnable shares by calling
      * into either the StrategyManager or EigenPodManager (if the strategy is beaconChainETH).
-     * @param operator The operator to decrease shares for
-     * @param strategy The strategy to decrease shares for
-     * @param prevMaxMagnitude the previous maxMagnitude of the operator
-     * @param newMaxMagnitude the new maxMagnitude of the operator
-     * @dev Callable only by the AllocationManager
+     * @param operator The operator to decrease shares for.
+     * @param operatorSet The operator set to decrease shares for.
+     * @param slashId The slash id to decrease shares for.
+     * @param strategies The strategies to decrease shares for.
+     * @param prevMaxMagnitudes The previous maxMagnitudes of the operator.
+     * @param newMaxMagnitudes The new maxMagnitudes of the operator.
+     * @dev Callable only by the AllocationManager.
      * @dev Note: Assumes `prevMaxMagnitude <= newMaxMagnitude`. This invariant is maintained in
      * the AllocationManager.
+     * @return totalDepositSharesToBurn The total deposit shares to burn.
      */
     function slashOperatorShares(
         address operator,
-        IStrategy strategy,
-        uint64 prevMaxMagnitude,
-        uint64 newMaxMagnitude
-    ) external;
+        OperatorSet calldata operatorSet,
+        uint256 slashId,
+        IStrategy[] calldata strategies,
+        uint64[] calldata prevMaxMagnitudes,
+        uint64[] calldata newMaxMagnitudes
+    ) external returns (uint256[] memory totalDepositSharesToBurn);
 
     /**
      *

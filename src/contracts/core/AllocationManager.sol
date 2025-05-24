@@ -2,9 +2,8 @@
 pragma solidity ^0.8.27;
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
-import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
-
+import "../mixins/Deprecated_OwnableUpgradeable.sol";
 import "../mixins/PermissionControllerMixin.sol";
 import "../mixins/SemVerMixin.sol";
 import "../permissions/Pausable.sol";
@@ -14,7 +13,7 @@ import "./AllocationManagerStorage.sol";
 
 contract AllocationManager is
     Initializable,
-    OwnableUpgradeable,
+    Deprecated_OwnableUpgradeable,
     Pausable,
     AllocationManagerStorage,
     ReentrancyGuardUpgradeable,
@@ -22,12 +21,11 @@ contract AllocationManager is
     SemVerMixin
 {
     using DoubleEndedQueue for DoubleEndedQueue.Bytes32Deque;
-    using EnumerableSet for *;
-    using SafeCast for *;
-
     using Snapshots for Snapshots.DefaultWadHistory;
     using OperatorSetLib for OperatorSet;
     using SlashingLib for uint256;
+    using EnumerableSet for *;
+    using SafeCast for *;
 
     /**
      *
@@ -55,97 +53,31 @@ contract AllocationManager is
     }
 
     /// @inheritdoc IAllocationManager
-    function initialize(address initialOwner, uint256 initialPausedStatus) external initializer {
+    function initialize(
+        uint256 initialPausedStatus
+    ) external initializer {
         _setPausedStatus(initialPausedStatus);
-        _transferOwnership(initialOwner);
     }
 
     /// @inheritdoc IAllocationManager
     function slashOperator(
         address avs,
         SlashingParams calldata params
-    ) external onlyWhenNotPaused(PAUSED_OPERATOR_SLASHING) checkCanCall(avs) {
+    )
+        external
+        onlyWhenNotPaused(PAUSED_OPERATOR_SLASHING)
+        checkCanCall(avs)
+        returns (uint256 slashId, uint256[] memory shares)
+    {
         // Check that the operator set exists and the operator is registered to it
         OperatorSet memory operatorSet = OperatorSet(avs, params.operatorSetId);
-        require(params.strategies.length == params.wadsToSlash.length, InputArrayLengthMismatch());
-        require(_operatorSets[operatorSet.avs].contains(operatorSet.id), InvalidOperatorSet());
+
+        _checkArrayLengthsMatch(params.strategies.length, params.wadsToSlash.length);
+        _checkIsOperatorSet(operatorSet);
+
         require(isOperatorSlashable(params.operator, operatorSet), OperatorNotSlashable());
 
-        uint256[] memory wadSlashed = new uint256[](params.strategies.length);
-
-        // For each strategy in the operator set, slash any existing allocation
-        for (uint256 i = 0; i < params.strategies.length; i++) {
-            // Check that `strategies` is in ascending order.
-            require(
-                i == 0 || uint160(address(params.strategies[i])) > uint160(address(params.strategies[i - 1])),
-                StrategiesMustBeInAscendingOrder()
-            );
-            // Check that `wadToSlash` is within acceptable bounds.
-            require(0 < params.wadsToSlash[i] && params.wadsToSlash[i] <= WAD, InvalidWadToSlash());
-            // Check that the operator set contains the strategy.
-            require(
-                _operatorSetStrategies[operatorSet.key()].contains(address(params.strategies[i])),
-                StrategyNotInOperatorSet()
-            );
-
-            // 1. Get the operator's allocation info for the strategy and operator set
-            (StrategyInfo memory info, Allocation memory allocation) =
-                _getUpdatedAllocation(params.operator, operatorSet.key(), params.strategies[i]);
-
-            // 2. Skip if the operator does not have a slashable allocation
-            // NOTE: this "if" is equivalent to: `if (!_isAllocationSlashable)`, because the other
-            // conditions in this method are already true (isOperatorSlashable + operatorSetStrategies.contains)
-            if (allocation.currentMagnitude == 0) {
-                continue;
-            }
-
-            // 3. Calculate the amount of magnitude being slashed, and subtract from
-            // the operator's currently-allocated magnitude, as well as the strategy's
-            // max and encumbered magnitudes
-            uint64 slashedMagnitude = uint64(uint256(allocation.currentMagnitude).mulWadRoundUp(params.wadsToSlash[i]));
-            uint64 prevMaxMagnitude = info.maxMagnitude;
-            wadSlashed[i] = uint256(slashedMagnitude).divWad(info.maxMagnitude);
-
-            allocation.currentMagnitude -= slashedMagnitude;
-            info.maxMagnitude -= slashedMagnitude;
-            info.encumberedMagnitude -= slashedMagnitude;
-
-            // 4. If there is a pending deallocation, reduce the pending deallocation proportionally.
-            // This ensures that when the deallocation is completed, less magnitude is freed.
-            if (allocation.pendingDiff < 0) {
-                uint64 slashedPending =
-                    uint64(uint256(uint128(-allocation.pendingDiff)).mulWadRoundUp(params.wadsToSlash[i]));
-                allocation.pendingDiff += int128(uint128(slashedPending));
-
-                emit AllocationUpdated(
-                    params.operator,
-                    operatorSet,
-                    params.strategies[i],
-                    _addInt128(allocation.currentMagnitude, allocation.pendingDiff),
-                    allocation.effectBlock
-                );
-            }
-
-            // 5. Update state
-            _updateAllocationInfo(params.operator, operatorSet.key(), params.strategies[i], info, allocation);
-
-            // Emit an event for the updated allocation
-            emit AllocationUpdated(
-                params.operator, operatorSet, params.strategies[i], allocation.currentMagnitude, uint32(block.number)
-            );
-
-            _updateMaxMagnitude(params.operator, params.strategies[i], info.maxMagnitude);
-
-            // 6. Slash operators shares in the DelegationManager
-            delegation.slashOperatorShares({
-                operator: params.operator,
-                strategy: params.strategies[i],
-                prevMaxMagnitude: prevMaxMagnitude,
-                newMaxMagnitude: info.maxMagnitude
-            });
-        }
-
-        emit OperatorSlashed(params.operator, operatorSet, params.strategies, wadSlashed, params.description);
+        return _slashOperator(params, operatorSet);
     }
 
     /// @inheritdoc IAllocationManager
@@ -155,7 +87,7 @@ contract AllocationManager is
     ) external onlyWhenNotPaused(PAUSED_MODIFY_ALLOCATIONS) {
         // Check that the caller is allowed to modify allocations on behalf of the operator
         // We do not use a modifier to avoid `stack too deep` errors
-        require(_checkCanCall(operator), InvalidCaller());
+        _checkCanCall(operator);
 
         // Check that the operator exists and has configured an allocation delay
         uint32 operatorAllocationDelay;
@@ -166,7 +98,7 @@ contract AllocationManager is
         }
 
         for (uint256 i = 0; i < params.length; i++) {
-            require(params[i].strategies.length == params[i].newMagnitudes.length, InputArrayLengthMismatch());
+            _checkArrayLengthsMatch(params[i].strategies.length, params[i].newMagnitudes.length);
 
             // Check that the operator set exists and get the operator's registration status
             // Operators do not need to be registered for an operator set in order to allocate
@@ -174,7 +106,7 @@ contract AllocationManager is
             // allocate magnitude before registering, as AVS's will likely only accept
             // registrations from operators that are already slashable.
             OperatorSet memory operatorSet = params[i].operatorSet;
-            require(_operatorSets[operatorSet.avs].contains(operatorSet.id), InvalidOperatorSet());
+            _checkIsOperatorSet(operatorSet);
 
             bool _isOperatorSlashable = isOperatorSlashable(operator, operatorSet);
 
@@ -229,7 +161,7 @@ contract AllocationManager is
                 _updateAllocationInfo(operator, operatorSet.key(), strategy, info, allocation);
 
                 // 6. Emit an event for the updated allocation
-                emit AllocationUpdated(
+                _emitAllocationUpdated(
                     operator,
                     operatorSet,
                     strategy,
@@ -246,8 +178,7 @@ contract AllocationManager is
         IStrategy[] calldata strategies,
         uint16[] calldata numToClear
     ) external onlyWhenNotPaused(PAUSED_MODIFY_ALLOCATIONS) {
-        require(strategies.length == numToClear.length, InputArrayLengthMismatch());
-
+        _checkArrayLengthsMatch(strategies.length, numToClear.length);
         for (uint256 i = 0; i < strategies.length; ++i) {
             _clearDeallocationQueue({operator: operator, strategy: strategies[i], numToClear: numToClear[i]});
         }
@@ -258,13 +189,13 @@ contract AllocationManager is
         address operator,
         RegisterParams calldata params
     ) external onlyWhenNotPaused(PAUSED_OPERATOR_SET_REGISTRATION_AND_DEREGISTRATION) checkCanCall(operator) {
-        // Check that the operator exists
-        require(delegation.isOperator(operator), InvalidOperator());
+        // Check if the operator has registered.
+        _checkIsOperator(operator);
 
         for (uint256 i = 0; i < params.operatorSetIds.length; i++) {
             // Check the operator set exists and the operator is not currently registered to it
             OperatorSet memory operatorSet = OperatorSet(params.avs, params.operatorSetIds[i]);
-            require(_operatorSets[operatorSet.avs].contains(operatorSet.id), InvalidOperatorSet());
+            _checkIsOperatorSet(operatorSet);
             require(!isOperatorSlashable(operator, operatorSet), AlreadyMemberOfSet());
 
             // Add operator to operator set
@@ -285,12 +216,12 @@ contract AllocationManager is
         DeregisterParams calldata params
     ) external onlyWhenNotPaused(PAUSED_OPERATOR_SET_REGISTRATION_AND_DEREGISTRATION) {
         // Check that the caller is either authorized on behalf of the operator or AVS
-        require(_checkCanCall(params.operator) || _checkCanCall(params.avs), InvalidCaller());
+        require(_canCall(params.operator) || _canCall(params.avs), InvalidPermissions());
 
         for (uint256 i = 0; i < params.operatorSetIds.length; i++) {
             // Check the operator set exists and the operator is registered to it
             OperatorSet memory operatorSet = OperatorSet(params.avs, params.operatorSetIds[i]);
-            require(_operatorSets[params.avs].contains(operatorSet.id), InvalidOperatorSet());
+            _checkIsOperatorSet(operatorSet);
             require(registrationStatus[params.operator][operatorSet.key()].registered, NotMemberOfSet());
 
             // Remove operator from operator set
@@ -313,8 +244,8 @@ contract AllocationManager is
     /// @inheritdoc IAllocationManager
     function setAllocationDelay(address operator, uint32 delay) external {
         if (msg.sender != address(delegation)) {
-            require(_checkCanCall(operator), InvalidCaller());
-            require(delegation.isOperator(operator), InvalidOperator());
+            _checkCanCall(operator);
+            _checkIsOperator(operator);
         }
         _setAllocationDelay(operator, delay);
     }
@@ -330,31 +261,29 @@ contract AllocationManager is
 
     /// @inheritdoc IAllocationManager
     function updateAVSMetadataURI(address avs, string calldata metadataURI) external checkCanCall(avs) {
-        if (!_avsRegisteredMetadata[avs]) {
-            _avsRegisteredMetadata[avs] = true;
-        }
-
+        if (!_avsRegisteredMetadata[avs]) _avsRegisteredMetadata[avs] = true;
         emit AVSMetadataURIUpdated(avs, metadataURI);
     }
 
     /// @inheritdoc IAllocationManager
     function createOperatorSets(address avs, CreateSetParams[] calldata params) external checkCanCall(avs) {
-        // Check that the AVS exists and has registered metadata
-        require(_avsRegisteredMetadata[avs], NonexistentAVSMetadata());
-
+        _checkAVSExists(avs);
         for (uint256 i = 0; i < params.length; i++) {
-            OperatorSet memory operatorSet = OperatorSet(avs, params[i].operatorSetId);
+            _createOperatorSet(avs, params[i], DEFAULT_BURN_ADDRESS);
+        }
+    }
 
-            // Create the operator set, ensuring it does not already exist
-            require(_operatorSets[avs].add(operatorSet.id), InvalidOperatorSet());
-            emit OperatorSetCreated(OperatorSet(avs, operatorSet.id));
-
-            // Add strategies to the operator set
-            bytes32 operatorSetKey = operatorSet.key();
-            for (uint256 j = 0; j < params[i].strategies.length; j++) {
-                _operatorSetStrategies[operatorSetKey].add(address(params[i].strategies[j]));
-                emit StrategyAddedToOperatorSet(operatorSet, params[i].strategies[j]);
-            }
+    /// @inheritdoc IAllocationManager
+    function createRedistributingOperatorSets(
+        address avs,
+        CreateSetParams[] calldata params,
+        address[] calldata redistributionRecipients
+    ) external checkCanCall(avs) {
+        _checkArrayLengthsMatch(params.length, redistributionRecipients.length);
+        _checkAVSExists(avs);
+        for (uint256 i = 0; i < params.length; i++) {
+            require(redistributionRecipients[i] != address(0), InputAddressZero());
+            _createOperatorSet(avs, params[i], redistributionRecipients[i]);
         }
     }
 
@@ -365,13 +294,11 @@ contract AllocationManager is
         IStrategy[] calldata strategies
     ) external checkCanCall(avs) {
         OperatorSet memory operatorSet = OperatorSet(avs, operatorSetId);
-        bytes32 operatorSetKey = operatorSet.key();
-
-        require(_operatorSets[avs].contains(operatorSet.id), InvalidOperatorSet());
-
+        _checkIsOperatorSet(operatorSet);
         for (uint256 i = 0; i < strategies.length; i++) {
-            require(_operatorSetStrategies[operatorSetKey].add(address(strategies[i])), StrategyAlreadyInOperatorSet());
-            emit StrategyAddedToOperatorSet(operatorSet, strategies[i]);
+            _addStrategyToOperatorSet(
+                operatorSet, strategies[i], isRedistributingOperatorSet(OperatorSet(avs, operatorSetId))
+            );
         }
     }
 
@@ -382,8 +309,7 @@ contract AllocationManager is
         IStrategy[] calldata strategies
     ) external checkCanCall(avs) {
         OperatorSet memory operatorSet = OperatorSet(avs, operatorSetId);
-        require(_operatorSets[avs].contains(operatorSet.id), InvalidOperatorSet());
-
+        _checkIsOperatorSet(operatorSet);
         bytes32 operatorSetKey = operatorSet.key();
         for (uint256 i = 0; i < strategies.length; i++) {
             require(_operatorSetStrategies[operatorSetKey].remove(address(strategies[i])), StrategyNotInOperatorSet());
@@ -396,6 +322,148 @@ contract AllocationManager is
      *                         INTERNAL FUNCTIONS
      *
      */
+    function _slashOperator(
+        SlashingParams calldata params,
+        OperatorSet memory operatorSet
+    ) internal returns (uint256 slashId, uint256[] memory shares) {
+        uint256[] memory wadSlashed = new uint256[](params.strategies.length);
+
+        // Increment the slash count for the operator set.
+        slashId = ++_slashCount[operatorSet.key()];
+
+        uint64[] memory prevMaxMagnitudes = new uint64[](params.strategies.length);
+        uint64[] memory newMaxMagnitudes = new uint64[](params.strategies.length);
+
+        // For each strategy in the operator set, slash any existing allocation
+        for (uint256 i = 0; i < params.strategies.length; i++) {
+            // Check that `strategies` is in ascending order.
+            require(
+                i == 0 || uint160(address(params.strategies[i])) > uint160(address(params.strategies[i - 1])),
+                StrategiesMustBeInAscendingOrder()
+            );
+            // Check that `wadToSlash` is within acceptable bounds.
+            require(0 < params.wadsToSlash[i] && params.wadsToSlash[i] <= WAD, InvalidWadToSlash());
+            // Check that the operator set contains the strategy.
+            require(
+                _operatorSetStrategies[operatorSet.key()].contains(address(params.strategies[i])),
+                StrategyNotInOperatorSet()
+            );
+
+            // 1. Get the operator's allocation info for the strategy and operator set
+            (StrategyInfo memory info, Allocation memory allocation) =
+                _getUpdatedAllocation(params.operator, operatorSet.key(), params.strategies[i]);
+
+            // 2. Skip if the operator does not have a slashable allocation
+            // NOTE: this "if" is equivalent to: `if (!_isAllocationSlashable)`, because the other
+            // conditions in this method are already true (isOperatorSlashable + operatorSetStrategies.contains)
+            if (allocation.currentMagnitude == 0) {
+                continue;
+            }
+
+            // 3. Calculate the amount of magnitude being slashed, and subtract from
+            // the operator's currently-allocated magnitude, as well as the strategy's
+            // max and encumbered magnitudes
+            uint64 slashedMagnitude = uint64(uint256(allocation.currentMagnitude).mulWadRoundUp(params.wadsToSlash[i]));
+            uint64 prevMaxMagnitude = info.maxMagnitude;
+            wadSlashed[i] = uint256(slashedMagnitude).divWad(info.maxMagnitude);
+
+            allocation.currentMagnitude -= slashedMagnitude;
+            info.maxMagnitude -= slashedMagnitude;
+            info.encumberedMagnitude -= slashedMagnitude;
+
+            // 4. If there is a pending deallocation, reduce the pending deallocation proportionally.
+            // This ensures that when the deallocation is completed, less magnitude is freed.
+            if (allocation.pendingDiff < 0) {
+                uint64 slashedPending =
+                    uint64(uint256(uint128(-allocation.pendingDiff)).mulWadRoundUp(params.wadsToSlash[i]));
+                allocation.pendingDiff += int128(uint128(slashedPending));
+
+                _emitAllocationUpdated(
+                    params.operator,
+                    operatorSet,
+                    params.strategies[i],
+                    _addInt128(allocation.currentMagnitude, allocation.pendingDiff),
+                    allocation.effectBlock
+                );
+            }
+
+            // 5. Update state
+            _updateAllocationInfo(params.operator, operatorSet.key(), params.strategies[i], info, allocation);
+
+            _emitAllocationUpdated(
+                params.operator, operatorSet, params.strategies[i], allocation.currentMagnitude, uint32(block.number)
+            );
+
+            _updateMaxMagnitude(params.operator, params.strategies[i], info.maxMagnitude);
+
+            prevMaxMagnitudes[i] = prevMaxMagnitude;
+            newMaxMagnitudes[i] = info.maxMagnitude;
+        }
+
+        // 6. Slash operators shares in the DelegationManager
+        shares = delegation.slashOperatorShares({
+            operator: params.operator,
+            operatorSet: operatorSet,
+            slashId: slashId,
+            strategies: params.strategies,
+            prevMaxMagnitudes: prevMaxMagnitudes,
+            newMaxMagnitudes: newMaxMagnitudes
+        });
+
+        emit OperatorSlashed(params.operator, operatorSet, params.strategies, wadSlashed, params.description);
+    }
+
+    /**
+     * @dev Adds a strategy to an operator set.
+     * @param operatorSet The operator set to add the strategy to.
+     * @param strategy The strategy to add to the operator set.
+     * @param isRedistributing Whether the operator set is redistributing.
+     */
+    function _addStrategyToOperatorSet(
+        OperatorSet memory operatorSet,
+        IStrategy strategy,
+        bool isRedistributing
+    ) internal {
+        // We do not currently support redistributing beaconchain ETH.
+        if (isRedistributing) {
+            require(strategy != BEACONCHAIN_ETH_STRAT, InvalidStrategy());
+        }
+
+        require(_operatorSetStrategies[operatorSet.key()].add(address(strategy)), StrategyAlreadyInOperatorSet());
+        emit StrategyAddedToOperatorSet(operatorSet, strategy);
+    }
+
+    /**
+     * @notice Creates a new operator set for an AVS.
+     * @param avs The AVS address that owns the operator set.
+     * @param params The parameters for creating the operator set.
+     * @param redistributionRecipient Address to receive redistributed funds when operators are slashed.
+     * @dev If `redistributionRecipient` is address(0), the operator set is considered non-redistributing
+     * and slashed funds are sent to the `DEFAULT_BURN_ADDRESS`.
+     * @dev Providing `BEACONCHAIN_ETH_STRAT` as a strategy will revert since it's not currently supported.
+     */
+    function _createOperatorSet(
+        address avs,
+        CreateSetParams calldata params,
+        address redistributionRecipient
+    ) internal {
+        OperatorSet memory operatorSet = OperatorSet(avs, params.operatorSetId);
+
+        // Create the operator set, ensuring it does not already exist.
+        require(_operatorSets[avs].add(operatorSet.id), InvalidOperatorSet());
+        emit OperatorSetCreated(operatorSet);
+
+        bool isRedistributing = redistributionRecipient != DEFAULT_BURN_ADDRESS;
+
+        if (isRedistributing) {
+            _redistributionRecipients[operatorSet.key()] = redistributionRecipient;
+            emit RedistributionAddressSet(operatorSet, redistributionRecipient);
+        }
+
+        for (uint256 j = 0; j < params.strategies.length; j++) {
+            _addStrategyToOperatorSet(operatorSet, params.strategies[j], isRedistributing);
+        }
+    }
 
     /**
      * @dev Clear one or more pending deallocations to a strategy's allocated magnitude
@@ -605,6 +673,59 @@ contract AllocationManager is
         return uint256(int256(int128(uint128(a)) + b)).toUint64();
     }
 
+    /// @dev Reverts if the operator set does not exist.
+    function _checkIsOperatorSet(
+        OperatorSet memory operatorSet
+    ) internal view {
+        require(_operatorSets[operatorSet.avs].contains(operatorSet.id), InvalidOperatorSet());
+    }
+
+    /// @dev Reverts if the provided arrays have different lengths.
+    function _checkArrayLengthsMatch(uint256 left, uint256 right) internal pure {
+        require(left == right, InputArrayLengthMismatch());
+    }
+
+    /// @dev Reverts if the operator is not registered.
+    function _checkIsOperator(
+        address operator
+    ) internal view {
+        require(delegation.isOperator(operator), InvalidOperator());
+    }
+
+    function _checkAVSExists(
+        address avs
+    ) internal view {
+        require(_avsRegisteredMetadata[avs], NonexistentAVSMetadata());
+    }
+
+    function _emitAllocationUpdated(
+        address operator,
+        OperatorSet memory operatorSet,
+        IStrategy strategy,
+        uint64 currentMagnitude,
+        uint32 effectBlock
+    ) internal {
+        emit AllocationUpdated(operator, operatorSet, strategy, currentMagnitude, effectBlock);
+    }
+
+    /**
+     * @notice Helper function to check if an operator is redistributable from a list of operator sets
+     * @param operator The operator to check
+     * @param operatorSets The list of operator sets to check
+     * @return True if the operator is redistributable from any of the operator sets, false otherwise
+     */
+    function _isOperatorRedistributable(
+        address operator,
+        OperatorSet[] memory operatorSets
+    ) internal view returns (bool) {
+        for (uint256 i = 0; i < operatorSets.length; ++i) {
+            if (isOperatorSlashable(operator, operatorSets[i]) && isRedistributingOperatorSet(operatorSets[i])) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /**
      *
      *                         VIEW FUNCTIONS
@@ -621,7 +742,7 @@ contract AllocationManager is
     /// @inheritdoc IAllocationManager
     function getAllocatedSets(
         address operator
-    ) external view returns (OperatorSet[] memory) {
+    ) public view returns (OperatorSet[] memory) {
         uint256 length = allocatedSets[operator].length();
 
         OperatorSet[] memory operatorSets = new OperatorSet[](length);
@@ -891,7 +1012,7 @@ contract AllocationManager is
         OperatorSet memory operatorSet,
         address[] memory operators,
         IStrategy[] memory strategies
-    ) public view returns (uint256[][] memory) {
+    ) external view returns (uint256[][] memory) {
         /// This helper function returns the minimum allocated stake by taking into account deallocations at some `futureBlock`.
         /// We use the block.number, as the `futureBlock`, meaning that no **future** deallocations are considered.
         return _getMinimumAllocatedStake(operatorSet, operators, strategies, uint32(block.number));
@@ -904,5 +1025,42 @@ contract AllocationManager is
         // slashableUntil returns the last block the operator is slashable in so we check for
         // less than or equal to
         return status.registered || block.number <= status.slashableUntil;
+    }
+
+    /// @inheritdoc IAllocationManager
+    function getRedistributionRecipient(
+        OperatorSet memory operatorSet
+    ) public view returns (address) {
+        // Load the redistribution recipient and return it if set, otherwise return the default burn address.
+        address redistributionRecipient = _redistributionRecipients[operatorSet.key()];
+        return redistributionRecipient == address(0) ? DEFAULT_BURN_ADDRESS : redistributionRecipient;
+    }
+
+    /// @inheritdoc IAllocationManager
+    function isRedistributingOperatorSet(
+        OperatorSet memory operatorSet
+    ) public view returns (bool) {
+        return getRedistributionRecipient(operatorSet) != DEFAULT_BURN_ADDRESS;
+    }
+
+    /// @inheritdoc IAllocationManager
+    function getSlashCount(
+        OperatorSet memory operatorSet
+    ) external view returns (uint256) {
+        return _slashCount[operatorSet.key()];
+    }
+
+    /// @inheritdoc IAllocationManager
+    function isOperatorRedistributable(
+        address operator
+    ) external view returns (bool) {
+        // Get the registered and allocated sets for the operator.
+        // We get both sets, since upon deregistration the operator is removed from RegisteredSets, but is still allocated.
+        OperatorSet[] memory registeredSets = getRegisteredSets(operator);
+        OperatorSet[] memory allocatedSets = getAllocatedSets(operator);
+
+        // Check if the operator is redistributable from any of the registered or allocated sets
+        return
+            _isOperatorRedistributable(operator, registeredSets) || _isOperatorRedistributable(operator, allocatedSets);
     }
 }

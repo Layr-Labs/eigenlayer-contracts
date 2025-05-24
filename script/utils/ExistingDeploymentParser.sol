@@ -11,6 +11,8 @@ import "../../src/contracts/core/AVSDirectory.sol";
 import "../../src/contracts/core/RewardsCoordinator.sol";
 import "../../src/contracts/core/AllocationManager.sol";
 import "../../src/contracts/permissions/PermissionController.sol";
+import "../../src/contracts/core/SlashEscrowFactory.sol";
+import "../../src/contracts/core/SlashEscrow.sol";
 
 import "../../src/contracts/strategies/StrategyFactory.sol";
 import "../../src/contracts/strategies/StrategyBase.sol";
@@ -135,6 +137,10 @@ contract ExistingDeploymentParser is Script, Logger {
     StrategyFactory public strategyFactoryImplementation;
     StrategyBase public baseStrategyImplementation;
     StrategyBase public strategyFactoryBeaconImplementation;
+
+    /// @dev SlashEscrowFactory
+    SlashEscrowFactory public slashEscrowFactory;
+    SlashEscrowFactory public slashEscrowFactoryImplementation;
 
     // Token
     ProxyAdmin public tokenProxyAdmin;
@@ -524,7 +530,7 @@ contract ExistingDeploymentParser is Script, Logger {
         );
         // DelegationManager
         cheats.expectRevert(bytes("Initializable: contract is already initialized"));
-        delegationManager.initialize(address(0), 0);
+        delegationManager.initialize(0);
         // StrategyManager
         cheats.expectRevert(bytes("Initializable: contract is already initialized"));
         strategyManager.initialize(address(0), address(0), STRATEGY_MANAGER_INIT_PAUSED_STATUS);
@@ -605,7 +611,7 @@ contract ExistingDeploymentParser is Script, Logger {
             delegationManager.pauserRegistry() == eigenLayerPauserReg,
             "delegationManager: pauser registry not set correctly"
         );
-        assertEq(delegationManager.owner(), executorMultisig, "delegationManager: owner not set correctly");
+        // assertEq(delegationManager.owner(), executorMultisig, "delegationManager: owner not set correctly");
         assertEq(
             delegationManager.paused(),
             DELEGATION_MANAGER_INIT_PAUSED_STATUS,

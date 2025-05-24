@@ -36,7 +36,7 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, 
         avsd = AVSDirectory(
             address(
                 new TransparentUpgradeableProxy(
-                    address(new AVSDirectory(IDelegationManager(delegationManager), pauserRegistry, "v9.9.9")),
+                    address(new AVSDirectory(IDelegationManager(delegationManager), pauserRegistry, "9.9.9")),
                     address(eigenLayerProxyAdmin),
                     abi.encodeWithSelector(
                         AVSDirectory.initialize.selector,
@@ -51,7 +51,7 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, 
         bytes memory v = bytes(avsd.version());
         bytes32 expectedDomainSeparator = keccak256(
             abi.encode(
-                EIP712_DOMAIN_TYPEHASH, keccak256(bytes("EigenLayer")), keccak256(bytes.concat(v[0], v[1])), block.chainid, address(avsd)
+                EIP712_DOMAIN_TYPEHASH, keccak256(bytes("EigenLayer")), keccak256(abi.encodePacked(v[0])), block.chainid, address(avsd)
             )
         );
 

@@ -43,7 +43,7 @@ contract EigenPodManagerUnitTests is EigenLayerUnitTestSetup, IEigenPodManagerEv
 
         // Deploy EPM Implementation & Proxy
         eigenPodManagerImplementation =
-            new EigenPodManager(ethPOSMock, eigenPodBeacon, IDelegationManager(address(delegationManagerMock)), pauserRegistry, "v9.9.9");
+            new EigenPodManager(ethPOSMock, eigenPodBeacon, IDelegationManager(address(delegationManagerMock)), pauserRegistry, "9.9.9");
         eigenPodManager = EigenPodManager(
             address(
                 new TransparentUpgradeableProxy(
@@ -234,7 +234,7 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
 
         // Upgrade eigenPodManager to wrapper
         eigenPodManagerWrapper = new EigenPodManagerWrapper(
-            ethPOSMock, eigenPodBeacon, IDelegationManager(address(delegationManagerMock)), pauserRegistry, "v9.9.9"
+            ethPOSMock, eigenPodBeacon, IDelegationManager(address(delegationManagerMock)), pauserRegistry, "9.9.9"
         );
         eigenLayerProxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(eigenPodManager))), address(eigenPodManagerWrapper));
     }
@@ -425,7 +425,7 @@ contract EigenPodManagerUnitTests_WithdrawSharesAsTokensTests is EigenPodManager
 
         // Upgrade eigenPodManager to wrapper
         eigenPodManagerWrapper = new EigenPodManagerWrapper(
-            ethPOSMock, eigenPodBeacon, IDelegationManager(address(delegationManagerMock)), pauserRegistry, "v9.9.9"
+            ethPOSMock, eigenPodBeacon, IDelegationManager(address(delegationManagerMock)), pauserRegistry, "9.9.9"
         );
         eigenLayerProxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(eigenPodManager))), address(eigenPodManagerWrapper));
     }
@@ -546,7 +546,7 @@ contract EigenPodManagerUnitTests_BeaconChainETHBalanceUpdateTests is EigenPodMa
 
         // Upgrade eigenPodManager to wrapper
         eigenPodManagerWrapper = new EigenPodManagerWrapper(
-            ethPOSMock, eigenPodBeacon, IDelegationManager(address(delegationManagerMock)), pauserRegistry, "v9.9.9"
+            ethPOSMock, eigenPodBeacon, IDelegationManager(address(delegationManagerMock)), pauserRegistry, "9.9.9"
         );
         eigenLayerProxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(eigenPodManager))), address(eigenPodManagerWrapper));
     }
@@ -662,12 +662,12 @@ contract EigenPodManagerUnitTests_BeaconChainETHBalanceUpdateTests is EigenPodMa
     }
 }
 
-contract EigenPodManagerUnitTests_increaseBurnableShares is EigenPodManagerUnitTests {
+contract EigenPodManagerUnitTests_increaseBurnOrRedistributableShares is EigenPodManagerUnitTests {
     function testFuzz_onlyDelegationManager(address invalidCaller) public filterFuzzedAddressInputs(invalidCaller) {
         cheats.assume(invalidCaller != address(delegationManagerMock));
         cheats.prank(invalidCaller);
         cheats.expectRevert(IEigenPodManagerErrors.OnlyDelegationManager.selector);
-        eigenPodManager.increaseBurnableShares(beaconChainETHStrategy, 1 ether);
+        eigenPodManager.increaseBurnOrRedistributableShares(OperatorSet(address(0), 0), 0, beaconChainETHStrategy, 1 ether);
     }
 
     function testFuzz_singleDeposit(uint increasedBurnableShares) public {
@@ -675,7 +675,7 @@ contract EigenPodManagerUnitTests_increaseBurnableShares is EigenPodManagerUnitT
         emit BurnableETHSharesIncreased(increasedBurnableShares);
 
         cheats.prank(address(delegationManagerMock));
-        eigenPodManager.increaseBurnableShares(beaconChainETHStrategy, increasedBurnableShares);
+        eigenPodManager.increaseBurnOrRedistributableShares(OperatorSet(address(0), 0), 0, beaconChainETHStrategy, increasedBurnableShares);
 
         assertEq(eigenPodManager.burnableETHShares(), increasedBurnableShares, "Burnable shares not updated correctly");
     }
@@ -687,14 +687,14 @@ contract EigenPodManagerUnitTests_increaseBurnableShares is EigenPodManagerUnitT
         cheats.expectEmit(true, true, true, true, address(eigenPodManager));
         emit BurnableETHSharesIncreased(existingBurnableShares);
         cheats.prank(address(delegationManagerMock));
-        eigenPodManager.increaseBurnableShares(beaconChainETHStrategy, existingBurnableShares);
+        eigenPodManager.increaseBurnOrRedistributableShares(OperatorSet(address(0), 0), 0, beaconChainETHStrategy, existingBurnableShares);
 
         assertEq(eigenPodManager.burnableETHShares(), existingBurnableShares, "Burnable shares not setup correctly");
 
         cheats.expectEmit(true, true, true, true, address(eigenPodManager));
         emit BurnableETHSharesIncreased(increasedBurnableShares);
         cheats.prank(address(delegationManagerMock));
-        eigenPodManager.increaseBurnableShares(beaconChainETHStrategy, increasedBurnableShares);
+        eigenPodManager.increaseBurnOrRedistributableShares(OperatorSet(address(0), 0), 0, beaconChainETHStrategy, increasedBurnableShares);
 
         assertEq(
             eigenPodManager.burnableETHShares(), existingBurnableShares + increasedBurnableShares, "Burnable shares not updated correctly"

@@ -41,7 +41,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     bool isUpgraded;
     uint mainnetForkBlock = 21_616_692; // Post Protocol Council upgrade
 
-    string version = "v9.9.9";
+    string version = "9.9.9";
 
     // Beacon chain genesis time when running locally
     // Multiple of 12 for sanity's sake
@@ -53,6 +53,9 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     IETHPOSDeposit constant DEPOSIT_CONTRACT = IETHPOSDeposit(0x00000000219ab540356cBB839Cbe05303d7705Fa);
 
     uint8 constant NUM_LST_STRATS = 32;
+
+    uint32 INITIAL_GLOBAL_DELAY_BLOCKS = 28_800; // 4 days in blocks
+
     // Lists of strategies used in the system
     //
     // When we select random user assets, we use the `assetType` to determine
@@ -134,6 +137,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         bool forkMainnet = isForktest();
 
         if (forkMainnet) {
+            console.log("Forking mainnet");
             forkType = MAINNET;
             _setUpMainnet();
         } else {
@@ -278,21 +282,20 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
         // First, deploy the new contracts as empty contracts
         emptyContract = new EmptyContract();
-        allocationManager =
-            AllocationManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
-        permissionController =
-            PermissionController(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
 
-        emit log_named_uint("EPM pause status", eigenPodManager.paused());
+        slashEscrowFactory =
+            SlashEscrowFactory(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
 
         // Deploy new implementation contracts and upgrade all proxies to point to them
         _deployImplementations();
         _upgradeProxies();
 
-        emit log_named_uint("EPM pause status", eigenPodManager.paused());
-
         // Initialize the newly-deployed proxy
-        allocationManager.initialize({initialOwner: executorMultisig, initialPausedStatus: 0});
+        slashEscrowFactory.initialize({
+            initialOwner: communityMultisig,
+            initialPausedStatus: 0,
+            initialGlobalDelayBlocks: INITIAL_GLOBAL_DELAY_BLOCKS
+        });
 
         cheats.stopPrank();
     }
@@ -313,6 +316,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             AllocationManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
         permissionController =
             PermissionController(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
+        slashEscrowFactory =
+            SlashEscrowFactory(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
         eigenPodBeacon = new UpgradeableBeacon(address(emptyContract));
         strategyBeacon = new UpgradeableBeacon(address(emptyContract));
     }
@@ -332,7 +337,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS,
             version
         );
-        strategyManagerImplementation = new StrategyManager(delegationManager, eigenLayerPauserReg, version);
+        strategyManagerImplementation = new StrategyManager(delegationManager, slashEscrowFactory, eigenLayerPauserReg, version);
         rewardsCoordinatorImplementation = new RewardsCoordinator(
             IRewardsCoordinatorTypes.RewardsCoordinatorConstructorParams({
                 delegationManager: delegationManager,
@@ -350,12 +355,14 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         );
         avsDirectoryImplementation = new AVSDirectory(delegationManager, eigenLayerPauserReg, version);
         eigenPodManagerImplementation =
-            new EigenPodManager(DEPOSIT_CONTRACT, eigenPodBeacon, delegationManager, eigenLayerPauserReg, "v9.9.9");
-        strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg, "v9.9.9");
+            new EigenPodManager(DEPOSIT_CONTRACT, eigenPodBeacon, delegationManager, eigenLayerPauserReg, "9.9.9");
+        strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg, "9.9.9");
+        slashEscrowFactoryImplementation =
+            new SlashEscrowFactory(allocationManager, strategyManager, eigenLayerPauserReg, new SlashEscrow(), "9.9.9");
 
         // Beacon implementations
-        eigenPodImplementation = new EigenPod(DEPOSIT_CONTRACT, eigenPodManager, BEACON_GENESIS_TIME, "v9.9.9");
-        baseStrategyImplementation = new StrategyBase(strategyManager, eigenLayerPauserReg, "v9.9.9");
+        eigenPodImplementation = new EigenPod(DEPOSIT_CONTRACT, eigenPodManager, BEACON_GENESIS_TIME, "9.9.9");
+        baseStrategyImplementation = new StrategyBase(strategyManager, eigenLayerPauserReg, "9.9.9");
 
         // Pre-longtail StrategyBaseTVLLimits implementation
         // TODO - need to update ExistingDeploymentParser
@@ -400,6 +407,11 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             ITransparentUpgradeableProxy(payable(address(strategyFactory))), address(strategyFactoryImplementation)
         );
 
+        // SlashEscrowFactory
+        eigenLayerProxyAdmin.upgrade(
+            ITransparentUpgradeableProxy(payable(address(slashEscrowFactory))), address(slashEscrowFactoryImplementation)
+        );
+
         // EigenPod beacon
         eigenPodBeacon.upgradeTo(address(eigenPodImplementation));
 
@@ -416,7 +428,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     }
 
     function _initializeProxies() public noTracing {
-        delegationManager.initialize({initialOwner: executorMultisig, initialPausedStatus: 0});
+        delegationManager.initialize({initialPausedStatus: 0});
 
         strategyManager.initialize({
             initialOwner: executorMultisig,
@@ -428,7 +440,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
         avsDirectory.initialize({initialOwner: executorMultisig, initialPausedStatus: 0});
 
-        allocationManager.initialize({initialOwner: executorMultisig, initialPausedStatus: 0});
+        allocationManager.initialize({initialPausedStatus: 0});
 
         strategyFactory.initialize({_initialOwner: executorMultisig, _initialPausedStatus: 0, _strategyBeacon: strategyBeacon});
     }
@@ -709,14 +721,16 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     }
 
     function _shuffle(IStrategy[] memory strats) internal returns (IStrategy[] memory) {
-        // Fisher-Yates shuffle algorithm
-        for (uint i = strats.length - 1; i > 0; i--) {
-            uint randomIndex = _randUint({min: 0, max: i});
+        uint[] memory casted;
 
-            // Swap elements
-            IStrategy temp = strats[i];
-            strats[i] = strats[randomIndex];
-            strats[randomIndex] = temp;
+        assembly {
+            casted := strats
+        }
+
+        casted = vm.shuffle(casted);
+
+        assembly {
+            strats := casted
         }
 
         return strats;

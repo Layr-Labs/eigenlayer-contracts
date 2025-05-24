@@ -2,11 +2,11 @@
 pragma solidity ^0.8.27;
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
-import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 
 import "../mixins/SignatureUtilsMixin.sol";
 import "../mixins/PermissionControllerMixin.sol";
+import "../mixins/Deprecated_OwnableUpgradeable.sol";
 import "../permissions/Pausable.sol";
 import "../libraries/SlashingLib.sol";
 import "../libraries/Snapshots.sol";
@@ -24,7 +24,7 @@ import "./DelegationManagerStorage.sol";
  */
 contract DelegationManager is
     Initializable,
-    OwnableUpgradeable,
+    Deprecated_OwnableUpgradeable,
     Pausable,
     DelegationManagerStorage,
     ReentrancyGuardUpgradeable,
@@ -37,20 +37,17 @@ contract DelegationManager is
 
     // @notice Simple permission for functions that are only callable by the StrategyManager contract OR by the EigenPodManagerContract
     modifier onlyStrategyManagerOrEigenPodManager() {
-        require(
-            (msg.sender == address(strategyManager) || msg.sender == address(eigenPodManager)),
-            OnlyStrategyManagerOrEigenPodManager()
-        );
+        _checkCallerIsStrategyManagerOrEigenPodManager();
         _;
     }
 
     modifier onlyEigenPodManager() {
-        require(msg.sender == address(eigenPodManager), OnlyEigenPodManager());
+        _checkCallerIsEigenPodManager();
         _;
     }
 
     modifier onlyAllocationManager() {
-        require(msg.sender == address(allocationManager), OnlyAllocationManager());
+        _checkCallerIsAllocationManager();
         _;
     }
 
@@ -80,9 +77,10 @@ contract DelegationManager is
         _disableInitializers();
     }
 
-    function initialize(address initialOwner, uint256 initialPausedStatus) external initializer {
+    function initialize(
+        uint256 initialPausedStatus
+    ) external initializer {
         _setPausedStatus(initialPausedStatus);
-        _transferOwnership(initialOwner);
     }
 
     /**
@@ -95,9 +93,9 @@ contract DelegationManager is
     function registerAsOperator(
         address initDelegationApprover,
         uint32 allocationDelay,
-        string calldata metadataURI
+        string memory metadataURI
     ) external nonReentrant {
-        require(!isDelegated(msg.sender), ActivelyDelegated());
+        _checkStakerNotDelegated(msg.sender);
 
         allocationManager.setAllocationDelay(msg.sender, allocationDelay);
         _setDelegationApprover(msg.sender, initDelegationApprover);
@@ -114,13 +112,13 @@ contract DelegationManager is
         address operator,
         address newDelegationApprover
     ) external checkCanCall(operator) nonReentrant {
-        require(isOperator(operator), OperatorNotRegistered());
+        _checkOperatorRegistered(operator);
         _setDelegationApprover(operator, newDelegationApprover);
     }
 
     /// @inheritdoc IDelegationManager
-    function updateOperatorMetadataURI(address operator, string calldata metadataURI) external checkCanCall(operator) {
-        require(isOperator(operator), OperatorNotRegistered());
+    function updateOperatorMetadataURI(address operator, string memory metadataURI) external checkCanCall(operator) {
+        _checkOperatorRegistered(operator);
         emit OperatorMetadataURIUpdated(operator, metadataURI);
     }
 
@@ -130,8 +128,8 @@ contract DelegationManager is
         SignatureWithExpiry memory approverSignatureAndExpiry,
         bytes32 approverSalt
     ) public nonReentrant {
-        require(!isDelegated(msg.sender), ActivelyDelegated());
-        require(isOperator(operator), OperatorNotRegistered());
+        _checkStakerNotDelegated(msg.sender);
+        _checkOperatorRegistered(operator);
 
         // If the operator has a `delegationApprover`, check the provided signature
         _checkApproverSignature({
@@ -158,7 +156,7 @@ contract DelegationManager is
         if (msg.sender != staker) {
             address operator = delegatedTo[staker];
 
-            require(_checkCanCall(operator) || msg.sender == delegationApprover(operator), CallerCannotUndelegate());
+            require(_canCall(operator) || msg.sender == delegationApprover(operator), CallerCannotUndelegate());
             emit StakerForceUndelegated(staker, operator);
         }
 
@@ -178,13 +176,13 @@ contract DelegationManager is
 
     /// @inheritdoc IDelegationManager
     function queueWithdrawals(
-        QueuedWithdrawalParams[] calldata params
+        QueuedWithdrawalParams[] memory params
     ) external onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE) nonReentrant returns (bytes32[] memory) {
         bytes32[] memory withdrawalRoots = new bytes32[](params.length);
         address operator = delegatedTo[msg.sender];
 
         for (uint256 i = 0; i < params.length; i++) {
-            require(params[i].strategies.length == params[i].depositShares.length, InputArrayLengthMismatch());
+            _checkInputArrayLengths(params[i].strategies.length, params[i].depositShares.length);
 
             uint256[] memory slashingFactors = _getSlashingFactors(msg.sender, operator, params[i].strategies);
 
@@ -206,8 +204,8 @@ contract DelegationManager is
 
     /// @inheritdoc IDelegationManager
     function completeQueuedWithdrawal(
-        Withdrawal calldata withdrawal,
-        IERC20[] calldata tokens,
+        Withdrawal memory withdrawal,
+        IERC20[] memory tokens,
         bool receiveAsTokens
     ) external onlyWhenNotPaused(PAUSED_EXIT_WITHDRAWAL_QUEUE) nonReentrant {
         _completeQueuedWithdrawal(withdrawal, tokens, receiveAsTokens);
@@ -215,9 +213,9 @@ contract DelegationManager is
 
     /// @inheritdoc IDelegationManager
     function completeQueuedWithdrawals(
-        Withdrawal[] calldata withdrawals,
-        IERC20[][] calldata tokens,
-        bool[] calldata receiveAsTokens
+        Withdrawal[] memory withdrawals,
+        IERC20[][] memory tokens,
+        bool[] memory receiveAsTokens
     ) external onlyWhenNotPaused(PAUSED_EXIT_WITHDRAWAL_QUEUE) nonReentrant {
         uint256 n = withdrawals.length;
         for (uint256 i; i < n; ++i) {
@@ -282,42 +280,19 @@ contract DelegationManager is
     /// @inheritdoc IDelegationManager
     function slashOperatorShares(
         address operator,
-        IStrategy strategy,
-        uint64 prevMaxMagnitude,
-        uint64 newMaxMagnitude
-    ) external onlyAllocationManager nonReentrant {
-        /// forgefmt: disable-next-item
-        uint256 operatorSharesSlashed = SlashingLib.calcSlashedAmount({
-            operatorShares: operatorShares[operator][strategy],
-            prevMaxMagnitude: prevMaxMagnitude,
-            newMaxMagnitude: newMaxMagnitude
-        });
-
-        uint256 scaledSharesSlashedFromQueue = _getSlashableSharesInQueue({
-            operator: operator,
-            strategy: strategy,
-            prevMaxMagnitude: prevMaxMagnitude,
-            newMaxMagnitude: newMaxMagnitude
-        });
-
-        // Calculate the total deposit shares to burn - slashed operator shares plus still-slashable
-        // shares sitting in the withdrawal queue.
-        uint256 totalDepositSharesToBurn = operatorSharesSlashed + scaledSharesSlashedFromQueue;
-
-        // Remove shares from operator
-        _decreaseDelegation({
-            operator: operator,
-            staker: address(0), // we treat this as a decrease for the 0-staker (only used for events)
-            strategy: strategy,
-            sharesToDecrease: operatorSharesSlashed
-        });
-
-        // Emit event for operator shares being slashed
-        emit OperatorSharesSlashed(operator, strategy, totalDepositSharesToBurn);
-
-        IShareManager shareManager = _getShareManager(strategy);
-        // NOTE: for beaconChainETHStrategy, increased burnable shares currently have no mechanism for burning
-        shareManager.increaseBurnableShares(strategy, totalDepositSharesToBurn);
+        OperatorSet calldata operatorSet,
+        uint256 slashId,
+        IStrategy[] calldata strategies,
+        uint64[] calldata prevMaxMagnitudes,
+        uint64[] calldata newMaxMagnitudes
+    ) external onlyAllocationManager nonReentrant returns (uint256[] memory totalDepositSharesToBurn) {
+        totalDepositSharesToBurn = new uint256[](strategies.length);
+        for (uint256 i = 0; i < strategies.length; i++) {
+            totalDepositSharesToBurn[i] = _slashOperatorShares(
+                operator, operatorSet, slashId, strategies[i], prevMaxMagnitudes[i], newMaxMagnitudes[i]
+            );
+        }
+        return totalDepositSharesToBurn;
     }
 
     /**
@@ -521,13 +496,21 @@ contract DelegationManager is
             scaledShares: scaledShares
         });
 
+        bytes32 withdrawalRoot = _addWithdrawalToQueue(withdrawal);
+
+        emit SlashingWithdrawalQueued(withdrawalRoot, withdrawal, withdrawableShares);
+        return withdrawalRoot;
+    }
+
+    function _addWithdrawalToQueue(
+        Withdrawal memory withdrawal
+    ) internal returns (bytes32) {
         bytes32 withdrawalRoot = calculateWithdrawalRoot(withdrawal);
 
         pendingWithdrawals[withdrawalRoot] = true;
         _queuedWithdrawals[withdrawalRoot] = withdrawal;
-        _stakerQueuedWithdrawalRoots[staker].add(withdrawalRoot);
+        _stakerQueuedWithdrawalRoots[withdrawal.staker].add(withdrawalRoot);
 
-        emit SlashingWithdrawalQueued(withdrawalRoot, withdrawal, withdrawableShares);
         return withdrawalRoot;
     }
 
@@ -542,10 +525,11 @@ contract DelegationManager is
      */
     function _completeQueuedWithdrawal(
         Withdrawal memory withdrawal,
-        IERC20[] calldata tokens,
+        IERC20[] memory tokens,
         bool receiveAsTokens
     ) internal {
-        require(tokens.length == withdrawal.strategies.length, InputArrayLengthMismatch());
+        _checkInputArrayLengths(tokens.length, withdrawal.strategies.length);
+
         require(msg.sender == withdrawal.withdrawer, WithdrawerNotCaller());
         bytes32 withdrawalRoot = calculateWithdrawalRoot(withdrawal);
         require(pendingWithdrawals[withdrawalRoot], WithdrawalNotQueued());
@@ -681,6 +665,54 @@ contract DelegationManager is
         // Decrement operator shares
         operatorShares[operator][strategy] -= sharesToDecrease;
         emit OperatorSharesDecreased(operator, staker, strategy, sharesToDecrease);
+    }
+
+    /// @dev Slashes operator shares and queues a redistribution for the slashable shares in the queue.
+    /// See `slashOperatorShares` for more details.
+    function _slashOperatorShares(
+        address operator,
+        OperatorSet memory operatorSet,
+        uint256 slashId,
+        IStrategy strategy,
+        uint64 prevMaxMagnitude,
+        uint64 newMaxMagnitude
+    ) internal returns (uint256 totalDepositSharesToBurn) {
+        // Avoid emitting events if nothing has changed for sanitization.
+        if (prevMaxMagnitude == newMaxMagnitude) return 0;
+
+        uint256 operatorSharesSlashed = SlashingLib.calcSlashedAmount({
+            operatorShares: operatorShares[operator][strategy],
+            prevMaxMagnitude: prevMaxMagnitude,
+            newMaxMagnitude: newMaxMagnitude
+        });
+
+        uint256 scaledSharesSlashedFromQueue = _getSlashableSharesInQueue({
+            operator: operator,
+            strategy: strategy,
+            prevMaxMagnitude: prevMaxMagnitude,
+            newMaxMagnitude: newMaxMagnitude
+        });
+
+        // Calculate the total deposit shares to burn - slashed operator shares plus still-slashable
+        // shares sitting in the withdrawal queue.
+        totalDepositSharesToBurn = operatorSharesSlashed + scaledSharesSlashedFromQueue;
+
+        // Remove shares from operator
+        _decreaseDelegation({
+            operator: operator,
+            staker: address(0), // we treat this as a decrease for the 0-staker (only used for events)
+            strategy: strategy,
+            sharesToDecrease: operatorSharesSlashed
+        });
+
+        // Emit event for operator shares being slashed
+        emit OperatorSharesSlashed(operator, strategy, totalDepositSharesToBurn);
+
+        _getShareManager(strategy).increaseBurnOrRedistributableShares(
+            operatorSet, slashId, strategy, totalDepositSharesToBurn
+        );
+
+        return totalDepositSharesToBurn;
     }
 
     /// @dev If `operator` has configured a `delegationApprover`, check that `signature` and `salt`
@@ -846,6 +878,37 @@ contract DelegationManager is
         return strategy == beaconChainETHStrategy
             ? IShareManager(address(eigenPodManager))
             : IShareManager(address(strategyManager));
+    }
+
+    function _checkCallerIsStrategyManagerOrEigenPodManager() internal view {
+        require(
+            (msg.sender == address(strategyManager) || msg.sender == address(eigenPodManager)),
+            OnlyStrategyManagerOrEigenPodManager()
+        );
+    }
+
+    function _checkCallerIsEigenPodManager() internal view {
+        require(msg.sender == address(eigenPodManager), OnlyEigenPodManager());
+    }
+
+    function _checkCallerIsAllocationManager() internal view {
+        require(msg.sender == address(allocationManager), OnlyAllocationManager());
+    }
+
+    function _checkOperatorRegistered(
+        address operator
+    ) internal view {
+        require(isOperator(operator), OperatorNotRegistered());
+    }
+
+    function _checkStakerNotDelegated(
+        address staker
+    ) internal view {
+        require(!isDelegated(staker), ActivelyDelegated());
+    }
+
+    function _checkInputArrayLengths(uint256 left, uint256 right) internal pure {
+        require(left == right, InputArrayLengthMismatch());
     }
 
     /**

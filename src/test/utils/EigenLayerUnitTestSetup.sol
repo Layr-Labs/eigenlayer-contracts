@@ -16,6 +16,7 @@ import "src/test/mocks/AllocationManagerMock.sol";
 import "src/test/mocks/StrategyManagerMock.sol";
 import "src/test/mocks/DelegationManagerMock.sol";
 import "src/test/mocks/EigenPodManagerMock.sol";
+import "src/test/mocks/SlashEscrowFactoryMock.sol";
 import "src/test/mocks/EmptyContract.sol";
 
 import "src/test/utils/ArrayLib.sol";
@@ -43,6 +44,7 @@ abstract contract EigenLayerUnitTestSetup is Test {
     StrategyManagerMock strategyManagerMock;
     DelegationManagerMock delegationManagerMock;
     EigenPodManagerMock eigenPodManagerMock;
+    SlashEscrowFactoryMock slashEscrowFactoryMock;
     EmptyContract emptyContract;
 
     mapping(address => bool) public isExcludedFuzzAddress;
@@ -70,7 +72,7 @@ abstract contract EigenLayerUnitTestSetup is Test {
         eigenLayerProxyAdmin = new ProxyAdmin();
 
         // Deploy permission controller
-        permissionControllerImplementation = new PermissionController("v9.9.9");
+        permissionControllerImplementation = new PermissionController("9.9.9");
         permissionController = PermissionController(
             address(new TransparentUpgradeableProxy(address(permissionControllerImplementation), address(eigenLayerProxyAdmin), ""))
         );
@@ -81,6 +83,7 @@ abstract contract EigenLayerUnitTestSetup is Test {
             StrategyManagerMock(payable(address(new StrategyManagerMock(IDelegationManager(address(delegationManagerMock))))));
         delegationManagerMock = DelegationManagerMock(payable(address(new DelegationManagerMock())));
         eigenPodManagerMock = EigenPodManagerMock(payable(address(new EigenPodManagerMock(pauserRegistry))));
+        slashEscrowFactoryMock = SlashEscrowFactoryMock(payable(address(new SlashEscrowFactoryMock())));
         emptyContract = new EmptyContract();
 
         isExcludedFuzzAddress[address(0)] = true;
@@ -92,5 +95,6 @@ abstract contract EigenLayerUnitTestSetup is Test {
         isExcludedFuzzAddress[address(strategyManagerMock)] = true;
         isExcludedFuzzAddress[address(delegationManagerMock)] = true;
         isExcludedFuzzAddress[address(eigenPodManagerMock)] = true;
+        isExcludedFuzzAddress[address(slashEscrowFactoryMock)] = true;
     }
 }

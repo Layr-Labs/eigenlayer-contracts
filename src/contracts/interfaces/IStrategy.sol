@@ -66,8 +66,9 @@ interface IStrategy is IStrategyErrors, IStrategyEvents, ISemVerMixin {
      * @param amountShares is the amount of shares being withdrawn
      * @dev This function is only callable by the strategyManager contract. It is invoked inside of the strategyManager's
      * other functions, and individual share balances are recorded in the strategyManager as well.
+     * @return amountOut is the amount of tokens being transferred out.
      */
-    function withdraw(address recipient, IERC20 token, uint256 amountShares) external;
+    function withdraw(address recipient, IERC20 token, uint256 amountShares) external returns (uint256);
 
     /**
      * @notice Used to convert a number of shares to the equivalent amount of underlying tokens for this strategy.

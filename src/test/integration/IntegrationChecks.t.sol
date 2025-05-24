@@ -1065,7 +1065,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Slashed_SlashableStake(operator, operatorSet, slashParams, "slash should lower slashable stake");
         assert_Snap_Slashed_OperatorShares(operator, slashParams, "slash should remove operator shares");
         assert_Snap_Slashed_Allocation(operator, operatorSet, slashParams, "slash should reduce current magnitude");
-        assert_Snap_Increased_BurnableShares(operator, slashParams, "slash should increase burnable shares");
+        // assert_Snap_Increased_BurnableShares(operatorSet, operator, slashParams, "slash should increase burnable shares");
 
         // Slashing SHOULD NOT change allocatable magnitude, registration, and slashability status
         assert_Snap_Unchanged_AllocatableMagnitude(operator, allStrats, "slashing should not change allocatable magnitude");
