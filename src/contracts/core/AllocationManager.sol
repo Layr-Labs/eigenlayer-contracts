@@ -98,7 +98,7 @@ contract AllocationManager is
         }
 
         for (uint256 i = 0; i < params.length; i++) {
-            _checkArrayLengthsMatch(params[i].strategies.length, params[i].newMagnitudes.length);
+            require(params[i].strategies.length == params[i].newMagnitudes.length, InputArrayLengthMismatch());
 
             // Check that the operator set exists and get the operator's registration status
             // Operators do not need to be registered for an operator set in order to allocate
@@ -178,7 +178,7 @@ contract AllocationManager is
         IStrategy[] calldata strategies,
         uint16[] calldata numToClear
     ) external onlyWhenNotPaused(PAUSED_MODIFY_ALLOCATIONS) {
-        _checkArrayLengthsMatch(strategies.length, numToClear.length);
+        require(strategies.length == numToClear.length, InputArrayLengthMismatch());
         for (uint256 i = 0; i < strategies.length; ++i) {
             _clearDeallocationQueue({operator: operator, strategy: strategies[i], numToClear: numToClear[i]});
         }
@@ -279,7 +279,7 @@ contract AllocationManager is
         CreateSetParams[] calldata params,
         address[] calldata redistributionRecipients
     ) external checkCanCall(avs) {
-        _checkArrayLengthsMatch(params.length, redistributionRecipients.length);
+        require(params.length == redistributionRecipients.length, InputArrayLengthMismatch());
         require(_avsRegisteredMetadata[avs], NonexistentAVSMetadata());
         for (uint256 i = 0; i < params.length; i++) {
             require(redistributionRecipients[i] != address(0), InputAddressZero());
@@ -671,11 +671,6 @@ contract AllocationManager is
     /// @dev Use safe casting when downcasting to uint64
     function _addInt128(uint64 a, int128 b) internal pure returns (uint64) {
         return uint256(int256(int128(uint128(a)) + b)).toUint64();
-    }
-
-    /// @dev Reverts if the provided arrays have different lengths.
-    function _checkArrayLengthsMatch(uint256 left, uint256 right) internal pure {
-        require(left == right, InputArrayLengthMismatch());
     }
 
     /**
