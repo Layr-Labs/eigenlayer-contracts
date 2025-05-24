@@ -352,7 +352,7 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
     }
 
     /// @inheritdoc ISlashEscrowFactory
-    function getPendingStrategiesForSlashIdCount(
+    function getTotalPendingStrategiesForSlashId(
         OperatorSet calldata operatorSet,
         uint256 slashId
     ) external view returns (uint256) {
