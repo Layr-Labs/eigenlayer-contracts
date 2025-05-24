@@ -37,17 +37,20 @@ contract DelegationManager is
 
     // @notice Simple permission for functions that are only callable by the StrategyManager contract OR by the EigenPodManagerContract
     modifier onlyStrategyManagerOrEigenPodManager() {
-        _checkCallerIsStrategyManagerOrEigenPodManager();
+        require(
+            (msg.sender == address(strategyManager) || msg.sender == address(eigenPodManager)),
+            OnlyStrategyManagerOrEigenPodManager()
+        );
         _;
     }
 
     modifier onlyEigenPodManager() {
-        _checkCallerIsEigenPodManager();
+        require(msg.sender == address(eigenPodManager), OnlyEigenPodManager());
         _;
     }
 
     modifier onlyAllocationManager() {
-        _checkCallerIsAllocationManager();
+        require(msg.sender == address(allocationManager), OnlyAllocationManager());
         _;
     }
 
@@ -95,7 +98,7 @@ contract DelegationManager is
         uint32 allocationDelay,
         string memory metadataURI
     ) external nonReentrant {
-        _checkStakerNotDelegated(msg.sender);
+        require(!isDelegated(msg.sender), ActivelyDelegated());
 
         allocationManager.setAllocationDelay(msg.sender, allocationDelay);
         _setDelegationApprover(msg.sender, initDelegationApprover);
@@ -112,13 +115,13 @@ contract DelegationManager is
         address operator,
         address newDelegationApprover
     ) external checkCanCall(operator) nonReentrant {
-        _checkOperatorRegistered(operator);
+        require(isOperator(operator), OperatorNotRegistered());
         _setDelegationApprover(operator, newDelegationApprover);
     }
 
     /// @inheritdoc IDelegationManager
     function updateOperatorMetadataURI(address operator, string memory metadataURI) external checkCanCall(operator) {
-        _checkOperatorRegistered(operator);
+        require(isOperator(operator), OperatorNotRegistered());
         emit OperatorMetadataURIUpdated(operator, metadataURI);
     }
 
@@ -128,8 +131,8 @@ contract DelegationManager is
         SignatureWithExpiry memory approverSignatureAndExpiry,
         bytes32 approverSalt
     ) public nonReentrant {
-        _checkStakerNotDelegated(msg.sender);
-        _checkOperatorRegistered(operator);
+        require(!isDelegated(msg.sender), ActivelyDelegated());
+        require(isOperator(operator), OperatorNotRegistered());
 
         // If the operator has a `delegationApprover`, check the provided signature
         _checkApproverSignature({
@@ -182,7 +185,7 @@ contract DelegationManager is
         address operator = delegatedTo[msg.sender];
 
         for (uint256 i = 0; i < params.length; i++) {
-            _checkInputArrayLengths(params[i].strategies.length, params[i].depositShares.length);
+            require(params[i].strategies.length == params[i].depositShares.length, InputArrayLengthMismatch());
 
             uint256[] memory slashingFactors = _getSlashingFactors(msg.sender, operator, params[i].strategies);
 
@@ -496,21 +499,13 @@ contract DelegationManager is
             scaledShares: scaledShares
         });
 
-        bytes32 withdrawalRoot = _addWithdrawalToQueue(withdrawal);
-
-        emit SlashingWithdrawalQueued(withdrawalRoot, withdrawal, withdrawableShares);
-        return withdrawalRoot;
-    }
-
-    function _addWithdrawalToQueue(
-        Withdrawal memory withdrawal
-    ) internal returns (bytes32) {
         bytes32 withdrawalRoot = calculateWithdrawalRoot(withdrawal);
 
         pendingWithdrawals[withdrawalRoot] = true;
         _queuedWithdrawals[withdrawalRoot] = withdrawal;
         _stakerQueuedWithdrawalRoots[withdrawal.staker].add(withdrawalRoot);
 
+        emit SlashingWithdrawalQueued(withdrawalRoot, withdrawal, withdrawableShares);
         return withdrawalRoot;
     }
 
@@ -528,7 +523,7 @@ contract DelegationManager is
         IERC20[] memory tokens,
         bool receiveAsTokens
     ) internal {
-        _checkInputArrayLengths(tokens.length, withdrawal.strategies.length);
+        require(tokens.length == withdrawal.strategies.length, InputArrayLengthMismatch());
         if (withdrawal.delegatedTo == address(this)) {
             // If this is a redistribution withdrawal // TODO: make this cleaner
             require(receiveAsTokens, WithdrawerNotCaller());
@@ -881,37 +876,6 @@ contract DelegationManager is
         return strategy == beaconChainETHStrategy
             ? IShareManager(address(eigenPodManager))
             : IShareManager(address(strategyManager));
-    }
-
-    function _checkCallerIsStrategyManagerOrEigenPodManager() internal view {
-        require(
-            (msg.sender == address(strategyManager) || msg.sender == address(eigenPodManager)),
-            OnlyStrategyManagerOrEigenPodManager()
-        );
-    }
-
-    function _checkCallerIsEigenPodManager() internal view {
-        require(msg.sender == address(eigenPodManager), OnlyEigenPodManager());
-    }
-
-    function _checkCallerIsAllocationManager() internal view {
-        require(msg.sender == address(allocationManager), OnlyAllocationManager());
-    }
-
-    function _checkOperatorRegistered(
-        address operator
-    ) internal view {
-        require(isOperator(operator), OperatorNotRegistered());
-    }
-
-    function _checkStakerNotDelegated(
-        address staker
-    ) internal view {
-        require(!isDelegated(staker), ActivelyDelegated());
-    }
-
-    function _checkInputArrayLengths(uint256 left, uint256 right) internal pure {
-        require(left == right, InputArrayLengthMismatch());
     }
 
     /**
