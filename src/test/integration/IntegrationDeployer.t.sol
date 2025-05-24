@@ -53,6 +53,9 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     IETHPOSDeposit constant DEPOSIT_CONTRACT = IETHPOSDeposit(0x00000000219ab540356cBB839Cbe05303d7705Fa);
 
     uint8 constant NUM_LST_STRATS = 32;
+
+    uint32 INITIAL_GLOBAL_DELAY_BLOCKS = 28_800; // 4 days in blocks
+
     // Lists of strategies used in the system
     //
     // When we select random user assets, we use the `assetType` to determine
@@ -134,6 +137,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         bool forkMainnet = isForktest();
 
         if (forkMainnet) {
+            console.log("Forking mainnet");
             forkType = MAINNET;
             _setUpMainnet();
         } else {
@@ -278,21 +282,20 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
         // First, deploy the new contracts as empty contracts
         emptyContract = new EmptyContract();
-        allocationManager =
-            AllocationManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
-        permissionController =
-            PermissionController(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
 
-        emit log_named_uint("EPM pause status", eigenPodManager.paused());
+        slashEscrowFactory =
+            SlashEscrowFactory(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
 
         // Deploy new implementation contracts and upgrade all proxies to point to them
         _deployImplementations();
         _upgradeProxies();
 
-        emit log_named_uint("EPM pause status", eigenPodManager.paused());
-
         // Initialize the newly-deployed proxy
-        allocationManager.initialize({initialPausedStatus: 0});
+        slashEscrowFactory.initialize({
+            initialOwner: communityMultisig,
+            initialPausedStatus: 0,
+            initialGlobalDelayBlocks: INITIAL_GLOBAL_DELAY_BLOCKS
+        });
 
         cheats.stopPrank();
     }
