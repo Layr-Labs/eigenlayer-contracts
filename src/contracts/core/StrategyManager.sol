@@ -210,7 +210,11 @@ contract StrategyManager is
     }
     
     /// @inheritdoc IStrategyManager
-    function decreaseBurnableShares(OperatorSet calldata operatorSet, uint256 slashId, uint256 index) public returns (uint256) {
+    function decreaseBurnableShares(
+        OperatorSet calldata operatorSet,
+        uint256 slashId,
+        uint256 index
+    ) public returns (uint256) {
         EnumerableMap.AddressToUintMap storage operatorSetBurnableShares =
             _operatorSetBurnableShares[operatorSet.key()][slashId];
 

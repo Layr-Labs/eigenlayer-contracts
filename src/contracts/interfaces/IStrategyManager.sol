@@ -148,7 +148,11 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
      * @param slashId The slash ID to burn shares in.
      * @param index The index of the strategy to burn shares in. Returns the amount of shares that were burned.
      */
+<<<<<<< HEAD
     function decreaseBurnOrRedistributableShares(
+=======
+    function decreaseBurnableShares(
+>>>>>>> b227d922 (chore: format)
         OperatorSet calldata operatorSet,
         uint256 slashId,
         uint256 index
@@ -163,6 +167,7 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
     function getBurnOrRedistributableShares(
         OperatorSet calldata operatorSet,
         uint256 slashId
+<<<<<<< HEAD
     ) external view returns (IStrategy[] memory, uint256[] memory);
 
     /**
@@ -189,6 +194,9 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
         OperatorSet calldata operatorSet,
         uint256 slashId
     ) external view returns (uint256);
+=======
+    ) external view returns (IStrategy[] memory);
+>>>>>>> b227d922 (chore: format)
 
     /**
      * @notice Owner-only function to change the `strategyWhitelister` address.
