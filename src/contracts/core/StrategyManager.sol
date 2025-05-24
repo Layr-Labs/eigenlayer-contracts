@@ -147,39 +147,42 @@ contract StrategyManager is
     }
 
     /// @inheritdoc IShareManager
-    function increaseBurnableShares(
+    function increaseBurnOrRedistributableShares(
         OperatorSet calldata operatorSet,
         uint256 slashId,
         IStrategy strategy,
         uint256 sharesToBurn
     ) external onlyDelegationManager nonReentrant {
-        emit BurnOrRedistributableSharesIncreased(operatorSet, slashId, strategy, sharesToBurn);
-
         EnumerableMap.AddressToUintMap storage operatorSetBurnableShares =
-            _operatorSetBurnableShares[operatorSet.key()][slashId];
+            _burnOrRedistributableShares[operatorSet.key()][slashId];
 
         if (sharesToBurn != 0) {
             operatorSetBurnableShares.set(address(strategy), sharesToBurn);
 
             // Notify the `SlashEscrowFactory` contract that it received underlying tokens to burn or redistribute.
             slashEscrowFactory.initiateSlashEscrow(operatorSet, slashId, strategy);
+
+            emit BurnOrRedistributableSharesIncreased(operatorSet, slashId, strategy, sharesToBurn);
         }
     }
 
     /// @inheritdoc IStrategyManager
-    function decreaseBurnableShares(OperatorSet calldata operatorSet, uint256 slashId) external nonReentrant {
-        EnumerableMap.AddressToUintMap storage operatorSetBurnableShares =
-            _operatorSetBurnableShares[operatorSet.key()][slashId];
+    function decreaseBurnOrRedistributableShares(
+        OperatorSet calldata operatorSet,
+        uint256 slashId
+    ) external nonReentrant {
+        EnumerableMap.AddressToUintMap storage burnOrRedistributableShares =
+            _burnOrRedistributableShares[operatorSet.key()][slashId];
 
         // Cache length to avoid sloads.
-        uint256 length = operatorSetBurnableShares.length();
+        uint256 length = burnOrRedistributableShares.length();
 
         // Iterate over all strategies that have burnable shares.
         for (uint256 i = 0; i < length; ++i) {
-            (address strategy, uint256 sharesToBurn) = operatorSetBurnableShares.at(i);
+            (address strategy, uint256 sharesToBurn) = burnOrRedistributableShares.at(i);
 
             // Remove the strategy from the operator set burnable shares.
-            operatorSetBurnableShares.remove(address(strategy));
+            burnOrRedistributableShares.remove(address(strategy));
 
             // Withdraw the shares to the slash escrow.
             IStrategy(strategy).withdraw({
@@ -199,7 +202,7 @@ contract StrategyManager is
     ) external nonReentrant {
         (, uint256 sharesToBurn) = EnumerableMap.tryGet(burnableShares, address(strategy));
         EnumerableMap.remove(burnableShares, address(strategy));
-        emit BurnOrRedistributableSharesDecreased(OperatorSet(address(this), 0), 0, strategy, sharesToBurn);
+        emit BurnableSharesDecreased(strategy, sharesToBurn);
 
         // Burning acts like withdrawing, except that the destination is to the burn address.
         // If we have no shares to burn, we don't need to call the strategy.

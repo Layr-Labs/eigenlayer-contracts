@@ -47,7 +47,7 @@ interface IShareManager {
      * @param addedSharesToBurn The amount of added shares to burn.
      * @dev This function is only called by the DelegationManager when an operator is slashed.
      */
-    function increaseBurnableShares(
+    function increaseBurnOrRedistributableShares(
         OperatorSet calldata operatorSet,
         uint256 slashId,
         IStrategy strategy,

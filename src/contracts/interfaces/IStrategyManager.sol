@@ -44,15 +44,19 @@ interface IStrategyManagerEvents {
     /// @notice Emitted when a strategy is removed from the approved list of strategies for deposit
     event StrategyRemovedFromDepositWhitelist(IStrategy strategy);
 
-    /// @notice Emitted when an operator is slashed and shares to be burned are increased
+    /// @notice Emitted when an operator is slashed and shares to be burned or redistributed are increased
     event BurnOrRedistributableSharesIncreased(
         OperatorSet operatorSet, uint256 slashId, IStrategy strategy, uint256 shares
     );
 
-    /// @notice Emitted when shares are burned
+    /// @notice Emitted when shares marked for burning or redistribution are decreased and transferred to the `SlashEscrow`
     event BurnOrRedistributableSharesDecreased(
         OperatorSet operatorSet, uint256 slashId, IStrategy strategy, uint256 shares
     );
+
+    /// @notice Emitted when shares are burnt
+    /// @dev This event is only emitted in the pre-redistribution slash path
+    event BurnableSharesDecreased(IStrategy strategy, uint256 shares);
 }
 
 /**
@@ -123,6 +127,7 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
      * @notice Burns Strategy shares for the given strategy by calling into the strategy to transfer
      * to the default burn address.
      * @param strategy The strategy to burn shares in.
+     * @dev This function will be deprecated in a release after redistribution
      */
     function burnShares(
         IStrategy strategy
@@ -133,7 +138,7 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
      * @param operatorSet The operator set to burn shares in.
      * @param slashId The slash ID to burn shares in.
      */
-    function decreaseBurnableShares(OperatorSet calldata operatorSet, uint256 slashId) external;
+    function decreaseBurnOrRedistributableShares(OperatorSet calldata operatorSet, uint256 slashId) external;
 
     /**
      * @notice Owner-only function to change the `strategyWhitelister` address.

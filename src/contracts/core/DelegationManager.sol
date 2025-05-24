@@ -529,21 +529,16 @@ contract DelegationManager is
         bool receiveAsTokens
     ) internal {
         _checkInputArrayLengths(tokens.length, withdrawal.strategies.length);
-        if (withdrawal.delegatedTo == address(this)) {
-            // If this is a redistribution withdrawal // TODO: make this cleaner
-            require(receiveAsTokens, WithdrawerNotCaller());
-        } else {
-            require(msg.sender == withdrawal.withdrawer, WithdrawerNotCaller());
-        }
+
+        require(msg.sender == withdrawal.withdrawer, WithdrawerNotCaller());
         bytes32 withdrawalRoot = calculateWithdrawalRoot(withdrawal);
         require(pendingWithdrawals[withdrawalRoot], WithdrawalNotQueued());
 
         uint256[] memory prevSlashingFactors;
         {
-            // The slashableUntil block is inclusive, so we verify that the current block number exceeds it
-            // before allowing the withdrawal to be completed.
-            uint32 delayBlocks = withdrawal.delegatedTo == address(this) ? 4 days : MIN_WITHDRAWAL_DELAY_BLOCKS;
-            uint32 slashableUntil = withdrawal.startBlock + delayBlocks;
+            // slashableUntil is block inclusive so we need to check if the current block is strictly greater than the slashableUntil block
+            // meaning the withdrawal can be completed.
+            uint32 slashableUntil = withdrawal.startBlock + MIN_WITHDRAWAL_DELAY_BLOCKS;
             require(uint32(block.number) > slashableUntil, WithdrawalDelayNotElapsed());
 
             // Given the max magnitudes of the operator the staker was originally delegated to, calculate
@@ -713,7 +708,9 @@ contract DelegationManager is
         // Emit event for operator shares being slashed
         emit OperatorSharesSlashed(operator, strategy, totalDepositSharesToBurn);
 
-        _getShareManager(strategy).increaseBurnableShares(operatorSet, slashId, strategy, totalDepositSharesToBurn);
+        _getShareManager(strategy).increaseBurnOrRedistributableShares(
+            operatorSet, slashId, strategy, totalDepositSharesToBurn
+        );
 
         return totalDepositSharesToBurn;
     }
