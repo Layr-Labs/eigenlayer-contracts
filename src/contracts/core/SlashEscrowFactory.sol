@@ -339,19 +339,6 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
     }
 
     /// @inheritdoc ISlashEscrowFactory
-    function getPendingStrategiesForSlashIds() public view returns (IStrategy[][][] memory strategies) {
-        bytes32[] memory operatorSetKeys = _pendingOperatorSets.values();
-
-        uint256 length = operatorSetKeys.length;
-
-        strategies = new IStrategy[][][](length);
-
-        for (uint256 i = 0; i < length; ++i) {
-            strategies[i] = getPendingStrategiesForSlashIds(operatorSetKeys[i].decode());
-        }
-    }
-
-    /// @inheritdoc ISlashEscrowFactory
     function getTotalPendingStrategiesForSlashId(
         OperatorSet calldata operatorSet,
         uint256 slashId
