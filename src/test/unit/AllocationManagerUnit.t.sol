@@ -3826,7 +3826,7 @@ contract AllocationManagerUnitTests_createRedistributingOperatorSets is Allocati
     }
 
     function testRevert_createRedistributingOperatorSets_ZeroAddress(Randomness r) public rand(r) {
-        address avs = r.Address();
+        address avs = address(0x12345);
         address[] memory redistributionRecipients = new address[](1);
         redistributionRecipients[0] = address(0);
 
@@ -3835,7 +3835,6 @@ contract AllocationManagerUnitTests_createRedistributingOperatorSets is Allocati
 
         cheats.prank(avs);
         cheats.expectRevert(IPausable.InputAddressZero.selector);
-        cheats.prank(avs);
         allocationManager.createRedistributingOperatorSets(
             avs, CreateSetParams(defaultOperatorSet.id, defaultStrategies).toArray(), redistributionRecipients
         );
