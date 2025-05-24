@@ -285,16 +285,40 @@ contract DelegationManager is
         address operator,
         OperatorSet calldata operatorSet,
         uint256 slashId,
-        IStrategy[] calldata strategies,
-        uint64[] calldata prevMaxMagnitudes,
-        uint64[] calldata newMaxMagnitudes
-    ) external onlyAllocationManager nonReentrant returns (uint256[] memory totalDepositSharesToBurn) {
-        totalDepositSharesToBurn = new uint256[](strategies.length);
-        for (uint256 i = 0; i < strategies.length; i++) {
-            totalDepositSharesToBurn[i] = _slashOperatorShares(
-                operator, operatorSet, slashId, strategies[i], prevMaxMagnitudes[i], newMaxMagnitudes[i]
-            );
-        }
+        IStrategy strategy,
+        uint64 prevMaxMagnitude,
+        uint64 newMaxMagnitude
+    ) external onlyAllocationManager nonReentrant returns (uint256 totalDepositSharesToBurn) {
+        uint256 operatorSharesSlashed = SlashingLib.calcSlashedAmount({
+            operatorShares: operatorShares[operator][strategy],
+            prevMaxMagnitude: prevMaxMagnitude,
+            newMaxMagnitude: newMaxMagnitude
+        });
+
+        uint256 scaledSharesSlashedFromQueue = _getSlashableSharesInQueue({
+            operator: operator,
+            strategy: strategy,
+            prevMaxMagnitude: prevMaxMagnitude,
+            newMaxMagnitude: newMaxMagnitude
+        });
+
+        // Calculate the total deposit shares to burn - slashed operator shares plus still-slashable
+        // shares sitting in the withdrawal queue.
+        totalDepositSharesToBurn = operatorSharesSlashed + scaledSharesSlashedFromQueue;
+
+        // Remove shares from operator
+        _decreaseDelegation({
+            operator: operator,
+            staker: address(0), // we treat this as a decrease for the 0-staker (only used for events)
+            strategy: strategy,
+            sharesToDecrease: operatorSharesSlashed
+        });
+
+        // Emit event for operator shares being slashed
+        emit OperatorSharesSlashed(operator, strategy, totalDepositSharesToBurn);
+
+        _getShareManager(strategy).increaseBurnableShares(operatorSet, slashId, strategy, totalDepositSharesToBurn);
+
         return totalDepositSharesToBurn;
     }
 
@@ -661,56 +685,8 @@ contract DelegationManager is
         emit OperatorSharesDecreased(operator, staker, strategy, sharesToDecrease);
     }
 
-    /// @dev Slashes operator shares and queues a redistribution for the slashable shares in the queue.
-    /// See `slashOperatorShares` for more details.
-    function _slashOperatorShares(
-        address operator,
-        OperatorSet memory operatorSet,
-        uint256 slashId,
-        IStrategy strategy,
-        uint64 prevMaxMagnitude,
-        uint64 newMaxMagnitude
-    ) internal returns (uint256 totalDepositSharesToBurn) {
-        // Avoid emitting events if nothing has changed for sanitization.
-        if (prevMaxMagnitude == newMaxMagnitude) return 0;
-
-        uint256 operatorSharesSlashed = SlashingLib.calcSlashedAmount({
-            operatorShares: operatorShares[operator][strategy],
-            prevMaxMagnitude: prevMaxMagnitude,
-            newMaxMagnitude: newMaxMagnitude
-        });
-
-        uint256 scaledSharesSlashedFromQueue = _getSlashableSharesInQueue({
-            operator: operator,
-            strategy: strategy,
-            prevMaxMagnitude: prevMaxMagnitude,
-            newMaxMagnitude: newMaxMagnitude
-        });
-
-        // Calculate the total deposit shares to burn - slashed operator shares plus still-slashable
-        // shares sitting in the withdrawal queue.
-        totalDepositSharesToBurn = operatorSharesSlashed + scaledSharesSlashedFromQueue;
-
-        // Remove shares from operator
-        _decreaseDelegation({
-            operator: operator,
-            staker: address(0), // we treat this as a decrease for the 0-staker (only used for events)
-            strategy: strategy,
-            sharesToDecrease: operatorSharesSlashed
-        });
-
-        // Emit event for operator shares being slashed
-        emit OperatorSharesSlashed(operator, strategy, totalDepositSharesToBurn);
-
-        _getShareManager(strategy).increaseBurnOrRedistributableShares(
-            operatorSet, slashId, strategy, totalDepositSharesToBurn
-        );
-
-        return totalDepositSharesToBurn;
-    }
-
     /// @dev If `operator` has configured a `delegationApprover`, check that `signature` and `salt`
-    /// are a valid approval for `staker` delegating to `operator`.
+    /// are a valid appfroval for `staker` delegating to `operator`.
     function _checkApproverSignature(
         address staker,
         address operator,

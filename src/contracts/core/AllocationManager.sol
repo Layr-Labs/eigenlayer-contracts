@@ -63,18 +63,11 @@ contract AllocationManager is
     function slashOperator(
         address avs,
         SlashingParams calldata params
-    )
-        external
-        onlyWhenNotPaused(PAUSED_OPERATOR_SLASHING)
-        checkCanCall(avs)
-        returns (uint256 slashId, uint256[] memory shares)
-    {
+    ) external onlyWhenNotPaused(PAUSED_OPERATOR_SLASHING) checkCanCall(avs) returns (uint256, uint256[] memory) {
         // Check that the operator set exists and the operator is registered to it
         OperatorSet memory operatorSet = OperatorSet(avs, params.operatorSetId);
-
         require(params.strategies.length == params.wadsToSlash.length, InputArrayLengthMismatch());
         require(_operatorSets[operatorSet.avs].contains(operatorSet.id), InvalidOperatorSet());
-
         require(isOperatorSlashable(params.operator, operatorSet), OperatorNotSlashable());
 
         return _slashOperator(params, operatorSet);
@@ -327,12 +320,10 @@ contract AllocationManager is
         OperatorSet memory operatorSet
     ) internal returns (uint256 slashId, uint256[] memory shares) {
         uint256[] memory wadSlashed = new uint256[](params.strategies.length);
+        shares = new uint256[](params.strategies.length);
 
         // Increment the slash count for the operator set.
         slashId = ++_slashCount[operatorSet.key()];
-
-        uint64[] memory prevMaxMagnitudes = new uint64[](params.strategies.length);
-        uint64[] memory newMaxMagnitudes = new uint64[](params.strategies.length);
 
         // For each strategy in the operator set, slash any existing allocation
         for (uint256 i = 0; i < params.strategies.length; i++) {
@@ -390,25 +381,23 @@ contract AllocationManager is
             // 5. Update state
             _updateAllocationInfo(params.operator, operatorSet.key(), params.strategies[i], info, allocation);
 
+            // Emit an event for the updated allocation
             emit AllocationUpdated(
                 params.operator, operatorSet, params.strategies[i], allocation.currentMagnitude, uint32(block.number)
             );
 
             _updateMaxMagnitude(params.operator, params.strategies[i], info.maxMagnitude);
 
-            prevMaxMagnitudes[i] = prevMaxMagnitude;
-            newMaxMagnitudes[i] = info.maxMagnitude;
+            // 6. Slash operators shares in the DelegationManager
+            shares[i] = delegation.slashOperatorShares({
+                operator: params.operator,
+                operatorSet: operatorSet,
+                slashId: slashId,
+                strategy: params.strategies[i],
+                prevMaxMagnitude: prevMaxMagnitude,
+                newMaxMagnitude: info.maxMagnitude
+            });
         }
-
-        // 6. Slash operators shares in the DelegationManager
-        shares = delegation.slashOperatorShares({
-            operator: params.operator,
-            operatorSet: operatorSet,
-            slashId: slashId,
-            strategies: params.strategies,
-            prevMaxMagnitudes: prevMaxMagnitudes,
-            newMaxMagnitudes: newMaxMagnitudes
-        });
 
         emit OperatorSlashed(params.operator, operatorSet, params.strategies, wadSlashed, params.description);
     }
