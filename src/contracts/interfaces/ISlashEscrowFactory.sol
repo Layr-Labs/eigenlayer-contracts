@@ -176,7 +176,7 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
      * @param slashId The slash ID of the strategies that are being queried.
      * @return The number of pending strategies.
      */
-    function getPendingStrategiesForSlashIdCount(
+    function getTotalPendingStrategiesForSlashId(
         OperatorSet calldata operatorSet,
         uint256 slashId
     ) external view returns (uint256);

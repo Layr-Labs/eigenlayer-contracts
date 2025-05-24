@@ -126,7 +126,7 @@ contract SlashEscrowFactoryUnitTests is EigenLayerUnitTestSetup, ISlashEscrowFac
         (IStrategy[] memory strategies) = router.getPendingStrategiesForSlashId(operatorSet, slashId);
 
         assertEq(strategies.length, expectedCount);
-        assertEq(router.getPendingStrategiesForSlashIdCount(operatorSet, slashId), expectedCount);
+        assertEq(router.getTotalPendingStrategiesForSlashId(operatorSet, slashId), expectedCount);
 
         // Assert that the start block for the (operator set, slash ID) is correct.
         assertEq(router.getBurnOrRedistributionStartBlock(operatorSet, slashId), uint32(block.number));
@@ -225,7 +225,7 @@ contract SlashEscrowFactoryUnitTests_releaseSlashEscrow is SlashEscrowFactoryUni
         assertEq(router.getTotalPendingSlashIds(defaultOperatorSet), 0);
 
         // Assert that the strategies and underlying amounts are no longer in the pending burn or redistributions.
-        assertEq(router.getPendingStrategiesForSlashIdCount(defaultOperatorSet, defaultSlashId), 0);
+        assertEq(router.getTotalPendingStrategiesForSlashId(defaultOperatorSet, defaultSlashId), 0);
 
         // Assert that the underlying amounts are no longer set.
         for (uint i = numStrategies; i > 0; i--) {
@@ -305,7 +305,7 @@ contract SlashEscrowFactoryUnitTests_releaseSlashEscrow is SlashEscrowFactoryUni
         assertFalse(router.isPendingSlashId(defaultOperatorSet, defaultSlashId));
         assertEq(router.getTotalPendingOperatorSets(), 0);
         assertEq(router.getTotalPendingSlashIds(defaultOperatorSet), 0);
-        assertEq(router.getPendingStrategiesForSlashIdCount(defaultOperatorSet, defaultSlashId), 0);
+        assertEq(router.getTotalPendingStrategiesForSlashId(defaultOperatorSet, defaultSlashId), 0);
 
         // Verify that all underlying amounts are cleared
         for (uint i = 0; i < numStrategies; i++) {
