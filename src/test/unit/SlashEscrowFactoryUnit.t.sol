@@ -478,3 +478,85 @@ contract SlashEscrowFactoryUnitTests_getPendingBurnOrRedistributions is SlashEsc
         assertEq(factory.getTotalPendingStrategiesForSlashId(defaultOperatorSet, defaultSlashId), 0);
     }
 }
+
+contract SlashEscrowFactoryUnitTests_SlashEscrowProxy is SlashEscrowFactoryUnitTests {
+    address maliciousCaller;
+
+    function setUp() public override {
+        super.setUp();
+        _initiateSlashEscrow(defaultOperatorSet, defaultSlashId, defaultStrategy, defaultToken, 100);
+        _releaseSlashEscrow(defaultOperatorSet, defaultSlashId);
+        maliciousCaller = cheats.randomAddress();
+    }
+
+    function test_SlashEscrowProxy_InvalidDeploymentParameters_BadFactory() public {
+        ISlashEscrow slashEscrow = factory.getSlashEscrow(defaultOperatorSet, defaultSlashId);
+
+        cheats.prank(maliciousCaller);
+        cheats.expectRevert(ISlashEscrow.InvalidDeploymentParameters.selector);
+        slashEscrow.burnOrRedistributeUnderlyingTokens(
+            ISlashEscrowFactory(maliciousCaller),
+            slashEscrowImplementation,
+            defaultOperatorSet,
+            defaultSlashId,
+            defaultRedistributionRecipient,
+            defaultStrategy
+        );
+    }
+
+    function test_SlashEscrowProxy_InvalidDeploymentParameters_BadSlashEscrowImplementation() public {
+        ISlashEscrow slashEscrow = factory.getSlashEscrow(defaultOperatorSet, defaultSlashId);
+
+        cheats.prank(maliciousCaller);
+        cheats.expectRevert(ISlashEscrow.InvalidDeploymentParameters.selector);
+        slashEscrow.burnOrRedistributeUnderlyingTokens(
+            factory, ISlashEscrow(maliciousCaller), defaultOperatorSet, defaultSlashId, defaultRedistributionRecipient, defaultStrategy
+        );
+    }
+
+    function test_SlashEscrowProxy_InvalidDeploymentParameters_BadOperatorSet() public {
+        ISlashEscrow slashEscrow = factory.getSlashEscrow(defaultOperatorSet, defaultSlashId);
+
+        cheats.prank(maliciousCaller);
+        cheats.expectRevert(ISlashEscrow.InvalidDeploymentParameters.selector);
+        slashEscrow.burnOrRedistributeUnderlyingTokens(
+            factory,
+            slashEscrowImplementation,
+            OperatorSet(maliciousCaller, 1),
+            defaultSlashId,
+            defaultRedistributionRecipient,
+            defaultStrategy
+        );
+    }
+
+    function test_SlashEscrowProxy_InvalidDeploymentParameters_BadSlashId(uint slashId) public {
+        ISlashEscrow slashEscrow = factory.getSlashEscrow(defaultOperatorSet, defaultSlashId);
+
+        cheats.assume(slashId != defaultSlashId);
+
+        cheats.prank(maliciousCaller);
+        cheats.expectRevert(ISlashEscrow.InvalidDeploymentParameters.selector);
+        slashEscrow.burnOrRedistributeUnderlyingTokens(
+            factory, slashEscrowImplementation, defaultOperatorSet, slashId, defaultRedistributionRecipient, defaultStrategy
+        );
+    }
+
+    function test_SlashEscrowProxy_OnlySlashEscrowFactory() public {
+        ISlashEscrow slashEscrow = factory.getSlashEscrow(defaultOperatorSet, defaultSlashId);
+
+        cheats.expectRevert(ISlashEscrow.OnlySlashEscrowFactory.selector);
+        slashEscrow.burnOrRedistributeUnderlyingTokens(
+            factory, slashEscrowImplementation, defaultOperatorSet, defaultSlashId, defaultRedistributionRecipient, defaultStrategy
+        );
+    }
+
+    function test_SlashEscrowProxy_OnlySlashEscrowFactory_BadRecipient() public {
+        ISlashEscrow slashEscrow = factory.getSlashEscrow(defaultOperatorSet, defaultSlashId);
+
+        cheats.prank(maliciousCaller);
+        cheats.expectRevert(ISlashEscrow.OnlySlashEscrowFactory.selector);
+        slashEscrow.burnOrRedistributeUnderlyingTokens(
+            factory, slashEscrowImplementation, defaultOperatorSet, defaultSlashId, maliciousCaller, defaultStrategy
+        );
+    }
+}
