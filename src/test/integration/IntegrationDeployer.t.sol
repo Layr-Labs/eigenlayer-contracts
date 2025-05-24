@@ -282,7 +282,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
         // First, deploy the new contracts as empty contracts
         emptyContract = new EmptyContract();
-        
+
         slashEscrowFactory =
             SlashEscrowFactory(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
 
@@ -291,7 +291,11 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         _upgradeProxies();
 
         // Initialize the newly-deployed proxy
-        slashEscrowFactory.initialize({initialOwner: communityMultisig, initialPausedStatus: 0, initialGlobalDelayBlocks: INITIAL_GLOBAL_DELAY_BLOCKS});
+        slashEscrowFactory.initialize({
+            initialOwner: communityMultisig,
+            initialPausedStatus: 0,
+            initialGlobalDelayBlocks: INITIAL_GLOBAL_DELAY_BLOCKS
+        });
 
         cheats.stopPrank();
     }
