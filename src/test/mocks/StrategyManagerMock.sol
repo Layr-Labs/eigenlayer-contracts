@@ -106,7 +106,7 @@ contract StrategyManagerMock is Test {
         return (existingShares, addedShares);
     }
 
-    function decreaseBurnableShares(IStrategy strategy, uint sharesToBurn) external {}
+    function decreaseBurnOrRedistributableShares(IStrategy strategy, uint sharesToBurn) external {}
 
     function _getStrategyIndex(address staker, IStrategy strategy) internal view returns (uint) {
         IStrategy[] memory strategies = strategiesToReturn[staker];
