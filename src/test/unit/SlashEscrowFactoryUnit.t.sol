@@ -163,6 +163,23 @@ contract SlashEscrowFactoryUnitTests_initiateSlashEscrow is SlashEscrowFactoryUn
         factory.initiateSlashEscrow(defaultOperatorSet, defaultSlashId, defaultStrategy);
     }
 
+    function testFuzz_initiateSlashEscrow_multipleStrategies(uint r) public {
+        // Initialize arrays to store test data for multiple strategies
+        uint numStrategies = bound(r, 2, 10);
+        // Set up each strategy with random data and start burn/redistribution
+        for (uint i = 0; i < numStrategies; i++) {
+            // Generate random strategy address and token
+            IStrategy strategy = IStrategy(cheats.randomAddress());
+            MockERC20 token = new MockERC20();
+            uint underlyingAmount = cheats.randomUint();
+
+            // Start burn/redistribution for this strategy
+            _initiateSlashEscrow(defaultOperatorSet, defaultSlashId, strategy, token, underlyingAmount);
+            // Verify the burn/redistribution was started correctly
+            _checkStartBurnOrRedistributions(defaultOperatorSet, defaultSlashId, strategy, token, underlyingAmount, i + 1);
+        }
+    }
+
     function test_initiateSlashEscrow_correctness(uint underlyingAmount) public {
         _initiateSlashEscrow(defaultOperatorSet, defaultSlashId, defaultStrategy, defaultToken, underlyingAmount);
         _checkStartBurnOrRedistributions(defaultOperatorSet, defaultSlashId, defaultStrategy, defaultToken, underlyingAmount, 1);
