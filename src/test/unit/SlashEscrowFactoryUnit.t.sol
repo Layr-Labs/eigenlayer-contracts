@@ -408,7 +408,7 @@ contract SlashEscrowFactoryUnitTests_setStrategyBurnOrRedistributionDelay is Sla
     function test_setStrategyBurnOrRedistributionDelay_correctness() public {
         cheats.prank(defaultOwner);
         factory.setStrategyBurnOrRedistributionDelay(defaultStrategy, 10 days / 12 seconds);
-        // Returns global delay since strategy delay is larger than global delay.
+        // Returns strategy delay since strategy delay is larger than global delay.
         assertEq(factory.getStrategyBurnOrRedistributionDelay(defaultStrategy), 10 days / 12 seconds);
     }
 }
