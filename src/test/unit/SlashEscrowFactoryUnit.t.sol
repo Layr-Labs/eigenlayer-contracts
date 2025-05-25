@@ -417,14 +417,6 @@ contract SlashEscrowFactoryUnitTests_setStrategyBurnOrRedistributionDelay is Sla
         // Returns strategy delay since strategy delay is larger than global delay.
         assertEq(factory.getStrategyBurnOrRedistributionDelay(defaultStrategy), delay);
     }
-
-    // Test
-    //     function testFuzz_setStrategyBurnOrRedistributionDelay_correctness() public {
-    //     cheats.prank(defaultOwner);
-    //     factory.setStrategyBurnOrRedistributionDelay(defaultStrategy, 10 days / 12 seconds);
-    //     // Returns strategy delay since strategy delay is larger than global delay.
-    //     assertEq(factory.getStrategyBurnOrRedistributionDelay(defaultStrategy), 10 days / 12 seconds);
-    // }
 }
 
 contract SlashEscrowFactoryUnitTests_getBurnOrRedistributionDelay is SlashEscrowFactoryUnitTests {
