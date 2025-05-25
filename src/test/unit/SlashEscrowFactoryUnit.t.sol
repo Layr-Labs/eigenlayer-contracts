@@ -539,6 +539,21 @@ contract SlashEscrowFactoryUnitTests_getPendingBurnOrRedistributions is SlashEsc
     }
 }
 
+contract SlashEscrowFactoryUnitTests_getPendingOperatorSetsAndSlashIds is SlashEscrowFactoryUnitTests {
+    function test_getPendingOperatorSetsAndSlashIds() public {
+        _initiateSlashEscrow(defaultOperatorSet, defaultSlashId, defaultStrategy, defaultToken, 100);
+        _initiateSlashEscrow(defaultOperatorSet, defaultSlashId + 1, defaultStrategy, defaultToken, 100);
+        _initiateSlashEscrow(defaultOperatorSet, defaultSlashId + 2, defaultStrategy, defaultToken, 100);
+        (OperatorSet[] memory operatorSets, uint256[][] memory slashIds) = factory.getPendingOperatorSetsAndSlashIds();
+        assertEq(operatorSets.length, 1);
+        assertEq(operatorSets[0].key(), defaultOperatorSet.key());
+        assertEq(slashIds.length, 1);
+        assertEq(slashIds[0].length, 3);
+        assertEq(slashIds[0][0], defaultSlashId);
+        assertEq(slashIds[0][1], defaultSlashId + 1);
+        assertEq(slashIds[0][2], defaultSlashId + 2);
+    }
+}
 contract SlashEscrowFactoryUnitTests_SlashEscrowProxy is SlashEscrowFactoryUnitTests {
     address maliciousCaller;
 

@@ -129,6 +129,14 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
     ) external view returns (uint256[] memory);
 
     /**
+     * @notice Returns the pending escrows and their release blocks.
+     * @return operatorSets The pending operator sets.
+     * @return slashIds The pending slash IDs for each operator set. Indexed by operator set.
+     * @return releaseBlocks The release block for each slash ID. Indexed by operator set x slashID
+     */
+    function getPendingEscrows() external view returns (OperatorSet[] memory operatorSets, uint256[][] memory slashIds, uint256[][] memory releaseBlocks);
+
+    /**
      * @notice Returns the total number of slash IDs for an operator set.
      * @param operatorSet The operator set whose total slash IDs are being queried.
      * @return The total number of slash IDs for the operator set.

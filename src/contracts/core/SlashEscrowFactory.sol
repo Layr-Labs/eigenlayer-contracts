@@ -224,7 +224,7 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
      */
 
     /// @inheritdoc ISlashEscrowFactory
-    function getPendingOperatorSets() external view returns (OperatorSet[] memory operatorSets) {
+    function getPendingOperatorSets() public view returns (OperatorSet[] memory operatorSets) {
         bytes32[] memory operatorSetKeys = _pendingOperatorSets.values();
 
         operatorSets = new OperatorSet[](operatorSetKeys.length);
@@ -250,8 +250,8 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
 
     /// @inheritdoc ISlashEscrowFactory
     function getPendingSlashIds(
-        OperatorSet calldata operatorSet
-    ) external view returns (uint256[] memory) {
+        OperatorSet memory operatorSet
+    ) public view returns (uint256[] memory) {
         return _pendingSlashIds[operatorSet.key()].values();
     }
 
@@ -260,6 +260,17 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
         OperatorSet calldata operatorSet
     ) external view returns (uint256) {
         return _pendingSlashIds[operatorSet.key()].length();
+    }
+
+    /// @inheritdoc ISlashEscrowFactory
+    function getPendingOperatorSetsAndSlashIds() external view returns (OperatorSet[] memory operatorSets, uint256[][] memory slashIds, uint256[][] memory releaseBlocks) {
+        operatorSets = getPendingOperatorSets();
+        slashIds = new uint256[][](operatorSets.length);
+        releaseBlocks = new uint256[][](operatorSets.length);
+
+        for (uint256 i = 0; i < operatorSets.length; i++) {
+            slashIds[i] = getPendingSlashIds(operatorSets[i]);
+        }
     }
 
     /// @inheritdoc ISlashEscrowFactory
