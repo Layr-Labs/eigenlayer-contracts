@@ -1077,7 +1077,7 @@ contract StrategyManagerUnitTests_increaseBurnOrRedistributableShares is Strateg
         cheats.expectRevert(IStrategyManagerErrors.OnlyDelegationManager.selector);
         strategyManager.increaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, dummyStrat, 1);
     }
-    
+
     function test_Revert_StrategyAlreadyInSlash() external {
         IStrategy strategy = dummyStrat;
         cheats.startPrank(address(delegationManagerMock));

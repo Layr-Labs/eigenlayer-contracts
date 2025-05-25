@@ -153,7 +153,8 @@ contract StrategyManager is
         IStrategy strategy,
         uint256 sharesToBurn
     ) external onlyDelegationManager nonReentrant {
-        EnumerableMap.AddressToUintMap storage operatorSetBurnableShares = _burnOrRedistributableShares[operatorSet.key()][slashId];
+        EnumerableMap.AddressToUintMap storage operatorSetBurnableShares =
+            _burnOrRedistributableShares[operatorSet.key()][slashId];
 
         // Sanity check that the strategy is not already in the slash's burn or redistributable shares.
         // This should never happen because the `AllocationManager` ensures that strategies for a given slash are unique.
