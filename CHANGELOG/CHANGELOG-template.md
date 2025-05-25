@@ -59,7 +59,7 @@ git log v1.4.2..HEAD --pretty=format:"- %s (%an)"
 
 This will show:
 
-- Only commits since v1.2.3 up to the current HEAD
+- Only commits since v1.4.2 up to the current HEAD
 - One-line commit messages (%s) with the author name (%an)
 
 
@@ -76,6 +76,6 @@ An example output is:
 ...
 ```
 
-3. Commit the Changelog, Before Cutting Release
+3. Commit the Changelog
 
 Copy the output and add here with a commit, then proceed to cut the release from the commit.
