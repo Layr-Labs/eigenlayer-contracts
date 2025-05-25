@@ -155,10 +155,10 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
     ) external returns (uint256);
 
     /**
-     * @notice Returns the strategies that have NOT been sent to escrow for a given slashId.
+     * @notice Returns the strategies and shares that have NOT been sent to escrow for a given slashId.
      * @param operatorSet The operator set to burn or redistribute shares in.
      * @param slashId The slash ID to burn or redistribute shares in.
-     * @return strategies The strategies for the given slashId.
+     * @return The strategies and shares for the given slashId.
      */
     function getBurnOrRedistributableShares(
         OperatorSet calldata operatorSet,

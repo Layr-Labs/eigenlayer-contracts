@@ -1077,6 +1077,10 @@ contract StrategyManagerUnitTests_increaseBurnOrRedistributableShares is Strateg
         cheats.expectRevert(IStrategyManagerErrors.OnlyDelegationManager.selector);
         strategyManager.increaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, dummyStrat, 1);
     }
+    
+    function test_Revert_StrategyAlreadyInSlash() external {
+        IStrategy strategy = dummyStrat;
+        cheats.startPrank(address(delegationManagerMock));
 
     function test_Revert_StrategyAlreadyInSlash() external {
         IStrategy strategy = dummyStrat;
@@ -1143,7 +1147,6 @@ contract StrategyManagerUnitTests_increaseBurnOrRedistributableShares is Strateg
             strategyManager.getBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
 
         for (uint i = 0; i < strategies.length; ++i) {
-            assertEq(address(strats[i]), address(strategies[i]), "get burn or redistributable shares is wrong");
             assertEq(shares[i], sharesToAdd[i], "get burn or redistributable shares is wrong");
             assertEq(
                 strategyManager.getBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, strategies[i]),
@@ -1161,11 +1164,10 @@ contract StrategyManagerUnitTests_increaseBurnOrRedistributableShares is Strateg
     }
 
     function testFuzz_existingShares(uint existingBurnableShares, uint addedSharesToBurn) external {
-        // preventing fuzz overflow, in practice StrategyBase has a 1e38 - 1 maxShares limit so this won't
-        // be an issue on mainnet/testnet environments
-        existingBurnableShares = bound(existingBurnableShares, 1, type(uint).max / 2);
-        addedSharesToBurn = bound(addedSharesToBurn, 1, type(uint).max / 2);
-        IStrategy strategy = dummyStrat;
+        (IStrategy[] memory strats, uint256[] memory shares) = strategyManager.getBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
+        
+        for(uint i = 0; i < strategies.length; ++i) {
+            assertEq(address(strats[i]), address(strategies[i]), "get burn or redistributable shares is wrong");
         cheats.prank(address(delegationManagerMock));
         cheats.expectEmit(true, true, true, true, address(strategyManager));
         emit BurnOrRedistributableSharesIncreased(defaultOperatorSet, defaultSlashId, strategy, existingBurnableShares);

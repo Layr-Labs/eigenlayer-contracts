@@ -153,8 +153,7 @@ contract StrategyManager is
         IStrategy strategy,
         uint256 sharesToBurn
     ) external onlyDelegationManager nonReentrant {
-        EnumerableMap.AddressToUintMap storage operatorSetBurnableShares =
-            _burnOrRedistributableShares[operatorSet.key()][slashId];
+        EnumerableMap.AddressToUintMap storage operatorSetBurnableShares = _burnOrRedistributableShares[operatorSet.key()][slashId];
 
         // Sanity check that the strategy is not already in the slash's burn or redistributable shares.
         // This should never happen because the `AllocationManager` ensures that strategies for a given slash are unique.
@@ -248,21 +247,6 @@ contract StrategyManager is
         if (sharesToBurn != 0) {
             strategy.withdraw(DEFAULT_BURN_ADDRESS, strategy.underlyingToken(), sharesToBurn);
         }
-    }
-
-    /// @inheritdoc IStrategyManager
-    function getBurnOrRedistributableShares(
-        OperatorSet calldata operatorSet,
-        uint256 slashId
-    ) external view returns (IStrategy[] memory) {
-        address[] memory keys = _burnOrRedistributableShares[operatorSet.key()][slashId].keys();
-        IStrategy[] memory strategies = new IStrategy[](keys.length);
-
-        for (uint256 i = 0; i < keys.length; ++i) {
-            strategies[i] = IStrategy(keys[i]);
-        }
-
-        return strategies;
     }
 
     /// @inheritdoc IStrategyManager
