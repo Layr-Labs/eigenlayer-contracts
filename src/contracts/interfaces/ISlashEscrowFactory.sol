@@ -223,7 +223,7 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
     ) external view returns (uint256);
 
     /**
-     * @notice Returns the delay in blcoks for a slash ID.
+     * @notice Returns the delay in blocks for a slash ID.
      * @param operatorSet The operator set whose complete block is being queried.
      * @param slashId The slash ID of the complete block that is being queried.
      * @return The delay in blocks for all strategies.
