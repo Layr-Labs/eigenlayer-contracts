@@ -17,6 +17,9 @@ interface ISlashEscrowFactoryErrors {
 
     /// @notice Thrown when a burn or redistribution delay is less than the minimum burn or redistribution delay.
     error BurnOrRedistributionDelayLessThanMinimum();
+
+    /// @notice Thrown when the escrow delay has not elapsed.
+    error EscrowDelayNotElapsed();
 }
 
 interface ISlashEscrowFactoryEvents {
@@ -24,7 +27,7 @@ interface ISlashEscrowFactoryEvents {
     event StartBurnOrRedistribution(OperatorSet operatorSet, uint256 slashId, IStrategy strategy, uint32 startBlock);
 
     /// @notice Emitted when a redistribution is released.
-    event BurnOrRedistribution(OperatorSet operatorSet, uint256 slashId, IStrategy strategy, address recipient);
+    event BurnOrRedistributionComplete(OperatorSet operatorSet, uint256 slashId, IStrategy strategy, address recipient);
 
     /// @notice Emitted when a redistribution is paused.
     event RedistributionPaused(OperatorSet operatorSet, uint256 slashId);
@@ -216,6 +219,18 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
      */
     function getStrategyBurnOrRedistributionDelay(
         IStrategy strategy
+    ) external view returns (uint256);
+
+    /**
+     * @notice Returns the delay in blcoks for a slash ID.
+     * @param operatorSet The operator set whose complete block is being queried.
+     * @param slashId The slash ID of the complete block that is being queried.
+     * @return The complete block.
+     * @dev This block number is the block number at which the entire slashId can be released from escrow.
+     */
+    function getBurnOrRedistributionDelay(
+        OperatorSet calldata operatorSet,
+        uint256 slashId
     ) external view returns (uint256);
 
     /**
