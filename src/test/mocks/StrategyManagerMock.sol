@@ -111,7 +111,7 @@ contract StrategyManagerMock is Test {
 
     function decreaseBurnOrRedistributableShares(IStrategy strategy, uint sharesToBurn) external {}
 
-    function getBurnOrRedistributableCount(OperatorSet calldata operatorSet, uint256 slashId) external view returns (uint) {
+    function getBurnOrRedistributableCount(OperatorSet calldata operatorSet, uint slashId) external view returns (uint) {
         return _burnOrRedistributableCount;
     }
 
