@@ -65,6 +65,7 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
      * @param slashId The slash ID of the redistribution that is being released.
      * @dev The caller must be the redistribution recipient, unless the redistribution recipient
      * is the default burn address in which case anyone can call.
+     * @dev The slash escrow is released once the delay for ALL strategies has elapsed.
      */
     function releaseSlashEscrow(OperatorSet calldata operatorSet, uint256 slashId) external;
 
@@ -225,8 +226,8 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
      * @notice Returns the delay in blcoks for a slash ID.
      * @param operatorSet The operator set whose complete block is being queried.
      * @param slashId The slash ID of the complete block that is being queried.
-     * @return The complete block.
-     * @dev This block number is the block number at which the entire slashId can be released from escrow.
+     * @return The delay in blocks for all strategies.
+     * @dev This block number, combined with the start block, is the block number after which the entire slash can be released from escrow.
      */
     function getBurnOrRedistributionDelay(
         OperatorSet calldata operatorSet,
