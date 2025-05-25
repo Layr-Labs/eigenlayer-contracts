@@ -43,3 +43,5 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal is UpgradeTest {
 ```
 
 **Note** how the initial staker actions are NOT followed by `check_X_State` methods. This is because, before calling `_upgradeEigenLayerContracts`, the test is being run on old contracts. Adding invariant checks to old state transitions is not the point of this test and would add a lot of maintenance overhead.
+
+**Note** that tests for previous upgrades should be removed if you need to write an upgrade for a new fork block. 
