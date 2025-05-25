@@ -146,7 +146,7 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
      * @param slashId The slash ID to burn shares in.
      * @param index The index of the strategy to burn shares in. Returns the amount of shares that were burned.
      */
-    function decreaseBurnableShares(
+    function decreaseBurnOrRedistributableShares(
         OperatorSet calldata operatorSet,
         uint256 slashId,
         uint256 index
@@ -154,8 +154,8 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
 
     /**
      * @notice Returns the strategies that have NOT been sent to escrow for a given slashId.
-     * @param operatorSet The operator set to burn shares in.
-     * @param slashId The slash ID to burn shares in.
+     * @param operatorSet The operator set to burn or redistribute shares in.
+     * @param slashId The slash ID to burn or redistribute shares in.
      * @return strategies The strategies for the given slashId.
      */
     function getBurnOrRedistributableShares(

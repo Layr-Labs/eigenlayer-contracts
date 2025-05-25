@@ -176,18 +176,18 @@ contract StrategyManager is
         uint256 length = _burnOrRedistributableShares[operatorSet.key()][slashId].length();
 
         for (uint256 i = length; i >= 0; --i) {
-            decreaseBurnableShares(operatorSet, slashId, i - 1);
+            decreaseBurnOrRedistributableShares(operatorSet, slashId, i - 1);
         }
     }
 
     /// @inheritdoc IStrategyManager
-    function decreaseBurnableShares(
+    function decreaseBurnOrRedistributableShares(
         OperatorSet calldata operatorSet,
         uint256 slashId,
         uint256 index
     ) public returns (uint256) {
         EnumerableMap.AddressToUintMap storage operatorSetBurnableShares =
-            _operatorSetBurnableShares[operatorSet.key()][slashId];
+            _burnOrRedistributableShares[operatorSet.key()][slashId];
 
         (address strategy, uint256 sharesToBurn) = operatorSetBurnableShares.at(index);
 
@@ -226,7 +226,7 @@ contract StrategyManager is
         OperatorSet calldata operatorSet,
         uint256 slashId
     ) external view returns (IStrategy[] memory) {
-        address[] memory keys = _operatorSetBurnableShares[operatorSet.key()][slashId].keys();
+        address[] memory keys = _burnOrRedistributableShares[operatorSet.key()][slashId].keys();
         IStrategy[] memory strategies = new IStrategy[](keys.length);
 
         for (uint256 i = 0; i < keys.length; ++i) {
