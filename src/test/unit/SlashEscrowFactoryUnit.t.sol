@@ -97,11 +97,8 @@ contract SlashEscrowFactoryUnitTests is EigenLayerUnitTestSetup, ISlashEscrowFac
         }
 
         // If the redistribution recipient is any address
-        if (redistributionRecipient != DEFAULT_BURN_ADDRESS) {
-            cheats.prank(defaultRedistributionRecipient);
-        } else {
-            cheats.prank(cheats.randomAddress());
-        }
+        if (redistributionRecipient != DEFAULT_BURN_ADDRESS) cheats.prank(defaultRedistributionRecipient);
+        else cheats.prank(cheats.randomAddress());
         factory.releaseSlashEscrow(operatorSet, slashId);
 
         assertEq(factory.computeSlashEscrowSalt(operatorSet, slashId), keccak256(abi.encodePacked(operatorSet.key(), slashId)));
@@ -188,12 +185,9 @@ contract SlashEscrowFactoryUnitTests_initiateSlashEscrow is SlashEscrowFactoryUn
 }
 
 contract SlashEscrowFactoryUnitTests_releaseSlashEscrow is SlashEscrowFactoryUnitTests {
-
     /// @dev Sets the redistribution recipient to the default burn address if `shouldBurn` is true.
     function _setRedistributionRecipient(bool shouldBurn) internal {
-        if (shouldBurn) {
-            allocationManagerMock.setRedistributionRecipient(defaultOperatorSet, DEFAULT_BURN_ADDRESS);
-        }
+        if (shouldBurn) allocationManagerMock.setRedistributionRecipient(defaultOperatorSet, DEFAULT_BURN_ADDRESS);
     }
 
     /// @dev Asserts that the function reverts if the caller is not the redistribution recipient.
