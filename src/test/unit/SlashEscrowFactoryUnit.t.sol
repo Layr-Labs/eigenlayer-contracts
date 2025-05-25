@@ -90,17 +90,18 @@ contract SlashEscrowFactoryUnitTests is EigenLayerUnitTestSetup, ISlashEscrowFac
         (IStrategy[] memory strategies) = factory.getPendingStrategiesForSlashId(operatorSet, slashId);
 
         address redistributionRecipient = allocationManagerMock.getRedistributionRecipient(operatorSet);
-        uint startBlock = factory.getBurnOrRedistributionStartBlock(operatorSet, slashId);
 
         for (uint i = strategies.length; i > 0; i--) {
-            uint strategyDelay = factory.getStrategyBurnOrRedistributionDelay(strategies[i - 1]);
-            if (block.number > startBlock + strategyDelay) {
-                cheats.expectEmit(true, true, true, true);
-                emit BurnOrRedistribution(operatorSet, slashId, strategies[i - 1], redistributionRecipient);
-            }
+            cheats.expectEmit(true, true, true, true);
+            emit BurnOrRedistributionComplete(operatorSet, slashId, strategies[i - 1], redistributionRecipient);
         }
 
-        cheats.prank(defaultRedistributionRecipient);
+        // If the redistribution recipient is any address
+        if (redistributionRecipient != DEFAULT_BURN_ADDRESS) {
+            cheats.prank(defaultRedistributionRecipient);
+        } else {
+            cheats.prank(cheats.randomAddress());
+        }
         factory.releaseSlashEscrow(operatorSet, slashId);
 
         assertEq(factory.computeSlashEscrowSalt(operatorSet, slashId), keccak256(abi.encodePacked(operatorSet.key(), slashId)));
@@ -187,6 +188,14 @@ contract SlashEscrowFactoryUnitTests_initiateSlashEscrow is SlashEscrowFactoryUn
 }
 
 contract SlashEscrowFactoryUnitTests_releaseSlashEscrow is SlashEscrowFactoryUnitTests {
+
+    /// @dev Sets the redistribution recipient to the default burn address if `shouldBurn` is true.
+    function _setRedistributionRecipient(bool shouldBurn) internal {
+        if (shouldBurn) {
+            allocationManagerMock.setRedistributionRecipient(defaultOperatorSet, DEFAULT_BURN_ADDRESS);
+        }
+    }
+
     /// @dev Asserts that the function reverts if the caller is not the redistribution recipient.
     function testFuzz_releaseSlashEscrow_onlyRedistributionRecipient(uint underlyingAmount) public {
         _initiateSlashEscrow(defaultOperatorSet, defaultSlashId, defaultStrategy, defaultToken, underlyingAmount);
@@ -213,6 +222,14 @@ contract SlashEscrowFactoryUnitTests_releaseSlashEscrow is SlashEscrowFactoryUni
         assertFalse(factory.isPendingSlashId(defaultOperatorSet, defaultSlashId));
     }
 
+    function testFuzz_releaseSlashEscrow_delayNotElapsed(uint underlyingAmount) public {
+        _initiateSlashEscrow(defaultOperatorSet, defaultSlashId, defaultStrategy, defaultToken, underlyingAmount);
+        cheats.roll(block.number + defaultGlobalDelayBlocks);
+        cheats.prank(defaultRedistributionRecipient);
+        cheats.expectRevert(ISlashEscrowFactoryErrors.EscrowDelayNotElapsed.selector);
+        factory.releaseSlashEscrow(defaultOperatorSet, defaultSlashId);
+    }
+
     /// @dev Tests that multiple strategies can be burned or redistributed in a single call
     function testFuzz_releaseSlashEscrow_multipleStrategies_sameDelay(uint r) public {
         // Initialize arrays to store test data for multiple strategies
@@ -220,6 +237,9 @@ contract SlashEscrowFactoryUnitTests_releaseSlashEscrow is SlashEscrowFactoryUni
         IStrategy[] memory strategies = new IStrategy[](numStrategies);
         MockERC20[] memory tokens = new MockERC20[](numStrategies);
         uint[] memory underlyingAmounts = new uint[](numStrategies);
+
+        // Randomly update the redistribution to be the default burn address
+        _setRedistributionRecipient(r % 2 == 0);
 
         // Set up each strategy with random data and start burn/redistribution
         for (uint i = 0; i < numStrategies; i++) {
@@ -274,6 +294,9 @@ contract SlashEscrowFactoryUnitTests_releaseSlashEscrow is SlashEscrowFactoryUni
         uint[] memory underlyingAmounts = new uint[](numStrategies);
         uint[] memory delays = new uint[](numStrategies);
 
+        // Randomly update the redistribution to be the default burn address
+        _setRedistributionRecipient(r % 2 == 0);
+
         // Set global delay less than all the strategy delays.
         cheats.prank(defaultOwner);
         factory.setGlobalBurnOrRedistributionDelay(0.5 days / 12 seconds);
@@ -298,8 +321,14 @@ contract SlashEscrowFactoryUnitTests_releaseSlashEscrow is SlashEscrowFactoryUni
             _checkStartBurnOrRedistributions(defaultOperatorSet, defaultSlashId, strategies[i], tokens[i], underlyingAmounts[i], i + 1);
         }
 
-        // Advance time to allow some strategies to be processed (2 days worth of blocks)
-        cheats.roll(block.number + 2 days / 12 seconds);
+        // Assert that we cannot release the slash escrow until the delay has elapsed for ALL strategies
+        cheats.roll(block.number + 1 days / 12 seconds * numStrategies);
+        cheats.prank(defaultRedistributionRecipient);
+        cheats.expectRevert(ISlashEscrowFactoryErrors.EscrowDelayNotElapsed.selector);
+        factory.releaseSlashEscrow(defaultOperatorSet, defaultSlashId);
+
+        // Roll forward to the next block
+        cheats.roll(block.number + 1);
 
         // Set up mock calls for each strategy's underlying token
         for (uint i = 0; i < numStrategies; i++) {
@@ -307,26 +336,6 @@ contract SlashEscrowFactoryUnitTests_releaseSlashEscrow is SlashEscrowFactoryUni
         }
 
         // Execute the burn/redistribution
-        _releaseSlashEscrow(defaultOperatorSet, defaultSlashId);
-
-        // Verify that only strategies with delays < 2 days were processed
-        for (uint i = 0; i < numStrategies; i++) {
-            if (delays[i] < 2 days / 12 seconds) {
-                // Strategy should have been processed
-                assertEq(_getPendingUnderlyingAmountForStrategy(defaultOperatorSet, defaultSlashId, strategies[i], tokens[i]), 0);
-            } else {
-                // Strategy should still be pending
-                assertEq(
-                    _getPendingUnderlyingAmountForStrategy(defaultOperatorSet, defaultSlashId, strategies[i], tokens[i]),
-                    underlyingAmounts[i]
-                );
-            }
-        }
-
-        // Advance time further to process remaining strategies.
-        cheats.roll(block.number + 1 days / 12 seconds * numStrategies + 1);
-
-        // Execute the burn/redistribution again
         _releaseSlashEscrow(defaultOperatorSet, defaultSlashId);
 
         // Verify that all strategies have been processed
@@ -405,11 +414,51 @@ contract SlashEscrowFactoryUnitTests_setStrategyBurnOrRedistributionDelay is Sla
         factory.setStrategyBurnOrRedistributionDelay(defaultStrategy, 100);
     }
 
-    function test_setStrategyBurnOrRedistributionDelay_correctness() public {
+    function testFuzz_setStrategyBurnOrRedistributionDelay_correctness(uint delay) public {
         cheats.prank(defaultOwner);
-        factory.setStrategyBurnOrRedistributionDelay(defaultStrategy, 10 days / 12 seconds);
+        factory.setStrategyBurnOrRedistributionDelay(defaultStrategy, delay);
         // Returns strategy delay since strategy delay is larger than global delay.
-        assertEq(factory.getStrategyBurnOrRedistributionDelay(defaultStrategy), 10 days / 12 seconds);
+        assertEq(factory.getStrategyBurnOrRedistributionDelay(defaultStrategy), delay);
+    }
+}
+
+contract SlashEscrowFactoryUnitTests_getBurnOrRedistributionDelay is SlashEscrowFactoryUnitTests {
+    function testFuzz_getBurnOrRedistributionDelay_correctness(uint r) public {
+        // Initialize arrays to store test data for multiple strategies
+        uint numStrategies = bound(r, 2, 10);
+        IStrategy[] memory strategies = new IStrategy[](numStrategies);
+        MockERC20[] memory tokens = new MockERC20[](numStrategies);
+        uint[] memory underlyingAmounts = new uint[](numStrategies);
+        uint[] memory delays = new uint[](numStrategies);
+
+        // Randomly update the redistribution to be the default burn address
+
+        // Set global delay less than all the strategy delays.
+        cheats.prank(defaultOwner);
+        factory.setGlobalBurnOrRedistributionDelay(0.5 days / 12 seconds);
+
+        // Set up each strategy with random data and different delays
+        for (uint i = 0; i < numStrategies; i++) {
+            // Generate random strategy address and token
+            strategies[i] = IStrategy(cheats.randomAddress());
+            tokens[i] = new MockERC20();
+            underlyingAmounts[i] = cheats.randomUint();
+
+            // Set different delays for each strategy (increasing delays)
+            delays[i] = (i + 1) * 1 days / 12 seconds; // 1 day, 2 days, 3 days, etc.
+
+            // Set the strategy-specific delay
+            cheats.prank(defaultOwner);
+            factory.setStrategyBurnOrRedistributionDelay(strategies[i], delays[i]);
+
+            // Start burn/redistribution for this strategy
+            _initiateSlashEscrow(defaultOperatorSet, defaultSlashId, strategies[i], tokens[i], underlyingAmounts[i]);
+            // Verify the burn/redistribution was started correctly
+            _checkStartBurnOrRedistributions(defaultOperatorSet, defaultSlashId, strategies[i], tokens[i], underlyingAmounts[i], i + 1);
+        }
+
+        // The delay should e the maximum delay of all the strategies
+        assertEq(factory.getBurnOrRedistributionDelay(defaultOperatorSet, defaultSlashId), delays[numStrategies - 1]);
     }
 }
 

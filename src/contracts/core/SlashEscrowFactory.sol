@@ -87,13 +87,22 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
             require(msg.sender == redistributionRecipient, OnlyRedistributionRecipient());
         }
 
-        require(!_paused[operatorSet.key()][slashId], IPausable.CurrentlyPaused());
+        // Assert that the slash ID is not paused
+        require(!isBurnOrRedistributionPaused(operatorSet, slashId), IPausable.CurrentlyPaused());
 
-        // Calling `decreaseBurnOrRedistributableShares` will transfer the underlying tokens to the `SlashEscrow`.
-        // NOTE: While `decreaseBurnOrRedistributableShares` may have already been called, we call it again to ensure that the
-        // underlying tokens are actually in escrow before processing and removing storage (which would otherwise prevent
+        // Assert that the escrow delay has elapsed
+        uint256 startBlock = getBurnOrRedistributionStartBlock(operatorSet, slashId);
+        require(block.number > startBlock + getBurnOrRedistributionDelay(operatorSet, slashId), EscrowDelayNotElapsed());
+
+        // If all of the strategies have not been processed, release them to slash escrow
+        // We need to ensure that ALL strategies are in escrow before processing and removing storage (which would otherwise prevent
         // the tokens from being released).
-        strategyManager.decreaseBurnOrRedistributableShares(operatorSet, slashId);
+        if (strategyManager.getBurnOrRedistributableCount(operatorSet, slashId) != 0) {
+            strategyManager.decreaseBurnOrRedistributableShares(operatorSet, slashId);
+        }
+
+        // Deploy the counterfactual `SlashEscrow`.
+        ISlashEscrow slashEscrow = _deploySlashEscrow(operatorSet, slashId);
 
         // Create storage pointers for readability.
         EnumerableSet.Bytes32Set storage pendingOperatorSets = _pendingOperatorSets;
@@ -101,13 +110,34 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
         EnumerableSet.AddressSet storage pendingStrategiesForSlashId =
             _pendingStrategiesForSlashId[operatorSet.key()][slashId];
 
-        // Process the burn or redistribution.
-        _processBurnOrRedistribution(pendingStrategiesForSlashId, operatorSet, slashId, redistributionRecipient);
+        // Iterate over the escrow array in reverse order and pop the processed entries from storage.
+        uint256 totalPendingForSlashId = pendingStrategiesForSlashId.length();
+        for (uint256 i = totalPendingForSlashId; i > 0; --i) {
+            address strategy = pendingStrategiesForSlashId.at(i - 1);
 
-        // Remove the slash ID and operator set from their respective pending lists if no more strategies remain to be processed.
-        _tryClearPendingOperatorSetsAndSlashIds(
-            pendingOperatorSets, pendingSlashIds, pendingStrategiesForSlashId, operatorSet, slashId
-        );
+            // Burn or redistribute the underlying tokens for the strategy.
+            slashEscrow.burnOrRedistributeUnderlyingTokens(
+                ISlashEscrowFactory(address(this)),
+                slashEscrowImplementation,
+                operatorSet,
+                slashId,
+                redistributionRecipient,
+                IStrategy(strategy)
+            );
+
+            // Remove the strategy and underlying amount from the pending burn or redistributions map.
+            pendingStrategiesForSlashId.remove(strategy);
+            emit BurnOrRedistributionComplete(operatorSet, slashId, IStrategy(strategy), redistributionRecipient);
+        }
+
+        // Remove the slash ID from the pending slash IDs set.
+        pendingSlashIds.remove(slashId);
+
+        // Delete the start block for the slash ID.
+        delete _slashIdToStartBlock[operatorSet.key()][slashId];
+
+        // Remove the operator set from the pending operator sets set.
+        pendingOperatorSets.remove(operatorSet.key());
     }
 
     /**
@@ -155,47 +185,6 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
      *
      */
 
-    /// @notice Processes burn or redistribution of escrowed tokens for a given operator set and slash ID.
-    /// @dev Iterates through pending burn/redistributions in reverse order, checking if each strategy's delay period has elapsed.
-    /// If delay has passed, transfers underlying tokens to redistribution recipient and removes from pending map.
-    function _processBurnOrRedistribution(
-        EnumerableSet.AddressSet storage pendingStrategiesForSlashId,
-        OperatorSet calldata operatorSet,
-        uint256 slashId,
-        address redistributionRecipient
-    ) internal {
-        uint256 totalPendingForSlashId = pendingStrategiesForSlashId.length();
-        uint256 startBlock = getBurnOrRedistributionStartBlock(operatorSet, slashId);
-
-        // Deploy the counterfactual `SlashEscrow` if code hasn't already been deployed.
-        ISlashEscrow slashEscrow = _deploySlashEscrow(operatorSet, slashId);
-
-        // Iterate over the escrow array in reverse order and pop the processed entries from storage.
-        for (uint256 i = totalPendingForSlashId; i > 0; --i) {
-            address strategy = pendingStrategiesForSlashId.at(i - 1);
-            uint256 delay = getStrategyBurnOrRedistributionDelay(IStrategy(strategy));
-
-            // Skip this element if the delay has not passed...
-            if (startBlock + delay >= block.number) {
-                continue;
-            }
-
-            // Burn or redistribute the underlying tokens for the strategy.
-            slashEscrow.burnOrRedistributeUnderlyingTokens(
-                ISlashEscrowFactory(address(this)),
-                slashEscrowImplementation,
-                operatorSet,
-                slashId,
-                redistributionRecipient,
-                IStrategy(strategy)
-            );
-
-            // Remove the strategy and underlying amount from the pending burn or redistributions map.
-            pendingStrategiesForSlashId.remove(strategy);
-            emit BurnOrRedistribution(operatorSet, slashId, IStrategy(strategy), redistributionRecipient);
-        }
-    }
-
     /// @notice Deploys a counterfactual `SlashEscrow` if code hasn't already been deployed.
     /// @dev Returns the deployed `SlashEscrow` if it already exists.
     function _deploySlashEscrow(OperatorSet calldata operatorSet, uint256 slashId) internal returns (ISlashEscrow) {
@@ -209,32 +198,6 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
         }
 
         return slashEscrow;
-    }
-
-    /// @notice Attempts to clear the pending operator sets and slash IDs if no more strategies remain to be processed.
-    /// @dev Removes slash ID from pending slash IDs set and deletes start block for slash ID if no more strategies remain.
-    /// Also removes operator set from pending operator sets set if no more slash IDs exist for it.
-    function _tryClearPendingOperatorSetsAndSlashIds(
-        EnumerableSet.Bytes32Set storage pendingOperatorSets,
-        EnumerableSet.UintSet storage pendingSlashIds,
-        EnumerableSet.AddressSet storage pendingStrategiesForSlashId,
-        OperatorSet calldata operatorSet,
-        uint256 slashId
-    ) internal {
-        uint256 totalPendingForSlashId = pendingStrategiesForSlashId.length();
-
-        // If there are no more strategies to process, remove the slash ID from the pending slash IDs set.
-        if (totalPendingForSlashId == 0) {
-            pendingSlashIds.remove(slashId);
-
-            // Delete the start block for the slash ID.
-            delete _slashIdToStartBlock[operatorSet.key()][slashId];
-
-            // If there are no more slash IDs for the operator set, remove the operator set from the pending operator sets set.
-            if (pendingSlashIds.length() == 0) {
-                pendingOperatorSets.remove(operatorSet.key());
-            }
-        }
     }
 
     function _setGlobalBurnOrRedistributionDelay(
@@ -359,7 +322,7 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
     function isBurnOrRedistributionPaused(
         OperatorSet calldata operatorSet,
         uint256 slashId
-    ) external view returns (bool) {
+    ) public view returns (bool) {
         return _paused[operatorSet.key()][slashId];
     }
 
@@ -385,6 +348,25 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
     /// @inheritdoc ISlashEscrowFactory
     function getGlobalBurnOrRedistributionDelay() external view returns (uint256) {
         return _globalBurnOrRedistributionDelayBlocks;
+    }
+
+    /// @inheritdoc ISlashEscrowFactory
+    function getBurnOrRedistributionDelay(
+        OperatorSet calldata operatorSet,
+        uint256 slashId
+    ) public view returns (uint256) {
+        IStrategy[] memory strategies = getPendingStrategiesForSlashId(operatorSet, slashId);
+
+        // Loop through all strategies and return the max delay
+        uint256 maxDelay;
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            uint256 delay = getStrategyBurnOrRedistributionDelay(IStrategy(address(strategies[i])));
+            if (delay > maxDelay) {
+                maxDelay = delay;
+            }
+        }
+
+        return maxDelay;
     }
 
     /// @inheritdoc ISlashEscrowFactory
