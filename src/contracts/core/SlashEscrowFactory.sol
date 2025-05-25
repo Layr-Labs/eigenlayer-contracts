@@ -91,8 +91,7 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
         require(!isBurnOrRedistributionPaused(operatorSet, slashId), IPausable.CurrentlyPaused());
 
         // Assert that the escrow delay has elapsed
-        uint256 startBlock = getBurnOrRedistributionStartBlock(operatorSet, slashId);
-        require(block.number > startBlock + getBurnOrRedistributionDelay(operatorSet, slashId), EscrowDelayNotElapsed());
+        require(block.number >= getBurnOrRedistributionCompleteBlock(operatorSet, slashId), EscrowDelayNotElapsed());
 
         // If all of the strategies have not been processed, release them to slash escrow
         // We need to ensure that ALL strategies are in escrow before processing and removing storage (which would otherwise prevent
@@ -102,7 +101,7 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
         }
 
         // Deploy the counterfactual `SlashEscrow`.
-        ISlashEscrow slashEscrow = _deploySlashEscrow(operatorSet, slashId);
+        ISlashEscrow slashEscrow = deploySlashEscrow(operatorSet, slashId);
 
         // Create storage pointers for readability.
         EnumerableSet.Bytes32Set storage pendingOperatorSets = _pendingOperatorSets;
@@ -140,6 +139,20 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
         pendingOperatorSets.remove(operatorSet.key());
     }
 
+    /// @inheritdoc ISlashEscrowFactory
+    function deploySlashEscrow(OperatorSet calldata operatorSet, uint256 slashId) public returns (ISlashEscrow) {
+        ISlashEscrow slashEscrow = getSlashEscrow(operatorSet, slashId);
+
+        // If the slash escrow is not deployed...
+        if (!isDeployedSlashEscrow(slashEscrow)) {
+            return ISlashEscrow(
+                address(slashEscrowImplementation).cloneDeterministic(computeSlashEscrowSalt(operatorSet, slashId))
+            );
+        }
+
+        return slashEscrow;
+    }
+
     /**
      *
      *                         PAUSABLE ACTIONS
@@ -168,14 +181,14 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
 
     /// @inheritdoc ISlashEscrowFactory
     function setGlobalBurnOrRedistributionDelay(
-        uint256 delay
+        uint32 delay
     ) external onlyOwner {
         _setGlobalBurnOrRedistributionDelay(delay);
     }
 
     /// @inheritdoc ISlashEscrowFactory
-    function setStrategyBurnOrRedistributionDelay(IStrategy strategy, uint256 delay) external onlyOwner {
-        _strategyBurnOrRedistributionDelayBlocks[address(strategy)] = uint32(delay);
+    function setStrategyBurnOrRedistributionDelay(IStrategy strategy, uint32 delay) external onlyOwner {
+        _strategyBurnOrRedistributionDelayBlocks[address(strategy)] = delay;
         emit StrategyBurnOrRedistributionDelaySet(strategy, delay);
     }
 
@@ -184,26 +197,10 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
      *                         HELPERS
      *
      */
-
-    /// @notice Deploys a counterfactual `SlashEscrow` if code hasn't already been deployed.
-    /// @dev Returns the deployed `SlashEscrow` if it already exists.
-    function _deploySlashEscrow(OperatorSet calldata operatorSet, uint256 slashId) internal returns (ISlashEscrow) {
-        ISlashEscrow slashEscrow = getSlashEscrow(operatorSet, slashId);
-
-        // If the slash escrow is not deployed...
-        if (!isDeployedSlashEscrow(slashEscrow)) {
-            return ISlashEscrow(
-                address(slashEscrowImplementation).cloneDeterministic(computeSlashEscrowSalt(operatorSet, slashId))
-            );
-        }
-
-        return slashEscrow;
-    }
-
     function _setGlobalBurnOrRedistributionDelay(
-        uint256 delay
+        uint32 delay
     ) internal {
-        _globalBurnOrRedistributionDelayBlocks = uint32(delay);
+        _globalBurnOrRedistributionDelayBlocks = delay;
         emit GlobalBurnOrRedistributionDelaySet(delay);
     }
 
@@ -263,13 +260,34 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
     }
 
     /// @inheritdoc ISlashEscrowFactory
-    function getPendingOperatorSetsAndSlashIds() external view returns (OperatorSet[] memory operatorSets, uint256[][] memory slashIds, uint256[][] memory releaseBlocks) {
+    function getPendingEscrows()
+        external
+        view
+        returns (
+            OperatorSet[] memory operatorSets,
+            bool[] memory isRedistributing,
+            uint256[][] memory slashIds,
+            uint32[][] memory completeBlocks
+        )
+    {
         operatorSets = getPendingOperatorSets();
+        isRedistributing = new bool[](operatorSets.length);
         slashIds = new uint256[][](operatorSets.length);
-        releaseBlocks = new uint256[][](operatorSets.length);
+        completeBlocks = new uint32[][](operatorSets.length);
 
+        // Populate all arrays.
         for (uint256 i = 0; i < operatorSets.length; i++) {
+            // Get whether the operator set is redistributing.
+            isRedistributing[i] = allocationManager.isRedistributingOperatorSet(operatorSets[i]);
+
+            // Get the pending slash IDs for the operator set.
             slashIds[i] = getPendingSlashIds(operatorSets[i]);
+
+            // For each slashId, get the complete block.
+            completeBlocks[i] = new uint32[](slashIds[i].length);
+            for (uint256 j = 0; j < slashIds[i].length; j++) {
+                completeBlocks[i][j] = getBurnOrRedistributionCompleteBlock(operatorSets[i], slashIds[i][j]);
+            }
         }
     }
 
@@ -339,45 +357,46 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
 
     /// @inheritdoc ISlashEscrowFactory
     function getBurnOrRedistributionStartBlock(
-        OperatorSet calldata operatorSet,
+        OperatorSet memory operatorSet,
         uint256 slashId
     ) public view returns (uint256) {
         return _slashIdToStartBlock[operatorSet.key()][slashId];
     }
 
     /// @inheritdoc ISlashEscrowFactory
+    function getBurnOrRedistributionCompleteBlock(
+        OperatorSet memory operatorSet,
+        uint256 slashId
+    ) public view returns (uint32) {
+        IStrategy[] memory strategies = getPendingStrategiesForSlashId(operatorSet, slashId);
+
+        // Loop through all strategies and return the max delay
+        uint32 maxStrategyDelay;
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            uint32 delay = getStrategyBurnOrRedistributionDelay(IStrategy(address(strategies[i])));
+            if (delay > maxStrategyDelay) {
+                maxStrategyDelay = delay;
+            }
+        }
+
+        // The escrow can be released once the max strategy delay has elapsed.
+        return uint32(getBurnOrRedistributionStartBlock(operatorSet, slashId) + maxStrategyDelay + 1);
+    }
+
+    /// @inheritdoc ISlashEscrowFactory
     function getStrategyBurnOrRedistributionDelay(
         IStrategy strategy
-    ) public view returns (uint256) {
-        uint256 globalDelay = _globalBurnOrRedistributionDelayBlocks;
-        uint256 strategyDelay = _strategyBurnOrRedistributionDelayBlocks[address(strategy)];
+    ) public view returns (uint32) {
+        uint32 globalDelay = _globalBurnOrRedistributionDelayBlocks;
+        uint32 strategyDelay = _strategyBurnOrRedistributionDelayBlocks[address(strategy)];
 
         // Return whichever delay is greater.
         return strategyDelay > globalDelay ? strategyDelay : globalDelay;
     }
 
     /// @inheritdoc ISlashEscrowFactory
-    function getGlobalBurnOrRedistributionDelay() external view returns (uint256) {
+    function getGlobalBurnOrRedistributionDelay() external view returns (uint32) {
         return _globalBurnOrRedistributionDelayBlocks;
-    }
-
-    /// @inheritdoc ISlashEscrowFactory
-    function getBurnOrRedistributionDelay(
-        OperatorSet calldata operatorSet,
-        uint256 slashId
-    ) public view returns (uint256) {
-        IStrategy[] memory strategies = getPendingStrategiesForSlashId(operatorSet, slashId);
-
-        // Loop through all strategies and return the max delay
-        uint256 maxDelay;
-        for (uint256 i = 0; i < strategies.length; ++i) {
-            uint256 delay = getStrategyBurnOrRedistributionDelay(IStrategy(address(strategies[i])));
-            if (delay > maxDelay) {
-                maxDelay = delay;
-            }
-        }
-
-        return maxDelay;
     }
 
     /// @inheritdoc ISlashEscrowFactory
