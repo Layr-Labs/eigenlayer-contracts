@@ -24,6 +24,8 @@ interface IStrategyManagerErrors {
     error StrategyNotFound();
     /// @dev Thrown when attempting to deposit to a non-whitelisted strategy.
     error StrategyNotWhitelisted();
+    /// @dev Thrown when attempting to add a strategy that is already in the operator set's burn or redistributable shares.
+    error StrategyAlreadyInSlash();
 }
 
 interface IStrategyManagerEvents {
@@ -141,6 +143,54 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
     function decreaseBurnOrRedistributableShares(OperatorSet calldata operatorSet, uint256 slashId) external;
 
     /**
+     * @notice Removes a single strategy's shares from storage and transfers the underlying tokens for the slashId to the slash escrow.
+     * @param operatorSet The operator set to burn shares in.
+     * @param slashId The slash ID to burn shares in.
+     * @param index The index of the strategy to burn shares in. Returns the amount of shares that were burned.
+     */
+    function decreaseBurnOrRedistributableShares(
+        OperatorSet calldata operatorSet,
+        uint256 slashId,
+        uint256 index
+    ) external returns (uint256);
+
+    /**
+     * @notice Returns the strategies and shares that have NOT been sent to escrow for a given slashId.
+     * @param operatorSet The operator set to burn or redistribute shares in.
+     * @param slashId The slash ID to burn or redistribute shares in.
+     * @return The strategies and shares for the given slashId.
+     */
+    function getBurnOrRedistributableShares(
+        OperatorSet calldata operatorSet,
+        uint256 slashId
+    ) external view returns (IStrategy[] memory, uint256[] memory);
+
+    /**
+     * @notice Returns the shares for a given strategy for a given slashId.
+     * @param operatorSet The operator set to burn or redistribute shares in.
+     * @param slashId The slash ID to burn or redistribute shares in.
+     * @param strategy The strategy to get the shares for.
+     * @return The shares for the given strategy for the given slashId.
+     * @dev This function will return  0 if the shares have been sent to escrow.
+     */
+    function getBurnOrRedistributableShares(
+        OperatorSet calldata operatorSet,
+        uint256 slashId,
+        IStrategy strategy
+    ) external view returns (uint256);
+
+    /**
+     * @notice Returns the number of strategies that have NOT been sent to escrow for a given slashId.
+     * @param operatorSet The operator set to burn or redistribute shares in.
+     * @param slashId The slash ID to burn or redistribute shares in.
+     * @return The number of strategies for the given slashId.
+     */
+    function getBurnOrRedistributableCount(
+        OperatorSet calldata operatorSet,
+        uint256 slashId
+    ) external view returns (uint256);
+
+    /**
      * @notice Owner-only function to change the `strategyWhitelister` address.
      * @param newStrategyWhitelister new address for the `strategyWhitelister`.
      */
@@ -196,6 +246,7 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
     function strategyWhitelister() external view returns (address);
 
     /// @notice Returns the burnable shares of a strategy
+    /// @dev This function will be deprecated in a release after redistribution
     function getBurnableShares(
         IStrategy strategy
     ) external view returns (uint256);
@@ -203,6 +254,7 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
     /**
      * @notice Gets every strategy with burnable shares and the amount of burnable shares in each said strategy
      *
+     * @dev This function will be deprecated in a release after redistribution
      * WARNING: This operation can copy the entire storage to memory, which can be quite expensive. This is designed
      * to mostly be used by view accessors that are queried without any gas fees. Users should keep in mind that
      * this function has an unbounded cost, and using it as part of a state-changing function may render the function
