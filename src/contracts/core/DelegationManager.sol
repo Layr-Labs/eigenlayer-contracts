@@ -96,7 +96,7 @@ contract DelegationManager is
     function registerAsOperator(
         address initDelegationApprover,
         uint32 allocationDelay,
-        string memory metadataURI
+        string calldata metadataURI
     ) external nonReentrant {
         require(!isDelegated(msg.sender), ActivelyDelegated());
 
@@ -120,7 +120,7 @@ contract DelegationManager is
     }
 
     /// @inheritdoc IDelegationManager
-    function updateOperatorMetadataURI(address operator, string memory metadataURI) external checkCanCall(operator) {
+    function updateOperatorMetadataURI(address operator, string calldata metadataURI) external checkCanCall(operator) {
         require(isOperator(operator), OperatorNotRegistered());
         emit OperatorMetadataURIUpdated(operator, metadataURI);
     }
@@ -159,7 +159,7 @@ contract DelegationManager is
         if (msg.sender != staker) {
             address operator = delegatedTo[staker];
 
-            require(_canCall(operator) || msg.sender == delegationApprover(operator), CallerCannotUndelegate());
+            require(_checkCanCall(operator) || msg.sender == delegationApprover(operator), CallerCannotUndelegate());
             emit StakerForceUndelegated(staker, operator);
         }
 
@@ -179,7 +179,7 @@ contract DelegationManager is
 
     /// @inheritdoc IDelegationManager
     function queueWithdrawals(
-        QueuedWithdrawalParams[] memory params
+        QueuedWithdrawalParams[] calldata params
     ) external onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE) nonReentrant returns (bytes32[] memory) {
         bytes32[] memory withdrawalRoots = new bytes32[](params.length);
         address operator = delegatedTo[msg.sender];
@@ -208,7 +208,7 @@ contract DelegationManager is
     /// @inheritdoc IDelegationManager
     function completeQueuedWithdrawal(
         Withdrawal memory withdrawal,
-        IERC20[] memory tokens,
+        IERC20[] calldata tokens,
         bool receiveAsTokens
     ) external onlyWhenNotPaused(PAUSED_EXIT_WITHDRAWAL_QUEUE) nonReentrant {
         _completeQueuedWithdrawal(withdrawal, tokens, receiveAsTokens);
@@ -216,9 +216,9 @@ contract DelegationManager is
 
     /// @inheritdoc IDelegationManager
     function completeQueuedWithdrawals(
-        Withdrawal[] memory withdrawals,
-        IERC20[][] memory tokens,
-        bool[] memory receiveAsTokens
+        Withdrawal[] calldata withdrawals,
+        IERC20[][] calldata tokens,
+        bool[] calldata receiveAsTokens
     ) external onlyWhenNotPaused(PAUSED_EXIT_WITHDRAWAL_QUEUE) nonReentrant {
         uint256 n = withdrawals.length;
         for (uint256 i; i < n; ++i) {
@@ -529,7 +529,7 @@ contract DelegationManager is
 
         pendingWithdrawals[withdrawalRoot] = true;
         _queuedWithdrawals[withdrawalRoot] = withdrawal;
-        _stakerQueuedWithdrawalRoots[withdrawal.staker].add(withdrawalRoot);
+        _stakerQueuedWithdrawalRoots[staker].add(withdrawalRoot);
 
         emit SlashingWithdrawalQueued(withdrawalRoot, withdrawal, withdrawableShares);
         return withdrawalRoot;
@@ -546,7 +546,7 @@ contract DelegationManager is
      */
     function _completeQueuedWithdrawal(
         Withdrawal memory withdrawal,
-        IERC20[] memory tokens,
+        IERC20[] calldata tokens,
         bool receiveAsTokens
     ) internal {
         require(tokens.length == withdrawal.strategies.length, InputArrayLengthMismatch());
@@ -688,7 +688,7 @@ contract DelegationManager is
     }
 
     /// @dev If `operator` has configured a `delegationApprover`, check that `signature` and `salt`
-    /// are a valid appfroval for `staker` delegating to `operator`.
+    /// are a valid approval for `staker` delegating to `operator`.
     function _checkApproverSignature(
         address staker,
         address operator,
