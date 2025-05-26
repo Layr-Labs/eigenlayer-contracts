@@ -16,35 +16,23 @@ abstract contract PermissionControllerMixin {
         permissionController = _permissionController;
     }
 
-    /// @notice Reverts if the caller does not have permission to call on behalf of `account`.
+    /// @notice Checks if the caller (msg.sender) can call on behalf of an account.
     modifier checkCanCall(
         address account
     ) {
-        _checkCanCall(account);
+        require(_checkCanCall(account), InvalidPermissions());
         _;
     }
 
     /**
      * @notice Checks if the caller is allowed to call a function on behalf of an account.
-     * @param account The account to check permissions for.
+     * @param account the account to check
      * @dev `msg.sender` is the caller to check that can call the function on behalf of `account`.
-     * @dev Returns whether the caller has permission to call the function on behalf of the account.
-     */
-    function _canCall(
-        address account
-    ) internal returns (bool) {
-        return permissionController.canCall(account, msg.sender, address(this), msg.sig);
-    }
-
-    /**
-     * @notice Checks if the caller is allowed to call a function on behalf of an account.
-     * @param account The account to check permissions for.
-     * @dev `msg.sender` is the caller to check that can call the function on behalf of `account`.
-     * @dev Reverts if the caller does not have permission.
+     * @dev Returns a bool, instead of reverting
      */
     function _checkCanCall(
         address account
-    ) internal {
-        require(_canCall(account), InvalidPermissions());
+    ) internal returns (bool) {
+        return permissionController.canCall(account, msg.sender, address(this), msg.sig);
     }
 }

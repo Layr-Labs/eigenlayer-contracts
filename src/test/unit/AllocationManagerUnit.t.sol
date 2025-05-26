@@ -13,8 +13,6 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
     /// Constants
     /// -----------------------------------------------------------------------
 
-    error InvalidPermissions();
-
     /// NOTE: Raising these values directly increases cpu time for tests.
     uint internal constant FUZZ_MAX_ALLOCATIONS = 8;
     uint internal constant FUZZ_MAX_STRATS = 8;
@@ -1789,9 +1787,9 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         allocationManager.modifyAllocations(address(this), new AllocateParams[](0));
     }
 
-    function test_revert_invalidPermissions() public {
+    function test_revert_InvalidCaller() public {
         address invalidOperator = address(0x2);
-        cheats.expectRevert(InvalidPermissions.selector);
+        cheats.expectRevert(InvalidCaller.selector);
         allocationManager.modifyAllocations(invalidOperator, new AllocateParams[](0));
     }
 
@@ -3276,7 +3274,7 @@ contract AllocationManagerUnitTests_SetAllocationDelay is AllocationManagerUnitT
     }
 
     function test_revert_callerNotAuthorized() public {
-        cheats.expectRevert(InvalidPermissions.selector);
+        cheats.expectRevert(InvalidCaller.selector);
         allocationManager.setAllocationDelay(operatorToSet, 1);
     }
 
@@ -3531,7 +3529,7 @@ contract AllocationManagerUnitTests_deregisterFromOperatorSets is AllocationMana
         address randomOperator = address(0x1);
         defaultDeregisterParams.operator = randomOperator;
 
-        cheats.expectRevert(InvalidPermissions.selector);
+        cheats.expectRevert(InvalidCaller.selector);
         allocationManager.deregisterFromOperatorSets(defaultDeregisterParams);
     }
 
@@ -3539,7 +3537,7 @@ contract AllocationManagerUnitTests_deregisterFromOperatorSets is AllocationMana
         address randomAVS = address(0x1);
 
         cheats.prank(randomAVS);
-        cheats.expectRevert(InvalidPermissions.selector);
+        cheats.expectRevert(InvalidCaller.selector);
         allocationManager.deregisterFromOperatorSets(defaultDeregisterParams);
     }
 
