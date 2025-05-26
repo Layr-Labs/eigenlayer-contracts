@@ -17,11 +17,13 @@ interface IAllocationManagerErrors {
     /// @dev Thrown when the AVSRegistrar is not correctly configured to prevent an AVSRegistrar contract
     /// from being used with the wrong AVS
     error InvalidAVSRegistrar();
+    /// @dev Thrown when an invalid strategy is provided.
+    error InvalidStrategy();
 
     /// Caller
 
-    /// @dev Thrown when an invalid strategy is provided.
-    error InvalidStrategy();
+    /// @dev Thrown when caller is not authorized to call a function.
+    error InvalidCaller();
 
     /// Operator Status
 
