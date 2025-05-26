@@ -93,12 +93,11 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
         // Assert that the escrow delay has elapsed
         require(block.number >= getBurnOrRedistributionCompleteBlock(operatorSet, slashId), EscrowDelayNotElapsed());
 
-        // If all of the strategies have not been processed, release them to slash escrow
-        // We need to ensure that ALL strategies are in escrow before processing and removing storage (which would otherwise prevent
+        // Calling `decreaseBurnOrRedistributableShares` will transfer the underlying tokens to the `SlashEscrow`.
+        // NOTE: While `decreaseBurnOrRedistributableShares` may have already been called, we call it again to ensure that the
+        // underlying tokens are actually in escrow before processing and removing storage (which would otherwise prevent
         // the tokens from being released).
-        if (strategyManager.getBurnOrRedistributableCount(operatorSet, slashId) != 0) {
-            strategyManager.decreaseBurnOrRedistributableShares(operatorSet, slashId);
-        }
+        strategyManager.decreaseBurnOrRedistributableShares(operatorSet, slashId);
 
         // Deploy the counterfactual `SlashEscrow`.
         ISlashEscrow slashEscrow = deploySlashEscrow(operatorSet, slashId);
