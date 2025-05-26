@@ -19,7 +19,7 @@ interface ISlashEscrow {
     /// @param slashId The slash ID that was used to create the slash escrow.
     /// @param recipient The recipient of the underlying tokens.
     /// @param strategy The strategy that was used to create the slash escrow.
-    function burnOrRedistributeUnderlyingTokens(
+    function releaseTokens(
         ISlashEscrowFactory slashEscrowFactory,
         ISlashEscrow slashEscrowImplementation,
         OperatorSet calldata operatorSet,
@@ -32,7 +32,7 @@ interface ISlashEscrow {
     /// @dev Validates that the provided parameters deterministically generate this contract's address using CREATE2.
     /// - Uses ClonesUpgradeable.predictDeterministicAddress() to compute the expected address from the parameters.
     /// - Compares the computed address against this contract's address to validate parameter integrity.
-    /// - Provides a stateless validation mechanism for burnOrRedistributeUnderlyingTokens() inputs.
+    /// - Provides a stateless validation mechanism for releaseTokens() inputs.
     /// - Security relies on the cryptographic properties of CREATE2 address derivation.
     /// - Attack vector would require finding a hash collision in the CREATE2 address computation.
     /// @param slashEscrowFactory The factory contract that created the slash escrow.
