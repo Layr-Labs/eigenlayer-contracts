@@ -1078,111 +1078,283 @@ contract StrategyManagerUnitTests_increaseBurnOrRedistributableShares is Strateg
         strategyManager.increaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, dummyStrat, 1);
     }
 
-    // function testFuzz_increaseBurnOrRedistributableShares(uint addedSharesToBurn) external {
-    //     IStrategy strategy = dummyStrat;
-    //     cheats.expectEmit(true, true, true, true, address(strategyManager));
-    //     emit BurnOrRedistributableSharesIncreased(defaultOperatorSet, defaultSlashId, strategy, addedSharesToBurn);
-    //     cheats.prank(address(delegationManagerMock));
-    //     strategyManager.increaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, strategy, addedSharesToBurn);
-    //     assertEq(
-    //         strategyManager.getBurnableShares(strategy), addedSharesToBurn, "strategyManager.burnableShares(strategy) != addedSharesToBurn"
-    //     );
-    // }
+    function test_Revert_StrategyAlreadyInSlash() external {
+        IStrategy strategy = dummyStrat;
+        cheats.startPrank(address(delegationManagerMock));
 
-    // function testFuzz_increaseBurnOrRedistributableShares_existingShares(uint existingBurnableShares, uint addedSharesToBurn) external {
-    //     // preventing fuzz overflow, in practice StrategyBase has a 1e38 - 1 maxShares limit so this won't
-    //     // be an issue on mainnet/testnet environments
-    //     existingBurnableShares = bound(existingBurnableShares, 1, type(uint).max / 2);
-    //     addedSharesToBurn = bound(addedSharesToBurn, 1, type(uint).max / 2);
-    //     IStrategy strategy = dummyStrat;
-    //     cheats.prank(address(delegationManagerMock));
-    //     cheats.expectEmit(true, true, true, true, address(strategyManager));
-    //     emit BurnOrRedistributableSharesIncreased(defaultOperatorSet, defaultSlashId, strategy, existingBurnableShares);
-    //     strategyManager.increaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, strategy, existingBurnableShares);
-    //     assertEq(
-    //         strategyManager.getBurnableShares(strategy),
-    //         existingBurnableShares,
-    //         "strategyManager.burnableShares(strategy) != existingBurnableShares"
-    //     );
+        // Add strategy once
+        strategyManager.increaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, strategy, 1);
 
-    //     cheats.prank(address(delegationManagerMock));
-    //     cheats.expectEmit(true, true, true, true, address(strategyManager));
-    //     emit BurnOrRedistributableSharesIncreased(defaultOperatorSet, defaultSlashId, strategy, addedSharesToBurn);
-    //     strategyManager.increaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, strategy, addedSharesToBurn);
+        // Revert when adding strategy again
+        cheats.expectRevert(IStrategyManagerErrors.StrategyAlreadyInSlash.selector);
+        strategyManager.increaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, strategy, 1);
 
-    //     assertEq(
-    //         strategyManager.getBurnableShares(strategy),
-    //         existingBurnableShares + addedSharesToBurn,
-    //         "strategyManager.burnableShares(strategy) != existingBurnableShares + addedSharesToBurn"
-    //     );
-    // }
+        cheats.stopPrank();
+    }
+
+    function testFuzz_singleStrategy(uint addedSharesToBurn) external {
+        IStrategy strategy = dummyStrat;
+
+        cheats.expectEmit(true, true, true, true, address(strategyManager));
+        emit BurnOrRedistributableSharesIncreased(defaultOperatorSet, defaultSlashId, strategy, addedSharesToBurn);
+
+        cheats.prank(address(delegationManagerMock));
+        strategyManager.increaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, strategy, addedSharesToBurn);
+
+        (IStrategy[] memory strats, uint[] memory shares) =
+            strategyManager.getBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
+
+        assertEq(address(strats[0]), address(strategy), "get burn or redistributable shares is wrong");
+        assertEq(shares[0], addedSharesToBurn, "get burn or redistributable shares is wrong");
+        assertEq(
+            strategyManager.getBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, strategy),
+            addedSharesToBurn,
+            "get burn or redistributable shares is wrong"
+        );
+        assertEq(
+            strategyManager.getBurnOrRedistributableCount(defaultOperatorSet, defaultSlashId),
+            1,
+            "get burn or redistributable shares count is wrong"
+        );
+
+        // Sanity check that the strategy is not in the OLD burnable shares mapping
+        assertEq(strategyManager.getBurnableShares(strategy), 0, "get burnable shares is wrong");
+    }
+
+    function testFuzz_multipleStrategies(uint sharesToAdd1, uint sharesToAdd2, uint sharesToAdd3) external {
+        IStrategy[] memory strategies = new IStrategy[](3);
+        strategies[0] = dummyStrat;
+        strategies[1] = dummyStrat2;
+        strategies[2] = dummyStrat3;
+
+        uint[] memory sharesToAdd = new uint[](3);
+        sharesToAdd[0] = sharesToAdd1;
+        sharesToAdd[1] = sharesToAdd2;
+        sharesToAdd[2] = sharesToAdd3;
+
+        for (uint i = 0; i < strategies.length; ++i) {
+            cheats.expectEmit(true, true, true, true, address(strategyManager));
+            emit BurnOrRedistributableSharesIncreased(defaultOperatorSet, defaultSlashId, strategies[i], sharesToAdd[i]);
+            cheats.prank(address(delegationManagerMock));
+            strategyManager.increaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, strategies[i], sharesToAdd[i]);
+        }
+
+        (IStrategy[] memory strats, uint[] memory shares) =
+            strategyManager.getBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
+
+        for (uint i = 0; i < strategies.length; ++i) {
+            assertEq(address(strats[i]), address(strategies[i]), "get burn or redistributable shares is wrong");
+            assertEq(shares[i], sharesToAdd[i], "get burn or redistributable shares is wrong");
+            assertEq(
+                strategyManager.getBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, strategies[i]),
+                sharesToAdd[i],
+                "get burn or redistributable shares is wrong"
+            );
+            // Sanity check that the strategy is not in the OLD burnable shares mapping
+            assertEq(strategyManager.getBurnableShares(strategies[i]), 0, "get burnable shares is wrong");
+        }
+        assertEq(
+            strategyManager.getBurnOrRedistributableCount(defaultOperatorSet, defaultSlashId),
+            strategies.length,
+            "get burn or redistributable shares count is wrong"
+        );
+    }
+
+    function testFuzz_existingShares(uint existingBurnableShares, uint addedSharesToBurn) external {
+        // preventing fuzz overflow, in practice StrategyBase has a 1e38 - 1 maxShares limit so this won't
+        // be an issue on mainnet/testnet environments
+        existingBurnableShares = bound(existingBurnableShares, 1, type(uint).max / 2);
+        addedSharesToBurn = bound(addedSharesToBurn, 1, type(uint).max / 2);
+        IStrategy strategy = dummyStrat;
+        cheats.prank(address(delegationManagerMock));
+        cheats.expectEmit(true, true, true, true, address(strategyManager));
+        emit BurnOrRedistributableSharesIncreased(defaultOperatorSet, defaultSlashId, strategy, existingBurnableShares);
+        strategyManager.increaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, strategy, existingBurnableShares);
+        assertEq(
+            strategyManager.getBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, strategy),
+            existingBurnableShares,
+            "strategyManager.burnableShares(strategy) != existingBurnableShares"
+        );
+
+        uint nextSlashId = defaultSlashId + 1;
+        cheats.prank(address(delegationManagerMock));
+        cheats.expectEmit(true, true, true, true, address(strategyManager));
+        emit BurnOrRedistributableSharesIncreased(defaultOperatorSet, nextSlashId, strategy, addedSharesToBurn);
+        strategyManager.increaseBurnOrRedistributableShares(defaultOperatorSet, nextSlashId, strategy, addedSharesToBurn);
+
+        assertEq(
+            strategyManager.getBurnOrRedistributableShares(defaultOperatorSet, nextSlashId, strategy),
+            addedSharesToBurn,
+            "added shares to burn wrong"
+        );
+    }
 }
 
 contract StrategyManagerUnitTests_decreaseBurnOrRedistributableShares is StrategyManagerUnitTests {
-// function testFuzz_SingleStrategyDeposited(address staker, uint depositAmount, uint sharesToBurn)
-//     external
-//     filterFuzzedAddressInputs(staker)
-// {
-//     cheats.assume(staker != address(0));
-//     cheats.assume(staker != address(dummyStrat));
-//     cheats.assume(sharesToBurn > 0 && sharesToBurn < dummyToken.totalSupply() && depositAmount >= sharesToBurn);
-//     IStrategy strategy = dummyStrat;
-//     IERC20 token = dummyToken;
-//     _depositIntoStrategySuccessfully(strategy, staker, depositAmount);
+    function _increaseBurnOrRedistributableShares(IStrategy strategy, uint sharesToAdd) internal {
+        cheats.prank(address(delegationManagerMock));
+        strategyManager.increaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, strategy, sharesToAdd);
+        _depositIntoStrategySuccessfully(strategy, address(this), sharesToAdd);
+    }
 
-//     // slash shares and increase amount to burn from DelegationManager
-//     cheats.prank(address(delegationManagerMock));
-//     cheats.expectEmit(true, true, true, true, address(strategyManager));
-//     emit BurnOrRedistributableSharesIncreased(defaultOperatorSet, defaultSlashId, strategy, sharesToBurn);
-//     strategyManager.increaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, strategy, sharesToBurn);
+    function _increaseBurnOrRedistributableShares(IStrategy[] memory strategies, uint[] memory sharesToAdd) internal {
+        for (uint i = 0; i < strategies.length; ++i) {
+            _increaseBurnOrRedistributableShares(strategies[i], sharesToAdd[i]);
+        }
+    }
 
-//     uint strategyBalanceBefore = token.balanceOf(address(strategy));
-//     uint burnAddressBalanceBefore = token.balanceOf(strategyManager.DEFAULT_BURN_ADDRESS());
-//     cheats.prank(address(delegationManagerMock));
-//     // cheats.expectEmit(true, true, true, true, address(strategyManager));
-//     // emit BurnOrRedistributableSharesDecreased(
-//     //     OperatorSet(address(strategyManager), type(uint32).max), type(uint).max, strategy, DEFAULT_BURN_ADDRESS, sharesToBurn
-//     // );
-//     strategyManager.burnShares(strategy);
-//     uint strategyBalanceAfter = token.balanceOf(address(strategy));
-//     uint burnAddressBalanceAfter = token.balanceOf(strategyManager.DEFAULT_BURN_ADDRESS());
+    function testFuzz_singleStrategy(uint shares) external {
+        IStrategy strategy = dummyStrat;
+        _increaseBurnOrRedistributableShares(strategy, shares);
 
-//     assertEq(strategyBalanceBefore - sharesToBurn, strategyBalanceAfter, "strategyBalanceBefore - sharesToBurn != strategyBalanceAfter");
-//     assertEq(burnAddressBalanceAfter, burnAddressBalanceBefore + sharesToBurn, "balanceAfter != balanceBefore + sharesAmount");
+        cheats.expectEmit(true, true, true, true, address(strategyManager));
+        emit BurnOrRedistributableSharesDecreased(defaultOperatorSet, defaultSlashId, strategy, shares);
+        strategyManager.decreaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
 
-//     // Verify strategy was removed from burnable sharesc
-//     (address[] memory strategiesAfterBurn,) = strategyManager.getStrategiesWithBurnableShares();
-//     assertEq(strategiesAfterBurn.length, 0, "Should have no strategies after burning");
-//     assertEq(strategyManager.getBurnableShares(strategy), 0, "getBurnableShares should return 0 after burning");
-// }
+        (IStrategy[] memory escrowStrats, uint[] memory escrowShares) =
+            strategyManager.getBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
+        assertEq(escrowStrats.length, 0, "strats length should be 0");
+        assertEq(escrowShares.length, 0, "shares length should be 0");
+        assertEq(strategyManager.getBurnOrRedistributableCount(defaultOperatorSet, defaultSlashId), 0, "count should be 0");
 
-// /// @notice check that balances are unchanged with a reverting token but burnShares doesn't revert
-// function testFuzz_BurnableSharesUnchangedWithRevertToken(address staker, uint depositAmount, uint sharesToBurn)
-//     external
-//     filterFuzzedAddressInputs(staker)
-// {
-//     cheats.assume(staker != address(0));
-//     cheats.assume(sharesToBurn > 0 && sharesToBurn < dummyToken.totalSupply() && depositAmount >= sharesToBurn);
-//     IStrategy strategy = dummyStrat;
-//     IERC20 token = dummyToken;
-//     _depositIntoStrategySuccessfully(strategy, staker, depositAmount);
+        address slashEscrow = slashEscrowFactoryMock.getSlashEscrow(defaultOperatorSet, defaultSlashId);
+        assertEq(dummyToken.balanceOf(slashEscrow), shares, "strategy balance of slash escrow invalid");
+        assertEq(dummyToken.balanceOf(address(strategy)), 0, "strategy balance should be 0");
+    }
 
-//     // slash shares and increase amount to burn from DelegationManager
-//     cheats.prank(address(delegationManagerMock));
-//     cheats.expectEmit(true, true, true, true, address(strategyManager));
-//     emit BurnOrRedistributableSharesIncreased(defaultOperatorSet, defaultSlashId, strategy, sharesToBurn);
-//     strategyManager.increaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, strategy, sharesToBurn);
+    /// @notice Same as above, but uses the indexed version of the function
+    function testFuzz_singleStrategy_byIndex(uint shares) external {
+        IStrategy strategy = dummyStrat;
+        _increaseBurnOrRedistributableShares(strategy, shares);
 
-//     // Now set token to be contract that reverts simulating an upgrade
-//     cheats.etch(address(token), address(revertToken).code);
-//     ERC20_SetTransferReverting_Mock(address(token)).setTransfersRevert(true);
+        console.log("strategy balance", dummyToken.balanceOf(address(strategy)));
 
-//     cheats.expectRevert("SafeERC20: low-level call failed");
-//     cheats.prank(address(delegationManagerMock));
-//     strategyManager.burnShares(strategy);
+        cheats.expectEmit(true, true, true, true, address(strategyManager));
+        emit BurnOrRedistributableSharesDecreased(defaultOperatorSet, defaultSlashId, strategy, shares);
+        strategyManager.decreaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, 0);
 
-//     assertEq(strategyManager.getBurnableShares(strategy), sharesToBurn, "burnable shares should be unchanged");
-// }
+        (IStrategy[] memory escrowStrats, uint[] memory escrowShares) =
+            strategyManager.getBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
+        assertEq(escrowStrats.length, 0, "strats length should be 0");
+        assertEq(escrowShares.length, 0, "shares length should be 0");
+        assertEq(strategyManager.getBurnOrRedistributableCount(defaultOperatorSet, defaultSlashId), 0, "count should be 0");
+
+        address slashEscrow = slashEscrowFactoryMock.getSlashEscrow(defaultOperatorSet, defaultSlashId);
+        assertEq(dummyToken.balanceOf(slashEscrow), shares, "strategy balance of slash escrow invalid");
+        assertEq(dummyToken.balanceOf(address(strategy)), 0, "strategy balance should be 0");
+    }
+
+    /// @dev We use uint128 to avoid overflow when adding the three share amounts
+    function testFuzz_multipleStrategies(Randomness r) external rand(r) {
+        IStrategy[] memory strategies = new IStrategy[](3);
+        strategies[0] = dummyStrat;
+        strategies[1] = dummyStrat2;
+        strategies[2] = dummyStrat3;
+
+        uint sharesToAdd1 = r.Uint128();
+        uint sharesToAdd2 = r.Uint128();
+        uint sharesToAdd3 = r.Uint128();
+
+        uint[] memory sharesToAdd = new uint[](3);
+        uint totalSharesToAdd = sharesToAdd1 + sharesToAdd2 + sharesToAdd3;
+        sharesToAdd[0] = sharesToAdd1;
+        sharesToAdd[1] = sharesToAdd2;
+        sharesToAdd[2] = sharesToAdd3;
+
+        _increaseBurnOrRedistributableShares(strategies, sharesToAdd);
+
+        strategyManager.decreaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
+
+        (IStrategy[] memory escrowStrats, uint[] memory escrowShares) =
+            strategyManager.getBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
+        assertEq(escrowStrats.length, 0, "strats length should be 0");
+        assertEq(escrowShares.length, 0, "shares length should be 0");
+        assertEq(strategyManager.getBurnOrRedistributableCount(defaultOperatorSet, defaultSlashId), 0, "count should be 0");
+
+        // The dummyStrats all have the same token, assert total balance
+        address slashEscrow = slashEscrowFactoryMock.getSlashEscrow(defaultOperatorSet, defaultSlashId);
+        assertEq(dummyToken.balanceOf(slashEscrow), totalSharesToAdd, "total balance should be total shares to add");
+        assertEq(dummyToken.balanceOf(address(strategies[0])), 0, "strategy balance should be 0");
+        assertEq(dummyToken.balanceOf(address(strategies[1])), 0, "strategy balance should be 0");
+        assertEq(dummyToken.balanceOf(address(strategies[2])), 0, "strategy balance should be 0");
+    }
+
+    function testFuzz_multipleStrategies_byRandomIndex(Randomness r) external rand(r) {
+        IStrategy[] memory strategies = new IStrategy[](3);
+        strategies[0] = dummyStrat;
+        strategies[1] = dummyStrat2;
+        strategies[2] = dummyStrat3;
+
+        uint[] memory shares = new uint[](3);
+
+        uint sharesToAdd1 = r.Uint128();
+        uint sharesToAdd2 = r.Uint128();
+        uint sharesToAdd3 = r.Uint128();
+
+        uint totalShares = sharesToAdd1 + sharesToAdd2 + sharesToAdd3;
+        shares[0] = sharesToAdd1;
+        shares[1] = sharesToAdd2;
+        shares[2] = sharesToAdd3;
+
+        _increaseBurnOrRedistributableShares(strategies, shares);
+
+        // Remove shares in random order
+        for (uint i = 0; i < strategies.length; ++i) {
+            // Create a random index to remove shares
+            uint index = r.Uint256(0, strategies.length - i - 1);
+
+            strategyManager.decreaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, index);
+
+            (IStrategy[] memory strats, uint[] memory shares) =
+                strategyManager.getBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
+            assertEq(strats.length, strategies.length - i - 1, "strats length should be 0");
+            assertEq(shares.length, strategies.length - i - 1, "shares length should be 0");
+            assertEq(
+                strategyManager.getBurnOrRedistributableCount(defaultOperatorSet, defaultSlashId),
+                strategies.length - i - 1,
+                "count not correct"
+            );
+        }
+
+        // The dummyStrats all have the same token, assert total balance
+        address slashEscrow = slashEscrowFactoryMock.getSlashEscrow(defaultOperatorSet, defaultSlashId);
+        assertEq(dummyToken.balanceOf(slashEscrow), totalShares, "total balance should be total shares to add");
+        assertEq(dummyToken.balanceOf(address(strategies[0])), 0, "strategy balance should be 0");
+        assertEq(dummyToken.balanceOf(address(strategies[1])), 0, "strategy balance should be 0");
+        assertEq(dummyToken.balanceOf(address(strategies[2])), 0, "strategy balance should be 0");
+    }
+
+    /// @notice check that balances are unchanged with a reverting token but burnShares doesn't revert
+    function testFuzz_unchangedWithRevertToken(address staker, uint depositAmount, uint sharesToRemove)
+        external
+        filterFuzzedAddressInputs(staker)
+    {
+        cheats.assume(staker != address(0));
+        cheats.assume(sharesToRemove > 0 && sharesToRemove < dummyToken.totalSupply() && depositAmount >= sharesToRemove);
+        IStrategy strategy = dummyStrat;
+        IERC20 token = dummyToken;
+        _depositIntoStrategySuccessfully(strategy, staker, depositAmount);
+
+        // slash shares and increase amount to burn from DelegationManager
+        cheats.prank(address(delegationManagerMock));
+        cheats.expectEmit(true, true, true, true, address(strategyManager));
+        emit BurnOrRedistributableSharesIncreased(defaultOperatorSet, defaultSlashId, strategy, sharesToRemove);
+        strategyManager.increaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, strategy, sharesToRemove);
+
+        // Now set token to be contract that reverts simulating an upgrade
+        cheats.etch(address(token), address(revertToken).code);
+        ERC20_SetTransferReverting_Mock(address(token)).setTransfersRevert(true);
+
+        cheats.expectRevert("SafeERC20: low-level call failed");
+        cheats.prank(address(delegationManagerMock));
+        strategyManager.decreaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
+
+        assertEq(
+            strategyManager.getBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, strategy),
+            sharesToRemove,
+            "burnable shares should be unchanged"
+        );
+    }
 }
 
 contract StrategyManagerUnitTests_setStrategyWhitelister is StrategyManagerUnitTests {
@@ -1342,74 +1514,4 @@ contract StrategyManagerUnitTests_removeStrategiesFromDepositWhitelist is Strate
             }
         }
     }
-}
-
-contract StrategyManagerUnitTests_getStrategiesWithBurnableShares is StrategyManagerUnitTests {
-    function test_getStrategiesWithBurnableShares_Empty() public view {
-        (address[] memory strategies, uint[] memory shares) = strategyManager.getStrategiesWithBurnableShares();
-        assertEq(strategies.length, 0, "Should have no strategies when empty");
-        assertEq(shares.length, 0, "Should have no shares when empty");
-    }
-
-    // function testFuzz_getStrategiesWithBurnableShares_Single(uint sharesToAdd) public {
-    //     //ensure non-zero
-    //     cheats.assume(sharesToAdd > 0);
-
-    //     // Add burnable shares
-    //     cheats.prank(address(delegationManagerMock));
-    //     strategyManager.increaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, dummyStrat, sharesToAdd);
-
-    //     // Get strategies with burnable shares
-    //     (address[] memory strategies, uint[] memory shares) = strategyManager.getStrategiesWithBurnableShares();
-
-    //     // Verify results
-    //     assertEq(strategies.length, 1, "Should have one strategy");
-    //     assertEq(shares.length, 1, "Should have one share amount");
-    //     assertEq(strategies[0], address(dummyStrat), "Wrong strategy address");
-    //     assertEq(shares[0], sharesToAdd, "Wrong shares amount");
-    // }
-
-    // function testFuzz_getStrategiesWithBurnableShares_Multiple(uint[3] calldata sharesToAdd) public {
-    //     IStrategy[] memory strategies = new IStrategy[](3);
-    //     strategies[0] = dummyStrat;
-    //     strategies[1] = dummyStrat2;
-    //     strategies[2] = dummyStrat3;
-    //     uint[3] memory expectedShares;
-    //     uint expectedLength = 0;
-
-    //     // Add non-zero shares to strategies
-    //     for (uint i = 0; i < 3; i++) {
-    //         expectedShares[i] = sharesToAdd[i];
-    //         if (sharesToAdd[i] > 0) {
-    //             expectedLength++;
-    //             cheats.prank(address(delegationManagerMock));
-    //             strategyManager.increaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, strategies[i], sharesToAdd[i]);
-    //         }
-    //     }
-
-    //     // Get strategies with burnable shares
-    //     (address[] memory returnedStrategies, uint[] memory returnedShares) = strategyManager.getStrategiesWithBurnableShares();
-
-    //     // Verify lengths match
-    //     assertEq(returnedStrategies.length, expectedLength, "Wrong number of strategies returned");
-    //     assertEq(returnedShares.length, expectedLength, "Wrong number of share amounts returned");
-
-    //     // For all strategies with non-zero shares, verify they are in the returned arrays
-    //     uint foundCount = 0;
-    //     for (uint i = 0; i < 3; i++) {
-    //         if (expectedShares[i] > 0) {
-    //             bool found = false;
-    //             for (uint j = 0; j < returnedStrategies.length; j++) {
-    //                 if (returnedStrategies[j] == address(strategies[i])) {
-    //                     assertEq(returnedShares[j], expectedShares[i], "Wrong share amount");
-    //                     found = true;
-    //                     foundCount++;
-    //                     break;
-    //                 }
-    //             }
-    //             assertTrue(found, "Strategy with non-zero shares not found in returned array");
-    //         }
-    //     }
-    //     assertEq(foundCount, expectedLength, "Number of found strategies doesn't match expected length");
-    // }
 }
