@@ -112,11 +112,10 @@ contract StrategyManagerMock is Test {
 
     function clearBurnOrRedistributableShares(OperatorSet calldata operatorSet, uint slashId) external {}
 
-    function clearBurnOrRedistributableSharesByStrategy(
-        OperatorSet calldata operatorSet,
-        uint256 slashId,
-        IStrategy strategy
-    ) external returns (uint256) {}
+    function clearBurnOrRedistributableSharesByStrategy(OperatorSet calldata operatorSet, uint slashId, IStrategy strategy)
+        external
+        returns (uint)
+    {}
 
     function getBurnOrRedistributableCount(OperatorSet calldata operatorSet, uint slashId) external view returns (uint) {
         return _burnOrRedistributableCount;
