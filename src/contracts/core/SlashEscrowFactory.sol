@@ -260,30 +260,6 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
         emit GlobalEscrowDelaySet(delay);
     }
 
-    /// @notice Checks that the slash escrow can be released.
-    function _checkReleaseSlashEscrow(
-        OperatorSet calldata operatorSet,
-        uint256 slashId,
-        address redistributionRecipient
-    ) internal {
-        // If the redistribution recipient is not the default burn address...
-        if (redistributionRecipient != DEFAULT_BURN_ADDRESS) {
-            require(msg.sender == redistributionRecipient, OnlyRedistributionRecipient());
-        }
-
-        // Assert that the slash ID is not paused
-        require(!isEscrowPaused(operatorSet, slashId), IPausable.CurrentlyPaused());
-
-        // Assert that the escrow delay has elapsed
-        require(block.number >= getEscrowCompleteBlock(operatorSet, slashId), EscrowDelayNotElapsed());
-
-        // Calling `decreaseBurnOrRedistributableShares` will transfer the underlying tokens to the `SlashEscrow`.
-        // NOTE: While `decreaseBurnOrRedistributableShares` may have already been called, we call it again to ensure that the
-        // underlying tokens are actually in escrow before processing and removing storage (which would otherwise prevent
-        // the tokens from being released).
-        strategyManager.clearBurnOrRedistributableShares(operatorSet, slashId);
-    }
-
     /**
      * @notice Deploys a `SlashEscrow`
      * @param operatorSet The operator set whose slash escrow is being deployed.
