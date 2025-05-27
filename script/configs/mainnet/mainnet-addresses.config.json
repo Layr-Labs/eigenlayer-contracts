@@ -6,7 +6,7 @@
         "avsDirectory": "0x135dda560e946695d6f155dacafc6f1f25c1f5af",
         "avsDirectoryImplementation": "0xA396D855D70e1A1ec1A0199ADB9845096683B6A2",
         "beaconOracle": "0x343907185b71aDF0eBa9567538314396aa985442",
-        "baseStrategyImplementation": "0xdfdA04f980bE6A64E3607c95Ca26012Ab9aA46d3",
+        "baseStrategyImplementation": "0x0EC17ef9c00F360DB28CA8008684a4796b11E456",
         "delayedWithdrawalRouter": "0x7Fe7E9CC0F274d2435AD5d56D5fa73E47F6A23D8",
         "delayedWithdrawalRouterImplementation": "0x4bb6731b02314d40abbffbc4540f508874014226",
         "delegationManager": "0x39053D51B77DC0d36036Fc1fCc8Cb819df8Ef37A",
