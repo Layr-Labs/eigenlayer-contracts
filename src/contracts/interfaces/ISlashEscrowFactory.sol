@@ -12,34 +12,31 @@ interface ISlashEscrowFactoryErrors {
     /// @notice Thrown when a caller is not the redistribution recipient.
     error OnlyRedistributionRecipient();
 
-    /// @notice Thrown when a redistribution is not mature.
-    error RedistributionNotMature();
-
-    /// @notice Thrown when a burn or redistribution delay is less than the minimum burn or redistribution delay.
-    error BurnOrRedistributionDelayLessThanMinimum();
+    /// @notice Thrown when a escrow is not mature.
+    error EscrowNotMature();
 
     /// @notice Thrown when the escrow delay has not elapsed.
     error EscrowDelayNotElapsed();
 }
 
 interface ISlashEscrowFactoryEvents {
-    /// @notice Emitted when a redistribution is initiated.
-    event StartBurnOrRedistribution(OperatorSet operatorSet, uint256 slashId, IStrategy strategy, uint32 startBlock);
+    /// @notice Emitted when a escrow is initiated.
+    event StartEscrow(OperatorSet operatorSet, uint256 slashId, IStrategy strategy, uint32 startBlock);
 
-    /// @notice Emitted when a redistribution is released.
-    event BurnOrRedistributionComplete(OperatorSet operatorSet, uint256 slashId, IStrategy strategy, address recipient);
+    /// @notice Emitted when a escrow is released.
+    event EscrowComplete(OperatorSet operatorSet, uint256 slashId, IStrategy strategy, address recipient);
 
-    /// @notice Emitted when a redistribution is paused.
-    event RedistributionPaused(OperatorSet operatorSet, uint256 slashId);
+    /// @notice Emitted when a escrow is paused.
+    event EscrowPaused(OperatorSet operatorSet, uint256 slashId);
 
-    /// @notice Emitted when a redistribution is unpaused.
-    event RedistributionUnpaused(OperatorSet operatorSet, uint256 slashId);
+    /// @notice Emitted when a escrow is unpaused.
+    event EscrowUnpaused(OperatorSet operatorSet, uint256 slashId);
 
-    /// @notice Emitted when a global burn or redistribution delay is set.
-    event GlobalBurnOrRedistributionDelaySet(uint32 delay);
+    /// @notice Emitted when a global escrow delay is set.
+    event GlobalEscrowDelaySet(uint32 delay);
 
-    /// @notice Emitted when a burn or redistribution delay is set.
-    event StrategyBurnOrRedistributionDelaySet(IStrategy strategy, uint32 delay);
+    /// @notice Emitted when a escrow delay is set.
+    event StrategyEscrowDelaySet(IStrategy strategy, uint32 delay);
 }
 
 interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryEvents {
@@ -47,22 +44,22 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
      * @notice Initializes the initial owner and paused status.
      * @param initialOwner The initial owner of the router.
      * @param initialPausedStatus The initial paused status of the router.
-     * @param initialGlobalDelayBlocks The initial global burn or redistribution delay.
+     * @param initialGlobalDelayBlocks The initial global escrow delay.
      */
     function initialize(address initialOwner, uint256 initialPausedStatus, uint32 initialGlobalDelayBlocks) external;
 
     /**
-     * @notice Locks up a redistribution.
-     * @param operatorSet The operator set whose redistribution is being locked up.
-     * @param slashId The slash ID of the redistribution that is being locked up.
+     * @notice Locks up a escrow.
+     * @param operatorSet The operator set whose escrow is being locked up.
+     * @param slashId The slash ID of the escrow that is being locked up.
      * @param strategy The strategy that whose underlying tokens are being redistributed.
      */
     function initiateSlashEscrow(OperatorSet calldata operatorSet, uint256 slashId, IStrategy strategy) external;
 
     /**
-     * @notice Releases a redistribution.
-     * @param operatorSet The operator set whose redistribution is being released.
-     * @param slashId The slash ID of the redistribution that is being released.
+     * @notice Releases an escrow.
+     * @param operatorSet The operator set whose escrow is being released.
+     * @param slashId The slash ID of the escrow that is being released.
      * @dev The caller must be the redistribution recipient, unless the redistribution recipient
      * is the default burn address in which case anyone can call.
      * @dev The slash escrow is released once the delay for ALL strategies has elapsed.
@@ -78,51 +75,51 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
     function deploySlashEscrow(OperatorSet calldata operatorSet, uint256 slashId) external returns (ISlashEscrow);
 
     /**
-     * @notice Pauses a redistribution.
-     * @param operatorSet The operator set whose redistribution is being paused.
-     * @param slashId The slash ID of the redistribution that is being paused.
+     * @notice Pauses a escrow.
+     * @param operatorSet The operator set whose escrow is being paused.
+     * @param slashId The slash ID of the escrow that is being paused.
      */
-    function pauseRedistribution(OperatorSet calldata operatorSet, uint256 slashId) external;
+    function pauseEscrow(OperatorSet calldata operatorSet, uint256 slashId) external;
 
     /**
-     * @notice Unpauses a redistribution.
-     * @param operatorSet The operator set whose redistribution is being unpaused.
-     * @param slashId The slash ID of the redistribution that is being unpaused.
+     * @notice Unpauses a escrow.
+     * @param operatorSet The operator set whose escrow is being unpaused.
+     * @param slashId The slash ID of the escrow that is being unpaused.
      */
-    function unpauseRedistribution(OperatorSet calldata operatorSet, uint256 slashId) external;
+    function unpauseEscrow(OperatorSet calldata operatorSet, uint256 slashId) external;
 
     /**
-     * @notice Sets the delay for the burn or redistribution of a strategies underlying token.
-     * @dev If the strategy delay is less than the global delay, the strategy delay will be used.
-     * @param strategy The strategy whose burn or redistribution delay is being set.
-     * @param delay The delay for the burn or redistribution.
+     * @notice Sets the delay for the escrow of a strategies underlying token.
+     * @dev The largest of all strategy delays or global delay will be used.
+     * @param strategy The strategy whose escrow delay is being set.
+     * @param delay The delay for the escrow.
      */
-    function setStrategyBurnOrRedistributionDelay(IStrategy strategy, uint32 delay) external;
+    function setStrategyEscrowDelay(IStrategy strategy, uint32 delay) external;
 
     /**
-     * @notice Sets the delay for the burn or redistribution of all strategies underlying tokens globally.
-     * @param delay The delay for the burn or redistribution.
+     * @notice Sets the delay for the escrow of all strategies underlying tokens globally.
+     * @param delay The delay for the escrow.
      */
-    function setGlobalBurnOrRedistributionDelay(
+    function setGlobalEscrowDelay(
         uint32 delay
     ) external;
 
     /**
-     * @notice Returns the operator sets that have pending burn or redistributions.
-     * @return operatorSets The operator sets that have pending burn or redistributions.
+     * @notice Returns the operator sets that have pending escrows.
+     * @return operatorSets The operator sets that have pending escrows.
      */
     function getPendingOperatorSets() external view returns (OperatorSet[] memory operatorSets);
 
     /**
-     * @notice Returns the total number of operator sets with pending burn or redistributions.
-     * @return The total number of operator sets with pending burn or redistributions.
+     * @notice Returns the total number of operator sets with pending escrows.
+     * @return The total number of operator sets with pending escrows.
      */
     function getTotalPendingOperatorSets() external view returns (uint256);
 
     /**
-     * @notice Returns whether an operator set has pending burn or redistributions.
-     * @param operatorSet The operator set whose pending burn or redistributions are being queried.
-     * @return Whether the operator set has pending burn or redistributions.
+     * @notice Returns whether an operator set has pending escrows.
+     * @param operatorSet The operator set whose pending escrows are being queried.
+     * @return Whether the operator set has pending escrows.
      */
     function isPendingOperatorSet(
         OperatorSet calldata operatorSet
@@ -206,7 +203,7 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
     /**
      * @notice Returns the pending underlying amount for a strategy for an operator set and slash ID.
      * @param operatorSet The operator set whose pending underlying amount is being queried.
-     * @param slashId The slash ID of the burn or redistribution that is being queried.
+     * @param slashId The slash ID of the escrow that is being queried.
      * @param strategy The strategy whose pending underlying amount is being queried.
      * @return The pending underlying amount.
      */
@@ -217,15 +214,12 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
     ) external view returns (uint256);
 
     /**
-     * @notice Returns the paused status of a redistribution.
-     * @param operatorSet The operator set whose redistribution is being queried.
-     * @param slashId The slash ID of the redistribution that is being queried.
-     * @return The paused status of the redistribution.
+     * @notice Returns the paused status of a escrow.
+     * @param operatorSet The operator set whose escrow is being queried.
+     * @param slashId The slash ID of the escrow that is being queried.
+     * @return The paused status of the escrow.
      */
-    function isBurnOrRedistributionPaused(
-        OperatorSet calldata operatorSet,
-        uint256 slashId
-    ) external view returns (bool);
+    function isEscrowPaused(OperatorSet calldata operatorSet, uint256 slashId) external view returns (bool);
 
     /**
      * @notice Returns the start block for a slash ID.
@@ -233,10 +227,7 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
      * @param slashId The slash ID of the start block that is being queried.
      * @return The start block.
      */
-    function getBurnOrRedistributionStartBlock(
-        OperatorSet calldata operatorSet,
-        uint256 slashId
-    ) external view returns (uint256);
+    function getEscrowStartBlock(OperatorSet calldata operatorSet, uint256 slashId) external view returns (uint256);
 
     /**
      * @notice Returns the block at which the escrow can be released.
@@ -244,25 +235,22 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
      * @param slashId The slash ID of the start block that is being queried.
      * @return The block at which the escrow can be released.
      */
-    function getBurnOrRedistributionCompleteBlock(
-        OperatorSet calldata operatorSet,
-        uint256 slashId
-    ) external view returns (uint32);
+    function getEscrowCompleteBlock(OperatorSet calldata operatorSet, uint256 slashId) external view returns (uint32);
 
     /**
-     * @notice Returns the burn or redistribution delay for a strategy.
-     * @param strategy The strategy whose burn or redistribution delay is being queried.
-     * @return The burn or redistribution delay.
+     * @notice Returns the escrow delay for a strategy.
+     * @param strategy The strategy whose escrow delay is being queried.
+     * @return The escrow delay.
      */
-    function getStrategyBurnOrRedistributionDelay(
+    function getStrategyEscrowDelay(
         IStrategy strategy
     ) external view returns (uint32);
 
     /**
-     * @notice Returns the global burn or redistribution delay.
-     * @return The global burn or redistribution delay.
+     * @notice Returns the global escrow delay.
+     * @return The global escrow delay.
      */
-    function getGlobalBurnOrRedistributionDelay() external view returns (uint32);
+    function getGlobalEscrowDelay() external view returns (uint32);
 
     /**
      * @notice Returns the salt for a slash escrow.

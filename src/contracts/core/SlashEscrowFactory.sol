@@ -42,7 +42,7 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
     ) external initializer {
         _transferOwnership(initialOwner);
         _setPausedStatus(initialPausedStatus);
-        _setGlobalBurnOrRedistributionDelay(initialGlobalDelayBlocks);
+        _setGlobalEscrowDelay(initialGlobalDelayBlocks);
     }
 
     /**
@@ -72,14 +72,14 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
 
         // Set the start block for the slash ID.
         _slashIdToStartBlock[operatorSet.key()][slashId] = uint32(block.number);
-        emit StartBurnOrRedistribution(operatorSet, slashId, strategy, uint32(block.number));
+        emit StartEscrow(operatorSet, slashId, strategy, uint32(block.number));
     }
 
     /// @inheritdoc ISlashEscrowFactory
     function releaseSlashEscrow(
         OperatorSet calldata operatorSet,
         uint256 slashId
-    ) external virtual onlyWhenNotPaused(PAUSED_BURN_OR_REDISTRIBUTE_SHARES) {
+    ) external virtual onlyWhenNotPaused(PAUSED_RELEASE_ESCROW) {
         address redistributionRecipient = allocationManager.getRedistributionRecipient(operatorSet);
 
         // If the redistribution recipient is not the default burn address...
@@ -88,10 +88,10 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
         }
 
         // Assert that the slash ID is not paused
-        require(!isBurnOrRedistributionPaused(operatorSet, slashId), IPausable.CurrentlyPaused());
+        require(!isEscrowPaused(operatorSet, slashId), IPausable.CurrentlyPaused());
 
         // Assert that the escrow delay has elapsed
-        require(block.number >= getBurnOrRedistributionCompleteBlock(operatorSet, slashId), EscrowDelayNotElapsed());
+        require(block.number >= getEscrowCompleteBlock(operatorSet, slashId), EscrowDelayNotElapsed());
 
         // Calling `decreaseBurnOrRedistributableShares` will transfer the underlying tokens to the `SlashEscrow`.
         // NOTE: While `decreaseBurnOrRedistributableShares` may have already been called, we call it again to ensure that the
@@ -127,17 +127,17 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
      */
 
     /// @inheritdoc ISlashEscrowFactory
-    function pauseRedistribution(OperatorSet calldata operatorSet, uint256 slashId) external virtual onlyPauser {
+    function pauseEscrow(OperatorSet calldata operatorSet, uint256 slashId) external virtual onlyPauser {
         _checkNewPausedStatus(operatorSet, slashId, true);
         _paused[operatorSet.key()][slashId] = true;
-        emit RedistributionPaused(operatorSet, slashId);
+        emit EscrowPaused(operatorSet, slashId);
     }
 
     /// @inheritdoc ISlashEscrowFactory
-    function unpauseRedistribution(OperatorSet calldata operatorSet, uint256 slashId) external virtual onlyUnpauser {
+    function unpauseEscrow(OperatorSet calldata operatorSet, uint256 slashId) external virtual onlyUnpauser {
         _checkNewPausedStatus(operatorSet, slashId, false);
         _paused[operatorSet.key()][slashId] = false;
-        emit RedistributionUnpaused(operatorSet, slashId);
+        emit EscrowUnpaused(operatorSet, slashId);
     }
 
     /**
@@ -147,16 +147,16 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
      */
 
     /// @inheritdoc ISlashEscrowFactory
-    function setGlobalBurnOrRedistributionDelay(
+    function setGlobalEscrowDelay(
         uint32 delay
     ) external onlyOwner {
-        _setGlobalBurnOrRedistributionDelay(delay);
+        _setGlobalEscrowDelay(delay);
     }
 
     /// @inheritdoc ISlashEscrowFactory
-    function setStrategyBurnOrRedistributionDelay(IStrategy strategy, uint32 delay) external onlyOwner {
-        _strategyBurnOrRedistributionDelayBlocks[address(strategy)] = delay;
-        emit StrategyBurnOrRedistributionDelaySet(strategy, delay);
+    function setStrategyEscrowDelay(IStrategy strategy, uint32 delay) external onlyOwner {
+        _strategyEscrowDelayBlocks[address(strategy)] = delay;
+        emit StrategyEscrowDelaySet(strategy, delay);
     }
 
     /**
@@ -184,7 +184,7 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
             address strategy = pendingStrategiesForSlashId.at(i - 1);
 
             // Burn or redistribute the underlying tokens for the strategy.
-            slashEscrow.burnOrRedistributeUnderlyingTokens(
+            slashEscrow.releaseTokens(
                 ISlashEscrowFactory(address(this)),
                 slashEscrowImplementation,
                 operatorSet,
@@ -195,7 +195,7 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
 
             // Remove the strategy and underlying amount from the pending burn or redistributions map.
             pendingStrategiesForSlashId.remove(strategy);
-            emit BurnOrRedistributionComplete(operatorSet, slashId, IStrategy(strategy), redistributionRecipient);
+            emit EscrowComplete(operatorSet, slashId, IStrategy(strategy), redistributionRecipient);
         }
 
         // Remove the slash ID from the pending slash IDs set.
@@ -210,12 +210,12 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
         }
     }
 
-    /// @notice Sets the global burn or redistribution delay.
-    function _setGlobalBurnOrRedistributionDelay(
+    /// @notice Sets the global escrow delay.
+    function _setGlobalEscrowDelay(
         uint32 delay
     ) internal {
-        _globalBurnOrRedistributionDelayBlocks = delay;
-        emit GlobalBurnOrRedistributionDelaySet(delay);
+        _globalEscrowDelayBlocks = delay;
+        emit GlobalEscrowDelaySet(delay);
     }
 
     /// @notice Checks that the new paused status is not the same as the current paused status.
@@ -300,7 +300,7 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
             // For each slashId, get the complete block.
             completeBlocks[i] = new uint32[](slashIds[i].length);
             for (uint256 j = 0; j < slashIds[i].length; j++) {
-                completeBlocks[i][j] = getBurnOrRedistributionCompleteBlock(operatorSets[i], slashIds[i][j]);
+                completeBlocks[i][j] = getEscrowCompleteBlock(operatorSets[i], slashIds[i][j]);
             }
         }
     }
@@ -362,55 +362,46 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
     }
 
     /// @inheritdoc ISlashEscrowFactory
-    function isBurnOrRedistributionPaused(
-        OperatorSet calldata operatorSet,
-        uint256 slashId
-    ) public view returns (bool) {
+    function isEscrowPaused(OperatorSet calldata operatorSet, uint256 slashId) public view returns (bool) {
         return _paused[operatorSet.key()][slashId];
     }
 
     /// @inheritdoc ISlashEscrowFactory
-    function getBurnOrRedistributionStartBlock(
-        OperatorSet memory operatorSet,
-        uint256 slashId
-    ) public view returns (uint256) {
+    function getEscrowStartBlock(OperatorSet memory operatorSet, uint256 slashId) public view returns (uint256) {
         return _slashIdToStartBlock[operatorSet.key()][slashId];
     }
 
     /// @inheritdoc ISlashEscrowFactory
-    function getBurnOrRedistributionCompleteBlock(
-        OperatorSet memory operatorSet,
-        uint256 slashId
-    ) public view returns (uint32) {
+    function getEscrowCompleteBlock(OperatorSet memory operatorSet, uint256 slashId) public view returns (uint32) {
         IStrategy[] memory strategies = getPendingStrategiesForSlashId(operatorSet, slashId);
 
         // Loop through all strategies and return the max delay
         uint32 maxStrategyDelay;
         for (uint256 i = 0; i < strategies.length; ++i) {
-            uint32 delay = getStrategyBurnOrRedistributionDelay(IStrategy(address(strategies[i])));
+            uint32 delay = getStrategyEscrowDelay(IStrategy(address(strategies[i])));
             if (delay > maxStrategyDelay) {
                 maxStrategyDelay = delay;
             }
         }
 
         // The escrow can be released once the max strategy delay has elapsed.
-        return uint32(getBurnOrRedistributionStartBlock(operatorSet, slashId) + maxStrategyDelay + 1);
+        return uint32(getEscrowStartBlock(operatorSet, slashId) + maxStrategyDelay + 1);
     }
 
     /// @inheritdoc ISlashEscrowFactory
-    function getStrategyBurnOrRedistributionDelay(
+    function getStrategyEscrowDelay(
         IStrategy strategy
     ) public view returns (uint32) {
-        uint32 globalDelay = _globalBurnOrRedistributionDelayBlocks;
-        uint32 strategyDelay = _strategyBurnOrRedistributionDelayBlocks[address(strategy)];
+        uint32 globalDelay = _globalEscrowDelayBlocks;
+        uint32 strategyDelay = _strategyEscrowDelayBlocks[address(strategy)];
 
         // Return whichever delay is greater.
         return strategyDelay > globalDelay ? strategyDelay : globalDelay;
     }
 
     /// @inheritdoc ISlashEscrowFactory
-    function getGlobalBurnOrRedistributionDelay() external view returns (uint32) {
-        return _globalBurnOrRedistributionDelayBlocks;
+    function getGlobalEscrowDelay() external view returns (uint32) {
+        return _globalEscrowDelayBlocks;
     }
 
     /// @inheritdoc ISlashEscrowFactory

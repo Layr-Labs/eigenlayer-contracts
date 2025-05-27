@@ -15,8 +15,8 @@ abstract contract SlashEscrowFactoryStorage is ISlashEscrowFactory {
     address internal constant DEFAULT_BURN_ADDRESS = 0x00000000000000000000000000000000000E16E4;
 
     /// @notice The pause status for the `releaseSlashEscrow` function.
-    /// @dev Allows all burn or redistribution outflows to be temporarily halted.
-    uint8 public constant PAUSED_BURN_OR_REDISTRIBUTE_SHARES = 0;
+    /// @dev Allows all escrow outflows to be temporarily halted.
+    uint8 public constant PAUSED_RELEASE_ESCROW = 0;
 
     // Immutable Storage
 
@@ -48,11 +48,11 @@ abstract contract SlashEscrowFactoryStorage is ISlashEscrowFactory {
     /// @notice Returns the paused status for a given operator set and slash ID.
     mapping(bytes32 operatorSetKey => mapping(uint256 slashId => bool paused)) internal _paused;
 
-    /// @dev Returns the burn or redistribution delay for a given strategy.
-    uint32 internal _globalBurnOrRedistributionDelayBlocks;
+    /// @dev Returns the global escrow delay for all strategies.
+    uint32 internal _globalEscrowDelayBlocks;
 
     /// @dev Returns the operator set delay for a given strategy.
-    mapping(address strategy => uint32 delay) internal _strategyBurnOrRedistributionDelayBlocks;
+    mapping(address strategy => uint32 delay) internal _strategyEscrowDelayBlocks;
 
     // Constructor
 
