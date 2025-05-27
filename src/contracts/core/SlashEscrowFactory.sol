@@ -91,13 +91,16 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
 
         _checkReleaseSlashEscrow(operatorSet, slashId, redistributionRecipient);
 
-        // Deploy the counterfactual `SlashEscrow` if it is not already deployed.
-        ISlashEscrow slashEscrow = deploySlashEscrow(operatorSet, slashId);
-
         // Iterate over the escrow array in reverse order and pop the processed entries from storage.
         uint256 totalPendingForSlashId = _pendingStrategiesForSlashId[operatorSet.key()][slashId].length();
         for (uint256 i = totalPendingForSlashId; i > 0; --i) {
-            _processSlashEscrowByIndex(operatorSet, slashId, slashEscrow, redistributionRecipient, i - 1);
+            _processSlashEscrowByIndex({
+                operatorSet: operatorSet,
+                slashId: slashId,
+                slashEscrow: getSlashEscrow(operatorSet, slashId),
+                redistributionRecipient: redistributionRecipient,
+                index: i - 1
+            });
         }
 
         // Update the slash escrow storage.
@@ -114,11 +117,14 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
 
         _checkReleaseSlashEscrow(operatorSet, slashId, redistributionRecipient);
 
-        // Deploy the counterfactual `SlashEscrow` if it is not already deployed.
-        ISlashEscrow slashEscrow = deploySlashEscrow(operatorSet, slashId);
-
         // Release the slashEscrow.
-        _processSlashEscrowByIndex(operatorSet, slashId, slashEscrow, redistributionRecipient, index);
+        _processSlashEscrowByIndex({
+            operatorSet: operatorSet,
+            slashId: slashId,
+            slashEscrow: getSlashEscrow(operatorSet, slashId),
+            redistributionRecipient: redistributionRecipient,
+            index: index
+        });
 
         // Update the slash escrow storage.
         _updateSlashEscrowStorage(operatorSet, slashId);
