@@ -100,12 +100,6 @@ contract SlashEscrowFactoryUnitTests is EigenLayerUnitTestSetup, ISlashEscrowFac
         if (redistributionRecipient != DEFAULT_BURN_ADDRESS) cheats.prank(defaultRedistributionRecipient);
         else cheats.prank(cheats.randomAddress());
         factory.releaseSlashEscrow(operatorSet, slashId);
-
-        assertEq(factory.computeSlashEscrowSalt(operatorSet, slashId), keccak256(abi.encodePacked(operatorSet.key(), slashId)));
-        assertTrue(factory.isDeployedSlashEscrow(operatorSet, slashId));
-        ISlashEscrow slashEscrow = factory.getSlashEscrow(operatorSet, slashId);
-        assertTrue(factory.isDeployedSlashEscrow(slashEscrow));
-        assertTrue(slashEscrow.verifyDeploymentParameters(factory, slashEscrowImplementation, operatorSet, slashId));
     }
 
     /// @dev Asserts that the operator set and slash ID are pending, and that the strategy and underlying amount are in the pending burn or redistributions.
@@ -137,6 +131,13 @@ contract SlashEscrowFactoryUnitTests is EigenLayerUnitTestSetup, ISlashEscrowFac
 
         // Assert that the start block for the (operator set, slash ID) is correct.
         assertEq(factory.getEscrowStartBlock(operatorSet, slashId), uint32(block.number));
+
+        // Assert that the escrow is deployed
+        assertEq(factory.computeSlashEscrowSalt(operatorSet, slashId), keccak256(abi.encodePacked(operatorSet.key(), slashId)));
+        assertTrue(factory.isDeployedSlashEscrow(operatorSet, slashId));
+        ISlashEscrow slashEscrow = factory.getSlashEscrow(operatorSet, slashId);
+        assertTrue(factory.isDeployedSlashEscrow(slashEscrow));
+        assertTrue(slashEscrow.verifyDeploymentParameters(factory, slashEscrowImplementation, operatorSet, slashId));
     }
 }
 
@@ -708,7 +709,6 @@ contract SlashEscrowFactoryUnitTests_SlashEscrowProxy is SlashEscrowFactoryUnitT
     function setUp() public override {
         super.setUp();
         _initiateSlashEscrow(defaultOperatorSet, defaultSlashId, defaultStrategy, defaultToken, 100);
-        factory.deploySlashEscrow(defaultOperatorSet, defaultSlashId);
         maliciousCaller = cheats.randomAddress();
     }
 
