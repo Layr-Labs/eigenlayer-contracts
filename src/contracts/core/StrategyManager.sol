@@ -194,7 +194,6 @@ contract StrategyManager is
             _burnOrRedistributableShares[operatorSet.key()][slashId];
 
         (, uint256 sharesToRemove) = burnOrRedistributableShares.tryGet(address(strategy));
-
         burnOrRedistributableShares.remove(address(strategy));
 
         if (sharesToRemove != 0) {
