@@ -15,7 +15,7 @@ import "src/test/utils/Logger.t.sol";
 
 import "src/test/utils/ArrayLib.sol";
 import "src/contracts/interfaces/IAVSRegistrar.sol";
-import "src/test/integration/deprecatedInterfaces/mainnet/AllocationManager.sol";
+import "src/test/integration/deprecatedInterfaces/mainnet/IAllocationManager.sol";
 
 interface IAVSDeployer {
     function delegationManager() external view returns (IDelegationManager);
