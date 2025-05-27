@@ -92,14 +92,14 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
         _checkReleaseSlashEscrow(operatorSet, slashId, redistributionRecipient);
 
         // Iterate over the escrow array in reverse order and pop the processed entries from storage.
-        uint256 totalPendingForSlashId = _pendingStrategiesForSlashId[operatorSet.key()][slashId].length();
-        for (uint256 i = totalPendingForSlashId; i > 0; --i) {
-            _processSlashEscrowByIndex({
+        address[] memory strategies = _pendingStrategiesForSlashId[operatorSet.key()][slashId].values();
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            _processSlashEscrowByStrategy({
                 operatorSet: operatorSet,
                 slashId: slashId,
                 slashEscrow: getSlashEscrow(operatorSet, slashId),
                 redistributionRecipient: redistributionRecipient,
-                index: i - 1
+                strategy: IStrategy(strategies[i])
             });
         }
 
@@ -108,22 +108,22 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
     }
 
     /// @inheritdoc ISlashEscrowFactory
-    function releaseSlashEscrowByIndex(
+    function releaseSlashEscrowByStrategy(
         OperatorSet calldata operatorSet,
         uint256 slashId,
-        uint256 index
+        IStrategy strategy
     ) external virtual onlyWhenNotPaused(PAUSED_RELEASE_ESCROW) {
         address redistributionRecipient = allocationManager.getRedistributionRecipient(operatorSet);
 
         _checkReleaseSlashEscrow(operatorSet, slashId, redistributionRecipient);
 
         // Release the slashEscrow.
-        _processSlashEscrowByIndex({
+        _processSlashEscrowByStrategy({
             operatorSet: operatorSet,
             slashId: slashId,
             slashEscrow: getSlashEscrow(operatorSet, slashId),
             redistributionRecipient: redistributionRecipient,
-            index: index
+            strategy: strategy
         });
 
         // Update the slash escrow storage.
@@ -200,32 +200,30 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
     }
 
     /// @notice Processes the slash escrow for a single strategy.
-    function _processSlashEscrowByIndex(
+    function _processSlashEscrowByStrategy(
         OperatorSet calldata operatorSet,
         uint256 slashId,
         ISlashEscrow slashEscrow,
         address redistributionRecipient,
-        uint256 index
+        IStrategy strategy
     ) internal {
-        // Create storage pointers for readability.
+        // Create storage pointer for readability.
         EnumerableSet.AddressSet storage pendingStrategiesForSlashId =
             _pendingStrategiesForSlashId[operatorSet.key()][slashId];
 
-        address strategy = pendingStrategiesForSlashId.at(index);
-
         // Burn or redistribute the underlying tokens for the strategy.
-        slashEscrow.releaseTokens(
-            ISlashEscrowFactory(address(this)),
-            slashEscrowImplementation,
-            operatorSet,
-            slashId,
-            redistributionRecipient,
-            IStrategy(strategy)
-        );
+        slashEscrow.releaseTokens({
+            slashEscrowFactory: ISlashEscrowFactory(address(this)),
+            slashEscrowImplementation: slashEscrowImplementation,
+            operatorSet: operatorSet,
+            slashId: slashId,
+            recipient: redistributionRecipient,
+            strategy: strategy
+        });
 
         // Remove the strategy and underlying amount from the pending strategies escrow map.
-        pendingStrategiesForSlashId.remove(strategy);
-        emit EscrowComplete(operatorSet, slashId, IStrategy(strategy), redistributionRecipient);
+        pendingStrategiesForSlashId.remove(address(strategy));
+        emit EscrowComplete(operatorSet, slashId, strategy, redistributionRecipient);
     }
 
     function _updateSlashEscrowStorage(OperatorSet calldata operatorSet, uint256 slashId) internal {

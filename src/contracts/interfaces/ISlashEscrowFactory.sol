@@ -70,12 +70,12 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
      * @notice Releases an escrow for a single strategy in a slash.
      * @param operatorSet The operator set whose escrow is being released.
      * @param slashId The slash ID of the escrow that is being released.
-     * @param index The index of the strategy that is being released.
+     * @param strategy The strategy whose escrow is being released.
      * @dev The caller must be the redistribution recipient, unless the redistribution recipient
      * is the default burn address in which case anyone can call.
      * @dev The slash escrow is released once the delay for ALL strategies has elapsed.
      */
-    function releaseSlashEscrowByIndex(OperatorSet calldata operatorSet, uint256 slashId, uint256 index) external;
+    function releaseSlashEscrowByStrategy(OperatorSet calldata operatorSet, uint256 slashId, IStrategy strategy) external;
 
     /**
      * @notice Pauses a escrow.
