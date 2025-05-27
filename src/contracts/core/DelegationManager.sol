@@ -207,7 +207,7 @@ contract DelegationManager is
 
     /// @inheritdoc IDelegationManager
     function completeQueuedWithdrawal(
-        Withdrawal memory withdrawal,
+        Withdrawal calldata withdrawal,
         IERC20[] calldata tokens,
         bool receiveAsTokens
     ) external onlyWhenNotPaused(PAUSED_EXIT_WITHDRAWAL_QUEUE) nonReentrant {
