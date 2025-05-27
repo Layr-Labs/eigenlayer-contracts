@@ -104,7 +104,7 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
         // the tokens from being released).
         strategyManager.decreaseBurnOrRedistributableShares(operatorSet, slashId);
 
-        // Release the slashEscrow. The counterfactual `SlashEscrow` is deployed in `initiateSlashEscrow`.
+        // Release the slashEscrow. The `SlashEscrow` is deployed in `initiateSlashEscrow`.
         _processSlashEscrow(operatorSet, slashId, getSlashEscrow(operatorSet, slashId), redistributionRecipient);
     }
 
