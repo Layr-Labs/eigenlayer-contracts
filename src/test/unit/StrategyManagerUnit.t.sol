@@ -1245,21 +1245,18 @@ contract StrategyManagerUnitTests_decreaseBurnOrRedistributableShares is Strateg
     }
 
     /// @dev We use uint128 to avoid overflow when adding the three share amounts
-    function testFuzz_multipleStrategies(Randomness r) external rand(r) {
+    function testFuzz_multipleStrategies(uint shares) external {
+        shares = bound(shares, 3, type(uint).max / 3);
         IStrategy[] memory strategies = new IStrategy[](3);
         strategies[0] = dummyStrat;
         strategies[1] = dummyStrat2;
         strategies[2] = dummyStrat3;
 
-        uint sharesToAdd1 = r.Uint128();
-        uint sharesToAdd2 = r.Uint128();
-        uint sharesToAdd3 = r.Uint128();
-
         uint[] memory sharesToAdd = new uint[](3);
-        uint totalSharesToAdd = sharesToAdd1 + sharesToAdd2 + sharesToAdd3;
-        sharesToAdd[0] = sharesToAdd1;
-        sharesToAdd[1] = sharesToAdd2;
-        sharesToAdd[2] = sharesToAdd3;
+        uint totalSharesToAdd = shares * 3;
+        sharesToAdd[0] = shares;
+        sharesToAdd[1] = shares;
+        sharesToAdd[2] = shares;
 
         _increaseBurnOrRedistributableShares(strategies, sharesToAdd);
 
