@@ -171,7 +171,7 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
      * @param slashId The slash ID to burn or redistribute shares in.
      * @param strategy The strategy to get the shares for.
      * @return The shares for the given strategy for the given slashId.
-     * @dev This function will return  0 if the shares have been sent to escrow.
+     * @dev This function will return revert if the shares have already been sent to escrow.
      */
     function getBurnOrRedistributableShares(
         OperatorSet calldata operatorSet,
