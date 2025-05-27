@@ -75,7 +75,11 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
      * is the default burn address in which case anyone can call.
      * @dev The slash escrow is released once the delay for ALL strategies has elapsed.
      */
-    function releaseSlashEscrowByStrategy(OperatorSet calldata operatorSet, uint256 slashId, IStrategy strategy) external;
+    function releaseSlashEscrowByStrategy(
+        OperatorSet calldata operatorSet,
+        uint256 slashId,
+        IStrategy strategy
+    ) external;
 
     /**
      * @notice Pauses a escrow.
