@@ -77,6 +77,8 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
         // Add the strategy to the pending strategies for the slash ID.
         pendingStrategiesForSlashId.add(address(strategy));
 
+        // Emit the start escrow event. We can use the block.number here because all strategies
+        // in a given operatorSet/slashId will have their escrow initiated in the same transaction.
         emit StartEscrow(operatorSet, slashId, strategy, uint32(block.number));
     }
 
