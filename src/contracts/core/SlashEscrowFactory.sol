@@ -97,7 +97,7 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
         // the tokens from being released).
         strategyManager.clearBurnOrRedistributableShares(operatorSet, slashId);
 
-        // Iterate over the escrow array in reverse order and pop the processed entries from storage.
+        // Process the slash escrow for each strategy.
         address[] memory strategies = _pendingStrategiesForSlashId[operatorSet.key()][slashId].values();
         for (uint256 i = 0; i < strategies.length; ++i) {
             _processSlashEscrowByStrategy({
