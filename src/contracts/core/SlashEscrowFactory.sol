@@ -91,6 +91,12 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
 
         _checkReleaseSlashEscrow(operatorSet, slashId, redistributionRecipient);
 
+        // Calling `clearBurnOrRedistributableShares` will transfer the underlying tokens to the `SlashEscrow`.
+        // NOTE: While `clearBurnOrRedistributableShares` may have already been called, we call it again to ensure that the
+        // underlying tokens are actually in escrow before processing and removing storage (which would otherwise prevent
+        // the tokens from being released).
+        strategyManager.clearBurnOrRedistributableShares(operatorSet, slashId);
+
         // Iterate over the escrow array in reverse order and pop the processed entries from storage.
         address[] memory strategies = _pendingStrategiesForSlashId[operatorSet.key()][slashId].values();
         for (uint256 i = 0; i < strategies.length; ++i) {
@@ -116,6 +122,12 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
         address redistributionRecipient = allocationManager.getRedistributionRecipient(operatorSet);
 
         _checkReleaseSlashEscrow(operatorSet, slashId, redistributionRecipient);
+
+        // Calling `clearBurnOrRedistributableSharesByStrategy` will transfer the underlying tokens to the `SlashEscrow`.
+        // NOTE: While the strategy may have already been cleared, we call it again to ensure that the
+        // underlying tokens are actually in escrow before processing and removing storage (which would otherwise prevent
+        // the tokens from being released).
+        strategyManager.clearBurnOrRedistributableSharesByStrategy(operatorSet, slashId, strategy);
 
         // Release the slashEscrow.
         _processSlashEscrowByStrategy({
@@ -191,12 +203,6 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
 
         // Assert that the escrow delay has elapsed
         require(block.number >= getEscrowCompleteBlock(operatorSet, slashId), EscrowDelayNotElapsed());
-
-        // Calling `decreaseBurnOrRedistributableShares` will transfer the underlying tokens to the `SlashEscrow`.
-        // NOTE: While `decreaseBurnOrRedistributableShares` may have already been called, we call it again to ensure that the
-        // underlying tokens are actually in escrow before processing and removing storage (which would otherwise prevent
-        // the tokens from being released).
-        strategyManager.decreaseBurnOrRedistributableShares(operatorSet, slashId);
     }
 
     /// @notice Processes the slash escrow for a single strategy.
