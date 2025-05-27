@@ -52,26 +52,33 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
      */
 
     /// @inheritdoc ISlashEscrowFactory
-    function initiateSlashEscrow(
-        OperatorSet calldata operatorSet,
-        uint256 slashId,
-        IStrategy strategy
-    ) external virtual {
+    function initiateSlashEscrow(OperatorSet calldata operatorSet, uint256 slashId, IStrategy strategy) external {
         require(msg.sender == address(strategyManager), OnlyStrategyManager());
 
         // Create storage pointers for readability.
-        EnumerableSet.Bytes32Set storage pendingOperatorSets = _pendingOperatorSets;
         EnumerableSet.UintSet storage pendingSlashIds = _pendingSlashIds[operatorSet.key()];
         EnumerableSet.AddressSet storage pendingStrategiesForSlashId =
             _pendingStrategiesForSlashId[operatorSet.key()][slashId];
 
-        // Add the slash ID, operator set, and strategy to their respective pending sets.
-        pendingSlashIds.add(slashId);
-        pendingOperatorSets.add(operatorSet.key());
+        // Note: Since this function can be called multiple times for the same operatorSet/slashId, we check
+        // if the slash escrow is already deployed. If it is not, we deploy it and update the pending mappings.
+        if (!isDeployedSlashEscrow(operatorSet, slashId)) {
+            // Deploy the `SlashEscrow`.
+            _deploySlashEscrow(operatorSet, slashId);
+
+            // Update the pending mappings
+            _pendingOperatorSets.add(operatorSet.key());
+            pendingSlashIds.add(slashId);
+
+            // Set the start block for the slash ID.
+            _slashIdToStartBlock[operatorSet.key()][slashId] = uint32(block.number);
+        }
+
+        // Add the strategy to the pending strategies for the slash ID.
         pendingStrategiesForSlashId.add(address(strategy));
 
-        // Set the start block for the slash ID.
-        _slashIdToStartBlock[operatorSet.key()][slashId] = uint32(block.number);
+        // Emit the start escrow event. We can use the block.number here because all strategies
+        // in a given operatorSet/slashId will have their escrow initiated in the same transaction.
         emit StartEscrow(operatorSet, slashId, strategy, uint32(block.number));
     }
 
@@ -79,7 +86,7 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
     function releaseSlashEscrow(
         OperatorSet calldata operatorSet,
         uint256 slashId
-    ) external virtual onlyWhenNotPaused(PAUSED_RELEASE_ESCROW) {
+    ) external onlyWhenNotPaused(PAUSED_RELEASE_ESCROW) {
         address redistributionRecipient = allocationManager.getRedistributionRecipient(operatorSet);
 
         // If the redistribution recipient is not the default burn address...
@@ -99,25 +106,8 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
         // the tokens from being released).
         strategyManager.decreaseBurnOrRedistributableShares(operatorSet, slashId);
 
-        // Deploy the counterfactual `SlashEscrow`.
-        ISlashEscrow slashEscrow = deploySlashEscrow(operatorSet, slashId);
-
-        // Release the slashEscrow
-        _processSlashEscrow(operatorSet, slashId, slashEscrow, redistributionRecipient);
-    }
-
-    /// @inheritdoc ISlashEscrowFactory
-    function deploySlashEscrow(OperatorSet calldata operatorSet, uint256 slashId) public returns (ISlashEscrow) {
-        ISlashEscrow slashEscrow = getSlashEscrow(operatorSet, slashId);
-
-        // If the slash escrow is not deployed...
-        if (!isDeployedSlashEscrow(slashEscrow)) {
-            return ISlashEscrow(
-                address(slashEscrowImplementation).cloneDeterministic(computeSlashEscrowSalt(operatorSet, slashId))
-            );
-        }
-
-        return slashEscrow;
+        // Release the slashEscrow. The `SlashEscrow` is deployed in `initiateSlashEscrow`.
+        _processSlashEscrow(operatorSet, slashId, getSlashEscrow(operatorSet, slashId), redistributionRecipient);
     }
 
     /**
@@ -127,14 +117,14 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
      */
 
     /// @inheritdoc ISlashEscrowFactory
-    function pauseEscrow(OperatorSet calldata operatorSet, uint256 slashId) external virtual onlyPauser {
+    function pauseEscrow(OperatorSet calldata operatorSet, uint256 slashId) external onlyPauser {
         _checkNewPausedStatus(operatorSet, slashId, true);
         _paused[operatorSet.key()][slashId] = true;
         emit EscrowPaused(operatorSet, slashId);
     }
 
     /// @inheritdoc ISlashEscrowFactory
-    function unpauseEscrow(OperatorSet calldata operatorSet, uint256 slashId) external virtual onlyUnpauser {
+    function unpauseEscrow(OperatorSet calldata operatorSet, uint256 slashId) external onlyUnpauser {
         _checkNewPausedStatus(operatorSet, slashId, false);
         _paused[operatorSet.key()][slashId] = false;
         emit EscrowUnpaused(operatorSet, slashId);
@@ -226,6 +216,16 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
         bool newPauseStatus
     ) internal view {
         require(_paused[operatorSet.key()][slashId] != newPauseStatus, IPausable.InvalidNewPausedStatus());
+    }
+
+    /**
+     * @notice Deploys a `SlashEscrow`
+     * @param operatorSet The operator set whose slash escrow is being deployed.
+     * @param slashId The slash ID of the slash escrow that is being deployed.
+     * @dev The slash escrow is deployed in `initiateSlashEscrow`
+     */
+    function _deploySlashEscrow(OperatorSet calldata operatorSet, uint256 slashId) internal {
+        address(slashEscrowImplementation).cloneDeterministic(computeSlashEscrowSalt(operatorSet, slashId));
     }
 
     /**
