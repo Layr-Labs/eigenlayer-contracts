@@ -11,7 +11,7 @@ contract SlashEscrow is ISlashEscrow {
     using SafeERC20 for IERC20;
 
     /// @inheritdoc ISlashEscrow
-    function burnOrRedistributeUnderlyingTokens(
+    function releaseTokens(
         ISlashEscrowFactory slashEscrowFactory,
         ISlashEscrow slashEscrowImplementation,
         OperatorSet calldata operatorSet,
