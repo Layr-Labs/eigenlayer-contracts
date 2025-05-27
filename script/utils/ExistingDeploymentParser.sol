@@ -231,7 +231,8 @@ contract ExistingDeploymentParser is Script, Logger {
 
         // AllocationManager
         allocationManager = AllocationManager(json.readAddress(".addresses.allocationManager"));
-        allocationManagerImplementation = AllocationManager(json.readAddress(".addresses.allocationManagerImplementation"));
+        allocationManagerImplementation =
+            AllocationManager(json.readAddress(".addresses.allocationManagerImplementation"));
 
         // AVSDirectory
         avsDirectory = AVSDirectory(json.readAddress(".addresses.avsDirectory"));
@@ -244,7 +245,8 @@ contract ExistingDeploymentParser is Script, Logger {
 
         // PermissionController
         permissionController = PermissionController(json.readAddress(".addresses.permissionController"));
-        permissionControllerImplementation = PermissionController(json.readAddress(".addresses.permissionControllerImplementation"));
+        permissionControllerImplementation =
+            PermissionController(json.readAddress(".addresses.permissionControllerImplementation"));
 
         // RewardsCoordinator
         rewardsCoordinator = RewardsCoordinator(json.readAddress(".addresses.rewardsCoordinator"));

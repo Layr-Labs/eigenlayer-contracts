@@ -72,18 +72,18 @@ contract Integration_Upgrade_Redistribution is Integration_Upgrade_Redistributio
         assertEq(strategiesWithBurnedShares.length, 0);
     }
 
-    // function testFuzz_burn_update_operatorSet(uint24 r) public rand(r) {
-    //     // 1. Burn shares
-    //     (address[] memory strategiesWithBurnableShares,) = strategyManager.getStrategiesWithBurnableShares();
-    //     for (uint i = 0; i < strategiesWithBurnableShares.length; i++) {
-    //         strategyManager.burnShares(IStrategy(strategiesWithBurnableShares[i]));
-    //     }
-        
-    //     // 2. Upgrade contracts
-    //     _upgradeEigenLayerContracts();
+    function testFuzz_burn_update_operatorSet(uint24 r) public rand(r) {
+        // 1. Burn shares
+        (address[] memory strategiesWithBurnableShares,) = strategyManager.getStrategiesWithBurnableShares();
+        for (uint i = 0; i < strategiesWithBurnableShares.length; i++) {
+            strategyManager.burnShares(IStrategy(strategiesWithBurnableShares[i]));
+        }
 
-    //     // Assert that there are no strategies with burned shares
-    //     (address[] memory strategiesWithBurnedShares,) = strategyManager.getStrategiesWithBurnableShares();
-    //     assertEq(strategiesWithBurnedShares.length, 0);
-    // }
+        // 2. Upgrade contracts
+        _upgradeEigenLayerContracts();
+
+        // Assert that there are no strategies with burned shares
+        (address[] memory strategiesWithBurnedShares,) = strategyManager.getStrategiesWithBurnableShares();
+        assertEq(strategiesWithBurnedShares.length, 0);
+    }
 }

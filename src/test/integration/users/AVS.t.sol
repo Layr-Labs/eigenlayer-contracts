@@ -189,7 +189,6 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
     /// @notice Slash operator prior to redistribution.
     /// @dev This is ONLY used by the redistribution upgrade test.
     function slashOperator_PreRedistribution(SlashingParams memory params) public createSnapshot {
-
         IAllocationManager_PreRedistribution.SlashingParams memory slashParams = IAllocationManager_PreRedistribution.SlashingParams({
             operator: params.operator,
             operatorSetId: params.operatorSetId,
@@ -220,7 +219,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
         }
 
         _tryPrankAppointee_AllocationManager(IAllocationManager.slashOperator.selector);
-        
+
         IAllocationManager_PreRedistribution(address(allocationManager)).slashOperator(address(this), slashParams);
         print.gasUsed();
     }

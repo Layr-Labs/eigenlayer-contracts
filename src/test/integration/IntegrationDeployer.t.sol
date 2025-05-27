@@ -589,7 +589,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             } else {
                 revert("_randUser: unimplemented userType");
             }
-        // Leaving this if statement for future upgraded users
+            // Leaving this if statement for future upgraded users
         } else if (forkType == MAINNET && !isUpgraded) {
             if (userType == DEFAULT) {
                 user = new User(name);

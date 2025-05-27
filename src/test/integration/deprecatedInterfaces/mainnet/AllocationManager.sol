@@ -3,13 +3,12 @@ pragma solidity ^0.8.27;
 
 import "src/contracts/interfaces/IStrategy.sol";
 
-/** 
- * @notice Interface of the allocationManager prior to redistribution. 
+/**
+ * @notice Interface of the allocationManager prior to redistribution.
  * @dev The interface remains the exact same, except `SlashOperator` does not return the slashID or shares
  * @dev This interface is the minimal possibl interface needed for the redistribution upgrade test
  */
 interface IAllocationManager_PreRedistribution {
-    
     /**
      * @notice Struct containing parameters to slashing
      * @param operator the address to slash
@@ -23,7 +22,7 @@ interface IAllocationManager_PreRedistribution {
         address operator;
         uint32 operatorSetId;
         IStrategy[] strategies;
-        uint256[] wadsToSlash;
+        uint[] wadsToSlash;
         string description;
     }
 
