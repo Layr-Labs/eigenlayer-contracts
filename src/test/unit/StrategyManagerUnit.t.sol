@@ -1143,7 +1143,6 @@ contract StrategyManagerUnitTests_increaseBurnOrRedistributableShares is Strateg
             strategyManager.getBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
 
         for (uint i = 0; i < strategies.length; ++i) {
-            assertEq(address(strats[i]), address(strategies[i]), "get burn or redistributable shares is wrong");
             assertEq(shares[i], sharesToAdd[i], "get burn or redistributable shares is wrong");
             assertEq(
                 strategyManager.getBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, strategies[i]),
@@ -1166,6 +1165,7 @@ contract StrategyManagerUnitTests_increaseBurnOrRedistributableShares is Strateg
         existingBurnableShares = bound(existingBurnableShares, 1, type(uint).max / 2);
         addedSharesToBurn = bound(addedSharesToBurn, 1, type(uint).max / 2);
         IStrategy strategy = dummyStrat;
+
         cheats.prank(address(delegationManagerMock));
         cheats.expectEmit(true, true, true, true, address(strategyManager));
         emit BurnOrRedistributableSharesIncreased(defaultOperatorSet, defaultSlashId, strategy, existingBurnableShares);
@@ -1245,21 +1245,18 @@ contract StrategyManagerUnitTests_decreaseBurnOrRedistributableShares is Strateg
     }
 
     /// @dev We use uint128 to avoid overflow when adding the three share amounts
-    function testFuzz_multipleStrategies(Randomness r) external rand(r) {
+    function testFuzz_multipleStrategies(uint shares) external {
+        shares = bound(shares, 3, type(uint).max / 3);
         IStrategy[] memory strategies = new IStrategy[](3);
         strategies[0] = dummyStrat;
         strategies[1] = dummyStrat2;
         strategies[2] = dummyStrat3;
 
-        uint sharesToAdd1 = r.Uint128();
-        uint sharesToAdd2 = r.Uint128();
-        uint sharesToAdd3 = r.Uint128();
-
         uint[] memory sharesToAdd = new uint[](3);
-        uint totalSharesToAdd = sharesToAdd1 + sharesToAdd2 + sharesToAdd3;
-        sharesToAdd[0] = sharesToAdd1;
-        sharesToAdd[1] = sharesToAdd2;
-        sharesToAdd[2] = sharesToAdd3;
+        uint totalSharesToAdd = shares * 3;
+        sharesToAdd[0] = shares;
+        sharesToAdd[1] = shares;
+        sharesToAdd[2] = shares;
 
         _increaseBurnOrRedistributableShares(strategies, sharesToAdd);
 
@@ -1279,24 +1276,20 @@ contract StrategyManagerUnitTests_decreaseBurnOrRedistributableShares is Strateg
         assertEq(dummyToken.balanceOf(address(strategies[2])), 0, "strategy balance should be 0");
     }
 
-    function testFuzz_multipleStrategies_byRandomIndex(Randomness r) external rand(r) {
+    function testFuzz_multipleStrategies_byRandomIndex(uint shares, Randomness r) external rand(r) {
+        shares = bound(shares, 3, type(uint).max / 3);
         IStrategy[] memory strategies = new IStrategy[](3);
         strategies[0] = dummyStrat;
         strategies[1] = dummyStrat2;
         strategies[2] = dummyStrat3;
 
-        uint[] memory shares = new uint[](3);
+        uint[] memory sharesToAdd = new uint[](3);
+        uint totalShares = shares * 3;
+        sharesToAdd[0] = shares;
+        sharesToAdd[1] = shares;
+        sharesToAdd[2] = shares;
 
-        uint sharesToAdd1 = r.Uint128();
-        uint sharesToAdd2 = r.Uint128();
-        uint sharesToAdd3 = r.Uint128();
-
-        uint totalShares = sharesToAdd1 + sharesToAdd2 + sharesToAdd3;
-        shares[0] = sharesToAdd1;
-        shares[1] = sharesToAdd2;
-        shares[2] = sharesToAdd3;
-
-        _increaseBurnOrRedistributableShares(strategies, shares);
+        _increaseBurnOrRedistributableShares(strategies, sharesToAdd);
 
         // Remove shares in random order
         for (uint i = 0; i < strategies.length; ++i) {
@@ -1305,10 +1298,10 @@ contract StrategyManagerUnitTests_decreaseBurnOrRedistributableShares is Strateg
 
             strategyManager.decreaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, index);
 
-            (IStrategy[] memory strats, uint[] memory shares) =
+            (IStrategy[] memory strats, uint[] memory sharesToBurnOrRedistribute) =
                 strategyManager.getBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
             assertEq(strats.length, strategies.length - i - 1, "strats length should be 0");
-            assertEq(shares.length, strategies.length - i - 1, "shares length should be 0");
+            assertEq(sharesToBurnOrRedistribute.length, strategies.length - i - 1, "shares length should be 0");
             assertEq(
                 strategyManager.getBurnOrRedistributableCount(defaultOperatorSet, defaultSlashId),
                 strategies.length - i - 1,

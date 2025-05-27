@@ -153,15 +153,15 @@ contract StrategyManager is
         IStrategy strategy,
         uint256 sharesToBurn
     ) external onlyDelegationManager nonReentrant {
-        EnumerableMap.AddressToUintMap storage operatorSetBurnableShares =
+        EnumerableMap.AddressToUintMap storage burnOrRedistributableShares =
             _burnOrRedistributableShares[operatorSet.key()][slashId];
 
         // Sanity check that the strategy is not already in the slash's burn or redistributable shares.
         // This should never happen because the `AllocationManager` ensures that strategies for a given slash are unique.
-        require(!operatorSetBurnableShares.contains(address(strategy)), StrategyAlreadyInSlash());
+        require(!burnOrRedistributableShares.contains(address(strategy)), StrategyAlreadyInSlash());
 
         // Add the shares to the operator set's burn or redistributable shares.
-        operatorSetBurnableShares.set(address(strategy), sharesToBurn);
+        burnOrRedistributableShares.set(address(strategy), sharesToBurn);
 
         // Notify the `SlashEscrowFactory` contract that it received underlying tokens to burn or redistribute.
         slashEscrowFactory.initiateSlashEscrow(operatorSet, slashId, strategy);
@@ -189,10 +189,10 @@ contract StrategyManager is
         uint256 slashId,
         uint256 index
     ) public returns (uint256) {
-        EnumerableMap.AddressToUintMap storage operatorSetBurnableShares =
+        EnumerableMap.AddressToUintMap storage burnOrRedistributableShares =
             _burnOrRedistributableShares[operatorSet.key()][slashId];
 
-        (address strategy, uint256 sharesToRemove) = operatorSetBurnableShares.at(index);
+        (address strategy, uint256 sharesToRemove) = burnOrRedistributableShares.at(index);
 
         // Withdraw the shares to the slash escrow.
         IStrategy(strategy).withdraw({
@@ -201,7 +201,7 @@ contract StrategyManager is
             amountShares: sharesToRemove
         });
 
-        operatorSetBurnableShares.remove(address(strategy));
+        burnOrRedistributableShares.remove(address(strategy));
 
         // Emit an event to notify the that burnable shares have been decreased.
         emit BurnOrRedistributableSharesDecreased(operatorSet, slashId, IStrategy(strategy), sharesToRemove);
@@ -453,16 +453,16 @@ contract StrategyManager is
         uint256 slashId
     ) external view returns (IStrategy[] memory, uint256[] memory) {
         // Store the data structure for readability
-        EnumerableMap.AddressToUintMap storage operatorSetBurnableShares =
+        EnumerableMap.AddressToUintMap storage burnOrRedistributableShares =
             _burnOrRedistributableShares[operatorSet.key()][slashId];
 
-        address[] memory keys = operatorSetBurnableShares.keys();
+        address[] memory keys = burnOrRedistributableShares.keys();
         IStrategy[] memory strategies = new IStrategy[](keys.length);
         uint256[] memory shares = new uint256[](keys.length);
 
         for (uint256 i = 0; i < keys.length; ++i) {
             strategies[i] = IStrategy(keys[i]);
-            shares[i] = operatorSetBurnableShares.get(keys[i]);
+            shares[i] = burnOrRedistributableShares.get(keys[i]);
         }
 
         return (strategies, shares);
