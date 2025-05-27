@@ -1276,24 +1276,20 @@ contract StrategyManagerUnitTests_decreaseBurnOrRedistributableShares is Strateg
         assertEq(dummyToken.balanceOf(address(strategies[2])), 0, "strategy balance should be 0");
     }
 
-    function testFuzz_multipleStrategies_byRandomIndex(Randomness r) external rand(r) {
+    function testFuzz_multipleStrategies_byRandomIndex(uint shares, Randomness r) external rand(r) {
+        shares = bound(shares, 3, type(uint).max / 3);
         IStrategy[] memory strategies = new IStrategy[](3);
         strategies[0] = dummyStrat;
         strategies[1] = dummyStrat2;
         strategies[2] = dummyStrat3;
 
-        uint[] memory shares = new uint[](3);
+        uint[] memory sharesToAdd = new uint[](3);
+        uint totalShares = shares * 3;
+        sharesToAdd[0] = shares;
+        sharesToAdd[1] = shares;
+        sharesToAdd[2] = shares;
 
-        uint sharesToAdd1 = r.Uint128();
-        uint sharesToAdd2 = r.Uint128();
-        uint sharesToAdd3 = r.Uint128();
-
-        uint totalShares = sharesToAdd1 + sharesToAdd2 + sharesToAdd3;
-        shares[0] = sharesToAdd1;
-        shares[1] = sharesToAdd2;
-        shares[2] = sharesToAdd3;
-
-        _increaseBurnOrRedistributableShares(strategies, shares);
+        _increaseBurnOrRedistributableShares(strategies, sharesToAdd);
 
         // Remove shares in random order
         for (uint i = 0; i < strategies.length; ++i) {
@@ -1302,10 +1298,10 @@ contract StrategyManagerUnitTests_decreaseBurnOrRedistributableShares is Strateg
 
             strategyManager.decreaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, index);
 
-            (IStrategy[] memory strats, uint[] memory shares) =
+            (IStrategy[] memory strats, uint[] memory sharesToBurnOrRedistribute) =
                 strategyManager.getBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
             assertEq(strats.length, strategies.length - i - 1, "strats length should be 0");
-            assertEq(shares.length, strategies.length - i - 1, "shares length should be 0");
+            assertEq(sharesToBurnOrRedistribute.length, strategies.length - i - 1, "shares length should be 0");
             assertEq(
                 strategyManager.getBurnOrRedistributableCount(defaultOperatorSet, defaultSlashId),
                 strategies.length - i - 1,
