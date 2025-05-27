@@ -149,7 +149,6 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
      * @param strategy The strategy to burn shares in.
      * @return The amount of shares that were burned.
      */
-
     function clearBurnOrRedistributableSharesByStrategy(
         OperatorSet calldata operatorSet,
         uint256 slashId,
