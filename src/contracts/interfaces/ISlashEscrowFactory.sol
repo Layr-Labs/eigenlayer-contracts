@@ -67,14 +67,6 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
     function releaseSlashEscrow(OperatorSet calldata operatorSet, uint256 slashId) external;
 
     /**
-     * @notice Deploys a counterfactual `SlashEscrow` if code hasn't already been deployed.
-     * @param operatorSet The operator set whose slash escrow is being deployed.
-     * @param slashId The slash ID of the slash escrow that is being deployed.
-     * @return The deployed `SlashEscrow`.
-     */
-    function deploySlashEscrow(OperatorSet calldata operatorSet, uint256 slashId) external returns (ISlashEscrow);
-
-    /**
      * @notice Pauses a escrow.
      * @param operatorSet The operator set whose escrow is being paused.
      * @param slashId The slash ID of the escrow that is being paused.
