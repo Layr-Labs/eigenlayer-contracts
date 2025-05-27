@@ -117,15 +117,15 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
      */
 
     /// @inheritdoc ISlashEscrowFactory
-    function pauseEscrow(OperatorSet calldata operatorSet, uint256 slashId) external onlyPauser {
-        _checkNewPausedStatus(operatorSet, slashId, true);
+    function pauseEscrow(OperatorSet calldata operatorSet, uint256 slashId) external virtual onlyPauser {
+        require(!_paused[operatorSet.key()][slashId], IPausable.InvalidNewPausedStatus());
         _paused[operatorSet.key()][slashId] = true;
         emit EscrowPaused(operatorSet, slashId);
     }
 
     /// @inheritdoc ISlashEscrowFactory
-    function unpauseEscrow(OperatorSet calldata operatorSet, uint256 slashId) external onlyUnpauser {
-        _checkNewPausedStatus(operatorSet, slashId, false);
+    function unpauseEscrow(OperatorSet calldata operatorSet, uint256 slashId) external virtual onlyUnpauser {
+        require(_paused[operatorSet.key()][slashId], IPausable.InvalidNewPausedStatus());
         _paused[operatorSet.key()][slashId] = false;
         emit EscrowUnpaused(operatorSet, slashId);
     }
@@ -206,16 +206,6 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
     ) internal {
         _globalEscrowDelayBlocks = delay;
         emit GlobalEscrowDelaySet(delay);
-    }
-
-    /// @notice Checks that the new paused status is not the same as the current paused status.
-    /// @dev This is needed for event sanitization.
-    function _checkNewPausedStatus(
-        OperatorSet calldata operatorSet,
-        uint256 slashId,
-        bool newPauseStatus
-    ) internal view {
-        require(_paused[operatorSet.key()][slashId] != newPauseStatus, IPausable.InvalidNewPausedStatus());
     }
 
     /**
@@ -363,7 +353,7 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
 
     /// @inheritdoc ISlashEscrowFactory
     function isEscrowPaused(OperatorSet calldata operatorSet, uint256 slashId) public view returns (bool) {
-        return _paused[operatorSet.key()][slashId];
+        return _paused[operatorSet.key()][slashId] || paused(PAUSED_RELEASE_ESCROW);
     }
 
     /// @inheritdoc ISlashEscrowFactory
