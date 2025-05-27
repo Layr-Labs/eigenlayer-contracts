@@ -1231,7 +1231,7 @@ contract StrategyManagerUnitTests_clearBurnOrRedistributableShares is StrategyMa
 
         cheats.expectEmit(true, true, true, true, address(strategyManager));
         emit BurnOrRedistributableSharesDecreased(defaultOperatorSet, defaultSlashId, strategy, shares);
-        strategyManager.clearBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, strategy);
+        strategyManager.clearBurnOrRedistributableSharesByStrategy(defaultOperatorSet, defaultSlashId, strategy);
 
         (IStrategy[] memory escrowStrats, uint[] memory escrowShares) =
             strategyManager.getBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
@@ -1298,7 +1298,7 @@ contract StrategyManagerUnitTests_clearBurnOrRedistributableShares is StrategyMa
         indices[2] = 2; // dummyStrat3
 
         for (uint i = 0; i < strategies.length; ++i) {
-            strategyManager.clearBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, strategies[indices[i]]);
+            strategyManager.clearBurnOrRedistributableSharesByStrategy(defaultOperatorSet, defaultSlashId, strategies[indices[i]]);
 
             (IStrategy[] memory strats, uint[] memory sharesToBurnOrRedistribute) =
                 strategyManager.getBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);

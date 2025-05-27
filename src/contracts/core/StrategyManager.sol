@@ -180,12 +180,12 @@ contract StrategyManager is
         uint256 length = strategies.length;
 
         for (uint256 i = 0; i < length; ++i) {
-            clearBurnOrRedistributableShares(operatorSet, slashId, IStrategy(strategies[i]));
+            clearBurnOrRedistributableSharesByStrategy(operatorSet, slashId, IStrategy(strategies[i]));
         }
     }
 
     /// @inheritdoc IStrategyManager
-    function clearBurnOrRedistributableShares(
+    function clearBurnOrRedistributableSharesByStrategy(
         OperatorSet calldata operatorSet,
         uint256 slashId,
         IStrategy strategy
