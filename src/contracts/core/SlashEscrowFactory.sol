@@ -192,7 +192,7 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
         OperatorSet calldata operatorSet,
         uint256 slashId,
         address redistributionRecipient
-    ) internal {
+    ) internal view {
         // If the redistribution recipient is not the default burn address...
         if (redistributionRecipient != DEFAULT_BURN_ADDRESS) {
             require(msg.sender == redistributionRecipient, OnlyRedistributionRecipient());
