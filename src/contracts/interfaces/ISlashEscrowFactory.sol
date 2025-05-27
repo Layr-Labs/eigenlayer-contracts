@@ -17,6 +17,9 @@ interface ISlashEscrowFactoryErrors {
 
     /// @notice Thrown when a burn or redistribution delay is less than the minimum burn or redistribution delay.
     error BurnOrRedistributionDelayLessThanMinimum();
+
+    /// @notice Thrown when the escrow delay has not elapsed.
+    error EscrowDelayNotElapsed();
 }
 
 interface ISlashEscrowFactoryEvents {
@@ -24,7 +27,7 @@ interface ISlashEscrowFactoryEvents {
     event StartBurnOrRedistribution(OperatorSet operatorSet, uint256 slashId, IStrategy strategy, uint32 startBlock);
 
     /// @notice Emitted when a redistribution is released.
-    event BurnOrRedistribution(OperatorSet operatorSet, uint256 slashId, IStrategy strategy, address recipient);
+    event BurnOrRedistributionComplete(OperatorSet operatorSet, uint256 slashId, IStrategy strategy, address recipient);
 
     /// @notice Emitted when a redistribution is paused.
     event RedistributionPaused(OperatorSet operatorSet, uint256 slashId);
@@ -33,10 +36,10 @@ interface ISlashEscrowFactoryEvents {
     event RedistributionUnpaused(OperatorSet operatorSet, uint256 slashId);
 
     /// @notice Emitted when a global burn or redistribution delay is set.
-    event GlobalBurnOrRedistributionDelaySet(uint256 delay);
+    event GlobalBurnOrRedistributionDelaySet(uint32 delay);
 
     /// @notice Emitted when a burn or redistribution delay is set.
-    event StrategyBurnOrRedistributionDelaySet(IStrategy strategy, uint256 delay);
+    event StrategyBurnOrRedistributionDelaySet(IStrategy strategy, uint32 delay);
 }
 
 interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryEvents {
@@ -62,8 +65,17 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
      * @param slashId The slash ID of the redistribution that is being released.
      * @dev The caller must be the redistribution recipient, unless the redistribution recipient
      * is the default burn address in which case anyone can call.
+     * @dev The slash escrow is released once the delay for ALL strategies has elapsed.
      */
     function releaseSlashEscrow(OperatorSet calldata operatorSet, uint256 slashId) external;
+
+    /**
+     * @notice Deploys a counterfactual `SlashEscrow` if code hasn't already been deployed.
+     * @param operatorSet The operator set whose slash escrow is being deployed.
+     * @param slashId The slash ID of the slash escrow that is being deployed.
+     * @return The deployed `SlashEscrow`.
+     */
+    function deploySlashEscrow(OperatorSet calldata operatorSet, uint256 slashId) external returns (ISlashEscrow);
 
     /**
      * @notice Pauses a redistribution.
@@ -85,14 +97,14 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
      * @param strategy The strategy whose burn or redistribution delay is being set.
      * @param delay The delay for the burn or redistribution.
      */
-    function setStrategyBurnOrRedistributionDelay(IStrategy strategy, uint256 delay) external;
+    function setStrategyBurnOrRedistributionDelay(IStrategy strategy, uint32 delay) external;
 
     /**
      * @notice Sets the delay for the burn or redistribution of all strategies underlying tokens globally.
      * @param delay The delay for the burn or redistribution.
      */
     function setGlobalBurnOrRedistributionDelay(
-        uint256 delay
+        uint32 delay
     ) external;
 
     /**
@@ -123,6 +135,23 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
     function getPendingSlashIds(
         OperatorSet calldata operatorSet
     ) external view returns (uint256[] memory);
+
+    /**
+     * @notice Returns the pending escrows and their release blocks.
+     * @return operatorSets The pending operator sets.
+     * @return isRedistributing Whether the operator set is redistributing.
+     * @return slashIds The pending slash IDs for each operator set. Indexed by operator set.
+     * @return completeBlocks The block at which a slashID can be released. Indexed by [operatorSet][slashId]
+     */
+    function getPendingEscrows()
+        external
+        view
+        returns (
+            OperatorSet[] memory operatorSets,
+            bool[] memory isRedistributing,
+            uint256[][] memory slashIds,
+            uint32[][] memory completeBlocks
+        );
 
     /**
      * @notice Returns the total number of slash IDs for an operator set.
@@ -210,19 +239,30 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
     ) external view returns (uint256);
 
     /**
+     * @notice Returns the block at which the escrow can be released.
+     * @param operatorSet The operator set whose start block is being queried.
+     * @param slashId The slash ID of the start block that is being queried.
+     * @return The block at which the escrow can be released.
+     */
+    function getBurnOrRedistributionCompleteBlock(
+        OperatorSet calldata operatorSet,
+        uint256 slashId
+    ) external view returns (uint32);
+
+    /**
      * @notice Returns the burn or redistribution delay for a strategy.
      * @param strategy The strategy whose burn or redistribution delay is being queried.
      * @return The burn or redistribution delay.
      */
     function getStrategyBurnOrRedistributionDelay(
         IStrategy strategy
-    ) external view returns (uint256);
+    ) external view returns (uint32);
 
     /**
      * @notice Returns the global burn or redistribution delay.
      * @return The global burn or redistribution delay.
      */
-    function getGlobalBurnOrRedistributionDelay() external view returns (uint256);
+    function getGlobalBurnOrRedistributionDelay() external view returns (uint32);
 
     /**
      * @notice Returns the salt for a slash escrow.
