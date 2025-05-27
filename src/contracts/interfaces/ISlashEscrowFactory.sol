@@ -60,7 +60,7 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
      * @notice Releases an escrow.
      * @param operatorSet The operator set whose escrow is being released.
      * @param slashId The slash ID of the escrow that is being released.
-     * @dev The caller must be the escrow recipient, unless the escrow recipient
+     * @dev The caller must be the redistribution recipient, unless the redistribution recipient
      * is the default burn address in which case anyone can call.
      * @dev The slash escrow is released once the delay for ALL strategies has elapsed.
      */
@@ -90,7 +90,7 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
 
     /**
      * @notice Sets the delay for the escrow of a strategies underlying token.
-     * @dev If the strategy delay is less than the global delay, the strategy delay will be used.
+     * @dev The largest of all strategy delays or global delay will be used.
      * @param strategy The strategy whose escrow delay is being set.
      * @param delay The delay for the escrow.
      */

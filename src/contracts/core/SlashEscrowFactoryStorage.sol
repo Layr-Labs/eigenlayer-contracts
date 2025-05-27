@@ -48,7 +48,7 @@ abstract contract SlashEscrowFactoryStorage is ISlashEscrowFactory {
     /// @notice Returns the paused status for a given operator set and slash ID.
     mapping(bytes32 operatorSetKey => mapping(uint256 slashId => bool paused)) internal _paused;
 
-    /// @dev Returns the escrow delay for a given strategy.
+    /// @dev Returns the global escrow delay for all strategies.
     uint32 internal _globalEscrowDelayBlocks;
 
     /// @dev Returns the operator set delay for a given strategy.
