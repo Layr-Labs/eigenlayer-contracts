@@ -250,6 +250,8 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
      * @dev Small slashing amounts may not result in actual token burns due to
      *      rounding, which will result in small amounts of tokens locked in the contract
      *      rather than fully burning through the burn mechanism.
+     * @return slashId The operator set's unique identifier for the slash.
+     * @return shares The number of shares to be burned or redistributed for each strategy that was slashed.
      */
     function slashOperator(
         address avs,
