@@ -134,8 +134,10 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
         // Delete the start block for the slash ID.
         delete _slashIdToStartBlock[operatorSet.key()][slashId];
 
-        // Remove the operator set from the pending operator sets set.
-        pendingOperatorSets.remove(operatorSet.key());
+        // Remove the operator set from the pending operator sets set if there are no more pending slash IDs.
+        if (pendingSlashIds.length() == 0) {
+            pendingOperatorSets.remove(operatorSet.key());
+        }
     }
 
     /// @inheritdoc ISlashEscrowFactory
