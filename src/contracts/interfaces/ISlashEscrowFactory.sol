@@ -30,7 +30,7 @@ interface ISlashEscrowFactoryEvents {
     event EscrowPaused(OperatorSet operatorSet, uint256 slashId);
 
     /// @notice Emitted when a escrow is unpaused.
-    event EscrowUnPaused(OperatorSet operatorSet, uint256 slashId);
+    event EscrowUnpaused(OperatorSet operatorSet, uint256 slashId);
 
     /// @notice Emitted when a global escrow delay is set.
     event GlobalEscrowDelaySet(uint32 delay);

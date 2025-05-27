@@ -390,49 +390,6 @@ contract SlashEscrowFactoryUnitTests_releaseSlashEscrow is SlashEscrowFactoryUni
         assertFalse(factory.isPendingSlashId(defaultOperatorSet, defaultSlashId + numEscrows - 1));
         assertEq(factory.getTotalPendingOperatorSets(), 0);
     }
-
-    /// @dev Tests that operatorSets are only cleared once all slash IDs are released
-    function testFuzz_releaseSlashEscrow_multipleReleases(uint r) public {
-        uint numEscrows = bound(r, 2, 5);
-
-        IStrategy[] memory strategies = new IStrategy[](1);
-        MockERC20[] memory tokens = new MockERC20[](1);
-        uint[] memory underlyingAmounts = new uint[](1);
-
-        underlyingAmounts[0] = cheats.randomUint() / numEscrows;
-
-        strategies[0] = IStrategy(cheats.randomAddress());
-        tokens[0] = new MockERC20();
-
-        // Set up numEscrows slash escrows for the same operator set
-        for (uint i = 0; i < numEscrows; i++) {
-            // Start burn/redistribution for this slash
-            _initiateSlashEscrow(defaultOperatorSet, defaultSlashId + i, strategies[0], tokens[0], underlyingAmounts[0]);
-            // Verify the burn/redistribution was started correctly
-            _checkStartBurnOrRedistributions(defaultOperatorSet, defaultSlashId + i, strategies[0], tokens[0], underlyingAmounts[0], 1);
-        }
-
-        _rollForwardDefaultBurnOrRedistributionDelay();
-
-        // Release the first n-1 slash escrows
-        for (uint i = 0; i < numEscrows - 1; i++) {
-            _releaseSlashEscrow(defaultOperatorSet, defaultSlashId + i);
-        }
-
-        // Assert that the operator set is still pending
-        assertTrue(factory.isPendingOperatorSet(defaultOperatorSet));
-        assertTrue(factory.isPendingSlashId(defaultOperatorSet, defaultSlashId + numEscrows - 1));
-        assertEq(factory.getTotalPendingOperatorSets(), 1);
-        assertEq(factory.getTotalPendingSlashIds(defaultOperatorSet), 1);
-
-        // Release the last escrow
-        _releaseSlashEscrow(defaultOperatorSet, defaultSlashId + numEscrows - 1);
-
-        // Assert that the operator set is no longer pending
-        assertFalse(factory.isPendingOperatorSet(defaultOperatorSet));
-        assertFalse(factory.isPendingSlashId(defaultOperatorSet, defaultSlashId + numEscrows - 1));
-        assertEq(factory.getTotalPendingOperatorSets(), 0);
-    }
 }
 
 contract SlashEscrowFactoryUnitTests_pauseEscrow is SlashEscrowFactoryUnitTests {
@@ -491,7 +448,7 @@ contract SlashEscrowFactoryUnitTests_setStrategyEscrowDelay is SlashEscrowFactor
     function test_setStrategyEscrowDelay_onlyOwner() public {
         cheats.prank(cheats.randomAddress());
         cheats.expectRevert("Ownable: caller is not the owner");
-        factory.setStrategyBurnOrRedistributionDelay(defaultStrategy, uint32(25));
+        factory.setStrategyEscrowDelay(defaultStrategy, uint32(25));
     }
 
     function testFuzz_setStrategyEscrowDelay_correctness(uint32 delay) public {
@@ -516,7 +473,7 @@ contract SlashEscrowFactoryUnitTests_getBurnOrRedistributionDelay is SlashEscrow
 
         // Set global delay less than all the strategy delays.
         cheats.prank(defaultOwner);
-        factory.getGlobalEscrowDelay(0.5 days / 12 seconds);
+        factory.setGlobalEscrowDelay(0.5 days / 12 seconds);
 
         // Set up each strategy with random data and different delays
         for (uint i = 0; i < numStrategies; i++) {
@@ -539,9 +496,7 @@ contract SlashEscrowFactoryUnitTests_getBurnOrRedistributionDelay is SlashEscrow
         }
 
         // The complete block should be the maximum delay across all strategies
-        assertEq(
-            factory.getEscrowCompleteBlock(defaultOperatorSet, defaultSlashId), block.number + delays[numStrategies - 1] + 1
-        );
+        assertEq(factory.getEscrowCompleteBlock(defaultOperatorSet, defaultSlashId), block.number + delays[numStrategies - 1] + 1);
     }
 }
 
@@ -596,14 +551,6 @@ contract SlashEscrowFactoryUnitTests_setGlobalEscrowDelay is SlashEscrowFactoryU
         emit GlobalEscrowDelaySet(delay);
         factory.setGlobalEscrowDelay(delay);
         assertEq(factory.getGlobalEscrowDelay(), delay);
-    }
-
-    function testFuzz_setGlobalBurnOrRedistributionDelay_correctness(uint32 delay) public {
-        cheats.prank(defaultOwner);
-        cheats.expectEmit(true, true, true, true);
-        emit GlobalBurnOrRedistributionDelaySet(delay);
-        factory.setGlobalBurnOrRedistributionDelay(delay);
-        assertEq(factory.getGlobalBurnOrRedistributionDelay(), delay);
     }
 }
 

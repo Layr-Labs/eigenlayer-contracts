@@ -127,17 +127,17 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
      */
 
     /// @inheritdoc ISlashEscrowFactory
-    function pauseRedistribution(OperatorSet calldata operatorSet, uint256 slashId) external virtual onlyPauser {
+    function pauseEscrow(OperatorSet calldata operatorSet, uint256 slashId) external virtual onlyPauser {
         _checkNewPausedStatus(operatorSet, slashId, true);
         _paused[operatorSet.key()][slashId] = true;
-        emit RedistributionPaused(operatorSet, slashId);
+        emit EscrowPaused(operatorSet, slashId);
     }
 
     /// @inheritdoc ISlashEscrowFactory
-    function unpauseRedistribution(OperatorSet calldata operatorSet, uint256 slashId) external virtual onlyUnpauser {
+    function unpauseEscrow(OperatorSet calldata operatorSet, uint256 slashId) external virtual onlyUnpauser {
         _checkNewPausedStatus(operatorSet, slashId, false);
         _paused[operatorSet.key()][slashId] = false;
-        emit RedistributionUnpaused(operatorSet, slashId);
+        emit EscrowUnpaused(operatorSet, slashId);
     }
 
     /**
@@ -147,16 +147,16 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
      */
 
     /// @inheritdoc ISlashEscrowFactory
-    function setGlobalBurnOrRedistributionDelay(
+    function setGlobalEscrowDelay(
         uint32 delay
     ) external onlyOwner {
-        _setGlobalBurnOrRedistributionDelay(delay);
+        _setGlobalEscrowDelay(delay);
     }
 
     /// @inheritdoc ISlashEscrowFactory
-    function setStrategyBurnOrRedistributionDelay(IStrategy strategy, uint32 delay) external onlyOwner {
-        _strategyBurnOrRedistributionDelayBlocks[address(strategy)] = delay;
-        emit StrategyBurnOrRedistributionDelaySet(strategy, delay);
+    function setStrategyEscrowDelay(IStrategy strategy, uint32 delay) external onlyOwner {
+        _strategyEscrowDelayBlocks[address(strategy)] = delay;
+        emit StrategyEscrowDelaySet(strategy, delay);
     }
 
     /**
@@ -210,64 +210,7 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
         }
     }
 
-    /// @inheritdoc ISlashEscrowFactory
-    function deploySlashEscrow(OperatorSet calldata operatorSet, uint256 slashId) public returns (ISlashEscrow) {
-        ISlashEscrow slashEscrow = getSlashEscrow(operatorSet, slashId);
-
-        // If the slash escrow is not deployed...
-        if (!isDeployedSlashEscrow(slashEscrow)) {
-            return ISlashEscrow(
-                address(slashEscrowImplementation).cloneDeterministic(computeSlashEscrowSalt(operatorSet, slashId))
-            );
-        }
-
-        return slashEscrow;
-    }
-
-    /**
-     *
-     *                         PAUSABLE ACTIONS
-     *
-     */
-
-    /// @inheritdoc ISlashEscrowFactory
-    function pauseEscrow(OperatorSet calldata operatorSet, uint256 slashId) external virtual onlyPauser {
-        _checkNewPausedStatus(operatorSet, slashId, true);
-        _paused[operatorSet.key()][slashId] = true;
-        emit EscrowPaused(operatorSet, slashId);
-    }
-
-    /// @inheritdoc ISlashEscrowFactory
-    function unpauseEscrow(OperatorSet calldata operatorSet, uint256 slashId) external virtual onlyUnpauser {
-        _checkNewPausedStatus(operatorSet, slashId, false);
-        _paused[operatorSet.key()][slashId] = false;
-        emit EscrowUnPaused(operatorSet, slashId);
-    }
-
-    /**
-     *
-     *                         OWNER ACTIONS
-     *
-     */
-
-    /// @inheritdoc ISlashEscrowFactory
-    function setGlobalEscrowDelay(
-        uint32 delay
-    ) external onlyOwner {
-        _setGlobalEscrowDelay(delay);
-    }
-
-    /// @inheritdoc ISlashEscrowFactory
-    function setStrategyEscrowDelay(IStrategy strategy, uint32 delay) external onlyOwner {
-        _strategyEscrowDelayBlocks[address(strategy)] = delay;
-        emit StrategyEscrowDelaySet(strategy, delay);
-    }
-
-    /**
-     *
-     *                         HELPERS
-     *
-     */
+    /// @notice Sets the global escrow delay.
     function _setGlobalEscrowDelay(
         uint32 delay
     ) internal {
