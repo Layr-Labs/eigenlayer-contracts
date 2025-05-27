@@ -57,7 +57,7 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
     function initiateSlashEscrow(OperatorSet calldata operatorSet, uint256 slashId, IStrategy strategy) external;
 
     /**
-     * @notice Releases an escrow.
+     * @notice Releases an escrow for all strategies in a slash.
      * @param operatorSet The operator set whose escrow is being released.
      * @param slashId The slash ID of the escrow that is being released.
      * @dev The caller must be the redistribution recipient, unless the redistribution recipient
@@ -66,6 +66,17 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
      */
     function releaseSlashEscrow(OperatorSet calldata operatorSet, uint256 slashId) external;
 
+    /**
+     * @notice Releases an escrow for a single strategy in a slash.
+     * @param operatorSet The operator set whose escrow is being released.
+     * @param slashId The slash ID of the escrow that is being released.
+     * @param index The index of the strategy that is being released.
+     * @dev The caller must be the redistribution recipient, unless the redistribution recipient
+     * is the default burn address in which case anyone can call.
+     * @dev The slash escrow is released once the delay for ALL strategies has elapsed.
+     */
+    function releaseSlashEscrow(OperatorSet calldata operatorSet, uint256 slashId, uint256 index) external;
+    
     /**
      * @notice Pauses a escrow.
      * @param operatorSet The operator set whose escrow is being paused.
