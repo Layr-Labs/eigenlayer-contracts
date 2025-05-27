@@ -102,42 +102,8 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
         // Deploy the counterfactual `SlashEscrow`.
         ISlashEscrow slashEscrow = deploySlashEscrow(operatorSet, slashId);
 
-        // Create storage pointers for readability.
-        EnumerableSet.Bytes32Set storage pendingOperatorSets = _pendingOperatorSets;
-        EnumerableSet.UintSet storage pendingSlashIds = _pendingSlashIds[operatorSet.key()];
-        EnumerableSet.AddressSet storage pendingStrategiesForSlashId =
-            _pendingStrategiesForSlashId[operatorSet.key()][slashId];
-
-        // Iterate over the escrow array in reverse order and pop the processed entries from storage.
-        uint256 totalPendingForSlashId = pendingStrategiesForSlashId.length();
-        for (uint256 i = totalPendingForSlashId; i > 0; --i) {
-            address strategy = pendingStrategiesForSlashId.at(i - 1);
-
-            // Burn or redistribute the underlying tokens for the strategy.
-            slashEscrow.burnOrRedistributeUnderlyingTokens(
-                ISlashEscrowFactory(address(this)),
-                slashEscrowImplementation,
-                operatorSet,
-                slashId,
-                redistributionRecipient,
-                IStrategy(strategy)
-            );
-
-            // Remove the strategy and underlying amount from the pending burn or redistributions map.
-            pendingStrategiesForSlashId.remove(strategy);
-            emit BurnOrRedistributionComplete(operatorSet, slashId, IStrategy(strategy), redistributionRecipient);
-        }
-
-        // Remove the slash ID from the pending slash IDs set.
-        pendingSlashIds.remove(slashId);
-
-        // Delete the start block for the slash ID.
-        delete _slashIdToStartBlock[operatorSet.key()][slashId];
-
-        // Remove the operator set from the pending operator sets set if there are no more pending slash IDs.
-        if (pendingSlashIds.length() == 0) {
-            pendingOperatorSets.remove(operatorSet.key());
-        }
+        // Release the slashEscrow
+        _processSlashEscrow(operatorSet, slashId, slashEscrow, redistributionRecipient);
     }
 
     /// @inheritdoc ISlashEscrowFactory
@@ -198,6 +164,53 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
      *                         HELPERS
      *
      */
+
+    /// @notice Processes the slash escrow.
+    function _processSlashEscrow(
+        OperatorSet calldata operatorSet,
+        uint256 slashId,
+        ISlashEscrow slashEscrow,
+        address redistributionRecipient
+    ) internal {
+        // Create storage pointers for readability.
+        EnumerableSet.Bytes32Set storage pendingOperatorSets = _pendingOperatorSets;
+        EnumerableSet.UintSet storage pendingSlashIds = _pendingSlashIds[operatorSet.key()];
+        EnumerableSet.AddressSet storage pendingStrategiesForSlashId =
+            _pendingStrategiesForSlashId[operatorSet.key()][slashId];
+
+        // Iterate over the escrow array in reverse order and pop the processed entries from storage.
+        uint256 totalPendingForSlashId = pendingStrategiesForSlashId.length();
+        for (uint256 i = totalPendingForSlashId; i > 0; --i) {
+            address strategy = pendingStrategiesForSlashId.at(i - 1);
+
+            // Burn or redistribute the underlying tokens for the strategy.
+            slashEscrow.burnOrRedistributeUnderlyingTokens(
+                ISlashEscrowFactory(address(this)),
+                slashEscrowImplementation,
+                operatorSet,
+                slashId,
+                redistributionRecipient,
+                IStrategy(strategy)
+            );
+
+            // Remove the strategy and underlying amount from the pending burn or redistributions map.
+            pendingStrategiesForSlashId.remove(strategy);
+            emit BurnOrRedistributionComplete(operatorSet, slashId, IStrategy(strategy), redistributionRecipient);
+        }
+
+        // Remove the slash ID from the pending slash IDs set.
+        pendingSlashIds.remove(slashId);
+
+        // Delete the start block for the slash ID.
+        delete _slashIdToStartBlock[operatorSet.key()][slashId];
+
+        // Remove the operator set from the pending operator sets set if there are no more pending slash IDs.
+        if (pendingSlashIds.length() == 0) {
+            pendingOperatorSets.remove(operatorSet.key());
+        }
+    }
+
+    /// @notice Sets the global burn or redistribution delay.
     function _setGlobalBurnOrRedistributionDelay(
         uint32 delay
     ) internal {
