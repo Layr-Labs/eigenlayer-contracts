@@ -1190,7 +1190,7 @@ contract StrategyManagerUnitTests_increaseBurnOrRedistributableShares is Strateg
     }
 }
 
-contract StrategyManagerUnitTests_decreaseBurnOrRedistributableShares is StrategyManagerUnitTests {
+contract StrategyManagerUnitTests_clearBurnOrRedistributableShares is StrategyManagerUnitTests {
     function _increaseBurnOrRedistributableShares(IStrategy strategy, uint sharesToAdd) internal {
         cheats.prank(address(delegationManagerMock));
         strategyManager.increaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, strategy, sharesToAdd);
@@ -1209,7 +1209,7 @@ contract StrategyManagerUnitTests_decreaseBurnOrRedistributableShares is Strateg
 
         cheats.expectEmit(true, true, true, true, address(strategyManager));
         emit BurnOrRedistributableSharesDecreased(defaultOperatorSet, defaultSlashId, strategy, shares);
-        strategyManager.decreaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
+        strategyManager.clearBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
 
         (IStrategy[] memory escrowStrats, uint[] memory escrowShares) =
             strategyManager.getBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
@@ -1231,7 +1231,7 @@ contract StrategyManagerUnitTests_decreaseBurnOrRedistributableShares is Strateg
 
         cheats.expectEmit(true, true, true, true, address(strategyManager));
         emit BurnOrRedistributableSharesDecreased(defaultOperatorSet, defaultSlashId, strategy, shares);
-        strategyManager.decreaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, 0);
+        strategyManager.clearBurnOrRedistributableSharesByStrategy(defaultOperatorSet, defaultSlashId, strategy);
 
         (IStrategy[] memory escrowStrats, uint[] memory escrowShares) =
             strategyManager.getBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
@@ -1260,7 +1260,7 @@ contract StrategyManagerUnitTests_decreaseBurnOrRedistributableShares is Strateg
 
         _increaseBurnOrRedistributableShares(strategies, sharesToAdd);
 
-        strategyManager.decreaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
+        strategyManager.clearBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
 
         (IStrategy[] memory escrowStrats, uint[] memory escrowShares) =
             strategyManager.getBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
@@ -1292,11 +1292,13 @@ contract StrategyManagerUnitTests_decreaseBurnOrRedistributableShares is Strateg
         _increaseBurnOrRedistributableShares(strategies, sharesToAdd);
 
         // Remove shares in random order
-        for (uint i = 0; i < strategies.length; ++i) {
-            // Create a random index to remove shares
-            uint index = r.Uint256(0, strategies.length - i - 1);
+        uint[] memory indices = new uint[](3);
+        indices[0] = 1; // dummyStrat2
+        indices[1] = 0; // dummyStrat
+        indices[2] = 2; // dummyStrat3
 
-            strategyManager.decreaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, index);
+        for (uint i = 0; i < strategies.length; ++i) {
+            strategyManager.clearBurnOrRedistributableSharesByStrategy(defaultOperatorSet, defaultSlashId, strategies[indices[i]]);
 
             (IStrategy[] memory strats, uint[] memory sharesToBurnOrRedistribute) =
                 strategyManager.getBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
@@ -1340,7 +1342,7 @@ contract StrategyManagerUnitTests_decreaseBurnOrRedistributableShares is Strateg
 
         cheats.expectRevert("SafeERC20: low-level call failed");
         cheats.prank(address(delegationManagerMock));
-        strategyManager.decreaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
+        strategyManager.clearBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
 
         assertEq(
             strategyManager.getBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, strategy),

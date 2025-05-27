@@ -170,41 +170,44 @@ contract StrategyManager is
     }
 
     /// @inheritdoc IStrategyManager
-    function decreaseBurnOrRedistributableShares(
+    function clearBurnOrRedistributableShares(
         OperatorSet calldata operatorSet,
         uint256 slashId
     ) external nonReentrant {
         // Iterate over burnable shares backwards. Iterating with an increasing index can cause
         // elements to be missed as the item to remove is swapped and popped with the last element.
-        uint256 length = _burnOrRedistributableShares[operatorSet.key()][slashId].length();
+        address[] memory strategies = _burnOrRedistributableShares[operatorSet.key()][slashId].keys();
+        uint256 length = strategies.length;
 
-        for (uint256 i = length; i > 0; --i) {
-            decreaseBurnOrRedistributableShares(operatorSet, slashId, i - 1);
+        for (uint256 i = 0; i < length; ++i) {
+            clearBurnOrRedistributableSharesByStrategy(operatorSet, slashId, IStrategy(strategies[i]));
         }
     }
 
     /// @inheritdoc IStrategyManager
-    function decreaseBurnOrRedistributableShares(
+    function clearBurnOrRedistributableSharesByStrategy(
         OperatorSet calldata operatorSet,
         uint256 slashId,
-        uint256 index
+        IStrategy strategy
     ) public returns (uint256) {
         EnumerableMap.AddressToUintMap storage burnOrRedistributableShares =
             _burnOrRedistributableShares[operatorSet.key()][slashId];
 
-        (address strategy, uint256 sharesToRemove) = burnOrRedistributableShares.at(index);
-
-        // Withdraw the shares to the slash escrow.
-        IStrategy(strategy).withdraw({
-            recipient: address(slashEscrowFactory.getSlashEscrow(operatorSet, slashId)),
-            token: IStrategy(strategy).underlyingToken(),
-            amountShares: sharesToRemove
-        });
+        (, uint256 sharesToRemove) = burnOrRedistributableShares.tryGet(address(strategy));
 
         burnOrRedistributableShares.remove(address(strategy));
 
-        // Emit an event to notify the that burnable shares have been decreased.
-        emit BurnOrRedistributableSharesDecreased(operatorSet, slashId, IStrategy(strategy), sharesToRemove);
+        if (sharesToRemove != 0) {
+            // Withdraw the shares to the slash escrow.
+            IStrategy(strategy).withdraw({
+                recipient: address(slashEscrowFactory.getSlashEscrow(operatorSet, slashId)),
+                token: IStrategy(strategy).underlyingToken(),
+                amountShares: sharesToRemove
+            });
+
+            // Emit an event to notify the that burnable shares have been decreased.
+            emit BurnOrRedistributableSharesDecreased(operatorSet, slashId, strategy, sharesToRemove);
+        }
 
         return sharesToRemove;
     }
