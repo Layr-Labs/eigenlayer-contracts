@@ -14,12 +14,17 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
     using OperatorSetLib for *;
     using EnumerableSet for *;
     using ClonesUpgradeable for address;
+
+    modifier onlyStrategyManager() {
+        require(msg.sender == address(strategyManager), OnlyStrategyManager());
+        _;
+    }
+
     /**
      *
      *                         INITIALIZATION
      *
      */
-
     constructor(
         IAllocationManager _allocationManager,
         IStrategyManager _strategyManager,
@@ -52,9 +57,11 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
      */
 
     /// @inheritdoc ISlashEscrowFactory
-    function initiateSlashEscrow(OperatorSet calldata operatorSet, uint256 slashId, IStrategy strategy) external {
-        require(msg.sender == address(strategyManager), OnlyStrategyManager());
-
+    function initiateSlashEscrow(
+        OperatorSet calldata operatorSet,
+        uint256 slashId,
+        IStrategy strategy
+    ) external onlyStrategyManager {
         // Create storage pointers for readability.
         EnumerableSet.UintSet storage pendingSlashIds = _pendingSlashIds[operatorSet.key()];
         EnumerableSet.AddressSet storage pendingStrategiesForSlashId =

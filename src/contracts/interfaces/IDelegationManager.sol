@@ -365,7 +365,7 @@ interface IDelegationManager is ISignatureUtilsMixin, IDelegationManagerErrors, 
      * @dev Callable only by the AllocationManager.
      * @dev Note: Assumes `prevMaxMagnitude <= newMaxMagnitude`. This invariant is maintained in
      * the AllocationManager.
-     * @return totalDepositSharesToBurn The total deposit shares to burn.
+     * @return totalDepositSharesToSlash The total deposit shares to burn or redistribute.
      */
     function slashOperatorShares(
         address operator,
@@ -374,7 +374,7 @@ interface IDelegationManager is ISignatureUtilsMixin, IDelegationManagerErrors, 
         IStrategy strategy,
         uint64 prevMaxMagnitude,
         uint64 newMaxMagnitude
-    ) external returns (uint256 totalDepositSharesToBurn);
+    ) external returns (uint256 totalDepositSharesToSlash);
 
     /**
      *

@@ -18,7 +18,7 @@ contract SlashEscrow is ISlashEscrow {
         uint256 slashId,
         address recipient,
         IStrategy strategy
-    ) external virtual {
+    ) external {
         // Assert that the deployment parameters are valid by validating against the address of this proxy.
         require(
             verifyDeploymentParameters(slashEscrowFactory, slashEscrowImplementation, operatorSet, slashId),
@@ -39,7 +39,7 @@ contract SlashEscrow is ISlashEscrow {
         ISlashEscrow slashEscrowImplementation,
         OperatorSet calldata operatorSet,
         uint256 slashId
-    ) public view virtual returns (bool) {
+    ) public view returns (bool) {
         return ClonesUpgradeable.predictDeterministicAddress(
             address(slashEscrowImplementation),
             keccak256(abi.encodePacked(operatorSet.key(), slashId)),
