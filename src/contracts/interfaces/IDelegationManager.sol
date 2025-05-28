@@ -174,9 +174,6 @@ interface IDelegationManagerEvents is IDelegationManagerTypes {
 
     /// @notice Emitted whenever an operator's shares are slashed for a given strategy
     event OperatorSharesSlashed(address indexed operator, IStrategy strategy, uint256 totalSlashedShares);
-
-    /// @notice Emitted when a redistribution is queued
-    event RedistributionQueued(bytes32 withdrawalRoot, Withdrawal withdrawal);
 }
 
 /**

@@ -25,7 +25,6 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
      *                         INITIALIZATION
      *
      */
-
     constructor(
         IAllocationManager _allocationManager,
         IStrategyManager _strategyManager,
