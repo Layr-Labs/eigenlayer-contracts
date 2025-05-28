@@ -1069,6 +1069,16 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Slashed_Allocation(operator, operatorSet, slashParams, "slash should reduce current magnitude");
         assert_Snap_Increased_BurnableShares(operatorSet, operator, slashParams, slashId, "slash should increase burnable shares");
 
+        bool flag = false;
+
+        for (uint i = 0; i < slashParams.strategies.length; i++) {
+            if (slashParams.strategies[i] == BEACONCHAIN_ETH_STRAT) {
+                flag = true;
+            }
+        }
+
+        if (!flag) assert_Snap_SlashEscrowCreated(operatorSet, slashId, "slash should create slash escrow");
+
         // Slashing SHOULD NOT change allocatable magnitude, registration, and slashability status
         assert_Snap_Unchanged_AllocatableMagnitude(operator, allStrats, "slashing should not change allocatable magnitude");
         assert_Snap_Unchanged_Registration(operator, operatorSet, "slash should not change registration status");
