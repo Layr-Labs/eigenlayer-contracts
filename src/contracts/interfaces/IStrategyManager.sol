@@ -139,15 +139,19 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
      * @notice Removes burned shares from storage and transfers the underlying tokens for the slashId to the slash escrow.
      * @param operatorSet The operator set to burn shares in.
      * @param slashId The slash ID to burn shares in.
+     * @return The amounts of tokens transferred to the slash escrow for each strategy
      */
-    function clearBurnOrRedistributableShares(OperatorSet calldata operatorSet, uint256 slashId) external;
+    function clearBurnOrRedistributableShares(
+        OperatorSet calldata operatorSet,
+        uint256 slashId
+    ) external returns (uint256[] memory);
 
     /**
      * @notice Removes a single strategy's shares from storage and transfers the underlying tokens for the slashId to the slash escrow.
      * @param operatorSet The operator set to burn shares in.
      * @param slashId The slash ID to burn shares in.
      * @param strategy The strategy to burn shares in.
-     * @return The amount of shares that were burned.
+     * @return The amount of tokens transferred to the slash escrow for the strategy.
      */
     function clearBurnOrRedistributableSharesByStrategy(
         OperatorSet calldata operatorSet,

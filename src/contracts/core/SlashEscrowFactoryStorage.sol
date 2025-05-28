@@ -51,7 +51,7 @@ abstract contract SlashEscrowFactoryStorage is ISlashEscrowFactory {
     /// @dev Returns the global escrow delay for all strategies.
     uint32 internal _globalEscrowDelayBlocks;
 
-    /// @dev Returns the operator set delay for a given strategy.
+    /// @dev Returns the escrow delay for a given strategy.
     mapping(address strategy => uint32 delay) internal _strategyEscrowDelayBlocks;
 
     // Constructor
