@@ -14,7 +14,7 @@ SlashEscrow:
 | [`ISlashEscrow.sol`](../../src/contracts/interface/ISlashEscrow.sol) | interface |
 
 ## Overview
-The `SlashEscrowFactory` handles the burning or redistribution of slashed funds out of the EigenLayer protocol. The `SlashEscrowFactory` is responsible for (i) enforcing an escrow delay upon an AVS calling  calls [`slashOperator](./AllocationManager.md#slashoperator), (ii) deploying the `SlashEscrow` for each slash, and (iii) releasing funds from the escrow contract upon completion of a the escrow delay. 
+The `SlashEscrowFactory` handles the burning or redistribution of slashed funds out of the EigenLayer protocol. The `SlashEscrowFactory` is responsible for (i) enforcing an escrow delay upon an AVS calling [`slashOperator`](./AllocationManager.md#slashoperator), (ii) deploying the `SlashEscrow` for each slash, and (iii) releasing funds from the escrow contract upon completion of a the escrow delay. 
 
 ## Parameterization
 * `DEFAULT_BURN_ADDRESS = 0x00000000000000000000000000000000000E16E4`
