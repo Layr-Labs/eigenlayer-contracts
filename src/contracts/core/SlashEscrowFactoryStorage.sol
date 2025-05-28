@@ -16,7 +16,7 @@ abstract contract SlashEscrowFactoryStorage is ISlashEscrowFactory {
 
     /// @notice The pause status for the `releaseSlashEscrow` function.
     /// @dev Allows all escrow outflows to be temporarily halted.
-    uint8 public constant PAUSED_RELEASE_ESCROW = 0;
+    uint8 internal constant PAUSED_RELEASE_ESCROW = 0;
 
     // Immutable Storage
 

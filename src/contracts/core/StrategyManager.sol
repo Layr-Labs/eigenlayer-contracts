@@ -174,11 +174,11 @@ contract StrategyManager is
         OperatorSet calldata operatorSet,
         uint256 slashId
     ) external nonReentrant {
-        // Iterate over burnable shares backwards. Iterating with an increasing index can cause
-        // elements to be missed as the item to remove is swapped and popped with the last element.
+        // Get the strategies to clear.
         address[] memory strategies = _burnOrRedistributableShares[operatorSet.key()][slashId].keys();
         uint256 length = strategies.length;
 
+        // Note: We don't need to iterate backwards since we're indexing into the `EnumerableMap` directly.
         for (uint256 i = 0; i < length; ++i) {
             clearBurnOrRedistributableSharesByStrategy(operatorSet, slashId, IStrategy(strategies[i]));
         }
@@ -194,7 +194,6 @@ contract StrategyManager is
             _burnOrRedistributableShares[operatorSet.key()][slashId];
 
         (, uint256 sharesToRemove) = burnOrRedistributableShares.tryGet(address(strategy));
-
         burnOrRedistributableShares.remove(address(strategy));
 
         if (sharesToRemove != 0) {

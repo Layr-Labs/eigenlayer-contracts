@@ -4,6 +4,7 @@ pragma solidity ^0.8.27;
 import "forge-std/Test.sol";
 
 import "../../contracts/interfaces/IDelegationManager.sol";
+import "../../contracts/interfaces/IStrategy.sol";
 
 contract StrategyManagerMock is Test {
     IDelegationManager public delegation;
@@ -109,7 +110,12 @@ contract StrategyManagerMock is Test {
         return (existingShares, addedShares);
     }
 
-    function clearBurnOrRedistributableShares(IStrategy strategy, uint sharesToBurn) external {}
+    function clearBurnOrRedistributableShares(OperatorSet calldata operatorSet, uint slashId) external {}
+
+    function clearBurnOrRedistributableSharesByStrategy(OperatorSet calldata operatorSet, uint slashId, IStrategy strategy)
+        external
+        returns (uint)
+    {}
 
     function getBurnOrRedistributableCount(OperatorSet calldata operatorSet, uint slashId) external view returns (uint) {
         return _burnOrRedistributableCount;
