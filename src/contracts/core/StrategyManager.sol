@@ -153,19 +153,17 @@ contract StrategyManager is
         IStrategy strategy,
         uint256 sharesToBurn
     ) external onlyDelegationManager nonReentrant {
+        // Create storage pointer for readability.
         EnumerableMap.AddressToUintMap storage burnOrRedistributableShares =
             _burnOrRedistributableShares[operatorSet.key()][slashId];
 
         // Sanity check that the strategy is not already in the slash's burn or redistributable shares.
         // This should never happen because the `AllocationManager` ensures that strategies for a given slash are unique.
-        require(!burnOrRedistributableShares.contains(address(strategy)), StrategyAlreadyInSlash());
-
         // Add the shares to the operator set's burn or redistributable shares.
-        burnOrRedistributableShares.set(address(strategy), sharesToBurn);
+        require(burnOrRedistributableShares.set(address(strategy), sharesToBurn), StrategyAlreadyInSlash());
 
         // Notify the `SlashEscrowFactory` contract that it received underlying tokens to burn or redistribute.
         slashEscrowFactory.initiateSlashEscrow(operatorSet, slashId, strategy);
-
         emit BurnOrRedistributableSharesIncreased(operatorSet, slashId, strategy, sharesToBurn);
     }
 
