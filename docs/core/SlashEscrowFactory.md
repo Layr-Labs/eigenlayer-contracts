@@ -27,7 +27,7 @@ An escrow is initiated for each slash triggered by an AVS. A slash can contain m
 
 *[`SlashEscrowFactory.initiateSlashEscrow`](#initiateslashescrow)
 *[`SlashEscrowFactory.releaseSlashEscrow`](#releaseslashescrow)
-*[`SlashEscrowFactory.deploySlashEscrow`](#deployslashescrow)
+*[`SlashEscrowFactory.releaseSlashEscrowByStrategy`](#releaseslashescrow)
 
 #### `initiateSlashEscrow`
 
@@ -48,17 +48,35 @@ external onlyStrategyManager;
 Initiates an escrow for a given `operatorSet`, `slashId`, and `strategy`. This function can be called multiple times in the same transaction by the `StrategyManager`, as a single slash can contain multiple strategies. The `operatorSet`, `slashId`, and `strategy` are each stored in an [EnumerableSet](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/utils/structs/EnumerableSet.sol).
 
 *Effects*:
-* Adds the `operatorSet `to `pendingOperatorSets`
-* Adds the `slashId` to the operatorSet's `pendingSlashIds`
+* If the operatorSet and slashID have not already been set to pending:
+    * The `SlashEscrow` contract is [deployed](#deployslashescrow)
+    * Adds the `operatorSet `to `pendingOperatorSets`
+    * Adds the `slashId` to the operatorSet's `pendingSlashIds`
 * Adds the strategy to `pendingStrategiesForSlashId` 
 * Emits a `StartEscrow` event
 
 *Requirements*:
 * Can only be called by the `StrategyManager`
 
-#### `releaseSlashEscrow`
+#### `deploySlashEscrow`
 
-## Release Escrow
+```solidity
+/**
+ * @notice Deploys a counterfactual `SlashEscrow` if code hasn't already been deployed.
+ * @param operatorSet The operator set whose slash escrow is being deployed.
+ * @param slashId The slash ID of the slash escrow that is being deployed.
+ */
+function _deploySlashEscrow(
+    OperatorSet calldata operatorSet, 
+    uint256 slashId) 
+internal;
+```
+
+The internal function is called on `initiateEscrow`. A unique slash escrow contract is deployed per `operatorSet` and `slashId`
+
+SlashEscrows are deployed deterministically using [Open Zeppelin's Clones Upgradeable Library](https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/blob/f6febd79e2a3a17e26969dd0d450c6ebd64bf459/contracts/proxy/ClonesUpgradeable.sol), which is a minimal, non-upgradeable proxy. The deployment salt is a concatenation of the `operatorSet` and `slashId`, which together are guaranteed to be unique. 
+
+#### `releaseSlashEscrow`
 
 ```solidity
 /**
@@ -73,45 +91,44 @@ function releaseSlashEscrow(
     OperatorSet calldata operatorSet, 
     uint256 slashId)
 external onlyWhenNotPaused(PAUSED_RELEASE_ESCROW);
+
+/**
+ * @notice Releases an escrow for a single strategy in a slash.
+ * @param operatorSet The operator set whose escrow is being released.
+ * @param slashId The slash ID of the escrow that is being released.
+ * @param strategy The strategy whose escrow is being released.
+ * @dev The caller must be the redistribution recipient, unless the redistribution recipient
+ * is the default burn address in which case anyone can call.
+ * @dev The slash escrow is released once the delay for ALL strategies has elapsed.
+ */
+function releaseSlashEscrowByStrategy(
+    OperatorSet calldata operatorSet,
+    uint256 slashId,
+    IStrategy strategy
+) external;
 ```
 At or after the `getEscrowCompleteBlock`, tokens are transferred from the `SlashEscrow` contract to the [`redistributionRecipient`](./AllocationManager.md#createredistributingoperatorsets) of an `operatorSet`.
 
-For each `strategy` in the `slash`, tokens are transferred from the slash's unique `SlashEscrow` contract to the `redistributionRecipient`. 
+For each `strategy` in the `slash`, tokens are transferred from the slash's unique `SlashEscrow` contract to the `redistributionRecipient`.
+
+To accommodate the unlimited number of strategies that can be added to an operatorSet, and a token transfer failures blocking other releases, a user can release a single strategy from escrow via `releaseSlashEscrowByStrategy`.
 
 *Effects*:
-* If not deployed, the `SlashEscrow` is [deployed](#deployslashescrow)
-* Call [`StrategyManager.decreaseBurnOrRedistributableShares`](./StrategyManager.md#decreaseburnorredistributableshares). This function may have already been called prior and will no-op if so. We call it again for sanity to ensure that all tokens are transferred to the `SlashEscrow` contract
-* For each strategy, call [`SlashEscrow.releaseTokens`](#releasetokens)
-* For each strategy, emits an `EscrowComplete`
-* Remove the `strategy` from the `_pendingStrategiesForSlashId`
-* Remove the `slashId` from `_pendingSlashIds`
-* Delete the start block for the `slashId`
+* Call [`StrategyManager.clearBurnOrRedistributableShares`](./StrategyManager.md#clearburnorredistributableshares). This function may have already been called prior and will no-op if so. We call it again for sanity to ensure that all tokens are transferred to the `SlashEscrow` contract. For `releaseEscrowByStrategy` we call the by strategy variant: `StrategyManager.clearBurnOrRedistributableSharesByStrategy`
+* For each strategy:
+    * Call [`SlashEscrow.releaseTokens`](#releasetokens)
+    * Emits an `EscrowComplete`
+    * Remove the `strategy` from the `_pendingStrategiesForSlashId`
+* If all strategies from an operatorSet/slashId have been released:
+    * Remove the `slashId` from `_pendingSlashIds`
+    * Delete the start block for the `slashId`
 * If the `operatorSet` has no more pending slashes, remove it from `pendingOperatorSets` 
 
 *Requirements*:
-* Paused status MUST NOT bee set: `PAUSED_RELEASE_ESCROW`
+* The global paused status MUST NOT be set: `PAUSED_RELEASE_ESCROW`
+* The escrow paused status MUST NOT be set: `pauseEscrow`
 * If the operatorSet is redistributable, caller MUST be the `redistributionRecipient`
 * The escrow delay must have elapsed
-
-### `deploySlashEscrow`
-
-```solidity
-/**
- * @notice Deploys a counterfactual `SlashEscrow` if code hasn't already been deployed.
- * @param operatorSet The operator set whose slash escrow is being deployed.
- * @param slashId The slash ID of the slash escrow that is being deployed.
- * @return The deployed `SlashEscrow`.
- */
-function deploySlashEscrow(
-    OperatorSet calldata operatorSet, 
-    uint256 slashId) 
-external returns (ISlashEscrow);
-```
-
-Deploys a unique slash escrow contract per `operatorSet` and `slashId`. Note that this `SlashEscrow` contract is counterfactual because slashed tokens can be transferred to the contract via [StrategyManager.decreaseBurnOrRedistributableShares](./StrategyManager.md#decreaseburnorredistributableshares) prior to the contract being deployed. 
-
-SlashEscrows are deployed deterministically using [Open Zeppelin's Clones Upgradeable Library](https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable/blob/f6febd79e2a3a17e26969dd0d450c6ebd64bf459/contracts/proxy/ClonesUpgradeable.sol), which is a minimal, non-upgradeable proxy. The deployment salt is a concatenation of the `operatorSet` and `slashId`, which together are guaranteed to be unique. 
-
 
 ## SlashEscrow
 
