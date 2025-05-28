@@ -1,32 +1,21 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "src/test/integration/IntegrationChecks.t.sol";
+import "src/test/integration/tests/eigenpod/EigenPod.t.sol";
 
 /// @notice Tests where we slash native eth on the Beacon Chain and by an OperatorSet
-contract Integration_DualSlashing_Base is IntegrationCheckUtils {
+contract Integration_EigenPod_DualSlashing_Base is EigenPodTest {
     using ArrayLib for *;
 
-    AVS avs;
-    OperatorSet operatorSet;
-
-    User operator;
-    AllocateParams allocateParams;
-
-    User staker;
-    uint64 beaconBalanceGwei;
-    uint40[] validators;
-    IStrategy[] strategies;
-    uint[] initTokenBalances;
-    uint[] initDepositShares;
-
     function _init() internal virtual override {
+        super._init();
+
         _configAssetTypes(HOLDS_ETH);
 
         // Create staker, operator, and avs
         (staker, strategies, initTokenBalances) = _newRandomStaker();
-        (operator,,) = _newRandomOperator();
-        (avs,) = _newRandomAVS();
+        operator = _newRandomOperator();
+        avs = _newRandomAVS();
 
         // 1. Deposit into strategies
         (validators, beaconBalanceGwei,) = staker.startValidators();
@@ -55,8 +44,8 @@ contract Integration_DualSlashing_Base is IntegrationCheckUtils {
     }
 }
 
-contract Integration_DualSlashing_BeaconChainFirst is Integration_DualSlashing_Base {
-    function testFuzz_bcSlash_checkpoint_avsSlash(uint24 _random) public rand(_random) {
+contract Integration_DualSlashing_BeaconChainFirst is Integration_EigenPod_DualSlashing_Base {
+    function testFuzz_bcSlash_checkpoint_avsSlash(uint24) public {
         // 6. Slash staker on BC
         uint64 slashedAmountGwei = beaconChain.slashValidators(validators, BeaconChainMock.SlashType.Minor);
         beaconChain.advanceEpoch_NoRewards();
@@ -81,10 +70,8 @@ contract Integration_DualSlashing_BeaconChainFirst is Integration_DualSlashing_B
     }
 }
 
-contract Integration_DualSlashing_AVSFirst is Integration_DualSlashing_Base {
+contract Integration_DualSlashing_AVSFirst is Integration_EigenPod_DualSlashing_Base {
     using ArrayLib for *;
-
-    SlashingParams slashingParams;
 
     function _init() internal virtual override {
         super._init();
@@ -101,7 +88,7 @@ contract Integration_DualSlashing_AVSFirst is Integration_DualSlashing_Base {
     }
 
     /// @dev Validates behavior of "restaking", ie. that the funds can be slashed twice
-    function testFuzz_avsSlash_bcSlash_checkpoint(uint24 _random) public rand(_random) {
+    function testFuzz_avsSlash_bcSlash_checkpoint(uint24) public {
         // 7. Slash Staker on BC
         uint64 slashedAmountGwei = beaconChain.slashValidators(validators, BeaconChainMock.SlashType.Minor);
         beaconChain.advanceEpoch_NoRewards();
@@ -117,7 +104,7 @@ contract Integration_DualSlashing_AVSFirst is Integration_DualSlashing_Base {
 
     /// @notice Because the validator is proven prior to the BC slash, the system applies the new balance
     ///         to the BC and AVS slash combined
-    function testFuzz_avsSlash_verifyValidator_bcSlash_checkpoint(uint24 _random) public rand(_random) {
+    function testFuzz_avsSlash_verifyValidator_bcSlash_checkpoint(uint24) public {
         // 7. Verify Validator
         cheats.deal(address(staker), 32 ether);
         (uint40[] memory newValidators, uint64 addedBeaconBalanceGwei,) = staker.startValidators();
@@ -146,7 +133,7 @@ contract Integration_DualSlashing_AVSFirst is Integration_DualSlashing_Base {
     }
 
     /// @dev Same as above, but validator is proven after BC slash (this ordering doesn't matter to EL)
-    function testFuzz_avsSlash_bcSlash_verifyValidator_checkpoint(uint24 _random) public rand(_random) {
+    function testFuzz_avsSlash_bcSlash_verifyValidator_checkpoint(uint24) public {
         // 7. Slash Staker on BC
         uint64 slashedAmountGwei = beaconChain.slashValidators(validators, BeaconChainMock.SlashType.Minor);
         beaconChain.advanceEpoch_NoRewards();
@@ -175,7 +162,7 @@ contract Integration_DualSlashing_AVSFirst is Integration_DualSlashing_Base {
     }
 
     /// @notice The validator proven should not be affected by the BC or AVS slashes
-    function testFuzz_avsSlash_bcSlash_checkpoint_verifyValidator(uint24 _rand) public rand(_rand) {
+    function testFuzz_avsSlash_bcSlash_checkpoint_verifyValidator(uint24) public {
         // 7. Slash Staker on BC
         uint64 slashedAmountGwei = beaconChain.slashValidators(validators, BeaconChainMock.SlashType.Minor);
         beaconChain.advanceEpoch_NoRewards();
@@ -205,7 +192,7 @@ contract Integration_DualSlashing_AVSFirst is Integration_DualSlashing_Base {
 
     /// @notice The balance increase results in the pods not processing the beacon slash as a slash, given
     ///         that the checkpoint had a positive delta
-    function testFuzz_avsSlash_bcSlash_balanceIncrease_checkpoint(uint24 _rand) public rand(_rand) {
+    function testFuzz_avsSlash_bcSlash_balanceIncrease_checkpoint(uint24) public {
         // 7. Slash Staker on BC
         uint64 slashedAmountGwei = beaconChain.slashValidators(validators, BeaconChainMock.SlashType.Minor);
         beaconChain.advanceEpoch_NoRewards();
@@ -226,7 +213,7 @@ contract Integration_DualSlashing_AVSFirst is Integration_DualSlashing_Base {
     }
 
     /// @notice The balance increase occurs after the slashings are processed, so it should be unaffected by the slashings
-    function testFuzz_avsSlash_bcSlash_checkpoint_balanceIncrease(uint24 _rand) public rand(_rand) {
+    function testFuzz_avsSlash_bcSlash_checkpoint_balanceIncrease(uint24) public {
         // 7. Slash Staker on BC
         uint64 slashedAmountGwei = beaconChain.slashValidators(validators, BeaconChainMock.SlashType.Minor);
         beaconChain.advanceEpoch_NoRewards();
@@ -254,14 +241,10 @@ contract Integration_DualSlashing_AVSFirst is Integration_DualSlashing_Base {
     }
 }
 
-contract Integration_DualSlashing_FullSlashes is Integration_DualSlashing_Base {
+contract Integration_DualSlashing_FullSlashes is Integration_EigenPod_DualSlashing_Base {
     using ArrayLib for *;
     using SlashingLib for *;
     using Math for uint;
-
-    SlashingParams slashingParams;
-    uint64 slashedAmountGwei;
-    IERC20[] tokens;
 
     function _init() internal virtual override {
         super._init();
@@ -300,7 +283,7 @@ contract Integration_DualSlashing_FullSlashes is Integration_DualSlashing_Base {
         }
     }
 
-    function testFuzz_fullDualSlash_undelegate_verifyValidator_checkpoint_exitEverything(uint24 _random) public rand(_random) {
+    function testFuzz_fullDualSlash_undelegate_verifyValidator_checkpoint_exitEverything(uint24) public {
         // 8. Undelegate staker, so we don't revert when verifying a validator
         Withdrawal[] memory withdrawals = staker.undelegate();
         bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
@@ -337,9 +320,7 @@ contract Integration_DualSlashing_FullSlashes is Integration_DualSlashing_Base {
         _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint i = 0; i < withdrawals.length; ++i) {
             staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State(
-                staker, operator, withdrawals[i], withdrawals[i].strategies, uint(0).toArrayU256(), tokens, uint(0).toArrayU256()
-            );
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals[i], uint(0).toArrayU256(), uint(0).toArrayU256());
         }
 
         // 13. Queue withdrawal for all remaining shares
@@ -354,9 +335,7 @@ contract Integration_DualSlashing_FullSlashes is Integration_DualSlashing_Base {
         uint[] memory expectedTokens = _calculateExpectedTokens(strategies, withdrawableShares2);
         for (uint i = 0; i < withdrawals2.length; ++i) {
             staker.completeWithdrawalAsTokens(withdrawals2[i]);
-            check_Withdrawal_AsTokens_State(
-                staker, operator, withdrawals2[i], withdrawals2[i].strategies, withdrawableShares2, tokens, expectedTokens
-            );
+            check_Withdrawal_AsTokens_State(staker, operator, withdrawals2[i], withdrawableShares2, expectedTokens);
         }
 
         // Sanity check that balance locked in pod and depositShares are 0
@@ -364,7 +343,7 @@ contract Integration_DualSlashing_FullSlashes is Integration_DualSlashing_Base {
         assertEq(address(staker.pod()).balance, depositShares[0] - expectedTokens[0], "staker withdrew more than expected");
     }
 
-    function testFuzz_fullDualSlash_redeposit_revertCheckpoint(uint24 _random) public rand(_random) {
+    function testFuzz_fullDualSlash_redeposit_revertCheckpoint(uint24) public {
         // 8. Deposit ETH into pod, doesn't matter how large it is, we'll still revert
         uint ethToDeposit = 1000 ether;
         cheats.deal(address(staker), ethToDeposit);
@@ -381,7 +360,7 @@ contract Integration_DualSlashing_FullSlashes is Integration_DualSlashing_Base {
         staker.completeCheckpoint();
     }
 
-    function testFuzz_fullDualSlash_checkpoint(uint24 _random) public rand(_random) {
+    function testFuzz_fullDualSlash_checkpoint(uint24) public {
         // 8. Checkpoint
         staker.startCheckpoint();
         check_StartCheckpoint_WithPodBalance_State(staker, beaconBalanceGwei - slashedAmountGwei);

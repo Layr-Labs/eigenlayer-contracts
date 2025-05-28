@@ -5,6 +5,7 @@ import "forge-std/Vm.sol";
 import "zeus-templates/utils/ZEnvHelpers.sol";
 
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
+import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
 /// core/
@@ -12,8 +13,9 @@ import "src/contracts/core/AllocationManager.sol";
 import "src/contracts/core/AVSDirectory.sol";
 import "src/contracts/core/DelegationManager.sol";
 import "src/contracts/core/RewardsCoordinator.sol";
-import "src/contracts/interfaces/IRewardsCoordinator.sol";
+
 import "src/contracts/core/StrategyManager.sol";
+import "src/contracts/interfaces/IRewardsCoordinator.sol";
 
 /// permissions/
 import "src/contracts/permissions/PauserRegistry.sol";

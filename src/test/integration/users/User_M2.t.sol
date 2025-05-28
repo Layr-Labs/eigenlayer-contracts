@@ -2,28 +2,11 @@
 pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
-
-import "src/test/integration/deprecatedInterfaces/mainnet/IEigenPod.sol";
-import "src/test/integration/deprecatedInterfaces/mainnet/IEigenPodManager.sol";
-import "src/test/integration/deprecatedInterfaces/mainnet/IStrategyManager.sol";
-import "src/test/integration/deprecatedInterfaces/mainnet/IDelegationManager.sol";
-
+import "src/test/integration/deprecated/mainnet/IDelegationManager.sol";
+import "src/test/integration/deprecated/mainnet/IEigenPod.sol";
+import "src/test/integration/deprecated/mainnet/IEigenPodManager.sol";
+import "src/test/integration/deprecated/mainnet/IStrategyManager.sol";
 import "src/test/integration/users/User.t.sol";
-import "src/test/integration/TimeMachine.t.sol";
-import "src/test/integration/mocks/BeaconChainMock.t.sol";
-import "src/test/utils/Logger.t.sol";
-import "src/test/utils/ArrayLib.sol";
-
-interface IUserM2MainnetForkDeployer {
-    function delegationManager() external view returns (DelegationManager);
-    function strategyManager() external view returns (StrategyManager);
-    function eigenPodManager() external view returns (EigenPodManager);
-    function delegationManager_M2() external view returns (IDelegationManager_DeprecatedM2);
-    function strategyManager_M2() external view returns (IStrategyManager_DeprecatedM2);
-    function eigenPodManager_M2() external view returns (IEigenPodManager_DeprecatedM2);
-    function timeMachine() external view returns (TimeMachine);
-    function beaconChain() external view returns (BeaconChainMock);
-}
 
 /**
  * @dev User_M2 used for performing mainnet M2 contract methods but also inherits User
@@ -39,11 +22,10 @@ contract User_M2 is User {
     IEigenPodManager_DeprecatedM2 eigenPodManager_M2;
 
     constructor(string memory name) User(name) {
-        IUserM2MainnetForkDeployer deployer = IUserM2MainnetForkDeployer(msg.sender);
-
-        delegationManager_M2 = IDelegationManager_DeprecatedM2(address(deployer.delegationManager()));
-        strategyManager_M2 = IStrategyManager_DeprecatedM2(address(deployer.strategyManager()));
-        eigenPodManager_M2 = IEigenPodManager_DeprecatedM2(address(deployer.eigenPodManager()));
+        ConfigGetters config = ConfigGetters(msg.sender);
+        delegationManager_M2 = IDelegationManager_DeprecatedM2(address(config.delegationManager()));
+        strategyManager_M2 = IStrategyManager_DeprecatedM2(address(config.strategyManager()));
+        eigenPodManager_M2 = IEigenPodManager_DeprecatedM2(address(config.eigenPodManager()));
         cheats.label(address(this), NAME_COLORED());
     }
 
@@ -142,7 +124,7 @@ contract User_M2 is User {
             } else {
                 uint tokens = uint(delta);
                 IERC20 underlyingToken = strat.underlyingToken();
-                underlyingToken.approve(address(strategyManager), tokens);
+                underlyingToken.approve(address(config.strategyManager()), tokens);
                 strategyManager_M2.depositIntoStrategy(strat, underlyingToken, tokens);
             }
         }
@@ -218,73 +200,6 @@ contract User_M2 is User {
         pod.verifyCheckpointProofs({balanceContainerProof: proofs.balanceContainerProof, proofs: proofs.balanceProofs});
         cheats.resumeTracing();
     }
-
-    function _completeQueuedWithdrawal_M2(IDelegationManager_DeprecatedM2.Withdrawal memory withdrawal, bool receiveAsTokens)
-        internal
-        virtual
-        returns (IERC20[] memory)
-    {
-        IERC20[] memory tokens = new IERC20[](withdrawal.strategies.length);
-
-        for (uint i = 0; i < tokens.length; i++) {
-            IStrategy strat = withdrawal.strategies[i];
-
-            if (strat == BEACONCHAIN_ETH_STRAT) {
-                tokens[i] = NATIVE_ETH;
-
-                // If we're withdrawing native ETH as tokens, stop ALL validators
-                // and complete a checkpoint
-                if (receiveAsTokens) {
-                    console.log("- exiting all validators and completing checkpoint");
-                    _exitValidators(getActiveValidators());
-
-                    beaconChain.advanceEpoch_NoRewards();
-
-                    _startCheckpoint();
-                    if (pod.activeValidatorCount() != 0) _completeCheckpoint();
-                }
-            } else {
-                tokens[i] = strat.underlyingToken();
-            }
-        }
-
-        delegationManager_M2.completeQueuedWithdrawal(withdrawal, tokens, 0, receiveAsTokens);
-
-        return tokens;
-    }
-
-    /// @notice Gets the expected withdrawals to be created when the staker is undelegated via a call to `delegationManager_M2.undelegate()`
-    /// @notice Assumes staker and withdrawer are the same and that all strategies and shares are withdrawn
-    function _getExpectedM2WithdrawalStructsForStaker(address staker)
-        internal
-        view
-        returns (IDelegationManager_DeprecatedM2.Withdrawal[] memory)
-    {
-        (IStrategy[] memory strategies, uint[] memory shares) = delegationManager_M2.getDelegatableShares(staker);
-
-        IDelegationManager_DeprecatedM2.Withdrawal[] memory expectedWithdrawals =
-            new IDelegationManager_DeprecatedM2.Withdrawal[](strategies.length);
-        address delegatedTo = delegationManager_M2.delegatedTo(staker);
-        uint nonce = delegationManager_M2.cumulativeWithdrawalsQueued(staker);
-
-        for (uint i = 0; i < strategies.length; ++i) {
-            IStrategy[] memory singleStrategy = new IStrategy[](1);
-            uint[] memory singleShares = new uint[](1);
-            singleStrategy[0] = strategies[i];
-            singleShares[0] = shares[i];
-            expectedWithdrawals[i] = IDelegationManager_DeprecatedM2.Withdrawal({
-                staker: staker,
-                delegatedTo: delegatedTo,
-                withdrawer: staker,
-                nonce: (nonce + i),
-                startBlock: uint32(block.number),
-                strategies: singleStrategy,
-                shares: singleShares
-            });
-        }
-
-        return expectedWithdrawals;
-    }
 }
 
 /// @notice A user contract that calls nonstandard methods (like xBySignature methods)
@@ -309,7 +224,7 @@ contract User_M2_AltMethods is User_M2 {
             } else {
                 // Approve token
                 IERC20 underlyingToken = strat.underlyingToken();
-                underlyingToken.approve(address(strategyManager), tokenBalance);
+                underlyingToken.approve(address(config.strategyManager()), tokenBalance);
 
                 // Get signature
                 uint nonceBefore = strategyManager_M2.nonces(address(this));

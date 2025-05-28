@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "src/test/integration/UpgradeTest.t.sol";
+import "src/test/integration/tests/upgrade/UpgradeTest.t.sol";
 
 contract Integration_Upgrade_Pectra is UpgradeTest, EigenPodPausingConstants {
     function _init() internal override {
@@ -9,7 +9,7 @@ contract Integration_Upgrade_Pectra is UpgradeTest, EigenPodPausingConstants {
         _configUserTypes(DEFAULT);
     }
 
-    function test_Upgrade_VerifyWC_StartCP_CompleteCP(uint24 _rand) public rand(_rand) {
+    function test_Upgrade_VerifyWC_StartCP_CompleteCP(uint24) public {
         // 1. Pause, Fork, and Upgrade
         _pauseForkAndUpgrade();
 
@@ -34,7 +34,7 @@ contract Integration_Upgrade_Pectra is UpgradeTest, EigenPodPausingConstants {
         check_CompleteCheckpoint_State(staker);
     }
 
-    function test_VerifyWC_StartCP_Fork_CompleteCP(uint24 _rand) public rand(_rand) {
+    function test_VerifyWC_StartCP_Fork_CompleteCP(uint24) public {
         // Initialize state
         (User staker,,) = _newRandomStaker();
         (uint40[] memory validators,,) = staker.startValidators();
@@ -57,7 +57,7 @@ contract Integration_Upgrade_Pectra is UpgradeTest, EigenPodPausingConstants {
         check_CompleteCheckpoint_State(staker);
     }
 
-    function test_VerifyWC_Fork_EarnToPod_StartCP_CompleteCP(uint24 _rand) public rand(_rand) {
+    function test_VerifyWC_Fork_EarnToPod_StartCP_CompleteCP(uint24) public {
         // Initialize state
         (User staker,,) = _newRandomStaker();
         (uint40[] memory validators,,) = staker.startValidators();
@@ -88,8 +88,8 @@ contract Integration_Upgrade_Pectra is UpgradeTest, EigenPodPausingConstants {
 
     function _pauseForkAndUpgrade() internal {
         // 1. Pause starting checkpoint, completing, and credential proofs
-        cheats.prank(pauserMultisig);
-        eigenPodManager.pause(
+        cheats.prank(pauserMultisig());
+        eigenPodManager().pause(
             2 ** PAUSED_START_CHECKPOINT | 2 ** PAUSED_EIGENPODS_VERIFY_CREDENTIALS | 2 ** PAUSED_VERIFY_STALE_BALANCE
                 | 2 ** PAUSED_EIGENPODS_VERIFY_CHECKPOINT_PROOFS
         );
@@ -102,14 +102,14 @@ contract Integration_Upgrade_Pectra is UpgradeTest, EigenPodPausingConstants {
         _upgradeEigenLayerContracts();
 
         // 4. Set proof timestamp setter to operations multisig
-        cheats.prank(eigenPodManager.owner());
-        eigenPodManager.setProofTimestampSetter(address(operationsMultisig));
+        cheats.prank(eigenPodManager().owner());
+        eigenPodManager().setProofTimestampSetter(address(operationsMultisig()));
     }
 
     function _setTimestampAndUnpause() internal {
         // 1. Set Timestamp
-        cheats.startPrank(eigenPodManager.proofTimestampSetter());
-        eigenPodManager.setPectraForkTimestamp(BeaconChainMock_DenebForkable(address(beaconChain)).pectraForkTimestamp());
+        cheats.startPrank(eigenPodManager().proofTimestampSetter());
+        eigenPodManager().setPectraForkTimestamp(BeaconChainMock_DenebForkable(address(beaconChain)).pectraForkTimestamp());
         cheats.stopPrank();
 
         // 2. Randomly warp to just after the fork timestamp
@@ -120,7 +120,7 @@ contract Integration_Upgrade_Pectra is UpgradeTest, EigenPodPausingConstants {
         }
 
         // 3. Unpause
-        cheats.prank(eigenLayerPauserReg.unpauser());
-        eigenPodManager.unpause(0);
+        cheats.prank(pauserRegistry().unpauser());
+        eigenPodManager().unpause(0);
     }
 }

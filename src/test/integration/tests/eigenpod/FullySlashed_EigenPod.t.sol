@@ -1,22 +1,22 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "src/test/integration/IntegrationChecks.t.sol";
+import "src/test/integration/tests/eigenpod/EigenPod.t.sol";
 
-contract Integration_FullySlashedEigenpod_Base is IntegrationCheckUtils {
+contract Integration_EigenPod_FullySlashedEigenpod_Base is EigenPodTest {
     using ArrayLib for *;
 
-    User staker;
-    IStrategy[] strategies;
-    uint[] initTokenBalances;
-    uint[] initDepositShares;
-    uint64 slashedGwei;
-    uint40[] validators;
-
     function _init() internal virtual override {
+        super._init();
+
         _configAssetTypes(HOLDS_ETH);
         (staker, strategies, initTokenBalances) = _newRandomStaker();
-        cheats.assume(initTokenBalances[0] >= 64 ether);
+
+        // Ensure the staker has at least 64 ETH to deposit.
+        if (initTokenBalances[0] < 64 ether) {
+            initTokenBalances[0] = 64 ether;
+            cheats.deal(address(staker), 64 ether);
+        }
 
         // Deposit staker
         uint[] memory shares = _calculateExpectedShares(strategies, initTokenBalances);
@@ -31,7 +31,7 @@ contract Integration_FullySlashedEigenpod_Base is IntegrationCheckUtils {
     }
 }
 
-contract Integration_FullySlashedEigenpod_Checkpointed is Integration_FullySlashedEigenpod_Base {
+contract Integration_EigenPod_FullySlashedEigenpod_Checkpointed is Integration_EigenPod_FullySlashedEigenpod_Base {
     function _init() internal override {
         super._init();
 
@@ -42,15 +42,15 @@ contract Integration_FullySlashedEigenpod_Checkpointed is Integration_FullySlash
         check_CompleteCheckpoint_FullySlashed_State(staker, validators, slashedGwei);
     }
 
-    function testFuzz_fullSlash_Delegate(uint24 _rand) public rand(_rand) {
-        (User operator,,) = _newRandomOperator();
+    function testFuzz_fullSlash_Delegate(uint24) public {
+        operator = _newRandomOperator();
 
         // Delegate to an operator - should succeed given that delegation only checks the operator's slashing factor
         staker.delegateTo(operator);
         check_Delegation_State(staker, operator, strategies, initDepositShares);
     }
 
-    function testFuzz_fullSlash_Revert_Redeposit(uint24 _rand) public rand(_rand) {
+    function testFuzz_fullSlash_Revert_Redeposit(uint24) public {
         // Start a new validator & verify withdrawal credentials
         cheats.deal(address(staker), 32 ether);
         (uint40[] memory newValidators,,) = staker.startValidators();
@@ -61,7 +61,7 @@ contract Integration_FullySlashedEigenpod_Checkpointed is Integration_FullySlash
         staker.verifyWithdrawalCredentials(newValidators);
     }
 
-    function testFuzz_fullSlash_registerStakerAsOperator_Revert_Redeposit(uint24 _rand) public rand(_rand) {
+    function testFuzz_fullSlash_registerStakerAsOperator_Revert_Redeposit(uint24) public {
         // Register staker as operator
         staker.registerAsOperator();
 
@@ -75,7 +75,7 @@ contract Integration_FullySlashedEigenpod_Checkpointed is Integration_FullySlash
         staker.verifyWithdrawalCredentials(newValidators);
     }
 
-    function testFuzz_fullSlash_registerStakerAsOperator_delegate_undelegate_completeAsShares(uint24 _rand) public rand(_rand) {
+    function testFuzz_fullSlash_registerStakerAsOperator_delegate_undelegate_completeAsShares(uint24) public {
         // Register staker as operator
         staker.registerAsOperator();
         User operator = User(payable(address(staker)));
@@ -92,7 +92,7 @@ contract Integration_FullySlashedEigenpod_Checkpointed is Integration_FullySlash
 
         // Register as operator and undelegate - the equivalent of redelegating to yourself
         Withdrawal[] memory withdrawals = staker2.undelegate();
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_Undelegate_State(staker2, operator, withdrawals, withdrawalRoots, strategies2, shares);
 
         // Complete withdrawals as shares
@@ -104,9 +104,9 @@ contract Integration_FullySlashedEigenpod_Checkpointed is Integration_FullySlash
     }
 }
 
-contract Integration_FullySlashedEigenpod_NotCheckpointed is Integration_FullySlashedEigenpod_Base {
+contract Integration_EigenPod_FullySlashedEigenpod_NotCheckpointed is Integration_EigenPod_FullySlashedEigenpod_Base {
     /// @dev Adding funds prior to checkpointing allows the pod to not be "bricked"
-    function testFuzz_proveValidator_checkpoint_queue_completeAsTokens(uint24 _rand) public rand(_rand) {
+    function testFuzz_proveValidator_checkpoint_queue_completeAsTokens(uint24) public {
         // Deal ETH to staker
         uint amount = 32 ether;
         cheats.deal(address(staker), amount);
@@ -128,7 +128,7 @@ contract Integration_FullySlashedEigenpod_NotCheckpointed is Integration_FullySl
         uint[] memory depositShares = _getStakerDepositShares(staker, strategies);
         uint[] memory withdrawableShares = _getWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, depositShares);
-        bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+        withdrawalRoots = _getWithdrawalHashes(withdrawals);
         check_QueuedWithdrawal_State(
             staker, User(payable(address(0))), strategies, depositShares, withdrawableShares, withdrawals, withdrawalRoots
         );
@@ -139,13 +139,11 @@ contract Integration_FullySlashedEigenpod_NotCheckpointed is Integration_FullySl
             IERC20[] memory tokens = _getUnderlyingTokens(withdrawals[i].strategies);
             uint[] memory expectedTokens = _calculateExpectedTokens(withdrawals[i].strategies, withdrawableShares);
             staker.completeWithdrawalAsTokens(withdrawals[i]);
-            check_Withdrawal_AsTokens_State(
-                staker, User(payable(address(0))), withdrawals[i], withdrawals[i].strategies, withdrawableShares, tokens, expectedTokens
-            );
+            check_Withdrawal_AsTokens_State(staker, User(payable(address(0))), withdrawals[i], withdrawableShares, expectedTokens);
         }
     }
 
-    function testFuzz_depositMinimumAmount_checkpoint(uint24 _rand) public rand(_rand) {
+    function testFuzz_depositMinimumAmount_checkpoint(uint24) public {
         // Deal ETH to staker, minimum amount to be checkpointed
         uint64 podBalanceGwei = 1;
         uint amountToDeal = 1 * GWEI_TO_WEI;
