@@ -1426,9 +1426,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
             bool flag = false;
 
             for (uint j = 0; j < params.strategies.length; j++) {
-                if (params.strategies[j] == BEACONCHAIN_ETH_STRAT) {
-                    flag = true;
-                }
+                if (params.strategies[j] == BEACONCHAIN_ETH_STRAT) flag = true;
             }
 
             if (flag) continue;
