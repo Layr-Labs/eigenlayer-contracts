@@ -1052,7 +1052,9 @@ contract IntegrationCheckUtils is IntegrationBase {
      *                             ALM - SLASHING
      *
      */
-    function check_Base_Slashing_State(User operator, AllocateParams memory allocateParams, SlashingParams memory slashParams) internal {
+    function check_Base_Slashing_State(User operator, AllocateParams memory allocateParams, SlashingParams memory slashParams, uint slashId)
+        internal
+    {
         OperatorSet memory operatorSet = allocateParams.operatorSet;
 
         check_MaxMag_Invariants(operator);
@@ -1065,7 +1067,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Slashed_SlashableStake(operator, operatorSet, slashParams, "slash should lower slashable stake");
         assert_Snap_Slashed_OperatorShares(operator, slashParams, "slash should remove operator shares");
         assert_Snap_Slashed_Allocation(operator, operatorSet, slashParams, "slash should reduce current magnitude");
-        // assert_Snap_Increased_BurnableShares(operatorSet, operator, slashParams, "slash should increase burnable shares");
+        assert_Snap_Increased_BurnableShares(operatorSet, operator, slashParams, slashId, "slash should increase burnable shares");
 
         // Slashing SHOULD NOT change allocatable magnitude, registration, and slashability status
         assert_Snap_Unchanged_AllocatableMagnitude(operator, allStrats, "slashing should not change allocatable magnitude");
@@ -1079,15 +1081,18 @@ contract IntegrationCheckUtils is IntegrationBase {
         User operator,
         AllocateParams memory allocateParams,
         SlashingParams memory slashParams,
-        Withdrawal[] memory withdrawals
+        Withdrawal[] memory withdrawals,
+        uint slashId
     ) internal {
-        check_Base_Slashing_State(operator, allocateParams, slashParams);
+        check_Base_Slashing_State(operator, allocateParams, slashParams, slashId);
         assert_Snap_Decreased_SlashableSharesInQueue(operator, slashParams, withdrawals, "slash should decrease slashable shares in queue");
     }
 
     /// Slashing invariants when the operator has been fully slashed for every strategy in the operator set
-    function check_FullySlashed_State(User operator, AllocateParams memory allocateParams, SlashingParams memory slashParams) internal {
-        check_Base_Slashing_State(operator, allocateParams, slashParams);
+    function check_FullySlashed_State(User operator, AllocateParams memory allocateParams, SlashingParams memory slashParams, uint slashId)
+        internal
+    {
+        check_Base_Slashing_State(operator, allocateParams, slashParams, slashId);
 
         assert_Snap_Removed_AllocatedSet(operator, allocateParams.operatorSet, "should not have updated allocated sets");
         assert_Snap_Removed_AllocatedStrats(

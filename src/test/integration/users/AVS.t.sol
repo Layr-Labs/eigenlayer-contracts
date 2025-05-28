@@ -99,6 +99,30 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
         print.gasUsed();
     }
 
+    function createRedistributingOperatorSets(IStrategy[][] memory strategies, address[] memory redistributionRecipients)
+        public
+        createSnapshot
+        returns (OperatorSet[] memory operatorSets)
+    {
+        print.method("createRedistributingOperatorSets");
+
+        uint len = strategies.length;
+        CreateSetParams[] memory p = new CreateSetParams[](len);
+        operatorSets = new OperatorSet[](len);
+
+        for (uint i; i < len; ++i) {
+            p[i] = CreateSetParams({operatorSetId: totalOperatorSets++, strategies: strategies[i]});
+
+            operatorSets[i] = OperatorSet(address(this), p[i].operatorSetId);
+        }
+
+        print.createOperatorSets(p);
+
+        allocationManager.createRedistributingOperatorSets(address(this), p, redistributionRecipients);
+
+        print.gasUsed();
+    }
+
     function createOperatorSet(IStrategy[] memory strategies) public createSnapshot returns (OperatorSet memory operatorSet) {
         print.method("createOperatorSets");
 
@@ -111,7 +135,23 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
         print.gasUsed();
     }
 
-    function slashOperator(SlashingParams memory params) public createSnapshot {
+    function createRedistributingOperatorSet(IStrategy[] memory strategies, address redistributionRecipient)
+        public
+        createSnapshot
+        returns (OperatorSet memory operatorSet)
+    {
+        print.method("createRedistributingOperatorSet");
+
+        operatorSet = OperatorSet(address(this), totalOperatorSets++);
+
+        CreateSetParams[] memory p = CreateSetParams({operatorSetId: operatorSet.id, strategies: strategies}).toArray();
+
+        print.createOperatorSets(p);
+        allocationManager.createRedistributingOperatorSets(address(this), p, redistributionRecipient.toArray());
+        print.gasUsed();
+    }
+
+    function slashOperator(SlashingParams memory params) public createSnapshot returns (uint slashId, uint[] memory shares) {
         for (uint i; i < params.strategies.length; ++i) {
             string memory strategyName = params.strategies[i] == beaconChainETHStrategy
                 ? "Native ETH"
@@ -141,7 +181,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
     function slashOperator(User operator, uint32 operatorSetId, IStrategy[] memory strategies, uint[] memory wadsToSlash)
         public
         createSnapshot
-        returns (SlashingParams memory p)
+        returns (SlashingParams memory p, uint slashId, uint[] memory shares)
     {
         p = SlashingParams({
             operator: address(operator),
@@ -172,7 +212,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
         }
 
         _tryPrankAppointee_AllocationManager(IAllocationManager.slashOperator.selector);
-        allocationManager.slashOperator(address(this), p);
+        (slashId, shares) = allocationManager.slashOperator(address(this), p);
         print.gasUsed();
     }
 

@@ -22,6 +22,8 @@ contract Integration_SlashBC_OneBCSF is IntegrationCheckUtils {
     uint64 beaconBalanceGwei;
     uint64 slashedGwei;
 
+    uint slashId;
+
     /**
      * Shared setup:
      * 1. Update the EPM implementation to manually set the beaconChainSlashingFactor to 1
@@ -133,8 +135,8 @@ contract Integration_SlashBC_OneBCSF is IntegrationCheckUtils {
 
         // 5. slash operator to 1 magnitude remaining
         SlashingParams memory slashParams = _genSlashing_Custom(operator, operatorSet, WAD - 1);
-        avs.slashOperator(slashParams);
-        check_Base_Slashing_State(operator, allocateParams, slashParams);
+        (slashId,) = avs.slashOperator(slashParams);
+        check_Base_Slashing_State(operator, allocateParams, slashParams, slashId);
 
         // assert operator has 1 magnitude remaining
         assertEq(allocationManager.getMaxMagnitude(address(operator), beaconChainETHStrategy), 1);

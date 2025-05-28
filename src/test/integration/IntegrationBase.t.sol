@@ -1408,14 +1408,15 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         OperatorSet memory operatorSet,
         User operator,
         SlashingParams memory params,
+        uint slashId,
         string memory err
     ) internal {
         uint[] memory curShares = _getOperatorShares(operator, params.strategies);
         uint[] memory prevShares = _getPrevOperatorShares(operator, params.strategies);
 
         for (uint i = 0; i < params.strategies.length; i++) {
-            uint curBurnable = _getBurnableShares(params.strategies[i]);
-            uint prevBurnable = _getPrevBurnableShares(params.strategies[i]);
+            uint curBurnable = _getBurnOrRedistributableShares(operatorSet, slashId, params.strategies[i]);
+            uint prevBurnable = _getPrevBurnOrRedistributableShares(operatorSet, slashId, params.strategies[i]);
             uint slashedAtLeast = prevShares[i] - curShares[i];
             // Not factoring in slashable shares in queue here, because that gets more complex (TODO)
             assertTrue(curBurnable >= (prevBurnable + slashedAtLeast), err);
@@ -2709,12 +2710,22 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         return allocationManager.isMemberOfOperatorSet(address(operator), operatorSet);
     }
 
-    function _getPrevBurnableShares(IStrategy strategy) internal timewarp returns (uint) {
-        return _getBurnableShares(strategy);
+    function _getPrevBurnOrRedistributableShares(OperatorSet memory operatorSet, uint slashId, IStrategy strategy)
+        internal
+        timewarp
+        returns (uint)
+    {
+        return _getBurnOrRedistributableShares(operatorSet, slashId, strategy);
     }
 
-    function _getBurnableShares(IStrategy strategy) internal view returns (uint) {
-        return strategy == beaconChainETHStrategy ? eigenPodManager.burnableETHShares() : strategyManager.getBurnableShares(strategy);
+    function _getBurnOrRedistributableShares(OperatorSet memory operatorSet, uint slashId, IStrategy strategy)
+        internal
+        view
+        returns (uint)
+    {
+        return strategy == beaconChainETHStrategy
+            ? eigenPodManager.burnableETHShares()
+            : strategyManager.getBurnOrRedistributableShares(operatorSet, slashId, strategy);
     }
 
     function _getPrevSlashableSharesInQueue(User operator, IStrategy[] memory strategies) internal timewarp returns (uint[] memory) {

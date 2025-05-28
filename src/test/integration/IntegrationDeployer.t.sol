@@ -54,7 +54,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
     uint8 constant NUM_LST_STRATS = 32;
 
-    uint32 INITIAL_GLOBAL_DELAY_BLOCKS = 28_800; // 4 days in blocks
+    uint32 INITIAL_GLOBAL_DELAY_BLOCKS = 4 days / 12 seconds; // 4 days in blocks
 
     // Lists of strategies used in the system
     //
@@ -443,6 +443,12 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         allocationManager.initialize({initialPausedStatus: 0});
 
         strategyFactory.initialize({_initialOwner: executorMultisig, _initialPausedStatus: 0, _strategyBeacon: strategyBeacon});
+
+        slashEscrowFactory.initialize({
+            initialOwner: communityMultisig,
+            initialPausedStatus: 0,
+            initialGlobalDelayBlocks: INITIAL_GLOBAL_DELAY_BLOCKS
+        });
     }
 
     /// @dev Deploy a strategy and its underlying token, push to global lists of tokens/strategies, and whitelist
