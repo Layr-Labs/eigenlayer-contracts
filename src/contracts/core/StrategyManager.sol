@@ -171,15 +171,18 @@ contract StrategyManager is
     function clearBurnOrRedistributableShares(
         OperatorSet calldata operatorSet,
         uint256 slashId
-    ) external nonReentrant {
+    ) external nonReentrant returns (uint256[] memory) {
         // Get the strategies to clear.
         address[] memory strategies = _burnOrRedistributableShares[operatorSet.key()][slashId].keys();
         uint256 length = strategies.length;
+        uint256[] memory amounts = new uint256[](length);
 
         // Note: We don't need to iterate backwards since we're indexing into the `EnumerableMap` directly.
         for (uint256 i = 0; i < length; ++i) {
-            clearBurnOrRedistributableSharesByStrategy(operatorSet, slashId, IStrategy(strategies[i]));
+            amounts[i] = clearBurnOrRedistributableSharesByStrategy(operatorSet, slashId, IStrategy(strategies[i]));
         }
+
+        return amounts;
     }
 
     /// @inheritdoc IStrategyManager
@@ -194,9 +197,10 @@ contract StrategyManager is
         (, uint256 sharesToRemove) = burnOrRedistributableShares.tryGet(address(strategy));
         burnOrRedistributableShares.remove(address(strategy));
 
+        uint256 amountOut;
         if (sharesToRemove != 0) {
             // Withdraw the shares to the slash escrow.
-            IStrategy(strategy).withdraw({
+            amountOut = IStrategy(strategy).withdraw({
                 recipient: address(slashEscrowFactory.getSlashEscrow(operatorSet, slashId)),
                 token: IStrategy(strategy).underlyingToken(),
                 amountShares: sharesToRemove
@@ -206,7 +210,7 @@ contract StrategyManager is
             emit BurnOrRedistributableSharesDecreased(operatorSet, slashId, strategy, sharesToRemove);
         }
 
-        return sharesToRemove;
+        return amountOut;
     }
 
     /// @inheritdoc IStrategyManager

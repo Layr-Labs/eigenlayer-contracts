@@ -288,7 +288,7 @@ contract DelegationManager is
         IStrategy strategy,
         uint64 prevMaxMagnitude,
         uint64 newMaxMagnitude
-    ) external onlyAllocationManager nonReentrant returns (uint256 totalDepositSharesToBurn) {
+    ) external onlyAllocationManager nonReentrant returns (uint256 totalDepositSharesToSlash) {
         uint256 operatorSharesSlashed = SlashingLib.calcSlashedAmount({
             operatorShares: operatorShares[operator][strategy],
             prevMaxMagnitude: prevMaxMagnitude,
@@ -304,7 +304,7 @@ contract DelegationManager is
 
         // Calculate the total deposit shares to burn - slashed operator shares plus still-slashable
         // shares sitting in the withdrawal queue.
-        totalDepositSharesToBurn = operatorSharesSlashed + scaledSharesSlashedFromQueue;
+        totalDepositSharesToSlash = operatorSharesSlashed + scaledSharesSlashedFromQueue;
 
         // Remove shares from operator
         _decreaseDelegation({
@@ -315,13 +315,13 @@ contract DelegationManager is
         });
 
         // Emit event for operator shares being slashed
-        emit OperatorSharesSlashed(operator, strategy, totalDepositSharesToBurn);
+        emit OperatorSharesSlashed(operator, strategy, totalDepositSharesToSlash);
 
         _getShareManager(strategy).increaseBurnOrRedistributableShares(
-            operatorSet, slashId, strategy, totalDepositSharesToBurn
+            operatorSet, slashId, strategy, totalDepositSharesToSlash
         );
 
-        return totalDepositSharesToBurn;
+        return totalDepositSharesToSlash;
     }
 
     /**
