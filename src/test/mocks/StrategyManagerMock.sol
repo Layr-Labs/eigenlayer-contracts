@@ -110,7 +110,7 @@ contract StrategyManagerMock is Test {
         return (existingShares, addedShares);
     }
 
-    function clearBurnOrRedistributableShares(OperatorSet calldata operatorSet, uint slashId) external {}
+    function clearBurnOrRedistributableShares(OperatorSet calldata operatorSet, uint slashId) external returns (address[] memory) {}
 
     function clearBurnOrRedistributableSharesByStrategy(OperatorSet calldata operatorSet, uint slashId, IStrategy strategy)
         external
