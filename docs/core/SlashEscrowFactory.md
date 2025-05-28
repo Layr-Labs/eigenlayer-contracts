@@ -111,7 +111,7 @@ At or after the `getEscrowCompleteBlock`, tokens are transferred from the `Slash
 
 For each `strategy` in the `slash`, tokens are transferred from the slash's unique `SlashEscrow` contract to the `redistributionRecipient`.
 
-To accommodate the unlimited number of strategies that can be added to an operatorSet, and a token transfer failures blocking other releases, a user can release a single strategy from escrow via `releaseSlashEscrowByStrategy`.
+To accommodate the unlimited number of strategies that can be added to an operatorSet, and a token transfer revert blocking the release of other tokens, a user can release a single strategy from escrow via `releaseSlashEscrowByStrategy`.
 
 *Effects*:
 * Call [`StrategyManager.clearBurnOrRedistributableShares`](./StrategyManager.md#clearburnorredistributableshares). This function may have already been called prior and will no-op if so. We call it again for sanity to ensure that all tokens are transferred to the `SlashEscrow` contract. For `releaseEscrowByStrategy` we call the by strategy variant: `StrategyManager.clearBurnOrRedistributableSharesByStrategy`
@@ -128,7 +128,7 @@ To accommodate the unlimited number of strategies that can be added to an operat
 * The global paused status MUST NOT be set: `PAUSED_RELEASE_ESCROW`
 * The escrow paused status MUST NOT be set: `pauseEscrow`
 * If the operatorSet is redistributable, caller MUST be the `redistributionRecipient`
-* The escrow delay must have elapsed
+* The escrow delay MUST have elapsed
 
 ## SlashEscrow
 
