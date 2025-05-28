@@ -174,7 +174,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
         }
 
         _tryPrankAppointee_AllocationManager(IAllocationManager.slashOperator.selector);
-        allocationManager.slashOperator(address(this), params);
+        (slashId, shares) = allocationManager.slashOperator(address(this), params);
         print.gasUsed();
     }
 

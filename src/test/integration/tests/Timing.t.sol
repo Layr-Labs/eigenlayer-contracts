@@ -50,7 +50,7 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
 
         /// 3. Slash operator
         SlashingParams memory slashingParams = _genSlashing_Rand(operator, operatorSet);
-        avs.slashOperator(operator, operatorSet.id, slashingParams.strategies, slashingParams.wadsToSlash);
+        (, slashId,) = avs.slashOperator(operator, operatorSet.id, slashingParams.strategies, slashingParams.wadsToSlash);
 
         // Verify that the slash was performed correctly
         check_Base_Slashing_State(operator, allocateParams, slashingParams, slashId);

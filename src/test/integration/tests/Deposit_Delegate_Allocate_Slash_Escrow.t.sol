@@ -21,7 +21,6 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Escrow is IntegrationCheckU
 
     uint[] initTokenBalances;
     uint[] initDepositShares;
-    uint[] slashShares;
 
     address redistributionRecipient;
 
@@ -52,7 +51,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Escrow is IntegrationCheckU
     function testFuzz_fullSlash_EscrowTiming_EscrowDelayNotElapsed(uint24 _random) public rand(_random) {
         // 4) Operator is full slashed.
         slashParams = _genSlashing_Full(operator, operatorSet);
-        (slashId, slashShares) = avs.slashOperator(slashParams);
+        (slashId,) = avs.slashOperator(slashParams);
         check_Base_Slashing_State(operator, allocateParams, slashParams, slashId); // TODO: add state, balance checks
 
         // Roll forward to just before the escrow delay.
@@ -67,7 +66,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Escrow is IntegrationCheckU
     function testFuzz_fullSlash_EscrowTiming_EscrowElapsed(uint24 _random) public rand(_random) {
         // 4) Operator is full slashed.
         slashParams = _genSlashing_Full(operator, operatorSet);
-        (slashId, slashShares) = avs.slashOperator(slashParams);
+        (slashId,) = avs.slashOperator(slashParams);
         check_Base_Slashing_State(operator, allocateParams, slashParams, slashId); // TODO: add state, balance checks
 
         // Roll forward to just before the escrow delay.
