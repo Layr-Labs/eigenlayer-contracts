@@ -197,7 +197,7 @@ Sets the global escrow delay observed by all strategies. *Note: If this value is
 ```solidity
 /**
  * @notice Sets the delay for the escrow of a strategies underlying token.
- * @dev If the strategy delay is less than the global delay, the strategy delay will be used.
+ * @dev The maximum of the strategy and global delay is used
  * @param strategy The strategy whose escrow delay is being set.
  * @param delay The delay for the escrow.
  */
