@@ -101,11 +101,12 @@ abstract contract AllocationManagerStorage is IAllocationManager {
     /// @notice Returns the number of slashes for a given operator set.
     /// @dev This is also used as a unique slash identifier.
     /// @dev This tracks the number of slashes after the redistribution release.
-    mapping(bytes32 operatorSetKey => uint256 slashId) internal _slashCount;
+    mapping(bytes32 operatorSetKey => uint256 slashId) internal _slashIds;
 
     /// @notice Returns the address where slashed funds will be sent for a given operator set.
     /// @dev For redistributing Operator Sets, returns the configured redistribution address set during Operator Set creation.
-    ///      For non-redistributing or non-existing operator sets, returns `address(0)`.
+    ///      For non-redistributing or non-existing operator sets, the public getter for this function `getRedistributionRecipient`
+    ///      returns `DEFAULT_BURN_ADDRESS`
     mapping(bytes32 operatorSetKey => address redistributionAddr) internal _redistributionRecipients;
 
     // Construction

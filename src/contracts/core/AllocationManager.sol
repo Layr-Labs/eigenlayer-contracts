@@ -214,7 +214,7 @@ contract AllocationManager is
         for (uint256 i = 0; i < params.operatorSetIds.length; i++) {
             // Check the operator set exists and the operator is registered to it
             OperatorSet memory operatorSet = OperatorSet(params.avs, params.operatorSetIds[i]);
-            require(_operatorSets[operatorSet.avs].contains(operatorSet.id), InvalidOperatorSet());
+            require(_operatorSets[params.avs].contains(operatorSet.id), InvalidOperatorSet());
             require(registrationStatus[params.operator][operatorSet.key()].registered, NotMemberOfSet());
 
             // Remove operator from operator set
@@ -287,7 +287,7 @@ contract AllocationManager is
         IStrategy[] calldata strategies
     ) external checkCanCall(avs) {
         OperatorSet memory operatorSet = OperatorSet(avs, operatorSetId);
-        require(_operatorSets[operatorSet.avs].contains(operatorSet.id), InvalidOperatorSet());
+        require(_operatorSets[avs].contains(operatorSet.id), InvalidOperatorSet());
         for (uint256 i = 0; i < strategies.length; i++) {
             _addStrategyToOperatorSet(
                 operatorSet, strategies[i], isRedistributingOperatorSet(OperatorSet(avs, operatorSetId))
@@ -302,7 +302,7 @@ contract AllocationManager is
         IStrategy[] calldata strategies
     ) external checkCanCall(avs) {
         OperatorSet memory operatorSet = OperatorSet(avs, operatorSetId);
-        require(_operatorSets[operatorSet.avs].contains(operatorSet.id), InvalidOperatorSet());
+        require(_operatorSets[avs].contains(operatorSet.id), InvalidOperatorSet());
         bytes32 operatorSetKey = operatorSet.key();
         for (uint256 i = 0; i < strategies.length; i++) {
             require(_operatorSetStrategies[operatorSetKey].remove(address(strategies[i])), StrategyNotInOperatorSet());
@@ -315,6 +315,14 @@ contract AllocationManager is
      *                         INTERNAL FUNCTIONS
      *
      */
+
+    /**
+     * @dev Slashes an operator.
+     * @param params The slashing parameters. See IAllocationManager.sol#slashOperator for specifics.
+     * @param operatorSet The operator set from which the operator is being slashed.
+     * @return slashId The operator set's unique identifier for the slash.
+     * @return shares The number of shares to be burned or redistributed for each strategy that was slashed.
+     */
     function _slashOperator(
         SlashingParams calldata params,
         OperatorSet memory operatorSet
@@ -323,7 +331,7 @@ contract AllocationManager is
         shares = new uint256[](params.strategies.length);
 
         // Increment the slash count for the operator set.
-        slashId = ++_slashCount[operatorSet.key()];
+        slashId = ++_slashIds[operatorSet.key()];
 
         // For each strategy in the operator set, slash any existing allocation
         for (uint256 i = 0; i < params.strategies.length; i++) {
@@ -1001,7 +1009,7 @@ contract AllocationManager is
     function getSlashCount(
         OperatorSet memory operatorSet
     ) external view returns (uint256) {
-        return _slashCount[operatorSet.key()];
+        return _slashIds[operatorSet.key()];
     }
 
     /// @inheritdoc IAllocationManager
@@ -1009,7 +1017,9 @@ contract AllocationManager is
         address operator
     ) external view returns (bool) {
         // Get the registered and allocated sets for the operator.
-        // We get both sets, since upon deregistration the operator is removed from RegisteredSets, but is still allocated.
+        // We get both sets, since:
+        //    - Upon registration the operator allocation will be pending to a redistributing operator set, and as such not yet in RegisteredSets.
+        //    - Upon deregistration the operator is removed from RegisteredSets, but is still allocated.
         OperatorSet[] memory registeredSets = getRegisteredSets(operator);
         OperatorSet[] memory allocatedSets = getAllocatedSets(operator);
 
