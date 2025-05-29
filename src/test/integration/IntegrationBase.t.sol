@@ -2572,6 +2572,10 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         cheats.roll(latest + 1);
     }
 
+    function _rollBlocksForCompleteSlashEscrow() internal {
+        cheats.roll(block.number + INITIAL_GLOBAL_DELAY_BLOCKS + 1);
+    }
+
     /// @dev Uses timewarp modifier to get the operator set strategy allocations at the last snapshot.
     function _getPrevAllocations(User operator, OperatorSet memory operatorSet, IStrategy[] memory strategies)
         internal
