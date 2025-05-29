@@ -1,45 +1,24 @@
 # v1.6.0 Moocow and ELIP5
 
-**Use this template to draft changelog and submit PR to review by the team**
-
-
 ## Release Manager
 
 @wadealexc @bowenli86
 
-
 ## Highlights
 
-🚀 New Features – Highlight major new functionality
-- ...
-- ...
+🚀 **New Features**
+- New APIs supporting Pectra's validator consolidation and withdrawal features: `EigenPod.requestConsolidation(...)` and `EigenPod.requestWithdrawal(...)`
+- New getters to support Pectra APIs: `EigenPod.getConsolidationRequestFee()` and `EigenPod.getWithdrawalRequestFee()`
+- Added 4 new events to `EigenPod.sol` to track consolidation and withdrawal requests
+- Added 2 new events to `Eigen.sol` to track token wraps/unwraps with `BackingEigen`
 
-⛔ Breaking Changes – Call out backward-incompatible changes.
-- ...
-- ...
+📌 **Deprecations**
+- Removed `EigenPod.GENESIS_TIME()` getter. This method, though public, has been unused for over a year.
 
-📌 Deprecations – Mention features that are being phased out.
-- ...
-- ...
-
-🛠️ Security Fixes – Specify patched vulnerabilities.
-- ...
-- ...
-
-🔧 Improvements – Enhancements to existing features.
-- ...
-- ...
-
-🐛 Bug Fixes – List resolved issues.
-- ...
-- ...
-
+🔧 **Improvements**
+- When finalizing an `EigenPod` checkpoint (`proofsRemaining == 0`), the contract will store the finalized checkpoint in storage. This can be queried via `EigenPod.currentCheckpoint()`. Starting a new checkpoint will overwrite this previously-finalized checkpoint.
+- Added semver to `Eigen`
 
 ## Changelog
 
-Copy the one that's auto generated from github by default to here, and submit PR for review
-
-
-- merged PRs in diff from last release
-- contributors
-- etc
+* feat: MOOCOW and ELIP5 ([#1375](https://github.com/Layr-Labs/eigenlayer-contracts/pull/1375))

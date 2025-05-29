@@ -35,6 +35,12 @@ contract EigenWrappingTests is Test {
     /// @notice event emitted when the transfer restrictions are disabled
     event TransferRestrictionsDisabled();
 
+    // EVENTS FROM Eigen.sol
+    /// @notice event emitted when bEIGEN tokens are wrapped into EIGEN
+    event TokenWrapped(address indexed account, uint amount);
+    /// @notice event emitted when EIGEN tokens are unwrapped into bEIGEN
+    event TokenUnwrapped(address indexed account, uint amount);
+
     modifier filterAddress(address fuzzedAddress) {
         vm.assume(!fuzzedOutAddresses[fuzzedAddress]);
         _;
@@ -88,6 +94,8 @@ contract EigenWrappingTests is Test {
         // unwrap amount should be less than minter1 balance
         unwrapAmount = unwrapAmount % minter1Balance;
         vm.prank(unwrapper);
+        vm.expectEmit(true, false, false, false);
+        emit TokenUnwrapped(unwrapper, unwrapAmount);
         eigen.unwrap(unwrapAmount);
 
         // check total supply and balance changes
@@ -114,6 +122,8 @@ contract EigenWrappingTests is Test {
 
         // unwrap
         vm.startPrank(minter1);
+        vm.expectEmit(true, false, false, false);
+        emit TokenUnwrapped(minter1, minter1Balance);
         eigen.unwrap(minter1Balance);
 
         // send bEIGEN to wrapper
@@ -130,6 +140,8 @@ contract EigenWrappingTests is Test {
         // approve bEIGEN
         bEIGEN.approve(address(eigen), wrapAmount);
         // wrap
+        vm.expectEmit(true, false, false, false);
+        emit TokenWrapped(wrapper, wrapAmount);
         eigen.wrap(wrapAmount);
         vm.stopPrank();
 
@@ -166,6 +178,8 @@ contract EigenWrappingTests is Test {
 
         // unwrap
         vm.startPrank(minter1);
+        vm.expectEmit(true, false, false, false);
+        emit TokenUnwrapped(minter1, wrapAmount);
         eigen.unwrap(wrapAmount);
         bEIGEN.transfer(wrapper, wrapAmount);
         vm.stopPrank();
