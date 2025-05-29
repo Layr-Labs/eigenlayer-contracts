@@ -1336,9 +1336,9 @@ contract StrategyManagerUnitTests_clearBurnOrRedistributableShares is StrategyMa
         emit BurnOrRedistributableSharesIncreased(defaultOperatorSet, defaultSlashId, strategy, sharesToRemove);
         strategyManager.increaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, strategy, sharesToRemove);
 
-//     // Now set token to be contract that reverts simulating an upgrade
-//     cheats.etch(address(token), address(revertToken).code);
-//     ERC20_SetTransferReverting_Mock(address(token)).setTransfersRevert(true);
+        // Now set token to be contract that reverts simulating an upgrade
+        cheats.etch(address(token), address(revertToken).code);
+        ERC20_SetTransferReverting_Mock(address(token)).setTransfersRevert(true);
 
         cheats.expectRevert("SafeERC20: low-level call failed");
         cheats.prank(address(delegationManagerMock));
