@@ -20,6 +20,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Escrow is IntegrationCheckU
     uint[] initTokenBalances;
     uint[] initDepositShares;
     address payable redistributionRecipient;
+    bool isRedistributing;
 
     function _init() internal virtual override {
         _configAssetTypes(HOLDS_LST);
@@ -27,10 +28,18 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Escrow is IntegrationCheckU
         (staker, strategies, initTokenBalances) = _newRandomStaker();
         operator = _newRandomOperator_NoAssets();
         (avs,) = _newRandomAVS();
-        redistributionRecipient = payable(cheats.randomAddress());
-        cheats.label(redistributionRecipient, "redistributionRecipient");
 
-        operatorSet = avs.createRedistributingOperatorSet(strategies, redistributionRecipient);
+        isRedistributing = cheats.randomBool();
+
+        if (isRedistributing) {
+            redistributionRecipient = payable(cheats.randomAddress());
+            cheats.label(redistributionRecipient, "redistributionRecipient");
+            operatorSet = avs.createRedistributingOperatorSet(strategies, redistributionRecipient);
+        } else {
+            operatorSet = avs.createOperatorSet(strategies);
+            redistributionRecipient = payable(allocationManager.getRedistributionRecipient(operatorSet)); // burn address
+        }
+
         tokens = _getUnderlyingTokens(strategies);
 
         // 1) Register operator for operator set.
@@ -193,6 +202,7 @@ contract Integration_Deposit_Delegate_Allocate_SlashOnlySomeStrategies_Escrow is
     uint[] initTokenBalances;
     uint[] initDepositShares;
     address payable redistributionRecipient;
+    bool isRedistributing;
 
     function testFuzz_fullSlash_clearByStrategy_releaseByStrategy(uint24 _random) public rand(_random) {
         _configAssetTypes(HOLDS_LST);
@@ -200,15 +210,20 @@ contract Integration_Deposit_Delegate_Allocate_SlashOnlySomeStrategies_Escrow is
         (staker, strategies, initTokenBalances) = _newRandomStaker();
         operator = _newRandomOperator_NoAssets();
         (avs,) = _newRandomAVS();
-        redistributionRecipient = payable(cheats.randomAddress());
-        cheats.label(redistributionRecipient, "redistributionRecipient");
 
         // Modify the length of the array in memory (thus ignoring remaining elements).
         assembly {
             sstore(strategies.slot, 2)
         }
 
-        operatorSet = avs.createRedistributingOperatorSet(strategies, redistributionRecipient);
+        if (isRedistributing) {
+            redistributionRecipient = payable(cheats.randomAddress());
+            cheats.label(redistributionRecipient, "redistributionRecipient");
+            operatorSet = avs.createRedistributingOperatorSet(strategies, redistributionRecipient);
+        } else {
+            operatorSet = avs.createOperatorSet(strategies);
+            redistributionRecipient = payable(allocationManager.getRedistributionRecipient(operatorSet)); // burn address
+        }
         tokens = _getUnderlyingTokens(strategies);
 
         // 1) Register operator for operator set.
@@ -273,6 +288,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Escrow_Timing is Integratio
     uint[] initTokenBalances;
     uint[] initDepositShares;
     address payable redistributionRecipient;
+    bool isRedistributing;
 
     function _init() internal virtual override {
         _configAssetTypes(HOLDS_LST);
@@ -280,10 +296,15 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Escrow_Timing is Integratio
         (staker, strategies, initTokenBalances) = _newRandomStaker();
         operator = _newRandomOperator_NoAssets();
         (avs,) = _newRandomAVS();
-        redistributionRecipient = payable(cheats.randomAddress());
-        cheats.label(redistributionRecipient, "redistributionRecipient");
 
-        operatorSet = avs.createRedistributingOperatorSet(strategies, redistributionRecipient);
+        if (isRedistributing) {
+            redistributionRecipient = payable(cheats.randomAddress());
+            cheats.label(redistributionRecipient, "redistributionRecipient");
+            operatorSet = avs.createRedistributingOperatorSet(strategies, redistributionRecipient);
+        } else {
+            operatorSet = avs.createOperatorSet(strategies);
+            redistributionRecipient = payable(allocationManager.getRedistributionRecipient(operatorSet)); // burn address
+        }
         tokens = _getUnderlyingTokens(strategies);
 
         // 1) Register operator for operator set.
