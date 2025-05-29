@@ -272,7 +272,7 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
     ) external pure returns (bytes32);
 
     /**
-     * @notice Returns whether a slash escrow is deployed or still counterfactual.
+     * @notice Returns whether a slash escrow is deployed or not.
      * @param operatorSet The operator set whose slash escrow is being queried.
      * @param slashId The slash ID of the slash escrow that is being queried.
      * @return Whether the slash escrow is deployed.
