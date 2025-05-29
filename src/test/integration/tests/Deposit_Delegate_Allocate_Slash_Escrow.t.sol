@@ -92,7 +92,7 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Escrow is IntegrationCheckU
         check_releaseSlashEscrow_State_NoneRemaining(operatorSet, slashId, strategies, initTokenBalances, redistributionRecipient);
     }
 
-    function testFuzz_fullSlash_releaseByStrategy(uint24 _random) public rand(_random) {
+    function testFuzz_fullSlash_releaseAllByStrategy(uint24 _random) public rand(_random) {
         // Randomize the order of strategies and initTokenBalances.
         _shuffleStrategiesAndBalances();
 
@@ -113,6 +113,11 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Escrow is IntegrationCheckU
             initTokenBalances,
             "slash escrow should have underlying token balances"
         );
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(
+                strategyManager.getBurnOrRedistributableShares(operatorSet, slashId, strategies[i]), 0, "no burnable shares should remain"
+            );
+        }
 
         // 8) Release escrow, expect success.
         cheats.prank(redistributionRecipient);
@@ -128,6 +133,11 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Escrow is IntegrationCheckU
             initTokenBalances,
             "slash escrow should have underlying token balances"
         );
+        for (uint i = 0; i < strategies.length; i++) {
+            assertEq(
+                strategyManager.getBurnOrRedistributableShares(operatorSet, slashId, strategies[i]), 0, "no burnable shares should remain"
+            );
+        }
 
         // Randomize the order of strategies and initTokenBalances.
         _shuffleStrategiesAndBalances();
@@ -154,6 +164,9 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Escrow is IntegrationCheckU
                 initTokenBalances[i],
                 "slash escrow should have underlying token balance"
             );
+            assertEq(
+                strategyManager.getBurnOrRedistributableShares(operatorSet, slashId, strategies[i]), 0, "no burnable shares should remain"
+            );
         }
 
         // 8) Release escrow, expect success.
@@ -174,6 +187,9 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Escrow is IntegrationCheckU
                 strategies[i],
                 initTokenBalances[i],
                 "slash escrow should have underlying token balance"
+            );
+            assertEq(
+                strategyManager.getBurnOrRedistributableShares(operatorSet, slashId, strategies[i]), 0, "no burnable shares should remain"
             );
         }
 
@@ -262,6 +278,7 @@ contract Integration_Deposit_Delegate_Allocate_SlashOnlySomeStrategies_Escrow is
             initTokenBalances,
             "slash escrow should have underlying token balances"
         );
+        assertEq(strategyManager.getBurnOrRedistributableShares(operatorSet, slashId, strategies[0]), 0, "no burnable shares should remain");
 
         // 8) Release escrow, expect success.
         cheats.prank(redistributionRecipient);
