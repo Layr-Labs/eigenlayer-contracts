@@ -3,9 +3,10 @@ pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
 
-import "src/contracts/core/AllocationManager.sol";
-import "src/contracts/permissions/PermissionController.sol";
-import "src/contracts/strategies/StrategyFactory.sol";
+import "src/contracts/interfaces/IAllocationManager.sol";
+import "src/contracts/interfaces/IPermissionController.sol";
+import "src/contracts/interfaces/IStrategyFactory.sol";
+import "src/contracts/interfaces/ISlashEscrowFactory.sol";
 
 import "src/test/mocks/ERC20Mock.sol";
 import "src/test/integration/users/User.t.sol";
@@ -16,10 +17,12 @@ import "src/test/utils/ArrayLib.sol";
 import "src/contracts/interfaces/IAVSRegistrar.sol";
 
 interface IAVSDeployer {
-    function delegationManager() external view returns (DelegationManager);
-    function allocationManager() external view returns (AllocationManager);
-    function strategyFactory() external view returns (StrategyFactory);
-    function permissionController() external view returns (PermissionController);
+    function delegationManager() external view returns (IDelegationManager);
+    function allocationManager() external view returns (IAllocationManager);
+    function strategyManager() external view returns (IStrategyManager);
+    function strategyFactory() external view returns (IStrategyFactory);
+    function permissionController() external view returns (IPermissionController);
+    function slashEscrowFactory() external view returns (ISlashEscrowFactory);
     function timeMachine() external view returns (TimeMachine);
 }
 
@@ -30,10 +33,12 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
     IStrategy constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 
     // TODO: fix later for same reason as User.t.sol
-    AllocationManager immutable allocationManager;
-    PermissionController immutable permissionController;
-    DelegationManager immutable delegationManager;
-    StrategyFactory immutable strategyFactory;
+    IAllocationManager immutable allocationManager;
+    IPermissionController immutable permissionController;
+    IDelegationManager immutable delegationManager;
+    IStrategyManager immutable strategyManager;
+    IStrategyFactory immutable strategyFactory;
+    ISlashEscrowFactory immutable slashEscrowFactory;
     TimeMachine immutable timeMachine;
     string _NAME;
 
@@ -44,7 +49,9 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
         allocationManager = deployer.allocationManager();
         permissionController = deployer.permissionController();
         delegationManager = deployer.delegationManager();
+        strategyManager = deployer.strategyManager();
         strategyFactory = deployer.strategyFactory();
+        slashEscrowFactory = deployer.slashEscrowFactory();
         timeMachine = deployer.timeMachine();
         _NAME = name;
         cheats.label(address(this), NAME_COLORED());
@@ -172,7 +179,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
                 )
             );
         }
-
+        cheats.label(address(slashEscrowFactory.getSlashEscrow(OperatorSet(address(this), params.operatorSetId), slashId)), "slashEscrow");
         _tryPrankAppointee_AllocationManager(IAllocationManager.slashOperator.selector);
         (slashId, shares) = allocationManager.slashOperator(address(this), params);
         print.gasUsed();
@@ -213,6 +220,21 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
 
         _tryPrankAppointee_AllocationManager(IAllocationManager.slashOperator.selector);
         (slashId, shares) = allocationManager.slashOperator(address(this), p);
+        print.gasUsed();
+    }
+
+    function clearBurnOrRedistributableShares(OperatorSet memory operatorSet, uint slashId) public createSnapshot {
+        print.method("clearBurnOrRedistributableShares");
+        strategyManager.clearBurnOrRedistributableShares(operatorSet, slashId);
+        print.gasUsed();
+    }
+
+    function clearBurnOrRedistributableSharesByStrategy(OperatorSet memory operatorSet, uint slashId, IStrategy strategy)
+        public
+        createSnapshot
+    {
+        print.method("clearBurnOrRedistributableSharesByStrategy");
+        strategyManager.clearBurnOrRedistributableSharesByStrategy(operatorSet, slashId, strategy);
         print.gasUsed();
     }
 
