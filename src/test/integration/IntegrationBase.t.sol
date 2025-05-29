@@ -2238,6 +2238,22 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
+    function _genSlashing_SingleStrategy(User operator, OperatorSet memory operatorSet, IStrategy strategy)
+        internal
+        returns (SlashingParams memory params)
+    {
+        params.operator = address(operator);
+        params.operatorSetId = operatorSet.id;
+        params.description = "_genSlashing_SingleStrategy";
+        params.strategies = strategy.toArray();
+        params.wadsToSlash = new uint[](params.strategies.length);
+
+        // slash 100%
+        for (uint i = 0; i < params.wadsToSlash.length; i++) {
+            params.wadsToSlash[i] = 1e18;
+        }
+    }
+
     function _genSlashing_Custom(User operator, OperatorSet memory operatorSet, uint wadsToSlash)
         internal
         returns (SlashingParams memory params)

@@ -239,3 +239,83 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Escrow is IntegrationCheckU
         check_releaseSlashEscrow_State_NoneRemaining(operatorSet, slashId, strategies, initTokenBalances, redistributionRecipient);
     }
 }
+
+contract Integration_Deposit_Delegate_Allocate_SlashOnlySomeStrategies_Escrow is IntegrationCheckUtils {
+    using ArrayLib for *;
+
+    AVS avs;
+    User staker;
+    User operator;
+    OperatorSet operatorSet;
+    AllocateParams allocateParams;
+    SlashingParams slashParams;
+    uint slashId;
+    IStrategy[] strategies;
+    IERC20[] tokens;
+    uint[] initTokenBalances;
+    uint[] initDepositShares;
+    address payable redistributionRecipient;
+
+    function testFuzz_fullSlash_clearByStrategy_releaseByStrategy(uint24 _random) public rand(_random) {
+        _configAssetTypes(HOLDS_LST);
+
+        (staker, strategies, initTokenBalances) = _newRandomStaker();
+        operator = _newRandomOperator_NoAssets();
+        (avs,) = _newRandomAVS();
+        redistributionRecipient = payable(cheats.randomAddress());
+        cheats.label(redistributionRecipient, "redistributionRecipient");
+
+        // Modify the length of the array in memory (thus ignoring remaining elements).
+        assembly {
+            sstore(strategies.slot, 2)
+        }
+
+        operatorSet = avs.createRedistributingOperatorSet(strategies, redistributionRecipient);
+        tokens = _getUnderlyingTokens(strategies);
+
+        // 1) Register operator for operator set.
+        operator.registerForOperatorSet(operatorSet);
+        check_Registration_State_NoAllocation(operator, operatorSet, strategies);
+
+        // 2) Deposit Into Strategies
+        initDepositShares = _calculateExpectedShares(strategies, initTokenBalances);
+        staker.depositIntoEigenlayer(strategies, initTokenBalances);
+
+        // 3) Delegate to operator
+        staker.delegateTo(operator);
+        check_Delegation_State(staker, operator, strategies, initDepositShares);
+
+        // 4) Operator allocates to operator set.
+        allocateParams = _genAllocation_AllAvailable(operator, operatorSet);
+        operator.modifyAllocations(allocateParams);
+        check_Base_IncrAlloc_State(operator, allocateParams);
+
+        // 5) Roll forward to complete allocation.
+        _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
+
+        // 6) Operator is full slashed.
+        slashParams = _genSlashing_SingleStrategy(operator, operatorSet, strategies[0]);
+        (slashId,) = avs.slashOperator(slashParams);
+        check_Base_Slashing_State(operator, allocateParams, slashParams, slashId);
+
+        // Roll forward to just before the escrow delay.
+        cheats.roll(block.number + INITIAL_GLOBAL_DELAY_BLOCKS + 1);
+
+        // 7) Clear burnable shares (transfers tokens to escrow).
+        avs.clearBurnOrRedistributableShares(operatorSet, slashId);
+        assert_HasUnderlyingTokenBalances(
+            User(payable(address(slashEscrowFactory.getSlashEscrow(operatorSet, slashId)))),
+            strategies[0].toArray(),
+            initTokenBalances,
+            "slash escrow should have underlying token balances"
+        );
+
+        // 8) Release escrow, expect success.
+        cheats.prank(redistributionRecipient);
+        slashEscrowFactory.releaseSlashEscrow({operatorSet: operatorSet, slashId: 1});
+        check_releaseSlashEscrow_State_NoneRemaining(
+            operatorSet, slashId, strategies[0].toArray(), initTokenBalances, redistributionRecipient
+        );
+        assertEq(slashEscrowFactory.getTotalPendingSlashIds(operatorSet), 0, "no pending slash ids should remain");
+    }
+}
