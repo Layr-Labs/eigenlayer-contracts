@@ -83,6 +83,18 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Escrow is IntegrationCheckU
         check_releaseSlashEscrow_State_NoneRemaining(operatorSet, slashId, strategies, initTokenBalances, redistributionRecipient);
     }
 
+    function testFuzz_fullSlash_releaseByStrategy(uint24 _random) public rand(_random) {
+        // Randomize the order of strategies and initTokenBalances.
+        _shuffleStrategiesAndBalances();
+
+        // 7) Release escrow, expect success.
+        for (uint i = 0; i < strategies.length; i++) {
+            cheats.prank(redistributionRecipient);
+            slashEscrowFactory.releaseSlashEscrowByStrategy({operatorSet: operatorSet, slashId: 1, strategy: strategies[i]});
+        }
+        check_releaseSlashEscrow_State_NoneRemaining(operatorSet, slashId, strategies, initTokenBalances, redistributionRecipient);
+    }
+
     function testFuzz_fullSlash_clearAll_releaseAll(uint24 _random) public rand(_random) {
         // 7) Clear burnable shares (transfers tokens to escrow).
         avs.clearBurnOrRedistributableShares(operatorSet, slashId);
