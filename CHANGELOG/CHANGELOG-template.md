@@ -51,10 +51,12 @@ This shows your most recent tags at the top. Let's say the last release tag is `
 
 2. Generate the changelog
 
-Now, use the following command to list the commits since that tag:
+Now, use the following command to list the commits since that tag, and auto generate github PR link if there's any
 
 ```
-git log v1.4.2..HEAD --pretty=format:"- %s (%an)"
+git log v1.4.2..HEAD --pretty=format:"%s" --no-merges | \
+sed -E 's/^(.*)\(#([0-9]+)\)$/- \1[PR #\2](https:\/\/github.com\/layr-labs\/eigenlayer-contracts\/pull\/\2)/' | \
+sed -E '/\[PR #[0-9]+\]/! s/^(.*)$/- \1/'
 ```
 
 This will show:
@@ -66,13 +68,14 @@ This will show:
 An example output is:
 
 ```
-% git log v1.4.2..HEAD --pretty=format:"- %s (%an)" --no-merges
-- ci: add explicit permissions to workflows to  mitigate security concerns (#1392) (bowenli86)
-- ci: remove branch constraint for foundry coverage job (Bowen Li)
-- docs: add release managers to changelogs (Bowen Li)
-- docs: add templates for changelog and release notes (#1382) (bowenli86)
-- docs: add doc for steps to write deploy scripts (#1380) (bowenli86)
-- ci: add testnet envs sepolia and hoodi to validate-deployment-scripts (#1378) (bowenli86)
+- ci: add explicit permissions to workflows to  mitigate security concerns [PR #1392](https://github.com/layr-labs/eigenlayer-contracts/pull/1392)
+- ci: remove branch constraint for foundry coverage job
+- docs: add release managers to changelogs
+- docs: add templates for changelog and release notes [PR #1382](https://github.com/layr-labs/eigenlayer-contracts/pull/1382)
+- docs: add doc for steps to write deploy scripts [PR #1380](https://github.com/layr-labs/eigenlayer-contracts/pull/1380)
+- ci: add testnet envs sepolia and hoodi to validate-deployment-scripts [PR #1378](https://github.com/layr-labs/eigenlayer-contracts/pull/1378)
+- docs: update MAINTENANCE to include practices of merging multiple release-dev branches
+- docs: updating readme for dead links, readability, new language, and more [PR #1377](https://github.com/layr-labs/eigenlayer-contracts/pull/1377)
 ...
 ```
 
