@@ -172,10 +172,7 @@ contract Deploy is EOADeployer {
         SlashEscrowFactory slashEscrowFactory = Env.proxy.slashEscrowFactory();
         assertTrue(slashEscrowFactory.owner() == Env.executorMultisig(), "sef.owner invalid");
         assertTrue(slashEscrowFactory.paused() == 0, "sef.paused invalid");
-        assertTrue(
-            slashEscrowFactory.getGlobalEscrowDelay() == Env.SLASH_ESCROW_DELAY(),
-            "sef.globalDelay invalid"
-        );
+        assertTrue(slashEscrowFactory.getGlobalEscrowDelay() == Env.SLASH_ESCROW_DELAY(), "sef.globalDelay invalid");
 
         _validateNewImplAddresses({areMatching: false});
         _validateProxyAdmins();

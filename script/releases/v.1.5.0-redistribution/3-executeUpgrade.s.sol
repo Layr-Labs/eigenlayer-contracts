@@ -72,10 +72,7 @@ contract Execute is QueueUpgrade {
         // Check slashEscrowFactory local vars again for sanity
         assertTrue(slashEscrowFactory.owner() == Env.executorMultisig(), "sef.owner invalid");
         assertTrue(slashEscrowFactory.paused() == 0, "sef.paused invalid");
-        assertTrue(
-            slashEscrowFactory.getGlobalEscrowDelay() == Env.SLASH_ESCROW_DELAY(),
-            "sef.globalDelay invalid"
-        );
+        assertTrue(slashEscrowFactory.getGlobalEscrowDelay() == Env.SLASH_ESCROW_DELAY(), "sef.globalDelay invalid");
 
         AllocationManager allocationManager = Env.proxy.allocationManager();
         assertTrue(allocationManager.delegation() == Env.proxy.delegationManager(), "alm.dm invalid");
