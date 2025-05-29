@@ -369,4 +369,20 @@ library ArrayLib {
 
         return strategies;
     }
+
+    function shuffle(IStrategy[] memory strats) internal returns (IStrategy[] memory) {
+        uint[] memory casted;
+
+        assembly {
+            casted := strats
+        }
+
+        casted = cheats.shuffle(casted);
+
+        assembly {
+            strats := casted
+        }
+
+        return strats;
+    }
 }

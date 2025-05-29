@@ -202,15 +202,16 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         view
     {
         for (uint i = 0; i < strategies.length; i++) {
-            IStrategy strat = strategies[i];
-
-            uint expectedBalance = expectedBalances[i];
-            uint tokenBalance;
-            if (strat == BEACONCHAIN_ETH_STRAT) tokenBalance = address(user).balance;
-            else tokenBalance = strat.underlyingToken().balanceOf(address(user));
-
-            assertApproxEqAbs(expectedBalance, tokenBalance, 1, err);
+            assert_HasUnderlyingTokenBalance(user, strategies[i], expectedBalances[i], err);
         }
+    }
+
+    function assert_HasUnderlyingTokenBalance(User user, IStrategy strategy, uint expectedBalance, string memory err) internal view {
+        uint tokenBalance;
+        if (strategy == BEACONCHAIN_ETH_STRAT) tokenBalance = address(user).balance;
+        else tokenBalance = strategy.underlyingToken().balanceOf(address(user));
+
+        assertApproxEqAbs(expectedBalance, tokenBalance, 1, err);
     }
 
     function assert_HasNoUnderlyingTokenBalance(User user, IStrategy[] memory strategies, string memory err) internal view {

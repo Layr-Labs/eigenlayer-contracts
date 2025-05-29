@@ -726,29 +726,13 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         return userType;
     }
 
-    function _shuffle(IStrategy[] memory strats) internal returns (IStrategy[] memory) {
-        uint[] memory casted;
-
-        assembly {
-            casted := strats
-        }
-
-        casted = vm.shuffle(casted);
-
-        assembly {
-            strats := casted
-        }
-
-        return strats;
-    }
-
     function _randomStrategies() internal returns (IStrategy[][] memory strategies) {
         uint numOpSets = _randUint({min: 1, max: 5});
 
         strategies = new IStrategy[][](numOpSets);
 
         for (uint i; i < numOpSets; ++i) {
-            IStrategy[] memory randomStrategies = _shuffle(allStrats);
+            IStrategy[] memory randomStrategies = allStrats.shuffle();
             uint numStrategies = _randUint({min: 1, max: maxUniqueAssetsHeld});
 
             // Modify the length of the array in memory (thus ignoring remaining elements).

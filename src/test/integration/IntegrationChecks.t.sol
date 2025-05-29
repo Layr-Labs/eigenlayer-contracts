@@ -1114,12 +1114,8 @@ contract IntegrationCheckUtils is IntegrationBase {
             "redistribution recipient should have underlying token balances"
         );
 
-        assertTrue(_getPrevIsPendingOperatorSet(operatorSet), "operator set should be pending");
         assertFalse(_getIsPendingSlashId(operatorSet, slashId), "slash id should not be pending");
-
         assertEq(_getEscrowStartBlock(operatorSet, slashId), 0, "escrow start block should be deleted after");
-
-        assertTrue(_getPrevIsDeployedSlashEscrow(operatorSet, slashId), "escrow should be deployed before");
         assertTrue(_getIsDeployedSlashEscrow(operatorSet, slashId), "escrow should be deployed after");
     }
 
