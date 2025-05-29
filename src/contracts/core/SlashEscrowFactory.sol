@@ -176,7 +176,9 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
      */
 
     /// @inheritdoc ISlashEscrowFactory
-    function setGlobalEscrowDelay(uint32 delay) external onlyOwner {
+    function setGlobalEscrowDelay(
+        uint32 delay
+    ) external onlyOwner {
         _setGlobalEscrowDelay(delay);
     }
 
