@@ -126,10 +126,10 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
     ) external returns (uint256 depositShares);
 
     /**
-     * @notice Burns Strategy shares for the given strategy by calling into the strategy to transfer
+     * @notice Legacy burn strategy shares for the given strategy by calling into the strategy to transfer
      * to the default burn address.
      * @param strategy The strategy to burn shares in.
-     * @dev This function will be deprecated in a release after redistribution
+     * @dev This function will be DEPRECATED in a release after redistribution
      */
     function burnShares(
         IStrategy strategy
