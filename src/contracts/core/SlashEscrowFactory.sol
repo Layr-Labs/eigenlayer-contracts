@@ -151,7 +151,7 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
 
     /**
      *
-     *                         PAUSABLE ACTIONS
+     *                         PAUSER/UNPAUSER ACTIONS
      *
      */
 
@@ -209,6 +209,8 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
         require(!isEscrowPaused(operatorSet, slashId), IPausable.CurrentlyPaused());
 
         // Assert that the escrow delay has elapsed
+        // `getEscrowCompleteBlock` returns the block number at which the escrow can be released, so
+        // we require that the current block number is greater than OR equal to the complete block.
         require(block.number >= getEscrowCompleteBlock(operatorSet, slashId), EscrowDelayNotElapsed());
     }
 
