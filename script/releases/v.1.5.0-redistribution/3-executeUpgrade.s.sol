@@ -73,7 +73,7 @@ contract Execute is QueueUpgrade {
         assertTrue(slashEscrowFactory.owner() == Env.executorMultisig(), "sef.owner invalid");
         assertTrue(slashEscrowFactory.paused() == 0, "sef.paused invalid");
         assertTrue(
-            slashEscrowFactory.getGlobalBurnOrRedistributionDelay() == Env.SLASH_ESCROW_DELAY(),
+            slashEscrowFactory.getGlobalEscrowDelay() == Env.SLASH_ESCROW_DELAY(),
             "sef.globalDelay invalid"
         );
 
