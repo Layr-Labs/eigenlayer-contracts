@@ -241,6 +241,9 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
      *  - wadsToSlash: Array of proportions to slash from each strategy (must be between 0 and 1e18).
      *  - description: Description of why the operator was slashed.
      *
+     * @return slashId The ID of the slash.
+     * @return shares The amount of shares that were slashed for each strategy.
+     *
      * @dev For each strategy:
      *      1. Reduces the operator's current allocation magnitude by wadToSlash proportion.
      *      2. Reduces the strategy's max and encumbered magnitudes proportionally.
@@ -250,8 +253,6 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
      * @dev Small slashing amounts may not result in actual token burns due to
      *      rounding, which will result in small amounts of tokens locked in the contract
      *      rather than fully burning through the burn mechanism.
-     * @return slashId The operator set's unique identifier for the slash.
-     * @return shares The number of shares to be burned or redistributed for each strategy that was slashed.
      */
     function slashOperator(
         address avs,
@@ -354,6 +355,7 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
     /**
      * @notice Allows an AVS to add strategies to an operator set
      * @dev Strategies MUST NOT already exist in the operator set
+     * @dev If the operatorSet is redistributing, the `BEACONCHAIN_ETH_STRAT` may not be added, since redistribution is not supported for native eth
      * @param avs the avs to set strategies for
      * @param operatorSetId the operator set to add strategies to
      * @param strategies the strategies to add

@@ -39,7 +39,7 @@ interface IShareManager {
     function stakerDepositShares(address user, IStrategy strategy) external view returns (uint256 depositShares);
 
     /**
-     * @notice Increase the amount of burnable shares for a given Strategy. This is called by the DelegationManager
+     * @notice Increase the amount of burnable/redistributable shares for a given Strategy. This is called by the DelegationManager
      * when an operator is slashed in EigenLayer.
      * @param operatorSet The operator set to burn shares in.
      * @param slashId The slash id to burn shares in.
