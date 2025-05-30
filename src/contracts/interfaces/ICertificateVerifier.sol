@@ -3,11 +3,15 @@ pragma solidity ^0.8.27;
 
 import "src/contracts/libraries/OperatorSetLib.sol";
 import "src/contracts/libraries/BN254.sol";
-
+import "src/contracts/interfaces/ICrossChainRegistry.sol";
 import "src/contracts/interfaces/IECDSATableCalculator.sol";
 import "src/contracts/interfaces/IBN254TableCalculator.sol";
 
-interface ICertificateVerifierTypes is IBN254TableCalculatorTypes, IECDSATableCalculatorTypes {
+interface ICertificateVerifierTypes is
+    IBN254TableCalculatorTypes,
+    IECDSATableCalculatorTypes,
+    ICrossChainRegistryTypes
+{
     // TODO: use the `KeyType` from `KeyRegistrar`
     /**
      * @notice The type of key used by the operatorSet. An OperatorSet can
@@ -16,16 +20,6 @@ interface ICertificateVerifierTypes is IBN254TableCalculatorTypes, IECDSATableCa
     enum OperatorKeyType {
         ECDSA,
         BN254
-    }
-
-    /**
-     * @notice A per-operatorSet configuration struct that is transported from the CrossChainRegistry on L1.
-     * @param owner the permissioned owner of the OperatorSet on L2 that can call the CertificateVerifier specific setters
-     * @param maxStalenessPeriod the maximum staleness period of the operatorSet
-     */
-    struct OpSetConfig {
-        address owner;
-        uint32 maxStalenessPeriod;
     }
 
     /**
@@ -97,7 +91,7 @@ interface ICertificateVerifier is ICertificateVerifierEvents, ICertificateVerifi
      * @param operatorSet the operatorSet to update the operator table for
      * @param referenceTimestamp the timestamp at which the operatorInfos were sourced
      * @param operatorInfos the operatorInfos to update the operator table with
-     * @param opSetConfig the configuration of the operatorSet
+     * @param OperatorSetConfig the configuration of the operatorSet
      * @dev only callable by the operatorTableUpdater for the given operatorSet
      * @dev We pass in an `operatorSet` for future-proofing a global `TableManager` contract
      */
@@ -105,7 +99,7 @@ interface ICertificateVerifier is ICertificateVerifierEvents, ICertificateVerifi
         OperatorSet calldata operatorSet,
         uint32 referenceTimestamp,
         ECDSAOperatorInfo[] calldata operatorInfos,
-        OpSetConfig calldata opSetConfig
+        OperatorSetConfig calldata OperatorSetConfig
     ) external;
 
     /**
@@ -152,7 +146,7 @@ interface ICertificateVerifier is ICertificateVerifierEvents, ICertificateVerifi
      * @param referenceTimestamp the timestamp at which the operatorSetInfo and
      * operatorInfoTreeRoot were sourced
      * @param operatorSetInfo the aggregate information about the operatorSet
-     * @param opSetConfig the configuration of the operatorSet
+     * @param OperatorSetConfig the configuration of the operatorSet
      * @dev only callable by the operatorTableUpdater for the given operatorSet
      * @dev We pass in an `operatorSet` for future-proofing a global `TableManager` contract
      */
@@ -160,7 +154,7 @@ interface ICertificateVerifier is ICertificateVerifierEvents, ICertificateVerifi
         OperatorSet calldata operatorSet,
         uint32 referenceTimestamp,
         BN254OperatorSetInfo memory operatorSetInfo,
-        OpSetConfig calldata opSetConfig
+        OperatorSetConfig calldata OperatorSetConfig
     ) external;
 
     /**
