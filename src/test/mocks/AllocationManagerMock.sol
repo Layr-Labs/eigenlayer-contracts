@@ -5,6 +5,7 @@ import "forge-std/Test.sol";
 import "src/contracts/interfaces/IStrategy.sol";
 import "src/contracts/libraries/Snapshots.sol";
 import "src/contracts/libraries/OperatorSetLib.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 contract AllocationManagerMock is Test {
     using Snapshots for Snapshots.DefaultWadHistory;
@@ -16,6 +17,7 @@ contract AllocationManagerMock is Test {
     mapping(bytes32 operatorSetKey => bool) public _isOperatorSet;
     mapping(address avs => uint) public getOperatorSetCount;
     mapping(address => mapping(IStrategy => Snapshots.DefaultWadHistory)) internal _maxMagnitudeHistory;
+    mapping(bytes32 operatorSetKey => EnumerableSet.AddressSet) internal _operatorSetMembers;
 
     function setIsOperatorSet(OperatorSet memory operatorSet, bool boolean) external {
         _isOperatorSet[operatorSet.key()] = boolean;
@@ -65,5 +67,10 @@ contract AllocationManagerMock is Test {
 
     function setAVSSetCount(address avs, uint numSets) external {
         getOperatorSetCount[avs] = numSets;
+    }
+
+    function addToOperatorSet(address operator, OperatorSet memory operatorSet) external {
+        bytes32 operatorSetKey = operatorSet.key();
+        EnumerableSet.add(_operatorSetMembers[operatorSet.key()], operator);
     }
 }
