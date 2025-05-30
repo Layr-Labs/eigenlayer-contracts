@@ -294,7 +294,7 @@ Also note that, like `addShares`, if the original Pod Owner has a share deficit 
 
 **Methods**:
 * [`recordBeaconChainETHBalanceUpdate`](#recordbeaconchainethbalanceupdate)
-* [`increaseBurnableShares`](#increaseburnableshares)
+* [`increaseBurnOrRedistributableShares`](#increaseburnorredistributableshares)
 
 #### `recordBeaconChainETHBalanceUpdate`
 
@@ -343,27 +343,31 @@ If a staker has negative shares as of the slashing release, this method will REV
 * `balanceDeltaWei` MUST be a whole Gwei amount
 * Legacy withdrawals MUST be complete (i.e. `currentDepositShares >= 0`)
 
-#### `increaseBurnableShares`
+#### `increaseBurnOrRedistributableShares`
 
 ```solidity
 /**
- * @notice Increase the amount of burnable shares for a given Strategy. This is called by the DelegationManager
+ * @notice Increase the amount of burnable/redistributable shares for a given Strategy. This is called by the DelegationManager
  * when an operator is slashed in EigenLayer.
+ * @param operatorSet The operator set to burn shares in.
+ * @param slashId The slash id to burn shares in.
  * @param strategy The strategy to burn shares in.
  * @param addedSharesToBurn The amount of added shares to burn.
  * @dev This function is only called by the DelegationManager when an operator is slashed.
  */
-function increaseBurnableShares(
-    IStrategy strategy, 
+function increaseBurnOrRedistributableShares(
+    OperatorSet calldata operatorSet,
+    uint256 slashId,
+    IStrategy strategy,
     uint256 addedSharesToBurn
-)
-    external
-    onlyDelegationManager
+) external onlyDelegationManager;
 ```
 
 The `DelegationManager` calls this method when an operator is slashed, calculating the number of slashable shares and marking them for burning here.
 
 Unlike in the `StrategyManager`, there is no current mechanism to burn these shares, as burning requires the Pectra hard fork to be able to eject validators. This will be added in a future update.
+
+We also do not distinguish burnable shares on a per operatorSet/slashId basis, like the `StrategyManager` does. 
 
 *Effects*:
 * Increases `burnableShares` for the beacon chain ETH strategy by `addedSharesToBurn`

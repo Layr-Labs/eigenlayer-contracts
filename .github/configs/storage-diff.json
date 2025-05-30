@@ -1,6 +1,10 @@
 {
     "contracts": [
       {
+        "name": "AllocationManager",
+        "address": "0x948a420b8CC1d6BFd0B6087C2E7c344a2CD0bc39"
+      },
+      {
         "name": "AVSDirectory",
         "address": "0x135dda560e946695d6f155dacafc6f1f25c1f5af"
       },

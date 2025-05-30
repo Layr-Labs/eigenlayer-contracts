@@ -26,8 +26,6 @@ import "src/test/integration/mocks/BeaconChainMock.t.sol";
 
 import "src/test/integration/users/AVS.t.sol";
 import "src/test/integration/users/User.t.sol";
-import "src/test/integration/users/User_M1.t.sol";
-import "src/test/integration/users/User_M2.t.sol";
 
 import "script/utils/ExistingDeploymentParser.sol";
 
@@ -39,9 +37,9 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
     // Fork ids for specific fork tests
     bool isUpgraded;
-    uint mainnetForkBlock = 21_616_692; // Post Protocol Council upgrade
+    uint mainnetForkBlock = 22_514_370; // Post Pectra Compatibility Upgrade
 
-    string version = "v9.9.9";
+    string version = "9.9.9";
 
     // Beacon chain genesis time when running locally
     // Multiple of 12 for sanity's sake
@@ -53,6 +51,9 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     IETHPOSDeposit constant DEPOSIT_CONTRACT = IETHPOSDeposit(0x00000000219ab540356cBB839Cbe05303d7705Fa);
 
     uint8 constant NUM_LST_STRATS = 32;
+
+    uint32 INITIAL_GLOBAL_DELAY_BLOCKS = 4 days / 12 seconds; // 4 days in blocks
+
     // Lists of strategies used in the system
     //
     // When we select random user assets, we use the `assetType` to determine
@@ -134,6 +135,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         bool forkMainnet = isForktest();
 
         if (forkMainnet) {
+            console.log("Forking mainnet");
             forkType = MAINNET;
             _setUpMainnet();
         } else {
@@ -278,21 +280,20 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
         // First, deploy the new contracts as empty contracts
         emptyContract = new EmptyContract();
-        allocationManager =
-            AllocationManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
-        permissionController =
-            PermissionController(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
 
-        emit log_named_uint("EPM pause status", eigenPodManager.paused());
+        slashEscrowFactory =
+            SlashEscrowFactory(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
 
         // Deploy new implementation contracts and upgrade all proxies to point to them
         _deployImplementations();
         _upgradeProxies();
 
-        emit log_named_uint("EPM pause status", eigenPodManager.paused());
-
         // Initialize the newly-deployed proxy
-        allocationManager.initialize({initialOwner: executorMultisig, initialPausedStatus: 0});
+        slashEscrowFactory.initialize({
+            initialOwner: communityMultisig,
+            initialPausedStatus: 0,
+            initialGlobalDelayBlocks: INITIAL_GLOBAL_DELAY_BLOCKS
+        });
 
         cheats.stopPrank();
     }
@@ -313,6 +314,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             AllocationManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
         permissionController =
             PermissionController(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
+        slashEscrowFactory =
+            SlashEscrowFactory(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
         eigenPodBeacon = new UpgradeableBeacon(address(emptyContract));
         strategyBeacon = new UpgradeableBeacon(address(emptyContract));
     }
@@ -332,7 +335,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS,
             version
         );
-        strategyManagerImplementation = new StrategyManager(delegationManager, eigenLayerPauserReg, version);
+        strategyManagerImplementation = new StrategyManager(delegationManager, slashEscrowFactory, eigenLayerPauserReg, version);
         rewardsCoordinatorImplementation = new RewardsCoordinator(
             IRewardsCoordinatorTypes.RewardsCoordinatorConstructorParams({
                 delegationManager: delegationManager,
@@ -350,12 +353,14 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         );
         avsDirectoryImplementation = new AVSDirectory(delegationManager, eigenLayerPauserReg, version);
         eigenPodManagerImplementation =
-            new EigenPodManager(DEPOSIT_CONTRACT, eigenPodBeacon, delegationManager, eigenLayerPauserReg, "v9.9.9");
-        strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg, "v9.9.9");
+            new EigenPodManager(DEPOSIT_CONTRACT, eigenPodBeacon, delegationManager, eigenLayerPauserReg, "9.9.9");
+        strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg, "9.9.9");
+        slashEscrowFactoryImplementation =
+            new SlashEscrowFactory(allocationManager, strategyManager, eigenLayerPauserReg, new SlashEscrow(), "9.9.9");
 
         // Beacon implementations
-        eigenPodImplementation = new EigenPod(DEPOSIT_CONTRACT, eigenPodManager, BEACON_GENESIS_TIME, "v9.9.9");
-        baseStrategyImplementation = new StrategyBase(strategyManager, eigenLayerPauserReg, "v9.9.9");
+        eigenPodImplementation = new EigenPod(DEPOSIT_CONTRACT, eigenPodManager, BEACON_GENESIS_TIME, "9.9.9");
+        baseStrategyImplementation = new StrategyBase(strategyManager, eigenLayerPauserReg, "9.9.9");
 
         // Pre-longtail StrategyBaseTVLLimits implementation
         // TODO - need to update ExistingDeploymentParser
@@ -400,6 +405,11 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             ITransparentUpgradeableProxy(payable(address(strategyFactory))), address(strategyFactoryImplementation)
         );
 
+        // SlashEscrowFactory
+        eigenLayerProxyAdmin.upgrade(
+            ITransparentUpgradeableProxy(payable(address(slashEscrowFactory))), address(slashEscrowFactoryImplementation)
+        );
+
         // EigenPod beacon
         eigenPodBeacon.upgradeTo(address(eigenPodImplementation));
 
@@ -416,7 +426,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     }
 
     function _initializeProxies() public noTracing {
-        delegationManager.initialize({initialOwner: executorMultisig, initialPausedStatus: 0});
+        delegationManager.initialize({initialPausedStatus: 0});
 
         strategyManager.initialize({
             initialOwner: executorMultisig,
@@ -428,9 +438,15 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
         avsDirectory.initialize({initialOwner: executorMultisig, initialPausedStatus: 0});
 
-        allocationManager.initialize({initialOwner: executorMultisig, initialPausedStatus: 0});
+        allocationManager.initialize({initialPausedStatus: 0});
 
         strategyFactory.initialize({_initialOwner: executorMultisig, _initialPausedStatus: 0, _strategyBeacon: strategyBeacon});
+
+        slashEscrowFactory.initialize({
+            initialOwner: communityMultisig,
+            initialPausedStatus: 0,
+            initialGlobalDelayBlocks: INITIAL_GLOBAL_DELAY_BLOCKS
+        });
     }
 
     /// @dev Deploy a strategy and its underlying token, push to global lists of tokens/strategies, and whitelist
@@ -573,12 +589,13 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             } else {
                 revert("_randUser: unimplemented userType");
             }
+            // Leaving this if statement for future upgraded users
         } else if (forkType == MAINNET && !isUpgraded) {
             if (userType == DEFAULT) {
-                user = User(new User_M2(name));
+                user = new User(name);
             } else if (userType == ALT_METHODS) {
                 // User will use nonstandard methods like `depositIntoStrategyWithSignature`
-                user = User(new User_M2(name));
+                user = User(new User_AltMethods(name));
             } else {
                 revert("_randUser: unimplemented userType");
             }
@@ -708,27 +725,13 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         return userType;
     }
 
-    function _shuffle(IStrategy[] memory strats) internal returns (IStrategy[] memory) {
-        // Fisher-Yates shuffle algorithm
-        for (uint i = strats.length - 1; i > 0; i--) {
-            uint randomIndex = _randUint({min: 0, max: i});
-
-            // Swap elements
-            IStrategy temp = strats[i];
-            strats[i] = strats[randomIndex];
-            strats[randomIndex] = temp;
-        }
-
-        return strats;
-    }
-
     function _randomStrategies() internal returns (IStrategy[][] memory strategies) {
         uint numOpSets = _randUint({min: 1, max: 5});
 
         strategies = new IStrategy[][](numOpSets);
 
         for (uint i; i < numOpSets; ++i) {
-            IStrategy[] memory randomStrategies = _shuffle(allStrats);
+            IStrategy[] memory randomStrategies = allStrats.shuffle();
             uint numStrategies = _randUint({min: 1, max: maxUniqueAssetsHeld});
 
             // Modify the length of the array in memory (thus ignoring remaining elements).

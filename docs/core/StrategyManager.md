@@ -248,55 +248,103 @@ This method directs the `strategy` to convert the input deposit shares to tokens
 
 ---
 
-## Burning Slashed Shares
+## Increasing/Clearing Slashed Shares
 
-Slashed shares are marked as burnable, and anyone can call `burnShares` to transfer them to the default burn address. Burnable shares are stored in `burnableShares`, an [EnumerableMap](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/utils/structs/EnumerableMap.sol) with strategy contract addresses as keys and associated view functions. The following methods handle burning of slashed shares:
-* [`StrategyManager.increaseBurnableShares`](#increaseburnableshares)
-* [`StrategyManager.burnShares`](#burnshares)
+Slashes shares are marked as burnable or redistributable. Anybody can call
+`clearBurnOrRedistributableShares` to send tokens to the slash's `SlashEscrow` contract. Shares to clear are stored in `_burnOrRedistributableShares`, a nested [EnumerableMap](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/utils/structs/EnumerableMap.sol). The operatorSet and slashId are used to index into the enumerableMap of strategies to shares. The following methods handle clearing burn or redistributable shares:
+* [`StrategyManager.increaseBurnOrRedistributableShares`](#increaseburnorredistributableshares)
+* [`StrategyManager.clearBurnOrRedistributableShares`](#clearBurnOrRedistributableShares)
+* [`StrategyManager.clearBurnOrRedistributableSharesByStrategy](#clearburnorredistributableshares)
+* [`StrategyManager.burnShares`](#burnshares) - Legacy burnShares function
 
-#### `increaseBurnableShares`
+#### `increaseBurnOrRedistributableShares`
 
 ```solidity
 /**
- * @notice Increase the amount of burnable shares for a given Strategy. This is called by the DelegationManager
+ * @notice Increase the amount of burnable/redistributable shares for a given Strategy. This is called by the DelegationManager
  * when an operator is slashed in EigenLayer.
+ * @param operatorSet The operator set to burn shares in.
+ * @param slashId The slash id to burn shares in.
  * @param strategy The strategy to burn shares in.
  * @param addedSharesToBurn The amount of added shares to burn.
  * @dev This function is only called by the DelegationManager when an operator is slashed.
  */
-function increaseBurnableShares(
-    IStrategy strategy, 
+function increaseBurnOrRedistributableShares(
+    OperatorSet calldata operatorSet,
+    uint256 slashId,
+    IStrategy strategy,
     uint256 addedSharesToBurn
-)
-    external
-    onlyDelegationManager
+) external onlyDelegationManager;
 ```
 
-The `DelegationManager` calls this method when an operator is slashed, calculating the number of slashable shares and marking them for burning here.
+The `DelegationManager` calls this method when an operator is slashed, calculating the number of slashable shares and marking them for burn or redistribution here.
 
-Anyone can then convert the shares to tokens and trigger a burn via `burnShares`. This asynchronous burning method was added to mitigate potential DoS vectors when slashing.
+Anyone can then convert the shares to tokens and trigger a burn via `burnShares`. This asynchronous method was added to mitigate potential DoS vectors when slashing.
 
 *Effects*:
-* Increases `burnableShares` for the given `strategy` by `addedSharesToBurn`
+* Sets `burnOrRedistributableShares` for the given `operatorSet`, `slashId`, and `strategy`
+* Emits a `BurnOrRedistributableSharesIncreased` event
+* See [`SlashEscrowFactory.initiateSlashEscrow`](./SlashEscrowFactory.md#initiateslashescrow)
+
 
 *Requirements*:
 * Can only be called by the `DelegationManager`
+* The `burnOrRedistributableShares` for the given `operatorSet` and `slashId` must not contain the `strategy`
 
-#### `burnShares`
+
+#### `clearBurnOrRedistributableShares` 
 
 ```solidity
 /**
- * @notice Burns Strategy shares for the given strategy by calling into the strategy to transfer
+ * @notice Removes burned shares from storage and transfers the underlying tokens for the slashId to the slash escrow.
+ * @param operatorSet The operator set to burn shares in.
+ * @param slashId The slash ID to burn shares in.
+ * @return The amounts of tokens transferred to the slash escrow for each strategy
+ */
+function clearBurnOrRedistributableShares(
+    OperatorSet calldata operatorSet, 
+    uint256 slashId) 
+external returns (uint256[] memory);
+
+/**
+ * @notice Removes a single strategy's shares from storage and transfers the underlying tokens for the slashId to the slash escrow.
+ * @param operatorSet The operator set to burn shares in.
+ * @param slashId The slash ID to burn shares in.
+ * @param strategy The strategy to burn shares in.
+ * @return The amount of shares that were burned.
+ */
+function clearBurnOrRedistributableSharesByStrategy(
+    OperatorSet calldata operatorSet,
+    uint256 slashId,
+    IStrategy strategy
+) external returns (uint256);
+```
+
+Anyone can call this method to transfer slashed shares to the slash's `SlashEscrow` contract. This method sets the `burnOrRedistributableShares` for the given `slashId` and `operatorSet` to 0. To accommodate the unlimited number of strategies that can be added to an operatorSet, users can also pass in a strategy to clear via `clearBurnOrRedistributableSharesByStrategy`. The strategies that haven not been cleared can be retrieved by calling `getBurnOrRedistributableShares(operatorSet, slashId)`. 
+
+*Effects*:
+* Resets the strategy's burn or redistributable shares for the operatorSet and slashId to 0
+* If the shares to remove are nonzero:
+    * Calls `withdraw` on the `strategy`, withdrawing shares and sending a corresponding amount of tokens to the slash's `slashEscrow` contract
+    * Emits a `BurnOrRedistributableSharesDecreased`
+
+#### `burnShares`
+
+*Note: This is the legacy function for burning shares pre-redistribution. It will be deprecated sometime after the redistribution upgrade.*
+
+```solidity
+/**
+ * @notice Legacy burn strategy shares for the given strategy by calling into the strategy to transfer
  * to the default burn address.
  * @param strategy The strategy to burn shares in.
+ * @dev This function will be DEPRECATED in a release after redistribution
  */
 function burnShares(
     IStrategy strategy
-)
-    external
+) external;
 ```
 
-Anyone can call this method to burn slashed shares previously added by the `DelegationManager` via `increaseBurnableShares`. This method resets the strategy's burnable shares to 0, and directs the corresponding `strategy` to convert the shares to tokens and transfer them to `DEFAULT_BURN_ADDRESS`, rendering them unrecoverable.
+Anyone can call this method to burn slashed shares previously added by the `DelegationManager` via the now-deprecated `increaseBurnableShares`. This method resets the strategy's burnable shares to 0, and directs the corresponding `strategy` to convert the shares to tokens and transfer them to `DEFAULT_BURN_ADDRESS`, rendering them unrecoverable.
 
 The `strategy` is not called if the strategy had no burnable shares.
 
@@ -383,6 +431,7 @@ The number of new shares created are returned to the `StrategyManager` to be add
  * @dev This function is only callable by the strategyManager contract. It is invoked inside of the strategyManager's
  * other functions, and individual share balances are recorded in the strategyManager as well.
  * @dev Note that any validation of `token` is done inside `_beforeWithdrawal`. This can be overridden if needed.
+ * @return amountOut is the amount of tokens being transferred out.
  */
 function withdraw(
     address recipient,
@@ -392,6 +441,7 @@ function withdraw(
     external
     onlyWhenNotPaused(PAUSED_WITHDRAWALS)
     onlyStrategyManager
+    returns (uint256)
 ```
 
 The `StrategyManager` calls this method to convert a number of deposit shares to tokens, and transfer them to a `recipient`. Typically, this method is invoked as part of the withdrawal completion flow (see [`DelegationManager.completeQueuedWithdrawal`](./DelegationManager.md#completequeuedwithdrawal)). However, this method may also be invoked during the share burning flow (see [`StrategyManager.burnShares`](#burnshares)).
@@ -401,6 +451,7 @@ This method converts the deposit shares back into tokens using the strategy's ex
 *Effects*:
 * `StrategyBaseTVLLimits.totalShares` is decreased to account for the shares being withdrawn
 * `underlyingToken.safeTransfer` is called to transfer the tokens to the `recipient`
+* Returns the amount of tokens the `recipient`` will receive
 
 *Requirements*:
 * Caller MUST be the `StrategyManager`

@@ -17,6 +17,8 @@ contract Integration_ALMSlashBase is IntegrationCheckUtils {
     uint[] initTokenBalances;
     uint[] initDepositShares;
 
+    uint slashId;
+
     /// Shared setup:
     ///
     /// 1. Generate staker, operator, and AVS
@@ -77,6 +79,8 @@ contract Integration_SlashThenWithdraw is Integration_ALMSlashBase {
     AllocateParams allocateParamsB;
     SlashingParams slashParamsB;
 
+    uint slashIdB;
+
     /// Init: Registered operator gets slashed one or more times for a random magnitude
     /// - Second operator (for redelegation) may or may not be slashed
     ///
@@ -123,8 +127,8 @@ contract Integration_SlashThenWithdraw is Integration_ALMSlashBase {
             uint numSlashes = _randUint(1, 10);
             for (uint i = 0; i < numSlashes; i++) {
                 slashParams = _genSlashing_Rand(operator, operatorSet);
-                avs.slashOperator(slashParams);
-                check_Base_Slashing_State(operator, allocateParams, slashParams);
+                (slashId,) = avs.slashOperator(slashParams);
+                check_Base_Slashing_State(operator, allocateParams, slashParams, slashId);
 
                 // TODO - staker variant?
                 // assert_Snap_Unchanged_Staker_DepositShares(staker, "staker deposit shares should be unchanged after slashing");
@@ -138,8 +142,8 @@ contract Integration_SlashThenWithdraw is Integration_ALMSlashBase {
             bool slashSecondOperator = _randBool();
             if (slashSecondOperator) {
                 slashParamsB = _genSlashing_Half(operatorB, operatorSetB);
-                avs.slashOperator(slashParamsB);
-                check_Base_Slashing_State(operatorB, allocateParamsB, slashParamsB);
+                (slashIdB,) = avs.slashOperator(slashParamsB);
+                check_Base_Slashing_State(operatorB, allocateParamsB, slashParamsB, slashIdB);
             }
         }
     }
@@ -257,8 +261,8 @@ contract Integration_QueueWithdrawalThenSlash is Integration_ALMSlashBase {
 
         // 5. Slash operator
         slashParams = _genSlashing_Rand(operator, operatorSet);
-        avs.slashOperator(slashParams);
-        check_Base_Slashing_State(operator, allocateParams, slashParams);
+        (slashId,) = avs.slashOperator(slashParams);
+        check_Base_Slashing_State(operator, allocateParams, slashParams, slashId);
         // TODO - staker variants?
 
         // 6. Complete withdrawal
@@ -285,8 +289,8 @@ contract Integration_QueueWithdrawalThenSlash is Integration_ALMSlashBase {
 
         // 5. Slash operator
         slashParams = _genSlashing_Rand(operator, operatorSet);
-        avs.slashOperator(slashParams);
-        check_Base_Slashing_State(operator, allocateParams, slashParams);
+        (slashId,) = avs.slashOperator(slashParams);
+        check_Base_Slashing_State(operator, allocateParams, slashParams, slashId);
         // TODO - staker variants?
 
         // 4. Complete withdrawal
@@ -316,8 +320,8 @@ contract Integration_DeallocateThenSlash is Integration_ALMSlashBase {
 
         // 5. Slash operator
         slashParams = _genSlashing_Rand(operator, operatorSet);
-        avs.slashOperator(slashParams);
-        check_Base_Slashing_State(operator, deallocateParams, slashParams);
+        (slashId,) = avs.slashOperator(slashParams);
+        check_Base_Slashing_State(operator, deallocateParams, slashParams, slashId);
         // TODO - staker variants?
 
         // 6. Queue withdrawals
@@ -346,8 +350,8 @@ contract Integration_DeallocateThenSlash is Integration_ALMSlashBase {
 
         // 5. Slash operator
         slashParams = _genSlashing_Rand(operator, operatorSet);
-        avs.slashOperator(slashParams);
-        check_Base_Slashing_State(operator, allocateParams, slashParams);
+        (slashId,) = avs.slashOperator(slashParams);
+        check_Base_Slashing_State(operator, allocateParams, slashParams, slashId);
         // TODO - staker variants?
     }
 }

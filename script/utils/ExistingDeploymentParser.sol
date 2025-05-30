@@ -11,6 +11,8 @@ import "../../src/contracts/core/AVSDirectory.sol";
 import "../../src/contracts/core/RewardsCoordinator.sol";
 import "../../src/contracts/core/AllocationManager.sol";
 import "../../src/contracts/permissions/PermissionController.sol";
+import "../../src/contracts/core/SlashEscrowFactory.sol";
+import "../../src/contracts/core/SlashEscrow.sol";
 
 import "../../src/contracts/strategies/StrategyFactory.sol";
 import "../../src/contracts/strategies/StrategyBase.sol";
@@ -136,6 +138,10 @@ contract ExistingDeploymentParser is Script, Logger {
     StrategyBase public baseStrategyImplementation;
     StrategyBase public strategyFactoryBeaconImplementation;
 
+    /// @dev SlashEscrowFactory
+    SlashEscrowFactory public slashEscrowFactory;
+    SlashEscrowFactory public slashEscrowFactoryImplementation;
+
     // Token
     ProxyAdmin public tokenProxyAdmin;
     IEigen public EIGEN;
@@ -223,25 +229,10 @@ contract ExistingDeploymentParser is Script, Logger {
             )
         );
 
-        allocationManagerImplementation = new AllocationManager(
-            delegationManager,
-            eigenLayerPauserReg,
-            permissionController,
-            DEALLOCATION_DELAY,
-            ALLOCATION_CONFIGURATION_DELAY,
-            SEMVER
-        );
-        allocationManager = AllocationManager(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(allocationManagerImplementation), address(eigenLayerProxyAdmin), ""
-                )
-            )
-        );
-
-        // // AllocationManager
-        // allocationManager = AllocationManager(json.readAddress(".addresses.allocationManager"));
-        // allocationManagerImplementation = json.readAddress(".addresses.allocationManagerImplementation");
+        // AllocationManager
+        allocationManager = AllocationManager(json.readAddress(".addresses.allocationManager"));
+        allocationManagerImplementation =
+            AllocationManager(json.readAddress(".addresses.allocationManagerImplementation"));
 
         // AVSDirectory
         avsDirectory = AVSDirectory(json.readAddress(".addresses.avsDirectory"));
@@ -252,9 +243,10 @@ contract ExistingDeploymentParser is Script, Logger {
         delegationManagerImplementation =
             DelegationManager(json.readAddress(".addresses.delegationManagerImplementation"));
 
-        // // PermissionController
-        // permissionController = PermissionController(json.readAddress(".addresses.permissionController"));
-        // permissionControllerImplementation = json.readAddress(".addresses.permissionControllerImplementation");
+        // PermissionController
+        permissionController = PermissionController(json.readAddress(".addresses.permissionController"));
+        permissionControllerImplementation =
+            PermissionController(json.readAddress(".addresses.permissionControllerImplementation"));
 
         // RewardsCoordinator
         rewardsCoordinator = RewardsCoordinator(json.readAddress(".addresses.rewardsCoordinator"));
@@ -524,7 +516,7 @@ contract ExistingDeploymentParser is Script, Logger {
         );
         // DelegationManager
         cheats.expectRevert(bytes("Initializable: contract is already initialized"));
-        delegationManager.initialize(address(0), 0);
+        delegationManager.initialize(0);
         // StrategyManager
         cheats.expectRevert(bytes("Initializable: contract is already initialized"));
         strategyManager.initialize(address(0), address(0), STRATEGY_MANAGER_INIT_PAUSED_STATUS);
@@ -605,7 +597,7 @@ contract ExistingDeploymentParser is Script, Logger {
             delegationManager.pauserRegistry() == eigenLayerPauserReg,
             "delegationManager: pauser registry not set correctly"
         );
-        assertEq(delegationManager.owner(), executorMultisig, "delegationManager: owner not set correctly");
+        // assertEq(delegationManager.owner(), executorMultisig, "delegationManager: owner not set correctly");
         assertEq(
             delegationManager.paused(),
             DELEGATION_MANAGER_INIT_PAUSED_STATUS,

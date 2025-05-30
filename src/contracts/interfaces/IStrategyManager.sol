@@ -24,6 +24,8 @@ interface IStrategyManagerErrors {
     error StrategyNotFound();
     /// @dev Thrown when attempting to deposit to a non-whitelisted strategy.
     error StrategyNotWhitelisted();
+    /// @dev Thrown when attempting to add a strategy that is already in the operator set's burn or redistributable shares.
+    error StrategyAlreadyInSlash();
 }
 
 interface IStrategyManagerEvents {
@@ -44,10 +46,18 @@ interface IStrategyManagerEvents {
     /// @notice Emitted when a strategy is removed from the approved list of strategies for deposit
     event StrategyRemovedFromDepositWhitelist(IStrategy strategy);
 
-    /// @notice Emitted when an operator is slashed and shares to be burned are increased
-    event BurnableSharesIncreased(IStrategy strategy, uint256 shares);
+    /// @notice Emitted when an operator is slashed and shares to be burned or redistributed are increased
+    event BurnOrRedistributableSharesIncreased(
+        OperatorSet operatorSet, uint256 slashId, IStrategy strategy, uint256 shares
+    );
 
-    /// @notice Emitted when shares are burned
+    /// @notice Emitted when shares marked for burning or redistribution are decreased and transferred to the `SlashEscrow`
+    event BurnOrRedistributableSharesDecreased(
+        OperatorSet operatorSet, uint256 slashId, IStrategy strategy, uint256 shares
+    );
+
+    /// @notice Emitted when shares are burnt
+    /// @dev This event is only emitted in the pre-redistribution slash path
     event BurnableSharesDecreased(IStrategy strategy, uint256 shares);
 }
 
@@ -116,13 +126,74 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
     ) external returns (uint256 depositShares);
 
     /**
-     * @notice Burns Strategy shares for the given strategy by calling into the strategy to transfer
+     * @notice Legacy burn strategy shares for the given strategy by calling into the strategy to transfer
      * to the default burn address.
      * @param strategy The strategy to burn shares in.
+     * @dev This function will be DEPRECATED in a release after redistribution
      */
     function burnShares(
         IStrategy strategy
     ) external;
+
+    /**
+     * @notice Removes burned shares from storage and transfers the underlying tokens for the slashId to the slash escrow.
+     * @param operatorSet The operator set to burn shares in.
+     * @param slashId The slash ID to burn shares in.
+     * @return The amounts of tokens transferred to the slash escrow for each strategy
+     */
+    function clearBurnOrRedistributableShares(
+        OperatorSet calldata operatorSet,
+        uint256 slashId
+    ) external returns (uint256[] memory);
+
+    /**
+     * @notice Removes a single strategy's shares from storage and transfers the underlying tokens for the slashId to the slash escrow.
+     * @param operatorSet The operator set to burn shares in.
+     * @param slashId The slash ID to burn shares in.
+     * @param strategy The strategy to burn shares in.
+     * @return The amount of tokens transferred to the slash escrow for the strategy.
+     */
+    function clearBurnOrRedistributableSharesByStrategy(
+        OperatorSet calldata operatorSet,
+        uint256 slashId,
+        IStrategy strategy
+    ) external returns (uint256);
+
+    /**
+     * @notice Returns the strategies and shares that have NOT been sent to escrow for a given slashId.
+     * @param operatorSet The operator set to burn or redistribute shares in.
+     * @param slashId The slash ID to burn or redistribute shares in.
+     * @return The strategies and shares for the given slashId.
+     */
+    function getBurnOrRedistributableShares(
+        OperatorSet calldata operatorSet,
+        uint256 slashId
+    ) external view returns (IStrategy[] memory, uint256[] memory);
+
+    /**
+     * @notice Returns the shares for a given strategy for a given slashId.
+     * @param operatorSet The operator set to burn or redistribute shares in.
+     * @param slashId The slash ID to burn or redistribute shares in.
+     * @param strategy The strategy to get the shares for.
+     * @return The shares for the given strategy for the given slashId.
+     * @dev This function will return revert if the shares have already been sent to escrow.
+     */
+    function getBurnOrRedistributableShares(
+        OperatorSet calldata operatorSet,
+        uint256 slashId,
+        IStrategy strategy
+    ) external view returns (uint256);
+
+    /**
+     * @notice Returns the number of strategies that have NOT been sent to escrow for a given slashId.
+     * @param operatorSet The operator set to burn or redistribute shares in.
+     * @param slashId The slash ID to burn or redistribute shares in.
+     * @return The number of strategies for the given slashId.
+     */
+    function getBurnOrRedistributableCount(
+        OperatorSet calldata operatorSet,
+        uint256 slashId
+    ) external view returns (uint256);
 
     /**
      * @notice Owner-only function to change the `strategyWhitelister` address.
@@ -180,6 +251,7 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
     function strategyWhitelister() external view returns (address);
 
     /// @notice Returns the burnable shares of a strategy
+    /// @dev This function will be deprecated in a release after redistribution
     function getBurnableShares(
         IStrategy strategy
     ) external view returns (uint256);
@@ -187,6 +259,7 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
     /**
      * @notice Gets every strategy with burnable shares and the amount of burnable shares in each said strategy
      *
+     * @dev This function will be deprecated in a release after redistribution
      * WARNING: This operation can copy the entire storage to memory, which can be quite expensive. This is designed
      * to mostly be used by view accessors that are queried without any gas fees. Users should keep in mind that
      * this function has an unbounded cost, and using it as part of a state-changing function may render the function

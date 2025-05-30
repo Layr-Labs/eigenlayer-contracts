@@ -17,6 +17,8 @@ interface IAllocationManagerErrors {
     /// @dev Thrown when the AVSRegistrar is not correctly configured to prevent an AVSRegistrar contract
     /// from being used with the wrong AVS
     error InvalidAVSRegistrar();
+    /// @dev Thrown when an invalid strategy is provided.
+    error InvalidStrategy();
 
     /// Caller
 
@@ -209,6 +211,9 @@ interface IAllocationManagerEvents is IAllocationManagerTypes {
     /// @notice Emitted when an operator is removed from an operator set.
     event OperatorRemovedFromOperatorSet(address indexed operator, OperatorSet operatorSet);
 
+    /// @notice Emitted when a redistributing operator set is created by an AVS.
+    event RedistributionAddressSet(OperatorSet operatorSet, address redistributionRecipient);
+
     /// @notice Emitted when a strategy is added to an operator set.
     event StrategyAddedToOperatorSet(OperatorSet operatorSet, IStrategy strategy);
 
@@ -220,7 +225,9 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
     /**
      * @dev Initializes the initial owner and paused status.
      */
-    function initialize(address initialOwner, uint256 initialPausedStatus) external;
+    function initialize(
+        uint256 initialPausedStatus
+    ) external;
 
     /**
      * @notice Called by an AVS to slash an operator in a given operator set. The operator must be registered
@@ -234,6 +241,9 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
      *  - wadsToSlash: Array of proportions to slash from each strategy (must be between 0 and 1e18).
      *  - description: Description of why the operator was slashed.
      *
+     * @return slashId The ID of the slash.
+     * @return shares The amount of shares that were slashed for each strategy.
+     *
      * @dev For each strategy:
      *      1. Reduces the operator's current allocation magnitude by wadToSlash proportion.
      *      2. Reduces the strategy's max and encumbered magnitudes proportionally.
@@ -244,7 +254,10 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
      *      rounding, which will result in small amounts of tokens locked in the contract
      *      rather than fully burning through the burn mechanism.
      */
-    function slashOperator(address avs, SlashingParams calldata params) external;
+    function slashOperator(
+        address avs,
+        SlashingParams calldata params
+    ) external returns (uint256 slashId, uint256[] memory shares);
 
     /**
      * @notice Modifies the proportions of slashable stake allocated to an operator set from a list of strategies
@@ -326,8 +339,23 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
     function createOperatorSets(address avs, CreateSetParams[] calldata params) external;
 
     /**
+     * @notice Allows an AVS to create new Redistribution operator sets.
+     * @param avs The AVS creating the new operator sets.
+     * @param params An array of operator set creation parameters.
+     * @param redistributionRecipients An array of addresses that will receive redistributed funds when operators are slashed.
+     * @dev Same logic as `createOperatorSets`, except `redistributionRecipients` corresponding to each operator set are stored.
+     *      Additionally, emits `RedistributionOperatorSetCreated` event instead of `OperatorSetCreated` for each created operator set.
+     */
+    function createRedistributingOperatorSets(
+        address avs,
+        CreateSetParams[] calldata params,
+        address[] calldata redistributionRecipients
+    ) external;
+
+    /**
      * @notice Allows an AVS to add strategies to an operator set
      * @dev Strategies MUST NOT already exist in the operator set
+     * @dev If the operatorSet is redistributing, the `BEACONCHAIN_ETH_STRAT` may not be added, since redistribution is not supported for native eth
      * @param avs the avs to set strategies for
      * @param operatorSetId the operator set to add strategies to
      * @param strategies the strategies to add
@@ -601,4 +629,42 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
      * @param operatorSet the operator set to check slashability for
      */
     function isOperatorSlashable(address operator, OperatorSet memory operatorSet) external view returns (bool);
+
+    /**
+     * @notice Returns the address where slashed funds will be sent for a given operator set.
+     * @param operatorSet The Operator Set to query.
+     * @return For redistributing Operator Sets, returns the configured redistribution address set during Operator Set creation.
+     *         For non-redistributing operator sets, returns the `DEFAULT_BURN_ADDRESS`.
+     */
+    function getRedistributionRecipient(
+        OperatorSet memory operatorSet
+    ) external view returns (address);
+
+    /**
+     * @notice Returns whether a given operator set supports redistribution
+     * or not when funds are slashed and burned from EigenLayer.
+     * @param operatorSet The Operator Set to query.
+     * @return For redistributing Operator Sets, returns true.
+     *         For non-redistributing Operator Sets, returns false.
+     */
+    function isRedistributingOperatorSet(
+        OperatorSet memory operatorSet
+    ) external view returns (bool);
+
+    /**
+     * @notice Returns the number of slashes for a given operator set.
+     * @param operatorSet The operator set to query.
+     * @return The number of slashes for the operator set.
+     */
+    function getSlashCount(
+        OperatorSet memory operatorSet
+    ) external view returns (uint256);
+
+    /**
+     * @notice Returns whether an operator is slashable by a redistributing operator set.
+     * @param operator The operator to query.
+     */
+    function isOperatorRedistributable(
+        address operator
+    ) external view returns (bool);
 }

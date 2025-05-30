@@ -233,7 +233,12 @@ contract EigenPodManager is
     }
 
     /// @inheritdoc IShareManager
-    function increaseBurnableShares(IStrategy, uint256 addedSharesToBurn) external onlyDelegationManager nonReentrant {
+    function increaseBurnOrRedistributableShares(
+        OperatorSet calldata,
+        uint256,
+        IStrategy,
+        uint256 addedSharesToBurn
+    ) external onlyDelegationManager nonReentrant {
         burnableETHShares += addedSharesToBurn;
         emit BurnableETHSharesIncreased(addedSharesToBurn);
     }

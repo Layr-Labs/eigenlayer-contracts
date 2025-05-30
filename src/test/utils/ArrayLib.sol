@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
+import {Vm} from "forge-std/Vm.sol";
+
 import "src/contracts/interfaces/IAllocationManager.sol";
 import "src/contracts/interfaces/IDelegationManager.sol";
 
@@ -8,6 +10,8 @@ library ArrayLib {
     using ArrayLib for *;
     using ArrayLib for uint[];
     using ArrayLib for address[];
+
+    Vm constant cheats = Vm(address(uint160(uint(keccak256("hevm cheat code")))));
 
     /// -----------------------------------------------------------------------
     /// Single Item Arrays
@@ -350,27 +354,35 @@ library ArrayLib {
     /// Sorting
     /// -----------------------------------------------------------------------
 
-    function sort(IStrategy[] memory array) internal pure returns (IStrategy[] memory) {
-        if (array.length <= 1) return array;
+    function sort(IStrategy[] memory strategies) internal returns (IStrategy[] memory) {
+        uint[] memory casted;
 
-        for (uint i = 1; i < array.length; i++) {
-            IStrategy key = array[i];
-            uint j = i - 1;
-
-            while (j > 0 && uint(uint160(address(array[j]))) > uint(uint160(address(key)))) {
-                array[j + 1] = array[j];
-                j--;
-            }
-
-            // Special case for the first element
-            if (j == 0 && uint(uint160(address(array[j]))) > uint(uint160(address(key)))) {
-                array[j + 1] = array[j];
-                array[j] = key;
-            } else if (j < i - 1) {
-                array[j + 1] = key;
-            }
+        assembly {
+            casted := strategies
         }
 
-        return array;
+        casted = cheats.sort(casted);
+
+        assembly {
+            strategies := casted
+        }
+
+        return strategies;
+    }
+
+    function shuffle(IStrategy[] memory strats) internal returns (IStrategy[] memory) {
+        uint[] memory casted;
+
+        assembly {
+            casted := strats
+        }
+
+        casted = cheats.shuffle(casted);
+
+        assembly {
+            strats := casted
+        }
+
+        return strats;
     }
 }
