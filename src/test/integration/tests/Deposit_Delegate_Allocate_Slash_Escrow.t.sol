@@ -223,36 +223,38 @@ contract Integration_Deposit_Delegate_Allocate_SlashOnlySomeStrategies_Escrow is
     function testFuzz_fullSlash_clearByStrategy_releaseByStrategy(uint24 _random) public rand(_random) {
         _configAssetTypes(HOLDS_LST);
 
-        (User staker, IStrategy[] memory strats, uint[] memory initTokenBalances) = _newRandomStaker();
+        (staker, strategies, initTokenBalances) = _newRandomStaker();
         operator = _newRandomOperator_NoAssets();
         (avs,) = _newRandomAVS();
 
+        cheats.assume(strategies.length >= 2);
+
         // Modify the length of the array in memory (thus ignoring remaining elements).
         assembly {
-            mstore(strats, 2)
+            sstore(strategies.slot, 2)
         }
 
         if (isRedistributing) {
             redistributionRecipient = payable(cheats.randomAddress());
             cheats.label(redistributionRecipient, "redistributionRecipient");
-            operatorSet = avs.createRedistributingOperatorSet(strats, redistributionRecipient);
+            operatorSet = avs.createRedistributingOperatorSet(strategies, redistributionRecipient);
         } else {
-            operatorSet = avs.createOperatorSet(strats);
+            operatorSet = avs.createOperatorSet(strategies);
             redistributionRecipient = payable(allocationManager.getRedistributionRecipient(operatorSet)); // burn address
         }
-        tokens = _getUnderlyingTokens(strats);
+        tokens = _getUnderlyingTokens(strategies);
 
         // 1) Register operator for operator set.
         operator.registerForOperatorSet(operatorSet);
-        check_Registration_State_NoAllocation(operator, operatorSet, strats);
+        check_Registration_State_NoAllocation(operator, operatorSet, strategies);
 
         // 2) Deposit Into Strategies
-        initDepositShares = _calculateExpectedShares(strats, initTokenBalances);
-        staker.depositIntoEigenlayer(strats, initTokenBalances);
+        initDepositShares = _calculateExpectedShares(strategies, initTokenBalances);
+        staker.depositIntoEigenlayer(strategies, initTokenBalances);
 
         // 3) Delegate to operator
         staker.delegateTo(operator);
-        check_Delegation_State(staker, operator, strats, initDepositShares);
+        check_Delegation_State(staker, operator, strategies, initDepositShares);
 
         // 4) Operator allocates to operator set.
         allocateParams = _genAllocation_AllAvailable(operator, operatorSet);
@@ -260,10 +262,10 @@ contract Integration_Deposit_Delegate_Allocate_SlashOnlySomeStrategies_Escrow is
         check_Base_IncrAlloc_State(operator, allocateParams);
 
         // 5) Roll forward to complete allocation.
-        _rollBlocksForCompleteAllocation(operator, operatorSet, strats);
+        _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
 
         // 6) Operator is full slashed.
-        slashParams = _genSlashing_SingleStrategy(operator, operatorSet, strats[0]);
+        slashParams = _genSlashing_SingleStrategy(operator, operatorSet, strategies[0]);
         (slashId,) = avs.slashOperator(slashParams);
         check_Base_Slashing_State(operator, allocateParams, slashParams, slashId);
 
@@ -271,20 +273,20 @@ contract Integration_Deposit_Delegate_Allocate_SlashOnlySomeStrategies_Escrow is
         _rollBlocksForCompleteSlashEscrow();
 
         // 7) Clear burnable shares (transfers tokens to escrow).
-        avs.clearBurnOrRedistributableSharesByStrategy(operatorSet, slashId, strats[0]);
+        avs.clearBurnOrRedistributableSharesByStrategy(operatorSet, slashId, strategies[0]);
         assert_HasUnderlyingTokenBalances(
             User(payable(address(slashEscrowFactory.getSlashEscrow(operatorSet, slashId)))),
             strategies[0].toArray(),
             initTokenBalances,
             "slash escrow should have underlying token balances"
         );
-        assertEq(strategyManager.getBurnOrRedistributableShares(operatorSet, slashId, strats[0]), 0, "no burnable shares should remain");
+        assertEq(strategyManager.getBurnOrRedistributableShares(operatorSet, slashId, strategies[0]), 0, "no burnable shares should remain");
 
         // 8) Release escrow, expect success.
         cheats.prank(redistributionRecipient);
-        slashEscrowFactory.releaseSlashEscrowByStrategy({operatorSet: operatorSet, slashId: 1, strategy: strats[0]});
+        slashEscrowFactory.releaseSlashEscrowByStrategy({operatorSet: operatorSet, slashId: 1, strategy: strategies[0]});
         check_releaseSlashEscrow_State_NoneRemaining(
-            operatorSet, slashId, strats[0].toArray(), initTokenBalances[0].toArrayU256(), redistributionRecipient
+            operatorSet, slashId, strategies[0].toArray(), initTokenBalances[0].toArrayU256(), redistributionRecipient
         );
         assertEq(slashEscrowFactory.getTotalPendingSlashIds(operatorSet), 0, "no pending slash ids should remain");
     }
