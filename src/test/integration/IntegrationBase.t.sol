@@ -1422,14 +1422,13 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
             // Not factoring in slashable shares in queue here, because that gets more complex (TODO)
             assertTrue(curBurnable >= (prevBurnable + slashedAtLeast), err);
 
+            // TODO: Improve this check in the future, it's not very optimized.
+            // In the future, we can simply use a flag to communicate whether the operator set is redistributable.
             if (curShares[i] == prevShares[i]) continue;
-
             bool flag = false;
-
             for (uint j = 0; j < params.strategies.length; j++) {
                 if (params.strategies[j] == BEACONCHAIN_ETH_STRAT) flag = true;
             }
-
             if (flag) continue;
 
             assertTrue(_getIsPendingOperatorSet(operatorSet), "operator set should be pending");
