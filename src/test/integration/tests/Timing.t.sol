@@ -50,10 +50,10 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
 
         /// 3. Slash operator
         SlashingParams memory slashingParams = _genSlashing_Rand(operator, operatorSet);
-        avs.slashOperator(operator, operatorSet.id, slashingParams.strategies, slashingParams.wadsToSlash);
+        (, slashId,) = avs.slashOperator(operator, operatorSet.id, slashingParams.strategies, slashingParams.wadsToSlash);
 
         // Verify that the slash was performed correctly
-        check_Base_Slashing_State(operator, allocateParams, slashingParams);
+        check_Base_Slashing_State(operator, allocateParams, slashingParams, slashId);
 
         /// 4. Move time forward to withdrawal block
         vm.roll(block.number + 1);
@@ -107,10 +107,10 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
 
         /// 3. Slash operator
         SlashingParams memory slashingParams = _genSlashing_Rand(operator, operatorSet);
-        avs.slashOperator(operator, operatorSet.id, slashingParams.strategies, slashingParams.wadsToSlash);
+        (, slashId,) = avs.slashOperator(operator, operatorSet.id, slashingParams.strategies, slashingParams.wadsToSlash);
 
         // Verify that the slash was performed correctly
-        check_Base_Slashing_State(operator, allocateParams, slashingParams);
+        check_Base_Slashing_State(operator, allocateParams, slashingParams, slashId);
 
         /// 4. Move time forward to withdrawal block
         vm.roll(block.number + 1);
@@ -173,10 +173,10 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
 
         /// 3. Slash operator
         SlashingParams memory slashingParams = _genSlashing_Rand(operator, operatorSet);
-        avs.slashOperator(operator, operatorSet.id, slashingParams.strategies, slashingParams.wadsToSlash);
+        (, slashId,) = avs.slashOperator(operator, operatorSet.id, slashingParams.strategies, slashingParams.wadsToSlash);
 
         // Verify that the slash was performed correctly
-        check_Base_Slashing_State(operator, allocateParams, slashingParams);
+        check_Base_Slashing_State(operator, allocateParams, slashingParams, slashId);
 
         /// 4. Complete withdrawals
         // Note: expectedTokens must be recalculated because the withdrawable shares have changed due to the slash
@@ -219,10 +219,10 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
 
         /// 3. Slash operator
         SlashingParams memory slashingParams = _genSlashing_Rand(operator, operatorSet);
-        avs.slashOperator(operator, operatorSet.id, slashingParams.strategies, slashingParams.wadsToSlash);
+        (, slashId,) = avs.slashOperator(operator, operatorSet.id, slashingParams.strategies, slashingParams.wadsToSlash);
 
         // Verify that the slash was performed correctly
-        check_Base_Slashing_State(operator, allocateParams, slashingParams);
+        check_Base_Slashing_State(operator, allocateParams, slashingParams, slashId);
 
         /// 4. Complete withdrawals
         staker.completeWithdrawalsAsTokens(withdrawals);
@@ -266,9 +266,9 @@ contract Integration_OperatorDeallocationTiming is Integration_ALMSlashBase {
 
         /// 3. Slash operator
         slashParams = _genSlashing_Rand(operator, operatorSet);
-        avs.slashOperator(slashParams);
+        (slashId,) = avs.slashOperator(slashParams);
         // Verify that the slash was performed correctly
-        check_Base_Slashing_State(operator, allocateParams, slashParams);
+        check_Base_Slashing_State(operator, allocateParams, slashParams, slashId);
     }
 
     function testFuzz_deallocateFully_slashAfterDelay(uint24 _r) public rand(_r) {
@@ -287,11 +287,11 @@ contract Integration_OperatorDeallocationTiming is Integration_ALMSlashBase {
 
         /// 3. Slash operator
         slashParams = _genSlashing_Rand(operator, operatorSet);
-        avs.slashOperator(slashParams);
+        (slashId,) = avs.slashOperator(slashParams);
         // Verify that the slash has no impact on the operator
         // Note: emptySlashParams remains uninitialized, as the slash _should not_ impact the operator.
         SlashingParams memory emptySlashParams;
-        check_Base_Slashing_State(operator, allocateParams, emptySlashParams);
+        check_Base_Slashing_State(operator, allocateParams, emptySlashParams, slashId);
     }
 }
 
@@ -315,8 +315,8 @@ contract Integration_OperatorDeregistrationTiming is Integration_ALMSlashBase {
 
         /// 3. Slash operator
         slashParams = _genSlashing_Rand(operator, operatorSet);
-        avs.slashOperator(slashParams);
-        check_Base_Slashing_State(operator, allocateParams, slashParams);
+        (slashId,) = avs.slashOperator(slashParams);
+        check_Base_Slashing_State(operator, allocateParams, slashParams, slashId);
     }
 
     function testFuzz_deregister_slashAfterDelay(uint24 _r) public rand(_r) {
@@ -334,7 +334,7 @@ contract Integration_OperatorDeregistrationTiming is Integration_ALMSlashBase {
         // Note: Unlike the deallocation case, the operator is no longer registered, so a slash will revert entirely.
         slashParams = _genSlashing_Rand(operator, operatorSet);
         vm.expectRevert(IAllocationManagerErrors.OperatorNotSlashable.selector);
-        avs.slashOperator(slashParams);
+        (slashId,) = avs.slashOperator(slashParams);
     }
 }
 
@@ -357,6 +357,8 @@ contract Integration_OperatorAllocationTiming is IntegrationCheckUtils {
     IERC20[] tokens;
     uint[] initTokenBalances;
     uint[] initDepositShares;
+
+    uint slashId;
 
     ////////////////////////////////////////
     /// OPERATOR ALLOCATION TIMING TESTS ///
@@ -407,12 +409,12 @@ contract Integration_OperatorAllocationTiming is IntegrationCheckUtils {
         // Note: This slash does not revert as the operator, even though it is not allocated, is
         // still registered. However, since there is no allocation, the slash has no material effect.
         slashParams = _genSlashing_Rand(operator, operatorSet);
-        avs.slashOperator(slashParams);
+        (slashId,) = avs.slashOperator(slashParams);
 
         // Verify that the slash has no impact on the operator
         // Note: emptySlashParams remains uninitialized, as the slash _should not_ impact the operator.
         SlashingParams memory emptySlashParams;
-        check_Base_Slashing_State(operator, allocateParams, emptySlashParams);
+        check_Base_Slashing_State(operator, allocateParams, emptySlashParams, slashId);
     }
 
     function testFuzz_allocate_register_slashBeforeDelay(uint24 _r) public rand(_r) {
@@ -435,12 +437,12 @@ contract Integration_OperatorAllocationTiming is IntegrationCheckUtils {
         // Note: This slash does not revert as the operator, even though it is not allocated, is
         // still registered. However, since there is no allocation, the slash has no material effect.
         slashParams = _genSlashing_Rand(operator, operatorSet);
-        avs.slashOperator(slashParams);
+        (slashId,) = avs.slashOperator(slashParams);
 
         // Verify that the slash has no impact on the operator
         // Note: emptySlashParams remains uninitialized, as the slash _should not_ impact the operator.
         SlashingParams memory emptySlashParams;
-        check_Base_Slashing_State(operator, allocateParams, emptySlashParams);
+        check_Base_Slashing_State(operator, allocateParams, emptySlashParams, slashId);
     }
 
     function testFuzz_register_allocate_slashAfterDelay(uint24 _r) public rand(_r) {
@@ -460,9 +462,9 @@ contract Integration_OperatorAllocationTiming is IntegrationCheckUtils {
 
         /// 4. Slash operator
         slashParams = _genSlashing_Rand(operator, operatorSet);
-        avs.slashOperator(slashParams);
+        (slashId,) = avs.slashOperator(slashParams);
         // Verify that the slash was performed correctly
-        check_Base_Slashing_State(operator, allocateParams, slashParams);
+        check_Base_Slashing_State(operator, allocateParams, slashParams, slashId);
     }
 
     function testFuzz_allocate_register_slashAfterDelay(uint24 _r) public rand(_r) {
@@ -482,8 +484,8 @@ contract Integration_OperatorAllocationTiming is IntegrationCheckUtils {
 
         /// 4. Slash operator
         slashParams = _genSlashing_Rand(operator, operatorSet);
-        avs.slashOperator(slashParams);
+        (slashId,) = avs.slashOperator(slashParams);
         // Verify that the slash was performed correctly
-        check_Base_Slashing_State(operator, allocateParams, slashParams);
+        check_Base_Slashing_State(operator, allocateParams, slashParams, slashId);
     }
 }

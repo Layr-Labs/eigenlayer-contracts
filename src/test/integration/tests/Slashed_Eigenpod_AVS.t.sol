@@ -20,6 +20,8 @@ contract Integration_SlashedEigenpod_AVS_Base is IntegrationCheckUtils {
     uint[] initTokenBalances;
     uint[] initDepositShares;
 
+    uint slashId;
+
     function _init() internal virtual override {
         _configAssetTypes(HOLDS_ETH);
         (staker, strategies, initTokenBalances) = _newRandomStaker();
@@ -58,8 +60,8 @@ contract Integration_SlashedEigenpod_AVS_Checkpoint is Integration_SlashedEigenp
 
         // 6. Slash
         slashParams = _genSlashing_Rand(operator, operatorSet);
-        avs.slashOperator(slashParams);
-        check_Base_Slashing_State(operator, allocateParams, slashParams);
+        (slashId,) = avs.slashOperator(slashParams);
+        check_Base_Slashing_State(operator, allocateParams, slashParams, slashId);
 
         beaconChain.advanceEpoch_NoRewards();
     }
@@ -88,8 +90,8 @@ contract Integration_SlashedEigenpod_AVS_Withdraw is Integration_SlashedEigenpod
             // Slash -> Queue Withdrawal
             // 7. Slash
             slashParams = _genSlashing_Half(operator, operatorSet);
-            avs.slashOperator(slashParams);
-            check_Base_Slashing_State(operator, allocateParams, slashParams);
+            (slashId,) = avs.slashOperator(slashParams);
+            check_Base_Slashing_State(operator, allocateParams, slashParams, slashId);
 
             // 8. Queue Withdrawal for all shares.
             Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, initDepositShares);
@@ -110,8 +112,8 @@ contract Integration_SlashedEigenpod_AVS_Withdraw is Integration_SlashedEigenpod
 
             // 8. Slash
             slashParams = _genSlashing_Half(operator, operatorSet);
-            avs.slashOperator(slashParams);
-            check_Base_Slashing_State(operator, allocateParams, slashParams);
+            (slashId,) = avs.slashOperator(slashParams);
+            check_Base_Slashing_State(operator, allocateParams, slashParams, slashId);
         }
         withdrawableSharesAfterSlash = _calcWithdrawable(staker, strategies, initDepositShares);
 

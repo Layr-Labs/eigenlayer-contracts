@@ -466,7 +466,7 @@ contract StrategyManager is
 
         for (uint256 i = 0; i < keys.length; ++i) {
             strategies[i] = IStrategy(keys[i]);
-            shares[i] = burnOrRedistributableShares.get(keys[i]);
+            (, shares[i]) = burnOrRedistributableShares.tryGet(keys[i]);
         }
 
         return (strategies, shares);
@@ -478,7 +478,8 @@ contract StrategyManager is
         uint256 slashId,
         IStrategy strategy
     ) external view returns (uint256) {
-        return _burnOrRedistributableShares[operatorSet.key()][slashId].get(address(strategy));
+        (, uint256 shares) = _burnOrRedistributableShares[operatorSet.key()][slashId].tryGet(address(strategy));
+        return shares;
     }
 
     /// @inheritdoc IStrategyManager
