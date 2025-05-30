@@ -1,0 +1,53 @@
+// SPDX-License-Identifier: BUSL-1.1
+pragma solidity ^0.8.27;
+
+import {BN254} from "../libraries/BN254.sol";
+import {IPermissionController} from "../interfaces/IPermissionController.sol";
+import {IAllocationManager} from "../interfaces/IAllocationManager.sol";
+import {IKeyRegistrar} from "../interfaces/IKeyRegistrar.sol";
+
+abstract contract KeyRegistrarStorage is IKeyRegistrar {
+    using BN254 for BN254.G1Point;
+
+    // Constants
+
+    /// @dev Gas limit for pairing operations to prevent DoS
+    uint256 internal constant PAIRING_EQUALITY_CHECK_GAS = 400000;
+    
+    /// @dev Hash of zero ECDSA public key (0x04 + 64 zero bytes)
+    bytes32 internal constant ZERO_ECDSA_PUBKEY_HASH = keccak256(abi.encodePacked(bytes1(0x04), new bytes(64)));
+
+    // Immutables
+
+    /// @dev Reference to the AllocationManager contract
+    IAllocationManager public immutable allocationManager;
+
+    // Mutatables
+
+    /// @dev Maps (operatorSetKey, operator) to their key info
+    mapping(bytes32 => mapping(address => KeyInfo)) internal operatorKeyInfo;
+
+    /// @dev Maps operatorSetKey to their configuration
+    mapping(bytes32 => OperatorSetConfig) internal operatorSetConfigs;
+
+    /// @dev Maps operatorSetKey to their aggregate BN254 G1 point
+    mapping(bytes32 => BN254.G1Point) internal operatorSetToAggregateBN254Key;
+
+    /// @dev Global mapping of key hash to registration status - enforces global uniqueness
+    mapping(bytes32 => bool) internal globalKeyRegistry;
+
+    // Construction
+
+    constructor(
+        IAllocationManager _allocationManager
+    ) {
+        allocationManager = _allocationManager;
+    }
+
+    /**
+     * @dev This empty reserved space is put in place to allow future versions to add new
+     * variables without shifting down storage in the inheritance chain.
+     * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
+     */
+    uint256[46] private __gap;
+}
