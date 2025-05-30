@@ -36,6 +36,13 @@
 
 ## Changelog
 
+- feat(draft): `AllocationManager` redistribution support [PR #1346](https://github.com/layr-labs/eigenlayer-contracts/pull/1346)
+- feat: redistribution upgrade script [PR #1396](https://github.com/layr-labs/eigenlayer-contracts/pull/1396)
+- chore: bindings [PR #1422](https://github.com/layr-labs/eigenlayer-contracts/pull/1422)
+- test: redistribution upgrade [PR #1410](https://github.com/layr-labs/eigenlayer-contracts/pull/1410)
+- test: redistribution integration [PR #1415](https://github.com/layr-labs/eigenlayer-contracts/pull/1415)
+- docs: redistribution [PR #1409](https://github.com/layr-labs/eigenlayer-contracts/pull/1409)
+- chore: address redistribution nits [PR #1420](https://github.com/layr-labs/eigenlayer-contracts/pull/1420)
 - chore: style updates [PR #1416](https://github.com/layr-labs/eigenlayer-contracts/pull/1416)
 - perf: avoid binary search [PR #1417](https://github.com/layr-labs/eigenlayer-contracts/pull/1417)
 - feat: release escrow by strategy [PR #1412](https://github.com/layr-labs/eigenlayer-contracts/pull/1412)
