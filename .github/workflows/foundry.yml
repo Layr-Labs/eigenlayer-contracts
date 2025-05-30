@@ -66,9 +66,9 @@ jobs:
       - name: Run ${{ matrix.suite }} tests
         run: |
           case "${{ matrix.suite }}" in
-            Unit) forge test --no-match-contract Integration ;;
-            Integration) forge test --match-contract Integration ;;
-            Fork) forge test --match-contract Integration ;;
+            Unit) forge test --no-match-contract Integration -vvv ;;
+            Integration) forge test --match-contract Integration -vvv ;;
+            Fork) forge test --match-contract Integration -vvv ;;
           esac
         env:
           FOUNDRY_PROFILE: ${{ matrix.suite == 'Fork' && 'forktest' || 'medium' }}
