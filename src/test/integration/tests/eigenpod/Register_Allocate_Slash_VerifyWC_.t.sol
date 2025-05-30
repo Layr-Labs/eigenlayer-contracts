@@ -22,6 +22,8 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationCheckUtils {
     uint64 beaconBalanceGwei;
     uint64 slashedGwei;
 
+    uint slashId;
+
     /**
      * 1. Create an operatorSet and register the operator allocating all magnitude
      * 2. slash operator to 1 magnitude remaining
@@ -48,8 +50,8 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationCheckUtils {
 
         // 2. Fully slash operator
         SlashingParams memory slashParams = _genSlashing_Custom(operator, operatorSet, WAD - 1);
-        avs.slashOperator(slashParams);
-        check_Base_Slashing_State(operator, allocateParams, slashParams);
+        (slashId,) = avs.slashOperator(slashParams);
+        check_Base_Slashing_State(operator, allocateParams, slashParams, slashId);
 
         // 3. Delegate to an operator
         staker.delegateTo(operator);
@@ -128,8 +130,8 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationCheckUtils {
         // 4. AVS slashes operator again to 0 magnitude and fully slashed
         SlashingParams memory slashParams = _genSlashing_Full(operator, operatorSet);
         slashParams.wadsToSlash[0] = WAD;
-        avs.slashOperator(slashParams);
-        check_Base_Slashing_State(operator, allocateParams, slashParams);
+        (slashId,) = avs.slashOperator(slashParams);
+        check_Base_Slashing_State(operator, allocateParams, slashParams, slashId);
 
         // 5. undelegate results in 0 delegated shares removed since operator has 0 magnitude and staker is fully slashed too
         uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
@@ -170,8 +172,8 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationCheckUtils {
         // 4. AVS slashes operator again to 0 magnitude and fully slashed
         SlashingParams memory slashParams = _genSlashing_Full(operator, operatorSet);
         slashParams.wadsToSlash[0] = WAD;
-        avs.slashOperator(slashParams);
-        check_Base_Slashing_State(operator, allocateParams, slashParams);
+        (slashId,) = avs.slashOperator(slashParams);
+        check_Base_Slashing_State(operator, allocateParams, slashParams, slashId);
 
         // 5. undelegate results in 0 delegated shares removed since operator has 0 magnitude and staker is fully slashed too
         uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
@@ -207,8 +209,8 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationCheckUtils {
         // 4. AVS slashes operator again to 0 magnitude and fully slashed
         SlashingParams memory slashParams = _genSlashing_Full(operator, operatorSet);
         slashParams.wadsToSlash[0] = WAD;
-        avs.slashOperator(slashParams);
-        check_Base_Slashing_State(operator, allocateParams, slashParams);
+        (slashId,) = avs.slashOperator(slashParams);
+        check_Base_Slashing_State(operator, allocateParams, slashParams, slashId);
 
         // 5. undelegate results in 0 delegated shares removed since operator has 0 magnitude and staker is fully slashed too
         uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);

@@ -20,6 +20,8 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
 
     uint[] numTokensRemaining;
 
+    uint slashId;
+
     function _init() internal override {
         _configUserTypes(DEFAULT);
 
@@ -72,8 +74,8 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
     function testFuzz_fullSlash_undelegate_complete_redeposit(uint24 _random) public rand(_random) {
         // 4. Fully slash operator
         SlashingParams memory slashParams = _genSlashing_Full(operator, operatorSet);
-        avs.slashOperator(slashParams);
-        check_FullySlashed_State(operator, allocateParams, slashParams);
+        (slashId,) = avs.slashOperator(slashParams);
+        check_FullySlashed_State(operator, allocateParams, slashParams, slashId);
 
         // 5. Undelegate from an operator
         uint[] memory shares = _getStakerWithdrawableShares(staker, strategies);
@@ -105,8 +107,8 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
 
         // 5. Fully slash operator
         SlashingParams memory slashParams = _genSlashing_Full(operator, operatorSet);
-        avs.slashOperator(slashParams);
-        check_FullySlashed_State(operator, allocateParams, slashParams);
+        (slashId,) = avs.slashOperator(slashParams);
+        check_FullySlashed_State(operator, allocateParams, slashParams, slashId);
 
         // 6. Complete withdrawal. Staker should receive 0 shares/tokens after a full slash
         uint[] memory expectedShares = new uint[](strategies.length);
@@ -131,8 +133,8 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
 
         // 4. Fully slash random proper subset of operators strategies
         SlashingParams memory slashParams = _genSlashing_Full(operator, operatorSet);
-        avs.slashOperator(slashParams);
-        check_FullySlashed_State(operator, allocateParams, slashParams);
+        (slashId,) = avs.slashOperator(slashParams);
+        check_FullySlashed_State(operator, allocateParams, slashParams, slashId);
 
         // add deposit shares to initDepositShares
         for (uint i = 0; i < depositShares.length; i++) {
@@ -159,8 +161,8 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
     function testFuzz_deposit_delegate_allocate_partialSlash_redeposit_queue_complete(uint24 r) public rand(r) {
         // Partially slash operator
         SlashingParams memory slashParams = _genSlashing_Half(operator, operatorSet);
-        avs.slashOperator(slashParams);
-        check_Base_Slashing_State(operator, allocateParams, slashParams);
+        (slashId,) = avs.slashOperator(slashParams);
+        check_Base_Slashing_State(operator, allocateParams, slashParams, slashId);
 
         // Redeposit remaining tokens
         uint[] memory depositShares = _calculateExpectedShares(strategies, numTokensRemaining);
@@ -198,8 +200,8 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
 
         // Partially slash operator
         SlashingParams memory slashParams = _genSlashing_Half(operator, operatorSet);
-        avs.slashOperator(slashParams);
-        check_Base_Slashing_State(operator, allocateParams, slashParams);
+        (slashId,) = avs.slashOperator(slashParams);
+        check_Base_Slashing_State(operator, allocateParams, slashParams, slashId);
 
         // Complete withdrawal
         _rollBlocksForCompleteWithdrawals(withdrawals);
@@ -221,8 +223,8 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
 
         // Partially slash operator
         SlashingParams memory slashParams = _genSlashing_Half(operator, operatorSet);
-        avs.slashOperator(slashParams);
-        check_Base_Slashing_State(operator, allocateParams, slashParams);
+        (slashId,) = avs.slashOperator(slashParams);
+        check_Base_Slashing_State(operator, allocateParams, slashParams, slashId);
 
         // Queue withdrawal
         uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
@@ -249,8 +251,8 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
 
         // Partially slash operator
         SlashingParams memory slashParams = _genSlashing_Half(operator, operatorSet);
-        avs.slashOperator(slashParams);
-        check_Base_Slashing_State(operator, allocateParams, slashParams);
+        (slashId,) = avs.slashOperator(slashParams);
+        check_Base_Slashing_State(operator, allocateParams, slashParams, slashId);
 
         // Queue withdrawal
         uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
@@ -279,8 +281,8 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
 
         // Partially slash operator
         SlashingParams memory slashParams = _genSlashing_Half(operator, operatorSet);
-        avs.slashOperator(slashParams);
-        check_Base_Slashing_State(operator, allocateParams, slashParams);
+        (slashId,) = avs.slashOperator(slashParams);
+        check_Base_Slashing_State(operator, allocateParams, slashParams, slashId);
 
         // Deposit tokens
         uint[] memory depositShares = _calculateExpectedShares(strategies, tokensToDeposit);
@@ -308,8 +310,8 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
     function testFuzz_deposit_delegate_allocate_partialSlash_deallocate(uint24 r) public rand(r) {
         // Partially slash operator
         SlashingParams memory slashParams = _genSlashing_Half(operator, operatorSet);
-        avs.slashOperator(slashParams);
-        check_Base_Slashing_State(operator, allocateParams, slashParams);
+        (slashId,) = avs.slashOperator(slashParams);
+        check_Base_Slashing_State(operator, allocateParams, slashParams, slashId);
 
         // Deallocate from operator set
         AllocateParams memory deallocateParams = _genDeallocation_Full(operator, operatorSet);
@@ -322,8 +324,8 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
 
         // 4. Fully slash operator
         SlashingParams memory slashParams = _genSlashing_Full(operator, operatorSet);
-        avs.slashOperator(slashParams);
-        check_FullySlashed_State(operator, allocateParams, slashParams);
+        (slashId,) = avs.slashOperator(slashParams);
+        check_FullySlashed_State(operator, allocateParams, slashParams, slashId);
 
         // 5. Undelegate from an operator
         uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
@@ -356,8 +358,8 @@ contract Integration_Deposit_Delegate_Allocate_Slash_Queue_Redeposit is Integrat
 
         // 4. Fully slash operator
         SlashingParams memory slashParams = _genSlashing_Full(operator, operatorSet);
-        avs.slashOperator(slashParams);
-        check_FullySlashed_State(operator, allocateParams, slashParams);
+        (slashId,) = avs.slashOperator(slashParams);
+        check_FullySlashed_State(operator, allocateParams, slashParams, slashId);
 
         // 5. Undelegate from an operator
         uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);

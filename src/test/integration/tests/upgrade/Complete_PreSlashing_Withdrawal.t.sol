@@ -17,6 +17,8 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal_Base is UpgradeTest
         bool completeAsTokens;
     }
 
+    uint slashId;
+
     function _init_(bool withOperator, bool withDelegation) internal virtual returns (TestState memory state) {
         // Create staker
         (state.staker, state.strategies, state.tokenBalances) = _newRandomStaker();
@@ -136,8 +138,8 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal_Slash is Integratio
 
         // Slash operator by AVS
         SlashingParams memory slashParams = _genSlashing_Full(state.operator, operatorSet);
-        avs.slashOperator(slashParams);
-        check_Base_Slashing_State(state.operator, allocateParams, slashParams);
+        (slashId,) = avs.slashOperator(slashParams);
+        check_Base_Slashing_State(state.operator, allocateParams, slashParams, slashId);
 
         // Complete withdrawals as shares
         state.completeAsTokens = false;
@@ -151,8 +153,8 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal_Slash is Integratio
 
         // Slash operator by AVS
         SlashingParams memory slashParams = _genSlashing_Full(state.operator, operatorSet);
-        avs.slashOperator(slashParams);
-        check_Base_Slashing_State(state.operator, allocateParams, slashParams);
+        (slashId,) = avs.slashOperator(slashParams);
+        check_Base_Slashing_State(state.operator, allocateParams, slashParams, slashId);
 
         // Complete withdrawals as tokens
         state.completeAsTokens = true;
@@ -165,8 +167,8 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal_Slash is Integratio
 
         // Slash operator by AVS
         SlashingParams memory slashParams = _genSlashing_Rand(state.operator, operatorSet);
-        avs.slashOperator(slashParams);
-        check_Base_Slashing_State(state.operator, allocateParams, slashParams);
+        (slashId,) = avs.slashOperator(slashParams);
+        check_Base_Slashing_State(state.operator, allocateParams, slashParams, slashId);
 
         // Complete withdrawals as shares. Shares need to be recalculated to handle slight round down after slashing.
         state.completeAsTokens = false;
@@ -180,8 +182,8 @@ contract Integration_Upgrade_Complete_PreSlashing_Withdrawal_Slash is Integratio
 
         // Slash operator by AVS
         SlashingParams memory slashParams = _genSlashing_Rand(state.operator, operatorSet);
-        avs.slashOperator(slashParams);
-        check_Base_Slashing_State(state.operator, allocateParams, slashParams);
+        (slashId,) = avs.slashOperator(slashParams);
+        check_Base_Slashing_State(state.operator, allocateParams, slashParams, slashId);
 
         // Complete withdrawals as tokens
         state.completeAsTokens = true;

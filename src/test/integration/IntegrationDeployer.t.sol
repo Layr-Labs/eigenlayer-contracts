@@ -54,7 +54,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
     uint8 constant NUM_LST_STRATS = 32;
 
-    uint32 INITIAL_GLOBAL_DELAY_BLOCKS = 28_800; // 4 days in blocks
+    uint32 INITIAL_GLOBAL_DELAY_BLOCKS = 4 days / 12 seconds; // 4 days in blocks
 
     // Lists of strategies used in the system
     //
@@ -443,6 +443,12 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         allocationManager.initialize({initialPausedStatus: 0});
 
         strategyFactory.initialize({_initialOwner: executorMultisig, _initialPausedStatus: 0, _strategyBeacon: strategyBeacon});
+
+        slashEscrowFactory.initialize({
+            initialOwner: communityMultisig,
+            initialPausedStatus: 0,
+            initialGlobalDelayBlocks: INITIAL_GLOBAL_DELAY_BLOCKS
+        });
     }
 
     /// @dev Deploy a strategy and its underlying token, push to global lists of tokens/strategies, and whitelist
@@ -720,29 +726,13 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         return userType;
     }
 
-    function _shuffle(IStrategy[] memory strats) internal returns (IStrategy[] memory) {
-        uint[] memory casted;
-
-        assembly {
-            casted := strats
-        }
-
-        casted = vm.shuffle(casted);
-
-        assembly {
-            strats := casted
-        }
-
-        return strats;
-    }
-
     function _randomStrategies() internal returns (IStrategy[][] memory strategies) {
         uint numOpSets = _randUint({min: 1, max: 5});
 
         strategies = new IStrategy[][](numOpSets);
 
         for (uint i; i < numOpSets; ++i) {
-            IStrategy[] memory randomStrategies = _shuffle(allStrats);
+            IStrategy[] memory randomStrategies = allStrats.shuffle();
             uint numStrategies = _randUint({min: 1, max: maxUniqueAssetsHeld});
 
             // Modify the length of the array in memory (thus ignoring remaining elements).

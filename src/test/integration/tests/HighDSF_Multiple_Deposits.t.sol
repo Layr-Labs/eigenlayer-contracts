@@ -20,6 +20,8 @@ contract Integration_HighDSF_Multiple_Deposits is IntegrationCheckUtils {
     uint[] initTokenBalances;
     uint[] initDepositShares;
 
+    uint slashId;
+
     /**
      * Shared setup:
      * 1. create a new staker, operator, and avs
@@ -45,8 +47,8 @@ contract Integration_HighDSF_Multiple_Deposits is IntegrationCheckUtils {
 
         // 3. slash operator to 1 magnitude remaining
         slashParams = _genSlashing_Custom(operator, operatorSet, WAD - 1);
-        avs.slashOperator(slashParams);
-        check_Base_Slashing_State(operator, allocateParams, slashParams);
+        (slashId,) = avs.slashOperator(slashParams);
+        check_Base_Slashing_State(operator, allocateParams, slashParams, slashId);
 
         // 4. delegate to operator
         staker.delegateTo(operator);

@@ -19,6 +19,7 @@ contract Integration_DualSlashing_Base is IntegrationCheckUtils {
     IStrategy[] strategies;
     uint[] initTokenBalances;
     uint[] initDepositShares;
+    uint slashId;
 
     function _init() internal virtual override {
         _configAssetTypes(HOLDS_ETH);
@@ -91,8 +92,8 @@ contract Integration_DualSlashing_AVSFirst is Integration_DualSlashing_Base {
 
         // 6. Slash operator by AVS
         slashingParams = _genSlashing_Rand(operator, operatorSet);
-        avs.slashOperator(slashingParams);
-        check_Base_Slashing_State(operator, allocateParams, slashingParams);
+        (slashId,) = avs.slashOperator(slashingParams);
+        check_Base_Slashing_State(operator, allocateParams, slashingParams, slashId);
         assert_Snap_Allocations_Slashed(slashingParams, operatorSet, true, "operator allocations should be slashed");
         assert_Snap_Unchanged_Staker_DepositShares(staker, "staker deposit shares should be unchanged after slashing");
         assert_Snap_StakerWithdrawableShares_AfterSlash(
@@ -272,8 +273,8 @@ contract Integration_DualSlashing_FullSlashes is Integration_DualSlashing_Base {
         if (_randBool()) {
             // 6. Slash operator by AVS fully
             slashingParams = _genSlashing_Full(operator, operatorSet);
-            avs.slashOperator(slashingParams);
-            check_Base_Slashing_State(operator, allocateParams, slashingParams);
+            (slashId,) = avs.slashOperator(slashingParams);
+            check_Base_Slashing_State(operator, allocateParams, slashingParams, slashId);
             assert_Snap_Allocations_Slashed(slashingParams, operatorSet, true, "operator allocations should be slashed");
             assert_Snap_Unchanged_Staker_DepositShares(staker, "staker deposit shares should be unchanged after slashing");
             assert_Snap_StakerWithdrawableShares_AfterSlash(
@@ -290,8 +291,8 @@ contract Integration_DualSlashing_FullSlashes is Integration_DualSlashing_Base {
 
             // 7. Slash operator by AVS fully
             slashingParams = _genSlashing_Full(operator, operatorSet);
-            avs.slashOperator(slashingParams);
-            check_Base_Slashing_State(operator, allocateParams, slashingParams);
+            (slashId,) = avs.slashOperator(slashingParams);
+            check_Base_Slashing_State(operator, allocateParams, slashingParams, slashId);
             assert_Snap_Allocations_Slashed(slashingParams, operatorSet, true, "operator allocations should be slashed");
             assert_Snap_Unchanged_Staker_DepositShares(staker, "staker deposit shares should be unchanged after slashing");
             assert_Snap_StakerWithdrawableShares_AfterSlash(
