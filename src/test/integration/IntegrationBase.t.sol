@@ -13,7 +13,6 @@ import "src/test/integration/TypeImporter.t.sol";
 import "src/test/integration/IntegrationDeployer.t.sol";
 import "src/test/integration/TimeMachine.t.sol";
 import "src/test/integration/users/User.t.sol";
-import "src/test/integration/users/User_M1.t.sol";
 
 abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     using StdStyle for *;
@@ -75,16 +74,10 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         uint[] memory addedShares = _calculateExpectedShares(strategies, tokenBalances);
         operator.depositIntoEigenlayer(strategies, tokenBalances);
 
-        /// Registration flow differs for M2 vs Slashing release
-        if (!isUpgraded) {
-            User_M2(payable(operator)).registerAsOperator_M2();
+        /// Registration flow is the same pre and post redistribution upgrade
+        operator.registerAsOperator();
 
-            operatorsToMigrate.push(operator);
-        } else {
-            operator.registerAsOperator();
-
-            rollForward({blocks: ALLOCATION_CONFIGURATION_DELAY + 1});
-        }
+        rollForward({blocks: ALLOCATION_CONFIGURATION_DELAY + 1});
 
         assert_Snap_Added_OperatorShares(operator, strategies, addedShares, "_newRandomOperator: failed to award shares to operator");
         assertTrue(delegationManager.isOperator(address(operator)), "_newRandomOperator: operator should be registered");
@@ -96,16 +89,10 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     function _newRandomOperator_NoAssets() internal returns (User) {
         User operator = _randUser_NoAssets(_getOperatorName());
 
-        /// Registration flow differs for M2 vs Slashing release
-        if (!isUpgraded) {
-            User_M2(payable(operator)).registerAsOperator_M2();
+        /// Registration flow is the same pre and post redistribution upgrade
+        operator.registerAsOperator();
 
-            operatorsToMigrate.push(operator);
-        } else {
-            operator.registerAsOperator();
-
-            rollForward({blocks: ALLOCATION_CONFIGURATION_DELAY + 1});
-        }
+        rollForward({blocks: ALLOCATION_CONFIGURATION_DELAY + 1});
 
         assertTrue(delegationManager.isOperator(address(operator)), "_newRandomOperator: operator should be registered");
         assertEq(delegationManager.delegatedTo(address(operator)), address(operator), "_newRandomOperator: should be self-delegated");
@@ -117,7 +104,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         numStakers++;
 
         string memory stakerNum = cheats.toString(numStakers);
-        string memory namePrefix = isUpgraded ? "staker" : "m2-staker";
+        string memory namePrefix = isUpgraded ? "staker" : "pre-redistribution-staker";
 
         return string.concat(namePrefix, stakerNum);
     }
@@ -127,7 +114,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         numOperators++;
 
         string memory operatorNum = cheats.toString(numOperators);
-        string memory namePrefix = isUpgraded ? "operator" : "m2-operator";
+        string memory namePrefix = isUpgraded ? "operator" : "pre-redistribution-operator";
 
         return string.concat(namePrefix, operatorNum);
     }
@@ -2431,9 +2418,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
 
     function _calcNativeETHOperatorShareDelta(User staker, int shareDelta) internal view returns (int) {
         // TODO: Maybe we update parent method to have an M2 and Slashing version?
-        int curPodOwnerShares;
-        if (!isUpgraded) curPodOwnerShares = IEigenPodManager_DeprecatedM2(address(eigenPodManager)).podOwnerShares(address(staker));
-        else curPodOwnerShares = eigenPodManager.podOwnerDepositShares(address(staker));
+        int curPodOwnerShares = eigenPodManager.podOwnerDepositShares(address(staker));
         int newPodOwnerShares = curPodOwnerShares + shareDelta;
 
         if (curPodOwnerShares <= 0) {

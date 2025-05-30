@@ -26,8 +26,6 @@ import "src/test/integration/mocks/BeaconChainMock.t.sol";
 
 import "src/test/integration/users/AVS.t.sol";
 import "src/test/integration/users/User.t.sol";
-import "src/test/integration/users/User_M1.t.sol";
-import "src/test/integration/users/User_M2.t.sol";
 
 import "script/utils/ExistingDeploymentParser.sol";
 
@@ -39,7 +37,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
     // Fork ids for specific fork tests
     bool isUpgraded;
-    uint mainnetForkBlock = 21_616_692; // Post Protocol Council upgrade
+    uint mainnetForkBlock = 22_514_370; // Post Pectra Compatibility Upgrade
 
     string version = "9.9.9";
 
@@ -591,12 +589,13 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             } else {
                 revert("_randUser: unimplemented userType");
             }
+            // Leaving this if statement for future upgraded users
         } else if (forkType == MAINNET && !isUpgraded) {
             if (userType == DEFAULT) {
-                user = User(new User_M2(name));
+                user = new User(name);
             } else if (userType == ALT_METHODS) {
                 // User will use nonstandard methods like `depositIntoStrategyWithSignature`
-                user = User(new User_M2(name));
+                user = User(new User_AltMethods(name));
             } else {
                 revert("_randUser: unimplemented userType");
             }

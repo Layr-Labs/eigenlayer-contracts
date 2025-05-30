@@ -229,25 +229,10 @@ contract ExistingDeploymentParser is Script, Logger {
             )
         );
 
-        allocationManagerImplementation = new AllocationManager(
-            delegationManager,
-            eigenLayerPauserReg,
-            permissionController,
-            DEALLOCATION_DELAY,
-            ALLOCATION_CONFIGURATION_DELAY,
-            SEMVER
-        );
-        allocationManager = AllocationManager(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(allocationManagerImplementation), address(eigenLayerProxyAdmin), ""
-                )
-            )
-        );
-
-        // // AllocationManager
-        // allocationManager = AllocationManager(json.readAddress(".addresses.allocationManager"));
-        // allocationManagerImplementation = json.readAddress(".addresses.allocationManagerImplementation");
+        // AllocationManager
+        allocationManager = AllocationManager(json.readAddress(".addresses.allocationManager"));
+        allocationManagerImplementation =
+            AllocationManager(json.readAddress(".addresses.allocationManagerImplementation"));
 
         // AVSDirectory
         avsDirectory = AVSDirectory(json.readAddress(".addresses.avsDirectory"));
@@ -258,9 +243,10 @@ contract ExistingDeploymentParser is Script, Logger {
         delegationManagerImplementation =
             DelegationManager(json.readAddress(".addresses.delegationManagerImplementation"));
 
-        // // PermissionController
-        // permissionController = PermissionController(json.readAddress(".addresses.permissionController"));
-        // permissionControllerImplementation = json.readAddress(".addresses.permissionControllerImplementation");
+        // PermissionController
+        permissionController = PermissionController(json.readAddress(".addresses.permissionController"));
+        permissionControllerImplementation =
+            PermissionController(json.readAddress(".addresses.permissionControllerImplementation"));
 
         // RewardsCoordinator
         rewardsCoordinator = RewardsCoordinator(json.readAddress(".addresses.rewardsCoordinator"));
