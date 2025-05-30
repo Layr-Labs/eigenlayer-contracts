@@ -673,44 +673,6 @@ contract SlashEscrowFactoryUnitTests_setStrategyEscrowDelay is SlashEscrowFactor
     }
 }
 
-contract SlashEscrowFactoryUnitTests_getBurnOrRedistributionDelay is SlashEscrowFactoryUnitTests {
-    function testFuzz_getBurnOrRedistributionDelay_correctness(uint r) public {
-        // Initialize arrays to store test data for multiple strategies
-        uint numStrategies = bound(r, 2, 10);
-        IStrategy[] memory strategies = new IStrategy[](numStrategies);
-        MockERC20[] memory tokens = new MockERC20[](numStrategies);
-        uint[] memory underlyingAmounts = new uint[](numStrategies);
-        uint32[] memory delays = new uint32[](numStrategies);
-
-        // Set global delay less than all the strategy delays.
-        cheats.prank(defaultOwner);
-        factory.setGlobalEscrowDelay(0.5 days / 12 seconds);
-
-        // Set up each strategy with random data and different delays
-        for (uint i = 0; i < numStrategies; i++) {
-            // Generate random strategy address and token
-            strategies[i] = IStrategy(cheats.randomAddress());
-            tokens[i] = new MockERC20();
-            underlyingAmounts[i] = cheats.randomUint();
-
-            // Set different delays for each strategy (increasing delays)
-            delays[i] = uint32((i + 1) * 1 days / 12 seconds); // 1 day, 2 days, 3 days, etc.
-
-            // Set the strategy-specific delay
-            cheats.prank(defaultOwner);
-            factory.setStrategyEscrowDelay(strategies[i], delays[i]);
-
-            // Start escrow for this strategy
-            _initiateSlashEscrow(defaultOperatorSet, defaultSlashId, strategies[i], tokens[i], underlyingAmounts[i]);
-            // Verify the escrow was started correctly
-            _checkStartEscrows(defaultOperatorSet, defaultSlashId, strategies[i], tokens[i], underlyingAmounts[i], i + 1);
-        }
-
-        // The complete block should be the maximum delay across all strategies
-        assertEq(factory.getEscrowCompleteBlock(defaultOperatorSet, defaultSlashId), block.number + delays[numStrategies - 1] + 1);
-    }
-}
-
 contract SlashEscrowFactoryUnitTests_getEscrowDelay is SlashEscrowFactoryUnitTests {
     function testFuzz_getEscrowDelay_correctness(uint r) public {
         // Initialize arrays to store test data for multiple strategies

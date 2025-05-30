@@ -15,6 +15,7 @@ import "src/test/utils/Logger.t.sol";
 
 import "src/test/utils/ArrayLib.sol";
 import "src/contracts/interfaces/IAVSRegistrar.sol";
+import "src/test/integration/deprecatedInterfaces/mainnet/IAllocationManager.sol";
 
 interface IAVSDeployer {
     function delegationManager() external view returns (IDelegationManager);
@@ -182,6 +183,44 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
         cheats.label(address(slashEscrowFactory.getSlashEscrow(OperatorSet(address(this), params.operatorSetId), slashId)), "slashEscrow");
         _tryPrankAppointee_AllocationManager(IAllocationManager.slashOperator.selector);
         (slashId, shares) = allocationManager.slashOperator(address(this), params);
+        print.gasUsed();
+    }
+
+    /// @notice Slash operator prior to redistribution.
+    /// @dev This is ONLY used by the redistribution upgrade test.
+    function slashOperator_PreRedistribution(SlashingParams memory params) public createSnapshot {
+        IAllocationManager_PreRedistribution.SlashingParams memory slashParams = IAllocationManager_PreRedistribution.SlashingParams({
+            operator: params.operator,
+            operatorSetId: params.operatorSetId,
+            strategies: params.strategies,
+            wadsToSlash: params.wadsToSlash,
+            description: params.description
+        });
+
+        for (uint i; i < params.strategies.length; ++i) {
+            string memory strategyName = params.strategies[i] == beaconChainETHStrategy
+                ? "Native ETH"
+                : IERC20Metadata(address(params.strategies[i].underlyingToken())).name();
+
+            print.method(
+                "slashOperator",
+                string.concat(
+                    "{operator: ",
+                    User(payable(params.operator)).NAME_COLORED(),
+                    ", operatorSetId: ",
+                    cheats.toString(params.operatorSetId),
+                    ", strategy: ",
+                    strategyName,
+                    ", wadToSlash: ",
+                    params.wadsToSlash[i].asWad(),
+                    "}"
+                )
+            );
+        }
+
+        _tryPrankAppointee_AllocationManager(IAllocationManager.slashOperator.selector);
+
+        IAllocationManager_PreRedistribution(address(allocationManager)).slashOperator(address(this), slashParams);
         print.gasUsed();
     }
 
