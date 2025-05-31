@@ -65,17 +65,29 @@ interface ICertificateVerifierTypes is
 
 interface ICertificateVerifierEvents is ICertificateVerifierTypes {
     /// @notice Emitted when an ECDSA table is updated
-    event ECDSATableUpdated(uint32 referenceTimestamp, ECDSAOperatorInfo[] operatorInfos);
+    event ECDSATableUpdated(OperatorSet operatorSet, uint32 referenceTimestamp, ECDSAOperatorInfo[] operatorInfos);
 
     /// @notice Emitted when a BN254 table is updated
-    event BN254TableUpdated(uint32 referenceTimestamp, BN254OperatorSetInfo operatorSetInfo);
+    event BN254TableUpdated(OperatorSet operatorSet, uint32 referenceTimestamp, BN254OperatorSetInfo operatorSetInfo);
+
+    /// @notice Emitted when the owner of an operatorSet is updated
+    event OperatorSetOwnerUpdated(OperatorSet operatorSet, address owner);
+
+    /// @notice Emitted when the max staleness period of an operatorSet is updated
+    event MaxStalenessPeriodUpdated(OperatorSet operatorSet, uint32 maxStalenessPeriod);
 }
 
 interface ICertificateVerifierErrors {
     /// @notice Thrown when the table updater is not caller
     error OnlyTableUpdater();
-    /// @notice Thrown when the table is too stale
-    error TableStale();
+    /// @notice Thrown when the table update is stale
+    error TableUpdateStale();
+    /// @notice Thrown when array lengths mismatch
+    error ArrayLengthMismatch();
+    /// @notice Thrown when the certificate is too stale
+    error CertificateStale();
+    /// @notice Thrown when the reference timestamp does not exist
+    error ReferenceTimestampDoesNotExist();
     /// @notice Thrown when certificate verification fails
     error VerificationFailed();
 }
@@ -94,6 +106,7 @@ interface ICertificateVerifier is ICertificateVerifierEvents, ICertificateVerifi
      * @param OperatorSetConfig the configuration of the operatorSet
      * @dev only callable by the operatorTableUpdater for the given operatorSet
      * @dev We pass in an `operatorSet` for future-proofing a global `TableManager` contract
+     * @dev The `referenceTimestamp` must be greater than the latest reference timestamp for the given operatorSet
      */
     function updateECDSAOperatorTable(
         OperatorSet calldata operatorSet,
@@ -149,6 +162,7 @@ interface ICertificateVerifier is ICertificateVerifierEvents, ICertificateVerifi
      * @param OperatorSetConfig the configuration of the operatorSet
      * @dev only callable by the operatorTableUpdater for the given operatorSet
      * @dev We pass in an `operatorSet` for future-proofing a global `TableManager` contract
+     * @dev The `referenceTimestamp` must be greater than the latest reference timestamp for the given operatorSet
      */
     function updateBN254OperatorTable(
         OperatorSet calldata operatorSet,
