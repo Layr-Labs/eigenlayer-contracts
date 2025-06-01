@@ -14,16 +14,15 @@ contract DelegationManagerHarness is DelegationManager {
         IPermissionController _permissionController,
         uint32 _MIN_WITHDRAWAL_DELAY
     )
-    
-    DelegationManager(
-        _strategyManager,
-        _eigenPodManager,
-        _allocationManager,
-        _pauserRegistry,
-        _permissionController,
-        _MIN_WITHDRAWAL_DELAY,
-        TestConstants.TEST_VERSION
-    )
+        DelegationManager(
+            _strategyManager,
+            _eigenPodManager,
+            _allocationManager,
+            _pauserRegistry,
+            _permissionController,
+            _MIN_WITHDRAWAL_DELAY,
+            TestConstants.TEST_VERSION
+        )
     {}
 
     function getSlashingFactor(address staker, IStrategy strategy, uint64 operatorMaxMagnitude) external view returns (uint) {
