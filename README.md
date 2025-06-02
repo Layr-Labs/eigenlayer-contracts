@@ -13,9 +13,9 @@ The deployments on `mainnet`, `holesky`, `sepolia`, and `hoodi` are on the below
 | Environment | Version |
 | -------- | -------- |
 | Mainnet Ethereum | [`v1.4.1`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.4.1) |
-| Testnet Holesky | [`v1.5.0-rc.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.5.0-rc.0) |
-| Testnet Sepolia | [`v1.5.0-rc.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.5.0-rc.0) |
-| Testnet Hoodi | [`v1.5.0-rc.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.5.0-rc.0) |
+| Testnet Holesky | [`v1.5.0](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.5.0-rc.0) |
+| Testnet Sepolia | [`v1.5.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.5.0-rc.0) |
+| Testnet Hoodi | [`v1.5.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.5.0-rc.0) |
 
 ### Current Deployment Contracts
 
@@ -121,11 +121,13 @@ You can view the deployed contract addresses below, or check out the code itself
 
 ###### Slashing
 
-These contracts handle the burning/redistribution of slashed funds. The `SlashEscrowFactory` is upgradeable by the `SlashEscrowProxyAdmin`. 
+These contracts handle the burning/redistribution of slashed funds. The `SlashEscrowFactory` is upgradeable by the `SlashEscrowProxyAdmin`:
 
+| Name | Proxy | Implementation | Notes |
+| -------- | -------- | -------- | -------- |
+| [`OZ Proxy Admin: (SlashEscrowFactory)`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/ProxyAdmin.sol) | - | [`0x18dc...966b`](https://holesky.etherscan.io/address/0x0AA4F4791872211374d5912B67F5673E757CE430) | |
 | [`SlashEscrowFactory`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.5.0-rc.0/src/contracts/core/SlashEscrowFactory.sol) | [`0xcc444eccD13E29033A46D3cbd4d30a2f70c10cbe`](https://holesky..etherscan.io/address/0xA5022befe84Ad0f5aAdc12e9c59230bc076083A5) | [`0xB643...348B`](https://holesky.etherscan.io/address/0xB64333C42F3c187744ad9F5d317C243A7788348B) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 | [`SlashEscrow (Clone Implementation)`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.5.0-rc.0/src/contracts/core/SlashEscrow.sol) |  | [`0xa84b...ab2d`](https://holesky.etherscan.io/address/0x9c4cAc1e205cB33B4596E4f612eFdFDAe278A9CC) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
-
 
 ###### Strategies
 
@@ -135,7 +137,6 @@ Anyone can deploy and whitelist strategies for standard ERC20s by using the `Str
 | -------- | -------- | -------- | -------- | 
 | [`StrategyFactory`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.4.2/src/contracts/strategies/StrategyFactory.sol) | [`0x9c01252B580efD11a05C00Aa42Dd3ac1Ec52DF6d`](https://holesky.etherscan.io/address/0x9c01252B580efD11a05C00Aa42Dd3ac1Ec52DF6d) | [`0x84aa...a7d`](https://holesky.etherscan.io/address/0x84aaD0F753b84Cd68F36Ff207DDfA0f2865b1a7d) | Proxy: [`TUP@4.7.1`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 | [`StrategyBase`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.4.2/src/contracts/strategies/StrategyBase.sol) | [`0xd3c6C6BA4E40dB9288c6a2077e5635344F8aFA4F`](https://holesky.etherscan.io/address/0xd3c6C6BA4E40dB9288c6a2077e5635344F8aFA4F) | [`0x0xbD16...3427`](https://holesky.etherscan.io/address/0xbD161189bCdb7d948761D74A84E34AB193B83427) | - Beacon: [`BeaconProxy`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.0/contracts/proxy/beacon/BeaconProxy.sol) <br />- Strategies: [`UpgradeableBeacon`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.4.1/contracts/proxy/beacon/UpgradeableBeacon.sol) |
-| [`OZ: Proxy Admin (`SlashEscrowProxyAdmin)`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/ProxyAdmin.sol) | - | [`0x0AA4F4791872211374d5912B67F5673E757CE430`](https://holesky.etherscan.io/address/0x0AA4F4791872211374d5912B67F5673E757CE430) | |
 
 The following strategies were originally deployed and whitelisted outside of the `StrategyFactory`:
 
@@ -280,12 +281,12 @@ The following strategies differ significantly from the other strategies deployed
 
 | Name | Proxy | Implementation | Notes |
 | -------- | -------- | -------- | -------- |
-| [`DelegationManager`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.4.1/src/contracts/core/DelegationManager.sol) | [`0x867837a9722C512e0862d8c2E15b8bE220E8b87d`](https://hoodi.etherscan.io/address/0x867837a9722C512e0862d8c2E15b8bE220E8b87d) | [`0xf3bC...aABe5`](https://hoodi.etherscan.io/address/0xf3bC41Ce245F7C20c99E584313cD0B414D5aABe5) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
-| [`StrategyManager`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.4.1/src/contracts/core/StrategyManager.sol) | [`0xeE45e76ddbEDdA2918b8C7E3035cd37Eab3b5D41`](https://hoodi.etherscan.io/address/0xeE45e76ddbEDdA2918b8C7E3035cd37Eab3b5D41) | [`0x1916...0EB6`](https://hoodi.etherscan.io/address/0x19165891b0ADAE0a69AdCD4156E8AF80C8cf0EB6) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
-| [`EigenPodManager`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.4.1/src/contracts/pods/EigenPodManager.sol) | [`0xcd1442415Fc5C29Aa848A49d2e232720BE07976c`](https://hoodi.etherscan.io/address/0xcd1442415Fc5C29Aa848A49d2e232720BE07976c) | [`0x5A0e...0810`](https://hoodi.etherscan.io/address/0x5A0eE5d133eE5E1487A75A520dC0E821d7660810) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+| [`DelegationManager`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.5.0-rc.0/src/contracts/core/DelegationManager.sol) | [`0x867837a9722C512e0862d8c2E15b8bE220E8b87d`](https://hoodi.etherscan.io/address/0x867837a9722C512e0862d8c2E15b8bE220E8b87d) | [`0xf3bC...aABe5`](https://hoodi.etherscan.io/address/0xf3bC41Ce245F7C20c99E584313cD0B414D5aABe5) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+| [`StrategyManager`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.5.0-rc.0/src/contracts/core/StrategyManager.sol) | [`0xeE45e76ddbEDdA2918b8C7E3035cd37Eab3b5D41`](https://hoodi.etherscan.io/address/0xeE45e76ddbEDdA2918b8C7E3035cd37Eab3b5D41) | [`0x1916...0EB6`](https://hoodi.etherscan.io/address/0x19165891b0ADAE0a69AdCD4156E8AF80C8cf0EB6) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+| [`EigenPodManager`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.5.0-rc.0/src/contracts/pods/EigenPodManager.sol) | [`0xcd1442415Fc5C29Aa848A49d2e232720BE07976c`](https://hoodi.etherscan.io/address/0xcd1442415Fc5C29Aa848A49d2e232720BE07976c) | [`0x5A0e...0810`](https://hoodi.etherscan.io/address/0x5A0eE5d133eE5E1487A75A520dC0E821d7660810) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 | [`AVSDirectory`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.4.1/src/contracts/core/AVSDirectory.sol) | [`0xD58f6844f79eB1fbd9f7091d05f7cb30d3363926`](https://hoodi.etherscan.io/address/0xD58f6844f79eB1fbd9f7091d05f7cb30d3363926) | [`0xd290...5d5c`](https://hoodi.etherscan.io/address/0xd2905B858cA5Ded115B61dd9E98F7dcF9aEE2d5c) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 | [`RewardsCoordinator`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.4.1/src/contracts/core/RewardsCoordinator.sol) | [`0x29e8572678e0c272350aa0b4B8f304E47EBcd5e7`](https://hoodi.etherscan.io/address/0x29e8572678e0c272350aa0b4B8f304E47EBcd5e7) | [`0xe786...2832`](https://hoodi.etherscan.io/address/0xe786FD0dE8a6001772386700318187Dc438a2832) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
-| [`AllocationManager`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.4.1/src/contracts/core/AllocationManager.sol) | [`0x95a7431400F362F3647a69535C5666cA0133CAA0`](https://hoodi.etherscan.io/address/0x95a7431400F362F3647a69535C5666cA0133CAA0) | [`0xA004...8330`](https://hoodi.etherscan.io/address/0xA0047a6b4cD97D3929ab8192a31F92b97E078330) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+| [`AllocationManager`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.5.0-rc.0/src/contracts/core/AllocationManager.sol) | [`0x95a7431400F362F3647a69535C5666cA0133CAA0`](https://hoodi.etherscan.io/address/0x95a7431400F362F3647a69535C5666cA0133CAA0) | [`0xA004...8330`](https://hoodi.etherscan.io/address/0xA0047a6b4cD97D3929ab8192a31F92b97E078330) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 | [`PermissionController`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.4.1/src/contracts/permissions/PermissionController.sol) | [`0xdcCF401fD121d8C542E96BC1d0078884422aFAD2`](https://hoodi.etherscan.io/address/0xdcCF401fD121d8C542E96BC1d0078884422aFAD2) | [`0x2D73...eA27`](https://hoodi.etherscan.io/address/0x2D731E7993a100afd19454B98eEEC7b90366eA27) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 
 ###### Strategies
