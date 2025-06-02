@@ -25,7 +25,7 @@ Libraries and Mixins:
 
 The `DelegationManager` is the intersection between the two sides of the protocol. It (i) allows stakers to delegate/undelegate to/from operators, (ii) handles withdrawals and withdrawal processing for assets in both the `StrategyManager` and `EigenPodManager`, and (iii) manages accounting around slashing for stakers and operators.
 
-When operators are slashed by AVSs, it receives share burning directives from the `AllocationManager`. When stakers deposit assets using the `StrategyManager/EigenPodManager`, it tracks share/delegation accounting changes. The `DelegationManager` combines inputs from both sides of the protocol into a staker's "deposit scaling factor," which serves as the primary conversion vehicle between a staker's _raw deposited assets_ and the _amount they can withdraw_.
+When operators are slashed by AVSs, it receives share slashing directives from the `AllocationManager`. When stakers deposit assets using the `StrategyManager/EigenPodManager`, it tracks share/delegation accounting changes. The `DelegationManager` combines inputs from both sides of the protocol into a staker's "deposit scaling factor," which serves as the primary conversion vehicle between a staker's _raw deposited assets_ and the _amount they can withdraw_.
 
 The `DelegationManager's` responsibilities can be broken down into the following concepts:
 * [Becoming an Operator](#becoming-an-operator)
@@ -230,7 +230,7 @@ mapping(address staker => EnumerableSet.Bytes32Set withdrawalRoots) internal _st
 mapping(bytes32 withdrawalRoot => Withdrawal withdrawal) public queuedWithdrawals;
 
 /// @notice Contains history of the total cumulative staker withdrawals for an operator and a given strategy.
-/// Used to calculate burned StrategyManager shares when an operator is slashed.
+/// Used to calculate burned/redistributed StrategyManager shares when an operator is slashed.
 /// @dev Stores scaledShares instead of total withdrawn shares to track current slashable shares, dependent on the maxMagnitude
 mapping(address operator => mapping(IStrategy strategy => Snapshots.DefaultZeroHistory)) internal
     _cumulativeScaledSharesHistory;
@@ -396,7 +396,7 @@ Just as with a normal queued withdrawal, these withdrawals can be completed by t
         * See [`StrategyManager.removeDepositShares`](./StrategyManager.md#removedepositshares)
     * _Deposit shares_ are converted to _withdrawable shares_ (See [Slashing Factors and Scaling Shares](#slashing-factors-and-scaling-shares)). These are decremented from the operator's delegated shares.
     * _Deposit shares_ are converted to _scaled shares_  (See [Shares Accounting - Queue Withdrawals](./accounting/SharesAccounting.md#queue-withdrawal)), which are stored in the `Withdrawal` struct
-    * _Scaled shares_ are pushed to `_cumulativeScaledSharesHistory`, which is used for burning slashed shares
+    * _Scaled shares_ are pushed to `_cumulativeScaledSharesHistory`, which is used for burning or redistributing slashed shares
     * The `Withdrawal` is saved to storage
         * The hash of the `Withdrawal` is marked as "pending"
         * The hash of the `Withdrawal` is set in a mapping to the `Withdrawal` struct itself
@@ -487,7 +487,7 @@ For each `QueuedWithdrawalParams` passed as input, a `Withdrawal` is created in 
 * The raw _deposit shares_ are removed from the staker's deposit share balance in the corresponding share manager (`EigenPodManager` or `StrategyManager`).
 * _Scaled shares_ are calculated by applying the staker's _deposit scaling factor_ to their _deposit shares_. Scaled shares:
     * are stored in the `Withdrawal` itself and used during withdrawal completion
-    * are added to the operator's `cumulativeScaledSharesHistory`, where they can be burned if slashing occurs while the withdrawal is in the queue
+    * are added to the operator's `cumulativeScaledSharesHistory`, where they can be burned or redistributed if slashing occurs while the withdrawal is in the queue
 * _Withdrawable shares_ are calculated by applying both the staker's _deposit scaling factor_ AND any appropriate _slashing factor_ to the staker's _deposit shares_. These "currently withdrawable shares" are removed from the operator's delegated shares (if applicable).
 
 Note that the `QueuedWithdrawalParams.__deprecated_withdrawer` field is ignored. Originally, this was used to create withdrawals that could be completed by a third party. This functionality was removed during the M2 release due to growing concerns over the phish risk this presented. Until the slashing release, this field was explicitly checked for equivalence with `msg.sender`; however, at present it is ignored. All `Withdrawals` are created with `withdrawer == staker` regardless of this field's value.
@@ -499,7 +499,7 @@ Note that the `QueuedWithdrawalParams.__deprecated_withdrawer` field is ignored.
         * See [`StrategyManager.removeDepositShares`](./StrategyManager.md#removedepositshares)
     * _Deposit shares_ are converted to _withdrawable shares_ (See [Slashing Factors and Scaling Deposits](#slashing-factors-and-scaling-shares)). These are decremented from their operator's delegated shares (if applicable)
     * _Deposit shares_ are converted to _scaled shares_  (See [Shares Accounting - Queue Withdrawals](./accounting/SharesAccounting.md#queue-withdrawal)), which are stored in the `Withdrawal` struct
-    * If the caller is delegated to an operator, _scaled shares_ are pushed to that operator's `_cumulativeScaledSharesHistory`, which may be burned if slashing occurs.
+    * If the caller is delegated to an operator, _scaled shares_ are pushed to that operator's `_cumulativeScaledSharesHistory`, which may be burned or redistributed if slashing occurs.
     * The `Withdrawal` is saved to storage
         * The hash of the `Withdrawal` is marked as "pending"
         * The hash of the `Withdrawal` is set in a mapping to the `Withdrawal` struct itself
@@ -644,18 +644,23 @@ These methods are all called by other system contracts: the `AllocationManager` 
 
 ```solidity
 /**
- * @notice Decreases the operators shares in storage after a slash and increases the burnable shares by calling
+ * @notice Decreases the operators shares in storage after a slash and increases the burn or redistributable shares by calling
  * into either the StrategyManager or EigenPodManager (if the strategy is beaconChainETH).
  * @param operator The operator to decrease shares for
+ * @param operatorSet The OperatorSet to decrease shares for
+ * @param slashID The slashID to decrease shares for
  * @param strategy The strategy to decrease shares for
  * @param prevMaxMagnitude the previous maxMagnitude of the operator
  * @param newMaxMagnitude the new maxMagnitude of the operator
  * @dev Callable only by the AllocationManager
  * @dev Note: Assumes `prevMaxMagnitude <= newMaxMagnitude`. This invariant is maintained in
  * the AllocationManager.
+ * @return depositSharesToSlash The total deposit shares to slash (burn or redistribute).
  */
 function slashOperatorShares(
     address operator,
+    OperatorSet calldata operatorSet,
+    uint256 slashId,
     IStrategy strategy,
     uint64 prevMaxMagnitude,
     uint64 newMaxMagnitude
@@ -663,21 +668,22 @@ function slashOperatorShares(
     external
     onlyAllocationManager
     nonReentrant
+    returns (uint256 depositSharesToSlash)
 ```
 
 _See [Shares Accounting - Slashing](https://github.com/Layr-Labs/eigenlayer-contracts/blob/slashing-magnitudes/docs/core/accounting/SharesAccounting.md#slashing) for a description of the accounting in this method._
 
 This method is called by the `AllocationManager` when processing an AVS's slash of an operator. Slashing occurs instantly, with this method directly reducing the operator's delegated shares proportional to the slash.
 
-Additionally, any _slashable shares_ in the withdrawal queue are marked for burning according to the same slashing proportion (shares in the withdrawal queue remain slashable for `MIN_WITHDRAWAL_DELAY_BLOCKS`). For the slashed strategy, the corresponding share manager (`EigenPodManager/StrateyManager`) is called, increasing the burnable shares for that strategy.
+Additionally, any _slashable shares_ in the withdrawal queue are marked for burn or redistribution according to the same slashing proportion (shares in the withdrawal queue remain slashable for `MIN_WITHDRAWAL_DELAY_BLOCKS`). For the slashed strategy, the corresponding share manager (`EigenPodManager/StrateyManager`) is called, increasing the burn or redistributable shares for that operatorSet, slashId, and strategy combination. 
 
-**Note**: native ETH does not currently possess a burning mechanism, as this requires Pectra to be able to force exit validators. Currently, slashing for the `beaconChainETHStrategy` is realized by modifying the amount stakers are able to withdraw.
+**Note**: native ETH does not currently possess a burn/redistribution mechanism, as this requires Pectra to be able to force exit validators. Currently, slashing for the `beaconChainETHStrategy` is realized by modifying the amount stakers are able to withdraw.
 
 *Effects*:
 * The `operator's` `operatorShares` are reduced for the given `strategy`, according to the proportion given by `prevMaxMagnitude` and `newMaxMagnitude`
-* Any slashable shares in the withdrawal queue are marked for burning according to the same proportion
-* See [`StrategyManager.increaseBurnableShares`](./StrategyManager.md#increaseBurnableShares)
-* See [`EigenPodManager.increaseBurnableShares`](./EigenPodManager.md#increaseBurnableShares)
+* Any slashable shares in the withdrawal queue are marked for burning or redistribution according to the same proportion
+* See [`StrategyManager.increaseBurnOrRedistributableShares`](./StrategyManager.md#increaseBurnableShares)
+* See [`EigenPodManager.increaseBurnOrRedistributableShares`](./EigenPodManager.md#increaseBurnableShares)
 
 
 *Requirements*:

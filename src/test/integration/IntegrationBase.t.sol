@@ -13,7 +13,6 @@ import "src/test/integration/TypeImporter.t.sol";
 import "src/test/integration/IntegrationDeployer.t.sol";
 import "src/test/integration/TimeMachine.t.sol";
 import "src/test/integration/users/User.t.sol";
-import "src/test/integration/users/User_M1.t.sol";
 
 abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     using StdStyle for *;
@@ -75,16 +74,10 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         uint[] memory addedShares = _calculateExpectedShares(strategies, tokenBalances);
         operator.depositIntoEigenlayer(strategies, tokenBalances);
 
-        /// Registration flow differs for M2 vs Slashing release
-        if (!isUpgraded) {
-            User_M2(payable(operator)).registerAsOperator_M2();
+        /// Registration flow is the same pre and post redistribution upgrade
+        operator.registerAsOperator();
 
-            operatorsToMigrate.push(operator);
-        } else {
-            operator.registerAsOperator();
-
-            rollForward({blocks: ALLOCATION_CONFIGURATION_DELAY + 1});
-        }
+        rollForward({blocks: ALLOCATION_CONFIGURATION_DELAY + 1});
 
         assert_Snap_Added_OperatorShares(operator, strategies, addedShares, "_newRandomOperator: failed to award shares to operator");
         assertTrue(delegationManager.isOperator(address(operator)), "_newRandomOperator: operator should be registered");
@@ -96,16 +89,10 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     function _newRandomOperator_NoAssets() internal returns (User) {
         User operator = _randUser_NoAssets(_getOperatorName());
 
-        /// Registration flow differs for M2 vs Slashing release
-        if (!isUpgraded) {
-            User_M2(payable(operator)).registerAsOperator_M2();
+        /// Registration flow is the same pre and post redistribution upgrade
+        operator.registerAsOperator();
 
-            operatorsToMigrate.push(operator);
-        } else {
-            operator.registerAsOperator();
-
-            rollForward({blocks: ALLOCATION_CONFIGURATION_DELAY + 1});
-        }
+        rollForward({blocks: ALLOCATION_CONFIGURATION_DELAY + 1});
 
         assertTrue(delegationManager.isOperator(address(operator)), "_newRandomOperator: operator should be registered");
         assertEq(delegationManager.delegatedTo(address(operator)), address(operator), "_newRandomOperator: should be self-delegated");
@@ -117,7 +104,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         numStakers++;
 
         string memory stakerNum = cheats.toString(numStakers);
-        string memory namePrefix = isUpgraded ? "staker" : "m2-staker";
+        string memory namePrefix = isUpgraded ? "staker" : "pre-redistribution-staker";
 
         return string.concat(namePrefix, stakerNum);
     }
@@ -127,7 +114,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         numOperators++;
 
         string memory operatorNum = cheats.toString(numOperators);
-        string memory namePrefix = isUpgraded ? "operator" : "m2-operator";
+        string memory namePrefix = isUpgraded ? "operator" : "pre-redistribution-operator";
 
         return string.concat(namePrefix, operatorNum);
     }
@@ -202,15 +189,16 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         view
     {
         for (uint i = 0; i < strategies.length; i++) {
-            IStrategy strat = strategies[i];
-
-            uint expectedBalance = expectedBalances[i];
-            uint tokenBalance;
-            if (strat == BEACONCHAIN_ETH_STRAT) tokenBalance = address(user).balance;
-            else tokenBalance = strat.underlyingToken().balanceOf(address(user));
-
-            assertApproxEqAbs(expectedBalance, tokenBalance, 1, err);
+            assert_HasUnderlyingTokenBalance(user, strategies[i], expectedBalances[i], err);
         }
+    }
+
+    function assert_HasUnderlyingTokenBalance(User user, IStrategy strategy, uint expectedBalance, string memory err) internal view {
+        uint tokenBalance;
+        if (strategy == BEACONCHAIN_ETH_STRAT) tokenBalance = address(user).balance;
+        else tokenBalance = strategy.underlyingToken().balanceOf(address(user));
+
+        assertApproxEqAbs(expectedBalance, tokenBalance, 1, err);
     }
 
     function assert_HasNoUnderlyingTokenBalance(User user, IStrategy[] memory strategies, string memory err) internal view {
@@ -1404,18 +1392,42 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
-    function assert_Snap_Increased_BurnableShares(User operator, SlashingParams memory params, string memory err) internal {
-        uint[] memory curBurnable = _getBurnableShares(params.strategies);
-        uint[] memory prevBurnable = _getPrevBurnableShares(params.strategies);
-
+    function assert_Snap_Increased_BurnableShares(
+        OperatorSet memory operatorSet,
+        User operator,
+        SlashingParams memory params,
+        uint slashId,
+        string memory err
+    ) internal {
         uint[] memory curShares = _getOperatorShares(operator, params.strategies);
         uint[] memory prevShares = _getPrevOperatorShares(operator, params.strategies);
 
         for (uint i = 0; i < params.strategies.length; i++) {
+            uint curBurnable = _getBurnOrRedistributableShares(operatorSet, slashId, params.strategies[i]);
+            uint prevBurnable = _getPrevBurnOrRedistributableShares(operatorSet, slashId, params.strategies[i]);
             uint slashedAtLeast = prevShares[i] - curShares[i];
-
             // Not factoring in slashable shares in queue here, because that gets more complex (TODO)
-            assertTrue(curBurnable[i] >= (prevBurnable[i] + slashedAtLeast), err);
+            assertTrue(curBurnable >= (prevBurnable + slashedAtLeast), err);
+
+            // TODO: Improve this check in the future, it's not very optimized.
+            // In the future, we can simply use a flag to communicate whether the operator set is redistributable.
+            if (curShares[i] == prevShares[i]) continue;
+            bool flag = false;
+            for (uint j = 0; j < params.strategies.length; j++) {
+                if (params.strategies[j] == BEACONCHAIN_ETH_STRAT) flag = true;
+            }
+            if (flag) continue;
+
+            assertTrue(_getIsPendingOperatorSet(operatorSet), "operator set should be pending");
+
+            assertTrue(_getIsPendingSlashId(operatorSet, slashId), "slash id should be pending");
+            assertFalse(_getPrevIsPendingSlashId(operatorSet, slashId), "slash id should not be pending");
+
+            assertEq(_getEscrowStartBlock(operatorSet, slashId), block.number, "escrow start block should be current block");
+            assertEq(_getPrevEscrowStartBlock(operatorSet, slashId), 0, "escrow start block should be 0");
+
+            assertTrue(_getIsDeployedSlashEscrow(operatorSet, slashId), "escrow should be deployed");
+            assertFalse(_getPrevIsDeployedSlashEscrow(operatorSet, slashId), "escrow should not be deployed");
         }
     }
 
@@ -2186,7 +2198,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
-    function _genSlashing_Half(User operator, OperatorSet memory operatorSet) internal view returns (SlashingParams memory params) {
+    function _genSlashing_Half(User operator, OperatorSet memory operatorSet) internal returns (SlashingParams memory params) {
         params.operator = address(operator);
         params.operatorSetId = operatorSet.id;
         params.description = "genSlashing_Half";
@@ -2199,7 +2211,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
-    function _genSlashing_Full(User operator, OperatorSet memory operatorSet) internal view returns (SlashingParams memory params) {
+    function _genSlashing_Full(User operator, OperatorSet memory operatorSet) internal returns (SlashingParams memory params) {
         params.operator = address(operator);
         params.operatorSetId = operatorSet.id;
         params.description = "_genSlashing_Full";
@@ -2212,9 +2224,24 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
+    function _genSlashing_SingleStrategy(User operator, OperatorSet memory operatorSet, IStrategy strategy)
+        internal
+        returns (SlashingParams memory params)
+    {
+        params.operator = address(operator);
+        params.operatorSetId = operatorSet.id;
+        params.description = "_genSlashing_SingleStrategy";
+        params.strategies = strategy.toArray();
+        params.wadsToSlash = new uint[](params.strategies.length);
+
+        // slash 100%
+        for (uint i = 0; i < params.wadsToSlash.length; i++) {
+            params.wadsToSlash[i] = 1e18;
+        }
+    }
+
     function _genSlashing_Custom(User operator, OperatorSet memory operatorSet, uint wadsToSlash)
         internal
-        view
         returns (SlashingParams memory params)
     {
         params.operator = address(operator);
@@ -2234,7 +2261,6 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
 
     function _strategiesAndWadsForFullSlash(OperatorSet memory operatorSet)
         internal
-        view
         returns (IStrategy[] memory strategies, uint[] memory wadsToSlash)
     {
         // Get list of all strategies in an operator set.
@@ -2392,9 +2418,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
 
     function _calcNativeETHOperatorShareDelta(User staker, int shareDelta) internal view returns (int) {
         // TODO: Maybe we update parent method to have an M2 and Slashing version?
-        int curPodOwnerShares;
-        if (!isUpgraded) curPodOwnerShares = IEigenPodManager_DeprecatedM2(address(eigenPodManager)).podOwnerShares(address(staker));
-        else curPodOwnerShares = eigenPodManager.podOwnerDepositShares(address(staker));
+        int curPodOwnerShares = eigenPodManager.podOwnerDepositShares(address(staker));
         int newPodOwnerShares = curPodOwnerShares + shareDelta;
 
         if (curPodOwnerShares <= 0) {
@@ -2530,6 +2554,10 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
             }
         }
         cheats.roll(latest + 1);
+    }
+
+    function _rollBlocksForCompleteSlashEscrow() internal {
+        cheats.roll(block.number + INITIAL_GLOBAL_DELAY_BLOCKS + 1);
     }
 
     /// @dev Uses timewarp modifier to get the operator set strategy allocations at the last snapshot.
@@ -2708,19 +2736,54 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         return allocationManager.isMemberOfOperatorSet(address(operator), operatorSet);
     }
 
-    function _getPrevBurnableShares(IStrategy[] memory strategies) internal timewarp returns (uint[] memory) {
-        return _getBurnableShares(strategies);
+    function _getPrevBurnOrRedistributableShares(OperatorSet memory operatorSet, uint slashId, IStrategy strategy)
+        internal
+        timewarp
+        returns (uint)
+    {
+        return _getBurnOrRedistributableShares(operatorSet, slashId, strategy);
     }
 
-    function _getBurnableShares(IStrategy[] memory strategies) internal view returns (uint[] memory) {
-        uint[] memory burnableShares = new uint[](strategies.length);
+    function _getBurnOrRedistributableShares(OperatorSet memory operatorSet, uint slashId, IStrategy strategy)
+        internal
+        view
+        returns (uint)
+    {
+        return strategy == beaconChainETHStrategy
+            ? eigenPodManager.burnableETHShares()
+            : strategyManager.getBurnOrRedistributableShares(operatorSet, slashId, strategy);
+    }
 
-        for (uint i = 0; i < strategies.length; i++) {
-            if (strategies[i] == beaconChainETHStrategy) burnableShares[i] = eigenPodManager.burnableETHShares();
-            else burnableShares[i] = strategyManager.getBurnableShares(strategies[i]);
-        }
+    function _getPrevIsPendingOperatorSet(OperatorSet memory operatorSet) internal timewarp returns (bool) {
+        return _getIsPendingOperatorSet(operatorSet);
+    }
 
-        return burnableShares;
+    function _getIsPendingOperatorSet(OperatorSet memory operatorSet) internal view returns (bool) {
+        return slashEscrowFactory.isPendingOperatorSet(operatorSet);
+    }
+
+    function _getPrevIsPendingSlashId(OperatorSet memory operatorSet, uint slashId) internal timewarp returns (bool) {
+        return _getIsPendingSlashId(operatorSet, slashId);
+    }
+
+    function _getIsPendingSlashId(OperatorSet memory operatorSet, uint slashId) internal view returns (bool) {
+        return slashEscrowFactory.isPendingSlashId(operatorSet, slashId);
+    }
+
+    function _getPrevEscrowStartBlock(OperatorSet memory operatorSet, uint slashId) internal timewarp returns (uint) {
+        return _getEscrowStartBlock(operatorSet, slashId);
+    }
+
+    function _getEscrowStartBlock(OperatorSet memory operatorSet, uint slashId) internal view returns (uint) {
+        return slashEscrowFactory.getEscrowStartBlock(operatorSet, slashId);
+    }
+
+    function _getPrevIsDeployedSlashEscrow(OperatorSet memory operatorSet, uint slashId) internal timewarp returns (bool) {
+        return _getIsDeployedSlashEscrow(operatorSet, slashId);
+    }
+
+    function _getIsDeployedSlashEscrow(OperatorSet memory operatorSet, uint slashId) internal view returns (bool) {
+        return slashEscrowFactory.isDeployedSlashEscrow(operatorSet, slashId);
     }
 
     function _getPrevSlashableSharesInQueue(User operator, IStrategy[] memory strategies) internal timewarp returns (uint[] memory) {

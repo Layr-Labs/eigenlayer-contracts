@@ -57,12 +57,12 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
 
     function setUp() public virtual override {
         EigenLayerUnitTestSetup.setUp();
-        _initializeAllocationManager(address(this), pauserRegistry, 0);
+        _initializeAllocationManager(pauserRegistry, 0);
         tokenMock = new ERC20PresetFixedSupply("Mock Token", "MOCK", type(uint).max, address(this));
         strategyMock = StrategyBase(
             address(
                 new TransparentUpgradeableProxy(
-                    address(new StrategyBase(IStrategyManager(address(strategyManagerMock)), pauserRegistry, "v9.9.9")),
+                    address(new StrategyBase(IStrategyManager(address(strategyManagerMock)), pauserRegistry, "9.9.9")),
                     address(eigenLayerProxyAdmin),
                     abi.encodeWithSelector(StrategyBase.initialize.selector, tokenMock)
                 )
@@ -85,7 +85,7 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
     /// Internal Helpers
     /// -----------------------------------------------------------------------
 
-    function _initializeAllocationManager(address _initialOwner, IPauserRegistry _pauserRegistry, uint _initialPausedStatus)
+    function _initializeAllocationManager(IPauserRegistry _pauserRegistry, uint _initialPausedStatus)
         internal
         returns (AllocationManagerHarness)
     {
@@ -102,7 +102,7 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
                         )
                     ),
                     address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(AllocationManager.initialize.selector, _initialOwner, _initialPausedStatus)
+                    abi.encodeWithSelector(AllocationManager.initialize.selector, _initialPausedStatus)
                 )
             )
         );
@@ -135,6 +135,35 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
 
         cheats.prank(operatorSets[0].avs);
         allocationManager.createOperatorSets(operatorSets[0].avs, createSetParams);
+    }
+
+    function _createRedistributingOperatorSet(
+        OperatorSet memory operatorSet,
+        IStrategy[] memory strategies,
+        address redistributionRecipient
+    ) internal returns (OperatorSet memory) {
+        cheats.prank(operatorSet.avs);
+        allocationManager.createRedistributingOperatorSets(
+            operatorSet.avs,
+            CreateSetParams({operatorSetId: operatorSet.id, strategies: strategies}).toArray(),
+            redistributionRecipient.toArray()
+        );
+        return operatorSet;
+    }
+
+    function _createRedistributingOperatorSets(
+        OperatorSet[] memory operatorSets,
+        IStrategy[] memory strategies,
+        address[] memory redistributionRecipients
+    ) internal {
+        CreateSetParams[] memory createSetParams = new CreateSetParams[](operatorSets.length);
+
+        for (uint i; i < operatorSets.length; ++i) {
+            createSetParams[i] = CreateSetParams({operatorSetId: operatorSets[i].id, strategies: strategies});
+        }
+
+        cheats.prank(operatorSets[0].avs);
+        allocationManager.createRedistributingOperatorSets(operatorSets[0].avs, createSetParams, redistributionRecipients);
     }
 
     function _registerForOperatorSet(address operator, OperatorSet memory operatorSet) internal {
@@ -515,16 +544,15 @@ contract AllocationManagerUnitTests_Initialization_Setters is AllocationManagerU
     /// 2. The fn initializes the contract state correctly (owner, pauserRegistry, and initialPausedStatus).
     function testFuzz_Initialize(Randomness r) public rand(r) {
         // Generate random values for the expected initial state of the contract.
-        address expectedInitialOwner = r.Address();
         IPauserRegistry expectedPauserRegistry = IPauserRegistry(r.Address());
 
         // Deploy the contract with the expected initial state.
         uint initialPausedStatus = r.Uint256();
-        AllocationManager alm = _initializeAllocationManager(expectedInitialOwner, expectedPauserRegistry, initialPausedStatus);
+        AllocationManager alm = _initializeAllocationManager(expectedPauserRegistry, initialPausedStatus);
 
         // Assert that the contract can only be initialized once.
         vm.expectRevert("Initializable: contract is already initialized");
-        alm.initialize(expectedInitialOwner, initialPausedStatus);
+        alm.initialize(initialPausedStatus);
 
         // Assert immutable state
         assertEq(address(alm.delegation()), address(delegationManagerMock));
@@ -532,7 +560,7 @@ contract AllocationManagerUnitTests_Initialization_Setters is AllocationManagerU
         assertEq(alm.ALLOCATION_CONFIGURATION_DELAY(), ALLOCATION_CONFIGURATION_DELAY);
 
         // Assert initialization state
-        assertEq(alm.owner(), expectedInitialOwner);
+        // assertEq(alm.owner(), expectedInitialOwner);
         assertEq(alm.paused(), initialPausedStatus);
     }
 }
@@ -916,6 +944,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
      * 1. Events are emitted
      * 2. Storage properly updated after each slash
      * 3. Slashed amounts are rounded up to ensure magnitude is always slashed
+     * 4. SlashCount increments
      */
     function test_repeatUntilFullSlash() public {
         // Generate allocation for `strategyMock`, we allocate 100% to opSet 0
@@ -954,6 +983,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         allocationManager.slashOperator(defaultAVS, slashingParams);
 
         // Check storage
+        assertEq(allocationManager.getSlashCount(defaultOperatorSet), 1, "slash count should be 1");
         _checkAllocationStorage({
             operator: defaultOperator,
             operatorSet: defaultOperatorSet,
@@ -994,6 +1024,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         allocationManager.slashOperator(defaultAVS, slashingParams);
 
         // Check storage
+        assertEq(allocationManager.getSlashCount(defaultOperatorSet), 2, "slash count should be 2");
         _checkAllocationStorage({
             operator: defaultOperator,
             operatorSet: defaultOperatorSet,
@@ -1036,6 +1067,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         allocationManager.slashOperator(defaultAVS, slashingParams);
 
         // Check storage
+        assertEq(allocationManager.getSlashCount(defaultOperatorSet), 3, "slash count should be 3");
         _checkAllocationStorage({
             operator: defaultOperator,
             operatorSet: defaultOperatorSet,
@@ -1755,7 +1787,7 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         allocationManager.modifyAllocations(address(this), new AllocateParams[](0));
     }
 
-    function test_revert_invalidCaller() public {
+    function test_revert_InvalidCaller() public {
         address invalidOperator = address(0x2);
         cheats.expectRevert(InvalidCaller.selector);
         allocationManager.modifyAllocations(invalidOperator, new AllocateParams[](0));
@@ -3432,6 +3464,49 @@ contract AllocationManagerUnitTests_registerForOperatorSets is AllocationManager
             assertEq(allocationManager.getMembers(OperatorSet(defaultAVS, operatorSetIds[k]))[0], operator, "should be member of set");
         }
     }
+
+    function testFuzz_registerForOperatorSets_Redistributing_Correctness(Randomness r) public rand(r) {
+        address operator = r.Address();
+        uint numOpSets = r.Uint256(1, FUZZ_MAX_OP_SETS);
+        uint32[] memory operatorSetIds = new uint32[](numOpSets);
+        CreateSetParams[] memory createSetParams = new CreateSetParams[](numOpSets);
+
+        _registerOperator(operator);
+
+        for (uint i; i < numOpSets; ++i) {
+            operatorSetIds[i] = r.Uint32(1, type(uint32).max);
+            createSetParams[i].operatorSetId = operatorSetIds[i];
+            createSetParams[i].strategies = defaultStrategies;
+        }
+
+        address[] memory redistributionRecipients = new address[](numOpSets);
+        for (uint i; i < numOpSets; ++i) {
+            redistributionRecipients[i] = defaultAVS;
+        }
+
+        cheats.prank(defaultAVS);
+        allocationManager.createRedistributingOperatorSets(defaultAVS, createSetParams, redistributionRecipients);
+
+        for (uint j; j < numOpSets; ++j) {
+            cheats.expectEmit(true, true, true, true, address(allocationManager));
+            emit OperatorAddedToOperatorSet(operator, OperatorSet(defaultAVS, operatorSetIds[j]));
+        }
+
+        cheats.expectCall(
+            defaultAVS, abi.encodeWithSelector(IAVSRegistrar.registerOperator.selector, operator, defaultAVS, operatorSetIds, "")
+        );
+
+        cheats.prank(operator);
+        allocationManager.registerForOperatorSets(operator, RegisterParams(defaultAVS, operatorSetIds, ""));
+
+        assertEq(allocationManager.getRegisteredSets(operator).length, numOpSets, "should be registered for all sets");
+
+        for (uint k; k < numOpSets; ++k) {
+            OperatorSet memory operatorSet = OperatorSet(defaultAVS, operatorSetIds[k]);
+            assertTrue(allocationManager.isMemberOfOperatorSet(operator, operatorSet), "should be member of set");
+            assertEq(allocationManager.getMembers(OperatorSet(defaultAVS, operatorSetIds[k]))[0], operator, "should be member of set");
+        }
+    }
 }
 
 contract AllocationManagerUnitTests_deregisterFromOperatorSets is AllocationManagerUnitTests {
@@ -3523,6 +3598,55 @@ contract AllocationManagerUnitTests_deregisterFromOperatorSets is AllocationMana
             assertEq(allocationManager.getMemberCount(OperatorSet(defaultAVS, operatorSetIds[k])), 0, "should not be member of set");
         }
     }
+
+    function testFuzz_deregisterFromOperatorSets_Redistributing_Correctness(Randomness r) public rand(r) {
+        uint numOpSets = r.Uint256(1, FUZZ_MAX_OP_SETS);
+        uint32[] memory operatorSetIds = new uint32[](numOpSets);
+        CreateSetParams[] memory createSetParams = new CreateSetParams[](numOpSets);
+
+        for (uint i; i < numOpSets; ++i) {
+            operatorSetIds[i] = r.Uint32(1, type(uint32).max);
+            createSetParams[i].operatorSetId = operatorSetIds[i];
+            createSetParams[i].strategies = defaultStrategies;
+        }
+
+        address[] memory redistributionRecipients = new address[](numOpSets);
+        for (uint i; i < numOpSets; ++i) {
+            redistributionRecipients[i] = defaultAVS;
+        }
+
+        cheats.prank(defaultAVS);
+        allocationManager.createRedistributingOperatorSets(defaultAVS, createSetParams, redistributionRecipients);
+
+        address operator = r.Address();
+        _registerOperator(operator);
+
+        cheats.prank(operator);
+        allocationManager.registerForOperatorSets(operator, RegisterParams(defaultAVS, operatorSetIds, ""));
+
+        for (uint j; j < numOpSets; ++j) {
+            cheats.expectEmit(true, true, true, true, address(allocationManager));
+            emit OperatorRemovedFromOperatorSet(operator, OperatorSet(defaultAVS, operatorSetIds[j]));
+        }
+
+        cheats.expectCall(
+            defaultAVS, abi.encodeWithSelector(IAVSRegistrar.deregisterOperator.selector, operator, defaultAVS, operatorSetIds)
+        );
+
+        bool callFromAVS = r.Boolean();
+        if (callFromAVS) cheats.prank(defaultAVS);
+        else cheats.prank(operator);
+        allocationManager.deregisterFromOperatorSets(DeregisterParams(operator, defaultAVS, operatorSetIds));
+
+        assertEq(allocationManager.getRegisteredSets(operator).length, 0, "should not be registered for any sets");
+
+        for (uint k; k < numOpSets; ++k) {
+            assertFalse(
+                allocationManager.isMemberOfOperatorSet(operator, OperatorSet(defaultAVS, operatorSetIds[k])), "should not be member of set"
+            );
+            assertEq(allocationManager.getMemberCount(OperatorSet(defaultAVS, operatorSetIds[k])), 0, "should not be member of set");
+        }
+    }
 }
 
 contract AllocationManagerUnitTests_addStrategiesToOperatorSet is AllocationManagerUnitTests {
@@ -3538,6 +3662,25 @@ contract AllocationManagerUnitTests_addStrategiesToOperatorSet is AllocationMana
         cheats.prank(defaultAVS);
         cheats.expectRevert(StrategyAlreadyInOperatorSet.selector);
         allocationManager.addStrategiesToOperatorSet(defaultAVS, defaultOperatorSet.id, defaultStrategies);
+    }
+
+    function test_addStrategiesToOperatorSet_BeaconChainStratInRedistributingSet() public {
+        // Create a redistributing operator set
+        CreateSetParams[] memory createSetParams = new CreateSetParams[](1);
+        createSetParams[0] = CreateSetParams({operatorSetId: 1, strategies: new IStrategy[](0)});
+        address[] memory redistributionRecipients = new address[](1);
+        redistributionRecipients[0] = address(0x123);
+
+        cheats.prank(defaultAVS);
+        allocationManager.createRedistributingOperatorSets(defaultAVS, createSetParams, redistributionRecipients);
+
+        // Try to add beacon chain strategy to redistributing set
+        IStrategy[] memory strategies = new IStrategy[](1);
+        strategies[0] = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
+
+        cheats.prank(defaultAVS);
+        cheats.expectRevert(InvalidStrategy.selector);
+        allocationManager.addStrategiesToOperatorSet(defaultAVS, 1, strategies);
     }
 
     function testFuzz_addStrategiesToOperatorSet_Correctness(Randomness r) public rand(r) {
@@ -3602,6 +3745,8 @@ contract AllocationManagerUnitTests_removeStrategiesFromOperatorSet is Allocatio
 contract AllocationManagerUnitTests_createOperatorSets is AllocationManagerUnitTests {
     using ArrayLib for *;
 
+    address internal constant DEFAULT_BURN_ADDRESS = 0x00000000000000000000000000000000000E16E4;
+
     function testRevert_createOperatorSets_InvalidOperatorSet() public {
         cheats.prank(defaultAVS);
         cheats.expectRevert(InvalidOperatorSet.selector);
@@ -3642,6 +3787,96 @@ contract AllocationManagerUnitTests_createOperatorSets is AllocationManagerUnitT
         for (uint k; k < numOpSets; ++k) {
             OperatorSet memory opSet = OperatorSet(avs, createSetParams[k].operatorSetId);
             assertTrue(allocationManager.isOperatorSet(opSet), "should be operator set");
+            IStrategy[] memory strategiesInSet = allocationManager.getStrategiesInOperatorSet(opSet);
+            assertEq(strategiesInSet.length, numStrategies, "strategiesInSet length should be numStrategies");
+            for (uint l; l < numStrategies; ++l) {
+                assertTrue(
+                    allocationManager.getStrategiesInOperatorSet(opSet)[l] == createSetParams[k].strategies[l], "should be strat of set"
+                );
+            }
+            assertFalse(allocationManager.isRedistributingOperatorSet(opSet), "should not be redistributing operator set");
+            assertEq(allocationManager.getRedistributionRecipient(opSet), DEFAULT_BURN_ADDRESS, "recipient should be default burn address");
+        }
+
+        assertEq(createSetParams.length, allocationManager.getOperatorSetCount(avs), "should be correct number of sets");
+    }
+}
+
+contract AllocationManagerUnitTests_createRedistributingOperatorSets is AllocationManagerUnitTests {
+    using ArrayLib for *;
+
+    function testRevert_createRedistributingOperatorSets_InvalidOperatorSet() public {
+        cheats.prank(defaultAVS);
+        cheats.expectRevert(InvalidOperatorSet.selector);
+        allocationManager.createRedistributingOperatorSets(
+            defaultAVS, CreateSetParams(defaultOperatorSet.id, defaultStrategies).toArray(), address(this).toArray()
+        );
+    }
+
+    function testRevert_createRedistributingOperatorSets_NonexistentAVSMetadata(Randomness r) public rand(r) {
+        address avs = r.Address();
+        address redistributionRecipient = r.Address();
+        cheats.expectRevert(NonexistentAVSMetadata.selector);
+        cheats.prank(avs);
+        allocationManager.createRedistributingOperatorSets(
+            avs, CreateSetParams(defaultOperatorSet.id, defaultStrategies).toArray(), redistributionRecipient.toArray()
+        );
+    }
+
+    function testRevert_createRedistributingOperatorSets_ZeroAddress(Randomness r) public rand(r) {
+        address avs = address(0x12345);
+        address[] memory redistributionRecipients = new address[](1);
+        redistributionRecipients[0] = address(0);
+
+        cheats.prank(avs);
+        allocationManager.updateAVSMetadataURI(avs, "https://example.com");
+
+        cheats.prank(avs);
+        cheats.expectRevert(IPausable.InputAddressZero.selector);
+        allocationManager.createRedistributingOperatorSets(
+            avs, CreateSetParams(defaultOperatorSet.id, defaultStrategies).toArray(), redistributionRecipients
+        );
+    }
+
+    function testFuzz_createRedistributingOperatorSets_Correctness(Randomness r) public rand(r) {
+        address avs = r.Address();
+        uint numOpSets = r.Uint256(1, FUZZ_MAX_OP_SETS);
+        uint numStrategies = r.Uint256(1, FUZZ_MAX_STRATS);
+
+        cheats.prank(avs);
+        allocationManager.updateAVSMetadataURI(avs, "https://example.com");
+
+        CreateSetParams[] memory createSetParams = new CreateSetParams[](numOpSets);
+        address[] memory redistributionRecipients = new address[](numOpSets);
+
+        for (uint i; i < numOpSets; ++i) {
+            createSetParams[i].operatorSetId = r.Uint32(1, type(uint32).max);
+            createSetParams[i].strategies = r.StrategyArray(numStrategies);
+            redistributionRecipients[i] = r.Address();
+
+            cheats.expectEmit(true, true, true, true, address(allocationManager));
+            emit OperatorSetCreated(OperatorSet(avs, createSetParams[i].operatorSetId));
+            cheats.expectEmit(true, true, true, true, address(allocationManager));
+            emit RedistributionAddressSet(OperatorSet(avs, createSetParams[i].operatorSetId), redistributionRecipients[i]);
+            for (uint j; j < numStrategies; ++j) {
+                cheats.expectEmit(true, true, true, true, address(allocationManager));
+                emit StrategyAddedToOperatorSet(OperatorSet(avs, createSetParams[i].operatorSetId), createSetParams[i].strategies[j]);
+            }
+        }
+
+        cheats.prank(avs);
+        allocationManager.createRedistributingOperatorSets(avs, createSetParams, redistributionRecipients);
+
+        for (uint k; k < numOpSets; ++k) {
+            OperatorSet memory opSet = OperatorSet(avs, createSetParams[k].operatorSetId);
+            assertTrue(allocationManager.isOperatorSet(opSet), "should be operator set");
+            assertTrue(allocationManager.isRedistributingOperatorSet(opSet), "should be redistributing operator set");
+            assertEq(
+                allocationManager.getRedistributionRecipient(opSet),
+                redistributionRecipients[k],
+                "should have correct redistribution recipient"
+            );
+
             IStrategy[] memory strategiesInSet = allocationManager.getStrategiesInOperatorSet(opSet);
             assertEq(strategiesInSet.length, numStrategies, "strategiesInSet length should be numStrategies");
             for (uint l; l < numStrategies; ++l) {
@@ -4133,5 +4368,130 @@ contract AllocationManagerUnitTests_getAllocatedStake is AllocationManagerUnitTe
         uint[][] memory allocatedStake =
             allocationManager.getAllocatedStake(defaultOperatorSet, defaultOperator.toArray(), defaultStrategies);
         assertEq(allocatedStake[0][0], DEFAULT_OPERATOR_SHARES.mulWad(5e17), "allocated stake should remain same after deregistration");
+    }
+}
+
+contract AllocationManagerUnitTests_isRedistributingOperatorSet is AllocationManagerUnitTests {
+    function testFuzz_isRedistributingOperatorSet(Randomness r) public rand(r) {
+        assertEq(allocationManager.isRedistributingOperatorSet(defaultOperatorSet), false, "operator set should not be redistributing");
+
+        OperatorSet memory redistributingOpSet = OperatorSet(defaultAVS, defaultOperatorSet.id + 1);
+        address redistributionRecipient = r.Address();
+        _createRedistributingOperatorSet(redistributingOpSet, defaultStrategies, redistributionRecipient);
+        assertEq(allocationManager.isRedistributingOperatorSet(redistributingOpSet), true, "operator set should be redistributing");
+        assertEq(
+            allocationManager.getRedistributionRecipient(redistributingOpSet),
+            redistributionRecipient,
+            "redistribution recipient should be correct"
+        );
+    }
+}
+
+contract AllocationManagerUnitTests_isOperatorRedistributable is AllocationManagerUnitTests {
+    using SlashingLib for *;
+    using ArrayLib for *;
+
+    function testFuzz_nonRedistributableSet(Randomness r) public rand(r) {
+        // Assert defaultOperator is not redistributable
+        assertFalse(allocationManager.isOperatorRedistributable(defaultOperator), "operator should not be redistributable");
+    }
+
+    function testFuzz_registered_notAllocated(Randomness r) public rand(r) {
+        // Create redistributing operatorSet
+        OperatorSet memory redistributingOpSet = OperatorSet(defaultAVS, defaultOperatorSet.id + 1);
+        address redistributionRecipient = r.Address();
+        _createRedistributingOperatorSet(redistributingOpSet, defaultStrategies, redistributionRecipient);
+
+        // Register operator to redistributing operatorSet
+        _registerOperator(defaultOperator);
+        cheats.prank(defaultOperator);
+        uint32[] memory operatorSetIds = new uint32[](1);
+        operatorSetIds[0] = redistributingOpSet.id;
+        allocationManager.registerForOperatorSets(defaultOperator, RegisterParams(defaultAVS, operatorSetIds, ""));
+
+        // Operator should not be redistributable since it's not allocated
+        assertTrue(allocationManager.isOperatorRedistributable(defaultOperator), "operator should be redistributable");
+    }
+
+    function testFuzz_redistributableSet_allocated_notRegistered(Randomness r) public rand(r) {
+        // Create redistributing operatorSet
+        OperatorSet memory redistributingOpSet = OperatorSet(defaultAVS, defaultOperatorSet.id + 1);
+        address redistributionRecipient = r.Address();
+        _createRedistributingOperatorSet(redistributingOpSet, defaultStrategies, redistributionRecipient);
+
+        // Allocate to redistributing operatorSet
+        AllocateParams[] memory allocateParams = _newAllocateParams(redistributingOpSet, 5e17);
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(defaultOperator, allocateParams);
+        cheats.roll(block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY);
+
+        // Operator should not be redistributable since it's not slashable
+        assertFalse(allocationManager.isOperatorRedistributable(defaultOperator), "operator should not be redistributable");
+    }
+
+    function testFuzz_allocate_register_deregister(Randomness r) public rand(r) {
+        // Create redistributing operatorSet
+        OperatorSet memory redistributingOpSet = OperatorSet(defaultAVS, defaultOperatorSet.id + 1);
+        address redistributionRecipient = r.Address();
+        _createRedistributingOperatorSet(redistributingOpSet, defaultStrategies, redistributionRecipient);
+
+        // Allocate to redistributing operatorSet
+        AllocateParams[] memory allocateParams = _newAllocateParams(redistributingOpSet, 5e17);
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(defaultOperator, allocateParams);
+        cheats.roll(block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY);
+
+        // Register operator to redistributing operatorSet
+        _registerOperator(defaultOperator);
+        cheats.prank(defaultOperator);
+        uint32[] memory operatorSetIds = new uint32[](1);
+        operatorSetIds[0] = redistributingOpSet.id;
+        allocationManager.registerForOperatorSets(defaultOperator, RegisterParams(defaultAVS, operatorSetIds, ""));
+
+        // Deregister operator from redistributing operatorSet
+        cheats.prank(defaultOperator);
+        allocationManager.deregisterFromOperatorSets(DeregisterParams(defaultOperator, defaultAVS, operatorSetIds));
+
+        // Operator should be redistributable
+        assertTrue(allocationManager.isOperatorRedistributable(defaultOperator), "operator should be redistributable");
+
+        // Warp past deallocation delay
+        cheats.roll(block.number + DEALLOCATION_DELAY + 1);
+
+        // Operator should not be redistributable
+        assertFalse(allocationManager.isOperatorRedistributable(defaultOperator), "operator should not be redistributable");
+    }
+
+    function testFuzz_allocate_register_deallocate(Randomness r) public rand(r) {
+        // Create redistributing operatorSet
+        OperatorSet memory redistributingOpSet = OperatorSet(defaultAVS, defaultOperatorSet.id + 1);
+        address redistributionRecipient = r.Address();
+        _createRedistributingOperatorSet(redistributingOpSet, defaultStrategies, redistributionRecipient);
+
+        // Allocate to redistributing operatorSet
+        AllocateParams[] memory allocateParams = _newAllocateParams(redistributingOpSet, 5e17);
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(defaultOperator, allocateParams);
+        cheats.roll(block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY);
+
+        // Register operator to redistributing operatorSet
+        _registerOperator(defaultOperator);
+        cheats.prank(defaultOperator);
+        uint32[] memory operatorSetIds = new uint32[](1);
+        operatorSetIds[0] = redistributingOpSet.id;
+        allocationManager.registerForOperatorSets(defaultOperator, RegisterParams(defaultAVS, operatorSetIds, ""));
+
+        // Deallocate from redistributing operatorSet
+        cheats.prank(defaultOperator);
+        allocationManager.modifyAllocations(defaultOperator, _newAllocateParams(redistributingOpSet, 0));
+
+        // Operator should be redistributable
+        assertTrue(allocationManager.isOperatorRedistributable(defaultOperator), "operator should be redistributable");
+
+        // Warp past deallocation delay
+        cheats.roll(block.number + DEALLOCATION_DELAY + 1);
+
+        // Operator should be redistributable (still registered)
+        assertTrue(allocationManager.isOperatorRedistributable(defaultOperator), "operator should be redistributable");
     }
 }

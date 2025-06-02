@@ -21,6 +21,8 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
     uint40[] validators;
     uint40[] slashedValidators;
 
+    uint slashId;
+
     function _init() internal virtual override {
         _configAssetTypes(HOLDS_ETH);
         (staker, strategies, initTokenBalances) = _newRandomStaker();
@@ -146,7 +148,7 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         //Slash operator before delegation
         IAllocationManagerTypes.SlashingParams memory slashingParams;
         uint wadToSlash = _randWadToSlash();
-        slashingParams = avs.slashOperator(operator, operatorSet.id, strategies, wadToSlash.toArrayU256());
+        (slashingParams, slashId,) = avs.slashOperator(operator, operatorSet.id, strategies, wadToSlash.toArrayU256());
         assert_Snap_Allocations_Slashed(slashingParams, operatorSet, true, "operator allocations should be slashed");
 
         uint[] memory initDepositShares = _getStakerDepositShares(staker, strategies);
@@ -235,7 +237,7 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
         // Slash operator before delegation
         SlashingParams memory slashingParams;
         uint wadToSlash = _randWadToSlash();
-        slashingParams = avs.slashOperator(operator, operatorSet.id, strategies, wadToSlash.toArrayU256());
+        (slashingParams, slashId,) = avs.slashOperator(operator, operatorSet.id, strategies, wadToSlash.toArrayU256());
         assert_Snap_Allocations_Slashed(slashingParams, operatorSet, true, "operator allocations should be slashed");
 
         // Delegate to an operator
@@ -344,8 +346,8 @@ contract Integration_SlashedEigenpod_BC is IntegrationCheckUtils {
 
         // Slash operator - should have non-WAD magnitude
         SlashingParams memory slashParams = _genSlashing_Rand(operator, operatorSet);
-        avs.slashOperator(slashParams);
-        check_Base_Slashing_State(operator, allocateParams, slashParams);
+        (slashId,) = avs.slashOperator(slashParams);
+        check_Base_Slashing_State(operator, allocateParams, slashParams, slashId);
 
         // Verify additional validator
         cheats.deal(address(staker), 32 ether);
@@ -376,6 +378,8 @@ contract Integration_SlashedOperator_SlashedEigenpod_Base is IntegrationCheckUti
     IStrategy[] strategies;
     uint[] initTokenBalances;
     uint[] initDepositShares;
+
+    uint slashId;
 
     function _init() internal virtual override {
         _configAssetTypes(HOLDS_ETH);
@@ -412,8 +416,8 @@ contract Integration_SlashedOperator_SlashedEigenpod_Base is IntegrationCheckUti
 
         // Slash operator
         SlashingParams memory slashParams = _genSlashing_Rand(_operator, operatorSet);
-        avs.slashOperator(slashParams);
-        check_Base_Slashing_State(_operator, _allocateParams, slashParams);
+        (slashId,) = avs.slashOperator(slashParams);
+        check_Base_Slashing_State(_operator, _allocateParams, slashParams, slashId);
     }
 }
 
@@ -557,8 +561,8 @@ contract Integration_Redelegate_SlashOperator_SlashEigenpod is Integration_Slash
 
         // 9. Slash original operator
         SlashingParams memory slashParams = _genSlashing_Half(operator, operatorSet);
-        avs.slashOperator(slashParams);
-        check_Base_Slashing_State(operator, allocateParams, slashParams);
+        (slashId,) = avs.slashOperator(slashParams);
+        check_Base_Slashing_State(operator, allocateParams, slashParams, slashId);
 
         // 10. Slash on BC
         uint40[] memory validators = staker.getActiveValidators();

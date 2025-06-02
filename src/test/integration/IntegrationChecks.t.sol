@@ -3,8 +3,6 @@ pragma solidity ^0.8.27;
 
 import "src/test/integration/IntegrationBase.t.sol";
 import "src/test/integration/users/User.t.sol";
-import "src/test/integration/users/User_M1.t.sol";
-import "src/test/integration/users/User_M2.t.sol";
 
 /// @notice Contract that provides utility functions to reuse common test blocks & checks
 contract IntegrationCheckUtils is IntegrationBase {
@@ -1052,7 +1050,9 @@ contract IntegrationCheckUtils is IntegrationBase {
      *                             ALM - SLASHING
      *
      */
-    function check_Base_Slashing_State(User operator, AllocateParams memory allocateParams, SlashingParams memory slashParams) internal {
+    function check_Base_Slashing_State(User operator, AllocateParams memory allocateParams, SlashingParams memory slashParams, uint slashId)
+        internal
+    {
         OperatorSet memory operatorSet = allocateParams.operatorSet;
 
         check_MaxMag_Invariants(operator);
@@ -1065,7 +1065,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Slashed_SlashableStake(operator, operatorSet, slashParams, "slash should lower slashable stake");
         assert_Snap_Slashed_OperatorShares(operator, slashParams, "slash should remove operator shares");
         assert_Snap_Slashed_Allocation(operator, operatorSet, slashParams, "slash should reduce current magnitude");
-        assert_Snap_Increased_BurnableShares(operator, slashParams, "slash should increase burnable shares");
+        assert_Snap_Increased_BurnableShares(operatorSet, operator, slashParams, slashId, "slash should increase burnable shares");
 
         // Slashing SHOULD NOT change allocatable magnitude, registration, and slashability status
         assert_Snap_Unchanged_AllocatableMagnitude(operator, allStrats, "slashing should not change allocatable magnitude");
@@ -1079,20 +1079,53 @@ contract IntegrationCheckUtils is IntegrationBase {
         User operator,
         AllocateParams memory allocateParams,
         SlashingParams memory slashParams,
-        Withdrawal[] memory withdrawals
+        Withdrawal[] memory withdrawals,
+        uint slashId
     ) internal {
-        check_Base_Slashing_State(operator, allocateParams, slashParams);
+        check_Base_Slashing_State(operator, allocateParams, slashParams, slashId);
         assert_Snap_Decreased_SlashableSharesInQueue(operator, slashParams, withdrawals, "slash should decrease slashable shares in queue");
     }
 
     /// Slashing invariants when the operator has been fully slashed for every strategy in the operator set
-    function check_FullySlashed_State(User operator, AllocateParams memory allocateParams, SlashingParams memory slashParams) internal {
-        check_Base_Slashing_State(operator, allocateParams, slashParams);
+    function check_FullySlashed_State(User operator, AllocateParams memory allocateParams, SlashingParams memory slashParams, uint slashId)
+        internal
+    {
+        check_Base_Slashing_State(operator, allocateParams, slashParams, slashId);
 
         assert_Snap_Removed_AllocatedSet(operator, allocateParams.operatorSet, "should not have updated allocated sets");
         assert_Snap_Removed_AllocatedStrats(
             operator, allocateParams.operatorSet, slashParams.strategies, "should not have updated allocated strategies"
         );
+    }
+
+    function check_releaseSlashEscrow_State(
+        OperatorSet memory operatorSet,
+        uint slashId,
+        IStrategy[] memory strategies,
+        uint[] memory initTokenBalances,
+        address redistributionRecipient
+    ) internal {
+        assert_HasUnderlyingTokenBalances(
+            User(payable(redistributionRecipient)),
+            strategies,
+            initTokenBalances,
+            "redistribution recipient should have underlying token balances"
+        );
+
+        assertFalse(_getIsPendingSlashId(operatorSet, slashId), "slash id should not be pending");
+        assertEq(_getEscrowStartBlock(operatorSet, slashId), 0, "escrow start block should be deleted after");
+        assertTrue(_getIsDeployedSlashEscrow(operatorSet, slashId), "escrow should be deployed after");
+    }
+
+    function check_releaseSlashEscrow_State_NoneRemaining(
+        OperatorSet memory operatorSet,
+        uint slashId,
+        IStrategy[] memory strategies,
+        uint[] memory initTokenBalances,
+        address redistributionRecipient
+    ) internal {
+        check_releaseSlashEscrow_State(operatorSet, slashId, strategies, initTokenBalances, redistributionRecipient);
+        assertFalse(_getIsPendingOperatorSet(operatorSet), "operator set should not be pending");
     }
 
     /**

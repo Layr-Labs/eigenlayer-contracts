@@ -12,7 +12,8 @@ import {TimelockController} from "@openzeppelin/contracts/governance/TimelockCon
 /**
  * Purpose:
  *      * enqueue a multisig transaction which;
- *             - upgrades DM, EPM, EP
+ *             - upgrades DM, ALM, SM, EPM
+ *             - upgrades strategies (EigenStrategy, StrategyBase, StrategyBaseTVLLimits)
  *  This should be run via the protocol council multisig.
  */
 contract QueueUpgrade is MultisigBuilder, Deploy {
@@ -35,7 +36,6 @@ contract QueueUpgrade is MultisigBuilder, Deploy {
 
     /// @dev Get the calldata to be sent from the timelock to the executor
     function _getCalldataToExecutor() internal returns (bytes memory) {
-        // Core - Pods - Strategies - Permissions
         MultisigCall[] storage executorCalls = Encode.newMultisigCalls().append({
             to: Env.proxyAdmin(),
             data: Encode.proxyAdmin.upgrade({
@@ -43,15 +43,44 @@ contract QueueUpgrade is MultisigBuilder, Deploy {
                 impl: address(Env.impl.delegationManager())
             })
         }).append({
-            to: address(Env.beacon.eigenPod()),
-            data: Encode.upgradeableBeacon.upgradeTo({newImpl: address(Env.impl.eigenPod())})
+            to: Env.proxyAdmin(),
+            data: Encode.proxyAdmin.upgrade({
+                proxy: address(Env.proxy.allocationManager()),
+                impl: address(Env.impl.allocationManager())
+            })
+        }).append({
+            to: Env.proxyAdmin(),
+            data: Encode.proxyAdmin.upgrade({
+                proxy: address(Env.proxy.strategyManager()),
+                impl: address(Env.impl.strategyManager())
+            })
         }).append({
             to: Env.proxyAdmin(),
             data: Encode.proxyAdmin.upgrade({
                 proxy: address(Env.proxy.eigenPodManager()),
                 impl: address(Env.impl.eigenPodManager())
             })
+        }).append({
+            to: Env.proxyAdmin(),
+            data: Encode.proxyAdmin.upgrade({
+                proxy: address(Env.proxy.eigenStrategy()),
+                impl: address(Env.impl.eigenStrategy())
+            })
+        }).append({
+            to: address(Env.beacon.strategyBase()),
+            data: Encode.upgradeableBeacon.upgradeTo({newImpl: address(Env.impl.strategyBase())})
         });
+
+        // Add call to upgrade each pre-longtail strategy instance
+        uint256 count = Env.instance.strategyBaseTVLLimits_Count();
+        for (uint256 i = 0; i < count; i++) {
+            address proxyInstance = address(Env.instance.strategyBaseTVLLimits(i));
+
+            executorCalls.append({
+                to: Env.proxyAdmin(),
+                data: Encode.proxyAdmin.upgrade({proxy: proxyInstance, impl: address(Env.impl.strategyBaseTVLLimits())})
+            });
+        }
 
         return Encode.gnosisSafe.execTransaction({
             from: address(Env.timelockController()),

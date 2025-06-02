@@ -19,6 +19,8 @@ contract Integration_FullySlashed_Operator is IntegrationCheckUtils {
     uint[] initTokenBalances;
     uint[] initDepositShares;
 
+    uint slashId;
+
     function _init() internal virtual override {
         _configAssetTypes(HOLDS_LST);
 
@@ -43,8 +45,8 @@ contract Integration_FullySlashed_Operator is IntegrationCheckUtils {
 
         // 4) Operator is full slashed.
         slashParams = _genSlashing_Full(operator, operatorSet);
-        avs.slashOperator(slashParams);
-        check_Base_Slashing_State(operator, allocateParams, slashParams);
+        (slashId,) = avs.slashOperator(slashParams);
+        check_Base_Slashing_State(operator, allocateParams, slashParams, slashId);
     }
 
     function testFuzz_register_allocate_fullSlash_deposit_delegate(uint24 r) public rand(r) {

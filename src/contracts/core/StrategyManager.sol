@@ -30,6 +30,7 @@ contract StrategyManager is
 {
     using SlashingLib for *;
     using SafeERC20 for IERC20;
+    using EnumerableMap for EnumerableMap.AddressToUintMap;
 
     modifier onlyStrategyWhitelister() {
         require(msg.sender == strategyWhitelister, OnlyStrategyWhitelister());
@@ -53,9 +54,14 @@ contract StrategyManager is
      */
     constructor(
         IDelegationManager _delegation,
+        ISlashEscrowFactory _slashEscrowFactory,
         IPauserRegistry _pauserRegistry,
         string memory _version
-    ) StrategyManagerStorage(_delegation) Pausable(_pauserRegistry) SignatureUtilsMixin(_version) {
+    )
+        StrategyManagerStorage(_delegation, _slashEscrowFactory)
+        Pausable(_pauserRegistry)
+        SignatureUtilsMixin(_version)
+    {
         _disableInitializers();
     }
 
@@ -118,8 +124,7 @@ contract StrategyManager is
         IStrategy strategy,
         uint256 depositSharesToRemove
     ) external onlyDelegationManager nonReentrant returns (uint256) {
-        (, uint256 sharesAfter) = _removeDepositShares(staker, strategy, depositSharesToRemove);
-        return sharesAfter;
+        return _removeDepositShares(staker, strategy, depositSharesToRemove);
     }
 
     /// @inheritdoc IShareManager
@@ -142,13 +147,70 @@ contract StrategyManager is
     }
 
     /// @inheritdoc IShareManager
-    function increaseBurnableShares(
+    function increaseBurnOrRedistributableShares(
+        OperatorSet calldata operatorSet,
+        uint256 slashId,
         IStrategy strategy,
-        uint256 addedSharesToBurn
+        uint256 sharesToBurn
     ) external onlyDelegationManager nonReentrant {
-        (, uint256 currentShares) = EnumerableMap.tryGet(burnableShares, address(strategy));
-        EnumerableMap.set(burnableShares, address(strategy), currentShares + addedSharesToBurn);
-        emit BurnableSharesIncreased(strategy, addedSharesToBurn);
+        // Create storage pointer for readability.
+        EnumerableMap.AddressToUintMap storage burnOrRedistributableShares =
+            _burnOrRedistributableShares[operatorSet.key()][slashId];
+
+        // Sanity check that the strategy is not already in the slash's burn or redistributable shares.
+        // This should never happen because the `AllocationManager` ensures that strategies for a given slash are unique.
+        // Add the shares to the operator set's burn or redistributable shares.
+        require(burnOrRedistributableShares.set(address(strategy), sharesToBurn), StrategyAlreadyInSlash());
+
+        // Notify the `SlashEscrowFactory` contract that it received underlying tokens to burn or redistribute.
+        slashEscrowFactory.initiateSlashEscrow(operatorSet, slashId, strategy);
+        emit BurnOrRedistributableSharesIncreased(operatorSet, slashId, strategy, sharesToBurn);
+    }
+
+    /// @inheritdoc IStrategyManager
+    function clearBurnOrRedistributableShares(
+        OperatorSet calldata operatorSet,
+        uint256 slashId
+    ) external nonReentrant returns (uint256[] memory) {
+        // Get the strategies to clear.
+        address[] memory strategies = _burnOrRedistributableShares[operatorSet.key()][slashId].keys();
+        uint256 length = strategies.length;
+        uint256[] memory amounts = new uint256[](length);
+
+        // Note: We don't need to iterate backwards since we're indexing into the `EnumerableMap` directly.
+        for (uint256 i = 0; i < length; ++i) {
+            amounts[i] = clearBurnOrRedistributableSharesByStrategy(operatorSet, slashId, IStrategy(strategies[i]));
+        }
+
+        return amounts;
+    }
+
+    /// @inheritdoc IStrategyManager
+    function clearBurnOrRedistributableSharesByStrategy(
+        OperatorSet calldata operatorSet,
+        uint256 slashId,
+        IStrategy strategy
+    ) public returns (uint256) {
+        EnumerableMap.AddressToUintMap storage burnOrRedistributableShares =
+            _burnOrRedistributableShares[operatorSet.key()][slashId];
+
+        (, uint256 sharesToRemove) = burnOrRedistributableShares.tryGet(address(strategy));
+        burnOrRedistributableShares.remove(address(strategy));
+
+        uint256 amountOut;
+        if (sharesToRemove != 0) {
+            // Withdraw the shares to the slash escrow.
+            amountOut = IStrategy(strategy).withdraw({
+                recipient: address(slashEscrowFactory.getSlashEscrow(operatorSet, slashId)),
+                token: IStrategy(strategy).underlyingToken(),
+                amountShares: sharesToRemove
+            });
+
+            // Emit an event to notify the that burnable shares have been decreased.
+            emit BurnOrRedistributableSharesDecreased(operatorSet, slashId, strategy, sharesToRemove);
+        }
+
+        return amountOut;
     }
 
     /// @inheritdoc IStrategyManager
@@ -280,7 +342,7 @@ contract StrategyManager is
         address staker,
         IStrategy strategy,
         uint256 depositSharesToRemove
-    ) internal returns (bool, uint256) {
+    ) internal returns (uint256) {
         // sanity checks on inputs
         require(depositSharesToRemove != 0, SharesAmountZero());
 
@@ -298,12 +360,9 @@ contract StrategyManager is
         // if no existing shares, remove the strategy from the staker's dynamic array of strategies
         if (userDepositShares == 0) {
             _removeStrategyFromStakerStrategyList(staker, strategy);
-
-            // return true in the event that the strategy was removed from stakerStrategyList[staker]
-            return (true, userDepositShares);
         }
-        // return false in the event that the strategy was *not* removed from stakerStrategyList[staker]
-        return (false, userDepositShares);
+
+        return userDepositShares;
     }
 
     /**
@@ -390,6 +449,45 @@ contract StrategyManager is
                 )
             )
         );
+    }
+
+    /// @inheritdoc IStrategyManager
+    function getBurnOrRedistributableShares(
+        OperatorSet calldata operatorSet,
+        uint256 slashId
+    ) external view returns (IStrategy[] memory, uint256[] memory) {
+        // Store the data structure for readability
+        EnumerableMap.AddressToUintMap storage burnOrRedistributableShares =
+            _burnOrRedistributableShares[operatorSet.key()][slashId];
+
+        address[] memory keys = burnOrRedistributableShares.keys();
+        IStrategy[] memory strategies = new IStrategy[](keys.length);
+        uint256[] memory shares = new uint256[](keys.length);
+
+        for (uint256 i = 0; i < keys.length; ++i) {
+            strategies[i] = IStrategy(keys[i]);
+            (, shares[i]) = burnOrRedistributableShares.tryGet(keys[i]);
+        }
+
+        return (strategies, shares);
+    }
+
+    /// @inheritdoc IStrategyManager
+    function getBurnOrRedistributableShares(
+        OperatorSet calldata operatorSet,
+        uint256 slashId,
+        IStrategy strategy
+    ) external view returns (uint256) {
+        (, uint256 shares) = _burnOrRedistributableShares[operatorSet.key()][slashId].tryGet(address(strategy));
+        return shares;
+    }
+
+    /// @inheritdoc IStrategyManager
+    function getBurnOrRedistributableCount(
+        OperatorSet calldata operatorSet,
+        uint256 slashId
+    ) external view returns (uint256) {
+        return _burnOrRedistributableShares[operatorSet.key()][slashId].length();
     }
 
     /// @inheritdoc IStrategyManager

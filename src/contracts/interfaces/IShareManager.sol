@@ -4,13 +4,14 @@ pragma solidity ^0.8.27;
 import "../libraries/SlashingLib.sol";
 import "./IStrategy.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
+import "../libraries/OperatorSetLib.sol";
 /**
  * @title Interface for a `IShareManager` contract.
  * @author Layr Labs, Inc.
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice This contract is used by the DelegationManager as a unified interface to interact with the EigenPodManager and StrategyManager
  */
+
 interface IShareManager {
     /// @notice Used by the DelegationManager to remove a Staker's shares from a particular strategy when entering the withdrawal queue
     /// @dev strategy must be beaconChainETH when talking to the EigenPodManager
@@ -38,11 +39,18 @@ interface IShareManager {
     function stakerDepositShares(address user, IStrategy strategy) external view returns (uint256 depositShares);
 
     /**
-     * @notice Increase the amount of burnable shares for a given Strategy. This is called by the DelegationManager
+     * @notice Increase the amount of burnable/redistributable shares for a given Strategy. This is called by the DelegationManager
      * when an operator is slashed in EigenLayer.
+     * @param operatorSet The operator set to burn shares in.
+     * @param slashId The slash id to burn shares in.
      * @param strategy The strategy to burn shares in.
      * @param addedSharesToBurn The amount of added shares to burn.
      * @dev This function is only called by the DelegationManager when an operator is slashed.
      */
-    function increaseBurnableShares(IStrategy strategy, uint256 addedSharesToBurn) external;
+    function increaseBurnOrRedistributableShares(
+        OperatorSet calldata operatorSet,
+        uint256 slashId,
+        IStrategy strategy,
+        uint256 addedSharesToBurn
+    ) external;
 }

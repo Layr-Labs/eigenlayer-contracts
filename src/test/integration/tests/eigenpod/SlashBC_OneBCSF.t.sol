@@ -22,6 +22,8 @@ contract Integration_SlashBC_OneBCSF is IntegrationCheckUtils {
     uint64 beaconBalanceGwei;
     uint64 slashedGwei;
 
+    uint slashId;
+
     /**
      * Shared setup:
      * 1. Update the EPM implementation to manually set the beaconChainSlashingFactor to 1
@@ -34,7 +36,7 @@ contract Integration_SlashBC_OneBCSF is IntegrationCheckUtils {
     function _init() internal override {
         // 1. etch a new implementation to set staker's beaconChainSlashingFactor to 1
         EigenPodManagerWrapper eigenPodManagerWrapper =
-            new EigenPodManagerWrapper(DEPOSIT_CONTRACT, eigenPodBeacon, delegationManager, eigenLayerPauserReg, "v9.9.9");
+            new EigenPodManagerWrapper(DEPOSIT_CONTRACT, eigenPodBeacon, delegationManager, eigenLayerPauserReg, "9.9.9");
         address targetAddr = address(eigenPodManagerImplementation);
         cheats.etch(targetAddr, address(eigenPodManagerWrapper).code);
 
@@ -133,8 +135,8 @@ contract Integration_SlashBC_OneBCSF is IntegrationCheckUtils {
 
         // 5. slash operator to 1 magnitude remaining
         SlashingParams memory slashParams = _genSlashing_Custom(operator, operatorSet, WAD - 1);
-        avs.slashOperator(slashParams);
-        check_Base_Slashing_State(operator, allocateParams, slashParams);
+        (slashId,) = avs.slashOperator(slashParams);
+        check_Base_Slashing_State(operator, allocateParams, slashParams, slashId);
 
         // assert operator has 1 magnitude remaining
         assertEq(allocationManager.getMaxMagnitude(address(operator), beaconChainETHStrategy), 1);

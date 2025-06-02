@@ -4,6 +4,7 @@ pragma solidity ^0.8.27;
 import "forge-std/Test.sol";
 
 import "../../contracts/interfaces/IDelegationManager.sol";
+import "../../contracts/interfaces/IStrategy.sol";
 
 contract StrategyManagerMock is Test {
     IDelegationManager public delegation;
@@ -19,6 +20,9 @@ contract StrategyManagerMock is Test {
 
     /// @notice Mapping: staker => cumulative number of queued withdrawals they have ever initiated. only increments (doesn't decrement)
     mapping(address => uint) public cumulativeWithdrawalsQueued;
+
+    /// @notice Mock the burn or redistributable count
+    uint public _burnOrRedistributableCount;
 
     constructor(IDelegationManager _delegation) {
         delegation = _delegation;
@@ -106,7 +110,20 @@ contract StrategyManagerMock is Test {
         return (existingShares, addedShares);
     }
 
-    function burnShares(IStrategy strategy, uint sharesToBurn) external {}
+    function clearBurnOrRedistributableShares(OperatorSet calldata operatorSet, uint slashId) external returns (address[] memory) {}
+
+    function clearBurnOrRedistributableSharesByStrategy(OperatorSet calldata operatorSet, uint slashId, IStrategy strategy)
+        external
+        returns (uint)
+    {}
+
+    function getBurnOrRedistributableCount(OperatorSet calldata operatorSet, uint slashId) external view returns (uint) {
+        return _burnOrRedistributableCount;
+    }
+
+    function setBurnOrRedistributableCount(uint count) external {
+        _burnOrRedistributableCount = count;
+    }
 
     function _getStrategyIndex(address staker, IStrategy strategy) internal view returns (uint) {
         IStrategy[] memory strategies = strategiesToReturn[staker];

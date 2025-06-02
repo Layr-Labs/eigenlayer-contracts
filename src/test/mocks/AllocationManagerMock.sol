@@ -8,6 +8,8 @@ import "src/contracts/libraries/OperatorSetLib.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 contract AllocationManagerMock is Test {
+    address constant DEFAULT_BURN_ADDRESS = address(0x00000000000000000000000000000000000E16E4);
+
     using Snapshots for Snapshots.DefaultWadHistory;
     using OperatorSetLib for OperatorSet;
 
@@ -18,7 +20,31 @@ contract AllocationManagerMock is Test {
     mapping(address avs => uint) public getOperatorSetCount;
     mapping(address => mapping(IStrategy => Snapshots.DefaultWadHistory)) internal _maxMagnitudeHistory;
     mapping(address => address) internal _avsRegistrar;
+    mapping(bytes32 operatorSetKey => address) public _getRedistributionRecipient;
+    mapping(bytes32 operatorSetKey => uint) public _getSlashCount;
 
+    function getSlashCount(OperatorSet memory operatorSet) external view returns (uint) {
+        return _getSlashCount[operatorSet.key()];
+    }
+
+    function setSlashCount(OperatorSet memory operatorSet, uint slashCount) external {
+        _getSlashCount[operatorSet.key()] = slashCount;
+    }
+
+    function getRedistributionRecipient(OperatorSet memory operatorSet) external view returns (address recipient) {
+        recipient = _getRedistributionRecipient[operatorSet.key()];
+
+        if (recipient == address(0)) recipient = DEFAULT_BURN_ADDRESS;
+    }
+
+    function setRedistributionRecipient(OperatorSet memory operatorSet, address recipient) external {
+        _getRedistributionRecipient[operatorSet.key()] = recipient;
+    }
+
+    function isRedistributingOperatorSet(OperatorSet memory operatorSet) external view returns (bool) {
+        return true;
+    }
+    
     function setIsOperatorSet(OperatorSet memory operatorSet, bool boolean) external {
         _isOperatorSet[operatorSet.key()] = boolean;
     }

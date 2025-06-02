@@ -62,7 +62,7 @@ library BN254 {
     }
 
     // generator of group G2
-    /// @dev Generator point in F_q2 is of the form: (x0 + ix1, y0 + iy1).
+    /// @dev Generator point in F_q2 is of the form: (x0 + ix1, y0 + it1).
     uint256 internal constant G2x1 =
         11_559_732_032_986_387_107_991_004_021_392_285_783_925_812_861_821_192_530_917_403_151_452_391_805_634;
     uint256 internal constant G2x0 =
@@ -82,7 +82,7 @@ library BN254 {
     }
 
     // negation of the generator of group G2
-    /// @dev Generator point in F_q2 is of the form: (x0 + ix1, y0 + iy1).
+    /// @dev Generator point in F_q2 is of the form: (x0 + ix1, y0 + it1).
     uint256 internal constant nG2x1 =
         11_559_732_032_986_387_107_991_004_021_392_285_783_925_812_861_821_192_530_917_403_151_452_391_805_634;
     uint256 internal constant nG2x0 =

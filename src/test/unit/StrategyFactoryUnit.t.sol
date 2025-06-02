@@ -46,12 +46,12 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
 
         underlyingToken = new ERC20PresetFixedSupply("Test Token", "TEST", initialSupply, initialOwner);
 
-        strategyImplementation = new StrategyBase(IStrategyManager(address(strategyManagerMock)), pauserRegistry, "v9.9.9");
+        strategyImplementation = new StrategyBase(IStrategyManager(address(strategyManagerMock)), pauserRegistry, "9.9.9");
 
         strategyBeacon = new UpgradeableBeacon(address(strategyImplementation));
         strategyBeacon.transferOwnership(beaconProxyOwner);
 
-        strategyFactoryImplementation = new StrategyFactory(IStrategyManager(address(strategyManagerMock)), pauserRegistry, "v9.9.9");
+        strategyFactoryImplementation = new StrategyFactory(IStrategyManager(address(strategyManagerMock)), pauserRegistry, "9.9.9");
 
         strategyFactory = StrategyFactory(
             address(
