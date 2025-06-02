@@ -27,4 +27,13 @@ interface IECDSATableCalculator is IECDSATableCalculatorTypes {
     function calculateOperatorTable(
         OperatorSet calldata operatorSet
     ) external view returns (ECDSAOperatorInfo[] memory operatorInfos);
+
+    /**
+     * @notice calculates the operatorInfos for a given operatorSet
+     * @param operatorSet the operatorSet to calculate the operator table for
+     * @return operatorTableBytes the operatorTableBytes for the given operatorSet
+     */
+    function calculateOperatorTableBytes(
+        OperatorSet calldata operatorSet
+    ) external view returns (bytes memory operatorTableBytes);
 }

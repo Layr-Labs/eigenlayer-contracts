@@ -70,7 +70,7 @@ interface IBN254CertificateVerifier is IBN254CertificateVerifierEvents, IBaseCer
     function verifyCertificate(
         OperatorSet memory operatorSet,
         BN254Certificate memory cert
-    ) external returns (uint96[] memory signedStakes);
+    ) external returns (uint256[] memory signedStakes);
 
     /**
      * @notice verifies a certificate and makes sure that the signed stakes meet
@@ -99,6 +99,6 @@ interface IBN254CertificateVerifier is IBN254CertificateVerifierEvents, IBaseCer
     function verifyCertificateNominal(
         OperatorSet memory operatorSet,
         BN254Certificate memory cert,
-        uint96[] memory totalStakeNominalThresholds
+        uint256[] memory totalStakeNominalThresholds
     ) external returns (bool);
 }

@@ -14,7 +14,7 @@ interface IBN254TableCalculatorTypes {
      */
     struct BN254OperatorInfo {
         BN254.G1Point pubkey;
-        uint96[] weights;
+        uint256[] weights;
     }
 
     /**
@@ -35,7 +35,7 @@ interface IBN254TableCalculatorTypes {
         bytes32 operatorInfoTreeRoot;
         uint256 numOperators;
         BN254.G1Point aggregatePubkey;
-        uint96[] totalWeights;
+        uint256[] totalWeights;
     }
 }
 
@@ -49,6 +49,15 @@ interface IBN254TableCalculator is IBN254TableCalculatorTypes {
     function calculateOperatorTable(
         OperatorSet calldata operatorSet
     ) external view returns (BN254OperatorSetInfo memory operatorSetInfo);
+
+    /**
+     * @notice calculates the operatorInfos for a given operatorSet
+     * @param operatorSet the operatorSet to calculate the operator table for
+     * @return operatorTableBytes the operatorTableBytes for the given operatorSet
+     */
+    function calculateOperatorTableBytes(
+        OperatorSet calldata operatorSet
+    ) external view returns (bytes memory operatorTableBytes);
 
     /**
      * @notice Get the operatorInfos for a given operatorSet

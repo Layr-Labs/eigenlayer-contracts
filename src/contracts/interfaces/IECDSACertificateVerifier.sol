@@ -53,7 +53,7 @@ interface IECDSACertificateVerifier is IECDSACertificateVerifierEvents, IBaseCer
     function verifyCertificate(
         OperatorSet calldata operatorSet,
         ECDSACertificate memory cert
-    ) external returns (uint96[] memory signedStakes);
+    ) external returns (uint256[] memory signedStakes);
 
     /**
      * @notice verifies a certificate and makes sure that the signed stakes meet
@@ -61,7 +61,7 @@ interface IECDSACertificateVerifier is IECDSACertificateVerifierEvents, IBaseCer
      * @param cert a certificate
      * @param totalStakeProportionThresholds the proportion of total stake that
      * the signed stake of the certificate should meet
-     * @return whether or not certificate is valid and meets thresholds
+     * @return Whether or not the certificate is valid and meets thresholds
      */
     function verifyCertificateProportion(
         OperatorSet calldata operatorSet,
@@ -75,11 +75,11 @@ interface IECDSACertificateVerifier is IECDSACertificateVerifierEvents, IBaseCer
      * @param cert a certificate
      * @param totalStakeNominalThresholds the proportion of total stake that
      * the signed stake of the certificate should meet
-     * @return whether or not certificate is valid and meets thresholds
+     * @return Whether or not the certificate is valid and meets thresholds
      */
     function verifyCertificateNominal(
         OperatorSet calldata operatorSet,
         ECDSACertificate memory cert,
-        uint96[] memory totalStakeNominalThresholds
+        uint256[] memory totalStakeNominalThresholds
     ) external returns (bool);
 }
