@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.5.0;
 
-import {OperatorSet} from "../libraries/OperatorSetLib.sol";
+import "../../libraries/OperatorSetLib.sol";
 
 interface IECDSATableCalculatorTypes {
     /**
      * @notice A struct that contains information about a single operator
-     * @param pubkey The address of the operator
+     * @param pubkey The address of the signing ECDSA key of the operator and not the operator address itself.
+     * This is read from the KeyRegistrar contract.
      * @param weights The weights of the operator for a single operatorSet
      * @dev The `weights` array can be defined as a list of arbitrary groupings. For example,
      * it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]
