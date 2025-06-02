@@ -30,9 +30,6 @@ abstract contract KeyRegistrarStorage is IKeyRegistrar {
     /// @dev Maps operatorSetKey to their configuration
     mapping(bytes32 => OperatorSetConfig) internal operatorSetConfigs;
 
-    /// @dev Maps operatorSetKey to their aggregate BN254 G1 point
-    mapping(bytes32 => BN254.G1Point) internal operatorSetToAggregateBN254Key;
-
     /// @dev Global mapping of key hash to registration status - enforces global uniqueness
     mapping(bytes32 => bool) internal globalKeyRegistry;
 

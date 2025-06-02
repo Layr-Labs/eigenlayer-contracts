@@ -411,7 +411,7 @@ contract KeyRegistrarUnitTests is Test {
 
     // ============ Key Deregistration Tests ============
 
-    function testDeregisterKeyAndUpdate_ECDSA() public {
+    function testDeregisterKey_ECDSA() public {
         OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
         
         vm.prank(avs1);
@@ -423,12 +423,12 @@ contract KeyRegistrarUnitTests is Test {
         vm.prank(avs1);
         vm.expectEmit(true, true, true, true);
         emit KeyDeregistered(operatorSet, operator1, IKeyRegistrarTypes.CurveType.ECDSA);
-        keyRegistrar.deregisterKeyAndUpdate(operator1, operatorSet);
+        keyRegistrar.deregisterKey(operator1, operatorSet);
         
         assertFalse(keyRegistrar.isRegistered(operatorSet, operator1));
     }
 
-    function testDeregisterKeyAndUpdate_BN254() public {
+    function testDeregisterKey_BN254() public {
         OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
         
         vm.prank(avs1);
@@ -446,22 +446,17 @@ contract KeyRegistrarUnitTests is Test {
         
         // First add to APK
         vm.prank(avs1);
-        keyRegistrar.checkAndUpdateKey(operatorSet, operator1);
+        keyRegistrar.checkKey(operatorSet, operator1);
         
         vm.prank(avs1);
         vm.expectEmit(true, true, true, true);
         emit KeyDeregistered(operatorSet, operator1, IKeyRegistrarTypes.CurveType.BN254);
-        keyRegistrar.deregisterKeyAndUpdate(operator1, operatorSet);
+        keyRegistrar.deregisterKey(operator1, operatorSet);
         
         assertFalse(keyRegistrar.isRegistered(operatorSet, operator1));
-        
-        // Verify aggregate key was updated (should be zero after removing the only key)
-        BN254.G1Point memory apk = keyRegistrar.getApk(operatorSet);
-        assertEq(apk.X, 0);
-        assertEq(apk.Y, 0);
     }
 
-    function testDeregisterKeyAndUpdate_RevertKeyNotFound() public {
+    function testDeregisterKey_RevertKeyNotFound() public {
         OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
         
         vm.prank(avs1);
@@ -469,84 +464,15 @@ contract KeyRegistrarUnitTests is Test {
         
         vm.prank(avs1);
         vm.expectRevert(abi.encodeWithSelector(IKeyRegistrarErrors.KeyNotFound.selector, operatorSet, operator1));
-        keyRegistrar.deregisterKeyAndUpdate(operator1, operatorSet);
+        keyRegistrar.deregisterKey(operator1, operatorSet);
     }
 
-    function testDeregisterKeyAndUpdate_RevertUnauthorized() public {
+    function testDeregisterKeye_RevertUnauthorized() public {
         OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
         
         vm.prank(operator1);
         vm.expectRevert(PermissionControllerMixin.InvalidPermissions.selector);
-        keyRegistrar.deregisterKeyAndUpdate(operator1, operatorSet);
-    }
-
-    // ============ APK Management Tests ============
-
-    function testCheckAndUpdateKey_OnlyAuthorized() public {
-        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
-        
-        vm.prank(avs1);
-        keyRegistrar.configureOperatorSet(operatorSet, IKeyRegistrarTypes.CurveType.BN254);
-        
-        vm.prank(operator1);
-        vm.expectRevert(PermissionControllerMixin.InvalidPermissions.selector);
-        keyRegistrar.checkAndUpdateKey(operatorSet, operator1);
-    }
-
-    function testCheckAndUpdateKey_AuthorizedCall() public {
-        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
-        
-        vm.prank(avs1);
-        keyRegistrar.configureOperatorSet(operatorSet, IKeyRegistrarTypes.CurveType.BN254);
-
-        bytes memory signature = _generateBN254Signature(
-            operator1, 
-            operatorSet, 
-            bn254Key1, 
-            bn254PrivKey1
-        );
-        
-        vm.prank(operator1);
-        keyRegistrar.registerKey(operator1, operatorSet, bn254Key1, signature);
-        
-        vm.prank(avs1);
-        vm.expectEmit(true, true, true, true);
-        emit AggregateBN254KeyUpdated(operatorSet, bn254G1Key1);
-        keyRegistrar.checkAndUpdateKey(operatorSet, operator1);
-        
-        // Verify aggregate key was updated
-        BN254.G1Point memory apk = keyRegistrar.getApk(operatorSet);
-        assertEq(apk.X, bn254G1Key1.X);
-        assertEq(apk.Y, bn254G1Key1.Y);
-    }
-
-    function testCheckAndUpdateKey_ECDSAType_NoOp() public {
-        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
-        
-        vm.prank(avs1);
-        keyRegistrar.configureOperatorSet(operatorSet, IKeyRegistrarTypes.CurveType.ECDSA);
-        
-        vm.prank(operator1);
-        keyRegistrar.registerKey(operator1, operatorSet, ecdsaKey1, "");
-        
-        vm.prank(avs1);
-        keyRegistrar.checkAndUpdateKey(operatorSet, operator1);
-        
-        // Should not emit any events or change APK for ECDSA
-        BN254.G1Point memory apk = keyRegistrar.getApk(operatorSet);
-        assertEq(apk.X, 0);
-        assertEq(apk.Y, 0);
-    }
-
-    function testCheckAndUpdateKey_RevertKeyNotFound() public {
-        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
-        
-        vm.prank(avs1);
-        keyRegistrar.configureOperatorSet(operatorSet, IKeyRegistrarTypes.CurveType.BN254);
-        
-        vm.prank(avs1);
-        vm.expectRevert(abi.encodeWithSelector(IKeyRegistrarErrors.KeyNotFound.selector, operatorSet, operator1));
-        keyRegistrar.checkAndUpdateKey(operatorSet, operator1);
+        keyRegistrar.deregisterKey(operator1, operatorSet);
     }
 
     // ============ View Function Tests ============
@@ -630,19 +556,6 @@ contract KeyRegistrarUnitTests is Test {
         assertEq(g2Point.Y[1], 0);
     }
 
-    function testGetECDSAKey_EmptyForUnregistered() public {
-        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
-        bytes memory key = keyRegistrar.getECDSAKey(operatorSet, operator1);
-        assertEq(key.length, 0);
-    }
-
-    function testGetApk_ReturnsZeroForUninitialized() public {
-        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
-        BN254.G1Point memory apk = keyRegistrar.getApk(operatorSet);
-        assertEq(apk.X, 0);
-        assertEq(apk.Y, 0);
-    }
-
     // ============ Authorization Tests ============
 
     function testRegisterKey_RevertOperatorSetNotConfigured() public {
@@ -664,20 +577,20 @@ contract KeyRegistrarUnitTests is Test {
         keyRegistrar.registerKey(operator1, operatorSet, ecdsaKey1, "");
     }
 
-    function testDeregisterKeyAndUpdate_RevertOperatorSetNotConfigured() public {
+    function testDeregisterKey_RevertOperatorSetNotConfigured() public {
         OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
         
         vm.prank(avs1);
         vm.expectRevert(IKeyRegistrarErrors.OperatorSetNotConfigured.selector);
-        keyRegistrar.deregisterKeyAndUpdate(operator1, operatorSet);
+        keyRegistrar.deregisterKey(operator1, operatorSet);
     }
 
-    function testCheckAndUpdateKey_RevertOperatorSetNotConfigured() public {
+    function testCheckKey_RevertOperatorSetNotConfigured() public {
         OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
         
         vm.prank(avs1);
         vm.expectRevert(IKeyRegistrarErrors.OperatorSetNotConfigured.selector);
-        keyRegistrar.checkAndUpdateKey(operatorSet, operator1);
+        keyRegistrar.checkKey(operatorSet, operator1);
     }
 
     // ============ Multiple Operator Sets Tests ============
@@ -766,7 +679,7 @@ contract KeyRegistrarUnitTests is Test {
         assertTrue(keyRegistrar.isKeyGloballyRegistered(keyHash));
         
         vm.prank(avs1);
-        keyRegistrar.deregisterKeyAndUpdate(operator1, operatorSet1);
+        keyRegistrar.deregisterKey(operator1, operatorSet1);
         
         // Key should still be globally registered after deregistration
         assertTrue(keyRegistrar.isKeyGloballyRegistered(keyHash));
@@ -800,7 +713,7 @@ contract KeyRegistrarUnitTests is Test {
         assertTrue(keyRegistrar.isKeyGloballyRegistered(keyHash));
         
         vm.prank(avs1);
-        keyRegistrar.deregisterKeyAndUpdate(operator1, operatorSet1);
+        keyRegistrar.deregisterKey(operator1, operatorSet1);
         
         // Key should still be globally registered after deregistration
         assertTrue(keyRegistrar.isKeyGloballyRegistered(keyHash));
@@ -848,59 +761,6 @@ contract KeyRegistrarUnitTests is Test {
         // Both should be registered
         assertTrue(keyRegistrar.isRegistered(ecdsaOperatorSet, operator1));
         assertTrue(keyRegistrar.isRegistered(bn254OperatorSet, operator1));
-    }
-
-    // ============ BN254 Aggregate Key Tests ============
-
-    function testAggregateBN254Key_MultipleOperators() public {
-        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
-        
-        vm.prank(avs1);
-        keyRegistrar.configureOperatorSet(operatorSet, IKeyRegistrarTypes.CurveType.BN254);
-        
-        // Register first operator
-        bytes memory signature1 = _generateBN254Signature(
-            operator1, 
-            operatorSet, 
-            bn254Key1, 
-            bn254PrivKey1
-        );
-        
-        vm.prank(operator1);
-        keyRegistrar.registerKey(operator1, operatorSet, bn254Key1, signature1);
-        
-        vm.prank(avs1);
-        keyRegistrar.checkAndUpdateKey(operatorSet, operator1);
-        
-        // Register second operator
-        bytes memory signature2 = _generateBN254Signature(
-            operator2, 
-            operatorSet, 
-            bn254Key2, 
-            bn254PrivKey2
-        );
-        
-        vm.prank(operator2);
-        keyRegistrar.registerKey(operator2, operatorSet, bn254Key2, signature2);
-        
-        vm.prank(avs1);
-        keyRegistrar.checkAndUpdateKey(operatorSet, operator2);
-        
-        // Verify aggregate key is the sum of both keys
-        BN254.G1Point memory apk = keyRegistrar.getApk(operatorSet);
-        BN254.G1Point memory expectedApk = bn254G1Key1.plus(bn254G1Key2);
-        
-        assertEq(apk.X, expectedApk.X);
-        assertEq(apk.Y, expectedApk.Y);
-        
-        // Remove first operator
-        vm.prank(avs1);
-        keyRegistrar.deregisterKeyAndUpdate(operator1, operatorSet);
-        
-        // Verify aggregate key is now just the second key
-        apk = keyRegistrar.getApk(operatorSet);
-        assertEq(apk.X, bn254G1Key2.X);
-        assertEq(apk.Y, bn254G1Key2.Y);
     }
 
     // ============ Error Condition Tests ============

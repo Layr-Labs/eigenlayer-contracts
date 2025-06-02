@@ -82,30 +82,31 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
     ) external;
 
     /**
-     * @notice Deregisters a cryptographic key for an operator with a specific operator set and updates APK
+     * @notice Deregisters a cryptographic key for an operator with a specific operator set
      * @param operator Address of the operator to deregister key for
      * @param operatorSet The operator set to deregister the key from
      * @dev Can be called by avs directly or by addresses they've authorized via PermissionController
      * @dev Reverts if key was not registered
      * @dev Keys remain in global key registry to prevent reuse
      */
-    function deregisterKeyAndUpdate(
+    function deregisterKey(
         address operator,
         OperatorSet memory operatorSet
     ) external;
 
     /**
-     * @notice Checks if an operator has a registered key and updates the aggregate BN254 public key if applicable
+     * @notice Checks if an operator has a registered key
      * @param operatorSet The operator set to check and update
      * @param operator Address of the operator
+     * @return whether the operator has a registered key
      * @dev This function is called by the AVSRegistrar when an operator registers for an AVS
      * @dev Only authorized callers for the AVS can call this function
      * @dev Reverts if operator doesn't have a registered key for this operator set
      */
-    function checkAndUpdateKey(
+    function checkKey(
         OperatorSet memory operatorSet,
         address operator
-    ) external;
+    ) external returns (bool);
 
     /**
      * @notice Checks if a key is registered for an operator with a specific operator set
@@ -167,15 +168,6 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
         OperatorSet memory operatorSet,
         address operator
     ) external view returns (bytes32);
-
-    /**
-     * @notice Gets the aggregate BN254 public key for an operator set
-     * @param operatorSet The operator set to get the aggregate key for
-     * @return The aggregate BN254 G1 public key
-     */
-    function getApk(
-        OperatorSet memory operatorSet
-    ) external view returns (BN254.G1Point memory);
 
     /**
      * @notice Verifies a BN254 signature using Fiat-Shamir challenge to prevent rogue key attacks

@@ -100,7 +100,7 @@ contract KeyRegistrar is
     }
 
     /// @inheritdoc IKeyRegistrar
-    function deregisterKeyAndUpdate(
+    function deregisterKey(
         address operator,
         OperatorSet memory operatorSet
     ) external checkCanCall(operatorSet.avs) {
@@ -115,16 +115,6 @@ contract KeyRegistrar is
             revert KeyNotFound(operatorSet, operator);
         }
 
-        if (config.curveType == CurveType.BN254) {
-
-            // Extract the G1 point from the stored key data
-            (uint256 g1X, uint256 g1Y, , ) = abi.decode(keyInfo.keyData, (uint256, uint256, uint256[2], uint256[2]));
-            BN254.G1Point memory operatorKey = BN254.G1Point(g1X, g1Y);
-
-            // Remove the operator's key from the aggregate
-            _updateAggregateBN254Key(operatorSet, operatorKey, false);
-        }
-
         // Clear key info
         delete operatorKeyInfo[operatorSet.key()][operator];
 
@@ -132,25 +122,18 @@ contract KeyRegistrar is
     }
 
     /// @inheritdoc IKeyRegistrar
-    function checkAndUpdateKey(
+    function checkKey(
         OperatorSet memory operatorSet,
         address operator
-    ) external checkCanCall(operatorSet.avs) {
+    ) external checkCanCall(operatorSet.avs) returns (bool) {
         OperatorSetConfig memory config = operatorSetConfigs[operatorSet.key()];
         require(config.isActive, OperatorSetNotConfigured());
         
         KeyInfo memory keyInfo = operatorKeyInfo[operatorSet.key()][operator];
         if (!keyInfo.isRegistered) {
-            revert KeyNotFound(operatorSet, operator);
-        }
-
-        if (config.curveType == CurveType.BN254) {
-            // Extract the G1 point from the stored key data
-            (uint256 g1X, uint256 g1Y, , ) = abi.decode(keyInfo.keyData, (uint256, uint256, uint256[2], uint256[2]));
-            BN254.G1Point memory operatorKey = BN254.G1Point(g1X, g1Y);
-
-            // Add the operator's key to the aggregate
-            _updateAggregateBN254Key(operatorSet, operatorKey, true);
+            return false;
+        } else {
+            return true;
         }
     }
 
@@ -270,31 +253,6 @@ contract KeyRegistrar is
         }
         
         revert InvalidCurveType();
-    }
-
-    /**
-     * @notice Update an operator set's aggregate BN254 key
-     * @param operatorSet The operator set to update
-     * @param key BN254 key to add or remove
-     * @param isAddition True to add the key, false to remove it
-     */
-    function _updateAggregateBN254Key(
-        OperatorSet memory operatorSet,
-        BN254.G1Point memory key,
-        bool isAddition
-    ) internal {
-        BN254.G1Point memory currentApk = operatorSetToAggregateBN254Key[operatorSet.key()];
-        BN254.G1Point memory newApk;
-        
-        if (isAddition) {
-            newApk = currentApk.plus(key);
-        } else {
-            newApk = currentApk.plus(key.negate());
-        }
-        
-        operatorSetToAggregateBN254Key[operatorSet.key()] = newApk;
-        
-        emit AggregateBN254KeyUpdated(operatorSet, newApk);
     }
 
     /**
@@ -418,13 +376,6 @@ contract KeyRegistrar is
         }
         
         return _getKeyHashForPubkey(keyInfo.keyData, config.curveType);
-    }
-
-    /// @inheritdoc IKeyRegistrar
-    function getApk(
-        OperatorSet memory operatorSet
-    ) external view returns (BN254.G1Point memory) {
-        return operatorSetToAggregateBN254Key[operatorSet.key()];
     }
 
     /// @inheritdoc IKeyRegistrar
