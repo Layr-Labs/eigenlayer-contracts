@@ -1,22 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "src/contracts/libraries/OperatorSetLib.sol";
-import "src/contracts/interfaces/ICrossChainRegistry.sol";
+import "./ICrossChainRegistry.sol";
+import {OperatorSet} from "../libraries/OperatorSetLib.sol";
 
-interface IBaseCertificateVerifierTypes is ICrossChainRegistryTypes {
-    // TODO: use the `KeyType` from `KeyRegistrar`
-    /**
-     * @notice The type of key used by the operatorSet. An OperatorSet can
-     * only generate one Operator Table for an OperatorSet for a given OperatorKeyType.
-     */
-    enum OperatorKeyType {
-        ECDSA,
-        BN254
-    }
-}
-
-interface IBaseCertificateVerifierEvents is IBaseCertificateVerifierTypes {
+interface IBaseCertificateVerifierEvents {
     /// @notice Emitted when the owner of an operatorSet is updated
     event OperatorSetOwnerUpdated(OperatorSet operatorSet, address owner);
 
@@ -41,8 +29,12 @@ interface IBaseCertificateVerifierErrors {
 
 /// @notice A base interface that verifies certificates for a given operatorSet
 /// @notice This is a base interface that all curve certificate verifiers (eg. BN254, ECDSA) must implement
-/// @dev A single `CertificateVerifier` can be used for ONLY 1 operatorSet
-interface IBaseCertificateVerifier is IBaseCertificateVerifierEvents, IBaseCertificateVerifierErrors {
+/// @dev A single `CertificateVerifier` can be used for multiple operatorSets, but a single key type
+interface IBaseCertificateVerifier is
+    IBaseCertificateVerifierEvents,
+    IBaseCertificateVerifierErrors,
+    ICrossChainRegistryTypes
+{
     /// @notice the address of the owner of the OperatorSet
     function getOperatorSetOwner(
         OperatorSet memory operatorSet

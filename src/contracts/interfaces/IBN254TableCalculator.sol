@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "src/contracts/libraries/BN254.sol";
-import "src/contracts/libraries/OperatorSetLib.sol";
+import {BN254} from "../libraries/BN254.sol";
+import {OperatorSet} from "../libraries/OperatorSetLib.sol";
 
 interface IBN254TableCalculatorTypes {
     /**
