@@ -52,7 +52,9 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @dev Initializes the contract ownership
      * @param initialOwner Initial owner of the contract
      */
-    function initialize(address initialOwner) external;
+    function initialize(
+        address initialOwner
+    ) external;
 
     /**
      * @notice Configures an operator set with curve type
@@ -60,10 +62,7 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @param curveType Type of curve (ECDSA, BN254)
      * @dev Only authorized callers for the AVS can configure operator sets
      */
-    function configureOperatorSet(
-        OperatorSet memory operatorSet,
-        CurveType curveType
-    ) external;
+    function configureOperatorSet(OperatorSet memory operatorSet, CurveType curveType) external;
 
     /**
      * @notice Registers a cryptographic key for an operator with a specific operator set
@@ -89,10 +88,7 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @dev Reverts if key was not registered
      * @dev Keys remain in global key registry to prevent reuse
      */
-    function deregisterKey(
-        address operator,
-        OperatorSet memory operatorSet
-    ) external;
+    function deregisterKey(address operator, OperatorSet memory operatorSet) external;
 
     /**
      * @notice Checks if an operator has a registered key
@@ -103,10 +99,7 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @dev Only authorized callers for the AVS can call this function
      * @dev Reverts if operator doesn't have a registered key for this operator set
      */
-    function checkKey(
-        OperatorSet memory operatorSet,
-        address operator
-    ) external view returns (bool);
+    function checkKey(OperatorSet memory operatorSet, address operator) external view returns (bool);
 
     /**
      * @notice Checks if a key is registered for an operator with a specific operator set
@@ -114,10 +107,7 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @param operator Address of the operator
      * @return True if the key is registered
      */
-    function isRegistered(
-        OperatorSet memory operatorSet,
-        address operator
-    ) external view returns (bool);
+    function isRegistered(OperatorSet memory operatorSet, address operator) external view returns (bool);
 
     /**
      * @notice Gets the configuration for an operator set
@@ -136,7 +126,7 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @return g2Point The BN254 G2 public key
      */
     function getBN254Key(
-        OperatorSet memory operatorSet, 
+        OperatorSet memory operatorSet,
         address operator
     ) external view returns (BN254.G1Point memory g1Point, BN254.G2Point memory g2Point);
 
@@ -146,10 +136,7 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @param operator Address of the operator
      * @return pubkey The ECDSA public key
      */
-    function getECDSAKey(
-        OperatorSet memory operatorSet, 
-        address operator
-    ) external view returns (bytes memory);
+    function getECDSAKey(OperatorSet memory operatorSet, address operator) external view returns (bytes memory);
 
     /**
      * @notice Gets the ECDSA public key for an operator with a specific operator set
@@ -157,17 +144,16 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @param operator Address of the operator
      * @return pubkey The ECDSA public key
      */
-    function getECDSAAddress(
-        OperatorSet memory operatorSet, 
-        address operator
-    ) external view returns (address);
+    function getECDSAAddress(OperatorSet memory operatorSet, address operator) external view returns (address);
 
     /**
      * @notice Checks if a key hash is globally registered
      * @param keyHash Hash of the key
      * @return True if the key is globally registered
      */
-    function isKeyGloballyRegistered(bytes32 keyHash) external view returns (bool);
+    function isKeyGloballyRegistered(
+        bytes32 keyHash
+    ) external view returns (bool);
 
     /**
      * @notice Gets the key hash for an operator with a specific operator set
@@ -175,10 +161,7 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @param operator Address of the operator
      * @return keyHash The key hash
      */
-    function getKeyHash(
-        OperatorSet memory operatorSet,
-        address operator
-    ) external view returns (bytes32);
+    function getKeyHash(OperatorSet memory operatorSet, address operator) external view returns (bytes32);
 
     /**
      * @notice Verifies a BN254 signature using Fiat-Shamir challenge to prevent rogue key attacks
