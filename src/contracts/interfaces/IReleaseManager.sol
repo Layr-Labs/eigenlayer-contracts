@@ -1,53 +1,37 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "./interfaces/IPermissionController.sol";
-
-// ============ Types ============
-    enum Architecture {
-        AMD64,
-        ARM64
-    }
-
-    enum OperatingSystem {
-        Linux,
-        Darwin,
-        Windows
-    }
-
-    enum ArtifactType {
-        Binary,
-        Container
-    }
+import "@eigenlayer-contracts/src/contracts/interfaces/IPermissionController.sol";
 
 interface IReleaseManagerErrors {
     /// @notice Thrown when an AVS is not registered
     error AVSNotRegistered();
     /// @notice Thrown when an AVS is already registered
     error AVSAlreadyRegistered();
-    /// @notice Thrown when an artifact digest is not found
-    error ArtifactNotFound();
+    /// @notice Thrown when a release is not found
+    error ReleaseNotFound();
     /// @notice Thrown when trying to publish with an invalid deadline
     error InvalidDeadline();
-    /// @notice Thrown when arrays have mismatched lengths
-    error ArrayLengthMismatch();
     /// @notice Thrown when caller lacks required permissions
     error Unauthorized();
-    /// @notice Thrown when attempting to deprecate an already deprecated artifact
+    /// @notice Thrown when attempting to deprecate an already deprecated release
     error AlreadyDeprecated();
+    /// @notice Thrown when digest is invalid
+    error InvalidDigest();
 }
 
 interface IReleaseManagerEvents {
-    /// @notice Emitted when artifacts are published
-    event ArtifactsPublished(
+    /// @notice Emitted when a release is published
+    event ReleasePublished(
         address indexed avs,
         string indexed version,
-        uint256 deploymentDeadline,
-        bytes32[] digests
+        bytes32 indexed digest,
+        string registryUrl,
+        uint256 deploymentDeadline
     );
 
-    /// @notice Emitted when an artifact is deprecated
-    event ArtifactDeprecated(
+    /// @notice Emitted when a release is deprecated
+    event ReleaseDeprecated(
         address indexed avs,
         bytes32 indexed digest
     );
@@ -60,15 +44,6 @@ interface IReleaseManagerEvents {
 }
 
 interface IReleaseManager is IReleaseManagerErrors, IReleaseManagerEvents {
-    struct Artifact {
-        ArtifactType artifactType;
-        Architecture architecture;
-        OperatingSystem os;
-        bytes32 digest;
-        string registryUrl;
-        uint256 publishedAt;
-    }
-
     struct PublishedRelease {
         bytes32 digest;
         string registryUrl;
@@ -92,36 +67,30 @@ interface IReleaseManager is IReleaseManagerErrors, IReleaseManagerEvents {
     function deregister(address avs) external;
 
     /**
-     * @notice Publish artifacts for an AVS with deployment information
-     * @param avs The address of the AVS publishing artifacts
-     * @param artifacts Array of artifacts to publish
+     * @notice Publish a release for an AVS
+     * @param avs The address of the AVS publishing the release
+     * @param digest The OCI artifact digest (sha256 hash)
+     * @param registryUrl The full OCI registry URL
      * @param version Semantic version string
      * @param deploymentDeadline UTC timestamp deadline for deployment
      */
-    function publishArtifacts(
+    function publishRelease(
         address avs,
-        Artifact[] calldata artifacts,
+        bytes32 digest,
+        string calldata registryUrl,
         string calldata version,
         uint256 deploymentDeadline
     ) external;
 
     /**
-     * @notice Deprecate a specific artifact
+     * @notice Deprecate a specific release
      * @param avs The address of the AVS
-     * @param digest The digest of the artifact to deprecate
+     * @param digest The digest of the release to deprecate
      */
-    function deprecateArtifact(
+    function deprecateRelease(
         address avs,
         bytes32 digest
     ) external;
-
-    /**
-     * @notice Get artifact details by AVS and digest
-     * @param avs The address of the AVS
-     * @param digest The digest of the artifact
-     * @return The artifact details
-     */
-    function getArtifact(address avs, bytes32 digest) external view returns (Artifact memory);
 
     /**
      * @notice Get all published releases for an AVS
@@ -153,21 +122,21 @@ interface IReleaseManager is IReleaseManagerErrors, IReleaseManagerEvents {
     ) external view returns (PublishedRelease memory);
 
     /**
-     * @notice Get all deprecated artifact digests for an AVS
+     * @notice Get all deprecated release digests for an AVS
      * @param avs The address of the AVS
-     * @return Array of deprecated artifact digests
+     * @return Array of deprecated release digests
      */
-    function getDeprecatedArtifacts(
+    function getDeprecatedReleases(
         address avs
     ) external view returns (bytes32[] memory);
 
     /**
-     * @notice Check if an artifact is deprecated
+     * @notice Check if a release is deprecated
      * @param avs The address of the AVS
-     * @param digest The artifact digest
+     * @param digest The release digest
      * @return True if deprecated, false otherwise
      */
-    function isArtifactDeprecated(
+    function isReleaseDeprecated(
         address avs,
         bytes32 digest
     ) external view returns (bool);

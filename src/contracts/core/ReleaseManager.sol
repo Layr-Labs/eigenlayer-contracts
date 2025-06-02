@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
+import {OwnableUpgradeable} from "./OwnableUpgradeable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {Checkpoints} from "@openzeppelin/contracts/utils/structs/Checkpoints.sol";
 
@@ -11,8 +11,8 @@ import {ReleaseManagerStorage} from "./ReleaseManagerStorage.sol";
 
 /**
  * @title ReleaseManager
- * @author EigenLabs
- * @notice Contract for managing an append-only log of artifact releases for AVS deployments.
+ * @author Your Organization
+ * @notice Contract for managing an append-only log of OCI artifact releases for AVS deployments.
  */
 contract ReleaseManager is ReentrancyGuard, OwnableUpgradeable, ReleaseManagerStorage {
     /**
@@ -63,60 +63,41 @@ contract ReleaseManager is ReentrancyGuard, OwnableUpgradeable, ReleaseManagerSt
     }
 
     /// @inheritdoc IReleaseManager
-    function publishArtifacts(
+    function publishRelease(
         address avs,
-        Artifact[] calldata _artifacts,
+        bytes32 digest,
+        string calldata registryUrl,
         string calldata version,
         uint256 deploymentDeadline
     ) external nonReentrant onlyRegistered(avs) onlyAuthorized(avs) {
         if (deploymentDeadline == 0) revert InvalidDeadline();
-        if (_artifacts.length == 0) revert ArrayLengthMismatch();
+        if (digest == bytes32(0)) revert InvalidDigest();
+        if (bytes(registryUrl).length == 0) revert InvalidDigest();
 
-        bytes32[] memory digests = new bytes32[](_artifacts.length);
+        PublishedRelease memory release = PublishedRelease({
+            digest: digest,
+            registryUrl: registryUrl,
+            version: version,
+            deploymentDeadline: deploymentDeadline,
+            publishedAt: block.timestamp
+        });
 
-        // First, store all artifacts
-        for (uint256 i = 0; i < _artifacts.length; i++) {
-            Artifact memory artifact = _artifacts[i];
-            artifact.publishedAt = block.timestamp;
+        // Add to the append-only log
+        allPublishedReleases[avs].push(release);
 
-            // Create unique key: keccak256(abi.encodePacked(avs, digest))
-            bytes32 key = _getArtifactKey(avs, artifact.digest);
+        // Update the checkpoint to point to the new index
+        uint256 newIndex = allPublishedReleases[avs].length - 1;
+        releaseIndexHistory[avs].push(block.number, newIndex);
 
-            // Store artifact
-            artifacts[key] = artifact;
-            artifactExists[key] = true;
-            digests[i] = artifact.digest;
-        }
-
-        // Create releases for each artifact
-        for (uint256 i = 0; i < _artifacts.length; i++) {
-            PublishedRelease memory release = PublishedRelease({
-                digest: _artifacts[i].digest,
-                registryUrl: _artifacts[i].registryUrl,
-                version: version,
-                deploymentDeadline: deploymentDeadline,
-                publishedAt: block.timestamp
-            });
-
-            // Add to the append-only log
-            allPublishedReleases[avs].push(release);
-
-            // Update the checkpoint to point to the new index
-            uint256 newIndex = allPublishedReleases[avs].length - 1;
-            releaseIndexHistory[avs].push(block.number, newIndex);
-        }
-
-        emit ArtifactsPublished(avs, version, deploymentDeadline, digests);
+        emit ReleasePublished(avs, version, digest, registryUrl, deploymentDeadline);
     }
 
     /// @inheritdoc IReleaseManager
-    function deprecateArtifact(
+    function deprecateRelease(
         address avs,
         bytes32 digest
     ) external nonReentrant onlyRegistered(avs) onlyAuthorized(avs) {
-        // Verify artifact exists
-        bytes32 artifactKey = _getArtifactKey(avs, digest);
-        if (!artifactExists[artifactKey]) revert ArtifactNotFound();
+        if (digest == bytes32(0)) revert InvalidDigest();
 
         // Mark as deprecated
         bytes32 deprecationKey = keccak256(abi.encodePacked(avs, digest));
@@ -125,9 +106,9 @@ contract ReleaseManager is ReentrancyGuard, OwnableUpgradeable, ReleaseManagerSt
         isDeprecated[deprecationKey] = true;
 
         // Add to deprecated list
-        deprecatedArtifacts[avs].push(digest);
+        deprecatedReleases[avs].push(digest);
 
-        emit ArtifactDeprecated(avs, digest);
+        emit ReleaseDeprecated(avs, digest);
     }
 
     /**
@@ -155,27 +136,10 @@ contract ReleaseManager is ReentrancyGuard, OwnableUpgradeable, ReleaseManagerSt
     }
 
     /**
-     * @notice Generate unique key for artifact storage
-     * @param avs The AVS address
-     * @param digest The artifact digest
-     * @return The unique key
-     */
-    function _getArtifactKey(address avs, bytes32 digest) internal pure returns (bytes32) {
-        return keccak256(abi.encodePacked(avs, digest));
-    }
-
-    /**
      *
      *                         VIEW FUNCTIONS
      *
      */
-
-    /// @inheritdoc IReleaseManager
-    function getArtifact(address avs, bytes32 digest) external view returns (Artifact memory) {
-        bytes32 key = _getArtifactKey(avs, digest);
-        if (!artifactExists[key]) revert ArtifactNotFound();
-        return artifacts[key];
-    }
 
     /// @inheritdoc IReleaseManager
     function getPublishedReleases(
@@ -189,7 +153,7 @@ contract ReleaseManager is ReentrancyGuard, OwnableUpgradeable, ReleaseManagerSt
         address avs
     ) external view returns (PublishedRelease memory) {
         PublishedRelease[] memory releases = allPublishedReleases[avs];
-        if (releases.length == 0) revert ArtifactNotFound();
+        if (releases.length == 0) revert ReleaseNotFound();
         return releases[releases.length - 1];
     }
 
@@ -200,19 +164,19 @@ contract ReleaseManager is ReentrancyGuard, OwnableUpgradeable, ReleaseManagerSt
     ) external view returns (PublishedRelease memory) {
         uint256 index = releaseIndexHistory[avs].upperLookup(blockNumber);
         PublishedRelease[] memory releases = allPublishedReleases[avs];
-        if (releases.length == 0 || index >= releases.length) revert ArtifactNotFound();
+        if (releases.length == 0 || index >= releases.length) revert ReleaseNotFound();
         return releases[index];
     }
 
     /// @inheritdoc IReleaseManager
-    function getDeprecatedArtifacts(
+    function getDeprecatedReleases(
         address avs
     ) external view returns (bytes32[] memory) {
-        return deprecatedArtifacts[avs];
+        return deprecatedReleases[avs];
     }
 
     /// @inheritdoc IReleaseManager
-    function isArtifactDeprecated(
+    function isReleaseDeprecated(
         address avs,
         bytes32 digest
     ) external view returns (bool) {
