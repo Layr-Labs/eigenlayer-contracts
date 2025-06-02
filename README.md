@@ -203,9 +203,9 @@ You can view the deployed contract addresses below, or check out the code itself
 
 ###### Slashing
 
-| [`SlashingEscrowFactory`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.5.0-rc.0/src/contracts/core/SlashEscrowFactory.sol) | [`0xA5022befe84Ad0f5aAdc12e9c59230bc076083A5`](https://sepolia.etherscan.io/address/0xA5022befe84Ad0f5aAdc12e9c59230bc076083A5) | [`0x7A0D...883E`](https://sepolia.etherscan.io/address/0x7A0D6553941BFc3864E5EEdEa7B2d9EA6Eb5883E) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
-| [`SlashingEscrow (Clone Implementation)`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.5.0-rc.0/src/contracts/core/SlashEscrow.sol) |  | [`0xa84b...ab2d`](https://sepolia.etherscan.io/address/0xa84b596F9456f473AD3241431fde8C135a63ab2d) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
-
+| [`OZ: Proxy Admin (SlashEscrowFactory)`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/ProxyAdmin.sol) | - | [`0x18dc...966b`](https://sepolia.etherscan.io/address/0x18dc7D96d26b4F43ac464349D5D4af0310Ca966b) | |
+| [`SlashEscrowFactory`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.5.0-rc.0/src/contracts/core/SlashEscrowFactory.sol) | [`0xA5022befe84Ad0f5aAdc12e9c59230bc076083A5`](https://sepolia.etherscan.io/address/0xA5022befe84Ad0f5aAdc12e9c59230bc076083A5) | [`0x7A0D...883E`](https://sepolia.etherscan.io/address/0x7A0D6553941BFc3864E5EEdEa7B2d9EA6Eb5883E) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+| [`SlashEscrow (Clone Implementation)`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.5.0-rc.0/src/contracts/core/SlashEscrow.sol) |  | [`0xa84b...ab2d`](https://sepolia.etherscan.io/address/0xa84b596F9456f473AD3241431fde8C135a63ab2d) | |
 
 ###### Strategies
 
