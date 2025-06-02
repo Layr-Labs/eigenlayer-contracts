@@ -62,23 +62,27 @@ interface IBN254CertificateVerifier is IBN254CertificateVerifierEvents, IBaseCer
 
     /**
      * @notice verifies a certificate
+     * @param operatorSet the operatorSet that the certificate is for
      * @param cert a certificate
      * @return signedStakes amount of stake that signed the certificate for each stake
      * type
      */
     function verifyCertificate(
+        OperatorSet memory operatorSet,
         BN254Certificate memory cert
     ) external returns (uint96[] memory signedStakes);
 
     /**
      * @notice verifies a certificate and makes sure that the signed stakes meet
      * provided portions of the total stake on the AVS
+     * @param operatorSet the operatorSet that the certificate is for
      * @param cert a certificate
      * @param totalStakeProportionThresholds the proportion of total stake that
      * the signed stake of the certificate should meet
      * @return whether or not certificate is valid and meets thresholds
      */
     function verifyCertificateProportion(
+        OperatorSet memory operatorSet,
         BN254Certificate memory cert,
         uint16[] memory totalStakeProportionThresholds
     ) external returns (bool);
@@ -86,12 +90,14 @@ interface IBN254CertificateVerifier is IBN254CertificateVerifierEvents, IBaseCer
     /**
      * @notice verifies a certificate and makes sure that the signed stakes meet
      * provided nominal stake thresholds
+     * @param operatorSet the operatorSet that the certificate is for
      * @param cert a certificate
      * @param totalStakeNominalThresholds the nominal amount of stake that
      * the signed stake of the certificate should meet
      * @return whether or not certificate is valid and meets thresholds
      */
     function verifyCertificateNominal(
+        OperatorSet memory operatorSet,
         BN254Certificate memory cert,
         uint96[] memory totalStakeNominalThresholds
     ) external returns (bool);
