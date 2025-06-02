@@ -14,9 +14,8 @@ The deployments on `mainnet`, `holesky`, `sepolia`, and `hoodi` are on the below
 | -------- | -------- |
 | Mainnet Ethereum | [`v1.4.1`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.4.1) |
 | Testnet Holesky | [`v1.4.2`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.4.2) |
-| Testnet Sepolia | [`v1.3.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.3.0) |
+| Testnet Sepolia | [`v1.5.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.5.0-rc.0) |
 | Testnet Hoodi | [`v1.4.1`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.4.1) |
-
 
 ### Current Deployment Contracts
 
@@ -201,7 +200,12 @@ You can view the deployed contract addresses below, or check out the code itself
 | [`RewardsCoordinator`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.3.0/src/contracts/core/RewardsCoordinator.sol) | [`0x5ae8152fb88c26ff9ca5C014c94fca3c68029349`](https://sepolia.etherscan.io/address/0x5ae8152fb88c26ff9ca5C014c94fca3c68029349) | [`0xcC30...7940`](https://sepolia.etherscan.io/address/0xcC305562B01bec562D13A40ef8781e313AFE7940) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 | [`AllocationManager`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.5.0-rc.0/src/contracts/core/AllocationManager.sol) | [`0x42583067658071247ec8CE0A516A58f682002d07`](https://sepolia.etherscan.io/address/0x42583067658071247ec8CE0A516A58f682002d07) | [`0xb368...DAd6`](https://sepolia.etherscan.io/address/0xb36883818b5a4D25C409A81946DE9067cdC8DAd6) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 | [`PermissionController`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.3.0/src/contracts/permissions/PermissionController.sol) | [`0x44632dfBdCb6D3E21EF613B0ca8A6A0c618F5a37`](https://sepolia.etherscan.io/address/0x44632dfBdCb6D3E21EF613B0ca8A6A0c618F5a37) | [`0x59B1...f525`](https://sepolia.etherscan.io/address/0x59B11b191B572888703E150E45F5015e0fFcf525) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+
+###### Slashing
+
 | [`SlashingEscrowFactory`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.5.0-rc.0/src/contracts/core/SlashEscrowFactory.sol) | [`0xA5022befe84Ad0f5aAdc12e9c59230bc076083A5`](https://sepolia.etherscan.io/address/0xA5022befe84Ad0f5aAdc12e9c59230bc076083A5) | [`0x7A0D...883E`](https://sepolia.etherscan.io/address/0x7A0D6553941BFc3864E5EEdEa7B2d9EA6Eb5883E) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+| [`SlashingEscrow (Clone Implementation)`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.5.0-rc.0/src/contracts/core/SlashEscrow.sol) |  | [`0xa84b...ab2d`](https://sepolia.etherscan.io/address/0xa84b596F9456f473AD3241431fde8C135a63ab2d) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+
 
 ###### Strategies
 
