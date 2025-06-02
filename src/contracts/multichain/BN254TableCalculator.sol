@@ -38,21 +38,21 @@ contract BN254TableCalculator is Initializable, OwnableUpgradeable, BN254TableCa
     /// @inheritdoc IBN254TableCalculator
     function calculateOperatorTable(
         OperatorSet calldata operatorSet
-    ) public view returns (BN254OperatorSetInfo memory operatorSetInfo) {
+    ) public view virtual returns (BN254OperatorSetInfo memory operatorSetInfo) {
         return _calculateOperatorTable(operatorSet);
     }
 
     /// @inheritdoc IBN254TableCalculator
     function calculateOperatorTableBytes(
         OperatorSet calldata operatorSet
-    ) external view returns (bytes memory operatorTableBytes) {
+    ) external view virtual returns (bytes memory operatorTableBytes) {
         return abi.encode(_calculateOperatorTable(operatorSet));
     }
 
     /// @inheritdoc IBN254TableCalculator
     function getOperatorInfos(
         OperatorSet calldata operatorSet
-    ) external view returns (BN254OperatorInfo[] memory) {
+    ) external view virtual returns (BN254OperatorInfo[] memory) {
         // Get the weights for all operators
         (address[] memory operators, uint256[][] memory weights) =
             operatorWeightCalculator.getOperatorWeights(operatorSet);
