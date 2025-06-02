@@ -24,7 +24,10 @@ contract BN254CertificateVerifier is IBN254CertificateVerifier, Ownable {
     using Merkle for bytes;
     using BN254 for BN254.G1Point;
 
-    // Gas limit for pairing operations to prevent DoS
+    error OnlyOperatorSetOwner();
+    error InvalidOperatorIndex();
+
+    // Gas limit for pairing operations to prevent DoS attacks
     uint256 private constant PAIRING_EQUALITY_CHECK_GAS = 400000;
 
     // The address that can update operator tables
@@ -67,7 +70,7 @@ contract BN254CertificateVerifier is IBN254CertificateVerifier, Ownable {
     // Modifier to restrict access to operator set owner
     modifier onlyOperatorSetOwner(OperatorSet memory operatorSet) {
         bytes32 operatorSetKey = operatorSet.key();
-        if (msg.sender != _operatorSetOwners[operatorSetKey]) revert("OnlyOperatorSetOwner");
+        if (msg.sender != _operatorSetOwners[operatorSetKey]) revert OnlyOperatorSetOwner();
         _;
     }
 
@@ -325,7 +328,7 @@ contract BN254CertificateVerifier is IBN254CertificateVerifier, Ownable {
             
             // Validate index
             if (witness.operatorIndex >= ctx.operatorSetInfo.numOperators) {
-                revert("non-signer index not valid");
+                revert InvalidOperatorIndex();
             }
 
             // Get or cache operator info
