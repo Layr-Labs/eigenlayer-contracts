@@ -106,7 +106,7 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
     function checkKey(
         OperatorSet memory operatorSet,
         address operator
-    ) external returns (bool);
+    ) external view returns (bool);
 
     /**
      * @notice Checks if a key is registered for an operator with a specific operator set
@@ -141,7 +141,7 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
     ) external view returns (BN254.G1Point memory g1Point, BN254.G2Point memory g2Point);
 
     /**
-     * @notice Gets the ECDSA public key for an operator with a specific operator set
+     * @notice Gets the ECDSA public key for an operator with a specific operator set as bytes
      * @param operatorSet The operator set to get the key for
      * @param operator Address of the operator
      * @return pubkey The ECDSA public key
@@ -150,6 +150,17 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
         OperatorSet memory operatorSet, 
         address operator
     ) external view returns (bytes memory);
+
+    /**
+     * @notice Gets the ECDSA public key for an operator with a specific operator set
+     * @param operatorSet The operator set to get the key for
+     * @param operator Address of the operator
+     * @return pubkey The ECDSA public key
+     */
+    function getECDSAAddress(
+        OperatorSet memory operatorSet, 
+        address operator
+    ) external view returns (address);
 
     /**
      * @notice Checks if a key hash is globally registered

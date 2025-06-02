@@ -3,6 +3,7 @@ pragma solidity ^0.8.27;
 
 import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {BN254} from "../libraries/BN254.sol";
 import {PermissionControllerMixin} from "../mixins/PermissionControllerMixin.sol";
 import {SemVerMixin} from "../mixins/SemVerMixin.sol";
@@ -56,7 +57,8 @@ contract KeyRegistrar is
     function configureOperatorSet(
         OperatorSet memory operatorSet,
         CurveType curveType
-    ) external checkCanCall(operatorSet.avs) {
+    ) external {
+        require(address(allocationManager.getAVSRegistrar(operatorSet.avs)) == msg.sender, "Unauthorized");
         require(curveType == CurveType.ECDSA || curveType == CurveType.BN254, InvalidCurveType());
         
         // Prevent overwriting existing configurations
@@ -75,7 +77,7 @@ contract KeyRegistrar is
     function registerKey(
         address operator,
         OperatorSet memory operatorSet,
-        bytes calldata pubkey,
+        bytes calldata keyData,
         bytes calldata signature
     ) external checkCanCall(operator) {
         
@@ -85,35 +87,33 @@ contract KeyRegistrar is
         // Check if the key is already registered
         require(!operatorKeyInfo[operatorSet.key()][operator].isRegistered, KeyAlreadyRegistered());
 
-        // Register key based on curve type
+        // Register key based on curve type - both now require signature verification
         if (config.curveType == CurveType.ECDSA) {
-            _registerECDSAKey(operatorSet, operator, pubkey);
+            _registerECDSAKey(operatorSet, operator, keyData, signature);
         } 
         else if (config.curveType == CurveType.BN254) {
-            _registerBN254Key(operatorSet, operator, pubkey, signature);
+            _registerBN254Key(operatorSet, operator, keyData, signature);
         } 
         else {
             revert InvalidCurveType();
         }
 
-        emit KeyRegistered(operatorSet, operator, config.curveType, pubkey);
+        emit KeyRegistered(operatorSet, operator, config.curveType, keyData);
     }
 
     /// @inheritdoc IKeyRegistrar
     function deregisterKey(
         address operator,
         OperatorSet memory operatorSet
-    ) external checkCanCall(operatorSet.avs) {
+    ) external {
+        require(address(allocationManager.getAVSRegistrar(operatorSet.avs)) == msg.sender, "Unauthorized");
         
         OperatorSetConfig memory config = operatorSetConfigs[operatorSet.key()];
         require(config.isActive, OperatorSetNotConfigured());
         
         KeyInfo memory keyInfo = operatorKeyInfo[operatorSet.key()][operator];
         
-        if (!keyInfo.isRegistered) {
-            // Revert if key was not registered
-            revert KeyNotFound(operatorSet, operator);
-        }
+        require(keyInfo.isRegistered, KeyNotFound(operatorSet, operator));
 
         // Clear key info
         delete operatorKeyInfo[operatorSet.key()][operator];
@@ -125,16 +125,14 @@ contract KeyRegistrar is
     function checkKey(
         OperatorSet memory operatorSet,
         address operator
-    ) external checkCanCall(operatorSet.avs) returns (bool) {
+    ) external view returns (bool) {
+        require(address(allocationManager.getAVSRegistrar(operatorSet.avs)) == msg.sender, "Unauthorized");
+        
         OperatorSetConfig memory config = operatorSetConfigs[operatorSet.key()];
         require(config.isActive, OperatorSetNotConfigured());
         
         KeyInfo memory keyInfo = operatorKeyInfo[operatorSet.key()][operator];
-        if (!keyInfo.isRegistered) {
-            return false;
-        } else {
-            return true;
-        }
+        return keyInfo.isRegistered;
     }
 
     /**
@@ -144,60 +142,70 @@ contract KeyRegistrar is
      */
 
     /**
-     * @notice Validates and registers an ECDSA public key
+     * @notice Validates and registers an ECDSA address with signature verification
      * @param operatorSet The operator set to register the key for
      * @param operator Address of the operator
-     * @param pubkey The ECDSA public key bytes
-     * @dev Validates key format and ensures global uniqueness
+     * @param keyData The ECDSA address encoded as bytes (20 bytes)
+     * @param signature Signature over a message that includes the operator's address
+     * @dev Validates address format, verifies signature ownership, and ensures global uniqueness
      */
     function _registerECDSAKey(
         OperatorSet memory operatorSet,
         address operator,
-        bytes calldata pubkey
+        bytes calldata keyData,
+        bytes calldata signature
     ) internal {
-        // Validate ECDSA public key format
-        require(pubkey.length == 65, InvalidKeyFormat());
-        require(pubkey[0] == 0x04, InvalidKeyFormat()); // Must be uncompressed format
+        // Validate ECDSA address format
+        require(keyData.length == 20, InvalidKeyFormat());
         
-        // Calculate key hash using consistent hashing function
-        bytes32 keyHash = _getKeyHashForPubkey(pubkey, CurveType.ECDSA);
-
-        // Reject zero public keys
-        require(keyHash != ZERO_ECDSA_PUBKEY_HASH, ZeroPubkey());
+        // Decode address from bytes
+        address keyAddress = address(bytes20(keyData));
+        require(keyAddress != address(0), ZeroPubkey());
+        
+        // Calculate key hash using the address
+        bytes32 keyHash = _getKeyHashForKeyData(keyData, CurveType.ECDSA);
         
         // Check global uniqueness
         require(!globalKeyRegistry[keyHash], KeyAlreadyRegistered());
 
-        // Store key data
-        operatorKeyInfo[operatorSet.key()][operator] = KeyInfo({
-            isRegistered: true,
-            keyData: pubkey
-        });
-        
-        // Update global key registry
-        globalKeyRegistry[keyHash] = true;
+        // Verify signature to prevent frontrunning attacks
+        bytes32 messageHash = keccak256(abi.encodePacked(
+            "EigenLayer.KeyRegistrar.ECDSA.v1", // Domain separator
+            address(this), // Contract address for additional separation
+            operatorSet.avs, 
+            operatorSet.id, 
+            operator, 
+            keyAddress
+        ));
+
+        // Verify that the signature was created by the key address
+        address recoveredSigner = ECDSA.recover(messageHash, signature);
+        require(recoveredSigner == keyAddress, InvalidSignature());
+
+        // Store key data using internal helper
+        _storeKeyData(operatorSet, operator, keyData, keyHash);
     }
 
     /**
      * @notice Validates and registers a BN254 public key
      * @param operatorSet The operator set to register the key for
      * @param operator Address of the operator
-     * @param pubkey The BN254 public key bytes (G1 and G2 components)
+     * @param keyData The BN254 public key bytes (G1 and G2 components)
      * @param signature Signature proving key ownership
      * @dev Validates keypair, verifies signature, and ensures global uniqueness
      */
     function _registerBN254Key(
         OperatorSet memory operatorSet,
         address operator,
-        bytes calldata pubkey,
+        bytes calldata keyData,
         bytes calldata signature
     ) internal {
         BN254.G1Point memory g1Point;
 
         {
-        // Decode BN254 G1 and G2 points from the pubkey bytes
+        // Decode BN254 G1 and G2 points from the keyData bytes
         (uint256 g1X, uint256 g1Y, uint256[2] memory g2X, uint256[2] memory g2Y) = 
-            abi.decode(pubkey, (uint256, uint256, uint256[2], uint256[2]));
+            abi.decode(keyData, (uint256, uint256, uint256[2], uint256[2]));
 
         // Validate G1 point
         g1Point = BN254.G1Point(g1X, g1Y);
@@ -206,9 +214,6 @@ contract KeyRegistrar is
         // Construct BN254 G2 point from coordinates
         BN254.G2Point memory g2Point = BN254.G2Point(g2X, g2Y);
 
-        // Verify that G1 and G2 form a valid keypair
-        require(BN254.pairing(g1Point, BN254.negGeneratorG2(), BN254.generatorG1(), g2Point), InvalidKeypair());
-
         // Verify the signature to prevent rogue key attacks with domain separation
         bytes32 messageHash = keccak256(abi.encodePacked(
             "EigenLayer.KeyRegistrar.v1", // Domain separator
@@ -216,21 +221,38 @@ contract KeyRegistrar is
             operatorSet.avs, 
             operatorSet.id, 
             operator, 
-            pubkey
+            keyData
         ));
         _verifyBN254Signature(messageHash, signature, g1Point, g2Point);
         }
 
         // Calculate key hash and check global uniqueness
-        bytes32 keyHash = _getKeyHashForPubkey(pubkey, CurveType.BN254);
+        bytes32 keyHash = _getKeyHashForKeyData(keyData, CurveType.BN254);
         require(!globalKeyRegistry[keyHash], KeyAlreadyRegistered());
 
-        // Store the key data
+        // Store key data using internal helper
+        _storeKeyData(operatorSet, operator, keyData, keyHash);
+    }
+
+    /**
+     * @notice Internal helper to store key data and update global registry
+     * @param operatorSet The operator set
+     * @param operator The operator address
+     * @param pubkey The public key data
+     * @param keyHash The key hash
+     */
+    function _storeKeyData(
+        OperatorSet memory operatorSet,
+        address operator,
+        bytes memory pubkey,
+        bytes32 keyHash
+    ) internal {
+        // Store key data
         operatorKeyInfo[operatorSet.key()][operator] = KeyInfo({
             isRegistered: true,
             keyData: pubkey
         });
-        
+
         // Update global key registry
         globalKeyRegistry[keyHash] = true;
     }
@@ -241,7 +263,7 @@ contract KeyRegistrar is
      * @param curveType The curve type (ECDSA or BN254)
      * @return keyHash The key hash
      */
-    function _getKeyHashForPubkey(
+    function _getKeyHashForKeyData(
         bytes memory pubkey,
         CurveType curveType
     ) internal pure returns (bytes32) {
@@ -335,6 +357,10 @@ contract KeyRegistrar is
         OperatorSet memory operatorSet, 
         address operator
     ) external view returns (BN254.G1Point memory g1Point, BN254.G2Point memory g2Point) {
+        // Validate operator set curve type
+        OperatorSetConfig memory config = operatorSetConfigs[operatorSet.key()];
+        require(config.curveType == CurveType.BN254, InvalidCurveType());
+        
         KeyInfo memory keyInfo = operatorKeyInfo[operatorSet.key()][operator];
         
         if (!keyInfo.isRegistered) {
@@ -353,9 +379,21 @@ contract KeyRegistrar is
     function getECDSAKey(
         OperatorSet memory operatorSet, 
         address operator
-    ) external view returns (bytes memory) {
+    ) public view returns (bytes memory) {
+        // Validate operator set curve type
+        OperatorSetConfig memory config = operatorSetConfigs[operatorSet.key()];
+        require(config.curveType == CurveType.ECDSA, InvalidCurveType());
+        
         KeyInfo memory keyInfo = operatorKeyInfo[operatorSet.key()][operator];
-        return keyInfo.keyData;
+        return keyInfo.keyData; // Returns the 20-byte address as bytes
+    }
+
+    /// @inheritdoc IKeyRegistrar
+    function getECDSAAddress(
+        OperatorSet memory operatorSet, 
+        address operator
+    ) external view returns (address) {    
+        return address(bytes20(getECDSAKey(operatorSet, operator)));
     }
 
     /// @inheritdoc IKeyRegistrar
@@ -375,7 +413,7 @@ contract KeyRegistrar is
             return bytes32(0);
         }
         
-        return _getKeyHashForPubkey(keyInfo.keyData, config.curveType);
+        return _getKeyHashForKeyData(keyInfo.keyData, config.curveType);
     }
 
     /// @inheritdoc IKeyRegistrar

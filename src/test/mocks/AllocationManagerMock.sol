@@ -17,7 +17,7 @@ contract AllocationManagerMock is Test {
     mapping(bytes32 operatorSetKey => bool) public _isOperatorSet;
     mapping(address avs => uint) public getOperatorSetCount;
     mapping(address => mapping(IStrategy => Snapshots.DefaultWadHistory)) internal _maxMagnitudeHistory;
-    mapping(bytes32 operatorSetKey => EnumerableSet.AddressSet) internal _operatorSetMembers;
+    mapping(address => address) internal _avsRegistrar;
 
     function setIsOperatorSet(OperatorSet memory operatorSet, bool boolean) external {
         _isOperatorSet[operatorSet.key()] = boolean;
@@ -69,8 +69,11 @@ contract AllocationManagerMock is Test {
         getOperatorSetCount[avs] = numSets;
     }
 
-    function addToOperatorSet(address operator, OperatorSet memory operatorSet) external {
-        bytes32 operatorSetKey = operatorSet.key();
-        EnumerableSet.add(_operatorSetMembers[operatorSet.key()], operator);
+    function setAVSRegistrar(address avs, address avsRegistrar) external {
+        _avsRegistrar[avs] = avsRegistrar;
+    }
+
+    function getAVSRegistrar(address avs) external view returns (address) {
+        return _avsRegistrar[avs];
     }
 }
