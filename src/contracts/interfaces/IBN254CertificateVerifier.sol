@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "src/contracts/libraries/OperatorSetLib.sol";
-import "src/contracts/interfaces/ICrossChainRegistry.sol";
-import "src/contracts/interfaces/IBaseCertificateVerifier.sol";
-import "src/contracts/interfaces/IBN254TableCalculator.sol";
+import {BN254} from "../libraries/BN254.sol";
+import {OperatorSet} from "../libraries/OperatorSetLib.sol";
+import "./IBN254TableCalculator.sol";
+import "./IBaseCertificateVerifier.sol";
 
 interface IBN254CertificateVerifierTypes is IBN254TableCalculatorTypes {
     /**
@@ -42,7 +42,7 @@ interface IBN254CertificateVerifierEvents is IBN254CertificateVerifierTypes {
 }
 
 /// @notice An interface for verifying BN254 certificates
-/// @notice This implements a base interface that all curve certificate verifiers (eg. BN254, ECDSA) must implement
+/// @notice This implements the base `IBaseCertificateVerifier` interface
 interface IBN254CertificateVerifier is IBN254CertificateVerifierEvents, IBaseCertificateVerifier {
     /**
      * @notice updates the operator table
