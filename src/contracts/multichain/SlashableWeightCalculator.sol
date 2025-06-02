@@ -1,13 +1,16 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
-import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-
-import {IStrategy} from "../interfaces/IStrategy.sol";
-import {IOperatorWeightCalculator, OperatorSet, OperatorSetLib} from "../interfaces/multichain/IOperatorWeightCalculator.sol";
-import {SlashableWeightCalculatorStorage, IAllocationManager} from "./SlashableWeightCalculatorStorage.sol";
+import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
+import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
+import "../interfaces/IStrategy.sol";
+import {
+    IOperatorWeightCalculator,
+    OperatorSet,
+    OperatorSetLib
+} from "../interfaces/multichain/IOperatorWeightCalculator.sol";
+import "./SlashableWeightCalculatorStorage.sol";
 
 /**
  * @title SlashableWeightCalculator
@@ -50,7 +53,7 @@ contract SlashableWeightCalculator is Initializable, OwnableUpgradeable, Slashab
      */
     function getOperatorWeights(
         OperatorSet calldata operatorSet
-    ) public view virtual override returns (address[] memory operators, uint256[][] memory weights) {
+    ) public view virtual returns (address[] memory operators, uint256[][] memory weights) {
         // Get all operators & strategies in the operatorSet
         operators = allocationManager.getMembers(operatorSet);
         IStrategy[] memory strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
