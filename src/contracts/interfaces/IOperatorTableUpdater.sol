@@ -5,7 +5,9 @@ import "src/contracts/libraries/OperatorSetLib.sol";
 
 import "src/contracts/interfaces/IECDSATableCalculator.sol";
 import "src/contracts/interfaces/IBN254TableCalculator.sol";
-import "src/contracts/interfaces/ICertificateVerifier.sol";
+import "src/contracts/interfaces/IECDSACertificateVerifier.sol";
+import "src/contracts/interfaces/IBN254CertificateVerifier.sol";
+import "src/contracts/interfaces/ICrossChainRegistry.sol";
 
 interface IOperatorTableUpdaterErrors {
     /// @notice Thrown when the GlobalTableRoot update fails
@@ -24,7 +26,9 @@ interface IOperatorTableUpdaterEvents {
 interface IOperatorTableUpdater is
     IOperatorTableUpdaterErrors,
     IOperatorTableUpdaterEvents,
-    ICertificateVerifierTypes
+    IECDSACertificateVerifierTypes,
+    IBN254CertificateVerifierTypes,
+    ICrossChainRegistryTypes
 {
     /**
      * @notice Confirms Global operator table root
