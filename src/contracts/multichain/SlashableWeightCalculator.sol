@@ -22,6 +22,7 @@ contract SlashableWeightCalculator is Initializable, OwnableUpgradeable, Slashab
     using Math for uint256;
 
     error LookaheadBlocksTooHigh();
+    error ArrayLengthMismatch();
 
     /// @notice Emitted when a strategy multiplier is set
     event StrategyMultiplierSet(IStrategy indexed strategy, uint256 multiplier);
@@ -125,7 +126,7 @@ contract SlashableWeightCalculator is Initializable, OwnableUpgradeable, Slashab
         uint256[] calldata multipliers
     ) external onlyOwner {
         // Validate the lengths of strategies and multipliers
-        require(strategies.length == multipliers.length, "Incorrect length of strategyAndMultipliers");
+        require(strategies.length == multipliers.length, ArrayLengthMismatch());
 
         // Get the key for the operatorSet
         bytes32 operatorSetKey = operatorSet.key();
