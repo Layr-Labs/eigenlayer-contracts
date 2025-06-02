@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "src/contracts/libraries/OperatorSetLib.sol";
+import {OperatorSet} from "../libraries/OperatorSetLib.sol";
 
 interface IOperatorTableCalculator {
 // TODO: implement, stub for now
@@ -91,7 +91,7 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryT
     /**
      * @notice Adds a chainID to the whitelist of chainIDs that can be transported to
      * @param chainID the chainID to add to the whitelist
-     * @dev msg.sender must be UAM permissioned for operatorSet.avs
+     * @dev msg.sender must be the owner of the CrossChainRegistry
      */
     function addChainIDToWhitelist(
         uint32 chainID
@@ -100,7 +100,7 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryT
     /**
      * @notice Removes a chainID from the whitelist of chainIDs that can be transported to
      * @param chainID the chainID to remove from the whitelist
-     * @dev msg.sender must be UAM permissioned for operatorSet.avs
+     * @dev msg.sender must be the owner of the CrossChainRegistry
      */
     function removeChainIDFromWhitelist(
         uint32 chainID
