@@ -165,7 +165,7 @@ library Merkle {
         return layer[0];
     }
 
-        /**
+    /**
      * @notice this function returns the merkle root of a tree created from a set of leaves using keccak as its hash function
      * @param leaves the leaves of the merkle tree
      * @return The computed Merkle root of the tree.
@@ -198,10 +198,7 @@ library Merkle {
         return layer[0];
     }
 
-    function getProofKeccak(
-        bytes32[] memory leaves,
-        uint256 index
-    ) internal pure returns (bytes memory proof) {
+    function getProofKeccak(bytes32[] memory leaves, uint256 index) internal pure returns (bytes memory proof) {
         // TODO: very inefficient, use ZERO_HASHES
         // pad to the next power of 2
         uint256 numNodesInLayer = 1;

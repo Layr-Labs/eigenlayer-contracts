@@ -6,13 +6,8 @@ import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 import {BN254} from "../libraries/BN254.sol";
 import {OperatorSet} from "../libraries/OperatorSetLib.sol";
-import {
-    IBN254TableCalculator, IBN254TableCalculatorTypes
-} from "../interfaces/IBN254TableCalculator.sol";
-import {
-    IBN254CertificateVerifier,
-    IBN254CertificateVerifierTypes
-} from "../interfaces/IBN254CertificateVerifier.sol";
+import {IBN254TableCalculator, IBN254TableCalculatorTypes} from "../interfaces/IBN254TableCalculator.sol";
+import {IBN254CertificateVerifier, IBN254CertificateVerifierTypes} from "../interfaces/IBN254CertificateVerifier.sol";
 import {IBaseCertificateVerifier} from "../interfaces/IBaseCertificateVerifier.sol";
 import {Merkle} from "../libraries/Merkle.sol";
 import "./BN254CertificateVerifierStorage.sol";
@@ -23,11 +18,11 @@ import "./BN254CertificateVerifierStorage.sol";
  * @dev This contract uses BN254 curves for signature verification and
  *      caches operator information for efficient verification
  */
-contract BN254CertificateVerifier is 
+contract BN254CertificateVerifier is
     Initializable,
     OwnableUpgradeable,
     ReentrancyGuardUpgradeable,
-    BN254CertificateVerifierStorage 
+    BN254CertificateVerifierStorage
 {
     using Merkle for bytes;
     using BN254 for BN254.G1Point;
@@ -61,13 +56,10 @@ contract BN254CertificateVerifier is
      * @param __operatorTableUpdater The address that can update operator tables
      * @param __owner The initial owner of the contract
      */
-    function initialize(
-        address __operatorTableUpdater,
-        address __owner
-    ) external initializer {
+    function initialize(address __operatorTableUpdater, address __owner) external initializer {
         __Ownable_init();
         __ReentrancyGuard_init();
-        
+
         _operatorTableUpdater = __operatorTableUpdater;
         _transferOwnership(__owner);
     }
@@ -106,7 +98,9 @@ contract BN254CertificateVerifier is
      * @notice Set the operator table updater address
      * @param newOperatorTableUpdater The new operator table updater address
      */
-    function setOperatorTableUpdater(address newOperatorTableUpdater) external onlyOwner {
+    function setOperatorTableUpdater(
+        address newOperatorTableUpdater
+    ) external onlyOwner {
         _operatorTableUpdater = newOperatorTableUpdater;
     }
 
@@ -120,7 +114,7 @@ contract BN254CertificateVerifier is
         OperatorSetConfig calldata operatorSetConfig
     ) external onlyTableUpdater {
         bytes32 operatorSetKey = operatorSet.key();
-        
+
         // Require that the new timestamp is greater than the latest reference timestamp
         require(referenceTimestamp > _latestReferenceTimestamps[operatorSetKey], TableUpdateStale());
 
@@ -157,8 +151,7 @@ contract BN254CertificateVerifier is
 
         // Get total stakes from the operator set info
         bytes32 operatorSetKey = operatorSet.key();
-        BN254OperatorSetInfo memory operatorSetInfo = 
-            _operatorSetInfos[operatorSetKey][cert.referenceTimestamp];
+        BN254OperatorSetInfo memory operatorSetInfo = _operatorSetInfos[operatorSetKey][cert.referenceTimestamp];
         uint256[] memory totalStakes = operatorSetInfo.totalWeights;
 
         // Verify that each stake meets the threshold
@@ -169,7 +162,7 @@ contract BN254CertificateVerifier is
         for (uint256 i = 0; i < signedStakes.length; i++) {
             // Calculate threshold as proportion of total stake
             // totalStakeProportionThresholds is in basis points (e.g. 6600 = 66%)
-            uint256 threshold = (totalStakes[i] * totalStakeProportionThresholds[i]) / 10000;
+            uint256 threshold = (totalStakes[i] * totalStakeProportionThresholds[i]) / 10_000;
 
             // If signed stake doesn't meet threshold, return false
             if (signedStakes[i] < threshold) {
@@ -258,11 +251,11 @@ contract BN254CertificateVerifier is
     ) internal returns (uint256[] memory signedStakes) {
         VerificationContext memory ctx;
         ctx.operatorSetKey = operatorSet.key();
-        
+
         // Check staleness and get operator set info
         _validateCertificateTimestamp(ctx.operatorSetKey, cert.referenceTimestamp);
         ctx.operatorSetInfo = _operatorSetInfos[ctx.operatorSetKey][cert.referenceTimestamp];
-        
+
         // Check that this reference timestamp exists
         if (ctx.operatorSetInfo.operatorInfoTreeRoot == bytes32(0)) {
             revert ReferenceTimestampDoesNotExist();
@@ -286,10 +279,7 @@ contract BN254CertificateVerifier is
     /**
      * @notice Validates certificate timestamp against staleness requirements
      */
-    function _validateCertificateTimestamp(
-        bytes32 operatorSetKey,
-        uint32 referenceTimestamp
-    ) internal view {
+    function _validateCertificateTimestamp(bytes32 operatorSetKey, uint32 referenceTimestamp) internal view {
         uint32 maxStaleness = _maxStalenessPeriods[operatorSetKey];
         if (maxStaleness > 0 && block.timestamp > referenceTimestamp + maxStaleness) {
             revert CertificateStale();
@@ -307,18 +297,15 @@ contract BN254CertificateVerifier is
 
         for (uint256 i = 0; i < cert.nonSignerWitnesses.length; i++) {
             BN254OperatorInfoWitness memory witness = cert.nonSignerWitnesses[i];
-            
+
             // Validate index
             if (witness.operatorIndex >= ctx.operatorSetInfo.numOperators) {
                 revert InvalidOperatorIndex();
             }
 
             // Get or cache operator info
-            BN254OperatorInfo memory operatorInfo = _getOrCacheOperatorInfo(
-                ctx.operatorSetKey,
-                cert.referenceTimestamp,
-                witness
-            );
+            BN254OperatorInfo memory operatorInfo =
+                _getOrCacheOperatorInfo(ctx.operatorSetKey, cert.referenceTimestamp, witness);
 
             // Aggregate non-signer public key
             nonSignerApk = nonSignerApk.plus(operatorInfo.pubkey);
@@ -340,8 +327,7 @@ contract BN254CertificateVerifier is
         BN254OperatorInfoWitness memory witness
     ) internal returns (BN254OperatorInfo memory operatorInfo) {
         // Check cache first
-        BN254OperatorInfo storage cachedInfo = 
-            _operatorInfos[operatorSetKey][referenceTimestamp][witness.operatorIndex];
+        BN254OperatorInfo storage cachedInfo = _operatorInfos[operatorSetKey][referenceTimestamp][witness.operatorIndex];
 
         // weights can be 0, so check if operator has been cached using bn254 pubkey
         bool isInfoCached = (cachedInfo.pubkey.X != 0 || cachedInfo.pubkey.Y != 0);
@@ -371,10 +357,7 @@ contract BN254CertificateVerifier is
     /**
      * @notice Verifies the BLS signature
      */
-    function _verifySignature(
-        VerificationContext memory ctx,
-        BN254Certificate memory cert
-    ) internal view {
+    function _verifySignature(VerificationContext memory ctx, BN254Certificate memory cert) internal view {
         // Calculate signer aggregate public key
         BN254.G1Point memory signerApk = ctx.operatorSetInfo.aggregatePubkey.plus(ctx.nonSignerApk.negate());
 

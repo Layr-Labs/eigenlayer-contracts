@@ -48,7 +48,11 @@ interface IBN254CertificateVerifierErrors {
 
 /// @notice An interface for verifying BN254 certificates
 /// @notice This implements the base `IBaseCertificateVerifier` interface
-interface IBN254CertificateVerifier is IBN254CertificateVerifierEvents, IBaseCertificateVerifier, IBN254CertificateVerifierErrors {
+interface IBN254CertificateVerifier is
+    IBN254CertificateVerifierEvents,
+    IBaseCertificateVerifier,
+    IBN254CertificateVerifierErrors
+{
     /**
      * @notice updates the operator table
      * @param operatorSet the operatorSet to update the operator table for
