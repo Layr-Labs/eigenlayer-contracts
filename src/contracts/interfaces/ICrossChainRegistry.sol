@@ -2,10 +2,7 @@
 pragma solidity ^0.8.27;
 
 import {OperatorSet} from "../libraries/OperatorSetLib.sol";
-
-interface IOperatorTableCalculator {
-// TODO: implement, stub for now
-}
+import "./IOperatorTableCalculator.sol";
 
 interface ICrossChainRegistryErrors {
     /// @notice Thrown when the chainId is invalid
@@ -107,13 +104,19 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryT
     ) external;
 
     /**
+     * @notice Gets the list of chains that are supported by the CrossChainRegistry
+     * @return An array of chainIDs that are supported by the CrossChainRegistry
+     */
+    function getSupportedChains() external view returns (uint32[] memory);
+
+    /**
      * @notice Gets the operatorTableCalculator for a given operatorSet
      * @param operatorSet the operatorSet to get the operatorTableCalculator for
      * @return The operatorTableCalculator for the given operatorSet
      */
     function getOperatorTableCalculator(
         OperatorSet calldata operatorSet
-    ) external returns (IOperatorTableCalculator);
+    ) external view returns (IOperatorTableCalculator);
 
     /**
      * @notice Gets the active generation reservations
@@ -122,5 +125,15 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryT
      */
     function getActiveGenerationReservations()
         external
+        view
         returns (OperatorSet[] memory, IOperatorTableCalculator[] memory);
+
+    /**
+     * @notice Gets the transport destinations for a given operatorSet
+     * @param operatorSet the operatorSet to get the transport destinations for
+     * @return An array of chainIDs that are transport destinations for the given operatorSet
+     */
+    function getTransportDestinations(
+        OperatorSet calldata operatorSet
+    ) external view returns (uint32[] memory);
 }
