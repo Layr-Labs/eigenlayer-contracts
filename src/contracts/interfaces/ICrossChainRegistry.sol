@@ -28,6 +28,9 @@ interface ICrossChainRegistryErrors {
 
     /// @notice Thrown when the operator table calculator address is invalid
     error InvalidOperatorTableCalculator();
+
+    /// @notice Thrown when the staleness period is zero
+    error StalenessPeriodZero();
 }
 
 interface ICrossChainRegistryTypes {

@@ -176,6 +176,7 @@ contract CrossChainRegistry is
     ) external onlyWhenNotPaused(PAUSED_OPERATOR_SET_CONFIG) checkCanCall(operatorSet.avs) nonReentrant {
         // Validate config
         require(config.owner != address(0), InputAddressZero());
+        require(config.maxStalenessPeriod != 0, StalenessPeriodZero());
 
         bytes32 operatorSetKey = operatorSet.key();
 
