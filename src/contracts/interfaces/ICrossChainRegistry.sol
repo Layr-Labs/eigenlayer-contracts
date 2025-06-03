@@ -147,14 +147,18 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
      * @param operatorSet the operatorSet to get the transport destinations for
      * @return An array of chainIDs that the operatorSet is configured to transport to
      */
-    function getTransportDestinations(OperatorSet calldata operatorSet) external view returns (uint32[] memory);
+    function getTransportDestinations(
+        OperatorSet calldata operatorSet
+    ) external view returns (uint32[] memory);
 
     /**
      * @notice Gets the operatorSetConfig for a given operatorSet
      * @param operatorSet the operatorSet to get the operatorSetConfig for
      * @return The operatorSetConfig for the given operatorSet
      */
-    function getOperatorSetConfig(OperatorSet calldata operatorSet) external view returns (OperatorSetConfig memory);
+    function getOperatorSetConfig(
+        OperatorSet calldata operatorSet
+    ) external view returns (OperatorSetConfig memory);
 
     /**
      * @notice Gets the whitelisted chainIDs
