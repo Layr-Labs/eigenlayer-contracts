@@ -12,7 +12,6 @@ import "../contracts/libraries/OperatorSetLib.sol";
  * @author Layr Labs, Inc.
  * @notice Storage contract for the CrossChainRegistry, containing all storage variables and immutables
  * @dev This abstract contract is designed to be inherited by the CrossChainRegistry implementation
- * @dev Uses the storage gap pattern for upgradeability compatibility
  */
 abstract contract CrossChainRegistryStorage is ICrossChainRegistry {
     using EnumerableSet for EnumerableSet.Bytes32Set;
@@ -68,7 +67,9 @@ abstract contract CrossChainRegistryStorage is ICrossChainRegistry {
 
     // Construction
 
-    constructor(IAllocationManager _allocationManager) {
+    constructor(
+        IAllocationManager _allocationManager
+    ) {
         allocationManager = _allocationManager;
     }
 
@@ -78,4 +79,4 @@ abstract contract CrossChainRegistryStorage is ICrossChainRegistry {
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
     uint256[44] private __gap;
-} 
+}

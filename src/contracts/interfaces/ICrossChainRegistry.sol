@@ -7,25 +7,25 @@ import "./IOperatorTableCalculator.sol";
 interface ICrossChainRegistryErrors {
     /// @notice Thrown when the chainId is invalid
     error InvalidChainId();
-    
+
     /// @notice Thrown when a generation reservation already exists for the operator set
     error GenerationReservationAlreadyExists();
-    
+
     /// @notice Thrown when a generation reservation does not exist for the operator set
     error GenerationReservationDoesNotExist();
-    
+
     /// @notice Thrown when a transport destination is already added for the operator set
     error TransportDestinationAlreadyAdded();
-    
+
     /// @notice Thrown when a transport destination is not found for the operator set
     error TransportDestinationNotFound();
-    
+
     /// @notice Thrown when a chain ID is already whitelisted
     error ChainIDAlreadyWhitelisted();
-    
+
     /// @notice Thrown when a chain ID is not whitelisted
     error ChainIDNotWhitelisted();
-    
+
     /// @notice Thrown when the operator table calculator address is invalid
     error InvalidOperatorTableCalculator();
 }
