@@ -23,7 +23,7 @@ abstract contract OperatorTableUpdaterStorage is IOperatorTableUpdater {
     OperatorSet public globalRootConfirmerSet;
 
     /// @notice The current global table root
-    bytes32 public currentGlobalTableRoot;
+    bytes32 internal _currentGlobalTableRoot;
 
     /// @notice The global table roots by timestamp
     mapping(uint32 timestamp => bytes32 globalTableRoot) internal _globalTableRoots; 

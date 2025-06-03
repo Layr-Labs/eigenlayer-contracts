@@ -11,7 +11,7 @@ import "./ICrossChainRegistry.sol";
 
 interface IOperatorTableUpdaterErrors {
     /// @notice Thrown when the GlobalTableRoot update fails
-    error GlobalTableRootUpdateFailed();
+    error CertificateInvalid();
 }
 
 interface IOperatorTableUpdaterEvents {
@@ -20,7 +20,19 @@ interface IOperatorTableUpdaterEvents {
      * @param referenceTimestamp the timestamp of the global table root
      * @param globalTableRoot the root of the global table
      */
-    event NewglobalTableRoot(uint32 referenceTimestamp, bytes32 globalTableRoot);
+    event NewGlobalTableRoot(uint32 indexed referenceTimestamp, bytes32 indexed globalTableRoot);
+
+    /**
+     * @notice Emitted when the global root confirmer set is updated
+     * @param operatorSet The operatorSet which certifies against global roots
+     */
+    event GlobalRootConfirmerSetUpdated(OperatorSet operatorSet);
+
+    /**
+     * @notice Emitted when the global root confirmation threshold is updated
+     * @param bps The threshold, in bps, for a global root to be signed off on and updated
+     */
+    event GlobalRootConfirmationThresholdUpdated(uint16 bps);
 }
 
 interface IOperatorTableUpdater is
@@ -115,7 +127,7 @@ interface IOperatorTableUpdater is
      * @param referenceTimestamp the timestamp of the table root
      * @return tableRoot the table root at the given timestamp
      */
-    function getTableRootByTimestamp(
+    function getGlobalTableRootByTimestamp(
         uint32 referenceTimestamp
     ) external view returns (bytes32 tableRoot);
 }
