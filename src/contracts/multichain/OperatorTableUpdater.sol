@@ -80,7 +80,25 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
         BN254OperatorSetInfo calldata operatorSetInfo,
         OperatorSetConfig calldata config
     ) external {
-        // TODO: Implement
+        // Check that the `referenceTimestamp` is greater than the latest reference timestamp
+        require(referenceTimestamp > bn254CertificateVerifier.latestReferenceTimestamp(operatorSet), TableUpdateForPastTimestamp());
+
+        // Verify the operator table update
+        _verifyOperatorTableUpdate(
+            referenceTimestamp,
+            globalTableRoot,
+            operatorSetIndex,
+            proof,
+            operatorSet
+        );
+        
+        // Update the operator table
+        bn254CertificateVerifier.updateOperatorTable(
+            operatorSet,
+            referenceTimestamp,
+            operatorSetInfo,
+            config
+        );
     }
 
     /// @inheritdoc IOperatorTableUpdater
@@ -93,7 +111,25 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
         ECDSAOperatorInfo[] calldata operatorInfos,
         OperatorSetConfig calldata config
     ) external {
-        // TODO: Implement
+        // Check that the `referenceTimestamp` is greater than the latest reference timestamp
+        require(referenceTimestamp > ecdsaCertificateVerifier.latestReferenceTimestamp(operatorSet), TableUpdateForPastTimestamp());
+
+        // Verify the operator table update
+        _verifyOperatorTableUpdate(
+            referenceTimestamp,
+            globalTableRoot,
+            operatorSetIndex,
+            proof,
+            operatorSet
+        );
+
+        // Update the operator table
+        ecdsaCertificateVerifier.updateOperatorTable(
+            operatorSet,
+            referenceTimestamp,
+            operatorInfos,
+            config
+        );
     }
 
     /**
@@ -139,6 +175,28 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
      *                         INTERNAL HELPERS
      *
      */
+
+    /**
+     * @notice Verifies that the operator table update is valid by checking the `proof` against a `globalTableRoot`
+     * @param referenceTimestamp The reference timestamp of the operator table update
+     * @param globalTableRoot The global table root of the operator table update
+     * @param operatorSetIndex The index of the operator set in the operator table
+     * @param proof The proof of the operator table update
+     * @param operatorSet The operator set of the operator table update
+     * @dev Reverts if there does not exist a `globalTableRoot` for the given `referenceTimestamp`
+     */
+    function _verifyOperatorTableUpdate(
+        uint32 referenceTimestamp,
+        bytes32 globalTableRoot,
+        uint32 operatorSetIndex,
+        bytes calldata proof,
+        OperatorSet calldata operatorSet
+    ) internal {
+        // Check that the `globalTableRoot` matches the `referenceTimestamp`
+        require(_globalTableRoots[referenceTimestamp] == globalTableRoot, InvalidGlobalTableRoot());
+        
+        // Verify inclusion of the operatorSet and 
+    }
 
     /**
      * @notice Sets the global root confirmer set

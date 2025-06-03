@@ -12,8 +12,11 @@ import "./ICrossChainRegistry.sol";
 interface IOperatorTableUpdaterErrors {
     /// @notice Thrown when the GlobalTableRoot update fails
     error CertificateInvalid();
+    /// @notice Thrown when the table has been updated for the timestamp
+    error TableUpdateForPastTimestamp();
+    /// @notice Thrown when the global table root does not match what is in storage
+    error InvalidGlobalTableRoot();
 }
-
 interface IOperatorTableUpdaterEvents {
     /**
      * @notice Emitted when a new global table root is set
