@@ -186,10 +186,4 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
     function getOperatorSetConfig(
         OperatorSet calldata operatorSet
     ) external view returns (OperatorSetConfig memory);
-
-    /**
-     * @notice Gets the whitelisted chainIDs
-     * @return An array of chainIDs that are whitelisted
-     */
-    function getWhitelistedChainIDs() external view returns (uint32[] memory);
 }

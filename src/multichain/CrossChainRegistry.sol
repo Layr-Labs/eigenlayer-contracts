@@ -300,9 +300,4 @@ contract CrossChainRegistry is
     ) external view returns (OperatorSetConfig memory) {
         return _operatorSetConfigs[operatorSet.key()];
     }
-
-    /// @inheritdoc ICrossChainRegistry
-    function getWhitelistedChainIDs() external view returns (uint32[] memory) {
-        return _getUint32Array(_whitelistedChainIDs);
-    }
 }
