@@ -50,7 +50,9 @@ contract BN254CertificateVerifier is
      * @dev Disables initializers to prevent implementation initialization
      * @param __operatorTableUpdater Address authorized to update operator tables
      */
-    constructor(address __operatorTableUpdater) BN254CertificateVerifierStorage(__operatorTableUpdater) {
+    constructor(
+        address __operatorTableUpdater
+    ) BN254CertificateVerifierStorage(__operatorTableUpdater) {
         _disableInitializers();
     }
 
@@ -58,7 +60,9 @@ contract BN254CertificateVerifier is
      * @notice Initialize the contract
      * @param __owner The initial owner of the contract
      */
-    function initialize(address __owner) external initializer {
+    function initialize(
+        address __owner
+    ) external initializer {
         __Ownable_init();
         __ReentrancyGuard_init();
         _transferOwnership(__owner);
@@ -107,7 +111,7 @@ contract BN254CertificateVerifier is
 
         // Validate that the new timestamp is greater than the latest reference timestamp
         require(referenceTimestamp > _latestReferenceTimestamps[operatorSetKey], TableUpdateStale());
-        
+
         // Store the operator set info
         _operatorSetInfos[operatorSetKey][referenceTimestamp] = operatorSetInfo;
         _latestReferenceTimestamps[operatorSetKey] = referenceTimestamp;

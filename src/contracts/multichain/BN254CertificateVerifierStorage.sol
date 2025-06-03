@@ -38,7 +38,9 @@ abstract contract BN254CertificateVerifierStorage is IBN254CertificateVerifier {
 
     // Construction
 
-    constructor(address __operatorTableUpdater) {
+    constructor(
+        address __operatorTableUpdater
+    ) {
         _operatorTableUpdater = __operatorTableUpdater;
     }
 

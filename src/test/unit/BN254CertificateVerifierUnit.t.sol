@@ -52,9 +52,8 @@ contract BN254CertificateVerifierTest is Test {
         BN254CertificateVerifier implementation = new BN254CertificateVerifier(tableUpdater);
 
         // Deploy proxy and initialize
-        ERC1967Proxy proxy = new ERC1967Proxy(
-            address(implementation), abi.encodeWithSelector(BN254CertificateVerifier.initialize.selector, owner)
-        );
+        ERC1967Proxy proxy =
+            new ERC1967Proxy(address(implementation), abi.encodeWithSelector(BN254CertificateVerifier.initialize.selector, owner));
 
         verifier = BN254CertificateVerifier(address(proxy));
 
