@@ -69,7 +69,6 @@ contract ExistingDeploymentParser is Script, Logger {
     uint256 EIGENPOD_MANAGER_INIT_PAUSED_STATUS;
 
     /// @dev EigenPod
-    uint64 EIGENPOD_GENESIS_TIME;
     uint64 EIGENPOD_MAX_RESTAKED_BALANCE_GWEI_PER_VALIDATOR;
     address ETHPOSDepositAddress;
 
@@ -394,7 +393,6 @@ contract ExistingDeploymentParser is Script, Logger {
         // AllocationManager
         ALLOCATION_MANAGER_INIT_PAUSED_STATUS = json.readUint(".allocationManager.init_paused_status");
         // EigenPod
-        EIGENPOD_GENESIS_TIME = uint64(json.readUint(".eigenPod.GENESIS_TIME"));
         ETHPOSDepositAddress = json.readAddress(".ethPOSDepositAddress");
 
         // check that all values are non-zero
@@ -647,11 +645,6 @@ contract ExistingDeploymentParser is Script, Logger {
         assertEq(eigenPodBeacon.owner(), executorMultisig, "eigenPodBeacon: owner not set correctly");
         // EigenPodImplementation
         assertEq(
-            eigenPodImplementation.GENESIS_TIME(),
-            EIGENPOD_GENESIS_TIME,
-            "eigenPodImplementation: GENESIS TIME not set correctly"
-        );
-        assertEq(
             address(eigenPodImplementation.ethPOS()),
             ETHPOSDepositAddress,
             "eigenPodImplementation: ethPOS not set correctly"
@@ -692,7 +685,6 @@ contract ExistingDeploymentParser is Script, Logger {
         console.log("REWARDS_COORDINATOR_INIT_PAUSED_STATUS", REWARDS_COORDINATOR_INIT_PAUSED_STATUS);
         // todo log all rewards coordinator params
         console.log("EIGENPOD_MANAGER_INIT_PAUSED_STATUS", EIGENPOD_MANAGER_INIT_PAUSED_STATUS);
-        console.log("EIGENPOD_GENESIS_TIME", EIGENPOD_GENESIS_TIME);
         console.log("ETHPOSDepositAddress", ETHPOSDepositAddress);
 
         console.log("==== Strategies to Deploy,==");

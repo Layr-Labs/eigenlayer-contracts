@@ -81,9 +81,6 @@ contract DeployFromScratch is Script, Test {
 
     string SEMVER;
 
-    // IMMUTABLES TO SET
-    uint64 HOLESKY_GENESIS_TIME = 1_616_508_000;
-
     // OTHER DEPLOYMENT PARAMETERS
     uint256 STRATEGY_MANAGER_INIT_PAUSED_STATUS;
     uint256 DELEGATION_INIT_PAUSED_STATUS;
@@ -225,7 +222,7 @@ contract DeployFromScratch is Script, Test {
         if (chainId == 1) ethPOSDeposit = IETHPOSDeposit(0x00000000219ab540356cBB839Cbe05303d7705Fa);
         // if not on mainnet, deploy a mock
         else ethPOSDeposit = IETHPOSDeposit(stdJson.readAddress(config_data, ".ethPOSDepositAddress"));
-        eigenPodImplementation = new EigenPod(ethPOSDeposit, eigenPodManager, HOLESKY_GENESIS_TIME, SEMVER);
+        eigenPodImplementation = new EigenPod(ethPOSDeposit, eigenPodManager, SEMVER);
 
         eigenPodBeacon = new UpgradeableBeacon(address(eigenPodImplementation));
 

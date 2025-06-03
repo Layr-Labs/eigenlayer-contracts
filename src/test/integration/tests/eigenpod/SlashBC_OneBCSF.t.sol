@@ -61,7 +61,7 @@ contract Integration_SlashBC_OneBCSF is IntegrationCheckUtils {
     /// @notice Test that a staker can still verify WC, start/complete CP even if the operator has 1 magnitude remaining
     function test_verifyWC_startCompleteCP(uint24 _r) public rand(_r) {
         // 4. start validators and verify withdrawal credentials
-        (validators, beaconBalanceGwei,) = staker.startValidators(uint8(_randUint(1, 10)));
+        (validators, beaconBalanceGwei) = staker.startETH1Validators(uint8(_randUint(1, 10)));
         beaconChain.advanceEpoch_NoRewards();
         staker.verifyWithdrawalCredentials(validators);
         check_VerifyWC_State(staker, validators, beaconBalanceGwei);
@@ -95,7 +95,7 @@ contract Integration_SlashBC_OneBCSF is IntegrationCheckUtils {
         // 5. deposit expecting revert (randomly pick to verifyWC, start/complete CP)
         if (_randBool()) {
             // Verify WC
-            (validators,,) = staker.startValidators(uint8(_randUint(3, 10)));
+            (validators,) = staker.startETH1Validators(uint8(_randUint(3, 10)));
             beaconChain.advanceEpoch();
 
             cheats.expectRevert(IDelegationManagerErrors.FullySlashed.selector);
@@ -148,7 +148,7 @@ contract Integration_SlashBC_OneBCSF is IntegrationCheckUtils {
         // 7. deposit expecting revert (randomly pick to verifyWC, start/complete CP)
         if (_randBool()) {
             // Verify WC
-            (validators,,) = staker.startValidators(uint8(_randUint(1, 10)));
+            (validators,) = staker.startETH1Validators(uint8(_randUint(1, 10)));
             beaconChain.advanceEpoch();
 
             cheats.expectRevert(IDelegationManagerErrors.FullySlashed.selector);

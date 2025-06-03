@@ -55,6 +55,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_DepositShares_GTE_WithdrawableShares(
             staker, BEACONCHAIN_ETH_STRAT.toArray(), "deposit shares should be greater than or equal to withdrawable shares"
         );
+        assert_Snap_Unchanged_CheckpointBlockRoot(staker, "completed checkpoint should still have block root");
         assert_Snap_Removed_Checkpoint(staker, "should have deleted active checkpoint");
         assert_Snap_Updated_LastCheckpoint(staker, "last checkpoint timestamp should be updated");
         assert_Snap_Added_PodBalanceToWithdrawable(staker, "pod balance should have been added to withdrawable restaked exec layer gwei");
@@ -180,6 +181,15 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Added_BalanceExitedGwei(staker, exitedBalanceGwei, "should have attributed expected gwei to exited balance");
         assert_Snap_Removed_ActiveValidatorCount(staker, exitedValidators.length, "should have decreased active validator count");
         assert_Snap_Removed_ActiveValidators(staker, exitedValidators, "exited validators should each be WITHDRAWN");
+    }
+
+    function check_CompleteCheckpoint_WithConsolidations_State(User staker, uint40[] memory consolidatedValidators) internal {
+        check_CompleteCheckpoint_State(staker);
+
+        assert_Snap_Unchanged_Staker_DepositShares(staker, "staker should not have changed shares");
+        assert_Snap_Unchanged_WithdrawableGwei(staker, "withdrawal gwei should not have increased");
+        assert_Snap_Removed_ActiveValidatorCount(staker, consolidatedValidators.length, "should have decreased active validator count");
+        assert_Snap_Removed_ActiveValidators(staker, consolidatedValidators, "consolidated validators should each be WITHDRAWN");
     }
 
     function check_CompleteCheckpoint_ZeroBalanceDelta_State(User staker) internal {

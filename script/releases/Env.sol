@@ -112,10 +112,6 @@ library Env {
         return _envAddress("MultiSendCallOnly");
     }
 
-    function EIGENPOD_GENESIS_TIME() internal view returns (uint64) {
-        return _envU64("EIGENPOD_GENESIS_TIME");
-    }
-
     function MIN_WITHDRAWAL_DELAY() internal view returns (uint32) {
         return _envU32("MIN_WITHDRAWAL_DELAY");
     }
@@ -360,14 +356,14 @@ library Env {
      */
     function eigen(
         DeployedProxy
-    ) internal view returns (IEigen) {
-        return IEigen(_deployedProxy(type(Eigen).name));
+    ) internal view returns (Eigen) {
+        return Eigen(_deployedProxy(type(Eigen).name));
     }
 
     function eigen(
         DeployedImpl
-    ) internal view returns (IEigen) {
-        return IEigen(_deployedImpl(type(Eigen).name));
+    ) internal view returns (Eigen) {
+        return Eigen(_deployedImpl(type(Eigen).name));
     }
 
     function beigen(

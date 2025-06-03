@@ -8,8 +8,6 @@ import "../../contracts/mixins/SemVerMixin.sol";
 contract EigenPodMock is IEigenPod, SemVerMixin, Test {
     constructor() SemVerMixin("9.9.9") {}
 
-    function nonBeaconChainETHBalanceWei() external view returns (uint) {}
-
     /// @notice the amount of execution layer ETH in this contract that is staked in EigenLayer (i.e. withdrawn from beaconchain but not EigenLayer),
     function withdrawableRestakedExecutionLayerGwei() external view returns (uint64) {}
 
@@ -32,12 +30,6 @@ contract EigenPodMock is IEigenPod, SemVerMixin, Test {
 
     /// @notice The owner of this EigenPod
     function podOwner() external view returns (address) {}
-
-    /// @notice an indicator of whether or not the podOwner has ever "fully restaked" by successfully calling `verifyCorrectWithdrawalCredentials`.
-    function hasRestaked() external view returns (bool) {}
-
-    /// @notice block timestamp of the most recent withdrawal
-    function mostRecentWithdrawalTimestamp() external view returns (uint64) {}
 
     /// @notice Returns the validatorInfo struct for the provided pubkeyHash
     function validatorPubkeyHashToInfo(bytes32 validatorPubkeyHash) external view returns (ValidatorInfo memory) {}
@@ -80,14 +72,8 @@ contract EigenPodMock is IEigenPod, SemVerMixin, Test {
         bytes32[][] calldata validatorFields
     ) external {}
 
-    /// @notice Called by the pod owner to withdraw the balance of the pod when `hasRestaked` is set to false
-    function activateRestaking() external {}
-
-    /// @notice Called by the pod owner to withdraw the balance of the pod when `hasRestaked` is set to false
-    function withdrawBeforeRestaking() external {}
-
-    /// @notice Called by the pod owner to withdraw the nonBeaconChainETHBalanceWei
-    function withdrawNonBeaconChainETHBalanceWei(address recipient, uint amountToWithdraw) external {}
+    function requestConsolidation(ConsolidationRequest[] calldata) external payable {}
+    function requestWithdrawal(WithdrawalRequest[] calldata) external payable {}
 
     /// @notice called by owner of a pod to remove any ERC20s deposited in the pod
     function recoverTokens(IERC20[] memory tokenList, uint[] memory amountsToWithdraw, address recipient) external {}
@@ -106,4 +92,7 @@ contract EigenPodMock is IEigenPod, SemVerMixin, Test {
     function getParentBlockRoot(uint64 timestamp) external view returns (bytes32) {}
 
     function getPectraForkTimestamp() external view returns (uint64) {}
+
+    function getConsolidationRequestFee() external view returns (uint) {}
+    function getWithdrawalRequestFee() external view returns (uint) {}
 }

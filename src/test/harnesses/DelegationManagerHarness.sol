@@ -3,6 +3,7 @@ pragma solidity ^0.8.27;
 
 import "../../contracts/core/DelegationManager.sol";
 import "forge-std/Test.sol";
+import "../TestConstants.sol";
 
 contract DelegationManagerHarness is DelegationManager {
     constructor(
@@ -20,7 +21,7 @@ contract DelegationManagerHarness is DelegationManager {
             _pauserRegistry,
             _permissionController,
             _MIN_WITHDRAWAL_DELAY,
-            "9.9.9"
+            TestConstants.TEST_VERSION
         )
     {}
 
