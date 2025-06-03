@@ -21,7 +21,7 @@ interface ICrossChainRegistryTypes {
     }
 }
 
-interface ICrossChainRegistryEvents {
+interface ICrossChainRegistryEvents is ICrossChainRegistryTypes {
     /// @notice Emitted when a generation reservation is made
     event GenerationReservationMade(OperatorSet operatorSet, IOperatorTableCalculator operatorTableCalculator);
 
@@ -39,9 +39,15 @@ interface ICrossChainRegistryEvents {
 
     /// @notice Emitted when a chainID is removed from the whitelist
     event ChainIDRemovedFromWhitelist(uint32 chainID);
+
+    /// @notice Emitted when an operatorTableCalculator is set
+    event OperatorTableCalculatorSet(OperatorSet operatorSet, IOperatorTableCalculator operatorTableCalculator);
+
+    /// @notice Emitted when an operatorSetConfig is set
+    event OperatorSetConfigSet(OperatorSet operatorSet, OperatorSetConfig config);
 }
 
-interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryTypes, ICrossChainRegistryEvents {
+interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryEvents {
     /**
      * @notice Initiates a generation reservation
      * @param operatorSet the operatorSet to make a reservation for
@@ -84,6 +90,14 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryT
         OperatorSet calldata operatorSet,
         IOperatorTableCalculator calculator
     ) external;
+
+    /**
+     * @notice Sets the operatorSetConfig for a given operatorSet
+     * @param operatorSet the operatorSet to set the operatorSetConfig for
+     * @param config the config to set
+     * @dev msg.sender must be UAM permissioned for operatorSet.avs
+     */
+    function setOperatorSetConfig(OperatorSet calldata operatorSet, OperatorSetConfig calldata config) external;
 
     /**
      * @notice Adds a chainID to the whitelist of chainIDs that can be transported to
@@ -131,9 +145,20 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryT
     /**
      * @notice Gets the transport destinations for a given operatorSet
      * @param operatorSet the operatorSet to get the transport destinations for
-     * @return An array of chainIDs that are transport destinations for the given operatorSet
+     * @return An array of chainIDs that the operatorSet is configured to transport to
      */
-    function getTransportDestinations(
-        OperatorSet calldata operatorSet
-    ) external view returns (uint32[] memory);
+    function getTransportDestinations(OperatorSet calldata operatorSet) external view returns (uint32[] memory);
+
+    /**
+     * @notice Gets the operatorSetConfig for a given operatorSet
+     * @param operatorSet the operatorSet to get the operatorSetConfig for
+     * @return The operatorSetConfig for the given operatorSet
+     */
+    function getOperatorSetConfig(OperatorSet calldata operatorSet) external view returns (OperatorSetConfig memory);
+
+    /**
+     * @notice Gets the whitelisted chainIDs
+     * @return An array of chainIDs that are whitelisted
+     */
+    function getWhitelistedChainIDs() external view returns (uint32[] memory);
 }
