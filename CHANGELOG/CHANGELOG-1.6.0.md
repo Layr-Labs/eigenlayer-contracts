@@ -20,6 +20,8 @@
 - Added semver to `Eigen`
 - Signatures of a few `EigenPod` events are changed to match the rest events and take validator pubkey hash instead of validator index, which standardized `EigenPod` events signature
 
+🐛 Bug Fixes
+- For Hoodi, updates fixes ethPOS deposit contract to point to `0x00000000219ab540356cBB839Cbe05303d7705Fa`
 
 ## Changelog
 
