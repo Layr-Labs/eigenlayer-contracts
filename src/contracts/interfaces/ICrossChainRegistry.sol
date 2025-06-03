@@ -116,7 +116,7 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryT
      */
     function getOperatorTableCalculator(
         OperatorSet calldata operatorSet
-    ) external returns (IOperatorTableCalculator);
+    ) external view returns (IOperatorTableCalculator);
 
     /**
      * @notice Gets the active generation reservations
@@ -125,6 +125,7 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryT
      */
     function getActiveGenerationReservations()
         external
+        view
         returns (OperatorSet[] memory, IOperatorTableCalculator[] memory);
 
     /**
