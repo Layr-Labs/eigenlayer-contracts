@@ -109,7 +109,7 @@ contract CrossChainRegistry is
         _activeGenerationReservations.remove(operatorSetKey);
 
         // Remove the operator table calculator
-        delete _operatorTableCalculators[operatorSetKey];
+        _setOperatorTableCalculator(operatorSet, IOperatorTableCalculator(address(0)));
 
         emit GenerationReservationRemoved(operatorSet, calculator);
     }
