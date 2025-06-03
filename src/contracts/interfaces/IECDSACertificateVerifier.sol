@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "src/contracts/libraries/OperatorSetLib.sol";
-import "src/contracts/interfaces/ICrossChainRegistry.sol";
-import "src/contracts/interfaces/IBaseCertificateVerifier.sol";
-import "src/contracts/interfaces/IECDSATableCalculator.sol";
+import {OperatorSet} from "../libraries/OperatorSetLib.sol";
+import "./IBaseCertificateVerifier.sol";
+import "./IECDSATableCalculator.sol";
 
 interface IECDSACertificateVerifierTypes is IECDSATableCalculatorTypes {
     /**
@@ -26,7 +25,7 @@ interface IECDSACertificateVerifierEvents is IECDSACertificateVerifierTypes {
 }
 
 /// @notice An interface for verifying ECDSA certificates
-/// @notice This implements a base interface that all curve certificate verifiers (eg. BN254, ECDSA) must implement
+/// @notice This implements the base `IBaseCertificateVerifier` interface
 interface IECDSACertificateVerifier is IECDSACertificateVerifierEvents, IBaseCertificateVerifier {
     /**
      * @notice updates the operator table

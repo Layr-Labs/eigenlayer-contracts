@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "src/contracts/libraries/OperatorSetLib.sol";
+import {OperatorSet} from "../libraries/OperatorSetLib.sol";
 
-import "src/contracts/interfaces/IECDSATableCalculator.sol";
-import "src/contracts/interfaces/IBN254TableCalculator.sol";
-import "src/contracts/interfaces/IECDSACertificateVerifier.sol";
-import "src/contracts/interfaces/IBN254CertificateVerifier.sol";
-import "src/contracts/interfaces/ICrossChainRegistry.sol";
+import "./IECDSATableCalculator.sol";
+import "./IBN254TableCalculator.sol";
+import "./IECDSACertificateVerifier.sol";
+import "./IBN254CertificateVerifier.sol";
+import "./ICrossChainRegistry.sol";
 
 interface IOperatorTableUpdaterErrors {
     /// @notice Thrown when the GlobalTableRoot update fails
