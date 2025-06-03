@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
+import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
+import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 import {BN254} from "../libraries/BN254.sol";
 import {OperatorSet} from "../libraries/OperatorSetLib.sol";
 import {
@@ -11,44 +14,23 @@ import {
     IBN254CertificateVerifierTypes
 } from "../interfaces/IBN254CertificateVerifier.sol";
 import {IBaseCertificateVerifier} from "../interfaces/IBaseCertificateVerifier.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Merkle} from "../libraries/Merkle.sol";
+import "./BN254CertificateVerifierStorage.sol";
+
 /**
  * @title BN254CertificateVerifier
  * @notice Singleton verifier for BN254 certificates across multiple operator sets
  * @dev This contract uses BN254 curves for signature verification and
  *      caches operator information for efficient verification
  */
-contract BN254CertificateVerifier is IBN254CertificateVerifier, Ownable {
+contract BN254CertificateVerifier is 
+    Initializable,
+    OwnableUpgradeable,
+    ReentrancyGuardUpgradeable,
+    BN254CertificateVerifierStorage 
+{
     using Merkle for bytes;
     using BN254 for BN254.G1Point;
-
-    error OnlyOperatorSetOwner();
-    error InvalidOperatorIndex();
-
-    // Gas limit for pairing operations to prevent DoS attacks
-    uint256 private constant PAIRING_EQUALITY_CHECK_GAS = 400000;
-
-    // The address that can update operator tables
-    address private _operatorTableUpdater;
-
-    // Mapping from operatorSet key to owner address
-    mapping(bytes32 => address) private _operatorSetOwners;
-
-    // Mapping from operatorSet key to maximum staleness period
-    mapping(bytes32 => uint32) private _maxStalenessPeriods;
-
-    // Mapping from operatorSet key to latest reference timestamp
-    mapping(bytes32 => uint32) private _latestReferenceTimestamps;
-
-    // Mapping from operatorSet key to reference timestamp to operator set info
-    mapping(bytes32 => mapping(uint32 => IBN254TableCalculatorTypes.BN254OperatorSetInfo)) 
-        private _operatorSetInfos;
-
-    // Mapping from operatorSet key to reference timestamp to operator index to operator info
-    // This is used to cache operator info that has been proven against a tree root
-    mapping(bytes32 => mapping(uint32 => mapping(uint256 => IBN254TableCalculatorTypes.BN254OperatorInfo))) 
-        private _operatorInfos;
 
     /**
      * @notice Struct to hold verification context and reduce stack depth
@@ -66,25 +48,32 @@ contract BN254CertificateVerifier is IBN254CertificateVerifier, Ownable {
         _;
     }
 
-    // Modifier to restrict access to operator set owner
-    modifier onlyOperatorSetOwner(OperatorSet memory operatorSet) {
-        bytes32 operatorSetKey = operatorSet.key();
-        if (msg.sender != _operatorSetOwners[operatorSetKey]) revert OnlyOperatorSetOwner();
-        _;
-    }
-
     /**
      * @notice Constructor for the certificate verifier
-     * @param __operatorTableUpdater The address that can update operator tables
+     * @dev Disables initializers to prevent implementation initialization
      */
-    constructor(address __operatorTableUpdater) {
-        _operatorTableUpdater = __operatorTableUpdater;
+    constructor() {
+        _disableInitializers();
     }
 
     /**
-     * @notice Get the owner of an operator set
-     * @param operatorSet The operator set to query
-     * @return The owner address
+     * @notice Initialize the contract
+     * @param __operatorTableUpdater The address that can update operator tables
+     * @param __owner The initial owner of the contract
+     */
+    function initialize(
+        address __operatorTableUpdater,
+        address __owner
+    ) external initializer {
+        __Ownable_init();
+        __ReentrancyGuard_init();
+        
+        _operatorTableUpdater = __operatorTableUpdater;
+        _transferOwnership(__owner);
+    }
+
+    /**
+     * @inheritdoc IBaseCertificateVerifier
      */
     function getOperatorSetOwner(
         OperatorSet memory operatorSet
@@ -94,9 +83,7 @@ contract BN254CertificateVerifier is IBN254CertificateVerifier, Ownable {
     }
 
     /**
-     * @notice Get the maximum staleness period for an operator set
-     * @param operatorSet The operator set to query
-     * @return The maximum staleness period in seconds
+     * @inheritdoc IBaseCertificateVerifier
      */
     function maxOperatorTableStaleness(
         OperatorSet memory operatorSet
@@ -106,9 +93,7 @@ contract BN254CertificateVerifier is IBN254CertificateVerifier, Ownable {
     }
 
     /**
-     * @notice Get the latest reference timestamp for an operator set
-     * @param operatorSet The operator set to query
-     * @return The latest reference timestamp
+     * @inheritdoc IBaseCertificateVerifier
      */
     function latestReferenceTimestamp(
         OperatorSet memory operatorSet
@@ -137,9 +122,7 @@ contract BN254CertificateVerifier is IBN254CertificateVerifier, Ownable {
         bytes32 operatorSetKey = operatorSet.key();
         
         // Require that the new timestamp is greater than the latest reference timestamp
-        if (referenceTimestamp <= _latestReferenceTimestamps[operatorSetKey]) {
-            revert TableUpdateStale();
-        }
+        require(referenceTimestamp > _latestReferenceTimestamps[operatorSetKey], TableUpdateStale());
 
         // Store the operator set info
         _operatorSetInfos[operatorSetKey][referenceTimestamp] = operatorSetInfo;
@@ -340,7 +323,6 @@ contract BN254CertificateVerifier is IBN254CertificateVerifier, Ownable {
             // Aggregate non-signer public key
             nonSignerApk = nonSignerApk.plus(operatorInfo.pubkey);
 
-
             for (uint256 j = 0; j < operatorInfo.weights.length; j++) {
                 if (j < ctx.signedStakes.length) {
                     ctx.signedStakes[j] -= operatorInfo.weights[j];
@@ -361,8 +343,7 @@ contract BN254CertificateVerifier is IBN254CertificateVerifier, Ownable {
         BN254OperatorInfo storage cachedInfo = 
             _operatorInfos[operatorSetKey][referenceTimestamp][witness.operatorIndex];
 
-
-        //weights can be 0, so check if operator has been cached using bn254 pubkey
+        // weights can be 0, so check if operator has been cached using bn254 pubkey
         bool isInfoCached = (cachedInfo.pubkey.X != 0 || cachedInfo.pubkey.Y != 0);
 
         if (!isInfoCached) {
@@ -453,5 +434,13 @@ contract BN254CertificateVerifier is IBN254CertificateVerifier, Ownable {
     ) external view returns (BN254OperatorSetInfo memory) {
         bytes32 operatorSetKey = operatorSet.key();
         return _operatorSetInfos[operatorSetKey][referenceTimestamp];
+    }
+
+    /**
+     * @notice Get the current operator table updater address
+     * @return The operator table updater address
+     */
+    function getOperatorTableUpdater() external view returns (address) {
+        return _operatorTableUpdater;
     }
 }

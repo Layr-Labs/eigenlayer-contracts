@@ -11,6 +11,8 @@ import {ICrossChainRegistryTypes} from "../../contracts/interfaces/ICrossChainRe
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {OperatorSet} from "../../contracts/libraries/OperatorSetLib.sol";
 import {Merkle} from "../../contracts/libraries/Merkle.sol";
+import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+
 
 contract BN254CertificateVerifierTest is Test {
     using BN254 for BN254.G1Point;
@@ -49,10 +51,20 @@ contract BN254CertificateVerifierTest is Test {
         testOperatorSet.avs = address(0x5);
         testOperatorSet.id = 1;
         
-        // Deploy contract with owner
-        vm.startPrank(owner);
-        verifier = new BN254CertificateVerifier(tableUpdater);
-        vm.stopPrank();
+        // Deploy implementation
+        BN254CertificateVerifier implementation = new BN254CertificateVerifier();
+        
+        // Deploy proxy and initialize
+        ERC1967Proxy proxy = new ERC1967Proxy(
+            address(implementation),
+            abi.encodeWithSelector(
+                BN254CertificateVerifier.initialize.selector,
+                tableUpdater,
+                owner
+            )
+        );
+
+        verifier = BN254CertificateVerifier(address(proxy));
         
         // Set standard test message hash
         msgHash = keccak256(abi.encodePacked("test message"));
