@@ -29,6 +29,12 @@ contract CrossChainRegistry is
     using OperatorSetLib for OperatorSet;
 
     /**
+     *
+     *                         INITIALIZING FUNCTIONS
+     *
+     */
+
+    /**
      * @dev Initializes the CrossChainRegistry with immutable dependencies
      * @param _permissionController The permission controller for access control
      * @param _allocationManager The allocation manager for operator set validation
@@ -58,6 +64,12 @@ contract CrossChainRegistry is
         _transferOwnership(initialOwner);
         _setPausedStatus(initialPausedStatus);
     }
+
+    /**
+     *
+     *                         EXTERNAL FUNCTIONS
+     *
+     */
 
     /// @inheritdoc ICrossChainRegistry
     function requestGenerationReservation(
@@ -202,6 +214,47 @@ contract CrossChainRegistry is
         emit ChainIDRemovedFromWhitelist(chainID);
     }
 
+    /**
+     *
+     *                         INTERNAL FUNCTIONS
+     *
+     */
+
+    /**
+     * @dev Internal function to set the operator table calculator for an operator set
+     * @param operatorSet The operator set to set the calculator for
+     * @param calculator The operator table calculator contract
+     */
+    function _setOperatorTableCalculator(
+        OperatorSet memory operatorSet,
+        IOperatorTableCalculator calculator
+    ) internal {
+        bytes32 operatorSetKey = operatorSet.key();
+        _operatorTableCalculators[operatorSetKey] = calculator;
+        emit OperatorTableCalculatorSet(operatorSet, calculator);
+    }
+
+    /**
+     * @dev Internal helper function to convert EnumerableSet.UintSet to uint32[]
+     * @param set The EnumerableSet.UintSet to convert
+     * @return result The converted uint32 array
+     */
+    function _getUint32Array(
+        EnumerableSet.UintSet storage set
+    ) internal view returns (uint32[] memory result) {
+        uint256 length = set.length();
+        result = new uint32[](length);
+        for (uint256 i = 0; i < length; i++) {
+            result[i] = uint32(set.at(i));
+        }
+    }
+
+    /**
+     *
+     *                         VIEW FUNCTIONS
+     *
+     */
+
     /// @inheritdoc ICrossChainRegistry
     function getSupportedChains() external view returns (uint32[] memory) {
         return _getUint32Array(_whitelistedChainIDs);
@@ -250,34 +303,5 @@ contract CrossChainRegistry is
     /// @inheritdoc ICrossChainRegistry
     function getWhitelistedChainIDs() external view returns (uint32[] memory) {
         return _getUint32Array(_whitelistedChainIDs);
-    }
-
-    /**
-     * @dev Internal function to set the operator table calculator for an operator set
-     * @param operatorSet The operator set to set the calculator for
-     * @param calculator The operator table calculator contract
-     */
-    function _setOperatorTableCalculator(
-        OperatorSet memory operatorSet,
-        IOperatorTableCalculator calculator
-    ) internal {
-        bytes32 operatorSetKey = operatorSet.key();
-        _operatorTableCalculators[operatorSetKey] = calculator;
-        emit OperatorTableCalculatorSet(operatorSet, calculator);
-    }
-
-    /**
-     * @dev Internal helper function to convert EnumerableSet.UintSet to uint32[]
-     * @param set The EnumerableSet.UintSet to convert
-     * @return result The converted uint32 array
-     */
-    function _getUint32Array(
-        EnumerableSet.UintSet storage set
-    ) internal view returns (uint32[] memory result) {
-        uint256 length = set.length();
-        result = new uint32[](length);
-        for (uint256 i = 0; i < length; i++) {
-            result[i] = uint32(set.at(i));
-        }
     }
 }

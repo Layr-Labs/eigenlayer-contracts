@@ -75,7 +75,10 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
      * @param operatorTableCalculator the address of the operatorTableCalculator
      * @dev msg.sender must be UAM permissioned for operatorSet.avs
      */
-    function requestGenerationReservation(OperatorSet calldata operatorSet, IOperatorTableCalculator operatorTableCalculator) external;
+    function requestGenerationReservation(
+        OperatorSet calldata operatorSet,
+        IOperatorTableCalculator operatorTableCalculator
+    ) external;
 
     /**
      * @notice Removes a generation reservation for a given operatorSet
