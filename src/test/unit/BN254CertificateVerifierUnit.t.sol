@@ -4,7 +4,7 @@ pragma solidity ^0.8.27;
 import "forge-std/Test.sol";
 import {BN254} from "../../contracts/libraries/BN254.sol";
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
-import {BN254CertificateVerifier} from "../../contracts/core/BN254CertificateVerifier.sol";
+import {BN254CertificateVerifier} from "../../contracts/multichain/BN254CertificateVerifier.sol";
 import {IBN254CertificateVerifier, IBN254CertificateVerifierTypes} from "../../contracts/interfaces/IBN254CertificateVerifier.sol";
 import {IBN254TableCalculatorTypes} from "../../contracts/interfaces/IBN254TableCalculator.sol";
 import {ICrossChainRegistryTypes} from "../../contracts/interfaces/ICrossChainRegistry.sol";
