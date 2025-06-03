@@ -4,26 +4,21 @@ pragma solidity ^0.8.27;
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 
+import "../libraries/Merkle.sol";
 import "../mixins/SemVerMixin.sol";
 import "./OperatorTableUpdaterStorage.sol";
 
-
 contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTableUpdaterStorage, SemVerMixin {
-
     /**
      *
      *                         INITIALIZING FUNCTIONS
      *
      */
-
     constructor(
         IBN254CertificateVerifier _bn254CertificateVerifier,
         IECDSACertificateVerifier _ecdsaCertificateVerifier,
         string memory _version
-    )
-        OperatorTableUpdaterStorage(_bn254CertificateVerifier, _ecdsaCertificateVerifier)
-        SemVerMixin(_version)
-    {
+    ) OperatorTableUpdaterStorage(_bn254CertificateVerifier, _ecdsaCertificateVerifier) SemVerMixin(_version) {
         _disableInitializers();
     }
 
@@ -56,9 +51,7 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
         uint16[] memory stakeProportionThresholds = new uint16[](1);
         stakeProportionThresholds[0] = globalRootConfirmationThreshold;
         bool isValid = bn254CertificateVerifier.verifyCertificateProportion(
-            globalRootConfirmerSet,
-            globalTableRootCert,
-            stakeProportionThresholds
+            globalRootConfirmerSet, globalTableRootCert, stakeProportionThresholds
         );
 
         require(isValid, CertificateInvalid());
@@ -81,24 +74,24 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
         OperatorSetConfig calldata config
     ) external {
         // Check that the `referenceTimestamp` is greater than the latest reference timestamp
-        require(referenceTimestamp > bn254CertificateVerifier.latestReferenceTimestamp(operatorSet), TableUpdateForPastTimestamp());
+        require(
+            referenceTimestamp > bn254CertificateVerifier.latestReferenceTimestamp(operatorSet),
+            TableUpdateForPastTimestamp()
+        );
+
+        bytes32 operatorSetLeafHash = keccak256(abi.encode(operatorSetInfo, config));
 
         // Verify the operator table update
-        _verifyOperatorTableUpdate(
-            referenceTimestamp,
-            globalTableRoot,
-            operatorSetIndex,
-            proof,
-            operatorSet
-        );
-        
+        _verifyOperatorTableUpdate({
+            referenceTimestamp: referenceTimestamp,
+            globalTableRoot: globalTableRoot,
+            operatorSetIndex: operatorSetIndex,
+            proof: proof,
+            operatorSetLeafHash: operatorSetLeafHash
+        });
+
         // Update the operator table
-        bn254CertificateVerifier.updateOperatorTable(
-            operatorSet,
-            referenceTimestamp,
-            operatorSetInfo,
-            config
-        );
+        bn254CertificateVerifier.updateOperatorTable(operatorSet, referenceTimestamp, operatorSetInfo, config);
     }
 
     /// @inheritdoc IOperatorTableUpdater
@@ -112,24 +105,24 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
         OperatorSetConfig calldata config
     ) external {
         // Check that the `referenceTimestamp` is greater than the latest reference timestamp
-        require(referenceTimestamp > ecdsaCertificateVerifier.latestReferenceTimestamp(operatorSet), TableUpdateForPastTimestamp());
+        require(
+            referenceTimestamp > ecdsaCertificateVerifier.latestReferenceTimestamp(operatorSet),
+            TableUpdateForPastTimestamp()
+        );
+
+        bytes32 operatorSetLeafHash = keccak256(abi.encode(operatorInfos, config));
 
         // Verify the operator table update
-        _verifyOperatorTableUpdate(
-            referenceTimestamp,
-            globalTableRoot,
-            operatorSetIndex,
-            proof,
-            operatorSet
-        );
+        _verifyOperatorTableUpdate({
+            referenceTimestamp: referenceTimestamp,
+            globalTableRoot: globalTableRoot,
+            operatorSetIndex: operatorSetIndex,
+            proof: proof,
+            operatorSetLeafHash: operatorSetLeafHash
+        });
 
         // Update the operator table
-        ecdsaCertificateVerifier.updateOperatorTable(
-            operatorSet,
-            referenceTimestamp,
-            operatorInfos,
-            config
-        );
+        ecdsaCertificateVerifier.updateOperatorTable(operatorSet, referenceTimestamp, operatorInfos, config);
     }
 
     /**
@@ -182,7 +175,7 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
      * @param globalTableRoot The global table root of the operator table update
      * @param operatorSetIndex The index of the operator set in the operator table
      * @param proof The proof of the operator table update
-     * @param operatorSet The operator set of the operator table update
+     * @param operatorSetLeafHash The leaf hash of the operator set
      * @dev Reverts if there does not exist a `globalTableRoot` for the given `referenceTimestamp`
      */
     function _verifyOperatorTableUpdate(
@@ -190,12 +183,21 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
         bytes32 globalTableRoot,
         uint32 operatorSetIndex,
         bytes calldata proof,
-        OperatorSet calldata operatorSet
-    ) internal {
+        bytes32 operatorSetLeafHash
+    ) internal view {
         // Check that the `globalTableRoot` matches the `referenceTimestamp`
         require(_globalTableRoots[referenceTimestamp] == globalTableRoot, InvalidGlobalTableRoot());
-        
-        // Verify inclusion of the operatorSet and 
+
+        // Verify inclusion of the operatorSet and operatorSetLeaf in the merkle tree
+        require(
+            Merkle.verifyInclusionKeccak({
+                proof: proof,
+                root: globalTableRoot,
+                leaf: operatorSetLeafHash,
+                index: operatorSetIndex
+            }),
+            InvalidOperatorSetProof()
+        );
     }
 
     /**

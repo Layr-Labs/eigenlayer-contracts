@@ -16,7 +16,10 @@ interface IOperatorTableUpdaterErrors {
     error TableUpdateForPastTimestamp();
     /// @notice Thrown when the global table root does not match what is in storage
     error InvalidGlobalTableRoot();
+    /// @notice Thrown when the operator set proof is invalid
+    error InvalidOperatorSetProof();
 }
+
 interface IOperatorTableUpdaterEvents {
     /**
      * @notice Emitted when a new global table root is set

@@ -26,7 +26,7 @@ abstract contract OperatorTableUpdaterStorage is IOperatorTableUpdater {
     bytes32 internal _currentGlobalTableRoot;
 
     /// @notice The global table roots by timestamp
-    mapping(uint32 timestamp => bytes32 globalTableRoot) internal _globalTableRoots; 
+    mapping(uint32 timestamp => bytes32 globalTableRoot) internal _globalTableRoots;
 
     // Constructor
     constructor(
@@ -42,5 +42,5 @@ abstract contract OperatorTableUpdaterStorage is IOperatorTableUpdater {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[46] private __gap; 
+    uint256[46] private __gap;
 }
