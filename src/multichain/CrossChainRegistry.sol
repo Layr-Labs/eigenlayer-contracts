@@ -62,7 +62,7 @@ contract CrossChainRegistry is
     /// @inheritdoc ICrossChainRegistry
     function requestGenerationReservation(
         OperatorSet calldata operatorSet,
-        address operatorTableCalculator
+        IOperatorTableCalculator operatorTableCalculator
     ) external onlyWhenNotPaused(PAUSED_GENERATION_RESERVATIONS) checkCanCall(operatorSet.avs) nonReentrant {
         bytes32 operatorSetKey = operatorSet.key();
 
@@ -70,15 +70,15 @@ contract CrossChainRegistry is
         require(!_activeGenerationReservations.contains(operatorSetKey), GenerationReservationAlreadyExists());
 
         // Validate the operator table calculator
-        require(operatorTableCalculator != address(0), InvalidOperatorTableCalculator());
+        require(address(operatorTableCalculator) != address(0), InvalidOperatorTableCalculator());
 
         // Add to active generation reservations
         _activeGenerationReservations.add(operatorSetKey);
 
         // Set the operator table calculator
-        _setOperatorTableCalculator(operatorSet, IOperatorTableCalculator(operatorTableCalculator));
+        _setOperatorTableCalculator(operatorSet, operatorTableCalculator);
 
-        emit GenerationReservationMade(operatorSet, IOperatorTableCalculator(operatorTableCalculator));
+        emit GenerationReservationMade(operatorSet, operatorTableCalculator);
     }
 
     /// @inheritdoc ICrossChainRegistry
