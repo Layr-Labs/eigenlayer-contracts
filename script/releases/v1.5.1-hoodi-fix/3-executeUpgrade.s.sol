@@ -68,7 +68,13 @@ contract Execute is QueueUpgrade {
         {
             EigenPodManager eigenPodManager = Env.proxy.eigenPodManager();
             assertTrue(eigenPodManager.ethPOS() == Env.ethPOS(), "epm.ethPOS invalid");
-            assertTrue(address(eigenPodManager.ethPOS()) == 0x00000000219ab540356cBB839Cbe05303d7705Fa, "hoodi ETH POS invalid");
+            // Validate hoodi specific ethPOS
+            if (block.chainid == 560_048) {
+                assertTrue(
+                    address(eigenPodManager.ethPOS()) == 0x00000000219ab540356cBB839Cbe05303d7705Fa,
+                    "hoodi ETH POS invalid"
+                );
+            }
             assertTrue(eigenPodManager.eigenPodBeacon() == Env.beacon.eigenPod(), "epm.epBeacon invalid");
             assertTrue(eigenPodManager.delegationManager() == Env.proxy.delegationManager(), "epm.dm invalid");
             assertTrue(eigenPodManager.pauserRegistry() == Env.impl.pauserRegistry(), "epm.pR invalid");
@@ -95,23 +101,38 @@ contract Execute is QueueUpgrade {
         vm.expectRevert(errInit);
         eigenPodManager.initialize(address(0), 0);
         assertTrue(eigenPodManager.owner() == Env.executorMultisig(), "epm.owner invalid");
-        assertTrue(eigenPodManager.paused() == 0, "epm.paused invalid");
+        // EigenPods are paused on sepolia
+        if (block.chainid == 11155111) {
+            assertTrue(eigenPodManager.paused() == 487, "epm.paused invalid");
+        } else {
+            assertTrue(eigenPodManager.paused() == 0, "epm.paused invalid");
+        }
     }
 
     /// @dev Validates the ethPOS on the eigenPodImpl, an exiting EigenPod, and if a new pod is deployed
     function _validateEigenPodETHPos() internal {
+        // Ignore non-Hoodi chains
+        if (block.chainid != 560_048) return;
+
         // Check the ethPOS on the eigenPodImpl
         EigenPod eigenPod = EigenPod(payable(Env.beacon.eigenPod().implementation()));
-        assertTrue(address(eigenPod.ethPOS()) == 0x00000000219ab540356cBB839Cbe05303d7705Fa, "hoodi ETH POS invalid");
+        assertTrue(
+            address(eigenPod.ethPOS()) == 0x00000000219ab540356cBB839Cbe05303d7705Fa, "hoodi ETH POS invalid"
+        );
 
         // Check the ethPOS on an existing EigenPod
         EigenPod existingEigenPod = EigenPod(payable(0x916966e12bB58bdd17c70514A3d9DeFD65D294Dc));
-        assertTrue(address(existingEigenPod.ethPOS()) == 0x00000000219ab540356cBB839Cbe05303d7705Fa, "hoodi ETH POS invalid");
-        
+        assertTrue(
+            address(existingEigenPod.ethPOS()) == 0x00000000219ab540356cBB839Cbe05303d7705Fa,
+            "hoodi ETH POS invalid"
+        );
+
         // Deploy a new pod
         EigenPodManager eigenPodManager = Env.proxy.eigenPodManager();
         address newPod = eigenPodManager.createPod();
         EigenPod newEigenPod = EigenPod(payable(newPod));
-        assertTrue(address(newEigenPod.ethPOS()) == 0x00000000219ab540356cBB839Cbe05303d7705Fa, "hoodi ETH POS invalid");
+        assertTrue(
+            address(newEigenPod.ethPOS()) == 0x00000000219ab540356cBB839Cbe05303d7705Fa, "hoodi ETH POS invalid"
+        );
     }
 }

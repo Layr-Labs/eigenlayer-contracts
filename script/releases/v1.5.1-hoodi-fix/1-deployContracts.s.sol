@@ -52,7 +52,9 @@ contract Deploy is EOADeployer {
         _runAsEOA();
 
         // Assert the deposit contract is valid
-        assertTrue(address(Env.ethPOS()) == 0x00000000219ab540356cBB839Cbe05303d7705Fa, "ethPOS invalid");
+        if (block.chainid == 560_048) {
+            assertTrue(address(Env.ethPOS()) == 0x00000000219ab540356cBB839Cbe05303d7705Fa, "ethPOS invalid");
+        }
 
         _validateNewImplAddresses({areMatching: false});
         _validateProxyAdmins();

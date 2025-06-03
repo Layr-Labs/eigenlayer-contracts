@@ -37,28 +37,17 @@ contract QueueUpgrade is MultisigBuilder, Deploy {
     function _getCalldataToExecutor() internal returns (bytes memory) {
         /// forgefmt: disable-next-item
         MultisigCall[] storage executorCalls = Encode.newMultisigCalls().append({
-<<<<<<<< HEAD:script/releases/v1.6.0-moocow-and-elip5/2-queueUpgrade.s.sol
-========
             to: Env.proxyAdmin(),
             data: Encode.proxyAdmin.upgrade({
                 proxy: address(Env.proxy.eigenPodManager()),
                 impl: address(Env.impl.eigenPodManager())
             })
         }).append({
->>>>>>>> d7a2afe1 (fix: add v1.5.1 deploy script):script/releases/v1.5.1-hoodi-fix/2-queueUpgrade.s.sol
-            to: address(Env.beacon.eigenPod()),
-            data: Encode.upgradeableBeacon.upgradeTo({
-                newImpl: address(Env.impl.eigenPod())
-            })
-<<<<<<<< HEAD:script/releases/v1.6.0-moocow-and-elip5/2-queueUpgrade.s.sol
-        }).append({
             to: Env.proxyAdmin(),
             data: Encode.proxyAdmin.upgrade({
                 proxy: address(Env.proxy.eigen()),
                 impl: address(Env.impl.eigen())
             })
-========
->>>>>>>> d7a2afe1 (fix: add v1.5.1 deploy script):script/releases/v1.5.1-hoodi-fix/2-queueUpgrade.s.sol
         });
 
         return Encode.gnosisSafe.execTransaction({
