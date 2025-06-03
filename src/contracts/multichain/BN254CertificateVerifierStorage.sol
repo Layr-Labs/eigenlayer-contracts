@@ -17,7 +17,7 @@ abstract contract BN254CertificateVerifierStorage is IBN254CertificateVerifier {
     // Mutatables
 
     /// @dev The address that can update operator tables
-    address internal _operatorTableUpdater;
+    address immutable _operatorTableUpdater;
 
     /// @dev Mapping from operatorSet key to owner address
     mapping(bytes32 => address) internal _operatorSetOwners;
@@ -38,7 +38,9 @@ abstract contract BN254CertificateVerifierStorage is IBN254CertificateVerifier {
 
     // Construction
 
-    constructor() {}
+    constructor(address __operatorTableUpdater) {
+        _operatorTableUpdater = __operatorTableUpdater;
+    }
 
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new

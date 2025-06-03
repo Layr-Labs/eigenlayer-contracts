@@ -49,11 +49,11 @@ contract BN254CertificateVerifierTest is Test {
         testOperatorSet.id = 1;
 
         // Deploy implementation
-        BN254CertificateVerifier implementation = new BN254CertificateVerifier();
+        BN254CertificateVerifier implementation = new BN254CertificateVerifier(tableUpdater);
 
         // Deploy proxy and initialize
         ERC1967Proxy proxy = new ERC1967Proxy(
-            address(implementation), abi.encodeWithSelector(BN254CertificateVerifier.initialize.selector, tableUpdater, owner)
+            address(implementation), abi.encodeWithSelector(BN254CertificateVerifier.initialize.selector, owner)
         );
 
         verifier = BN254CertificateVerifier(address(proxy));
@@ -717,36 +717,6 @@ contract BN254CertificateVerifierTest is Test {
         verifier.updateOperatorTable(testOperatorSet, staleTimestamp, operatorSetInfo, operatorSetConfig);
 
         vm.stopPrank();
-    }
-
-    // Test setting operator table updater (owner only)
-    function testSetOperatorTableUpdater() public {
-        address newTableUpdater = address(0x999);
-
-        // Non-owner should not be able to change
-        vm.prank(nonOwner);
-        vm.expectRevert();
-        verifier.setOperatorTableUpdater(newTableUpdater);
-
-        // Owner should be able to change
-        vm.prank(owner);
-        verifier.setOperatorTableUpdater(newTableUpdater);
-
-        // Test that new updater can update tables
-        uint32 referenceTimestamp = uint32(block.timestamp);
-        (IBN254TableCalculatorTypes.BN254OperatorInfo[] memory operators,,) = createOperatorsWithSplitKeys(123, 3, 1);
-
-        IBN254TableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo = createOperatorSetInfo(operators);
-        ICrossChainRegistryTypes.OperatorSetConfig memory operatorSetConfig = createOperatorSetConfig();
-
-        // Old updater should no longer work
-        vm.prank(tableUpdater);
-        vm.expectRevert(abi.encodeWithSignature("OnlyTableUpdater()"));
-        verifier.updateOperatorTable(testOperatorSet, referenceTimestamp, operatorSetInfo, operatorSetConfig);
-
-        // New updater should work
-        vm.prank(newTableUpdater);
-        verifier.updateOperatorTable(testOperatorSet, referenceTimestamp, operatorSetInfo, operatorSetConfig);
     }
 
     // Test operator info caching

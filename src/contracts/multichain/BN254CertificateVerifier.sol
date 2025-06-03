@@ -37,7 +37,9 @@ contract BN254CertificateVerifier is
         BN254.G1Point nonSignerApk;
     }
 
-    // Modifier to restrict access to the operator table updater
+    /**
+     * @notice Restricts access to the operator table updater
+     */
     modifier onlyTableUpdater() {
         require(msg.sender == _operatorTableUpdater, OnlyTableUpdater());
         _;
@@ -46,21 +48,19 @@ contract BN254CertificateVerifier is
     /**
      * @notice Constructor for the certificate verifier
      * @dev Disables initializers to prevent implementation initialization
+     * @param __operatorTableUpdater Address authorized to update operator tables
      */
-    constructor() {
+    constructor(address __operatorTableUpdater) BN254CertificateVerifierStorage(__operatorTableUpdater) {
         _disableInitializers();
     }
 
     /**
      * @notice Initialize the contract
-     * @param __operatorTableUpdater The address that can update operator tables
      * @param __owner The initial owner of the contract
      */
-    function initialize(address __operatorTableUpdater, address __owner) external initializer {
+    function initialize(address __owner) external initializer {
         __Ownable_init();
         __ReentrancyGuard_init();
-
-        _operatorTableUpdater = __operatorTableUpdater;
         _transferOwnership(__owner);
     }
 
@@ -95,16 +95,6 @@ contract BN254CertificateVerifier is
     }
 
     /**
-     * @notice Set the operator table updater address
-     * @param newOperatorTableUpdater The new operator table updater address
-     */
-    function setOperatorTableUpdater(
-        address newOperatorTableUpdater
-    ) external onlyOwner {
-        _operatorTableUpdater = newOperatorTableUpdater;
-    }
-
-    /**
      * @inheritdoc IBN254CertificateVerifier
      */
     function updateOperatorTable(
@@ -115,16 +105,15 @@ contract BN254CertificateVerifier is
     ) external onlyTableUpdater {
         bytes32 operatorSetKey = operatorSet.key();
 
-        // Require that the new timestamp is greater than the latest reference timestamp
+        // Validate that the new timestamp is greater than the latest reference timestamp
         require(referenceTimestamp > _latestReferenceTimestamps[operatorSetKey], TableUpdateStale());
-
+        
         // Store the operator set info
         _operatorSetInfos[operatorSetKey][referenceTimestamp] = operatorSetInfo;
         _latestReferenceTimestamps[operatorSetKey] = referenceTimestamp;
         _operatorSetOwners[operatorSetKey] = operatorSetConfig.owner;
         _maxStalenessPeriods[operatorSetKey] = operatorSetConfig.maxStalenessPeriod;
 
-        // Emit event
         emit TableUpdated(operatorSet, referenceTimestamp, operatorSetInfo);
     }
 
@@ -146,15 +135,12 @@ contract BN254CertificateVerifier is
         BN254Certificate memory cert,
         uint16[] memory totalStakeProportionThresholds
     ) external returns (bool) {
-        // Get signed stakes
         uint256[] memory signedStakes = _verifyCertificate(operatorSet, cert);
 
-        // Get total stakes from the operator set info
         bytes32 operatorSetKey = operatorSet.key();
         BN254OperatorSetInfo memory operatorSetInfo = _operatorSetInfos[operatorSetKey][cert.referenceTimestamp];
         uint256[] memory totalStakes = operatorSetInfo.totalWeights;
 
-        // Verify that each stake meets the threshold
         require(signedStakes.length == totalStakeProportionThresholds.length, ArrayLengthMismatch());
 
         for (uint256 i = 0; i < signedStakes.length; i++) {
@@ -162,7 +148,6 @@ contract BN254CertificateVerifier is
             // totalStakeProportionThresholds is in basis points (e.g. 6600 = 66%)
             uint256 threshold = (totalStakes[i] * totalStakeProportionThresholds[i]) / 10_000;
 
-            // If signed stake doesn't meet threshold, return false
             if (signedStakes[i] < threshold) {
                 return false;
             }
@@ -179,14 +164,11 @@ contract BN254CertificateVerifier is
         BN254Certificate memory cert,
         uint256[] memory totalStakeNominalThresholds
     ) external returns (bool) {
-        // Get signed stakes
         uint256[] memory signedStakes = _verifyCertificate(operatorSet, cert);
 
-        // Verify that each stake meets the threshold
         require(signedStakes.length == totalStakeNominalThresholds.length, ArrayLengthMismatch());
 
         for (uint256 i = 0; i < signedStakes.length; i++) {
-            // If signed stake doesn't meet nominal threshold, return false
             if (signedStakes[i] < totalStakeNominalThresholds[i]) {
                 return false;
             }
@@ -196,7 +178,7 @@ contract BN254CertificateVerifier is
     }
 
     /**
-     * @notice Try signature verification with gas limit for safety
+     * @notice Attempts signature verification with gas limit for safety
      * @param msgHash The message hash that was signed
      * @param aggPubkey The aggregate public key of signers
      * @param apkG2 The G2 point representation of the aggregate public key
@@ -248,11 +230,9 @@ contract BN254CertificateVerifier is
         VerificationContext memory ctx;
         ctx.operatorSetKey = operatorSet.key();
 
-        // Check staleness and get operator set info
         _validateCertificateTimestamp(ctx.operatorSetKey, cert.referenceTimestamp);
         ctx.operatorSetInfo = _operatorSetInfos[ctx.operatorSetKey][cert.referenceTimestamp];
 
-        // Check that this reference timestamp exists
         require(ctx.operatorSetInfo.operatorInfoTreeRoot != bytes32(0), ReferenceTimestampDoesNotExist());
 
         // Initialize signed stakes with total stakes
@@ -261,10 +241,8 @@ contract BN254CertificateVerifier is
             ctx.signedStakes[i] = ctx.operatorSetInfo.totalWeights[i];
         }
 
-        // Process non-signers
         ctx.nonSignerApk = _processNonSigners(ctx, cert);
 
-        // Verify signature
         _verifySignature(ctx, cert);
 
         return ctx.signedStakes;
@@ -272,6 +250,8 @@ contract BN254CertificateVerifier is
 
     /**
      * @notice Validates certificate timestamp against staleness requirements
+     * @param operatorSetKey The operator set key
+     * @param referenceTimestamp The reference timestamp to validate
      */
     function _validateCertificateTimestamp(bytes32 operatorSetKey, uint32 referenceTimestamp) internal view {
         uint32 maxStaleness = _maxStalenessPeriods[operatorSetKey];
@@ -280,6 +260,9 @@ contract BN254CertificateVerifier is
 
     /**
      * @notice Processes non-signer witnesses and returns aggregate non-signer public key
+     * @param ctx The verification context
+     * @param cert The certificate being verified
+     * @return nonSignerApk The aggregate public key of non-signers
      */
     function _processNonSigners(
         VerificationContext memory ctx,
@@ -290,16 +273,14 @@ contract BN254CertificateVerifier is
         for (uint256 i = 0; i < cert.nonSignerWitnesses.length; i++) {
             BN254OperatorInfoWitness memory witness = cert.nonSignerWitnesses[i];
 
-            // Validate index
             require(witness.operatorIndex < ctx.operatorSetInfo.numOperators, InvalidOperatorIndex());
 
-            // Get or cache operator info
             BN254OperatorInfo memory operatorInfo =
                 _getOrCacheOperatorInfo(ctx.operatorSetKey, cert.referenceTimestamp, witness);
 
-            // Aggregate non-signer public key
             nonSignerApk = nonSignerApk.plus(operatorInfo.pubkey);
 
+            // Subtract non-signer stakes from total signed stakes
             for (uint256 j = 0; j < operatorInfo.weights.length; j++) {
                 if (j < ctx.signedStakes.length) {
                     ctx.signedStakes[j] -= operatorInfo.weights[j];
@@ -310,20 +291,22 @@ contract BN254CertificateVerifier is
 
     /**
      * @notice Gets operator info from cache or verifies and caches it
+     * @param operatorSetKey The operator set key
+     * @param referenceTimestamp The reference timestamp
+     * @param witness The operator info witness containing proof data
+     * @return operatorInfo The verified operator information
      */
     function _getOrCacheOperatorInfo(
         bytes32 operatorSetKey,
         uint32 referenceTimestamp,
         BN254OperatorInfoWitness memory witness
     ) internal returns (BN254OperatorInfo memory operatorInfo) {
-        // Check cache first
         BN254OperatorInfo storage cachedInfo = _operatorInfos[operatorSetKey][referenceTimestamp][witness.operatorIndex];
 
-        // weights can be 0, so check if operator has been cached using bn254 pubkey
+        // Check if operator info is cached using pubkey existence (weights can be 0)
         bool isInfoCached = (cachedInfo.pubkey.X != 0 || cachedInfo.pubkey.Y != 0);
 
         if (!isInfoCached) {
-            // Verify merkle proof
             bool verified = _verifyOperatorInfoMerkleProof(
                 operatorSetKey,
                 referenceTimestamp,
@@ -334,7 +317,6 @@ contract BN254CertificateVerifier is
 
             require(verified, VerificationFailed());
 
-            // Cache the operator info
             _operatorInfos[operatorSetKey][referenceTimestamp][witness.operatorIndex] = witness.operatorInfo;
             operatorInfo = witness.operatorInfo;
         } else {
@@ -344,12 +326,13 @@ contract BN254CertificateVerifier is
 
     /**
      * @notice Verifies the BLS signature
+     * @param ctx The verification context
+     * @param cert The certificate containing the signature to verify
      */
     function _verifySignature(VerificationContext memory ctx, BN254Certificate memory cert) internal view {
-        // Calculate signer aggregate public key
+        // Calculate signer aggregate public key by subtracting non-signers from total
         BN254.G1Point memory signerApk = ctx.operatorSetInfo.aggregatePubkey.plus(ctx.nonSignerApk.negate());
 
-        // Verify the BLS signature
         (bool pairingSuccessful, bool signatureValid) =
             trySignatureVerification(cert.messageHash, signerApk, cert.apk, cert.signature);
 
@@ -358,7 +341,7 @@ contract BN254CertificateVerifier is
 
     /**
      * @notice Verifies a merkle proof for an operator info
-     * @param operatorSetKey The operatorSet key
+     * @param operatorSetKey The operator set key
      * @param referenceTimestamp The reference timestamp
      * @param operatorIndex The index of the operator
      * @param operatorInfo The operator info
