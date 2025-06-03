@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import {Initializable} from "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
-import {OwnableUpgradeable} from "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
-import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import {BN254} from "../libraries/BN254.sol";
-import {PermissionControllerMixin} from "../mixins/PermissionControllerMixin.sol";
-import {SemVerMixin} from "../mixins/SemVerMixin.sol";
-import {IPermissionController} from "../interfaces/IPermissionController.sol";
-import {IAllocationManager} from "../interfaces/IAllocationManager.sol";
-import {OperatorSet} from "../libraries/OperatorSetLib.sol";
+import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "../libraries/BN254.sol";
+import "../mixins/PermissionControllerMixin.sol";
+import "../mixins/SemVerMixin.sol";
+import "../interfaces/IPermissionController.sol";
+import "../interfaces/IAllocationManager.sol";
+import "../libraries/OperatorSetLib.sol";
 import "./KeyRegistrarStorage.sol";
 
 /**

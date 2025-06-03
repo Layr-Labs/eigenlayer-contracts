@@ -44,7 +44,7 @@ contract AllocationManagerMock is Test {
     function isRedistributingOperatorSet(OperatorSet memory operatorSet) external view returns (bool) {
         return true;
     }
-    
+
     function setIsOperatorSet(OperatorSet memory operatorSet, bool boolean) external {
         _isOperatorSet[operatorSet.key()] = boolean;
     }

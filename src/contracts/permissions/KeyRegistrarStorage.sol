@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import {BN254} from "../libraries/BN254.sol";
-import {IPermissionController} from "../interfaces/IPermissionController.sol";
-import {IAllocationManager} from "../interfaces/IAllocationManager.sol";
-import {IKeyRegistrar} from "../interfaces/IKeyRegistrar.sol";
+import "../libraries/BN254.sol";
+import "../interfaces/IPermissionController.sol";
+import "../interfaces/IAllocationManager.sol";
+import "../interfaces/IKeyRegistrar.sol";
 
 abstract contract KeyRegistrarStorage is IKeyRegistrar {
     using BN254 for BN254.G1Point;

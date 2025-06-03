@@ -1,15 +1,16 @@
 //SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+
 import "forge-std/Test.sol";
-import "../../contracts/core/KeyRegistrar.sol";
-import {IKeyRegistrar, IKeyRegistrarTypes, IKeyRegistrarErrors} from "../../contracts/interfaces/IKeyRegistrar.sol";
-import {BN254} from "../../contracts/libraries/BN254.sol";
-import {IPermissionController} from "../../contracts/interfaces/IPermissionController.sol";
-import {PermissionControllerMixin} from "../../contracts/mixins/PermissionControllerMixin.sol";
-import {OperatorSet} from "../../contracts/libraries/OperatorSetLib.sol";
-import {AllocationManagerMock} from "../mocks/AllocationManagerMock.sol";
-import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "src/contracts/permissions/KeyRegistrar.sol";
+import "src/contracts/interfaces/IKeyRegistrar.sol";
+import "src/contracts/libraries/BN254.sol";
+import "src/contracts/interfaces/IPermissionController.sol";
+import "src/contracts/mixins/PermissionControllerMixin.sol";
+import "src/contracts/libraries/OperatorSetLib.sol";
+import "src/test/mocks/AllocationManagerMock.sol";
 
 contract MockPermissionController is IPermissionController {
     function addPendingAdmin(address, address) external override {}
