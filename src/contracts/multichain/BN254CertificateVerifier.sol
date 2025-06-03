@@ -39,7 +39,7 @@ contract BN254CertificateVerifier is
 
     // Modifier to restrict access to the operator table updater
     modifier onlyTableUpdater() {
-        if (msg.sender != _operatorTableUpdater) revert OnlyTableUpdater();
+        require(msg.sender == _operatorTableUpdater, OnlyTableUpdater());
         _;
     }
 
@@ -155,9 +155,7 @@ contract BN254CertificateVerifier is
         uint256[] memory totalStakes = operatorSetInfo.totalWeights;
 
         // Verify that each stake meets the threshold
-        if (signedStakes.length != totalStakeProportionThresholds.length) {
-            revert ArrayLengthMismatch();
-        }
+        require(signedStakes.length == totalStakeProportionThresholds.length, ArrayLengthMismatch());
 
         for (uint256 i = 0; i < signedStakes.length; i++) {
             // Calculate threshold as proportion of total stake
@@ -185,9 +183,7 @@ contract BN254CertificateVerifier is
         uint256[] memory signedStakes = _verifyCertificate(operatorSet, cert);
 
         // Verify that each stake meets the threshold
-        if (signedStakes.length != totalStakeNominalThresholds.length) {
-            revert ArrayLengthMismatch();
-        }
+        require(signedStakes.length == totalStakeNominalThresholds.length, ArrayLengthMismatch());
 
         for (uint256 i = 0; i < signedStakes.length; i++) {
             // If signed stake doesn't meet nominal threshold, return false
@@ -257,9 +253,7 @@ contract BN254CertificateVerifier is
         ctx.operatorSetInfo = _operatorSetInfos[ctx.operatorSetKey][cert.referenceTimestamp];
 
         // Check that this reference timestamp exists
-        if (ctx.operatorSetInfo.operatorInfoTreeRoot == bytes32(0)) {
-            revert ReferenceTimestampDoesNotExist();
-        }
+        require(ctx.operatorSetInfo.operatorInfoTreeRoot != bytes32(0), ReferenceTimestampDoesNotExist());
 
         // Initialize signed stakes with total stakes
         ctx.signedStakes = new uint256[](ctx.operatorSetInfo.totalWeights.length);
@@ -281,9 +275,7 @@ contract BN254CertificateVerifier is
      */
     function _validateCertificateTimestamp(bytes32 operatorSetKey, uint32 referenceTimestamp) internal view {
         uint32 maxStaleness = _maxStalenessPeriods[operatorSetKey];
-        if (maxStaleness > 0 && block.timestamp > referenceTimestamp + maxStaleness) {
-            revert CertificateStale();
-        }
+        require(maxStaleness == 0 || block.timestamp <= referenceTimestamp + maxStaleness, CertificateStale());
     }
 
     /**
@@ -299,9 +291,7 @@ contract BN254CertificateVerifier is
             BN254OperatorInfoWitness memory witness = cert.nonSignerWitnesses[i];
 
             // Validate index
-            if (witness.operatorIndex >= ctx.operatorSetInfo.numOperators) {
-                revert InvalidOperatorIndex();
-            }
+            require(witness.operatorIndex < ctx.operatorSetInfo.numOperators, InvalidOperatorIndex());
 
             // Get or cache operator info
             BN254OperatorInfo memory operatorInfo =
@@ -342,9 +332,7 @@ contract BN254CertificateVerifier is
                 witness.operatorInfoProof
             );
 
-            if (!verified) {
-                revert VerificationFailed();
-            }
+            require(verified, VerificationFailed());
 
             // Cache the operator info
             _operatorInfos[operatorSetKey][referenceTimestamp][witness.operatorIndex] = witness.operatorInfo;
