@@ -333,7 +333,6 @@ contract BN254CertificateVerifierTest is Test {
             signature
         );
         
-        // No mocking needed - verify certificate with real verification
         uint256[] memory signedStakes = verifier.verifyCertificate(testOperatorSet, cert);
         
         // Check that the signed stakes are correct

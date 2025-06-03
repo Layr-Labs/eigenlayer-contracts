@@ -13,7 +13,6 @@ import {
 import {IBaseCertificateVerifier} from "../interfaces/IBaseCertificateVerifier.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Merkle} from "../libraries/Merkle.sol";
-
 /**
  * @title BN254CertificateVerifier
  * @notice Singleton verifier for BN254 certificates across multiple operator sets
@@ -33,20 +32,20 @@ contract BN254CertificateVerifier is IBN254CertificateVerifier, Ownable {
     // The address that can update operator tables
     address private _operatorTableUpdater;
 
-    // Mapping from operatorSet hash to owner address
+    // Mapping from operatorSet key to owner address
     mapping(bytes32 => address) private _operatorSetOwners;
 
-    // Mapping from operatorSet hash to maximum staleness period
+    // Mapping from operatorSet key to maximum staleness period
     mapping(bytes32 => uint32) private _maxStalenessPeriods;
 
-    // Mapping from operatorSet hash to latest reference timestamp
+    // Mapping from operatorSet key to latest reference timestamp
     mapping(bytes32 => uint32) private _latestReferenceTimestamps;
 
-    // Mapping from operatorSet hash to reference timestamp to operator set info
+    // Mapping from operatorSet key to reference timestamp to operator set info
     mapping(bytes32 => mapping(uint32 => IBN254TableCalculatorTypes.BN254OperatorSetInfo)) 
         private _operatorSetInfos;
 
-    // Mapping from operatorSet hash to reference timestamp to operator index to operator info
+    // Mapping from operatorSet key to reference timestamp to operator index to operator info
     // This is used to cache operator info that has been proven against a tree root
     mapping(bytes32 => mapping(uint32 => mapping(uint256 => IBN254TableCalculatorTypes.BN254OperatorInfo))) 
         private _operatorInfos;
@@ -341,8 +340,12 @@ contract BN254CertificateVerifier is IBN254CertificateVerifier, Ownable {
             // Aggregate non-signer public key
             nonSignerApk = nonSignerApk.plus(operatorInfo.pubkey);
 
-            // Subtract non-signer weights from signed stakes
-            _subtractOperatorWeights(ctx.signedStakes, operatorInfo.weights);
+
+            for (uint256 j = 0; j < operatorInfo.weights.length; j++) {
+                if (j < ctx.signedStakes.length) {
+                    ctx.signedStakes[j] -= operatorInfo.weights[j];
+                }
+            }
         }
     }
 
@@ -357,7 +360,9 @@ contract BN254CertificateVerifier is IBN254CertificateVerifier, Ownable {
         // Check cache first
         BN254OperatorInfo storage cachedInfo = 
             _operatorInfos[operatorSetKey][referenceTimestamp][witness.operatorIndex];
-        
+
+
+        //weights can be 0, so check if operator has been cached using bn254 pubkey
         bool isInfoCached = (cachedInfo.pubkey.X != 0 || cachedInfo.pubkey.Y != 0);
 
         if (!isInfoCached) {
@@ -383,18 +388,6 @@ contract BN254CertificateVerifier is IBN254CertificateVerifier, Ownable {
     }
 
     /**
-     * @notice Subtracts operator weights from signed stakes
-     */
-    function _subtractOperatorWeights(
-        uint256[] memory signedStakes,
-        uint256[] memory operatorWeights
-    ) internal pure {
-        for (uint256 j = 0; j < operatorWeights.length && j < signedStakes.length; j++) {
-            signedStakes[j] -= operatorWeights[j];
-        }
-    }
-
-    /**
      * @notice Verifies the BLS signature
      */
     function _verifySignature(
@@ -408,14 +401,12 @@ contract BN254CertificateVerifier is IBN254CertificateVerifier, Ownable {
         (bool pairingSuccessful, bool signatureValid) =
             trySignatureVerification(cert.messageHash, signerApk, cert.apk, cert.signature);
 
-        if (!pairingSuccessful || !signatureValid) {
-            revert VerificationFailed();
-        }
+        require(pairingSuccessful && signatureValid, VerificationFailed());
     }
 
     /**
      * @notice Verifies a merkle proof for an operator info
-     * @param operatorSetKey The hash of the operator set
+     * @param operatorSetKey The operatorSet key
      * @param referenceTimestamp The reference timestamp
      * @param operatorIndex The index of the operator
      * @param operatorInfo The operator info
