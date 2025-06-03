@@ -1,14 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "../libraries/BN254.sol";
-import "../interfaces/IPermissionController.sol";
 import "../interfaces/IAllocationManager.sol";
 import "../interfaces/IKeyRegistrar.sol";
 
 abstract contract KeyRegistrarStorage is IKeyRegistrar {
-    using BN254 for BN254.G1Point;
-
     // Constants
 
     /// @dev Gas limit for pairing operations to prevent DoS
@@ -46,5 +42,5 @@ abstract contract KeyRegistrarStorage is IKeyRegistrar {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[46] private __gap;
+    uint256[47] private __gap;
 }
