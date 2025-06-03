@@ -67,14 +67,10 @@ contract CrossChainRegistry is
         bytes32 operatorSetKey = operatorSet.key();
 
         // Check if generation reservation already exists
-        if (_activeGenerationReservations.contains(operatorSetKey)) {
-            revert GenerationReservationAlreadyExists();
-        }
+        require(!_activeGenerationReservations.contains(operatorSetKey), GenerationReservationAlreadyExists());
 
         // Validate the operator table calculator
-        if (operatorTableCalculator == address(0)) {
-            revert InvalidOperatorTableCalculator();
-        }
+        require(operatorTableCalculator != address(0), InvalidOperatorTableCalculator());
 
         // Add to active generation reservations
         _activeGenerationReservations.add(operatorSetKey);
@@ -92,9 +88,7 @@ contract CrossChainRegistry is
         bytes32 operatorSetKey = operatorSet.key();
 
         // Check if generation reservation exists
-        if (!_activeGenerationReservations.contains(operatorSetKey)) {
-            revert GenerationReservationDoesNotExist();
-        }
+        require(_activeGenerationReservations.contains(operatorSetKey), GenerationReservationDoesNotExist());
 
         // Get the current operator table calculator before removal
         IOperatorTableCalculator calculator = _operatorTableCalculators[operatorSetKey];
@@ -114,21 +108,15 @@ contract CrossChainRegistry is
         uint32 chainID
     ) external onlyWhenNotPaused(PAUSED_TRANSPORT_DESTINATIONS) checkCanCall(operatorSet.avs) nonReentrant {
         // Validate chainID
-        if (chainID == 0) {
-            revert InvalidChainId();
-        }
+        require(chainID != 0, InvalidChainId());
 
         // Check if chainID is whitelisted
-        if (!_whitelistedChainIDs.contains(chainID)) {
-            revert ChainIDNotWhitelisted();
-        }
+        require(_whitelistedChainIDs.contains(chainID), ChainIDNotWhitelisted());
 
         bytes32 operatorSetKey = operatorSet.key();
 
         // Check if already added
-        if (_transportDestinations[operatorSetKey].contains(chainID)) {
-            revert TransportDestinationAlreadyAdded();
-        }
+        require(!_transportDestinations[operatorSetKey].contains(chainID), TransportDestinationAlreadyAdded());
 
         // Add transport destination
         _transportDestinations[operatorSetKey].add(chainID);
@@ -144,9 +132,7 @@ contract CrossChainRegistry is
         bytes32 operatorSetKey = operatorSet.key();
 
         // Check if transport destination exists
-        if (!_transportDestinations[operatorSetKey].contains(chainID)) {
-            revert TransportDestinationNotFound();
-        }
+        require(_transportDestinations[operatorSetKey].contains(chainID), TransportDestinationNotFound());
 
         // Remove transport destination
         _transportDestinations[operatorSetKey].remove(chainID);
@@ -162,14 +148,10 @@ contract CrossChainRegistry is
         bytes32 operatorSetKey = operatorSet.key();
 
         // Check if generation reservation exists
-        if (!_activeGenerationReservations.contains(operatorSetKey)) {
-            revert GenerationReservationDoesNotExist();
-        }
+        require(_activeGenerationReservations.contains(operatorSetKey), GenerationReservationDoesNotExist());
 
         // Validate the operator table calculator
-        if (address(calculator) == address(0)) {
-            revert InvalidOperatorTableCalculator();
-        }
+        require(address(calculator) != address(0), InvalidOperatorTableCalculator());
 
         // Set the operator table calculator
         _setOperatorTableCalculator(operatorSet, calculator);
@@ -181,9 +163,7 @@ contract CrossChainRegistry is
         OperatorSetConfig calldata config
     ) external onlyWhenNotPaused(PAUSED_OPERATOR_SET_CONFIG) checkCanCall(operatorSet.avs) nonReentrant {
         // Validate config
-        if (config.owner == address(0)) {
-            revert InputAddressZero();
-        }
+        require(config.owner != address(0), InputAddressZero());
 
         bytes32 operatorSetKey = operatorSet.key();
 
@@ -198,14 +178,10 @@ contract CrossChainRegistry is
         uint32 chainID
     ) external onlyOwner onlyWhenNotPaused(PAUSED_CHAIN_WHITELIST) nonReentrant {
         // Validate chainID
-        if (chainID == 0) {
-            revert InvalidChainId();
-        }
+        require(chainID != 0, InvalidChainId());
 
         // Check if already whitelisted
-        if (_whitelistedChainIDs.contains(chainID)) {
-            revert ChainIDAlreadyWhitelisted();
-        }
+        require(!_whitelistedChainIDs.contains(chainID), ChainIDAlreadyWhitelisted());
 
         // Add to whitelist
         _whitelistedChainIDs.add(chainID);
@@ -218,9 +194,7 @@ contract CrossChainRegistry is
         uint32 chainID
     ) external onlyOwner onlyWhenNotPaused(PAUSED_CHAIN_WHITELIST) nonReentrant {
         // Check if whitelisted
-        if (!_whitelistedChainIDs.contains(chainID)) {
-            revert ChainIDNotWhitelisted();
-        }
+        require(_whitelistedChainIDs.contains(chainID), ChainIDNotWhitelisted());
 
         // Remove from whitelist
         _whitelistedChainIDs.remove(chainID);
