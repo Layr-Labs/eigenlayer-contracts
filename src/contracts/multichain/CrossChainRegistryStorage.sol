@@ -2,10 +2,10 @@
 pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import "../contracts/interfaces/ICrossChainRegistry.sol";
-import "../contracts/interfaces/IOperatorTableCalculator.sol";
-import "../contracts/interfaces/IAllocationManager.sol";
-import "../contracts/libraries/OperatorSetLib.sol";
+import "../interfaces/ICrossChainRegistry.sol";
+import "../interfaces/IOperatorTableCalculator.sol";
+import "../interfaces/IAllocationManager.sol";
+import "../libraries/OperatorSetLib.sol";
 
 /**
  * @title CrossChainRegistryStorage

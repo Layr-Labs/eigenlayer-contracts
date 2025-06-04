@@ -3,9 +3,9 @@ pragma solidity ^0.8.27;
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
-import "../contracts/mixins/PermissionControllerMixin.sol";
-import "../contracts/mixins/SemVerMixin.sol";
-import "../contracts/permissions/Pausable.sol";
+import "../mixins/PermissionControllerMixin.sol";
+import "../mixins/SemVerMixin.sol";
+import "../permissions/Pausable.sol";
 import "./CrossChainRegistryStorage.sol";
 
 /**
