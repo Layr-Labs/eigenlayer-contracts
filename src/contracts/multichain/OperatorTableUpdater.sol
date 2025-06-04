@@ -7,7 +7,6 @@ import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "../libraries/Merkle.sol";
 import "../mixins/SemVerMixin.sol";
 import "./OperatorTableUpdaterStorage.sol";
-import "forge-std/console.sol";
 
 contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTableUpdaterStorage, SemVerMixin {
     /**
@@ -257,10 +256,8 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
         pure
         returns (OperatorSet memory operatorSet, CurveType curveType, OperatorSetConfig memory operatorSetInfo)
     {
-        console.log("operatorTable");
         (operatorSet, curveType, operatorSetInfo) =
             abi.decode(operatorTable, (OperatorSet, CurveType, OperatorSetConfig));
-        console.log("operatorTable2");
     }
 
     /**
