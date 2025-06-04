@@ -68,9 +68,7 @@ contract BN254CertificateVerifier is
         _transferOwnership(__owner);
     }
 
-    /**
-     * @inheritdoc IBaseCertificateVerifier
-     */
+    ///@inheritdoc IBaseCertificateVerifier
     function getOperatorSetOwner(
         OperatorSet memory operatorSet
     ) external view returns (address) {
@@ -78,9 +76,7 @@ contract BN254CertificateVerifier is
         return _operatorSetOwners[operatorSetKey];
     }
 
-    /**
-     * @inheritdoc IBaseCertificateVerifier
-     */
+    ///@inheritdoc IBaseCertificateVerifier
     function maxOperatorTableStaleness(
         OperatorSet memory operatorSet
     ) external view returns (uint32) {
@@ -88,9 +84,7 @@ contract BN254CertificateVerifier is
         return _maxStalenessPeriods[operatorSetKey];
     }
 
-    /**
-     * @inheritdoc IBaseCertificateVerifier
-     */
+    ///@inheritdoc IBaseCertificateVerifier
     function latestReferenceTimestamp(
         OperatorSet memory operatorSet
     ) external view returns (uint32) {
@@ -98,9 +92,7 @@ contract BN254CertificateVerifier is
         return _latestReferenceTimestamps[operatorSetKey];
     }
 
-    /**
-     * @inheritdoc IBN254CertificateVerifier
-     */
+    ///@inheritdoc IBN254CertificateVerifier
     function updateOperatorTable(
         OperatorSet calldata operatorSet,
         uint32 referenceTimestamp,
@@ -121,9 +113,7 @@ contract BN254CertificateVerifier is
         emit TableUpdated(operatorSet, referenceTimestamp, operatorSetInfo);
     }
 
-    /**
-     * @inheritdoc IBN254CertificateVerifier
-     */
+    ///@inheritdoc IBN254CertificateVerifier
     function verifyCertificate(
         OperatorSet memory operatorSet,
         BN254Certificate memory cert
@@ -131,9 +121,7 @@ contract BN254CertificateVerifier is
         return _verifyCertificate(operatorSet, cert);
     }
 
-    /**
-     * @inheritdoc IBN254CertificateVerifier
-     */
+    ///@inheritdoc IBN254CertificateVerifier
     function verifyCertificateProportion(
         OperatorSet memory operatorSet,
         BN254Certificate memory cert,
@@ -160,9 +148,7 @@ contract BN254CertificateVerifier is
         return true;
     }
 
-    /**
-     * @inheritdoc IBN254CertificateVerifier
-     */
+    ///@inheritdoc IBN254CertificateVerifier
     function verifyCertificateNominal(
         OperatorSet memory operatorSet,
         BN254Certificate memory cert,
