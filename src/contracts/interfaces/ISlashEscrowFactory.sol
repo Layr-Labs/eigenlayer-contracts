@@ -9,9 +9,6 @@ interface ISlashEscrowFactoryErrors {
     /// @notice Thrown when a caller is not the strategy manager.
     error OnlyStrategyManager();
 
-    /// @notice Thrown when a caller is not the redistribution recipient.
-    error OnlyRedistributionRecipient();
-
     /// @notice Thrown when a escrow is not mature.
     error EscrowNotMature();
 
@@ -61,8 +58,6 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
      * @notice Releases an escrow by transferring tokens from the `SlashEscrow` to the operator set's redistribution recipient.
      * @param operatorSet The operator set whose escrow is being released.
      * @param slashId The slash ID of the escrow that is being released.
-     * @dev The caller must be the escrow recipient, unless the escrow recipient
-     * is the default burn address in which case anyone can call.
      * @dev The slash escrow is released once the delay for ALL strategies has elapsed.
      */
     function releaseSlashEscrow(OperatorSet calldata operatorSet, uint256 slashId) external;
@@ -72,8 +67,6 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
      * @param operatorSet The operator set whose escrow is being released.
      * @param slashId The slash ID of the escrow that is being released.
      * @param strategy The strategy whose escrow is being released.
-     * @dev The caller must be the redistribution recipient, unless the redistribution recipient
-     * is the default burn address in which case anyone can call.
      * @dev The slash escrow is released once the delay for ALL strategies has elapsed.
      */
     function releaseSlashEscrowByStrategy(
