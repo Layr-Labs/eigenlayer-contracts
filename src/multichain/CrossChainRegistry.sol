@@ -72,7 +72,8 @@ contract CrossChainRegistry is
     /// @inheritdoc ICrossChainRegistry
     function requestGenerationReservation(
         OperatorSet calldata operatorSet,
-        IOperatorTableCalculator operatorTableCalculator
+        IOperatorTableCalculator operatorTableCalculator,
+        OperatorSetConfig calldata config
     ) external onlyWhenNotPaused(PAUSED_GENERATION_RESERVATIONS) checkCanCall(operatorSet.avs) {
         // Validate the operator set
         require(allocationManager.isOperatorSet(operatorSet), InvalidOperatorSet());
@@ -88,6 +89,9 @@ contract CrossChainRegistry is
 
         // Set the operator table calculator
         _setOperatorTableCalculator(operatorSet, operatorTableCalculator, false);
+
+        // Set the operator set config
+        _setOperatorSetConfig(operatorSet, config, false);
     }
 
     /// @inheritdoc ICrossChainRegistry
@@ -108,6 +112,9 @@ contract CrossChainRegistry is
 
         // Remove the operator table calculator
         _setOperatorTableCalculator(operatorSet, IOperatorTableCalculator(address(0)), true);
+
+        // Remove the operator set config
+        _setOperatorSetConfig(operatorSet, OperatorSetConfig(address(0), 0), true);
     }
 
     /// @inheritdoc ICrossChainRegistry
@@ -128,10 +135,26 @@ contract CrossChainRegistry is
     }
 
     /// @inheritdoc ICrossChainRegistry
+    function setOperatorSetConfig(
+        OperatorSet calldata operatorSet,
+        OperatorSetConfig calldata config
+    ) external onlyWhenNotPaused(PAUSED_OPERATOR_SET_CONFIG) checkCanCall(operatorSet.avs) {
+        // Validate the operator set
+        require(allocationManager.isOperatorSet(operatorSet), InvalidOperatorSet());
+
+        bytes32 operatorSetKey = operatorSet.key();
+
+        // Check if transport reservation exists
+        require(_activeTransportReservations.contains(operatorSetKey), TransportReservationDoesNotExist());
+
+        // Set the operator set config
+        _setOperatorSetConfig(operatorSet, config, false);
+    }
+
+    /// @inheritdoc ICrossChainRegistry
     function requestTransportReservation(
         OperatorSet calldata operatorSet,
-        uint32[] calldata chainIDs,
-        OperatorSetConfig calldata config
+        uint32[] calldata chainIDs
     ) external onlyWhenNotPaused(PAUSED_TRANSPORT_RESERVATIONS) checkCanCall(operatorSet.avs) {
         // Validate the operator set
         require(allocationManager.isOperatorSet(operatorSet), InvalidOperatorSet());
@@ -149,9 +172,6 @@ contract CrossChainRegistry is
         for (uint256 i = 0; i < chainIDs.length; i++) {
             _addTransportDestination(operatorSet, chainIDs[i]);
         }
-
-        // Set the operator set config
-        _setOperatorSetConfig(operatorSet, config, false);
     }
 
     /// @inheritdoc ICrossChainRegistry
@@ -176,9 +196,6 @@ contract CrossChainRegistry is
         for (uint256 i = 0; i < chainIDs.length(); i++) {
             _removeTransportDestination(operatorSet, uint32(chainIDs.at(i)));
         }
-
-        // Remove the operator set config
-        _setOperatorSetConfig(operatorSet, OperatorSetConfig(address(0), 0), true);
     }
 
     /// @inheritdoc ICrossChainRegistry
@@ -215,23 +232,6 @@ contract CrossChainRegistry is
         for (uint256 i = 0; i < chainIDs.length; i++) {
             _removeTransportDestination(operatorSet, chainIDs[i]);
         }
-    }
-
-    /// @inheritdoc ICrossChainRegistry
-    function setOperatorSetConfig(
-        OperatorSet calldata operatorSet,
-        OperatorSetConfig calldata config
-    ) external onlyWhenNotPaused(PAUSED_OPERATOR_SET_CONFIG) checkCanCall(operatorSet.avs) {
-        // Validate the operator set
-        require(allocationManager.isOperatorSet(operatorSet), InvalidOperatorSet());
-
-        bytes32 operatorSetKey = operatorSet.key();
-
-        // Check if transport reservation exists
-        require(_activeTransportReservations.contains(operatorSetKey), TransportReservationDoesNotExist());
-
-        // Set the operator set config
-        _setOperatorSetConfig(operatorSet, config, false);
     }
 
     /// @inheritdoc ICrossChainRegistry
@@ -291,6 +291,27 @@ contract CrossChainRegistry is
     }
 
     /**
+     * @dev Internal function to set the operator set config for an operator set
+     * @param operatorSet The operator set to set the config for
+     * @param config The operator set config
+     * @param isDelete Whether to delete the operator set config
+     */
+    function _setOperatorSetConfig(
+        OperatorSet calldata operatorSet,
+        OperatorSetConfig memory config,
+        bool isDelete
+    ) internal {
+        if (!isDelete) {
+            // Validate the operator set config
+            require(config.owner != address(0), InputAddressZero());
+            require(config.maxStalenessPeriod != 0, StalenessPeriodZero());
+        }
+        bytes32 operatorSetKey = operatorSet.key();
+        _operatorSetConfigs[operatorSetKey] = config;
+        emit OperatorSetConfigSet(operatorSet, config);
+    }
+
+    /**
      * @dev Internal function to add a transport destination for an operator set
      * @param operatorSet The operator set to add the transport destination for
      * @param chainID The chain ID to add the transport destination for
@@ -330,21 +351,6 @@ contract CrossChainRegistry is
         _transportDestinations[operatorSetKey].remove(chainID);
 
         emit TransportDestinationRemoved(operatorSet, chainID);
-    }
-
-    function _setOperatorSetConfig(
-        OperatorSet calldata operatorSet,
-        OperatorSetConfig memory config,
-        bool isDelete
-    ) internal {
-        if (!isDelete) {
-            // Validate the operator set config
-            require(config.owner != address(0), InputAddressZero());
-            require(config.maxStalenessPeriod != 0, StalenessPeriodZero());
-        }
-        bytes32 operatorSetKey = operatorSet.key();
-        _operatorSetConfigs[operatorSetKey] = config;
-        emit OperatorSetConfigSet(operatorSet, config);
     }
 
     /**
@@ -437,15 +443,10 @@ contract CrossChainRegistry is
     }
 
     /// @inheritdoc ICrossChainRegistry
-    function getActiveTransportReservations()
-        external
-        view
-        returns (OperatorSet[] memory, uint32[][] memory, OperatorSetConfig[] memory)
-    {
+    function getActiveTransportReservations() external view returns (OperatorSet[] memory, uint32[][] memory) {
         uint256 length = _activeTransportReservations.length();
         OperatorSet[] memory operatorSets = new OperatorSet[](length);
         uint32[][] memory chainIDs = new uint32[][](length);
-        OperatorSetConfig[] memory configs = new OperatorSetConfig[](length);
 
         for (uint256 i = 0; i < length; i++) {
             bytes32 operatorSetKey = _activeTransportReservations.at(i);
@@ -453,9 +454,8 @@ contract CrossChainRegistry is
 
             operatorSets[i] = operatorSet;
             chainIDs[i] = getTransportDestinations(operatorSet);
-            configs[i] = getOperatorSetConfig(operatorSet);
         }
 
-        return (operatorSets, chainIDs, configs);
+        return (operatorSets, chainIDs);
     }
 }

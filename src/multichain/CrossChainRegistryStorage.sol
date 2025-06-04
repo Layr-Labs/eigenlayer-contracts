@@ -26,14 +26,14 @@ abstract contract CrossChainRegistryStorage is ICrossChainRegistry {
     /// @dev Index for flag that pauses operator table calculator modifications when set
     uint8 internal constant PAUSED_OPERATOR_TABLE_CALCULATOR = 1;
 
+    /// @dev Index for flag that pauses operator set config modifications when set
+    uint8 internal constant PAUSED_OPERATOR_SET_CONFIG = 2;
+
     /// @dev Index for flag that pauses transport reservations when set
-    uint8 internal constant PAUSED_TRANSPORT_RESERVATIONS = 2;
+    uint8 internal constant PAUSED_TRANSPORT_RESERVATIONS = 3;
 
     /// @dev Index for flag that pauses transport destination modifications when set
-    uint8 internal constant PAUSED_TRANSPORT_DESTINATIONS = 3;
-
-    /// @dev Index for flag that pauses operator set config modifications when set
-    uint8 internal constant PAUSED_OPERATOR_SET_CONFIG = 4;
+    uint8 internal constant PAUSED_TRANSPORT_DESTINATIONS = 4;
 
     /// @dev Index for flag that pauses chain whitelist modifications when set
     uint8 internal constant PAUSED_CHAIN_WHITELIST = 5;

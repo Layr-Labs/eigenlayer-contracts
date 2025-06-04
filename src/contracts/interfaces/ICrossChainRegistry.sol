@@ -91,11 +91,13 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
      * @notice Initiates a generation reservation
      * @param operatorSet the operatorSet to make a reservation for
      * @param operatorTableCalculator the address of the operatorTableCalculator
+     * @param config the config to set for the operatorSet
      * @dev msg.sender must be UAM permissioned for operatorSet.avs
      */
     function requestGenerationReservation(
         OperatorSet calldata operatorSet,
-        IOperatorTableCalculator operatorTableCalculator
+        IOperatorTableCalculator operatorTableCalculator,
+        OperatorSetConfig calldata config
     ) external;
 
     /**
@@ -120,17 +122,21 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
     ) external;
 
     /**
+     * @notice Sets the operatorSetConfig for a given operatorSet
+     * @param operatorSet the operatorSet to set the operatorSetConfig for
+     * @param config the config to set
+     * @dev msg.sender must be UAM permissioned for operatorSet.avs
+     * @dev operatorSet must have an active transport reservation
+     */
+    function setOperatorSetConfig(OperatorSet calldata operatorSet, OperatorSetConfig calldata config) external;
+
+    /**
      * @notice Initiates a transport reservation
      * @param operatorSet the operatorSet to make a reservation for
      * @param chainIDs the chainIDs to transport to
-     * @param config the config to set for the operatorSet
      * @dev msg.sender must be UAM permissioned for operatorSet.avs
      */
-    function requestTransportReservation(
-        OperatorSet calldata operatorSet,
-        uint32[] calldata chainIDs,
-        OperatorSetConfig calldata config
-    ) external;
+    function requestTransportReservation(OperatorSet calldata operatorSet, uint32[] calldata chainIDs) external;
 
     /**
      * @notice Removes a transport reservation for a given operatorSet
@@ -158,15 +164,6 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
     function removeTransportDestinations(OperatorSet calldata operatorSet, uint32[] calldata chainIDs) external;
 
     /**
-     * @notice Sets the operatorSetConfig for a given operatorSet
-     * @param operatorSet the operatorSet to set the operatorSetConfig for
-     * @param config the config to set
-     * @dev msg.sender must be UAM permissioned for operatorSet.avs
-     * @dev operatorSet must have an active transport reservation
-     */
-    function setOperatorSetConfig(OperatorSet calldata operatorSet, OperatorSetConfig calldata config) external;
-
-    /**
      * @notice Adds a chainID to the whitelist of chainIDs that can be transported to
      * @param chainID the chainID to add to the whitelist
      * @dev msg.sender must be the owner of the CrossChainRegistry
@@ -183,6 +180,12 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
     function removeChainIDFromWhitelist(
         uint32 chainID
     ) external;
+
+    /**
+     *
+     *                         VIEW FUNCTIONS
+     *
+     */
 
     /**
      * @notice Gets the list of chains that are supported by the CrossChainRegistry
@@ -231,10 +234,6 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
      * @notice Gets the active transport reservations
      * @return An array of operatorSets with active transport reservations
      * @return An array of chainIDs that the operatorSet is configured to transport to
-     * @return An array of operatorSetConfigs for the operatorSets
      */
-    function getActiveTransportReservations()
-        external
-        view
-        returns (OperatorSet[] memory, uint32[][] memory, OperatorSetConfig[] memory);
+    function getActiveTransportReservations() external view returns (OperatorSet[] memory, uint32[][] memory);
 }
