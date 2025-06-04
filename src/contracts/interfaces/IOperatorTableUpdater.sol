@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.27;
+pragma solidity >=0.5.0;
 
 import {OperatorSet} from "../libraries/OperatorSetLib.sol";
 
@@ -7,11 +7,28 @@ import "./IECDSATableCalculator.sol";
 import "./IBN254TableCalculator.sol";
 import "./IECDSACertificateVerifier.sol";
 import "./IBN254CertificateVerifier.sol";
+import "./IKeyRegistrar.sol";
 import "./ICrossChainRegistry.sol";
 
 interface IOperatorTableUpdaterErrors {
+    /// @notice Thrown when the global table root is in the future
+    error GlobalTableRootInFuture();
+    /// @notice Thrown when the global table root is stale
+    error GlobalTableRootStale();
+    /// @notice Thrown when the table root does not match what is in the certificate
+    error TableRootNotInCertificate();
     /// @notice Thrown when the GlobalTableRoot update fails
-    error GlobalTableRootUpdateFailed();
+    error CertificateInvalid();
+    /// @notice Thrown when the table has been updated for the timestamp
+    error TableUpdateForPastTimestamp();
+    /// @notice Thrown when the global table root does not match what is in storage
+    error InvalidGlobalTableRoot();
+    /// @notice Thrown when the operator set proof is invalid
+    error InvalidOperatorSetProof();
+    /// @notice Thrown when the confirmation threshold is invalid
+    error InvalidConfirmationThreshold();
+    /// @notice Thrown when the curve type is invalid
+    error InvalidCurveType();
 }
 
 interface IOperatorTableUpdaterEvents {
@@ -20,7 +37,19 @@ interface IOperatorTableUpdaterEvents {
      * @param referenceTimestamp the timestamp of the global table root
      * @param globalTableRoot the root of the global table
      */
-    event NewglobalTableRoot(uint32 referenceTimestamp, bytes32 globalTableRoot);
+    event NewGlobalTableRoot(uint32 indexed referenceTimestamp, bytes32 indexed globalTableRoot);
+
+    /**
+     * @notice Emitted when the global root confirmer set is updated
+     * @param operatorSet The operatorSet which certifies against global roots
+     */
+    event GlobalRootConfirmerSetUpdated(OperatorSet operatorSet);
+
+    /**
+     * @notice Emitted when the global root confirmation threshold is updated
+     * @param bps The threshold, in bps, for a global root to be signed off on and updated
+     */
+    event GlobalRootConfirmationThresholdUpdated(uint16 bps);
 }
 
 interface IOperatorTableUpdater is
@@ -28,6 +57,7 @@ interface IOperatorTableUpdater is
     IOperatorTableUpdaterEvents,
     IECDSACertificateVerifierTypes,
     IBN254CertificateVerifierTypes,
+    IKeyRegistrarTypes,
     ICrossChainRegistryTypes
 {
     /**
@@ -63,45 +93,20 @@ interface IOperatorTableUpdater is
     ) external;
 
     /**
-     * @notice update a BN254 operator table in the CertificateVerifier
+     * @notice Updates an operator table
      * @param referenceTimestamp the reference block number of the globalTableRoot
      * @param globalTableRoot the new globalTableRoot
      * @param operatorSetIndex the index of the given operatorSet being updated
      * @param proof the proof of the leaf at index against the globalTableRoot
-     * @param operatorSet the operatorSet being proven
-     * @param operatorSetInfo the operatorSetInfo of the operator table
-     * @param config the configuration of the operatorSet
-     * @dev globalTableRoot must be confirmed majority certified by globalTableRootSet
+     * @param tableInfo the tableInfo of the operator table
+     * @dev Depending on the decoded KeyType, the tableInfo will be decoded to a
      */
-    function updateBN254OperatorTable(
+    function updateOperatorTable(
         uint32 referenceTimestamp,
         bytes32 globalTableRoot,
         uint32 operatorSetIndex,
         bytes calldata proof,
-        OperatorSet calldata operatorSet,
-        BN254OperatorSetInfo calldata operatorSetInfo,
-        OperatorSetConfig calldata config
-    ) external;
-
-    /**
-     * @notice updates an ECDSA operator table in the CertificateVerifier
-     * @param referenceTimestamp the reference block number of the globalTableRoot
-     * @param globalTableRoot the new globalTableRoot
-     * @param operatorSetIndex the index of the given operatorSet being updated
-     * @param proof the proof of the leaf at index against the globalTableRoot
-     * @param operatorSet the operatorSet being proven
-     * @param operatorInfos the operatorInfos of the operator table
-     * @param config the configuration of the operatorSet
-     * @dev globalTableRoot must be confirmed majority certified by globalTableRootSet
-     */
-    function updateECDSAOperatorTable(
-        uint32 referenceTimestamp,
-        bytes32 globalTableRoot,
-        uint32 operatorSetIndex,
-        bytes calldata proof,
-        OperatorSet calldata operatorSet,
-        ECDSAOperatorInfo[] calldata operatorInfos,
-        OperatorSetConfig calldata config
+        bytes calldata tableInfo
     ) external;
 
     /**
@@ -115,7 +120,22 @@ interface IOperatorTableUpdater is
      * @param referenceTimestamp the timestamp of the table root
      * @return tableRoot the table root at the given timestamp
      */
-    function getTableRootByTimestamp(
+    function getGlobalTableRootByTimestamp(
         uint32 referenceTimestamp
     ) external view returns (bytes32 tableRoot);
+
+    /**
+     * @notice Get the operatorSet which certifies against global roots
+     * @return The operatorSet which certifies against global roots
+     */
+    function getGlobalRootConfirmerSet() external view returns (OperatorSet memory);
+
+    /**
+     * @notice Get the certificate verifier for a given key type
+     * @param curveType The curve type
+     * @return The certificate verifier for the given key type
+     */
+    function getCertificateVerifier(
+        CurveType curveType
+    ) external view returns (address);
 }
