@@ -9,6 +9,15 @@ import "../mixins/SemVerMixin.sol";
 import "./OperatorTableUpdaterStorage.sol";
 
 contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTableUpdaterStorage, SemVerMixin {
+    enum KeyType {
+        NONE,
+        BN254,
+        ECDSA
+    }
+
+    error InvalidKeyType();
+
+
     /**
      *
      *                         INITIALIZING FUNCTIONS
@@ -65,6 +74,7 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
         // Table roots can only be updated for current or past timestamps and after the latest reference timestamp
         require(referenceTimestamp <= block.timestamp, GlobalTableRootInFuture());
         require(referenceTimestamp > latestReferenceTimestamp, GlobalTableRootStale());
+        require(globalTableRoot == globalTableRootCert.messageHash, TableRootNotInCertificate());
 
         // Verify certificate by using the stake proportion thresholds
         uint16[] memory stakeProportionThresholds = new uint16[](1);
@@ -82,6 +92,42 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
 
         emit NewGlobalTableRoot(referenceTimestamp, globalTableRoot);
     }
+
+    /// @inheritdoc IOperatorTableUpdater
+    function updateOperatorTable(
+        uint32 referenceTimestamp,
+        bytes32 globalTableRoot,
+        uint32 operatorSetIndex,
+        bytes calldata proof,
+        bytes calldata tableInfo
+    ) external {
+        (OperatorSet memory operatorSet, KeyType keyType, OperatorSetConfig memory operatorSetConfig) = _getOperatorTableInfo(tableInfo);
+
+        // Check that the `referenceTimestamp` is greater than the latest reference timestamp
+        require(
+            referenceTimestamp > IBaseCertificateVerifier(_getCertificateVerifier(keyType)).latestReferenceTimestamp(operatorSet),
+            TableUpdateForPastTimestamp()
+        );
+
+        bytes32 operatorSetLeafHash = keccak256(tableInfo);
+
+        _verifyOperatorTableUpdate({
+            referenceTimestamp: referenceTimestamp,
+            globalTableRoot: globalTableRoot,
+            operatorSetIndex: operatorSetIndex,
+            proof: proof,
+            operatorSetLeafHash: operatorSetLeafHash
+        });
+
+        if (keyType == KeyType.BN254) {
+            bn254CertificateVerifier.updateOperatorTable(operatorSet, referenceTimestamp, _getBN254OperatorSetInfo(tableInfo), operatorSetConfig);
+        } else if (keyType == KeyType.ECDSA) {
+            ecdsaCertificateVerifier.updateOperatorTable(operatorSet, referenceTimestamp, _getECDSAOperatorSetInfo(tableInfo), operatorSetConfig);
+        } else {
+            revert InvalidKeyType();
+        }
+    }
+
 
     /// @inheritdoc IOperatorTableUpdater
     function updateBN254OperatorTable(
@@ -246,5 +292,35 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
         require(bps <= MAX_BPS, InvalidConfirmationThreshold());
         globalRootConfirmationThreshold = bps;
         emit GlobalRootConfirmationThresholdUpdated(bps);
+    }
+
+    function _getOperatorTableInfo(
+        bytes calldata tableInfo
+    ) internal pure returns (OperatorSet memory operatorSet, KeyType keyType, OperatorSetConfig memory operatorSetInfo) {
+        (operatorSet, keyType, operatorSetInfo) = abi.decode(tableInfo, (OperatorSet, KeyType, OperatorSetConfig));
+    }
+
+    function _getBN254OperatorSetInfo(
+        bytes calldata tableInfo
+    ) internal pure returns (BN254OperatorSetInfo memory operatorSetInfo) {
+        (,,,operatorSetInfo) = abi.decode(tableInfo, (OperatorSet, KeyType, OperatorSetConfig, BN254OperatorSetInfo));
+    }
+
+    function _getECDSAOperatorSetInfo(
+        bytes calldata tableInfo
+    ) internal pure returns (ECDSAOperatorInfo[] memory operatorSetInfo) {
+        (,,,operatorSetInfo) = abi.decode(tableInfo, (OperatorSet, KeyType, OperatorSetConfig, ECDSAOperatorInfo[]));
+    }
+
+    function _getCertificateVerifier(
+        KeyType keyType
+    ) internal view returns (address) {
+        if (keyType == KeyType.BN254) {
+            return address(bn254CertificateVerifier);
+        } else if (keyType == KeyType.ECDSA) {
+            return address(ecdsaCertificateVerifier);
+        } else {
+            revert InvalidKeyType();
+        }
     }
 }

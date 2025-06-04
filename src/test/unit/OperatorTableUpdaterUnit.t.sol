@@ -98,6 +98,7 @@ contract OperatorTableUpdaterUnitTests is
 
     function _updateGlobalTableRoot(bytes32 globalTableRoot) internal {
         BN254Certificate memory mockCertificate;
+        mockCertificate.messageHash = globalTableRoot;
         _setIsValidCertificate(mockCertificate, true);
         operatorTableUpdater.confirmGlobalTableRoot(mockCertificate, globalTableRoot, uint32(block.timestamp));
     }
@@ -138,13 +139,21 @@ contract OperatorTableUpdaterUnitTests_confirmGlobalTableRoot is OperatorTableUp
         operatorTableUpdater.confirmGlobalTableRoot(mockCertificate, bytes32(0), referenceTimestamp + 1);
     }
 
-    function test_revert_staleCertificate(Randomness r) public rand(r) {
+    function testFuzz_revert_staleCertificate(Randomness r) public rand(r) {
         _setIsValidCertificate(mockCertificate, true);
         operatorTableUpdater.confirmGlobalTableRoot(mockCertificate, bytes32(0), uint32(block.timestamp));
 
         uint32 referenceTimestamp = r.Uint32(0, uint32(block.timestamp));
         cheats.expectRevert(GlobalTableRootStale.selector);
         operatorTableUpdater.confirmGlobalTableRoot(mockCertificate, bytes32(0), referenceTimestamp);
+    }
+
+    function testFuzz_revert_tableRootNotInCertificate(Randomness r) public rand(r) {
+        bytes32 invalidTableRoot = bytes32(r.Uint256(1, type(uint).max));
+        mockCertificate.messageHash = invalidTableRoot;
+
+        cheats.expectRevert(TableRootNotInCertificate.selector);
+        operatorTableUpdater.confirmGlobalTableRoot(mockCertificate, bytes32(0), uint32(block.timestamp));
     }
 
     function test_revert_invalidCertificate() public {

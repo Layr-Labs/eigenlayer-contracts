@@ -14,6 +14,8 @@ interface IOperatorTableUpdaterErrors {
     error GlobalTableRootInFuture();
     /// @notice Thrown when the global table root is stale
     error GlobalTableRootStale();
+    /// @notice Thrown when the table root does not match what is in the certificate
+    error TableRootNotInCertificate();
     /// @notice Thrown when the GlobalTableRoot update fails
     error CertificateInvalid();
     /// @notice Thrown when the table has been updated for the timestamp
@@ -84,6 +86,23 @@ interface IOperatorTableUpdater is
      */
     function setGlobalRootConfirmationThreshold(
         uint16 bps
+    ) external;
+
+    /**
+     * @notice Updates an operator table
+     * @param referenceTimestamp the reference block number of the globalTableRoot
+     * @param globalTableRoot the new globalTableRoot
+     * @param operatorSetIndex the index of the given operatorSet being updated
+     * @param proof the proof of the leaf at index against the globalTableRoot
+     * @param tableInfo the tableInfo of the operator table
+     * @dev Depending on the decoded KeyType, the tableInfo will be decoded to a
+     */
+    function updateOperatorTable(
+        uint32 referenceTimestamp,
+        bytes32 globalTableRoot,
+        uint32 operatorSetIndex,
+        bytes calldata proof,
+        bytes calldata tableInfo
     ) external;
 
     /**
