@@ -1,36 +1,32 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
-import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "../interfaces/multichain/IBN254TableCalculator.sol";
 import "../interfaces/IKeyRegistrar.sol";
+import "../interfaces/IAllocationManager.sol";
 import "../libraries/Merkle.sol";
 import "../libraries/BN254.sol";
-import "./BN254TableCalculatorStorage.sol";
 
 /**
  * @title BN254TableCalculator
  * @notice Contract that calculates BN254 operator tables for a given operatorSet
  * @dev This contract calculates operator weights and formats them into the required table structure
  */
-contract BN254TableCalculator is Initializable, OwnableUpgradeable, BN254TableCalculatorStorage {
+contract BN254TableCalculator is IBN254TableCalculator {
     using Merkle for bytes32[];
     using BN254 for BN254.G1Point;
 
-    constructor(
-        IKeyRegistrar _keyRegistrar,
-        IAllocationManager _allocationManager
-    ) BN254TableCalculatorStorage(_keyRegistrar, _allocationManager) {
-        _disableInitializers();
-    }
+    // Immutables & Constants
+    /// @notice KeyRegistrar contract for managing operator keys
+    IKeyRegistrar public immutable keyRegistrar;
+    /// @notice AllocationManager contract for managing operator allocations
+    IAllocationManager public immutable allocationManager;
+    /// @notice The default lookahead blocks for the slashable stake lookup
+    uint256 public constant LOOKAHEAD_BLOCKS = 100_800;
 
-    /**
-     * @notice Initializes the contract.
-     */
-    function initialize(address initialOwner, uint256 _lookaheadBlocks) external initializer {
-        lookaheadBlocks = _lookaheadBlocks;
-        _transferOwnership(initialOwner);
+    constructor(IKeyRegistrar _keyRegistrar, IAllocationManager _allocationManager) {
+        keyRegistrar = _keyRegistrar;
+        allocationManager = _allocationManager;
     }
 
     /// @inheritdoc IBN254TableCalculator
@@ -93,15 +89,6 @@ contract BN254TableCalculator is Initializable, OwnableUpgradeable, BN254TableCa
         return operatorInfos;
     }
 
-    /// @inheritdoc IBN254TableCalculator
-    function setLookaheadBlocks(
-        uint256 _lookaheadBlocks
-    ) external onlyOwner {
-        require(_lookaheadBlocks < allocationManager.DEALLOCATION_DELAY(), LookaheadBlocksTooHigh());
-        lookaheadBlocks = _lookaheadBlocks;
-        emit LookaheadBlocksSet(_lookaheadBlocks);
-    }
-
     /**
      * @notice Get the operator weights for a given operatorSet based on the slashable stake.
      * @param operatorSet The operatorSet to get the weights for
@@ -121,7 +108,7 @@ contract BN254TableCalculator is Initializable, OwnableUpgradeable, BN254TableCa
             operatorSet: operatorSet,
             operators: operators,
             strategies: strategies,
-            futureBlock: uint32(block.number + lookaheadBlocks)
+            futureBlock: uint32(block.number + LOOKAHEAD_BLOCKS)
         });
 
         weights = new uint256[][](operators.length);

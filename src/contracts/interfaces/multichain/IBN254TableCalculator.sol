@@ -74,12 +74,4 @@ interface IBN254TableCalculator is
     function getOperatorInfos(
         OperatorSet calldata operatorSet
     ) external view returns (BN254OperatorInfo[] memory operatorInfos);
-
-    /**
-     * @notice Set the lookahead blocks for the slashable stake calculation
-     * @param _lookaheadBlocks The lookahead blocks to set
-     */
-    function setLookaheadBlocks(
-        uint256 _lookaheadBlocks
-    ) external;
 }

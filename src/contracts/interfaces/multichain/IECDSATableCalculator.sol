@@ -44,12 +44,4 @@ interface IECDSATableCalculator is
     function calculateOperatorTable(
         OperatorSet calldata operatorSet
     ) external view returns (ECDSAOperatorInfo[] memory operatorInfos);
-
-    /**
-     * @notice Set the lookahead blocks for the slashable stake calculation
-     * @param _lookaheadBlocks The lookahead blocks to set
-     */
-    function setLookaheadBlocks(
-        uint256 _lookaheadBlocks
-    ) external;
 }
