@@ -2,9 +2,9 @@
 pragma solidity ^0.8.27;
 
 import {OperatorSet} from "../libraries/OperatorSetLib.sol";
-import {IBN254TableCalculator, IBN254TableCalculatorTypes} from "../interfaces/IBN254TableCalculator.sol";
-import {IBN254CertificateVerifier, IBN254CertificateVerifierTypes} from "../interfaces/IBN254CertificateVerifier.sol";
-import {IBaseCertificateVerifier} from "../interfaces/IBaseCertificateVerifier.sol";
+import "../interfaces/IBN254TableCalculator.sol";
+import "../interfaces/IBN254CertificateVerifier.sol";
+import "../interfaces/IBaseCertificateVerifier.sol";
 
 abstract contract BN254CertificateVerifierStorage is IBN254CertificateVerifier {
     // Constants

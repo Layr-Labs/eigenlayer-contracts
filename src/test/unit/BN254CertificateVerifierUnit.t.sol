@@ -18,11 +18,13 @@ contract BN254CertificateVerifierTest is Test {
 
     // Contract being tested
     BN254CertificateVerifier verifier;
+
     // Test accounts
     address owner = address(0x1);
     address tableUpdater = address(0x2);
     address nonOwner = address(0x3);
     address operatorSetOwner = address(0x4);
+
     // Test data
     uint32 numOperators = 4;
     uint32 maxStaleness = 3600; // 1 hour max staleness
@@ -205,8 +207,8 @@ contract BN254CertificateVerifierTest is Test {
             operatorInfoTreeRoot: operatorInfoTreeRoot
         });
     }
-    // Helper to create a certificate with real BLS signature
 
+    // Helper to create a certificate with real BLS signature
     function createCertificate(
         uint32 referenceTimestamp,
         bytes32 messageHash,
@@ -228,6 +230,7 @@ contract BN254CertificateVerifierTest is Test {
                 operatorInfo: ops[nonSignerIndex]
             });
         }
+
         return IBN254CertificateVerifierTypes.BN254Certificate({
             referenceTimestamp: referenceTimestamp,
             messageHash: messageHash,
@@ -441,6 +444,7 @@ contract BN254CertificateVerifierTest is Test {
             operators,
             signature // Signature is for original msgHash, not wrongHash
         );
+
         // Verification should fail without mocking
         vm.expectRevert(abi.encodeWithSignature("VerificationFailed()"));
         verifier.verifyCertificate(testOperatorSet, cert);
@@ -610,6 +614,7 @@ contract BN254CertificateVerifierTest is Test {
             apk: aggSignerApkG2,
             nonSignerWitnesses: new IBN254CertificateVerifierTypes.BN254OperatorInfoWitness[](0)
         });
+
         // Verification should fail due to timestamp not existing
         vm.expectRevert(abi.encodeWithSignature("ReferenceTimestampDoesNotExist()"));
         verifier.verifyCertificate(testOperatorSet, cert);

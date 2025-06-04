@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.27;
+pragma solidity >=0.5.0;
 
 import {OperatorSet} from "../libraries/OperatorSetLib.sol";
 
@@ -7,6 +7,7 @@ import "./IECDSATableCalculator.sol";
 import "./IBN254TableCalculator.sol";
 import "./IECDSACertificateVerifier.sol";
 import "./IBN254CertificateVerifier.sol";
+import "./IKeyRegistrar.sol";
 import "./ICrossChainRegistry.sol";
 
 interface IOperatorTableUpdaterErrors {
