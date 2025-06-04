@@ -5,9 +5,12 @@ import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import {BN254} from "../libraries/BN254.sol";
 import {OperatorSet} from "../libraries/OperatorSetLib.sol";
-import {IBN254TableCalculator, IBN254TableCalculatorTypes} from "../interfaces/IBN254TableCalculator.sol";
-import {IBN254CertificateVerifier, IBN254CertificateVerifierTypes} from "../interfaces/IBN254CertificateVerifier.sol";
-import {IBaseCertificateVerifier} from "../interfaces/IBaseCertificateVerifier.sol";
+import {IBN254TableCalculator, IBN254TableCalculatorTypes} from "../interfaces/multichain/IBN254TableCalculator.sol";
+import {
+    IBN254CertificateVerifier,
+    IBN254CertificateVerifierTypes
+} from "../interfaces/multichain/IBN254CertificateVerifier.sol";
+import {IBaseCertificateVerifier} from "../interfaces/multichain/IBaseCertificateVerifier.sol";
 import {Merkle} from "../libraries/Merkle.sol";
 import "./BN254CertificateVerifierStorage.sol";
 
