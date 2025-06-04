@@ -41,9 +41,18 @@ interface IBN254CertificateVerifierEvents is IBN254CertificateVerifierTypes {
     event TableUpdated(OperatorSet operatorSet, uint32 referenceTimestamp, BN254OperatorSetInfo operatorSetInfo);
 }
 
+interface IBN254CertificateVerifierErrors {
+    ///@notice thrown when operator index provided in certificate is invalid
+    error InvalidOperatorIndex();
+}
+
 /// @notice An interface for verifying BN254 certificates
 /// @notice This implements the base `IBaseCertificateVerifier` interface
-interface IBN254CertificateVerifier is IBN254CertificateVerifierEvents, IBaseCertificateVerifier {
+interface IBN254CertificateVerifier is
+    IBN254CertificateVerifierEvents,
+    IBaseCertificateVerifier,
+    IBN254CertificateVerifierErrors
+{
     /**
      * @notice updates the operator table
      * @param operatorSet the operatorSet to update the operator table for
