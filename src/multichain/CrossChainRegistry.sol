@@ -108,10 +108,8 @@ contract CrossChainRegistry is
         checkCanCall(operatorSet.avs)
         isValidOperatorSet(operatorSet)
     {
-        bytes32 operatorSetKey = operatorSet.key();
-
         // Add to active generation reservations
-        require(_activeGenerationReservations.add(operatorSetKey), GenerationReservationAlreadyExists());
+        require(_activeGenerationReservations.add(operatorSet.key()), GenerationReservationAlreadyExists());
         emit GenerationReservationMade(operatorSet);
 
         // Set the operator table calculator
@@ -129,10 +127,8 @@ contract CrossChainRegistry is
         checkCanCall(operatorSet.avs)
         isValidOperatorSet(operatorSet)
     {
-        bytes32 operatorSetKey = operatorSet.key();
-
         // Remove from active generation reservations
-        require(_activeGenerationReservations.remove(operatorSetKey), GenerationReservationDoesNotExist());
+        require(_activeGenerationReservations.remove(operatorSet.key()), GenerationReservationDoesNotExist());
         emit GenerationReservationRemoved(operatorSet);
 
         // Remove the operator table calculator
@@ -151,10 +147,8 @@ contract CrossChainRegistry is
         checkCanCall(operatorSet.avs)
         isValidOperatorSet(operatorSet)
     {
-        bytes32 operatorSetKey = operatorSet.key();
-
         // Check if generation reservation exists
-        require(_activeGenerationReservations.contains(operatorSetKey), GenerationReservationDoesNotExist());
+        require(_activeGenerationReservations.contains(operatorSet.key()), GenerationReservationDoesNotExist());
 
         // Set the operator table calculator
         _setOperatorTableCalculator(operatorSet, operatorTableCalculator, false);
@@ -170,10 +164,8 @@ contract CrossChainRegistry is
         checkCanCall(operatorSet.avs)
         isValidOperatorSet(operatorSet)
     {
-        bytes32 operatorSetKey = operatorSet.key();
-
         // Check if generation reservation exists
-        require(_activeGenerationReservations.contains(operatorSetKey), GenerationReservationDoesNotExist());
+        require(_activeGenerationReservations.contains(operatorSet.key()), GenerationReservationDoesNotExist());
 
         // Set the operator set config
         _setOperatorSetConfig(operatorSet, config, false);
@@ -299,8 +291,7 @@ contract CrossChainRegistry is
             // Validate the operator table calculator
             require(address(operatorTableCalculator) != address(0), InvalidOperatorTableCalculator());
         }
-        bytes32 operatorSetKey = operatorSet.key();
-        _operatorTableCalculators[operatorSetKey] = operatorTableCalculator;
+        _operatorTableCalculators[operatorSet.key()] = operatorTableCalculator;
         emit OperatorTableCalculatorSet(operatorSet, operatorTableCalculator);
     }
 
@@ -320,8 +311,7 @@ contract CrossChainRegistry is
             require(config.owner != address(0), InputAddressZero());
             require(config.maxStalenessPeriod != 0, StalenessPeriodZero());
         }
-        bytes32 operatorSetKey = operatorSet.key();
-        _operatorSetConfigs[operatorSetKey] = config;
+        _operatorSetConfigs[operatorSet.key()] = config;
         emit OperatorSetConfigSet(operatorSet, config);
     }
 
