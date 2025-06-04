@@ -82,8 +82,6 @@ SlashEscrows are deployed deterministically using [Open Zeppelin's Clones Upgrad
  * @notice Releases an escrow by transferring tokens from the `SlashEscrow` to the operator set's redistribution recipient.
  * @param operatorSet The operator set whose escrow is being released.
  * @param slashId The slash ID of the escrow that is being released.
- * @dev The caller must be the escrow recipient, unless the escrow recipient
- * is the default burn address in which case anyone can call.
  * @dev The slash escrow is released once the delay for ALL strategies has elapsed.
  */
 function releaseSlashEscrow(
@@ -96,8 +94,6 @@ external onlyWhenNotPaused(PAUSED_RELEASE_ESCROW);
  * @param operatorSet The operator set whose escrow is being released.
  * @param slashId The slash ID of the escrow that is being released.
  * @param strategy The strategy whose escrow is being released.
- * @dev The caller must be the redistribution recipient, unless the redistribution recipient
- * is the default burn address in which case anyone can call.
  * @dev The slash escrow is released once the delay for ALL strategies has elapsed.
  */
 function releaseSlashEscrowByStrategy(
@@ -126,7 +122,6 @@ To accommodate the unlimited number of strategies that can be added to an operat
 *Requirements*:
 * The global paused status MUST NOT be set: `PAUSED_RELEASE_ESCROW`
 * The escrow paused status MUST NOT be set: `pauseEscrow`
-* If the operatorSet is redistributable, caller MUST be the `redistributionRecipient`
 * The escrow delay MUST have elapsed
 
 ## SlashEscrow
