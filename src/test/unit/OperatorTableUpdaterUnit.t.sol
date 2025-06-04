@@ -10,7 +10,8 @@ contract OperatorTableUpdaterUnitTests is
     IOperatorTableUpdaterEvents,
     IBN254CertificateVerifierTypes,
     IECDSACertificateVerifierTypes,
-    ICrossChainRegistryTypes
+    ICrossChainRegistryTypes,
+    IKeyRegistrarTypes
 {
     using StdStyle for *;
     using ArrayLib for *;
@@ -63,8 +64,37 @@ contract OperatorTableUpdaterUnitTests is
         );
     }
 
+    /// @dev Sets a valid certificate for the BN254 certificate verifier
     function _setIsValidCertificate(BN254Certificate memory certificate, bool isValid) internal {
         bn254CertificateVerifierMock.setIsValidCertificate(certificate, isValid);
+    }
+
+    /// @dev Sets a valid certificate for the ECDSA certificate verifier
+    function _setIsValidCertificate(ECDSACertificate memory certificate, bool isValid) internal {
+        ecdsaCertificateVerifierMock.setIsValidCertificate(certificate, isValid);
+    }
+
+    function _generateRandomBN254OperatorSetInfo(Randomness r) internal returns (BN254OperatorSetInfo memory) {
+        BN254OperatorSetInfo memory operatorSetInfo;
+        uint maxWeightLength = r.Uint256(1, 16);
+        operatorSetInfo.operatorInfoTreeRoot = bytes32(r.Uint256());
+        operatorSetInfo.numOperators = r.Uint256();
+        operatorSetInfo.aggregatePubkey = BN254.G1Point({X: r.Uint256(), Y: r.Uint256()});
+        operatorSetInfo.totalWeights = r.Uint256Array({len: maxWeightLength, min: 2, max: 10_000 ether});
+        return operatorSetInfo;
+    }
+
+    function _generateRandomECDSAOperatorInfos(Randomness r) internal returns (ECDSAOperatorInfo[] memory) {
+        uint numOperators = r.Uint256(1, 50);
+        uint maxWeightLength = r.Uint256(1, 16);
+        ECDSAOperatorInfo[] memory operatorInfos = new ECDSAOperatorInfo[](numOperators);
+
+        for (uint i = 0; i < numOperators; i++) {
+            operatorInfos[i].pubkey = r.Address();
+            operatorInfos[i].weights = r.Uint256Array({len: maxWeightLength, min: 2, max: 10_000 ether});
+        }
+
+        return operatorInfos;
     }
 
     function _generateRandomOperatorSetConfig(Randomness r) internal returns (OperatorSetConfig memory) {
@@ -179,29 +209,29 @@ contract OperatorTableUpdaterUnitTests_confirmGlobalTableRoot is OperatorTableUp
     }
 }
 
-contract OperatorTableUpdaterUnitTests_updateBN254OperatorTable is OperatorTableUpdaterUnitTests {
-    function _setLatestReferenceTimestamp(OperatorSet memory operatorSet, uint32 referenceTimestamp) internal {
+contract OperatorTableUpdaterUnitTests_updateOperatorTable_BN254 is OperatorTableUpdaterUnitTests {
+    function _setLatestReferenceTimestampBN254(OperatorSet memory operatorSet, uint32 referenceTimestamp) internal {
         bn254CertificateVerifierMock.setLatestReferenceTimestamp(operatorSet, referenceTimestamp);
     }
 
-    function testFuzz_revert_staleTableUpdate(Randomness r) public rand(r) {
-        BN254OperatorSetInfo memory mockOperatorSetInfo;
-        OperatorSetConfig memory mockOperatorSetConfig;
-
+    function testFuzz_BN254_revert_staleTableUpdate(Randomness r) public rand(r) {
         uint32 referenceTimestamp = r.Uint32(uint32(block.timestamp), type(uint32).max);
-        _setLatestReferenceTimestamp(defaultOperatorSet, referenceTimestamp);
+        _setLatestReferenceTimestampBN254(defaultOperatorSet, referenceTimestamp);
+        BN254OperatorSetInfo memory emptyOperatorSetInfo;
+
+        bytes memory operatorTable =
+            abi.encode(defaultOperatorSet, CurveType.BN254, _generateRandomOperatorSetConfig(r), emptyOperatorSetInfo);
 
         cheats.expectRevert(TableUpdateForPastTimestamp.selector);
-        operatorTableUpdater.updateBN254OperatorTable(
-            uint32(block.timestamp), bytes32(0), 0, new bytes(0), defaultOperatorSet, mockOperatorSetInfo, mockOperatorSetConfig
-        );
+        operatorTableUpdater.updateOperatorTable(uint32(block.timestamp), bytes32(0), 0, new bytes(0), operatorTable);
     }
 
-    function testFuzz_correctness(Randomness r) public rand(r) {
+    function testFuzz_BN254_correctness(Randomness r) public rand(r) {
         // Generate random operatorSetInfo and operatorSetConfig
-        BN254OperatorSetInfo memory operatorSetInfo = _generateRandomOperatorSetInfo(r);
+        BN254OperatorSetInfo memory operatorSetInfo = _generateRandomBN254OperatorSetInfo(r);
         OperatorSetConfig memory operatorSetConfig = _generateRandomOperatorSetConfig(r);
-        bytes32 operatorSetLeafHash = keccak256(abi.encode(defaultOperatorSet.key(), operatorSetInfo, operatorSetConfig));
+        bytes memory operatorTable = abi.encode(defaultOperatorSet, CurveType.BN254, operatorSetConfig, operatorSetInfo);
+        bytes32 operatorSetLeafHash = keccak256(operatorTable);
 
         // Include the operatorSetInfo and operatorSetConfig in the global table root & set it
         (bytes32 globalTableRoot, uint32 operatorSetIndex, bytes32[] memory leaves) = _createGlobalTableRoot(r, operatorSetLeafHash);
@@ -221,45 +251,33 @@ contract OperatorTableUpdaterUnitTests_updateBN254OperatorTable is OperatorTable
                 operatorSetConfig
             )
         );
-        operatorTableUpdater.updateBN254OperatorTable(
-            uint32(block.timestamp), globalTableRoot, operatorSetIndex, proof, defaultOperatorSet, operatorSetInfo, operatorSetConfig
-        );
-    }
-
-    function _generateRandomOperatorSetInfo(Randomness r) internal returns (BN254OperatorSetInfo memory) {
-        BN254OperatorSetInfo memory operatorSetInfo;
-        uint maxWeightLength = r.Uint256(1, 16);
-        operatorSetInfo.operatorInfoTreeRoot = bytes32(r.Uint256());
-        operatorSetInfo.numOperators = r.Uint256();
-        operatorSetInfo.aggregatePubkey = BN254.G1Point({X: r.Uint256(), Y: r.Uint256()});
-        operatorSetInfo.totalWeights = r.Uint256Array({len: maxWeightLength, min: 2, max: 10_000 ether});
-        return operatorSetInfo;
+        operatorTableUpdater.updateOperatorTable(uint32(block.timestamp), globalTableRoot, operatorSetIndex, proof, operatorTable);
     }
 }
 
-contract OperatorTableUpdaterUnitTests_updateECDSAOperatorTable is OperatorTableUpdaterUnitTests {
-    function _setLatestReferenceTimestamp(OperatorSet memory operatorSet, uint32 referenceTimestamp) internal {
+contract OperatorTableUpdaterUnitTests_updateOperatorTable_ECDSA is OperatorTableUpdaterUnitTests {
+    function _setLatestReferenceTimestampECDSA(OperatorSet memory operatorSet, uint32 referenceTimestamp) internal {
         ecdsaCertificateVerifierMock.setLatestReferenceTimestamp(operatorSet, referenceTimestamp);
     }
 
-    function testFuzz_revert_staleTableUpdate(Randomness r) public rand(r) {
-        ECDSAOperatorInfo[] memory mockOperatorInfos;
-        OperatorSetConfig memory mockOperatorSetConfig;
-
+    function testFuzz_revert_ECDSA_staleTableUpdate(Randomness r) public rand(r) {
         uint32 referenceTimestamp = r.Uint32(uint32(block.timestamp), type(uint32).max);
-        _setLatestReferenceTimestamp(defaultOperatorSet, referenceTimestamp);
+        _setLatestReferenceTimestampECDSA(defaultOperatorSet, referenceTimestamp);
+        ECDSAOperatorInfo[] memory emptyOperatorSetInfo;
+
+        bytes memory operatorTable =
+            abi.encode(defaultOperatorSet, CurveType.ECDSA, _generateRandomOperatorSetConfig(r), emptyOperatorSetInfo);
 
         cheats.expectRevert(TableUpdateForPastTimestamp.selector);
-        operatorTableUpdater.updateECDSAOperatorTable(
-            uint32(block.timestamp), bytes32(0), 0, new bytes(0), defaultOperatorSet, mockOperatorInfos, mockOperatorSetConfig
-        );
+        operatorTableUpdater.updateOperatorTable(uint32(block.timestamp), bytes32(0), 0, new bytes(0), operatorTable);
     }
 
-    function testFuzz_correctness(Randomness r) public rand(r) {
-        // Generate random operatorInfos and operatorSetConfig
+    function testFuzz_ECDSA_correctness(Randomness r) public rand(r) {
+        // Generate random operatorSetInfo and operatorSetConfig
         ECDSAOperatorInfo[] memory operatorInfos = _generateRandomECDSAOperatorInfos(r);
         OperatorSetConfig memory operatorSetConfig = _generateRandomOperatorSetConfig(r);
-        bytes32 operatorSetLeafHash = keccak256(abi.encode(defaultOperatorSet.key(), operatorInfos, operatorSetConfig));
+        bytes memory operatorTable = abi.encode(defaultOperatorSet, CurveType.ECDSA, operatorSetConfig, operatorInfos);
+        bytes32 operatorSetLeafHash = keccak256(operatorTable);
 
         // Include the operatorInfos and operatorSetConfig in the global table root & set it
         (bytes32 globalTableRoot, uint32 operatorSetIndex, bytes32[] memory leaves) = _createGlobalTableRoot(r, operatorSetLeafHash);
@@ -279,22 +297,25 @@ contract OperatorTableUpdaterUnitTests_updateECDSAOperatorTable is OperatorTable
                 operatorSetConfig
             )
         );
-        operatorTableUpdater.updateECDSAOperatorTable(
-            uint32(block.timestamp), globalTableRoot, operatorSetIndex, proof, defaultOperatorSet, operatorInfos, operatorSetConfig
-        );
+        operatorTableUpdater.updateOperatorTable(uint32(block.timestamp), globalTableRoot, operatorSetIndex, proof, operatorTable);
+    }
+}
+
+contract OperatorTableUpdaterUnitTests_getCertificateVerifier is OperatorTableUpdaterUnitTests {
+    function test_revert_invalidCurveType() public {
+        cheats.expectRevert(InvalidCurveType.selector);
+        operatorTableUpdater.getCertificateVerifier(CurveType.NONE);
     }
 
-    function _generateRandomECDSAOperatorInfos(Randomness r) internal returns (ECDSAOperatorInfo[] memory) {
-        uint numOperators = r.Uint256(1, 50);
-        uint maxWeightLength = r.Uint256(1, 16);
-        ECDSAOperatorInfo[] memory operatorInfos = new ECDSAOperatorInfo[](numOperators);
+    function testFuzz_correctness(Randomness r) public rand(r) {
+        CurveType curveType = CurveType(r.Uint256(1, 2));
+        // Get the certificate verifier
+        address certificateVerifier = operatorTableUpdater.getCertificateVerifier(curveType);
 
-        for (uint i = 0; i < numOperators; i++) {
-            operatorInfos[i].pubkey = r.Address();
-            operatorInfos[i].weights = r.Uint256Array({len: maxWeightLength, min: 2, max: 10_000 ether});
-        }
-
-        return operatorInfos;
+        // Expect the certificate verifier to be the correct address
+        if (curveType == CurveType.BN254) assertEq(certificateVerifier, address(bn254CertificateVerifierMock));
+        else if (curveType == CurveType.ECDSA) assertEq(certificateVerifier, address(ecdsaCertificateVerifierMock));
+        else revert("Invalid State");
     }
 }
 

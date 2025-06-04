@@ -7,17 +7,9 @@ import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "../libraries/Merkle.sol";
 import "../mixins/SemVerMixin.sol";
 import "./OperatorTableUpdaterStorage.sol";
+import "forge-std/console.sol";
 
 contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTableUpdaterStorage, SemVerMixin {
-    enum KeyType {
-        NONE,
-        BN254,
-        ECDSA
-    }
-
-    error InvalidKeyType();
-
-
     /**
      *
      *                         INITIALIZING FUNCTIONS
@@ -101,94 +93,37 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
         bytes calldata proof,
         bytes calldata tableInfo
     ) external {
-        (OperatorSet memory operatorSet, KeyType keyType, OperatorSetConfig memory operatorSetConfig) = _getOperatorTableInfo(tableInfo);
+        (OperatorSet memory operatorSet, CurveType curveType, OperatorSetConfig memory operatorSetConfig) =
+            _getOperatorTableInfo(tableInfo);
 
         // Check that the `referenceTimestamp` is greater than the latest reference timestamp
         require(
-            referenceTimestamp > IBaseCertificateVerifier(_getCertificateVerifier(keyType)).latestReferenceTimestamp(operatorSet),
+            referenceTimestamp
+                > IBaseCertificateVerifier(getCertificateVerifier(curveType)).latestReferenceTimestamp(operatorSet),
             TableUpdateForPastTimestamp()
         );
 
-        bytes32 operatorSetLeafHash = keccak256(tableInfo);
-
+        // Verify the operator table update
         _verifyOperatorTableUpdate({
             referenceTimestamp: referenceTimestamp,
             globalTableRoot: globalTableRoot,
             operatorSetIndex: operatorSetIndex,
             proof: proof,
-            operatorSetLeafHash: operatorSetLeafHash
+            operatorSetLeafHash: keccak256(tableInfo)
         });
 
-        if (keyType == KeyType.BN254) {
-            bn254CertificateVerifier.updateOperatorTable(operatorSet, referenceTimestamp, _getBN254OperatorSetInfo(tableInfo), operatorSetConfig);
-        } else if (keyType == KeyType.ECDSA) {
-            ecdsaCertificateVerifier.updateOperatorTable(operatorSet, referenceTimestamp, _getECDSAOperatorSetInfo(tableInfo), operatorSetConfig);
+        // Update the operator table
+        if (curveType == CurveType.BN254) {
+            bn254CertificateVerifier.updateOperatorTable(
+                operatorSet, referenceTimestamp, _getBN254OperatorSetInfo(tableInfo), operatorSetConfig
+            );
+        } else if (curveType == CurveType.ECDSA) {
+            ecdsaCertificateVerifier.updateOperatorTable(
+                operatorSet, referenceTimestamp, _getECDSAOperatorSetInfo(tableInfo), operatorSetConfig
+            );
         } else {
-            revert InvalidKeyType();
+            revert InvalidCurveType();
         }
-    }
-
-
-    /// @inheritdoc IOperatorTableUpdater
-    function updateBN254OperatorTable(
-        uint32 referenceTimestamp,
-        bytes32 globalTableRoot,
-        uint32 operatorSetIndex,
-        bytes calldata proof,
-        OperatorSet calldata operatorSet,
-        BN254OperatorSetInfo calldata operatorSetInfo,
-        OperatorSetConfig calldata config
-    ) external {
-        // Check that the `referenceTimestamp` is greater than the latest reference timestamp
-        require(
-            referenceTimestamp > bn254CertificateVerifier.latestReferenceTimestamp(operatorSet),
-            TableUpdateForPastTimestamp()
-        );
-
-        bytes32 operatorSetLeafHash = keccak256(abi.encode(operatorSet.key(), operatorSetInfo, config));
-
-        // Verify the operator table update
-        _verifyOperatorTableUpdate({
-            referenceTimestamp: referenceTimestamp,
-            globalTableRoot: globalTableRoot,
-            operatorSetIndex: operatorSetIndex,
-            proof: proof,
-            operatorSetLeafHash: operatorSetLeafHash
-        });
-
-        // Update the operator table
-        bn254CertificateVerifier.updateOperatorTable(operatorSet, referenceTimestamp, operatorSetInfo, config);
-    }
-
-    /// @inheritdoc IOperatorTableUpdater
-    function updateECDSAOperatorTable(
-        uint32 referenceTimestamp,
-        bytes32 globalTableRoot,
-        uint32 operatorSetIndex,
-        bytes calldata proof,
-        OperatorSet calldata operatorSet,
-        ECDSAOperatorInfo[] calldata operatorInfos,
-        OperatorSetConfig calldata config
-    ) external {
-        // Check that the `referenceTimestamp` is greater than the latest reference timestamp
-        require(
-            referenceTimestamp > ecdsaCertificateVerifier.latestReferenceTimestamp(operatorSet),
-            TableUpdateForPastTimestamp()
-        );
-
-        bytes32 operatorSetLeafHash = keccak256(abi.encode(operatorSet.key(), operatorInfos, config));
-
-        // Verify the operator table update
-        _verifyOperatorTableUpdate({
-            referenceTimestamp: referenceTimestamp,
-            globalTableRoot: globalTableRoot,
-            operatorSetIndex: operatorSetIndex,
-            proof: proof,
-            operatorSetLeafHash: operatorSetLeafHash
-        });
-
-        // Update the operator table
-        ecdsaCertificateVerifier.updateOperatorTable(operatorSet, referenceTimestamp, operatorInfos, config);
     }
 
     /**
@@ -232,6 +167,19 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
     /// @inheritdoc IOperatorTableUpdater
     function getGlobalRootConfirmerSet() external view returns (OperatorSet memory) {
         return _globalRootConfirmerSet;
+    }
+
+    /// @inheritdoc IOperatorTableUpdater
+    function getCertificateVerifier(
+        CurveType curveType
+    ) public view returns (address) {
+        if (curveType == CurveType.BN254) {
+            return address(bn254CertificateVerifier);
+        } else if (curveType == CurveType.ECDSA) {
+            return address(ecdsaCertificateVerifier);
+        } else {
+            revert InvalidCurveType();
+        }
     }
 
     /**
@@ -294,33 +242,48 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
         emit GlobalRootConfirmationThresholdUpdated(bps);
     }
 
+    /**
+     * @notice Gets the operator table info from a bytes array
+     * @param operatorTable The bytes containing the operator table
+     * @return operatorSet The operator set
+     * @return curveType The curve type
+     * @return operatorSetInfo The operator set info
+     * @dev Does NOT return the operatorInfo, as that is dependent on the curve type, see `_getBN254OperatorSetInfo` and `_getECDSAOperatorSetInfo`
+     */
     function _getOperatorTableInfo(
-        bytes calldata tableInfo
-    ) internal pure returns (OperatorSet memory operatorSet, KeyType keyType, OperatorSetConfig memory operatorSetInfo) {
-        (operatorSet, keyType, operatorSetInfo) = abi.decode(tableInfo, (OperatorSet, KeyType, OperatorSetConfig));
+        bytes calldata operatorTable
+    )
+        internal
+        pure
+        returns (OperatorSet memory operatorSet, CurveType curveType, OperatorSetConfig memory operatorSetInfo)
+    {
+        console.log("operatorTable");
+        (operatorSet, curveType, operatorSetInfo) =
+            abi.decode(operatorTable, (OperatorSet, CurveType, OperatorSetConfig));
+        console.log("operatorTable2");
     }
 
+    /**
+     * @notice Gets the BN254 operator set info from a bytes array
+     * @param operatorTable The bytes containing the operator table info
+     * @return operatorSetInfo The BN254 operator set info
+     */
     function _getBN254OperatorSetInfo(
-        bytes calldata tableInfo
+        bytes calldata operatorTable
     ) internal pure returns (BN254OperatorSetInfo memory operatorSetInfo) {
-        (,,,operatorSetInfo) = abi.decode(tableInfo, (OperatorSet, KeyType, OperatorSetConfig, BN254OperatorSetInfo));
+        (,,, operatorSetInfo) =
+            abi.decode(operatorTable, (OperatorSet, CurveType, OperatorSetConfig, BN254OperatorSetInfo));
     }
 
+    /**
+     * @notice Gets the ECDSA operator set info from a bytes array
+     * @param operatorTable The bytes containing the operator table info
+     * @return operatorSetInfo The ECDSA operator set info
+     */
     function _getECDSAOperatorSetInfo(
-        bytes calldata tableInfo
+        bytes calldata operatorTable
     ) internal pure returns (ECDSAOperatorInfo[] memory operatorSetInfo) {
-        (,,,operatorSetInfo) = abi.decode(tableInfo, (OperatorSet, KeyType, OperatorSetConfig, ECDSAOperatorInfo[]));
-    }
-
-    function _getCertificateVerifier(
-        KeyType keyType
-    ) internal view returns (address) {
-        if (keyType == KeyType.BN254) {
-            return address(bn254CertificateVerifier);
-        } else if (keyType == KeyType.ECDSA) {
-            return address(ecdsaCertificateVerifier);
-        } else {
-            revert InvalidKeyType();
-        }
+        (,,, operatorSetInfo) =
+            abi.decode(operatorTable, (OperatorSet, CurveType, OperatorSetConfig, ECDSAOperatorInfo[]));
     }
 }
