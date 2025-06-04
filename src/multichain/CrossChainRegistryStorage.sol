@@ -23,17 +23,20 @@ abstract contract CrossChainRegistryStorage is ICrossChainRegistry {
     /// @dev Index for flag that pauses generation reservations when set
     uint8 internal constant PAUSED_GENERATION_RESERVATIONS = 0;
 
-    /// @dev Index for flag that pauses transport destination modifications when set
-    uint8 internal constant PAUSED_TRANSPORT_DESTINATIONS = 1;
-
     /// @dev Index for flag that pauses operator table calculator modifications when set
-    uint8 internal constant PAUSED_OPERATOR_TABLE_CALCULATOR = 2;
+    uint8 internal constant PAUSED_OPERATOR_TABLE_CALCULATOR = 1;
+
+    /// @dev Index for flag that pauses transport reservations when set
+    uint8 internal constant PAUSED_TRANSPORT_RESERVATIONS = 2;
+
+    /// @dev Index for flag that pauses transport destination modifications when set
+    uint8 internal constant PAUSED_TRANSPORT_DESTINATIONS = 3;
 
     /// @dev Index for flag that pauses operator set config modifications when set
-    uint8 internal constant PAUSED_OPERATOR_SET_CONFIG = 3;
+    uint8 internal constant PAUSED_OPERATOR_SET_CONFIG = 4;
 
     /// @dev Index for flag that pauses chain whitelist modifications when set
-    uint8 internal constant PAUSED_CHAIN_WHITELIST = 4;
+    uint8 internal constant PAUSED_CHAIN_WHITELIST = 5;
 
     // Immutables
 
@@ -50,12 +53,13 @@ abstract contract CrossChainRegistryStorage is ICrossChainRegistry {
     /// @dev Mapping from operator set key to operator table calculator for active reservations
     mapping(bytes32 operatorSetKey => IOperatorTableCalculator) internal _operatorTableCalculators;
 
-    /// TRANSPORT DESTINATIONS
+    /// TRANSPORT RESERVATIONS
+
+    /// @dev Set of operator sets with active transport reservations
+    EnumerableSet.Bytes32Set internal _activeTransportReservations;
 
     /// @dev Mapping from operator set key to set of chain IDs for transport destinations
     mapping(bytes32 operatorSetKey => EnumerableSet.UintSet) internal _transportDestinations;
-
-    /// OPERATOR SET CONFIGURATIONS
 
     /// @dev Mapping from operator set key to operator set configuration
     mapping(bytes32 operatorSetKey => OperatorSetConfig) internal _operatorSetConfigs;
