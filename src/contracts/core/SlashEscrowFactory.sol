@@ -121,6 +121,8 @@ contract SlashEscrowFactory is
         // the tokens from being released).
         strategyManager.clearBurnOrRedistributableShares(operatorSet, slashId);
 
+        // Cache the redistribution recipient.
+        address redistributionRecipient = allocationManager.getRedistributionRecipient(operatorSet);
         // Process the slash escrow for each strategy.
         address[] memory strategies = _pendingStrategiesForSlashId[operatorSet.key()][slashId].values();
         for (uint256 i = 0; i < strategies.length; ++i) {
@@ -128,7 +130,7 @@ contract SlashEscrowFactory is
                 operatorSet: operatorSet,
                 slashId: slashId,
                 slashEscrow: getSlashEscrow(operatorSet, slashId),
-                redistributionRecipient: allocationManager.getRedistributionRecipient(operatorSet),
+                redistributionRecipient: redistributionRecipient,
                 strategy: IStrategy(strategies[i])
             });
         }
