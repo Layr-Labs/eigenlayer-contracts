@@ -9,58 +9,13 @@ import "src/contracts/interfaces/IKeyRegistrar.sol";
 import "src/contracts/libraries/BN254.sol";
 import "src/contracts/interfaces/IPermissionController.sol";
 import "src/contracts/mixins/PermissionControllerMixin.sol";
+import "src/test/utils/EigenLayerUnitTestSetup.sol";
 import "src/contracts/libraries/OperatorSetLib.sol";
-import "src/test/mocks/AllocationManagerMock.sol";
 
-contract MockPermissionController is IPermissionController {
-    function addPendingAdmin(address, address) external override {}
-    function removePendingAdmin(address, address) external override {}
-    function acceptAdmin(address) external override {}
-    function removeAdmin(address, address) external override {}
-    function setAppointee(address, address, address, bytes4) external override {}
-    function removeAppointee(address, address, address, bytes4) external override {}
-
-    function isAdmin(address, address) external pure override returns (bool) {
-        return true;
-    }
-
-    function isPendingAdmin(address, address) external pure override returns (bool) {
-        return false;
-    }
-
-    function getAdmins(address account) external pure override returns (address[] memory) {
-        address[] memory admins = new address[](1);
-        admins[0] = account;
-        return admins;
-    }
-
-    function getPendingAdmins(address) external pure override returns (address[] memory) {
-        return new address[](0);
-    }
-
-    function canCall(address account, address caller, address target, bytes4 selector) external override returns (bool) {
-        return caller == account;
-    }
-
-    function getAppointeePermissions(address, address) external pure override returns (address[] memory, bytes4[] memory) {
-        return (new address[](0), new bytes4[](0));
-    }
-
-    function getAppointees(address, address, bytes4) external pure override returns (address[] memory) {
-        return new address[](0);
-    }
-
-    function version() external pure override returns (string memory) {
-        return "1.0.0";
-    }
-}
-
-contract KeyRegistrarUnitTests is Test {
+contract KeyRegistrarUnitTests is EigenLayerUnitTestSetup {
     using BN254 for BN254.G1Point;
 
     KeyRegistrar public keyRegistrar;
-    MockPermissionController public permissionController;
-    AllocationManagerMock public allocationManager;
 
     address public owner = address(0x1);
     address public operator1 = address(0x2);
@@ -96,11 +51,12 @@ contract KeyRegistrarUnitTests is Test {
     event KeyDeregistered(OperatorSet operatorSet, address indexed operator, IKeyRegistrarTypes.CurveType curveType);
     event OperatorSetConfigured(OperatorSet operatorSet, IKeyRegistrarTypes.CurveType curveType);
 
-    function setUp() public {
-        permissionController = new MockPermissionController();
-        allocationManager = new AllocationManagerMock();
+    function setUp() public virtual override {
+
+        EigenLayerUnitTestSetup.setUp();
+
         keyRegistrar =
-            new KeyRegistrar(IPermissionController(address(permissionController)), IAllocationManager(address(allocationManager)), "1.0.0");
+            new KeyRegistrar(IPermissionController(address(permissionController)), IAllocationManager(address(allocationManagerMock)), "1.0.0");
 
         // Set up ECDSA addresses that correspond to the private keys
         ecdsaAddress1 = vm.addr(ecdsaPrivKey1);
@@ -126,8 +82,8 @@ contract KeyRegistrarUnitTests is Test {
         bn254Key1 = abi.encode(bn254G1Key1.X, bn254G1Key1.Y, bn254G2Key1.X, bn254G2Key1.Y);
         bn254Key2 = abi.encode(bn254G1Key2.X, bn254G1Key2.Y, bn254G2Key2.X, bn254G2Key2.Y);
 
-        allocationManager.setAVSRegistrar(avs1, avs1);
-        allocationManager.setAVSRegistrar(avs2, avs2);
+        allocationManagerMock.setAVSRegistrar(avs1, avs1);
+        allocationManagerMock.setAVSRegistrar(avs2, avs2);
     }
 
     function _createOperatorSet(address avs, uint32 operatorSetId) internal pure returns (OperatorSet memory) {
