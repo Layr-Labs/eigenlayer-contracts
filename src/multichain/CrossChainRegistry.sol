@@ -110,11 +110,8 @@ contract CrossChainRegistry is
     {
         bytes32 operatorSetKey = operatorSet.key();
 
-        // Check if generation reservation already exists
-        require(!_activeGenerationReservations.contains(operatorSetKey), GenerationReservationAlreadyExists());
-
         // Add to active generation reservations
-        _activeGenerationReservations.add(operatorSetKey);
+        require(_activeGenerationReservations.add(operatorSetKey), GenerationReservationAlreadyExists());
         emit GenerationReservationMade(operatorSet);
 
         // Set the operator table calculator
@@ -134,11 +131,8 @@ contract CrossChainRegistry is
     {
         bytes32 operatorSetKey = operatorSet.key();
 
-        // Check if generation reservation exists
-        require(_activeGenerationReservations.contains(operatorSetKey), GenerationReservationDoesNotExist());
-
         // Remove from active generation reservations
-        _activeGenerationReservations.remove(operatorSetKey);
+        require(_activeGenerationReservations.remove(operatorSetKey), GenerationReservationDoesNotExist());
         emit GenerationReservationRemoved(operatorSet);
 
         // Remove the operator table calculator
@@ -199,9 +193,7 @@ contract CrossChainRegistry is
         bytes32 operatorSetKey = operatorSet.key();
 
         // Check if this is the first transport destination (create reservation if needed)
-        if (!_activeTransportReservations.contains(operatorSetKey)) {
-            _activeTransportReservations.add(operatorSetKey);
-        }
+        _activeTransportReservations.add(operatorSetKey);
 
         for (uint256 i = 0; i < chainIDs.length; i++) {
             uint32 chainID = chainIDs[i];
@@ -210,11 +202,9 @@ contract CrossChainRegistry is
             require(chainID != 0, InvalidChainId());
             // Check if chainID is whitelisted
             require(_whitelistedChainIDs.contains(chainID), ChainIDNotWhitelisted());
-            // Check if already added
-            require(!_transportDestinations[operatorSetKey].contains(chainID), TransportDestinationAlreadyAdded());
 
             // Add transport destination
-            _transportDestinations[operatorSetKey].add(chainID);
+            require(_transportDestinations[operatorSetKey].add(chainID), TransportDestinationAlreadyAdded());
 
             emit TransportDestinationAdded(operatorSet, chainID);
         }
@@ -241,11 +231,9 @@ contract CrossChainRegistry is
 
             // Validate chainID
             require(chainID != 0, InvalidChainId());
-            // Check if transport destination exists
-            require(_transportDestinations[operatorSetKey].contains(chainID), TransportDestinationNotFound());
 
             // Remove transport destination
-            _transportDestinations[operatorSetKey].remove(chainID);
+            require(_transportDestinations[operatorSetKey].remove(chainID), TransportDestinationNotFound());
 
             emit TransportDestinationRemoved(operatorSet, chainID);
         }
@@ -265,11 +253,9 @@ contract CrossChainRegistry is
 
             // Validate chainID
             require(chainID != 0, InvalidChainId());
-            // Check if already whitelisted
-            require(!_whitelistedChainIDs.contains(chainID), ChainIDAlreadyWhitelisted());
 
             // Add to whitelist
-            _whitelistedChainIDs.add(chainID);
+            require(_whitelistedChainIDs.add(chainID), ChainIDAlreadyWhitelisted());
 
             emit ChainIDAddedToWhitelist(chainID);
         }
@@ -284,11 +270,9 @@ contract CrossChainRegistry is
 
             // Validate chainID
             require(chainID != 0, InvalidChainId());
-            // Check if whitelisted
-            require(_whitelistedChainIDs.contains(chainID), ChainIDNotWhitelisted());
 
             // Remove from whitelist
-            _whitelistedChainIDs.remove(chainID);
+            require(_whitelistedChainIDs.remove(chainID), ChainIDNotWhitelisted());
 
             emit ChainIDRemovedFromWhitelist(chainID);
         }
