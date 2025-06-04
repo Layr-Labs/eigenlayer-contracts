@@ -188,21 +188,6 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
      */
 
     /**
-     * @notice Gets the list of chains that are supported by the CrossChainRegistry
-     * @return An array of chainIDs that are supported by the CrossChainRegistry
-     */
-    function getSupportedChains() external view returns (uint32[] memory);
-
-    /**
-     * @notice Gets the operatorTableCalculator for a given operatorSet
-     * @param operatorSet the operatorSet to get the operatorTableCalculator for
-     * @return The operatorTableCalculator for the given operatorSet
-     */
-    function getOperatorTableCalculator(
-        OperatorSet memory operatorSet
-    ) external view returns (IOperatorTableCalculator);
-
-    /**
      * @notice Gets the active generation reservations
      * @return An array of operatorSets with active generationReservations
      * @return An array of the corresponding operatorTableCalculators
@@ -213,13 +198,13 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
         returns (OperatorSet[] memory, IOperatorTableCalculator[] memory);
 
     /**
-     * @notice Gets the transport destinations for a given operatorSet
-     * @param operatorSet the operatorSet to get the transport destinations for
-     * @return An array of chainIDs that the operatorSet is configured to transport to
+     * @notice Gets the operatorTableCalculator for a given operatorSet
+     * @param operatorSet the operatorSet to get the operatorTableCalculator for
+     * @return The operatorTableCalculator for the given operatorSet
      */
-    function getTransportDestinations(
+    function getOperatorTableCalculator(
         OperatorSet memory operatorSet
-    ) external view returns (uint32[] memory);
+    ) external view returns (IOperatorTableCalculator);
 
     /**
      * @notice Gets the operatorSetConfig for a given operatorSet
@@ -236,4 +221,19 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
      * @return An array of chainIDs that the operatorSet is configured to transport to
      */
     function getActiveTransportReservations() external view returns (OperatorSet[] memory, uint32[][] memory);
+
+    /**
+     * @notice Gets the transport destinations for a given operatorSet
+     * @param operatorSet the operatorSet to get the transport destinations for
+     * @return An array of chainIDs that the operatorSet is configured to transport to
+     */
+    function getTransportDestinations(
+        OperatorSet memory operatorSet
+    ) external view returns (uint32[] memory);
+
+    /**
+     * @notice Gets the list of chains that are supported by the CrossChainRegistry
+     * @return An array of chainIDs that are supported by the CrossChainRegistry
+     */
+    function getSupportedChains() external view returns (uint32[] memory);
 }

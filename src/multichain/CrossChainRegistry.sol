@@ -375,18 +375,6 @@ contract CrossChainRegistry is
      */
 
     /// @inheritdoc ICrossChainRegistry
-    function getSupportedChains() external view returns (uint32[] memory) {
-        return _getUint32Array(_whitelistedChainIDs);
-    }
-
-    /// @inheritdoc ICrossChainRegistry
-    function getOperatorTableCalculator(
-        OperatorSet memory operatorSet
-    ) public view returns (IOperatorTableCalculator) {
-        return _operatorTableCalculators[operatorSet.key()];
-    }
-
-    /// @inheritdoc ICrossChainRegistry
     function getActiveGenerationReservations()
         external
         view
@@ -405,6 +393,37 @@ contract CrossChainRegistry is
         }
 
         return (operatorSets, calculators);
+    }
+
+    /// @inheritdoc ICrossChainRegistry
+    function getOperatorTableCalculator(
+        OperatorSet memory operatorSet
+    ) public view returns (IOperatorTableCalculator) {
+        return _operatorTableCalculators[operatorSet.key()];
+    }
+
+    /// @inheritdoc ICrossChainRegistry
+    function getOperatorSetConfig(
+        OperatorSet memory operatorSet
+    ) public view returns (OperatorSetConfig memory) {
+        return _operatorSetConfigs[operatorSet.key()];
+    }
+
+    /// @inheritdoc ICrossChainRegistry
+    function getActiveTransportReservations() external view returns (OperatorSet[] memory, uint32[][] memory) {
+        uint256 length = _activeTransportReservations.length();
+        OperatorSet[] memory operatorSets = new OperatorSet[](length);
+        uint32[][] memory chainIDs = new uint32[][](length);
+
+        for (uint256 i = 0; i < length; i++) {
+            bytes32 operatorSetKey = _activeTransportReservations.at(i);
+            OperatorSet memory operatorSet = OperatorSetLib.decode(operatorSetKey);
+
+            operatorSets[i] = operatorSet;
+            chainIDs[i] = getTransportDestinations(operatorSet);
+        }
+
+        return (operatorSets, chainIDs);
     }
 
     /// @inheritdoc ICrossChainRegistry
@@ -436,26 +455,7 @@ contract CrossChainRegistry is
     }
 
     /// @inheritdoc ICrossChainRegistry
-    function getOperatorSetConfig(
-        OperatorSet memory operatorSet
-    ) public view returns (OperatorSetConfig memory) {
-        return _operatorSetConfigs[operatorSet.key()];
-    }
-
-    /// @inheritdoc ICrossChainRegistry
-    function getActiveTransportReservations() external view returns (OperatorSet[] memory, uint32[][] memory) {
-        uint256 length = _activeTransportReservations.length();
-        OperatorSet[] memory operatorSets = new OperatorSet[](length);
-        uint32[][] memory chainIDs = new uint32[][](length);
-
-        for (uint256 i = 0; i < length; i++) {
-            bytes32 operatorSetKey = _activeTransportReservations.at(i);
-            OperatorSet memory operatorSet = OperatorSetLib.decode(operatorSetKey);
-
-            operatorSets[i] = operatorSet;
-            chainIDs[i] = getTransportDestinations(operatorSet);
-        }
-
-        return (operatorSets, chainIDs);
+    function getSupportedChains() external view returns (uint32[] memory) {
+        return _getUint32Array(_whitelistedChainIDs);
     }
 }
