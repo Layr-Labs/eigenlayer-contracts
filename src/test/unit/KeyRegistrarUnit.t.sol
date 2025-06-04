@@ -52,11 +52,11 @@ contract KeyRegistrarUnitTests is EigenLayerUnitTestSetup {
     event OperatorSetConfigured(OperatorSet operatorSet, IKeyRegistrarTypes.CurveType curveType);
 
     function setUp() public virtual override {
-
         EigenLayerUnitTestSetup.setUp();
 
-        keyRegistrar =
-            new KeyRegistrar(IPermissionController(address(permissionController)), IAllocationManager(address(allocationManagerMock)), "1.0.0");
+        keyRegistrar = new KeyRegistrar(
+            IPermissionController(address(permissionController)), IAllocationManager(address(allocationManagerMock)), "1.0.0"
+        );
 
         // Set up ECDSA addresses that correspond to the private keys
         ecdsaAddress1 = vm.addr(ecdsaPrivKey1);
