@@ -2,7 +2,7 @@
 pragma solidity >=0.5.0;
 
 import "./ICrossChainRegistry.sol";
-import {OperatorSet} from "../libraries/OperatorSetLib.sol";
+import {OperatorSet} from "../../libraries/OperatorSetLib.sol";
 
 interface IBaseCertificateVerifierEvents {
     /// @notice Emitted when the owner of an operatorSet is updated
