@@ -392,27 +392,27 @@ contract CrossChainRegistry is
     function getTransportDestinations(
         OperatorSet memory operatorSet
     ) public view returns (uint32[] memory) {
-        // Only return chains that are whitelisted
         EnumerableSet.UintSet storage chainIDs = _transportDestinations[operatorSet.key()];
+        uint256 length = chainIDs.length();
 
-        // First count how many chain IDs are whitelisted
+        // Create result array with maximum possible size
+        uint32[] memory result = new uint32[](length);
         uint256 count = 0;
-        for (uint256 i = 0; i < chainIDs.length(); i++) {
-            if (_whitelistedChainIDs.contains(uint32(chainIDs.at(i)))) {
+
+        // Single loop to filter whitelisted chains
+        for (uint256 i = 0; i < length; i++) {
+            uint32 chainID = uint32(chainIDs.at(i));
+            if (_whitelistedChainIDs.contains(chainID)) {
+                result[count] = chainID;
                 count++;
             }
         }
 
-        // Create result array with correct size
-        uint32[] memory result = new uint32[](count);
-        uint256 j = 0;
-        for (uint256 i = 0; i < chainIDs.length(); i++) {
-            uint32 chainID = uint32(chainIDs.at(i));
-            if (_whitelistedChainIDs.contains(chainID)) {
-                result[j] = chainID;
-                j++;
-            }
+        // Resize the array to the actual count using assembly
+        assembly {
+            mstore(result, count)
         }
+        // Only return chains that are whitelisted
         return result;
     }
 
