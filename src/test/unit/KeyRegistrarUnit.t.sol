@@ -137,17 +137,10 @@ contract KeyRegistrarUnitTests is Test {
     function _generateECDSASignature(address operator, OperatorSet memory operatorSet, address keyAddress, uint privKey)
         internal
         view
-        returns (bytes memory) 
+        returns (bytes memory)
     {
         bytes32 structHash = keccak256(
-            abi.encode(
-                keyRegistrar.ECDSA_KEY_REGISTRATION_TYPEHASH(),
-                operator,
-                operatorSet.avs,
-                operatorSet.id,
-                keyAddress,
-                block.chainid
-            )
+            abi.encode(keyRegistrar.ECDSA_KEY_REGISTRATION_TYPEHASH(), operator, operatorSet.avs, operatorSet.id, keyAddress, block.chainid)
         );
         bytes32 messageHash = keyRegistrar.domainSeparator();
         messageHash = keccak256(abi.encodePacked("\x19\x01", messageHash, structHash));
@@ -163,12 +156,7 @@ contract KeyRegistrarUnitTests is Test {
     {
         bytes32 structHash = keccak256(
             abi.encode(
-                keyRegistrar.BN254_KEY_REGISTRATION_TYPEHASH(),
-                operator,
-                operatorSet.avs,
-                operatorSet.id,
-                keccak256(pubkey),
-                block.chainid
+                keyRegistrar.BN254_KEY_REGISTRATION_TYPEHASH(), operator, operatorSet.avs, operatorSet.id, keccak256(pubkey), block.chainid
             )
         );
         bytes32 messageHash = keyRegistrar.domainSeparator();
