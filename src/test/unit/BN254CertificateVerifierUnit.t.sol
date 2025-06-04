@@ -206,6 +206,7 @@ contract BN254CertificateVerifierTest is Test {
         });
     }
     // Helper to create a certificate with real BLS signature
+
     function createCertificate(
         uint32 referenceTimestamp,
         bytes32 messageHash,
