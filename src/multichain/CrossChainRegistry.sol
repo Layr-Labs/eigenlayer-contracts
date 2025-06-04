@@ -44,6 +44,17 @@ contract CrossChainRegistry is
     }
 
     /**
+     * @dev Validates that the chainIDs array is not empty
+     * @param chainIDs The array of chain IDs to validate
+     */
+    modifier nonEmptyChainIDsArray(
+        uint32[] calldata chainIDs
+    ) {
+        require(chainIDs.length > 0, EmptyChainIDsArray());
+        _;
+    }
+
+    /**
      *
      *                         INITIALIZING FUNCTIONS
      *
@@ -183,6 +194,7 @@ contract CrossChainRegistry is
         onlyWhenNotPaused(PAUSED_TRANSPORT_DESTINATIONS)
         checkCanCall(operatorSet.avs)
         isValidOperatorSet(operatorSet)
+        nonEmptyChainIDsArray(chainIDs)
     {
         bytes32 operatorSetKey = operatorSet.key();
 
@@ -205,6 +217,7 @@ contract CrossChainRegistry is
         onlyWhenNotPaused(PAUSED_TRANSPORT_DESTINATIONS)
         checkCanCall(operatorSet.avs)
         isValidOperatorSet(operatorSet)
+        nonEmptyChainIDsArray(chainIDs)
     {
         bytes32 operatorSetKey = operatorSet.key();
 
@@ -222,33 +235,41 @@ contract CrossChainRegistry is
     }
 
     /// @inheritdoc ICrossChainRegistry
-    function addChainIDToWhitelist(
-        uint32 chainID
-    ) external onlyOwner onlyWhenNotPaused(PAUSED_CHAIN_WHITELIST) {
-        // Validate chainID
-        require(chainID != 0, InvalidChainId());
-        // Check if already whitelisted
-        require(!_whitelistedChainIDs.contains(chainID), ChainIDAlreadyWhitelisted());
+    function addChainIDsToWhitelist(
+        uint32[] calldata chainIDs
+    ) external onlyOwner onlyWhenNotPaused(PAUSED_CHAIN_WHITELIST) nonEmptyChainIDsArray(chainIDs) {
+        for (uint256 i = 0; i < chainIDs.length; i++) {
+            uint32 chainID = chainIDs[i];
 
-        // Add to whitelist
-        _whitelistedChainIDs.add(chainID);
+            // Validate chainID
+            require(chainID != 0, InvalidChainId());
+            // Check if already whitelisted
+            require(!_whitelistedChainIDs.contains(chainID), ChainIDAlreadyWhitelisted());
 
-        emit ChainIDAddedToWhitelist(chainID);
+            // Add to whitelist
+            _whitelistedChainIDs.add(chainID);
+
+            emit ChainIDAddedToWhitelist(chainID);
+        }
     }
 
     /// @inheritdoc ICrossChainRegistry
-    function removeChainIDFromWhitelist(
-        uint32 chainID
-    ) external onlyOwner onlyWhenNotPaused(PAUSED_CHAIN_WHITELIST) {
-        // Validate chainID
-        require(chainID != 0, InvalidChainId());
-        // Check if whitelisted
-        require(_whitelistedChainIDs.contains(chainID), ChainIDNotWhitelisted());
+    function removeChainIDsFromWhitelist(
+        uint32[] calldata chainIDs
+    ) external onlyOwner onlyWhenNotPaused(PAUSED_CHAIN_WHITELIST) nonEmptyChainIDsArray(chainIDs) {
+        for (uint256 i = 0; i < chainIDs.length; i++) {
+            uint32 chainID = chainIDs[i];
 
-        // Remove from whitelist
-        _whitelistedChainIDs.remove(chainID);
+            // Validate chainID
+            require(chainID != 0, InvalidChainId());
+            // Check if whitelisted
+            require(_whitelistedChainIDs.contains(chainID), ChainIDNotWhitelisted());
 
-        emit ChainIDRemovedFromWhitelist(chainID);
+            // Remove from whitelist
+            _whitelistedChainIDs.remove(chainID);
+
+            emit ChainIDRemovedFromWhitelist(chainID);
+        }
     }
 
     /**

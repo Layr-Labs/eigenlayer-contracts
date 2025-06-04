@@ -37,6 +37,9 @@ interface ICrossChainRegistryErrors {
 
     /// @notice Thrown when the operator set is not valid
     error InvalidOperatorSet();
+
+    /// @notice Thrown when the chainIDs array is empty
+    error EmptyChainIDsArray();
 }
 
 interface ICrossChainRegistryTypes {
@@ -140,21 +143,21 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
     function removeTransportDestinations(OperatorSet calldata operatorSet, uint32[] calldata chainIDs) external;
 
     /**
-     * @notice Adds a chainID to the whitelist of chainIDs that can be transported to
-     * @param chainID the chainID to add to the whitelist
+     * @notice Adds chainIDs to the whitelist of chainIDs that can be transported to
+     * @param chainIDs the chainIDs to add to the whitelist
      * @dev msg.sender must be the owner of the CrossChainRegistry
      */
-    function addChainIDToWhitelist(
-        uint32 chainID
+    function addChainIDsToWhitelist(
+        uint32[] calldata chainIDs
     ) external;
 
     /**
-     * @notice Removes a chainID from the whitelist of chainIDs that can be transported to
-     * @param chainID the chainID to remove from the whitelist
+     * @notice Removes chainIDs from the whitelist of chainIDs that can be transported to
+     * @param chainIDs the chainIDs to remove from the whitelist
      * @dev msg.sender must be the owner of the CrossChainRegistry
      */
-    function removeChainIDFromWhitelist(
-        uint32 chainID
+    function removeChainIDsFromWhitelist(
+        uint32[] calldata chainIDs
     ) external;
 
     /**
