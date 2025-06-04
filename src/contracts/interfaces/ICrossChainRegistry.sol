@@ -37,6 +37,9 @@ interface ICrossChainRegistryErrors {
 
     /// @notice Thrown when the staleness period is zero
     error StalenessPeriodZero();
+
+    /// @notice Thrown when the operator set is not valid
+    error InvalidOperatorSet();
 }
 
 interface ICrossChainRegistryTypes {
