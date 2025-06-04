@@ -114,9 +114,9 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @param operatorSet The operator set to get configuration for
      * @return The operator set configuration
      */
-    function getOperatorSetConfig(
+    function getOperatorSetCurveType(
         OperatorSet memory operatorSet
-    ) external view returns (OperatorSetConfig memory);
+    ) external view returns (CurveType);
 
     /**
      * @notice Gets the BN254 public key for an operator with a specific operator set
@@ -162,19 +162,4 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @return keyHash The key hash
      */
     function getKeyHash(OperatorSet memory operatorSet, address operator) external view returns (bytes32);
-
-    /**
-     * @notice Verifies a BN254 signature using Fiat-Shamir challenge to prevent rogue key attacks
-     * @param messageHash Hash of the message being signed
-     * @param signature The signature bytes
-     * @param pubkeyG1 The G1 component of the public key
-     * @param pubkeyG2 The G2 component of the public key
-     * @dev Uses gamma challenge value derived from message and public key components
-     */
-    function verifyBN254Signature(
-        bytes32 messageHash,
-        bytes memory signature,
-        BN254.G1Point memory pubkeyG1,
-        BN254.G2Point memory pubkeyG2
-    ) external view;
 }
