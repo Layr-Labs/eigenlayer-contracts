@@ -240,7 +240,6 @@ contract CrossChainRegistry is
     ) external onlyOwner onlyWhenNotPaused(PAUSED_CHAIN_WHITELIST) {
         // Validate chainID
         require(chainID != 0, InvalidChainId());
-
         // Check if already whitelisted
         require(!_whitelistedChainIDs.contains(chainID), ChainIDAlreadyWhitelisted());
 
@@ -256,7 +255,6 @@ contract CrossChainRegistry is
     ) external onlyOwner onlyWhenNotPaused(PAUSED_CHAIN_WHITELIST) {
         // Validate chainID
         require(chainID != 0, InvalidChainId());
-
         // Check if whitelisted
         require(_whitelistedChainIDs.contains(chainID), ChainIDNotWhitelisted());
 
@@ -300,7 +298,6 @@ contract CrossChainRegistry is
     function _addTransportDestination(OperatorSet calldata operatorSet, uint32 chainID) internal {
         // Validate chainID
         require(chainID != 0, InvalidChainId());
-
         // Check if chainID is whitelisted
         require(_whitelistedChainIDs.contains(chainID), ChainIDNotWhitelisted());
 
