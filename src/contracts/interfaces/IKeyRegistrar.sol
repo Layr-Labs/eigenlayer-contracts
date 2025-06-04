@@ -32,12 +32,6 @@ interface IKeyRegistrarTypes {
         bool isRegistered;
         bytes keyData; // Flexible storage for different curve types
     }
-
-    /// @dev Configuration for each operator set
-    struct OperatorSetConfig {
-        CurveType curveType;
-        bool isActive;
-    }
 }
 
 interface IKeyRegistrarEvents is IKeyRegistrarTypes {
@@ -108,15 +102,6 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @return True if the key is registered
      */
     function isRegistered(OperatorSet memory operatorSet, address operator) external view returns (bool);
-
-    /**
-     * @notice Gets the configuration for an operator set
-     * @param operatorSet The operator set to get configuration for
-     * @return The operator set configuration
-     */
-    function getOperatorSetConfig(
-        OperatorSet memory operatorSet
-    ) external view returns (OperatorSetConfig memory);
 
     /**
      * @notice Gets the BN254 public key for an operator with a specific operator set

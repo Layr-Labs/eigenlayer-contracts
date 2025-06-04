@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.5.0;
 
-import "../../libraries/OperatorSetLib.sol";
+import "../libraries/OperatorSetLib.sol";
 
 import "./IECDSATableCalculator.sol";
 import "./IBN254TableCalculator.sol";
