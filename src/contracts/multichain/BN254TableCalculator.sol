@@ -36,7 +36,7 @@ contract BN254TableCalculator is Initializable, OwnableUpgradeable, BN254TableCa
     /// @inheritdoc IBN254TableCalculator
     function calculateOperatorTable(
         OperatorSet calldata operatorSet
-    ) public view virtual returns (BN254OperatorSetInfo memory operatorSetInfo) {
+    ) external view virtual returns (BN254OperatorSetInfo memory operatorSetInfo) {
         return _calculateOperatorTable(operatorSet);
     }
 
@@ -50,7 +50,7 @@ contract BN254TableCalculator is Initializable, OwnableUpgradeable, BN254TableCa
     /// @inheritdoc IOperatorTableCalculator
     function getOperatorWeights(
         OperatorSet calldata operatorSet
-    ) public view virtual returns (address[] memory operators, uint256[][] memory weights) {
+    ) external view virtual returns (address[] memory operators, uint256[][] memory weights) {
         return _getOperatorWeights(operatorSet);
     }
 
@@ -58,7 +58,7 @@ contract BN254TableCalculator is Initializable, OwnableUpgradeable, BN254TableCa
     function getOperatorWeight(
         OperatorSet calldata operatorSet,
         address operator
-    ) public view virtual returns (uint256 weight) {
+    ) external view virtual returns (uint256 weight) {
         (address[] memory operators, uint256[][] memory weights) = _getOperatorWeights(operatorSet);
 
         // Find the index of the operator in the operators array
@@ -111,7 +111,7 @@ contract BN254TableCalculator is Initializable, OwnableUpgradeable, BN254TableCa
      */
     function _getOperatorWeights(
         OperatorSet calldata operatorSet
-    ) public view virtual returns (address[] memory operators, uint256[][] memory weights) {
+    ) internal view virtual returns (address[] memory operators, uint256[][] memory weights) {
         // Get all operators & strategies in the operatorSet
         operators = allocationManager.getMembers(operatorSet);
         IStrategy[] memory strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
@@ -152,7 +152,7 @@ contract BN254TableCalculator is Initializable, OwnableUpgradeable, BN254TableCa
         OperatorSet calldata operatorSet
     ) internal view returns (BN254OperatorSetInfo memory operatorSetInfo) {
         // Get the weights for all operators in the operatorSet
-        (address[] memory operators, uint256[][] memory weights) = getOperatorWeights(operatorSet);
+        (address[] memory operators, uint256[][] memory weights) = _getOperatorWeights(operatorSet);
 
         // Collate weights into a single array of total weights
         uint256 subArrayLength = weights[0].length;
