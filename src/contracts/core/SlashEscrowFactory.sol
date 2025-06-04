@@ -94,9 +94,7 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
         OperatorSet calldata operatorSet,
         uint256 slashId
     ) external onlyWhenNotPaused(PAUSED_RELEASE_ESCROW) {
-        address redistributionRecipient = allocationManager.getRedistributionRecipient(operatorSet);
-
-        _checkReleaseSlashEscrow(operatorSet, slashId, redistributionRecipient);
+        _checkReleaseSlashEscrow(operatorSet, slashId);
 
         // Calling `clearBurnOrRedistributableShares` will transfer the underlying tokens to the `SlashEscrow`.
         // NOTE: While `clearBurnOrRedistributableShares` may have already been called, we call it again to ensure that the
@@ -104,6 +102,8 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
         // the tokens from being released).
         strategyManager.clearBurnOrRedistributableShares(operatorSet, slashId);
 
+        // Cache the redistribution recipient.
+        address redistributionRecipient = allocationManager.getRedistributionRecipient(operatorSet);
         // Process the slash escrow for each strategy.
         address[] memory strategies = _pendingStrategiesForSlashId[operatorSet.key()][slashId].values();
         for (uint256 i = 0; i < strategies.length; ++i) {
@@ -126,9 +126,7 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
         uint256 slashId,
         IStrategy strategy
     ) external virtual onlyWhenNotPaused(PAUSED_RELEASE_ESCROW) {
-        address redistributionRecipient = allocationManager.getRedistributionRecipient(operatorSet);
-
-        _checkReleaseSlashEscrow(operatorSet, slashId, redistributionRecipient);
+        _checkReleaseSlashEscrow(operatorSet, slashId);
 
         // Calling `clearBurnOrRedistributableSharesByStrategy` will transfer the underlying tokens to the `SlashEscrow`.
         // NOTE: While the strategy may have already been cleared, we call it again to ensure that the
@@ -141,7 +139,7 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
             operatorSet: operatorSet,
             slashId: slashId,
             slashEscrow: getSlashEscrow(operatorSet, slashId),
-            redistributionRecipient: redistributionRecipient,
+            redistributionRecipient: allocationManager.getRedistributionRecipient(operatorSet),
             strategy: strategy
         });
 
@@ -195,16 +193,7 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
      */
 
     /// @notice Checks that the slash escrow can be released.
-    function _checkReleaseSlashEscrow(
-        OperatorSet calldata operatorSet,
-        uint256 slashId,
-        address redistributionRecipient
-    ) internal view {
-        // If the redistribution recipient is not the default burn address...
-        if (redistributionRecipient != DEFAULT_BURN_ADDRESS) {
-            require(msg.sender == redistributionRecipient, OnlyRedistributionRecipient());
-        }
-
+    function _checkReleaseSlashEscrow(OperatorSet calldata operatorSet, uint256 slashId) internal view {
         // Assert that the slash ID is not paused
         require(!isEscrowPaused(operatorSet, slashId), IPausable.CurrentlyPaused());
 
