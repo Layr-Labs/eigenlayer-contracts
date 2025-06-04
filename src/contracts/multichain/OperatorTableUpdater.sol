@@ -78,7 +78,6 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
 
         // Update the global table root
         latestReferenceTimestamp = referenceTimestamp;
-        _currentGlobalTableRoot = globalTableRoot;
         _globalTableRoots[referenceTimestamp] = globalTableRoot;
 
         emit NewGlobalTableRoot(referenceTimestamp, globalTableRoot);
@@ -160,7 +159,7 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
 
     /// @inheritdoc IOperatorTableUpdater
     function getCurrentGlobalTableRoot() external view returns (bytes32) {
-        return _currentGlobalTableRoot;
+        return _globalTableRoots[latestReferenceTimestamp];
     }
 
     /// @inheritdoc IOperatorTableUpdater
