@@ -74,6 +74,7 @@ contract OperatorTableUpdaterUnitTests is
         ecdsaCertificateVerifierMock.setIsValidCertificate(certificate, isValid);
     }
 
+    /// @dev Generates a random BN254 operator set info
     function _generateRandomBN254OperatorSetInfo(Randomness r) internal returns (BN254OperatorSetInfo memory) {
         BN254OperatorSetInfo memory operatorSetInfo;
         uint maxWeightLength = r.Uint256(1, 16);
@@ -84,6 +85,7 @@ contract OperatorTableUpdaterUnitTests is
         return operatorSetInfo;
     }
 
+    /// @dev Generates a random ECDSA operator set info
     function _generateRandomECDSAOperatorInfos(Randomness r) internal returns (ECDSAOperatorInfo[] memory) {
         uint numOperators = r.Uint256(1, 50);
         uint maxWeightLength = r.Uint256(1, 16);
@@ -97,6 +99,7 @@ contract OperatorTableUpdaterUnitTests is
         return operatorInfos;
     }
 
+    /// @dev Generates a random operator set config
     function _generateRandomOperatorSetConfig(Randomness r) internal returns (OperatorSetConfig memory) {
         OperatorSetConfig memory operatorSetConfig;
         operatorSetConfig.owner = r.Address();
@@ -104,6 +107,7 @@ contract OperatorTableUpdaterUnitTests is
         return operatorSetConfig;
     }
 
+    /// @dev Creates a global table root with a single operatorSetLeafHash
     function _createGlobalTableRoot(Randomness r, bytes32 operatorSetLeafHash) internal returns (bytes32, uint32, bytes32[] memory) {
         // Generate a random power of 2 between 2 and 2^16
         uint exponent = r.Uint256(1, 16);
@@ -126,6 +130,40 @@ contract OperatorTableUpdaterUnitTests is
         return (globalTableRoot, randomIndex, leaves);
     }
 
+    /// @dev Creates a global table root with multiple operatorSetLeafHashes
+    function _createGlobalTableRoot(Randomness r, bytes32[] memory operatorSetLeafHashes)
+        internal
+        returns (bytes32, uint32[] memory, bytes32[] memory)
+    {
+        // Generate a random power of 2 between the number of operatorSetLeafHashes and 2^16
+        uint exponent = r.Uint256(operatorSetLeafHashes.length, 16);
+        uint numLeaves = 2 ** exponent;
+
+        // Create leaves array with the specified size
+        bytes32[] memory leaves = new bytes32[](numLeaves);
+
+        uint32[] memory operatorSetIndices = new uint32[](operatorSetLeafHashes.length);
+
+        // Set the first n indices to be the operatorSetLeafHashes
+        uint32 randomIndex = uint32(r.Uint256(0, numLeaves - 1));
+
+        // Fill the leaves
+        for (uint i = 0; i < operatorSetLeafHashes.length; i++) {
+            leaves[i] = operatorSetLeafHashes[i];
+            operatorSetIndices[i] = uint32(i);
+        }
+
+        // Fill the remaining leaves with random data
+        for (uint i = operatorSetLeafHashes.length; i < numLeaves; i++) {
+            leaves[i] = bytes32(r.Uint256());
+        }
+
+        bytes32 globalTableRoot = Merkle.merkleizeKeccak(leaves);
+
+        return (globalTableRoot, operatorSetIndices, leaves);
+    }
+
+    /// @dev Updates the global table root in the BN254 certificate verifier
     function _updateGlobalTableRoot(bytes32 globalTableRoot) internal {
         BN254Certificate memory mockCertificate;
         mockCertificate.messageHash = globalTableRoot;
@@ -298,6 +336,46 @@ contract OperatorTableUpdaterUnitTests_updateOperatorTable_ECDSA is OperatorTabl
             )
         );
         operatorTableUpdater.updateOperatorTable(uint32(block.timestamp), globalTableRoot, operatorSetIndex, proof, operatorTable);
+    }
+}
+
+contract OperatorTableUpdaterUnitTests_multipleCurveTypes is OperatorTableUpdaterUnitTests {
+    function testFuzz_correctness(Randomness r) public rand(r) {
+        // Generate random BN254 operatorSetInfo and operatorSetConfig
+        bytes memory bn254OperatorTable;
+        {
+            BN254OperatorSetInfo memory bn254OperatorSetInfo = _generateRandomBN254OperatorSetInfo(r);
+            OperatorSetConfig memory bn254OperatorSetConfig = _generateRandomOperatorSetConfig(r);
+            bn254OperatorTable = abi.encode(defaultOperatorSet, CurveType.BN254, bn254OperatorSetConfig, bn254OperatorSetInfo);
+        }
+
+        // Generate random ECDSA operatorInfos and operatorSetConfig
+        bytes memory ecdsaOperatorTable;
+        {
+            ECDSAOperatorInfo[] memory ecdsaOperatorInfos = _generateRandomECDSAOperatorInfos(r);
+            OperatorSetConfig memory ecdsaOperatorSetConfig = _generateRandomOperatorSetConfig(r);
+            ecdsaOperatorTable = abi.encode(defaultOperatorSet, CurveType.ECDSA, ecdsaOperatorSetConfig, ecdsaOperatorInfos);
+        }
+
+        // Include the operatorInfos and operatorSetConfig in the global table root & set it
+        bytes32[] memory operatorSetLeafHashes = new bytes32[](2);
+        operatorSetLeafHashes[0] = keccak256(bn254OperatorTable);
+        operatorSetLeafHashes[1] = keccak256(ecdsaOperatorTable);
+        (bytes32 globalTableRoot, uint32[] memory operatorSetIndices, bytes32[] memory leaves) =
+            _createGlobalTableRoot(r, operatorSetLeafHashes);
+        _updateGlobalTableRoot(globalTableRoot);
+
+        // Update the operator table for bn254
+        bytes memory bn254Proof = Merkle.getProofKeccak(leaves, operatorSetIndices[0]);
+        operatorTableUpdater.updateOperatorTable(
+            uint32(block.timestamp), globalTableRoot, operatorSetIndices[0], bn254Proof, bn254OperatorTable
+        );
+
+        // Update the operator table for ecdsa
+        bytes memory ecdsaProof = Merkle.getProofKeccak(leaves, operatorSetIndices[1]);
+        operatorTableUpdater.updateOperatorTable(
+            uint32(block.timestamp), globalTableRoot, operatorSetIndices[1], ecdsaProof, ecdsaOperatorTable
+        );
     }
 }
 
