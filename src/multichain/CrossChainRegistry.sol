@@ -3,7 +3,6 @@ pragma solidity ^0.8.27;
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
-import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 import "../contracts/mixins/PermissionControllerMixin.sol";
 import "../contracts/mixins/SemVerMixin.sol";
 import "../contracts/permissions/Pausable.sol";
@@ -18,7 +17,6 @@ import "./CrossChainRegistryStorage.sol";
 contract CrossChainRegistry is
     Initializable,
     OwnableUpgradeable,
-    ReentrancyGuardUpgradeable,
     Pausable,
     CrossChainRegistryStorage,
     PermissionControllerMixin,
@@ -75,7 +73,7 @@ contract CrossChainRegistry is
     function requestGenerationReservation(
         OperatorSet calldata operatorSet,
         IOperatorTableCalculator operatorTableCalculator
-    ) external onlyWhenNotPaused(PAUSED_GENERATION_RESERVATIONS) checkCanCall(operatorSet.avs) nonReentrant {
+    ) external onlyWhenNotPaused(PAUSED_GENERATION_RESERVATIONS) checkCanCall(operatorSet.avs) {
         bytes32 operatorSetKey = operatorSet.key();
 
         // Check if generation reservation already exists
@@ -92,7 +90,7 @@ contract CrossChainRegistry is
     /// @inheritdoc ICrossChainRegistry
     function removeGenerationReservation(
         OperatorSet calldata operatorSet
-    ) external onlyWhenNotPaused(PAUSED_GENERATION_RESERVATIONS) checkCanCall(operatorSet.avs) nonReentrant {
+    ) external onlyWhenNotPaused(PAUSED_GENERATION_RESERVATIONS) checkCanCall(operatorSet.avs) {
         bytes32 operatorSetKey = operatorSet.key();
 
         // Check if generation reservation exists
@@ -110,7 +108,7 @@ contract CrossChainRegistry is
     function setOperatorTableCalculator(
         OperatorSet calldata operatorSet,
         IOperatorTableCalculator operatorTableCalculator
-    ) external onlyWhenNotPaused(PAUSED_OPERATOR_TABLE_CALCULATOR) checkCanCall(operatorSet.avs) nonReentrant {
+    ) external onlyWhenNotPaused(PAUSED_OPERATOR_TABLE_CALCULATOR) checkCanCall(operatorSet.avs) {
         bytes32 operatorSetKey = operatorSet.key();
 
         // Check if generation reservation exists
@@ -125,7 +123,7 @@ contract CrossChainRegistry is
         OperatorSet calldata operatorSet,
         uint32[] calldata chainIDs,
         OperatorSetConfig calldata config
-    ) external onlyWhenNotPaused(PAUSED_TRANSPORT_RESERVATIONS) checkCanCall(operatorSet.avs) nonReentrant {
+    ) external onlyWhenNotPaused(PAUSED_TRANSPORT_RESERVATIONS) checkCanCall(operatorSet.avs) {
         bytes32 operatorSetKey = operatorSet.key();
 
         // Check if transport reservation already exists
@@ -147,7 +145,7 @@ contract CrossChainRegistry is
     /// @inheritdoc ICrossChainRegistry
     function removeTransportReservation(
         OperatorSet calldata operatorSet
-    ) external onlyWhenNotPaused(PAUSED_TRANSPORT_RESERVATIONS) checkCanCall(operatorSet.avs) nonReentrant {
+    ) external onlyWhenNotPaused(PAUSED_TRANSPORT_RESERVATIONS) checkCanCall(operatorSet.avs) {
         bytes32 operatorSetKey = operatorSet.key();
 
         // Check if transport reservation exists
@@ -172,7 +170,7 @@ contract CrossChainRegistry is
     function addTransportDestinations(
         OperatorSet calldata operatorSet,
         uint32[] calldata chainIDs
-    ) external onlyWhenNotPaused(PAUSED_TRANSPORT_DESTINATIONS) checkCanCall(operatorSet.avs) nonReentrant {
+    ) external onlyWhenNotPaused(PAUSED_TRANSPORT_DESTINATIONS) checkCanCall(operatorSet.avs) {
         bytes32 operatorSetKey = operatorSet.key();
 
         // Check if transport reservation exists
@@ -187,7 +185,7 @@ contract CrossChainRegistry is
     function removeTransportDestinations(
         OperatorSet calldata operatorSet,
         uint32[] calldata chainIDs
-    ) external onlyWhenNotPaused(PAUSED_TRANSPORT_DESTINATIONS) checkCanCall(operatorSet.avs) nonReentrant {
+    ) external onlyWhenNotPaused(PAUSED_TRANSPORT_DESTINATIONS) checkCanCall(operatorSet.avs) {
         bytes32 operatorSetKey = operatorSet.key();
 
         // Check if transport reservation exists
@@ -202,7 +200,7 @@ contract CrossChainRegistry is
     function setOperatorSetConfig(
         OperatorSet calldata operatorSet,
         OperatorSetConfig calldata config
-    ) external onlyWhenNotPaused(PAUSED_OPERATOR_SET_CONFIG) checkCanCall(operatorSet.avs) nonReentrant {
+    ) external onlyWhenNotPaused(PAUSED_OPERATOR_SET_CONFIG) checkCanCall(operatorSet.avs) {
         bytes32 operatorSetKey = operatorSet.key();
 
         // Check if transport reservation exists
@@ -215,7 +213,7 @@ contract CrossChainRegistry is
     /// @inheritdoc ICrossChainRegistry
     function addChainIDToWhitelist(
         uint32 chainID
-    ) external onlyOwner onlyWhenNotPaused(PAUSED_CHAIN_WHITELIST) nonReentrant {
+    ) external onlyOwner onlyWhenNotPaused(PAUSED_CHAIN_WHITELIST) {
         // Validate chainID
         require(chainID != 0, InvalidChainId());
 
@@ -231,7 +229,7 @@ contract CrossChainRegistry is
     /// @inheritdoc ICrossChainRegistry
     function removeChainIDFromWhitelist(
         uint32 chainID
-    ) external onlyOwner onlyWhenNotPaused(PAUSED_CHAIN_WHITELIST) nonReentrant {
+    ) external onlyOwner onlyWhenNotPaused(PAUSED_CHAIN_WHITELIST) {
         // Validate chainID
         require(chainID != 0, InvalidChainId());
 
