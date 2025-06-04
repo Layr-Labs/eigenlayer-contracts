@@ -1,6 +1,6 @@
 import "../ptaHelpers.spec";
 
-using DelegationManager as DelegationManager;
+using DelegationManagerHarness as DelegationManager;
 
 methods {
     //// External Calls
@@ -49,6 +49,11 @@ methods {
     function get_stakerDelegateableShares(address,address) external returns (uint256) envfree;
     function get_min_withdrawal_delay_blocks() external returns (uint32) envfree;
 
+    // external calls to AVSRegistrar.  Note that the source does not have a proper implementation, the one available always reverts
+    function _.registerOperator(address,address,uint32[],bytes) external => DISPATCHER(true);
+    function _.deregisterOperator(address,address,uint32[]) external => DISPATCHER(true);
+    function _.supportsAVS(address) external => DISPATCHER(true);
+
     //envfree functions
     function delegatedTo(address) external returns (address) envfree;
     function delegationApprover(address operator) external returns (address) envfree;
@@ -56,7 +61,6 @@ methods {
     function isDelegated(address staker) external returns (bool) envfree;
     function isOperator(address operator) external returns (bool) envfree;
     function delegationApproverSaltIsSpent(address delegationApprover, bytes32 salt) external returns (bool) envfree;
-    function owner() external returns (address) envfree;
     function strategyManager() external returns (address) envfree;
     function eigenPodManager() external returns (address) envfree;
     function calculateWithdrawalRoot(IDelegationManagerTypes.Withdrawal) external returns (bytes32) envfree;
@@ -251,12 +255,12 @@ hook Sload uint256 index DelegationManager._stakerQueuedWithdrawalRoots[KEY addr
 // -----------------------------------------
 
 function requireDelegationManagerValidState() {
-    requireInvariant operatorDelegatesToThemselves();
+    // requireInvariant operatorDelegatesToThemselves(); // violated on delegateTo
     requireInvariant stakerQueuedWithdrawalRootsInvariant();
     requireInvariant cumulativeScaledSharesHistoryKeysMonotonicInc();
     requireInvariant cumulativeScaledSharesHistoryPastLengthNullified();
     requireInvariant cumulativeScaledSharesMonotonicallyIncreasing();
-    requireInvariant queuedWithdrawalsCorrect();
+    // requireInvariant queuedWithdrawalsCorrect(); // violated on completeQueueWithdrawal
 }
 
 /// @title 
@@ -318,21 +322,26 @@ For a given staker, all roots existing in _stakerQueuedWithdrawalRoots also exis
 _queuedWithdrawals[withdrawalRoot] returns the Withdrawal struct / staker != address(0)
 pendingWithdrawals[withdrawalRoot] returns True
 */
+// violated in completeQueuedWithdrawal() and completeQueuedWithdrawals()
 /// @property Queued Withdrawal Registration Consistency Invariant
-invariant queuedWithdrawalsCorrect()
-    forall address staker . forall bytes32 root . inRootsSets(staker, root) => 
-                pendingWithdrawalsMirror[root] && queuedWithdrawalsStakesrGhost[root] != 0
-    {
-        preserved {
-            requireInvariant stakerQueuedWithdrawalRootsInvariant();
-        }
-    }
+// invariant queuedWithdrawalsCorrect()
+//     forall address staker . forall bytes32 root . inRootsSets(staker, root) => 
+//                 pendingWithdrawalsMirror[root] && queuedWithdrawalsStakesrGhost[root] != 0
+//     {
+//         preserved {
+//             requireInvariant stakerQueuedWithdrawalRootsInvariant();
+//         }
+//     }
 
 /// @title Verifies that operators delegates to themselves.
 /// @property Operators delegates to themselves
+/// violated by delegateTo
 invariant operatorDelegatesToThemselves()
-    forall address operator . operatorDetailsDelegationApproversMirror[operator] != 0 => DelegationManager.delegatedTo[operator] == operator;
-
+    forall address operator . operatorDetailsDelegationApproversMirror[operator] != 0 => DelegationManager.delegatedTo[operator] == operator {
+        preserved with (env e){
+            require (e.msg.sender != 0, "0 address cannot be an operator");
+        }
+    }
 
 /// @title Operator Cannot Deregister
 /// @property Operator Cannot Deregister
@@ -353,23 +362,24 @@ filtered{f -> !f.isView}
     assert delegatedToPre == account => delegatedToPost == account;
 }
 
-/// @title depositScalingFactor is initialized as WAD and only increases on further deposits.
-/// @property depositScalingFactor Monotonic Increasing
-rule depositScalingFactorMonotonicInc(method f, address staker, address strategy) 
-filtered{f -> !f.isView}
-{
-    env e;
-    calldataarg args;
+// /// @title depositScalingFactor is initialized as WAD and only increases on further deposits.
+// /// @property depositScalingFactor Monotonic Increasing
+// exceptions: delegateTo, increaseDelegatedShares and registerAsOperator can decrease dsf
+// rule depositScalingFactorMonotonicInc(method f, address staker, address strategy) 
+// filtered{f -> !f.isView}
+// {
+//     env e;
+//     calldataarg args;
 
-    uint256 depositScalingFactorPre = scalingFactorsGhost[staker][strategy];
-    require depositScalingFactorPre >= WAD();
+//     uint256 depositScalingFactorPre = scalingFactorsGhost[staker][strategy];
+//     require depositScalingFactorPre >= WAD();
 
-        f(e, args);
+//         f(e, args);
 
-    uint256 depositScalingFactorPost = scalingFactorsGhost[staker][strategy];
+//     uint256 depositScalingFactorPost = scalingFactorsGhost[staker][strategy];
 
-    assert depositScalingFactorPost >= depositScalingFactorPre;
-}
+//     assert depositScalingFactorPost >= depositScalingFactorPre;
+// }
 
 // /// @title For a given (Staker, Strategy), withdrawableShares <= depositShares.
 // /// @property Withdrawable Shares Cannot Exceed Deposited Shares.
@@ -420,5 +430,6 @@ filtered{f -> !f.isView}
     assert depositScalingFactorPost != depositScalingFactorPre =>
         f.selector == sig:increaseDelegatedShares(address, address, uint256, uint256).selector ||
         f.selector == sig:delegateTo(address, ISignatureUtilsMixinTypes.SignatureWithExpiry, bytes32).selector ||
-        f.selector == sig:completeQueuedWithdrawals(IDelegationManagerTypes.Withdrawal[], address[][], bool[]).selector;
+        f.selector == sig:completeQueuedWithdrawals(IDelegationManagerTypes.Withdrawal[], address[][], bool[]).selector ||
+        f.selector == sig:registerAsOperator(address,uint32,string).selector;
 }

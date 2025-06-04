@@ -1,6 +1,6 @@
 import "../optimizations.spec";
 
-using AllocationManager as AllocationManager;
+using AllocationManagerHarness as AllocationManager;
 methods {
     function AllocationManager.DEALLOCATION_DELAY() external returns(uint32) envfree;
 

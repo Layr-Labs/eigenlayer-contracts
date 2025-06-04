@@ -10,6 +10,7 @@ methods {
     function _.transfer(address a, uint256 x)                    external with (env e) => transferCVL(calledContract, e.msg.sender, a, x) expect bool;
     function _.transferFrom(address a, address b, uint256 x)     external with (env e) => transferFromCVL(calledContract, e.msg.sender, a, b, x) expect bool;
     function _.safeTransferFrom(address a, address b, uint256 x) external with (env e) => safeTransferFromCVL(calledContract, e.msg.sender, a, b, x) expect void;
+    function _.safeTransfer(address to, uint256 x) external with (env e) => safeTransferCVL(calledContract, e.msg.sender, to, x) expect void;
 }
 
 
@@ -60,6 +61,12 @@ function safeTransferFromCVL(address t, address spender, address from, address t
     bool nondetSuccess;
     if (!nondetSuccess) require false;
     transferFromCVL(t, spender, from, to, amount);
+}
+
+function safeTransferCVL(address t, address from, address to, uint256 amount) {
+    bool nondetSuccess;
+    if (!nondetSuccess) require false;
+    transferCVL(t, from, to, amount);
 }
 
 function transferCVL(address t, address from, address to, uint256 amount) returns bool {
