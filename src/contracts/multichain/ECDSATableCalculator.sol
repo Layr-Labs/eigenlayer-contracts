@@ -81,7 +81,7 @@ contract ECDSATableCalculator is Initializable, OwnableUpgradeable, ECDSATableCa
      */
     function _getOperatorWeights(
         OperatorSet calldata operatorSet
-    ) public view virtual returns (address[] memory operators, uint256[][] memory weights) {
+    ) internal view virtual returns (address[] memory operators, uint256[][] memory weights) {
         // Get all operators & strategies in the operatorSet
         operators = allocationManager.getMembers(operatorSet);
         IStrategy[] memory strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
