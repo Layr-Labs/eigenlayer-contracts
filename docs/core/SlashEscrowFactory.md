@@ -82,6 +82,7 @@ SlashEscrows are deployed deterministically using [Open Zeppelin's Clones Upgrad
  * @notice Releases an escrow by transferring tokens from the `SlashEscrow` to the operator set's redistribution recipient.
  * @param operatorSet The operator set whose escrow is being released.
  * @param slashId The slash ID of the escrow that is being released.
+ * @dev This method is permissionless, anyone can call it.
  * @dev The slash escrow is released once the delay for ALL strategies has elapsed.
  */
 function releaseSlashEscrow(
@@ -94,6 +95,7 @@ external onlyWhenNotPaused(PAUSED_RELEASE_ESCROW);
  * @param operatorSet The operator set whose escrow is being released.
  * @param slashId The slash ID of the escrow that is being released.
  * @param strategy The strategy whose escrow is being released.
+ * @dev This method is permissionless, anyone can call it.
  * @dev The slash escrow is released once the delay for ALL strategies has elapsed.
  */
 function releaseSlashEscrowByStrategy(
