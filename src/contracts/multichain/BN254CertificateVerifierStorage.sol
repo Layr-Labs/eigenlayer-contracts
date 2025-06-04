@@ -12,6 +12,9 @@ abstract contract BN254CertificateVerifierStorage is IBN254CertificateVerifier {
     /// @dev Gas limit for pairing operations to prevent DoS attacks
     uint256 internal constant PAIRING_EQUALITY_CHECK_GAS = 400_000;
 
+    /// @dev Basis point unit denominator for division
+    uint256 internal constant BPS_DENOMINATOR = 10_000;
+
     // Immutables - None in this case, but could be added if needed
 
     // Mutatables
