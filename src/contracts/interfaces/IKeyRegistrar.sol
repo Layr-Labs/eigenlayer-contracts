@@ -32,12 +32,6 @@ interface IKeyRegistrarTypes {
         bool isRegistered;
         bytes keyData; // Flexible storage for different curve types
     }
-
-    /// @dev Configuration for each operator set
-    struct OperatorSetConfig {
-        CurveType curveType;
-        bool isActive;
-    }
 }
 
 interface IKeyRegistrarEvents is IKeyRegistrarTypes {
