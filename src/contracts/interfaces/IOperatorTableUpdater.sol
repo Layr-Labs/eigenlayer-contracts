@@ -10,6 +10,10 @@ import "./IBN254CertificateVerifier.sol";
 import "./ICrossChainRegistry.sol";
 
 interface IOperatorTableUpdaterErrors {
+    /// @notice Thrown when the global table root is in the future
+    error GlobalTableRootInFuture();
+    /// @notice Thrown when the global table root is stale
+    error GlobalTableRootStale();
     /// @notice Thrown when the GlobalTableRoot update fails
     error CertificateInvalid();
     /// @notice Thrown when the table has been updated for the timestamp
@@ -18,6 +22,8 @@ interface IOperatorTableUpdaterErrors {
     error InvalidGlobalTableRoot();
     /// @notice Thrown when the operator set proof is invalid
     error InvalidOperatorSetProof();
+    /// @notice Thrown when the confirmation threshold is invalid
+    error InvalidConfirmationThreshold();
 }
 
 interface IOperatorTableUpdaterEvents {
@@ -136,4 +142,10 @@ interface IOperatorTableUpdater is
     function getGlobalTableRootByTimestamp(
         uint32 referenceTimestamp
     ) external view returns (bytes32 tableRoot);
+
+    /**
+     * @notice Get the operatorSet which certifies against global roots
+     * @return The operatorSet which certifies against global roots
+     */
+    function getGlobalRootConfirmerSet() external view returns (OperatorSet memory);
 }

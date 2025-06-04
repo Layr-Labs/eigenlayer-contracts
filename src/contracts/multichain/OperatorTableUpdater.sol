@@ -24,15 +24,30 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
 
     /**
      * @notice Initializes the OperatorTableUpdater
+     * @param owner The owner of the OperatorTableUpdater
      * @param _globalRootConfirmerSet The operatorSet which certifies against global roots
      * @param _globalRootConfirmationThreshold The threshold, in bps, for a global root to be signed off on and updated
+     * @param referenceTimestamp The reference timestamp for the global root confirmer set
+     * @param globalRootConfirmerSetInfo The operatorSetInfo for the global root confirmer set
+     * @param globalRootConfirmerSetConfig The operatorSetConfig for the global root confirmer set
+     * @dev We also update the operator table for the global root confirmer set, to begin signing off on global roots
      */
     function initialize(
+        address owner,
         OperatorSet calldata _globalRootConfirmerSet,
-        uint16 _globalRootConfirmationThreshold
+        uint16 _globalRootConfirmationThreshold,
+        uint32 referenceTimestamp,
+        BN254OperatorSetInfo calldata globalRootConfirmerSetInfo,
+        OperatorSetConfig calldata globalRootConfirmerSetConfig
     ) external initializer {
+        _transferOwnership(owner);
         _setGlobalRootConfirmerSet(_globalRootConfirmerSet);
         _setGlobalRootConfirmationThreshold(_globalRootConfirmationThreshold);
+
+        // Update the operator table for the global root confirmer set
+        bn254CertificateVerifier.updateOperatorTable(
+            _globalRootConfirmerSet, referenceTimestamp, globalRootConfirmerSetInfo, globalRootConfirmerSetConfig
+        );
     }
 
     /**
@@ -47,16 +62,21 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
         bytes32 globalTableRoot,
         uint32 referenceTimestamp
     ) external {
+        // Table roots can only be updated for current or past timestamps and after the latest reference timestamp
+        require(referenceTimestamp <= block.timestamp, GlobalTableRootInFuture());
+        require(referenceTimestamp > latestReferenceTimestamp, GlobalTableRootStale());
+
         // Verify certificate by using the stake proportion thresholds
         uint16[] memory stakeProportionThresholds = new uint16[](1);
         stakeProportionThresholds[0] = globalRootConfirmationThreshold;
         bool isValid = bn254CertificateVerifier.verifyCertificateProportion(
-            globalRootConfirmerSet, globalTableRootCert, stakeProportionThresholds
+            _globalRootConfirmerSet, globalTableRootCert, stakeProportionThresholds
         );
 
         require(isValid, CertificateInvalid());
 
         // Update the global table root
+        latestReferenceTimestamp = referenceTimestamp;
         _currentGlobalTableRoot = globalTableRoot;
         _globalTableRoots[referenceTimestamp] = globalTableRoot;
 
@@ -79,7 +99,7 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
             TableUpdateForPastTimestamp()
         );
 
-        bytes32 operatorSetLeafHash = keccak256(abi.encode(operatorSetInfo, config));
+        bytes32 operatorSetLeafHash = keccak256(abi.encode(operatorSet.key(), operatorSetInfo, config));
 
         // Verify the operator table update
         _verifyOperatorTableUpdate({
@@ -110,7 +130,7 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
             TableUpdateForPastTimestamp()
         );
 
-        bytes32 operatorSetLeafHash = keccak256(abi.encode(operatorInfos, config));
+        bytes32 operatorSetLeafHash = keccak256(abi.encode(operatorSet.key(), operatorInfos, config));
 
         // Verify the operator table update
         _verifyOperatorTableUpdate({
@@ -163,6 +183,11 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
         return _currentGlobalTableRoot;
     }
 
+    /// @inheritdoc IOperatorTableUpdater
+    function getGlobalRootConfirmerSet() external view returns (OperatorSet memory) {
+        return _globalRootConfirmerSet;
+    }
+
     /**
      *
      *                         INTERNAL HELPERS
@@ -207,7 +232,7 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
     function _setGlobalRootConfirmerSet(
         OperatorSet calldata operatorSet
     ) internal {
-        globalRootConfirmerSet = operatorSet;
+        _globalRootConfirmerSet = operatorSet;
         emit GlobalRootConfirmerSetUpdated(operatorSet);
     }
 
@@ -218,6 +243,7 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
     function _setGlobalRootConfirmationThreshold(
         uint16 bps
     ) internal {
+        require(bps <= MAX_BPS, InvalidConfirmationThreshold());
         globalRootConfirmationThreshold = bps;
         emit GlobalRootConfirmationThresholdUpdated(bps);
     }

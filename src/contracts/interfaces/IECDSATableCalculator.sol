@@ -13,7 +13,7 @@ interface IECDSATableCalculatorTypes {
      */
     struct ECDSAOperatorInfo {
         address pubkey;
-        uint96[] weights;
+        uint256[] weights;
     }
 }
 

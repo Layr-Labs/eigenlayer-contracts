@@ -1,0 +1,351 @@
+// SPDX-License-Identifier: BUSL-1.1
+pragma solidity ^0.8.27;
+
+import "src/contracts/multichain/OperatorTableUpdater.sol";
+import "src/test/utils/EigenLayerMultichainUnitTestSetup.sol";
+
+contract OperatorTableUpdaterUnitTests is
+    EigenLayerMultichainUnitTestSetup,
+    IOperatorTableUpdaterErrors,
+    IOperatorTableUpdaterEvents,
+    IBN254CertificateVerifierTypes,
+    IECDSACertificateVerifierTypes,
+    ICrossChainRegistryTypes
+{
+    using StdStyle for *;
+    using ArrayLib for *;
+
+    /// @notice Pointers to the operatorTableUpdater and its implementation
+    OperatorTableUpdater operatorTableUpdater;
+    OperatorTableUpdater operatorTableUpdaterImplementation;
+
+    /// @notice The default operatorSet
+    OperatorSet defaultOperatorSet = OperatorSet({avs: address(this), id: 0});
+
+    /// @notice The global confirmer operatorSet params
+    OperatorSet globalRootConfirmerSet = OperatorSet({avs: address(0xDEADBEEF), id: 0});
+    uint16 internal constant GLOBAL_ROOT_CONFIRMATION_THRESHOLD = 10_000; // 100% signoff threshold
+
+    function setUp() public virtual override {
+        EigenLayerMultichainUnitTestSetup.setUp();
+
+        // Setup a mock Bn254OperatorSetInfo for the initial table update on initialization
+        BN254OperatorSetInfo memory initialOperatorSetInfo = BN254OperatorSetInfo({
+            operatorInfoTreeRoot: bytes32(0),
+            numOperators: 1,
+            aggregatePubkey: BN254.G1Point({X: 1, Y: 2}),
+            totalWeights: new uint[](1)
+        });
+        OperatorSetConfig memory initialOperatorSetConfig = OperatorSetConfig({owner: address(0xDEADBEEF), maxStalenessPeriod: 10_000});
+
+        operatorTableUpdater =
+            OperatorTableUpdater(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
+
+        // Deploy operatorTableUpdater
+        operatorTableUpdaterImplementation = new OperatorTableUpdater(
+            IBN254CertificateVerifier(address(bn254CertificateVerifierMock)),
+            IECDSACertificateVerifier(address(ecdsaCertificateVerifierMock)),
+            "1.0.0"
+        );
+
+        eigenLayerProxyAdmin.upgradeAndCall(
+            ITransparentUpgradeableProxy(payable(address(operatorTableUpdater))),
+            address(operatorTableUpdaterImplementation),
+            abi.encodeWithSelector(
+                OperatorTableUpdater.initialize.selector,
+                address(this), // owner
+                globalRootConfirmerSet, // globalRootConfirmerSet
+                GLOBAL_ROOT_CONFIRMATION_THRESHOLD, // globalRootConfirmationThreshold
+                block.timestamp, // referenceTimestamp
+                initialOperatorSetInfo, // globalRootConfirmerSetInfo
+                initialOperatorSetConfig // globalRootConfirmerSetConfig
+            )
+        );
+    }
+
+    function _setIsValidCertificate(BN254Certificate memory certificate, bool isValid) internal {
+        bn254CertificateVerifierMock.setIsValidCertificate(certificate, isValid);
+    }
+
+    function _generateRandomOperatorSetConfig(Randomness r) internal returns (OperatorSetConfig memory) {
+        OperatorSetConfig memory operatorSetConfig;
+        operatorSetConfig.owner = r.Address();
+        operatorSetConfig.maxStalenessPeriod = r.Uint32(0, type(uint32).max);
+        return operatorSetConfig;
+    }
+
+    function _createGlobalTableRoot(Randomness r, bytes32 operatorSetLeafHash) internal returns (bytes32, uint32, bytes32[] memory) {
+        // Generate a random power of 2 between 2 and 2^16
+        uint exponent = r.Uint256(1, 16);
+        uint numLeaves = 2 ** exponent;
+
+        // Create leaves array with the specified size
+        bytes32[] memory leaves = new bytes32[](numLeaves);
+
+        // Set a random index to be the operatorSetLeafHash
+        uint32 randomIndex = uint32(r.Uint256(0, numLeaves - 1));
+
+        // Fill remaining leaves with random data
+        for (uint i = 0; i < numLeaves; i++) {
+            if (i == randomIndex) leaves[i] = operatorSetLeafHash;
+            else leaves[i] = bytes32(r.Uint256());
+        }
+
+        bytes32 globalTableRoot = Merkle.merkleizeKeccak(leaves);
+
+        return (globalTableRoot, randomIndex, leaves);
+    }
+
+    function _updateGlobalTableRoot(bytes32 globalTableRoot) internal {
+        BN254Certificate memory mockCertificate;
+        _setIsValidCertificate(mockCertificate, true);
+        operatorTableUpdater.confirmGlobalTableRoot(mockCertificate, globalTableRoot, uint32(block.timestamp));
+    }
+}
+
+contract OperatorTableUpdaterUnitTests_initialize is OperatorTableUpdaterUnitTests {
+    function test_initialize_success() public view {
+        OperatorSet memory confirmerSet = operatorTableUpdater.getGlobalRootConfirmerSet();
+        assertEq(confirmerSet.avs, address(0xDEADBEEF));
+        assertEq(confirmerSet.id, 0);
+
+        uint16 threshold = operatorTableUpdater.globalRootConfirmationThreshold();
+        assertEq(threshold, GLOBAL_ROOT_CONFIRMATION_THRESHOLD);
+    }
+
+    function test_initialize_revert_reinitialization() public {
+        BN254OperatorSetInfo memory initialOperatorSetInfo;
+        OperatorSetConfig memory initialOperatorSetConfig;
+        cheats.expectRevert("Initializable: contract is already initialized");
+        operatorTableUpdater.initialize(
+            address(this),
+            globalRootConfirmerSet,
+            GLOBAL_ROOT_CONFIRMATION_THRESHOLD,
+            uint32(block.timestamp),
+            initialOperatorSetInfo,
+            initialOperatorSetConfig
+        );
+    }
+}
+
+contract OperatorTableUpdaterUnitTests_confirmGlobalTableRoot is OperatorTableUpdaterUnitTests {
+    BN254Certificate mockCertificate;
+
+    function testFuzz_revert_futureTableRoot(Randomness r) public rand(r) {
+        uint32 referenceTimestamp = r.Uint32(uint32(block.timestamp), type(uint32).max);
+
+        cheats.expectRevert(GlobalTableRootInFuture.selector);
+        operatorTableUpdater.confirmGlobalTableRoot(mockCertificate, bytes32(0), referenceTimestamp + 1);
+    }
+
+    function test_revert_staleCertificate(Randomness r) public rand(r) {
+        _setIsValidCertificate(mockCertificate, true);
+        operatorTableUpdater.confirmGlobalTableRoot(mockCertificate, bytes32(0), uint32(block.timestamp));
+
+        uint32 referenceTimestamp = r.Uint32(0, uint32(block.timestamp));
+        cheats.expectRevert(GlobalTableRootStale.selector);
+        operatorTableUpdater.confirmGlobalTableRoot(mockCertificate, bytes32(0), referenceTimestamp);
+    }
+
+    function test_revert_invalidCertificate() public {
+        _setIsValidCertificate(mockCertificate, false);
+        cheats.expectRevert(CertificateInvalid.selector);
+        operatorTableUpdater.confirmGlobalTableRoot(mockCertificate, bytes32(0), uint32(block.timestamp));
+    }
+
+    function test_correctness() public {
+        _setIsValidCertificate(mockCertificate, true);
+        uint32 referenceTimestamp = uint32(block.timestamp);
+        bytes32 globalTableRoot = bytes32(0);
+
+        // Expect the global table root to be updated
+        cheats.expectEmit(true, true, true, true);
+        emit NewGlobalTableRoot(referenceTimestamp, globalTableRoot);
+        operatorTableUpdater.confirmGlobalTableRoot(mockCertificate, globalTableRoot, referenceTimestamp);
+
+        // Expect the global table root to be updated
+        assertEq(operatorTableUpdater.getGlobalTableRootByTimestamp(referenceTimestamp), globalTableRoot);
+        assertEq(operatorTableUpdater.getCurrentGlobalTableRoot(), globalTableRoot);
+        assertEq(operatorTableUpdater.latestReferenceTimestamp(), referenceTimestamp);
+    }
+}
+
+contract OperatorTableUpdaterUnitTests_updateBN254OperatorTable is OperatorTableUpdaterUnitTests {
+    function _setLatestReferenceTimestamp(OperatorSet memory operatorSet, uint32 referenceTimestamp) internal {
+        bn254CertificateVerifierMock.setLatestReferenceTimestamp(operatorSet, referenceTimestamp);
+    }
+
+    function testFuzz_revert_staleTableUpdate(Randomness r) public rand(r) {
+        BN254OperatorSetInfo memory mockOperatorSetInfo;
+        OperatorSetConfig memory mockOperatorSetConfig;
+
+        uint32 referenceTimestamp = r.Uint32(uint32(block.timestamp), type(uint32).max);
+        _setLatestReferenceTimestamp(defaultOperatorSet, referenceTimestamp);
+
+        cheats.expectRevert(TableUpdateForPastTimestamp.selector);
+        operatorTableUpdater.updateBN254OperatorTable(
+            uint32(block.timestamp), bytes32(0), 0, new bytes(0), defaultOperatorSet, mockOperatorSetInfo, mockOperatorSetConfig
+        );
+    }
+
+    function testFuzz_correctness(Randomness r) public rand(r) {
+        // Generate random operatorSetInfo and operatorSetConfig
+        BN254OperatorSetInfo memory operatorSetInfo = _generateRandomOperatorSetInfo(r);
+        OperatorSetConfig memory operatorSetConfig = _generateRandomOperatorSetConfig(r);
+        bytes32 operatorSetLeafHash = keccak256(abi.encode(defaultOperatorSet.key(), operatorSetInfo, operatorSetConfig));
+
+        // Include the operatorSetInfo and operatorSetConfig in the global table root & set it
+        (bytes32 globalTableRoot, uint32 operatorSetIndex, bytes32[] memory leaves) = _createGlobalTableRoot(r, operatorSetLeafHash);
+        _updateGlobalTableRoot(globalTableRoot);
+
+        // Generate proof for the operatorSetInfo and operatorSetConfig
+        bytes memory proof = Merkle.getProofKeccak(leaves, operatorSetIndex);
+
+        // Update the operator table
+        cheats.expectCall(
+            address(bn254CertificateVerifierMock),
+            abi.encodeWithSelector(
+                IBN254CertificateVerifier.updateOperatorTable.selector,
+                defaultOperatorSet,
+                uint32(block.timestamp),
+                operatorSetInfo,
+                operatorSetConfig
+            )
+        );
+        operatorTableUpdater.updateBN254OperatorTable(
+            uint32(block.timestamp), globalTableRoot, operatorSetIndex, proof, defaultOperatorSet, operatorSetInfo, operatorSetConfig
+        );
+    }
+
+    function _generateRandomOperatorSetInfo(Randomness r) internal returns (BN254OperatorSetInfo memory) {
+        BN254OperatorSetInfo memory operatorSetInfo;
+        uint maxWeightLength = r.Uint256(1, 16);
+        operatorSetInfo.operatorInfoTreeRoot = bytes32(r.Uint256());
+        operatorSetInfo.numOperators = r.Uint256();
+        operatorSetInfo.aggregatePubkey = BN254.G1Point({X: r.Uint256(), Y: r.Uint256()});
+        operatorSetInfo.totalWeights = r.Uint256Array({len: maxWeightLength, min: 2, max: 10_000 ether});
+        return operatorSetInfo;
+    }
+}
+
+contract OperatorTableUpdaterUnitTests_updateECDSAOperatorTable is OperatorTableUpdaterUnitTests {
+    function _setLatestReferenceTimestamp(OperatorSet memory operatorSet, uint32 referenceTimestamp) internal {
+        ecdsaCertificateVerifierMock.setLatestReferenceTimestamp(operatorSet, referenceTimestamp);
+    }
+
+    function testFuzz_revert_staleTableUpdate(Randomness r) public rand(r) {
+        ECDSAOperatorInfo[] memory mockOperatorInfos;
+        OperatorSetConfig memory mockOperatorSetConfig;
+
+        uint32 referenceTimestamp = r.Uint32(uint32(block.timestamp), type(uint32).max);
+        _setLatestReferenceTimestamp(defaultOperatorSet, referenceTimestamp);
+
+        cheats.expectRevert(TableUpdateForPastTimestamp.selector);
+        operatorTableUpdater.updateECDSAOperatorTable(
+            uint32(block.timestamp), bytes32(0), 0, new bytes(0), defaultOperatorSet, mockOperatorInfos, mockOperatorSetConfig
+        );
+    }
+
+    function testFuzz_correctness(Randomness r) public rand(r) {
+        // Generate random operatorInfos and operatorSetConfig
+        ECDSAOperatorInfo[] memory operatorInfos = _generateRandomECDSAOperatorInfos(r);
+        OperatorSetConfig memory operatorSetConfig = _generateRandomOperatorSetConfig(r);
+        bytes32 operatorSetLeafHash = keccak256(abi.encode(defaultOperatorSet.key(), operatorInfos, operatorSetConfig));
+
+        // Include the operatorInfos and operatorSetConfig in the global table root & set it
+        (bytes32 globalTableRoot, uint32 operatorSetIndex, bytes32[] memory leaves) = _createGlobalTableRoot(r, operatorSetLeafHash);
+        _updateGlobalTableRoot(globalTableRoot);
+
+        // Generate proof for the operatorInfos and operatorSetConfig
+        bytes memory proof = Merkle.getProofKeccak(leaves, operatorSetIndex);
+
+        // Update the operator table
+        cheats.expectCall(
+            address(ecdsaCertificateVerifierMock),
+            abi.encodeWithSelector(
+                IECDSACertificateVerifier.updateOperatorTable.selector,
+                defaultOperatorSet,
+                uint32(block.timestamp),
+                operatorInfos,
+                operatorSetConfig
+            )
+        );
+        operatorTableUpdater.updateECDSAOperatorTable(
+            uint32(block.timestamp), globalTableRoot, operatorSetIndex, proof, defaultOperatorSet, operatorInfos, operatorSetConfig
+        );
+    }
+
+    function _generateRandomECDSAOperatorInfos(Randomness r) internal returns (ECDSAOperatorInfo[] memory) {
+        uint numOperators = r.Uint256(1, 50);
+        uint maxWeightLength = r.Uint256(1, 16);
+        ECDSAOperatorInfo[] memory operatorInfos = new ECDSAOperatorInfo[](numOperators);
+
+        for (uint i = 0; i < numOperators; i++) {
+            operatorInfos[i].pubkey = r.Address();
+            operatorInfos[i].weights = r.Uint256Array({len: maxWeightLength, min: 2, max: 10_000 ether});
+        }
+
+        return operatorInfos;
+    }
+}
+
+contract OperatorTableUpdaterUnitTests_setGlobalRootConfirmerSet is OperatorTableUpdaterUnitTests {
+    function testFuzz_revert_onlyOwner(Randomness r) public rand(r) {
+        address invalidCaller = r.Address();
+        cheats.assume(invalidCaller != address(this));
+        OperatorSet memory newSet;
+
+        // Should revert when called by non-owner
+        cheats.prank(invalidCaller);
+        cheats.expectRevert("Ownable: caller is not the owner");
+        operatorTableUpdater.setGlobalRootConfirmerSet(newSet);
+    }
+
+    function testFuzz_correctness(Randomness r) public rand(r) {
+        // Generate random operator set
+        OperatorSet memory newOperatorSet = OperatorSet({avs: r.Address(), id: r.Uint32()});
+
+        // Set the confirmer set
+        cheats.expectEmit(true, true, true, true);
+        emit GlobalRootConfirmerSetUpdated(newOperatorSet);
+        operatorTableUpdater.setGlobalRootConfirmerSet(newOperatorSet);
+
+        // Verify the storage was updated
+        OperatorSet memory updatedConfirmerSet = operatorTableUpdater.getGlobalRootConfirmerSet();
+        assertEq(updatedConfirmerSet.avs, newOperatorSet.avs);
+        assertEq(updatedConfirmerSet.id, newOperatorSet.id);
+    }
+}
+
+contract OperatorTableUpdaterUnitTests_setGlobalRootConfirmationThreshold is OperatorTableUpdaterUnitTests {
+    function testFuzz_revert_onlyOwner(Randomness r) public rand(r) {
+        address invalidCaller = r.Address();
+        cheats.assume(invalidCaller != address(this));
+        uint16 newThreshold;
+
+        // Should revert when called by non-owner
+        cheats.prank(invalidCaller);
+        cheats.expectRevert("Ownable: caller is not the owner");
+        operatorTableUpdater.setGlobalRootConfirmationThreshold(newThreshold);
+    }
+
+    function testFuzz_revert_invalidThreshold(Randomness r) public rand(r) {
+        uint16 newThreshold = uint16(r.Uint256(10_001, type(uint16).max));
+        cheats.expectRevert(InvalidConfirmationThreshold.selector);
+        operatorTableUpdater.setGlobalRootConfirmationThreshold(newThreshold);
+    }
+
+    function testFuzz_correctness(Randomness r) public rand(r) {
+        // Generate random threshold (0 to 10000 bps = 0% to 100%)
+        uint16 newThreshold = uint16(r.Uint256(0, 10_000));
+
+        // Expect the event to be emitted
+        cheats.expectEmit(true, true, true, true);
+        emit GlobalRootConfirmationThresholdUpdated(newThreshold);
+        operatorTableUpdater.setGlobalRootConfirmationThreshold(newThreshold);
+
+        // Verify the storage was updated
+        uint16 updatedThreshold = operatorTableUpdater.globalRootConfirmationThreshold();
+        assertEq(updatedThreshold, newThreshold);
+    }
+}
