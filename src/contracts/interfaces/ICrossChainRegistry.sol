@@ -23,9 +23,6 @@ interface ICrossChainRegistryErrors {
     /// @notice Thrown when a transport destination is not found for the operator set
     error TransportDestinationNotFound();
 
-    /// @notice Thrown when a transport reservation already exists for the operator set
-    error TransportReservationAlreadyExists();
-
     /// @notice Thrown when a transport reservation does not exist for the operator set
     error TransportReservationDoesNotExist();
 
@@ -64,20 +61,14 @@ interface ICrossChainRegistryEvents is ICrossChainRegistryTypes {
     /// @notice Emitted when an operatorTableCalculator is set
     event OperatorTableCalculatorSet(OperatorSet operatorSet, IOperatorTableCalculator operatorTableCalculator);
 
-    /// @notice Emitted when a transport reservation is made
-    event TransportReservationMade(OperatorSet operatorSet);
-
-    /// @notice Emitted when a transport reservation is removed
-    event TransportReservationRemoved(OperatorSet operatorSet);
+    /// @notice Emitted when an operatorSetConfig is set
+    event OperatorSetConfigSet(OperatorSet operatorSet, OperatorSetConfig config);
 
     /// @notice Emitted when a transport destination is added
     event TransportDestinationAdded(OperatorSet operatorSet, uint32 chainID);
 
     /// @notice Emitted when a transport destination is removed
     event TransportDestinationRemoved(OperatorSet operatorSet, uint32 chainID);
-
-    /// @notice Emitted when an operatorSetConfig is set
-    event OperatorSetConfigSet(OperatorSet operatorSet, OperatorSetConfig config);
 
     /// @notice Emitted when a chainID is added to the whitelist
     event ChainIDAddedToWhitelist(uint32 chainID);
@@ -126,40 +117,25 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
      * @param operatorSet the operatorSet to set the operatorSetConfig for
      * @param config the config to set
      * @dev msg.sender must be UAM permissioned for operatorSet.avs
-     * @dev operatorSet must have an active transport reservation
+     * @dev operatorSet must have an active generation reservation
      */
     function setOperatorSetConfig(OperatorSet calldata operatorSet, OperatorSetConfig calldata config) external;
 
     /**
-     * @notice Initiates a transport reservation
-     * @param operatorSet the operatorSet to make a reservation for
-     * @param chainIDs the chainIDs to transport to
-     * @dev msg.sender must be UAM permissioned for operatorSet.avs
-     */
-    function requestTransportReservation(OperatorSet calldata operatorSet, uint32[] calldata chainIDs) external;
-
-    /**
-     * @notice Removes a transport reservation for a given operatorSet
-     * @param operatorSet the operatorSet to remove
-     * @dev msg.sender must be UAM permissioned for operatorSet.avs
-     */
-    function removeTransportReservation(
-        OperatorSet calldata operatorSet
-    ) external;
-
-    /**
-     * @notice Adds a destination chain to transport to
+     * @notice Adds destination chains to transport to
+     * @param operatorSet the operatorSet to add transport destinations for
      * @param chainIDs to add transport to
      * @dev msg.sender must be UAM permissioned for operatorSet.avs
-     * @dev operatorSet must have an active transport reservation
+     * @dev Will create a transport reservation if one doesn't exist
      */
     function addTransportDestinations(OperatorSet calldata operatorSet, uint32[] calldata chainIDs) external;
 
     /**
-     * @notice Removes a destination chain to transport to
+     * @notice Removes destination chains to transport to
+     * @param operatorSet the operatorSet to remove transport destinations for
      * @param chainIDs to remove transport to
      * @dev msg.sender must be UAM permissioned for operatorSet.avs
-     * @dev operatorSet must have an active transport reservation
+     * @dev Will remove the transport reservation if all destinations are removed
      */
     function removeTransportDestinations(OperatorSet calldata operatorSet, uint32[] calldata chainIDs) external;
 

@@ -144,58 +144,11 @@ contract CrossChainRegistry is
 
         bytes32 operatorSetKey = operatorSet.key();
 
-        // Check if transport reservation exists
-        require(_activeTransportReservations.contains(operatorSetKey), TransportReservationDoesNotExist());
+        // Check if generation reservation exists
+        require(_activeGenerationReservations.contains(operatorSetKey), GenerationReservationDoesNotExist());
 
         // Set the operator set config
         _setOperatorSetConfig(operatorSet, config, false);
-    }
-
-    /// @inheritdoc ICrossChainRegistry
-    function requestTransportReservation(
-        OperatorSet calldata operatorSet,
-        uint32[] calldata chainIDs
-    ) external onlyWhenNotPaused(PAUSED_TRANSPORT_RESERVATIONS) checkCanCall(operatorSet.avs) {
-        // Validate the operator set
-        require(allocationManager.isOperatorSet(operatorSet), InvalidOperatorSet());
-
-        bytes32 operatorSetKey = operatorSet.key();
-
-        // Check if transport reservation already exists
-        require(!_activeTransportReservations.contains(operatorSetKey), TransportReservationAlreadyExists());
-
-        // Add to active transport reservations
-        _activeTransportReservations.add(operatorSetKey);
-        emit TransportReservationMade(operatorSet);
-
-        // Add transport destinations
-        for (uint256 i = 0; i < chainIDs.length; i++) {
-            _addTransportDestination(operatorSet, chainIDs[i]);
-        }
-    }
-
-    /// @inheritdoc ICrossChainRegistry
-    function removeTransportReservation(
-        OperatorSet calldata operatorSet
-    ) external onlyWhenNotPaused(PAUSED_TRANSPORT_RESERVATIONS) checkCanCall(operatorSet.avs) {
-        // Validate the operator set
-        require(allocationManager.isOperatorSet(operatorSet), InvalidOperatorSet());
-
-        bytes32 operatorSetKey = operatorSet.key();
-
-        // Check if transport reservation exists
-        require(_activeTransportReservations.contains(operatorSetKey), TransportReservationDoesNotExist());
-
-        // Remove from active transport reservations
-        _activeTransportReservations.remove(operatorSetKey);
-        emit TransportReservationRemoved(operatorSet);
-
-        // Get the transport destinations
-        EnumerableSet.UintSet storage chainIDs = _transportDestinations[operatorSetKey];
-        // Remove the transport destinations
-        for (uint256 i = 0; i < chainIDs.length(); i++) {
-            _removeTransportDestination(operatorSet, uint32(chainIDs.at(i)));
-        }
     }
 
     /// @inheritdoc ICrossChainRegistry
@@ -208,8 +161,10 @@ contract CrossChainRegistry is
 
         bytes32 operatorSetKey = operatorSet.key();
 
-        // Check if transport reservation exists
-        require(_activeTransportReservations.contains(operatorSetKey), TransportReservationDoesNotExist());
+        // Check if this is the first transport destination (create reservation if needed)
+        if (!_activeTransportReservations.contains(operatorSetKey) && chainIDs.length > 0) {
+            _activeTransportReservations.add(operatorSetKey);
+        }
 
         for (uint256 i = 0; i < chainIDs.length; i++) {
             _addTransportDestination(operatorSet, chainIDs[i]);
@@ -231,6 +186,11 @@ contract CrossChainRegistry is
 
         for (uint256 i = 0; i < chainIDs.length; i++) {
             _removeTransportDestination(operatorSet, chainIDs[i]);
+        }
+
+        // Check if all transport destinations have been removed
+        if (_transportDestinations[operatorSetKey].length() == 0) {
+            _activeTransportReservations.remove(operatorSetKey);
         }
     }
 
