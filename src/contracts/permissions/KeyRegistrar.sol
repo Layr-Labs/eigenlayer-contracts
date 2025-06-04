@@ -33,11 +33,11 @@ contract KeyRegistrar is
 
     // EIP-712 type hashes
     bytes32 public constant ECDSA_KEY_REGISTRATION_TYPEHASH = keccak256(
-        "ECDSAKeyRegistration(address operator,address avs,uint32 operatorSetId,address keyAddress,uint256 chainId)"
+        "ECDSAKeyRegistration(address operator,address avs,uint32 operatorSetId,address keyAddress)"
     );
 
     bytes32 public constant BN254_KEY_REGISTRATION_TYPEHASH = keccak256(
-        "BN254KeyRegistration(address operator,address avs,uint32 operatorSetId,bytes keyData,uint256 chainId)"
+        "BN254KeyRegistration(address operator,address avs,uint32 operatorSetId,bytes keyData)"
     );
 
     /**
@@ -168,7 +168,7 @@ contract KeyRegistrar is
         // Create EIP-712 compliant message hash
         bytes32 structHash = keccak256(
             abi.encode(
-                ECDSA_KEY_REGISTRATION_TYPEHASH, operator, operatorSet.avs, operatorSet.id, keyAddress, block.chainid
+                ECDSA_KEY_REGISTRATION_TYPEHASH, operator, operatorSet.avs, operatorSet.id, keyAddress
             )
         );
         bytes32 messageHash = _hashTypedDataV4(structHash);
@@ -218,8 +218,7 @@ contract KeyRegistrar is
                 operator,
                 operatorSet.avs,
                 operatorSet.id,
-                keccak256(keyData),
-                block.chainid
+                keccak256(keyData)
             )
         );
         bytes32 messageHash = _hashTypedDataV4(structHash);

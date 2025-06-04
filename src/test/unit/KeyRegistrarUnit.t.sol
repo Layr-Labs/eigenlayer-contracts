@@ -96,7 +96,7 @@ contract KeyRegistrarUnitTests is EigenLayerUnitTestSetup {
         returns (bytes memory)
     {
         bytes32 structHash = keccak256(
-            abi.encode(keyRegistrar.ECDSA_KEY_REGISTRATION_TYPEHASH(), operator, operatorSet.avs, operatorSet.id, keyAddress, block.chainid)
+            abi.encode(keyRegistrar.ECDSA_KEY_REGISTRATION_TYPEHASH(), operator, operatorSet.avs, operatorSet.id, keyAddress)
         );
         bytes32 messageHash = keyRegistrar.domainSeparator();
         messageHash = keccak256(abi.encodePacked("\x19\x01", messageHash, structHash));
@@ -112,7 +112,7 @@ contract KeyRegistrarUnitTests is EigenLayerUnitTestSetup {
     {
         bytes32 structHash = keccak256(
             abi.encode(
-                keyRegistrar.BN254_KEY_REGISTRATION_TYPEHASH(), operator, operatorSet.avs, operatorSet.id, keccak256(pubkey), block.chainid
+                keyRegistrar.BN254_KEY_REGISTRATION_TYPEHASH(), operator, operatorSet.avs, operatorSet.id, keccak256(pubkey)
             )
         );
         bytes32 messageHash = keyRegistrar.domainSeparator();
