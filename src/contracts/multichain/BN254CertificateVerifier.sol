@@ -3,7 +3,6 @@ pragma solidity ^0.8.27;
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
-import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 import {BN254} from "../libraries/BN254.sol";
 import {OperatorSet} from "../libraries/OperatorSetLib.sol";
 import {IBN254TableCalculator, IBN254TableCalculatorTypes} from "../interfaces/IBN254TableCalculator.sol";
@@ -21,7 +20,6 @@ import "./BN254CertificateVerifierStorage.sol";
 contract BN254CertificateVerifier is
     Initializable,
     OwnableUpgradeable,
-    ReentrancyGuardUpgradeable,
     BN254CertificateVerifierStorage
 {
     using Merkle for bytes;
@@ -64,7 +62,6 @@ contract BN254CertificateVerifier is
         address __owner
     ) external initializer {
         __Ownable_init();
-        __ReentrancyGuard_init();
         _transferOwnership(__owner);
     }
 
