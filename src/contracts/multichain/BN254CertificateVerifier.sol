@@ -17,11 +17,7 @@ import "./BN254CertificateVerifierStorage.sol";
  * @dev This contract uses BN254 curves for signature verification and
  *      caches operator information for efficient verification
  */
-contract BN254CertificateVerifier is
-    Initializable,
-    OwnableUpgradeable,
-    BN254CertificateVerifierStorage
-{
+contract BN254CertificateVerifier is Initializable, OwnableUpgradeable, BN254CertificateVerifierStorage {
     using Merkle for bytes;
     using BN254 for BN254.G1Point;
 
