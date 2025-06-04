@@ -4,7 +4,6 @@ pragma solidity ^0.8.27;
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "../interfaces/multichain/IBN254TableCalculator.sol";
-import "../interfaces/multichain/IOperatorWeightCalculator.sol";
 import "../interfaces/IKeyRegistrar.sol";
 import "../libraries/Merkle.sol";
 import "../libraries/BN254.sol";
@@ -13,25 +12,24 @@ import "./BN254TableCalculatorStorage.sol";
 /**
  * @title BN254TableCalculator
  * @notice Contract that calculates BN254 operator tables for a given operatorSet
- * @dev This contract uses an IOperatorWeightCalculator to get operator weights and formats them into the required table structure
+ * @dev This contract calculates operator weights and formats them into the required table structure
  */
 contract BN254TableCalculator is Initializable, OwnableUpgradeable, BN254TableCalculatorStorage {
     using Merkle for bytes32[];
     using BN254 for BN254.G1Point;
 
     constructor(
-        IOperatorWeightCalculator _operatorWeightCalculator,
-        IKeyRegistrar _keyRegistrar
-    ) BN254TableCalculatorStorage(_operatorWeightCalculator, _keyRegistrar) {
+        IKeyRegistrar _keyRegistrar,
+        IAllocationManager _allocationManager
+    ) BN254TableCalculatorStorage(_keyRegistrar, _allocationManager) {
         _disableInitializers();
     }
 
     /**
      * @notice Initializes the contract.
      */
-    function initialize(
-        address initialOwner
-    ) external initializer {
+    function initialize(address initialOwner, uint256 _lookaheadBlocks) external initializer {
+        lookaheadBlocks = _lookaheadBlocks;
         _transferOwnership(initialOwner);
     }
 
@@ -42,11 +40,35 @@ contract BN254TableCalculator is Initializable, OwnableUpgradeable, BN254TableCa
         return _calculateOperatorTable(operatorSet);
     }
 
-    /// @inheritdoc IBN254TableCalculator
+    /// @inheritdoc IOperatorTableCalculator
     function calculateOperatorTableBytes(
         OperatorSet calldata operatorSet
     ) external view virtual returns (bytes memory operatorTableBytes) {
         return abi.encode(_calculateOperatorTable(operatorSet));
+    }
+
+    /// @inheritdoc IOperatorTableCalculator
+    function getOperatorWeights(
+        OperatorSet calldata operatorSet
+    ) public view virtual returns (address[] memory operators, uint256[][] memory weights) {
+        return _getOperatorWeights(operatorSet);
+    }
+
+    /// @inheritdoc IOperatorTableCalculator
+    function getOperatorWeight(
+        OperatorSet calldata operatorSet,
+        address operator
+    ) public view virtual returns (uint256 weight) {
+        (address[] memory operators, uint256[][] memory weights) = _getOperatorWeights(operatorSet);
+
+        // Find the index of the operator in the operators array
+        for (uint256 i = 0; i < operators.length; i++) {
+            if (operators[i] == operator) {
+                return weights[i][0];
+            }
+        }
+
+        return 0;
     }
 
     /// @inheritdoc IBN254TableCalculator
@@ -54,8 +76,7 @@ contract BN254TableCalculator is Initializable, OwnableUpgradeable, BN254TableCa
         OperatorSet calldata operatorSet
     ) external view virtual returns (BN254OperatorInfo[] memory) {
         // Get the weights for all operators
-        (address[] memory operators, uint256[][] memory weights) =
-            operatorWeightCalculator.getOperatorWeights(operatorSet);
+        (address[] memory operators, uint256[][] memory weights) = _getOperatorWeights(operatorSet);
 
         BN254OperatorInfo[] memory operatorInfos = new BN254OperatorInfo[](operators.length);
 
@@ -70,6 +91,50 @@ contract BN254TableCalculator is Initializable, OwnableUpgradeable, BN254TableCa
         }
 
         return operatorInfos;
+    }
+
+    /// @inheritdoc IBN254TableCalculator
+    function setLookaheadBlocks(
+        uint256 _lookaheadBlocks
+    ) external onlyOwner {
+        require(_lookaheadBlocks < allocationManager.DEALLOCATION_DELAY(), LookaheadBlocksTooHigh());
+        lookaheadBlocks = _lookaheadBlocks;
+        emit LookaheadBlocksSet(_lookaheadBlocks);
+    }
+
+    /**
+     * @notice Get the operator weights for a given operatorSet based on the slashable stake.
+     * @param operatorSet The operatorSet to get the weights for
+     * @return operators The addresses of the operators in the operatorSet
+     * @return weights The weights for each operator in the operatorSet, this is a 2D array where the first index is the operator
+     * and the second index is the type of weight. In this case its of length 1 and returns the slashable stake for the operatorSet.
+     */
+    function _getOperatorWeights(
+        OperatorSet calldata operatorSet
+    ) public view virtual returns (address[] memory operators, uint256[][] memory weights) {
+        // Get all operators & strategies in the operatorSet
+        operators = allocationManager.getMembers(operatorSet);
+        IStrategy[] memory strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
+
+        // Get the minimum slashable stake for each operator
+        uint256[][] memory minSlashableStake = allocationManager.getMinimumSlashableStake({
+            operatorSet: operatorSet,
+            operators: operators,
+            strategies: strategies,
+            futureBlock: uint32(block.number + lookaheadBlocks)
+        });
+
+        weights = new uint256[][](operators.length);
+        for (uint256 operatorIndex = 0; operatorIndex < operators.length; ++operatorIndex) {
+            // Initialize operator weights array of length 1 just for slashable stake
+            weights[operatorIndex] = new uint256[](1);
+            // 1. For the given operator, loop through the strategies and sum together to calculate the operator's weight for the operatorSet
+            for (uint256 stratIndex = 0; stratIndex < strategies.length; ++stratIndex) {
+                weights[operatorIndex][0] += minSlashableStake[operatorIndex][stratIndex];
+            }
+        }
+
+        return (operators, weights);
     }
 
     /**
@@ -87,8 +152,7 @@ contract BN254TableCalculator is Initializable, OwnableUpgradeable, BN254TableCa
         OperatorSet calldata operatorSet
     ) internal view returns (BN254OperatorSetInfo memory operatorSetInfo) {
         // Get the weights for all operators in the operatorSet
-        (address[] memory operators, uint256[][] memory weights) =
-            operatorWeightCalculator.getOperatorWeights(operatorSet);
+        (address[] memory operators, uint256[][] memory weights) = getOperatorWeights(operatorSet);
 
         // Collate weights into a single array of total weights
         uint256 subArrayLength = weights[0].length;

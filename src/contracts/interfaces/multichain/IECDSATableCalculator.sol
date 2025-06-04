@@ -2,6 +2,7 @@
 pragma solidity >=0.5.0;
 
 import "../../libraries/OperatorSetLib.sol";
+import "./IOperatorTableCalculator.sol";
 
 interface IECDSATableCalculatorTypes {
     /**
@@ -18,7 +19,22 @@ interface IECDSATableCalculatorTypes {
     }
 }
 
-interface IECDSATableCalculator is IECDSATableCalculatorTypes {
+interface IECDSATableCalculatorEvents {
+    /// @notice Emitted when the lookahead blocks are set
+    event LookaheadBlocksSet(uint256 lookaheadBlocks);
+}
+
+interface IECDSATableCalculatorErrors {
+    /// @notice Emitted when the lookahead blocks are too high
+    error LookaheadBlocksTooHigh();
+}
+
+interface IECDSATableCalculator is
+    IOperatorTableCalculator,
+    IECDSATableCalculatorTypes,
+    IECDSATableCalculatorEvents,
+    IECDSATableCalculatorErrors
+{
     /**
      * @notice calculates the operatorInfos for a given operatorSet
      * @param operatorSet the operatorSet to calculate the operator table for
@@ -30,11 +46,10 @@ interface IECDSATableCalculator is IECDSATableCalculatorTypes {
     ) external view returns (ECDSAOperatorInfo[] memory operatorInfos);
 
     /**
-     * @notice calculates the operatorInfos for a given operatorSet
-     * @param operatorSet the operatorSet to calculate the operator table for
-     * @return operatorTableBytes the operatorTableBytes for the given operatorSet
+     * @notice Set the lookahead blocks for the slashable stake calculation
+     * @param _lookaheadBlocks The lookahead blocks to set
      */
-    function calculateOperatorTableBytes(
-        OperatorSet calldata operatorSet
-    ) external view returns (bytes memory operatorTableBytes);
+    function setLookaheadBlocks(
+        uint256 _lookaheadBlocks
+    ) external;
 }

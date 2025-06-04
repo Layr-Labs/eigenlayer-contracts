@@ -2,8 +2,8 @@
 pragma solidity ^0.8.27;
 
 import "../interfaces/multichain/IBN254TableCalculator.sol";
-import "../interfaces/multichain/IOperatorWeightCalculator.sol";
 import "../interfaces/IKeyRegistrar.sol";
+import "../interfaces/IAllocationManager.sol";
 
 /**
  * @title Storage variables for the `BN254TableCalculator` contract.
@@ -11,15 +11,18 @@ import "../interfaces/IKeyRegistrar.sol";
  */
 abstract contract BN254TableCalculatorStorage is IBN254TableCalculator {
     // Immutables
-    /// @notice OperatorWeightCalculator contract for calculating operator weights
-    IOperatorWeightCalculator public immutable operatorWeightCalculator;
-
     /// @notice KeyRegistrar contract for managing operator keys
     IKeyRegistrar public immutable keyRegistrar;
+    /// @notice AllocationManager contract for managing operator allocations
+    IAllocationManager public immutable allocationManager;
 
-    constructor(IOperatorWeightCalculator _operatorWeightCalculator, IKeyRegistrar _keyRegistrar) {
-        operatorWeightCalculator = _operatorWeightCalculator;
+    // Storage variables
+    /// @notice The lookahead blocks for the slashable stake calculation
+    uint256 public lookaheadBlocks;
+
+    constructor(IKeyRegistrar _keyRegistrar, IAllocationManager _allocationManager) {
         keyRegistrar = _keyRegistrar;
+        allocationManager = _allocationManager;
     }
 
     /**

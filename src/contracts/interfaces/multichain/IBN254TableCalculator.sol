@@ -3,6 +3,7 @@ pragma solidity >=0.5.0;
 
 import "../../libraries/BN254.sol";
 import "../../libraries/OperatorSetLib.sol";
+import "./IOperatorTableCalculator.sol";
 
 interface IBN254TableCalculatorTypes {
     /**
@@ -39,7 +40,22 @@ interface IBN254TableCalculatorTypes {
     }
 }
 
-interface IBN254TableCalculator is IBN254TableCalculatorTypes {
+interface IBN254TableCalculatorEvents {
+    /// @notice Emitted when the lookahead blocks are set
+    event LookaheadBlocksSet(uint256 lookaheadBlocks);
+}
+
+interface IBN254TableCalculatorErrors {
+    /// @notice Emitted when the lookahead blocks are too high
+    error LookaheadBlocksTooHigh();
+}
+
+interface IBN254TableCalculator is
+    IOperatorTableCalculator,
+    IBN254TableCalculatorTypes,
+    IBN254TableCalculatorEvents,
+    IBN254TableCalculatorErrors
+{
     /**
      * @notice calculates the operatorInfos for a given operatorSet
      * @param operatorSet the operatorSet to calculate the operator table for
@@ -51,15 +67,6 @@ interface IBN254TableCalculator is IBN254TableCalculatorTypes {
     ) external view returns (BN254OperatorSetInfo memory operatorSetInfo);
 
     /**
-     * @notice calculates the operatorInfos for a given operatorSet
-     * @param operatorSet the operatorSet to calculate the operator table for
-     * @return operatorTableBytes the operatorTableBytes for the given operatorSet
-     */
-    function calculateOperatorTableBytes(
-        OperatorSet calldata operatorSet
-    ) external view returns (bytes memory operatorTableBytes);
-
-    /**
      * @notice Get the operatorInfos for a given operatorSet
      * @param operatorSet the operatorSet to get the operatorInfos for
      * @return operatorInfos the operatorInfos for the given operatorSet
@@ -67,4 +74,12 @@ interface IBN254TableCalculator is IBN254TableCalculatorTypes {
     function getOperatorInfos(
         OperatorSet calldata operatorSet
     ) external view returns (BN254OperatorInfo[] memory operatorInfos);
+
+    /**
+     * @notice Set the lookahead blocks for the slashable stake calculation
+     * @param _lookaheadBlocks The lookahead blocks to set
+     */
+    function setLookaheadBlocks(
+        uint256 _lookaheadBlocks
+    ) external;
 }
