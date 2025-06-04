@@ -50,6 +50,9 @@ abstract contract CrossChainRegistryStorage is ICrossChainRegistry {
     /// @dev Mapping from operator set key to operator table calculator for active reservations
     mapping(bytes32 operatorSetKey => IOperatorTableCalculator) internal _operatorTableCalculators;
 
+    /// @dev Mapping from operator set key to operator set configuration
+    mapping(bytes32 operatorSetKey => OperatorSetConfig) internal _operatorSetConfigs;
+
     /// TRANSPORT RESERVATIONS
 
     /// @dev Set of operator sets with active transport reservations
@@ -57,9 +60,6 @@ abstract contract CrossChainRegistryStorage is ICrossChainRegistry {
 
     /// @dev Mapping from operator set key to set of chain IDs for transport destinations
     mapping(bytes32 operatorSetKey => EnumerableSet.UintSet) internal _transportDestinations;
-
-    /// @dev Mapping from operator set key to operator set configuration
-    mapping(bytes32 operatorSetKey => OperatorSetConfig) internal _operatorSetConfigs;
 
     /// CHAIN WHITELISTING
 

@@ -28,6 +28,23 @@ contract CrossChainRegistry is
 
     /**
      *
+     *                         MODIFIERS
+     *
+     */
+
+    /**
+     * @dev Validates that the operator set exists in the AllocationManager
+     * @param operatorSet The operator set to validate
+     */
+    modifier isValidOperatorSet(
+        OperatorSet calldata operatorSet
+    ) {
+        require(allocationManager.isOperatorSet(operatorSet), InvalidOperatorSet());
+        _;
+    }
+
+    /**
+     *
      *                         INITIALIZING FUNCTIONS
      *
      */
@@ -74,10 +91,12 @@ contract CrossChainRegistry is
         OperatorSet calldata operatorSet,
         IOperatorTableCalculator operatorTableCalculator,
         OperatorSetConfig calldata config
-    ) external onlyWhenNotPaused(PAUSED_GENERATION_RESERVATIONS) checkCanCall(operatorSet.avs) {
-        // Validate the operator set
-        require(allocationManager.isOperatorSet(operatorSet), InvalidOperatorSet());
-
+    )
+        external
+        onlyWhenNotPaused(PAUSED_GENERATION_RESERVATIONS)
+        checkCanCall(operatorSet.avs)
+        isValidOperatorSet(operatorSet)
+    {
         bytes32 operatorSetKey = operatorSet.key();
 
         // Check if generation reservation already exists
@@ -89,7 +108,6 @@ contract CrossChainRegistry is
 
         // Set the operator table calculator
         _setOperatorTableCalculator(operatorSet, operatorTableCalculator, false);
-
         // Set the operator set config
         _setOperatorSetConfig(operatorSet, config, false);
     }
@@ -97,10 +115,12 @@ contract CrossChainRegistry is
     /// @inheritdoc ICrossChainRegistry
     function removeGenerationReservation(
         OperatorSet calldata operatorSet
-    ) external onlyWhenNotPaused(PAUSED_GENERATION_RESERVATIONS) checkCanCall(operatorSet.avs) {
-        // Validate the operator set
-        require(allocationManager.isOperatorSet(operatorSet), InvalidOperatorSet());
-
+    )
+        external
+        onlyWhenNotPaused(PAUSED_GENERATION_RESERVATIONS)
+        checkCanCall(operatorSet.avs)
+        isValidOperatorSet(operatorSet)
+    {
         bytes32 operatorSetKey = operatorSet.key();
 
         // Check if generation reservation exists
@@ -112,7 +132,6 @@ contract CrossChainRegistry is
 
         // Remove the operator table calculator
         _setOperatorTableCalculator(operatorSet, IOperatorTableCalculator(address(0)), true);
-
         // Remove the operator set config
         _setOperatorSetConfig(operatorSet, OperatorSetConfig(address(0), 0), true);
     }
@@ -121,10 +140,12 @@ contract CrossChainRegistry is
     function setOperatorTableCalculator(
         OperatorSet calldata operatorSet,
         IOperatorTableCalculator operatorTableCalculator
-    ) external onlyWhenNotPaused(PAUSED_OPERATOR_TABLE_CALCULATOR) checkCanCall(operatorSet.avs) {
-        // Validate the operator set
-        require(allocationManager.isOperatorSet(operatorSet), InvalidOperatorSet());
-
+    )
+        external
+        onlyWhenNotPaused(PAUSED_OPERATOR_TABLE_CALCULATOR)
+        checkCanCall(operatorSet.avs)
+        isValidOperatorSet(operatorSet)
+    {
         bytes32 operatorSetKey = operatorSet.key();
 
         // Check if generation reservation exists
@@ -138,10 +159,12 @@ contract CrossChainRegistry is
     function setOperatorSetConfig(
         OperatorSet calldata operatorSet,
         OperatorSetConfig calldata config
-    ) external onlyWhenNotPaused(PAUSED_OPERATOR_SET_CONFIG) checkCanCall(operatorSet.avs) {
-        // Validate the operator set
-        require(allocationManager.isOperatorSet(operatorSet), InvalidOperatorSet());
-
+    )
+        external
+        onlyWhenNotPaused(PAUSED_OPERATOR_SET_CONFIG)
+        checkCanCall(operatorSet.avs)
+        isValidOperatorSet(operatorSet)
+    {
         bytes32 operatorSetKey = operatorSet.key();
 
         // Check if generation reservation exists
@@ -155,10 +178,12 @@ contract CrossChainRegistry is
     function addTransportDestinations(
         OperatorSet calldata operatorSet,
         uint32[] calldata chainIDs
-    ) external onlyWhenNotPaused(PAUSED_TRANSPORT_DESTINATIONS) checkCanCall(operatorSet.avs) {
-        // Validate the operator set
-        require(allocationManager.isOperatorSet(operatorSet), InvalidOperatorSet());
-
+    )
+        external
+        onlyWhenNotPaused(PAUSED_TRANSPORT_DESTINATIONS)
+        checkCanCall(operatorSet.avs)
+        isValidOperatorSet(operatorSet)
+    {
         bytes32 operatorSetKey = operatorSet.key();
 
         // Check if this is the first transport destination (create reservation if needed)
@@ -175,10 +200,12 @@ contract CrossChainRegistry is
     function removeTransportDestinations(
         OperatorSet calldata operatorSet,
         uint32[] calldata chainIDs
-    ) external onlyWhenNotPaused(PAUSED_TRANSPORT_DESTINATIONS) checkCanCall(operatorSet.avs) {
-        // Validate the operator set
-        require(allocationManager.isOperatorSet(operatorSet), InvalidOperatorSet());
-
+    )
+        external
+        onlyWhenNotPaused(PAUSED_TRANSPORT_DESTINATIONS)
+        checkCanCall(operatorSet.avs)
+        isValidOperatorSet(operatorSet)
+    {
         bytes32 operatorSetKey = operatorSet.key();
 
         // Check if transport reservation exists
