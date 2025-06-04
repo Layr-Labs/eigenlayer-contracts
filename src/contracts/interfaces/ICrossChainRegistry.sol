@@ -1,11 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.27;
+pragma solidity >=0.5.0;
 
-import "src/contracts/libraries/OperatorSetLib.sol";
-
-interface IOperatorTableCalculator {
-// TODO: implement, stub for now
-}
+import {OperatorSet} from "../libraries/OperatorSetLib.sol";
+import "./IOperatorTableCalculator.sol";
 
 interface ICrossChainRegistryErrors {
     /// @notice Thrown when the chainId is invalid
@@ -91,7 +88,7 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryT
     /**
      * @notice Adds a chainID to the whitelist of chainIDs that can be transported to
      * @param chainID the chainID to add to the whitelist
-     * @dev msg.sender must be UAM permissioned for operatorSet.avs
+     * @dev msg.sender must be the owner of the CrossChainRegistry
      */
     function addChainIDToWhitelist(
         uint32 chainID
@@ -100,11 +97,17 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryT
     /**
      * @notice Removes a chainID from the whitelist of chainIDs that can be transported to
      * @param chainID the chainID to remove from the whitelist
-     * @dev msg.sender must be UAM permissioned for operatorSet.avs
+     * @dev msg.sender must be the owner of the CrossChainRegistry
      */
     function removeChainIDFromWhitelist(
         uint32 chainID
     ) external;
+
+    /**
+     * @notice Gets the list of chains that are supported by the CrossChainRegistry
+     * @return An array of chainIDs that are supported by the CrossChainRegistry
+     */
+    function getSupportedChains() external view returns (uint32[] memory);
 
     /**
      * @notice Gets the operatorTableCalculator for a given operatorSet
@@ -113,7 +116,7 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryT
      */
     function getOperatorTableCalculator(
         OperatorSet calldata operatorSet
-    ) external returns (IOperatorTableCalculator);
+    ) external view returns (IOperatorTableCalculator);
 
     /**
      * @notice Gets the active generation reservations
@@ -122,5 +125,15 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryT
      */
     function getActiveGenerationReservations()
         external
+        view
         returns (OperatorSet[] memory, IOperatorTableCalculator[] memory);
+
+    /**
+     * @notice Gets the transport destinations for a given operatorSet
+     * @param operatorSet the operatorSet to get the transport destinations for
+     * @return An array of chainIDs that are transport destinations for the given operatorSet
+     */
+    function getTransportDestinations(
+        OperatorSet calldata operatorSet
+    ) external view returns (uint32[] memory);
 }

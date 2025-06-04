@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.27;
+pragma solidity >=0.5.0;
 
-import "src/contracts/libraries/OperatorSetLib.sol";
+import {OperatorSet} from "../libraries/OperatorSetLib.sol";
 
 interface IECDSATableCalculatorTypes {
     /**
@@ -13,7 +13,7 @@ interface IECDSATableCalculatorTypes {
      */
     struct ECDSAOperatorInfo {
         address pubkey;
-        uint96[] weights;
+        uint256[] weights;
     }
 }
 
