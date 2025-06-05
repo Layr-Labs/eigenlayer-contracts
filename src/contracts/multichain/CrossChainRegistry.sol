@@ -93,7 +93,8 @@ contract CrossChainRegistry is
     function requestGenerationReservation(
         OperatorSet calldata operatorSet,
         IOperatorTableCalculator operatorTableCalculator,
-        OperatorSetConfig calldata config
+        OperatorSetConfig calldata config,
+        uint32[] calldata chainIDs
     )
         external
         onlyWhenNotPaused(PAUSED_GENERATION_RESERVATIONS)
@@ -108,6 +109,8 @@ contract CrossChainRegistry is
         _setOperatorTableCalculator(operatorSet, operatorTableCalculator, false);
         // Set the operator set config
         _setOperatorSetConfig(operatorSet, config, false);
+        // Add transport destinations
+        _addTransportDestinations(operatorSet, chainIDs);
     }
 
     /// @inheritdoc ICrossChainRegistry
@@ -119,14 +122,18 @@ contract CrossChainRegistry is
         checkCanCall(operatorSet.avs)
         isValidOperatorSet(operatorSet)
     {
+        bytes32 operatorSetKey = operatorSet.key();
+
         // Remove from active generation reservations
-        require(_activeGenerationReservations.remove(operatorSet.key()), GenerationReservationDoesNotExist());
+        require(_activeGenerationReservations.remove(operatorSetKey), GenerationReservationDoesNotExist());
         emit GenerationReservationRemoved(operatorSet);
 
         // Remove the operator table calculator
         _setOperatorTableCalculator(operatorSet, IOperatorTableCalculator(address(0)), true);
         // Remove the operator set config
         _setOperatorSetConfig(operatorSet, OperatorSetConfig(address(0), 0), true);
+        // Remove all transport destinations
+        _removeTransportDestinations(operatorSet, _getUint32Array(_transportDestinations[operatorSetKey]), true);
     }
 
     /// @inheritdoc ICrossChainRegistry
@@ -173,25 +180,10 @@ contract CrossChainRegistry is
         checkCanCall(operatorSet.avs)
         isValidOperatorSet(operatorSet)
     {
-        // Validate chainIDs array
-        require(chainIDs.length > 0, EmptyChainIDsArray());
+        // Check if generation reservation exists
+        require(_activeGenerationReservations.contains(operatorSet.key()), GenerationReservationDoesNotExist());
 
-        bytes32 operatorSetKey = operatorSet.key();
-
-        // Check if this is the first transport destination (create reservation if needed)
-        _activeTransportReservations.add(operatorSetKey);
-
-        for (uint256 i = 0; i < chainIDs.length; i++) {
-            uint32 chainID = chainIDs[i];
-
-            // Check if chainID is whitelisted
-            require(_whitelistedChainIDs.contains(chainID), ChainIDNotWhitelisted());
-
-            // Add transport destination
-            require(_transportDestinations[operatorSetKey].add(chainID), TransportDestinationAlreadyAdded());
-
-            emit TransportDestinationAdded(operatorSet, chainID);
-        }
+        _addTransportDestinations(operatorSet, chainIDs);
     }
 
     /// @inheritdoc ICrossChainRegistry
@@ -204,24 +196,10 @@ contract CrossChainRegistry is
         checkCanCall(operatorSet.avs)
         isValidOperatorSet(operatorSet)
     {
-        bytes32 operatorSetKey = operatorSet.key();
+        // Check if generation reservation exists
+        require(_activeGenerationReservations.contains(operatorSet.key()), GenerationReservationDoesNotExist());
 
-        // Check if transport reservation exists
-        require(_activeTransportReservations.contains(operatorSetKey), TransportReservationDoesNotExist());
-
-        for (uint256 i = 0; i < chainIDs.length; i++) {
-            uint32 chainID = chainIDs[i];
-
-            // Remove transport destination
-            require(_transportDestinations[operatorSetKey].remove(chainID), TransportDestinationNotFound());
-
-            emit TransportDestinationRemoved(operatorSet, chainID);
-        }
-
-        // Check if all transport destinations have been removed
-        if (_transportDestinations[operatorSetKey].length() == 0) {
-            _activeTransportReservations.remove(operatorSetKey);
-        }
+        _removeTransportDestinations(operatorSet, chainIDs, false);
     }
 
     /// @inheritdoc ICrossChainRegistry
@@ -301,6 +279,62 @@ contract CrossChainRegistry is
     }
 
     /**
+     * @dev Internal function to add transport destinations for an operator set
+     * @param operatorSet The operator set to add destinations for
+     * @param chainIDs The chain IDs to add as destinations
+     */
+    function _addTransportDestinations(OperatorSet memory operatorSet, uint32[] memory chainIDs) internal {
+        // Validate chainIDs array
+        require(chainIDs.length > 0, EmptyChainIDsArray());
+
+        bytes32 operatorSetKey = operatorSet.key();
+
+        for (uint256 i = 0; i < chainIDs.length; i++) {
+            uint32 chainID = chainIDs[i];
+
+            // Check if chainID is whitelisted
+            require(_whitelistedChainIDs.contains(chainID), ChainIDNotWhitelisted());
+
+            // Add transport destination
+            require(_transportDestinations[operatorSetKey].add(chainID), TransportDestinationAlreadyAdded());
+
+            emit TransportDestinationAdded(operatorSet, chainID);
+        }
+    }
+
+    /**
+     * @dev Internal function to remove transport destinations for an operator set
+     * @param operatorSet The operator set to remove destinations from
+     * @param chainIDs The chain IDs to remove as destinations
+     * @param isDelete Whether to delete the transport destinations
+     */
+    function _removeTransportDestinations(
+        OperatorSet memory operatorSet,
+        uint32[] memory chainIDs,
+        bool isDelete
+    ) internal {
+        // Validate chainIDs array
+        require(chainIDs.length > 0, EmptyChainIDsArray());
+
+        bytes32 operatorSetKey = operatorSet.key();
+
+        for (uint256 i = 0; i < chainIDs.length; i++) {
+            uint32 chainID = chainIDs[i];
+
+            // Remove transport destination
+            require(_transportDestinations[operatorSetKey].remove(chainID), TransportDestinationNotFound());
+
+            emit TransportDestinationRemoved(operatorSet, chainID);
+        }
+
+        // Check final state based on isDelete flag
+        if (!isDelete) {
+            // For normal removal, at least one destination should remain
+            require(_transportDestinations[operatorSetKey].length() > 0, RequireAtLeastOneTransportDestination());
+        }
+    }
+
+    /**
      * @dev Internal helper function to convert EnumerableSet.UintSet to uint32[]
      * @param set The EnumerableSet.UintSet to convert
      * @return result The converted uint32 array
@@ -370,12 +404,12 @@ contract CrossChainRegistry is
 
     /// @inheritdoc ICrossChainRegistry
     function getActiveTransportReservations() external view returns (OperatorSet[] memory, uint32[][] memory) {
-        uint256 length = _activeTransportReservations.length();
+        uint256 length = _activeGenerationReservations.length();
         OperatorSet[] memory operatorSets = new OperatorSet[](length);
         uint32[][] memory chainIDs = new uint32[][](length);
 
         for (uint256 i = 0; i < length; i++) {
-            bytes32 operatorSetKey = _activeTransportReservations.at(i);
+            bytes32 operatorSetKey = _activeGenerationReservations.at(i);
             OperatorSet memory operatorSet = OperatorSetLib.decode(operatorSetKey);
 
             operatorSets[i] = operatorSet;

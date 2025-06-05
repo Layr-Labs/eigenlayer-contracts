@@ -23,9 +23,6 @@ interface ICrossChainRegistryErrors {
     /// @notice Thrown when a transport destination is not found for the operator set
     error TransportDestinationNotFound();
 
-    /// @notice Thrown when a transport reservation does not exist for the operator set
-    error TransportReservationDoesNotExist();
-
     /// @notice Thrown when a chain ID is already whitelisted
     error ChainIDAlreadyWhitelisted();
 
@@ -40,6 +37,9 @@ interface ICrossChainRegistryErrors {
 
     /// @notice Thrown when the chainIDs array is empty
     error EmptyChainIDsArray();
+
+    /// @notice Thrown when a at least one transport destination is required
+    error RequireAtLeastOneTransportDestination();
 }
 
 interface ICrossChainRegistryTypes {
@@ -86,12 +86,14 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
      * @param operatorSet the operatorSet to make a reservation for
      * @param operatorTableCalculator the address of the operatorTableCalculator
      * @param config the config to set for the operatorSet
+     * @param chainIDs the chainIDs to add as transport destinations
      * @dev msg.sender must be UAM permissioned for operatorSet.avs
      */
     function requestGenerationReservation(
         OperatorSet calldata operatorSet,
         IOperatorTableCalculator operatorTableCalculator,
-        OperatorSetConfig calldata config
+        OperatorSetConfig calldata config,
+        uint32[] calldata chainIDs
     ) external;
 
     /**

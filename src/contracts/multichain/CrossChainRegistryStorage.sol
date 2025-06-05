@@ -57,11 +57,6 @@ abstract contract CrossChainRegistryStorage is ICrossChainRegistry {
     /// @dev Mapping from operator set key to operator set configuration
     mapping(bytes32 operatorSetKey => OperatorSetConfig) internal _operatorSetConfigs;
 
-    /// TRANSPORT RESERVATIONS
-
-    /// @dev Set of operator sets with active transport reservations
-    EnumerableSet.Bytes32Set internal _activeTransportReservations;
-
     /// @dev Mapping from operator set key to set of chain IDs for transport destinations
     mapping(bytes32 operatorSetKey => EnumerableSet.UintSet) internal _transportDestinations;
 
@@ -82,5 +77,5 @@ abstract contract CrossChainRegistryStorage is ICrossChainRegistry {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[41] private __gap;
+    uint256[43] private __gap;
 }
