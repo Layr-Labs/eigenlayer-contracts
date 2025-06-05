@@ -63,15 +63,16 @@ contract CrossChainRegistry is
 
     /**
      * @dev Initializes the CrossChainRegistry with immutable dependencies
-     * @param _permissionController The permission controller for access control
      * @param _allocationManager The allocation manager for operator set validation
+     * @param _keyRegistrar The key registrar for operator set curve type validation
+     * @param _permissionController The permission controller for access control
      * @param _pauserRegistry The pauser registry for pause functionality
      * @param _version The semantic version of the contract
      */
     constructor(
-        IPermissionController _permissionController,
         IAllocationManager _allocationManager,
         IKeyRegistrar _keyRegistrar,
+        IPermissionController _permissionController,
         IPauserRegistry _pauserRegistry,
         string memory _version
     )
@@ -304,7 +305,7 @@ contract CrossChainRegistry is
      * @param isDelete Whether to delete the operator set config
      */
     function _setOperatorSetConfig(
-        OperatorSet calldata operatorSet,
+        OperatorSet memory operatorSet,
         OperatorSetConfig memory config,
         bool isDelete
     ) internal {

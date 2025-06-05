@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity >=0.5.0;
+pragma solidity ^0.8.27;
 
 import {OperatorSet} from "../libraries/OperatorSetLib.sol";
 import "./IOperatorTableCalculator.sol";
@@ -197,7 +197,12 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
     /**
      * @notice Calculates the operatorTableBytes for a given operatorSet
      * @param operatorSet the operatorSet to calculate the operator table for
-     * @return the encoded operatorTableBytes for the given operatorSet
+     * @return the encoded operatorTableBytes containing:
+     *         - operatorSet details
+     *         - curve type from KeyRegistrar
+     *         - operator set configuration
+     *         - calculated operator table from the calculator contract
+     * @dev This function aggregates data from multiple sources for cross-chain transport
      */
     function calculateOperatorTableBytes(
         OperatorSet calldata operatorSet
