@@ -41,9 +41,15 @@ contract BN254TableCalculatorUnitTests is EigenLayerMultichainUnitTestSetup, Ope
         address[] memory operatorAddresses = new address[](operatorCount);
         for (uint i = 0; i < operatorCount; ++i) {
             operators[i] = _createOperatorWallet(r);
-            operatorAddresses[i] = operators[i].key.addr;
+            address operatorAddress = operators[i].key.addr;
+            operatorAddresses[i] = operatorAddress;
+
+            // Generate signature data for operator
+            bytes32 messageHash = keyRegistrar.getBN254KeyRegistrationMessageHash(operatorAddress, defaultOperatorSet, );
 
             // Register each operator in the keyRegistrar
+            cheats.prank(operatorAddress);
+            keyRegistrar.registerKey(operatorAddress, defaultOperatorSet, );
         }
 
         allocationManagerMock.setMembersInOperatorSet(defaultOperatorSet, operatorAddresses);
