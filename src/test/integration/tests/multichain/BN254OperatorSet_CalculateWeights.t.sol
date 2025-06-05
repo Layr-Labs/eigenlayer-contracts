@@ -6,7 +6,7 @@ import "src/test/integration/users/User.t.sol";
 import {console} from "forge-std/console.sol";
 import {BN254} from "src/contracts/libraries/BN254.sol";
 
-// TODO: insteads of hardcode bn254 keys, generate randomly per operator
+// TODO: instead of hardcoding bn254 keys, generate randomly per operator
 contract BN254OperatorSet_CalculateWeights is IntegrationCheckUtils {
     using BN254 for BN254.G1Point;
 
