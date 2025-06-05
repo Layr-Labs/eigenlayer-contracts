@@ -16,4 +16,4 @@ contract OperatorTableCalculatorMock is IOperatorTableCalculator {
     function setOperatorTableBytes(OperatorSet memory operatorSet, bytes memory operatorTableBytes) external {
         _operatorTableBytes[operatorSet.key()] = operatorTableBytes;
     }
-} 
+}
