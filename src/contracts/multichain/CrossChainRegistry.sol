@@ -45,17 +45,6 @@ contract CrossChainRegistry is
     }
 
     /**
-     * @dev Validates that the chainIDs array is not empty
-     * @param chainIDs The array of chain IDs to validate
-     */
-    modifier nonEmptyChainIDsArray(
-        uint32[] calldata chainIDs
-    ) {
-        require(chainIDs.length > 0, EmptyChainIDsArray());
-        _;
-    }
-
-    /**
      *
      *                         INITIALIZING FUNCTIONS
      *
@@ -183,8 +172,10 @@ contract CrossChainRegistry is
         onlyWhenNotPaused(PAUSED_TRANSPORT_DESTINATIONS)
         checkCanCall(operatorSet.avs)
         isValidOperatorSet(operatorSet)
-        nonEmptyChainIDsArray(chainIDs)
     {
+        // Validate chainIDs array
+        require(chainIDs.length > 0, EmptyChainIDsArray());
+
         bytes32 operatorSetKey = operatorSet.key();
 
         // Check if this is the first transport destination (create reservation if needed)
@@ -193,8 +184,6 @@ contract CrossChainRegistry is
         for (uint256 i = 0; i < chainIDs.length; i++) {
             uint32 chainID = chainIDs[i];
 
-            // Validate chainID
-            require(chainID != 0, InvalidChainId());
             // Check if chainID is whitelisted
             require(_whitelistedChainIDs.contains(chainID), ChainIDNotWhitelisted());
 
@@ -214,7 +203,6 @@ contract CrossChainRegistry is
         onlyWhenNotPaused(PAUSED_TRANSPORT_DESTINATIONS)
         checkCanCall(operatorSet.avs)
         isValidOperatorSet(operatorSet)
-        nonEmptyChainIDsArray(chainIDs)
     {
         bytes32 operatorSetKey = operatorSet.key();
 
@@ -223,9 +211,6 @@ contract CrossChainRegistry is
 
         for (uint256 i = 0; i < chainIDs.length; i++) {
             uint32 chainID = chainIDs[i];
-
-            // Validate chainID
-            require(chainID != 0, InvalidChainId());
 
             // Remove transport destination
             require(_transportDestinations[operatorSetKey].remove(chainID), TransportDestinationNotFound());
@@ -242,7 +227,7 @@ contract CrossChainRegistry is
     /// @inheritdoc ICrossChainRegistry
     function addChainIDsToWhitelist(
         uint32[] calldata chainIDs
-    ) external onlyOwner onlyWhenNotPaused(PAUSED_CHAIN_WHITELIST) nonEmptyChainIDsArray(chainIDs) {
+    ) external onlyOwner onlyWhenNotPaused(PAUSED_CHAIN_WHITELIST) {
         for (uint256 i = 0; i < chainIDs.length; i++) {
             uint32 chainID = chainIDs[i];
 
@@ -259,12 +244,9 @@ contract CrossChainRegistry is
     /// @inheritdoc ICrossChainRegistry
     function removeChainIDsFromWhitelist(
         uint32[] calldata chainIDs
-    ) external onlyOwner onlyWhenNotPaused(PAUSED_CHAIN_WHITELIST) nonEmptyChainIDsArray(chainIDs) {
+    ) external onlyOwner onlyWhenNotPaused(PAUSED_CHAIN_WHITELIST) {
         for (uint256 i = 0; i < chainIDs.length; i++) {
             uint32 chainID = chainIDs[i];
-
-            // Validate chainID
-            require(chainID != 0, InvalidChainId());
 
             // Remove from whitelist
             require(_whitelistedChainIDs.remove(chainID), ChainIDNotWhitelisted());
