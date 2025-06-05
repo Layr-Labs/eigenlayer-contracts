@@ -159,8 +159,8 @@ contract ExistingDeploymentParser is Script, Logger {
     EigenStrategy public eigenStrategyImpl;
 
     /// @dev Multichain
-    IKeyRegistrar public keyRegistrar;
-    IKeyRegistrar public keyRegistrarImplementation;
+    KeyRegistrar public keyRegistrar;
+    KeyRegistrar public keyRegistrarImplementation;
     IBN254CertificateVerifier public bn254CertificateVerifier;
     IBN254CertificateVerifier public bn254CertificateVerifierImplementation;
     IECDSACertificateVerifier public ecdsaCertificateVerifier;
@@ -315,7 +315,7 @@ contract ExistingDeploymentParser is Script, Logger {
         eigenStrategyImpl = EigenStrategy(json.readAddress(".addresses.token.eigenStrategyImpl"));
 
         // multichain
-        keyRegistrar = IKeyRegistrar(json.readAddress(".addresses.multichain.keyRegistrar"));
+        keyRegistrar = KeyRegistrar(json.readAddress(".addresses.multichain.keyRegistrar"));
         bn254CertificateVerifier =
             IBN254CertificateVerifier(json.readAddress(".addresses.multichain.bn254CertificateVerifier"));
         ecdsaCertificateVerifier =

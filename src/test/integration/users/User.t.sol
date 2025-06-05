@@ -10,7 +10,7 @@ import "src/contracts/core/StrategyManager.sol";
 import "src/contracts/pods/EigenPodManager.sol";
 import "src/contracts/pods/EigenPod.sol";
 
-import "src/contracts/interfaces/IKeyRegistrar.sol";
+import "src/contracts/permissions/KeyRegistrar.sol";
 import "src/contracts/libraries/BN254.sol";
 import "src/contracts/mixins/SignatureUtilsMixin.sol";
 
@@ -31,7 +31,7 @@ interface IUserDeployer {
     function eigenPodManager() external view returns (EigenPodManager);
     function timeMachine() external view returns (TimeMachine);
     function beaconChain() external view returns (BeaconChainMock);
-    function keyRegistrar() external view returns (IKeyRegistrar);
+    function keyRegistrar() external view returns (KeyRegistrar);
 }
 
 contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
@@ -53,7 +53,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     EigenPodManager eigenPodManager;
     TimeMachine timeMachine;
     BeaconChainMock beaconChain;
-    IKeyRegistrar keyRegistrar;
+    KeyRegistrar keyRegistrar;
 
     uint32 public allocationDelay = 1;
 
@@ -169,7 +169,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
                 keyRegistrar.BN254_KEY_REGISTRATION_TYPEHASH(), address(this), operatorSet.avs, operatorSet.id, keccak256(bn254KeyBytes)
             )
         );
-        bytes32 messageHash = SignatureUtilsMixin(address(keyRegistrar)).domainSeparator();
+        bytes32 messageHash = keyRegistrar.domainSeparator();
         messageHash = keccak256(abi.encodePacked("\x19\x01", messageHash, structHash));
 
         BN254.G1Point memory msgPoint = BN254.hashToG1(messageHash);
@@ -184,7 +184,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
 
         bytes32 structHash =
             keccak256(abi.encode(keyRegistrar.ECDSA_KEY_REGISTRATION_TYPEHASH(), address(this), operatorSet.avs, operatorSet.id, pubKey));
-        bytes32 messageHash = SignatureUtilsMixin(address(keyRegistrar)).domainSeparator();
+        bytes32 messageHash = keyRegistrar.domainSeparator();
         messageHash = keccak256(abi.encodePacked("\x19\x01", messageHash, structHash));
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(privKey, messageHash);
