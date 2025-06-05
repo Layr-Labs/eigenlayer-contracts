@@ -37,7 +37,7 @@ type OperatorSet struct {
 
 // ICrossChainRegistryMetaData contains all meta data concerning the ICrossChainRegistry contract.
 var ICrossChainRegistryMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"addChainIDToWhitelist\",\"inputs\":[{\"name\":\"chainID\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"addTransportDestination\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"chainID\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"getActiveGenerationReservations\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"tuple[]\",\"internalType\":\"structOperatorSet[]\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"\",\"type\":\"address[]\",\"internalType\":\"contractIOperatorTableCalculator[]\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"getOperatorTableCalculator\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIOperatorTableCalculator\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"getSupportedChains\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32[]\",\"internalType\":\"uint32[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getTransportDestinations\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"uint32[]\",\"internalType\":\"uint32[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"removeChainIDFromWhitelist\",\"inputs\":[{\"name\":\"chainID\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeGenerationReservation\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeTransportDestination\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"chainID\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"requestGenerationReservation\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"operatorTableCalculator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setOperatorTableCalculator\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"calculator\",\"type\":\"address\",\"internalType\":\"contractIOperatorTableCalculator\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"ChainIDAddedToWhitelist\",\"inputs\":[{\"name\":\"chainID\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"ChainIDRemovedFromWhitelist\",\"inputs\":[{\"name\":\"chainID\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"GenerationReservationMade\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"operatorTableCalculator\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIOperatorTableCalculator\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"GenerationReservationRemoved\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"operatorTableCalculator\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIOperatorTableCalculator\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"TransportDestinationAdded\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"chainID\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"TransportDestinationRemoved\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"chainID\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"InvalidChainId\",\"inputs\":[]}]",
+	ABI: "[{\"type\":\"function\",\"name\":\"addChainIDToWhitelist\",\"inputs\":[{\"name\":\"chainID\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"addTransportDestination\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"chainID\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"getActiveGenerationReservations\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"tuple[]\",\"internalType\":\"structOperatorSet[]\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"\",\"type\":\"address[]\",\"internalType\":\"contractIOperatorTableCalculator[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getOperatorTableCalculator\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIOperatorTableCalculator\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getSupportedChains\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32[]\",\"internalType\":\"uint32[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getTransportDestinations\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"uint32[]\",\"internalType\":\"uint32[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"removeChainIDFromWhitelist\",\"inputs\":[{\"name\":\"chainID\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeGenerationReservation\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeTransportDestination\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"chainID\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"requestGenerationReservation\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"operatorTableCalculator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setOperatorTableCalculator\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"calculator\",\"type\":\"address\",\"internalType\":\"contractIOperatorTableCalculator\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"ChainIDAddedToWhitelist\",\"inputs\":[{\"name\":\"chainID\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"ChainIDRemovedFromWhitelist\",\"inputs\":[{\"name\":\"chainID\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"GenerationReservationMade\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"operatorTableCalculator\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIOperatorTableCalculator\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"GenerationReservationRemoved\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"operatorTableCalculator\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIOperatorTableCalculator\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"TransportDestinationAdded\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"chainID\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"TransportDestinationRemoved\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"chainID\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"InvalidChainId\",\"inputs\":[]}]",
 }
 
 // ICrossChainRegistryABI is the input ABI used to generate the binding from.
@@ -186,6 +186,69 @@ func (_ICrossChainRegistry *ICrossChainRegistryTransactorRaw) Transact(opts *bin
 	return _ICrossChainRegistry.Contract.contract.Transact(opts, method, params...)
 }
 
+// GetActiveGenerationReservations is a free data retrieval call binding the contract method 0xd09b978b.
+//
+// Solidity: function getActiveGenerationReservations() view returns((address,uint32)[], address[])
+func (_ICrossChainRegistry *ICrossChainRegistryCaller) GetActiveGenerationReservations(opts *bind.CallOpts) ([]OperatorSet, []common.Address, error) {
+	var out []interface{}
+	err := _ICrossChainRegistry.contract.Call(opts, &out, "getActiveGenerationReservations")
+
+	if err != nil {
+		return *new([]OperatorSet), *new([]common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([]OperatorSet)).(*[]OperatorSet)
+	out1 := *abi.ConvertType(out[1], new([]common.Address)).(*[]common.Address)
+
+	return out0, out1, err
+
+}
+
+// GetActiveGenerationReservations is a free data retrieval call binding the contract method 0xd09b978b.
+//
+// Solidity: function getActiveGenerationReservations() view returns((address,uint32)[], address[])
+func (_ICrossChainRegistry *ICrossChainRegistrySession) GetActiveGenerationReservations() ([]OperatorSet, []common.Address, error) {
+	return _ICrossChainRegistry.Contract.GetActiveGenerationReservations(&_ICrossChainRegistry.CallOpts)
+}
+
+// GetActiveGenerationReservations is a free data retrieval call binding the contract method 0xd09b978b.
+//
+// Solidity: function getActiveGenerationReservations() view returns((address,uint32)[], address[])
+func (_ICrossChainRegistry *ICrossChainRegistryCallerSession) GetActiveGenerationReservations() ([]OperatorSet, []common.Address, error) {
+	return _ICrossChainRegistry.Contract.GetActiveGenerationReservations(&_ICrossChainRegistry.CallOpts)
+}
+
+// GetOperatorTableCalculator is a free data retrieval call binding the contract method 0x75e4b539.
+//
+// Solidity: function getOperatorTableCalculator((address,uint32) operatorSet) view returns(address)
+func (_ICrossChainRegistry *ICrossChainRegistryCaller) GetOperatorTableCalculator(opts *bind.CallOpts, operatorSet OperatorSet) (common.Address, error) {
+	var out []interface{}
+	err := _ICrossChainRegistry.contract.Call(opts, &out, "getOperatorTableCalculator", operatorSet)
+
+	if err != nil {
+		return *new(common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+
+	return out0, err
+
+}
+
+// GetOperatorTableCalculator is a free data retrieval call binding the contract method 0x75e4b539.
+//
+// Solidity: function getOperatorTableCalculator((address,uint32) operatorSet) view returns(address)
+func (_ICrossChainRegistry *ICrossChainRegistrySession) GetOperatorTableCalculator(operatorSet OperatorSet) (common.Address, error) {
+	return _ICrossChainRegistry.Contract.GetOperatorTableCalculator(&_ICrossChainRegistry.CallOpts, operatorSet)
+}
+
+// GetOperatorTableCalculator is a free data retrieval call binding the contract method 0x75e4b539.
+//
+// Solidity: function getOperatorTableCalculator((address,uint32) operatorSet) view returns(address)
+func (_ICrossChainRegistry *ICrossChainRegistryCallerSession) GetOperatorTableCalculator(operatorSet OperatorSet) (common.Address, error) {
+	return _ICrossChainRegistry.Contract.GetOperatorTableCalculator(&_ICrossChainRegistry.CallOpts, operatorSet)
+}
+
 // GetSupportedChains is a free data retrieval call binding the contract method 0xc4bffe2b.
 //
 // Solidity: function getSupportedChains() view returns(uint32[])
@@ -288,48 +351,6 @@ func (_ICrossChainRegistry *ICrossChainRegistrySession) AddTransportDestination(
 // Solidity: function addTransportDestination((address,uint32) operatorSet, uint32 chainID) returns()
 func (_ICrossChainRegistry *ICrossChainRegistryTransactorSession) AddTransportDestination(operatorSet OperatorSet, chainID uint32) (*types.Transaction, error) {
 	return _ICrossChainRegistry.Contract.AddTransportDestination(&_ICrossChainRegistry.TransactOpts, operatorSet, chainID)
-}
-
-// GetActiveGenerationReservations is a paid mutator transaction binding the contract method 0xd09b978b.
-//
-// Solidity: function getActiveGenerationReservations() returns((address,uint32)[], address[])
-func (_ICrossChainRegistry *ICrossChainRegistryTransactor) GetActiveGenerationReservations(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _ICrossChainRegistry.contract.Transact(opts, "getActiveGenerationReservations")
-}
-
-// GetActiveGenerationReservations is a paid mutator transaction binding the contract method 0xd09b978b.
-//
-// Solidity: function getActiveGenerationReservations() returns((address,uint32)[], address[])
-func (_ICrossChainRegistry *ICrossChainRegistrySession) GetActiveGenerationReservations() (*types.Transaction, error) {
-	return _ICrossChainRegistry.Contract.GetActiveGenerationReservations(&_ICrossChainRegistry.TransactOpts)
-}
-
-// GetActiveGenerationReservations is a paid mutator transaction binding the contract method 0xd09b978b.
-//
-// Solidity: function getActiveGenerationReservations() returns((address,uint32)[], address[])
-func (_ICrossChainRegistry *ICrossChainRegistryTransactorSession) GetActiveGenerationReservations() (*types.Transaction, error) {
-	return _ICrossChainRegistry.Contract.GetActiveGenerationReservations(&_ICrossChainRegistry.TransactOpts)
-}
-
-// GetOperatorTableCalculator is a paid mutator transaction binding the contract method 0x75e4b539.
-//
-// Solidity: function getOperatorTableCalculator((address,uint32) operatorSet) returns(address)
-func (_ICrossChainRegistry *ICrossChainRegistryTransactor) GetOperatorTableCalculator(opts *bind.TransactOpts, operatorSet OperatorSet) (*types.Transaction, error) {
-	return _ICrossChainRegistry.contract.Transact(opts, "getOperatorTableCalculator", operatorSet)
-}
-
-// GetOperatorTableCalculator is a paid mutator transaction binding the contract method 0x75e4b539.
-//
-// Solidity: function getOperatorTableCalculator((address,uint32) operatorSet) returns(address)
-func (_ICrossChainRegistry *ICrossChainRegistrySession) GetOperatorTableCalculator(operatorSet OperatorSet) (*types.Transaction, error) {
-	return _ICrossChainRegistry.Contract.GetOperatorTableCalculator(&_ICrossChainRegistry.TransactOpts, operatorSet)
-}
-
-// GetOperatorTableCalculator is a paid mutator transaction binding the contract method 0x75e4b539.
-//
-// Solidity: function getOperatorTableCalculator((address,uint32) operatorSet) returns(address)
-func (_ICrossChainRegistry *ICrossChainRegistryTransactorSession) GetOperatorTableCalculator(operatorSet OperatorSet) (*types.Transaction, error) {
-	return _ICrossChainRegistry.Contract.GetOperatorTableCalculator(&_ICrossChainRegistry.TransactOpts, operatorSet)
 }
 
 // RemoveChainIDFromWhitelist is a paid mutator transaction binding the contract method 0x2ab0b20f.

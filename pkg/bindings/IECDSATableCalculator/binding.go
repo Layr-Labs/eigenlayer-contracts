@@ -43,7 +43,7 @@ type OperatorSet struct {
 
 // IECDSATableCalculatorMetaData contains all meta data concerning the IECDSATableCalculator contract.
 var IECDSATableCalculatorMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"calculateOperatorTable\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"operatorInfos\",\"type\":\"tuple[]\",\"internalType\":\"structIECDSATableCalculatorTypes.ECDSAOperatorInfo[]\",\"components\":[{\"name\":\"pubkey\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"weights\",\"type\":\"uint96[]\",\"internalType\":\"uint96[]\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"calculateOperatorTableBytes\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"operatorTableBytes\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"stateMutability\":\"view\"}]",
+	ABI: "[{\"type\":\"function\",\"name\":\"calculateOperatorTable\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"operatorInfos\",\"type\":\"tuple[]\",\"internalType\":\"structIECDSATableCalculatorTypes.ECDSAOperatorInfo[]\",\"components\":[{\"name\":\"pubkey\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"weights\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"calculateOperatorTableBytes\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"operatorTableBytes\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"stateMutability\":\"view\"}]",
 }
 
 // IECDSATableCalculatorABI is the input ABI used to generate the binding from.
@@ -194,7 +194,7 @@ func (_IECDSATableCalculator *IECDSATableCalculatorTransactorRaw) Transact(opts 
 
 // CalculateOperatorTable is a free data retrieval call binding the contract method 0x124c87e0.
 //
-// Solidity: function calculateOperatorTable((address,uint32) operatorSet) view returns((address,uint96[])[] operatorInfos)
+// Solidity: function calculateOperatorTable((address,uint32) operatorSet) view returns((address,uint256[])[] operatorInfos)
 func (_IECDSATableCalculator *IECDSATableCalculatorCaller) CalculateOperatorTable(opts *bind.CallOpts, operatorSet OperatorSet) ([]IECDSATableCalculatorTypesECDSAOperatorInfo, error) {
 	var out []interface{}
 	err := _IECDSATableCalculator.contract.Call(opts, &out, "calculateOperatorTable", operatorSet)
@@ -211,14 +211,14 @@ func (_IECDSATableCalculator *IECDSATableCalculatorCaller) CalculateOperatorTabl
 
 // CalculateOperatorTable is a free data retrieval call binding the contract method 0x124c87e0.
 //
-// Solidity: function calculateOperatorTable((address,uint32) operatorSet) view returns((address,uint96[])[] operatorInfos)
+// Solidity: function calculateOperatorTable((address,uint32) operatorSet) view returns((address,uint256[])[] operatorInfos)
 func (_IECDSATableCalculator *IECDSATableCalculatorSession) CalculateOperatorTable(operatorSet OperatorSet) ([]IECDSATableCalculatorTypesECDSAOperatorInfo, error) {
 	return _IECDSATableCalculator.Contract.CalculateOperatorTable(&_IECDSATableCalculator.CallOpts, operatorSet)
 }
 
 // CalculateOperatorTable is a free data retrieval call binding the contract method 0x124c87e0.
 //
-// Solidity: function calculateOperatorTable((address,uint32) operatorSet) view returns((address,uint96[])[] operatorInfos)
+// Solidity: function calculateOperatorTable((address,uint32) operatorSet) view returns((address,uint256[])[] operatorInfos)
 func (_IECDSATableCalculator *IECDSATableCalculatorCallerSession) CalculateOperatorTable(operatorSet OperatorSet) ([]IECDSATableCalculatorTypesECDSAOperatorInfo, error) {
 	return _IECDSATableCalculator.Contract.CalculateOperatorTable(&_IECDSATableCalculator.CallOpts, operatorSet)
 }

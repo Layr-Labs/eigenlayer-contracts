@@ -1,7 +1,7 @@
 // Code generated - DO NOT EDIT.
 // This file is a generated binding and any manual changes will be lost.
 
-package IBN254CertificateVerifier
+package BN254CertificateVerifierStorage
 
 import (
 	"errors"
@@ -83,113 +83,113 @@ type OperatorSet struct {
 	Id  uint32
 }
 
-// IBN254CertificateVerifierMetaData contains all meta data concerning the IBN254CertificateVerifier contract.
-var IBN254CertificateVerifierMetaData = &bind.MetaData{
+// BN254CertificateVerifierStorageMetaData contains all meta data concerning the BN254CertificateVerifierStorage contract.
+var BN254CertificateVerifierStorageMetaData = &bind.MetaData{
 	ABI: "[{\"type\":\"function\",\"name\":\"getOperatorSetOwner\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"latestReferenceTimestamp\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"maxOperatorTableStaleness\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"updateOperatorTable\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"operatorSetInfo\",\"type\":\"tuple\",\"internalType\":\"structIBN254TableCalculatorTypes.BN254OperatorSetInfo\",\"components\":[{\"name\":\"operatorInfoTreeRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"numOperators\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"aggregatePubkey\",\"type\":\"tuple\",\"internalType\":\"structBN254.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"totalWeights\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}]},{\"name\":\"operatorSetConfig\",\"type\":\"tuple\",\"internalType\":\"structICrossChainRegistryTypes.OperatorSetConfig\",\"components\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"maxStalenessPeriod\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"verifyCertificate\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"cert\",\"type\":\"tuple\",\"internalType\":\"structIBN254CertificateVerifierTypes.BN254Certificate\",\"components\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"messageHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"signature\",\"type\":\"tuple\",\"internalType\":\"structBN254.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"apk\",\"type\":\"tuple\",\"internalType\":\"structBN254.G2Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256[2]\",\"internalType\":\"uint256[2]\"},{\"name\":\"Y\",\"type\":\"uint256[2]\",\"internalType\":\"uint256[2]\"}]},{\"name\":\"nonSignerWitnesses\",\"type\":\"tuple[]\",\"internalType\":\"structIBN254CertificateVerifierTypes.BN254OperatorInfoWitness[]\",\"components\":[{\"name\":\"operatorIndex\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"operatorInfoProof\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"operatorInfo\",\"type\":\"tuple\",\"internalType\":\"structIBN254TableCalculatorTypes.BN254OperatorInfo\",\"components\":[{\"name\":\"pubkey\",\"type\":\"tuple\",\"internalType\":\"structBN254.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"weights\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}]}]}]}],\"outputs\":[{\"name\":\"signedStakes\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"verifyCertificateNominal\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"cert\",\"type\":\"tuple\",\"internalType\":\"structIBN254CertificateVerifierTypes.BN254Certificate\",\"components\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"messageHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"signature\",\"type\":\"tuple\",\"internalType\":\"structBN254.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"apk\",\"type\":\"tuple\",\"internalType\":\"structBN254.G2Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256[2]\",\"internalType\":\"uint256[2]\"},{\"name\":\"Y\",\"type\":\"uint256[2]\",\"internalType\":\"uint256[2]\"}]},{\"name\":\"nonSignerWitnesses\",\"type\":\"tuple[]\",\"internalType\":\"structIBN254CertificateVerifierTypes.BN254OperatorInfoWitness[]\",\"components\":[{\"name\":\"operatorIndex\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"operatorInfoProof\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"operatorInfo\",\"type\":\"tuple\",\"internalType\":\"structIBN254TableCalculatorTypes.BN254OperatorInfo\",\"components\":[{\"name\":\"pubkey\",\"type\":\"tuple\",\"internalType\":\"structBN254.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"weights\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}]}]}]},{\"name\":\"totalStakeNominalThresholds\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"verifyCertificateProportion\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"cert\",\"type\":\"tuple\",\"internalType\":\"structIBN254CertificateVerifierTypes.BN254Certificate\",\"components\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"messageHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"signature\",\"type\":\"tuple\",\"internalType\":\"structBN254.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"apk\",\"type\":\"tuple\",\"internalType\":\"structBN254.G2Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256[2]\",\"internalType\":\"uint256[2]\"},{\"name\":\"Y\",\"type\":\"uint256[2]\",\"internalType\":\"uint256[2]\"}]},{\"name\":\"nonSignerWitnesses\",\"type\":\"tuple[]\",\"internalType\":\"structIBN254CertificateVerifierTypes.BN254OperatorInfoWitness[]\",\"components\":[{\"name\":\"operatorIndex\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"operatorInfoProof\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"operatorInfo\",\"type\":\"tuple\",\"internalType\":\"structIBN254TableCalculatorTypes.BN254OperatorInfo\",\"components\":[{\"name\":\"pubkey\",\"type\":\"tuple\",\"internalType\":\"structBN254.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"weights\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}]}]}]},{\"name\":\"totalStakeProportionThresholds\",\"type\":\"uint16[]\",\"internalType\":\"uint16[]\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"MaxStalenessPeriodUpdated\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"maxStalenessPeriod\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorSetOwnerUpdated\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"owner\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"TableUpdated\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"},{\"name\":\"operatorSetInfo\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structIBN254TableCalculatorTypes.BN254OperatorSetInfo\",\"components\":[{\"name\":\"operatorInfoTreeRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"numOperators\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"aggregatePubkey\",\"type\":\"tuple\",\"internalType\":\"structBN254.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"totalWeights\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}]}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"ArrayLengthMismatch\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"CertificateStale\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidOperatorIndex\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OnlyTableUpdater\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ReferenceTimestampDoesNotExist\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"TableUpdateStale\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"VerificationFailed\",\"inputs\":[]}]",
 }
 
-// IBN254CertificateVerifierABI is the input ABI used to generate the binding from.
-// Deprecated: Use IBN254CertificateVerifierMetaData.ABI instead.
-var IBN254CertificateVerifierABI = IBN254CertificateVerifierMetaData.ABI
+// BN254CertificateVerifierStorageABI is the input ABI used to generate the binding from.
+// Deprecated: Use BN254CertificateVerifierStorageMetaData.ABI instead.
+var BN254CertificateVerifierStorageABI = BN254CertificateVerifierStorageMetaData.ABI
 
-// IBN254CertificateVerifier is an auto generated Go binding around an Ethereum contract.
-type IBN254CertificateVerifier struct {
-	IBN254CertificateVerifierCaller     // Read-only binding to the contract
-	IBN254CertificateVerifierTransactor // Write-only binding to the contract
-	IBN254CertificateVerifierFilterer   // Log filterer for contract events
+// BN254CertificateVerifierStorage is an auto generated Go binding around an Ethereum contract.
+type BN254CertificateVerifierStorage struct {
+	BN254CertificateVerifierStorageCaller     // Read-only binding to the contract
+	BN254CertificateVerifierStorageTransactor // Write-only binding to the contract
+	BN254CertificateVerifierStorageFilterer   // Log filterer for contract events
 }
 
-// IBN254CertificateVerifierCaller is an auto generated read-only Go binding around an Ethereum contract.
-type IBN254CertificateVerifierCaller struct {
+// BN254CertificateVerifierStorageCaller is an auto generated read-only Go binding around an Ethereum contract.
+type BN254CertificateVerifierStorageCaller struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// IBN254CertificateVerifierTransactor is an auto generated write-only Go binding around an Ethereum contract.
-type IBN254CertificateVerifierTransactor struct {
+// BN254CertificateVerifierStorageTransactor is an auto generated write-only Go binding around an Ethereum contract.
+type BN254CertificateVerifierStorageTransactor struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// IBN254CertificateVerifierFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
-type IBN254CertificateVerifierFilterer struct {
+// BN254CertificateVerifierStorageFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
+type BN254CertificateVerifierStorageFilterer struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// IBN254CertificateVerifierSession is an auto generated Go binding around an Ethereum contract,
+// BN254CertificateVerifierStorageSession is an auto generated Go binding around an Ethereum contract,
 // with pre-set call and transact options.
-type IBN254CertificateVerifierSession struct {
-	Contract     *IBN254CertificateVerifier // Generic contract binding to set the session for
-	CallOpts     bind.CallOpts              // Call options to use throughout this session
-	TransactOpts bind.TransactOpts          // Transaction auth options to use throughout this session
+type BN254CertificateVerifierStorageSession struct {
+	Contract     *BN254CertificateVerifierStorage // Generic contract binding to set the session for
+	CallOpts     bind.CallOpts                    // Call options to use throughout this session
+	TransactOpts bind.TransactOpts                // Transaction auth options to use throughout this session
 }
 
-// IBN254CertificateVerifierCallerSession is an auto generated read-only Go binding around an Ethereum contract,
+// BN254CertificateVerifierStorageCallerSession is an auto generated read-only Go binding around an Ethereum contract,
 // with pre-set call options.
-type IBN254CertificateVerifierCallerSession struct {
-	Contract *IBN254CertificateVerifierCaller // Generic contract caller binding to set the session for
-	CallOpts bind.CallOpts                    // Call options to use throughout this session
+type BN254CertificateVerifierStorageCallerSession struct {
+	Contract *BN254CertificateVerifierStorageCaller // Generic contract caller binding to set the session for
+	CallOpts bind.CallOpts                          // Call options to use throughout this session
 }
 
-// IBN254CertificateVerifierTransactorSession is an auto generated write-only Go binding around an Ethereum contract,
+// BN254CertificateVerifierStorageTransactorSession is an auto generated write-only Go binding around an Ethereum contract,
 // with pre-set transact options.
-type IBN254CertificateVerifierTransactorSession struct {
-	Contract     *IBN254CertificateVerifierTransactor // Generic contract transactor binding to set the session for
-	TransactOpts bind.TransactOpts                    // Transaction auth options to use throughout this session
+type BN254CertificateVerifierStorageTransactorSession struct {
+	Contract     *BN254CertificateVerifierStorageTransactor // Generic contract transactor binding to set the session for
+	TransactOpts bind.TransactOpts                          // Transaction auth options to use throughout this session
 }
 
-// IBN254CertificateVerifierRaw is an auto generated low-level Go binding around an Ethereum contract.
-type IBN254CertificateVerifierRaw struct {
-	Contract *IBN254CertificateVerifier // Generic contract binding to access the raw methods on
+// BN254CertificateVerifierStorageRaw is an auto generated low-level Go binding around an Ethereum contract.
+type BN254CertificateVerifierStorageRaw struct {
+	Contract *BN254CertificateVerifierStorage // Generic contract binding to access the raw methods on
 }
 
-// IBN254CertificateVerifierCallerRaw is an auto generated low-level read-only Go binding around an Ethereum contract.
-type IBN254CertificateVerifierCallerRaw struct {
-	Contract *IBN254CertificateVerifierCaller // Generic read-only contract binding to access the raw methods on
+// BN254CertificateVerifierStorageCallerRaw is an auto generated low-level read-only Go binding around an Ethereum contract.
+type BN254CertificateVerifierStorageCallerRaw struct {
+	Contract *BN254CertificateVerifierStorageCaller // Generic read-only contract binding to access the raw methods on
 }
 
-// IBN254CertificateVerifierTransactorRaw is an auto generated low-level write-only Go binding around an Ethereum contract.
-type IBN254CertificateVerifierTransactorRaw struct {
-	Contract *IBN254CertificateVerifierTransactor // Generic write-only contract binding to access the raw methods on
+// BN254CertificateVerifierStorageTransactorRaw is an auto generated low-level write-only Go binding around an Ethereum contract.
+type BN254CertificateVerifierStorageTransactorRaw struct {
+	Contract *BN254CertificateVerifierStorageTransactor // Generic write-only contract binding to access the raw methods on
 }
 
-// NewIBN254CertificateVerifier creates a new instance of IBN254CertificateVerifier, bound to a specific deployed contract.
-func NewIBN254CertificateVerifier(address common.Address, backend bind.ContractBackend) (*IBN254CertificateVerifier, error) {
-	contract, err := bindIBN254CertificateVerifier(address, backend, backend, backend)
+// NewBN254CertificateVerifierStorage creates a new instance of BN254CertificateVerifierStorage, bound to a specific deployed contract.
+func NewBN254CertificateVerifierStorage(address common.Address, backend bind.ContractBackend) (*BN254CertificateVerifierStorage, error) {
+	contract, err := bindBN254CertificateVerifierStorage(address, backend, backend, backend)
 	if err != nil {
 		return nil, err
 	}
-	return &IBN254CertificateVerifier{IBN254CertificateVerifierCaller: IBN254CertificateVerifierCaller{contract: contract}, IBN254CertificateVerifierTransactor: IBN254CertificateVerifierTransactor{contract: contract}, IBN254CertificateVerifierFilterer: IBN254CertificateVerifierFilterer{contract: contract}}, nil
+	return &BN254CertificateVerifierStorage{BN254CertificateVerifierStorageCaller: BN254CertificateVerifierStorageCaller{contract: contract}, BN254CertificateVerifierStorageTransactor: BN254CertificateVerifierStorageTransactor{contract: contract}, BN254CertificateVerifierStorageFilterer: BN254CertificateVerifierStorageFilterer{contract: contract}}, nil
 }
 
-// NewIBN254CertificateVerifierCaller creates a new read-only instance of IBN254CertificateVerifier, bound to a specific deployed contract.
-func NewIBN254CertificateVerifierCaller(address common.Address, caller bind.ContractCaller) (*IBN254CertificateVerifierCaller, error) {
-	contract, err := bindIBN254CertificateVerifier(address, caller, nil, nil)
+// NewBN254CertificateVerifierStorageCaller creates a new read-only instance of BN254CertificateVerifierStorage, bound to a specific deployed contract.
+func NewBN254CertificateVerifierStorageCaller(address common.Address, caller bind.ContractCaller) (*BN254CertificateVerifierStorageCaller, error) {
+	contract, err := bindBN254CertificateVerifierStorage(address, caller, nil, nil)
 	if err != nil {
 		return nil, err
 	}
-	return &IBN254CertificateVerifierCaller{contract: contract}, nil
+	return &BN254CertificateVerifierStorageCaller{contract: contract}, nil
 }
 
-// NewIBN254CertificateVerifierTransactor creates a new write-only instance of IBN254CertificateVerifier, bound to a specific deployed contract.
-func NewIBN254CertificateVerifierTransactor(address common.Address, transactor bind.ContractTransactor) (*IBN254CertificateVerifierTransactor, error) {
-	contract, err := bindIBN254CertificateVerifier(address, nil, transactor, nil)
+// NewBN254CertificateVerifierStorageTransactor creates a new write-only instance of BN254CertificateVerifierStorage, bound to a specific deployed contract.
+func NewBN254CertificateVerifierStorageTransactor(address common.Address, transactor bind.ContractTransactor) (*BN254CertificateVerifierStorageTransactor, error) {
+	contract, err := bindBN254CertificateVerifierStorage(address, nil, transactor, nil)
 	if err != nil {
 		return nil, err
 	}
-	return &IBN254CertificateVerifierTransactor{contract: contract}, nil
+	return &BN254CertificateVerifierStorageTransactor{contract: contract}, nil
 }
 
-// NewIBN254CertificateVerifierFilterer creates a new log filterer instance of IBN254CertificateVerifier, bound to a specific deployed contract.
-func NewIBN254CertificateVerifierFilterer(address common.Address, filterer bind.ContractFilterer) (*IBN254CertificateVerifierFilterer, error) {
-	contract, err := bindIBN254CertificateVerifier(address, nil, nil, filterer)
+// NewBN254CertificateVerifierStorageFilterer creates a new log filterer instance of BN254CertificateVerifierStorage, bound to a specific deployed contract.
+func NewBN254CertificateVerifierStorageFilterer(address common.Address, filterer bind.ContractFilterer) (*BN254CertificateVerifierStorageFilterer, error) {
+	contract, err := bindBN254CertificateVerifierStorage(address, nil, nil, filterer)
 	if err != nil {
 		return nil, err
 	}
-	return &IBN254CertificateVerifierFilterer{contract: contract}, nil
+	return &BN254CertificateVerifierStorageFilterer{contract: contract}, nil
 }
 
-// bindIBN254CertificateVerifier binds a generic wrapper to an already deployed contract.
-func bindIBN254CertificateVerifier(address common.Address, caller bind.ContractCaller, transactor bind.ContractTransactor, filterer bind.ContractFilterer) (*bind.BoundContract, error) {
-	parsed, err := IBN254CertificateVerifierMetaData.GetAbi()
+// bindBN254CertificateVerifierStorage binds a generic wrapper to an already deployed contract.
+func bindBN254CertificateVerifierStorage(address common.Address, caller bind.ContractCaller, transactor bind.ContractTransactor, filterer bind.ContractFilterer) (*bind.BoundContract, error) {
+	parsed, err := BN254CertificateVerifierStorageMetaData.GetAbi()
 	if err != nil {
 		return nil, err
 	}
@@ -200,190 +200,190 @@ func bindIBN254CertificateVerifier(address common.Address, caller bind.ContractC
 // sets the output to result. The result type might be a single field for simple
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
-func (_IBN254CertificateVerifier *IBN254CertificateVerifierRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
-	return _IBN254CertificateVerifier.Contract.IBN254CertificateVerifierCaller.contract.Call(opts, result, method, params...)
+func (_BN254CertificateVerifierStorage *BN254CertificateVerifierStorageRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
+	return _BN254CertificateVerifierStorage.Contract.BN254CertificateVerifierStorageCaller.contract.Call(opts, result, method, params...)
 }
 
 // Transfer initiates a plain transaction to move funds to the contract, calling
 // its default method if one is available.
-func (_IBN254CertificateVerifier *IBN254CertificateVerifierRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _IBN254CertificateVerifier.Contract.IBN254CertificateVerifierTransactor.contract.Transfer(opts)
+func (_BN254CertificateVerifierStorage *BN254CertificateVerifierStorageRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _BN254CertificateVerifierStorage.Contract.BN254CertificateVerifierStorageTransactor.contract.Transfer(opts)
 }
 
 // Transact invokes the (paid) contract method with params as input values.
-func (_IBN254CertificateVerifier *IBN254CertificateVerifierRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
-	return _IBN254CertificateVerifier.Contract.IBN254CertificateVerifierTransactor.contract.Transact(opts, method, params...)
+func (_BN254CertificateVerifierStorage *BN254CertificateVerifierStorageRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
+	return _BN254CertificateVerifierStorage.Contract.BN254CertificateVerifierStorageTransactor.contract.Transact(opts, method, params...)
 }
 
 // Call invokes the (constant) contract method with params as input values and
 // sets the output to result. The result type might be a single field for simple
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
-func (_IBN254CertificateVerifier *IBN254CertificateVerifierCallerRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
-	return _IBN254CertificateVerifier.Contract.contract.Call(opts, result, method, params...)
+func (_BN254CertificateVerifierStorage *BN254CertificateVerifierStorageCallerRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
+	return _BN254CertificateVerifierStorage.Contract.contract.Call(opts, result, method, params...)
 }
 
 // Transfer initiates a plain transaction to move funds to the contract, calling
 // its default method if one is available.
-func (_IBN254CertificateVerifier *IBN254CertificateVerifierTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _IBN254CertificateVerifier.Contract.contract.Transfer(opts)
+func (_BN254CertificateVerifierStorage *BN254CertificateVerifierStorageTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _BN254CertificateVerifierStorage.Contract.contract.Transfer(opts)
 }
 
 // Transact invokes the (paid) contract method with params as input values.
-func (_IBN254CertificateVerifier *IBN254CertificateVerifierTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
-	return _IBN254CertificateVerifier.Contract.contract.Transact(opts, method, params...)
+func (_BN254CertificateVerifierStorage *BN254CertificateVerifierStorageTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
+	return _BN254CertificateVerifierStorage.Contract.contract.Transact(opts, method, params...)
 }
 
 // GetOperatorSetOwner is a paid mutator transaction binding the contract method 0x84818920.
 //
 // Solidity: function getOperatorSetOwner((address,uint32) operatorSet) returns(address)
-func (_IBN254CertificateVerifier *IBN254CertificateVerifierTransactor) GetOperatorSetOwner(opts *bind.TransactOpts, operatorSet OperatorSet) (*types.Transaction, error) {
-	return _IBN254CertificateVerifier.contract.Transact(opts, "getOperatorSetOwner", operatorSet)
+func (_BN254CertificateVerifierStorage *BN254CertificateVerifierStorageTransactor) GetOperatorSetOwner(opts *bind.TransactOpts, operatorSet OperatorSet) (*types.Transaction, error) {
+	return _BN254CertificateVerifierStorage.contract.Transact(opts, "getOperatorSetOwner", operatorSet)
 }
 
 // GetOperatorSetOwner is a paid mutator transaction binding the contract method 0x84818920.
 //
 // Solidity: function getOperatorSetOwner((address,uint32) operatorSet) returns(address)
-func (_IBN254CertificateVerifier *IBN254CertificateVerifierSession) GetOperatorSetOwner(operatorSet OperatorSet) (*types.Transaction, error) {
-	return _IBN254CertificateVerifier.Contract.GetOperatorSetOwner(&_IBN254CertificateVerifier.TransactOpts, operatorSet)
+func (_BN254CertificateVerifierStorage *BN254CertificateVerifierStorageSession) GetOperatorSetOwner(operatorSet OperatorSet) (*types.Transaction, error) {
+	return _BN254CertificateVerifierStorage.Contract.GetOperatorSetOwner(&_BN254CertificateVerifierStorage.TransactOpts, operatorSet)
 }
 
 // GetOperatorSetOwner is a paid mutator transaction binding the contract method 0x84818920.
 //
 // Solidity: function getOperatorSetOwner((address,uint32) operatorSet) returns(address)
-func (_IBN254CertificateVerifier *IBN254CertificateVerifierTransactorSession) GetOperatorSetOwner(operatorSet OperatorSet) (*types.Transaction, error) {
-	return _IBN254CertificateVerifier.Contract.GetOperatorSetOwner(&_IBN254CertificateVerifier.TransactOpts, operatorSet)
+func (_BN254CertificateVerifierStorage *BN254CertificateVerifierStorageTransactorSession) GetOperatorSetOwner(operatorSet OperatorSet) (*types.Transaction, error) {
+	return _BN254CertificateVerifierStorage.Contract.GetOperatorSetOwner(&_BN254CertificateVerifierStorage.TransactOpts, operatorSet)
 }
 
 // LatestReferenceTimestamp is a paid mutator transaction binding the contract method 0x5ddb9b5b.
 //
 // Solidity: function latestReferenceTimestamp((address,uint32) operatorSet) returns(uint32)
-func (_IBN254CertificateVerifier *IBN254CertificateVerifierTransactor) LatestReferenceTimestamp(opts *bind.TransactOpts, operatorSet OperatorSet) (*types.Transaction, error) {
-	return _IBN254CertificateVerifier.contract.Transact(opts, "latestReferenceTimestamp", operatorSet)
+func (_BN254CertificateVerifierStorage *BN254CertificateVerifierStorageTransactor) LatestReferenceTimestamp(opts *bind.TransactOpts, operatorSet OperatorSet) (*types.Transaction, error) {
+	return _BN254CertificateVerifierStorage.contract.Transact(opts, "latestReferenceTimestamp", operatorSet)
 }
 
 // LatestReferenceTimestamp is a paid mutator transaction binding the contract method 0x5ddb9b5b.
 //
 // Solidity: function latestReferenceTimestamp((address,uint32) operatorSet) returns(uint32)
-func (_IBN254CertificateVerifier *IBN254CertificateVerifierSession) LatestReferenceTimestamp(operatorSet OperatorSet) (*types.Transaction, error) {
-	return _IBN254CertificateVerifier.Contract.LatestReferenceTimestamp(&_IBN254CertificateVerifier.TransactOpts, operatorSet)
+func (_BN254CertificateVerifierStorage *BN254CertificateVerifierStorageSession) LatestReferenceTimestamp(operatorSet OperatorSet) (*types.Transaction, error) {
+	return _BN254CertificateVerifierStorage.Contract.LatestReferenceTimestamp(&_BN254CertificateVerifierStorage.TransactOpts, operatorSet)
 }
 
 // LatestReferenceTimestamp is a paid mutator transaction binding the contract method 0x5ddb9b5b.
 //
 // Solidity: function latestReferenceTimestamp((address,uint32) operatorSet) returns(uint32)
-func (_IBN254CertificateVerifier *IBN254CertificateVerifierTransactorSession) LatestReferenceTimestamp(operatorSet OperatorSet) (*types.Transaction, error) {
-	return _IBN254CertificateVerifier.Contract.LatestReferenceTimestamp(&_IBN254CertificateVerifier.TransactOpts, operatorSet)
+func (_BN254CertificateVerifierStorage *BN254CertificateVerifierStorageTransactorSession) LatestReferenceTimestamp(operatorSet OperatorSet) (*types.Transaction, error) {
+	return _BN254CertificateVerifierStorage.Contract.LatestReferenceTimestamp(&_BN254CertificateVerifierStorage.TransactOpts, operatorSet)
 }
 
 // MaxOperatorTableStaleness is a paid mutator transaction binding the contract method 0x6141879e.
 //
 // Solidity: function maxOperatorTableStaleness((address,uint32) operatorSet) returns(uint32)
-func (_IBN254CertificateVerifier *IBN254CertificateVerifierTransactor) MaxOperatorTableStaleness(opts *bind.TransactOpts, operatorSet OperatorSet) (*types.Transaction, error) {
-	return _IBN254CertificateVerifier.contract.Transact(opts, "maxOperatorTableStaleness", operatorSet)
+func (_BN254CertificateVerifierStorage *BN254CertificateVerifierStorageTransactor) MaxOperatorTableStaleness(opts *bind.TransactOpts, operatorSet OperatorSet) (*types.Transaction, error) {
+	return _BN254CertificateVerifierStorage.contract.Transact(opts, "maxOperatorTableStaleness", operatorSet)
 }
 
 // MaxOperatorTableStaleness is a paid mutator transaction binding the contract method 0x6141879e.
 //
 // Solidity: function maxOperatorTableStaleness((address,uint32) operatorSet) returns(uint32)
-func (_IBN254CertificateVerifier *IBN254CertificateVerifierSession) MaxOperatorTableStaleness(operatorSet OperatorSet) (*types.Transaction, error) {
-	return _IBN254CertificateVerifier.Contract.MaxOperatorTableStaleness(&_IBN254CertificateVerifier.TransactOpts, operatorSet)
+func (_BN254CertificateVerifierStorage *BN254CertificateVerifierStorageSession) MaxOperatorTableStaleness(operatorSet OperatorSet) (*types.Transaction, error) {
+	return _BN254CertificateVerifierStorage.Contract.MaxOperatorTableStaleness(&_BN254CertificateVerifierStorage.TransactOpts, operatorSet)
 }
 
 // MaxOperatorTableStaleness is a paid mutator transaction binding the contract method 0x6141879e.
 //
 // Solidity: function maxOperatorTableStaleness((address,uint32) operatorSet) returns(uint32)
-func (_IBN254CertificateVerifier *IBN254CertificateVerifierTransactorSession) MaxOperatorTableStaleness(operatorSet OperatorSet) (*types.Transaction, error) {
-	return _IBN254CertificateVerifier.Contract.MaxOperatorTableStaleness(&_IBN254CertificateVerifier.TransactOpts, operatorSet)
+func (_BN254CertificateVerifierStorage *BN254CertificateVerifierStorageTransactorSession) MaxOperatorTableStaleness(operatorSet OperatorSet) (*types.Transaction, error) {
+	return _BN254CertificateVerifierStorage.Contract.MaxOperatorTableStaleness(&_BN254CertificateVerifierStorage.TransactOpts, operatorSet)
 }
 
 // UpdateOperatorTable is a paid mutator transaction binding the contract method 0x6738c40b.
 //
 // Solidity: function updateOperatorTable((address,uint32) operatorSet, uint32 referenceTimestamp, (bytes32,uint256,(uint256,uint256),uint256[]) operatorSetInfo, (address,uint32) operatorSetConfig) returns()
-func (_IBN254CertificateVerifier *IBN254CertificateVerifierTransactor) UpdateOperatorTable(opts *bind.TransactOpts, operatorSet OperatorSet, referenceTimestamp uint32, operatorSetInfo IBN254TableCalculatorTypesBN254OperatorSetInfo, operatorSetConfig ICrossChainRegistryTypesOperatorSetConfig) (*types.Transaction, error) {
-	return _IBN254CertificateVerifier.contract.Transact(opts, "updateOperatorTable", operatorSet, referenceTimestamp, operatorSetInfo, operatorSetConfig)
+func (_BN254CertificateVerifierStorage *BN254CertificateVerifierStorageTransactor) UpdateOperatorTable(opts *bind.TransactOpts, operatorSet OperatorSet, referenceTimestamp uint32, operatorSetInfo IBN254TableCalculatorTypesBN254OperatorSetInfo, operatorSetConfig ICrossChainRegistryTypesOperatorSetConfig) (*types.Transaction, error) {
+	return _BN254CertificateVerifierStorage.contract.Transact(opts, "updateOperatorTable", operatorSet, referenceTimestamp, operatorSetInfo, operatorSetConfig)
 }
 
 // UpdateOperatorTable is a paid mutator transaction binding the contract method 0x6738c40b.
 //
 // Solidity: function updateOperatorTable((address,uint32) operatorSet, uint32 referenceTimestamp, (bytes32,uint256,(uint256,uint256),uint256[]) operatorSetInfo, (address,uint32) operatorSetConfig) returns()
-func (_IBN254CertificateVerifier *IBN254CertificateVerifierSession) UpdateOperatorTable(operatorSet OperatorSet, referenceTimestamp uint32, operatorSetInfo IBN254TableCalculatorTypesBN254OperatorSetInfo, operatorSetConfig ICrossChainRegistryTypesOperatorSetConfig) (*types.Transaction, error) {
-	return _IBN254CertificateVerifier.Contract.UpdateOperatorTable(&_IBN254CertificateVerifier.TransactOpts, operatorSet, referenceTimestamp, operatorSetInfo, operatorSetConfig)
+func (_BN254CertificateVerifierStorage *BN254CertificateVerifierStorageSession) UpdateOperatorTable(operatorSet OperatorSet, referenceTimestamp uint32, operatorSetInfo IBN254TableCalculatorTypesBN254OperatorSetInfo, operatorSetConfig ICrossChainRegistryTypesOperatorSetConfig) (*types.Transaction, error) {
+	return _BN254CertificateVerifierStorage.Contract.UpdateOperatorTable(&_BN254CertificateVerifierStorage.TransactOpts, operatorSet, referenceTimestamp, operatorSetInfo, operatorSetConfig)
 }
 
 // UpdateOperatorTable is a paid mutator transaction binding the contract method 0x6738c40b.
 //
 // Solidity: function updateOperatorTable((address,uint32) operatorSet, uint32 referenceTimestamp, (bytes32,uint256,(uint256,uint256),uint256[]) operatorSetInfo, (address,uint32) operatorSetConfig) returns()
-func (_IBN254CertificateVerifier *IBN254CertificateVerifierTransactorSession) UpdateOperatorTable(operatorSet OperatorSet, referenceTimestamp uint32, operatorSetInfo IBN254TableCalculatorTypesBN254OperatorSetInfo, operatorSetConfig ICrossChainRegistryTypesOperatorSetConfig) (*types.Transaction, error) {
-	return _IBN254CertificateVerifier.Contract.UpdateOperatorTable(&_IBN254CertificateVerifier.TransactOpts, operatorSet, referenceTimestamp, operatorSetInfo, operatorSetConfig)
+func (_BN254CertificateVerifierStorage *BN254CertificateVerifierStorageTransactorSession) UpdateOperatorTable(operatorSet OperatorSet, referenceTimestamp uint32, operatorSetInfo IBN254TableCalculatorTypesBN254OperatorSetInfo, operatorSetConfig ICrossChainRegistryTypesOperatorSetConfig) (*types.Transaction, error) {
+	return _BN254CertificateVerifierStorage.Contract.UpdateOperatorTable(&_BN254CertificateVerifierStorage.TransactOpts, operatorSet, referenceTimestamp, operatorSetInfo, operatorSetConfig)
 }
 
 // VerifyCertificate is a paid mutator transaction binding the contract method 0x080b7150.
 //
 // Solidity: function verifyCertificate((address,uint32) operatorSet, (uint32,bytes32,(uint256,uint256),(uint256[2],uint256[2]),(uint32,bytes,((uint256,uint256),uint256[]))[]) cert) returns(uint256[] signedStakes)
-func (_IBN254CertificateVerifier *IBN254CertificateVerifierTransactor) VerifyCertificate(opts *bind.TransactOpts, operatorSet OperatorSet, cert IBN254CertificateVerifierTypesBN254Certificate) (*types.Transaction, error) {
-	return _IBN254CertificateVerifier.contract.Transact(opts, "verifyCertificate", operatorSet, cert)
+func (_BN254CertificateVerifierStorage *BN254CertificateVerifierStorageTransactor) VerifyCertificate(opts *bind.TransactOpts, operatorSet OperatorSet, cert IBN254CertificateVerifierTypesBN254Certificate) (*types.Transaction, error) {
+	return _BN254CertificateVerifierStorage.contract.Transact(opts, "verifyCertificate", operatorSet, cert)
 }
 
 // VerifyCertificate is a paid mutator transaction binding the contract method 0x080b7150.
 //
 // Solidity: function verifyCertificate((address,uint32) operatorSet, (uint32,bytes32,(uint256,uint256),(uint256[2],uint256[2]),(uint32,bytes,((uint256,uint256),uint256[]))[]) cert) returns(uint256[] signedStakes)
-func (_IBN254CertificateVerifier *IBN254CertificateVerifierSession) VerifyCertificate(operatorSet OperatorSet, cert IBN254CertificateVerifierTypesBN254Certificate) (*types.Transaction, error) {
-	return _IBN254CertificateVerifier.Contract.VerifyCertificate(&_IBN254CertificateVerifier.TransactOpts, operatorSet, cert)
+func (_BN254CertificateVerifierStorage *BN254CertificateVerifierStorageSession) VerifyCertificate(operatorSet OperatorSet, cert IBN254CertificateVerifierTypesBN254Certificate) (*types.Transaction, error) {
+	return _BN254CertificateVerifierStorage.Contract.VerifyCertificate(&_BN254CertificateVerifierStorage.TransactOpts, operatorSet, cert)
 }
 
 // VerifyCertificate is a paid mutator transaction binding the contract method 0x080b7150.
 //
 // Solidity: function verifyCertificate((address,uint32) operatorSet, (uint32,bytes32,(uint256,uint256),(uint256[2],uint256[2]),(uint32,bytes,((uint256,uint256),uint256[]))[]) cert) returns(uint256[] signedStakes)
-func (_IBN254CertificateVerifier *IBN254CertificateVerifierTransactorSession) VerifyCertificate(operatorSet OperatorSet, cert IBN254CertificateVerifierTypesBN254Certificate) (*types.Transaction, error) {
-	return _IBN254CertificateVerifier.Contract.VerifyCertificate(&_IBN254CertificateVerifier.TransactOpts, operatorSet, cert)
+func (_BN254CertificateVerifierStorage *BN254CertificateVerifierStorageTransactorSession) VerifyCertificate(operatorSet OperatorSet, cert IBN254CertificateVerifierTypesBN254Certificate) (*types.Transaction, error) {
+	return _BN254CertificateVerifierStorage.Contract.VerifyCertificate(&_BN254CertificateVerifierStorage.TransactOpts, operatorSet, cert)
 }
 
 // VerifyCertificateNominal is a paid mutator transaction binding the contract method 0xdd2ae1b9.
 //
 // Solidity: function verifyCertificateNominal((address,uint32) operatorSet, (uint32,bytes32,(uint256,uint256),(uint256[2],uint256[2]),(uint32,bytes,((uint256,uint256),uint256[]))[]) cert, uint256[] totalStakeNominalThresholds) returns(bool)
-func (_IBN254CertificateVerifier *IBN254CertificateVerifierTransactor) VerifyCertificateNominal(opts *bind.TransactOpts, operatorSet OperatorSet, cert IBN254CertificateVerifierTypesBN254Certificate, totalStakeNominalThresholds []*big.Int) (*types.Transaction, error) {
-	return _IBN254CertificateVerifier.contract.Transact(opts, "verifyCertificateNominal", operatorSet, cert, totalStakeNominalThresholds)
+func (_BN254CertificateVerifierStorage *BN254CertificateVerifierStorageTransactor) VerifyCertificateNominal(opts *bind.TransactOpts, operatorSet OperatorSet, cert IBN254CertificateVerifierTypesBN254Certificate, totalStakeNominalThresholds []*big.Int) (*types.Transaction, error) {
+	return _BN254CertificateVerifierStorage.contract.Transact(opts, "verifyCertificateNominal", operatorSet, cert, totalStakeNominalThresholds)
 }
 
 // VerifyCertificateNominal is a paid mutator transaction binding the contract method 0xdd2ae1b9.
 //
 // Solidity: function verifyCertificateNominal((address,uint32) operatorSet, (uint32,bytes32,(uint256,uint256),(uint256[2],uint256[2]),(uint32,bytes,((uint256,uint256),uint256[]))[]) cert, uint256[] totalStakeNominalThresholds) returns(bool)
-func (_IBN254CertificateVerifier *IBN254CertificateVerifierSession) VerifyCertificateNominal(operatorSet OperatorSet, cert IBN254CertificateVerifierTypesBN254Certificate, totalStakeNominalThresholds []*big.Int) (*types.Transaction, error) {
-	return _IBN254CertificateVerifier.Contract.VerifyCertificateNominal(&_IBN254CertificateVerifier.TransactOpts, operatorSet, cert, totalStakeNominalThresholds)
+func (_BN254CertificateVerifierStorage *BN254CertificateVerifierStorageSession) VerifyCertificateNominal(operatorSet OperatorSet, cert IBN254CertificateVerifierTypesBN254Certificate, totalStakeNominalThresholds []*big.Int) (*types.Transaction, error) {
+	return _BN254CertificateVerifierStorage.Contract.VerifyCertificateNominal(&_BN254CertificateVerifierStorage.TransactOpts, operatorSet, cert, totalStakeNominalThresholds)
 }
 
 // VerifyCertificateNominal is a paid mutator transaction binding the contract method 0xdd2ae1b9.
 //
 // Solidity: function verifyCertificateNominal((address,uint32) operatorSet, (uint32,bytes32,(uint256,uint256),(uint256[2],uint256[2]),(uint32,bytes,((uint256,uint256),uint256[]))[]) cert, uint256[] totalStakeNominalThresholds) returns(bool)
-func (_IBN254CertificateVerifier *IBN254CertificateVerifierTransactorSession) VerifyCertificateNominal(operatorSet OperatorSet, cert IBN254CertificateVerifierTypesBN254Certificate, totalStakeNominalThresholds []*big.Int) (*types.Transaction, error) {
-	return _IBN254CertificateVerifier.Contract.VerifyCertificateNominal(&_IBN254CertificateVerifier.TransactOpts, operatorSet, cert, totalStakeNominalThresholds)
+func (_BN254CertificateVerifierStorage *BN254CertificateVerifierStorageTransactorSession) VerifyCertificateNominal(operatorSet OperatorSet, cert IBN254CertificateVerifierTypesBN254Certificate, totalStakeNominalThresholds []*big.Int) (*types.Transaction, error) {
+	return _BN254CertificateVerifierStorage.Contract.VerifyCertificateNominal(&_BN254CertificateVerifierStorage.TransactOpts, operatorSet, cert, totalStakeNominalThresholds)
 }
 
 // VerifyCertificateProportion is a paid mutator transaction binding the contract method 0x017d7974.
 //
 // Solidity: function verifyCertificateProportion((address,uint32) operatorSet, (uint32,bytes32,(uint256,uint256),(uint256[2],uint256[2]),(uint32,bytes,((uint256,uint256),uint256[]))[]) cert, uint16[] totalStakeProportionThresholds) returns(bool)
-func (_IBN254CertificateVerifier *IBN254CertificateVerifierTransactor) VerifyCertificateProportion(opts *bind.TransactOpts, operatorSet OperatorSet, cert IBN254CertificateVerifierTypesBN254Certificate, totalStakeProportionThresholds []uint16) (*types.Transaction, error) {
-	return _IBN254CertificateVerifier.contract.Transact(opts, "verifyCertificateProportion", operatorSet, cert, totalStakeProportionThresholds)
+func (_BN254CertificateVerifierStorage *BN254CertificateVerifierStorageTransactor) VerifyCertificateProportion(opts *bind.TransactOpts, operatorSet OperatorSet, cert IBN254CertificateVerifierTypesBN254Certificate, totalStakeProportionThresholds []uint16) (*types.Transaction, error) {
+	return _BN254CertificateVerifierStorage.contract.Transact(opts, "verifyCertificateProportion", operatorSet, cert, totalStakeProportionThresholds)
 }
 
 // VerifyCertificateProportion is a paid mutator transaction binding the contract method 0x017d7974.
 //
 // Solidity: function verifyCertificateProportion((address,uint32) operatorSet, (uint32,bytes32,(uint256,uint256),(uint256[2],uint256[2]),(uint32,bytes,((uint256,uint256),uint256[]))[]) cert, uint16[] totalStakeProportionThresholds) returns(bool)
-func (_IBN254CertificateVerifier *IBN254CertificateVerifierSession) VerifyCertificateProportion(operatorSet OperatorSet, cert IBN254CertificateVerifierTypesBN254Certificate, totalStakeProportionThresholds []uint16) (*types.Transaction, error) {
-	return _IBN254CertificateVerifier.Contract.VerifyCertificateProportion(&_IBN254CertificateVerifier.TransactOpts, operatorSet, cert, totalStakeProportionThresholds)
+func (_BN254CertificateVerifierStorage *BN254CertificateVerifierStorageSession) VerifyCertificateProportion(operatorSet OperatorSet, cert IBN254CertificateVerifierTypesBN254Certificate, totalStakeProportionThresholds []uint16) (*types.Transaction, error) {
+	return _BN254CertificateVerifierStorage.Contract.VerifyCertificateProportion(&_BN254CertificateVerifierStorage.TransactOpts, operatorSet, cert, totalStakeProportionThresholds)
 }
 
 // VerifyCertificateProportion is a paid mutator transaction binding the contract method 0x017d7974.
 //
 // Solidity: function verifyCertificateProportion((address,uint32) operatorSet, (uint32,bytes32,(uint256,uint256),(uint256[2],uint256[2]),(uint32,bytes,((uint256,uint256),uint256[]))[]) cert, uint16[] totalStakeProportionThresholds) returns(bool)
-func (_IBN254CertificateVerifier *IBN254CertificateVerifierTransactorSession) VerifyCertificateProportion(operatorSet OperatorSet, cert IBN254CertificateVerifierTypesBN254Certificate, totalStakeProportionThresholds []uint16) (*types.Transaction, error) {
-	return _IBN254CertificateVerifier.Contract.VerifyCertificateProportion(&_IBN254CertificateVerifier.TransactOpts, operatorSet, cert, totalStakeProportionThresholds)
+func (_BN254CertificateVerifierStorage *BN254CertificateVerifierStorageTransactorSession) VerifyCertificateProportion(operatorSet OperatorSet, cert IBN254CertificateVerifierTypesBN254Certificate, totalStakeProportionThresholds []uint16) (*types.Transaction, error) {
+	return _BN254CertificateVerifierStorage.Contract.VerifyCertificateProportion(&_BN254CertificateVerifierStorage.TransactOpts, operatorSet, cert, totalStakeProportionThresholds)
 }
 
-// IBN254CertificateVerifierMaxStalenessPeriodUpdatedIterator is returned from FilterMaxStalenessPeriodUpdated and is used to iterate over the raw logs and unpacked data for MaxStalenessPeriodUpdated events raised by the IBN254CertificateVerifier contract.
-type IBN254CertificateVerifierMaxStalenessPeriodUpdatedIterator struct {
-	Event *IBN254CertificateVerifierMaxStalenessPeriodUpdated // Event containing the contract specifics and raw log
+// BN254CertificateVerifierStorageMaxStalenessPeriodUpdatedIterator is returned from FilterMaxStalenessPeriodUpdated and is used to iterate over the raw logs and unpacked data for MaxStalenessPeriodUpdated events raised by the BN254CertificateVerifierStorage contract.
+type BN254CertificateVerifierStorageMaxStalenessPeriodUpdatedIterator struct {
+	Event *BN254CertificateVerifierStorageMaxStalenessPeriodUpdated // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -397,7 +397,7 @@ type IBN254CertificateVerifierMaxStalenessPeriodUpdatedIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *IBN254CertificateVerifierMaxStalenessPeriodUpdatedIterator) Next() bool {
+func (it *BN254CertificateVerifierStorageMaxStalenessPeriodUpdatedIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -406,7 +406,7 @@ func (it *IBN254CertificateVerifierMaxStalenessPeriodUpdatedIterator) Next() boo
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(IBN254CertificateVerifierMaxStalenessPeriodUpdated)
+			it.Event = new(BN254CertificateVerifierStorageMaxStalenessPeriodUpdated)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -421,7 +421,7 @@ func (it *IBN254CertificateVerifierMaxStalenessPeriodUpdatedIterator) Next() boo
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(IBN254CertificateVerifierMaxStalenessPeriodUpdated)
+		it.Event = new(BN254CertificateVerifierStorageMaxStalenessPeriodUpdated)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -437,19 +437,19 @@ func (it *IBN254CertificateVerifierMaxStalenessPeriodUpdatedIterator) Next() boo
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *IBN254CertificateVerifierMaxStalenessPeriodUpdatedIterator) Error() error {
+func (it *BN254CertificateVerifierStorageMaxStalenessPeriodUpdatedIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *IBN254CertificateVerifierMaxStalenessPeriodUpdatedIterator) Close() error {
+func (it *BN254CertificateVerifierStorageMaxStalenessPeriodUpdatedIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// IBN254CertificateVerifierMaxStalenessPeriodUpdated represents a MaxStalenessPeriodUpdated event raised by the IBN254CertificateVerifier contract.
-type IBN254CertificateVerifierMaxStalenessPeriodUpdated struct {
+// BN254CertificateVerifierStorageMaxStalenessPeriodUpdated represents a MaxStalenessPeriodUpdated event raised by the BN254CertificateVerifierStorage contract.
+type BN254CertificateVerifierStorageMaxStalenessPeriodUpdated struct {
 	OperatorSet        OperatorSet
 	MaxStalenessPeriod uint32
 	Raw                types.Log // Blockchain specific contextual infos
@@ -458,21 +458,21 @@ type IBN254CertificateVerifierMaxStalenessPeriodUpdated struct {
 // FilterMaxStalenessPeriodUpdated is a free log retrieval operation binding the contract event 0x28539469fbbc8a5482e60966bf9376f7b9d25b2f0a65a9976f6baa3f0e3788da.
 //
 // Solidity: event MaxStalenessPeriodUpdated((address,uint32) operatorSet, uint32 maxStalenessPeriod)
-func (_IBN254CertificateVerifier *IBN254CertificateVerifierFilterer) FilterMaxStalenessPeriodUpdated(opts *bind.FilterOpts) (*IBN254CertificateVerifierMaxStalenessPeriodUpdatedIterator, error) {
+func (_BN254CertificateVerifierStorage *BN254CertificateVerifierStorageFilterer) FilterMaxStalenessPeriodUpdated(opts *bind.FilterOpts) (*BN254CertificateVerifierStorageMaxStalenessPeriodUpdatedIterator, error) {
 
-	logs, sub, err := _IBN254CertificateVerifier.contract.FilterLogs(opts, "MaxStalenessPeriodUpdated")
+	logs, sub, err := _BN254CertificateVerifierStorage.contract.FilterLogs(opts, "MaxStalenessPeriodUpdated")
 	if err != nil {
 		return nil, err
 	}
-	return &IBN254CertificateVerifierMaxStalenessPeriodUpdatedIterator{contract: _IBN254CertificateVerifier.contract, event: "MaxStalenessPeriodUpdated", logs: logs, sub: sub}, nil
+	return &BN254CertificateVerifierStorageMaxStalenessPeriodUpdatedIterator{contract: _BN254CertificateVerifierStorage.contract, event: "MaxStalenessPeriodUpdated", logs: logs, sub: sub}, nil
 }
 
 // WatchMaxStalenessPeriodUpdated is a free log subscription operation binding the contract event 0x28539469fbbc8a5482e60966bf9376f7b9d25b2f0a65a9976f6baa3f0e3788da.
 //
 // Solidity: event MaxStalenessPeriodUpdated((address,uint32) operatorSet, uint32 maxStalenessPeriod)
-func (_IBN254CertificateVerifier *IBN254CertificateVerifierFilterer) WatchMaxStalenessPeriodUpdated(opts *bind.WatchOpts, sink chan<- *IBN254CertificateVerifierMaxStalenessPeriodUpdated) (event.Subscription, error) {
+func (_BN254CertificateVerifierStorage *BN254CertificateVerifierStorageFilterer) WatchMaxStalenessPeriodUpdated(opts *bind.WatchOpts, sink chan<- *BN254CertificateVerifierStorageMaxStalenessPeriodUpdated) (event.Subscription, error) {
 
-	logs, sub, err := _IBN254CertificateVerifier.contract.WatchLogs(opts, "MaxStalenessPeriodUpdated")
+	logs, sub, err := _BN254CertificateVerifierStorage.contract.WatchLogs(opts, "MaxStalenessPeriodUpdated")
 	if err != nil {
 		return nil, err
 	}
@@ -482,8 +482,8 @@ func (_IBN254CertificateVerifier *IBN254CertificateVerifierFilterer) WatchMaxSta
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(IBN254CertificateVerifierMaxStalenessPeriodUpdated)
-				if err := _IBN254CertificateVerifier.contract.UnpackLog(event, "MaxStalenessPeriodUpdated", log); err != nil {
+				event := new(BN254CertificateVerifierStorageMaxStalenessPeriodUpdated)
+				if err := _BN254CertificateVerifierStorage.contract.UnpackLog(event, "MaxStalenessPeriodUpdated", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -507,18 +507,18 @@ func (_IBN254CertificateVerifier *IBN254CertificateVerifierFilterer) WatchMaxSta
 // ParseMaxStalenessPeriodUpdated is a log parse operation binding the contract event 0x28539469fbbc8a5482e60966bf9376f7b9d25b2f0a65a9976f6baa3f0e3788da.
 //
 // Solidity: event MaxStalenessPeriodUpdated((address,uint32) operatorSet, uint32 maxStalenessPeriod)
-func (_IBN254CertificateVerifier *IBN254CertificateVerifierFilterer) ParseMaxStalenessPeriodUpdated(log types.Log) (*IBN254CertificateVerifierMaxStalenessPeriodUpdated, error) {
-	event := new(IBN254CertificateVerifierMaxStalenessPeriodUpdated)
-	if err := _IBN254CertificateVerifier.contract.UnpackLog(event, "MaxStalenessPeriodUpdated", log); err != nil {
+func (_BN254CertificateVerifierStorage *BN254CertificateVerifierStorageFilterer) ParseMaxStalenessPeriodUpdated(log types.Log) (*BN254CertificateVerifierStorageMaxStalenessPeriodUpdated, error) {
+	event := new(BN254CertificateVerifierStorageMaxStalenessPeriodUpdated)
+	if err := _BN254CertificateVerifierStorage.contract.UnpackLog(event, "MaxStalenessPeriodUpdated", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
 	return event, nil
 }
 
-// IBN254CertificateVerifierOperatorSetOwnerUpdatedIterator is returned from FilterOperatorSetOwnerUpdated and is used to iterate over the raw logs and unpacked data for OperatorSetOwnerUpdated events raised by the IBN254CertificateVerifier contract.
-type IBN254CertificateVerifierOperatorSetOwnerUpdatedIterator struct {
-	Event *IBN254CertificateVerifierOperatorSetOwnerUpdated // Event containing the contract specifics and raw log
+// BN254CertificateVerifierStorageOperatorSetOwnerUpdatedIterator is returned from FilterOperatorSetOwnerUpdated and is used to iterate over the raw logs and unpacked data for OperatorSetOwnerUpdated events raised by the BN254CertificateVerifierStorage contract.
+type BN254CertificateVerifierStorageOperatorSetOwnerUpdatedIterator struct {
+	Event *BN254CertificateVerifierStorageOperatorSetOwnerUpdated // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -532,7 +532,7 @@ type IBN254CertificateVerifierOperatorSetOwnerUpdatedIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *IBN254CertificateVerifierOperatorSetOwnerUpdatedIterator) Next() bool {
+func (it *BN254CertificateVerifierStorageOperatorSetOwnerUpdatedIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -541,7 +541,7 @@ func (it *IBN254CertificateVerifierOperatorSetOwnerUpdatedIterator) Next() bool 
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(IBN254CertificateVerifierOperatorSetOwnerUpdated)
+			it.Event = new(BN254CertificateVerifierStorageOperatorSetOwnerUpdated)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -556,7 +556,7 @@ func (it *IBN254CertificateVerifierOperatorSetOwnerUpdatedIterator) Next() bool 
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(IBN254CertificateVerifierOperatorSetOwnerUpdated)
+		it.Event = new(BN254CertificateVerifierStorageOperatorSetOwnerUpdated)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -572,19 +572,19 @@ func (it *IBN254CertificateVerifierOperatorSetOwnerUpdatedIterator) Next() bool 
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *IBN254CertificateVerifierOperatorSetOwnerUpdatedIterator) Error() error {
+func (it *BN254CertificateVerifierStorageOperatorSetOwnerUpdatedIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *IBN254CertificateVerifierOperatorSetOwnerUpdatedIterator) Close() error {
+func (it *BN254CertificateVerifierStorageOperatorSetOwnerUpdatedIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// IBN254CertificateVerifierOperatorSetOwnerUpdated represents a OperatorSetOwnerUpdated event raised by the IBN254CertificateVerifier contract.
-type IBN254CertificateVerifierOperatorSetOwnerUpdated struct {
+// BN254CertificateVerifierStorageOperatorSetOwnerUpdated represents a OperatorSetOwnerUpdated event raised by the BN254CertificateVerifierStorage contract.
+type BN254CertificateVerifierStorageOperatorSetOwnerUpdated struct {
 	OperatorSet OperatorSet
 	Owner       common.Address
 	Raw         types.Log // Blockchain specific contextual infos
@@ -593,21 +593,21 @@ type IBN254CertificateVerifierOperatorSetOwnerUpdated struct {
 // FilterOperatorSetOwnerUpdated is a free log retrieval operation binding the contract event 0x806dc367095c0baf953d7144b7c4376261675ee0b4e0da2761e43673051c7375.
 //
 // Solidity: event OperatorSetOwnerUpdated((address,uint32) operatorSet, address owner)
-func (_IBN254CertificateVerifier *IBN254CertificateVerifierFilterer) FilterOperatorSetOwnerUpdated(opts *bind.FilterOpts) (*IBN254CertificateVerifierOperatorSetOwnerUpdatedIterator, error) {
+func (_BN254CertificateVerifierStorage *BN254CertificateVerifierStorageFilterer) FilterOperatorSetOwnerUpdated(opts *bind.FilterOpts) (*BN254CertificateVerifierStorageOperatorSetOwnerUpdatedIterator, error) {
 
-	logs, sub, err := _IBN254CertificateVerifier.contract.FilterLogs(opts, "OperatorSetOwnerUpdated")
+	logs, sub, err := _BN254CertificateVerifierStorage.contract.FilterLogs(opts, "OperatorSetOwnerUpdated")
 	if err != nil {
 		return nil, err
 	}
-	return &IBN254CertificateVerifierOperatorSetOwnerUpdatedIterator{contract: _IBN254CertificateVerifier.contract, event: "OperatorSetOwnerUpdated", logs: logs, sub: sub}, nil
+	return &BN254CertificateVerifierStorageOperatorSetOwnerUpdatedIterator{contract: _BN254CertificateVerifierStorage.contract, event: "OperatorSetOwnerUpdated", logs: logs, sub: sub}, nil
 }
 
 // WatchOperatorSetOwnerUpdated is a free log subscription operation binding the contract event 0x806dc367095c0baf953d7144b7c4376261675ee0b4e0da2761e43673051c7375.
 //
 // Solidity: event OperatorSetOwnerUpdated((address,uint32) operatorSet, address owner)
-func (_IBN254CertificateVerifier *IBN254CertificateVerifierFilterer) WatchOperatorSetOwnerUpdated(opts *bind.WatchOpts, sink chan<- *IBN254CertificateVerifierOperatorSetOwnerUpdated) (event.Subscription, error) {
+func (_BN254CertificateVerifierStorage *BN254CertificateVerifierStorageFilterer) WatchOperatorSetOwnerUpdated(opts *bind.WatchOpts, sink chan<- *BN254CertificateVerifierStorageOperatorSetOwnerUpdated) (event.Subscription, error) {
 
-	logs, sub, err := _IBN254CertificateVerifier.contract.WatchLogs(opts, "OperatorSetOwnerUpdated")
+	logs, sub, err := _BN254CertificateVerifierStorage.contract.WatchLogs(opts, "OperatorSetOwnerUpdated")
 	if err != nil {
 		return nil, err
 	}
@@ -617,8 +617,8 @@ func (_IBN254CertificateVerifier *IBN254CertificateVerifierFilterer) WatchOperat
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(IBN254CertificateVerifierOperatorSetOwnerUpdated)
-				if err := _IBN254CertificateVerifier.contract.UnpackLog(event, "OperatorSetOwnerUpdated", log); err != nil {
+				event := new(BN254CertificateVerifierStorageOperatorSetOwnerUpdated)
+				if err := _BN254CertificateVerifierStorage.contract.UnpackLog(event, "OperatorSetOwnerUpdated", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -642,18 +642,18 @@ func (_IBN254CertificateVerifier *IBN254CertificateVerifierFilterer) WatchOperat
 // ParseOperatorSetOwnerUpdated is a log parse operation binding the contract event 0x806dc367095c0baf953d7144b7c4376261675ee0b4e0da2761e43673051c7375.
 //
 // Solidity: event OperatorSetOwnerUpdated((address,uint32) operatorSet, address owner)
-func (_IBN254CertificateVerifier *IBN254CertificateVerifierFilterer) ParseOperatorSetOwnerUpdated(log types.Log) (*IBN254CertificateVerifierOperatorSetOwnerUpdated, error) {
-	event := new(IBN254CertificateVerifierOperatorSetOwnerUpdated)
-	if err := _IBN254CertificateVerifier.contract.UnpackLog(event, "OperatorSetOwnerUpdated", log); err != nil {
+func (_BN254CertificateVerifierStorage *BN254CertificateVerifierStorageFilterer) ParseOperatorSetOwnerUpdated(log types.Log) (*BN254CertificateVerifierStorageOperatorSetOwnerUpdated, error) {
+	event := new(BN254CertificateVerifierStorageOperatorSetOwnerUpdated)
+	if err := _BN254CertificateVerifierStorage.contract.UnpackLog(event, "OperatorSetOwnerUpdated", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
 	return event, nil
 }
 
-// IBN254CertificateVerifierTableUpdatedIterator is returned from FilterTableUpdated and is used to iterate over the raw logs and unpacked data for TableUpdated events raised by the IBN254CertificateVerifier contract.
-type IBN254CertificateVerifierTableUpdatedIterator struct {
-	Event *IBN254CertificateVerifierTableUpdated // Event containing the contract specifics and raw log
+// BN254CertificateVerifierStorageTableUpdatedIterator is returned from FilterTableUpdated and is used to iterate over the raw logs and unpacked data for TableUpdated events raised by the BN254CertificateVerifierStorage contract.
+type BN254CertificateVerifierStorageTableUpdatedIterator struct {
+	Event *BN254CertificateVerifierStorageTableUpdated // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -667,7 +667,7 @@ type IBN254CertificateVerifierTableUpdatedIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *IBN254CertificateVerifierTableUpdatedIterator) Next() bool {
+func (it *BN254CertificateVerifierStorageTableUpdatedIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -676,7 +676,7 @@ func (it *IBN254CertificateVerifierTableUpdatedIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(IBN254CertificateVerifierTableUpdated)
+			it.Event = new(BN254CertificateVerifierStorageTableUpdated)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -691,7 +691,7 @@ func (it *IBN254CertificateVerifierTableUpdatedIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(IBN254CertificateVerifierTableUpdated)
+		it.Event = new(BN254CertificateVerifierStorageTableUpdated)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -707,19 +707,19 @@ func (it *IBN254CertificateVerifierTableUpdatedIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *IBN254CertificateVerifierTableUpdatedIterator) Error() error {
+func (it *BN254CertificateVerifierStorageTableUpdatedIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *IBN254CertificateVerifierTableUpdatedIterator) Close() error {
+func (it *BN254CertificateVerifierStorageTableUpdatedIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// IBN254CertificateVerifierTableUpdated represents a TableUpdated event raised by the IBN254CertificateVerifier contract.
-type IBN254CertificateVerifierTableUpdated struct {
+// BN254CertificateVerifierStorageTableUpdated represents a TableUpdated event raised by the BN254CertificateVerifierStorage contract.
+type BN254CertificateVerifierStorageTableUpdated struct {
 	OperatorSet        OperatorSet
 	ReferenceTimestamp uint32
 	OperatorSetInfo    IBN254TableCalculatorTypesBN254OperatorSetInfo
@@ -729,21 +729,21 @@ type IBN254CertificateVerifierTableUpdated struct {
 // FilterTableUpdated is a free log retrieval operation binding the contract event 0x93e6bea1c9b5dce4a5c07b00261e956df2a4a253d9ab6ca070ca2037d72ada9e.
 //
 // Solidity: event TableUpdated((address,uint32) operatorSet, uint32 referenceTimestamp, (bytes32,uint256,(uint256,uint256),uint256[]) operatorSetInfo)
-func (_IBN254CertificateVerifier *IBN254CertificateVerifierFilterer) FilterTableUpdated(opts *bind.FilterOpts) (*IBN254CertificateVerifierTableUpdatedIterator, error) {
+func (_BN254CertificateVerifierStorage *BN254CertificateVerifierStorageFilterer) FilterTableUpdated(opts *bind.FilterOpts) (*BN254CertificateVerifierStorageTableUpdatedIterator, error) {
 
-	logs, sub, err := _IBN254CertificateVerifier.contract.FilterLogs(opts, "TableUpdated")
+	logs, sub, err := _BN254CertificateVerifierStorage.contract.FilterLogs(opts, "TableUpdated")
 	if err != nil {
 		return nil, err
 	}
-	return &IBN254CertificateVerifierTableUpdatedIterator{contract: _IBN254CertificateVerifier.contract, event: "TableUpdated", logs: logs, sub: sub}, nil
+	return &BN254CertificateVerifierStorageTableUpdatedIterator{contract: _BN254CertificateVerifierStorage.contract, event: "TableUpdated", logs: logs, sub: sub}, nil
 }
 
 // WatchTableUpdated is a free log subscription operation binding the contract event 0x93e6bea1c9b5dce4a5c07b00261e956df2a4a253d9ab6ca070ca2037d72ada9e.
 //
 // Solidity: event TableUpdated((address,uint32) operatorSet, uint32 referenceTimestamp, (bytes32,uint256,(uint256,uint256),uint256[]) operatorSetInfo)
-func (_IBN254CertificateVerifier *IBN254CertificateVerifierFilterer) WatchTableUpdated(opts *bind.WatchOpts, sink chan<- *IBN254CertificateVerifierTableUpdated) (event.Subscription, error) {
+func (_BN254CertificateVerifierStorage *BN254CertificateVerifierStorageFilterer) WatchTableUpdated(opts *bind.WatchOpts, sink chan<- *BN254CertificateVerifierStorageTableUpdated) (event.Subscription, error) {
 
-	logs, sub, err := _IBN254CertificateVerifier.contract.WatchLogs(opts, "TableUpdated")
+	logs, sub, err := _BN254CertificateVerifierStorage.contract.WatchLogs(opts, "TableUpdated")
 	if err != nil {
 		return nil, err
 	}
@@ -753,8 +753,8 @@ func (_IBN254CertificateVerifier *IBN254CertificateVerifierFilterer) WatchTableU
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(IBN254CertificateVerifierTableUpdated)
-				if err := _IBN254CertificateVerifier.contract.UnpackLog(event, "TableUpdated", log); err != nil {
+				event := new(BN254CertificateVerifierStorageTableUpdated)
+				if err := _BN254CertificateVerifierStorage.contract.UnpackLog(event, "TableUpdated", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -778,9 +778,9 @@ func (_IBN254CertificateVerifier *IBN254CertificateVerifierFilterer) WatchTableU
 // ParseTableUpdated is a log parse operation binding the contract event 0x93e6bea1c9b5dce4a5c07b00261e956df2a4a253d9ab6ca070ca2037d72ada9e.
 //
 // Solidity: event TableUpdated((address,uint32) operatorSet, uint32 referenceTimestamp, (bytes32,uint256,(uint256,uint256),uint256[]) operatorSetInfo)
-func (_IBN254CertificateVerifier *IBN254CertificateVerifierFilterer) ParseTableUpdated(log types.Log) (*IBN254CertificateVerifierTableUpdated, error) {
-	event := new(IBN254CertificateVerifierTableUpdated)
-	if err := _IBN254CertificateVerifier.contract.UnpackLog(event, "TableUpdated", log); err != nil {
+func (_BN254CertificateVerifierStorage *BN254CertificateVerifierStorageFilterer) ParseTableUpdated(log types.Log) (*BN254CertificateVerifierStorageTableUpdated, error) {
+	event := new(BN254CertificateVerifierStorageTableUpdated)
+	if err := _BN254CertificateVerifierStorage.contract.UnpackLog(event, "TableUpdated", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
