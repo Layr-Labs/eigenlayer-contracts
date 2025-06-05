@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "../interfaces/multichain/IBN254TableCalculator.sol";
+import "../interfaces/IBN254TableCalculator.sol";
 import "../interfaces/IKeyRegistrar.sol";
 import "../interfaces/IAllocationManager.sol";
 import "../libraries/Merkle.sol";

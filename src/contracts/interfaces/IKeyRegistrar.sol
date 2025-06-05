@@ -32,12 +32,6 @@ interface IKeyRegistrarTypes {
         bool isRegistered;
         bytes keyData; // Flexible storage for different curve types
     }
-
-    /// @dev Configuration for each operator set
-    struct OperatorSetConfig {
-        CurveType curveType;
-        bool isActive;
-    }
 }
 
 interface IKeyRegistrarEvents is IKeyRegistrarTypes {
@@ -99,7 +93,7 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @dev Only authorized callers for the AVS can call this function
      * @dev Reverts if operator doesn't have a registered key for this operator set
      */
-    function checkKey(OperatorSet memory operatorSet, address operator) external returns (bool);
+    function checkKey(OperatorSet memory operatorSet, address operator) external view returns (bool);
 
     /**
      * @notice Checks if a key is registered for an operator with a specific operator set
@@ -114,9 +108,9 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @param operatorSet The operator set to get configuration for
      * @return The operator set configuration
      */
-    function getOperatorSetConfig(
+    function getOperatorSetCurveType(
         OperatorSet memory operatorSet
-    ) external view returns (OperatorSetConfig memory);
+    ) external view returns (CurveType);
 
     /**
      * @notice Gets the BN254 public key for an operator with a specific operator set
@@ -131,7 +125,7 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
     ) external view returns (BN254.G1Point memory g1Point, BN254.G2Point memory g2Point);
 
     /**
-     * @notice Gets the ECDSA public key for an operator with a specific operator set
+     * @notice Gets the ECDSA public key for an operator with a specific operator set as bytes
      * @param operatorSet The operator set to get the key for
      * @param operator Address of the operator
      * @return pubkey The ECDSA public key
@@ -139,13 +133,12 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
     function getECDSAKey(OperatorSet memory operatorSet, address operator) external view returns (bytes memory);
 
     /**
-     * @notice Computes the address of an operator from their ECDSA public key
-     * @param pubkey The ECDSA public key
-     * @return address The address of the operator
+     * @notice Gets the ECDSA public key for an operator with a specific operator set
+     * @param operatorSet The operator set to get the key for
+     * @param operator Address of the operator
+     * @return pubkey The ECDSA public key
      */
-    function computeAddressFromPubkey(
-        bytes memory pubkey
-    ) external view returns (address);
+    function getECDSAAddress(OperatorSet memory operatorSet, address operator) external view returns (address);
 
     /**
      * @notice Checks if a key hash is globally registered
@@ -163,19 +156,4 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @return keyHash The key hash
      */
     function getKeyHash(OperatorSet memory operatorSet, address operator) external view returns (bytes32);
-
-    /**
-     * @notice Verifies a BN254 signature using Fiat-Shamir challenge to prevent rogue key attacks
-     * @param messageHash Hash of the message being signed
-     * @param signature The signature bytes
-     * @param pubkeyG1 The G1 component of the public key
-     * @param pubkeyG2 The G2 component of the public key
-     * @dev Uses gamma challenge value derived from message and public key components
-     */
-    function verifyBN254Signature(
-        bytes32 messageHash,
-        bytes memory signature,
-        BN254.G1Point memory pubkeyG1,
-        BN254.G2Point memory pubkeyG2
-    ) external view;
 }
