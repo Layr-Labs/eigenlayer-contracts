@@ -356,24 +356,18 @@ contract CrossChainRegistry is
      */
 
     /// @inheritdoc ICrossChainRegistry
-    function getActiveGenerationReservations()
-        external
-        view
-        returns (OperatorSet[] memory, IOperatorTableCalculator[] memory)
-    {
+    function getActiveGenerationReservations() external view returns (OperatorSet[] memory) {
         uint256 length = _activeGenerationReservations.length();
         OperatorSet[] memory operatorSets = new OperatorSet[](length);
-        IOperatorTableCalculator[] memory calculators = new IOperatorTableCalculator[](length);
 
         for (uint256 i = 0; i < length; i++) {
             bytes32 operatorSetKey = _activeGenerationReservations.at(i);
             OperatorSet memory operatorSet = OperatorSetLib.decode(operatorSetKey);
 
             operatorSets[i] = operatorSet;
-            calculators[i] = getOperatorTableCalculator(operatorSet);
         }
 
-        return (operatorSets, calculators);
+        return operatorSets;
     }
 
     /// @inheritdoc ICrossChainRegistry
