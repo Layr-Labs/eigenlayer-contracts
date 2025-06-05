@@ -77,15 +77,15 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
             _pendingOperatorSets.add(operatorSet.key());
             pendingSlashIds.add(slashId);
 
-            // Calculate the maturity block for the strategy, and fetch the current maturity block.
-            uint32 maturityBlock = uint32(block.number + getStrategyEscrowDelay(strategy));
-            uint32 currentMaturityBlock = _slashIdToMaturityBlock[operatorSet.key()][slashId];
+            // Calculate the complete block for the strategy, and fetch the current complete block.
+            uint32 completeBlock = uint32(block.number + getStrategyEscrowDelay(strategy) + 1);
+            uint32 currentCompleteBlock = _slashIdToCompleteBlock[operatorSet.key()][slashId];
 
             // Only update the maturity block if the new calculated maturity block (with the strategy delay)
             // is further in the future than the currently stored value. This ensures the escrow cannot be released
             // before the longest required delay among all strategies for this slashId.
-            if (maturityBlock > currentMaturityBlock) {
-                _slashIdToMaturityBlock[operatorSet.key()][slashId] = maturityBlock;
+            if (completeBlock > currentCompleteBlock) {
+                _slashIdToCompleteBlock[operatorSet.key()][slashId] = completeBlock;
             }
         }
 
@@ -260,7 +260,7 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
             pendingSlashIds.remove(slashId);
 
             // Delete the start block for the slash ID.
-            delete _slashIdToMaturityBlock[operatorSet.key()][slashId];
+            delete _slashIdToCompleteBlock[operatorSet.key()][slashId];
 
             // If there are no more slash IDs for the operator set, remove the operator set from the pending operator sets set.
             if (pendingSlashIds.length() == 0) {
@@ -427,7 +427,7 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
 
     /// @inheritdoc ISlashEscrowFactory
     function getEscrowCompleteBlock(OperatorSet memory operatorSet, uint256 slashId) public view returns (uint32) {
-        return _slashIdToMaturityBlock[operatorSet.key()][slashId];
+        return _slashIdToCompleteBlock[operatorSet.key()][slashId];
     }
 
     /// @inheritdoc ISlashEscrowFactory
