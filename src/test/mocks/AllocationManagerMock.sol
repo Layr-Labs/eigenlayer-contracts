@@ -5,6 +5,7 @@ import "forge-std/Test.sol";
 import "src/contracts/interfaces/IStrategy.sol";
 import "src/contracts/libraries/Snapshots.sol";
 import "src/contracts/libraries/OperatorSetLib.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 contract AllocationManagerMock is Test {
     address constant DEFAULT_BURN_ADDRESS = address(0x00000000000000000000000000000000000E16E4);
@@ -18,6 +19,7 @@ contract AllocationManagerMock is Test {
     mapping(bytes32 operatorSetKey => bool) public _isOperatorSet;
     mapping(address avs => uint) public getOperatorSetCount;
     mapping(address => mapping(IStrategy => Snapshots.DefaultWadHistory)) internal _maxMagnitudeHistory;
+    mapping(address => address) internal _avsRegistrar;
     mapping(bytes32 operatorSetKey => address) public _getRedistributionRecipient;
     mapping(bytes32 operatorSetKey => uint) public _getSlashCount;
 
@@ -91,5 +93,13 @@ contract AllocationManagerMock is Test {
 
     function setAVSSetCount(address avs, uint numSets) external {
         getOperatorSetCount[avs] = numSets;
+    }
+
+    function setAVSRegistrar(address avs, address avsRegistrar) external {
+        _avsRegistrar[avs] = avsRegistrar;
+    }
+
+    function getAVSRegistrar(address avs) external view returns (address) {
+        return _avsRegistrar[avs];
     }
 }
