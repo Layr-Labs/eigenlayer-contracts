@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "../interfaces/ICrossChainRegistry.sol";
 import "../interfaces/IOperatorTableCalculator.sol";
 import "../interfaces/IAllocationManager.sol";
+import "../interfaces/IKeyRegistrar.sol";
 import "../libraries/OperatorSetLib.sol";
 
 /**
@@ -40,6 +41,9 @@ abstract contract CrossChainRegistryStorage is ICrossChainRegistry {
     /// @notice The AllocationManager contract for EigenLayer
     IAllocationManager public immutable allocationManager;
 
+    /// @notice The KeyRegistrar contract for EigenLayer
+    IKeyRegistrar public immutable keyRegistrar;
+
     // Mutatables
 
     /// GENERATION RESERVATIONS
@@ -68,10 +72,9 @@ abstract contract CrossChainRegistryStorage is ICrossChainRegistry {
 
     // Construction
 
-    constructor(
-        IAllocationManager _allocationManager
-    ) {
+    constructor(IAllocationManager _allocationManager, IKeyRegistrar _keyRegistrar) {
         allocationManager = _allocationManager;
+        keyRegistrar = _keyRegistrar;
     }
 
     /**

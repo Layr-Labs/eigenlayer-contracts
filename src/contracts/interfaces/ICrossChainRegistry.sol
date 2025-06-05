@@ -195,6 +195,15 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
     ) external view returns (OperatorSetConfig memory);
 
     /**
+     * @notice Calculates the operatorTableBytes for a given operatorSet
+     * @param operatorSet the operatorSet to calculate the operator table for
+     * @return the encoded operatorTableBytes for the given operatorSet
+     */
+    function calculateOperatorTableBytes(
+        OperatorSet calldata operatorSet
+    ) external view returns (bytes memory);
+
+    /**
      * @notice Gets the active transport reservations
      * @return An array of operatorSets with active transport reservations
      * @return An array of chainIDs that the operatorSet is configured to transport to

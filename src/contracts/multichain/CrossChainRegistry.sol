@@ -6,6 +6,7 @@ import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "../mixins/PermissionControllerMixin.sol";
 import "../mixins/SemVerMixin.sol";
 import "../permissions/Pausable.sol";
+import "../interfaces/IKeyRegistrar.sol";
 import "./CrossChainRegistryStorage.sol";
 
 /**
@@ -70,10 +71,11 @@ contract CrossChainRegistry is
     constructor(
         IPermissionController _permissionController,
         IAllocationManager _allocationManager,
+        IKeyRegistrar _keyRegistrar,
         IPauserRegistry _pauserRegistry,
         string memory _version
     )
-        CrossChainRegistryStorage(_allocationManager)
+        CrossChainRegistryStorage(_allocationManager, _keyRegistrar)
         PermissionControllerMixin(_permissionController)
         Pausable(_pauserRegistry)
         SemVerMixin(_version)
@@ -369,6 +371,18 @@ contract CrossChainRegistry is
         OperatorSet memory operatorSet
     ) public view returns (OperatorSetConfig memory) {
         return _operatorSetConfigs[operatorSet.key()];
+    }
+
+    /// @inheritdoc ICrossChainRegistry
+    function calculateOperatorTableBytes(
+        OperatorSet calldata operatorSet
+    ) external view returns (bytes memory) {
+        return abi.encode(
+            operatorSet,
+            keyRegistrar.getOperatorSetCurveType(operatorSet),
+            getOperatorSetConfig(operatorSet),
+            getOperatorTableCalculator(operatorSet).calculateOperatorTableBytes(operatorSet)
+        );
     }
 
     /// @inheritdoc ICrossChainRegistry
