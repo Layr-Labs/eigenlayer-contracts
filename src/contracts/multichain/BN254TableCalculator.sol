@@ -22,11 +22,12 @@ contract BN254TableCalculator is IBN254TableCalculator {
     /// @notice AllocationManager contract for managing operator allocations
     IAllocationManager public immutable allocationManager;
     /// @notice The default lookahead blocks for the slashable stake lookup
-    uint256 public constant LOOKAHEAD_BLOCKS = 100_800;
+    uint256 public immutable LOOKAHEAD_BLOCKS;
 
-    constructor(IKeyRegistrar _keyRegistrar, IAllocationManager _allocationManager) {
+    constructor(IKeyRegistrar _keyRegistrar, IAllocationManager _allocationManager, uint256 _LOOKAHEAD_BLOCKS) {
         keyRegistrar = _keyRegistrar;
         allocationManager = _allocationManager;
+        LOOKAHEAD_BLOCKS = _LOOKAHEAD_BLOCKS;
     }
 
     /// @inheritdoc IBN254TableCalculator

@@ -147,4 +147,16 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @return keyHash The key hash
      */
     function getKeyHash(OperatorSet memory operatorSet, address operator) external view returns (bytes32);
+
+    /**
+     * @notice Gets the BN254 key registration EIP-712 typehash
+     * @return The BN254 key registration typehash
+     */
+    function BN254_KEY_REGISTRATION_TYPEHASH() external view returns (bytes32);
+
+    /**
+     * @notice Gets the ECDSA key registration EIP-712 typehash
+     * @return The ECDSA key registration typehash
+     */
+    function ECDSA_KEY_REGISTRATION_TYPEHASH() external view returns (bytes32);
 }
