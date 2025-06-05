@@ -106,6 +106,7 @@ contract AllocationManagerMock is Test {
     function getAVSRegistrar(address avs) external view returns (address) {
         return _avsRegistrar[avs];
     }
+
     function getMembers(OperatorSet memory operatorSet) external view returns (address[] memory) {
         return _members[operatorSet.key()];
     }
