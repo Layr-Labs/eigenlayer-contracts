@@ -94,7 +94,7 @@ contract CrossChainRegistry is
         OperatorSet calldata operatorSet,
         IOperatorTableCalculator operatorTableCalculator,
         OperatorSetConfig calldata config,
-        uint32[] calldata chainIDs
+        uint256[] calldata chainIDs
     )
         external
         onlyWhenNotPaused(PAUSED_GENERATION_RESERVATIONS)
@@ -133,7 +133,7 @@ contract CrossChainRegistry is
         // Remove the operator set config
         _setOperatorSetConfig(operatorSet, OperatorSetConfig(address(0), 0), true);
         // Remove all transport destinations
-        _removeTransportDestinations(operatorSet, _getUint32Array(_transportDestinations[operatorSetKey]), true);
+        _removeTransportDestinations(operatorSet, _getUint256Array(_transportDestinations[operatorSetKey]), true);
     }
 
     /// @inheritdoc ICrossChainRegistry
@@ -173,7 +173,7 @@ contract CrossChainRegistry is
     /// @inheritdoc ICrossChainRegistry
     function addTransportDestinations(
         OperatorSet calldata operatorSet,
-        uint32[] calldata chainIDs
+        uint256[] calldata chainIDs
     )
         external
         onlyWhenNotPaused(PAUSED_TRANSPORT_DESTINATIONS)
@@ -189,7 +189,7 @@ contract CrossChainRegistry is
     /// @inheritdoc ICrossChainRegistry
     function removeTransportDestinations(
         OperatorSet calldata operatorSet,
-        uint32[] calldata chainIDs
+        uint256[] calldata chainIDs
     )
         external
         onlyWhenNotPaused(PAUSED_TRANSPORT_DESTINATIONS)
@@ -204,10 +204,10 @@ contract CrossChainRegistry is
 
     /// @inheritdoc ICrossChainRegistry
     function addChainIDsToWhitelist(
-        uint32[] calldata chainIDs
+        uint256[] calldata chainIDs
     ) external onlyOwner onlyWhenNotPaused(PAUSED_CHAIN_WHITELIST) {
         for (uint256 i = 0; i < chainIDs.length; i++) {
-            uint32 chainID = chainIDs[i];
+            uint256 chainID = chainIDs[i];
 
             // Validate chainID
             require(chainID != 0, InvalidChainId());
@@ -221,10 +221,10 @@ contract CrossChainRegistry is
 
     /// @inheritdoc ICrossChainRegistry
     function removeChainIDsFromWhitelist(
-        uint32[] calldata chainIDs
+        uint256[] calldata chainIDs
     ) external onlyOwner onlyWhenNotPaused(PAUSED_CHAIN_WHITELIST) {
         for (uint256 i = 0; i < chainIDs.length; i++) {
-            uint32 chainID = chainIDs[i];
+            uint256 chainID = chainIDs[i];
 
             // Remove from whitelist
             require(_whitelistedChainIDs.remove(chainID), ChainIDNotWhitelisted());
@@ -283,14 +283,14 @@ contract CrossChainRegistry is
      * @param operatorSet The operator set to add destinations for
      * @param chainIDs The chain IDs to add as destinations
      */
-    function _addTransportDestinations(OperatorSet memory operatorSet, uint32[] memory chainIDs) internal {
+    function _addTransportDestinations(OperatorSet memory operatorSet, uint256[] memory chainIDs) internal {
         // Validate chainIDs array
         require(chainIDs.length > 0, EmptyChainIDsArray());
 
         bytes32 operatorSetKey = operatorSet.key();
 
         for (uint256 i = 0; i < chainIDs.length; i++) {
-            uint32 chainID = chainIDs[i];
+            uint256 chainID = chainIDs[i];
 
             // Check if chainID is whitelisted
             require(_whitelistedChainIDs.contains(chainID), ChainIDNotWhitelisted());
@@ -310,7 +310,7 @@ contract CrossChainRegistry is
      */
     function _removeTransportDestinations(
         OperatorSet memory operatorSet,
-        uint32[] memory chainIDs,
+        uint256[] memory chainIDs,
         bool isDelete
     ) internal {
         // Validate chainIDs array
@@ -319,7 +319,7 @@ contract CrossChainRegistry is
         bytes32 operatorSetKey = operatorSet.key();
 
         for (uint256 i = 0; i < chainIDs.length; i++) {
-            uint32 chainID = chainIDs[i];
+            uint256 chainID = chainIDs[i];
 
             // Remove transport destination
             require(_transportDestinations[operatorSetKey].remove(chainID), TransportDestinationNotFound());
@@ -335,17 +335,17 @@ contract CrossChainRegistry is
     }
 
     /**
-     * @dev Internal helper function to convert EnumerableSet.UintSet to uint32[]
+     * @dev Internal helper function to convert EnumerableSet.UintSet to uint256[]
      * @param set The EnumerableSet.UintSet to convert
-     * @return result The converted uint32 array
+     * @return result The converted uint256 array
      */
-    function _getUint32Array(
+    function _getUint256Array(
         EnumerableSet.UintSet storage set
-    ) internal view returns (uint32[] memory result) {
+    ) internal view returns (uint256[] memory result) {
         uint256 length = set.length();
-        result = new uint32[](length);
+        result = new uint256[](length);
         for (uint256 i = 0; i < length; i++) {
-            result[i] = uint32(set.at(i));
+            result[i] = set.at(i);
         }
     }
 
@@ -397,10 +397,10 @@ contract CrossChainRegistry is
     }
 
     /// @inheritdoc ICrossChainRegistry
-    function getActiveTransportReservations() external view returns (OperatorSet[] memory, uint32[][] memory) {
+    function getActiveTransportReservations() external view returns (OperatorSet[] memory, uint256[][] memory) {
         uint256 length = _activeGenerationReservations.length();
         OperatorSet[] memory operatorSets = new OperatorSet[](length);
-        uint32[][] memory chainIDs = new uint32[][](length);
+        uint256[][] memory chainIDs = new uint256[][](length);
 
         for (uint256 i = 0; i < length; i++) {
             bytes32 operatorSetKey = _activeGenerationReservations.at(i);
@@ -416,17 +416,17 @@ contract CrossChainRegistry is
     /// @inheritdoc ICrossChainRegistry
     function getTransportDestinations(
         OperatorSet memory operatorSet
-    ) public view returns (uint32[] memory) {
+    ) public view returns (uint256[] memory) {
         EnumerableSet.UintSet storage chainIDs = _transportDestinations[operatorSet.key()];
         uint256 length = chainIDs.length();
 
         // Create result array with maximum possible size
-        uint32[] memory result = new uint32[](length);
+        uint256[] memory result = new uint256[](length);
         uint256 count = 0;
 
         // Single loop to filter whitelisted chains
         for (uint256 i = 0; i < length; i++) {
-            uint32 chainID = uint32(chainIDs.at(i));
+            uint256 chainID = chainIDs.at(i);
             if (_whitelistedChainIDs.contains(chainID)) {
                 result[count] = chainID;
                 count++;
@@ -442,7 +442,7 @@ contract CrossChainRegistry is
     }
 
     /// @inheritdoc ICrossChainRegistry
-    function getSupportedChains() external view returns (uint32[] memory) {
-        return _getUint32Array(_whitelistedChainIDs);
+    function getSupportedChains() external view returns (uint256[] memory) {
+        return _getUint256Array(_whitelistedChainIDs);
     }
 }

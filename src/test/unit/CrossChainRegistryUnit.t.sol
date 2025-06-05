@@ -29,8 +29,8 @@ contract CrossChainRegistryUnitTests is
     OperatorSet defaultOperatorSet;
     OperatorTableCalculatorMock defaultCalculator;
     OperatorSetConfig defaultConfig;
-    uint32[] defaultChainIDs;
-    uint32[] emptyChainIDs;
+    uint256[] defaultChainIDs;
+    uint256[] emptyChainIDs;
 
     function setUp() public virtual override {
         EigenLayerMultichainUnitTestSetup.setUp();
@@ -42,7 +42,7 @@ contract CrossChainRegistryUnitTests is
         defaultCalculator = new OperatorTableCalculatorMock();
         defaultConfig = OperatorSetConfig({owner: cheats.randomAddress(), maxStalenessPeriod: 1 days});
 
-        defaultChainIDs = new uint32[](2);
+        defaultChainIDs = new uint256[](2);
         defaultChainIDs[0] = 1;
         defaultChainIDs[1] = 10;
 
@@ -85,9 +85,9 @@ contract CrossChainRegistryUnitTests is
         return OperatorSetConfig({owner: owner, maxStalenessPeriod: stalenessPeriod});
     }
 
-    function _createAndWhitelistChainIDs(uint32 count) internal returns (uint32[] memory) {
-        uint32[] memory chainIDs = new uint32[](count);
-        for (uint32 i = 0; i < count; i++) {
+    function _createAndWhitelistChainIDs(uint256 count) internal returns (uint256[] memory) {
+        uint256[] memory chainIDs = new uint256[](count);
+        for (uint256 i = 0; i < count; i++) {
             chainIDs[i] = 100 + i;
         }
         crossChainRegistry.addChainIDsToWhitelist(chainIDs);
@@ -198,7 +198,7 @@ contract CrossChainRegistryUnitTests_requestGenerationReservation is CrossChainR
     }
 
     function test_Revert_ChainIDNotWhitelisted() public {
-        uint32[] memory nonWhitelistedChains = new uint32[](1);
+        uint256[] memory nonWhitelistedChains = new uint256[](1);
         nonWhitelistedChains[0] = 999;
 
         cheats.expectRevert(ChainIDNotWhitelisted.selector);
@@ -238,7 +238,7 @@ contract CrossChainRegistryUnitTests_requestGenerationReservation is CrossChainR
         assertEq(retrievedConfig.owner, defaultConfig.owner, "Config owner mismatch");
         assertEq(retrievedConfig.maxStalenessPeriod, defaultConfig.maxStalenessPeriod, "Config staleness period mismatch");
 
-        uint32[] memory destinations = crossChainRegistry.getTransportDestinations(defaultOperatorSet);
+        uint256[] memory destinations = crossChainRegistry.getTransportDestinations(defaultOperatorSet);
         assertEq(destinations.length, defaultChainIDs.length, "Transport destinations length mismatch");
         for (uint i = 0; i < destinations.length; i++) {
             assertEq(destinations[i], defaultChainIDs[i], "Transport destination mismatch");
@@ -247,11 +247,11 @@ contract CrossChainRegistryUnitTests_requestGenerationReservation is CrossChainR
 
     function testFuzz_requestGenerationReservation_MultipleChainIDs(uint8 numChainIDs) public {
         numChainIDs = uint8(bound(numChainIDs, 1, 10));
-        uint32[] memory chainIDs = _createAndWhitelistChainIDs(numChainIDs);
+        uint256[] memory chainIDs = _createAndWhitelistChainIDs(numChainIDs);
 
         crossChainRegistry.requestGenerationReservation(defaultOperatorSet, defaultCalculator, defaultConfig, chainIDs);
 
-        uint32[] memory retrievedChainIDs = crossChainRegistry.getTransportDestinations(defaultOperatorSet);
+        uint256[] memory retrievedChainIDs = crossChainRegistry.getTransportDestinations(defaultOperatorSet);
         assertEq(retrievedChainIDs.length, chainIDs.length, "Chain IDs length mismatch");
         for (uint i = 0; i < chainIDs.length; i++) {
             assertEq(retrievedChainIDs[i], chainIDs[i], "Chain ID mismatch");
@@ -331,7 +331,7 @@ contract CrossChainRegistryUnitTests_removeGenerationReservation is CrossChainRe
         assertEq(retrievedConfig.owner, address(0), "Config owner should be zero");
         assertEq(retrievedConfig.maxStalenessPeriod, 0, "Config staleness period should be zero");
 
-        uint32[] memory destinations = crossChainRegistry.getTransportDestinations(defaultOperatorSet);
+        uint256[] memory destinations = crossChainRegistry.getTransportDestinations(defaultOperatorSet);
         assertEq(destinations.length, 0, "Should have no transport destinations");
     }
 }
@@ -502,7 +502,7 @@ contract CrossChainRegistryUnitTests_setOperatorSetConfig is CrossChainRegistryU
  * @notice Unit tests for CrossChainRegistry.addTransportDestinations
  */
 contract CrossChainRegistryUnitTests_addTransportDestinations is CrossChainRegistryUnitTests {
-    uint32[] newChainIDs;
+    uint256[] newChainIDs;
 
     function setUp() public override {
         super.setUp();
@@ -510,7 +510,7 @@ contract CrossChainRegistryUnitTests_addTransportDestinations is CrossChainRegis
         crossChainRegistry.requestGenerationReservation(defaultOperatorSet, defaultCalculator, defaultConfig, defaultChainIDs);
 
         // Setup new chain IDs to add
-        newChainIDs = new uint32[](2);
+        newChainIDs = new uint256[](2);
         newChainIDs[0] = 20;
         newChainIDs[1] = 30;
         crossChainRegistry.addChainIDsToWhitelist(newChainIDs);
@@ -554,7 +554,7 @@ contract CrossChainRegistryUnitTests_addTransportDestinations is CrossChainRegis
     }
 
     function test_Revert_ChainIDNotWhitelisted() public {
-        uint32[] memory nonWhitelistedChains = new uint32[](1);
+        uint256[] memory nonWhitelistedChains = new uint256[](1);
         nonWhitelistedChains[0] = 999;
 
         cheats.expectRevert(ChainIDNotWhitelisted.selector);
@@ -577,7 +577,7 @@ contract CrossChainRegistryUnitTests_addTransportDestinations is CrossChainRegis
         crossChainRegistry.addTransportDestinations(defaultOperatorSet, newChainIDs);
 
         // Verify state
-        uint32[] memory destinations = crossChainRegistry.getTransportDestinations(defaultOperatorSet);
+        uint256[] memory destinations = crossChainRegistry.getTransportDestinations(defaultOperatorSet);
         assertEq(destinations.length, defaultChainIDs.length + newChainIDs.length, "Destinations count mismatch");
 
         // Check all destinations are present
@@ -597,11 +597,11 @@ contract CrossChainRegistryUnitTests_addTransportDestinations is CrossChainRegis
 
     function testFuzz_addTransportDestinations_MultipleChainIDs(uint8 numNewChainIDs) public {
         numNewChainIDs = uint8(bound(numNewChainIDs, 1, 10));
-        uint32[] memory fuzzChainIDs = _createAndWhitelistChainIDs(numNewChainIDs);
+        uint256[] memory fuzzChainIDs = _createAndWhitelistChainIDs(numNewChainIDs);
 
         crossChainRegistry.addTransportDestinations(defaultOperatorSet, fuzzChainIDs);
 
-        uint32[] memory destinations = crossChainRegistry.getTransportDestinations(defaultOperatorSet);
+        uint256[] memory destinations = crossChainRegistry.getTransportDestinations(defaultOperatorSet);
         assertEq(destinations.length, defaultChainIDs.length + fuzzChainIDs.length, "Destinations count mismatch");
     }
 }
@@ -611,19 +611,19 @@ contract CrossChainRegistryUnitTests_addTransportDestinations is CrossChainRegis
  * @notice Unit tests for CrossChainRegistry.removeTransportDestinations
  */
 contract CrossChainRegistryUnitTests_removeTransportDestinations is CrossChainRegistryUnitTests {
-    uint32[] chainIDsToRemove;
+    uint256[] chainIDsToRemove;
 
     function setUp() public override {
         super.setUp();
         // Create a default reservation with multiple chain IDs
-        uint32[] memory manyChainIDs = new uint32[](4);
+        uint256[] memory manyChainIDs = new uint256[](4);
         manyChainIDs[0] = 1; // Already whitelisted in base setUp
         manyChainIDs[1] = 10; // Already whitelisted in base setUp
         manyChainIDs[2] = 20;
         manyChainIDs[3] = 30;
 
         // Only whitelist the new chain IDs
-        uint32[] memory newChainIDs = new uint32[](2);
+        uint256[] memory newChainIDs = new uint256[](2);
         newChainIDs[0] = 20;
         newChainIDs[1] = 30;
         crossChainRegistry.addChainIDsToWhitelist(newChainIDs);
@@ -631,7 +631,7 @@ contract CrossChainRegistryUnitTests_removeTransportDestinations is CrossChainRe
         crossChainRegistry.requestGenerationReservation(defaultOperatorSet, defaultCalculator, defaultConfig, manyChainIDs);
 
         // Setup chain IDs to remove (subset)
-        chainIDsToRemove = new uint32[](2);
+        chainIDsToRemove = new uint256[](2);
         chainIDsToRemove[0] = 10;
         chainIDsToRemove[1] = 20;
     }
@@ -674,7 +674,7 @@ contract CrossChainRegistryUnitTests_removeTransportDestinations is CrossChainRe
     }
 
     function test_Revert_TransportDestinationNotFound() public {
-        uint32[] memory nonExistentChains = new uint32[](1);
+        uint256[] memory nonExistentChains = new uint256[](1);
         nonExistentChains[0] = 999;
 
         cheats.expectRevert(TransportDestinationNotFound.selector);
@@ -683,7 +683,7 @@ contract CrossChainRegistryUnitTests_removeTransportDestinations is CrossChainRe
 
     function test_Revert_RequireAtLeastOneTransportDestination() public {
         // Get all current destinations
-        uint32[] memory allDestinations = crossChainRegistry.getTransportDestinations(defaultOperatorSet);
+        uint256[] memory allDestinations = crossChainRegistry.getTransportDestinations(defaultOperatorSet);
 
         // Try to remove all of them
         cheats.expectRevert(RequireAtLeastOneTransportDestination.selector);
@@ -701,7 +701,7 @@ contract CrossChainRegistryUnitTests_removeTransportDestinations is CrossChainRe
         crossChainRegistry.removeTransportDestinations(defaultOperatorSet, chainIDsToRemove);
 
         // Verify state
-        uint32[] memory remainingDestinations = crossChainRegistry.getTransportDestinations(defaultOperatorSet);
+        uint256[] memory remainingDestinations = crossChainRegistry.getTransportDestinations(defaultOperatorSet);
         assertEq(remainingDestinations.length, 2, "Should have 2 remaining destinations");
 
         // Verify the correct destinations remain (1 and 30)
@@ -714,7 +714,7 @@ contract CrossChainRegistryUnitTests_removeTransportDestinations is CrossChainRe
 
     function testFuzz_removeTransportDestinations_PartialRemoval(uint8 numToRemove) public {
         // Setup with many destinations
-        uint32[] memory manyChainIDs = _createAndWhitelistChainIDs(10);
+        uint256[] memory manyChainIDs = _createAndWhitelistChainIDs(10);
         OperatorSet memory fuzzOperatorSet = _createOperatorSet(cheats.randomAddress(), 100);
         allocationManagerMock.setIsOperatorSet(fuzzOperatorSet, true);
         _grantUAMRole(address(this), fuzzOperatorSet.avs);
@@ -723,14 +723,14 @@ contract CrossChainRegistryUnitTests_removeTransportDestinations is CrossChainRe
 
         // Remove some but not all
         numToRemove = uint8(bound(numToRemove, 1, 9)); // Leave at least one
-        uint32[] memory toRemove = new uint32[](numToRemove);
+        uint256[] memory toRemove = new uint256[](numToRemove);
         for (uint i = 0; i < numToRemove; i++) {
             toRemove[i] = manyChainIDs[i];
         }
 
         crossChainRegistry.removeTransportDestinations(fuzzOperatorSet, toRemove);
 
-        uint32[] memory remaining = crossChainRegistry.getTransportDestinations(fuzzOperatorSet);
+        uint256[] memory remaining = crossChainRegistry.getTransportDestinations(fuzzOperatorSet);
         assertEq(remaining.length, manyChainIDs.length - numToRemove, "Incorrect remaining count");
     }
 }
@@ -740,11 +740,11 @@ contract CrossChainRegistryUnitTests_removeTransportDestinations is CrossChainRe
  * @notice Unit tests for CrossChainRegistry.addChainIDsToWhitelist
  */
 contract CrossChainRegistryUnitTests_addChainIDsToWhitelist is CrossChainRegistryUnitTests {
-    uint32[] newChainIDs;
+    uint256[] newChainIDs;
 
     function setUp() public override {
         super.setUp();
-        newChainIDs = new uint32[](3);
+        newChainIDs = new uint256[](3);
         newChainIDs[0] = 100;
         newChainIDs[1] = 200;
         newChainIDs[2] = 300;
@@ -765,7 +765,7 @@ contract CrossChainRegistryUnitTests_addChainIDsToWhitelist is CrossChainRegistr
     }
 
     function test_Revert_InvalidChainId() public {
-        uint32[] memory invalidChainIDs = new uint32[](1);
+        uint256[] memory invalidChainIDs = new uint256[](1);
         invalidChainIDs[0] = 0;
 
         cheats.expectRevert(InvalidChainId.selector);
@@ -788,21 +788,21 @@ contract CrossChainRegistryUnitTests_addChainIDsToWhitelist is CrossChainRegistr
         crossChainRegistry.addChainIDsToWhitelist(newChainIDs);
 
         // Verify state
-        uint32[] memory supportedChains = crossChainRegistry.getSupportedChains();
+        uint256[] memory supportedChains = crossChainRegistry.getSupportedChains();
         assertEq(supportedChains.length, defaultChainIDs.length + newChainIDs.length, "Supported chains count mismatch");
     }
 
     function testFuzz_addChainIDsToWhitelist_MultipleChainIDs(uint8 numChainIDs) public {
         numChainIDs = uint8(bound(numChainIDs, 1, 50));
-        uint32[] memory fuzzChainIDs = new uint32[](numChainIDs);
+        uint256[] memory fuzzChainIDs = new uint256[](numChainIDs);
 
         for (uint i = 0; i < numChainIDs; i++) {
-            fuzzChainIDs[i] = 1000 + uint32(i);
+            fuzzChainIDs[i] = 1000 + uint256(i);
         }
 
         crossChainRegistry.addChainIDsToWhitelist(fuzzChainIDs);
 
-        uint32[] memory supportedChains = crossChainRegistry.getSupportedChains();
+        uint256[] memory supportedChains = crossChainRegistry.getSupportedChains();
         assertTrue(supportedChains.length >= numChainIDs, "Not all chains added");
     }
 }
@@ -831,7 +831,7 @@ contract CrossChainRegistryUnitTests_removeChainIDsFromWhitelist is CrossChainRe
     }
 
     function test_Revert_ChainIDNotWhitelisted() public {
-        uint32[] memory nonWhitelistedChains = new uint32[](1);
+        uint256[] memory nonWhitelistedChains = new uint256[](1);
         nonWhitelistedChains[0] = 999;
 
         cheats.expectRevert(ChainIDNotWhitelisted.selector);
@@ -849,7 +849,7 @@ contract CrossChainRegistryUnitTests_removeChainIDsFromWhitelist is CrossChainRe
         crossChainRegistry.removeChainIDsFromWhitelist(defaultChainIDs);
 
         // Verify state
-        uint32[] memory supportedChains = crossChainRegistry.getSupportedChains();
+        uint256[] memory supportedChains = crossChainRegistry.getSupportedChains();
         assertEq(supportedChains.length, 0, "Should have no supported chains");
     }
 
@@ -858,12 +858,12 @@ contract CrossChainRegistryUnitTests_removeChainIDsFromWhitelist is CrossChainRe
         crossChainRegistry.requestGenerationReservation(defaultOperatorSet, defaultCalculator, defaultConfig, defaultChainIDs);
 
         // Remove one chain from whitelist
-        uint32[] memory chainToRemove = new uint32[](1);
+        uint256[] memory chainToRemove = new uint256[](1);
         chainToRemove[0] = defaultChainIDs[0];
         crossChainRegistry.removeChainIDsFromWhitelist(chainToRemove);
 
         // Verify transport destinations only returns whitelisted chains
-        uint32[] memory destinations = crossChainRegistry.getTransportDestinations(defaultOperatorSet);
+        uint256[] memory destinations = crossChainRegistry.getTransportDestinations(defaultOperatorSet);
         assertEq(destinations.length, 1, "Should only return whitelisted destination");
         assertEq(destinations[0], defaultChainIDs[1], "Wrong destination returned");
     }
@@ -956,7 +956,7 @@ contract CrossChainRegistryUnitTests_calculateOperatorTableBytes is CrossChainRe
  */
 contract CrossChainRegistryUnitTests_getActiveTransportReservations is CrossChainRegistryUnitTests {
     function test_getActiveTransportReservations_Empty() public {
-        (OperatorSet[] memory operatorSets, uint32[][] memory chainIDs) = crossChainRegistry.getActiveTransportReservations();
+        (OperatorSet[] memory operatorSets, uint256[][] memory chainIDs) = crossChainRegistry.getActiveTransportReservations();
         assertEq(operatorSets.length, 0, "Should have no transport reservations");
         assertEq(chainIDs.length, 0, "Should have no chain IDs");
     }
@@ -964,7 +964,7 @@ contract CrossChainRegistryUnitTests_getActiveTransportReservations is CrossChai
     function test_getActiveTransportReservations_Single() public {
         crossChainRegistry.requestGenerationReservation(defaultOperatorSet, defaultCalculator, defaultConfig, defaultChainIDs);
 
-        (OperatorSet[] memory operatorSets, uint32[][] memory chainIDs) = crossChainRegistry.getActiveTransportReservations();
+        (OperatorSet[] memory operatorSets, uint256[][] memory chainIDs) = crossChainRegistry.getActiveTransportReservations();
         assertEq(operatorSets.length, 1, "Should have 1 transport reservation");
         assertEq(operatorSets[0].avs, defaultOperatorSet.avs, "AVS mismatch");
         assertEq(operatorSets[0].id, defaultOperatorSet.id, "OperatorSetId mismatch");
@@ -983,17 +983,17 @@ contract CrossChainRegistryUnitTests_getActiveTransportReservations is CrossChai
             _grantUAMRole(address(this), operatorSet.avs);
 
             // Create unique chain IDs for each iteration
-            uint32[] memory chainIDs = new uint32[](i + 1);
+            uint256[] memory chainIDs = new uint256[](i + 1);
             for (uint j = 0; j <= i; j++) {
                 // Use a formula that ensures unique chainIDs across iterations
-                chainIDs[j] = 100 + uint32(i * 10 + j);
+                chainIDs[j] = 100 + uint256(i * 10 + j);
             }
             crossChainRegistry.addChainIDsToWhitelist(chainIDs);
 
             crossChainRegistry.requestGenerationReservation(operatorSet, defaultCalculator, defaultConfig, chainIDs);
         }
 
-        (OperatorSet[] memory operatorSets, uint32[][] memory chainIDs) = crossChainRegistry.getActiveTransportReservations();
+        (OperatorSet[] memory operatorSets, uint256[][] memory chainIDs) = crossChainRegistry.getActiveTransportReservations();
         assertEq(operatorSets.length, numReservations, "Transport reservation count mismatch");
 
         for (uint i = 0; i < numReservations; i++) {
@@ -1008,7 +1008,7 @@ contract CrossChainRegistryUnitTests_getActiveTransportReservations is CrossChai
  */
 contract CrossChainRegistryUnitTests_getSupportedChains is CrossChainRegistryUnitTests {
     function test_getSupportedChains_Initial() public {
-        uint32[] memory supportedChains = crossChainRegistry.getSupportedChains();
+        uint256[] memory supportedChains = crossChainRegistry.getSupportedChains();
         assertEq(supportedChains.length, defaultChainIDs.length, "Should have default chains");
         for (uint i = 0; i < supportedChains.length; i++) {
             bool found = false;
@@ -1027,14 +1027,14 @@ contract CrossChainRegistryUnitTests_getSupportedChains is CrossChainRegistryUni
         numToRemove = uint8(bound(numToRemove, 0, defaultChainIDs.length));
 
         // Add chains
-        uint32[] memory newChains = _createAndWhitelistChainIDs(numToAdd);
+        uint256[] memory newChains = _createAndWhitelistChainIDs(numToAdd);
 
-        uint32[] memory supportedChains = crossChainRegistry.getSupportedChains();
+        uint256[] memory supportedChains = crossChainRegistry.getSupportedChains();
         assertEq(supportedChains.length, defaultChainIDs.length + numToAdd, "Chain count after add mismatch");
 
         // Remove some default chains
         if (numToRemove > 0) {
-            uint32[] memory chainsToRemove = new uint32[](numToRemove);
+            uint256[] memory chainsToRemove = new uint256[](numToRemove);
             for (uint i = 0; i < numToRemove; i++) {
                 chainsToRemove[i] = defaultChainIDs[i];
             }

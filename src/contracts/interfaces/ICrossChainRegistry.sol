@@ -68,16 +68,16 @@ interface ICrossChainRegistryEvents is ICrossChainRegistryTypes {
     event OperatorSetConfigSet(OperatorSet operatorSet, OperatorSetConfig config);
 
     /// @notice Emitted when a transport destination is added
-    event TransportDestinationAdded(OperatorSet operatorSet, uint32 chainID);
+    event TransportDestinationAdded(OperatorSet operatorSet, uint256 chainID);
 
     /// @notice Emitted when a transport destination is removed
-    event TransportDestinationRemoved(OperatorSet operatorSet, uint32 chainID);
+    event TransportDestinationRemoved(OperatorSet operatorSet, uint256 chainID);
 
     /// @notice Emitted when a chainID is added to the whitelist
-    event ChainIDAddedToWhitelist(uint32 chainID);
+    event ChainIDAddedToWhitelist(uint256 chainID);
 
     /// @notice Emitted when a chainID is removed from the whitelist
-    event ChainIDRemovedFromWhitelist(uint32 chainID);
+    event ChainIDRemovedFromWhitelist(uint256 chainID);
 }
 
 interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryEvents {
@@ -93,7 +93,7 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
         OperatorSet calldata operatorSet,
         IOperatorTableCalculator operatorTableCalculator,
         OperatorSetConfig calldata config,
-        uint32[] calldata chainIDs
+        uint256[] calldata chainIDs
     ) external;
 
     /**
@@ -133,7 +133,7 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
      * @dev msg.sender must be UAM permissioned for operatorSet.avs
      * @dev Will create a transport reservation if one doesn't exist
      */
-    function addTransportDestinations(OperatorSet calldata operatorSet, uint32[] calldata chainIDs) external;
+    function addTransportDestinations(OperatorSet calldata operatorSet, uint256[] calldata chainIDs) external;
 
     /**
      * @notice Removes destination chains to transport to
@@ -142,7 +142,7 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
      * @dev msg.sender must be UAM permissioned for operatorSet.avs
      * @dev Will remove the transport reservation if all destinations are removed
      */
-    function removeTransportDestinations(OperatorSet calldata operatorSet, uint32[] calldata chainIDs) external;
+    function removeTransportDestinations(OperatorSet calldata operatorSet, uint256[] calldata chainIDs) external;
 
     /**
      * @notice Adds chainIDs to the whitelist of chainIDs that can be transported to
@@ -150,7 +150,7 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
      * @dev msg.sender must be the owner of the CrossChainRegistry
      */
     function addChainIDsToWhitelist(
-        uint32[] calldata chainIDs
+        uint256[] calldata chainIDs
     ) external;
 
     /**
@@ -159,7 +159,7 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
      * @dev msg.sender must be the owner of the CrossChainRegistry
      */
     function removeChainIDsFromWhitelist(
-        uint32[] calldata chainIDs
+        uint256[] calldata chainIDs
     ) external;
 
     /**
@@ -211,7 +211,7 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
      * @return An array of operatorSets with active transport reservations
      * @return An array of chainIDs that the operatorSet is configured to transport to
      */
-    function getActiveTransportReservations() external view returns (OperatorSet[] memory, uint32[][] memory);
+    function getActiveTransportReservations() external view returns (OperatorSet[] memory, uint256[][] memory);
 
     /**
      * @notice Gets the transport destinations for a given operatorSet
@@ -220,11 +220,11 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
      */
     function getTransportDestinations(
         OperatorSet memory operatorSet
-    ) external view returns (uint32[] memory);
+    ) external view returns (uint256[] memory);
 
     /**
      * @notice Gets the list of chains that are supported by the CrossChainRegistry
      * @return An array of chainIDs that are supported by the CrossChainRegistry
      */
-    function getSupportedChains() external view returns (uint32[] memory);
+    function getSupportedChains() external view returns (uint256[] memory);
 }
