@@ -183,5 +183,5 @@ rule checkVerifyCheckpointProofs(env e){
     BeaconChainProofs.BalanceProof[] proofs;
     verifyCheckpointProofs(e, balanceContainerProof, proofs);
     
-    assert currentContract._currentCheckpoint.proofsRemaining == 0 => currentContract.restakedExecutionLayerGwei * GWEI_TO_WEI() <= eigenPodManager.podOwnerDepositShares[podOwner()];
+    assert currentContract._currentCheckpoint.proofsRemaining == 0 && currentContract._currentCheckpoint.balanceDeltasGwei == /** get diff here */ => currentContract.restakedExecutionLayerGwei * GWEI_TO_WEI() <= eigenPodManager.podOwnerDepositShares[podOwner()];
 }
