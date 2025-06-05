@@ -1,4 +1,6 @@
 
+using EigenPodManager as eigenPodManager;
+
 methods {
     function getParentBlockRoot(uint64) internal returns (bytes32) => NONDET;
 
@@ -170,4 +172,16 @@ rule onlyPodOwnerOrProofSubmitterCanCall(env e, method f) filtered {
     calldataarg args;
     f(e, args);
     assert e.msg.sender == podOwner() || e.msg.sender == proofSubmitter();
+}
+
+/// Helper Invariant
+rule checkVerifyCheckpointProofs(env e){
+    require eigenPodManager.podOwnerDepositShares[podOwner()] % GWEI_TO_WEI() == 0;
+    require currentContract.restakedExecutionLayerGwei * GWEI_TO_WEI() <= eigenPodManager.podOwnerDepositShares[podOwner()];
+
+    BeaconChainProofs.BalanceContainerProof balanceContainerProof;
+    BeaconChainProofs.BalanceProof[] proofs;
+    verifyCheckpointProofs(e, balanceContainerProof, proofs);
+    
+    assert currentContract._currentCheckpoint.proofsRemaining == 0 => currentContract.restakedExecutionLayerGwei * GWEI_TO_WEI() <= eigenPodManager.podOwnerDepositShares[podOwner()];
 }
