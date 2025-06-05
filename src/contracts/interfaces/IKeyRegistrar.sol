@@ -13,6 +13,7 @@ interface IKeyRegistrarErrors {
     error ZeroPubkey();
     error InvalidCurveType();
     error InvalidKeypair();
+    error InvalidSignature();
     error ConfigurationAlreadySet();
     error OperatorSetNotConfigured();
     error KeyNotFound(OperatorSet operatorSet, address operator);
@@ -41,6 +42,14 @@ interface IKeyRegistrarEvents is IKeyRegistrarTypes {
 }
 
 interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixin {
+    /**
+     * @notice Initializes the contract ownership
+     * @param initialOwner Initial owner of the contract
+     */
+    function initialize(
+        address initialOwner
+    ) external;
+
     /**
      * @notice Configures an operator set with curve type
      * @param operatorSet The operator set to configure
