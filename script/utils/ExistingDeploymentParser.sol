@@ -23,6 +23,10 @@ import "../../src/contracts/pods/EigenPod.sol";
 import "../../src/contracts/pods/EigenPodManager.sol";
 
 import "../../src/contracts/permissions/PauserRegistry.sol";
+import "../../src/contracts/permissions/KeyRegistrar.sol";
+import "../../src/contracts/multichain/BN254CertificateVerifier.sol";
+import "../../src/contracts/multichain/BN254TableCalculator.sol";
+import "../../src/contracts/multichain/OperatorTableUpdater.sol";
 
 import "../../src/test/mocks/EmptyContract.sol";
 
@@ -94,6 +98,9 @@ contract ExistingDeploymentParser is Script, Logger {
     uint256 STRATEGY_MAX_PER_DEPOSIT;
     uint256 STRATEGY_MAX_TOTAL_DEPOSITS;
 
+    /// @dev BN254TableCalculator
+    uint256 BN254_TABLE_CALCULATOR_LOOKAHEAD_BLOCKS;
+
     /// -----------------------------------------------------------------------
     /// EigenLayer Contracts
     /// -----------------------------------------------------------------------
@@ -150,6 +157,17 @@ contract ExistingDeploymentParser is Script, Logger {
     IBackingEigen public bEIGENImpl;
     EigenStrategy public eigenStrategy;
     EigenStrategy public eigenStrategyImpl;
+
+    /// @dev Multichain
+    IKeyRegistrar public keyRegistrar;
+    IKeyRegistrar public keyRegistrarImplementation;
+    IBN254CertificateVerifier public bn254CertificateVerifier;
+    IBN254CertificateVerifier public bn254CertificateVerifierImplementation;
+    IECDSACertificateVerifier public ecdsaCertificateVerifier;
+    IECDSACertificateVerifier public ecdsaCertificateVerifierImplementation;
+    BN254TableCalculator public bn254TableCalculator;
+    IOperatorTableUpdater public operatorTableUpdater;
+    IOperatorTableUpdater public operatorTableUpdaterImplementation;
 
     /// -----------------------------------------------------------------------
     /// Storage
@@ -295,6 +313,14 @@ contract ExistingDeploymentParser is Script, Logger {
         bEIGENImpl = IBackingEigen(json.readAddress(".addresses.token.bEIGENImpl"));
         eigenStrategy = EigenStrategy(json.readAddress(".addresses.token.eigenStrategy"));
         eigenStrategyImpl = EigenStrategy(json.readAddress(".addresses.token.eigenStrategyImpl"));
+
+        // multichain
+        keyRegistrar = IKeyRegistrar(json.readAddress(".addresses.multichain.keyRegistrar"));
+        bn254CertificateVerifier =
+            IBN254CertificateVerifier(json.readAddress(".addresses.multichain.bn254CertificateVerifier"));
+        ecdsaCertificateVerifier =
+            IECDSACertificateVerifier(json.readAddress(".addresses.multichain.ecdsaCertificateVerifier"));
+        operatorTableUpdater = IOperatorTableUpdater(json.readAddress(".addresses.multichain.operatorTableUpdater"));
     }
 
     function _parseDeployedEigenPods(

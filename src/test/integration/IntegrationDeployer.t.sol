@@ -180,6 +180,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS = 50;
         DEALLOCATION_DELAY = 50;
         ALLOCATION_CONFIGURATION_DELAY = 75;
+        BN254_TABLE_CALCULATOR_LOOKAHEAD_BLOCKS = 50;
 
         REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS = 86_400;
         REWARDS_COORDINATOR_MAX_REWARDS_DURATION = 6_048_000;
@@ -318,6 +319,15 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             SlashEscrowFactory(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
         eigenPodBeacon = new UpgradeableBeacon(address(emptyContract));
         strategyBeacon = new UpgradeableBeacon(address(emptyContract));
+
+        // multichain
+        keyRegistrar = KeyRegistrar(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
+        bn254CertificateVerifier =
+            BN254CertificateVerifier(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
+        // TODO: add ecdsaCertificateVerifier
+        // ecdsaCertificateVerifier = IECDSACertificateVerifier(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
+        operatorTableUpdater =
+            OperatorTableUpdater(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
     }
 
     /// Deploy an implementation contract for each contract in the system
@@ -364,6 +374,14 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
         // Pre-longtail StrategyBaseTVLLimits implementation
         // TODO - need to update ExistingDeploymentParser
+
+        // multichain
+        keyRegistrarImplementation = new KeyRegistrar(permissionController, allocationManager, "9.9.9");
+        bn254CertificateVerifierImplementation = new BN254CertificateVerifier(address(operatorTableUpdater));
+        bn254TableCalculator = new BN254TableCalculator(keyRegistrar, allocationManager, BN254_TABLE_CALCULATOR_LOOKAHEAD_BLOCKS);
+        // TODO: add ecdsaCertificateVerifier
+        // ecdsaCertificateVerifierImplementation = new ECDSACertificateVerifier(keyRegistrar, allocationManager, "9.9.9");
+        operatorTableUpdaterImplementation = new OperatorTableUpdater(bn254CertificateVerifier, ecdsaCertificateVerifier, "9.9.9");
     }
 
     function _upgradeProxies() public noTracing {
@@ -423,6 +441,16 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
                 ITransparentUpgradeableProxy(payable(address(deployedStrategyArray[i]))), address(baseStrategyImplementation)
             );
         }
+
+        // multichain
+        // TODO: add ecdsaCertificateVerifier
+        eigenLayerProxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(keyRegistrar))), address(keyRegistrarImplementation));
+        eigenLayerProxyAdmin.upgrade(
+            ITransparentUpgradeableProxy(payable(address(bn254CertificateVerifier))), address(bn254CertificateVerifierImplementation)
+        );
+        eigenLayerProxyAdmin.upgrade(
+            ITransparentUpgradeableProxy(payable(address(operatorTableUpdater))), address(operatorTableUpdaterImplementation)
+        );
     }
 
     function _initializeProxies() public noTracing {
