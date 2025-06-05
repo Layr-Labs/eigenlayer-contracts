@@ -105,7 +105,6 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
 
     /// @inheritdoc IKeyRegistrar
     function checkKey(OperatorSet memory operatorSet, address operator) external view returns (bool) {
-        // Removed permission check as this is a view function
         CurveType curveType = operatorSetCurveTypes[operatorSet.key()];
         require(curveType != CurveType.NONE, OperatorSetNotConfigured());
 
