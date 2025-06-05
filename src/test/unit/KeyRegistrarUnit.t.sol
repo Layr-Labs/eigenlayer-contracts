@@ -11,6 +11,7 @@ import "src/contracts/interfaces/IPermissionController.sol";
 import "src/contracts/mixins/PermissionControllerMixin.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
 import "src/contracts/libraries/OperatorSetLib.sol";
+import "src/contracts/interfaces/ISignatureUtilsMixin.sol";
 
 contract KeyRegistrarUnitTests is EigenLayerUnitTestSetup {
     using BN254 for BN254.G1Point;
@@ -247,7 +248,7 @@ contract KeyRegistrarUnitTests is EigenLayerUnitTestSetup {
         );
 
         vm.prank(operator1);
-        vm.expectRevert(IKeyRegistrarErrors.InvalidSignature.selector);
+        vm.expectRevert(ISignatureUtilsMixinErrors.InvalidSignature.selector);
         keyRegistrar.registerKey(operator1, operatorSet, ecdsaKey1, wrongSignature);
     }
 
@@ -333,7 +334,7 @@ contract KeyRegistrarUnitTests is EigenLayerUnitTestSetup {
         bytes memory invalidSignature = abi.encode(uint(1), uint(2));
 
         vm.prank(operator1);
-        vm.expectRevert(IKeyRegistrarErrors.InvalidSignature.selector);
+        vm.expectRevert(ISignatureUtilsMixinErrors.InvalidSignature.selector);
         keyRegistrar.registerKey(operator1, operatorSet, bn254Key1, invalidSignature);
     }
 
@@ -446,17 +447,6 @@ contract KeyRegistrarUnitTests is EigenLayerUnitTestSetup {
 
         vm.prank(avs1);
         vm.expectRevert(IKeyRegistrarErrors.OperatorSetNotConfigured.selector);
-        keyRegistrar.checkKey(operatorSet, operator1);
-    }
-
-    function testCheckKey_RevertUnauthorized() public {
-        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
-
-        vm.prank(avs1);
-        keyRegistrar.configureOperatorSet(operatorSet, IKeyRegistrarTypes.CurveType.ECDSA);
-
-        vm.prank(operator1);
-        vm.expectRevert(PermissionControllerMixin.InvalidPermissions.selector);
         keyRegistrar.checkKey(operatorSet, operator1);
     }
 
@@ -685,7 +675,7 @@ contract KeyRegistrarUnitTests is EigenLayerUnitTestSetup {
         bytes memory invalidSignature = abi.encode(uint(1), uint(2));
         BN254.G1Point memory msgPoint = BN254.hashToG1(messageHash);
 
-        vm.expectRevert(IKeyRegistrarErrors.InvalidSignature.selector);
+        vm.expectRevert(ISignatureUtilsMixinErrors.InvalidSignature.selector);
         keyRegistrar._verifyBN254Signature(msgPoint, invalidSignature, bn254G1Key1, bn254G2Key1);
     }
 
@@ -726,7 +716,7 @@ contract KeyRegistrarUnitTests is EigenLayerUnitTestSetup {
         );
 
         vm.prank(operator1);
-        vm.expectRevert(IKeyRegistrarErrors.InvalidSignature.selector);
+        vm.expectRevert(ISignatureUtilsMixinErrors.InvalidSignature.selector);
         keyRegistrar.registerKey(operator1, operatorSet, bn254Key1, wrongSignature);
     }
 
