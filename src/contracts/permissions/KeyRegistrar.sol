@@ -193,7 +193,7 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         );
         bytes32 signableDigest = _calculateSignableDigest(structHash);
 
-        // Use hash-to-G1 approach like the middleware
+        // hash to g1
         BN254.G1Point memory messagePoint = BN254.hashToG1(signableDigest);
         _verifyBN254Signature(messagePoint, signature, g1Point, g2Point);
 
