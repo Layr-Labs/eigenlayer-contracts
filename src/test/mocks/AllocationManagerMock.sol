@@ -22,6 +22,10 @@ contract AllocationManagerMock is Test {
     mapping(address => address) internal _avsRegistrar;
     mapping(bytes32 operatorSetKey => address) public _getRedistributionRecipient;
     mapping(bytes32 operatorSetKey => uint) public _getSlashCount;
+    mapping(bytes32 operatorSetKey => address[] members) internal _members;
+    mapping(bytes32 operatorSetKey => IStrategy[] strategies) internal _strategies;
+    mapping(bytes32 operatorSetKey => mapping(address operator => mapping(IStrategy strategy => uint minimumSlashableStake))) internal
+        _minimumSlashableStake;
 
     function getSlashCount(OperatorSet memory operatorSet) external view returns (uint) {
         return _getSlashCount[operatorSet.key()];
@@ -101,5 +105,48 @@ contract AllocationManagerMock is Test {
 
     function getAVSRegistrar(address avs) external view returns (address) {
         return _avsRegistrar[avs];
+    }
+
+    function getMembers(OperatorSet memory operatorSet) external view returns (address[] memory) {
+        return _members[operatorSet.key()];
+    }
+
+    function setMembersInOperatorSet(OperatorSet memory operatorSet, address[] memory members) external {
+        _members[operatorSet.key()] = members;
+    }
+
+    function setStrategiesInOperatorSet(OperatorSet memory operatorSet, IStrategy[] memory strategies) external {
+        _strategies[operatorSet.key()] = strategies;
+    }
+
+    function getStrategiesInOperatorSet(OperatorSet memory operatorSet) external view returns (IStrategy[] memory) {
+        return _strategies[operatorSet.key()];
+    }
+
+    function setMinimumSlashableStake(
+        OperatorSet memory operatorSet,
+        address[] memory operators,
+        IStrategy[] memory strategies,
+        uint[][] memory minimumSlashableStake
+    ) external {
+        for (uint i = 0; i < operators.length; ++i) {
+            for (uint j = 0; j < strategies.length; ++j) {
+                _minimumSlashableStake[operatorSet.key()][operators[i]][strategies[j]] = minimumSlashableStake[i][j];
+            }
+        }
+    }
+
+    function getMinimumSlashableStake(
+        OperatorSet memory operatorSet,
+        address[] memory operators,
+        IStrategy[] memory strategies /*uint32 futureBlock*/
+    ) external pure returns (uint[][] memory) {
+        uint[][] memory minimumSlashableStake = new uint[][](operators.length);
+
+        for (uint i = 0; i < operators.length; ++i) {
+            minimumSlashableStake[i] = new uint[](strategies.length);
+        }
+
+        return minimumSlashableStake;
     }
 }

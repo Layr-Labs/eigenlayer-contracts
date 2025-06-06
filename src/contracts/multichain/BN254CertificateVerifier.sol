@@ -3,12 +3,14 @@ pragma solidity ^0.8.27;
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
+
 import {BN254} from "../libraries/BN254.sol";
-import {OperatorSet} from "../libraries/OperatorSetLib.sol";
-import {IBN254TableCalculator, IBN254TableCalculatorTypes} from "../interfaces/IBN254TableCalculator.sol";
-import {IBN254CertificateVerifier, IBN254CertificateVerifierTypes} from "../interfaces/IBN254CertificateVerifier.sol";
-import {IBaseCertificateVerifier} from "../interfaces/IBaseCertificateVerifier.sol";
 import {Merkle} from "../libraries/Merkle.sol";
+import {OperatorSet} from "../libraries/OperatorSetLib.sol";
+
+import "../interfaces/IBN254TableCalculator.sol";
+import "../interfaces/IBN254CertificateVerifier.sol";
+import "../interfaces/IBaseCertificateVerifier.sol";
 import "./BN254CertificateVerifierStorage.sol";
 
 /**
