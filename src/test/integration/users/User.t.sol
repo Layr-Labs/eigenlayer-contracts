@@ -10,6 +10,10 @@ import "src/contracts/core/StrategyManager.sol";
 import "src/contracts/pods/EigenPodManager.sol";
 import "src/contracts/pods/EigenPod.sol";
 
+import "src/contracts/permissions/KeyRegistrar.sol";
+import "src/contracts/libraries/BN254.sol";
+import "src/contracts/mixins/SignatureUtilsMixin.sol";
+
 import "src/test/integration/TimeMachine.t.sol";
 import "src/test/integration/mocks/BeaconChainMock.t.sol";
 import "src/test/utils/Logger.t.sol";
@@ -27,6 +31,7 @@ interface IUserDeployer {
     function eigenPodManager() external view returns (EigenPodManager);
     function timeMachine() external view returns (TimeMachine);
     function beaconChain() external view returns (BeaconChainMock);
+    function keyRegistrar() external view returns (KeyRegistrar);
 }
 
 contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
@@ -34,6 +39,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     using SlashingLib for *;
     using ArrayLib for *;
     using print for *;
+    using BN254 for *;
 
     IStrategy constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 
@@ -47,6 +53,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
     EigenPodManager eigenPodManager;
     TimeMachine timeMachine;
     BeaconChainMock beaconChain;
+    KeyRegistrar keyRegistrar;
 
     uint32 public allocationDelay = 1;
 
@@ -68,6 +75,7 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
 
         timeMachine = deployer.timeMachine();
         beaconChain = deployer.beaconChain();
+        keyRegistrar = deployer.keyRegistrar();
 
         _createPod();
         _NAME = name;
@@ -144,6 +152,45 @@ contract User is Logger, IDelegationManagerTypes, IAllocationManagerTypes {
         allocationManager().deregisterFromOperatorSets(
             DeregisterParams({operator: address(this), avs: operatorSet.avs, operatorSetIds: operatorSet.id.toArrayU32()})
         );
+        print.gasUsed();
+    }
+
+    function registerBN254Key(OperatorSet memory operatorSet, BN254.G1Point memory g1Key, BN254.G2Point memory g2Key, uint privKey)
+        public
+        virtual
+        createSnapshot
+    {
+        print.method("registerBN254Key");
+
+        bytes memory bn254KeyBytes = abi.encode(g1Key.X, g1Key.Y, g2Key.X, g2Key.Y);
+
+        bytes32 structHash = keccak256(
+            abi.encode(
+                keyRegistrar.BN254_KEY_REGISTRATION_TYPEHASH(), address(this), operatorSet.avs, operatorSet.id, keccak256(bn254KeyBytes)
+            )
+        );
+        bytes32 messageHash = keyRegistrar.domainSeparator();
+        messageHash = keccak256(abi.encodePacked("\x19\x01", messageHash, structHash));
+
+        BN254.G1Point memory msgPoint = BN254.hashToG1(messageHash);
+        BN254.G1Point memory signature = msgPoint.scalar_mul(privKey);
+
+        keyRegistrar.registerKey(address(this), operatorSet, bn254KeyBytes, abi.encode(signature.X, signature.Y));
+        print.gasUsed();
+    }
+
+    function registerECDSAKey(OperatorSet memory operatorSet, address pubKey, uint privKey) public virtual createSnapshot {
+        print.method("registerECDSAKey");
+
+        bytes32 structHash =
+            keccak256(abi.encode(keyRegistrar.ECDSA_KEY_REGISTRATION_TYPEHASH(), address(this), operatorSet.avs, operatorSet.id, pubKey));
+        bytes32 messageHash = keyRegistrar.domainSeparator();
+        messageHash = keccak256(abi.encodePacked("\x19\x01", messageHash, structHash));
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privKey, messageHash);
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        keyRegistrar.registerKey(address(this), operatorSet, abi.encodePacked(pubKey), signature);
         print.gasUsed();
     }
 

@@ -1,17 +1,16 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "forge-std/Test.sol";
-import {BN254} from "../../contracts/libraries/BN254.sol";
-import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
-import {BN254CertificateVerifier} from "../../contracts/multichain/BN254CertificateVerifier.sol";
-import {IBN254CertificateVerifier, IBN254CertificateVerifierTypes} from "../../contracts/interfaces/IBN254CertificateVerifier.sol";
-import {IBN254TableCalculatorTypes} from "../../contracts/interfaces/IBN254TableCalculator.sol";
-import {ICrossChainRegistryTypes} from "../../contracts/interfaces/ICrossChainRegistry.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {OperatorSet} from "../../contracts/libraries/OperatorSetLib.sol";
-import {Merkle} from "../../contracts/libraries/Merkle.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import "forge-std/Test.sol";
+
+import "src/contracts/libraries/BN254.sol";
+import "src/contracts/libraries/Merkle.sol";
+import "src/contracts/libraries/OperatorSetLib.sol";
+import "src/contracts/multichain/BN254CertificateVerifier.sol";
+import "src/contracts/interfaces/IBN254CertificateVerifier.sol";
+import "src/contracts/interfaces/IBN254TableCalculator.sol";
+import "src/contracts/interfaces/ICrossChainRegistry.sol";
 
 contract BN254CertificateVerifierTest is Test {
     using BN254 for BN254.G1Point;
