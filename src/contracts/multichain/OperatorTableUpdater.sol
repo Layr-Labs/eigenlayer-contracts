@@ -124,6 +124,7 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
         }
     }
 
+
     /**
      *
      *                         SETTERS
