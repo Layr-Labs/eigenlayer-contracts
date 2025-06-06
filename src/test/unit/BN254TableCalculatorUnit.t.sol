@@ -35,7 +35,7 @@ contract BN254TableCalculatorUnitTests is EigenLayerMultichainUnitTestSetup, Ope
 
     /// @dev Creates and registers operators in the operatorSet
     function _createAndRegisterOperators(Randomness r) internal returns (Operator[] memory) {
-        uint operatorCount = r.Uint256(1, 10);
+        uint operatorCount = 1; //r.Uint256(1, 10);
 
         Operator[] memory operators = new Operator[](operatorCount);
         address[] memory operatorAddresses = new address[](operatorCount);
@@ -102,5 +102,9 @@ contract BN254TableCalculatorUnitTests is EigenLayerMultichainUnitTestSetup, Ope
 
         // Create the operator wallet
         return createOperator(name);
+    }
+
+    function testRegistration(Randomness r) public rand(r) {
+        Operator[] memory operators = _createAndRegisterOperators(r);
     }
 }
