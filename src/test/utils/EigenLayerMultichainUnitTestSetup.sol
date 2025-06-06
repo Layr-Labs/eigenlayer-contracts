@@ -5,7 +5,6 @@ import "src/test/utils/EigenLayerUnitTestSetup.sol";
 import "src/contracts/permissions/KeyRegistrar.sol";
 import "src/test/mocks/BN254CertificateVerifierMock.sol";
 import "src/test/mocks/ECDSACertificateVerifierMock.sol";
-import "src/test/mocks/KeyRegistrarMock.sol";
 import "src/contracts/multichain/CrossChainRegistry.sol";
 
 abstract contract EigenLayerMultichainUnitTestSetup is EigenLayerUnitTestSetup {
@@ -19,7 +18,6 @@ abstract contract EigenLayerMultichainUnitTestSetup is EigenLayerUnitTestSetup {
     /// @dev Mocks
     BN254CertificateVerifierMock bn254CertificateVerifierMock;
     ECDSACertificateVerifierMock ecdsaCertificateVerifierMock;
-    KeyRegistrarMock keyRegistrarMock;
     CrossChainRegistry crossChainRegistry;
     CrossChainRegistry crossChainRegistryImplementation;
 
@@ -35,12 +33,11 @@ abstract contract EigenLayerMultichainUnitTestSetup is EigenLayerUnitTestSetup {
         // Deploy mocks
         bn254CertificateVerifierMock = new BN254CertificateVerifierMock();
         ecdsaCertificateVerifierMock = new ECDSACertificateVerifierMock();
-        keyRegistrarMock = new KeyRegistrarMock();
 
         // Deploy CrossChainRegistry implementation
         crossChainRegistryImplementation = new CrossChainRegistry(
             IAllocationManager(address(allocationManagerMock)),
-            IKeyRegistrar(address(keyRegistrarMock)),
+            IKeyRegistrar(address(keyRegistrar)),
             IPermissionController(address(permissionController)),
             pauserRegistry,
             "1.0.0"
@@ -64,7 +61,6 @@ abstract contract EigenLayerMultichainUnitTestSetup is EigenLayerUnitTestSetup {
         // Filter out mocks
         isExcludedFuzzAddress[address(bn254CertificateVerifierMock)] = true;
         isExcludedFuzzAddress[address(ecdsaCertificateVerifierMock)] = true;
-        isExcludedFuzzAddress[address(keyRegistrarMock)] = true;
         isExcludedFuzzAddress[address(crossChainRegistry)] = true;
     }
 }

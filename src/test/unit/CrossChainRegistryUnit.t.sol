@@ -4,6 +4,7 @@ pragma solidity ^0.8.27;
 import "src/contracts/multichain/CrossChainRegistry.sol";
 import "src/test/utils/EigenLayerMultichainUnitTestSetup.sol";
 import "src/test/mocks/OperatorTableCalculatorMock.sol";
+import "src/contracts/interfaces/IKeyRegistrar.sol";
 
 /**
  * @title CrossChainRegistryUnitTests
@@ -14,7 +15,8 @@ contract CrossChainRegistryUnitTests is
     ICrossChainRegistryErrors,
     ICrossChainRegistryTypes,
     ICrossChainRegistryEvents,
-    IPermissionControllerErrors
+    IPermissionControllerErrors,
+    IKeyRegistrarTypes
 {
     // Constants from CrossChainRegistryStorage
     uint8 constant PAUSED_GENERATION_RESERVATIONS = 0;
@@ -74,6 +76,9 @@ contract CrossChainRegistryUnitTests is
         permissionController.setAppointee(avs, target, address(crossChainRegistry), crossChainRegistry.setOperatorSetConfig.selector);
         permissionController.setAppointee(avs, target, address(crossChainRegistry), crossChainRegistry.addTransportDestinations.selector);
         permissionController.setAppointee(avs, target, address(crossChainRegistry), crossChainRegistry.removeTransportDestinations.selector);
+        
+        // Set appointee for KeyRegistrar functions
+        permissionController.setAppointee(avs, target, address(keyRegistrar), keyRegistrar.configureOperatorSet.selector);
         cheats.stopPrank();
     }
 
@@ -109,7 +114,7 @@ contract CrossChainRegistryUnitTests_initialize is CrossChainRegistryUnitTests {
         // Deploy new implementation and proxy to test initialization
         CrossChainRegistry freshImplementation = new CrossChainRegistry(
             IAllocationManager(address(allocationManagerMock)),
-            IKeyRegistrar(address(keyRegistrarMock)),
+            IKeyRegistrar(address(keyRegistrar)),
             IPermissionController(address(permissionController)),
             pauserRegistry,
             "1.0.0"
@@ -918,7 +923,8 @@ contract CrossChainRegistryUnitTests_calculateOperatorTableBytes is CrossChainRe
 
         // Set up mock data
         defaultCalculator.setOperatorTableBytes(defaultOperatorSet, testOperatorTableBytes);
-        keyRegistrarMock.setOperatorSetCurveType(defaultOperatorSet, IKeyRegistrarTypes.CurveType.BN254);
+        // Configure operator set in KeyRegistrar (permissions already granted in base setUp)
+        keyRegistrar.configureOperatorSet(defaultOperatorSet, CurveType.BN254);
     }
 
     function test_calculateOperatorTableBytes_Success() public {
@@ -927,15 +933,15 @@ contract CrossChainRegistryUnitTests_calculateOperatorTableBytes is CrossChainRe
         // Decode the result
         (
             OperatorSet memory decodedOperatorSet,
-            IKeyRegistrarTypes.CurveType curveType,
+            CurveType curveType,
             OperatorSetConfig memory decodedConfig,
             bytes memory decodedOperatorTableBytes
-        ) = abi.decode(result, (OperatorSet, IKeyRegistrarTypes.CurveType, OperatorSetConfig, bytes));
+        ) = abi.decode(result, (OperatorSet, CurveType, OperatorSetConfig, bytes));
 
         // Verify the decoded data
         assertEq(decodedOperatorSet.avs, defaultOperatorSet.avs, "AVS mismatch");
         assertEq(decodedOperatorSet.id, defaultOperatorSet.id, "OperatorSetId mismatch");
-        assertTrue(curveType == IKeyRegistrarTypes.CurveType.BN254, "CurveType mismatch");
+        assertTrue(curveType == CurveType.BN254, "CurveType mismatch");
         assertEq(decodedConfig.owner, defaultConfig.owner, "Config owner mismatch");
         assertEq(decodedConfig.maxStalenessPeriod, defaultConfig.maxStalenessPeriod, "Config staleness period mismatch");
         assertEq(decodedOperatorTableBytes, testOperatorTableBytes, "OperatorTableBytes mismatch");
