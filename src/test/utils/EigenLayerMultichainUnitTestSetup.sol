@@ -5,6 +5,7 @@ import "src/test/utils/EigenLayerUnitTestSetup.sol";
 import "src/contracts/permissions/KeyRegistrar.sol";
 import "src/test/mocks/BN254CertificateVerifierMock.sol";
 import "src/test/mocks/ECDSACertificateVerifierMock.sol";
+import "src/contracts/multichain/CrossChainRegistry.sol";
 
 abstract contract EigenLayerMultichainUnitTestSetup is EigenLayerUnitTestSetup {
     using StdStyle for *;
@@ -17,6 +18,8 @@ abstract contract EigenLayerMultichainUnitTestSetup is EigenLayerUnitTestSetup {
     /// @dev Mocks
     BN254CertificateVerifierMock bn254CertificateVerifierMock;
     ECDSACertificateVerifierMock ecdsaCertificateVerifierMock;
+    CrossChainRegistry crossChainRegistry;
+    CrossChainRegistry crossChainRegistryImplementation;
 
     function setUp() public virtual override {
         // Setup Core Mocks
@@ -31,8 +34,33 @@ abstract contract EigenLayerMultichainUnitTestSetup is EigenLayerUnitTestSetup {
         bn254CertificateVerifierMock = new BN254CertificateVerifierMock();
         ecdsaCertificateVerifierMock = new ECDSACertificateVerifierMock();
 
+        // Deploy CrossChainRegistry implementation
+        crossChainRegistryImplementation = new CrossChainRegistry(
+            IAllocationManager(address(allocationManagerMock)),
+            IKeyRegistrar(address(keyRegistrar)),
+            IPermissionController(address(permissionController)),
+            pauserRegistry,
+            "1.0.0"
+        );
+
+        // Deploy CrossChainRegistry proxy
+        crossChainRegistry = CrossChainRegistry(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(crossChainRegistryImplementation),
+                    address(eigenLayerProxyAdmin),
+                    abi.encodeWithSelector(
+                        CrossChainRegistry.initialize.selector,
+                        address(this), // initial owner
+                        0 // initial paused status
+                    )
+                )
+            )
+        );
+
         // Filter out mocks
         isExcludedFuzzAddress[address(bn254CertificateVerifierMock)] = true;
         isExcludedFuzzAddress[address(ecdsaCertificateVerifierMock)] = true;
+        isExcludedFuzzAddress[address(crossChainRegistry)] = true;
     }
 }
