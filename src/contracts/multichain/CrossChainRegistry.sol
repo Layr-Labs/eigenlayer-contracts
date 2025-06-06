@@ -133,7 +133,7 @@ contract CrossChainRegistry is
         // Remove the operator set config
         _setOperatorSetConfig(operatorSet, OperatorSetConfig(address(0), 0), true);
         // Remove all transport destinations
-        _removeTransportDestinations(operatorSet, _getUint256Array(_transportDestinations[operatorSetKey]), true);
+        _removeTransportDestinations(operatorSet, _transportDestinations[operatorSetKey].values(), true);
     }
 
     /// @inheritdoc ICrossChainRegistry
@@ -334,20 +334,7 @@ contract CrossChainRegistry is
         }
     }
 
-    /**
-     * @dev Internal helper function to convert EnumerableSet.UintSet to uint256[]
-     * @param set The EnumerableSet.UintSet to convert
-     * @return result The converted uint256 array
-     */
-    function _getUint256Array(
-        EnumerableSet.UintSet storage set
-    ) internal view returns (uint256[] memory result) {
-        uint256 length = set.length();
-        result = new uint256[](length);
-        for (uint256 i = 0; i < length; i++) {
-            result[i] = set.at(i);
-        }
-    }
+
 
     /**
      *
@@ -443,6 +430,6 @@ contract CrossChainRegistry is
 
     /// @inheritdoc ICrossChainRegistry
     function getSupportedChains() external view returns (uint256[] memory) {
-        return _getUint256Array(_whitelistedChainIDs);
+        return _whitelistedChainIDs.values();
     }
 }
