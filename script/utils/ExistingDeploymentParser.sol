@@ -23,6 +23,10 @@ import "../../src/contracts/pods/EigenPod.sol";
 import "../../src/contracts/pods/EigenPodManager.sol";
 
 import "../../src/contracts/permissions/PauserRegistry.sol";
+import "../../src/contracts/permissions/KeyRegistrar.sol";
+import "../../src/contracts/multichain/BN254CertificateVerifier.sol";
+import "../../src/contracts/multichain/BN254TableCalculator.sol";
+import "../../src/contracts/multichain/OperatorTableUpdater.sol";
 
 import "../../src/test/mocks/EmptyContract.sol";
 
@@ -93,6 +97,9 @@ contract ExistingDeploymentParser is Script, Logger {
     uint256 STRATEGY_MAX_PER_DEPOSIT;
     uint256 STRATEGY_MAX_TOTAL_DEPOSITS;
 
+    /// @dev BN254TableCalculator
+    uint256 BN254_TABLE_CALCULATOR_LOOKAHEAD_BLOCKS;
+
     /// -----------------------------------------------------------------------
     /// EigenLayer Contracts
     /// -----------------------------------------------------------------------
@@ -149,6 +156,11 @@ contract ExistingDeploymentParser is Script, Logger {
     IBackingEigen public bEIGENImpl;
     EigenStrategy public eigenStrategy;
     EigenStrategy public eigenStrategyImpl;
+
+    /// @dev Multichain
+    KeyRegistrar public keyRegistrar;
+    KeyRegistrar public keyRegistrarImplementation;
+    BN254TableCalculator public bn254TableCalculator;
 
     /// -----------------------------------------------------------------------
     /// Storage
