@@ -90,7 +90,7 @@ contract CrossChainRegistry is
      */
 
     /// @inheritdoc ICrossChainRegistry
-    function requestGenerationReservation(
+    function createGenerationReservation(
         OperatorSet calldata operatorSet,
         IOperatorTableCalculator operatorTableCalculator,
         OperatorSetConfig calldata config,
@@ -103,7 +103,7 @@ contract CrossChainRegistry is
     {
         // Add to active generation reservations
         require(_activeGenerationReservations.add(operatorSet.key()), GenerationReservationAlreadyExists());
-        emit GenerationReservationMade(operatorSet);
+        emit GenerationReservationCreated(operatorSet);
 
         // Set the operator table calculator
         _setOperatorTableCalculator(operatorSet, operatorTableCalculator, false);
@@ -334,8 +334,6 @@ contract CrossChainRegistry is
             require(_transportDestinations[operatorSetKey].length() > 0, RequireAtLeastOneTransportDestination());
         }
     }
-
-
 
     /**
      *

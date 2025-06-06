@@ -55,8 +55,8 @@ interface ICrossChainRegistryTypes {
 }
 
 interface ICrossChainRegistryEvents is ICrossChainRegistryTypes {
-    /// @notice Emitted when a generation reservation is made
-    event GenerationReservationMade(OperatorSet operatorSet);
+    /// @notice Emitted when a generation reservation is created
+    event GenerationReservationCreated(OperatorSet operatorSet);
 
     /// @notice Emitted when a generation reservation is removed
     event GenerationReservationRemoved(OperatorSet operatorSet);
@@ -82,14 +82,14 @@ interface ICrossChainRegistryEvents is ICrossChainRegistryTypes {
 
 interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryEvents {
     /**
-     * @notice Initiates a generation reservation
+     * @notice Creates a generation reservation
      * @param operatorSet the operatorSet to make a reservation for
      * @param operatorTableCalculator the address of the operatorTableCalculator
      * @param config the config to set for the operatorSet
      * @param chainIDs the chainIDs to add as transport destinations
      * @dev msg.sender must be UAM permissioned for operatorSet.avs
      */
-    function requestGenerationReservation(
+    function createGenerationReservation(
         OperatorSet calldata operatorSet,
         IOperatorTableCalculator operatorTableCalculator,
         OperatorSetConfig calldata config,
