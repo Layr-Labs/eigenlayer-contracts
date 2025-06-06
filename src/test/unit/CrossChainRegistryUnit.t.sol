@@ -76,7 +76,7 @@ contract CrossChainRegistryUnitTests is
         permissionController.setAppointee(avs, target, address(crossChainRegistry), crossChainRegistry.setOperatorSetConfig.selector);
         permissionController.setAppointee(avs, target, address(crossChainRegistry), crossChainRegistry.addTransportDestinations.selector);
         permissionController.setAppointee(avs, target, address(crossChainRegistry), crossChainRegistry.removeTransportDestinations.selector);
-        
+
         // Set appointee for KeyRegistrar functions
         permissionController.setAppointee(avs, target, address(keyRegistrar), keyRegistrar.configureOperatorSet.selector);
         cheats.stopPrank();
