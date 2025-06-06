@@ -13,9 +13,9 @@ The deployments on `mainnet`, `holesky`, `sepolia`, and `hoodi` are on the below
 | Environment | Version |
 | -------- | -------- |
 | Mainnet Ethereum | [`v1.4.1`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.4.1) |
-| Testnet Holesky | [`v1.5.0-rc.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.5.0-rc.0) |
+| Testnet Holesky | [`v1.6.0-rc.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.6.0-rc.0) |
 | Testnet Sepolia | [`v1.5.0-rc.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.5.0-rc.0) |
-| Testnet Hoodi | [`v1.5.0-rc.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.5.0-rc.0) |
+| Testnet Hoodi | [`v1.6.0-rc.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.6.0-rc.0) |
 
 ### Current Deployment Contracts
 
@@ -168,13 +168,13 @@ The following strategies differ significantly from the other strategies deployed
 
 | Name | Proxy | Implementation | Notes |
 | -------- | -------- | -------- | -------- | 
-| [`EigenPod (beacon)`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.4.2/src/contracts/pods/EigenPod.sol) | [`0x7261C2bd75a7ACE1762f6d7FAe8F63215581832D`](https://holesky.etherscan.io/address/0x7672F1f72d30bBf5A6781aC183EDCCA5e3003AAD) | [`0x454B...3109`](https://holesky.etherscan.io/address/0x454B7ae61EfaD9c2455eF4E8604a136593453109) | - Beacon: [`BeaconProxy`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.0/contracts/proxy/beacon/BeaconProxy.sol) <br />- Pods: [`UpgradeableBeacon`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.4.1/contracts/proxy/beacon/UpgradeableBeacon.sol) |
+| [`EigenPod (beacon)`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.6.0-rc.0/src/contracts/pods/EigenPod.sol) | [`0x7261C2bd75a7ACE1762f6d7FAe8F63215581832D`](https://holesky.etherscan.io/address/0x7672F1f72d30bBf5A6781aC183EDCCA5e3003AAD) | [`0x2742...0aD9`](https://holesky.etherscan.io/address/0x2742bd43b254f0199Bb5020CB477Ff9Ad3A80aD9) | - Beacon: [`BeaconProxy`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.0/contracts/proxy/beacon/BeaconProxy.sol) <br />- Pods: [`UpgradeableBeacon`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.4.1/contracts/proxy/beacon/UpgradeableBeacon.sol) |
 
 ###### EIGEN/bEIGEN
 
 | Name | Proxy | Implementation | Notes |
 | -------- | -------- | -------- | -------- | 
-| [`Eigen`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.4.2/src/contracts/token/Eigen.sol) | [`0x3B78576F7D4230A49bE2c915629b31122C3FbF88`](https://holesky.etherscan.io/address/0x3B78576F7D4230A49bE2c915629b31122C3FbF88) | [`0x01cb...3050`](https://holesky.etherscan.io/address/0x01cbB2ae8eFE46EEdB9f7575D91cA1EB38823050) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+| [`Eigen`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.6.0-rc.0/src/contracts/token/Eigen.sol) | [`0x3B78576F7D4230A49bE2c915629b31122C3FbF88`](https://holesky.etherscan.io/address/0x3B78576F7D4230A49bE2c915629b31122C3FbF88) | [`0xfF1e...468F0`](https://holesky.etherscan.io/address/0xfF1e23C37EC543684cf866785c0626c2Ac7468F0) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 | [`Backing Eigen`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.4.2/src/contracts/token/BackingEigen.sol) | [`0x275cCf9Be51f4a6C94aBa6114cdf2a4c45B9cb27`](https://holesky.etherscan.io/address/0x275cCf9Be51f4a6C94aBa6114cdf2a4c45B9cb27) | [`0x05ad...E05c`](https://holesky.etherscan.io/address/0x05adA1C66DdDD7c36705bC23a4d50dBa72E4E05c) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 
 ###### Multisigs
@@ -322,13 +322,13 @@ The following strategies differ significantly from the other strategies deployed
 
 | Name | Proxy | Implementation | Notes |
 | -------- | -------- | -------- | -------- | 
-| [`EigenPod (beacon)`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.4.1/src/contracts/pods/EigenPod.sol) | [`0x5e1577f8efB21b29cD5Eb4C5Aa3d6C4b228f650`](https://hoodi.etherscan.io/address/0x5e1577f8efB21b29cD5Eb4C5Aa3d6C4b228f650) | [`0xbe2F...a0b5`](https://hoodi.etherscan.io/address/0xbe2F96Efff467c6773Dc91eA62Ab34C73195a0b5) | - Beacon: [`BeaconProxy`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.0/contracts/proxy/beacon/BeaconProxy.sol) <br />- Pods: [`UpgradeableBeacon`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.4.1/contracts/proxy/beacon/UpgradeableBeacon.sol) |
+| [`EigenPod (beacon)`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.6.0-rc.0/src/contracts/pods/EigenPod.sol) | [`0x5e1577f8efB21b29cD5Eb4C5Aa3d6C4b228f650`](https://hoodi.etherscan.io/address/0x5e1577f8efB21b29cD5Eb4C5Aa3d6C4b228f650) | [`0x0e19...cAcf4`](https://hoodi.etherscan.io/address/0x0e19E56E41D42137d00dD4f51EC2F613E50cAcf4) | - Beacon: [`BeaconProxy`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.0/contracts/proxy/beacon/BeaconProxy.sol) <br />- Pods: [`UpgradeableBeacon`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.4.1/contracts/proxy/beacon/UpgradeableBeacon.sol) |
 
 ###### EIGEN/bEIGEN
 
 | Name | Proxy | Implementation | Notes |
 | -------- | -------- | -------- | -------- | 
-| [`Eigen`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.4.1/src/contracts/token/Eigen.sol) | [`0x8ae2520954db7D80D66835cB71E692835bbA45bf`](https://hoodi.etherscan.io/address/0x8ae2520954db7D80D66835cB71E692835bbA45bf) | [`0x45D3...9053`](https://hoodi.etherscan.io/address/0x45D3f8CC7e6AC1c0891DAfA90CE299Abf0aD9053) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+| [`Eigen`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.6.0-rc.0/src/contracts/token/Eigen.sol) | [`0x8ae2520954db7D80D66835cB71E692835bbA45bf`](https://hoodi.etherscan.io/address/0x8ae2520954db7D80D66835cB71E692835bbA45bf) | [`0x63AA...20f3`](https://hoodi.etherscan.io/address/0x63AAe451780090f50Ad323aAEF155F63a29D20f3) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 | [`Backing Eigen`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.4.1/src/contracts/token/BackingEigen.sol) | [`0x6e60888132Cc7e637488379B4B40c42b3751f63a`](https://hoodi.etherscan.io/address/0x6e60888132Cc7e637488379B4B40c42b3751f63a) | [`0x43e4...a1C4`](https://hoodi.etherscan.io/address/0x43e4940aCeb1C1F5a57e307EEB212007F0f6a1C4) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 
 ###### Multisigs
