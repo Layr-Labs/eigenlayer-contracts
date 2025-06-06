@@ -25,6 +25,7 @@ interface IAVSDeployer {
     function permissionController() external view returns (IPermissionController);
     function slashEscrowFactory() external view returns (ISlashEscrowFactory);
     function timeMachine() external view returns (TimeMachine);
+    function keyRegistrar() external view returns (IKeyRegistrar);
 }
 
 contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
@@ -40,6 +41,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
     IStrategyManager immutable strategyManager;
     IStrategyFactory immutable strategyFactory;
     ISlashEscrowFactory immutable slashEscrowFactory;
+    IKeyRegistrar immutable keyRegistrar;
     TimeMachine immutable timeMachine;
     string _NAME;
 
@@ -53,6 +55,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
         strategyManager = deployer.strategyManager();
         strategyFactory = deployer.strategyFactory();
         slashEscrowFactory = deployer.slashEscrowFactory();
+        keyRegistrar = deployer.keyRegistrar();
         timeMachine = deployer.timeMachine();
         _NAME = name;
         cheats.label(address(this), NAME_COLORED());
@@ -156,6 +159,12 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
 
         print.createOperatorSets(p);
         allocationManager.createRedistributingOperatorSets(address(this), p, redistributionRecipient.toArray());
+        print.gasUsed();
+    }
+
+    function configureOperatorSet(OperatorSet memory operatorSet, IKeyRegistrarTypes.CurveType curveType) public createSnapshot {
+        print.method("configureOperatorSet");
+        keyRegistrar.configureOperatorSet(operatorSet, curveType);
         print.gasUsed();
     }
 
