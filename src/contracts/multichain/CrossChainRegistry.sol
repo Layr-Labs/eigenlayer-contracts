@@ -133,6 +133,7 @@ contract CrossChainRegistry is
         // Remove the operator set config
         _setOperatorSetConfig(operatorSet, OperatorSetConfig(address(0), 0), true);
         // Remove all transport destinations
+        // TODO: This can lead to out of gas errors if there are a lot of transport destinations.
         _removeTransportDestinations(operatorSet, _transportDestinations[operatorSetKey].values(), true);
     }
 
