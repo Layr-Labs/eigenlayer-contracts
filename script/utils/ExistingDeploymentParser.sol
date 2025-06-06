@@ -161,13 +161,7 @@ contract ExistingDeploymentParser is Script, Logger {
     /// @dev Multichain
     KeyRegistrar public keyRegistrar;
     KeyRegistrar public keyRegistrarImplementation;
-    IBN254CertificateVerifier public bn254CertificateVerifier;
-    IBN254CertificateVerifier public bn254CertificateVerifierImplementation;
-    IECDSACertificateVerifier public ecdsaCertificateVerifier;
-    IECDSACertificateVerifier public ecdsaCertificateVerifierImplementation;
     BN254TableCalculator public bn254TableCalculator;
-    IOperatorTableUpdater public operatorTableUpdater;
-    IOperatorTableUpdater public operatorTableUpdaterImplementation;
 
     /// -----------------------------------------------------------------------
     /// Storage
@@ -313,14 +307,6 @@ contract ExistingDeploymentParser is Script, Logger {
         bEIGENImpl = IBackingEigen(json.readAddress(".addresses.token.bEIGENImpl"));
         eigenStrategy = EigenStrategy(json.readAddress(".addresses.token.eigenStrategy"));
         eigenStrategyImpl = EigenStrategy(json.readAddress(".addresses.token.eigenStrategyImpl"));
-
-        // multichain
-        keyRegistrar = KeyRegistrar(json.readAddress(".addresses.multichain.keyRegistrar"));
-        bn254CertificateVerifier =
-            IBN254CertificateVerifier(json.readAddress(".addresses.multichain.bn254CertificateVerifier"));
-        ecdsaCertificateVerifier =
-            IECDSACertificateVerifier(json.readAddress(".addresses.multichain.ecdsaCertificateVerifier"));
-        operatorTableUpdater = IOperatorTableUpdater(json.readAddress(".addresses.multichain.operatorTableUpdater"));
     }
 
     function _parseDeployedEigenPods(

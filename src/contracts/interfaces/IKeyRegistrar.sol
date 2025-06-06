@@ -13,7 +13,6 @@ interface IKeyRegistrarErrors {
     error ZeroPubkey();
     error InvalidCurveType();
     error InvalidKeypair();
-    error InvalidSignature();
     error ConfigurationAlreadySet();
     error OperatorSetNotConfigured();
     error KeyNotFound(OperatorSet operatorSet, address operator);
@@ -42,14 +41,6 @@ interface IKeyRegistrarEvents is IKeyRegistrarTypes {
 }
 
 interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixin {
-    /**
-     * @notice Initializes the contract ownership
-     * @param initialOwner Initial owner of the contract
-     */
-    function initialize(
-        address initialOwner
-    ) external;
-
     /**
      * @notice Configures an operator set with curve type
      * @param operatorSet The operator set to configure
@@ -156,16 +147,4 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @return keyHash The key hash
      */
     function getKeyHash(OperatorSet memory operatorSet, address operator) external view returns (bytes32);
-
-    /**
-     * @notice Gets the BN254 key registration EIP-712 typehash
-     * @return The BN254 key registration typehash
-     */
-    function BN254_KEY_REGISTRATION_TYPEHASH() external view returns (bytes32);
-
-    /**
-     * @notice Gets the ECDSA key registration EIP-712 typehash
-     * @return The ECDSA key registration typehash
-     */
-    function ECDSA_KEY_REGISTRATION_TYPEHASH() external view returns (bytes32);
 }

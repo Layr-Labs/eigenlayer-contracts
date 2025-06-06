@@ -285,6 +285,9 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         slashEscrowFactory =
             SlashEscrowFactory(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
 
+        // Multichain
+        keyRegistrar = KeyRegistrar(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
+
         // Deploy new implementation contracts and upgrade all proxies to point to them
         _deployImplementations();
         _upgradeProxies();
@@ -295,6 +298,9 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             initialPausedStatus: 0,
             initialGlobalDelayBlocks: INITIAL_GLOBAL_DELAY_BLOCKS
         });
+
+        // Key Registrar is not initializable. OperatorTableCalculator is not upgradeable.
+        // So we don't need to initialize them.
 
         cheats.stopPrank();
     }
@@ -322,12 +328,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
         // multichain
         keyRegistrar = KeyRegistrar(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
-        bn254CertificateVerifier =
-            BN254CertificateVerifier(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
-        // TODO: add ecdsaCertificateVerifier
-        // ecdsaCertificateVerifier = IECDSACertificateVerifier(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
-        operatorTableUpdater =
-            OperatorTableUpdater(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
     }
 
     /// Deploy an implementation contract for each contract in the system
@@ -377,11 +377,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
         // multichain
         keyRegistrarImplementation = new KeyRegistrar(permissionController, allocationManager, "9.9.9");
-        bn254CertificateVerifierImplementation = new BN254CertificateVerifier(address(operatorTableUpdater));
         bn254TableCalculator = new BN254TableCalculator(keyRegistrar, allocationManager, BN254_TABLE_CALCULATOR_LOOKAHEAD_BLOCKS);
-        // TODO: add ecdsaCertificateVerifier
-        // ecdsaCertificateVerifierImplementation = new ECDSACertificateVerifier(keyRegistrar, allocationManager, "9.9.9");
-        operatorTableUpdaterImplementation = new OperatorTableUpdater(bn254CertificateVerifier, ecdsaCertificateVerifier, "9.9.9");
     }
 
     function _upgradeProxies() public noTracing {
@@ -442,15 +438,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             );
         }
 
-        // multichain
-        // TODO: add ecdsaCertificateVerifier
+        // Key Registrar
         eigenLayerProxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(keyRegistrar))), address(keyRegistrarImplementation));
-        eigenLayerProxyAdmin.upgrade(
-            ITransparentUpgradeableProxy(payable(address(bn254CertificateVerifier))), address(bn254CertificateVerifierImplementation)
-        );
-        eigenLayerProxyAdmin.upgrade(
-            ITransparentUpgradeableProxy(payable(address(operatorTableUpdater))), address(operatorTableUpdaterImplementation)
-        );
     }
 
     function _initializeProxies() public noTracing {

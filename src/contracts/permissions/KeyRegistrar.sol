@@ -2,12 +2,10 @@
 pragma solidity ^0.8.27;
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
-import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
-import "@openzeppelin-upgrades/contracts/utils/cryptography/EIP712Upgradeable.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "../libraries/BN254.sol";
 import "../mixins/PermissionControllerMixin.sol";
-import "../mixins/SemVerMixin.sol";
+import "../mixins/SignatureUtilsMixin.sol";
 import "../interfaces/IPermissionController.sol";
 import "../interfaces/IAllocationManager.sol";
 import "../libraries/OperatorSetLib.sol";
@@ -21,14 +19,7 @@ import "./KeyRegistrarStorage.sol";
  *      Operators call functions directly to manage their own keys
  *      Aggregate keys are updated via callback from AVSRegistrar on registration and deregistration
  */
-contract KeyRegistrar is
-    Initializable,
-    OwnableUpgradeable,
-    KeyRegistrarStorage,
-    PermissionControllerMixin,
-    SemVerMixin,
-    EIP712Upgradeable
-{
+contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, SignatureUtilsMixin {
     using BN254 for BN254.G1Point;
 
     // EIP-712 type hashes
@@ -48,18 +39,11 @@ contract KeyRegistrar is
         IPermissionController _permissionController,
         IAllocationManager _allocationManager,
         string memory _version
-    ) KeyRegistrarStorage(_allocationManager) PermissionControllerMixin(_permissionController) SemVerMixin(_version) {
-        _disableInitializers();
-    }
-
-    /// @inheritdoc IKeyRegistrar
-    function initialize(
-        address initialOwner
-    ) external initializer {
-        require(initialOwner != address(0), ZeroAddress());
-        __EIP712_init("EigenLayer.KeyRegistrar", "v1");
-        _transferOwnership(initialOwner);
-    }
+    )
+        KeyRegistrarStorage(_allocationManager)
+        PermissionControllerMixin(_permissionController)
+        SignatureUtilsMixin(_version)
+    {}
 
     /// @inheritdoc IKeyRegistrar
     function configureOperatorSet(
@@ -165,13 +149,11 @@ contract KeyRegistrar is
         bytes32 structHash = keccak256(
             abi.encode(ECDSA_KEY_REGISTRATION_TYPEHASH, operator, operatorSet.avs, operatorSet.id, keyAddress)
         );
-        bytes32 messageHash = _hashTypedDataV4(structHash);
+        bytes32 signableDigest = _calculateSignableDigest(structHash);
 
-        // Verify that the signature was created by the key address
-        address recoveredSigner = ECDSA.recover(messageHash, signature);
-        require(recoveredSigner == keyAddress, InvalidSignature());
+        _checkIsValidSignatureNow(keyAddress, signableDigest, signature, type(uint256).max);
 
-        // Store key data using internal helper
+        // Store key data
         _storeKeyData(operatorSet, operator, keyData, keyHash);
     }
 
@@ -209,17 +191,17 @@ contract KeyRegistrar is
         bytes32 structHash = keccak256(
             abi.encode(BN254_KEY_REGISTRATION_TYPEHASH, operator, operatorSet.avs, operatorSet.id, keccak256(keyData))
         );
-        bytes32 messageHash = _hashTypedDataV4(structHash);
+        bytes32 signableDigest = _calculateSignableDigest(structHash);
 
-        // Use hash-to-G1 approach like the middleware
-        BN254.G1Point memory messagePoint = BN254.hashToG1(messageHash);
+        // hash to g1
+        BN254.G1Point memory messagePoint = BN254.hashToG1(signableDigest);
         _verifyBN254Signature(messagePoint, signature, g1Point, g2Point);
 
         // Calculate key hash and check global uniqueness
         bytes32 keyHash = _getKeyHashForKeyData(keyData, CurveType.BN254);
         require(!globalKeyRegistry[keyHash], KeyAlreadyRegistered());
 
-        // Store key data using internal helper
+        // Store key data
         _storeKeyData(operatorSet, operator, keyData, keyHash);
     }
 
@@ -386,10 +368,38 @@ contract KeyRegistrar is
     }
 
     /**
-     * @notice Returns the domain separator used for EIP-712 signatures
-     * @return The domain separator
+     * @notice Returns the message hash for ECDSA key registration
+     * @param operator The operator address
+     * @param operatorSet The operator set
+     * @param keyAddress The ECDSA key address
+     * @return The message hash for signing
      */
-    function domainSeparator() external view returns (bytes32) {
-        return _domainSeparatorV4();
+    function getECDSAKeyRegistrationMessageHash(
+        address operator,
+        OperatorSet memory operatorSet,
+        address keyAddress
+    ) external view returns (bytes32) {
+        bytes32 structHash = keccak256(
+            abi.encode(ECDSA_KEY_REGISTRATION_TYPEHASH, operator, operatorSet.avs, operatorSet.id, keyAddress)
+        );
+        return _calculateSignableDigest(structHash);
+    }
+
+    /**
+     * @notice Returns the message hash for BN254 key registration
+     * @param operator The operator address
+     * @param operatorSet The operator set
+     * @param keyData The BN254 key data
+     * @return The message hash for signing
+     */
+    function getBN254KeyRegistrationMessageHash(
+        address operator,
+        OperatorSet memory operatorSet,
+        bytes calldata keyData
+    ) external view returns (bytes32) {
+        bytes32 structHash = keccak256(
+            abi.encode(BN254_KEY_REGISTRATION_TYPEHASH, operator, operatorSet.avs, operatorSet.id, keccak256(keyData))
+        );
+        return _calculateSignableDigest(structHash);
     }
 }
