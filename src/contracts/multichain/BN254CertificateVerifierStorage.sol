@@ -2,6 +2,7 @@
 pragma solidity ^0.8.27;
 
 import {OperatorSet} from "../libraries/OperatorSetLib.sol";
+import "../interfaces/IOperatorTableUpdater.sol";
 import "../interfaces/IBN254TableCalculator.sol";
 import "../interfaces/IBN254CertificateVerifier.sol";
 import "../interfaces/IBaseCertificateVerifier.sol";
@@ -15,12 +16,12 @@ abstract contract BN254CertificateVerifierStorage is IBN254CertificateVerifier {
     /// @dev Basis point unit denominator for division
     uint256 internal constant BPS_DENOMINATOR = 10_000;
 
-    // Immutables - None in this case, but could be added if needed
-
-    // Mutatables
+    // Immutables
 
     /// @dev The address that can update operator tables
-    address immutable _operatorTableUpdater;
+    IOperatorTableUpdater public immutable operatorTableUpdater;
+
+    // Mutatables
 
     /// @dev Mapping from operatorSet key to owner address
     mapping(bytes32 => address) internal _operatorSetOwners;
@@ -32,19 +33,18 @@ abstract contract BN254CertificateVerifierStorage is IBN254CertificateVerifier {
     mapping(bytes32 => uint32) internal _latestReferenceTimestamps;
 
     /// @dev Mapping from operatorSet key to reference timestamp to operator set info
-    mapping(bytes32 => mapping(uint32 => IBN254TableCalculatorTypes.BN254OperatorSetInfo)) internal _operatorSetInfos;
+    mapping(bytes32 => mapping(uint32 => BN254OperatorSetInfo)) internal _operatorSetInfos;
 
     /// @dev Mapping from operatorSet key to reference timestamp to operator index to operator info
     /// This is used to cache operator info that has been proven against a tree root
-    mapping(bytes32 => mapping(uint32 => mapping(uint256 => IBN254TableCalculatorTypes.BN254OperatorInfo))) internal
-        _operatorInfos;
+    mapping(bytes32 => mapping(uint32 => mapping(uint256 => BN254OperatorInfo))) internal _operatorInfos;
 
     // Construction
 
     constructor(
-        address __operatorTableUpdater
+        IOperatorTableUpdater _operatorTableUpdater
     ) {
-        _operatorTableUpdater = __operatorTableUpdater;
+        operatorTableUpdater = _operatorTableUpdater;
     }
 
     /**
