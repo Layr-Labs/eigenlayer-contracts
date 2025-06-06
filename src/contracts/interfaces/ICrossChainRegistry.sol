@@ -40,6 +40,9 @@ interface ICrossChainRegistryErrors {
 
     /// @notice Thrown when a at least one transport destination is required
     error RequireAtLeastOneTransportDestination();
+
+    /// @notice Thrown when the storage is not cleared
+    error NeedToDelete();
 }
 
 interface ICrossChainRegistryTypes {

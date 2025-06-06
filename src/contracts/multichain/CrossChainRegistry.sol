@@ -254,6 +254,9 @@ contract CrossChainRegistry is
         if (!isDelete) {
             // Validate the operator table calculator
             require(address(operatorTableCalculator) != address(0), InvalidOperatorTableCalculator());
+        } else {
+            // Need to delete the operator table calculator
+            require(address(operatorTableCalculator) == address(0), NeedToDelete());
         }
         _operatorTableCalculators[operatorSet.key()] = operatorTableCalculator;
         emit OperatorTableCalculatorSet(operatorSet, operatorTableCalculator);
@@ -274,6 +277,10 @@ contract CrossChainRegistry is
             // Validate the operator set config
             require(config.owner != address(0), InputAddressZero());
             require(config.maxStalenessPeriod != 0, StalenessPeriodZero());
+        } else {
+            // Need to delete the operator set config
+            require(config.owner == address(0), NeedToDelete());
+            require(config.maxStalenessPeriod == 0, NeedToDelete());
         }
         _operatorSetConfigs[operatorSet.key()] = config;
         emit OperatorSetConfigSet(operatorSet, config);
@@ -332,6 +339,9 @@ contract CrossChainRegistry is
         if (!isDelete) {
             // For normal removal, at least one destination should remain
             require(_transportDestinations[operatorSetKey].length() > 0, RequireAtLeastOneTransportDestination());
+        } else {
+            // Need to delete the transport destinations
+            require(_transportDestinations[operatorSetKey].length() == 0, NeedToDelete());
         }
     }
 
