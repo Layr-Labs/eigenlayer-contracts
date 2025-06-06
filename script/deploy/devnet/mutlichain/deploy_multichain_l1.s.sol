@@ -6,11 +6,12 @@ import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 // Core Contracts
+import "src/contracts/permissions/PauserRegistry.sol";
 import "src/contracts/core/AllocationManager.sol";
 import "src/contracts/permissions/PermissionController.sol";
 
 // Multichain Contracts
-import "src/contracts/interfaces/ICrossChainRegistry.sol";
+import "src/contracts/multichain/CrossChainRegistry.sol";
 import "src/contracts/multichain/BN254TableCalculator.sol";
 import "src/contracts/permissions/KeyRegistrar.sol";
 import "src/test/mocks/EmptyContract.sol";
@@ -29,13 +30,14 @@ contract DeployMultichain_L1 is Script, Test {
     EmptyContract public emptyContract;
     AllocationManager public allocationManager = AllocationManager(0xFdD5749e11977D60850E06bF5B13221Ad95eb6B4);
     PermissionController public permissionController = PermissionController(0xa2348c77802238Db39f0CefAa500B62D3FDD682b);
+    PauserRegistry public pauserRegistry = PauserRegistry(0x50712285cE831a6B9a11214A430f28999A5b4DAe);
 
     // Multichain Contracts
     ProxyAdmin public proxyAdmin;
     KeyRegistrar public keyRegistrar;
     KeyRegistrar public keyRegistrarImplementation;
-    ICrossChainRegistry public crossChainRegistry;
-    ICrossChainRegistry public crossChainRegistryImplementation;
+    CrossChainRegistry public crossChainRegistry;
+    CrossChainRegistry public crossChainRegistryImplementation;
     BN254TableCalculator public bn254TableCalculator;
 
     function run() public {
@@ -58,19 +60,26 @@ contract DeployMultichain_L1 is Script, Test {
             KeyRegistrar(address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")));
 
         // Cross Chain Registry
-        // crossChainRegistry = ICrossChainRegistry(address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), "")));
+        crossChainRegistry = CrossChainRegistry(
+            address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), ""))
+        );
 
         // BN254 Table Calculator
 
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
         keyRegistrarImplementation = new KeyRegistrar(permissionController, allocationManager, "9.9.9");
-        // crossChainRegistryImplementation = new CrossChainRegistry(IKeyRegistrar(address(keyRegistrar)), IBN254TableCalculator(address(bn254TableCalculator)));
+        crossChainRegistryImplementation =
+            new CrossChainRegistry(allocationManager, keyRegistrar, permissionController, pauserRegistry, "9.9.9");
 
         // Third, upgrade the proxies to point to the new implementations
         proxyAdmin.upgrade(
             ITransparentUpgradeableProxy(payable(address(keyRegistrar))), address(keyRegistrarImplementation)
         );
-        // proxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(crossChainRegistry))), address(crossChainRegistryImplementation));
+        proxyAdmin.upgradeAndCall(
+            ITransparentUpgradeableProxy(payable(address(crossChainRegistry))),
+            address(crossChainRegistryImplementation),
+            abi.encodeWithSelector(CrossChainRegistry.initialize.selector, owner, 0)
+        );
 
         // Fourth, deploy the non-upgradeable contracts
         bn254TableCalculator = new BN254TableCalculator(keyRegistrar, allocationManager, 100);
@@ -92,6 +101,10 @@ contract DeployMultichain_L1 is Script, Test {
         vm.serializeAddress(deployed_addresses, "proxyAdmin", address(proxyAdmin));
         vm.serializeAddress(deployed_addresses, "keyRegistrar", address(keyRegistrar));
         vm.serializeAddress(deployed_addresses, "keyRegistrarImplementation", address(keyRegistrarImplementation));
+        vm.serializeAddress(deployed_addresses, "crossChainRegistry", address(crossChainRegistry));
+        vm.serializeAddress(
+            deployed_addresses, "crossChainRegistryImplementation", address(crossChainRegistryImplementation)
+        );
         string memory deployed_addresses_output =
             vm.serializeAddress(deployed_addresses, "bn254TableCalculator", address(bn254TableCalculator));
 
