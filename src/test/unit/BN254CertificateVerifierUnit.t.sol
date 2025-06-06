@@ -8,6 +8,7 @@ import "src/contracts/libraries/BN254.sol";
 import "src/contracts/libraries/Merkle.sol";
 import "src/contracts/libraries/OperatorSetLib.sol";
 import "src/contracts/multichain/BN254CertificateVerifier.sol";
+import "src/contracts/interfaces/IOperatorTableUpdater.sol";
 import "src/contracts/interfaces/IBN254CertificateVerifier.sol";
 import "src/contracts/interfaces/IBN254TableCalculator.sol";
 import "src/contracts/interfaces/ICrossChainRegistry.sol";
@@ -48,11 +49,10 @@ contract BN254CertificateVerifierTest is Test {
         testOperatorSet.id = 1;
 
         // Deploy implementation
-        BN254CertificateVerifier implementation = new BN254CertificateVerifier(tableUpdater);
+        BN254CertificateVerifier implementation = new BN254CertificateVerifier(IOperatorTableUpdater(tableUpdater));
 
         // Deploy proxy and initialize
-        ERC1967Proxy proxy =
-            new ERC1967Proxy(address(implementation), abi.encodeWithSelector(BN254CertificateVerifier.initialize.selector, owner));
+        ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), "");
 
         verifier = BN254CertificateVerifier(address(proxy));
 

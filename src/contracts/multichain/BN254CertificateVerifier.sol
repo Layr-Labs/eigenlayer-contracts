@@ -2,15 +2,11 @@
 pragma solidity ^0.8.27;
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
-import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 
 import {BN254} from "../libraries/BN254.sol";
 import {Merkle} from "../libraries/Merkle.sol";
 import {OperatorSet} from "../libraries/OperatorSetLib.sol";
 
-import "../interfaces/IBN254TableCalculator.sol";
-import "../interfaces/IBN254CertificateVerifier.sol";
-import "../interfaces/IBaseCertificateVerifier.sol";
 import "./BN254CertificateVerifierStorage.sol";
 
 /**
@@ -19,7 +15,7 @@ import "./BN254CertificateVerifierStorage.sol";
  * @dev This contract uses BN254 curves for signature verification and
  *      caches operator information for efficient verification
  */
-contract BN254CertificateVerifier is Initializable, OwnableUpgradeable, BN254CertificateVerifierStorage {
+contract BN254CertificateVerifier is Initializable, BN254CertificateVerifierStorage {
     using Merkle for bytes;
     using BN254 for BN254.G1Point;
 
@@ -37,30 +33,19 @@ contract BN254CertificateVerifier is Initializable, OwnableUpgradeable, BN254Cer
      * @notice Restricts access to the operator table updater
      */
     modifier onlyTableUpdater() {
-        require(msg.sender == _operatorTableUpdater, OnlyTableUpdater());
+        require(msg.sender == address(operatorTableUpdater), OnlyTableUpdater());
         _;
     }
 
     /**
      * @notice Constructor for the certificate verifier
      * @dev Disables initializers to prevent implementation initialization
-     * @param __operatorTableUpdater Address authorized to update operator tables
+     * @param _operatorTableUpdater Address authorized to update operator tables
      */
     constructor(
-        address __operatorTableUpdater
-    ) BN254CertificateVerifierStorage(__operatorTableUpdater) {
+        IOperatorTableUpdater _operatorTableUpdater
+    ) BN254CertificateVerifierStorage(_operatorTableUpdater) {
         _disableInitializers();
-    }
-
-    /**
-     * @notice Initialize the contract
-     * @param __owner The initial owner of the contract
-     */
-    function initialize(
-        address __owner
-    ) external initializer {
-        __Ownable_init();
-        _transferOwnership(__owner);
     }
 
     ///@inheritdoc IBaseCertificateVerifier
@@ -373,13 +358,5 @@ contract BN254CertificateVerifier is Initializable, OwnableUpgradeable, BN254Cer
     ) external view returns (BN254OperatorSetInfo memory) {
         bytes32 operatorSetKey = operatorSet.key();
         return _operatorSetInfos[operatorSetKey][referenceTimestamp];
-    }
-
-    /**
-     * @notice Get the current operator table updater address
-     * @return The operator table updater address
-     */
-    function getOperatorTableUpdater() external view returns (address) {
-        return _operatorTableUpdater;
     }
 }
