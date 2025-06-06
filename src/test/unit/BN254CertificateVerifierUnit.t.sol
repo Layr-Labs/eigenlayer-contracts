@@ -52,8 +52,7 @@ contract BN254CertificateVerifierTest is Test {
         BN254CertificateVerifier implementation = new BN254CertificateVerifier(IOperatorTableUpdater(tableUpdater));
 
         // Deploy proxy and initialize
-        ERC1967Proxy proxy =
-            new ERC1967Proxy(address(implementation), "");
+        ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), "");
 
         verifier = BN254CertificateVerifier(address(proxy));
 
