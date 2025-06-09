@@ -43,6 +43,9 @@ interface ICrossChainRegistryErrors {
 
     /// @notice Thrown when the storage is not cleared
     error NeedToDelete();
+
+    /// @notice Thrown when the lenghts between two arrays are not the same
+    error ArrayLengthMismatch();
 }
 
 interface ICrossChainRegistryTypes {

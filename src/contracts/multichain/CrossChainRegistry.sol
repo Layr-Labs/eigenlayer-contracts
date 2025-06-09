@@ -209,6 +209,8 @@ contract CrossChainRegistry is
         uint256[] calldata chainIDs,
         address[] calldata operatorTableUpdaters
     ) external onlyOwner onlyWhenNotPaused(PAUSED_CHAIN_WHITELIST) {
+        require(chainIDs.length == operatorTableUpdaters.length, ArrayLengthMismatch());
+
         for (uint256 i = 0; i < chainIDs.length; i++) {
             uint256 chainID = chainIDs[i];
 

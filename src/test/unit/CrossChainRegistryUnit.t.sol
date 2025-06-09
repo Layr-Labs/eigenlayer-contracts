@@ -786,17 +786,26 @@ contract CrossChainRegistryUnitTests_addChainIDsToWhitelist is CrossChainRegistr
         crossChainRegistry.addChainIDsToWhitelist(newChainIDs, newOperatorTableUpdaters);
     }
 
+    function test_Revert_ArrayLengthMismatch() public {
+        address[] memory invalidOperatorTableUpdaters = new address[](1);
+        invalidOperatorTableUpdaters[0] = defaultOperatorTableUpdater;
+        cheats.expectRevert(ArrayLengthMismatch.selector);
+        crossChainRegistry.addChainIDsToWhitelist(newChainIDs, invalidOperatorTableUpdaters);
+    }
+
     function test_Revert_InvalidChainId() public {
         uint[] memory invalidChainIDs = new uint[](1);
         invalidChainIDs[0] = 0;
+        address[] memory invalidOperatorTableUpdaters = new address[](1);
+        invalidOperatorTableUpdaters[0] = defaultOperatorTableUpdater;
 
         cheats.expectRevert(InvalidChainId.selector);
-        crossChainRegistry.addChainIDsToWhitelist(invalidChainIDs, newOperatorTableUpdaters);
+        crossChainRegistry.addChainIDsToWhitelist(invalidChainIDs, invalidOperatorTableUpdaters);
     }
 
     function test_Revert_ChainIDAlreadyWhitelisted() public {
         cheats.expectRevert(ChainIDAlreadyWhitelisted.selector);
-        crossChainRegistry.addChainIDsToWhitelist(defaultChainIDs, newOperatorTableUpdaters);
+        crossChainRegistry.addChainIDsToWhitelist(defaultChainIDs, defaultOperatorTableUpdaters);
     }
 
     function test_addChainIDsToWhitelist_Success() public {
