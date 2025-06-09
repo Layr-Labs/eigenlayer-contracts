@@ -2,6 +2,7 @@
 pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 import "../interfaces/ICrossChainRegistry.sol";
 import "../interfaces/IOperatorTableCalculator.sol";
 import "../interfaces/IAllocationManager.sol";
@@ -15,6 +16,7 @@ import "../libraries/OperatorSetLib.sol";
  * @dev This abstract contract is designed to be inherited by the CrossChainRegistry implementation
  */
 abstract contract CrossChainRegistryStorage is ICrossChainRegistry {
+    using EnumerableMap for EnumerableMap.UintToAddressMap;
     using EnumerableSet for EnumerableSet.Bytes32Set;
     using EnumerableSet for EnumerableSet.UintSet;
     using OperatorSetLib for OperatorSet;
@@ -62,8 +64,8 @@ abstract contract CrossChainRegistryStorage is ICrossChainRegistry {
 
     /// CHAIN WHITELISTING
 
-    /// @dev Set of whitelisted chain IDs that can be used as transport destinations
-    EnumerableSet.UintSet internal _whitelistedChainIDs;
+    /// @dev Map of whitelisted chain IDs to operator table updaters
+    EnumerableMap.UintToAddressMap internal _whitelistedChainIDs;
 
     // Construction
 
@@ -77,5 +79,5 @@ abstract contract CrossChainRegistryStorage is ICrossChainRegistry {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[43] private __gap;
+    uint256[42] private __gap;
 }
