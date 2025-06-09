@@ -43,6 +43,9 @@ interface ICrossChainRegistryErrors {
 
     /// @notice Thrown when the storage is not cleared
     error NeedToDelete();
+
+    /// @notice Thrown when the lengths between two arrays are not the same
+    error ArrayLengthMismatch();
 }
 
 interface ICrossChainRegistryTypes {
@@ -77,7 +80,7 @@ interface ICrossChainRegistryEvents is ICrossChainRegistryTypes {
     event TransportDestinationRemoved(OperatorSet operatorSet, uint256 chainID);
 
     /// @notice Emitted when a chainID is added to the whitelist
-    event ChainIDAddedToWhitelist(uint256 chainID);
+    event ChainIDAddedToWhitelist(uint256 chainID, address operatorTableUpdater);
 
     /// @notice Emitted when a chainID is removed from the whitelist
     event ChainIDRemovedFromWhitelist(uint256 chainID);
@@ -150,11 +153,10 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
     /**
      * @notice Adds chainIDs to the whitelist of chainIDs that can be transported to
      * @param chainIDs the chainIDs to add to the whitelist
+     * @param operatorTableUpdaters the operatorTableUpdaters for each whitelisted chainID
      * @dev msg.sender must be the owner of the CrossChainRegistry
      */
-    function addChainIDsToWhitelist(
-        uint256[] calldata chainIDs
-    ) external;
+    function addChainIDsToWhitelist(uint256[] calldata chainIDs, address[] calldata operatorTableUpdaters) external;
 
     /**
      * @notice Removes chainIDs from the whitelist of chainIDs that can be transported to
@@ -228,6 +230,7 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
     /**
      * @notice Gets the list of chains that are supported by the CrossChainRegistry
      * @return An array of chainIDs that are supported by the CrossChainRegistry
+     * @return An array of operatorTableUpdaters corresponding to each chainID
      */
-    function getSupportedChains() external view returns (uint256[] memory);
+    function getSupportedChains() external view returns (uint256[] memory, address[] memory);
 }
