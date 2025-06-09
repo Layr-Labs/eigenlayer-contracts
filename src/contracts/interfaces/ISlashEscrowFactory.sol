@@ -99,6 +99,7 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
     /**
      * @notice Sets the delay for the escrow of a strategies underlying token.
      * @dev The largest of all strategy delays or global delay will be used.
+     * @dev This delay setting only applies to new slashes and does not affect existing ones.
      * @param strategy The strategy whose escrow delay is being set.
      * @param delay The delay for the escrow.
      */
@@ -106,6 +107,7 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
 
     /**
      * @notice Sets a global delay applicable to all strategies.
+     * @dev This delay setting only applies to new slashes and does not affect existing ones.
      * @param delay The delay for the escrow.
      */
     function setGlobalEscrowDelay(
