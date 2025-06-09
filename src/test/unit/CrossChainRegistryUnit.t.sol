@@ -31,7 +31,9 @@ contract CrossChainRegistryUnitTests is
     OperatorSet defaultOperatorSet;
     OperatorTableCalculatorMock defaultCalculator;
     OperatorSetConfig defaultConfig;
+    address defaultOperatorTableUpdater = address(0x1);
     uint[] defaultChainIDs;
+    address[] defaultOperatorTableUpdaters;
     uint[] emptyChainIDs;
 
     function setUp() public virtual override {
@@ -47,6 +49,9 @@ contract CrossChainRegistryUnitTests is
         defaultChainIDs = new uint[](2);
         defaultChainIDs[0] = 1;
         defaultChainIDs[1] = 10;
+        defaultOperatorTableUpdaters = new address[](2);
+        defaultOperatorTableUpdaters[0] = defaultOperatorTableUpdater;
+        defaultOperatorTableUpdaters[1] = defaultOperatorTableUpdater;
 
         // Setup default permissions
         _grantUAMRole(address(this), defaultAVS);
@@ -55,7 +60,7 @@ contract CrossChainRegistryUnitTests is
         allocationManagerMock.setIsOperatorSet(defaultOperatorSet, true);
 
         // Whitelist chain IDs
-        crossChainRegistry.addChainIDsToWhitelist(defaultChainIDs);
+        crossChainRegistry.addChainIDsToWhitelist(defaultChainIDs, defaultOperatorTableUpdaters);
     }
 
     // Helper functions
@@ -90,10 +95,12 @@ contract CrossChainRegistryUnitTests is
 
     function _createAndWhitelistChainIDs(uint count) internal returns (uint[] memory) {
         uint[] memory chainIDs = new uint[](count);
+        address[] memory operatorTableUpdaters = new address[](count);
         for (uint i = 0; i < count; i++) {
             chainIDs[i] = 100 + i;
+            operatorTableUpdaters[i] = address(uint160(uint(100 + i)));
         }
-        crossChainRegistry.addChainIDsToWhitelist(chainIDs);
+        crossChainRegistry.addChainIDsToWhitelist(chainIDs, operatorTableUpdaters);
         return chainIDs;
     }
 }
@@ -506,6 +513,7 @@ contract CrossChainRegistryUnitTests_setOperatorSetConfig is CrossChainRegistryU
  */
 contract CrossChainRegistryUnitTests_addTransportDestinations is CrossChainRegistryUnitTests {
     uint[] newChainIDs;
+    address[] newOperatorTableUpdaters;
 
     function setUp() public override {
         super.setUp();
@@ -516,7 +524,10 @@ contract CrossChainRegistryUnitTests_addTransportDestinations is CrossChainRegis
         newChainIDs = new uint[](2);
         newChainIDs[0] = 20;
         newChainIDs[1] = 30;
-        crossChainRegistry.addChainIDsToWhitelist(newChainIDs);
+        newOperatorTableUpdaters = new address[](2);
+        newOperatorTableUpdaters[0] = defaultOperatorTableUpdater;
+        newOperatorTableUpdaters[1] = defaultOperatorTableUpdater;
+        crossChainRegistry.addChainIDsToWhitelist(newChainIDs, newOperatorTableUpdaters);
     }
 
     function test_Revert_Paused() public {
@@ -629,7 +640,10 @@ contract CrossChainRegistryUnitTests_removeTransportDestinations is CrossChainRe
         uint[] memory newChainIDs = new uint[](2);
         newChainIDs[0] = 20;
         newChainIDs[1] = 30;
-        crossChainRegistry.addChainIDsToWhitelist(newChainIDs);
+        address[] memory newOperatorTableUpdaters = new address[](2);
+        newOperatorTableUpdaters[0] = defaultOperatorTableUpdater;
+        newOperatorTableUpdaters[1] = defaultOperatorTableUpdater;
+        crossChainRegistry.addChainIDsToWhitelist(newChainIDs, newOperatorTableUpdaters);
 
         crossChainRegistry.createGenerationReservation(defaultOperatorSet, defaultCalculator, defaultConfig, manyChainIDs);
 
@@ -744,6 +758,7 @@ contract CrossChainRegistryUnitTests_removeTransportDestinations is CrossChainRe
  */
 contract CrossChainRegistryUnitTests_addChainIDsToWhitelist is CrossChainRegistryUnitTests {
     uint[] newChainIDs;
+    address[] newOperatorTableUpdaters;
 
     function setUp() public override {
         super.setUp();
@@ -751,12 +766,16 @@ contract CrossChainRegistryUnitTests_addChainIDsToWhitelist is CrossChainRegistr
         newChainIDs[0] = 100;
         newChainIDs[1] = 200;
         newChainIDs[2] = 300;
+        newOperatorTableUpdaters = new address[](3);
+        newOperatorTableUpdaters[0] = defaultOperatorTableUpdater;
+        newOperatorTableUpdaters[1] = defaultOperatorTableUpdater;
+        newOperatorTableUpdaters[2] = defaultOperatorTableUpdater;
     }
 
     function test_Revert_NotOwner() public {
         cheats.prank(notPermissioned);
         cheats.expectRevert("Ownable: caller is not the owner");
-        crossChainRegistry.addChainIDsToWhitelist(newChainIDs);
+        crossChainRegistry.addChainIDsToWhitelist(newChainIDs, newOperatorTableUpdaters);
     }
 
     function test_Revert_Paused() public {
@@ -764,49 +783,80 @@ contract CrossChainRegistryUnitTests_addChainIDsToWhitelist is CrossChainRegistr
         crossChainRegistry.pause(1 << PAUSED_CHAIN_WHITELIST);
 
         cheats.expectRevert(IPausable.CurrentlyPaused.selector);
-        crossChainRegistry.addChainIDsToWhitelist(newChainIDs);
+        crossChainRegistry.addChainIDsToWhitelist(newChainIDs, newOperatorTableUpdaters);
+    }
+
+    function test_Revert_ArrayLengthMismatch() public {
+        address[] memory invalidOperatorTableUpdaters = new address[](1);
+        invalidOperatorTableUpdaters[0] = defaultOperatorTableUpdater;
+        cheats.expectRevert(ArrayLengthMismatch.selector);
+        crossChainRegistry.addChainIDsToWhitelist(newChainIDs, invalidOperatorTableUpdaters);
     }
 
     function test_Revert_InvalidChainId() public {
         uint[] memory invalidChainIDs = new uint[](1);
         invalidChainIDs[0] = 0;
+        address[] memory invalidOperatorTableUpdaters = new address[](1);
+        invalidOperatorTableUpdaters[0] = defaultOperatorTableUpdater;
 
         cheats.expectRevert(InvalidChainId.selector);
-        crossChainRegistry.addChainIDsToWhitelist(invalidChainIDs);
+        crossChainRegistry.addChainIDsToWhitelist(invalidChainIDs, invalidOperatorTableUpdaters);
     }
 
     function test_Revert_ChainIDAlreadyWhitelisted() public {
         cheats.expectRevert(ChainIDAlreadyWhitelisted.selector);
-        crossChainRegistry.addChainIDsToWhitelist(defaultChainIDs);
+        crossChainRegistry.addChainIDsToWhitelist(defaultChainIDs, defaultOperatorTableUpdaters);
     }
 
     function test_addChainIDsToWhitelist_Success() public {
         // Expect events
         for (uint i = 0; i < newChainIDs.length; i++) {
             cheats.expectEmit(true, true, true, true, address(crossChainRegistry));
-            emit ChainIDAddedToWhitelist(newChainIDs[i]);
+            emit ChainIDAddedToWhitelist(newChainIDs[i], newOperatorTableUpdaters[i]);
         }
 
         // Add to whitelist
-        crossChainRegistry.addChainIDsToWhitelist(newChainIDs);
+        crossChainRegistry.addChainIDsToWhitelist(newChainIDs, newOperatorTableUpdaters);
 
         // Verify state
-        uint[] memory supportedChains = crossChainRegistry.getSupportedChains();
+        (uint[] memory supportedChains, address[] memory operatorTableUpdaters) = crossChainRegistry.getSupportedChains();
         assertEq(supportedChains.length, defaultChainIDs.length + newChainIDs.length, "Supported chains count mismatch");
+        assertEq(operatorTableUpdaters.length, defaultChainIDs.length + newChainIDs.length, "Operator table updaters count mismatch");
+        for (uint i = 0; i < supportedChains.length; i++) {
+            if (i < defaultChainIDs.length) {
+                assertEq(supportedChains[i], defaultChainIDs[i], "Supported chain mismatch");
+                assertEq(operatorTableUpdaters[i], defaultOperatorTableUpdaters[i], "Operator table updater mismatch");
+            } else {
+                assertEq(supportedChains[i], newChainIDs[i - defaultChainIDs.length], "Supported chain mismatch");
+                assertEq(operatorTableUpdaters[i], newOperatorTableUpdaters[i - defaultChainIDs.length], "Operator table updater mismatch");
+            }
+        }
     }
 
     function testFuzz_addChainIDsToWhitelist_MultipleChainIDs(uint8 numChainIDs) public {
         numChainIDs = uint8(bound(numChainIDs, 1, 50));
         uint[] memory fuzzChainIDs = new uint[](numChainIDs);
+        address[] memory fuzzOperatorTableUpdaters = new address[](numChainIDs);
 
         for (uint i = 0; i < numChainIDs; i++) {
             fuzzChainIDs[i] = 1000 + uint(i);
+            fuzzOperatorTableUpdaters[i] = address(uint160(uint(1000 + i)));
         }
 
-        crossChainRegistry.addChainIDsToWhitelist(fuzzChainIDs);
+        crossChainRegistry.addChainIDsToWhitelist(fuzzChainIDs, fuzzOperatorTableUpdaters);
 
-        uint[] memory supportedChains = crossChainRegistry.getSupportedChains();
-        assertTrue(supportedChains.length >= numChainIDs, "Not all chains added");
+        (uint[] memory supportedChains, address[] memory operatorTableUpdaters) = crossChainRegistry.getSupportedChains();
+        assertEq(supportedChains.length, numChainIDs + defaultChainIDs.length, "Supported chains count mismatch");
+        assertEq(operatorTableUpdaters.length, numChainIDs + defaultChainIDs.length, "Operator table updaters count mismatch");
+        for (uint i = 0; i < supportedChains.length; i++) {
+            if (i < defaultChainIDs.length) {
+                assertEq(supportedChains[i], defaultChainIDs[i], "Supported chain mismatch");
+                assertEq(operatorTableUpdaters[i], defaultOperatorTableUpdaters[i], "Operator table updater mismatch");
+            } else {
+                assertEq(supportedChains[i], fuzzChainIDs[i - defaultChainIDs.length], "Supported chain mismatch");
+                assertEq(operatorTableUpdaters[i], fuzzOperatorTableUpdaters[i - defaultChainIDs.length], "Operator table updater mismatch");
+            }
+        }
     }
 }
 
@@ -852,8 +902,9 @@ contract CrossChainRegistryUnitTests_removeChainIDsFromWhitelist is CrossChainRe
         crossChainRegistry.removeChainIDsFromWhitelist(defaultChainIDs);
 
         // Verify state
-        uint[] memory supportedChains = crossChainRegistry.getSupportedChains();
+        (uint[] memory supportedChains, address[] memory operatorTableUpdaters) = crossChainRegistry.getSupportedChains();
         assertEq(supportedChains.length, 0, "Should have no supported chains");
+        assertEq(operatorTableUpdaters.length, 0, "Should have no operator table updaters");
     }
 
     function test_removeChainIDsFromWhitelist_AffectsTransportDestinations() public {
@@ -988,11 +1039,13 @@ contract CrossChainRegistryUnitTests_getActiveTransportReservations is CrossChai
 
             // Create unique chain IDs for each iteration
             uint[] memory chainIDs = new uint[](i + 1);
+            address[] memory operatorTableUpdaters = new address[](i + 1);
             for (uint j = 0; j <= i; j++) {
                 // Use a formula that ensures unique chainIDs across iterations
                 chainIDs[j] = 100 + uint(i * 10 + j);
+                operatorTableUpdaters[j] = address(uint160(uint(100 + i * 10 + j)));
             }
-            crossChainRegistry.addChainIDsToWhitelist(chainIDs);
+            crossChainRegistry.addChainIDsToWhitelist(chainIDs, operatorTableUpdaters);
 
             crossChainRegistry.createGenerationReservation(operatorSet, defaultCalculator, defaultConfig, chainIDs);
         }
@@ -1012,8 +1065,9 @@ contract CrossChainRegistryUnitTests_getActiveTransportReservations is CrossChai
  */
 contract CrossChainRegistryUnitTests_getSupportedChains is CrossChainRegistryUnitTests {
     function test_getSupportedChains_Initial() public {
-        uint[] memory supportedChains = crossChainRegistry.getSupportedChains();
+        (uint[] memory supportedChains, address[] memory operatorTableUpdaters) = crossChainRegistry.getSupportedChains();
         assertEq(supportedChains.length, defaultChainIDs.length, "Should have default chains");
+        assertEq(operatorTableUpdaters.length, defaultChainIDs.length, "Should have default operator table updaters");
         for (uint i = 0; i < supportedChains.length; i++) {
             bool found = false;
             for (uint j = 0; j < defaultChainIDs.length; j++) {
@@ -1033,7 +1087,7 @@ contract CrossChainRegistryUnitTests_getSupportedChains is CrossChainRegistryUni
         // Add chains
         uint[] memory newChains = _createAndWhitelistChainIDs(numToAdd);
 
-        uint[] memory supportedChains = crossChainRegistry.getSupportedChains();
+        (uint[] memory supportedChains, address[] memory operatorTableUpdaters) = crossChainRegistry.getSupportedChains();
         assertEq(supportedChains.length, defaultChainIDs.length + numToAdd, "Chain count after add mismatch");
 
         // Remove some default chains
@@ -1044,8 +1098,13 @@ contract CrossChainRegistryUnitTests_getSupportedChains is CrossChainRegistryUni
             }
             crossChainRegistry.removeChainIDsFromWhitelist(chainsToRemove);
 
-            supportedChains = crossChainRegistry.getSupportedChains();
+            (supportedChains, operatorTableUpdaters) = crossChainRegistry.getSupportedChains();
             assertEq(supportedChains.length, defaultChainIDs.length + numToAdd - numToRemove, "Chain count after remove mismatch");
+            assertEq(
+                operatorTableUpdaters.length,
+                defaultChainIDs.length + numToAdd - numToRemove,
+                "Operator table updater count after remove mismatch"
+            );
         }
     }
 }
