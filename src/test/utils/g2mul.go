@@ -39,7 +39,7 @@ func main() {
 	pyssInt := new(big.Int)
 	pyssInt, _ = pyssInt.SetString(pyss[0], 10)
 
-	//swtich to print coord requested
+	//switch to print coord requested
 	switch os.Args[2] {
 	case "1":
 		fmt.Printf("0x%064X", pxsInt)
