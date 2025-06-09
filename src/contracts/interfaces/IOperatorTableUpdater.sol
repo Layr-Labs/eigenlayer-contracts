@@ -98,15 +98,15 @@ interface IOperatorTableUpdater is
      * @param globalTableRoot the new globalTableRoot
      * @param operatorSetIndex the index of the given operatorSet being updated
      * @param proof the proof of the leaf at index against the globalTableRoot
-     * @param tableInfo the tableInfo of the operator table
-     * @dev Depending on the decoded KeyType, the tableInfo will be decoded to a
+     * @param operatorTableBytes the bytes of the operator table
+     * @dev Depending on the decoded KeyType, the tableInfo will be decoded
      */
     function updateOperatorTable(
         uint32 referenceTimestamp,
         bytes32 globalTableRoot,
         uint32 operatorSetIndex,
         bytes calldata proof,
-        bytes calldata tableInfo
+        bytes calldata operatorTableBytes
     ) external;
 
     /**
