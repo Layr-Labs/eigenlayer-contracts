@@ -43,7 +43,7 @@ type OperatorSet struct {
 
 // IECDSATableCalculatorMetaData contains all meta data concerning the IECDSATableCalculator contract.
 var IECDSATableCalculatorMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"calculateOperatorTable\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"operatorInfos\",\"type\":\"tuple[]\",\"internalType\":\"structIECDSATableCalculatorTypes.ECDSAOperatorInfo[]\",\"components\":[{\"name\":\"pubkey\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"weights\",\"type\":\"uint96[]\",\"internalType\":\"uint96[]\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"calculateOperatorTableBytes\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"operatorTableBytes\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"stateMutability\":\"view\"}]",
+	ABI: "[{\"type\":\"function\",\"name\":\"calculateOperatorTable\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"operatorInfos\",\"type\":\"tuple[]\",\"internalType\":\"structIECDSATableCalculatorTypes.ECDSAOperatorInfo[]\",\"components\":[{\"name\":\"pubkey\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"weights\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"calculateOperatorTableBytes\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"operatorTableBytes\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getOperatorWeight\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"weight\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getOperatorWeights\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"operators\",\"type\":\"address[]\",\"internalType\":\"address[]\"},{\"name\":\"weights\",\"type\":\"uint256[][]\",\"internalType\":\"uint256[][]\"}],\"stateMutability\":\"view\"},{\"type\":\"event\",\"name\":\"LookaheadBlocksSet\",\"inputs\":[{\"name\":\"lookaheadBlocks\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"LookaheadBlocksTooHigh\",\"inputs\":[]}]",
 }
 
 // IECDSATableCalculatorABI is the input ABI used to generate the binding from.
@@ -194,7 +194,7 @@ func (_IECDSATableCalculator *IECDSATableCalculatorTransactorRaw) Transact(opts 
 
 // CalculateOperatorTable is a free data retrieval call binding the contract method 0x124c87e0.
 //
-// Solidity: function calculateOperatorTable((address,uint32) operatorSet) view returns((address,uint96[])[] operatorInfos)
+// Solidity: function calculateOperatorTable((address,uint32) operatorSet) view returns((address,uint256[])[] operatorInfos)
 func (_IECDSATableCalculator *IECDSATableCalculatorCaller) CalculateOperatorTable(opts *bind.CallOpts, operatorSet OperatorSet) ([]IECDSATableCalculatorTypesECDSAOperatorInfo, error) {
 	var out []interface{}
 	err := _IECDSATableCalculator.contract.Call(opts, &out, "calculateOperatorTable", operatorSet)
@@ -211,14 +211,14 @@ func (_IECDSATableCalculator *IECDSATableCalculatorCaller) CalculateOperatorTabl
 
 // CalculateOperatorTable is a free data retrieval call binding the contract method 0x124c87e0.
 //
-// Solidity: function calculateOperatorTable((address,uint32) operatorSet) view returns((address,uint96[])[] operatorInfos)
+// Solidity: function calculateOperatorTable((address,uint32) operatorSet) view returns((address,uint256[])[] operatorInfos)
 func (_IECDSATableCalculator *IECDSATableCalculatorSession) CalculateOperatorTable(operatorSet OperatorSet) ([]IECDSATableCalculatorTypesECDSAOperatorInfo, error) {
 	return _IECDSATableCalculator.Contract.CalculateOperatorTable(&_IECDSATableCalculator.CallOpts, operatorSet)
 }
 
 // CalculateOperatorTable is a free data retrieval call binding the contract method 0x124c87e0.
 //
-// Solidity: function calculateOperatorTable((address,uint32) operatorSet) view returns((address,uint96[])[] operatorInfos)
+// Solidity: function calculateOperatorTable((address,uint32) operatorSet) view returns((address,uint256[])[] operatorInfos)
 func (_IECDSATableCalculator *IECDSATableCalculatorCallerSession) CalculateOperatorTable(operatorSet OperatorSet) ([]IECDSATableCalculatorTypesECDSAOperatorInfo, error) {
 	return _IECDSATableCalculator.Contract.CalculateOperatorTable(&_IECDSATableCalculator.CallOpts, operatorSet)
 }
@@ -252,4 +252,214 @@ func (_IECDSATableCalculator *IECDSATableCalculatorSession) CalculateOperatorTab
 // Solidity: function calculateOperatorTableBytes((address,uint32) operatorSet) view returns(bytes operatorTableBytes)
 func (_IECDSATableCalculator *IECDSATableCalculatorCallerSession) CalculateOperatorTableBytes(operatorSet OperatorSet) ([]byte, error) {
 	return _IECDSATableCalculator.Contract.CalculateOperatorTableBytes(&_IECDSATableCalculator.CallOpts, operatorSet)
+}
+
+// GetOperatorWeight is a free data retrieval call binding the contract method 0x1088794a.
+//
+// Solidity: function getOperatorWeight((address,uint32) operatorSet, address operator) view returns(uint256 weight)
+func (_IECDSATableCalculator *IECDSATableCalculatorCaller) GetOperatorWeight(opts *bind.CallOpts, operatorSet OperatorSet, operator common.Address) (*big.Int, error) {
+	var out []interface{}
+	err := _IECDSATableCalculator.contract.Call(opts, &out, "getOperatorWeight", operatorSet, operator)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// GetOperatorWeight is a free data retrieval call binding the contract method 0x1088794a.
+//
+// Solidity: function getOperatorWeight((address,uint32) operatorSet, address operator) view returns(uint256 weight)
+func (_IECDSATableCalculator *IECDSATableCalculatorSession) GetOperatorWeight(operatorSet OperatorSet, operator common.Address) (*big.Int, error) {
+	return _IECDSATableCalculator.Contract.GetOperatorWeight(&_IECDSATableCalculator.CallOpts, operatorSet, operator)
+}
+
+// GetOperatorWeight is a free data retrieval call binding the contract method 0x1088794a.
+//
+// Solidity: function getOperatorWeight((address,uint32) operatorSet, address operator) view returns(uint256 weight)
+func (_IECDSATableCalculator *IECDSATableCalculatorCallerSession) GetOperatorWeight(operatorSet OperatorSet, operator common.Address) (*big.Int, error) {
+	return _IECDSATableCalculator.Contract.GetOperatorWeight(&_IECDSATableCalculator.CallOpts, operatorSet, operator)
+}
+
+// GetOperatorWeights is a free data retrieval call binding the contract method 0x71ca71d9.
+//
+// Solidity: function getOperatorWeights((address,uint32) operatorSet) view returns(address[] operators, uint256[][] weights)
+func (_IECDSATableCalculator *IECDSATableCalculatorCaller) GetOperatorWeights(opts *bind.CallOpts, operatorSet OperatorSet) (struct {
+	Operators []common.Address
+	Weights   [][]*big.Int
+}, error) {
+	var out []interface{}
+	err := _IECDSATableCalculator.contract.Call(opts, &out, "getOperatorWeights", operatorSet)
+
+	outstruct := new(struct {
+		Operators []common.Address
+		Weights   [][]*big.Int
+	})
+	if err != nil {
+		return *outstruct, err
+	}
+
+	outstruct.Operators = *abi.ConvertType(out[0], new([]common.Address)).(*[]common.Address)
+	outstruct.Weights = *abi.ConvertType(out[1], new([][]*big.Int)).(*[][]*big.Int)
+
+	return *outstruct, err
+
+}
+
+// GetOperatorWeights is a free data retrieval call binding the contract method 0x71ca71d9.
+//
+// Solidity: function getOperatorWeights((address,uint32) operatorSet) view returns(address[] operators, uint256[][] weights)
+func (_IECDSATableCalculator *IECDSATableCalculatorSession) GetOperatorWeights(operatorSet OperatorSet) (struct {
+	Operators []common.Address
+	Weights   [][]*big.Int
+}, error) {
+	return _IECDSATableCalculator.Contract.GetOperatorWeights(&_IECDSATableCalculator.CallOpts, operatorSet)
+}
+
+// GetOperatorWeights is a free data retrieval call binding the contract method 0x71ca71d9.
+//
+// Solidity: function getOperatorWeights((address,uint32) operatorSet) view returns(address[] operators, uint256[][] weights)
+func (_IECDSATableCalculator *IECDSATableCalculatorCallerSession) GetOperatorWeights(operatorSet OperatorSet) (struct {
+	Operators []common.Address
+	Weights   [][]*big.Int
+}, error) {
+	return _IECDSATableCalculator.Contract.GetOperatorWeights(&_IECDSATableCalculator.CallOpts, operatorSet)
+}
+
+// IECDSATableCalculatorLookaheadBlocksSetIterator is returned from FilterLookaheadBlocksSet and is used to iterate over the raw logs and unpacked data for LookaheadBlocksSet events raised by the IECDSATableCalculator contract.
+type IECDSATableCalculatorLookaheadBlocksSetIterator struct {
+	Event *IECDSATableCalculatorLookaheadBlocksSet // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *IECDSATableCalculatorLookaheadBlocksSetIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(IECDSATableCalculatorLookaheadBlocksSet)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(IECDSATableCalculatorLookaheadBlocksSet)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *IECDSATableCalculatorLookaheadBlocksSetIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *IECDSATableCalculatorLookaheadBlocksSetIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// IECDSATableCalculatorLookaheadBlocksSet represents a LookaheadBlocksSet event raised by the IECDSATableCalculator contract.
+type IECDSATableCalculatorLookaheadBlocksSet struct {
+	LookaheadBlocks *big.Int
+	Raw             types.Log // Blockchain specific contextual infos
+}
+
+// FilterLookaheadBlocksSet is a free log retrieval operation binding the contract event 0xa41e64dd47db91b61b43ccea8b57d75abfa496f23efc708c22753c4bc9d68842.
+//
+// Solidity: event LookaheadBlocksSet(uint256 lookaheadBlocks)
+func (_IECDSATableCalculator *IECDSATableCalculatorFilterer) FilterLookaheadBlocksSet(opts *bind.FilterOpts) (*IECDSATableCalculatorLookaheadBlocksSetIterator, error) {
+
+	logs, sub, err := _IECDSATableCalculator.contract.FilterLogs(opts, "LookaheadBlocksSet")
+	if err != nil {
+		return nil, err
+	}
+	return &IECDSATableCalculatorLookaheadBlocksSetIterator{contract: _IECDSATableCalculator.contract, event: "LookaheadBlocksSet", logs: logs, sub: sub}, nil
+}
+
+// WatchLookaheadBlocksSet is a free log subscription operation binding the contract event 0xa41e64dd47db91b61b43ccea8b57d75abfa496f23efc708c22753c4bc9d68842.
+//
+// Solidity: event LookaheadBlocksSet(uint256 lookaheadBlocks)
+func (_IECDSATableCalculator *IECDSATableCalculatorFilterer) WatchLookaheadBlocksSet(opts *bind.WatchOpts, sink chan<- *IECDSATableCalculatorLookaheadBlocksSet) (event.Subscription, error) {
+
+	logs, sub, err := _IECDSATableCalculator.contract.WatchLogs(opts, "LookaheadBlocksSet")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(IECDSATableCalculatorLookaheadBlocksSet)
+				if err := _IECDSATableCalculator.contract.UnpackLog(event, "LookaheadBlocksSet", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseLookaheadBlocksSet is a log parse operation binding the contract event 0xa41e64dd47db91b61b43ccea8b57d75abfa496f23efc708c22753c4bc9d68842.
+//
+// Solidity: event LookaheadBlocksSet(uint256 lookaheadBlocks)
+func (_IECDSATableCalculator *IECDSATableCalculatorFilterer) ParseLookaheadBlocksSet(log types.Log) (*IECDSATableCalculatorLookaheadBlocksSet, error) {
+	event := new(IECDSATableCalculatorLookaheadBlocksSet)
+	if err := _IECDSATableCalculator.contract.UnpackLog(event, "LookaheadBlocksSet", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
 }

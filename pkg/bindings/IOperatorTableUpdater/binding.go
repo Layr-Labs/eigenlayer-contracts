@@ -63,26 +63,6 @@ type IBN254TableCalculatorTypesBN254OperatorInfo struct {
 	Weights []*big.Int
 }
 
-// IBN254TableCalculatorTypesBN254OperatorSetInfo is an auto generated low-level Go binding around an user-defined struct.
-type IBN254TableCalculatorTypesBN254OperatorSetInfo struct {
-	OperatorInfoTreeRoot [32]byte
-	NumOperators         *big.Int
-	AggregatePubkey      BN254G1Point
-	TotalWeights         []*big.Int
-}
-
-// ICrossChainRegistryTypesOperatorSetConfig is an auto generated low-level Go binding around an user-defined struct.
-type ICrossChainRegistryTypesOperatorSetConfig struct {
-	Owner              common.Address
-	MaxStalenessPeriod uint32
-}
-
-// IECDSATableCalculatorTypesECDSAOperatorInfo is an auto generated low-level Go binding around an user-defined struct.
-type IECDSATableCalculatorTypesECDSAOperatorInfo struct {
-	Pubkey  common.Address
-	Weights []*big.Int
-}
-
 // OperatorSet is an auto generated low-level Go binding around an user-defined struct.
 type OperatorSet struct {
 	Avs common.Address
@@ -91,7 +71,7 @@ type OperatorSet struct {
 
 // IOperatorTableUpdaterMetaData contains all meta data concerning the IOperatorTableUpdater contract.
 var IOperatorTableUpdaterMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"confirmGlobalTableRoot\",\"inputs\":[{\"name\":\"globalTableRootCert\",\"type\":\"tuple\",\"internalType\":\"structIBN254CertificateVerifierTypes.BN254Certificate\",\"components\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"messageHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"signature\",\"type\":\"tuple\",\"internalType\":\"structBN254.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"apk\",\"type\":\"tuple\",\"internalType\":\"structBN254.G2Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256[2]\",\"internalType\":\"uint256[2]\"},{\"name\":\"Y\",\"type\":\"uint256[2]\",\"internalType\":\"uint256[2]\"}]},{\"name\":\"nonSignerWitnesses\",\"type\":\"tuple[]\",\"internalType\":\"structIBN254CertificateVerifierTypes.BN254OperatorInfoWitness[]\",\"components\":[{\"name\":\"operatorIndex\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"operatorInfoProof\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"operatorInfo\",\"type\":\"tuple\",\"internalType\":\"structIBN254TableCalculatorTypes.BN254OperatorInfo\",\"components\":[{\"name\":\"pubkey\",\"type\":\"tuple\",\"internalType\":\"structBN254.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"weights\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}]}]}]},{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"getCurrentGlobalTableRoot\",\"inputs\":[],\"outputs\":[{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getTableRootByTimestamp\",\"inputs\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"tableRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"setGlobalRootConfirmationThreshold\",\"inputs\":[{\"name\":\"bps\",\"type\":\"uint16\",\"internalType\":\"uint16\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setGlobalRootConfirmerSet\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"updateBN254OperatorTable\",\"inputs\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"operatorSetIndex\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"proof\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"operatorSetInfo\",\"type\":\"tuple\",\"internalType\":\"structIBN254TableCalculatorTypes.BN254OperatorSetInfo\",\"components\":[{\"name\":\"operatorInfoTreeRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"numOperators\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"aggregatePubkey\",\"type\":\"tuple\",\"internalType\":\"structBN254.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"totalWeights\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}]},{\"name\":\"config\",\"type\":\"tuple\",\"internalType\":\"structICrossChainRegistryTypes.OperatorSetConfig\",\"components\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"maxStalenessPeriod\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"updateECDSAOperatorTable\",\"inputs\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"operatorSetIndex\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"proof\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"operatorInfos\",\"type\":\"tuple[]\",\"internalType\":\"structIECDSATableCalculatorTypes.ECDSAOperatorInfo[]\",\"components\":[{\"name\":\"pubkey\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"weights\",\"type\":\"uint96[]\",\"internalType\":\"uint96[]\"}]},{\"name\":\"config\",\"type\":\"tuple\",\"internalType\":\"structICrossChainRegistryTypes.OperatorSetConfig\",\"components\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"maxStalenessPeriod\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"NewglobalTableRoot\",\"inputs\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"},{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"indexed\":false,\"internalType\":\"bytes32\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"GlobalTableRootUpdateFailed\",\"inputs\":[]}]",
+	ABI: "[{\"type\":\"function\",\"name\":\"confirmGlobalTableRoot\",\"inputs\":[{\"name\":\"globalTableRootCert\",\"type\":\"tuple\",\"internalType\":\"structIBN254CertificateVerifierTypes.BN254Certificate\",\"components\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"messageHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"signature\",\"type\":\"tuple\",\"internalType\":\"structBN254.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"apk\",\"type\":\"tuple\",\"internalType\":\"structBN254.G2Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256[2]\",\"internalType\":\"uint256[2]\"},{\"name\":\"Y\",\"type\":\"uint256[2]\",\"internalType\":\"uint256[2]\"}]},{\"name\":\"nonSignerWitnesses\",\"type\":\"tuple[]\",\"internalType\":\"structIBN254CertificateVerifierTypes.BN254OperatorInfoWitness[]\",\"components\":[{\"name\":\"operatorIndex\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"operatorInfoProof\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"operatorInfo\",\"type\":\"tuple\",\"internalType\":\"structIBN254TableCalculatorTypes.BN254OperatorInfo\",\"components\":[{\"name\":\"pubkey\",\"type\":\"tuple\",\"internalType\":\"structBN254.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"weights\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}]}]}]},{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"getCertificateVerifier\",\"inputs\":[{\"name\":\"curveType\",\"type\":\"uint8\",\"internalType\":\"enumIKeyRegistrarTypes.CurveType\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrentGlobalTableRoot\",\"inputs\":[],\"outputs\":[{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getGlobalRootConfirmerSet\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getGlobalTableRootByTimestamp\",\"inputs\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"tableRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"setGlobalRootConfirmationThreshold\",\"inputs\":[{\"name\":\"bps\",\"type\":\"uint16\",\"internalType\":\"uint16\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setGlobalRootConfirmerSet\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"updateOperatorTable\",\"inputs\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"operatorSetIndex\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"proof\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"operatorTableBytes\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"GlobalRootConfirmationThresholdUpdated\",\"inputs\":[{\"name\":\"bps\",\"type\":\"uint16\",\"indexed\":false,\"internalType\":\"uint16\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"GlobalRootConfirmerSetUpdated\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"NewGlobalTableRoot\",\"inputs\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"indexed\":true,\"internalType\":\"uint32\"},{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"CertificateInvalid\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"GlobalTableRootInFuture\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"GlobalTableRootStale\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidConfirmationThreshold\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidCurveType\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidGlobalTableRoot\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidOperatorSetProof\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"TableRootNotInCertificate\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"TableUpdateForPastTimestamp\",\"inputs\":[]}]",
 }
 
 // IOperatorTableUpdaterABI is the input ABI used to generate the binding from.
@@ -240,6 +220,37 @@ func (_IOperatorTableUpdater *IOperatorTableUpdaterTransactorRaw) Transact(opts 
 	return _IOperatorTableUpdater.Contract.contract.Transact(opts, method, params...)
 }
 
+// GetCertificateVerifier is a free data retrieval call binding the contract method 0x6f728c50.
+//
+// Solidity: function getCertificateVerifier(uint8 curveType) view returns(address)
+func (_IOperatorTableUpdater *IOperatorTableUpdaterCaller) GetCertificateVerifier(opts *bind.CallOpts, curveType uint8) (common.Address, error) {
+	var out []interface{}
+	err := _IOperatorTableUpdater.contract.Call(opts, &out, "getCertificateVerifier", curveType)
+
+	if err != nil {
+		return *new(common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+
+	return out0, err
+
+}
+
+// GetCertificateVerifier is a free data retrieval call binding the contract method 0x6f728c50.
+//
+// Solidity: function getCertificateVerifier(uint8 curveType) view returns(address)
+func (_IOperatorTableUpdater *IOperatorTableUpdaterSession) GetCertificateVerifier(curveType uint8) (common.Address, error) {
+	return _IOperatorTableUpdater.Contract.GetCertificateVerifier(&_IOperatorTableUpdater.CallOpts, curveType)
+}
+
+// GetCertificateVerifier is a free data retrieval call binding the contract method 0x6f728c50.
+//
+// Solidity: function getCertificateVerifier(uint8 curveType) view returns(address)
+func (_IOperatorTableUpdater *IOperatorTableUpdaterCallerSession) GetCertificateVerifier(curveType uint8) (common.Address, error) {
+	return _IOperatorTableUpdater.Contract.GetCertificateVerifier(&_IOperatorTableUpdater.CallOpts, curveType)
+}
+
 // GetCurrentGlobalTableRoot is a free data retrieval call binding the contract method 0x28522d79.
 //
 // Solidity: function getCurrentGlobalTableRoot() view returns(bytes32 globalTableRoot)
@@ -271,12 +282,43 @@ func (_IOperatorTableUpdater *IOperatorTableUpdaterCallerSession) GetCurrentGlob
 	return _IOperatorTableUpdater.Contract.GetCurrentGlobalTableRoot(&_IOperatorTableUpdater.CallOpts)
 }
 
-// GetTableRootByTimestamp is a free data retrieval call binding the contract method 0x9ea8dbce.
+// GetGlobalRootConfirmerSet is a free data retrieval call binding the contract method 0x46282889.
 //
-// Solidity: function getTableRootByTimestamp(uint32 referenceTimestamp) view returns(bytes32 tableRoot)
-func (_IOperatorTableUpdater *IOperatorTableUpdaterCaller) GetTableRootByTimestamp(opts *bind.CallOpts, referenceTimestamp uint32) ([32]byte, error) {
+// Solidity: function getGlobalRootConfirmerSet() view returns((address,uint32))
+func (_IOperatorTableUpdater *IOperatorTableUpdaterCaller) GetGlobalRootConfirmerSet(opts *bind.CallOpts) (OperatorSet, error) {
 	var out []interface{}
-	err := _IOperatorTableUpdater.contract.Call(opts, &out, "getTableRootByTimestamp", referenceTimestamp)
+	err := _IOperatorTableUpdater.contract.Call(opts, &out, "getGlobalRootConfirmerSet")
+
+	if err != nil {
+		return *new(OperatorSet), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(OperatorSet)).(*OperatorSet)
+
+	return out0, err
+
+}
+
+// GetGlobalRootConfirmerSet is a free data retrieval call binding the contract method 0x46282889.
+//
+// Solidity: function getGlobalRootConfirmerSet() view returns((address,uint32))
+func (_IOperatorTableUpdater *IOperatorTableUpdaterSession) GetGlobalRootConfirmerSet() (OperatorSet, error) {
+	return _IOperatorTableUpdater.Contract.GetGlobalRootConfirmerSet(&_IOperatorTableUpdater.CallOpts)
+}
+
+// GetGlobalRootConfirmerSet is a free data retrieval call binding the contract method 0x46282889.
+//
+// Solidity: function getGlobalRootConfirmerSet() view returns((address,uint32))
+func (_IOperatorTableUpdater *IOperatorTableUpdaterCallerSession) GetGlobalRootConfirmerSet() (OperatorSet, error) {
+	return _IOperatorTableUpdater.Contract.GetGlobalRootConfirmerSet(&_IOperatorTableUpdater.CallOpts)
+}
+
+// GetGlobalTableRootByTimestamp is a free data retrieval call binding the contract method 0xc5916a39.
+//
+// Solidity: function getGlobalTableRootByTimestamp(uint32 referenceTimestamp) view returns(bytes32 tableRoot)
+func (_IOperatorTableUpdater *IOperatorTableUpdaterCaller) GetGlobalTableRootByTimestamp(opts *bind.CallOpts, referenceTimestamp uint32) ([32]byte, error) {
+	var out []interface{}
+	err := _IOperatorTableUpdater.contract.Call(opts, &out, "getGlobalTableRootByTimestamp", referenceTimestamp)
 
 	if err != nil {
 		return *new([32]byte), err
@@ -288,18 +330,18 @@ func (_IOperatorTableUpdater *IOperatorTableUpdaterCaller) GetTableRootByTimesta
 
 }
 
-// GetTableRootByTimestamp is a free data retrieval call binding the contract method 0x9ea8dbce.
+// GetGlobalTableRootByTimestamp is a free data retrieval call binding the contract method 0xc5916a39.
 //
-// Solidity: function getTableRootByTimestamp(uint32 referenceTimestamp) view returns(bytes32 tableRoot)
-func (_IOperatorTableUpdater *IOperatorTableUpdaterSession) GetTableRootByTimestamp(referenceTimestamp uint32) ([32]byte, error) {
-	return _IOperatorTableUpdater.Contract.GetTableRootByTimestamp(&_IOperatorTableUpdater.CallOpts, referenceTimestamp)
+// Solidity: function getGlobalTableRootByTimestamp(uint32 referenceTimestamp) view returns(bytes32 tableRoot)
+func (_IOperatorTableUpdater *IOperatorTableUpdaterSession) GetGlobalTableRootByTimestamp(referenceTimestamp uint32) ([32]byte, error) {
+	return _IOperatorTableUpdater.Contract.GetGlobalTableRootByTimestamp(&_IOperatorTableUpdater.CallOpts, referenceTimestamp)
 }
 
-// GetTableRootByTimestamp is a free data retrieval call binding the contract method 0x9ea8dbce.
+// GetGlobalTableRootByTimestamp is a free data retrieval call binding the contract method 0xc5916a39.
 //
-// Solidity: function getTableRootByTimestamp(uint32 referenceTimestamp) view returns(bytes32 tableRoot)
-func (_IOperatorTableUpdater *IOperatorTableUpdaterCallerSession) GetTableRootByTimestamp(referenceTimestamp uint32) ([32]byte, error) {
-	return _IOperatorTableUpdater.Contract.GetTableRootByTimestamp(&_IOperatorTableUpdater.CallOpts, referenceTimestamp)
+// Solidity: function getGlobalTableRootByTimestamp(uint32 referenceTimestamp) view returns(bytes32 tableRoot)
+func (_IOperatorTableUpdater *IOperatorTableUpdaterCallerSession) GetGlobalTableRootByTimestamp(referenceTimestamp uint32) ([32]byte, error) {
+	return _IOperatorTableUpdater.Contract.GetGlobalTableRootByTimestamp(&_IOperatorTableUpdater.CallOpts, referenceTimestamp)
 }
 
 // ConfirmGlobalTableRoot is a paid mutator transaction binding the contract method 0x6ab40904.
@@ -365,51 +407,30 @@ func (_IOperatorTableUpdater *IOperatorTableUpdaterTransactorSession) SetGlobalR
 	return _IOperatorTableUpdater.Contract.SetGlobalRootConfirmerSet(&_IOperatorTableUpdater.TransactOpts, operatorSet)
 }
 
-// UpdateBN254OperatorTable is a paid mutator transaction binding the contract method 0x71034fe1.
+// UpdateOperatorTable is a paid mutator transaction binding the contract method 0x9ea94778.
 //
-// Solidity: function updateBN254OperatorTable(uint32 referenceTimestamp, bytes32 globalTableRoot, uint32 operatorSetIndex, bytes proof, (address,uint32) operatorSet, (bytes32,uint256,(uint256,uint256),uint256[]) operatorSetInfo, (address,uint32) config) returns()
-func (_IOperatorTableUpdater *IOperatorTableUpdaterTransactor) UpdateBN254OperatorTable(opts *bind.TransactOpts, referenceTimestamp uint32, globalTableRoot [32]byte, operatorSetIndex uint32, proof []byte, operatorSet OperatorSet, operatorSetInfo IBN254TableCalculatorTypesBN254OperatorSetInfo, config ICrossChainRegistryTypesOperatorSetConfig) (*types.Transaction, error) {
-	return _IOperatorTableUpdater.contract.Transact(opts, "updateBN254OperatorTable", referenceTimestamp, globalTableRoot, operatorSetIndex, proof, operatorSet, operatorSetInfo, config)
+// Solidity: function updateOperatorTable(uint32 referenceTimestamp, bytes32 globalTableRoot, uint32 operatorSetIndex, bytes proof, bytes operatorTableBytes) returns()
+func (_IOperatorTableUpdater *IOperatorTableUpdaterTransactor) UpdateOperatorTable(opts *bind.TransactOpts, referenceTimestamp uint32, globalTableRoot [32]byte, operatorSetIndex uint32, proof []byte, operatorTableBytes []byte) (*types.Transaction, error) {
+	return _IOperatorTableUpdater.contract.Transact(opts, "updateOperatorTable", referenceTimestamp, globalTableRoot, operatorSetIndex, proof, operatorTableBytes)
 }
 
-// UpdateBN254OperatorTable is a paid mutator transaction binding the contract method 0x71034fe1.
+// UpdateOperatorTable is a paid mutator transaction binding the contract method 0x9ea94778.
 //
-// Solidity: function updateBN254OperatorTable(uint32 referenceTimestamp, bytes32 globalTableRoot, uint32 operatorSetIndex, bytes proof, (address,uint32) operatorSet, (bytes32,uint256,(uint256,uint256),uint256[]) operatorSetInfo, (address,uint32) config) returns()
-func (_IOperatorTableUpdater *IOperatorTableUpdaterSession) UpdateBN254OperatorTable(referenceTimestamp uint32, globalTableRoot [32]byte, operatorSetIndex uint32, proof []byte, operatorSet OperatorSet, operatorSetInfo IBN254TableCalculatorTypesBN254OperatorSetInfo, config ICrossChainRegistryTypesOperatorSetConfig) (*types.Transaction, error) {
-	return _IOperatorTableUpdater.Contract.UpdateBN254OperatorTable(&_IOperatorTableUpdater.TransactOpts, referenceTimestamp, globalTableRoot, operatorSetIndex, proof, operatorSet, operatorSetInfo, config)
+// Solidity: function updateOperatorTable(uint32 referenceTimestamp, bytes32 globalTableRoot, uint32 operatorSetIndex, bytes proof, bytes operatorTableBytes) returns()
+func (_IOperatorTableUpdater *IOperatorTableUpdaterSession) UpdateOperatorTable(referenceTimestamp uint32, globalTableRoot [32]byte, operatorSetIndex uint32, proof []byte, operatorTableBytes []byte) (*types.Transaction, error) {
+	return _IOperatorTableUpdater.Contract.UpdateOperatorTable(&_IOperatorTableUpdater.TransactOpts, referenceTimestamp, globalTableRoot, operatorSetIndex, proof, operatorTableBytes)
 }
 
-// UpdateBN254OperatorTable is a paid mutator transaction binding the contract method 0x71034fe1.
+// UpdateOperatorTable is a paid mutator transaction binding the contract method 0x9ea94778.
 //
-// Solidity: function updateBN254OperatorTable(uint32 referenceTimestamp, bytes32 globalTableRoot, uint32 operatorSetIndex, bytes proof, (address,uint32) operatorSet, (bytes32,uint256,(uint256,uint256),uint256[]) operatorSetInfo, (address,uint32) config) returns()
-func (_IOperatorTableUpdater *IOperatorTableUpdaterTransactorSession) UpdateBN254OperatorTable(referenceTimestamp uint32, globalTableRoot [32]byte, operatorSetIndex uint32, proof []byte, operatorSet OperatorSet, operatorSetInfo IBN254TableCalculatorTypesBN254OperatorSetInfo, config ICrossChainRegistryTypesOperatorSetConfig) (*types.Transaction, error) {
-	return _IOperatorTableUpdater.Contract.UpdateBN254OperatorTable(&_IOperatorTableUpdater.TransactOpts, referenceTimestamp, globalTableRoot, operatorSetIndex, proof, operatorSet, operatorSetInfo, config)
+// Solidity: function updateOperatorTable(uint32 referenceTimestamp, bytes32 globalTableRoot, uint32 operatorSetIndex, bytes proof, bytes operatorTableBytes) returns()
+func (_IOperatorTableUpdater *IOperatorTableUpdaterTransactorSession) UpdateOperatorTable(referenceTimestamp uint32, globalTableRoot [32]byte, operatorSetIndex uint32, proof []byte, operatorTableBytes []byte) (*types.Transaction, error) {
+	return _IOperatorTableUpdater.Contract.UpdateOperatorTable(&_IOperatorTableUpdater.TransactOpts, referenceTimestamp, globalTableRoot, operatorSetIndex, proof, operatorTableBytes)
 }
 
-// UpdateECDSAOperatorTable is a paid mutator transaction binding the contract method 0x3397579c.
-//
-// Solidity: function updateECDSAOperatorTable(uint32 referenceTimestamp, bytes32 globalTableRoot, uint32 operatorSetIndex, bytes proof, (address,uint32) operatorSet, (address,uint96[])[] operatorInfos, (address,uint32) config) returns()
-func (_IOperatorTableUpdater *IOperatorTableUpdaterTransactor) UpdateECDSAOperatorTable(opts *bind.TransactOpts, referenceTimestamp uint32, globalTableRoot [32]byte, operatorSetIndex uint32, proof []byte, operatorSet OperatorSet, operatorInfos []IECDSATableCalculatorTypesECDSAOperatorInfo, config ICrossChainRegistryTypesOperatorSetConfig) (*types.Transaction, error) {
-	return _IOperatorTableUpdater.contract.Transact(opts, "updateECDSAOperatorTable", referenceTimestamp, globalTableRoot, operatorSetIndex, proof, operatorSet, operatorInfos, config)
-}
-
-// UpdateECDSAOperatorTable is a paid mutator transaction binding the contract method 0x3397579c.
-//
-// Solidity: function updateECDSAOperatorTable(uint32 referenceTimestamp, bytes32 globalTableRoot, uint32 operatorSetIndex, bytes proof, (address,uint32) operatorSet, (address,uint96[])[] operatorInfos, (address,uint32) config) returns()
-func (_IOperatorTableUpdater *IOperatorTableUpdaterSession) UpdateECDSAOperatorTable(referenceTimestamp uint32, globalTableRoot [32]byte, operatorSetIndex uint32, proof []byte, operatorSet OperatorSet, operatorInfos []IECDSATableCalculatorTypesECDSAOperatorInfo, config ICrossChainRegistryTypesOperatorSetConfig) (*types.Transaction, error) {
-	return _IOperatorTableUpdater.Contract.UpdateECDSAOperatorTable(&_IOperatorTableUpdater.TransactOpts, referenceTimestamp, globalTableRoot, operatorSetIndex, proof, operatorSet, operatorInfos, config)
-}
-
-// UpdateECDSAOperatorTable is a paid mutator transaction binding the contract method 0x3397579c.
-//
-// Solidity: function updateECDSAOperatorTable(uint32 referenceTimestamp, bytes32 globalTableRoot, uint32 operatorSetIndex, bytes proof, (address,uint32) operatorSet, (address,uint96[])[] operatorInfos, (address,uint32) config) returns()
-func (_IOperatorTableUpdater *IOperatorTableUpdaterTransactorSession) UpdateECDSAOperatorTable(referenceTimestamp uint32, globalTableRoot [32]byte, operatorSetIndex uint32, proof []byte, operatorSet OperatorSet, operatorInfos []IECDSATableCalculatorTypesECDSAOperatorInfo, config ICrossChainRegistryTypesOperatorSetConfig) (*types.Transaction, error) {
-	return _IOperatorTableUpdater.Contract.UpdateECDSAOperatorTable(&_IOperatorTableUpdater.TransactOpts, referenceTimestamp, globalTableRoot, operatorSetIndex, proof, operatorSet, operatorInfos, config)
-}
-
-// IOperatorTableUpdaterNewglobalTableRootIterator is returned from FilterNewglobalTableRoot and is used to iterate over the raw logs and unpacked data for NewglobalTableRoot events raised by the IOperatorTableUpdater contract.
-type IOperatorTableUpdaterNewglobalTableRootIterator struct {
-	Event *IOperatorTableUpdaterNewglobalTableRoot // Event containing the contract specifics and raw log
+// IOperatorTableUpdaterGlobalRootConfirmationThresholdUpdatedIterator is returned from FilterGlobalRootConfirmationThresholdUpdated and is used to iterate over the raw logs and unpacked data for GlobalRootConfirmationThresholdUpdated events raised by the IOperatorTableUpdater contract.
+type IOperatorTableUpdaterGlobalRootConfirmationThresholdUpdatedIterator struct {
+	Event *IOperatorTableUpdaterGlobalRootConfirmationThresholdUpdated // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -423,7 +444,7 @@ type IOperatorTableUpdaterNewglobalTableRootIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *IOperatorTableUpdaterNewglobalTableRootIterator) Next() bool {
+func (it *IOperatorTableUpdaterGlobalRootConfirmationThresholdUpdatedIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -432,7 +453,7 @@ func (it *IOperatorTableUpdaterNewglobalTableRootIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(IOperatorTableUpdaterNewglobalTableRoot)
+			it.Event = new(IOperatorTableUpdaterGlobalRootConfirmationThresholdUpdated)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -447,7 +468,7 @@ func (it *IOperatorTableUpdaterNewglobalTableRootIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(IOperatorTableUpdaterNewglobalTableRoot)
+		it.Event = new(IOperatorTableUpdaterGlobalRootConfirmationThresholdUpdated)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -463,42 +484,41 @@ func (it *IOperatorTableUpdaterNewglobalTableRootIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *IOperatorTableUpdaterNewglobalTableRootIterator) Error() error {
+func (it *IOperatorTableUpdaterGlobalRootConfirmationThresholdUpdatedIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *IOperatorTableUpdaterNewglobalTableRootIterator) Close() error {
+func (it *IOperatorTableUpdaterGlobalRootConfirmationThresholdUpdatedIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// IOperatorTableUpdaterNewglobalTableRoot represents a NewglobalTableRoot event raised by the IOperatorTableUpdater contract.
-type IOperatorTableUpdaterNewglobalTableRoot struct {
-	ReferenceTimestamp uint32
-	GlobalTableRoot    [32]byte
-	Raw                types.Log // Blockchain specific contextual infos
+// IOperatorTableUpdaterGlobalRootConfirmationThresholdUpdated represents a GlobalRootConfirmationThresholdUpdated event raised by the IOperatorTableUpdater contract.
+type IOperatorTableUpdaterGlobalRootConfirmationThresholdUpdated struct {
+	Bps uint16
+	Raw types.Log // Blockchain specific contextual infos
 }
 
-// FilterNewglobalTableRoot is a free log retrieval operation binding the contract event 0xbb96ecabc83b99776c3ba3d12d8131e99aeca109d673db36e42959d154359a65.
+// FilterGlobalRootConfirmationThresholdUpdated is a free log retrieval operation binding the contract event 0xf5d1836df8fcd7c1e54047e94ac8773d2855395603e2ef9ba5f5f16905f22592.
 //
-// Solidity: event NewglobalTableRoot(uint32 referenceTimestamp, bytes32 globalTableRoot)
-func (_IOperatorTableUpdater *IOperatorTableUpdaterFilterer) FilterNewglobalTableRoot(opts *bind.FilterOpts) (*IOperatorTableUpdaterNewglobalTableRootIterator, error) {
+// Solidity: event GlobalRootConfirmationThresholdUpdated(uint16 bps)
+func (_IOperatorTableUpdater *IOperatorTableUpdaterFilterer) FilterGlobalRootConfirmationThresholdUpdated(opts *bind.FilterOpts) (*IOperatorTableUpdaterGlobalRootConfirmationThresholdUpdatedIterator, error) {
 
-	logs, sub, err := _IOperatorTableUpdater.contract.FilterLogs(opts, "NewglobalTableRoot")
+	logs, sub, err := _IOperatorTableUpdater.contract.FilterLogs(opts, "GlobalRootConfirmationThresholdUpdated")
 	if err != nil {
 		return nil, err
 	}
-	return &IOperatorTableUpdaterNewglobalTableRootIterator{contract: _IOperatorTableUpdater.contract, event: "NewglobalTableRoot", logs: logs, sub: sub}, nil
+	return &IOperatorTableUpdaterGlobalRootConfirmationThresholdUpdatedIterator{contract: _IOperatorTableUpdater.contract, event: "GlobalRootConfirmationThresholdUpdated", logs: logs, sub: sub}, nil
 }
 
-// WatchNewglobalTableRoot is a free log subscription operation binding the contract event 0xbb96ecabc83b99776c3ba3d12d8131e99aeca109d673db36e42959d154359a65.
+// WatchGlobalRootConfirmationThresholdUpdated is a free log subscription operation binding the contract event 0xf5d1836df8fcd7c1e54047e94ac8773d2855395603e2ef9ba5f5f16905f22592.
 //
-// Solidity: event NewglobalTableRoot(uint32 referenceTimestamp, bytes32 globalTableRoot)
-func (_IOperatorTableUpdater *IOperatorTableUpdaterFilterer) WatchNewglobalTableRoot(opts *bind.WatchOpts, sink chan<- *IOperatorTableUpdaterNewglobalTableRoot) (event.Subscription, error) {
+// Solidity: event GlobalRootConfirmationThresholdUpdated(uint16 bps)
+func (_IOperatorTableUpdater *IOperatorTableUpdaterFilterer) WatchGlobalRootConfirmationThresholdUpdated(opts *bind.WatchOpts, sink chan<- *IOperatorTableUpdaterGlobalRootConfirmationThresholdUpdated) (event.Subscription, error) {
 
-	logs, sub, err := _IOperatorTableUpdater.contract.WatchLogs(opts, "NewglobalTableRoot")
+	logs, sub, err := _IOperatorTableUpdater.contract.WatchLogs(opts, "GlobalRootConfirmationThresholdUpdated")
 	if err != nil {
 		return nil, err
 	}
@@ -508,8 +528,8 @@ func (_IOperatorTableUpdater *IOperatorTableUpdaterFilterer) WatchNewglobalTable
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(IOperatorTableUpdaterNewglobalTableRoot)
-				if err := _IOperatorTableUpdater.contract.UnpackLog(event, "NewglobalTableRoot", log); err != nil {
+				event := new(IOperatorTableUpdaterGlobalRootConfirmationThresholdUpdated)
+				if err := _IOperatorTableUpdater.contract.UnpackLog(event, "GlobalRootConfirmationThresholdUpdated", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -530,12 +550,299 @@ func (_IOperatorTableUpdater *IOperatorTableUpdaterFilterer) WatchNewglobalTable
 	}), nil
 }
 
-// ParseNewglobalTableRoot is a log parse operation binding the contract event 0xbb96ecabc83b99776c3ba3d12d8131e99aeca109d673db36e42959d154359a65.
+// ParseGlobalRootConfirmationThresholdUpdated is a log parse operation binding the contract event 0xf5d1836df8fcd7c1e54047e94ac8773d2855395603e2ef9ba5f5f16905f22592.
 //
-// Solidity: event NewglobalTableRoot(uint32 referenceTimestamp, bytes32 globalTableRoot)
-func (_IOperatorTableUpdater *IOperatorTableUpdaterFilterer) ParseNewglobalTableRoot(log types.Log) (*IOperatorTableUpdaterNewglobalTableRoot, error) {
-	event := new(IOperatorTableUpdaterNewglobalTableRoot)
-	if err := _IOperatorTableUpdater.contract.UnpackLog(event, "NewglobalTableRoot", log); err != nil {
+// Solidity: event GlobalRootConfirmationThresholdUpdated(uint16 bps)
+func (_IOperatorTableUpdater *IOperatorTableUpdaterFilterer) ParseGlobalRootConfirmationThresholdUpdated(log types.Log) (*IOperatorTableUpdaterGlobalRootConfirmationThresholdUpdated, error) {
+	event := new(IOperatorTableUpdaterGlobalRootConfirmationThresholdUpdated)
+	if err := _IOperatorTableUpdater.contract.UnpackLog(event, "GlobalRootConfirmationThresholdUpdated", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// IOperatorTableUpdaterGlobalRootConfirmerSetUpdatedIterator is returned from FilterGlobalRootConfirmerSetUpdated and is used to iterate over the raw logs and unpacked data for GlobalRootConfirmerSetUpdated events raised by the IOperatorTableUpdater contract.
+type IOperatorTableUpdaterGlobalRootConfirmerSetUpdatedIterator struct {
+	Event *IOperatorTableUpdaterGlobalRootConfirmerSetUpdated // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *IOperatorTableUpdaterGlobalRootConfirmerSetUpdatedIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(IOperatorTableUpdaterGlobalRootConfirmerSetUpdated)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(IOperatorTableUpdaterGlobalRootConfirmerSetUpdated)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *IOperatorTableUpdaterGlobalRootConfirmerSetUpdatedIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *IOperatorTableUpdaterGlobalRootConfirmerSetUpdatedIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// IOperatorTableUpdaterGlobalRootConfirmerSetUpdated represents a GlobalRootConfirmerSetUpdated event raised by the IOperatorTableUpdater contract.
+type IOperatorTableUpdaterGlobalRootConfirmerSetUpdated struct {
+	OperatorSet OperatorSet
+	Raw         types.Log // Blockchain specific contextual infos
+}
+
+// FilterGlobalRootConfirmerSetUpdated is a free log retrieval operation binding the contract event 0x20100394950e66014c25009b45d12b675210a6e7a002044a0e3de6544e3c4b37.
+//
+// Solidity: event GlobalRootConfirmerSetUpdated((address,uint32) operatorSet)
+func (_IOperatorTableUpdater *IOperatorTableUpdaterFilterer) FilterGlobalRootConfirmerSetUpdated(opts *bind.FilterOpts) (*IOperatorTableUpdaterGlobalRootConfirmerSetUpdatedIterator, error) {
+
+	logs, sub, err := _IOperatorTableUpdater.contract.FilterLogs(opts, "GlobalRootConfirmerSetUpdated")
+	if err != nil {
+		return nil, err
+	}
+	return &IOperatorTableUpdaterGlobalRootConfirmerSetUpdatedIterator{contract: _IOperatorTableUpdater.contract, event: "GlobalRootConfirmerSetUpdated", logs: logs, sub: sub}, nil
+}
+
+// WatchGlobalRootConfirmerSetUpdated is a free log subscription operation binding the contract event 0x20100394950e66014c25009b45d12b675210a6e7a002044a0e3de6544e3c4b37.
+//
+// Solidity: event GlobalRootConfirmerSetUpdated((address,uint32) operatorSet)
+func (_IOperatorTableUpdater *IOperatorTableUpdaterFilterer) WatchGlobalRootConfirmerSetUpdated(opts *bind.WatchOpts, sink chan<- *IOperatorTableUpdaterGlobalRootConfirmerSetUpdated) (event.Subscription, error) {
+
+	logs, sub, err := _IOperatorTableUpdater.contract.WatchLogs(opts, "GlobalRootConfirmerSetUpdated")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(IOperatorTableUpdaterGlobalRootConfirmerSetUpdated)
+				if err := _IOperatorTableUpdater.contract.UnpackLog(event, "GlobalRootConfirmerSetUpdated", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseGlobalRootConfirmerSetUpdated is a log parse operation binding the contract event 0x20100394950e66014c25009b45d12b675210a6e7a002044a0e3de6544e3c4b37.
+//
+// Solidity: event GlobalRootConfirmerSetUpdated((address,uint32) operatorSet)
+func (_IOperatorTableUpdater *IOperatorTableUpdaterFilterer) ParseGlobalRootConfirmerSetUpdated(log types.Log) (*IOperatorTableUpdaterGlobalRootConfirmerSetUpdated, error) {
+	event := new(IOperatorTableUpdaterGlobalRootConfirmerSetUpdated)
+	if err := _IOperatorTableUpdater.contract.UnpackLog(event, "GlobalRootConfirmerSetUpdated", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// IOperatorTableUpdaterNewGlobalTableRootIterator is returned from FilterNewGlobalTableRoot and is used to iterate over the raw logs and unpacked data for NewGlobalTableRoot events raised by the IOperatorTableUpdater contract.
+type IOperatorTableUpdaterNewGlobalTableRootIterator struct {
+	Event *IOperatorTableUpdaterNewGlobalTableRoot // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *IOperatorTableUpdaterNewGlobalTableRootIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(IOperatorTableUpdaterNewGlobalTableRoot)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(IOperatorTableUpdaterNewGlobalTableRoot)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *IOperatorTableUpdaterNewGlobalTableRootIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *IOperatorTableUpdaterNewGlobalTableRootIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// IOperatorTableUpdaterNewGlobalTableRoot represents a NewGlobalTableRoot event raised by the IOperatorTableUpdater contract.
+type IOperatorTableUpdaterNewGlobalTableRoot struct {
+	ReferenceTimestamp uint32
+	GlobalTableRoot    [32]byte
+	Raw                types.Log // Blockchain specific contextual infos
+}
+
+// FilterNewGlobalTableRoot is a free log retrieval operation binding the contract event 0x010dcbe0d1e019c93357711f7bb6287d543b7ff7de74f29df3fb5ecceec8d369.
+//
+// Solidity: event NewGlobalTableRoot(uint32 indexed referenceTimestamp, bytes32 indexed globalTableRoot)
+func (_IOperatorTableUpdater *IOperatorTableUpdaterFilterer) FilterNewGlobalTableRoot(opts *bind.FilterOpts, referenceTimestamp []uint32, globalTableRoot [][32]byte) (*IOperatorTableUpdaterNewGlobalTableRootIterator, error) {
+
+	var referenceTimestampRule []interface{}
+	for _, referenceTimestampItem := range referenceTimestamp {
+		referenceTimestampRule = append(referenceTimestampRule, referenceTimestampItem)
+	}
+	var globalTableRootRule []interface{}
+	for _, globalTableRootItem := range globalTableRoot {
+		globalTableRootRule = append(globalTableRootRule, globalTableRootItem)
+	}
+
+	logs, sub, err := _IOperatorTableUpdater.contract.FilterLogs(opts, "NewGlobalTableRoot", referenceTimestampRule, globalTableRootRule)
+	if err != nil {
+		return nil, err
+	}
+	return &IOperatorTableUpdaterNewGlobalTableRootIterator{contract: _IOperatorTableUpdater.contract, event: "NewGlobalTableRoot", logs: logs, sub: sub}, nil
+}
+
+// WatchNewGlobalTableRoot is a free log subscription operation binding the contract event 0x010dcbe0d1e019c93357711f7bb6287d543b7ff7de74f29df3fb5ecceec8d369.
+//
+// Solidity: event NewGlobalTableRoot(uint32 indexed referenceTimestamp, bytes32 indexed globalTableRoot)
+func (_IOperatorTableUpdater *IOperatorTableUpdaterFilterer) WatchNewGlobalTableRoot(opts *bind.WatchOpts, sink chan<- *IOperatorTableUpdaterNewGlobalTableRoot, referenceTimestamp []uint32, globalTableRoot [][32]byte) (event.Subscription, error) {
+
+	var referenceTimestampRule []interface{}
+	for _, referenceTimestampItem := range referenceTimestamp {
+		referenceTimestampRule = append(referenceTimestampRule, referenceTimestampItem)
+	}
+	var globalTableRootRule []interface{}
+	for _, globalTableRootItem := range globalTableRoot {
+		globalTableRootRule = append(globalTableRootRule, globalTableRootItem)
+	}
+
+	logs, sub, err := _IOperatorTableUpdater.contract.WatchLogs(opts, "NewGlobalTableRoot", referenceTimestampRule, globalTableRootRule)
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(IOperatorTableUpdaterNewGlobalTableRoot)
+				if err := _IOperatorTableUpdater.contract.UnpackLog(event, "NewGlobalTableRoot", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseNewGlobalTableRoot is a log parse operation binding the contract event 0x010dcbe0d1e019c93357711f7bb6287d543b7ff7de74f29df3fb5ecceec8d369.
+//
+// Solidity: event NewGlobalTableRoot(uint32 indexed referenceTimestamp, bytes32 indexed globalTableRoot)
+func (_IOperatorTableUpdater *IOperatorTableUpdaterFilterer) ParseNewGlobalTableRoot(log types.Log) (*IOperatorTableUpdaterNewGlobalTableRoot, error) {
+	event := new(IOperatorTableUpdaterNewGlobalTableRoot)
+	if err := _IOperatorTableUpdater.contract.UnpackLog(event, "NewGlobalTableRoot", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
