@@ -92,7 +92,7 @@ library BN256G2 {
         );
     }
 
-    function _FQ2Much(uint xx, uint xy, uint c) internal pure returns (uint, uint) {
+    function _FQ2Mul(uint xx, uint xy, uint c) internal pure returns (uint, uint) {
         return (mulmod(xx, c, FIELD_MODULUS), mulmod(xy, c, FIELD_MODULUS));
     }
 
@@ -202,7 +202,7 @@ library BN256G2 {
         (pt2xx, pt2xy) = _FQ2Mul(pt1xx, pt1xy, pt1xx, pt1xy); // U * U
         (pt2xx, pt2xy) = _FQ2Mul(pt2xx, pt2xy, pt2zx, pt2zy); // U * U * W
         (pt2xx, pt2xy) = _FQ2Sub(pt2xx, pt2xy, pt1zx, pt1zy); // U * U * W - V_cubed
-        (pt2zx, pt2zy) = _FQ2Much(pt2yx, pt2yy, 2); // 2 * V_squared_times_V2
+        (pt2zx, pt2zy) = _FQ2Mul(pt2yx, pt2yy, 2); // 2 * V_squared_times_V2
         (pt2xx, pt2xy) = _FQ2Sub(pt2xx, pt2xy, pt2zx, pt2zy); // A = U * U * W - V_cubed - 2 * V_squared_times_V2
         (pt3[PTXX], pt3[PTXY]) = _FQ2Mul(pt1yx, pt1yy, pt2xx, pt2xy); // newx = V * A
         (pt1yx, pt1yy) = _FQ2Sub(pt2yx, pt2yy, pt2xx, pt2xy); // V_squared_times_V2 - A
@@ -216,26 +216,26 @@ library BN256G2 {
         pure
         returns (uint pt2xx, uint pt2xy, uint pt2yx, uint pt2yy, uint pt2zx, uint pt2zy)
     {
-        (pt2xx, pt2xy) = _FQ2Much(pt1xx, pt1xy, 3); // 3 * x
+        (pt2xx, pt2xy) = _FQ2Mul(pt1xx, pt1xy, 3); // 3 * x
         (pt2xx, pt2xy) = _FQ2Mul(pt2xx, pt2xy, pt1xx, pt1xy); // W = 3 * x * x
         (pt1zx, pt1zy) = _FQ2Mul(pt1yx, pt1yy, pt1zx, pt1zy); // S = y * z
         (pt2yx, pt2yy) = _FQ2Mul(pt1xx, pt1xy, pt1yx, pt1yy); // x * y
         (pt2yx, pt2yy) = _FQ2Mul(pt2yx, pt2yy, pt1zx, pt1zy); // B = x * y * S
         (pt1xx, pt1xy) = _FQ2Mul(pt2xx, pt2xy, pt2xx, pt2xy); // W * W
-        (pt2zx, pt2zy) = _FQ2Much(pt2yx, pt2yy, 8); // 8 * B
+        (pt2zx, pt2zy) = _FQ2Mul(pt2yx, pt2yy, 8); // 8 * B
         (pt1xx, pt1xy) = _FQ2Sub(pt1xx, pt1xy, pt2zx, pt2zy); // H = W * W - 8 * B
         (pt2zx, pt2zy) = _FQ2Mul(pt1zx, pt1zy, pt1zx, pt1zy); // S_squared = S * S
-        (pt2yx, pt2yy) = _FQ2Much(pt2yx, pt2yy, 4); // 4 * B
+        (pt2yx, pt2yy) = _FQ2Mul(pt2yx, pt2yy, 4); // 4 * B
         (pt2yx, pt2yy) = _FQ2Sub(pt2yx, pt2yy, pt1xx, pt1xy); // 4 * B - H
         (pt2yx, pt2yy) = _FQ2Mul(pt2yx, pt2yy, pt2xx, pt2xy); // W * (4 * B - H)
-        (pt2xx, pt2xy) = _FQ2Much(pt1yx, pt1yy, 8); // 8 * y
+        (pt2xx, pt2xy) = _FQ2Mul(pt1yx, pt1yy, 8); // 8 * y
         (pt2xx, pt2xy) = _FQ2Mul(pt2xx, pt2xy, pt1yx, pt1yy); // 8 * y * y
         (pt2xx, pt2xy) = _FQ2Mul(pt2xx, pt2xy, pt2zx, pt2zy); // 8 * y * y * S_squared
         (pt2yx, pt2yy) = _FQ2Sub(pt2yx, pt2yy, pt2xx, pt2xy); // newy = W * (4 * B - H) - 8 * y * y * S_squared
-        (pt2xx, pt2xy) = _FQ2Much(pt1xx, pt1xy, 2); // 2 * H
+        (pt2xx, pt2xy) = _FQ2Mul(pt1xx, pt1xy, 2); // 2 * H
         (pt2xx, pt2xy) = _FQ2Mul(pt2xx, pt2xy, pt1zx, pt1zy); // newx = 2 * H * S
         (pt2zx, pt2zy) = _FQ2Mul(pt1zx, pt1zy, pt2zx, pt2zy); // S * S_squared
-        (pt2zx, pt2zy) = _FQ2Much(pt2zx, pt2zy, 8); // newz = 8 * S * S_squared
+        (pt2zx, pt2zy) = _FQ2Mul(pt2zx, pt2zy, 8); // newz = 8 * S * S_squared
     }
 
     function _ECTwistMulJacobian(uint d, uint pt1xx, uint pt1xy, uint pt1yx, uint pt1yy, uint pt1zx, uint pt1zy)
