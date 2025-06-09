@@ -29,6 +29,12 @@ var (
 	_ = abi.ConvertType
 )
 
+// ICrossChainRegistryTypesOperatorSetConfig is an auto generated low-level Go binding around an user-defined struct.
+type ICrossChainRegistryTypesOperatorSetConfig struct {
+	Owner              common.Address
+	MaxStalenessPeriod uint32
+}
+
 // OperatorSet is an auto generated low-level Go binding around an user-defined struct.
 type OperatorSet struct {
 	Avs common.Address
@@ -37,7 +43,7 @@ type OperatorSet struct {
 
 // ICrossChainRegistryMetaData contains all meta data concerning the ICrossChainRegistry contract.
 var ICrossChainRegistryMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"addChainIDToWhitelist\",\"inputs\":[{\"name\":\"chainID\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"addTransportDestination\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"chainID\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"getActiveGenerationReservations\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"tuple[]\",\"internalType\":\"structOperatorSet[]\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"\",\"type\":\"address[]\",\"internalType\":\"contractIOperatorTableCalculator[]\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"getOperatorTableCalculator\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIOperatorTableCalculator\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"getSupportedChains\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32[]\",\"internalType\":\"uint32[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getTransportDestinations\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"uint32[]\",\"internalType\":\"uint32[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"removeChainIDFromWhitelist\",\"inputs\":[{\"name\":\"chainID\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeGenerationReservation\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeTransportDestination\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"chainID\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"requestGenerationReservation\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"operatorTableCalculator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setOperatorTableCalculator\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"calculator\",\"type\":\"address\",\"internalType\":\"contractIOperatorTableCalculator\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"ChainIDAddedToWhitelist\",\"inputs\":[{\"name\":\"chainID\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"ChainIDRemovedFromWhitelist\",\"inputs\":[{\"name\":\"chainID\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"GenerationReservationMade\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"operatorTableCalculator\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIOperatorTableCalculator\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"GenerationReservationRemoved\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"operatorTableCalculator\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIOperatorTableCalculator\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"TransportDestinationAdded\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"chainID\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"TransportDestinationRemoved\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"chainID\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"InvalidChainId\",\"inputs\":[]}]",
+	ABI: "[{\"type\":\"function\",\"name\":\"addChainIDsToWhitelist\",\"inputs\":[{\"name\":\"chainIDs\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"},{\"name\":\"operatorTableUpdaters\",\"type\":\"address[]\",\"internalType\":\"address[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"addTransportDestinations\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"chainIDs\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"calculateOperatorTableBytes\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"createGenerationReservation\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"operatorTableCalculator\",\"type\":\"address\",\"internalType\":\"contractIOperatorTableCalculator\"},{\"name\":\"config\",\"type\":\"tuple\",\"internalType\":\"structICrossChainRegistryTypes.OperatorSetConfig\",\"components\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"maxStalenessPeriod\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"chainIDs\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"getActiveGenerationReservations\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"tuple[]\",\"internalType\":\"structOperatorSet[]\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getActiveTransportReservations\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"tuple[]\",\"internalType\":\"structOperatorSet[]\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"\",\"type\":\"uint256[][]\",\"internalType\":\"uint256[][]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getOperatorSetConfig\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structICrossChainRegistryTypes.OperatorSetConfig\",\"components\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"maxStalenessPeriod\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getOperatorTableCalculator\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIOperatorTableCalculator\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getSupportedChains\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"},{\"name\":\"\",\"type\":\"address[]\",\"internalType\":\"address[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getTransportDestinations\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"removeChainIDsFromWhitelist\",\"inputs\":[{\"name\":\"chainIDs\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeGenerationReservation\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeTransportDestinations\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"chainIDs\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setOperatorSetConfig\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"config\",\"type\":\"tuple\",\"internalType\":\"structICrossChainRegistryTypes.OperatorSetConfig\",\"components\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"maxStalenessPeriod\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setOperatorTableCalculator\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"operatorTableCalculator\",\"type\":\"address\",\"internalType\":\"contractIOperatorTableCalculator\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"ChainIDAddedToWhitelist\",\"inputs\":[{\"name\":\"chainID\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"operatorTableUpdater\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"ChainIDRemovedFromWhitelist\",\"inputs\":[{\"name\":\"chainID\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"GenerationReservationCreated\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"GenerationReservationRemoved\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorSetConfigSet\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"config\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structICrossChainRegistryTypes.OperatorSetConfig\",\"components\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"maxStalenessPeriod\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorTableCalculatorSet\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"operatorTableCalculator\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIOperatorTableCalculator\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"TransportDestinationAdded\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"chainID\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"TransportDestinationRemoved\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"chainID\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"ArrayLengthMismatch\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ChainIDAlreadyWhitelisted\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ChainIDNotWhitelisted\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"EmptyChainIDsArray\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"GenerationReservationAlreadyExists\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"GenerationReservationDoesNotExist\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidChainId\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidOperatorSet\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidOperatorTableCalculator\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NeedToDelete\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"RequireAtLeastOneTransportDestination\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"StalenessPeriodZero\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"TransportDestinationAlreadyAdded\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"TransportDestinationNotFound\",\"inputs\":[]}]",
 }
 
 // ICrossChainRegistryABI is the input ABI used to generate the binding from.
@@ -186,49 +192,206 @@ func (_ICrossChainRegistry *ICrossChainRegistryTransactorRaw) Transact(opts *bin
 	return _ICrossChainRegistry.Contract.contract.Transact(opts, method, params...)
 }
 
+// CalculateOperatorTableBytes is a free data retrieval call binding the contract method 0x41ee6d0e.
+//
+// Solidity: function calculateOperatorTableBytes((address,uint32) operatorSet) view returns(bytes)
+func (_ICrossChainRegistry *ICrossChainRegistryCaller) CalculateOperatorTableBytes(opts *bind.CallOpts, operatorSet OperatorSet) ([]byte, error) {
+	var out []interface{}
+	err := _ICrossChainRegistry.contract.Call(opts, &out, "calculateOperatorTableBytes", operatorSet)
+
+	if err != nil {
+		return *new([]byte), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([]byte)).(*[]byte)
+
+	return out0, err
+
+}
+
+// CalculateOperatorTableBytes is a free data retrieval call binding the contract method 0x41ee6d0e.
+//
+// Solidity: function calculateOperatorTableBytes((address,uint32) operatorSet) view returns(bytes)
+func (_ICrossChainRegistry *ICrossChainRegistrySession) CalculateOperatorTableBytes(operatorSet OperatorSet) ([]byte, error) {
+	return _ICrossChainRegistry.Contract.CalculateOperatorTableBytes(&_ICrossChainRegistry.CallOpts, operatorSet)
+}
+
+// CalculateOperatorTableBytes is a free data retrieval call binding the contract method 0x41ee6d0e.
+//
+// Solidity: function calculateOperatorTableBytes((address,uint32) operatorSet) view returns(bytes)
+func (_ICrossChainRegistry *ICrossChainRegistryCallerSession) CalculateOperatorTableBytes(operatorSet OperatorSet) ([]byte, error) {
+	return _ICrossChainRegistry.Contract.CalculateOperatorTableBytes(&_ICrossChainRegistry.CallOpts, operatorSet)
+}
+
+// GetActiveGenerationReservations is a free data retrieval call binding the contract method 0xd09b978b.
+//
+// Solidity: function getActiveGenerationReservations() view returns((address,uint32)[])
+func (_ICrossChainRegistry *ICrossChainRegistryCaller) GetActiveGenerationReservations(opts *bind.CallOpts) ([]OperatorSet, error) {
+	var out []interface{}
+	err := _ICrossChainRegistry.contract.Call(opts, &out, "getActiveGenerationReservations")
+
+	if err != nil {
+		return *new([]OperatorSet), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([]OperatorSet)).(*[]OperatorSet)
+
+	return out0, err
+
+}
+
+// GetActiveGenerationReservations is a free data retrieval call binding the contract method 0xd09b978b.
+//
+// Solidity: function getActiveGenerationReservations() view returns((address,uint32)[])
+func (_ICrossChainRegistry *ICrossChainRegistrySession) GetActiveGenerationReservations() ([]OperatorSet, error) {
+	return _ICrossChainRegistry.Contract.GetActiveGenerationReservations(&_ICrossChainRegistry.CallOpts)
+}
+
+// GetActiveGenerationReservations is a free data retrieval call binding the contract method 0xd09b978b.
+//
+// Solidity: function getActiveGenerationReservations() view returns((address,uint32)[])
+func (_ICrossChainRegistry *ICrossChainRegistryCallerSession) GetActiveGenerationReservations() ([]OperatorSet, error) {
+	return _ICrossChainRegistry.Contract.GetActiveGenerationReservations(&_ICrossChainRegistry.CallOpts)
+}
+
+// GetActiveTransportReservations is a free data retrieval call binding the contract method 0xbfda3b3d.
+//
+// Solidity: function getActiveTransportReservations() view returns((address,uint32)[], uint256[][])
+func (_ICrossChainRegistry *ICrossChainRegistryCaller) GetActiveTransportReservations(opts *bind.CallOpts) ([]OperatorSet, [][]*big.Int, error) {
+	var out []interface{}
+	err := _ICrossChainRegistry.contract.Call(opts, &out, "getActiveTransportReservations")
+
+	if err != nil {
+		return *new([]OperatorSet), *new([][]*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([]OperatorSet)).(*[]OperatorSet)
+	out1 := *abi.ConvertType(out[1], new([][]*big.Int)).(*[][]*big.Int)
+
+	return out0, out1, err
+
+}
+
+// GetActiveTransportReservations is a free data retrieval call binding the contract method 0xbfda3b3d.
+//
+// Solidity: function getActiveTransportReservations() view returns((address,uint32)[], uint256[][])
+func (_ICrossChainRegistry *ICrossChainRegistrySession) GetActiveTransportReservations() ([]OperatorSet, [][]*big.Int, error) {
+	return _ICrossChainRegistry.Contract.GetActiveTransportReservations(&_ICrossChainRegistry.CallOpts)
+}
+
+// GetActiveTransportReservations is a free data retrieval call binding the contract method 0xbfda3b3d.
+//
+// Solidity: function getActiveTransportReservations() view returns((address,uint32)[], uint256[][])
+func (_ICrossChainRegistry *ICrossChainRegistryCallerSession) GetActiveTransportReservations() ([]OperatorSet, [][]*big.Int, error) {
+	return _ICrossChainRegistry.Contract.GetActiveTransportReservations(&_ICrossChainRegistry.CallOpts)
+}
+
+// GetOperatorSetConfig is a free data retrieval call binding the contract method 0x21fa7fdc.
+//
+// Solidity: function getOperatorSetConfig((address,uint32) operatorSet) view returns((address,uint32))
+func (_ICrossChainRegistry *ICrossChainRegistryCaller) GetOperatorSetConfig(opts *bind.CallOpts, operatorSet OperatorSet) (ICrossChainRegistryTypesOperatorSetConfig, error) {
+	var out []interface{}
+	err := _ICrossChainRegistry.contract.Call(opts, &out, "getOperatorSetConfig", operatorSet)
+
+	if err != nil {
+		return *new(ICrossChainRegistryTypesOperatorSetConfig), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(ICrossChainRegistryTypesOperatorSetConfig)).(*ICrossChainRegistryTypesOperatorSetConfig)
+
+	return out0, err
+
+}
+
+// GetOperatorSetConfig is a free data retrieval call binding the contract method 0x21fa7fdc.
+//
+// Solidity: function getOperatorSetConfig((address,uint32) operatorSet) view returns((address,uint32))
+func (_ICrossChainRegistry *ICrossChainRegistrySession) GetOperatorSetConfig(operatorSet OperatorSet) (ICrossChainRegistryTypesOperatorSetConfig, error) {
+	return _ICrossChainRegistry.Contract.GetOperatorSetConfig(&_ICrossChainRegistry.CallOpts, operatorSet)
+}
+
+// GetOperatorSetConfig is a free data retrieval call binding the contract method 0x21fa7fdc.
+//
+// Solidity: function getOperatorSetConfig((address,uint32) operatorSet) view returns((address,uint32))
+func (_ICrossChainRegistry *ICrossChainRegistryCallerSession) GetOperatorSetConfig(operatorSet OperatorSet) (ICrossChainRegistryTypesOperatorSetConfig, error) {
+	return _ICrossChainRegistry.Contract.GetOperatorSetConfig(&_ICrossChainRegistry.CallOpts, operatorSet)
+}
+
+// GetOperatorTableCalculator is a free data retrieval call binding the contract method 0x75e4b539.
+//
+// Solidity: function getOperatorTableCalculator((address,uint32) operatorSet) view returns(address)
+func (_ICrossChainRegistry *ICrossChainRegistryCaller) GetOperatorTableCalculator(opts *bind.CallOpts, operatorSet OperatorSet) (common.Address, error) {
+	var out []interface{}
+	err := _ICrossChainRegistry.contract.Call(opts, &out, "getOperatorTableCalculator", operatorSet)
+
+	if err != nil {
+		return *new(common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+
+	return out0, err
+
+}
+
+// GetOperatorTableCalculator is a free data retrieval call binding the contract method 0x75e4b539.
+//
+// Solidity: function getOperatorTableCalculator((address,uint32) operatorSet) view returns(address)
+func (_ICrossChainRegistry *ICrossChainRegistrySession) GetOperatorTableCalculator(operatorSet OperatorSet) (common.Address, error) {
+	return _ICrossChainRegistry.Contract.GetOperatorTableCalculator(&_ICrossChainRegistry.CallOpts, operatorSet)
+}
+
+// GetOperatorTableCalculator is a free data retrieval call binding the contract method 0x75e4b539.
+//
+// Solidity: function getOperatorTableCalculator((address,uint32) operatorSet) view returns(address)
+func (_ICrossChainRegistry *ICrossChainRegistryCallerSession) GetOperatorTableCalculator(operatorSet OperatorSet) (common.Address, error) {
+	return _ICrossChainRegistry.Contract.GetOperatorTableCalculator(&_ICrossChainRegistry.CallOpts, operatorSet)
+}
+
 // GetSupportedChains is a free data retrieval call binding the contract method 0xc4bffe2b.
 //
-// Solidity: function getSupportedChains() view returns(uint32[])
-func (_ICrossChainRegistry *ICrossChainRegistryCaller) GetSupportedChains(opts *bind.CallOpts) ([]uint32, error) {
+// Solidity: function getSupportedChains() view returns(uint256[], address[])
+func (_ICrossChainRegistry *ICrossChainRegistryCaller) GetSupportedChains(opts *bind.CallOpts) ([]*big.Int, []common.Address, error) {
 	var out []interface{}
 	err := _ICrossChainRegistry.contract.Call(opts, &out, "getSupportedChains")
 
 	if err != nil {
-		return *new([]uint32), err
+		return *new([]*big.Int), *new([]common.Address), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new([]uint32)).(*[]uint32)
+	out0 := *abi.ConvertType(out[0], new([]*big.Int)).(*[]*big.Int)
+	out1 := *abi.ConvertType(out[1], new([]common.Address)).(*[]common.Address)
 
-	return out0, err
+	return out0, out1, err
 
 }
 
 // GetSupportedChains is a free data retrieval call binding the contract method 0xc4bffe2b.
 //
-// Solidity: function getSupportedChains() view returns(uint32[])
-func (_ICrossChainRegistry *ICrossChainRegistrySession) GetSupportedChains() ([]uint32, error) {
+// Solidity: function getSupportedChains() view returns(uint256[], address[])
+func (_ICrossChainRegistry *ICrossChainRegistrySession) GetSupportedChains() ([]*big.Int, []common.Address, error) {
 	return _ICrossChainRegistry.Contract.GetSupportedChains(&_ICrossChainRegistry.CallOpts)
 }
 
 // GetSupportedChains is a free data retrieval call binding the contract method 0xc4bffe2b.
 //
-// Solidity: function getSupportedChains() view returns(uint32[])
-func (_ICrossChainRegistry *ICrossChainRegistryCallerSession) GetSupportedChains() ([]uint32, error) {
+// Solidity: function getSupportedChains() view returns(uint256[], address[])
+func (_ICrossChainRegistry *ICrossChainRegistryCallerSession) GetSupportedChains() ([]*big.Int, []common.Address, error) {
 	return _ICrossChainRegistry.Contract.GetSupportedChains(&_ICrossChainRegistry.CallOpts)
 }
 
 // GetTransportDestinations is a free data retrieval call binding the contract method 0x3c75fddf.
 //
-// Solidity: function getTransportDestinations((address,uint32) operatorSet) view returns(uint32[])
-func (_ICrossChainRegistry *ICrossChainRegistryCaller) GetTransportDestinations(opts *bind.CallOpts, operatorSet OperatorSet) ([]uint32, error) {
+// Solidity: function getTransportDestinations((address,uint32) operatorSet) view returns(uint256[])
+func (_ICrossChainRegistry *ICrossChainRegistryCaller) GetTransportDestinations(opts *bind.CallOpts, operatorSet OperatorSet) ([]*big.Int, error) {
 	var out []interface{}
 	err := _ICrossChainRegistry.contract.Call(opts, &out, "getTransportDestinations", operatorSet)
 
 	if err != nil {
-		return *new([]uint32), err
+		return *new([]*big.Int), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new([]uint32)).(*[]uint32)
+	out0 := *abi.ConvertType(out[0], new([]*big.Int)).(*[]*big.Int)
 
 	return out0, err
 
@@ -236,121 +399,100 @@ func (_ICrossChainRegistry *ICrossChainRegistryCaller) GetTransportDestinations(
 
 // GetTransportDestinations is a free data retrieval call binding the contract method 0x3c75fddf.
 //
-// Solidity: function getTransportDestinations((address,uint32) operatorSet) view returns(uint32[])
-func (_ICrossChainRegistry *ICrossChainRegistrySession) GetTransportDestinations(operatorSet OperatorSet) ([]uint32, error) {
+// Solidity: function getTransportDestinations((address,uint32) operatorSet) view returns(uint256[])
+func (_ICrossChainRegistry *ICrossChainRegistrySession) GetTransportDestinations(operatorSet OperatorSet) ([]*big.Int, error) {
 	return _ICrossChainRegistry.Contract.GetTransportDestinations(&_ICrossChainRegistry.CallOpts, operatorSet)
 }
 
 // GetTransportDestinations is a free data retrieval call binding the contract method 0x3c75fddf.
 //
-// Solidity: function getTransportDestinations((address,uint32) operatorSet) view returns(uint32[])
-func (_ICrossChainRegistry *ICrossChainRegistryCallerSession) GetTransportDestinations(operatorSet OperatorSet) ([]uint32, error) {
+// Solidity: function getTransportDestinations((address,uint32) operatorSet) view returns(uint256[])
+func (_ICrossChainRegistry *ICrossChainRegistryCallerSession) GetTransportDestinations(operatorSet OperatorSet) ([]*big.Int, error) {
 	return _ICrossChainRegistry.Contract.GetTransportDestinations(&_ICrossChainRegistry.CallOpts, operatorSet)
 }
 
-// AddChainIDToWhitelist is a paid mutator transaction binding the contract method 0x16df80b5.
+// AddChainIDsToWhitelist is a paid mutator transaction binding the contract method 0x04e98be3.
 //
-// Solidity: function addChainIDToWhitelist(uint32 chainID) returns()
-func (_ICrossChainRegistry *ICrossChainRegistryTransactor) AddChainIDToWhitelist(opts *bind.TransactOpts, chainID uint32) (*types.Transaction, error) {
-	return _ICrossChainRegistry.contract.Transact(opts, "addChainIDToWhitelist", chainID)
+// Solidity: function addChainIDsToWhitelist(uint256[] chainIDs, address[] operatorTableUpdaters) returns()
+func (_ICrossChainRegistry *ICrossChainRegistryTransactor) AddChainIDsToWhitelist(opts *bind.TransactOpts, chainIDs []*big.Int, operatorTableUpdaters []common.Address) (*types.Transaction, error) {
+	return _ICrossChainRegistry.contract.Transact(opts, "addChainIDsToWhitelist", chainIDs, operatorTableUpdaters)
 }
 
-// AddChainIDToWhitelist is a paid mutator transaction binding the contract method 0x16df80b5.
+// AddChainIDsToWhitelist is a paid mutator transaction binding the contract method 0x04e98be3.
 //
-// Solidity: function addChainIDToWhitelist(uint32 chainID) returns()
-func (_ICrossChainRegistry *ICrossChainRegistrySession) AddChainIDToWhitelist(chainID uint32) (*types.Transaction, error) {
-	return _ICrossChainRegistry.Contract.AddChainIDToWhitelist(&_ICrossChainRegistry.TransactOpts, chainID)
+// Solidity: function addChainIDsToWhitelist(uint256[] chainIDs, address[] operatorTableUpdaters) returns()
+func (_ICrossChainRegistry *ICrossChainRegistrySession) AddChainIDsToWhitelist(chainIDs []*big.Int, operatorTableUpdaters []common.Address) (*types.Transaction, error) {
+	return _ICrossChainRegistry.Contract.AddChainIDsToWhitelist(&_ICrossChainRegistry.TransactOpts, chainIDs, operatorTableUpdaters)
 }
 
-// AddChainIDToWhitelist is a paid mutator transaction binding the contract method 0x16df80b5.
+// AddChainIDsToWhitelist is a paid mutator transaction binding the contract method 0x04e98be3.
 //
-// Solidity: function addChainIDToWhitelist(uint32 chainID) returns()
-func (_ICrossChainRegistry *ICrossChainRegistryTransactorSession) AddChainIDToWhitelist(chainID uint32) (*types.Transaction, error) {
-	return _ICrossChainRegistry.Contract.AddChainIDToWhitelist(&_ICrossChainRegistry.TransactOpts, chainID)
+// Solidity: function addChainIDsToWhitelist(uint256[] chainIDs, address[] operatorTableUpdaters) returns()
+func (_ICrossChainRegistry *ICrossChainRegistryTransactorSession) AddChainIDsToWhitelist(chainIDs []*big.Int, operatorTableUpdaters []common.Address) (*types.Transaction, error) {
+	return _ICrossChainRegistry.Contract.AddChainIDsToWhitelist(&_ICrossChainRegistry.TransactOpts, chainIDs, operatorTableUpdaters)
 }
 
-// AddTransportDestination is a paid mutator transaction binding the contract method 0x814e731b.
+// AddTransportDestinations is a paid mutator transaction binding the contract method 0x49be7d6f.
 //
-// Solidity: function addTransportDestination((address,uint32) operatorSet, uint32 chainID) returns()
-func (_ICrossChainRegistry *ICrossChainRegistryTransactor) AddTransportDestination(opts *bind.TransactOpts, operatorSet OperatorSet, chainID uint32) (*types.Transaction, error) {
-	return _ICrossChainRegistry.contract.Transact(opts, "addTransportDestination", operatorSet, chainID)
+// Solidity: function addTransportDestinations((address,uint32) operatorSet, uint256[] chainIDs) returns()
+func (_ICrossChainRegistry *ICrossChainRegistryTransactor) AddTransportDestinations(opts *bind.TransactOpts, operatorSet OperatorSet, chainIDs []*big.Int) (*types.Transaction, error) {
+	return _ICrossChainRegistry.contract.Transact(opts, "addTransportDestinations", operatorSet, chainIDs)
 }
 
-// AddTransportDestination is a paid mutator transaction binding the contract method 0x814e731b.
+// AddTransportDestinations is a paid mutator transaction binding the contract method 0x49be7d6f.
 //
-// Solidity: function addTransportDestination((address,uint32) operatorSet, uint32 chainID) returns()
-func (_ICrossChainRegistry *ICrossChainRegistrySession) AddTransportDestination(operatorSet OperatorSet, chainID uint32) (*types.Transaction, error) {
-	return _ICrossChainRegistry.Contract.AddTransportDestination(&_ICrossChainRegistry.TransactOpts, operatorSet, chainID)
+// Solidity: function addTransportDestinations((address,uint32) operatorSet, uint256[] chainIDs) returns()
+func (_ICrossChainRegistry *ICrossChainRegistrySession) AddTransportDestinations(operatorSet OperatorSet, chainIDs []*big.Int) (*types.Transaction, error) {
+	return _ICrossChainRegistry.Contract.AddTransportDestinations(&_ICrossChainRegistry.TransactOpts, operatorSet, chainIDs)
 }
 
-// AddTransportDestination is a paid mutator transaction binding the contract method 0x814e731b.
+// AddTransportDestinations is a paid mutator transaction binding the contract method 0x49be7d6f.
 //
-// Solidity: function addTransportDestination((address,uint32) operatorSet, uint32 chainID) returns()
-func (_ICrossChainRegistry *ICrossChainRegistryTransactorSession) AddTransportDestination(operatorSet OperatorSet, chainID uint32) (*types.Transaction, error) {
-	return _ICrossChainRegistry.Contract.AddTransportDestination(&_ICrossChainRegistry.TransactOpts, operatorSet, chainID)
+// Solidity: function addTransportDestinations((address,uint32) operatorSet, uint256[] chainIDs) returns()
+func (_ICrossChainRegistry *ICrossChainRegistryTransactorSession) AddTransportDestinations(operatorSet OperatorSet, chainIDs []*big.Int) (*types.Transaction, error) {
+	return _ICrossChainRegistry.Contract.AddTransportDestinations(&_ICrossChainRegistry.TransactOpts, operatorSet, chainIDs)
 }
 
-// GetActiveGenerationReservations is a paid mutator transaction binding the contract method 0xd09b978b.
+// CreateGenerationReservation is a paid mutator transaction binding the contract method 0xfe596dee.
 //
-// Solidity: function getActiveGenerationReservations() returns((address,uint32)[], address[])
-func (_ICrossChainRegistry *ICrossChainRegistryTransactor) GetActiveGenerationReservations(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _ICrossChainRegistry.contract.Transact(opts, "getActiveGenerationReservations")
+// Solidity: function createGenerationReservation((address,uint32) operatorSet, address operatorTableCalculator, (address,uint32) config, uint256[] chainIDs) returns()
+func (_ICrossChainRegistry *ICrossChainRegistryTransactor) CreateGenerationReservation(opts *bind.TransactOpts, operatorSet OperatorSet, operatorTableCalculator common.Address, config ICrossChainRegistryTypesOperatorSetConfig, chainIDs []*big.Int) (*types.Transaction, error) {
+	return _ICrossChainRegistry.contract.Transact(opts, "createGenerationReservation", operatorSet, operatorTableCalculator, config, chainIDs)
 }
 
-// GetActiveGenerationReservations is a paid mutator transaction binding the contract method 0xd09b978b.
+// CreateGenerationReservation is a paid mutator transaction binding the contract method 0xfe596dee.
 //
-// Solidity: function getActiveGenerationReservations() returns((address,uint32)[], address[])
-func (_ICrossChainRegistry *ICrossChainRegistrySession) GetActiveGenerationReservations() (*types.Transaction, error) {
-	return _ICrossChainRegistry.Contract.GetActiveGenerationReservations(&_ICrossChainRegistry.TransactOpts)
+// Solidity: function createGenerationReservation((address,uint32) operatorSet, address operatorTableCalculator, (address,uint32) config, uint256[] chainIDs) returns()
+func (_ICrossChainRegistry *ICrossChainRegistrySession) CreateGenerationReservation(operatorSet OperatorSet, operatorTableCalculator common.Address, config ICrossChainRegistryTypesOperatorSetConfig, chainIDs []*big.Int) (*types.Transaction, error) {
+	return _ICrossChainRegistry.Contract.CreateGenerationReservation(&_ICrossChainRegistry.TransactOpts, operatorSet, operatorTableCalculator, config, chainIDs)
 }
 
-// GetActiveGenerationReservations is a paid mutator transaction binding the contract method 0xd09b978b.
+// CreateGenerationReservation is a paid mutator transaction binding the contract method 0xfe596dee.
 //
-// Solidity: function getActiveGenerationReservations() returns((address,uint32)[], address[])
-func (_ICrossChainRegistry *ICrossChainRegistryTransactorSession) GetActiveGenerationReservations() (*types.Transaction, error) {
-	return _ICrossChainRegistry.Contract.GetActiveGenerationReservations(&_ICrossChainRegistry.TransactOpts)
+// Solidity: function createGenerationReservation((address,uint32) operatorSet, address operatorTableCalculator, (address,uint32) config, uint256[] chainIDs) returns()
+func (_ICrossChainRegistry *ICrossChainRegistryTransactorSession) CreateGenerationReservation(operatorSet OperatorSet, operatorTableCalculator common.Address, config ICrossChainRegistryTypesOperatorSetConfig, chainIDs []*big.Int) (*types.Transaction, error) {
+	return _ICrossChainRegistry.Contract.CreateGenerationReservation(&_ICrossChainRegistry.TransactOpts, operatorSet, operatorTableCalculator, config, chainIDs)
 }
 
-// GetOperatorTableCalculator is a paid mutator transaction binding the contract method 0x75e4b539.
+// RemoveChainIDsFromWhitelist is a paid mutator transaction binding the contract method 0xdfbd9dfd.
 //
-// Solidity: function getOperatorTableCalculator((address,uint32) operatorSet) returns(address)
-func (_ICrossChainRegistry *ICrossChainRegistryTransactor) GetOperatorTableCalculator(opts *bind.TransactOpts, operatorSet OperatorSet) (*types.Transaction, error) {
-	return _ICrossChainRegistry.contract.Transact(opts, "getOperatorTableCalculator", operatorSet)
+// Solidity: function removeChainIDsFromWhitelist(uint256[] chainIDs) returns()
+func (_ICrossChainRegistry *ICrossChainRegistryTransactor) RemoveChainIDsFromWhitelist(opts *bind.TransactOpts, chainIDs []*big.Int) (*types.Transaction, error) {
+	return _ICrossChainRegistry.contract.Transact(opts, "removeChainIDsFromWhitelist", chainIDs)
 }
 
-// GetOperatorTableCalculator is a paid mutator transaction binding the contract method 0x75e4b539.
+// RemoveChainIDsFromWhitelist is a paid mutator transaction binding the contract method 0xdfbd9dfd.
 //
-// Solidity: function getOperatorTableCalculator((address,uint32) operatorSet) returns(address)
-func (_ICrossChainRegistry *ICrossChainRegistrySession) GetOperatorTableCalculator(operatorSet OperatorSet) (*types.Transaction, error) {
-	return _ICrossChainRegistry.Contract.GetOperatorTableCalculator(&_ICrossChainRegistry.TransactOpts, operatorSet)
+// Solidity: function removeChainIDsFromWhitelist(uint256[] chainIDs) returns()
+func (_ICrossChainRegistry *ICrossChainRegistrySession) RemoveChainIDsFromWhitelist(chainIDs []*big.Int) (*types.Transaction, error) {
+	return _ICrossChainRegistry.Contract.RemoveChainIDsFromWhitelist(&_ICrossChainRegistry.TransactOpts, chainIDs)
 }
 
-// GetOperatorTableCalculator is a paid mutator transaction binding the contract method 0x75e4b539.
+// RemoveChainIDsFromWhitelist is a paid mutator transaction binding the contract method 0xdfbd9dfd.
 //
-// Solidity: function getOperatorTableCalculator((address,uint32) operatorSet) returns(address)
-func (_ICrossChainRegistry *ICrossChainRegistryTransactorSession) GetOperatorTableCalculator(operatorSet OperatorSet) (*types.Transaction, error) {
-	return _ICrossChainRegistry.Contract.GetOperatorTableCalculator(&_ICrossChainRegistry.TransactOpts, operatorSet)
-}
-
-// RemoveChainIDFromWhitelist is a paid mutator transaction binding the contract method 0x2ab0b20f.
-//
-// Solidity: function removeChainIDFromWhitelist(uint32 chainID) returns()
-func (_ICrossChainRegistry *ICrossChainRegistryTransactor) RemoveChainIDFromWhitelist(opts *bind.TransactOpts, chainID uint32) (*types.Transaction, error) {
-	return _ICrossChainRegistry.contract.Transact(opts, "removeChainIDFromWhitelist", chainID)
-}
-
-// RemoveChainIDFromWhitelist is a paid mutator transaction binding the contract method 0x2ab0b20f.
-//
-// Solidity: function removeChainIDFromWhitelist(uint32 chainID) returns()
-func (_ICrossChainRegistry *ICrossChainRegistrySession) RemoveChainIDFromWhitelist(chainID uint32) (*types.Transaction, error) {
-	return _ICrossChainRegistry.Contract.RemoveChainIDFromWhitelist(&_ICrossChainRegistry.TransactOpts, chainID)
-}
-
-// RemoveChainIDFromWhitelist is a paid mutator transaction binding the contract method 0x2ab0b20f.
-//
-// Solidity: function removeChainIDFromWhitelist(uint32 chainID) returns()
-func (_ICrossChainRegistry *ICrossChainRegistryTransactorSession) RemoveChainIDFromWhitelist(chainID uint32) (*types.Transaction, error) {
-	return _ICrossChainRegistry.Contract.RemoveChainIDFromWhitelist(&_ICrossChainRegistry.TransactOpts, chainID)
+// Solidity: function removeChainIDsFromWhitelist(uint256[] chainIDs) returns()
+func (_ICrossChainRegistry *ICrossChainRegistryTransactorSession) RemoveChainIDsFromWhitelist(chainIDs []*big.Int) (*types.Transaction, error) {
+	return _ICrossChainRegistry.Contract.RemoveChainIDsFromWhitelist(&_ICrossChainRegistry.TransactOpts, chainIDs)
 }
 
 // RemoveGenerationReservation is a paid mutator transaction binding the contract method 0x6c55a37f.
@@ -374,67 +516,67 @@ func (_ICrossChainRegistry *ICrossChainRegistryTransactorSession) RemoveGenerati
 	return _ICrossChainRegistry.Contract.RemoveGenerationReservation(&_ICrossChainRegistry.TransactOpts, operatorSet)
 }
 
-// RemoveTransportDestination is a paid mutator transaction binding the contract method 0x2132488f.
+// RemoveTransportDestinations is a paid mutator transaction binding the contract method 0xf3e9f5d4.
 //
-// Solidity: function removeTransportDestination((address,uint32) operatorSet, uint32 chainID) returns()
-func (_ICrossChainRegistry *ICrossChainRegistryTransactor) RemoveTransportDestination(opts *bind.TransactOpts, operatorSet OperatorSet, chainID uint32) (*types.Transaction, error) {
-	return _ICrossChainRegistry.contract.Transact(opts, "removeTransportDestination", operatorSet, chainID)
+// Solidity: function removeTransportDestinations((address,uint32) operatorSet, uint256[] chainIDs) returns()
+func (_ICrossChainRegistry *ICrossChainRegistryTransactor) RemoveTransportDestinations(opts *bind.TransactOpts, operatorSet OperatorSet, chainIDs []*big.Int) (*types.Transaction, error) {
+	return _ICrossChainRegistry.contract.Transact(opts, "removeTransportDestinations", operatorSet, chainIDs)
 }
 
-// RemoveTransportDestination is a paid mutator transaction binding the contract method 0x2132488f.
+// RemoveTransportDestinations is a paid mutator transaction binding the contract method 0xf3e9f5d4.
 //
-// Solidity: function removeTransportDestination((address,uint32) operatorSet, uint32 chainID) returns()
-func (_ICrossChainRegistry *ICrossChainRegistrySession) RemoveTransportDestination(operatorSet OperatorSet, chainID uint32) (*types.Transaction, error) {
-	return _ICrossChainRegistry.Contract.RemoveTransportDestination(&_ICrossChainRegistry.TransactOpts, operatorSet, chainID)
+// Solidity: function removeTransportDestinations((address,uint32) operatorSet, uint256[] chainIDs) returns()
+func (_ICrossChainRegistry *ICrossChainRegistrySession) RemoveTransportDestinations(operatorSet OperatorSet, chainIDs []*big.Int) (*types.Transaction, error) {
+	return _ICrossChainRegistry.Contract.RemoveTransportDestinations(&_ICrossChainRegistry.TransactOpts, operatorSet, chainIDs)
 }
 
-// RemoveTransportDestination is a paid mutator transaction binding the contract method 0x2132488f.
+// RemoveTransportDestinations is a paid mutator transaction binding the contract method 0xf3e9f5d4.
 //
-// Solidity: function removeTransportDestination((address,uint32) operatorSet, uint32 chainID) returns()
-func (_ICrossChainRegistry *ICrossChainRegistryTransactorSession) RemoveTransportDestination(operatorSet OperatorSet, chainID uint32) (*types.Transaction, error) {
-	return _ICrossChainRegistry.Contract.RemoveTransportDestination(&_ICrossChainRegistry.TransactOpts, operatorSet, chainID)
+// Solidity: function removeTransportDestinations((address,uint32) operatorSet, uint256[] chainIDs) returns()
+func (_ICrossChainRegistry *ICrossChainRegistryTransactorSession) RemoveTransportDestinations(operatorSet OperatorSet, chainIDs []*big.Int) (*types.Transaction, error) {
+	return _ICrossChainRegistry.Contract.RemoveTransportDestinations(&_ICrossChainRegistry.TransactOpts, operatorSet, chainIDs)
 }
 
-// RequestGenerationReservation is a paid mutator transaction binding the contract method 0x4d9d1e48.
+// SetOperatorSetConfig is a paid mutator transaction binding the contract method 0x277e1e62.
 //
-// Solidity: function requestGenerationReservation((address,uint32) operatorSet, address operatorTableCalculator) returns()
-func (_ICrossChainRegistry *ICrossChainRegistryTransactor) RequestGenerationReservation(opts *bind.TransactOpts, operatorSet OperatorSet, operatorTableCalculator common.Address) (*types.Transaction, error) {
-	return _ICrossChainRegistry.contract.Transact(opts, "requestGenerationReservation", operatorSet, operatorTableCalculator)
+// Solidity: function setOperatorSetConfig((address,uint32) operatorSet, (address,uint32) config) returns()
+func (_ICrossChainRegistry *ICrossChainRegistryTransactor) SetOperatorSetConfig(opts *bind.TransactOpts, operatorSet OperatorSet, config ICrossChainRegistryTypesOperatorSetConfig) (*types.Transaction, error) {
+	return _ICrossChainRegistry.contract.Transact(opts, "setOperatorSetConfig", operatorSet, config)
 }
 
-// RequestGenerationReservation is a paid mutator transaction binding the contract method 0x4d9d1e48.
+// SetOperatorSetConfig is a paid mutator transaction binding the contract method 0x277e1e62.
 //
-// Solidity: function requestGenerationReservation((address,uint32) operatorSet, address operatorTableCalculator) returns()
-func (_ICrossChainRegistry *ICrossChainRegistrySession) RequestGenerationReservation(operatorSet OperatorSet, operatorTableCalculator common.Address) (*types.Transaction, error) {
-	return _ICrossChainRegistry.Contract.RequestGenerationReservation(&_ICrossChainRegistry.TransactOpts, operatorSet, operatorTableCalculator)
+// Solidity: function setOperatorSetConfig((address,uint32) operatorSet, (address,uint32) config) returns()
+func (_ICrossChainRegistry *ICrossChainRegistrySession) SetOperatorSetConfig(operatorSet OperatorSet, config ICrossChainRegistryTypesOperatorSetConfig) (*types.Transaction, error) {
+	return _ICrossChainRegistry.Contract.SetOperatorSetConfig(&_ICrossChainRegistry.TransactOpts, operatorSet, config)
 }
 
-// RequestGenerationReservation is a paid mutator transaction binding the contract method 0x4d9d1e48.
+// SetOperatorSetConfig is a paid mutator transaction binding the contract method 0x277e1e62.
 //
-// Solidity: function requestGenerationReservation((address,uint32) operatorSet, address operatorTableCalculator) returns()
-func (_ICrossChainRegistry *ICrossChainRegistryTransactorSession) RequestGenerationReservation(operatorSet OperatorSet, operatorTableCalculator common.Address) (*types.Transaction, error) {
-	return _ICrossChainRegistry.Contract.RequestGenerationReservation(&_ICrossChainRegistry.TransactOpts, operatorSet, operatorTableCalculator)
-}
-
-// SetOperatorTableCalculator is a paid mutator transaction binding the contract method 0x1ca9142a.
-//
-// Solidity: function setOperatorTableCalculator((address,uint32) operatorSet, address calculator) returns()
-func (_ICrossChainRegistry *ICrossChainRegistryTransactor) SetOperatorTableCalculator(opts *bind.TransactOpts, operatorSet OperatorSet, calculator common.Address) (*types.Transaction, error) {
-	return _ICrossChainRegistry.contract.Transact(opts, "setOperatorTableCalculator", operatorSet, calculator)
+// Solidity: function setOperatorSetConfig((address,uint32) operatorSet, (address,uint32) config) returns()
+func (_ICrossChainRegistry *ICrossChainRegistryTransactorSession) SetOperatorSetConfig(operatorSet OperatorSet, config ICrossChainRegistryTypesOperatorSetConfig) (*types.Transaction, error) {
+	return _ICrossChainRegistry.Contract.SetOperatorSetConfig(&_ICrossChainRegistry.TransactOpts, operatorSet, config)
 }
 
 // SetOperatorTableCalculator is a paid mutator transaction binding the contract method 0x1ca9142a.
 //
-// Solidity: function setOperatorTableCalculator((address,uint32) operatorSet, address calculator) returns()
-func (_ICrossChainRegistry *ICrossChainRegistrySession) SetOperatorTableCalculator(operatorSet OperatorSet, calculator common.Address) (*types.Transaction, error) {
-	return _ICrossChainRegistry.Contract.SetOperatorTableCalculator(&_ICrossChainRegistry.TransactOpts, operatorSet, calculator)
+// Solidity: function setOperatorTableCalculator((address,uint32) operatorSet, address operatorTableCalculator) returns()
+func (_ICrossChainRegistry *ICrossChainRegistryTransactor) SetOperatorTableCalculator(opts *bind.TransactOpts, operatorSet OperatorSet, operatorTableCalculator common.Address) (*types.Transaction, error) {
+	return _ICrossChainRegistry.contract.Transact(opts, "setOperatorTableCalculator", operatorSet, operatorTableCalculator)
 }
 
 // SetOperatorTableCalculator is a paid mutator transaction binding the contract method 0x1ca9142a.
 //
-// Solidity: function setOperatorTableCalculator((address,uint32) operatorSet, address calculator) returns()
-func (_ICrossChainRegistry *ICrossChainRegistryTransactorSession) SetOperatorTableCalculator(operatorSet OperatorSet, calculator common.Address) (*types.Transaction, error) {
-	return _ICrossChainRegistry.Contract.SetOperatorTableCalculator(&_ICrossChainRegistry.TransactOpts, operatorSet, calculator)
+// Solidity: function setOperatorTableCalculator((address,uint32) operatorSet, address operatorTableCalculator) returns()
+func (_ICrossChainRegistry *ICrossChainRegistrySession) SetOperatorTableCalculator(operatorSet OperatorSet, operatorTableCalculator common.Address) (*types.Transaction, error) {
+	return _ICrossChainRegistry.Contract.SetOperatorTableCalculator(&_ICrossChainRegistry.TransactOpts, operatorSet, operatorTableCalculator)
+}
+
+// SetOperatorTableCalculator is a paid mutator transaction binding the contract method 0x1ca9142a.
+//
+// Solidity: function setOperatorTableCalculator((address,uint32) operatorSet, address operatorTableCalculator) returns()
+func (_ICrossChainRegistry *ICrossChainRegistryTransactorSession) SetOperatorTableCalculator(operatorSet OperatorSet, operatorTableCalculator common.Address) (*types.Transaction, error) {
+	return _ICrossChainRegistry.Contract.SetOperatorTableCalculator(&_ICrossChainRegistry.TransactOpts, operatorSet, operatorTableCalculator)
 }
 
 // ICrossChainRegistryChainIDAddedToWhitelistIterator is returned from FilterChainIDAddedToWhitelist and is used to iterate over the raw logs and unpacked data for ChainIDAddedToWhitelist events raised by the ICrossChainRegistry contract.
@@ -506,13 +648,14 @@ func (it *ICrossChainRegistryChainIDAddedToWhitelistIterator) Close() error {
 
 // ICrossChainRegistryChainIDAddedToWhitelist represents a ChainIDAddedToWhitelist event raised by the ICrossChainRegistry contract.
 type ICrossChainRegistryChainIDAddedToWhitelist struct {
-	ChainID uint32
-	Raw     types.Log // Blockchain specific contextual infos
+	ChainID              *big.Int
+	OperatorTableUpdater common.Address
+	Raw                  types.Log // Blockchain specific contextual infos
 }
 
-// FilterChainIDAddedToWhitelist is a free log retrieval operation binding the contract event 0x554da9a23c6204a2a98605c0fc1f29bf2988ff3f3bbfe2ac1e3c11ee1866e5b9.
+// FilterChainIDAddedToWhitelist is a free log retrieval operation binding the contract event 0x7a0a76d85b582b17996dd7371a407aa7a79b870db8539247fba315c7b6beff62.
 //
-// Solidity: event ChainIDAddedToWhitelist(uint32 chainID)
+// Solidity: event ChainIDAddedToWhitelist(uint256 chainID, address operatorTableUpdater)
 func (_ICrossChainRegistry *ICrossChainRegistryFilterer) FilterChainIDAddedToWhitelist(opts *bind.FilterOpts) (*ICrossChainRegistryChainIDAddedToWhitelistIterator, error) {
 
 	logs, sub, err := _ICrossChainRegistry.contract.FilterLogs(opts, "ChainIDAddedToWhitelist")
@@ -522,9 +665,9 @@ func (_ICrossChainRegistry *ICrossChainRegistryFilterer) FilterChainIDAddedToWhi
 	return &ICrossChainRegistryChainIDAddedToWhitelistIterator{contract: _ICrossChainRegistry.contract, event: "ChainIDAddedToWhitelist", logs: logs, sub: sub}, nil
 }
 
-// WatchChainIDAddedToWhitelist is a free log subscription operation binding the contract event 0x554da9a23c6204a2a98605c0fc1f29bf2988ff3f3bbfe2ac1e3c11ee1866e5b9.
+// WatchChainIDAddedToWhitelist is a free log subscription operation binding the contract event 0x7a0a76d85b582b17996dd7371a407aa7a79b870db8539247fba315c7b6beff62.
 //
-// Solidity: event ChainIDAddedToWhitelist(uint32 chainID)
+// Solidity: event ChainIDAddedToWhitelist(uint256 chainID, address operatorTableUpdater)
 func (_ICrossChainRegistry *ICrossChainRegistryFilterer) WatchChainIDAddedToWhitelist(opts *bind.WatchOpts, sink chan<- *ICrossChainRegistryChainIDAddedToWhitelist) (event.Subscription, error) {
 
 	logs, sub, err := _ICrossChainRegistry.contract.WatchLogs(opts, "ChainIDAddedToWhitelist")
@@ -559,9 +702,9 @@ func (_ICrossChainRegistry *ICrossChainRegistryFilterer) WatchChainIDAddedToWhit
 	}), nil
 }
 
-// ParseChainIDAddedToWhitelist is a log parse operation binding the contract event 0x554da9a23c6204a2a98605c0fc1f29bf2988ff3f3bbfe2ac1e3c11ee1866e5b9.
+// ParseChainIDAddedToWhitelist is a log parse operation binding the contract event 0x7a0a76d85b582b17996dd7371a407aa7a79b870db8539247fba315c7b6beff62.
 //
-// Solidity: event ChainIDAddedToWhitelist(uint32 chainID)
+// Solidity: event ChainIDAddedToWhitelist(uint256 chainID, address operatorTableUpdater)
 func (_ICrossChainRegistry *ICrossChainRegistryFilterer) ParseChainIDAddedToWhitelist(log types.Log) (*ICrossChainRegistryChainIDAddedToWhitelist, error) {
 	event := new(ICrossChainRegistryChainIDAddedToWhitelist)
 	if err := _ICrossChainRegistry.contract.UnpackLog(event, "ChainIDAddedToWhitelist", log); err != nil {
@@ -640,13 +783,13 @@ func (it *ICrossChainRegistryChainIDRemovedFromWhitelistIterator) Close() error 
 
 // ICrossChainRegistryChainIDRemovedFromWhitelist represents a ChainIDRemovedFromWhitelist event raised by the ICrossChainRegistry contract.
 type ICrossChainRegistryChainIDRemovedFromWhitelist struct {
-	ChainID uint32
+	ChainID *big.Int
 	Raw     types.Log // Blockchain specific contextual infos
 }
 
-// FilterChainIDRemovedFromWhitelist is a free log retrieval operation binding the contract event 0x2069bbe11cd6c0fc8dd1e409735f3a6309718e89b813b4d648ede2399ae37f40.
+// FilterChainIDRemovedFromWhitelist is a free log retrieval operation binding the contract event 0x6824d36084ecf2cd819b137cb5d837cc6e73afce1e0e348c9fdecaa81d0341e5.
 //
-// Solidity: event ChainIDRemovedFromWhitelist(uint32 chainID)
+// Solidity: event ChainIDRemovedFromWhitelist(uint256 chainID)
 func (_ICrossChainRegistry *ICrossChainRegistryFilterer) FilterChainIDRemovedFromWhitelist(opts *bind.FilterOpts) (*ICrossChainRegistryChainIDRemovedFromWhitelistIterator, error) {
 
 	logs, sub, err := _ICrossChainRegistry.contract.FilterLogs(opts, "ChainIDRemovedFromWhitelist")
@@ -656,9 +799,9 @@ func (_ICrossChainRegistry *ICrossChainRegistryFilterer) FilterChainIDRemovedFro
 	return &ICrossChainRegistryChainIDRemovedFromWhitelistIterator{contract: _ICrossChainRegistry.contract, event: "ChainIDRemovedFromWhitelist", logs: logs, sub: sub}, nil
 }
 
-// WatchChainIDRemovedFromWhitelist is a free log subscription operation binding the contract event 0x2069bbe11cd6c0fc8dd1e409735f3a6309718e89b813b4d648ede2399ae37f40.
+// WatchChainIDRemovedFromWhitelist is a free log subscription operation binding the contract event 0x6824d36084ecf2cd819b137cb5d837cc6e73afce1e0e348c9fdecaa81d0341e5.
 //
-// Solidity: event ChainIDRemovedFromWhitelist(uint32 chainID)
+// Solidity: event ChainIDRemovedFromWhitelist(uint256 chainID)
 func (_ICrossChainRegistry *ICrossChainRegistryFilterer) WatchChainIDRemovedFromWhitelist(opts *bind.WatchOpts, sink chan<- *ICrossChainRegistryChainIDRemovedFromWhitelist) (event.Subscription, error) {
 
 	logs, sub, err := _ICrossChainRegistry.contract.WatchLogs(opts, "ChainIDRemovedFromWhitelist")
@@ -693,9 +836,9 @@ func (_ICrossChainRegistry *ICrossChainRegistryFilterer) WatchChainIDRemovedFrom
 	}), nil
 }
 
-// ParseChainIDRemovedFromWhitelist is a log parse operation binding the contract event 0x2069bbe11cd6c0fc8dd1e409735f3a6309718e89b813b4d648ede2399ae37f40.
+// ParseChainIDRemovedFromWhitelist is a log parse operation binding the contract event 0x6824d36084ecf2cd819b137cb5d837cc6e73afce1e0e348c9fdecaa81d0341e5.
 //
-// Solidity: event ChainIDRemovedFromWhitelist(uint32 chainID)
+// Solidity: event ChainIDRemovedFromWhitelist(uint256 chainID)
 func (_ICrossChainRegistry *ICrossChainRegistryFilterer) ParseChainIDRemovedFromWhitelist(log types.Log) (*ICrossChainRegistryChainIDRemovedFromWhitelist, error) {
 	event := new(ICrossChainRegistryChainIDRemovedFromWhitelist)
 	if err := _ICrossChainRegistry.contract.UnpackLog(event, "ChainIDRemovedFromWhitelist", log); err != nil {
@@ -705,9 +848,9 @@ func (_ICrossChainRegistry *ICrossChainRegistryFilterer) ParseChainIDRemovedFrom
 	return event, nil
 }
 
-// ICrossChainRegistryGenerationReservationMadeIterator is returned from FilterGenerationReservationMade and is used to iterate over the raw logs and unpacked data for GenerationReservationMade events raised by the ICrossChainRegistry contract.
-type ICrossChainRegistryGenerationReservationMadeIterator struct {
-	Event *ICrossChainRegistryGenerationReservationMade // Event containing the contract specifics and raw log
+// ICrossChainRegistryGenerationReservationCreatedIterator is returned from FilterGenerationReservationCreated and is used to iterate over the raw logs and unpacked data for GenerationReservationCreated events raised by the ICrossChainRegistry contract.
+type ICrossChainRegistryGenerationReservationCreatedIterator struct {
+	Event *ICrossChainRegistryGenerationReservationCreated // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -721,7 +864,7 @@ type ICrossChainRegistryGenerationReservationMadeIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *ICrossChainRegistryGenerationReservationMadeIterator) Next() bool {
+func (it *ICrossChainRegistryGenerationReservationCreatedIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -730,7 +873,7 @@ func (it *ICrossChainRegistryGenerationReservationMadeIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(ICrossChainRegistryGenerationReservationMade)
+			it.Event = new(ICrossChainRegistryGenerationReservationCreated)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -745,7 +888,7 @@ func (it *ICrossChainRegistryGenerationReservationMadeIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(ICrossChainRegistryGenerationReservationMade)
+		it.Event = new(ICrossChainRegistryGenerationReservationCreated)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -761,42 +904,41 @@ func (it *ICrossChainRegistryGenerationReservationMadeIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *ICrossChainRegistryGenerationReservationMadeIterator) Error() error {
+func (it *ICrossChainRegistryGenerationReservationCreatedIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *ICrossChainRegistryGenerationReservationMadeIterator) Close() error {
+func (it *ICrossChainRegistryGenerationReservationCreatedIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// ICrossChainRegistryGenerationReservationMade represents a GenerationReservationMade event raised by the ICrossChainRegistry contract.
-type ICrossChainRegistryGenerationReservationMade struct {
-	OperatorSet             OperatorSet
-	OperatorTableCalculator common.Address
-	Raw                     types.Log // Blockchain specific contextual infos
+// ICrossChainRegistryGenerationReservationCreated represents a GenerationReservationCreated event raised by the ICrossChainRegistry contract.
+type ICrossChainRegistryGenerationReservationCreated struct {
+	OperatorSet OperatorSet
+	Raw         types.Log // Blockchain specific contextual infos
 }
 
-// FilterGenerationReservationMade is a free log retrieval operation binding the contract event 0x14772150bf340e929cfaf20fe5e530cb3f57c1c78a7e2fe90caca8452b5d868b.
+// FilterGenerationReservationCreated is a free log retrieval operation binding the contract event 0x4fb6efec7dd60036ce3a7af8d5c48425019daa0fb61eb471a966a7ac2c6fa6a6.
 //
-// Solidity: event GenerationReservationMade((address,uint32) operatorSet, address operatorTableCalculator)
-func (_ICrossChainRegistry *ICrossChainRegistryFilterer) FilterGenerationReservationMade(opts *bind.FilterOpts) (*ICrossChainRegistryGenerationReservationMadeIterator, error) {
+// Solidity: event GenerationReservationCreated((address,uint32) operatorSet)
+func (_ICrossChainRegistry *ICrossChainRegistryFilterer) FilterGenerationReservationCreated(opts *bind.FilterOpts) (*ICrossChainRegistryGenerationReservationCreatedIterator, error) {
 
-	logs, sub, err := _ICrossChainRegistry.contract.FilterLogs(opts, "GenerationReservationMade")
+	logs, sub, err := _ICrossChainRegistry.contract.FilterLogs(opts, "GenerationReservationCreated")
 	if err != nil {
 		return nil, err
 	}
-	return &ICrossChainRegistryGenerationReservationMadeIterator{contract: _ICrossChainRegistry.contract, event: "GenerationReservationMade", logs: logs, sub: sub}, nil
+	return &ICrossChainRegistryGenerationReservationCreatedIterator{contract: _ICrossChainRegistry.contract, event: "GenerationReservationCreated", logs: logs, sub: sub}, nil
 }
 
-// WatchGenerationReservationMade is a free log subscription operation binding the contract event 0x14772150bf340e929cfaf20fe5e530cb3f57c1c78a7e2fe90caca8452b5d868b.
+// WatchGenerationReservationCreated is a free log subscription operation binding the contract event 0x4fb6efec7dd60036ce3a7af8d5c48425019daa0fb61eb471a966a7ac2c6fa6a6.
 //
-// Solidity: event GenerationReservationMade((address,uint32) operatorSet, address operatorTableCalculator)
-func (_ICrossChainRegistry *ICrossChainRegistryFilterer) WatchGenerationReservationMade(opts *bind.WatchOpts, sink chan<- *ICrossChainRegistryGenerationReservationMade) (event.Subscription, error) {
+// Solidity: event GenerationReservationCreated((address,uint32) operatorSet)
+func (_ICrossChainRegistry *ICrossChainRegistryFilterer) WatchGenerationReservationCreated(opts *bind.WatchOpts, sink chan<- *ICrossChainRegistryGenerationReservationCreated) (event.Subscription, error) {
 
-	logs, sub, err := _ICrossChainRegistry.contract.WatchLogs(opts, "GenerationReservationMade")
+	logs, sub, err := _ICrossChainRegistry.contract.WatchLogs(opts, "GenerationReservationCreated")
 	if err != nil {
 		return nil, err
 	}
@@ -806,8 +948,8 @@ func (_ICrossChainRegistry *ICrossChainRegistryFilterer) WatchGenerationReservat
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(ICrossChainRegistryGenerationReservationMade)
-				if err := _ICrossChainRegistry.contract.UnpackLog(event, "GenerationReservationMade", log); err != nil {
+				event := new(ICrossChainRegistryGenerationReservationCreated)
+				if err := _ICrossChainRegistry.contract.UnpackLog(event, "GenerationReservationCreated", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -828,12 +970,12 @@ func (_ICrossChainRegistry *ICrossChainRegistryFilterer) WatchGenerationReservat
 	}), nil
 }
 
-// ParseGenerationReservationMade is a log parse operation binding the contract event 0x14772150bf340e929cfaf20fe5e530cb3f57c1c78a7e2fe90caca8452b5d868b.
+// ParseGenerationReservationCreated is a log parse operation binding the contract event 0x4fb6efec7dd60036ce3a7af8d5c48425019daa0fb61eb471a966a7ac2c6fa6a6.
 //
-// Solidity: event GenerationReservationMade((address,uint32) operatorSet, address operatorTableCalculator)
-func (_ICrossChainRegistry *ICrossChainRegistryFilterer) ParseGenerationReservationMade(log types.Log) (*ICrossChainRegistryGenerationReservationMade, error) {
-	event := new(ICrossChainRegistryGenerationReservationMade)
-	if err := _ICrossChainRegistry.contract.UnpackLog(event, "GenerationReservationMade", log); err != nil {
+// Solidity: event GenerationReservationCreated((address,uint32) operatorSet)
+func (_ICrossChainRegistry *ICrossChainRegistryFilterer) ParseGenerationReservationCreated(log types.Log) (*ICrossChainRegistryGenerationReservationCreated, error) {
+	event := new(ICrossChainRegistryGenerationReservationCreated)
+	if err := _ICrossChainRegistry.contract.UnpackLog(event, "GenerationReservationCreated", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
@@ -909,14 +1051,13 @@ func (it *ICrossChainRegistryGenerationReservationRemovedIterator) Close() error
 
 // ICrossChainRegistryGenerationReservationRemoved represents a GenerationReservationRemoved event raised by the ICrossChainRegistry contract.
 type ICrossChainRegistryGenerationReservationRemoved struct {
-	OperatorSet             OperatorSet
-	OperatorTableCalculator common.Address
-	Raw                     types.Log // Blockchain specific contextual infos
+	OperatorSet OperatorSet
+	Raw         types.Log // Blockchain specific contextual infos
 }
 
-// FilterGenerationReservationRemoved is a free log retrieval operation binding the contract event 0x14c80ad57c80435a6a5df1a9e493d2bf1cee67dd762db709dc5363315fa224dd.
+// FilterGenerationReservationRemoved is a free log retrieval operation binding the contract event 0x4ffdfdd59e9e1e3c301608788f78dd458e61cb8c045ca92b62a7b484c80824fb.
 //
-// Solidity: event GenerationReservationRemoved((address,uint32) operatorSet, address operatorTableCalculator)
+// Solidity: event GenerationReservationRemoved((address,uint32) operatorSet)
 func (_ICrossChainRegistry *ICrossChainRegistryFilterer) FilterGenerationReservationRemoved(opts *bind.FilterOpts) (*ICrossChainRegistryGenerationReservationRemovedIterator, error) {
 
 	logs, sub, err := _ICrossChainRegistry.contract.FilterLogs(opts, "GenerationReservationRemoved")
@@ -926,9 +1067,9 @@ func (_ICrossChainRegistry *ICrossChainRegistryFilterer) FilterGenerationReserva
 	return &ICrossChainRegistryGenerationReservationRemovedIterator{contract: _ICrossChainRegistry.contract, event: "GenerationReservationRemoved", logs: logs, sub: sub}, nil
 }
 
-// WatchGenerationReservationRemoved is a free log subscription operation binding the contract event 0x14c80ad57c80435a6a5df1a9e493d2bf1cee67dd762db709dc5363315fa224dd.
+// WatchGenerationReservationRemoved is a free log subscription operation binding the contract event 0x4ffdfdd59e9e1e3c301608788f78dd458e61cb8c045ca92b62a7b484c80824fb.
 //
-// Solidity: event GenerationReservationRemoved((address,uint32) operatorSet, address operatorTableCalculator)
+// Solidity: event GenerationReservationRemoved((address,uint32) operatorSet)
 func (_ICrossChainRegistry *ICrossChainRegistryFilterer) WatchGenerationReservationRemoved(opts *bind.WatchOpts, sink chan<- *ICrossChainRegistryGenerationReservationRemoved) (event.Subscription, error) {
 
 	logs, sub, err := _ICrossChainRegistry.contract.WatchLogs(opts, "GenerationReservationRemoved")
@@ -963,12 +1104,282 @@ func (_ICrossChainRegistry *ICrossChainRegistryFilterer) WatchGenerationReservat
 	}), nil
 }
 
-// ParseGenerationReservationRemoved is a log parse operation binding the contract event 0x14c80ad57c80435a6a5df1a9e493d2bf1cee67dd762db709dc5363315fa224dd.
+// ParseGenerationReservationRemoved is a log parse operation binding the contract event 0x4ffdfdd59e9e1e3c301608788f78dd458e61cb8c045ca92b62a7b484c80824fb.
 //
-// Solidity: event GenerationReservationRemoved((address,uint32) operatorSet, address operatorTableCalculator)
+// Solidity: event GenerationReservationRemoved((address,uint32) operatorSet)
 func (_ICrossChainRegistry *ICrossChainRegistryFilterer) ParseGenerationReservationRemoved(log types.Log) (*ICrossChainRegistryGenerationReservationRemoved, error) {
 	event := new(ICrossChainRegistryGenerationReservationRemoved)
 	if err := _ICrossChainRegistry.contract.UnpackLog(event, "GenerationReservationRemoved", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// ICrossChainRegistryOperatorSetConfigSetIterator is returned from FilterOperatorSetConfigSet and is used to iterate over the raw logs and unpacked data for OperatorSetConfigSet events raised by the ICrossChainRegistry contract.
+type ICrossChainRegistryOperatorSetConfigSetIterator struct {
+	Event *ICrossChainRegistryOperatorSetConfigSet // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *ICrossChainRegistryOperatorSetConfigSetIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(ICrossChainRegistryOperatorSetConfigSet)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(ICrossChainRegistryOperatorSetConfigSet)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *ICrossChainRegistryOperatorSetConfigSetIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *ICrossChainRegistryOperatorSetConfigSetIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// ICrossChainRegistryOperatorSetConfigSet represents a OperatorSetConfigSet event raised by the ICrossChainRegistry contract.
+type ICrossChainRegistryOperatorSetConfigSet struct {
+	OperatorSet OperatorSet
+	Config      ICrossChainRegistryTypesOperatorSetConfig
+	Raw         types.Log // Blockchain specific contextual infos
+}
+
+// FilterOperatorSetConfigSet is a free log retrieval operation binding the contract event 0x3147846ee526009000671c20380b856a633345691300f82585f90034715cf0e2.
+//
+// Solidity: event OperatorSetConfigSet((address,uint32) operatorSet, (address,uint32) config)
+func (_ICrossChainRegistry *ICrossChainRegistryFilterer) FilterOperatorSetConfigSet(opts *bind.FilterOpts) (*ICrossChainRegistryOperatorSetConfigSetIterator, error) {
+
+	logs, sub, err := _ICrossChainRegistry.contract.FilterLogs(opts, "OperatorSetConfigSet")
+	if err != nil {
+		return nil, err
+	}
+	return &ICrossChainRegistryOperatorSetConfigSetIterator{contract: _ICrossChainRegistry.contract, event: "OperatorSetConfigSet", logs: logs, sub: sub}, nil
+}
+
+// WatchOperatorSetConfigSet is a free log subscription operation binding the contract event 0x3147846ee526009000671c20380b856a633345691300f82585f90034715cf0e2.
+//
+// Solidity: event OperatorSetConfigSet((address,uint32) operatorSet, (address,uint32) config)
+func (_ICrossChainRegistry *ICrossChainRegistryFilterer) WatchOperatorSetConfigSet(opts *bind.WatchOpts, sink chan<- *ICrossChainRegistryOperatorSetConfigSet) (event.Subscription, error) {
+
+	logs, sub, err := _ICrossChainRegistry.contract.WatchLogs(opts, "OperatorSetConfigSet")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(ICrossChainRegistryOperatorSetConfigSet)
+				if err := _ICrossChainRegistry.contract.UnpackLog(event, "OperatorSetConfigSet", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseOperatorSetConfigSet is a log parse operation binding the contract event 0x3147846ee526009000671c20380b856a633345691300f82585f90034715cf0e2.
+//
+// Solidity: event OperatorSetConfigSet((address,uint32) operatorSet, (address,uint32) config)
+func (_ICrossChainRegistry *ICrossChainRegistryFilterer) ParseOperatorSetConfigSet(log types.Log) (*ICrossChainRegistryOperatorSetConfigSet, error) {
+	event := new(ICrossChainRegistryOperatorSetConfigSet)
+	if err := _ICrossChainRegistry.contract.UnpackLog(event, "OperatorSetConfigSet", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// ICrossChainRegistryOperatorTableCalculatorSetIterator is returned from FilterOperatorTableCalculatorSet and is used to iterate over the raw logs and unpacked data for OperatorTableCalculatorSet events raised by the ICrossChainRegistry contract.
+type ICrossChainRegistryOperatorTableCalculatorSetIterator struct {
+	Event *ICrossChainRegistryOperatorTableCalculatorSet // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *ICrossChainRegistryOperatorTableCalculatorSetIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(ICrossChainRegistryOperatorTableCalculatorSet)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(ICrossChainRegistryOperatorTableCalculatorSet)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *ICrossChainRegistryOperatorTableCalculatorSetIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *ICrossChainRegistryOperatorTableCalculatorSetIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// ICrossChainRegistryOperatorTableCalculatorSet represents a OperatorTableCalculatorSet event raised by the ICrossChainRegistry contract.
+type ICrossChainRegistryOperatorTableCalculatorSet struct {
+	OperatorSet             OperatorSet
+	OperatorTableCalculator common.Address
+	Raw                     types.Log // Blockchain specific contextual infos
+}
+
+// FilterOperatorTableCalculatorSet is a free log retrieval operation binding the contract event 0x7f7ccafd92d20fdb39dee184a0dce002a9da420ed0def461f2a027abc9b3f6df.
+//
+// Solidity: event OperatorTableCalculatorSet((address,uint32) operatorSet, address operatorTableCalculator)
+func (_ICrossChainRegistry *ICrossChainRegistryFilterer) FilterOperatorTableCalculatorSet(opts *bind.FilterOpts) (*ICrossChainRegistryOperatorTableCalculatorSetIterator, error) {
+
+	logs, sub, err := _ICrossChainRegistry.contract.FilterLogs(opts, "OperatorTableCalculatorSet")
+	if err != nil {
+		return nil, err
+	}
+	return &ICrossChainRegistryOperatorTableCalculatorSetIterator{contract: _ICrossChainRegistry.contract, event: "OperatorTableCalculatorSet", logs: logs, sub: sub}, nil
+}
+
+// WatchOperatorTableCalculatorSet is a free log subscription operation binding the contract event 0x7f7ccafd92d20fdb39dee184a0dce002a9da420ed0def461f2a027abc9b3f6df.
+//
+// Solidity: event OperatorTableCalculatorSet((address,uint32) operatorSet, address operatorTableCalculator)
+func (_ICrossChainRegistry *ICrossChainRegistryFilterer) WatchOperatorTableCalculatorSet(opts *bind.WatchOpts, sink chan<- *ICrossChainRegistryOperatorTableCalculatorSet) (event.Subscription, error) {
+
+	logs, sub, err := _ICrossChainRegistry.contract.WatchLogs(opts, "OperatorTableCalculatorSet")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(ICrossChainRegistryOperatorTableCalculatorSet)
+				if err := _ICrossChainRegistry.contract.UnpackLog(event, "OperatorTableCalculatorSet", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseOperatorTableCalculatorSet is a log parse operation binding the contract event 0x7f7ccafd92d20fdb39dee184a0dce002a9da420ed0def461f2a027abc9b3f6df.
+//
+// Solidity: event OperatorTableCalculatorSet((address,uint32) operatorSet, address operatorTableCalculator)
+func (_ICrossChainRegistry *ICrossChainRegistryFilterer) ParseOperatorTableCalculatorSet(log types.Log) (*ICrossChainRegistryOperatorTableCalculatorSet, error) {
+	event := new(ICrossChainRegistryOperatorTableCalculatorSet)
+	if err := _ICrossChainRegistry.contract.UnpackLog(event, "OperatorTableCalculatorSet", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
@@ -1045,13 +1456,13 @@ func (it *ICrossChainRegistryTransportDestinationAddedIterator) Close() error {
 // ICrossChainRegistryTransportDestinationAdded represents a TransportDestinationAdded event raised by the ICrossChainRegistry contract.
 type ICrossChainRegistryTransportDestinationAdded struct {
 	OperatorSet OperatorSet
-	ChainID     uint32
+	ChainID     *big.Int
 	Raw         types.Log // Blockchain specific contextual infos
 }
 
-// FilterTransportDestinationAdded is a free log retrieval operation binding the contract event 0x8b4440933d21e00b2cb9054306b21777f3da3f19c8fd32d61bb225c02d2b9877.
+// FilterTransportDestinationAdded is a free log retrieval operation binding the contract event 0x8b3a5eb206599a7bd7dcffa354a014ae777667c6890b23d046ff6867cd968393.
 //
-// Solidity: event TransportDestinationAdded((address,uint32) operatorSet, uint32 chainID)
+// Solidity: event TransportDestinationAdded((address,uint32) operatorSet, uint256 chainID)
 func (_ICrossChainRegistry *ICrossChainRegistryFilterer) FilterTransportDestinationAdded(opts *bind.FilterOpts) (*ICrossChainRegistryTransportDestinationAddedIterator, error) {
 
 	logs, sub, err := _ICrossChainRegistry.contract.FilterLogs(opts, "TransportDestinationAdded")
@@ -1061,9 +1472,9 @@ func (_ICrossChainRegistry *ICrossChainRegistryFilterer) FilterTransportDestinat
 	return &ICrossChainRegistryTransportDestinationAddedIterator{contract: _ICrossChainRegistry.contract, event: "TransportDestinationAdded", logs: logs, sub: sub}, nil
 }
 
-// WatchTransportDestinationAdded is a free log subscription operation binding the contract event 0x8b4440933d21e00b2cb9054306b21777f3da3f19c8fd32d61bb225c02d2b9877.
+// WatchTransportDestinationAdded is a free log subscription operation binding the contract event 0x8b3a5eb206599a7bd7dcffa354a014ae777667c6890b23d046ff6867cd968393.
 //
-// Solidity: event TransportDestinationAdded((address,uint32) operatorSet, uint32 chainID)
+// Solidity: event TransportDestinationAdded((address,uint32) operatorSet, uint256 chainID)
 func (_ICrossChainRegistry *ICrossChainRegistryFilterer) WatchTransportDestinationAdded(opts *bind.WatchOpts, sink chan<- *ICrossChainRegistryTransportDestinationAdded) (event.Subscription, error) {
 
 	logs, sub, err := _ICrossChainRegistry.contract.WatchLogs(opts, "TransportDestinationAdded")
@@ -1098,9 +1509,9 @@ func (_ICrossChainRegistry *ICrossChainRegistryFilterer) WatchTransportDestinati
 	}), nil
 }
 
-// ParseTransportDestinationAdded is a log parse operation binding the contract event 0x8b4440933d21e00b2cb9054306b21777f3da3f19c8fd32d61bb225c02d2b9877.
+// ParseTransportDestinationAdded is a log parse operation binding the contract event 0x8b3a5eb206599a7bd7dcffa354a014ae777667c6890b23d046ff6867cd968393.
 //
-// Solidity: event TransportDestinationAdded((address,uint32) operatorSet, uint32 chainID)
+// Solidity: event TransportDestinationAdded((address,uint32) operatorSet, uint256 chainID)
 func (_ICrossChainRegistry *ICrossChainRegistryFilterer) ParseTransportDestinationAdded(log types.Log) (*ICrossChainRegistryTransportDestinationAdded, error) {
 	event := new(ICrossChainRegistryTransportDestinationAdded)
 	if err := _ICrossChainRegistry.contract.UnpackLog(event, "TransportDestinationAdded", log); err != nil {
@@ -1180,13 +1591,13 @@ func (it *ICrossChainRegistryTransportDestinationRemovedIterator) Close() error 
 // ICrossChainRegistryTransportDestinationRemoved represents a TransportDestinationRemoved event raised by the ICrossChainRegistry contract.
 type ICrossChainRegistryTransportDestinationRemoved struct {
 	OperatorSet OperatorSet
-	ChainID     uint32
+	ChainID     *big.Int
 	Raw         types.Log // Blockchain specific contextual infos
 }
 
-// FilterTransportDestinationRemoved is a free log retrieval operation binding the contract event 0x6492ce451b3fd0b7d79c6695d244676a8ee605aa63dab2ec2382796695d9461c.
+// FilterTransportDestinationRemoved is a free log retrieval operation binding the contract event 0x9fa5794dfaeae2ede46d5bdba347083580889221c3338813ca6c8d4b681ae8ee.
 //
-// Solidity: event TransportDestinationRemoved((address,uint32) operatorSet, uint32 chainID)
+// Solidity: event TransportDestinationRemoved((address,uint32) operatorSet, uint256 chainID)
 func (_ICrossChainRegistry *ICrossChainRegistryFilterer) FilterTransportDestinationRemoved(opts *bind.FilterOpts) (*ICrossChainRegistryTransportDestinationRemovedIterator, error) {
 
 	logs, sub, err := _ICrossChainRegistry.contract.FilterLogs(opts, "TransportDestinationRemoved")
@@ -1196,9 +1607,9 @@ func (_ICrossChainRegistry *ICrossChainRegistryFilterer) FilterTransportDestinat
 	return &ICrossChainRegistryTransportDestinationRemovedIterator{contract: _ICrossChainRegistry.contract, event: "TransportDestinationRemoved", logs: logs, sub: sub}, nil
 }
 
-// WatchTransportDestinationRemoved is a free log subscription operation binding the contract event 0x6492ce451b3fd0b7d79c6695d244676a8ee605aa63dab2ec2382796695d9461c.
+// WatchTransportDestinationRemoved is a free log subscription operation binding the contract event 0x9fa5794dfaeae2ede46d5bdba347083580889221c3338813ca6c8d4b681ae8ee.
 //
-// Solidity: event TransportDestinationRemoved((address,uint32) operatorSet, uint32 chainID)
+// Solidity: event TransportDestinationRemoved((address,uint32) operatorSet, uint256 chainID)
 func (_ICrossChainRegistry *ICrossChainRegistryFilterer) WatchTransportDestinationRemoved(opts *bind.WatchOpts, sink chan<- *ICrossChainRegistryTransportDestinationRemoved) (event.Subscription, error) {
 
 	logs, sub, err := _ICrossChainRegistry.contract.WatchLogs(opts, "TransportDestinationRemoved")
@@ -1233,9 +1644,9 @@ func (_ICrossChainRegistry *ICrossChainRegistryFilterer) WatchTransportDestinati
 	}), nil
 }
 
-// ParseTransportDestinationRemoved is a log parse operation binding the contract event 0x6492ce451b3fd0b7d79c6695d244676a8ee605aa63dab2ec2382796695d9461c.
+// ParseTransportDestinationRemoved is a log parse operation binding the contract event 0x9fa5794dfaeae2ede46d5bdba347083580889221c3338813ca6c8d4b681ae8ee.
 //
-// Solidity: event TransportDestinationRemoved((address,uint32) operatorSet, uint32 chainID)
+// Solidity: event TransportDestinationRemoved((address,uint32) operatorSet, uint256 chainID)
 func (_ICrossChainRegistry *ICrossChainRegistryFilterer) ParseTransportDestinationRemoved(log types.Log) (*ICrossChainRegistryTransportDestinationRemoved, error) {
 	event := new(ICrossChainRegistryTransportDestinationRemoved)
 	if err := _ICrossChainRegistry.contract.UnpackLog(event, "TransportDestinationRemoved", log); err != nil {
