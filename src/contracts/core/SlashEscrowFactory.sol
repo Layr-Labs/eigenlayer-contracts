@@ -76,21 +76,21 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
             // Update the pending mappings.
             _pendingOperatorSets.add(operatorSet.key());
             pendingSlashIds.add(slashId);
-
-            // Calculate the complete block for the strategy, and fetch the current complete block.
-            uint32 completeBlock = uint32(block.number + getStrategyEscrowDelay(strategy) + 1);
-            uint32 currentCompleteBlock = _slashIdToCompleteBlock[operatorSet.key()][slashId];
-
-            // Only update the maturity block if the new calculated maturity block (with the strategy delay)
-            // is further in the future than the currently stored value. This ensures the escrow cannot be released
-            // before the longest required delay among all strategies for this slashId.
-            if (completeBlock > currentCompleteBlock) {
-                _slashIdToCompleteBlock[operatorSet.key()][slashId] = completeBlock;
-            }
         }
 
         // Add the strategy to the pending strategies for the slash ID.
         pendingStrategiesForSlashId.add(address(strategy));
+
+        // Calculate the complete block for the strategy, and fetch the current complete block.
+        uint32 completeBlock = uint32(block.number + getStrategyEscrowDelay(strategy) + 1);
+        uint32 currentCompleteBlock = _slashIdToCompleteBlock[operatorSet.key()][slashId];
+
+        // Only update the maturity block if the new calculated maturity block (with the strategy delay)
+        // is further in the future than the currently stored value. This ensures the escrow cannot be released
+        // before the longest required delay among all strategies for this slashId.
+        if (completeBlock > currentCompleteBlock) {
+            _slashIdToCompleteBlock[operatorSet.key()][slashId] = completeBlock;
+        }
 
         // Emit the start escrow event. We can use the block.number here because all strategies
         // in a given operatorSet/slashId will have their escrow initiated in the same transaction.
