@@ -121,7 +121,7 @@ To accommodate the unlimited number of strategies that can be added to an operat
     * Remove the `strategy` from the `_pendingStrategiesForSlashId`
 * If all strategies from an operatorSet/slashId have been released:
     * Remove the `slashId` from `_pendingSlashIds`
-    * Delete the start block for the `slashId`
+    * Delete the complete block for the `slashId`
 * If the `operatorSet` has no more pending slashes, remove it from `pendingOperatorSets` 
 
 *Requirements*:
