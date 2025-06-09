@@ -23,6 +23,7 @@ contract CrossChainRegistry is
     PermissionControllerMixin,
     SemVerMixin
 {
+    using EnumerableMap for EnumerableMap.UintToAddressMap;
     using EnumerableSet for EnumerableSet.Bytes32Set;
     using EnumerableSet for EnumerableSet.UintSet;
     using OperatorSetLib for OperatorSet;
@@ -205,8 +206,11 @@ contract CrossChainRegistry is
 
     /// @inheritdoc ICrossChainRegistry
     function addChainIDsToWhitelist(
-        uint256[] calldata chainIDs
+        uint256[] calldata chainIDs,
+        address[] calldata operatorTableUpdaters
     ) external onlyOwner onlyWhenNotPaused(PAUSED_CHAIN_WHITELIST) {
+        require(chainIDs.length == operatorTableUpdaters.length, ArrayLengthMismatch());
+
         for (uint256 i = 0; i < chainIDs.length; i++) {
             uint256 chainID = chainIDs[i];
 
@@ -214,9 +218,9 @@ contract CrossChainRegistry is
             require(chainID != 0, InvalidChainId());
 
             // Add to whitelist
-            require(_whitelistedChainIDs.add(chainID), ChainIDAlreadyWhitelisted());
+            require(_whitelistedChainIDs.set(chainID, operatorTableUpdaters[i]), ChainIDAlreadyWhitelisted());
 
-            emit ChainIDAddedToWhitelist(chainID);
+            emit ChainIDAddedToWhitelist(chainID, operatorTableUpdaters[i]);
         }
     }
 
@@ -438,7 +442,17 @@ contract CrossChainRegistry is
     }
 
     /// @inheritdoc ICrossChainRegistry
-    function getSupportedChains() external view returns (uint256[] memory) {
-        return _whitelistedChainIDs.values();
+    function getSupportedChains() external view returns (uint256[] memory, address[] memory) {
+        uint256 length = _whitelistedChainIDs.length();
+        uint256[] memory chainIDs = new uint256[](length);
+        address[] memory operatorTableUpdaters = new address[](length);
+
+        for (uint256 i = 0; i < length; i++) {
+            (uint256 chainID, address operatorTableUpdater) = _whitelistedChainIDs.at(i);
+            chainIDs[i] = chainID;
+            operatorTableUpdaters[i] = operatorTableUpdater;
+        }
+
+        return (chainIDs, operatorTableUpdaters);
     }
 }

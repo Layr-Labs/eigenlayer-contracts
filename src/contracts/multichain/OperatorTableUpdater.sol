@@ -89,10 +89,10 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
         bytes32 globalTableRoot,
         uint32 operatorSetIndex,
         bytes calldata proof,
-        bytes calldata tableInfo
+        bytes calldata operatorTableBytes
     ) external {
         (OperatorSet memory operatorSet, CurveType curveType, OperatorSetConfig memory operatorSetConfig) =
-            _getOperatorTableInfo(tableInfo);
+            _getOperatorTableInfo(operatorTableBytes);
 
         // Check that the `referenceTimestamp` is greater than the latest reference timestamp
         require(
@@ -107,17 +107,17 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
             globalTableRoot: globalTableRoot,
             operatorSetIndex: operatorSetIndex,
             proof: proof,
-            operatorSetLeafHash: keccak256(tableInfo)
+            operatorSetLeafHash: keccak256(operatorTableBytes)
         });
 
         // Update the operator table
         if (curveType == CurveType.BN254) {
             bn254CertificateVerifier.updateOperatorTable(
-                operatorSet, referenceTimestamp, _getBN254OperatorSetInfo(tableInfo), operatorSetConfig
+                operatorSet, referenceTimestamp, _getBN254OperatorSetInfo(operatorTableBytes), operatorSetConfig
             );
         } else if (curveType == CurveType.ECDSA) {
             ecdsaCertificateVerifier.updateOperatorTable(
-                operatorSet, referenceTimestamp, _getECDSAOperatorSetInfo(tableInfo), operatorSetConfig
+                operatorSet, referenceTimestamp, _getECDSAOperatorSetInfo(operatorTableBytes), operatorSetConfig
             );
         } else {
             revert InvalidCurveType();
