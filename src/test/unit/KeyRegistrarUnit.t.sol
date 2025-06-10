@@ -7,6 +7,7 @@ import "forge-std/Test.sol";
 import "src/contracts/permissions/KeyRegistrar.sol";
 import "src/contracts/interfaces/IKeyRegistrar.sol";
 import "src/contracts/libraries/BN254.sol";
+import "src/contracts/libraries/BN254SignatureVerifier.sol";
 import "src/contracts/interfaces/IPermissionController.sol";
 import "src/contracts/mixins/PermissionControllerMixin.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
@@ -663,20 +664,23 @@ contract KeyRegistrarUnitTests is EigenLayerUnitTestSetup {
 
         // Generate signature with private key
         BN254.G1Point memory msgPoint = BN254.hashToG1(messageHash);
-        BN254.G1Point memory signature = msgPoint.scalar_mul(bn254PrivKey1);
-        bytes memory signatureBytes = abi.encode(signature.X, signature.Y);
+        BN254.G1Point memory signature = msgPoint.scalar_mul(bn254PrivKey2);
 
-        // Should not revert for valid signature
-        keyRegistrar._verifyBN254Signature(msgPoint, signatureBytes, bn254G1Key1, bn254G2Key1);
+        (bool success, bool pairingSuccessful) =
+            BN254SignatureVerifier.verifySignature(messageHash, signature, bn254G1Key2, bn254G2Key2, false, 0);
+        assertTrue(success && pairingSuccessful);
     }
 
     function testVerifyBN254Signature_RevertInvalid() public {
         bytes32 messageHash = keccak256("test message");
-        bytes memory invalidSignature = abi.encode(uint(1), uint(2));
-        BN254.G1Point memory msgPoint = BN254.hashToG1(messageHash);
 
-        vm.expectRevert(ISignatureUtilsMixinErrors.InvalidSignature.selector);
-        keyRegistrar._verifyBN254Signature(msgPoint, invalidSignature, bn254G1Key1, bn254G2Key1);
+        // Use a signature generated with the wrong private key - this should fail verification
+        BN254.G1Point memory msgPoint = BN254.hashToG1(messageHash);
+        BN254.G1Point memory invalidSignature = msgPoint.scalar_mul(bn254PrivKey1); // Wrong private key
+
+        (bool success, bool pairingSuccessful) =
+            BN254SignatureVerifier.verifySignature(messageHash, invalidSignature, bn254G1Key2, bn254G2Key2, false, 0);
+        assertFalse(success && pairingSuccessful);
     }
 
     function testRegisterBN254Key_RevertGloballyRegistered() public {
