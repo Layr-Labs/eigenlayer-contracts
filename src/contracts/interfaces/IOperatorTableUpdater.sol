@@ -138,4 +138,10 @@ interface IOperatorTableUpdater is
     function getCertificateVerifier(
         CurveType curveType
     ) external view returns (address);
+
+    /**
+     * @notice Get the latest reference timestamp
+     * @return The latest reference timestamp
+     */
+    function getLatestReferenceTimestamp() external view returns (uint32);
 }
