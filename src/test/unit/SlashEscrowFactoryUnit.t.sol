@@ -706,6 +706,33 @@ contract SlashEscrowFactoryUnitTests_getEscrowDelay is SlashEscrowFactoryUnitTes
         // The complete block should be the maximum delay across all strategies
         assertEq(factory.getEscrowCompleteBlock(defaultOperatorSet, defaultSlashId), block.number + delays[numStrategies - 1] + 1);
     }
+
+    function testFuzz_getEscrowCompleteBlock_multipleSlashes(uint r) public {
+        uint startBlock = block.number;
+        uint32 firstDelay = uint32(1 days / 12 seconds);
+        uint32 secondDelay = uint32(2 days / 12 seconds);
+
+        IStrategy[] memory strategies = new IStrategy[](1);
+        MockERC20[] memory tokens = new MockERC20[](1);
+        uint[] memory underlyingAmounts = new uint[](1);
+        strategies[0] = IStrategy(cheats.randomAddress());
+        tokens[0] = new MockERC20();
+        underlyingAmounts[0] = cheats.randomUint();
+
+        cheats.prank(defaultOwner);
+        factory.setGlobalEscrowDelay(firstDelay);
+
+        _initiateSlashEscrow(defaultOperatorSet, defaultSlashId, strategies[0], tokens[0], underlyingAmounts[0]);
+
+        cheats.prank(defaultOwner);
+        factory.setGlobalEscrowDelay(secondDelay);
+
+        uint secondSlashId = defaultSlashId + 1;
+        _initiateSlashEscrow(defaultOperatorSet, secondSlashId, strategies[0], tokens[0], underlyingAmounts[0]);
+
+        assertEq(factory.getEscrowCompleteBlock(defaultOperatorSet, defaultSlashId), startBlock + firstDelay + 1);
+        assertEq(factory.getEscrowCompleteBlock(defaultOperatorSet, secondSlashId), startBlock + secondDelay + 1);
+    }
 }
 
 contract SlashEscrowFactoryUnitTests_setGlobalEscrowDelay is SlashEscrowFactoryUnitTests {
