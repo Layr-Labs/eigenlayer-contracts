@@ -1456,9 +1456,6 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
             assertTrue(_getIsPendingSlashId(operatorSet, slashId), "slash id should be pending");
             assertFalse(_getPrevIsPendingSlashId(operatorSet, slashId), "slash id should not be pending");
 
-            assertEq(_getEscrowStartBlock(operatorSet, slashId), block.number, "escrow start block should be current block");
-            assertEq(_getPrevEscrowStartBlock(operatorSet, slashId), 0, "escrow start block should be 0");
-
             assertTrue(_getIsDeployedSlashEscrow(operatorSet, slashId), "escrow should be deployed");
             assertFalse(_getPrevIsDeployedSlashEscrow(operatorSet, slashId), "escrow should not be deployed");
         }
@@ -2822,12 +2819,12 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         return slashEscrowFactory.isPendingSlashId(operatorSet, slashId);
     }
 
-    function _getPrevEscrowStartBlock(OperatorSet memory operatorSet, uint slashId) internal timewarp returns (uint) {
-        return _getEscrowStartBlock(operatorSet, slashId);
+    function _getPrevEscrowCompleteBlock(OperatorSet memory operatorSet, uint slashId) internal timewarp returns (uint) {
+        return _getEscrowCompleteBlock(operatorSet, slashId);
     }
 
-    function _getEscrowStartBlock(OperatorSet memory operatorSet, uint slashId) internal view returns (uint) {
-        return slashEscrowFactory.getEscrowStartBlock(operatorSet, slashId);
+    function _getEscrowCompleteBlock(OperatorSet memory operatorSet, uint slashId) internal view returns (uint) {
+        return slashEscrowFactory.getEscrowCompleteBlock(operatorSet, slashId);
     }
 
     function _getPrevIsDeployedSlashEscrow(OperatorSet memory operatorSet, uint slashId) internal timewarp returns (bool) {

@@ -99,6 +99,7 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
     /**
      * @notice Sets the delay for the escrow of a strategies underlying token.
      * @dev The largest of all strategy delays or global delay will be used.
+     * @dev This delay setting only applies to new slashes and does not affect existing ones.
      * @param strategy The strategy whose escrow delay is being set.
      * @param delay The delay for the escrow.
      */
@@ -106,6 +107,7 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
 
     /**
      * @notice Sets a global delay applicable to all strategies.
+     * @dev This delay setting only applies to new slashes and does not affect existing ones.
      * @param delay The delay for the escrow.
      */
     function setGlobalEscrowDelay(
@@ -228,14 +230,6 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
      * @return The paused status of the escrow.
      */
     function isEscrowPaused(OperatorSet calldata operatorSet, uint256 slashId) external view returns (bool);
-
-    /**
-     * @notice Returns the start block for a slash ID.
-     * @param operatorSet The operator set whose start block is being queried.
-     * @param slashId The slash ID of the start block that is being queried.
-     * @return The start block.
-     */
-    function getEscrowStartBlock(OperatorSet calldata operatorSet, uint256 slashId) external view returns (uint256);
 
     /**
      * @notice Returns the block at which the escrow can be released.
