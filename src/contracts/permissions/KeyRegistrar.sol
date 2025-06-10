@@ -4,6 +4,7 @@ pragma solidity ^0.8.27;
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "../libraries/BN254.sol";
+import "../libraries/BN254SignatureVerifier.sol";
 import "../mixins/PermissionControllerMixin.sol";
 import "../mixins/SignatureUtilsMixin.sol";
 import "../interfaces/IPermissionController.sol";
@@ -193,9 +194,14 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         );
         bytes32 signableDigest = _calculateSignableDigest(structHash);
 
-        // hash to g1
-        BN254.G1Point memory messagePoint = BN254.hashToG1(signableDigest);
-        _verifyBN254Signature(messagePoint, signature, g1Point, g2Point);
+        // Decode signature from bytes to G1 point
+        (uint256 sigX, uint256 sigY) = abi.decode(signature, (uint256, uint256));
+        BN254.G1Point memory signaturePoint = BN254.G1Point(sigX, sigY);
+
+        // Verify signature
+        (, bool pairingSuccessful) =
+            BN254SignatureVerifier.verifySignature(signableDigest, signaturePoint, g1Point, g2Point, false, 0);
+        require(pairingSuccessful, InvalidSignature());
 
         // Calculate key hash and check global uniqueness
         bytes32 keyHash = _getKeyHashForKeyData(keyData, CurveType.BN254);
@@ -240,56 +246,6 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         }
 
         revert InvalidCurveType();
-    }
-
-    /**
-     * @notice Verifies a BN254 signature
-     * @param messagePoint The G1 point representing the hashed message
-     * @param signature The signature bytes
-     * @param pubkeyG1 The G1 component of the public key
-     * @param pubkeyG2 The G2 component of the public key
-     */
-    function _verifyBN254Signature(
-        BN254.G1Point memory messagePoint,
-        bytes memory signature,
-        BN254.G1Point memory pubkeyG1,
-        BN254.G2Point memory pubkeyG2
-    ) public view {
-        // Decode signature
-        BN254.G1Point memory sigPoint;
-        {
-            (uint256 sigX, uint256 sigY) = abi.decode(signature, (uint256, uint256));
-            sigPoint = BN254.G1Point(sigX, sigY);
-        }
-
-        // gamma = h(sigma, P, P', H(m)) - exact same pattern as BLSApkRegistry
-        uint256 gamma = uint256(
-            keccak256(
-                abi.encodePacked(
-                    sigPoint.X,
-                    sigPoint.Y,
-                    pubkeyG1.X,
-                    pubkeyG1.Y,
-                    pubkeyG2.X[0],
-                    pubkeyG2.X[1],
-                    pubkeyG2.Y[0],
-                    pubkeyG2.Y[1],
-                    messagePoint.X,
-                    messagePoint.Y
-                )
-            )
-        ) % BN254.FR_MODULUS;
-
-        // e(sigma + P * gamma, [1]_2) = e(H(m) + [1]_1 * gamma, P')
-        require(
-            BN254.pairing(
-                sigPoint.plus(pubkeyG1.scalar_mul(gamma)),
-                BN254.negGeneratorG2(),
-                messagePoint.plus(BN254.generatorG1().scalar_mul(gamma)),
-                pubkeyG2
-            ),
-            InvalidSignature()
-        );
     }
 
     /**
