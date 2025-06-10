@@ -359,4 +359,10 @@ contract BN254CertificateVerifier is Initializable, BN254CertificateVerifierStor
         bytes32 operatorSetKey = operatorSet.key();
         return _operatorSetInfos[operatorSetKey][referenceTimestamp];
     }
+
+    /// @dev Only used in a test environment
+    function setMaxStalenessPeriod(OperatorSet memory operatorSet, uint32 maxStalenessPeriod) external {
+        bytes32 operatorSetKey = operatorSet.key();
+        _maxStalenessPeriods[operatorSetKey] = maxStalenessPeriod;
+    }
 }
