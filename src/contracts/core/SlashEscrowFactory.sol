@@ -14,9 +14,9 @@ contract SlashEscrowFactory is
     Initializable,
     SlashEscrowFactoryStorage,
     OwnableUpgradeable,
-    ReentrancyGuardUpgradeable,
     Pausable,
-    SemVerMixin
+    SemVerMixin,
+    ReentrancyGuardUpgradeable
 {
     using SafeERC20 for IERC20;
     using OperatorSetLib for *;
