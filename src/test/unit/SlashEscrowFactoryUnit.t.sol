@@ -152,9 +152,6 @@ contract SlashEscrowFactoryUnitTests is EigenLayerUnitTestSetup, ISlashEscrowFac
         assertEq(strategies.length, expectedCount);
         assertEq(factory.getTotalPendingStrategiesForSlashId(operatorSet, slashId), expectedCount);
 
-        // Assert that the start block for the (operator set, slash ID) is correct.
-        assertEq(factory.getEscrowStartBlock(operatorSet, slashId), uint32(block.number));
-
         // Assert that the escrow is deployed
         assertEq(factory.computeSlashEscrowSalt(operatorSet, slashId), keccak256(abi.encodePacked(operatorSet.key(), slashId)));
         assertTrue(factory.isDeployedSlashEscrow(operatorSet, slashId));
@@ -306,7 +303,7 @@ contract SlashEscrowFactoryUnitTests_releaseSlashEscrow is SlashEscrowFactoryUni
         }
 
         // Assert that the start block for the (operator set, slash ID) is no longer set.
-        assertEq(factory.getEscrowStartBlock(defaultOperatorSet, defaultSlashId), 0);
+        assertEq(factory.getEscrowCompleteBlock(defaultOperatorSet, defaultSlashId), 0);
     }
 
     /// @dev Tests that multiple strategies with different delays are processed correctly
@@ -375,7 +372,7 @@ contract SlashEscrowFactoryUnitTests_releaseSlashEscrow is SlashEscrowFactoryUni
         }
 
         // Verify that the start block is cleared
-        assertEq(factory.getEscrowStartBlock(defaultOperatorSet, defaultSlashId), 0);
+        assertEq(factory.getEscrowCompleteBlock(defaultOperatorSet, defaultSlashId), 0);
     }
 
     /// @dev Tests that operatorSets are only cleared once all slash IDs are released
@@ -539,7 +536,7 @@ contract SlashEscrowFactoryUnitTests_releaseSlashEscrowByStrategy is SlashEscrow
         }
 
         // Assert that the start block for the (operator set, slash ID) is no longer set.
-        assertEq(factory.getEscrowStartBlock(defaultOperatorSet, defaultSlashId), 0);
+        assertEq(factory.getEscrowCompleteBlock(defaultOperatorSet, defaultSlashId), 0);
     }
 
     /// @dev Tests that multiple strategies can be burned or redistributed across multiple calls
@@ -599,7 +596,7 @@ contract SlashEscrowFactoryUnitTests_releaseSlashEscrowByStrategy is SlashEscrow
         }
 
         // Assert that the start block for the (operator set, slash ID) is no longer set.
-        assertEq(factory.getEscrowStartBlock(defaultOperatorSet, defaultSlashId), 0);
+        assertEq(factory.getEscrowCompleteBlock(defaultOperatorSet, defaultSlashId), 0);
     }
 }
 
@@ -708,6 +705,41 @@ contract SlashEscrowFactoryUnitTests_getEscrowDelay is SlashEscrowFactoryUnitTes
 
         // The complete block should be the maximum delay across all strategies
         assertEq(factory.getEscrowCompleteBlock(defaultOperatorSet, defaultSlashId), block.number + delays[numStrategies - 1] + 1);
+    }
+
+    function testFuzz_getEscrowCompleteBlock_multipleSlashes(uint r) public {
+        uint startBlock = block.number;
+        uint32 firstDelay = uint32(1 days / 12 seconds);
+        uint32 secondDelay = uint32(2 days / 12 seconds);
+
+        IStrategy[] memory strategies = new IStrategy[](1);
+        MockERC20[] memory tokens = new MockERC20[](1);
+        uint[] memory underlyingAmounts = new uint[](1);
+        strategies[0] = IStrategy(cheats.randomAddress());
+        tokens[0] = new MockERC20();
+        underlyingAmounts[0] = uint96(cheats.randomUint());
+
+        cheats.prank(defaultOwner);
+        factory.setGlobalEscrowDelay(firstDelay);
+
+        _initiateSlashEscrow(defaultOperatorSet, defaultSlashId, strategies[0], tokens[0], underlyingAmounts[0]);
+
+        cheats.prank(defaultOwner);
+        factory.setGlobalEscrowDelay(secondDelay);
+
+        uint secondSlashId = defaultSlashId + 1;
+        _initiateSlashEscrow(defaultOperatorSet, secondSlashId, strategies[0], tokens[0], underlyingAmounts[0]);
+
+        assertEq(factory.getEscrowCompleteBlock(defaultOperatorSet, defaultSlashId), startBlock + firstDelay + 1);
+        assertEq(factory.getEscrowCompleteBlock(defaultOperatorSet, secondSlashId), startBlock + secondDelay + 1);
+
+        cheats.roll(startBlock + firstDelay + 1);
+        _mockStrategyUnderlyingTokenCall(strategies[0], address(tokens[0]));
+        _releaseSlashEscrow(defaultOperatorSet, defaultSlashId);
+
+        cheats.roll(startBlock + secondDelay + 1);
+        _mockStrategyUnderlyingTokenCall(strategies[0], address(tokens[0]));
+        _releaseSlashEscrow(defaultOperatorSet, secondSlashId);
     }
 }
 
