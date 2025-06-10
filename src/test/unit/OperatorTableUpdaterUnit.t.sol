@@ -57,7 +57,7 @@ contract OperatorTableUpdaterUnitTests is
                 address(this), // owner
                 globalRootConfirmerSet, // globalRootConfirmerSet
                 GLOBAL_ROOT_CONFIRMATION_THRESHOLD, // globalRootConfirmationThreshold
-                block.timestamp, // referenceTimestamp
+                block.timestamp - 1, // referenceTimestamp
                 initialOperatorSetInfo, // globalRootConfirmerSetInfo
                 initialOperatorSetConfig // globalRootConfirmerSetConfig
             )
@@ -177,6 +177,7 @@ contract OperatorTableUpdaterUnitTests_initialize is OperatorTableUpdaterUnitTes
         OperatorSet memory confirmerSet = operatorTableUpdater.getGlobalRootConfirmerSet();
         assertEq(confirmerSet.avs, address(0xDEADBEEF));
         assertEq(confirmerSet.id, 0);
+        assertEq(operatorTableUpdater.getLatestReferenceTimestamp(), uint32(block.timestamp - 1));
 
         uint16 threshold = operatorTableUpdater.globalRootConfirmationThreshold();
         assertEq(threshold, GLOBAL_ROOT_CONFIRMATION_THRESHOLD);
@@ -190,7 +191,7 @@ contract OperatorTableUpdaterUnitTests_initialize is OperatorTableUpdaterUnitTes
             address(this),
             globalRootConfirmerSet,
             GLOBAL_ROOT_CONFIRMATION_THRESHOLD,
-            uint32(block.timestamp),
+            uint32(block.timestamp - 1),
             initialOperatorSetInfo,
             initialOperatorSetConfig
         );
@@ -243,7 +244,7 @@ contract OperatorTableUpdaterUnitTests_confirmGlobalTableRoot is OperatorTableUp
         // Expect the global table root to be updated
         assertEq(operatorTableUpdater.getGlobalTableRootByTimestamp(referenceTimestamp), globalTableRoot);
         assertEq(operatorTableUpdater.getCurrentGlobalTableRoot(), globalTableRoot);
-        assertEq(operatorTableUpdater.latestReferenceTimestamp(), referenceTimestamp);
+        assertEq(operatorTableUpdater.getLatestReferenceTimestamp(), referenceTimestamp);
     }
 }
 
