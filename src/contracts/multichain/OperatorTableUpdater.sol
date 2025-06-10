@@ -68,7 +68,10 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
         // Table roots can only be updated for current or past timestamps and after the latest reference timestamp
         require(referenceTimestamp <= block.timestamp, GlobalTableRootInFuture());
         require(referenceTimestamp > _latestReferenceTimestamp, GlobalTableRootStale());
-        require(globalTableRoot == globalTableRootCert.messageHash, TableRootNotInCertificate());
+        require(
+            globalTableRootCert.messageHash == getGlobalTableUpdateMessageHash(globalTableRoot, referenceTimestamp),
+            InvalidMessageHash()
+        );
 
         // Verify certificate by using the stake proportion thresholds
         uint16[] memory stakeProportionThresholds = new uint16[](1);
@@ -190,6 +193,14 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
     /// @inheritdoc IOperatorTableUpdater
     function getLatestReferenceTimestamp() external view returns (uint32) {
         return _latestReferenceTimestamp;
+    }
+
+    /// @inheritdoc IOperatorTableUpdater
+    function getGlobalTableUpdateMessageHash(
+        bytes32 globalTableRoot,
+        uint32 referenceTimestamp
+    ) public pure returns (bytes32) {
+        return keccak256(abi.encode(GLOBAL_TABLE_ROOT_CERT_TYPEHASH, globalTableRoot, referenceTimestamp));
     }
 
     /**
