@@ -28,6 +28,9 @@ abstract contract AllocationManagerStorage is IAllocationManager {
     /// @dev Index for flag that pauses operator register/deregister to operator sets when set.
     uint8 internal constant PAUSED_OPERATOR_SET_REGISTRATION_AND_DEREGISTRATION = 2;
 
+    /// @dev Maximum number of allocators that can allocate to an operator
+    uint8 internal constant MAX_ALLOCATORS = 32;
+
     // Immutables
 
     /// @notice The DelegationManager contract for EigenLayer
@@ -74,25 +77,28 @@ abstract contract AllocationManagerStorage is IAllocationManager {
     mapping(address operator => mapping(bytes32 operatorSetKey => RegistrationStatus)) internal registrationStatus;
 
     /// @dev For an operator set, lists all strategies an operator has outstanding allocations from.
-    mapping(address operator => mapping(bytes32 operatorSetKey => EnumerableSet.AddressSet)) internal
+    mapping(address allocator => mapping(bytes32 operatorSetKey => EnumerableSet.AddressSet)) internal
         allocatedStrategies;
 
     /// @dev For an operator set and strategy, the current allocated magnitude and any pending modification
-    mapping(address operator => mapping(bytes32 operatorSetKey => mapping(IStrategy strategy => Allocation))) internal
+    mapping(address allocator => mapping(bytes32 operatorSetKey => mapping(IStrategy strategy => AllocationInfo))) internal
         allocations;
+
+    /// @dev For each operator, tracks which allocators have allocated to them per operator set and strategy
+    mapping(address operator => mapping(bytes32 operatorSetKey => mapping(IStrategy strategy => EnumerableSet.AddressSet))) internal operatorAllocators;
 
     /// OPERATOR => STRATEGY (MAX/USED AND DEALLOCATIONS)
 
-    /// @dev Contains a history of the operator's maximum magnitude for a given strategy
-    mapping(address operator => mapping(IStrategy strategy => Snapshots.DefaultWadHistory)) internal
+    /// @dev Contains a history of the allocator's maximum magnitude for a given strategy
+    mapping(address allocator => mapping(IStrategy strategy => Snapshots.DefaultWadHistory)) internal
         _maxMagnitudeHistory;
 
-    /// @dev For a strategy, contains the amount of magnitude an operator has allocated to operator sets
-    mapping(address operator => mapping(IStrategy strategy => uint64)) internal encumberedMagnitude;
+    /// @dev For a strategy, contains the amount of magnitude an allocator has allocated to operator sets
+    mapping(address allocator => mapping(IStrategy strategy => uint64)) internal encumberedMagnitude;
 
     /// @dev For a strategy, keeps an ordered queue of operator sets that have pending deallocations
     /// These must be completed in order to free up magnitude for future allocation
-    mapping(address operator => mapping(IStrategy strategy => DoubleEndedQueue.Bytes32Deque)) internal deallocationQueue;
+    mapping(address allocator => mapping(IStrategy strategy => DoubleEndedQueue.Bytes32Deque)) internal deallocationQueue;
 
     /// @dev Lists the AVSs who has registered metadata and claimed itself as an AVS
     /// @notice bool is not used and is always true if the avs has registered metadata
@@ -108,6 +114,9 @@ abstract contract AllocationManagerStorage is IAllocationManager {
     ///      For non-redistributing or non-existing operator sets, the public getter for this function `getRedistributionRecipient`
     ///      returns `DEFAULT_BURN_ADDRESS`
     mapping(bytes32 operatorSetKey => address redistributionAddr) internal _redistributionRecipients;
+
+    /// @dev For each operator, maintains a whitelist of allocators that are allowed to allocate on their behalf per strategy
+    mapping(address operator => mapping(IStrategy strategy => EnumerableSet.AddressSet)) internal allocatorWhitelist;
 
     // Construction
 
