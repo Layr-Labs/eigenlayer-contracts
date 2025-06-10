@@ -4,6 +4,7 @@ pragma solidity ^0.8.27;
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 
 import {BN254} from "../libraries/BN254.sol";
+import {BN254SignatureVerifier} from "../libraries/BN254SignatureVerifier.sol";
 import {Merkle} from "../libraries/Merkle.sol";
 import {OperatorSet} from "../libraries/OperatorSetLib.sol";
 
@@ -162,27 +163,12 @@ contract BN254CertificateVerifier is Initializable, BN254CertificateVerifierStor
         BN254.G2Point memory apkG2,
         BN254.G1Point memory signature
     ) internal view returns (bool pairingSuccessful, bool signatureValid) {
-        uint256 gamma = uint256(
-            keccak256(
-                abi.encodePacked(
-                    msgHash,
-                    aggPubkey.X,
-                    aggPubkey.Y,
-                    apkG2.X[0],
-                    apkG2.X[1],
-                    apkG2.Y[0],
-                    apkG2.Y[1],
-                    signature.X,
-                    signature.Y
-                )
-            )
-        ) % BN254.FR_MODULUS;
-
-        (pairingSuccessful, signatureValid) = BN254.safePairing(
-            signature.plus(aggPubkey.scalar_mul(gamma)), // sigma + apk*gamma
-            BN254.negGeneratorG2(), // -G2
-            BN254.hashToG1(msgHash).plus(BN254.generatorG1().scalar_mul(gamma)), // H(m) + g1*gamma
-            apkG2, // apkG2
+        return BN254SignatureVerifier.verifySignature(
+            msgHash,
+            signature,
+            aggPubkey,
+            apkG2,
+            true, // use gas limit
             PAIRING_EQUALITY_CHECK_GAS
         );
     }
