@@ -25,7 +25,7 @@ abstract contract OperatorTableUpdaterStorage is IOperatorTableUpdater {
     uint16 public globalRootConfirmationThreshold;
 
     /// @notice The latest reference timestamp
-    uint32 public latestReferenceTimestamp;
+    uint32 internal _latestReferenceTimestamp;
 
     /// @notice The operatorSet which certifies against global roots
     OperatorSet internal _globalRootConfirmerSet;
