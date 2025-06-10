@@ -717,7 +717,7 @@ contract SlashEscrowFactoryUnitTests_getEscrowDelay is SlashEscrowFactoryUnitTes
         uint[] memory underlyingAmounts = new uint[](1);
         strategies[0] = IStrategy(cheats.randomAddress());
         tokens[0] = new MockERC20();
-        underlyingAmounts[0] = cheats.randomUint();
+        underlyingAmounts[0] = uint96(cheats.randomUint());
 
         cheats.prank(defaultOwner);
         factory.setGlobalEscrowDelay(firstDelay);
@@ -732,6 +732,14 @@ contract SlashEscrowFactoryUnitTests_getEscrowDelay is SlashEscrowFactoryUnitTes
 
         assertEq(factory.getEscrowCompleteBlock(defaultOperatorSet, defaultSlashId), startBlock + firstDelay + 1);
         assertEq(factory.getEscrowCompleteBlock(defaultOperatorSet, secondSlashId), startBlock + secondDelay + 1);
+
+        cheats.roll(startBlock + firstDelay + 1);
+        _mockStrategyUnderlyingTokenCall(strategies[0], address(tokens[0]));
+        _releaseSlashEscrow(defaultOperatorSet, defaultSlashId);
+
+        cheats.roll(startBlock + secondDelay + 1);
+        _mockStrategyUnderlyingTokenCall(strategies[0], address(tokens[0]));
+        _releaseSlashEscrow(defaultOperatorSet, secondSlashId);
     }
 }
 
