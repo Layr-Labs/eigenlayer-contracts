@@ -268,8 +268,10 @@ contract OperatorTableUpdaterUnitTests_updateOperatorTable_BN254 is OperatorTabl
     function testFuzz_BN254_correctness(Randomness r) public rand(r) {
         // Generate random operatorSetInfo and operatorSetConfig
         BN254OperatorSetInfo memory operatorSetInfo = _generateRandomBN254OperatorSetInfo(r);
+        // Encode the operatorSetInfo as bytes, as the CrossChainRegistry expects the operatorTable to be encoded as a bytes array;
+        bytes memory operatorSetInfoBytes = abi.encode(operatorSetInfo);
         OperatorSetConfig memory operatorSetConfig = _generateRandomOperatorSetConfig(r);
-        bytes memory operatorTable = abi.encode(defaultOperatorSet, CurveType.BN254, operatorSetConfig, operatorSetInfo);
+        bytes memory operatorTable = abi.encode(defaultOperatorSet, CurveType.BN254, operatorSetConfig, operatorSetInfoBytes);
         bytes32 operatorSetLeafHash = keccak256(operatorTable);
 
         // Include the operatorSetInfo and operatorSetConfig in the global table root & set it
@@ -314,8 +316,10 @@ contract OperatorTableUpdaterUnitTests_updateOperatorTable_ECDSA is OperatorTabl
     function testFuzz_ECDSA_correctness(Randomness r) public rand(r) {
         // Generate random operatorSetInfo and operatorSetConfig
         ECDSAOperatorInfo[] memory operatorInfos = _generateRandomECDSAOperatorInfos(r);
+        // Encode the operatorInfos as bytes, as the CrossChainRegistry expects the operatorTable to be encoded as a bytes array;
+        bytes memory operatorInfosBytes = abi.encode(operatorInfos);
         OperatorSetConfig memory operatorSetConfig = _generateRandomOperatorSetConfig(r);
-        bytes memory operatorTable = abi.encode(defaultOperatorSet, CurveType.ECDSA, operatorSetConfig, operatorInfos);
+        bytes memory operatorTable = abi.encode(defaultOperatorSet, CurveType.ECDSA, operatorSetConfig, operatorInfosBytes);
         bytes32 operatorSetLeafHash = keccak256(operatorTable);
 
         // Include the operatorInfos and operatorSetConfig in the global table root & set it
@@ -346,16 +350,18 @@ contract OperatorTableUpdaterUnitTests_multipleCurveTypes is OperatorTableUpdate
         bytes memory bn254OperatorTable;
         {
             BN254OperatorSetInfo memory bn254OperatorSetInfo = _generateRandomBN254OperatorSetInfo(r);
+            bytes memory bn254OperatorSetInfoBytes = abi.encode(bn254OperatorSetInfo);
             OperatorSetConfig memory bn254OperatorSetConfig = _generateRandomOperatorSetConfig(r);
-            bn254OperatorTable = abi.encode(defaultOperatorSet, CurveType.BN254, bn254OperatorSetConfig, bn254OperatorSetInfo);
+            bn254OperatorTable = abi.encode(defaultOperatorSet, CurveType.BN254, bn254OperatorSetConfig, bn254OperatorSetInfoBytes);
         }
 
         // Generate random ECDSA operatorInfos and operatorSetConfig
         bytes memory ecdsaOperatorTable;
         {
             ECDSAOperatorInfo[] memory ecdsaOperatorInfos = _generateRandomECDSAOperatorInfos(r);
+            bytes memory ecdsaOperatorInfosBytes = abi.encode(ecdsaOperatorInfos);
             OperatorSetConfig memory ecdsaOperatorSetConfig = _generateRandomOperatorSetConfig(r);
-            ecdsaOperatorTable = abi.encode(defaultOperatorSet, CurveType.ECDSA, ecdsaOperatorSetConfig, ecdsaOperatorInfos);
+            ecdsaOperatorTable = abi.encode(defaultOperatorSet, CurveType.ECDSA, ecdsaOperatorSetConfig, ecdsaOperatorInfosBytes);
         }
 
         // Include the operatorInfos and operatorSetConfig in the global table root & set it

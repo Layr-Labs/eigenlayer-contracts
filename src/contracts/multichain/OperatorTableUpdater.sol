@@ -94,8 +94,12 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
         bytes calldata proof,
         bytes calldata operatorTableBytes
     ) external {
-        (OperatorSet memory operatorSet, CurveType curveType, OperatorSetConfig memory operatorSetConfig) =
-            _getOperatorTableInfo(operatorTableBytes);
+        (
+            OperatorSet memory operatorSet,
+            CurveType curveType,
+            OperatorSetConfig memory operatorSetConfig,
+            bytes memory operatorTableInfo
+        ) = _decodeOperatorTableBytes(operatorTableBytes);
 
         // Check that the `referenceTimestamp` is greater than the latest reference timestamp
         require(
@@ -116,11 +120,11 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
         // Update the operator table
         if (curveType == CurveType.BN254) {
             bn254CertificateVerifier.updateOperatorTable(
-                operatorSet, referenceTimestamp, _getBN254OperatorSetInfo(operatorTableBytes), operatorSetConfig
+                operatorSet, referenceTimestamp, _getBN254OperatorInfo(operatorTableInfo), operatorSetConfig
             );
         } else if (curveType == CurveType.ECDSA) {
             ecdsaCertificateVerifier.updateOperatorTable(
-                operatorSet, referenceTimestamp, _getECDSAOperatorSetInfo(operatorTableBytes), operatorSetConfig
+                operatorSet, referenceTimestamp, _getECDSAOperatorInfo(operatorTableInfo), operatorSetConfig
             );
         } else {
             revert InvalidCurveType();
@@ -254,40 +258,43 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
      * @return operatorSet The operator set
      * @return curveType The curve type
      * @return operatorSetInfo The operator set info
-     * @dev Does NOT return the operatorInfo, as that is dependent on the curve type, see `_getBN254OperatorSetInfo` and `_getECDSAOperatorSetInfo`
+     * @return operatorTableInfo The operator table info. This is encoded as a bytes array, and its value is dependent on the curve type, see `_getBN254OperatorInfo` and `_getECDSAOperatorInfo`
      */
-    function _getOperatorTableInfo(
+    function _decodeOperatorTableBytes(
         bytes calldata operatorTable
     )
         internal
         pure
-        returns (OperatorSet memory operatorSet, CurveType curveType, OperatorSetConfig memory operatorSetInfo)
+        returns (
+            OperatorSet memory operatorSet,
+            CurveType curveType,
+            OperatorSetConfig memory operatorSetInfo,
+            bytes memory operatorTableInfo
+        )
     {
-        (operatorSet, curveType, operatorSetInfo) =
-            abi.decode(operatorTable, (OperatorSet, CurveType, OperatorSetConfig));
+        (operatorSet, curveType, operatorSetInfo, operatorTableInfo) =
+            abi.decode(operatorTable, (OperatorSet, CurveType, OperatorSetConfig, bytes));
     }
 
     /**
      * @notice Gets the BN254 operator set info from a bytes array
-     * @param operatorTable The bytes containing the operator table info
+     * @param BN254OperatorSetInfoBytes The bytes containing the operator set info
      * @return operatorSetInfo The BN254 operator set info
      */
-    function _getBN254OperatorSetInfo(
-        bytes calldata operatorTable
-    ) internal pure returns (BN254OperatorSetInfo memory operatorSetInfo) {
-        (,,, operatorSetInfo) =
-            abi.decode(operatorTable, (OperatorSet, CurveType, OperatorSetConfig, BN254OperatorSetInfo));
+    function _getBN254OperatorInfo(
+        bytes memory BN254OperatorSetInfoBytes
+    ) internal pure returns (BN254OperatorSetInfo memory) {
+        return abi.decode(BN254OperatorSetInfoBytes, (BN254OperatorSetInfo));
     }
 
     /**
      * @notice Gets the ECDSA operator set info from a bytes array
-     * @param operatorTable The bytes containing the operator table info
+     * @param ECDSAOperatorInfoBytes The bytes containing the operator table info
      * @return operatorSetInfo The ECDSA operator set info
      */
-    function _getECDSAOperatorSetInfo(
-        bytes calldata operatorTable
-    ) internal pure returns (ECDSAOperatorInfo[] memory operatorSetInfo) {
-        (,,, operatorSetInfo) =
-            abi.decode(operatorTable, (OperatorSet, CurveType, OperatorSetConfig, ECDSAOperatorInfo[]));
+    function _getECDSAOperatorInfo(
+        bytes memory ECDSAOperatorInfoBytes
+    ) internal pure returns (ECDSAOperatorInfo[] memory) {
+        return abi.decode(ECDSAOperatorInfoBytes, (ECDSAOperatorInfo[]));
     }
 }
