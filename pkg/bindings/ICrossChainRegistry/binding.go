@@ -43,7 +43,7 @@ type OperatorSet struct {
 
 // ICrossChainRegistryMetaData contains all meta data concerning the ICrossChainRegistry contract.
 var ICrossChainRegistryMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"addChainIDsToWhitelist\",\"inputs\":[{\"name\":\"chainIDs\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"},{\"name\":\"operatorTableUpdaters\",\"type\":\"address[]\",\"internalType\":\"address[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"addTransportDestinations\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"chainIDs\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"calculateOperatorTableBytes\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"createGenerationReservation\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"operatorTableCalculator\",\"type\":\"address\",\"internalType\":\"contractIOperatorTableCalculator\"},{\"name\":\"config\",\"type\":\"tuple\",\"internalType\":\"structICrossChainRegistryTypes.OperatorSetConfig\",\"components\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"maxStalenessPeriod\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"chainIDs\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"getActiveGenerationReservations\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"tuple[]\",\"internalType\":\"structOperatorSet[]\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getActiveTransportReservations\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"tuple[]\",\"internalType\":\"structOperatorSet[]\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"\",\"type\":\"uint256[][]\",\"internalType\":\"uint256[][]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getOperatorSetConfig\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structICrossChainRegistryTypes.OperatorSetConfig\",\"components\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"maxStalenessPeriod\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getOperatorTableCalculator\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIOperatorTableCalculator\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getSupportedChains\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"},{\"name\":\"\",\"type\":\"address[]\",\"internalType\":\"address[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getTransportDestinations\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"removeChainIDsFromWhitelist\",\"inputs\":[{\"name\":\"chainIDs\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeGenerationReservation\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeTransportDestinations\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"chainIDs\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setOperatorSetConfig\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"config\",\"type\":\"tuple\",\"internalType\":\"structICrossChainRegistryTypes.OperatorSetConfig\",\"components\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"maxStalenessPeriod\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setOperatorTableCalculator\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"operatorTableCalculator\",\"type\":\"address\",\"internalType\":\"contractIOperatorTableCalculator\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"ChainIDAddedToWhitelist\",\"inputs\":[{\"name\":\"chainID\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"operatorTableUpdater\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"ChainIDRemovedFromWhitelist\",\"inputs\":[{\"name\":\"chainID\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"GenerationReservationCreated\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"GenerationReservationRemoved\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorSetConfigSet\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"config\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structICrossChainRegistryTypes.OperatorSetConfig\",\"components\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"maxStalenessPeriod\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorTableCalculatorSet\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"operatorTableCalculator\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIOperatorTableCalculator\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"TransportDestinationAdded\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"chainID\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"TransportDestinationRemoved\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"chainID\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"ArrayLengthMismatch\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ChainIDAlreadyWhitelisted\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ChainIDNotWhitelisted\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"EmptyChainIDsArray\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"GenerationReservationAlreadyExists\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"GenerationReservationDoesNotExist\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidChainId\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidOperatorSet\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidOperatorTableCalculator\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NeedToDelete\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"RequireAtLeastOneTransportDestination\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"StalenessPeriodZero\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"TransportDestinationAlreadyAdded\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"TransportDestinationNotFound\",\"inputs\":[]}]",
+	ABI: "[{\"type\":\"function\",\"name\":\"addChainIDsToWhitelist\",\"inputs\":[{\"name\":\"chainIDs\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"},{\"name\":\"operatorTableUpdaters\",\"type\":\"address[]\",\"internalType\":\"address[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"addTransportDestinations\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"chainIDs\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"calculateOperatorTableBytes\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"createGenerationReservation\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"operatorTableCalculator\",\"type\":\"address\",\"internalType\":\"contractIOperatorTableCalculator\"},{\"name\":\"config\",\"type\":\"tuple\",\"internalType\":\"structICrossChainRegistryTypes.OperatorSetConfig\",\"components\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"maxStalenessPeriod\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"chainIDs\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"getActiveGenerationReservations\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"tuple[]\",\"internalType\":\"structOperatorSet[]\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getActiveTransportReservations\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"tuple[]\",\"internalType\":\"structOperatorSet[]\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"\",\"type\":\"uint256[][]\",\"internalType\":\"uint256[][]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getOperatorSetConfig\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structICrossChainRegistryTypes.OperatorSetConfig\",\"components\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"maxStalenessPeriod\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getOperatorTableCalculator\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIOperatorTableCalculator\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getSupportedChains\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"},{\"name\":\"\",\"type\":\"address[]\",\"internalType\":\"address[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getTransportDestinations\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"removeChainIDsFromWhitelist\",\"inputs\":[{\"name\":\"chainIDs\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeGenerationReservation\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"removeTransportDestinations\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"chainIDs\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setOperatorSetConfig\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"config\",\"type\":\"tuple\",\"internalType\":\"structICrossChainRegistryTypes.OperatorSetConfig\",\"components\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"maxStalenessPeriod\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setOperatorTableCalculator\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"operatorTableCalculator\",\"type\":\"address\",\"internalType\":\"contractIOperatorTableCalculator\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"ChainIDAddedToWhitelist\",\"inputs\":[{\"name\":\"chainID\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"operatorTableUpdater\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"ChainIDRemovedFromWhitelist\",\"inputs\":[{\"name\":\"chainID\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"GenerationReservationCreated\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"GenerationReservationRemoved\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorSetConfigSet\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"config\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structICrossChainRegistryTypes.OperatorSetConfig\",\"components\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"maxStalenessPeriod\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorTableCalculatorSet\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"operatorTableCalculator\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIOperatorTableCalculator\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"TransportDestinationChainAdded\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"chainID\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"TransportDestinationChainRemoved\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"chainID\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"ArrayLengthMismatch\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ChainIDAlreadyWhitelisted\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ChainIDNotWhitelisted\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"EmptyChainIDsArray\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"GenerationReservationAlreadyExists\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"GenerationReservationDoesNotExist\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidChainId\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidOperatorSet\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidOperatorTableCalculator\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NeedToDelete\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"RequireAtLeastOneTransportDestination\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"StalenessPeriodZero\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"TransportDestinationAlreadyAdded\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"TransportDestinationNotFound\",\"inputs\":[]}]",
 }
 
 // ICrossChainRegistryABI is the input ABI used to generate the binding from.
@@ -1386,9 +1386,9 @@ func (_ICrossChainRegistry *ICrossChainRegistryFilterer) ParseOperatorTableCalcu
 	return event, nil
 }
 
-// ICrossChainRegistryTransportDestinationAddedIterator is returned from FilterTransportDestinationAdded and is used to iterate over the raw logs and unpacked data for TransportDestinationAdded events raised by the ICrossChainRegistry contract.
-type ICrossChainRegistryTransportDestinationAddedIterator struct {
-	Event *ICrossChainRegistryTransportDestinationAdded // Event containing the contract specifics and raw log
+// ICrossChainRegistryTransportDestinationChainAddedIterator is returned from FilterTransportDestinationChainAdded and is used to iterate over the raw logs and unpacked data for TransportDestinationChainAdded events raised by the ICrossChainRegistry contract.
+type ICrossChainRegistryTransportDestinationChainAddedIterator struct {
+	Event *ICrossChainRegistryTransportDestinationChainAdded // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -1402,7 +1402,7 @@ type ICrossChainRegistryTransportDestinationAddedIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *ICrossChainRegistryTransportDestinationAddedIterator) Next() bool {
+func (it *ICrossChainRegistryTransportDestinationChainAddedIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -1411,7 +1411,7 @@ func (it *ICrossChainRegistryTransportDestinationAddedIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(ICrossChainRegistryTransportDestinationAdded)
+			it.Event = new(ICrossChainRegistryTransportDestinationChainAdded)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -1426,7 +1426,7 @@ func (it *ICrossChainRegistryTransportDestinationAddedIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(ICrossChainRegistryTransportDestinationAdded)
+		it.Event = new(ICrossChainRegistryTransportDestinationChainAdded)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -1442,42 +1442,42 @@ func (it *ICrossChainRegistryTransportDestinationAddedIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *ICrossChainRegistryTransportDestinationAddedIterator) Error() error {
+func (it *ICrossChainRegistryTransportDestinationChainAddedIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *ICrossChainRegistryTransportDestinationAddedIterator) Close() error {
+func (it *ICrossChainRegistryTransportDestinationChainAddedIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// ICrossChainRegistryTransportDestinationAdded represents a TransportDestinationAdded event raised by the ICrossChainRegistry contract.
-type ICrossChainRegistryTransportDestinationAdded struct {
+// ICrossChainRegistryTransportDestinationChainAdded represents a TransportDestinationChainAdded event raised by the ICrossChainRegistry contract.
+type ICrossChainRegistryTransportDestinationChainAdded struct {
 	OperatorSet OperatorSet
 	ChainID     *big.Int
 	Raw         types.Log // Blockchain specific contextual infos
 }
 
-// FilterTransportDestinationAdded is a free log retrieval operation binding the contract event 0x8b3a5eb206599a7bd7dcffa354a014ae777667c6890b23d046ff6867cd968393.
+// FilterTransportDestinationChainAdded is a free log retrieval operation binding the contract event 0x8b3a5eb206599a7bd7dcffa354a014ae777667c6890b23d046ff6867cd968393.
 //
-// Solidity: event TransportDestinationAdded((address,uint32) operatorSet, uint256 chainID)
-func (_ICrossChainRegistry *ICrossChainRegistryFilterer) FilterTransportDestinationAdded(opts *bind.FilterOpts) (*ICrossChainRegistryTransportDestinationAddedIterator, error) {
+// Solidity: event TransportDestinationChainAdded((address,uint32) operatorSet, uint256 chainID)
+func (_ICrossChainRegistry *ICrossChainRegistryFilterer) FilterTransportDestinationChainAdded(opts *bind.FilterOpts) (*ICrossChainRegistryTransportDestinationChainAddedIterator, error) {
 
-	logs, sub, err := _ICrossChainRegistry.contract.FilterLogs(opts, "TransportDestinationAdded")
+	logs, sub, err := _ICrossChainRegistry.contract.FilterLogs(opts, "TransportDestinationChainAdded")
 	if err != nil {
 		return nil, err
 	}
-	return &ICrossChainRegistryTransportDestinationAddedIterator{contract: _ICrossChainRegistry.contract, event: "TransportDestinationAdded", logs: logs, sub: sub}, nil
+	return &ICrossChainRegistryTransportDestinationChainAddedIterator{contract: _ICrossChainRegistry.contract, event: "TransportDestinationChainAdded", logs: logs, sub: sub}, nil
 }
 
-// WatchTransportDestinationAdded is a free log subscription operation binding the contract event 0x8b3a5eb206599a7bd7dcffa354a014ae777667c6890b23d046ff6867cd968393.
+// WatchTransportDestinationChainAdded is a free log subscription operation binding the contract event 0x8b3a5eb206599a7bd7dcffa354a014ae777667c6890b23d046ff6867cd968393.
 //
-// Solidity: event TransportDestinationAdded((address,uint32) operatorSet, uint256 chainID)
-func (_ICrossChainRegistry *ICrossChainRegistryFilterer) WatchTransportDestinationAdded(opts *bind.WatchOpts, sink chan<- *ICrossChainRegistryTransportDestinationAdded) (event.Subscription, error) {
+// Solidity: event TransportDestinationChainAdded((address,uint32) operatorSet, uint256 chainID)
+func (_ICrossChainRegistry *ICrossChainRegistryFilterer) WatchTransportDestinationChainAdded(opts *bind.WatchOpts, sink chan<- *ICrossChainRegistryTransportDestinationChainAdded) (event.Subscription, error) {
 
-	logs, sub, err := _ICrossChainRegistry.contract.WatchLogs(opts, "TransportDestinationAdded")
+	logs, sub, err := _ICrossChainRegistry.contract.WatchLogs(opts, "TransportDestinationChainAdded")
 	if err != nil {
 		return nil, err
 	}
@@ -1487,8 +1487,8 @@ func (_ICrossChainRegistry *ICrossChainRegistryFilterer) WatchTransportDestinati
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(ICrossChainRegistryTransportDestinationAdded)
-				if err := _ICrossChainRegistry.contract.UnpackLog(event, "TransportDestinationAdded", log); err != nil {
+				event := new(ICrossChainRegistryTransportDestinationChainAdded)
+				if err := _ICrossChainRegistry.contract.UnpackLog(event, "TransportDestinationChainAdded", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -1509,21 +1509,21 @@ func (_ICrossChainRegistry *ICrossChainRegistryFilterer) WatchTransportDestinati
 	}), nil
 }
 
-// ParseTransportDestinationAdded is a log parse operation binding the contract event 0x8b3a5eb206599a7bd7dcffa354a014ae777667c6890b23d046ff6867cd968393.
+// ParseTransportDestinationChainAdded is a log parse operation binding the contract event 0x8b3a5eb206599a7bd7dcffa354a014ae777667c6890b23d046ff6867cd968393.
 //
-// Solidity: event TransportDestinationAdded((address,uint32) operatorSet, uint256 chainID)
-func (_ICrossChainRegistry *ICrossChainRegistryFilterer) ParseTransportDestinationAdded(log types.Log) (*ICrossChainRegistryTransportDestinationAdded, error) {
-	event := new(ICrossChainRegistryTransportDestinationAdded)
-	if err := _ICrossChainRegistry.contract.UnpackLog(event, "TransportDestinationAdded", log); err != nil {
+// Solidity: event TransportDestinationChainAdded((address,uint32) operatorSet, uint256 chainID)
+func (_ICrossChainRegistry *ICrossChainRegistryFilterer) ParseTransportDestinationChainAdded(log types.Log) (*ICrossChainRegistryTransportDestinationChainAdded, error) {
+	event := new(ICrossChainRegistryTransportDestinationChainAdded)
+	if err := _ICrossChainRegistry.contract.UnpackLog(event, "TransportDestinationChainAdded", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
 	return event, nil
 }
 
-// ICrossChainRegistryTransportDestinationRemovedIterator is returned from FilterTransportDestinationRemoved and is used to iterate over the raw logs and unpacked data for TransportDestinationRemoved events raised by the ICrossChainRegistry contract.
-type ICrossChainRegistryTransportDestinationRemovedIterator struct {
-	Event *ICrossChainRegistryTransportDestinationRemoved // Event containing the contract specifics and raw log
+// ICrossChainRegistryTransportDestinationChainRemovedIterator is returned from FilterTransportDestinationChainRemoved and is used to iterate over the raw logs and unpacked data for TransportDestinationChainRemoved events raised by the ICrossChainRegistry contract.
+type ICrossChainRegistryTransportDestinationChainRemovedIterator struct {
+	Event *ICrossChainRegistryTransportDestinationChainRemoved // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -1537,7 +1537,7 @@ type ICrossChainRegistryTransportDestinationRemovedIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *ICrossChainRegistryTransportDestinationRemovedIterator) Next() bool {
+func (it *ICrossChainRegistryTransportDestinationChainRemovedIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -1546,7 +1546,7 @@ func (it *ICrossChainRegistryTransportDestinationRemovedIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(ICrossChainRegistryTransportDestinationRemoved)
+			it.Event = new(ICrossChainRegistryTransportDestinationChainRemoved)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -1561,7 +1561,7 @@ func (it *ICrossChainRegistryTransportDestinationRemovedIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(ICrossChainRegistryTransportDestinationRemoved)
+		it.Event = new(ICrossChainRegistryTransportDestinationChainRemoved)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -1577,42 +1577,42 @@ func (it *ICrossChainRegistryTransportDestinationRemovedIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *ICrossChainRegistryTransportDestinationRemovedIterator) Error() error {
+func (it *ICrossChainRegistryTransportDestinationChainRemovedIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *ICrossChainRegistryTransportDestinationRemovedIterator) Close() error {
+func (it *ICrossChainRegistryTransportDestinationChainRemovedIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// ICrossChainRegistryTransportDestinationRemoved represents a TransportDestinationRemoved event raised by the ICrossChainRegistry contract.
-type ICrossChainRegistryTransportDestinationRemoved struct {
+// ICrossChainRegistryTransportDestinationChainRemoved represents a TransportDestinationChainRemoved event raised by the ICrossChainRegistry contract.
+type ICrossChainRegistryTransportDestinationChainRemoved struct {
 	OperatorSet OperatorSet
 	ChainID     *big.Int
 	Raw         types.Log // Blockchain specific contextual infos
 }
 
-// FilterTransportDestinationRemoved is a free log retrieval operation binding the contract event 0x9fa5794dfaeae2ede46d5bdba347083580889221c3338813ca6c8d4b681ae8ee.
+// FilterTransportDestinationChainRemoved is a free log retrieval operation binding the contract event 0x9fa5794dfaeae2ede46d5bdba347083580889221c3338813ca6c8d4b681ae8ee.
 //
-// Solidity: event TransportDestinationRemoved((address,uint32) operatorSet, uint256 chainID)
-func (_ICrossChainRegistry *ICrossChainRegistryFilterer) FilterTransportDestinationRemoved(opts *bind.FilterOpts) (*ICrossChainRegistryTransportDestinationRemovedIterator, error) {
+// Solidity: event TransportDestinationChainRemoved((address,uint32) operatorSet, uint256 chainID)
+func (_ICrossChainRegistry *ICrossChainRegistryFilterer) FilterTransportDestinationChainRemoved(opts *bind.FilterOpts) (*ICrossChainRegistryTransportDestinationChainRemovedIterator, error) {
 
-	logs, sub, err := _ICrossChainRegistry.contract.FilterLogs(opts, "TransportDestinationRemoved")
+	logs, sub, err := _ICrossChainRegistry.contract.FilterLogs(opts, "TransportDestinationChainRemoved")
 	if err != nil {
 		return nil, err
 	}
-	return &ICrossChainRegistryTransportDestinationRemovedIterator{contract: _ICrossChainRegistry.contract, event: "TransportDestinationRemoved", logs: logs, sub: sub}, nil
+	return &ICrossChainRegistryTransportDestinationChainRemovedIterator{contract: _ICrossChainRegistry.contract, event: "TransportDestinationChainRemoved", logs: logs, sub: sub}, nil
 }
 
-// WatchTransportDestinationRemoved is a free log subscription operation binding the contract event 0x9fa5794dfaeae2ede46d5bdba347083580889221c3338813ca6c8d4b681ae8ee.
+// WatchTransportDestinationChainRemoved is a free log subscription operation binding the contract event 0x9fa5794dfaeae2ede46d5bdba347083580889221c3338813ca6c8d4b681ae8ee.
 //
-// Solidity: event TransportDestinationRemoved((address,uint32) operatorSet, uint256 chainID)
-func (_ICrossChainRegistry *ICrossChainRegistryFilterer) WatchTransportDestinationRemoved(opts *bind.WatchOpts, sink chan<- *ICrossChainRegistryTransportDestinationRemoved) (event.Subscription, error) {
+// Solidity: event TransportDestinationChainRemoved((address,uint32) operatorSet, uint256 chainID)
+func (_ICrossChainRegistry *ICrossChainRegistryFilterer) WatchTransportDestinationChainRemoved(opts *bind.WatchOpts, sink chan<- *ICrossChainRegistryTransportDestinationChainRemoved) (event.Subscription, error) {
 
-	logs, sub, err := _ICrossChainRegistry.contract.WatchLogs(opts, "TransportDestinationRemoved")
+	logs, sub, err := _ICrossChainRegistry.contract.WatchLogs(opts, "TransportDestinationChainRemoved")
 	if err != nil {
 		return nil, err
 	}
@@ -1622,8 +1622,8 @@ func (_ICrossChainRegistry *ICrossChainRegistryFilterer) WatchTransportDestinati
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(ICrossChainRegistryTransportDestinationRemoved)
-				if err := _ICrossChainRegistry.contract.UnpackLog(event, "TransportDestinationRemoved", log); err != nil {
+				event := new(ICrossChainRegistryTransportDestinationChainRemoved)
+				if err := _ICrossChainRegistry.contract.UnpackLog(event, "TransportDestinationChainRemoved", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -1644,12 +1644,12 @@ func (_ICrossChainRegistry *ICrossChainRegistryFilterer) WatchTransportDestinati
 	}), nil
 }
 
-// ParseTransportDestinationRemoved is a log parse operation binding the contract event 0x9fa5794dfaeae2ede46d5bdba347083580889221c3338813ca6c8d4b681ae8ee.
+// ParseTransportDestinationChainRemoved is a log parse operation binding the contract event 0x9fa5794dfaeae2ede46d5bdba347083580889221c3338813ca6c8d4b681ae8ee.
 //
-// Solidity: event TransportDestinationRemoved((address,uint32) operatorSet, uint256 chainID)
-func (_ICrossChainRegistry *ICrossChainRegistryFilterer) ParseTransportDestinationRemoved(log types.Log) (*ICrossChainRegistryTransportDestinationRemoved, error) {
-	event := new(ICrossChainRegistryTransportDestinationRemoved)
-	if err := _ICrossChainRegistry.contract.UnpackLog(event, "TransportDestinationRemoved", log); err != nil {
+// Solidity: event TransportDestinationChainRemoved((address,uint32) operatorSet, uint256 chainID)
+func (_ICrossChainRegistry *ICrossChainRegistryFilterer) ParseTransportDestinationChainRemoved(log types.Log) (*ICrossChainRegistryTransportDestinationChainRemoved, error) {
+	event := new(ICrossChainRegistryTransportDestinationChainRemoved)
+	if err := _ICrossChainRegistry.contract.UnpackLog(event, "TransportDestinationChainRemoved", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log

@@ -71,10 +71,10 @@ interface ICrossChainRegistryEvents is ICrossChainRegistryTypes {
     event OperatorSetConfigRemoved(OperatorSet operatorSet);
 
     /// @notice Emitted when a transport destination is added
-    event TransportDestinationAdded(OperatorSet operatorSet, uint256 chainID);
+    event TransportDestinationChainAdded(OperatorSet operatorSet, uint256 chainID);
 
     /// @notice Emitted when a transport destination is removed
-    event TransportDestinationRemoved(OperatorSet operatorSet, uint256 chainID);
+    event TransportDestinationChainRemoved(OperatorSet operatorSet, uint256 chainID);
 
     /// @notice Emitted when transport destinations are removed, when a generation reservation is removed
     event TransportDestinationsRemoved(OperatorSet operatorSet);

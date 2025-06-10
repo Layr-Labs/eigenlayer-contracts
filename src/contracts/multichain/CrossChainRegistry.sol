@@ -146,6 +146,8 @@ contract CrossChainRegistry is
         delete _transportDestinations[operatorSetKey];
         emit TransportDestinationsRemoved(operatorSet);
 
+        // 4. Remove from active generation reservations
+        _activeGenerationReservations.remove(operatorSetKey);
         emit GenerationReservationRemoved(operatorSet);
     }
 
@@ -276,7 +278,8 @@ contract CrossChainRegistry is
      * @param chainIDs The chain IDs to add as destinations
      */
     function _addTransportDestinations(OperatorSet memory operatorSet, uint256[] memory chainIDs) internal {
-        // Validate chainIDs array
+        // Validate chainIDs array is not empty. This is to prevent users from
+        // creating a generation reservation with no destinations.
         require(chainIDs.length > 0, EmptyChainIDsArray());
 
         bytes32 operatorSetKey = operatorSet.key();
@@ -290,7 +293,7 @@ contract CrossChainRegistry is
             // Add transport destination
             require(_transportDestinations[operatorSetKey].add(chainID), TransportDestinationAlreadyAdded());
 
-            emit TransportDestinationAdded(operatorSet, chainID);
+            emit TransportDestinationChainAdded(operatorSet, chainID);
         }
     }
 
@@ -308,7 +311,7 @@ contract CrossChainRegistry is
             // Remove transport destination
             require(_transportDestinations[operatorSetKey].remove(chainID), TransportDestinationNotFound());
 
-            emit TransportDestinationRemoved(operatorSet, chainID);
+            emit TransportDestinationChainRemoved(operatorSet, chainID);
         }
 
         // Ensure that at least one destination remains
@@ -404,6 +407,7 @@ contract CrossChainRegistry is
         assembly {
             mstore(result, count)
         }
+
         // Only return chains that are whitelisted
         return result;
     }
