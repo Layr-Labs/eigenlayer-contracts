@@ -16,7 +16,7 @@ interface IOperatorTableUpdaterErrors {
     /// @notice Thrown when the global table root is stale
     error GlobalTableRootStale();
     /// @notice Thrown when the table root does not match what is in the certificate
-    error TableRootNotInCertificate();
+    error InvalidMessageHash();
     /// @notice Thrown when the GlobalTableRoot update fails
     error CertificateInvalid();
     /// @notice Thrown when the table has been updated for the timestamp
@@ -144,4 +144,15 @@ interface IOperatorTableUpdater is
      * @return The latest reference timestamp
      */
     function getLatestReferenceTimestamp() external view returns (uint32);
+
+    /**
+     * @notice Get the message hash for the certificate of a global table root update
+     * @param globalTableRoot the global table root
+     * @param referenceTimestamp the reference timestamp
+     * @return The message hash for a global table root
+     */
+    function getGlobalTableUpdateMessageHash(
+        bytes32 globalTableRoot,
+        uint32 referenceTimestamp
+    ) external view returns (bytes32);
 }
