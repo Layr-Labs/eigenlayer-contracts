@@ -42,7 +42,6 @@ library BN254SignatureVerifier {
             (pairingSuccessful, success) =
                 BN254.safePairing(leftG1, BN254.negGeneratorG2(), rightG1, pubkeyG2, pairingGas);
         } else {
-            // Use regular pairing and revert on failure
             success = BN254.pairing(leftG1, BN254.negGeneratorG2(), rightG1, pubkeyG2);
             if (success) {
                 pairingSuccessful = true;
