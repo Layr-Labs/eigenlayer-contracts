@@ -82,6 +82,9 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
         pendingStrategiesForSlashId.add(address(strategy));
 
         // Calculate the complete block for the strategy, and fetch the current complete block.
+        // The escrow delay for a strategy is determined by taking the maximum of:
+        // 1. The global escrow delay (applies to all strategies).
+        // 2. The strategy-specific delay (if set).
         uint32 completeBlock = uint32(block.number + getStrategyEscrowDelay(strategy) + 1);
         uint32 currentCompleteBlock = _slashIdToCompleteBlock[operatorSet.key()][slashId];
 
