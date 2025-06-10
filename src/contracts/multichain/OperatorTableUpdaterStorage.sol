@@ -8,6 +8,9 @@ import "../interfaces/IECDSACertificateVerifier.sol";
 abstract contract OperatorTableUpdaterStorage is IOperatorTableUpdater {
     // Constants
 
+    bytes32 public constant GLOBAL_TABLE_ROOT_CERT_TYPEHASH =
+        keccak256("GlobalTableRootCert(bytes32 globalTableRoot,uint32 referenceTimestamp)");
+
     /// @notice The maximum BPS value
     uint16 public constant MAX_BPS = 10_000;
 
