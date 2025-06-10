@@ -305,6 +305,10 @@ contract CrossChainRegistry is
 
             emit TransportDestinationRemoved(operatorSet, chainID);
         }
+
+        // Ensure that at least one destination remains
+        // If a user wants to remove all destinations, they should call `removeGenerationReservation` instead
+        require(_transportDestinations[operatorSetKey].length() > 0, RequireAtLeastOneTransportDestination());
     }
 
     /**
