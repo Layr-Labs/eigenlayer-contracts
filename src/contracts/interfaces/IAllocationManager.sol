@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.5.0;
 
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import {DoubleEndedQueue} from "@openzeppelin/contracts/utils/structs/DoubleEndedQueue.sol";
+
 import {OperatorSet} from "../libraries/OperatorSetLib.sol";
 import "./IPauserRegistry.sol";
 import "./IStrategy.sol";
@@ -59,6 +62,15 @@ interface IAllocationManagerErrors {
     error ModificationAlreadyPending();
     /// @dev Thrown when an allocation is attempted that exceeds a given operators total allocatable magnitude.
     error InsufficientMagnitude();
+
+    /// @dev Thrown when an allocator is not whitelisted for the operator/strategy
+    error NotWhitelisted();
+    /// @dev Thrown when adding allocators exceeds the maximum per operator/strategy
+    error MaxAllocatorsExceeded();
+    /// @dev Thrown when attempting to add an allocator that is already whitelisted
+    error AllocatorAlreadyWhitelisted();
+    /// @dev Thrown when attempting to remove an allocator that is not whitelisted
+    error AllocatorNotWhitelisted();
 }
 
 interface IAllocationManagerTypes {
@@ -72,6 +84,17 @@ interface IAllocationManagerTypes {
         uint64 currentMagnitude;
         int128 pendingDiff;
         uint32 effectBlock;
+    }
+
+    /**
+     * @notice Defines allocation information for a an allovator to a strategy and an operator set for a set of operators
+     * @dev keeps the allocation to be backwards compatible with the old storage layout for self allocating operators
+     */
+    struct AllocationInfo {
+        Allocation allocation;
+        DoubleEndedQueue.Bytes32Deque operatorDeallocationQueue;
+        EnumerableSet.AddressSet operators;
+        mapping(address operator => Allocation) operatorAllocations;
     }
 
     /**
@@ -129,11 +152,13 @@ interface IAllocationManagerTypes {
 
     /**
      * @notice struct used to modify the allocation of slashable magnitude to an operator set
+     * @param operator the operator to modify allocations for
      * @param operatorSet the operator set to modify the allocation for
      * @param strategies the strategies to modify allocations for
      * @param newMagnitudes the new magnitude to allocate for each strategy to this operator set
      */
     struct AllocateParams {
+        address operator;
         OperatorSet operatorSet;
         IStrategy[] strategies;
         uint64[] newMagnitudes;
@@ -180,7 +205,7 @@ interface IAllocationManagerEvents is IAllocationManagerTypes {
 
     /// @notice Emitted when an operator's magnitude is updated for a given operatorSet and strategy
     event AllocationUpdated(
-        address operator, OperatorSet operatorSet, IStrategy strategy, uint64 magnitude, uint32 effectBlock
+        address allocator, address operator, OperatorSet operatorSet, IStrategy strategy, uint64 magnitude, uint32 effectBlock
     );
 
     /// @notice Emitted when operator's encumbered magnitude is updated for a given strategy
@@ -219,6 +244,10 @@ interface IAllocationManagerEvents is IAllocationManagerTypes {
 
     /// @notice Emitted when a strategy is removed from an operator set.
     event StrategyRemovedFromOperatorSet(OperatorSet operatorSet, IStrategy strategy);
+
+    /// @notice Emitted when an operator updates their allocator whitelist for a strategy
+    /// `whitelisted` is true when the allocator is added, false when removed
+    event AllocatorWhitelistUpdated(address indexed operator, IStrategy indexed strategy, address indexed allocator, bool whitelisted);
 }
 
 interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEvents, ISemVerMixin {
@@ -412,12 +441,14 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
 
     /**
      * @notice Returns the current/pending stake allocation an operator has from a strategy to an operator set
+     * @param allocator the allocator to query
      * @param operator the operator to query
      * @param operatorSet the operator set to query
      * @param strategy the strategy to query
      * @return the current/pending stake allocation
      */
     function getAllocation(
+        address allocator,
         address operator,
         OperatorSet memory operatorSet,
         IStrategy strategy
@@ -667,4 +698,33 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
     function isOperatorRedistributable(
         address operator
     ) external view returns (bool);
+
+    // ---------------------------------------------------------------------
+    // Allocator whitelist management
+    // ---------------------------------------------------------------------
+
+    /**
+     * @notice Modifies the whitelist status of each allocator for a given operator and strategy.
+     *         `whitelisted[i]` indicates whether `allocators[i]` should be added (true) or removed (false).
+     *         Can only be called by the operator or an authorised caller.
+     */
+    function modifyAllocatorWhitelist(
+        address operator,
+        IStrategy strategy,
+        address[] calldata allocators,
+        bool[] calldata whitelisted
+    ) external;
+
+    /**
+     * @notice Queues deallocations for all `allocators` that have been removed from the whitelist of `operator` for `strategy`.
+     *         Deallocation logic mirrors that of `modifyAllocations` when an allocator deallocates to zero.
+     *         Anyone can call this method.
+     */
+    function queueDeallocationsForRemovedAllocators(
+        address operator,
+        IStrategy strategy,
+        address[] calldata allocators,
+        uint256 startIdx,
+        uint256 count
+    ) external;
 }

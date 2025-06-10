@@ -70,24 +70,27 @@ contract AllocationManager is
         require(_operatorSets[operatorSet.avs].contains(operatorSet.id), InvalidOperatorSet());
         require(isOperatorSlashable(params.operator, operatorSet), OperatorNotSlashable());
 
-        return _slashOperator(params, operatorSet);
+        uint256 slashId;
+        uint256[] memory shares;
+        (slashId, shares) = _slashOperator(params, operatorSet);
+        return (slashId, shares);
     }
 
     /// @inheritdoc IAllocationManager
     function modifyAllocations(
-        address operator,
+        address allocator,
         AllocateParams[] memory params
     ) external onlyWhenNotPaused(PAUSED_MODIFY_ALLOCATIONS) {
-        // Check that the caller is allowed to modify allocations on behalf of the operator
+        // Check that the caller is allowed to modify allocations on behalf of the allocator
         // We do not use a modifier to avoid `stack too deep` errors
-        require(_checkCanCall(operator), InvalidCaller());
+        require(_checkCanCall(allocator), InvalidCaller());
 
-        // Check that the operator exists and has configured an allocation delay
-        uint32 operatorAllocationDelay;
+        // Check that the allocator exists and has configured an allocation delay
+        uint32 allocatorAllocationDelay;
         {
-            (bool isSet, uint32 delay) = getAllocationDelay(operator);
+            (bool isSet, uint32 delay) = getAllocationDelay(allocator);
             require(isSet, UninitializedAllocationDelay());
-            operatorAllocationDelay = delay;
+            allocatorAllocationDelay = delay;
         }
 
         for (uint256 i = 0; i < params.length; i++) {
@@ -101,18 +104,18 @@ contract AllocationManager is
             OperatorSet memory operatorSet = params[i].operatorSet;
             require(_operatorSets[operatorSet.avs].contains(operatorSet.id), InvalidOperatorSet());
 
-            bool _isOperatorSlashable = isOperatorSlashable(operator, operatorSet);
+            bool _isOperatorSlashable = isOperatorSlashable(params[i].operator, operatorSet);
 
             for (uint256 j = 0; j < params[i].strategies.length; j++) {
                 IStrategy strategy = params[i].strategies[j];
 
-                // 1. If the operator has any pending deallocations for this strategy, clear them
-                // to free up magnitude for allocation. Fetch the operator's up to date allocation
+                // 1. If the allocator has any pending deallocations for this strategy, clear them
+                // to free up magnitude for allocation. Fetch the allocator's up to date allocation
                 // info and ensure there is no remaining pending modification.
-                _clearDeallocationQueue(operator, strategy, type(uint16).max);
+                _clearDeallocationQueue(allocator, strategy, type(uint16).max);
 
                 (StrategyInfo memory info, Allocation memory allocation) =
-                    _getUpdatedAllocation(operator, operatorSet.key(), strategy);
+                    _getUpdatedAllocation(allocator, params[i].operator, operatorSet.key(), strategy);
                 require(allocation.effectBlock == 0, ModificationAlreadyPending());
 
                 // 2. Check whether the operator's allocation is slashable. If not, we allow instant
@@ -128,7 +131,8 @@ contract AllocationManager is
                     if (isSlashable) {
                         // If the operator is slashable, deallocated magnitude will be freed after
                         // the deallocation delay. This magnitude remains slashable until then.
-                        deallocationQueue[operator][strategy].pushBack(operatorSet.key());
+                        deallocationQueue[allocator][strategy].pushBack(operatorSet.key());
+                        allocations[allocator][operatorSet.key()][strategy].operatorDeallocationQueue.pushBack(bytes32(uint256(uint160(params[i].operator))));
 
                         // deallocations are slashable in the window [block.number, block.number + deallocationDelay]
                         // therefore, the effectBlock is set to the block right after the slashable window
@@ -147,15 +151,16 @@ contract AllocationManager is
                     info.encumberedMagnitude = _addInt128(info.encumberedMagnitude, allocation.pendingDiff);
                     require(info.encumberedMagnitude <= info.maxMagnitude, InsufficientMagnitude());
 
-                    allocation.effectBlock = uint32(block.number) + operatorAllocationDelay;
+                    allocation.effectBlock = uint32(block.number) + allocatorAllocationDelay;
                 }
 
                 // 5. Update state
-                _updateAllocationInfo(operator, operatorSet.key(), strategy, info, allocation);
+                _updateAllocationInfo(allocator, params[i].operator, operatorSet.key(), strategy, info, allocation);
 
                 // 6. Emit an event for the updated allocation
                 emit AllocationUpdated(
-                    operator,
+                    allocator,
+                    params[i].operator,
                     operatorSet,
                     strategy,
                     _addInt128(allocation.currentMagnitude, allocation.pendingDiff),
@@ -167,13 +172,122 @@ contract AllocationManager is
 
     /// @inheritdoc IAllocationManager
     function clearDeallocationQueue(
-        address operator,
+        address allocator,
         IStrategy[] calldata strategies,
         uint16[] calldata numToClear
     ) external onlyWhenNotPaused(PAUSED_MODIFY_ALLOCATIONS) {
         require(strategies.length == numToClear.length, InputArrayLengthMismatch());
         for (uint256 i = 0; i < strategies.length; ++i) {
-            _clearDeallocationQueue({operator: operator, strategy: strategies[i], numToClear: numToClear[i]});
+            _clearDeallocationQueue({allocator: allocator, strategy: strategies[i], numToClear: numToClear[i]});
+        }
+    }
+
+
+    /// ---------------------------------------------------------------------
+    /// Allocator whitelist management
+    /// ---------------------------------------------------------------------
+
+    /// @inheritdoc IAllocationManager
+    function modifyAllocatorWhitelist(
+        address operator,
+        IStrategy strategy,
+        address[] calldata allocators,
+        bool[] calldata whitelisted
+    ) external onlyWhenNotPaused(PAUSED_MODIFY_ALLOCATIONS) {
+        require(allocators.length == whitelisted.length, InputArrayLengthMismatch());
+        require(_checkCanCall(operator), InvalidCaller());
+        for (uint256 i = 0; i < allocators.length; ++i) {
+            if (whitelisted[i]) {
+                require(
+                    allocatorWhitelist[operator][strategy].add(allocators[i]),
+                    AllocatorAlreadyWhitelisted()
+                );
+            } else {
+                require(allocatorWhitelist[operator][strategy].remove(allocators[i]), AllocatorNotWhitelisted());
+            }
+            emit AllocatorWhitelistUpdated(operator, strategy, allocators[i], whitelisted[i]);
+        }
+    }
+
+    /// @inheritdoc IAllocationManager
+    function queueDeallocationsForRemovedAllocators(
+        address operator,
+        IStrategy strategy,
+        address[] calldata allocators,
+        uint256 startIdx,   
+        uint256 count
+    ) external onlyWhenNotPaused(PAUSED_MODIFY_ALLOCATIONS) {
+        require(allocators.length == count, InputArrayLengthMismatch());
+        for (uint256 i = 0; i < allocators.length; ++i) {
+            // Only consider allocators that are NOT currently whitelisted
+            if (allocatorWhitelist[operator][strategy].contains(allocators[i])) {
+                continue;
+            }
+            _queueDeallocationsForAllocator(allocators[i], operator, strategy, startIdx, count);
+        }
+    }
+
+    /// @dev Internal helper to queue deallocation of *all* allocations an allocator has to `operator` for `strategy`
+    function _queueDeallocationsForAllocator(
+        address allocator,
+        address operator,
+        IStrategy strategy,
+        uint256 startIdx,
+        uint256 count
+    ) internal {
+        uint256 length = allocatedSets[allocator].length();
+        for (uint256 idx = startIdx; idx < length && idx < startIdx + count; ++idx) {
+            bytes32 operatorSetKey = allocatedSets[allocator].at(idx);
+            // Ensure this allocation corresponds to the operator of interest
+            if (!operatorAllocators[operator][operatorSetKey][strategy].contains(allocator)) {
+                continue;
+            }
+            // Fetch current allocation details
+            (StrategyInfo memory info, Allocation memory allocation) = _getUpdatedAllocation(
+                allocator,
+                operator,
+                operatorSetKey,
+                strategy
+            );
+            // Skip if there is already a pending modification or nothing allocated
+            if (allocation.effectBlock != 0 || allocation.currentMagnitude == 0) {
+                continue;
+            }
+
+            // Determine slashability
+            OperatorSet memory opSet = OperatorSetLib.decode(operatorSetKey);
+            bool isSlashable = _isAllocationSlashable(
+                opSet,
+                strategy,
+                allocation,
+                isOperatorSlashable(operator, opSet)
+            );
+
+            // Queue full deallocation
+            allocation.pendingDiff = -int128(uint128(allocation.currentMagnitude));
+            if (isSlashable) {
+                deallocationQueue[allocator][strategy].pushBack(operatorSetKey);
+                allocations[allocator][operatorSetKey][strategy].operatorDeallocationQueue.pushBack(
+                    bytes32(uint256(uint160(operator)))
+                );
+                allocation.effectBlock = uint32(block.number) + DEALLOCATION_DELAY + 1;
+            } else {
+                info.encumberedMagnitude = _addInt128(info.encumberedMagnitude, allocation.pendingDiff);
+                allocation.currentMagnitude = 0;
+                allocation.pendingDiff = 0;
+                allocation.effectBlock = uint32(block.number);
+            }
+
+            _updateAllocationInfo(allocator, operator, operatorSetKey, strategy, info, allocation);
+
+            emit AllocationUpdated(
+                allocator,
+                operator,
+                opSet,
+                strategy,
+                _addInt128(allocation.currentMagnitude, allocation.pendingDiff),
+                allocation.effectBlock
+            );
         }
     }
 
@@ -327,11 +441,8 @@ contract AllocationManager is
         SlashingParams calldata params,
         OperatorSet memory operatorSet
     ) internal returns (uint256 slashId, uint256[] memory shares) {
-        uint256[] memory wadSlashed = new uint256[](params.strategies.length);
+        uint256[] memory wadsSlashed = new uint256[](params.strategies.length);
         shares = new uint256[](params.strategies.length);
-
-        // Increment the slash count for the operator set.
-        slashId = ++_slashIds[operatorSet.key()];
 
         // For each strategy in the operator set, slash any existing allocation
         for (uint256 i = 0; i < params.strategies.length; i++) {
@@ -348,66 +459,92 @@ contract AllocationManager is
                 StrategyNotInOperatorSet()
             );
 
-            // 1. Get the operator's allocation info for the strategy and operator set
-            (StrategyInfo memory info, Allocation memory allocation) =
-                _getUpdatedAllocation(params.operator, operatorSet.key(), params.strategies[i]);
-
-            // 2. Skip if the operator does not have a slashable allocation
-            // NOTE: this "if" is equivalent to: `if (!_isAllocationSlashable)`, because the other
-            // conditions in this method are already true (isOperatorSlashable + operatorSetStrategies.contains)
-            if (allocation.currentMagnitude == 0) {
-                continue;
+            for (uint256 j = 0; j < operatorAllocators[params.operator][operatorSet.key()][params.strategies[i]].length(); j++) {
+                address allocator = operatorAllocators[params.operator][operatorSet.key()][params.strategies[i]].at(j);
+                (uint256 wadSlashed, uint256 sharesSlashed) = _slashAllocator(allocator, params.operator, operatorSet, params.strategies[i], params.wadsToSlash[i]);
+                shares[i] += sharesSlashed;
+                wadsSlashed[i] += wadSlashed;
             }
-
-            // 3. Calculate the amount of magnitude being slashed, and subtract from
-            // the operator's currently-allocated magnitude, as well as the strategy's
-            // max and encumbered magnitudes
-            uint64 slashedMagnitude = uint64(uint256(allocation.currentMagnitude).mulWadRoundUp(params.wadsToSlash[i]));
-            uint64 prevMaxMagnitude = info.maxMagnitude;
-            wadSlashed[i] = uint256(slashedMagnitude).divWad(info.maxMagnitude);
-
-            allocation.currentMagnitude -= slashedMagnitude;
-            info.maxMagnitude -= slashedMagnitude;
-            info.encumberedMagnitude -= slashedMagnitude;
-
-            // 4. If there is a pending deallocation, reduce the pending deallocation proportionally.
-            // This ensures that when the deallocation is completed, less magnitude is freed.
-            if (allocation.pendingDiff < 0) {
-                uint64 slashedPending =
-                    uint64(uint256(uint128(-allocation.pendingDiff)).mulWadRoundUp(params.wadsToSlash[i]));
-                allocation.pendingDiff += int128(uint128(slashedPending));
-
-                emit AllocationUpdated(
-                    params.operator,
-                    operatorSet,
-                    params.strategies[i],
-                    _addInt128(allocation.currentMagnitude, allocation.pendingDiff),
-                    allocation.effectBlock
-                );
-            }
-
-            // 5. Update state
-            _updateAllocationInfo(params.operator, operatorSet.key(), params.strategies[i], info, allocation);
-
-            // Emit an event for the updated allocation
-            emit AllocationUpdated(
-                params.operator, operatorSet, params.strategies[i], allocation.currentMagnitude, uint32(block.number)
-            );
-
-            _updateMaxMagnitude(params.operator, params.strategies[i], info.maxMagnitude);
-
-            // 6. Slash operators shares in the DelegationManager
-            shares[i] = delegation.slashOperatorShares({
-                operator: params.operator,
-                operatorSet: operatorSet,
-                slashId: slashId,
-                strategy: params.strategies[i],
-                prevMaxMagnitude: prevMaxMagnitude,
-                newMaxMagnitude: info.maxMagnitude
-            });
         }
 
-        emit OperatorSlashed(params.operator, operatorSet, params.strategies, wadSlashed, params.description);
+        return (_slashIds[operatorSet.key()], shares);
+
+        // emit OperatorSlashed(params.operator, operatorSet, params.strategies, wadsSlashed, params.description);
+    }
+
+    function _slashAllocator(
+        address allocator,
+        address operator,
+        OperatorSet memory operatorSet,
+        IStrategy strategy,
+        uint256 wadsToSlash
+    ) internal returns (uint256 wadSlashed, uint256 sharesSlashed) {
+        // 1. Get the operator's own allocation info for the strategy and operator set
+        (StrategyInfo memory info, Allocation memory allocation) =
+            _getUpdatedAllocation(allocator, operator, operatorSet.key(), strategy);
+
+        // 2. Skip if the operator does not have a slashable allocation
+        // NOTE: this "if" is equivalent to: `if (!_isAllocationSlashable)`, because the other
+        // conditions in this method are already true (isOperatorSlashable + operatorSetStrategies.contains)
+        if (allocation.currentMagnitude == 0) {
+            return (0, 0);
+        }
+
+        // Increment the slash count for the operator set.
+        uint256 slashId = ++_slashIds[operatorSet.key()];
+
+        // 3. Calculate the amount of magnitude being slashed, and subtract from
+        // the operator's currently-allocated magnitude, as well as the strategy's
+        // max and encumbered magnitudes
+        uint64 slashedMagnitude = uint64(uint256(allocation.currentMagnitude).mulWadRoundUp(wadsToSlash));
+        uint64 prevMaxMagnitude = info.maxMagnitude;
+        wadSlashed = uint256(slashedMagnitude).divWad(info.maxMagnitude);
+
+        allocation.currentMagnitude -= slashedMagnitude;
+        info.maxMagnitude -= slashedMagnitude;
+        info.encumberedMagnitude -= slashedMagnitude;
+
+        // 4. If there is a pending deallocation, reduce the pending deallocation proportionally.
+        // This ensures that when the deallocation is completed, less magnitude is freed.
+        if (allocation.pendingDiff < 0) {
+            uint64 slashedPending =
+                uint64(uint256(uint128(-allocation.pendingDiff)).mulWadRoundUp(wadsToSlash));
+            allocation.pendingDiff += int128(uint128(slashedPending));
+
+            emit AllocationUpdated(
+                allocator,
+                operator,
+                operatorSet,
+                strategy,
+                _addInt128(allocation.currentMagnitude, allocation.pendingDiff),
+                allocation.effectBlock
+            );
+        }
+
+        // 5. Update state
+        _updateAllocationInfo(allocator, operator, operatorSet.key(), strategy, info, allocation);
+
+        // Emit an event for the updated allocation
+        emit AllocationUpdated(
+            allocator,
+            operator,
+            operatorSet,
+            strategy,
+            allocation.currentMagnitude,
+            uint32(block.number)
+        );
+
+        _updateMaxMagnitude(allocator, strategy, info.maxMagnitude);
+
+        // 6. Slash operators shares in the DelegationManager
+        sharesSlashed = delegation.slashOperatorShares({
+            operator: allocator,
+            operatorSet: operatorSet,
+            slashId: slashId,
+            strategy: strategy,
+            prevMaxMagnitude: prevMaxMagnitude,
+            newMaxMagnitude: info.maxMagnitude
+        });
     }
 
     /**
@@ -464,18 +601,21 @@ contract AllocationManager is
 
     /**
      * @dev Clear one or more pending deallocations to a strategy's allocated magnitude
-     * @param operator the operator whose pending deallocations will be cleared
+     * @param allocator the allocator whose pending deallocations will be cleared
      * @param strategy the strategy to update
      * @param numToClear the number of pending deallocations to clear
      */
-    function _clearDeallocationQueue(address operator, IStrategy strategy, uint16 numToClear) internal {
+    function _clearDeallocationQueue(address allocator, IStrategy strategy, uint16 numToClear) internal {
         uint256 numCleared;
-        uint256 length = deallocationQueue[operator][strategy].length();
+        uint256 length = deallocationQueue[allocator][strategy].length();
 
         while (length > 0 && numCleared < numToClear) {
-            bytes32 operatorSetKey = deallocationQueue[operator][strategy].front();
+            bytes32 operatorSetKey = deallocationQueue[allocator][strategy].front();
+            bytes32 operatorBytes = allocations[allocator][operatorSetKey][strategy].operatorDeallocationQueue.front();
+            address operator = address(uint160(uint256(operatorBytes)));
+            
             (StrategyInfo memory info, Allocation memory allocation) =
-                _getUpdatedAllocation(operator, operatorSetKey, strategy);
+                _getUpdatedAllocation(allocator, operator, operatorSetKey, strategy);
 
             // If we've reached a pending deallocation that isn't completable yet,
             // we can stop. Any subsequent deallocation will also be uncompletable.
@@ -485,10 +625,11 @@ contract AllocationManager is
 
             // Update state. This completes the deallocation, because `_getUpdatedAllocation`
             // gave us strategy/allocation info as if the deallocation was already completed.
-            _updateAllocationInfo(operator, operatorSetKey, strategy, info, allocation);
+            _updateAllocationInfo(allocator, operator, operatorSetKey, strategy, info, allocation);
 
-            // Remove the deallocation from the queue
-            deallocationQueue[operator][strategy].popFront();
+            // Remove the deallocation from both queues
+            deallocationQueue[allocator][strategy].popFront();
+            allocations[allocator][operatorSetKey][strategy].operatorDeallocationQueue.popFront();
             ++numCleared;
             --length;
         }
@@ -542,6 +683,7 @@ contract AllocationManager is
      * the effective encumbered magnitude for all operator sets belonging to this strategy
      */
     function _getUpdatedAllocation(
+        address allocator,
         address operator,
         bytes32 operatorSetKey,
         IStrategy strategy
@@ -551,7 +693,12 @@ contract AllocationManager is
             encumberedMagnitude: encumberedMagnitude[operator][strategy]
         });
 
-        Allocation memory allocation = allocations[operator][operatorSetKey][strategy];
+        Allocation memory allocation;
+        if (allocator == operator) {
+            allocation = allocations[allocator][operatorSetKey][strategy].allocation;
+        } else {
+            allocation = allocations[allocator][operatorSetKey][strategy].operatorAllocations[operator];
+        }
 
         // If the pending change can't be completed yet, return as-is
         if (block.number < allocation.effectBlock) {
@@ -573,6 +720,7 @@ contract AllocationManager is
     }
 
     function _updateAllocationInfo(
+        address allocator,
         address operator,
         bytes32 operatorSetKey,
         IStrategy strategy,
@@ -590,21 +738,38 @@ contract AllocationManager is
         // We emit an `AllocationUpdated` from the `modifyAllocations` and `slashOperator` functions.
         // `clearDeallocationQueue` does not emit an `AllocationUpdated` event since it was
         // emitted when the deallocation was queued
-        allocations[operator][operatorSetKey][strategy] = allocation;
+        if (allocator == operator) {
+            allocations[allocator][operatorSetKey][strategy].allocation = allocation;
+        } else {
+            allocations[allocator][operatorSetKey][strategy].operatorAllocations[operator] = allocation;
+        }
 
         // Note: these no-op if the sets already contain the added values (or do not contain removed ones)
         if (allocation.pendingDiff != 0) {
             // If we have a pending modification, ensure the allocation is in the operator's
             // list of enumerable strategies/sets.
-            allocatedStrategies[operator][operatorSetKey].add(address(strategy));
-            allocatedSets[operator].add(operatorSetKey);
+            allocatedStrategies[allocator][operatorSetKey].add(address(strategy));
+            allocatedSets[allocator].add(operatorSetKey);
+            
+            // Track that this allocator has allocated to this operator
+            if (allocator != operator) {
+                // make sure allocator is whitelisted
+                require(allocatorWhitelist[operator][strategy].contains(allocator), AllocatorNotWhitelisted());
+                operatorAllocators[operator][operatorSetKey][strategy].add(allocator);
+                require(operatorAllocators[operator][operatorSetKey][strategy].length() <= MAX_ALLOCATORS, MaxAllocatorsExceeded());
+            }
         } else if (allocation.currentMagnitude == 0) {
             // If we do NOT have a pending modification, and no existing magnitude, remove the
             // allocation from the operator's lists.
-            allocatedStrategies[operator][operatorSetKey].remove(address(strategy));
+            allocatedStrategies[allocator][operatorSetKey].remove(address(strategy));
 
-            if (allocatedStrategies[operator][operatorSetKey].length() == 0) {
-                allocatedSets[operator].remove(operatorSetKey);
+            if (allocatedStrategies[allocator][operatorSetKey].length() == 0) {
+                allocatedSets[allocator].remove(operatorSetKey);
+            }
+            
+            // Remove allocator from operator's allocator list if no magnitude remains
+            if (allocator != operator) {
+                operatorAllocators[operator][operatorSetKey][strategy].remove(allocator);
             }
         }
     }
@@ -623,7 +788,6 @@ contract AllocationManager is
         uint32 futureBlock
     ) internal view returns (uint256[][] memory allocatedStake) {
         allocatedStake = new uint256[][](operators.length);
-        uint256[][] memory delegatedStake = delegation.getOperatorsShares(operators, strategies);
 
         for (uint256 i = 0; i < operators.length; i++) {
             address operator = operators[i];
@@ -632,28 +796,46 @@ contract AllocationManager is
 
             for (uint256 j = 0; j < strategies.length; j++) {
                 IStrategy strategy = strategies[j];
-
-                // Fetch the max magnitude and allocation for the operator/strategy.
-                // Prevent division by 0 if needed. This mirrors the "FullySlashed" checks
-                // in the DelegationManager
-                uint64 maxMagnitude = _maxMagnitudeHistory[operator][strategy].latest();
-                if (maxMagnitude == 0) {
-                    continue;
+                // get the operator's own allocated shares
+                allocatedStake[i][j] = _getAllocatedShares(operator, operator, operatorSet, strategy, futureBlock);
+                // get the shares of all allocators
+                EnumerableSet.AddressSet storage allocators = operatorAllocators[operator][operatorSet.key()][strategy];
+                for (uint256 k = 0; k < allocators.length(); k++) {
+                    address allocator = allocators.at(k);
+                    allocatedStake[i][j] += _getAllocatedShares(allocator, operator, operatorSet, strategy, futureBlock);
                 }
-
-                Allocation memory alloc = getAllocation(operator, operatorSet, strategy);
-
-                // If the pending change takes effect before `futureBlock`, include it in `currentMagnitude`
-                // However, ONLY include the pending change if it is a deallocation, since this method
-                // is supposed to return the minimum slashable stake between now and `futureBlock`
-                if (alloc.effectBlock <= futureBlock && alloc.pendingDiff < 0) {
-                    alloc.currentMagnitude = _addInt128(alloc.currentMagnitude, alloc.pendingDiff);
-                }
-
-                uint256 slashableProportion = uint256(alloc.currentMagnitude).divWad(maxMagnitude);
-                allocatedStake[i][j] = delegatedStake[i][j].mulWad(slashableProportion);
             }
         }
+    }
+
+    function _getAllocatedShares(
+        address allocator,
+        address operator,
+        OperatorSet memory operatorSet,
+        IStrategy strategy,
+        uint32 futureBlock
+    ) internal view returns (uint256) {
+        // Fetch the max magnitude and allocation for the operator/strategy.
+        // Prevent division by 0 if needed. This mirrors the "FullySlashed" checks
+        // in the DelegationManager
+        uint64 maxMagnitude = _maxMagnitudeHistory[allocator][strategy].latest();
+        if (maxMagnitude == 0) {
+            return 0;
+        }
+        
+        Allocation memory alloc = getAllocation(allocator, operator, operatorSet, strategy);
+        
+        // If the pending change takes effect before `futureBlock`, include it in `currentMagnitude`
+        // However, ONLY include the pending change if it is a deallocation, since this method
+        // is supposed to return the minimum slashable stake between now and `futureBlock`
+        if (alloc.effectBlock <= futureBlock && alloc.pendingDiff < 0) {
+            alloc.currentMagnitude = _addInt128(alloc.currentMagnitude, alloc.pendingDiff);
+        }
+
+        uint256 slashableProportion = uint256(alloc.currentMagnitude).divWad(maxMagnitude);
+        IStrategy[] memory strategies = new IStrategy[](1);
+        strategies[0] = strategy;
+        return delegation.getOperatorShares(allocator, strategies)[0].mulWad(slashableProportion);
     }
 
     function _updateMaxMagnitude(address operator, IStrategy strategy, uint64 newMaxMagnitude) internal {
@@ -732,11 +914,12 @@ contract AllocationManager is
 
     /// @inheritdoc IAllocationManager
     function getAllocation(
+        address allocator,
         address operator,
         OperatorSet memory operatorSet,
         IStrategy strategy
     ) public view returns (Allocation memory) {
-        (, Allocation memory allocation) = _getUpdatedAllocation(operator, operatorSet.key(), strategy);
+        (, Allocation memory allocation) = _getUpdatedAllocation(allocator, operator, operatorSet.key(), strategy);
 
         return allocation;
     }
@@ -744,14 +927,14 @@ contract AllocationManager is
     /// @inheritdoc IAllocationManager
     function getAllocations(
         address[] memory operators,
-        OperatorSet memory operatorSet,
-        IStrategy strategy
-    ) external view returns (Allocation[] memory) {
+        OperatorSet memory /*operatorSet*/,
+        IStrategy /*strategy*/
+    ) external pure returns (Allocation[] memory) {
         Allocation[] memory _allocations = new Allocation[](operators.length);
 
-        for (uint256 i = 0; i < operators.length; i++) {
-            _allocations[i] = getAllocation(operators[i], operatorSet, strategy);
-        }
+        // for (uint256 i = 0; i < operators.length; i++) {
+        //     _allocations[i] = getAllocation(operators[i], operatorSet, strategy);
+        // }
 
         return _allocations;
     }
@@ -759,19 +942,19 @@ contract AllocationManager is
     /// @inheritdoc IAllocationManager
     function getStrategyAllocations(
         address operator,
-        IStrategy strategy
+        IStrategy /*strategy*/
     ) external view returns (OperatorSet[] memory, Allocation[] memory) {
         uint256 length = allocatedSets[operator].length();
 
         OperatorSet[] memory operatorSets = new OperatorSet[](length);
         Allocation[] memory _allocations = new Allocation[](length);
 
-        for (uint256 i = 0; i < length; i++) {
-            OperatorSet memory operatorSet = OperatorSetLib.decode(allocatedSets[operator].at(i));
+        // for (uint256 i = 0; i < length; i++) {
+        //     OperatorSet memory operatorSet = OperatorSetLib.decode(allocatedSets[operator].at(i));
 
-            operatorSets[i] = operatorSet;
-            _allocations[i] = getAllocation(operator, operatorSet, strategy);
-        }
+        //     operatorSets[i] = operatorSet;
+        //     _allocations[i] = getAllocation(operator, operatorSet, strategy);
+        // }
 
         return (operatorSets, _allocations);
     }
@@ -792,19 +975,22 @@ contract AllocationManager is
     /// magnitude. Note that these two values will always add up to the operator's max magnitude
     /// for the strategy
     function _getFreeAndUsedMagnitude(
-        address operator,
+        address allocator,
         IStrategy strategy
     ) internal view returns (uint64 curEncumberedMagnitude, uint64 curAllocatableMagnitude) {
         // This method needs to simulate clearing any pending deallocations.
         // This roughly mimics the calculations done in `_clearDeallocationQueue` and
         // `_getUpdatedAllocation`, while operating on a `curEncumberedMagnitude`
         // rather than continually reading/updating state.
-        curEncumberedMagnitude = encumberedMagnitude[operator][strategy];
+        curEncumberedMagnitude = encumberedMagnitude[allocator][strategy];
 
-        uint256 length = deallocationQueue[operator][strategy].length();
+        uint256 length = deallocationQueue[allocator][strategy].length();
         for (uint256 i = 0; i < length; ++i) {
-            bytes32 operatorSetKey = deallocationQueue[operator][strategy].at(i);
-            Allocation memory allocation = allocations[operator][operatorSetKey][strategy];
+            bytes32 operatorSetKey = deallocationQueue[allocator][strategy].at(i);
+            // yikes todo
+            bytes32 operatorBytes = allocations[allocator][operatorSetKey][strategy].operatorDeallocationQueue.at(i);
+            address operator = address(uint160(uint256(operatorBytes)));
+            Allocation memory allocation = allocations[allocator][operatorSetKey][strategy].operatorAllocations[operator];
 
             // If we've reached a pending deallocation that isn't completable yet,
             // we can stop. Any subsequent modifications will also be uncompletable.
@@ -820,7 +1006,7 @@ contract AllocationManager is
 
         // The difference between the operator's max magnitude and its encumbered magnitude
         // is the magnitude that can be allocated.
-        curAllocatableMagnitude = _maxMagnitudeHistory[operator][strategy].latest() - curEncumberedMagnitude;
+        curAllocatableMagnitude = _maxMagnitudeHistory[allocator][strategy].latest() - curEncumberedMagnitude;
         return (curEncumberedMagnitude, curAllocatableMagnitude);
     }
 
