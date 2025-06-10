@@ -48,6 +48,9 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
         bn254CertificateVerifier.updateOperatorTable(
             _globalRootConfirmerSet, referenceTimestamp, globalRootConfirmerSetInfo, globalRootConfirmerSetConfig
         );
+
+        // Set the latest reference timestamp
+        _latestReferenceTimestamp = referenceTimestamp;
     }
 
     /**
@@ -64,7 +67,7 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
     ) external {
         // Table roots can only be updated for current or past timestamps and after the latest reference timestamp
         require(referenceTimestamp <= block.timestamp, GlobalTableRootInFuture());
-        require(referenceTimestamp > latestReferenceTimestamp, GlobalTableRootStale());
+        require(referenceTimestamp > _latestReferenceTimestamp, GlobalTableRootStale());
         require(globalTableRoot == globalTableRootCert.messageHash, TableRootNotInCertificate());
 
         // Verify certificate by using the stake proportion thresholds
@@ -77,7 +80,7 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
         require(isValid, CertificateInvalid());
 
         // Update the global table root
-        latestReferenceTimestamp = referenceTimestamp;
+        _latestReferenceTimestamp = referenceTimestamp;
         _globalTableRoots[referenceTimestamp] = globalTableRoot;
 
         emit NewGlobalTableRoot(referenceTimestamp, globalTableRoot);
@@ -159,7 +162,7 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
 
     /// @inheritdoc IOperatorTableUpdater
     function getCurrentGlobalTableRoot() external view returns (bytes32) {
-        return _globalTableRoots[latestReferenceTimestamp];
+        return _globalTableRoots[_latestReferenceTimestamp];
     }
 
     /// @inheritdoc IOperatorTableUpdater
@@ -178,6 +181,11 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
         } else {
             revert InvalidCurveType();
         }
+    }
+
+    /// @inheritdoc IOperatorTableUpdater
+    function getLatestReferenceTimestamp() external view returns (uint32) {
+        return _latestReferenceTimestamp;
     }
 
     /**
