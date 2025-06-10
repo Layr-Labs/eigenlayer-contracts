@@ -136,10 +136,15 @@ contract CrossChainRegistry is
         // Clear all storage for the operator set
         // 1. Remove the operator table calculator
         delete _operatorTableCalculators[operatorSetKey];
+        emit OperatorTableCalculatorRemoved(operatorSet);
+
         // 2. Remove the operator set config
         delete _operatorSetConfigs[operatorSetKey];
+        emit OperatorSetConfigRemoved(operatorSet);
+
         // 3. Remove all transport destinations
         delete _transportDestinations[operatorSetKey];
+        emit TransportDestinationsRemoved(operatorSet);
 
         emit GenerationReservationRemoved(operatorSet);
     }
