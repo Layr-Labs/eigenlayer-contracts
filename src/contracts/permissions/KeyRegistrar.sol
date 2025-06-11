@@ -146,11 +146,8 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         // Check global uniqueness
         require(!globalKeyRegistry[keyHash], KeyAlreadyRegistered());
 
-        // Create EIP-712 compliant message hash
-        bytes32 structHash = keccak256(
-            abi.encode(ECDSA_KEY_REGISTRATION_TYPEHASH, operator, operatorSet.avs, operatorSet.id, keyAddress)
-        );
-        bytes32 signableDigest = _calculateSignableDigest(structHash);
+        // Get the signable digest for the ECDSA key registration message
+        bytes32 signableDigest = getECDSAKeyRegistrationMessageHash(operator, operatorSet, keyAddress);
 
         _checkIsValidSignatureNow(keyAddress, signableDigest, signature, type(uint256).max);
 
@@ -189,10 +186,7 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         }
 
         // Create EIP-712 compliant message hash
-        bytes32 structHash = keccak256(
-            abi.encode(BN254_KEY_REGISTRATION_TYPEHASH, operator, operatorSet.avs, operatorSet.id, keccak256(keyData))
-        );
-        bytes32 signableDigest = _calculateSignableDigest(structHash);
+        bytes32 signableDigest = getBN254KeyRegistrationMessageHash(operator, operatorSet, keyData);
 
         // Decode signature from bytes to G1 point
         (uint256 sigX, uint256 sigY) = abi.decode(signature, (uint256, uint256));
@@ -323,36 +317,24 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         return _getKeyHashForKeyData(keyInfo.keyData, curveType);
     }
 
-    /**
-     * @notice Returns the message hash for ECDSA key registration
-     * @param operator The operator address
-     * @param operatorSet The operator set
-     * @param keyAddress The ECDSA key address
-     * @return The message hash for signing
-     */
+    /// @inheritdoc IKeyRegistrar
     function getECDSAKeyRegistrationMessageHash(
         address operator,
         OperatorSet memory operatorSet,
         address keyAddress
-    ) external view returns (bytes32) {
+    ) public view returns (bytes32) {
         bytes32 structHash = keccak256(
             abi.encode(ECDSA_KEY_REGISTRATION_TYPEHASH, operator, operatorSet.avs, operatorSet.id, keyAddress)
         );
         return _calculateSignableDigest(structHash);
     }
 
-    /**
-     * @notice Returns the message hash for BN254 key registration
-     * @param operator The operator address
-     * @param operatorSet The operator set
-     * @param keyData The BN254 key data
-     * @return The message hash for signing
-     */
+    /// @inheritdoc IKeyRegistrar
     function getBN254KeyRegistrationMessageHash(
         address operator,
         OperatorSet memory operatorSet,
         bytes calldata keyData
-    ) external view returns (bytes32) {
+    ) public view returns (bytes32) {
         bytes32 structHash = keccak256(
             abi.encode(BN254_KEY_REGISTRATION_TYPEHASH, operator, operatorSet.avs, operatorSet.id, keccak256(keyData))
         );
