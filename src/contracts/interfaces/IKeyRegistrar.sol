@@ -147,4 +147,30 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @return keyHash The key hash
      */
     function getKeyHash(OperatorSet memory operatorSet, address operator) external view returns (bytes32);
+
+    /**
+     * @notice Returns the message hash for ECDSA key registration
+     * @param operator The operator address
+     * @param operatorSet The operator set
+     * @param keyAddress The address of the key
+     * @return The message hash for signing
+     */
+    function getECDSAKeyRegistrationMessageHash(
+        address operator,
+        OperatorSet memory operatorSet,
+        address keyAddress
+    ) external view returns (bytes32);
+
+    /**
+     * @notice Returns the message hash for BN254 key registration
+     * @param operator The operator address
+     * @param operatorSet The operator set
+     * @param keyData The BN254 key data
+     * @return The message hash for signing
+     */
+    function getBN254KeyRegistrationMessageHash(
+        address operator,
+        OperatorSet memory operatorSet,
+        bytes calldata keyData
+    ) external view returns (bytes32);
 }
