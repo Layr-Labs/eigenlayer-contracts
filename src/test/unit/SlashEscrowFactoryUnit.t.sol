@@ -99,7 +99,6 @@ contract SlashEscrowFactoryUnitTests is EigenLayerUnitTestSetup, ISlashEscrowFac
             emit EscrowComplete(operatorSet, slashId, strategies[i], redistributionRecipient);
         }
 
-        cheats.prank(cheats.randomAddress());
         factory.releaseSlashEscrow(operatorSet, slashId);
     }
 
