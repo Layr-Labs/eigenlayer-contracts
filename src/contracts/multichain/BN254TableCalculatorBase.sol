@@ -7,12 +7,12 @@ import "../libraries/Merkle.sol";
 import "../libraries/BN254.sol";
 
 /**
- * @title BaseBN254TableCalculator
+ * @title BN254TableCalculatorBase
  * @notice Abstract contract that provides base functionality for calculating BN254 operator tables
  * @dev This contract contains all the core logic for operator table calculations,
  *      with weight calculation left to be implemented by derived contracts
  */
-abstract contract BaseBN254TableCalculator is IBN254TableCalculator {
+abstract contract BN254TableCalculatorBase is IBN254TableCalculator {
     using Merkle for bytes32[];
     using BN254 for BN254.G1Point;
 
@@ -20,7 +20,9 @@ abstract contract BaseBN254TableCalculator is IBN254TableCalculator {
     /// @notice KeyRegistrar contract for managing operator keys
     IKeyRegistrar public immutable keyRegistrar;
 
-    constructor(IKeyRegistrar _keyRegistrar) {
+    constructor(
+        IKeyRegistrar _keyRegistrar
+    ) {
         keyRegistrar = _keyRegistrar;
     }
 
@@ -113,6 +115,16 @@ abstract contract BaseBN254TableCalculator is IBN254TableCalculator {
         // Get the weights for all operators in the operatorSet
         (address[] memory operators, uint256[][] memory weights) = _getOperatorWeights(operatorSet);
 
+        // Handle empty operator set
+        if (operators.length == 0) {
+            return BN254OperatorSetInfo({
+                operatorInfoTreeRoot: bytes32(0),
+                numOperators: 0,
+                aggregatePubkey: BN254.G1Point(0, 0),
+                totalWeights: new uint256[](0)
+            });
+        }
+
         // Collate weights into a single array of total weights
         uint256 subArrayLength = weights[0].length;
         uint256[] memory totalWeights = new uint256[](subArrayLength);
@@ -146,4 +158,4 @@ abstract contract BaseBN254TableCalculator is IBN254TableCalculator {
             totalWeights: totalWeights
         });
     }
-} 
+}
