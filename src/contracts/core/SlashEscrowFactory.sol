@@ -5,11 +5,19 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin-upgrades/contracts/proxy/ClonesUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
+import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 import "../permissions/Pausable.sol";
 import "../mixins/SemVerMixin.sol";
 import "./SlashEscrowFactoryStorage.sol";
 
-contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, OwnableUpgradeable, Pausable, SemVerMixin {
+contract SlashEscrowFactory is
+    Initializable,
+    SlashEscrowFactoryStorage,
+    OwnableUpgradeable,
+    Pausable,
+    SemVerMixin,
+    ReentrancyGuardUpgradeable
+{
     using SafeERC20 for IERC20;
     using OperatorSetLib for *;
     using EnumerableSet for *;
@@ -104,7 +112,7 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
     function releaseSlashEscrow(
         OperatorSet calldata operatorSet,
         uint256 slashId
-    ) external onlyWhenNotPaused(PAUSED_RELEASE_ESCROW) {
+    ) external onlyWhenNotPaused(PAUSED_RELEASE_ESCROW) nonReentrant {
         address redistributionRecipient = allocationManager.getRedistributionRecipient(operatorSet);
 
         _checkReleaseSlashEscrow(operatorSet, slashId, redistributionRecipient);
@@ -136,7 +144,7 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
         OperatorSet calldata operatorSet,
         uint256 slashId,
         IStrategy strategy
-    ) external virtual onlyWhenNotPaused(PAUSED_RELEASE_ESCROW) {
+    ) external virtual onlyWhenNotPaused(PAUSED_RELEASE_ESCROW) nonReentrant {
         address redistributionRecipient = allocationManager.getRedistributionRecipient(operatorSet);
 
         _checkReleaseSlashEscrow(operatorSet, slashId, redistributionRecipient);
