@@ -137,6 +137,7 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
 
     /**
      * @notice Removes burned shares from storage and transfers the underlying tokens for the slashId to the slash escrow.
+     * @dev Reentrancy is checked in the `clearBurnOrRedistributableSharesByStrategy` function.
      * @param operatorSet The operator set to burn shares in.
      * @param slashId The slash ID to burn shares in.
      * @return The amounts of tokens transferred to the slash escrow for each strategy
