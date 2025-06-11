@@ -123,13 +123,16 @@ contract SlashEscrowFactory is
 
         // Cache the redistribution recipient.
         address redistributionRecipient = allocationManager.getRedistributionRecipient(operatorSet);
+        // Cache the computed slash escrow address.
+        ISlashEscrow slashEscrow = getSlashEscrow(operatorSet, slashId);
+
         // Process the slash escrow for each strategy.
         address[] memory strategies = _pendingStrategiesForSlashId[operatorSet.key()][slashId].values();
         for (uint256 i = 0; i < strategies.length; ++i) {
             _processSlashEscrowByStrategy({
                 operatorSet: operatorSet,
                 slashId: slashId,
-                slashEscrow: getSlashEscrow(operatorSet, slashId),
+                slashEscrow: slashEscrow,
                 redistributionRecipient: redistributionRecipient,
                 strategy: IStrategy(strategies[i])
             });
