@@ -107,10 +107,6 @@ contract SlashEscrowFactoryUnitTests is EigenLayerUnitTestSetup, ISlashEscrowFac
     /// - Asserts that the `Escrow` event is emitted
     function _releaseSlashEscrowByStrategy(OperatorSet memory operatorSet, uint slashId, IStrategy strategy) internal {
         address redistributionRecipient = allocationManagerMock.getRedistributionRecipient(operatorSet);
-        // If the redistribution recipient is any address
-        if (redistributionRecipient != DEFAULT_BURN_ADDRESS) cheats.prank(redistributionRecipient);
-        else cheats.prank(cheats.randomAddress());
-
         cheats.expectEmit(true, true, true, true);
         emit EscrowComplete(operatorSet, slashId, strategy, redistributionRecipient);
 
