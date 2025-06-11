@@ -173,4 +173,15 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
         OperatorSet memory operatorSet,
         bytes calldata keyData
     ) external view returns (bytes32);
+
+    /**
+     * @notice Encodes the BN254 key data into a bytes array
+     * @param g1Point The BN254 G1 public key
+     * @param g2Point The BN254 G2 public key
+     * @return The encoded key data
+     */
+    function encodeBN254KeyData(
+        BN254.G1Point memory g1Point,
+        BN254.G2Point memory g2Point
+    ) external pure returns (bytes memory);
 }
