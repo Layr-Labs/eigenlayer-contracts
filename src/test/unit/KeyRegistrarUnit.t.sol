@@ -724,6 +724,56 @@ contract KeyRegistrarUnitTests is EigenLayerUnitTestSetup {
         keyRegistrar.registerKey(operator1, operatorSet, bn254Key1, wrongSignature);
     }
 
+    function testEncodeBN254KeyData() public {
+        // Test that encodeBN254KeyData produces the expected encoding
+        bytes memory encodedKey = keyRegistrar.encodeBN254KeyData(bn254G1Key1, bn254G2Key1);
+
+        // Verify the encoded data matches our manual encoding
+        assertEq(encodedKey, bn254Key1);
+
+        // Decode to verify structure
+        (uint g1X, uint g1Y, uint[2] memory g2X, uint[2] memory g2Y) = abi.decode(encodedKey, (uint, uint, uint[2], uint[2]));
+
+        assertEq(g1X, bn254G1Key1.X);
+        assertEq(g1Y, bn254G1Key1.Y);
+        assertEq(g2X[0], bn254G2Key1.X[0]);
+        assertEq(g2X[1], bn254G2Key1.X[1]);
+        assertEq(g2Y[0], bn254G2Key1.Y[0]);
+        assertEq(g2Y[1], bn254G2Key1.Y[1]);
+    }
+
+    function testEncodeBN254KeyData_RegisterKey() public {
+        // Test that encoded data from encodeBN254KeyData can be used with registerKey
+        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
+
+        vm.prank(avs1);
+        keyRegistrar.configureOperatorSet(operatorSet, IKeyRegistrarTypes.CurveType.BN254);
+
+        // Use encodeBN254KeyData to prepare the key data
+        bytes memory encodedKey = keyRegistrar.encodeBN254KeyData(bn254G1Key2, bn254G2Key2);
+
+        // Generate signature for the encoded key
+        bytes memory signature = _generateBN254Signature(operator1, operatorSet, encodedKey, bn254PrivKey2);
+
+        // Register the key using the encoded data
+        vm.prank(operator1);
+        vm.expectEmit(true, true, true, true);
+        emit KeyRegistered(operatorSet, operator1, IKeyRegistrarTypes.CurveType.BN254, encodedKey);
+        keyRegistrar.registerKey(operator1, operatorSet, encodedKey, signature);
+
+        // Verify registration was successful
+        assertTrue(keyRegistrar.isRegistered(operatorSet, operator1));
+
+        // Verify the stored key matches what we registered
+        (BN254.G1Point memory storedG1, BN254.G2Point memory storedG2) = keyRegistrar.getBN254Key(operatorSet, operator1);
+        assertEq(storedG1.X, bn254G1Key2.X);
+        assertEq(storedG1.Y, bn254G1Key2.Y);
+        assertEq(storedG2.X[0], bn254G2Key2.X[0]);
+        assertEq(storedG2.X[1], bn254G2Key2.X[1]);
+        assertEq(storedG2.Y[0], bn254G2Key2.Y[0]);
+        assertEq(storedG2.Y[1], bn254G2Key2.Y[1]);
+    }
+
     // ============ Key Deregistration Tests ============
 
     function testDeregisterKey_ECDSA() public {
