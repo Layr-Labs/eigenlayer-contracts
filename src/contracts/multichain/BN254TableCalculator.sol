@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "./BaseBN254TableCalculator.sol";
+import "./BN254TableCalculatorBase.sol";
 import "../interfaces/IAllocationManager.sol";
 
 /**
  * @title BN254TableCalculator
  * @notice Implementation that calculates BN254 operator tables using the sum of the minimum slashable stake weights
  */
-contract BN254TableCalculator is BaseBN254TableCalculator {
+contract BN254TableCalculator is BN254TableCalculatorBase {
     // Immutables
     /// @notice AllocationManager contract for managing operator allocations
     IAllocationManager public immutable allocationManager;
@@ -19,7 +19,7 @@ contract BN254TableCalculator is BaseBN254TableCalculator {
         IKeyRegistrar _keyRegistrar,
         IAllocationManager _allocationManager,
         uint256 _LOOKAHEAD_BLOCKS
-    ) BaseBN254TableCalculator(_keyRegistrar) {
+    ) BN254TableCalculatorBase(_keyRegistrar) {
         allocationManager = _allocationManager;
         LOOKAHEAD_BLOCKS = _LOOKAHEAD_BLOCKS;
     }
