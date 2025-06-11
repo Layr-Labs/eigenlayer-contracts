@@ -174,11 +174,6 @@ contract CrossChainRegistryUnitTests_createGenerationReservation is CrossChainRe
         crossChainRegistry.createGenerationReservation(invalidOperatorSet, defaultCalculator, defaultConfig, defaultChainIDs);
     }
 
-    function test_Revert_EmptyChainIDs() public {
-        cheats.expectRevert(EmptyChainIDsArray.selector);
-        crossChainRegistry.createGenerationReservation(defaultOperatorSet, defaultCalculator, defaultConfig, emptyChainIDs);
-    }
-
     function test_Revert_GenerationReservationAlreadyExists() public {
         crossChainRegistry.createGenerationReservation(defaultOperatorSet, defaultCalculator, defaultConfig, defaultChainIDs);
 
@@ -186,25 +181,9 @@ contract CrossChainRegistryUnitTests_createGenerationReservation is CrossChainRe
         crossChainRegistry.createGenerationReservation(defaultOperatorSet, defaultCalculator, defaultConfig, defaultChainIDs);
     }
 
-    function test_Revert_InvalidOperatorTableCalculator() public {
-        cheats.expectRevert(InvalidOperatorTableCalculator.selector);
-        crossChainRegistry.createGenerationReservation(
-            defaultOperatorSet, IOperatorTableCalculator(address(0)), defaultConfig, defaultChainIDs
-        );
-    }
-
-    function test_Revert_InvalidOperatorSetConfig_ZeroOwner() public {
-        OperatorSetConfig memory invalidConfig = _createOperatorSetConfig(address(0), 1 days);
-
-        cheats.expectRevert(IPausable.InputAddressZero.selector);
-        crossChainRegistry.createGenerationReservation(defaultOperatorSet, defaultCalculator, invalidConfig, defaultChainIDs);
-    }
-
-    function test_Revert_InvalidOperatorSetConfig_ZeroStalenessPeriod() public {
-        OperatorSetConfig memory invalidConfig = _createOperatorSetConfig(cheats.randomAddress(), 0);
-
-        cheats.expectRevert(StalenessPeriodZero.selector);
-        crossChainRegistry.createGenerationReservation(defaultOperatorSet, defaultCalculator, invalidConfig, defaultChainIDs);
+    function test_Revert_EmptyChainIDs() public {
+        cheats.expectRevert(EmptyChainIDsArray.selector);
+        crossChainRegistry.createGenerationReservation(defaultOperatorSet, defaultCalculator, defaultConfig, emptyChainIDs);
     }
 
     function test_Revert_ChainIDNotWhitelisted() public {
@@ -228,7 +207,7 @@ contract CrossChainRegistryUnitTests_createGenerationReservation is CrossChainRe
 
         for (uint i = 0; i < defaultChainIDs.length; i++) {
             cheats.expectEmit(true, true, true, true, address(crossChainRegistry));
-            emit TransportDestinationAdded(defaultOperatorSet, defaultChainIDs[i]);
+            emit TransportDestinationChainAdded(defaultOperatorSet, defaultChainIDs[i]);
         }
 
         // Make the call
@@ -315,18 +294,16 @@ contract CrossChainRegistryUnitTests_removeGenerationReservation is CrossChainRe
     function test_removeGenerationReservation_Success() public {
         // Expect events
         cheats.expectEmit(true, true, true, true, address(crossChainRegistry));
+        emit OperatorTableCalculatorRemoved(defaultOperatorSet);
+
+        cheats.expectEmit(true, true, true, true, address(crossChainRegistry));
+        emit OperatorSetConfigRemoved(defaultOperatorSet);
+
+        cheats.expectEmit(true, true, true, true, address(crossChainRegistry));
+        emit TransportDestinationsRemoved(defaultOperatorSet);
+
+        cheats.expectEmit(true, true, true, true, address(crossChainRegistry));
         emit GenerationReservationRemoved(defaultOperatorSet);
-
-        cheats.expectEmit(true, true, true, true, address(crossChainRegistry));
-        emit OperatorTableCalculatorSet(defaultOperatorSet, IOperatorTableCalculator(address(0)));
-
-        cheats.expectEmit(true, true, true, true, address(crossChainRegistry));
-        emit OperatorSetConfigSet(defaultOperatorSet, OperatorSetConfig(address(0), 0));
-
-        for (uint i = 0; i < defaultChainIDs.length; i++) {
-            cheats.expectEmit(true, true, true, true, address(crossChainRegistry));
-            emit TransportDestinationRemoved(defaultOperatorSet, defaultChainIDs[i]);
-        }
 
         // Remove the reservation
         crossChainRegistry.removeGenerationReservation(defaultOperatorSet);
@@ -390,11 +367,6 @@ contract CrossChainRegistryUnitTests_setOperatorTableCalculator is CrossChainReg
 
         cheats.expectRevert(GenerationReservationDoesNotExist.selector);
         crossChainRegistry.setOperatorTableCalculator(nonExistentOperatorSet, newCalculator);
-    }
-
-    function test_Revert_InvalidOperatorTableCalculator() public {
-        cheats.expectRevert(InvalidOperatorTableCalculator.selector);
-        crossChainRegistry.setOperatorTableCalculator(defaultOperatorSet, IOperatorTableCalculator(address(0)));
     }
 
     function test_setOperatorTableCalculator_Success() public {
@@ -466,20 +438,6 @@ contract CrossChainRegistryUnitTests_setOperatorSetConfig is CrossChainRegistryU
 
         cheats.expectRevert(GenerationReservationDoesNotExist.selector);
         crossChainRegistry.setOperatorSetConfig(nonExistentOperatorSet, newConfig);
-    }
-
-    function test_Revert_InvalidOperatorSetConfig_ZeroOwner() public {
-        OperatorSetConfig memory invalidConfig = _createOperatorSetConfig(address(0), 1 days);
-
-        cheats.expectRevert(IPausable.InputAddressZero.selector);
-        crossChainRegistry.setOperatorSetConfig(defaultOperatorSet, invalidConfig);
-    }
-
-    function test_Revert_InvalidOperatorSetConfig_ZeroStalenessPeriod() public {
-        OperatorSetConfig memory invalidConfig = _createOperatorSetConfig(cheats.randomAddress(), 0);
-
-        cheats.expectRevert(StalenessPeriodZero.selector);
-        crossChainRegistry.setOperatorSetConfig(defaultOperatorSet, invalidConfig);
     }
 
     function test_setOperatorSetConfig_Success() public {
@@ -584,7 +542,7 @@ contract CrossChainRegistryUnitTests_addTransportDestinations is CrossChainRegis
         // Expect events
         for (uint i = 0; i < newChainIDs.length; i++) {
             cheats.expectEmit(true, true, true, true, address(crossChainRegistry));
-            emit TransportDestinationAdded(defaultOperatorSet, newChainIDs[i]);
+            emit TransportDestinationChainAdded(defaultOperatorSet, newChainIDs[i]);
         }
 
         // Add new destinations
@@ -677,11 +635,6 @@ contract CrossChainRegistryUnitTests_removeTransportDestinations is CrossChainRe
         crossChainRegistry.removeTransportDestinations(invalidOperatorSet, chainIDsToRemove);
     }
 
-    function test_Revert_EmptyChainIDs() public {
-        cheats.expectRevert(EmptyChainIDsArray.selector);
-        crossChainRegistry.removeTransportDestinations(defaultOperatorSet, emptyChainIDs);
-    }
-
     function test_Revert_GenerationReservationDoesNotExist() public {
         OperatorSet memory nonExistentOperatorSet = _createOperatorSet(defaultAVS, 999);
         allocationManagerMock.setIsOperatorSet(nonExistentOperatorSet, true);
@@ -711,7 +664,7 @@ contract CrossChainRegistryUnitTests_removeTransportDestinations is CrossChainRe
         // Expect events
         for (uint i = 0; i < chainIDsToRemove.length; i++) {
             cheats.expectEmit(true, true, true, true, address(crossChainRegistry));
-            emit TransportDestinationRemoved(defaultOperatorSet, chainIDsToRemove[i]);
+            emit TransportDestinationChainRemoved(defaultOperatorSet, chainIDsToRemove[i]);
         }
 
         // Remove destinations

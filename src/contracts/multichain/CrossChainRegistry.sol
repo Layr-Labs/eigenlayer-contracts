@@ -45,6 +45,13 @@ contract CrossChainRegistry is
         _;
     }
 
+    modifier hasActiveGenerationReservation(
+        OperatorSet calldata operatorSet
+    ) {
+        require(_activeGenerationReservations.contains(operatorSet.key()), GenerationReservationDoesNotExist());
+        _;
+    }
+
     /**
      *
      *                         INITIALIZING FUNCTIONS
@@ -107,9 +114,9 @@ contract CrossChainRegistry is
         emit GenerationReservationCreated(operatorSet);
 
         // Set the operator table calculator
-        _setOperatorTableCalculator(operatorSet, operatorTableCalculator, false);
+        _setOperatorTableCalculator(operatorSet, operatorTableCalculator);
         // Set the operator set config
-        _setOperatorSetConfig(operatorSet, config, false);
+        _setOperatorSetConfig(operatorSet, config);
         // Add transport destinations
         _addTransportDestinations(operatorSet, chainIDs);
     }
@@ -122,20 +129,26 @@ contract CrossChainRegistry is
         onlyWhenNotPaused(PAUSED_GENERATION_RESERVATIONS)
         checkCanCall(operatorSet.avs)
         isValidOperatorSet(operatorSet)
+        hasActiveGenerationReservation(operatorSet)
     {
         bytes32 operatorSetKey = operatorSet.key();
 
-        // Remove from active generation reservations
-        require(_activeGenerationReservations.remove(operatorSetKey), GenerationReservationDoesNotExist());
-        emit GenerationReservationRemoved(operatorSet);
+        // Clear all storage for the operator set
+        // 1. Remove the operator table calculator
+        delete _operatorTableCalculators[operatorSetKey];
+        emit OperatorTableCalculatorRemoved(operatorSet);
 
-        // Remove the operator table calculator
-        _setOperatorTableCalculator(operatorSet, IOperatorTableCalculator(address(0)), true);
-        // Remove the operator set config
-        _setOperatorSetConfig(operatorSet, OperatorSetConfig(address(0), 0), true);
-        // Remove all transport destinations
-        // TODO: This can lead to out of gas errors if there are a lot of transport destinations.
-        _removeTransportDestinations(operatorSet, _transportDestinations[operatorSetKey].values(), true);
+        // 2. Remove the operator set config
+        delete _operatorSetConfigs[operatorSetKey];
+        emit OperatorSetConfigRemoved(operatorSet);
+
+        // 3. Remove all transport destinations
+        delete _transportDestinations[operatorSetKey];
+        emit TransportDestinationsRemoved(operatorSet);
+
+        // 4. Remove from active generation reservations
+        _activeGenerationReservations.remove(operatorSetKey);
+        emit GenerationReservationRemoved(operatorSet);
     }
 
     /// @inheritdoc ICrossChainRegistry
@@ -147,12 +160,10 @@ contract CrossChainRegistry is
         onlyWhenNotPaused(PAUSED_OPERATOR_TABLE_CALCULATOR)
         checkCanCall(operatorSet.avs)
         isValidOperatorSet(operatorSet)
+        hasActiveGenerationReservation(operatorSet)
     {
-        // Check if generation reservation exists
-        require(_activeGenerationReservations.contains(operatorSet.key()), GenerationReservationDoesNotExist());
-
         // Set the operator table calculator
-        _setOperatorTableCalculator(operatorSet, operatorTableCalculator, false);
+        _setOperatorTableCalculator(operatorSet, operatorTableCalculator);
     }
 
     /// @inheritdoc ICrossChainRegistry
@@ -164,12 +175,10 @@ contract CrossChainRegistry is
         onlyWhenNotPaused(PAUSED_OPERATOR_SET_CONFIG)
         checkCanCall(operatorSet.avs)
         isValidOperatorSet(operatorSet)
+        hasActiveGenerationReservation(operatorSet)
     {
-        // Check if generation reservation exists
-        require(_activeGenerationReservations.contains(operatorSet.key()), GenerationReservationDoesNotExist());
-
         // Set the operator set config
-        _setOperatorSetConfig(operatorSet, config, false);
+        _setOperatorSetConfig(operatorSet, config);
     }
 
     /// @inheritdoc ICrossChainRegistry
@@ -181,10 +190,8 @@ contract CrossChainRegistry is
         onlyWhenNotPaused(PAUSED_TRANSPORT_DESTINATIONS)
         checkCanCall(operatorSet.avs)
         isValidOperatorSet(operatorSet)
+        hasActiveGenerationReservation(operatorSet)
     {
-        // Check if generation reservation exists
-        require(_activeGenerationReservations.contains(operatorSet.key()), GenerationReservationDoesNotExist());
-
         _addTransportDestinations(operatorSet, chainIDs);
     }
 
@@ -197,11 +204,9 @@ contract CrossChainRegistry is
         onlyWhenNotPaused(PAUSED_TRANSPORT_DESTINATIONS)
         checkCanCall(operatorSet.avs)
         isValidOperatorSet(operatorSet)
+        hasActiveGenerationReservation(operatorSet)
     {
-        // Check if generation reservation exists
-        require(_activeGenerationReservations.contains(operatorSet.key()), GenerationReservationDoesNotExist());
-
-        _removeTransportDestinations(operatorSet, chainIDs, false);
+        _removeTransportDestinations(operatorSet, chainIDs);
     }
 
     /// @inheritdoc ICrossChainRegistry
@@ -248,20 +253,11 @@ contract CrossChainRegistry is
      * @dev Internal function to set the operator table calculator for an operator set
      * @param operatorSet The operator set to set the calculator for
      * @param operatorTableCalculator The operator table calculator contract
-     * @param isDelete Whether to delete the operator table calculator
      */
     function _setOperatorTableCalculator(
         OperatorSet memory operatorSet,
-        IOperatorTableCalculator operatorTableCalculator,
-        bool isDelete
+        IOperatorTableCalculator operatorTableCalculator
     ) internal {
-        if (!isDelete) {
-            // Validate the operator table calculator
-            require(address(operatorTableCalculator) != address(0), InvalidOperatorTableCalculator());
-        } else {
-            // Need to delete the operator table calculator
-            require(address(operatorTableCalculator) == address(0), NeedToDelete());
-        }
         _operatorTableCalculators[operatorSet.key()] = operatorTableCalculator;
         emit OperatorTableCalculatorSet(operatorSet, operatorTableCalculator);
     }
@@ -270,22 +266,8 @@ contract CrossChainRegistry is
      * @dev Internal function to set the operator set config for an operator set
      * @param operatorSet The operator set to set the config for
      * @param config The operator set config
-     * @param isDelete Whether to delete the operator set config
      */
-    function _setOperatorSetConfig(
-        OperatorSet memory operatorSet,
-        OperatorSetConfig memory config,
-        bool isDelete
-    ) internal {
-        if (!isDelete) {
-            // Validate the operator set config
-            require(config.owner != address(0), InputAddressZero());
-            require(config.maxStalenessPeriod != 0, StalenessPeriodZero());
-        } else {
-            // Need to delete the operator set config
-            require(config.owner == address(0), NeedToDelete());
-            require(config.maxStalenessPeriod == 0, NeedToDelete());
-        }
+    function _setOperatorSetConfig(OperatorSet memory operatorSet, OperatorSetConfig memory config) internal {
         _operatorSetConfigs[operatorSet.key()] = config;
         emit OperatorSetConfigSet(operatorSet, config);
     }
@@ -296,7 +278,8 @@ contract CrossChainRegistry is
      * @param chainIDs The chain IDs to add as destinations
      */
     function _addTransportDestinations(OperatorSet memory operatorSet, uint256[] memory chainIDs) internal {
-        // Validate chainIDs array
+        // Validate chainIDs array is not empty. This is to prevent users from
+        // creating a generation reservation with no destinations.
         require(chainIDs.length > 0, EmptyChainIDsArray());
 
         bytes32 operatorSetKey = operatorSet.key();
@@ -310,7 +293,7 @@ contract CrossChainRegistry is
             // Add transport destination
             require(_transportDestinations[operatorSetKey].add(chainID), TransportDestinationAlreadyAdded());
 
-            emit TransportDestinationAdded(operatorSet, chainID);
+            emit TransportDestinationChainAdded(operatorSet, chainID);
         }
     }
 
@@ -318,16 +301,8 @@ contract CrossChainRegistry is
      * @dev Internal function to remove transport destinations for an operator set
      * @param operatorSet The operator set to remove destinations from
      * @param chainIDs The chain IDs to remove as destinations
-     * @param isDelete Whether to delete the transport destinations
      */
-    function _removeTransportDestinations(
-        OperatorSet memory operatorSet,
-        uint256[] memory chainIDs,
-        bool isDelete
-    ) internal {
-        // Validate chainIDs array
-        require(chainIDs.length > 0, EmptyChainIDsArray());
-
+    function _removeTransportDestinations(OperatorSet memory operatorSet, uint256[] memory chainIDs) internal {
         bytes32 operatorSetKey = operatorSet.key();
 
         for (uint256 i = 0; i < chainIDs.length; i++) {
@@ -336,17 +311,12 @@ contract CrossChainRegistry is
             // Remove transport destination
             require(_transportDestinations[operatorSetKey].remove(chainID), TransportDestinationNotFound());
 
-            emit TransportDestinationRemoved(operatorSet, chainID);
+            emit TransportDestinationChainRemoved(operatorSet, chainID);
         }
 
-        // Check final state based on isDelete flag
-        if (!isDelete) {
-            // For normal removal, at least one destination should remain
-            require(_transportDestinations[operatorSetKey].length() > 0, RequireAtLeastOneTransportDestination());
-        } else {
-            // Need to delete the transport destinations
-            require(_transportDestinations[operatorSetKey].length() == 0, NeedToDelete());
-        }
+        // Ensure that at least one destination remains
+        // If a user wants to remove all destinations, they should call `removeGenerationReservation` instead
+        require(_transportDestinations[operatorSetKey].length() > 0, RequireAtLeastOneTransportDestination());
     }
 
     /**
@@ -437,6 +407,7 @@ contract CrossChainRegistry is
         assembly {
             mstore(result, count)
         }
+
         // Only return chains that are whitelisted
         return result;
     }
