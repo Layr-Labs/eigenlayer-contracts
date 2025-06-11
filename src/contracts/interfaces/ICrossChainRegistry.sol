@@ -14,9 +14,6 @@ interface ICrossChainRegistryErrors {
     /// @notice Thrown when a generation reservation does not exist for the operator set
     error GenerationReservationDoesNotExist();
 
-    /// @notice Thrown when the operator table calculator address is invalid
-    error InvalidOperatorTableCalculator();
-
     /// @notice Thrown when a transport destination is already added for the operator set
     error TransportDestinationAlreadyAdded();
 
@@ -29,9 +26,6 @@ interface ICrossChainRegistryErrors {
     /// @notice Thrown when a chain ID is not whitelisted
     error ChainIDNotWhitelisted();
 
-    /// @notice Thrown when the staleness period is zero
-    error StalenessPeriodZero();
-
     /// @notice Thrown when the operator set is not valid
     error InvalidOperatorSet();
 
@@ -40,9 +34,6 @@ interface ICrossChainRegistryErrors {
 
     /// @notice Thrown when a at least one transport destination is required
     error RequireAtLeastOneTransportDestination();
-
-    /// @notice Thrown when the storage is not cleared
-    error NeedToDelete();
 
     /// @notice Thrown when the lengths between two arrays are not the same
     error ArrayLengthMismatch();
@@ -70,14 +61,23 @@ interface ICrossChainRegistryEvents is ICrossChainRegistryTypes {
     /// @notice Emitted when an operatorTableCalculator is set
     event OperatorTableCalculatorSet(OperatorSet operatorSet, IOperatorTableCalculator operatorTableCalculator);
 
+    /// @notice Emitted when an operatorTableCalculator is removed, when a generation reservation is removed
+    event OperatorTableCalculatorRemoved(OperatorSet operatorSet);
+
     /// @notice Emitted when an operatorSetConfig is set
     event OperatorSetConfigSet(OperatorSet operatorSet, OperatorSetConfig config);
 
+    /// @notice Emitted when an operatorSetConfig is removed, when a generation reservation is removed
+    event OperatorSetConfigRemoved(OperatorSet operatorSet);
+
     /// @notice Emitted when a transport destination is added
-    event TransportDestinationAdded(OperatorSet operatorSet, uint256 chainID);
+    event TransportDestinationChainAdded(OperatorSet operatorSet, uint256 chainID);
 
     /// @notice Emitted when a transport destination is removed
-    event TransportDestinationRemoved(OperatorSet operatorSet, uint256 chainID);
+    event TransportDestinationChainRemoved(OperatorSet operatorSet, uint256 chainID);
+
+    /// @notice Emitted when transport destinations are removed, when a generation reservation is removed
+    event TransportDestinationsRemoved(OperatorSet operatorSet);
 
     /// @notice Emitted when a chainID is added to the whitelist
     event ChainIDAddedToWhitelist(uint256 chainID, address operatorTableUpdater);
