@@ -40,22 +40,7 @@ interface IBN254TableCalculatorTypes {
     }
 }
 
-interface IBN254TableCalculatorEvents {
-    /// @notice Emitted when the lookahead blocks are set
-    event LookaheadBlocksSet(uint256 lookaheadBlocks);
-}
-
-interface IBN254TableCalculatorErrors {
-    /// @notice Emitted when the lookahead blocks are too high
-    error LookaheadBlocksTooHigh();
-}
-
-interface IBN254TableCalculator is
-    IOperatorTableCalculator,
-    IBN254TableCalculatorTypes,
-    IBN254TableCalculatorEvents,
-    IBN254TableCalculatorErrors
-{
+interface IBN254TableCalculator is IOperatorTableCalculator, IBN254TableCalculatorTypes {
     /**
      * @notice calculates the operatorInfos for a given operatorSet
      * @param operatorSet the operatorSet to calculate the operator table for
