@@ -340,4 +340,12 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         );
         return _calculateSignableDigest(structHash);
     }
+
+    /// @inheritdoc IKeyRegistrar
+    function encodeBN254KeyData(
+        BN254.G1Point memory g1Point,
+        BN254.G2Point memory g2Point
+    ) public pure returns (bytes memory) {
+        return abi.encode(g1Point.X, g1Point.Y, g2Point.X[0], g2Point.X[1], g2Point.Y[0], g2Point.Y[1]);
+    }
 }
