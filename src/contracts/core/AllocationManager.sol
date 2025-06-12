@@ -275,8 +275,10 @@ contract AllocationManager is
         require(params.length == redistributionRecipients.length, InputArrayLengthMismatch());
         require(_avsRegisteredMetadata[avs], NonexistentAVSMetadata());
         for (uint256 i = 0; i < params.length; i++) {
-            require(redistributionRecipients[i] != address(0), InputAddressZero());
-            _createOperatorSet(avs, params[i], redistributionRecipients[i]);
+            address recipient = redistributionRecipients[i];
+            require(recipient != address(0), InputAddressZero());
+            require(recipient != DEFAULT_BURN_ADDRESS, InvalidRedistributionRecipient());
+            _createOperatorSet(avs, params[i], recipient);
         }
     }
 
