@@ -46,9 +46,10 @@ contract Integration_Rounding is IntegrationCheckUtils {
 
     // TODO: consider incremental manual fuzzing from 1 up to WAD - 1
     function test_rounding(uint16 slashes, uint64 initialWadToSlash, uint64 _initTokenBalance, uint24 r) public rand(r) {
+        vm.pauseGasMetering();
         // Bound slashes to a reasonable range, with at least 1 slash.
         // Note: Runs after 2500 hit OOG errors with default gas.
-        slashes = uint16(bound(slashes, 1, 2500));
+        slashes = uint16(bound(slashes, 1, 5000));
         
         // We do two slashes, the sum of which slash 1 WAD (all operator magnitude) in total. 
         // Each slash requires at least 1 mag. As such, we need to bound wadToSlash to 1 <= wadToSlash <= WAD - 1.
