@@ -92,9 +92,9 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
         uint256 encoded = _releaseDigests[operatorSet.key()].get(releaseDigest);
 
         uint32 deprecationTimestamp = uint32(encoded >> 224);
-        uint16 major = uint16((encoded >> 192) & 0xFFFF);
-        uint16 minor = uint16((encoded >> 160) & 0xFFFF);
-        uint16 patch = uint16((encoded >> 128) & 0xFFFF);
+        uint16 major = uint16((encoded >> 208) & type(uint16).max);
+        uint16 minor = uint16((encoded >> 192) & type(uint16).max);
+        uint16 patch = uint16((encoded >> 176) & type(uint16).max);
 
         return (deprecationTimestamp, Version(major, minor, patch));
     }
