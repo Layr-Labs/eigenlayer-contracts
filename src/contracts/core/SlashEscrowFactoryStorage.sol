@@ -43,7 +43,7 @@ abstract contract SlashEscrowFactoryStorage is ISlashEscrowFactory {
         _pendingStrategiesForSlashId;
 
     /// @dev Returns the start block for a given slash ID.
-    mapping(bytes32 operatorSetKey => mapping(uint256 slashId => uint32 startBlock)) internal _slashIdToStartBlock;
+    mapping(bytes32 operatorSetKey => mapping(uint256 slashId => uint32 completeBlock)) internal _slashIdToCompleteBlock;
 
     /// @notice Returns the paused status for a given operator set and slash ID.
     mapping(bytes32 operatorSetKey => mapping(uint256 slashId => bool paused)) internal _paused;

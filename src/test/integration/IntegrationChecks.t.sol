@@ -1123,7 +1123,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         );
 
         assertFalse(_getIsPendingSlashId(operatorSet, slashId), "slash id should not be pending");
-        assertEq(_getEscrowStartBlock(operatorSet, slashId), 0, "escrow start block should be deleted after");
+        assertEq(_getEscrowCompleteBlock(operatorSet, slashId), 0, "escrow complete block should be deleted after");
         assertTrue(_getIsDeployedSlashEscrow(operatorSet, slashId), "escrow should be deployed after");
     }
 

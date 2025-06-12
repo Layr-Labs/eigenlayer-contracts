@@ -171,7 +171,7 @@ contract StrategyManager is
     function clearBurnOrRedistributableShares(
         OperatorSet calldata operatorSet,
         uint256 slashId
-    ) external nonReentrant returns (uint256[] memory) {
+    ) external returns (uint256[] memory) {
         // Get the strategies to clear.
         address[] memory strategies = _burnOrRedistributableShares[operatorSet.key()][slashId].keys();
         uint256 length = strategies.length;
@@ -190,7 +190,7 @@ contract StrategyManager is
         OperatorSet calldata operatorSet,
         uint256 slashId,
         IStrategy strategy
-    ) public returns (uint256) {
+    ) public nonReentrant returns (uint256) {
         EnumerableMap.AddressToUintMap storage burnOrRedistributableShares =
             _burnOrRedistributableShares[operatorSet.key()][slashId];
 
