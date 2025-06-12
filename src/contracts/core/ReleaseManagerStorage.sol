@@ -1,35 +1,38 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "@openzeppelin/contracts/utils/structs/Checkpoints.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
+import "../libraries/Snapshots.sol";
 import "../interfaces/IReleaseManager.sol";
+import "../interfaces/IAllocationManager.sol";
 
-/**
- * @title ReleaseManagerStorage
- * @author Your Organization
- * @notice Storage contract for the ReleaseManager contract.
- */
 abstract contract ReleaseManagerStorage is IReleaseManager {
-    /// @notice Permission controller for UAM integration
-    IPermissionController public permissionController;
+    // Immutables
 
-    /// @notice Mapping of AVS addresses to registration status
-    mapping(address => bool) public registeredAVS;
+    /// @notice The EigenLayer AllocationManager contract.
+    IAllocationManager public immutable allocationManager;
 
-    /// @notice Mapping of AVS to array of ALL published releases (append-only)
-    mapping(address => PublishedRelease[]) public allPublishedReleases;
+    // Mutables
 
-    /// @notice Checkpoints tracking the index of releases for each AVS
-    /// @dev Uses Trace256 to store uint256 indices that point to allPublishedReleases array
-    mapping(address => Checkpoints.Trace256) internal releaseIndexHistory;
+    /// @notice A set of all release digests for an operator set.
+    /// @dev operatorSet, releaseId => (releaseDigest => (uint32(deprecationTimestamp), uint16(major), uint16(minor), uint16(patch)))
+    mapping(bytes32 operatorSetKey => EnumerableMap.Bytes32ToUintMap releaseDigests) internal _releaseDigests;
 
-    /// @notice Mapping to track deprecated releases per AVS
-    /// @dev Key is keccak256(avs, digest)
-    mapping(bytes32 => bool) public isDeprecated;
+    /// @notice The deployment deadline for a release digest.
+    /// @dev operatorSet => (uint224(releaseId))
+    mapping(bytes32 operatorSetKey => Snapshots.DefaultZeroHistory) internal _releaseSnapshots;
 
-    /// @notice List of deprecated release digests per AVS
-    mapping(address => bytes32[]) public deprecatedReleases;
+    /// @notice The registry URL for a release digest.
+    mapping(bytes32 operatorSetKey => mapping(bytes32 releaseDigest => string registryUrl)) internal
+        _releaseRegistryUrls;
 
-    /// @notice Storage gap for future upgrades
-    uint256[44] private __gap;
+    constructor(
+        IAllocationManager _allocationManager
+    ) {
+        allocationManager = _allocationManager;
+    }
+
+    // TODO: modify gap to account for odd variable sizes.
+
+    uint256[46] private __gap;
 }
