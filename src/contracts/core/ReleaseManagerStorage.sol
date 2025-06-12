@@ -32,8 +32,5 @@ abstract contract ReleaseManagerStorage is IReleaseManager {
         allocationManager = _allocationManager;
     }
 
-    // TODO: modify gap to account for odd variable sizes.
-
-    uint256[46] private __gap;
+    uint256[45] private __gap;
 }
-
