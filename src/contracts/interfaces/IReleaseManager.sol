@@ -107,7 +107,16 @@ interface IReleaseManager is IReleaseManagerErrors, IReleaseManagerEvents {
     /// @return bool True if the release is deprecated, false otherwise.
     function isReleaseDeprecated(OperatorSet memory operatorSet, bytes32 releaseDigest) external view returns (bool);
 
-    /// @notice Gets the semantic version string for a release.
+    /// @notice Returns the registry URL for a release digest.
+    /// @param operatorSet The operator set containing the release.
+    /// @param releaseDigest The release digest to get the registry URL for.
+    /// @return string The registry URL.
+    function getReleaseRegistryUrl(
+        OperatorSet memory operatorSet,
+        bytes32 releaseDigest
+    ) external view returns (string memory);
+
+    /// @notice Returns the semantic version string for a release.
     /// @param operatorSet The operator set containing the release.
     /// @param releaseDigest The release digest to get the version for.
     /// @return string The semantic version string (e.g. "1.2.3").
