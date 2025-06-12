@@ -45,6 +45,7 @@ contract Integration_Rounding is IntegrationCheckUtils {
     }
 
     // TODO: consider incremental manual fuzzing from 1 up to WAD - 1
+    // TODO: consider adding number of slashes as a fuzzing param
     function test_rounding(uint64 wadToSlash, uint64 _initTokenBalance) public rand(0) { 
         // We do two slashes, the sum of which slash 1 WAD (all operator magnitude) in total. 
         // Each slash requires at least 1 mag. As such, we need to bound wadToSlash to 1 <= wadToSlash <= WAD - 1.
@@ -57,7 +58,7 @@ contract Integration_Rounding is IntegrationCheckUtils {
         
         _magnitudeManipulation(wadToSlash); // Manipulate operator magnitude for a given strategy.
         _setupFinal(wadToSlash); // Setup operator with new opSet as well as honest stake in same strategy.
-        _final(wadToSlash); // Perform slash to attempt to extract surplus value.
+        _final(); // Perform slash to attempt to extract surplus value.
         
         // Check for any surplus value extracted by attacker. If found, we've proven the existence of the exploit.
         // Unchecked to avoid overflow reverting. Safe because token balances are bounded by uint64.
@@ -74,7 +75,7 @@ contract Integration_Rounding is IntegrationCheckUtils {
     
     // TODO - another way to mess with rounding/precision loss is to manipulate DSF
     function _magnitudeManipulation(uint64 wadToSlash) internal {
-        // Allocate magnitude to operator set.
+        // Allocate all magnitude to operator set.
         attacker.modifyAllocations(AllocateParams({
             operatorSet: mOpSet,
             strategies: strategy.toArray(),
@@ -85,7 +86,7 @@ contract Integration_Rounding is IntegrationCheckUtils {
 
         _print("allocate");
 
-        // Slash operator to low mag.
+        // Slash operator to arbitrary mag.
         badAVS.slashOperator(SlashingParams({
             operator: address(attacker),
             operatorSetId: mOpSet.id,
@@ -111,40 +112,38 @@ contract Integration_Rounding is IntegrationCheckUtils {
     }
 
     function _setupFinal(uint64 wadToSlash) internal {
-        // allocate to redistributable opset
+        // Allocate all remaining magnitude to redistributable opset.
         attacker.modifyAllocations(AllocateParams({
             operatorSet: rOpSet,
             strategies: strategy.toArray(),
             newMagnitudes: (WAD - wadToSlash).toArrayU64()
         }));
         
-        // deposit assets and delegate to attacker
+        // Deposit all attacker assets into Eigenlayer.
         attacker.depositIntoEigenlayer(strategy.toArray(), token.balanceOf(address(attacker)).toArrayU256());
         
-        
+        // Deposit all honest stake into Eigenlayer.
         goodStaker.depositIntoEigenlayer(strategy.toArray(), token.balanceOf(address(goodStaker)).toArrayU256());
-        
-        // TODO: print "initTokenBalances"
         
         _print("deposit");
     }
 
-    function _final(uint64 wadToSlash) internal {
-        // perform final slash on redistributable opset and check for profit
+    function _final() internal {
+        // Perform final slash on redistributable opset and check for profit. Slash all operator magnitude.
         badAVS.slashOperator(SlashingParams({
             operator: address(attacker),
             operatorSetId: rOpSet.id,
             strategies: strategy.toArray(),
-            wadsToSlash: uint(WAD - wadToSlash).toArrayU256(),
+            wadsToSlash: uint(WAD).toArrayU256(),
             description: "final slash"
         }));
         
         _print("slash");
         
-        // roll forward past the escrow delay
+        // Roll forward past the escrow delay.
         rollForward({blocks: slashEscrowFactory.getGlobalEscrowDelay() + 1});
         
-        // release funds
+        // Release funds.
         vm.prank(address(attacker));
         slashEscrowFactory.releaseSlashEscrow(rOpSet, 1); // 1 is used as it's the first slashId
         
