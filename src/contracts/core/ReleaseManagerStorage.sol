@@ -15,7 +15,7 @@ abstract contract ReleaseManagerStorage is IReleaseManager {
     // Mutables
 
     /// @notice A set of all release digests for an operator set.
-    /// @dev operatorSet, releaseId => (releaseDigest => (uint32(deprecationTimestamp), uint16(major), uint16(minor), uint16(patch)))
+    /// @dev operatorSet, releaseId, releaseDigest => (uint32(deprecationTimestamp), version))
     mapping(bytes32 operatorSetKey => EnumerableMap.Bytes32ToUintMap releaseDigests) internal _releaseDigests;
 
     /// @notice The deployment deadline for a release digest.
