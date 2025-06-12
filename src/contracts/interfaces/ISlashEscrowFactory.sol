@@ -83,14 +83,17 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
     ) external;
 
     /**
-     * @notice Pauses a escrow.
+     * @notice Pauses an individual slash escrow.
      * @param operatorSet The operator set whose escrow is being paused.
      * @param slashId The slash ID of the escrow that is being paused.
+     * @dev Allows governance to pause a specific slash escrow in response to security incidents or other emergencies.
+     * @dev When paused, the slashed funds become locked and can only be rescued through a protocol upgrade.
+     * @dev To pause all escrows simultaneously, use the `pauseAll()` function instead.
      */
     function pauseEscrow(OperatorSet calldata operatorSet, uint256 slashId) external;
 
     /**
-     * @notice Unpauses a escrow.
+     * @notice Unpauses an individual slash escrow.
      * @param operatorSet The operator set whose escrow is being unpaused.
      * @param slashId The slash ID of the escrow that is being unpaused.
      */
