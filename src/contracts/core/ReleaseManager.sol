@@ -90,7 +90,7 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
         bytes32 releaseDigest
     ) internal view returns (uint32, Version memory) {
         uint256 encoded = _releaseDigests[operatorSet.key()].get(releaseDigest);
-    
+
         uint32 deprecationTimestamp = uint32(encoded >> 224);
 
         Version memory version = Version({
