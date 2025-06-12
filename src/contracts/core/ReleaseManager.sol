@@ -9,11 +9,11 @@ import "../libraries/Snapshots.sol";
 import "./ReleaseManagerStorage.sol";
 
 contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionControllerMixin, SemVerMixin {
-    using Snapshots for *;
-    using EnumerableSet for *;
-    using EnumerableMap for *;
-    using OperatorSetLib for *;
-    using Strings for *;
+    using Snapshots for Snapshots.DefaultZeroHistory;
+    using EnumerableSet for EnumerableSet.Bytes32Set;
+    using EnumerableMap for EnumerableMap.Bytes32ToUintMap;
+    using OperatorSetLib for OperatorSet;
+    using Strings for uint16;
 
     /**
      *
