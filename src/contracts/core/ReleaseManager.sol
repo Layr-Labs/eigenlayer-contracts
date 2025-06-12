@@ -194,6 +194,14 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
     }
 
     /// @inheritdoc IReleaseManager
+    function getReleaseRegistryUrl(
+        OperatorSet memory operatorSet,
+        bytes32 releaseDigest
+    ) external view returns (string memory) {
+        return _releaseRegistryUrls[operatorSet.key()][releaseDigest];
+    }
+
+    /// @inheritdoc IReleaseManager
     function getReleaseVersion(
         OperatorSet memory operatorSet,
         bytes32 releaseDigest
