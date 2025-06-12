@@ -90,13 +90,16 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
         bytes32 releaseDigest
     ) internal view returns (uint32, Version memory) {
         uint256 encoded = _releaseDigests[operatorSet.key()].get(releaseDigest);
-
+    
         uint32 deprecationTimestamp = uint32(encoded >> 224);
-        uint16 major = uint16((encoded >> 208) & type(uint16).max);
-        uint16 minor = uint16((encoded >> 192) & type(uint16).max);
-        uint16 patch = uint16((encoded >> 176) & type(uint16).max);
 
-        return (deprecationTimestamp, Version(major, minor, patch));
+        Version memory version = Version({
+            major: uint16((encoded >> 208) & type(uint16).max),
+            minor: uint16((encoded >> 192) & type(uint16).max),
+            patch: uint16((encoded >> 176) & type(uint16).max)
+        });
+
+        return (deprecationTimestamp, version);
     }
 
     /// @dev Sets the release info for a release digest.
