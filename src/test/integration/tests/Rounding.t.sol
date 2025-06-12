@@ -12,24 +12,25 @@ contract Integration_Rounding is IntegrationCheckUtils {
     IStrategy strategy;
     IERC20Metadata token;
     User goodStaker;
+    uint64 initTokenBalance;
 
     OperatorSet mOpSet; // "manipOpSet" used for magnitude manipulation
-    OperatorSet rOpSet; // redistributable opset used to exploit precision loss and trigger redistribution
+    OperatorSet rOpSet; // Redistributable opset used to exploit precision loss and trigger redistribution
     
     function _init() internal override {
         _configAssetTypes(HOLDS_LST);
 
-        attacker = new User("Attacker"); // attacker can be both operator and staker
-        badAVS = new AVS("BadAVS");
+        attacker = new User("Attacker"); // Attacker serves as both operator and staker
+        badAVS = new AVS("BadAVS"); // AVS is also attacker-controlled
         strategy = lstStrats[0];
         token = IERC20Metadata(address(strategy.underlyingToken()));
-        deal(address(token), address(attacker), uint256(1000000000000000000)); // TODO: make the balance a fuzzing param
         
-        // good staker and operator setup
-        goodStaker = new User("goodStaker");
-        deal(address(token), address(goodStaker), uint256(1000000000000000000)); // TODO: make the balance a fuzzing param
+        // Prepares to add non-attacker stake into the protocol. Can be any amount > 0.
+        // Note that the honest stake does not need to be allocated anywhere, so long as it's in the same strategy.
+        goodStaker = new User("GoodStaker");
+        deal(address(token), address(goodStaker), uint256(1e18)); 
         
-        // Register attacker as operator and create attacker-controller AVS/OpSets
+        // Register attacker as operator and create attacker-controlled AVS/OpSets
         attacker.registerAsOperator(0);
         rollForward({blocks: ALLOCATION_CONFIGURATION_DELAY + 1});
         badAVS.updateAVSMetadataURI("https://example.com");
@@ -40,28 +41,40 @@ contract Integration_Rounding is IntegrationCheckUtils {
         attacker.registerForOperatorSet(mOpSet);
         attacker.registerForOperatorSet(rOpSet);
         
-        // TODO: considerations
-        // - assets of other users within the opSet
-        // - calculate total assets entering and leaving the protocol, estimate precision loss (+ or -)
-
         _print("setup");
     }
 
-    // TODO: parameterize deposits
-    // TODO: consider manual fuzzing from 1 up to WAD - 1
-    function test_rounding(uint64 wadToSlash) public rand(0) { 
-        // bound wadToSlash to 1 < wadToSlash < WAD - 1
+    // TODO: consider incremental manual fuzzing from 1 up to WAD - 1
+    function test_rounding(uint64 wadToSlash, uint64 _initTokenBalance) public rand(0) { 
+        // We do two slashes, the sum of which slash 1 WAD (all operator magnitude) in total. 
+        // Each slash requires at least 1 mag. As such, we need to bound wadToSlash to 1 <= wadToSlash <= WAD - 1.
         wadToSlash = uint64(bound(wadToSlash, 1, WAD - 1));
         
-        _magnitudeManipulation(wadToSlash); // get operator to low mag
-        _setupFinal(wadToSlash); // 
-        _final(wadToSlash);
+        // Bound initTokenBalance to a reasonable range to avoid overflow, with at least 1 token.
+        // Using ~18.45 quintillion tokens max (should be enough for any realistic test).
+        initTokenBalance = uint64(bound(_initTokenBalance, 1, type(uint64).max));
+        deal(address(token), address(attacker), initTokenBalance);
+        
+        _magnitudeManipulation(wadToSlash); // Manipulate operator magnitude for a given strategy.
+        _setupFinal(wadToSlash); // Setup operator with new opSet as well as honest stake in same strategy.
+        _final(wadToSlash); // Perform slash to attempt to extract surplus value.
+        
+        // Check for any surplus value extracted by attacker. If found, we've proven the existence of the exploit.
+        // Unchecked to avoid overflow reverting. Safe because token balances are bounded by uint64.
+        // Negative diff means attacker lost money, positive diff means attacker gained money.
+        int diff;
+        unchecked {
+            diff = int(token.balanceOf(address(attacker)) - initTokenBalance);
+        }
+        console.log("Difference in tokens: %d", diff);
+        if (diff > 0) {
+            revert("Rounding error exploit found!");
+        }
     }
     
     // TODO - another way to mess with rounding/precision loss is to manipulate DSF
     function _magnitudeManipulation(uint64 wadToSlash) internal {
-        
-        // allocate magnitude to operator set
+        // Allocate magnitude to operator set.
         attacker.modifyAllocations(AllocateParams({
             operatorSet: mOpSet,
             strategies: strategy.toArray(),
@@ -72,12 +85,12 @@ contract Integration_Rounding is IntegrationCheckUtils {
 
         _print("allocate");
 
-        // slash operator to low mag
+        // Slash operator to low mag.
         badAVS.slashOperator(SlashingParams({
             operator: address(attacker),
             operatorSetId: mOpSet.id,
             strategies: strategy.toArray(),
-            wadsToSlash: uint(wadToSlash).toArrayU256(), // TODO: Make WAD-1 a fuzzing param
+            wadsToSlash: uint(wadToSlash).toArrayU256(),
             description: "manipulation!"
         }));
         
@@ -85,7 +98,7 @@ contract Integration_Rounding is IntegrationCheckUtils {
 
         _print("slash");
         
-        // deallocate magnitude from operator set
+        // Deallocate magnitude from operator set.
         attacker.modifyAllocations(AllocateParams({
             operatorSet: mOpSet,
             strategies: strategy.toArray(),
