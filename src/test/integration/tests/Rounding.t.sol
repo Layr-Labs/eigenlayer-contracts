@@ -2,11 +2,12 @@
 pragma solidity ^0.8.27;
 
 import "src/test/integration/IntegrationChecks.t.sol";
+import "src/test/utils/Random.sol";
 
 contract Integration_Rounding is IntegrationCheckUtils {
     using ArrayLib for *;
     using StdStyle for *;
-
+    
     User attacker;
     AVS badAVS;
     IStrategy strategy;
@@ -46,18 +47,25 @@ contract Integration_Rounding is IntegrationCheckUtils {
 
     // TODO: consider incremental manual fuzzing from 1 up to WAD - 1
     // TODO: consider adding number of slashes as a fuzzing param
-    function test_rounding(uint64 wadToSlash, uint64 _initTokenBalance) public rand(0) { 
+    function test_rounding(uint8 slashes, uint64 initialWadToSlash, uint64 _initTokenBalance, uint24 r) public rand(r) {
         // We do two slashes, the sum of which slash 1 WAD (all operator magnitude) in total. 
         // Each slash requires at least 1 mag. As such, we need to bound wadToSlash to 1 <= wadToSlash <= WAD - 1.
-        wadToSlash = uint64(bound(wadToSlash, 1, WAD - 1));
+        initialWadToSlash = uint64(bound(initialWadToSlash, 1, WAD - 1));
         
         // Bound initTokenBalance to a reasonable range to avoid overflow, with at least 1 token.
         // Using ~18.45 quintillion tokens max (should be enough for any realistic test).
         initTokenBalance = uint64(bound(_initTokenBalance, 1, type(uint64).max));
         deal(address(token), address(attacker), initTokenBalance);
         
-        _magnitudeManipulation(wadToSlash); // Manipulate operator magnitude for a given strategy.
-        _setupFinal(wadToSlash); // Setup operator with new opSet as well as honest stake in same strategy.
+        _magnitudeManipulation(initialWadToSlash); // Manipulate operator magnitude for a given strategy.
+        _deposit(initialWadToSlash); // Setup operator with new opSet as well as honest stake in same strategy.
+        
+        // Perform slashes to 
+        for (uint8 i = 0; i < slashes; i++) {
+            // slash less than total mag to leave some for final slash
+            uint64 wadToSlash = uint64(_randUint(1, WAD - 1));
+            _slash(wadToSlash);
+        }
         _final(); // Perform slash to attempt to extract surplus value.
         
         // Check for any surplus value extracted by attacker. If found, we've proven the existence of the exploit.
@@ -111,7 +119,7 @@ contract Integration_Rounding is IntegrationCheckUtils {
         _print("deallocate");
     }
 
-    function _setupFinal(uint64 wadToSlash) internal {
+    function _deposit(uint64 wadToSlash) internal {
         // Allocate all remaining magnitude to redistributable opset.
         attacker.modifyAllocations(AllocateParams({
             operatorSet: rOpSet,
@@ -127,19 +135,24 @@ contract Integration_Rounding is IntegrationCheckUtils {
         
         _print("deposit");
     }
-
-    function _final() internal {
+    
+    function _slash(uint64 wadToSlash) internal {
         // Perform final slash on redistributable opset and check for profit. Slash all operator magnitude.
         badAVS.slashOperator(SlashingParams({
             operator: address(attacker),
             operatorSetId: rOpSet.id,
             strategies: strategy.toArray(),
-            wadsToSlash: uint(WAD).toArrayU256(),
+            wadsToSlash: uint(wadToSlash).toArrayU256(),
             description: "final slash"
         }));
         
         _print("slash");
-        
+    }
+
+    function _final() internal {
+        // Slash all operator magnitude.
+        _slash(WAD);
+
         // Roll forward past the escrow delay.
         rollForward({blocks: slashEscrowFactory.getGlobalEscrowDelay() + 1});
         
