@@ -57,13 +57,15 @@ interface IReleaseManagerTypes {
 interface IReleaseManagerEvents is IReleaseManagerTypes {
     event ReleasePublished(
         bytes32 indexed operatorSetKey,
-        bytes32 indexed versionKey,
+        Version indexed version,
         ReleaseType indexed releaseType,
         uint32 upgradeByTime,
         Artifact[] artifacts
     );
 
-    event ReleaseDeprecated(bytes32 indexed operatorSetKey, bytes32 indexed versionKey, uint32 deprecateAtTime);
+    event ReleaseDeprecated(bytes32 indexed operatorSetKey, Version indexed version, uint32 deprecateAtTime);
+
+    event UpgradeWindowExtended(bytes32 indexed operatorSetKey, Version indexed version, uint32 upgradeWindow);
 }
 
 interface IReleaseManager is IReleaseManagerErrors, IReleaseManagerEvents {
