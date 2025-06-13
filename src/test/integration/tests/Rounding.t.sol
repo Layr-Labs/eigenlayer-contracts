@@ -3,7 +3,6 @@ pragma solidity ^0.8.27;
 
 import "src/test/integration/IntegrationChecks.t.sol";
 
-// TODO: add strategy share manipulation
 contract Integration_Rounding is IntegrationCheckUtils {
     using ArrayLib for *;
     using StdStyle for *;
