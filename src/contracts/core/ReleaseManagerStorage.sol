@@ -25,5 +25,5 @@ abstract contract ReleaseManagerStorage is IReleaseManager {
         allocationManager = _allocationManager;
     }
 
-    uint256[48] private __gap;
+    uint256[47] private __gap;
 }

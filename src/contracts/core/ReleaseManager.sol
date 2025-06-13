@@ -34,6 +34,8 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
      *                         EXTERNAL FUNCTIONS
      *
      */
+
+    /// @inheritdoc IReleaseManager
     function publishRelease(
         OperatorSet calldata operatorSet,
         Artifact[] calldata artifacts,
@@ -71,6 +73,7 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
         return version;
     }
 
+    /// @inheritdoc IReleaseManager
     function deprecateRelease(
         OperatorSet calldata operatorSet,
         Version calldata version,
@@ -91,6 +94,7 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
         emit ReleaseDeprecated(operatorSet.key(), version, deprecateAtTime);
     }
 
+    /// @inheritdoc IReleaseManager
     function extendUpgradeWindow(
         OperatorSet calldata operatorSet,
         Version calldata version,
@@ -98,7 +102,7 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
     ) public checkCanCall(operatorSet.avs) {
         _upgradeByTimes[operatorSet.key()][version.major] = uint32(block.timestamp + upgradeWindow);
 
-        // emit UpgradeWindowExtended(operatorSet.key(), _encodeVersion(version), upgradeWindow);
+        emit UpgradeWindowExtended(operatorSet.key(), version, upgradeWindow);
     }
 
     /**
@@ -106,12 +110,19 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
      *                         INTERNAL FUNCTIONS
      *
      */
+    /// @notice Encodes a Version struct into a bytes32 value for storage.
+    /// @dev Needed to store versions in an EnumerableSet.
+    /// @dev Packs the major, minor, and patch versions into a single bytes32 value.
+    /// The encoding format is: [major(16 bits)][minor(16 bits)][patch(16 bits)][padding(224 bits)]
     function _encodeVersion(
         Version memory version
     ) internal pure returns (bytes32) {
         return bytes32(abi.encodePacked(version.major, version.minor, version.patch));
     }
 
+    /// @notice Decodes a bytes32 value back into a Version struct.
+    /// @dev Unpacks the major, minor, and patch versions from the encoded bytes32 value.
+    /// The decoding format is: [major(16 bits)][minor(16 bits)][patch(16 bits)][padding(224 bits)]
     function _decodeVersion(
         bytes32 encoded
     ) internal pure returns (Version memory) {
@@ -127,16 +138,20 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
      *                         VIEW FUNCTIONS
      *
      */
+
+    /// @inheritdoc IReleaseManager
     function getTotalReleaseCount(
         OperatorSet memory operatorSet
     ) external view returns (uint256) {
         return _versions[operatorSet.key()].length();
     }
 
+    /// @inheritdoc IReleaseManager
     function getVersion(OperatorSet memory operatorSet, uint256 index) external view returns (Version memory) {
         return _decodeVersion(_versions[operatorSet.key()].at(index));
     }
 
+    /// @inheritdoc IReleaseManager
     function getRelease(
         OperatorSet memory operatorSet,
         Version memory version
@@ -144,6 +159,7 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
         return _releases[operatorSet.key()][_encodeVersion(version)];
     }
 
+    /// @inheritdoc IReleaseManager
     function getReleaseStatus(
         OperatorSet memory operatorSet,
         Version memory version
@@ -166,6 +182,7 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
         return (ReleaseStatus.LIVE);
     }
 
+    /// @inheritdoc IReleaseManager
     function getLatestVersion(
         OperatorSet memory operatorSet
     ) public view returns (Version memory) {
@@ -173,6 +190,7 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
         return _decodeVersion(versions.at(versions.length() - 1));
     }
 
+    /// @inheritdoc IReleaseManager
     function getLatestStableVersion(
         OperatorSet memory operatorSet
     ) public view returns (Version memory) {
