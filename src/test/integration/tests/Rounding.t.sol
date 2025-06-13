@@ -45,7 +45,7 @@ contract Integration_Rounding is IntegrationCheckUtils {
     }
 
     // TODO: consider incremental manual fuzzing from 1 up to WAD - 1
-    function test_rounding(uint16 slashes, uint64 initialWadToSlash, uint64 _initTokenBalance, uint24 r) public rand(r) {
+    function test_rounding_allMagsSlashed(uint16 slashes, uint64 initialWadToSlash, uint64 _initTokenBalance, uint24 r) public rand(r) {
         vm.pauseGasMetering();
         // Bound slashes to a reasonable range, with at least 1 slash.
         // Note: Runs after 2500 hit OOG errors with default gas.
@@ -69,7 +69,12 @@ contract Integration_Rounding is IntegrationCheckUtils {
             uint64 wadToSlash = uint64(_randUint(1, WAD - 1));
             _slash(wadToSlash);
         }
-        _final(slashes); // Perform slash to attempt to extract surplus value.
+        
+        // Perform final slash to attempt to extract surplus value, where WAD represents 100% of operator magnitude.
+        _slash(WAD); 
+        
+        // Release all escrows to the redistributionRecipient (attacker).
+        _release(slashes);
         
         // Check for any surplus value extracted by attacker. If found, we've proven the existence of the exploit.
         // Unchecked to avoid overflow reverting. Safe because token balances are bounded by uint64.
@@ -85,6 +90,57 @@ contract Integration_Rounding is IntegrationCheckUtils {
         
         if (diff < 0) {
             revert("Tokens lost!");
+        }
+    }
+    
+    function test_rounding_partialMagsSlashed(uint16 slashes, uint64 initialWadToSlash, uint64 _initTokenBalance, uint24 r) public rand(r) {
+        vm.pauseGasMetering();
+        // Bound slashes to a reasonable range, with at least 1 slash.
+        // Note: Runs after 2500 hit OOG errors with default gas.
+        slashes = uint16(bound(slashes, 0, 500));
+        
+        // We do two slashes, the sum of which slash 1 WAD (all operator magnitude) in total. 
+        // Each slash requires at least 1 mag. As such, we need to bound wadToSlash to 1 <= wadToSlash <= WAD - 1.
+        initialWadToSlash = uint64(bound(initialWadToSlash, 1, WAD - 1));
+        
+        // Bound initTokenBalance to a reasonable range to avoid overflow, with at least 1 token.
+        // Using ~18.45 quintillion tokens max (should be enough for any realistic test).
+        initTokenBalance = uint64(bound(_initTokenBalance, 1, type(uint64).max));
+        deal(address(token), address(attacker), initTokenBalance);
+        
+        _magnitudeManipulation(initialWadToSlash); // Manipulate operator magnitude for a given strategy.
+        _deposit(initialWadToSlash); // Setup operator with new opSet as well as honest stake in same strategy.
+        
+        // Perform slashes to gradually whittle down operator magnitude, as well as produce slash escrows.
+        for (uint16 i = 0; i < slashes; i++) {
+            // Upper bound is less than WAD to leave some mag for final slash
+            uint64 wadToSlash = uint64(_randUint(1, WAD - 1));
+            _slash(wadToSlash);
+        }
+        
+        // Release all escrows to the redistributionRecipient (attacker).
+        _release(slashes);
+        
+        // Withdraw all attacker deposits.
+        (, uint256[] memory depositShares) = strategyManager.getDeposits(address(attacker));
+        
+        Withdrawal[] memory withdrawals = attacker.queueWithdrawals(strategy.toArray(), depositShares);
+        
+        rollForward({blocks: DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS + 1});
+        
+        attacker.completeWithdrawalsAsTokens(withdrawals);
+        
+        _print("withdraw");
+        
+        
+        if (token.balanceOf(address(attacker)) > initTokenBalance) {
+            uint64 diff = uint64(token.balanceOf(address(attacker))) - initTokenBalance;
+            console.log("EXCESS of tokens: %d", diff);
+            revert("Rounding error exploit found!");
+        } else if (token.balanceOf(address(attacker)) < initTokenBalance) {
+            uint64 diff = uint64(initTokenBalance - token.balanceOf(address(attacker)));
+            console.log("DEFICIT of tokens: %d", diff);
+            assertLt(diff, 100, "Tokens lost!");
         }
     }
     
@@ -156,10 +212,7 @@ contract Integration_Rounding is IntegrationCheckUtils {
         _print("slash");
     }
 
-    function _final(uint64 slashes) internal {
-        // Slash all operator magnitude.
-        _slash(WAD);
-
+    function _release(uint64 slashes) internal {
         // Roll forward past the escrow delay.
         rollForward({blocks: slashEscrowFactory.getGlobalEscrowDelay() + 1});
         
