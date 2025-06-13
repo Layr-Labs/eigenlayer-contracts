@@ -5,13 +5,10 @@ import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "../mixins/PermissionControllerMixin.sol";
 import "../mixins/SemVerMixin.sol";
-import "../libraries/Snapshots.sol";
 import "./ReleaseManagerStorage.sol";
 
 contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionControllerMixin, SemVerMixin {
-    using Snapshots for Snapshots.DefaultZeroHistory;
     using EnumerableSet for EnumerableSet.Bytes32Set;
-    using EnumerableMap for EnumerableMap.Bytes32ToUintMap;
     using OperatorSetLib for OperatorSet;
     using Strings for uint16;
 
@@ -37,45 +34,61 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
      *                         EXTERNAL FUNCTIONS
      *
      */
-
-    /// @inheritdoc IReleaseManager
     function publishRelease(
         OperatorSet calldata operatorSet,
-        bytes32 releaseDigest,
-        string calldata registryUrl,
-        Version calldata version
-    ) external checkCanCall(operatorSet.avs) {
-        // Parse the next releaseId (equal to the total number of releases).
-        uint256 releaseId = getTotalOperatorSetReleases(operatorSet);
+        Artifacts[] calldata artifacts,
+        uint32 upgradeWindow,
+        ReleaseType releaseType
+    ) external checkCanCall(operatorSet.avs) returns (Version memory) {
+        Version memory version = getLatestVersion(operatorSet);
 
-        // Push the release digest and set the version.
-        _setReleaseInfo(operatorSet, releaseDigest, version, uint32(0));
+        uint32 upgradeByTime = uint32(block.timestamp + upgradeWindow);
 
-        // Push the release snapshot.
-        _releaseSnapshots[operatorSet.key()].push(uint32(block.timestamp), releaseId);
+        if (releaseType == ReleaseType.MAJOR) {
+            ++version.major;
+            version.minor = 0;
+            version.patch = 0;
+            _upgradeByTimes[operatorSet.key()][version.major] = upgradeByTime;
+        } else if (releaseType == ReleaseType.MINOR) {
+            ++version.minor;
+            version.patch = 0;
+        } else if (releaseType == ReleaseType.PATCH) {
+            ++version.patch;
+        }
 
-        // Set the release registry URL for the release digest.
-        _releaseRegistryUrls[operatorSet.key()][releaseDigest] = registryUrl;
+        bytes32 versionKey = _encodeVersion(version);
 
-        emit ReleasePublished(operatorSet, releaseDigest, registryUrl, version);
+        // Append the version to the operator set's version history.
+        _versions[operatorSet.key()].add(versionKey);
+        // Map the version to the release artifacts and deprecation time.
+        Release storage release = _releases[operatorSet.key()][versionKey];
+        for (uint256 i = 0; i < artifacts.length; i++) {
+            release.artifacts.push(artifacts[i]);
+        }
+
+        emit ReleasePublished(operatorSet.key(), versionKey, releaseType, upgradeByTime, artifacts);
+
+        return version;
     }
 
-    /// @inheritdoc IReleaseManager
     function deprecateRelease(
         OperatorSet calldata operatorSet,
-        bytes32 releaseDigest,
-        uint32 deprecationTimestamp
-    ) external checkCanCall(operatorSet.avs) {
-        // Get the deprecation timestamp and version for the provided digest.
-        (uint32 currentDeprecationTimestamp, Version memory version) = _getReleaseInfo(operatorSet, releaseDigest);
+        Version calldata version,
+        uint32 deprecationDelay
+    ) public checkCanCall(operatorSet.avs) {
+        bytes32 versionKey = _encodeVersion(version);
 
-        // Assert that the release is not already deprecated.
-        require(currentDeprecationTimestamp != uint32(0), ReleaseAlreadyDeprecated());
+        // Check that the release is not already deprecated and modify state.
+        Release storage release = _releases[operatorSet.key()][versionKey];
+        require(release.deprecateAtTime == 0, ReleaseAlreadyDeprecated());
+        uint32 deprecateAtTime = uint32(block.timestamp + deprecationDelay);
+        release.deprecateAtTime = deprecateAtTime;
 
-        // Set the deprecation timestamp for the release digest.
-        _setReleaseInfo(operatorSet, releaseDigest, version, uint32(deprecationTimestamp));
+        // Checked that there is at least one stable version after deprecating this release.
+        Version memory lastStableVersion = getLatestStableVersion(operatorSet);
+        require(lastStableVersion.major != type(uint16).max, MustHaveAtLeastOneStableVersion());
 
-        emit DeprecationScheduled(operatorSet, releaseDigest, deprecationTimestamp);
+        emit ReleaseDeprecated(operatorSet.key(), versionKey, deprecateAtTime);
     }
 
     /**
@@ -83,40 +96,20 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
      *                         INTERNAL FUNCTIONS
      *
      */
-
-    /// @dev Returns the deprecation timestamp and version for a release digest.
-    function _getReleaseInfo(
-        OperatorSet memory operatorSet,
-        bytes32 releaseDigest
-    ) internal view returns (uint32, Version memory) {
-        uint256 encoded = _releaseDigests[operatorSet.key()].get(releaseDigest);
-
-        uint32 deprecationTimestamp = uint32(encoded >> 224);
-
-        Version memory version = Version({
-            major: uint16((encoded >> 208) & type(uint16).max),
-            minor: uint16((encoded >> 192) & type(uint16).max),
-            patch: uint16((encoded >> 176) & type(uint16).max)
-        });
-
-        return (deprecationTimestamp, version);
+    function _encodeVersion(
+        Version memory version
+    ) internal pure returns (bytes32) {
+        return bytes32(abi.encodePacked(version.major, version.minor, version.patch));
     }
 
-    /// @dev Sets the release info for a release digest.
-    function _setReleaseInfo(
-        OperatorSet memory operatorSet,
-        bytes32 releaseDigest,
-        Version memory version,
-        uint32 deprecationTimestamp
-    ) internal {
-        // Push the release digest and set the version.
-        require(
-            _releaseDigests[operatorSet.key()].set(
-                releaseDigest,
-                uint256(bytes32(abi.encodePacked(deprecationTimestamp, version.major, version.minor, version.patch)))
-            ),
-            ReleaseAlreadyExists()
-        );
+    function _decodeVersion(
+        bytes32 encoded
+    ) internal pure returns (Version memory) {
+        return Version({
+            major: uint16((uint256(encoded) >> 208) & type(uint16).max),
+            minor: uint16((uint256(encoded) >> 192) & type(uint16).max),
+            patch: uint16((uint256(encoded) >> 176) & type(uint16).max)
+        });
     }
 
     /**
@@ -124,93 +117,73 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
      *                         VIEW FUNCTIONS
      *
      */
-
-    /// @inheritdoc IReleaseManager
-    function isOperatorSetRelease(OperatorSet memory operatorSet, bytes32 releaseDigest) external view returns (bool) {
-        return _releaseDigests[operatorSet.key()].contains(releaseDigest);
-    }
-
-    /// @inheritdoc IReleaseManager
-    function getOperatorSetReleases(
-        OperatorSet memory operatorSet,
-        uint160 releaseId
-    ) external view returns (bytes32) {
-        (bytes32 releaseDigest,) = _releaseDigests[operatorSet.key()].at(releaseId);
-
-        return releaseDigest;
-    }
-
-    /// @inheritdoc IReleaseManager
-    function getOperatorSetReleases(
+    function getTotalReleaseCount(
         OperatorSet memory operatorSet
-    ) external view returns (bytes32[] memory) {
-        return _releaseDigests[operatorSet.key()].keys();
+    ) external view returns (uint256) {
+        return _versions[operatorSet.key()].length();
     }
 
-    /// @inheritdoc IReleaseManager
-    function getTotalOperatorSetReleases(
+    function getVersion(OperatorSet memory operatorSet, uint256 index) external view returns (Version memory) {
+        return _decodeVersion(_versions[operatorSet.key()].at(index));
+    }
+
+    function getRelease(
+        OperatorSet memory operatorSet,
+        Version memory version
+    ) external view returns (Release memory) {
+        return _releases[operatorSet.key()][_encodeVersion(version)];
+    }
+
+    function getReleaseStatus(
+        OperatorSet memory operatorSet,
+        Version memory version
+    ) external view returns (ReleaseStatus) {
+        // First, check whether the version exists.
+        bool exists = _versions[operatorSet.key()].contains(_encodeVersion(version));
+
+        // If the version does not exist, it is not valid.
+        if (!exists) return ReleaseStatus.NONEXISTENT;
+
+        // Second, check whether the version is deprecated by a force deprecation.
+        uint32 deprecateAtTime = _releases[operatorSet.key()][_encodeVersion(version)].deprecateAtTime;
+        if (deprecateAtTime != 0 && block.timestamp >= deprecateAtTime) return (ReleaseStatus.DEPRECATED);
+
+        // Third, check whether the version is deprecated by a major version upgrade.
+        uint32 lastUpgradeByTime = _upgradeByTimes[operatorSet.key()][getLatestStableVersion(operatorSet).major];
+        if (lastUpgradeByTime != 0 && block.timestamp >= lastUpgradeByTime) return (ReleaseStatus.OUTDATED);
+
+        // Otherwise, the version is live.
+        return (ReleaseStatus.LIVE);
+    }
+
+    function getLatestVersion(
         OperatorSet memory operatorSet
-    ) public view returns (uint256) {
-        return _releaseDigests[operatorSet.key()].length();
+    ) public view returns (Version memory) {
+        EnumerableSet.Bytes32Set storage versions = _versions[operatorSet.key()];
+        return _decodeVersion(versions.at(versions.length() - 1));
     }
 
-    /// @inheritdoc IReleaseManager
-    function getLastOperatorSetRelease(
+    function getLatestStableVersion(
         OperatorSet memory operatorSet
-    ) public view returns (bytes32) {
-        uint256 lastReleaseId = getTotalOperatorSetReleases(operatorSet) - 1;
+    ) public view returns (Version memory) {
+        EnumerableSet.Bytes32Set storage versions = _versions[operatorSet.key()];
+        uint256 versionCount = versions.length();
 
-        (bytes32 releaseDigest,) = _releaseDigests[operatorSet.key()].at(lastReleaseId);
+        // Linear search backwards for the latest stable version.
+        for (uint256 i = versionCount - 1; i >= 0; i--) {
+            bytes32 versionKey = versions.at(i);
+            uint32 deprecateAtTime = _releases[operatorSet.key()][versionKey].deprecateAtTime;
 
-        return releaseDigest;
-    }
+            // If the release is deprecated, skip it.
+            if (block.timestamp >= deprecateAtTime) {
+                continue;
+            }
 
-    /// @inheritdoc IReleaseManager
-    function getReleaseAtTime(
-        OperatorSet memory operatorSet,
-        uint32 previousTimestamp
-    ) external view returns (bytes32) {
-        // Get the most recent snapshot that was published at or before the provided timestamp.
-        uint256 releaseId = _releaseSnapshots[operatorSet.key()].upperLookup(previousTimestamp);
+            // Othersise, return the release version.
+            return _decodeVersion(versionKey);
+        }
 
-        // Return the release releaseDigest for the `releaseId`, revert if nonexistent.
-        (bytes32 releaseDigest,) = _releaseDigests[operatorSet.key()].at(releaseId);
-
-        return releaseDigest;
-    }
-
-    /// @inheritdoc IReleaseManager
-    function isReleaseDeprecated(OperatorSet memory operatorSet, bytes32 releaseDigest) external view returns (bool) {
-        // Get the deprecation timestamp and version for the provided digest.
-        (uint32 deprecationTimestamp, Version memory version) = _getReleaseInfo(operatorSet, releaseDigest);
-
-        // Get the the current major version for the operator set.
-        (, Version memory currentVersion) = _getReleaseInfo(operatorSet, getLastOperatorSetRelease(operatorSet));
-
-        // If the deprecation timestamp is in the future, the release is not deprecated.
-        if (deprecationTimestamp > block.timestamp) return false;
-
-        // If the major version is the same as the current major version, the release is not deprecated.
-        if (version.major == currentVersion.major) return false;
-
-        return true;
-    }
-
-    /// @inheritdoc IReleaseManager
-    function getReleaseRegistryUrl(
-        OperatorSet memory operatorSet,
-        bytes32 releaseDigest
-    ) external view returns (string memory) {
-        return _releaseRegistryUrls[operatorSet.key()][releaseDigest];
-    }
-
-    /// @inheritdoc IReleaseManager
-    function getReleaseVersion(
-        OperatorSet memory operatorSet,
-        bytes32 releaseDigest
-    ) external view returns (string memory) {
-        (, Version memory version) = _getReleaseInfo(operatorSet, releaseDigest);
-
-        return string.concat(version.major.toString(), ".", version.minor.toString(), ".", version.patch.toString());
+        // No version has been published.
+        return Version({major: type(uint16).max, minor: type(uint16).max, patch: type(uint16).max});
     }
 }

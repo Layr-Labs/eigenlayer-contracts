@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
-import "../libraries/Snapshots.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "../interfaces/IReleaseManager.sol";
 import "../interfaces/IAllocationManager.sol";
 
@@ -14,17 +13,11 @@ abstract contract ReleaseManagerStorage is IReleaseManager {
 
     // Mutables
 
-    /// @notice A set of all release digests for an operator set.
-    /// @dev operatorSet, releaseId, releaseDigest => (uint32(deprecationTimestamp), version))
-    mapping(bytes32 operatorSetKey => EnumerableMap.Bytes32ToUintMap releaseDigests) internal _releaseDigests;
+    mapping(bytes32 operatorSetKey => EnumerableSet.Bytes32Set versions) internal _versions;
 
-    /// @notice The deployment deadline for a release digest.
-    /// @dev operatorSet => (uint224(releaseId))
-    mapping(bytes32 operatorSetKey => Snapshots.DefaultZeroHistory) internal _releaseSnapshots;
+    mapping(bytes32 operatorSetKey => mapping(bytes32 versionKey => Release release)) internal _releases;
 
-    /// @notice The registry URL for a release digest.
-    mapping(bytes32 operatorSetKey => mapping(bytes32 releaseDigest => string registryUrl)) internal
-        _releaseRegistryUrls;
+    mapping(bytes32 operatorSetKey => mapping(uint16 major => uint32 upgradeByTime)) internal _upgradeByTimes;
 
     constructor(
         IAllocationManager _allocationManager
@@ -32,5 +25,5 @@ abstract contract ReleaseManagerStorage is IReleaseManager {
         allocationManager = _allocationManager;
     }
 
-    uint256[45] private __gap;
+    uint256[48] private __gap;
 }
