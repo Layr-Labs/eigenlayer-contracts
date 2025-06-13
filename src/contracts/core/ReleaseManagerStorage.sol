@@ -13,10 +13,21 @@ abstract contract ReleaseManagerStorage is IReleaseManager {
 
     // Mutables
 
+    /// @notice Maps operator set keys to their version history.
+    /// @param operatorSetKey The key identifying the operator set.
+    /// @return versions The set of version keys for this operator set.
     mapping(bytes32 operatorSetKey => EnumerableSet.Bytes32Set versions) internal _versions;
 
+    /// @notice Maps operator set and version keys to their release details.
+    /// @param operatorSetKey The key identifying the operator set.
+    /// @param versionKey The key identifying the version.
+    /// @return release The release details including artifacts and deprecation time.
     mapping(bytes32 operatorSetKey => mapping(bytes32 versionKey => Release release)) internal _releases;
 
+    /// @notice Maps operator set keys and major versions to their upgrade deadlines.
+    /// @param operatorSetKey The key identifying the operator set.
+    /// @param major The major version number.
+    /// @return upgradeByTime The timestamp by which operators must upgrade to this major version.
     mapping(bytes32 operatorSetKey => mapping(uint16 major => uint32 upgradeByTime)) internal _upgradeByTimes;
 
     constructor(
