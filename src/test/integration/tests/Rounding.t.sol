@@ -17,6 +17,8 @@ contract Integration_Rounding is IntegrationCheckUtils {
     OperatorSet mOpSet; // "manipOpSet" used for magnitude manipulation
     OperatorSet rOpSet; // Redistributable opset used to exploit precision loss and trigger redistribution
     
+    uint numSlashes = 50;
+
     function _init() internal override {
         _configAssetTypes(HOLDS_LST);
 
@@ -28,7 +30,8 @@ contract Integration_Rounding is IntegrationCheckUtils {
         // Prepares to add non-attacker stake into the protocol. Can be any amount > 0.
         // Note that the honest stake does not need to be allocated anywhere, so long as it's in the same strategy.
         goodStaker = new User("GoodStaker");
-        deal(address(token), address(goodStaker), uint256(1e18)); 
+        deal(address(token), address(goodStaker), uint256(1e18));
+        goodStaker.depositIntoEigenlayer(strategy.toArray(), 1e18.toArrayU256());
         
         // Register attacker as operator and create attacker-controlled AVS/OpSets
         attacker.registerAsOperator(0);
@@ -45,36 +48,33 @@ contract Integration_Rounding is IntegrationCheckUtils {
     }
 
     // TODO: consider incremental manual fuzzing from 1 up to WAD - 1
-    function test_rounding_allMagsSlashed(uint16 slashes, uint64 initialWadToSlash, uint64 _initTokenBalance, uint24 r) public rand(r) {
+    function test_rounding_allMagsSlashed(
+        uint64 initialWadToSlash, 
+        uint64 _initTokenBalance
+    ) public rand(0) {
         vm.pauseGasMetering();
-        // Bound slashes to a reasonable range, with at least 1 slash.
-        // Note: Runs after 2500 hit OOG errors with default gas.
-        slashes = uint16(bound(slashes, 1, 5000));
-        
-        // We do two slashes, the sum of which slash 1 WAD (all operator magnitude) in total. 
-        // Each slash requires at least 1 mag. As such, we need to bound wadToSlash to 1 <= wadToSlash <= WAD - 1.
+        // Don't slash 100% as we will do multiple slashes
         initialWadToSlash = uint64(bound(initialWadToSlash, 1, WAD - 1));
-        
-        // Bound initTokenBalance to a reasonable range to avoid overflow, with at least 1 token.
-        // Using ~18.45 quintillion tokens max (should be enough for any realistic test).
-        initTokenBalance = uint64(bound(_initTokenBalance, 1, type(uint64).max));
+        // Ensure attacker has at least one token
+        initTokenBalance = _initTokenBalance > 0 ? _initTokenBalance : _initTokenBalance + 1;
         deal(address(token), address(attacker), initTokenBalance);
         
-        _magnitudeManipulation(initialWadToSlash); // Manipulate operator magnitude for a given strategy.
-        _deposit(initialWadToSlash); // Setup operator with new opSet as well as honest stake in same strategy.
+        // Use modifyAllocation+slashOperator to arbitrarily set operator max magnitude
+        _magnitudeManipulation(initialWadToSlash);
+        _deposit();
         
         // Perform slashes to gradually whittle down operator magnitude, as well as produce slash escrows.
-        for (uint16 i = 0; i < slashes; i++) {
-            // Upper bound is less than WAD to leave some mag for final slash
-            uint64 wadToSlash = uint64(_randUint(1, WAD - 1));
+        // Since we're doing multiple slashes, never slash 100%.
+        for (uint16 i = 0; i < numSlashes; i++) {
+            uint64 wadToSlash = uint64(cheats.randomUint(1, WAD - 1));
             _slash(wadToSlash);
         }
         
-        // Perform final slash to attempt to extract surplus value, where WAD represents 100% of operator magnitude.
+        // Perform final 100% slash to extract any remaining tokens.
         _slash(WAD); 
         
         // Release all escrows to the redistributionRecipient (attacker).
-        _release(slashes);
+        _release();
         
         // Check for any surplus value extracted by attacker. If found, we've proven the existence of the exploit.
         // Unchecked to avoid overflow reverting. Safe because token balances are bounded by uint64.
@@ -93,33 +93,30 @@ contract Integration_Rounding is IntegrationCheckUtils {
         }
     }
     
-    function test_rounding_partialMagsSlashed(uint16 slashes, uint64 initialWadToSlash, uint64 _initTokenBalance, uint24 r) public rand(r) {
+    function test_rounding_partialMagsSlashed(
+        uint64 initialWadToSlash, 
+        uint64 _initTokenBalance
+    ) public rand(0) {
         vm.pauseGasMetering();
-        // Bound slashes to a reasonable range, with at least 1 slash.
-        // Note: Runs after 2500 hit OOG errors with default gas.
-        slashes = uint16(bound(slashes, 0, 500));
-        
-        // We do two slashes, the sum of which slash 1 WAD (all operator magnitude) in total. 
-        // Each slash requires at least 1 mag. As such, we need to bound wadToSlash to 1 <= wadToSlash <= WAD - 1.
+        // Don't slash 100% as we will do multiple slashes
         initialWadToSlash = uint64(bound(initialWadToSlash, 1, WAD - 1));
-        
-        // Bound initTokenBalance to a reasonable range to avoid overflow, with at least 1 token.
-        // Using ~18.45 quintillion tokens max (should be enough for any realistic test).
-        initTokenBalance = uint64(bound(_initTokenBalance, 1, type(uint64).max));
+        // Ensure attacker has at least one token
+        initTokenBalance = _initTokenBalance > 0 ? _initTokenBalance : _initTokenBalance + 1;
         deal(address(token), address(attacker), initTokenBalance);
         
-        _magnitudeManipulation(initialWadToSlash); // Manipulate operator magnitude for a given strategy.
-        _deposit(initialWadToSlash); // Setup operator with new opSet as well as honest stake in same strategy.
+        // Use modifyAllocation+slashOperator to arbitrarily set operator max magnitude
+        _magnitudeManipulation(initialWadToSlash);
+        _deposit();
         
         // Perform slashes to gradually whittle down operator magnitude, as well as produce slash escrows.
-        for (uint16 i = 0; i < slashes; i++) {
-            // Upper bound is less than WAD to leave some mag for final slash
-            uint64 wadToSlash = uint64(_randUint(1, WAD - 1));
+        // Since we're doing multiple slashes, never slash 100%.
+        for (uint16 i = 0; i < numSlashes; i++) {
+            uint64 wadToSlash = uint64(cheats.randomUint(1, WAD - 1));
             _slash(wadToSlash);
         }
         
         // Release all escrows to the redistributionRecipient (attacker).
-        _release(slashes);
+        _release();
         
         // Withdraw all attacker deposits.
         (, uint256[] memory depositShares) = strategyManager.getDeposits(address(attacker));
@@ -182,19 +179,17 @@ contract Integration_Rounding is IntegrationCheckUtils {
         _print("deallocate");
     }
 
-    function _deposit(uint64 wadToSlash) internal {
+    function _deposit() internal {
         // Allocate all remaining magnitude to redistributable opset.
+        uint64 allocatableMagnitude = allocationManager.getAllocatableMagnitude(address(attacker), strategy);
         attacker.modifyAllocations(AllocateParams({
             operatorSet: rOpSet,
             strategies: strategy.toArray(),
-            newMagnitudes: (WAD - wadToSlash).toArrayU64()
+            newMagnitudes: (allocatableMagnitude).toArrayU64()
         }));
         
         // Deposit all attacker assets into Eigenlayer.
         attacker.depositIntoEigenlayer(strategy.toArray(), token.balanceOf(address(attacker)).toArrayU256());
-        
-        // Deposit all honest stake into Eigenlayer.
-        goodStaker.depositIntoEigenlayer(strategy.toArray(), token.balanceOf(address(goodStaker)).toArrayU256());
         
         _print("deposit");
     }
@@ -212,19 +207,19 @@ contract Integration_Rounding is IntegrationCheckUtils {
         _print("slash");
     }
 
-    function _release(uint64 slashes) internal {
+    function _release() internal {
         // Roll forward past the escrow delay.
         rollForward({blocks: slashEscrowFactory.getGlobalEscrowDelay() + 1});
         
         // Release funds.
-        for (uint32 i = 1; i <= slashes; i++) {
+        for (uint32 i = 1; i <= numSlashes; i++) {
             vm.prank(address(attacker));
             slashEscrowFactory.releaseSlashEscrow(rOpSet, i);
         }
         
         // Release final escrow.
         vm.prank(address(attacker));
-        slashEscrowFactory.releaseSlashEscrow(rOpSet, uint256(slashes) + 1);
+        slashEscrowFactory.releaseSlashEscrow(rOpSet, uint256(numSlashes) + 1);
         
         _print("release");
     }
