@@ -140,7 +140,7 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
      */
 
     /// @inheritdoc IReleaseManager
-    function getTotalReleaseCount(
+    function getTotalVersions(
         OperatorSet memory operatorSet
     ) external view returns (uint256) {
         return _versions[operatorSet.key()].length();
@@ -165,13 +165,14 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
         Version memory version
     ) external view returns (ReleaseStatus) {
         // First, check whether the version exists.
-        bool exists = _versions[operatorSet.key()].contains(_encodeVersion(version));
+        bytes32 versionKey = _encodeVersion(version);
+        bool exists = _versions[operatorSet.key()].contains(versionKey);
 
         // If the version does not exist, it is not valid.
         if (!exists) return ReleaseStatus.NONEXISTENT;
 
         // Second, check whether the version is deprecated by a force deprecation.
-        uint32 deprecateAtTime = _releases[operatorSet.key()][_encodeVersion(version)].deprecateAtTime;
+        uint32 deprecateAtTime = _releases[operatorSet.key()][versionKey].deprecateAtTime;
         if (deprecateAtTime != 0 && block.timestamp >= deprecateAtTime) return (ReleaseStatus.DEPRECATED);
 
         // Third, check whether the version is deprecated by a major version upgrade.
