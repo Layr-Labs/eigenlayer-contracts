@@ -36,7 +36,7 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
      */
     function publishRelease(
         OperatorSet calldata operatorSet,
-        Artifacts[] calldata artifacts,
+        Artifact[] calldata artifacts,
         uint32 upgradeWindow,
         ReleaseType releaseType
     ) external checkCanCall(operatorSet.avs) returns (Version memory) {
@@ -66,7 +66,7 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
             release.artifacts.push(artifacts[i]);
         }
 
-        emit ReleasePublished(operatorSet.key(), versionKey, releaseType, upgradeByTime, artifacts);
+        emit ReleasePublished(operatorSet.key(), version, releaseType, upgradeByTime, artifacts);
 
         return version;
     }
@@ -88,7 +88,17 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
         Version memory lastStableVersion = getLatestStableVersion(operatorSet);
         require(lastStableVersion.major != type(uint16).max, MustHaveAtLeastOneStableVersion());
 
-        emit ReleaseDeprecated(operatorSet.key(), versionKey, deprecateAtTime);
+        emit ReleaseDeprecated(operatorSet.key(), version, deprecateAtTime);
+    }
+
+    function extendUpgradeWindow(
+        OperatorSet calldata operatorSet,
+        Version calldata version,
+        uint32 upgradeWindow
+    ) public checkCanCall(operatorSet.avs) {
+        _upgradeByTimes[operatorSet.key()][version.major] = uint32(block.timestamp + upgradeWindow);
+
+        // emit UpgradeWindowExtended(operatorSet.key(), _encodeVersion(version), upgradeWindow);
     }
 
     /**
