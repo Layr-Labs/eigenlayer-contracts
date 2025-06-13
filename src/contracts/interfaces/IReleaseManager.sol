@@ -91,6 +91,7 @@ interface IReleaseManagerEvents is IReleaseManagerTypes {
 
 interface IReleaseManager is IReleaseManagerErrors, IReleaseManagerEvents {
     // WRITE
+
     /// @notice Publishes a new release for an operator set with the specified artifacts and upgrade window.
     /// @param operatorSet The operator set to publish the release for.
     /// @param artifacts The artifacts included in this release.
@@ -125,10 +126,11 @@ interface IReleaseManager is IReleaseManagerErrors, IReleaseManagerEvents {
     ) external;
 
     // READ
+
     /// @notice Returns the total number of releases published for an operator set.
     /// @param operatorSet The operator set to query.
     /// @return The total number of releases.
-    function getTotalReleaseCount(
+    function getTotalVersions(
         OperatorSet memory operatorSet
     ) external view returns (uint256);
 
