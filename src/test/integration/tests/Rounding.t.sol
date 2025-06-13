@@ -55,6 +55,13 @@ contract Integration_Rounding is IntegrationCheckUtils {
      */
 
     // TODO: consider incremental manual fuzzing from 1 up to WAD - 1
+    /**
+     * @notice Tests rounding behavior when all operator magnitudes are slashed
+     * @param _initialMaxMag The initial maximum magnitude to set for the operator, bounded between 1 and WAD-1
+     * @param _initTokenBalance The initial token balance to give the attacker, must be > 0
+     * @dev This test verifies that when an operator's magnitude is gradually reduced through multiple slashes
+     * and finally completely slashed, there is no precision loss in the redistribution of tokens.
+     */
     function test_rounding_allMagsSlashed(
         uint64 _initialMaxMag,
         uint64 _initTokenBalance
@@ -70,7 +77,7 @@ contract Integration_Rounding is IntegrationCheckUtils {
         _magnitudeManipulation(_initialMaxMag);
 
         // Deposit all attacker assets into Eigenlayer.
-        _deposit();
+        _depositAll();
 
         // Perform slashes to gradually whittle down operator magnitude, as well as produce slash escrows.
         // Since we're doing multiple slashes, never slash 100%.
@@ -90,6 +97,13 @@ contract Integration_Rounding is IntegrationCheckUtils {
         checkForPrecisionLoss(0);
     }
 
+    /**
+     * @notice Tests rounding behavior when operator magnitudes are partially slashed
+     * @param _initialMaxMag The initial maximum magnitude to set for the operator, bounded between 1 and WAD-1
+     * @param _initTokenBalance The initial token balance to give the attacker, must be > 0
+     * @dev This test verifies that when an operator's magnitude is gradually reduced through multiple slashes
+     * and finally completely slashed, there is minimal precision loss.
+     */
     function test_rounding_partialMagsSlashed(
         uint64 _initialMaxMag,
         uint64 _initTokenBalance
@@ -105,7 +119,7 @@ contract Integration_Rounding is IntegrationCheckUtils {
         _magnitudeManipulation(_initialMaxMag);
 
         // Deposit all attacker assets into Eigenlayer.
-        _deposit();
+        _depositAll();
 
         // Perform slashes to gradually whittle down operator magnitude, as well as produce slash escrows.
         // Since we're doing multiple slashes, never slash 100%.
@@ -127,6 +141,117 @@ contract Integration_Rounding is IntegrationCheckUtils {
         checkForPrecisionLoss(operatorShares);
     }
 
+    // TODO: consider parameterizing "honest" stake to see how strategy exchange rate is affected
+    /**
+     * @notice Tests rounding behavior when the attacker manipulates the strategy's exchange rate with all magnitudes slashed
+     * @param _initialMaxMag The initial maximum magnitude to set for the operator, bounded between 1 and WAD-1
+     * @param _initTokenBalance The initial token balance to give the attacker, must be > 0
+     * @dev This test verifies that when the attacker manipulates the strategy's exchange rate, by depositing funds directly into the strategy, that the attacker cannot profit from the manipulation, even when all magnitudes are slashed.
+     */
+    function test_rounding_strategySharesManipulation_allMagsSlashed(
+        uint64 _initialMaxMag,
+        uint64 _initTokenBalance
+    ) public rand(0) {
+        vm.pauseGasMetering();
+        // Don't slash 100% initially as we will do multiple slashes
+        _initialMaxMag = uint64(bound(_initialMaxMag, 1, WAD - 1));
+        // Ensure attacker has at least one token
+        initTokenBalance = _initTokenBalance > 0 ? _initTokenBalance : _initTokenBalance + 1;
+        deal(address(token), address(attacker), initTokenBalance);
+
+        // Use modifyAllocation+slashOperator to arbitrarily set operator max magnitude
+        _magnitudeManipulation(_initialMaxMag);
+
+        // Allocate all remaining magnitude to redistributable opset.
+        uint64 allocatableMagnitude = allocationManager.getAllocatableMagnitude(address(attacker), strategy);
+        attacker.modifyAllocations(AllocateParams({
+            operatorSet: rOpSet,
+            strategies: strategy.toArray(),
+            newMagnitudes: (allocatableMagnitude).toArrayU64()
+        }));
+
+        // Deposit a random amount of tokens into the strategy.
+        attacker.depositIntoEigenlayer(strategy.toArray(), cheats.randomUint(1, token.balanceOf(address(attacker))).toArrayU256());
+
+        // Perform slashes to gradually whittle down operator magnitude, as well as produce slash escrows.
+        // Since we're doing multiple slashes, never slash 100%.
+        for (uint16 i = 0; i < numSlashes; i++) {
+            uint64 wadToSlash = uint64(cheats.randomUint(1, WAD - 1));
+            // Randomly decide whether to add funds to the strategy between slashes.
+            if (cheats.randomBool() && token.balanceOf(address(attacker)) > 0) {
+                uint fundsToAdd = cheats.randomUint(1, token.balanceOf(address(attacker)));
+                // Deal funds directly to the strategy to affect the exchange rate.
+                vm.prank(address(attacker));
+                token.transfer(address(strategy), fundsToAdd);
+            }
+            _slash(wadToSlash);
+        }
+
+        // Perform final 100% slash to extract any remaining tokens.
+        _slash(WAD);
+
+        // Release all escrows to the redistributionRecipient (attacker).
+        _release();
+
+        // Note: In this test case, the attacker burns funds to attempt to manipulate the strategy's exchange rate. As such, severe token loss is expected.
+        checkForPrecisionLoss(initTokenBalance);
+    }
+
+    /**
+     * @notice Tests rounding behavior when the attacker manipulates the strategy's exchange rate
+     * @param _initialMaxMag The initial maximum magnitude to set for the operator, bounded between 1 and WAD-1
+     * @param _initTokenBalance The initial token balance to give the attacker, must be > 0
+     * @dev This test verifies that when the attacker manipulates the strategy's exchange rate, by depositing funds directly into the strategy, that the attacker cannot profit from the manipulation.
+     */
+    function test_rounding_strategySharesManipulation_partialMagsSlashed(
+        uint64 _initialMaxMag,
+        uint64 _initTokenBalance
+    ) public rand(0) {
+        vm.pauseGasMetering();
+        // Don't slash 100% as we will do multiple slashes
+        _initialMaxMag = uint64(bound(_initialMaxMag, 1, WAD - 1));
+        // Ensure attacker has at least one token
+        initTokenBalance = _initTokenBalance > 0 ? _initTokenBalance : _initTokenBalance + 1;
+        deal(address(token), address(attacker), initTokenBalance);
+
+        // Use modifyAllocation+slashOperator to arbitrarily set operator max magnitude
+        _magnitudeManipulation(_initialMaxMag);
+
+        // Allocate all remaining magnitude to redistributable opset.
+        uint64 allocatableMagnitude = allocationManager.getAllocatableMagnitude(address(attacker), strategy);
+        attacker.modifyAllocations(AllocateParams({
+            operatorSet: rOpSet,
+            strategies: strategy.toArray(),
+            newMagnitudes: (allocatableMagnitude).toArrayU64()
+        }));
+
+        // Deposit a random amount of tokens into the strategy.
+        attacker.depositIntoEigenlayer(strategy.toArray(), cheats.randomUint(1, token.balanceOf(address(attacker))).toArrayU256());
+
+        // Perform slashes to gradually whittle down operator magnitude, as well as produce slash escrows.
+        // Since we're doing multiple slashes, never slash 100%.
+        for (uint16 i = 0; i < numSlashes; i++) {
+            uint64 wadToSlash = uint64(cheats.randomUint(1, WAD - 1));
+            // Randomly decide whether to add funds to the strategy between slashes.
+            if (cheats.randomBool() && token.balanceOf(address(attacker)) > 0) {
+                uint fundsToAdd = cheats.randomUint(1, token.balanceOf(address(attacker)));
+                // Deal funds directly to the strategy to affect the exchange rate.
+                vm.prank(address(attacker));
+                token.transfer(address(strategy), fundsToAdd);
+            }
+            _slash(wadToSlash);
+        }
+
+        // Release all escrows to the redistributionRecipient (attacker).
+        _release();
+
+        // Withdraw all attacker deposits. Necessary as operator has partial mags remaining.
+        _withdraw();
+
+        // Note: In this test case, the attacker burns funds to attempt to manipulate the strategy's exchange rate. As such, severe token loss is expected.
+        checkForPrecisionLoss(initTokenBalance);
+    }
+
     /**
      *
      *                         INTERNAL FUNCTIONS
@@ -141,11 +266,13 @@ contract Integration_Rounding is IntegrationCheckUtils {
         if (token.balanceOf(address(attacker)) > initTokenBalance) {
             uint64 diff = uint64(token.balanceOf(address(attacker))) - initTokenBalance;
             console.log("EXCESS of tokens: %d", diff);
+            console.log("maxLoss: %d", maxLoss);
             // ANY tokens gained is an exploit.
             revert("Rounding error exploit found!");
         } else if (token.balanceOf(address(attacker)) < initTokenBalance) {
             uint64 diff = uint64(initTokenBalance - token.balanceOf(address(attacker)));
             console.log("DEFICIT of tokens: %d", diff);
+            console.log("maxLoss: %d", maxLoss);
             // Check against provided tolerance.
             assertLe(diff, maxLoss, "Tokens lost!");
         }
@@ -188,7 +315,7 @@ contract Integration_Rounding is IntegrationCheckUtils {
         _print("deallocate");
     }
 
-    function _deposit() internal {
+    function _depositAll() internal {
         // Allocate all remaining magnitude to redistributable opset.
         uint64 allocatableMagnitude = allocationManager.getAllocatableMagnitude(address(attacker), strategy);
         attacker.modifyAllocations(AllocateParams({
@@ -200,7 +327,7 @@ contract Integration_Rounding is IntegrationCheckUtils {
         // Deposit all attacker assets into Eigenlayer.
         attacker.depositIntoEigenlayer(strategy.toArray(), token.balanceOf(address(attacker)).toArrayU256());
 
-        _print("deposit");
+        _print("depositAll");
     }
 
     function _slash(uint64 wadToSlash) internal {
