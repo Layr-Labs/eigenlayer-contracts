@@ -146,6 +146,20 @@ interface IOperatorTableUpdater is
     function getLatestReferenceTimestamp() external view returns (uint32);
 
     /**
+     * @notice Get the latest reference block number
+     * @return The latest reference block number
+     */
+    function getLatestReferenceBlockNumber() external view returns (uint32);
+
+    /**
+     * @notice Get the reference block number for a given reference timestamp
+     * @param referenceTimestamp the reference timestamp
+     * @return The reference block number for the given reference timestamp
+     */
+    function getReferenceBlockNumber(
+        uint32 referenceTimestamp) external view returns (uint32);
+
+    /**
      * @notice Get the message hash for the certificate of a global table root update
      * @param globalTableRoot the global table root
      * @param referenceTimestamp the reference timestamp

@@ -36,6 +36,9 @@ abstract contract OperatorTableUpdaterStorage is IOperatorTableUpdater {
     /// @notice The global table roots by timestamp
     mapping(uint32 timestamp => bytes32 globalTableRoot) internal _globalTableRoots;
 
+    /// @notice Mapping from latest reference timestamp to reference block number
+    mapping(uint32 referenceTimestamp => uint32 referenceBlockNumber) internal _referenceBlockNumbers;
+
     // Constructor
     constructor(
         IBN254CertificateVerifier _bn254CertificateVerifier,
