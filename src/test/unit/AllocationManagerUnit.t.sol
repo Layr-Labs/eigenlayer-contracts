@@ -934,6 +934,23 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         });
     }
 
+    function test_1WEI_maxMag() public {
+        // Test out slashingLib
+        uint256 magnitude = 1e18;
+        uint256 slashPortion = WAD-1;
+        uint256 output = magnitude.mulWadRoundUp(slashPortion);
+        console.log("output is: ", output);
+        uint256 newMagnitude = magnitude - output;
+        console.log("new magnitude: ", newMagnitude);
+
+        uint256 operatorShares = 100;
+        uint256 prevMag = 1;
+        uint256 newMag = 0;
+        uint256 value = operatorShares.calcSlashedAmount(prevMag, newMag);
+        console.log("shares slashed: ", value);
+        assert(false);
+    }
+
     /**
      * Allocates 100% magnitude for a single strategy to an operatorSet.
      * First slashes 99% from the operatorSet, slashes 99.99% a second time, and on the third slash, slashes

@@ -179,6 +179,9 @@ library SlashingLib {
         uint256 newMaxMagnitude
     ) internal pure returns (uint256) {
         // round up mulDiv so we don't overslash
+        // 100 shares - 100 * (0.33) = 100 - 33.3 = 63.7 shares versus  acually 64
+        // Because you round down there... should be fine???
+        // Is the operator able to slash more than they actually have?
         return operatorShares - operatorShares.mulDiv(newMaxMagnitude, prevMaxMagnitude, Math.Rounding.Up);
     }
 }
