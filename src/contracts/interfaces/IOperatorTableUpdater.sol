@@ -155,4 +155,11 @@ interface IOperatorTableUpdater is
         bytes32 globalTableRoot,
         uint32 referenceTimestamp
     ) external view returns (bytes32);
+
+    /**
+     * @notice Get the reference timestamp of the global confirmer set
+     * @return The reference timestamp of the global confirmer set
+     * @dev In V1, we only update the table of the global root confirmer set on initial deployment, and never update it again.
+     */
+    function getGlobalConfirmerSetReferenceTimestamp() external view returns (uint32);
 }
