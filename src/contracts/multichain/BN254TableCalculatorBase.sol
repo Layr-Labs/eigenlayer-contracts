@@ -115,8 +115,8 @@ abstract contract BN254TableCalculatorBase is IBN254TableCalculator {
         // Get the weights for all operators in the operatorSet
         (address[] memory operators, uint256[][] memory weights) = _getOperatorWeights(operatorSet);
 
-        // Handle empty operator set
-        if (operators.length == 0) {
+        // If there are no weights, return an empty operator set info
+        if (weights.length == 0) {
             return BN254OperatorSetInfo({
                 operatorInfoTreeRoot: bytes32(0),
                 numOperators: 0,
@@ -125,11 +125,12 @@ abstract contract BN254TableCalculatorBase is IBN254TableCalculator {
             });
         }
 
-        // Collate weights into a single array of total weights
+        // Initialize arrays
         uint256 subArrayLength = weights[0].length;
         uint256[] memory totalWeights = new uint256[](subArrayLength);
         bytes32[] memory operatorInfoLeaves = new bytes32[](operators.length);
         BN254.G1Point memory aggregatePubkey;
+        uint256 operatorCount = 0;
 
         for (uint256 i = 0; i < operators.length; i++) {
             // Skip if the operator has not registered their key
@@ -147,13 +148,31 @@ abstract contract BN254TableCalculatorBase is IBN254TableCalculator {
 
             // Add the operator's G1 point to the aggregate pubkey
             aggregatePubkey = aggregatePubkey.plus(g1Point);
+
+            // Increment the operator count
+            operatorCount++;
+        }
+
+        // If there are no operators, return an empty operator set info
+        if (operatorCount == 0) {
+            return BN254OperatorSetInfo({
+                operatorInfoTreeRoot: bytes32(0),
+                numOperators: 0,
+                aggregatePubkey: BN254.G1Point(0, 0),
+                totalWeights: new uint256[](0)
+            });
+        }
+
+        // Resize the operatorInfoLeaves array to the number of operators and merkleize
+        assembly {
+            mstore(operatorInfoLeaves, operatorCount)
         }
 
         bytes32 operatorInfoTreeRoot = operatorInfoLeaves.merkleizeKeccak();
 
         return BN254OperatorSetInfo({
             operatorInfoTreeRoot: operatorInfoTreeRoot,
-            numOperators: operators.length,
+            numOperators: operatorCount,
             aggregatePubkey: aggregatePubkey,
             totalWeights: totalWeights
         });

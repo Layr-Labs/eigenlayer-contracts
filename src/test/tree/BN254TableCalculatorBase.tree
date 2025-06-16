@@ -3,8 +3,8 @@
     ├── when calculateOperatorTable is called
     │   ├── given that there are no operators
     │   │   └── it should return empty operator table with zero aggregate pubkey
-    │   ├── given that operators have no registered BN254 keys
-    │   │   └── it should skip those operators and return table without them
+    │   ├── given that operators exist but none have registered BN254 keys
+    │   │   └── it should return empty operator table (operatorCount = 0, empty totalWeights)
     │   ├── given that all operators have registered BN254 keys
     │   │   └── it should include all operators in the table and calculate aggregate pubkey
     │   ├── given that weights array has multiple weight types

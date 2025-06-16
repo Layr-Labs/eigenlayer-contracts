@@ -89,7 +89,6 @@ contract BN254TableCalculatorBaseUnitTests is EigenLayerMultichainUnitTestSetup,
         // Set up BN254 keys
         bn254G1Key1 = BN254.generatorG1().scalar_mul(BN254_PRIV_KEY_1);
         bn254G1Key2 = BN254.generatorG1().scalar_mul(BN254_PRIV_KEY_2);
-        bn254G1Key3 = BN254.generatorG1().scalar_mul(BN254_PRIV_KEY_3);
 
         // Valid G2 points that correspond to the private keys
         bn254G2Key1.X[1] = 19_101_821_850_089_705_274_637_533_855_249_918_363_070_101_489_527_618_151_493_230_256_975_900_223_847;
@@ -101,11 +100,6 @@ contract BN254TableCalculatorBaseUnitTests is EigenLayerMultichainUnitTestSetup,
         bn254G2Key2.X[0] = 14_066_454_060_412_929_535_985_836_631_817_650_877_381_034_334_390_275_410_072_431_082_437_297_539_867;
         bn254G2Key2.Y[1] = 12_642_665_914_920_339_463_975_152_321_804_664_028_480_770_144_655_934_937_445_922_690_262_428_344_269;
         bn254G2Key2.Y[0] = 10_109_651_107_942_685_361_120_988_628_892_759_706_059_655_669_161_016_107_907_096_760_613_704_453_218;
-
-        bn254G2Key3.X[1] = 10_065_294_185_308_178_639_824_915_694_426_970_382_826_657_231_577_006_321_809_179_369_203_575_929_338;
-        bn254G2Key3.X[0] = 18_704_994_648_710_663_751_545_825_732_404_596_552_662_530_556_995_267_423_816_934_154_636_413_021_479;
-        bn254G2Key3.Y[1] = 1_100_573_176_922_536_894_696_269_099_002_967_087_499_178_600_700_442_719_486_499_522_975_418_913_755;
-        bn254G2Key3.Y[0] = 16_729_840_415_432_282_123_164_619_439_212_648_978_646_901_946_478_548_334_321_421_641_415_651_115_452;
 
         // Configure operator sets in AllocationManager
         allocationManagerMock.setAVSRegistrar(avs1, avs1);
@@ -204,9 +198,10 @@ contract BN254TableCalculatorBaseUnitTests_calculateOperatorTable is BN254TableC
 
         BN254OperatorSetInfo memory info = calculator.calculateOperatorTable(defaultOperatorSet);
 
-        assertEq(info.numOperators, 2, "Should have 2 operators");
-        assertEq(info.totalWeights.length, 1, "Should have 1 weight type");
-        assertEq(info.totalWeights[0], 0, "Total weight should be 0 (no registered keys)");
+        // When no operators have registered keys, operatorCount should be 0 and return empty table
+        assertEq(info.numOperators, 0, "Should have 0 operators when none are registered");
+        assertEq(info.totalWeights.length, 0, "Should have empty total weights when no operators registered");
+        assertEq(info.operatorInfoTreeRoot, bytes32(0), "Should have zero tree root");
         assertEq(info.aggregatePubkey.X, 0, "Aggregate pubkey X should be 0");
         assertEq(info.aggregatePubkey.Y, 0, "Aggregate pubkey Y should be 0");
     }
@@ -291,7 +286,7 @@ contract BN254TableCalculatorBaseUnitTests_calculateOperatorTable is BN254TableC
 
         BN254OperatorSetInfo memory info = calculator.calculateOperatorTable(defaultOperatorSet);
 
-        assertEq(info.numOperators, 3, "Should have 3 operators");
+        assertEq(info.numOperators, 1, "Should have 1 operator (only registered ones count)");
         assertEq(info.totalWeights[0], 100, "Total weight should be 100 (only operator1)");
         assertEq(info.aggregatePubkey.X, bn254G1Key1.X, "Aggregate pubkey X should be operator1's");
         assertEq(info.aggregatePubkey.Y, bn254G1Key1.Y, "Aggregate pubkey Y should be operator1's");
@@ -314,6 +309,60 @@ contract BN254TableCalculatorBaseUnitTests_calculateOperatorTable is BN254TableC
         assertEq(info.totalWeights[0], 100, "Total weight should be 100");
         assertEq(info.aggregatePubkey.X, bn254G1Key1.X, "Aggregate pubkey X mismatch");
         assertEq(info.aggregatePubkey.Y, bn254G1Key1.Y, "Aggregate pubkey Y mismatch");
+    }
+
+    function test_subsetOfOperatorsRegistered() public {
+        // Register operator1 and operator3, but not operator2
+        _registerOperatorKey(operator1, defaultOperatorSet, bn254G1Key1, bn254G2Key1, BN254_PRIV_KEY_1);
+
+        // Set operators and weights
+        address[] memory operators = new address[](3);
+        operators[0] = operator1; // registered
+        operators[1] = operator2; // not registered
+
+        uint[][] memory weights = new uint[][](3);
+        weights[0] = _createSingleWeightArray(100)[0];
+        weights[1] = _createSingleWeightArray(200)[0]; // This weight won't be included
+
+        calculator.setMockOperatorWeights(defaultOperatorSet, operators, weights);
+
+        BN254OperatorSetInfo memory info = calculator.calculateOperatorTable(defaultOperatorSet);
+
+        assertEq(info.numOperators, 1, "Should have 1 operator (only registered ones)");
+        assertEq(info.totalWeights[0], 100, "Total weight should be 100 (100 + 300)");
+
+        // Verify aggregate pubkey is sum of registered operators' keys
+        BN254.G1Point memory expectedAggregate = bn254G1Key1;
+        assertEq(info.aggregatePubkey.X, expectedAggregate.X, "Aggregate pubkey X mismatch");
+        assertEq(info.aggregatePubkey.Y, expectedAggregate.Y, "Aggregate pubkey Y mismatch");
+
+        // Verify merkle root is non-zero
+        assertTrue(info.operatorInfoTreeRoot != bytes32(0), "Merkle root should be non-zero");
+    }
+
+    function test_emptyOperatorSetReturnsZeroValues() public {
+        // Test with operators that exist but none registered
+        address[] memory operators = new address[](3);
+        operators[0] = operator1;
+        operators[1] = operator2;
+        operators[2] = operator3;
+
+        uint[][] memory weights = new uint[][](3);
+        weights[0] = _createSingleWeightArray(100)[0];
+        weights[1] = _createSingleWeightArray(200)[0];
+        weights[2] = _createSingleWeightArray(300)[0];
+
+        // Don't register any operators
+        calculator.setMockOperatorWeights(defaultOperatorSet, operators, weights);
+
+        BN254OperatorSetInfo memory info = calculator.calculateOperatorTable(defaultOperatorSet);
+
+        // Verify all values are zero/empty when no operators are registered
+        assertEq(info.operatorInfoTreeRoot, bytes32(0), "Tree root should be zero");
+        assertEq(info.numOperators, 0, "Should have 0 operators");
+        assertEq(info.aggregatePubkey.X, 0, "Aggregate pubkey X should be 0");
+        assertEq(info.aggregatePubkey.Y, 0, "Aggregate pubkey Y should be 0");
+        assertEq(info.totalWeights.length, 0, "Total weights should be empty array");
     }
 }
 

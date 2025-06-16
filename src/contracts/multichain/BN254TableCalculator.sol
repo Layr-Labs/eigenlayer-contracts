@@ -35,25 +35,43 @@ contract BN254TableCalculator is BN254TableCalculatorBase {
         OperatorSet calldata operatorSet
     ) internal view override returns (address[] memory operators, uint256[][] memory weights) {
         // Get all operators & strategies in the operatorSet
-        operators = allocationManager.getMembers(operatorSet);
+        address[] memory registeredOperators = allocationManager.getMembers(operatorSet);
         IStrategy[] memory strategies = allocationManager.getStrategiesInOperatorSet(operatorSet);
 
         // Get the minimum slashable stake for each operator
         uint256[][] memory minSlashableStake = allocationManager.getMinimumSlashableStake({
             operatorSet: operatorSet,
-            operators: operators,
+            operators: registeredOperators,
             strategies: strategies,
             futureBlock: uint32(block.number + LOOKAHEAD_BLOCKS)
         });
 
-        weights = new uint256[][](operators.length);
-        for (uint256 operatorIndex = 0; operatorIndex < operators.length; ++operatorIndex) {
-            // Initialize operator weights array of length 1 just for slashable stake
-            weights[operatorIndex] = new uint256[](1);
-            // 1. For the given operator, loop through the strategies and sum together to calculate the operator's weight for the operatorSet
+        operators = new address[](registeredOperators.length);
+        weights = new uint256[][](registeredOperators.length);
+        uint256 operatorCount = 0;
+        for (uint256 i = 0; i < registeredOperators.length; ++i) {
+            // For the given operator, loop through the strategies and sum together to calculate the operator's weight for the operatorSet
+            uint256 totalWeight;
             for (uint256 stratIndex = 0; stratIndex < strategies.length; ++stratIndex) {
-                weights[operatorIndex][0] += minSlashableStake[operatorIndex][stratIndex];
+                totalWeight += minSlashableStake[i][stratIndex];
             }
+
+            // If the operator has nonzero slashable stake, add them to the operators array
+            if (totalWeight > 0) {
+                // Initialize operator weights array of length 1 just for slashable stake
+                weights[operatorCount] = new uint256[](1);
+                weights[operatorCount][0] = totalWeight;
+
+                // Add the operator to the operators array
+                operators[operatorCount] = registeredOperators[i];
+                operatorCount++;
+            }
+        }
+
+        // Resize arrays to be the size of the number of operators with nonzero slashable stake
+        assembly {
+            mstore(operators, operatorCount)
+            mstore(weights, operatorCount)
         }
 
         return (operators, weights);
