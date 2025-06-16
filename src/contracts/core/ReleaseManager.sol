@@ -15,14 +15,9 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
      *
      */
     constructor(
-        IAllocationManager _allocationManager,
         IPermissionController _permissionController,
         string memory _version
-    )
-        ReleaseManagerStorage(_allocationManager)
-        PermissionControllerMixin(_permissionController)
-        SemVerMixin(_version)
-    {
+    ) ReleaseManagerStorage() PermissionControllerMixin(_permissionController) SemVerMixin(_version) {
         _disableInitializers();
     }
 
