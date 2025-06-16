@@ -16,10 +16,6 @@ import "./ECDSACertificateVerifierStorage.sol";
 contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStorage, SignatureUtilsMixin {
     using ECDSA for bytes32;
 
-    // EIP-712 type hash for certificate verification
-    bytes32 public constant ECDSA_CERTIFICATE_TYPEHASH =
-        keccak256("ECDSACertificate(uint32 referenceTimestamp,bytes32 messageHash)");
-
     /**
      * @notice Restricts access to the operator table updater
      */
@@ -32,11 +28,41 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
      * @notice Constructor for the certificate verifier
      * @dev Disables initializers to prevent implementation initialization
      * @param _operatorTableUpdater Address authorized to update operator tables
+     * @param _version The version string for the SignatureUtilsMixin
      */
     constructor(
-        IOperatorTableUpdater _operatorTableUpdater
-    ) ECDSACertificateVerifierStorage(_operatorTableUpdater) SignatureUtilsMixin("1.0.0") {
+        IOperatorTableUpdater _operatorTableUpdater,
+        string memory _version
+    ) ECDSACertificateVerifierStorage(_operatorTableUpdater) SignatureUtilsMixin(_version) {
         _disableInitializers();
+    }
+
+    /**
+     * @notice Override domainSeparator to not include chainId
+     * @return The domain separator hash without chainId
+     */
+    function domainSeparator() public view override returns (bytes32) {
+        return keccak256(
+            abi.encode(
+                EIP712_DOMAIN_TYPEHASH_NO_CHAINID,
+                keccak256(bytes("EigenLayer")),
+                keccak256(bytes(_majorVersion())),
+                address(this)
+            )
+        );
+    }
+
+    /**
+     * @notice Calculate the EIP-712 digest for a certificate
+     * @param referenceTimestamp The reference timestamp
+     * @param messageHash The message hash
+     * @return The EIP-712 digest
+     * @dev This function is public to allow offchain tools to calculate the same digest
+     * @dev Note: This does not support smart contract based signatures for multichain
+     */
+    function calculateCertificateDigest(uint32 referenceTimestamp, bytes32 messageHash) public view returns (bytes32) {
+        bytes32 structHash = keccak256(abi.encode(ECDSA_CERTIFICATE_TYPEHASH, referenceTimestamp, messageHash));
+        return _calculateSignableDigest(structHash);
     }
 
     ///@inheritdoc IBaseCertificateVerifier
@@ -90,65 +116,6 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
         emit TableUpdated(operatorSet, referenceTimestamp, operatorInfos);
     }
 
-    ///@inheritdoc IECDSACertificateVerifier
-    function verifyCertificate(
-        OperatorSet calldata operatorSet,
-        ECDSACertificate calldata cert
-    ) external view returns (uint256[] memory) {
-        uint96[] memory signedStakes96 = _verifyECDSACertificate(operatorSet, cert);
-        uint256[] memory signedStakes = new uint256[](signedStakes96.length);
-        for (uint256 i = 0; i < signedStakes96.length; i++) {
-            signedStakes[i] = uint256(signedStakes96[i]);
-        }
-        return signedStakes;
-    }
-
-    ///@inheritdoc IECDSACertificateVerifier
-    function verifyCertificateProportion(
-        OperatorSet calldata operatorSet,
-        ECDSACertificate calldata cert,
-        uint16[] calldata totalStakeProportionThresholds
-    ) external view returns (bool) {
-        uint96[] memory signedStakes96 = _verifyECDSACertificate(operatorSet, cert);
-        uint256[] memory signedStakes = new uint256[](signedStakes96.length);
-        for (uint256 i = 0; i < signedStakes96.length; i++) {
-            signedStakes[i] = uint256(signedStakes96[i]);
-        }
-        uint96[] memory totalStakes96 = _getTotalStakes(operatorSet, cert.referenceTimestamp);
-        uint256[] memory totalStakes = new uint256[](totalStakes96.length);
-        for (uint256 i = 0; i < totalStakes96.length; i++) {
-            totalStakes[i] = uint256(totalStakes96[i]);
-        }
-        require(signedStakes.length == totalStakeProportionThresholds.length, ArrayLengthMismatch());
-        for (uint256 i = 0; i < signedStakes.length; i++) {
-            uint256 threshold = (totalStakes[i] * totalStakeProportionThresholds[i]) / 10_000;
-            if (signedStakes[i] < threshold) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    ///@inheritdoc IECDSACertificateVerifier
-    function verifyCertificateNominal(
-        OperatorSet calldata operatorSet,
-        ECDSACertificate calldata cert,
-        uint256[] memory totalStakeNominalThresholds
-    ) external view returns (bool) {
-        uint96[] memory signedStakes96 = _verifyECDSACertificate(operatorSet, cert);
-        uint256[] memory signedStakes = new uint256[](signedStakes96.length);
-        for (uint256 i = 0; i < signedStakes96.length; i++) {
-            signedStakes[i] = uint256(signedStakes96[i]);
-        }
-        if (signedStakes.length != totalStakeNominalThresholds.length) revert ArrayLengthMismatch();
-        for (uint256 i = 0; i < signedStakes.length; i++) {
-            if (signedStakes[i] < totalStakeNominalThresholds[i]) {
-                return false;
-            }
-        }
-        return true;
-    }
-
     /**
      * @notice Internal function to verify a certificate
      * @param cert The certificate to verify
@@ -157,7 +124,7 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
     function _verifyECDSACertificate(
         OperatorSet calldata operatorSet,
         ECDSACertificate calldata cert
-    ) internal view returns (uint96[] memory) {
+    ) internal view returns (uint256[] memory) {
         bytes32 operatorSetKey = operatorSet.key();
 
         // Assert that reference timestamp is not stale
@@ -167,13 +134,11 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
         require(_latestReferenceTimestamps[operatorSetKey] == cert.referenceTimestamp, ReferenceTimestampDoesNotExist());
 
         // Get the total stakes
-        uint96[] memory totalStakes = _getTotalStakes(operatorSet, cert.referenceTimestamp);
-        uint96[] memory signedStakes = new uint96[](totalStakes.length);
+        uint256[] memory totalStakes = _getTotalStakes(operatorSet, cert.referenceTimestamp);
+        uint256[] memory signedStakes = new uint256[](totalStakes.length);
 
         // Compute the EIP-712 digest for signature recovery
-        bytes32 structHash =
-            keccak256(abi.encode(ECDSA_CERTIFICATE_TYPEHASH, cert.referenceTimestamp, cert.messageHash));
-        bytes32 signableDigest = keccak256(abi.encodePacked("\x19\x01", domainSeparator(), structHash));
+        bytes32 signableDigest = calculateCertificateDigest(cert.referenceTimestamp, cert.messageHash);
 
         // Parse the signatures
         (address[] memory signers, bool validSignatures) = _parseSignatures(signableDigest, cert.sig);
@@ -196,7 +161,7 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
                 // Add this operator's weights to the signed stakes
                 uint256[] storage weights = _operatorInfos[operatorSetKey][cert.referenceTimestamp][uint32(i)].weights;
                 for (uint256 j = 0; j < weights.length && j < signedStakes.length; j++) {
-                    signedStakes[j] += uint96(weights[j]);
+                    signedStakes[j] += weights[j];
                 }
             }
         }
@@ -214,12 +179,56 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
         return signedStakes;
     }
 
+    ///@inheritdoc IECDSACertificateVerifier
+    function verifyCertificate(
+        OperatorSet calldata operatorSet,
+        ECDSACertificate calldata cert
+    ) external view returns (uint256[] memory) {
+        return _verifyECDSACertificate(operatorSet, cert);
+    }
+
+    ///@inheritdoc IECDSACertificateVerifier
+    function verifyCertificateProportion(
+        OperatorSet calldata operatorSet,
+        ECDSACertificate calldata cert,
+        uint16[] calldata totalStakeProportionThresholds
+    ) external view returns (bool) {
+        uint256[] memory signedStakes = _verifyECDSACertificate(operatorSet, cert);
+        uint256[] memory totalStakes = _getTotalStakes(operatorSet, cert.referenceTimestamp);
+        require(signedStakes.length == totalStakeProportionThresholds.length, ArrayLengthMismatch());
+        for (uint256 i = 0; i < signedStakes.length; i++) {
+            uint256 threshold = (totalStakes[i] * totalStakeProportionThresholds[i]) / 10_000;
+            if (signedStakes[i] < threshold) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    ///@inheritdoc IECDSACertificateVerifier
+    function verifyCertificateNominal(
+        OperatorSet calldata operatorSet,
+        ECDSACertificate calldata cert,
+        uint256[] memory totalStakeNominalThresholds
+    ) external view returns (bool) {
+        uint256[] memory signedStakes = _verifyECDSACertificate(operatorSet, cert);
+        if (signedStakes.length != totalStakeNominalThresholds.length) revert ArrayLengthMismatch();
+        for (uint256 i = 0; i < signedStakes.length; i++) {
+            if (signedStakes[i] < totalStakeNominalThresholds[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     /**
      * @notice Parse signatures from the concatenated signature bytes
      * @param messageHash The message hash that was signed
      * @param signatures The concatenated signatures
      * @return signers Array of addresses that signed the message
      * @return valid Whether all signatures are valid
+     * @dev Signatures must be ordered by signer address (ascending)
+     * @dev This does not support smart contract based signatures for multichain
      */
     function _parseSignatures(
         bytes32 messageHash,
@@ -245,11 +254,9 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
                 return (signers, false);
             }
 
-            // Check for duplicate signers
-            for (uint256 j = 0; j < i; j++) {
-                if (signers[j] == signer) {
-                    return (signers, false);
-                }
+            // Check that signatures are ordered by signer address
+            if (i > 0 && signer <= signers[i - 1]) {
+                return (signers, false);
             }
 
             signers[i] = signer;
@@ -288,17 +295,17 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
     function _getTotalStakes(
         OperatorSet calldata operatorSet,
         uint32 referenceTimestamp
-    ) internal view returns (uint96[] memory totalStakes) {
+    ) internal view returns (uint256[] memory totalStakes) {
         bytes32 operatorSetKey = operatorSet.key();
         require(_latestReferenceTimestamps[operatorSetKey] == referenceTimestamp, ReferenceTimestampDoesNotExist());
         uint256 operatorCount = _numOperators[operatorSetKey][referenceTimestamp];
         require(operatorCount > 0, ReferenceTimestampDoesNotExist());
         uint256 stakeTypesCount = _operatorInfos[operatorSetKey][referenceTimestamp][0].weights.length;
-        totalStakes = new uint96[](stakeTypesCount);
+        totalStakes = new uint256[](stakeTypesCount);
         for (uint256 i = 0; i < operatorCount; i++) {
             uint256[] storage weights = _operatorInfos[operatorSetKey][referenceTimestamp][uint32(i)].weights;
             for (uint256 j = 0; j < weights.length && j < stakeTypesCount; j++) {
-                totalStakes[j] += uint96(weights[j]);
+                totalStakes[j] += weights[j];
             }
         }
         return totalStakes;

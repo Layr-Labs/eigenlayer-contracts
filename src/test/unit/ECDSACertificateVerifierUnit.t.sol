@@ -48,7 +48,7 @@ contract ECDSACertificateVerifierTest is Test {
         testOperatorSet.id = 1;
 
         // Deploy implementation
-        ECDSACertificateVerifier implementation = new ECDSACertificateVerifier(IOperatorTableUpdater(tableUpdater));
+        ECDSACertificateVerifier implementation = new ECDSACertificateVerifier(IOperatorTableUpdater(tableUpdater), "1.0.0");
 
         // Deploy proxy and initialize
         ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), "");
@@ -111,6 +111,11 @@ contract ECDSACertificateVerifierTest is Test {
         return ICrossChainRegistryTypes.OperatorSetConfig({owner: operatorSetOwner, maxStalenessPeriod: maxStaleness});
     }
 
+    // Helper function to mirror _calculateSignableDigest
+    function calculateSignableDigest(bytes32 structHash) internal view returns (bytes32) {
+        return keccak256(abi.encodePacked("\x19\x01", verifier.domainSeparator(), structHash));
+    }
+
     // Helper to create a certificate with real ECDSA signatures
     function createCertificate(
         uint32 referenceTimestamp,
@@ -119,12 +124,13 @@ contract ECDSACertificateVerifierTest is Test {
         IECDSACertificateVerifierTypes.ECDSAOperatorInfo[] memory ops,
         uint[] memory signerPrivKeys
     ) internal view returns (IECDSACertificateVerifierTypes.ECDSACertificate memory) {
-        // Create EIP-712 compliant message hash
-        bytes32 structHash = keccak256(abi.encode(verifier.ECDSA_CERTIFICATE_TYPEHASH(), referenceTimestamp, messageHash));
-        bytes32 signableDigest = keccak256(abi.encodePacked("\x19\x01", verifier.domainSeparator(), structHash));
+        // Use the contract's digest calculation
+        bytes32 signableDigest = verifier.calculateCertificateDigest(referenceTimestamp, messageHash);
 
-        // Generate signatures only for signers
-        bytes memory signatures;
+        // Collect signers and their private keys
+        uint numSigners = signerPrivKeys.length;
+        address[] memory signerAddresses = new address[](numSigners);
+        bytes[] memory signaturesArr = new bytes[](numSigners);
         uint signerIdx = 0;
         for (uint i = 0; i < ops.length; i++) {
             bool isNonSigner = false;
@@ -134,15 +140,34 @@ contract ECDSACertificateVerifierTest is Test {
                     break;
                 }
             }
-
             if (!isNonSigner) {
                 (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivKeys[signerIdx], signableDigest);
                 bytes memory signature = abi.encodePacked(r, s, v);
-                signatures = bytes.concat(signatures, signature);
+                signerAddresses[signerIdx] = ops[i].pubkey;
+                signaturesArr[signerIdx] = signature;
                 signerIdx++;
             }
         }
-
+        // Sort signers and signatures by address (ascending)
+        for (uint i = 0; i < numSigners; i++) {
+            for (uint j = i + 1; j < numSigners; j++) {
+                if (signerAddresses[j] < signerAddresses[i]) {
+                    // Swap addresses
+                    address tmpAddr = signerAddresses[i];
+                    signerAddresses[i] = signerAddresses[j];
+                    signerAddresses[j] = tmpAddr;
+                    // Swap signatures
+                    bytes memory tmpSig = signaturesArr[i];
+                    signaturesArr[i] = signaturesArr[j];
+                    signaturesArr[j] = tmpSig;
+                }
+            }
+        }
+        // Concatenate signatures in sorted order
+        bytes memory signatures;
+        for (uint i = 0; i < numSigners; i++) {
+            signatures = bytes.concat(signatures, signaturesArr[i]);
+        }
         return IECDSACertificateVerifierTypes.ECDSACertificate({
             referenceTimestamp: referenceTimestamp,
             messageHash: messageHash,

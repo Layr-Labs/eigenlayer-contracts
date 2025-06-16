@@ -13,6 +13,14 @@ abstract contract ECDSACertificateVerifierStorage is IECDSACertificateVerifier {
     /// @dev Basis point unit denominator for division
     uint256 internal constant BPS_DENOMINATOR = 10_000;
 
+    /// @dev EIP-712 type hash for certificate verification
+    bytes32 internal constant ECDSA_CERTIFICATE_TYPEHASH =
+        keccak256("ECDSACertificate(uint32 referenceTimestamp,bytes32 messageHash)");
+
+    /// @dev The EIP-712 domain type hash used for computing the domain separator without chainId
+    bytes32 internal constant EIP712_DOMAIN_TYPEHASH_NO_CHAINID =
+        keccak256("EIP712Domain(string name,string version,address verifyingContract)");
+
     // Immutables
 
     /// @dev The address that can update operator tables

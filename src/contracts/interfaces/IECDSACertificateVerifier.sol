@@ -6,7 +6,6 @@ import "./IBaseCertificateVerifier.sol";
 import "./IECDSATableCalculator.sol";
 
 interface IECDSACertificateVerifierTypes is IECDSATableCalculatorTypes {
-    
     // Errors
     error InvalidSignatureLength();
 
