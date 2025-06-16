@@ -38,7 +38,7 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
         Artifact[] calldata artifacts,
         uint32 upgradeByTime
     ) external checkCanCall(operatorSet.avs) returns (uint256 releaseId) {
-        // Create a storage pointer to the releases array for this operator set for readibility.
+        // Create a storage pointer to the releases array for this operator set for readability.
         Release[] storage releases = _operatorSetReleases[operatorSet.key()];
 
         // Get the release id (the current length of the releases array).
@@ -47,7 +47,7 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
         // Add a new empty release to the end of the array.
         releases.push();
 
-        // Create a storage pointer to the newly added release for readibility.
+        // Create a storage pointer to the newly added release for readability.
         Release storage release = releases[releaseId];
 
         // Copy the release to storage.
