@@ -55,20 +55,20 @@ interface IReleaseManager is IReleaseManagerErrors, IReleaseManagerEvents {
      *
      */
 
-    /// @notice Gets the total number of releases for an operator set.
+    /// @notice Returns the total number of releases for an operator set.
     /// @param operatorSet The operator set to query.
     /// @return The number of releases.
     function getTotalReleases(
         OperatorSet memory operatorSet
     ) external view returns (uint256);
 
-    /// @notice Gets a specific release by index.
+    /// @notice Returns a specific release by index.
     /// @param operatorSet The operator set to query.
-    /// @param index The index of the release to get.
+    /// @param releaseId The id of the release to get.
     /// @return The release at the specified index.
-    function getRelease(OperatorSet memory operatorSet, uint256 index) external view returns (Release memory);
+    function getRelease(OperatorSet memory operatorSet, uint256 releaseId) external view returns (Release memory);
 
-    /// @notice Gets the latest release for an operator set.
+    /// @notice Returns the latest release for an operator set.
     /// @param operatorSet The operator set to query.
     /// @return The most recent release.
     function getLatestRelease(

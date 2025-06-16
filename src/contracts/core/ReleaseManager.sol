@@ -68,8 +68,8 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
     }
 
     /// @inheritdoc IReleaseManager
-    function getRelease(OperatorSet memory operatorSet, uint256 index) external view returns (Release memory) {
-        return _operatorSetReleases[operatorSet.key()][index];
+    function getRelease(OperatorSet memory operatorSet, uint256 releaseId) external view returns (Release memory) {
+        return _operatorSetReleases[operatorSet.key()][releaseId];
     }
 
     /// @inheritdoc IReleaseManager
