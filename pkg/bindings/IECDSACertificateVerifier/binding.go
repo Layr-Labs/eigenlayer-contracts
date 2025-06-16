@@ -56,7 +56,7 @@ type OperatorSet struct {
 
 // IECDSACertificateVerifierMetaData contains all meta data concerning the IECDSACertificateVerifier contract.
 var IECDSACertificateVerifierMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"getOperatorSetOwner\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"latestReferenceTimestamp\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"maxOperatorTableStaleness\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"updateOperatorTable\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"operatorInfos\",\"type\":\"tuple[]\",\"internalType\":\"structIECDSATableCalculatorTypes.ECDSAOperatorInfo[]\",\"components\":[{\"name\":\"pubkey\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"weights\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}]},{\"name\":\"operatorSetConfig\",\"type\":\"tuple\",\"internalType\":\"structICrossChainRegistryTypes.OperatorSetConfig\",\"components\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"maxStalenessPeriod\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"verifyCertificate\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"cert\",\"type\":\"tuple\",\"internalType\":\"structIECDSACertificateVerifierTypes.ECDSACertificate\",\"components\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"messageHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"sig\",\"type\":\"bytes\",\"internalType\":\"bytes\"}]}],\"outputs\":[{\"name\":\"signedStakes\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"verifyCertificateNominal\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"cert\",\"type\":\"tuple\",\"internalType\":\"structIECDSACertificateVerifierTypes.ECDSACertificate\",\"components\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"messageHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"sig\",\"type\":\"bytes\",\"internalType\":\"bytes\"}]},{\"name\":\"totalStakeNominalThresholds\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"verifyCertificateProportion\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"cert\",\"type\":\"tuple\",\"internalType\":\"structIECDSACertificateVerifierTypes.ECDSACertificate\",\"components\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"messageHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"sig\",\"type\":\"bytes\",\"internalType\":\"bytes\"}]},{\"name\":\"totalStakeProportionThresholds\",\"type\":\"uint16[]\",\"internalType\":\"uint16[]\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"MaxStalenessPeriodUpdated\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"maxStalenessPeriod\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorSetOwnerUpdated\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"owner\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"TableUpdated\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"},{\"name\":\"operatorInfos\",\"type\":\"tuple[]\",\"indexed\":false,\"internalType\":\"structIECDSATableCalculatorTypes.ECDSAOperatorInfo[]\",\"components\":[{\"name\":\"pubkey\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"weights\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}]}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"ArrayLengthMismatch\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"CertificateStale\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OnlyTableUpdater\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ReferenceTimestampDoesNotExist\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"TableUpdateStale\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"VerificationFailed\",\"inputs\":[]}]",
+	ABI: "[{\"type\":\"function\",\"name\":\"getOperatorSetOwner\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"latestReferenceTimestamp\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"maxOperatorTableStaleness\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"updateOperatorTable\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"operatorInfos\",\"type\":\"tuple[]\",\"internalType\":\"structIECDSATableCalculatorTypes.ECDSAOperatorInfo[]\",\"components\":[{\"name\":\"pubkey\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"weights\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}]},{\"name\":\"operatorSetConfig\",\"type\":\"tuple\",\"internalType\":\"structICrossChainRegistryTypes.OperatorSetConfig\",\"components\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"maxStalenessPeriod\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"verifyCertificate\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"cert\",\"type\":\"tuple\",\"internalType\":\"structIECDSACertificateVerifierTypes.ECDSACertificate\",\"components\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"messageHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"sig\",\"type\":\"bytes\",\"internalType\":\"bytes\"}]}],\"outputs\":[{\"name\":\"signedStakes\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"verifyCertificateNominal\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"cert\",\"type\":\"tuple\",\"internalType\":\"structIECDSACertificateVerifierTypes.ECDSACertificate\",\"components\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"messageHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"sig\",\"type\":\"bytes\",\"internalType\":\"bytes\"}]},{\"name\":\"totalStakeNominalThresholds\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"verifyCertificateProportion\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"cert\",\"type\":\"tuple\",\"internalType\":\"structIECDSACertificateVerifierTypes.ECDSACertificate\",\"components\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"messageHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"sig\",\"type\":\"bytes\",\"internalType\":\"bytes\"}]},{\"name\":\"totalStakeProportionThresholds\",\"type\":\"uint16[]\",\"internalType\":\"uint16[]\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"MaxStalenessPeriodUpdated\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"maxStalenessPeriod\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorSetOwnerUpdated\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"owner\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"TableUpdated\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"},{\"name\":\"operatorInfos\",\"type\":\"tuple[]\",\"indexed\":false,\"internalType\":\"structIECDSATableCalculatorTypes.ECDSAOperatorInfo[]\",\"components\":[{\"name\":\"pubkey\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"weights\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}]}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"ArrayLengthMismatch\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"CertificateStale\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OnlyTableUpdater\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ReferenceTimestampDoesNotExist\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"TableUpdateStale\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"VerificationFailed\",\"inputs\":[]}]",
 }
 
 // IECDSACertificateVerifierABI is the input ABI used to generate the binding from.
@@ -205,67 +205,97 @@ func (_IECDSACertificateVerifier *IECDSACertificateVerifierTransactorRaw) Transa
 	return _IECDSACertificateVerifier.Contract.contract.Transact(opts, method, params...)
 }
 
-// GetOperatorSetOwner is a paid mutator transaction binding the contract method 0x84818920.
+// GetOperatorSetOwner is a free data retrieval call binding the contract method 0x84818920.
 //
-// Solidity: function getOperatorSetOwner((address,uint32) operatorSet) returns(address)
-func (_IECDSACertificateVerifier *IECDSACertificateVerifierTransactor) GetOperatorSetOwner(opts *bind.TransactOpts, operatorSet OperatorSet) (*types.Transaction, error) {
-	return _IECDSACertificateVerifier.contract.Transact(opts, "getOperatorSetOwner", operatorSet)
+// Solidity: function getOperatorSetOwner((address,uint32) operatorSet) view returns(address)
+func (_IECDSACertificateVerifier *IECDSACertificateVerifierCaller) GetOperatorSetOwner(opts *bind.CallOpts, operatorSet OperatorSet) (common.Address, error) {
+	var out []interface{}
+	err := _IECDSACertificateVerifier.contract.Call(opts, &out, "getOperatorSetOwner", operatorSet)
+
+	if err != nil {
+		return *new(common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+
+	return out0, err
+
 }
 
-// GetOperatorSetOwner is a paid mutator transaction binding the contract method 0x84818920.
+// GetOperatorSetOwner is a free data retrieval call binding the contract method 0x84818920.
 //
-// Solidity: function getOperatorSetOwner((address,uint32) operatorSet) returns(address)
-func (_IECDSACertificateVerifier *IECDSACertificateVerifierSession) GetOperatorSetOwner(operatorSet OperatorSet) (*types.Transaction, error) {
-	return _IECDSACertificateVerifier.Contract.GetOperatorSetOwner(&_IECDSACertificateVerifier.TransactOpts, operatorSet)
+// Solidity: function getOperatorSetOwner((address,uint32) operatorSet) view returns(address)
+func (_IECDSACertificateVerifier *IECDSACertificateVerifierSession) GetOperatorSetOwner(operatorSet OperatorSet) (common.Address, error) {
+	return _IECDSACertificateVerifier.Contract.GetOperatorSetOwner(&_IECDSACertificateVerifier.CallOpts, operatorSet)
 }
 
-// GetOperatorSetOwner is a paid mutator transaction binding the contract method 0x84818920.
+// GetOperatorSetOwner is a free data retrieval call binding the contract method 0x84818920.
 //
-// Solidity: function getOperatorSetOwner((address,uint32) operatorSet) returns(address)
-func (_IECDSACertificateVerifier *IECDSACertificateVerifierTransactorSession) GetOperatorSetOwner(operatorSet OperatorSet) (*types.Transaction, error) {
-	return _IECDSACertificateVerifier.Contract.GetOperatorSetOwner(&_IECDSACertificateVerifier.TransactOpts, operatorSet)
+// Solidity: function getOperatorSetOwner((address,uint32) operatorSet) view returns(address)
+func (_IECDSACertificateVerifier *IECDSACertificateVerifierCallerSession) GetOperatorSetOwner(operatorSet OperatorSet) (common.Address, error) {
+	return _IECDSACertificateVerifier.Contract.GetOperatorSetOwner(&_IECDSACertificateVerifier.CallOpts, operatorSet)
 }
 
-// LatestReferenceTimestamp is a paid mutator transaction binding the contract method 0x5ddb9b5b.
+// LatestReferenceTimestamp is a free data retrieval call binding the contract method 0x5ddb9b5b.
 //
-// Solidity: function latestReferenceTimestamp((address,uint32) operatorSet) returns(uint32)
-func (_IECDSACertificateVerifier *IECDSACertificateVerifierTransactor) LatestReferenceTimestamp(opts *bind.TransactOpts, operatorSet OperatorSet) (*types.Transaction, error) {
-	return _IECDSACertificateVerifier.contract.Transact(opts, "latestReferenceTimestamp", operatorSet)
+// Solidity: function latestReferenceTimestamp((address,uint32) operatorSet) view returns(uint32)
+func (_IECDSACertificateVerifier *IECDSACertificateVerifierCaller) LatestReferenceTimestamp(opts *bind.CallOpts, operatorSet OperatorSet) (uint32, error) {
+	var out []interface{}
+	err := _IECDSACertificateVerifier.contract.Call(opts, &out, "latestReferenceTimestamp", operatorSet)
+
+	if err != nil {
+		return *new(uint32), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(uint32)).(*uint32)
+
+	return out0, err
+
 }
 
-// LatestReferenceTimestamp is a paid mutator transaction binding the contract method 0x5ddb9b5b.
+// LatestReferenceTimestamp is a free data retrieval call binding the contract method 0x5ddb9b5b.
 //
-// Solidity: function latestReferenceTimestamp((address,uint32) operatorSet) returns(uint32)
-func (_IECDSACertificateVerifier *IECDSACertificateVerifierSession) LatestReferenceTimestamp(operatorSet OperatorSet) (*types.Transaction, error) {
-	return _IECDSACertificateVerifier.Contract.LatestReferenceTimestamp(&_IECDSACertificateVerifier.TransactOpts, operatorSet)
+// Solidity: function latestReferenceTimestamp((address,uint32) operatorSet) view returns(uint32)
+func (_IECDSACertificateVerifier *IECDSACertificateVerifierSession) LatestReferenceTimestamp(operatorSet OperatorSet) (uint32, error) {
+	return _IECDSACertificateVerifier.Contract.LatestReferenceTimestamp(&_IECDSACertificateVerifier.CallOpts, operatorSet)
 }
 
-// LatestReferenceTimestamp is a paid mutator transaction binding the contract method 0x5ddb9b5b.
+// LatestReferenceTimestamp is a free data retrieval call binding the contract method 0x5ddb9b5b.
 //
-// Solidity: function latestReferenceTimestamp((address,uint32) operatorSet) returns(uint32)
-func (_IECDSACertificateVerifier *IECDSACertificateVerifierTransactorSession) LatestReferenceTimestamp(operatorSet OperatorSet) (*types.Transaction, error) {
-	return _IECDSACertificateVerifier.Contract.LatestReferenceTimestamp(&_IECDSACertificateVerifier.TransactOpts, operatorSet)
+// Solidity: function latestReferenceTimestamp((address,uint32) operatorSet) view returns(uint32)
+func (_IECDSACertificateVerifier *IECDSACertificateVerifierCallerSession) LatestReferenceTimestamp(operatorSet OperatorSet) (uint32, error) {
+	return _IECDSACertificateVerifier.Contract.LatestReferenceTimestamp(&_IECDSACertificateVerifier.CallOpts, operatorSet)
 }
 
-// MaxOperatorTableStaleness is a paid mutator transaction binding the contract method 0x6141879e.
+// MaxOperatorTableStaleness is a free data retrieval call binding the contract method 0x6141879e.
 //
-// Solidity: function maxOperatorTableStaleness((address,uint32) operatorSet) returns(uint32)
-func (_IECDSACertificateVerifier *IECDSACertificateVerifierTransactor) MaxOperatorTableStaleness(opts *bind.TransactOpts, operatorSet OperatorSet) (*types.Transaction, error) {
-	return _IECDSACertificateVerifier.contract.Transact(opts, "maxOperatorTableStaleness", operatorSet)
+// Solidity: function maxOperatorTableStaleness((address,uint32) operatorSet) view returns(uint32)
+func (_IECDSACertificateVerifier *IECDSACertificateVerifierCaller) MaxOperatorTableStaleness(opts *bind.CallOpts, operatorSet OperatorSet) (uint32, error) {
+	var out []interface{}
+	err := _IECDSACertificateVerifier.contract.Call(opts, &out, "maxOperatorTableStaleness", operatorSet)
+
+	if err != nil {
+		return *new(uint32), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(uint32)).(*uint32)
+
+	return out0, err
+
 }
 
-// MaxOperatorTableStaleness is a paid mutator transaction binding the contract method 0x6141879e.
+// MaxOperatorTableStaleness is a free data retrieval call binding the contract method 0x6141879e.
 //
-// Solidity: function maxOperatorTableStaleness((address,uint32) operatorSet) returns(uint32)
-func (_IECDSACertificateVerifier *IECDSACertificateVerifierSession) MaxOperatorTableStaleness(operatorSet OperatorSet) (*types.Transaction, error) {
-	return _IECDSACertificateVerifier.Contract.MaxOperatorTableStaleness(&_IECDSACertificateVerifier.TransactOpts, operatorSet)
+// Solidity: function maxOperatorTableStaleness((address,uint32) operatorSet) view returns(uint32)
+func (_IECDSACertificateVerifier *IECDSACertificateVerifierSession) MaxOperatorTableStaleness(operatorSet OperatorSet) (uint32, error) {
+	return _IECDSACertificateVerifier.Contract.MaxOperatorTableStaleness(&_IECDSACertificateVerifier.CallOpts, operatorSet)
 }
 
-// MaxOperatorTableStaleness is a paid mutator transaction binding the contract method 0x6141879e.
+// MaxOperatorTableStaleness is a free data retrieval call binding the contract method 0x6141879e.
 //
-// Solidity: function maxOperatorTableStaleness((address,uint32) operatorSet) returns(uint32)
-func (_IECDSACertificateVerifier *IECDSACertificateVerifierTransactorSession) MaxOperatorTableStaleness(operatorSet OperatorSet) (*types.Transaction, error) {
-	return _IECDSACertificateVerifier.Contract.MaxOperatorTableStaleness(&_IECDSACertificateVerifier.TransactOpts, operatorSet)
+// Solidity: function maxOperatorTableStaleness((address,uint32) operatorSet) view returns(uint32)
+func (_IECDSACertificateVerifier *IECDSACertificateVerifierCallerSession) MaxOperatorTableStaleness(operatorSet OperatorSet) (uint32, error) {
+	return _IECDSACertificateVerifier.Contract.MaxOperatorTableStaleness(&_IECDSACertificateVerifier.CallOpts, operatorSet)
 }
 
 // UpdateOperatorTable is a paid mutator transaction binding the contract method 0x56d482f5.
