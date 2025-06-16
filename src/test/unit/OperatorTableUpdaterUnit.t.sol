@@ -178,6 +178,7 @@ contract OperatorTableUpdaterUnitTests_initialize is OperatorTableUpdaterUnitTes
         assertEq(confirmerSet.avs, address(0xDEADBEEF));
         assertEq(confirmerSet.id, 0);
         assertEq(operatorTableUpdater.getLatestReferenceTimestamp(), uint32(block.timestamp - 1));
+        assertEq(operatorTableUpdater.getGlobalConfirmerSetReferenceTimestamp(), uint32(block.timestamp - 1));
 
         uint16 threshold = operatorTableUpdater.globalRootConfirmationThreshold();
         assertEq(threshold, GLOBAL_ROOT_CONFIRMATION_THRESHOLD);
