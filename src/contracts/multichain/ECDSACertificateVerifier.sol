@@ -142,39 +142,35 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
 
         // Parse the signatures
         (address[] memory signers, bool validSignatures) = _parseSignatures(signableDigest, cert.sig);
-
         require(validSignatures, VerificationFailed());
 
-        // Process each operator to check if they signed
-        uint256 operatorCount = _numOperators[operatorSetKey][cert.referenceTimestamp];
-        for (uint256 i = 0; i < operatorCount; i++) {
-            // Check if this operator is in the signers list
-            bool isSigner = false;
-            for (uint256 j = 0; j < signers.length; j++) {
-                if (_operatorInfos[operatorSetKey][cert.referenceTimestamp][uint32(i)].pubkey == signers[j]) {
-                    isSigner = true;
+        // Process each recovered signer
+        for (uint256 i = 0; i < signers.length; i++) {
+            address signer = signers[i];
+
+            // Check if this signer is an operator
+            bool isOperator = false;
+            ECDSAOperatorInfo memory operatorInfo;
+
+            for (uint256 j = 0; j < _numOperators[operatorSetKey][cert.referenceTimestamp]; j++) {
+                operatorInfo = _operatorInfos[operatorSetKey][cert.referenceTimestamp][uint32(j)];
+                if (operatorInfo.pubkey == signer) {
+                    isOperator = true;
                     break;
                 }
             }
 
-            if (isSigner) {
-                // Add this operator's weights to the signed stakes
-                uint256[] storage weights = _operatorInfos[operatorSetKey][cert.referenceTimestamp][uint32(i)].weights;
-                for (uint256 j = 0; j < weights.length && j < signedStakes.length; j++) {
-                    signedStakes[j] += weights[j];
-                }
+            // If not an operator, the certificate is invalid
+            if (!isOperator) {
+                revert VerificationFailed();
             }
-        }
 
-        // After processing, check if all signed stakes are zero
-        bool anySigned = false;
-        for (uint256 i = 0; i < signedStakes.length; i++) {
-            if (signedStakes[i] > 0) {
-                anySigned = true;
-                break;
+            // Add this operator's weights to the signed stakes
+            uint256[] memory weights = operatorInfo.weights;
+            for (uint256 j = 0; j < weights.length && j < signedStakes.length; j++) {
+                signedStakes[j] += weights[j];
             }
         }
-        require(anySigned, VerificationFailed());
 
         return signedStakes;
     }
@@ -233,7 +229,7 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
     function _parseSignatures(
         bytes32 messageHash,
         bytes memory signatures
-    ) internal pure returns (address[] memory signers, bool valid) {
+    ) internal view returns (address[] memory signers, bool valid) {
         // Each ECDSA signature is 65 bytes: r (32 bytes) + s (32 bytes) + v (1 byte)
         if (signatures.length % 65 != 0) revert InvalidSignatureLength();
 
@@ -247,19 +243,20 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
             }
 
             // Recover the signer
-            address signer = messageHash.recover(signature);
-
-            // If any signature is invalid (returns address(0)), the whole certificate is invalid
-            if (signer == address(0)) {
+            (address recovered, ECDSA.RecoverError error) = ECDSA.tryRecover(messageHash, signature);
+            if (error != ECDSA.RecoverError.NoError || recovered == address(0)) {
                 return (signers, false);
             }
 
             // Check that signatures are ordered by signer address
-            if (i > 0 && signer <= signers[i - 1]) {
+            if (i > 0 && recovered <= signers[i - 1]) {
                 return (signers, false);
             }
 
-            signers[i] = signer;
+            // Verify that the recovered address actually signed the message
+            _checkIsValidSignatureNow(recovered, messageHash, signature, type(uint256).max);
+
+            signers[i] = recovered;
         }
 
         return (signers, true);
@@ -303,7 +300,7 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
         uint256 stakeTypesCount = _operatorInfos[operatorSetKey][referenceTimestamp][0].weights.length;
         totalStakes = new uint256[](stakeTypesCount);
         for (uint256 i = 0; i < operatorCount; i++) {
-            uint256[] storage weights = _operatorInfos[operatorSetKey][referenceTimestamp][uint32(i)].weights;
+            uint256[] memory weights = _operatorInfos[operatorSetKey][referenceTimestamp][uint32(i)].weights;
             for (uint256 j = 0; j < weights.length && j < stakeTypesCount; j++) {
                 totalStakes[j] += weights[j];
             }
