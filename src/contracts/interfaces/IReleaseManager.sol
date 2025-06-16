@@ -42,11 +42,12 @@ interface IReleaseManager is IReleaseManagerErrors, IReleaseManagerEvents {
     /// @param operatorSet The operator set this release is for.
     /// @param artifacts Array of artifacts to include in the release.
     /// @param upgradeByTime Timestamp by which operators must upgrade to this release.
+    /// @return releaseId The index of the newly published release.
     function publishRelease(
         OperatorSet calldata operatorSet,
         Artifact[] calldata artifacts,
         uint32 upgradeByTime
-    ) external;
+    ) external returns (uint256 releaseId);
 
     /**
      *
@@ -65,10 +66,7 @@ interface IReleaseManager is IReleaseManagerErrors, IReleaseManagerEvents {
     /// @param operatorSet The operator set to query.
     /// @param index The index of the release to get.
     /// @return The release at the specified index.
-    function getRelease(
-        OperatorSet memory operatorSet,
-        uint256 index
-    ) external view returns (Release memory);
+    function getRelease(OperatorSet memory operatorSet, uint256 index) external view returns (Release memory);
 
     /// @notice Gets the latest release for an operator set.
     /// @param operatorSet The operator set to query.

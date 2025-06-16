@@ -2,15 +2,12 @@
 pragma solidity ^0.8.27;
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
 import "../mixins/PermissionControllerMixin.sol";
 import "../mixins/SemVerMixin.sol";
 import "./ReleaseManagerStorage.sol";
 
 contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionControllerMixin, SemVerMixin {
-    using EnumerableSet for EnumerableSet.Bytes32Set;
     using OperatorSetLib for OperatorSet;
-    using Strings for uint16;
 
     /**
      *
@@ -40,15 +37,18 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
         OperatorSet calldata operatorSet,
         Artifact[] calldata artifacts,
         uint32 upgradeByTime
-    ) external checkCanCall(operatorSet.avs) {
+    ) external checkCanCall(operatorSet.avs) returns (uint256 releaseId) {
         // Create a storage pointer to the releases array for this operator set for readibility.
         Release[] storage releases = _operatorSetReleases[operatorSet.key()];
+
+        // Get the release id (the current length of the releases array).
+        releaseId = releases.length;
 
         // Add a new empty release to the end of the array.
         releases.push();
 
         // Create a storage pointer to the newly added release for readibility.
-        Release storage release = releases[releases.length - 1];
+        Release storage release = releases[releaseId];
 
         // Copy the release to storage.
         for (uint256 i = 0; i < artifacts.length; ++i) {
@@ -76,10 +76,7 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
     }
 
     /// @inheritdoc IReleaseManager
-    function getRelease(
-        OperatorSet memory operatorSet,
-        uint256 index
-    ) external view returns (Release memory) {
+    function getRelease(OperatorSet memory operatorSet, uint256 index) external view returns (Release memory) {
         return _operatorSetReleases[operatorSet.key()][index];
     }
 

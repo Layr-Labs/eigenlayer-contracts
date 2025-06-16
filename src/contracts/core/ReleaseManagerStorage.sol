@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "../interfaces/IReleaseManager.sol";
 import "../interfaces/IAllocationManager.sol";
 
