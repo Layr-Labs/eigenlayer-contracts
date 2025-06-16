@@ -38,15 +38,15 @@ interface IBaseCertificateVerifier is
     /// @notice the address of the owner of the OperatorSet
     function getOperatorSetOwner(
         OperatorSet memory operatorSet
-    ) external returns (address);
+    ) external view returns (address);
 
     /// @return the maximum amount of seconds that a operator table can be in the past for a given operatorSet
     function maxOperatorTableStaleness(
         OperatorSet memory operatorSet
-    ) external returns (uint32);
+    ) external view returns (uint32);
 
     /// @notice The latest reference timestamp of the operator table for a given operatorSet
     function latestReferenceTimestamp(
         OperatorSet memory operatorSet
-    ) external returns (uint32);
+    ) external view returns (uint32);
 }
