@@ -203,6 +203,13 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
         return keccak256(abi.encode(GLOBAL_TABLE_ROOT_CERT_TYPEHASH, globalTableRoot, referenceTimestamp));
     }
 
+    /// @inheritdoc IOperatorTableUpdater
+    function getGlobalConfirmerSetReferenceTimestamp() external view returns (uint32) {
+        return IBaseCertificateVerifier(address(bn254CertificateVerifier)).latestReferenceTimestamp(
+            _globalRootConfirmerSet
+        );
+    }
+
     /**
      *
      *                         INTERNAL HELPERS

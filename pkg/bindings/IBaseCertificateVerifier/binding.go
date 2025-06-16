@@ -37,7 +37,7 @@ type OperatorSet struct {
 
 // IBaseCertificateVerifierMetaData contains all meta data concerning the IBaseCertificateVerifier contract.
 var IBaseCertificateVerifierMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"getOperatorSetOwner\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"latestReferenceTimestamp\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"maxOperatorTableStaleness\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"MaxStalenessPeriodUpdated\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"maxStalenessPeriod\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorSetOwnerUpdated\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"owner\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"ArrayLengthMismatch\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"CertificateStale\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OnlyTableUpdater\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ReferenceTimestampDoesNotExist\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"TableUpdateStale\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"VerificationFailed\",\"inputs\":[]}]",
+	ABI: "[{\"type\":\"function\",\"name\":\"getOperatorSetOwner\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"latestReferenceTimestamp\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"maxOperatorTableStaleness\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"event\",\"name\":\"MaxStalenessPeriodUpdated\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"maxStalenessPeriod\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorSetOwnerUpdated\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"owner\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"ArrayLengthMismatch\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"CertificateStale\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OnlyTableUpdater\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ReferenceTimestampDoesNotExist\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"TableUpdateStale\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"VerificationFailed\",\"inputs\":[]}]",
 }
 
 // IBaseCertificateVerifierABI is the input ABI used to generate the binding from.
@@ -186,67 +186,97 @@ func (_IBaseCertificateVerifier *IBaseCertificateVerifierTransactorRaw) Transact
 	return _IBaseCertificateVerifier.Contract.contract.Transact(opts, method, params...)
 }
 
-// GetOperatorSetOwner is a paid mutator transaction binding the contract method 0x84818920.
+// GetOperatorSetOwner is a free data retrieval call binding the contract method 0x84818920.
 //
-// Solidity: function getOperatorSetOwner((address,uint32) operatorSet) returns(address)
-func (_IBaseCertificateVerifier *IBaseCertificateVerifierTransactor) GetOperatorSetOwner(opts *bind.TransactOpts, operatorSet OperatorSet) (*types.Transaction, error) {
-	return _IBaseCertificateVerifier.contract.Transact(opts, "getOperatorSetOwner", operatorSet)
+// Solidity: function getOperatorSetOwner((address,uint32) operatorSet) view returns(address)
+func (_IBaseCertificateVerifier *IBaseCertificateVerifierCaller) GetOperatorSetOwner(opts *bind.CallOpts, operatorSet OperatorSet) (common.Address, error) {
+	var out []interface{}
+	err := _IBaseCertificateVerifier.contract.Call(opts, &out, "getOperatorSetOwner", operatorSet)
+
+	if err != nil {
+		return *new(common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+
+	return out0, err
+
 }
 
-// GetOperatorSetOwner is a paid mutator transaction binding the contract method 0x84818920.
+// GetOperatorSetOwner is a free data retrieval call binding the contract method 0x84818920.
 //
-// Solidity: function getOperatorSetOwner((address,uint32) operatorSet) returns(address)
-func (_IBaseCertificateVerifier *IBaseCertificateVerifierSession) GetOperatorSetOwner(operatorSet OperatorSet) (*types.Transaction, error) {
-	return _IBaseCertificateVerifier.Contract.GetOperatorSetOwner(&_IBaseCertificateVerifier.TransactOpts, operatorSet)
+// Solidity: function getOperatorSetOwner((address,uint32) operatorSet) view returns(address)
+func (_IBaseCertificateVerifier *IBaseCertificateVerifierSession) GetOperatorSetOwner(operatorSet OperatorSet) (common.Address, error) {
+	return _IBaseCertificateVerifier.Contract.GetOperatorSetOwner(&_IBaseCertificateVerifier.CallOpts, operatorSet)
 }
 
-// GetOperatorSetOwner is a paid mutator transaction binding the contract method 0x84818920.
+// GetOperatorSetOwner is a free data retrieval call binding the contract method 0x84818920.
 //
-// Solidity: function getOperatorSetOwner((address,uint32) operatorSet) returns(address)
-func (_IBaseCertificateVerifier *IBaseCertificateVerifierTransactorSession) GetOperatorSetOwner(operatorSet OperatorSet) (*types.Transaction, error) {
-	return _IBaseCertificateVerifier.Contract.GetOperatorSetOwner(&_IBaseCertificateVerifier.TransactOpts, operatorSet)
+// Solidity: function getOperatorSetOwner((address,uint32) operatorSet) view returns(address)
+func (_IBaseCertificateVerifier *IBaseCertificateVerifierCallerSession) GetOperatorSetOwner(operatorSet OperatorSet) (common.Address, error) {
+	return _IBaseCertificateVerifier.Contract.GetOperatorSetOwner(&_IBaseCertificateVerifier.CallOpts, operatorSet)
 }
 
-// LatestReferenceTimestamp is a paid mutator transaction binding the contract method 0x5ddb9b5b.
+// LatestReferenceTimestamp is a free data retrieval call binding the contract method 0x5ddb9b5b.
 //
-// Solidity: function latestReferenceTimestamp((address,uint32) operatorSet) returns(uint32)
-func (_IBaseCertificateVerifier *IBaseCertificateVerifierTransactor) LatestReferenceTimestamp(opts *bind.TransactOpts, operatorSet OperatorSet) (*types.Transaction, error) {
-	return _IBaseCertificateVerifier.contract.Transact(opts, "latestReferenceTimestamp", operatorSet)
+// Solidity: function latestReferenceTimestamp((address,uint32) operatorSet) view returns(uint32)
+func (_IBaseCertificateVerifier *IBaseCertificateVerifierCaller) LatestReferenceTimestamp(opts *bind.CallOpts, operatorSet OperatorSet) (uint32, error) {
+	var out []interface{}
+	err := _IBaseCertificateVerifier.contract.Call(opts, &out, "latestReferenceTimestamp", operatorSet)
+
+	if err != nil {
+		return *new(uint32), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(uint32)).(*uint32)
+
+	return out0, err
+
 }
 
-// LatestReferenceTimestamp is a paid mutator transaction binding the contract method 0x5ddb9b5b.
+// LatestReferenceTimestamp is a free data retrieval call binding the contract method 0x5ddb9b5b.
 //
-// Solidity: function latestReferenceTimestamp((address,uint32) operatorSet) returns(uint32)
-func (_IBaseCertificateVerifier *IBaseCertificateVerifierSession) LatestReferenceTimestamp(operatorSet OperatorSet) (*types.Transaction, error) {
-	return _IBaseCertificateVerifier.Contract.LatestReferenceTimestamp(&_IBaseCertificateVerifier.TransactOpts, operatorSet)
+// Solidity: function latestReferenceTimestamp((address,uint32) operatorSet) view returns(uint32)
+func (_IBaseCertificateVerifier *IBaseCertificateVerifierSession) LatestReferenceTimestamp(operatorSet OperatorSet) (uint32, error) {
+	return _IBaseCertificateVerifier.Contract.LatestReferenceTimestamp(&_IBaseCertificateVerifier.CallOpts, operatorSet)
 }
 
-// LatestReferenceTimestamp is a paid mutator transaction binding the contract method 0x5ddb9b5b.
+// LatestReferenceTimestamp is a free data retrieval call binding the contract method 0x5ddb9b5b.
 //
-// Solidity: function latestReferenceTimestamp((address,uint32) operatorSet) returns(uint32)
-func (_IBaseCertificateVerifier *IBaseCertificateVerifierTransactorSession) LatestReferenceTimestamp(operatorSet OperatorSet) (*types.Transaction, error) {
-	return _IBaseCertificateVerifier.Contract.LatestReferenceTimestamp(&_IBaseCertificateVerifier.TransactOpts, operatorSet)
+// Solidity: function latestReferenceTimestamp((address,uint32) operatorSet) view returns(uint32)
+func (_IBaseCertificateVerifier *IBaseCertificateVerifierCallerSession) LatestReferenceTimestamp(operatorSet OperatorSet) (uint32, error) {
+	return _IBaseCertificateVerifier.Contract.LatestReferenceTimestamp(&_IBaseCertificateVerifier.CallOpts, operatorSet)
 }
 
-// MaxOperatorTableStaleness is a paid mutator transaction binding the contract method 0x6141879e.
+// MaxOperatorTableStaleness is a free data retrieval call binding the contract method 0x6141879e.
 //
-// Solidity: function maxOperatorTableStaleness((address,uint32) operatorSet) returns(uint32)
-func (_IBaseCertificateVerifier *IBaseCertificateVerifierTransactor) MaxOperatorTableStaleness(opts *bind.TransactOpts, operatorSet OperatorSet) (*types.Transaction, error) {
-	return _IBaseCertificateVerifier.contract.Transact(opts, "maxOperatorTableStaleness", operatorSet)
+// Solidity: function maxOperatorTableStaleness((address,uint32) operatorSet) view returns(uint32)
+func (_IBaseCertificateVerifier *IBaseCertificateVerifierCaller) MaxOperatorTableStaleness(opts *bind.CallOpts, operatorSet OperatorSet) (uint32, error) {
+	var out []interface{}
+	err := _IBaseCertificateVerifier.contract.Call(opts, &out, "maxOperatorTableStaleness", operatorSet)
+
+	if err != nil {
+		return *new(uint32), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(uint32)).(*uint32)
+
+	return out0, err
+
 }
 
-// MaxOperatorTableStaleness is a paid mutator transaction binding the contract method 0x6141879e.
+// MaxOperatorTableStaleness is a free data retrieval call binding the contract method 0x6141879e.
 //
-// Solidity: function maxOperatorTableStaleness((address,uint32) operatorSet) returns(uint32)
-func (_IBaseCertificateVerifier *IBaseCertificateVerifierSession) MaxOperatorTableStaleness(operatorSet OperatorSet) (*types.Transaction, error) {
-	return _IBaseCertificateVerifier.Contract.MaxOperatorTableStaleness(&_IBaseCertificateVerifier.TransactOpts, operatorSet)
+// Solidity: function maxOperatorTableStaleness((address,uint32) operatorSet) view returns(uint32)
+func (_IBaseCertificateVerifier *IBaseCertificateVerifierSession) MaxOperatorTableStaleness(operatorSet OperatorSet) (uint32, error) {
+	return _IBaseCertificateVerifier.Contract.MaxOperatorTableStaleness(&_IBaseCertificateVerifier.CallOpts, operatorSet)
 }
 
-// MaxOperatorTableStaleness is a paid mutator transaction binding the contract method 0x6141879e.
+// MaxOperatorTableStaleness is a free data retrieval call binding the contract method 0x6141879e.
 //
-// Solidity: function maxOperatorTableStaleness((address,uint32) operatorSet) returns(uint32)
-func (_IBaseCertificateVerifier *IBaseCertificateVerifierTransactorSession) MaxOperatorTableStaleness(operatorSet OperatorSet) (*types.Transaction, error) {
-	return _IBaseCertificateVerifier.Contract.MaxOperatorTableStaleness(&_IBaseCertificateVerifier.TransactOpts, operatorSet)
+// Solidity: function maxOperatorTableStaleness((address,uint32) operatorSet) view returns(uint32)
+func (_IBaseCertificateVerifier *IBaseCertificateVerifierCallerSession) MaxOperatorTableStaleness(operatorSet OperatorSet) (uint32, error) {
+	return _IBaseCertificateVerifier.Contract.MaxOperatorTableStaleness(&_IBaseCertificateVerifier.CallOpts, operatorSet)
 }
 
 // IBaseCertificateVerifierMaxStalenessPeriodUpdatedIterator is returned from FilterMaxStalenessPeriodUpdated and is used to iterate over the raw logs and unpacked data for MaxStalenessPeriodUpdated events raised by the IBaseCertificateVerifier contract.
