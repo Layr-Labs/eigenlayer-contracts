@@ -3,7 +3,10 @@ pragma solidity ^0.8.27;
 
 import "../libraries/OperatorSetLib.sol";
 
-interface IReleaseManagerErrors {}
+interface IReleaseManagerErrors {
+    /// @notice Thrown when the upgrade by time is not in the future.
+    error UpgradeByTimeNotInFuture();
+}
 
 interface IReleaseManagerTypes {
     /// @notice Represents a software artifact with its digest and registry URL.

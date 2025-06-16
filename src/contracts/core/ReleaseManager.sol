@@ -38,27 +38,20 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
         Artifact[] calldata artifacts,
         uint32 upgradeByTime
     ) external checkCanCall(operatorSet.avs) returns (uint256 releaseId) {
-        // Create a storage pointer to the releases array for this operator set for readability.
         Release[] storage releases = _operatorSetReleases[operatorSet.key()];
 
-        // Get the release id (the current length of the releases array).
+        require(upgradeByTime >= block.timestamp, UpgradeByTimeNotInFuture());
+
+        // New release id is the length of the array before this call.
         releaseId = releases.length;
-
-        // Add a new empty release to the end of the array.
+        // Increment total releases for this operator set.
         releases.push();
-
-        // Create a storage pointer to the newly added release for readability.
-        Release storage release = releases[releaseId];
-
         // Copy the release to storage.
         for (uint256 i = 0; i < artifacts.length; ++i) {
-            release.artifacts.push(artifacts[i]);
+            releases[releaseId].artifacts.push(artifacts[i]);
         }
+        releases[releaseId].upgradeByTime = upgradeByTime;
 
-        // Store the deadline by which operators should upgrade to this release.
-        release.upgradeByTime = upgradeByTime;
-
-        // Emit event with the release details.
         emit ReleasePublished(operatorSet, artifacts, upgradeByTime);
     }
 
