@@ -35,24 +35,23 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
     /// @inheritdoc IReleaseManager
     function publishRelease(
         OperatorSet calldata operatorSet,
-        Artifact[] calldata artifacts,
-        uint32 upgradeByTime
+        Release calldata release
     ) external checkCanCall(operatorSet.avs) returns (uint256 releaseId) {
         Release[] storage releases = _operatorSetReleases[operatorSet.key()];
 
-        require(upgradeByTime >= block.timestamp, UpgradeByTimeNotInFuture());
+        require(release.upgradeByTime >= block.timestamp, UpgradeByTimeNotInFuture());
 
         // New release id is the length of the array before this call.
         releaseId = releases.length;
         // Increment total releases for this operator set.
         releases.push();
         // Copy the release to storage.
-        for (uint256 i = 0; i < artifacts.length; ++i) {
-            releases[releaseId].artifacts.push(artifacts[i]);
+        for (uint256 i = 0; i < release.artifacts.length; ++i) {
+            releases[releaseId].artifacts.push(release.artifacts[i]);
         }
-        releases[releaseId].upgradeByTime = upgradeByTime;
+        releases[releaseId].upgradeByTime = release.upgradeByTime;
 
-        emit ReleasePublished(operatorSet, artifacts, upgradeByTime);
+        emit ReleasePublished(operatorSet, release);
     }
 
     /**

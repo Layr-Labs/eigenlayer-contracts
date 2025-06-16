@@ -29,9 +29,8 @@ interface IReleaseManagerTypes {
 interface IReleaseManagerEvents is IReleaseManagerTypes {
     /// @notice Emitted when a new release is published.
     /// @param operatorSet The operator set this release is for.
-    /// @param artifacts Array of artifacts included in the release.
-    /// @param upgradeByTime Timestamp by which operators must upgrade.
-    event ReleasePublished(OperatorSet indexed operatorSet, Artifact[] artifacts, uint32 upgradeByTime);
+    /// @param release The release that was published.
+    event ReleasePublished(OperatorSet indexed operatorSet, Release release);
 }
 
 interface IReleaseManager is IReleaseManagerErrors, IReleaseManagerEvents {
@@ -43,13 +42,11 @@ interface IReleaseManager is IReleaseManagerErrors, IReleaseManagerEvents {
 
     /// @notice Publishes a new release for an operator set.
     /// @param operatorSet The operator set this release is for.
-    /// @param artifacts Array of artifacts to include in the release.
-    /// @param upgradeByTime Timestamp by which operators must upgrade to this release.
+    /// @param release The release that was published.
     /// @return releaseId The index of the newly published release.
     function publishRelease(
         OperatorSet calldata operatorSet,
-        Artifact[] calldata artifacts,
-        uint32 upgradeByTime
+        Release calldata release
     ) external returns (uint256 releaseId);
 
     /**
