@@ -41,22 +41,24 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
         Artifact[] calldata artifacts,
         uint32 upgradeByTime
     ) external checkCanCall(operatorSet.avs) {
+        // Create a storage pointer to the releases array for this operator set for readibility.
         Release[] storage releases = _operatorSetReleases[operatorSet.key()];
 
-        uint256 newTotalReleases = releases.length + 1;
+        // Add a new empty release to the end of the array.
+        releases.push();
 
-        assembly {
-            sstore(releases.slot, newTotalReleases)
-        }
+        // Create a storage pointer to the newly added release for readibility.
+        Release storage release = releases[releases.length - 1];
 
-        Release storage release = releases[newTotalReleases - 1];
-
+        // Copy the release to storage.
         for (uint256 i = 0; i < artifacts.length; ++i) {
             release.artifacts.push(artifacts[i]);
         }
 
+        // Store the deadline by which operators should upgrade to this release.
         release.upgradeByTime = upgradeByTime;
 
+        // Emit event with the release details.
         emit ReleasePublished(operatorSet, artifacts, upgradeByTime);
     }
 
@@ -65,24 +67,28 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
      *                         VIEW FUNCTIONS
      *
      */
+
+    /// @inheritdoc IReleaseManager
     function getTotalReleases(
         OperatorSet memory operatorSet
     ) external view returns (uint256) {
         return _operatorSetReleases[operatorSet.key()].length;
     }
 
-    function getReleaseArtifacts(
+    /// @inheritdoc IReleaseManager
+    function getRelease(
         OperatorSet memory operatorSet,
         uint256 index
-    ) external view returns (Artifact[] memory) {
-        return _operatorSetReleases[operatorSet.key()][index].artifacts;
+    ) external view returns (Release memory) {
+        return _operatorSetReleases[operatorSet.key()][index];
     }
 
-    function getLatestReleaseArtifacts(
+    /// @inheritdoc IReleaseManager
+    function getLatestRelease(
         OperatorSet memory operatorSet
-    ) external view returns (Artifact[] memory) {
+    ) external view returns (Release memory) {
         Release[] storage releases = _operatorSetReleases[operatorSet.key()];
 
-        return releases[releases.length - 1].artifacts;
+        return releases[releases.length - 1];
     }
 }
