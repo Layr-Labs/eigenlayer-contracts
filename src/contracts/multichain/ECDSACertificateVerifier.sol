@@ -21,16 +21,6 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
         keccak256("ECDSACertificate(uint32 referenceTimestamp,bytes32 messageHash)");
 
     /**
-     * @notice Struct to hold verification context and reduce stack depth
-     */
-    struct VerificationContext {
-        bytes32 operatorSetKey;
-        ECDSAOperatorInfo[] operatorInfos;
-        uint256[] signedStakes;
-        address[] nonSigners;
-    }
-
-    /**
      * @notice Restricts access to the operator table updater
      */
     modifier onlyTableUpdater() {
@@ -150,7 +140,7 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
         for (uint256 i = 0; i < signedStakes96.length; i++) {
             signedStakes[i] = uint256(signedStakes96[i]);
         }
-        require(signedStakes.length == totalStakeNominalThresholds.length, "Length mismatch");
+        if (signedStakes.length != totalStakeNominalThresholds.length) revert ArrayLengthMismatch();
         for (uint256 i = 0; i < signedStakes.length; i++) {
             if (signedStakes[i] < totalStakeNominalThresholds[i]) {
                 return false;
@@ -236,7 +226,7 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
         bytes memory signatures
     ) internal pure returns (address[] memory signers, bool valid) {
         // Each ECDSA signature is 65 bytes: r (32 bytes) + s (32 bytes) + v (1 byte)
-        require(signatures.length % 65 == 0, "Invalid signature length");
+        if (signatures.length % 65 != 0) revert InvalidSignatureLength();
 
         uint256 signatureCount = signatures.length / 65;
         signers = new address[](signatureCount);
