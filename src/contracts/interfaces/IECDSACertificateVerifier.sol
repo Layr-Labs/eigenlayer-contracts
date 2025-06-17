@@ -6,6 +6,9 @@ import "./IBaseCertificateVerifier.sol";
 import "./IECDSATableCalculator.sol";
 
 interface IECDSACertificateVerifierTypes is IECDSATableCalculatorTypes {
+    // Errors
+    error InvalidSignatureLength();
+
     /**
      * @notice A ECDSA Certificate
      * @param referenceTimestamp the timestamp at which the certificate was created
