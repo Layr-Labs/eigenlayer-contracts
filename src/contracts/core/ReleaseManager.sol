@@ -79,7 +79,7 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
     /// @inheritdoc IReleaseManager
     function getLatestUpgradeByTime(
         OperatorSet memory operatorSet
-    ) external view returns (uint256) {
+    ) external view returns (uint32) {
         Release[] storage releases = _operatorSetReleases[operatorSet.key()];
         uint256 latestReleaseId = releases.length - 1;
         return releases[latestReleaseId].upgradeByTime;

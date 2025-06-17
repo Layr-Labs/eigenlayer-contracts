@@ -82,7 +82,7 @@ interface IReleaseManager is IReleaseManagerErrors, IReleaseManagerEvents {
     /// @return The upgrade by time for the latest release.
     function getLatestUpgradeByTime(
         OperatorSet memory operatorSet
-    ) external view returns (uint256);
+    ) external view returns (uint32);
 
     /// @notice Returns true if the release is the latest release, false otherwise.
     /// @param operatorSet The operator set to query.
