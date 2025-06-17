@@ -27,6 +27,12 @@ The `ReleaseManager's` responsibilities include:
 
 An AVS in the context of `ReleaseManager` is defined as the `address` of the contract that implements the AVS logic. For `PermissionController` purposes, this AVS address is also the AVS [account](https://github.com/Layr-Labs/eigenlayer-contracts/blob/dev/docs/permissions/PermissionController.md#accounts).
 
+### Important Notes on Release Management
+
+* **Latest Release Validity**: Only the latest release for an operator set is considered valid. Previous releases become obsolete as soon as a new release is published.
+* **Upgrade Deadlines**: The `upgradeByTime` timestamp is a suggested deadline and is not enforced on-chain or off-chain. It serves as a communication mechanism for AVSs to indicate when operators should complete their upgrades.
+* **Multiple Releases in Same Block**: If multiple releases are published in the same block with the same `upgradeByTime`, the last transaction processed in that block will determine the latest valid release.
+
 ---
 
 ## Releases
@@ -226,6 +232,8 @@ function isValidRelease(
 ```
 
 Checks whether a given release ID corresponds to the latest release for an operator set. This can be useful for operators to verify they are running the most current software version.
+
+**Note**: Only the latest release is considered valid. All previous releases are considered obsolete and should not be used by operators.
 
 *Returns*:
 * `true` if the `releaseId` matches the latest release index
