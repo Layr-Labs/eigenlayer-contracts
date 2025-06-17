@@ -84,9 +84,10 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
 
         require(isValid, CertificateInvalid());
 
-        // Update the global table root
+        // Update the global table root & reference timestamps
         _latestReferenceTimestamp = referenceTimestamp;
         _referenceBlockNumbers[referenceTimestamp] = referenceBlockNumber;
+        _referenceTimestamps[referenceBlockNumber] = referenceTimestamp;
         _globalTableRoots[referenceTimestamp] = globalTableRoot;
 
         emit NewGlobalTableRoot(referenceTimestamp, globalTableRoot);
@@ -204,10 +205,17 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
     }
 
     /// @inheritdoc IOperatorTableUpdater
-    function getReferenceBlockNumber(
+    function getReferenceBlockNumberByTimestamp(
         uint32 referenceTimestamp
     ) external view returns (uint32) {
         return _referenceBlockNumbers[referenceTimestamp];
+    }
+
+    /// @inheritdoc IOperatorTableUpdater
+    function getReferenceTimestampByBlockNumber(
+        uint32 referenceBlockNumber
+    ) external view returns (uint32) {
+        return _referenceTimestamps[referenceBlockNumber];
     }
 
     /// @inheritdoc IOperatorTableUpdater

@@ -15,7 +15,7 @@
     │   ├── given that the certificate is invalid
     │   │   └── it should revert with CertificateInvalid
     │   └── given that all parameters are valid
-    │       └── it should update global table root, reference timestamp, reference block number & emit NewGlobalTableRoot event
+    │       └── it should update global table root, reference timestamp, block number mappings (both directions) & emit NewGlobalTableRoot event
     ├── when updateOperatorTable is called
     │   ├── given that the reference timestamp is not greater than operator set's latest
     │   │   └── it should revert with TableUpdateForPastTimestamp
@@ -58,8 +58,10 @@
     │   └── it should return the latest reference timestamp
     ├── when getLatestReferenceBlockNumber is called
     │   └── it should return the reference block number for the latest reference timestamp
-    ├── when getReferenceBlockNumber is called
+    ├── when getReferenceBlockNumberByTimestamp is called
     │   └── it should return the reference block number for the given timestamp
+    ├── when getReferenceTimestampByBlockNumber is called
+    │   └── it should return the reference timestamp for the given block number
     ├── when getGlobalTableUpdateMessageHash is called
     │   └── it should return the keccak256 hash of encoded typehash, root, timestamp, and block number
     └── when getGlobalConfirmerSetReferenceTimestamp is called

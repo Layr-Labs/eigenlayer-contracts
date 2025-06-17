@@ -261,7 +261,8 @@ contract OperatorTableUpdaterUnitTests_confirmGlobalTableRoot is OperatorTableUp
         assertEq(operatorTableUpdater.getCurrentGlobalTableRoot(), globalTableRoot);
         assertEq(operatorTableUpdater.getLatestReferenceTimestamp(), referenceTimestamp);
         assertEq(operatorTableUpdater.getLatestReferenceBlockNumber(), referenceBlockNumber);
-        assertEq(operatorTableUpdater.getReferenceBlockNumber(referenceTimestamp), referenceBlockNumber);
+        assertEq(operatorTableUpdater.getReferenceBlockNumberByTimestamp(referenceTimestamp), referenceBlockNumber);
+        assertEq(operatorTableUpdater.getReferenceTimestampByBlockNumber(referenceBlockNumber), referenceTimestamp);
     }
 }
 

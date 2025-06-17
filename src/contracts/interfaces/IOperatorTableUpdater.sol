@@ -158,8 +158,17 @@ interface IOperatorTableUpdater is
      * @param referenceTimestamp the reference timestamp
      * @return The reference block number for the given reference timestamp
      */
-    function getReferenceBlockNumber(
+    function getReferenceBlockNumberByTimestamp(
         uint32 referenceTimestamp
+    ) external view returns (uint32);
+
+    /**
+     * @notice Get the reference timestamp for a given reference block number
+     * @param referenceBlockNumber the reference block number
+     * @return The reference timestamp for the given reference block number
+     */
+    function getReferenceTimestampByBlockNumber(
+        uint32 referenceBlockNumber
     ) external view returns (uint32);
 
     /**
