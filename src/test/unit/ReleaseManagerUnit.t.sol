@@ -413,3 +413,30 @@ contract ReleaseManagerUnitTests_EdgeCases is ReleaseManagerUnitTests {
         assertEq(retrieved2.artifacts.length, 2, "set2 release should have 2 artifacts");
     }
 }
+
+contract ReleaseManagerUnitTests_getLatestUpgradeByTime is ReleaseManagerUnitTests {
+    function test_revert_getLatestUpgradeByTime_noReleases() public {
+        // Should revert with underflow
+        vm.expectRevert();
+        releaseManager.getLatestUpgradeByTime(defaultOperatorSet);
+    }
+
+    function test_getLatestUpgradeByTime_singleRelease() public {
+        // Publish one release
+        _publishRelease(defaultOperatorSet, defaultRelease);
+
+        // Get latest upgrade by time
+        uint upgradeByTime = releaseManager.getLatestUpgradeByTime(defaultOperatorSet);
+        assertEq(upgradeByTime, defaultRelease.upgradeByTime, "upgradeByTime mismatch");
+    }
+
+    function test_getLatestUpgradeByTime_multipleReleases() public {
+        // Publish multiple releases
+        _publishRelease(defaultOperatorSet, defaultRelease);
+        _publishRelease(defaultOperatorSet, defaultRelease);
+
+        // Get latest upgrade by time
+        uint upgradeByTime = releaseManager.getLatestUpgradeByTime(defaultOperatorSet);
+        assertEq(upgradeByTime, defaultRelease.upgradeByTime, "upgradeByTime mismatch");
+    }
+}
