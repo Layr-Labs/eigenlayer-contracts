@@ -73,7 +73,7 @@ mapping(bytes32 operatorSetKey => Release[]) internal _operatorSetReleases;
 * [`getRelease`](#getrelease)
 * [`getLatestRelease`](#getlatestrelease)
 * [`getLatestUpgradeByTime`](#getlatestupgradebytime)
-* [`isLatestRelease`](#islatestrelease)
+* [`isValidRelease`](#isValidRelease)
 
 ---
 
@@ -206,7 +206,7 @@ A convenience function that returns just the upgrade deadline from the latest re
 * The `upgradeByTime` timestamp from the latest release
 * Reverts if no releases have been published for the operator set
 
-#### `isLatestRelease`
+#### `isValidRelease`
 
 ```solidity
 /**
@@ -215,7 +215,7 @@ A convenience function that returns just the upgrade deadline from the latest re
  * @param releaseId The id of the release to check.
  * @return True if the release is the latest release, false otherwise.
  */
-function isLatestRelease(
+function isValidRelease(
     OperatorSet memory operatorSet, 
     uint256 releaseId
 ) 

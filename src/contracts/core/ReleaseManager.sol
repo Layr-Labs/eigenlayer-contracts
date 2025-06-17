@@ -84,7 +84,7 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
     }
 
     /// @inheritdoc IReleaseManager
-    function isLatestRelease(OperatorSet memory operatorSet, uint256 releaseId) external view returns (bool) {
+    function isValidRelease(OperatorSet memory operatorSet, uint256 releaseId) external view returns (bool) {
         return releaseId == getTotalReleases(operatorSet) - 1;
     }
 }

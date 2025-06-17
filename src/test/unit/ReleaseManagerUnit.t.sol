@@ -441,32 +441,32 @@ contract ReleaseManagerUnitTests_getLatestUpgradeByTime is ReleaseManagerUnitTes
     }
 }
 
-contract ReleaseManagerUnitTests_isLatestRelease is ReleaseManagerUnitTests {
-    function test_revert_isLatestRelease_noReleases() public {
+contract ReleaseManagerUnitTests_isValidRelease is ReleaseManagerUnitTests {
+    function test_revert_isValidRelease_noReleases() public {
         // Should revert with underflow
         vm.expectRevert();
-        releaseManager.isLatestRelease(defaultOperatorSet, 0);
+        releaseManager.isValidRelease(defaultOperatorSet, 0);
     }
 
-    function test_isLatestRelease_singleRelease() public {
+    function test_isValidRelease_singleRelease() public {
         // Publish one release
         _publishRelease(defaultOperatorSet, defaultRelease);
 
         // Check if the release is the latest
-        bool isLatest = releaseManager.isLatestRelease(defaultOperatorSet, 0);
+        bool isLatest = releaseManager.isValidRelease(defaultOperatorSet, 0);
         assertEq(isLatest, true, "release should be the latest");
     }
 
-    function test_isLatestRelease_multipleReleases() public {
+    function test_isValidRelease_multipleReleases() public {
         // Publish multiple releases
         _publishRelease(defaultOperatorSet, defaultRelease);
         _publishRelease(defaultOperatorSet, defaultRelease);
 
         // Check if the release is the latest
-        bool isLatest = releaseManager.isLatestRelease(defaultOperatorSet, 0);
+        bool isLatest = releaseManager.isValidRelease(defaultOperatorSet, 0);
         assertEq(isLatest, false, "first release should not be the latest");
 
-        isLatest = releaseManager.isLatestRelease(defaultOperatorSet, 1);
+        isLatest = releaseManager.isValidRelease(defaultOperatorSet, 1);
         assertEq(isLatest, true, "second release should be the latest");
     }
 }
