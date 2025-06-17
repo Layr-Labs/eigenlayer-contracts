@@ -407,7 +407,7 @@ contract OperatorTableUpdaterUnitTests_updateOperatorTable_ECDSA is OperatorTabl
 }
 
 contract OperatorTableUpdaterUnitTests_updateOperatorTable_InvalidCurveType is OperatorTableUpdaterUnitTests {
-    function testFuzz_revert_invalidCurveType(Randomness r) public rand(r) {
+    function testFuzz_revert_invalidCurveType_inGetCertificateVerifier(Randomness r) public rand(r) {
         // Generate random operatorSetInfo and operatorSetConfig with invalid curve type
         BN254OperatorSetInfo memory operatorSetInfo = _generateRandomBN254OperatorSetInfo(r);
         bytes memory operatorSetInfoBytes = abi.encode(operatorSetInfo);
@@ -424,6 +424,7 @@ contract OperatorTableUpdaterUnitTests_updateOperatorTable_InvalidCurveType is O
         bytes memory proof = Merkle.getProofKeccak(leaves, operatorSetIndex);
 
         // Should revert with InvalidCurveType when trying to update with CurveType.NONE
+        // This will revert in getCertificateVerifier, not in the else branch
         cheats.expectRevert(InvalidCurveType.selector);
         operatorTableUpdater.updateOperatorTable(uint32(block.timestamp), globalTableRoot, operatorSetIndex, proof, operatorTable);
     }
