@@ -108,11 +108,11 @@ contract ReleaseManagerUnitTests_Initialization is ReleaseManagerUnitTests {
 }
 
 contract ReleaseManagerUnitTests_publishRelease is ReleaseManagerUnitTests {
-    function test_revert_upgradeByTimeNotInFuture() public {
+    function test_revert_InvalidUpgradeByTime() public {
         // Create release with past timestamp
         Release memory pastRelease = _createRelease(defaultArtifacts, uint32(block.timestamp - 1));
 
-        vm.expectRevert(UpgradeByTimeNotInFuture.selector);
+        vm.expectRevert(InvalidUpgradeByTime.selector);
         releaseManager.publishRelease(defaultOperatorSet, pastRelease);
     }
 

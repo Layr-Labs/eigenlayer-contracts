@@ -34,7 +34,7 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
     ) external checkCanCall(operatorSet.avs) returns (uint256 releaseId) {
         Release[] storage releases = _operatorSetReleases[operatorSet.key()];
 
-        require(release.upgradeByTime >= block.timestamp, UpgradeByTimeNotInFuture());
+        require(release.upgradeByTime >= block.timestamp, InvalidUpgradeByTime());
 
         // New release id is the length of the array before this call.
         releaseId = releases.length;

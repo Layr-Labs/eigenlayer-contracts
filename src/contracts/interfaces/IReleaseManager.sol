@@ -4,8 +4,8 @@ pragma solidity ^0.8.27;
 import "../libraries/OperatorSetLib.sol";
 
 interface IReleaseManagerErrors {
-    /// @notice Thrown when the upgrade by time is not in the future.
-    error UpgradeByTimeNotInFuture();
+    /// @notice Thrown when the upgrade by time is in the past.
+    error InvalidUpgradeByTime();
 }
 
 interface IReleaseManagerTypes {
