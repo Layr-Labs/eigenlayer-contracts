@@ -30,7 +30,7 @@ An AVS in the context of `ReleaseManager` is defined as the `address` of the con
 ### Important Notes on Release Management
 
 * **Latest Release Validity**: Only the latest release for an operator set is considered valid. Previous releases become obsolete as soon as a new release is published.
-* **Upgrade Deadlines**: The `upgradeByTime` timestamp is a suggested deadline and is not enforced on-chain or off-chain. It serves as a communication mechanism for AVSs to indicate when operators should complete their upgrades.
+* **Upgrade Deadlines**: The `upgradeByTime` timestamp (in Unix time) is a suggested deadline and is not enforced on-chain or off-chain. It serves as a communication mechanism for AVSs to indicate when operators should complete their upgrades.
 * **Multiple Releases in Same Block**: If multiple releases are published in the same block with the same `upgradeByTime`, the last transaction processed in that block will determine the latest valid release.
 
 ---
@@ -40,7 +40,7 @@ An AVS in the context of `ReleaseManager` is defined as the `address` of the con
 A release represents a collection of software artifacts that operators in an operator set must run. Each release is associated with a specific operator set and contains:
 
 * **Artifacts**: An array of software artifacts, each with a digest (hash) and registry URL
-* **Upgrade By Time**: A timestamp by which operators must complete the upgrade
+* **Upgrade By Time**: A Unix timestamp by which operators should complete the upgrade
 
 The release structure is defined as:
 
