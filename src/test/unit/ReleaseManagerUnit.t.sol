@@ -321,7 +321,8 @@ contract ReleaseManagerUnitTests_getLatestRelease is ReleaseManagerUnitTests {
         _publishRelease(defaultOperatorSet, defaultRelease);
 
         // Get latest
-        Release memory latest = releaseManager.getLatestRelease(defaultOperatorSet);
+        (uint latestReleaseId, Release memory latest) = releaseManager.getLatestRelease(defaultOperatorSet);
+        assertEq(latestReleaseId, 0, "latest release id should be 0");
         assertEq(latest.upgradeByTime, defaultRelease.upgradeByTime, "upgradeByTime mismatch");
         assertEq(latest.artifacts.length, defaultRelease.artifacts.length, "artifacts length mismatch");
     }
@@ -338,7 +339,8 @@ contract ReleaseManagerUnitTests_getLatestRelease is ReleaseManagerUnitTests {
         }
 
         // Get latest and verify it's the last one published
-        Release memory latest = releaseManager.getLatestRelease(defaultOperatorSet);
+        (uint latestReleaseId, Release memory latest) = releaseManager.getLatestRelease(defaultOperatorSet);
+        assertEq(latestReleaseId, numReleases - 1, "latest release id should be the last one published");
         assertEq(latest.upgradeByTime, lastRelease.upgradeByTime, "upgradeByTime mismatch");
         assertEq(latest.artifacts.length, lastRelease.artifacts.length, "artifacts length mismatch");
     }
@@ -349,7 +351,8 @@ contract ReleaseManagerUnitTests_getLatestRelease is ReleaseManagerUnitTests {
         _publishRelease(defaultOperatorSet, firstRelease);
 
         // Verify latest is first
-        Release memory latest = releaseManager.getLatestRelease(defaultOperatorSet);
+        (uint latestReleaseId, Release memory latest) = releaseManager.getLatestRelease(defaultOperatorSet);
+        assertEq(latestReleaseId, 0, "latest release id should be 0");
         assertEq(latest.artifacts.length, 1, "should have 1 artifact");
 
         // Publish second release
@@ -357,7 +360,8 @@ contract ReleaseManagerUnitTests_getLatestRelease is ReleaseManagerUnitTests {
         _publishRelease(defaultOperatorSet, secondRelease);
 
         // Verify latest is now second
-        latest = releaseManager.getLatestRelease(defaultOperatorSet);
+        (latestReleaseId, latest) = releaseManager.getLatestRelease(defaultOperatorSet);
+        assertEq(latestReleaseId, 1, "latest release id should be 1");
         assertEq(latest.artifacts.length, 5, "should have 5 artifacts");
     }
 }

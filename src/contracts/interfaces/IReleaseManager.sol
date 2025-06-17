@@ -71,10 +71,11 @@ interface IReleaseManager is IReleaseManagerErrors, IReleaseManagerEvents {
 
     /// @notice Returns the latest release for an operator set.
     /// @param operatorSet The operator set to query.
-    /// @return The most recent release.
+    /// @return The id of the latest release.
+    /// @return The latest release.
     function getLatestRelease(
         OperatorSet memory operatorSet
-    ) external view returns (Release memory);
+    ) external view returns (uint256, Release memory);
 
     /// @notice Returns the upgrade by time for the latest release.
     /// @param operatorSet The operator set to query.

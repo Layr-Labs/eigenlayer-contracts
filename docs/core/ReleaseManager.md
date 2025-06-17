@@ -168,14 +168,15 @@ Retrieves a specific release by its ID for a given operator set. The `releaseId`
 /**
  * @notice Returns the latest release for an operator set.
  * @param operatorSet The operator set to query.
- * @return The most recent release.
+ * @return The id of the latest release.
+ * @return The latest release.
  */
 function getLatestRelease(
     OperatorSet memory operatorSet
 ) 
     public 
     view 
-    returns (Release memory)
+    returns (uint256, Release memory)
 ```
 
 Retrieves the most recently published release for an operator set. This is typically the release that operators should be running or upgrading to.
