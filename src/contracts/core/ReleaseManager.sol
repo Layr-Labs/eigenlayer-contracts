@@ -58,7 +58,7 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
     /// @inheritdoc IReleaseManager
     function getTotalReleases(
         OperatorSet memory operatorSet
-    ) external view returns (uint256) {
+    ) public view returns (uint256) {
         return _operatorSetReleases[operatorSet.key()].length;
     }
 
@@ -81,5 +81,10 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
         OperatorSet memory operatorSet
     ) external view returns (uint256) {
         return getLatestRelease(operatorSet).upgradeByTime;
+    }
+
+    /// @inheritdoc IReleaseManager
+    function isLatestRelease(OperatorSet memory operatorSet, uint256 releaseId) external view returns (bool) {
+        return releaseId == getTotalReleases(operatorSet) - 1;
     }
 }
