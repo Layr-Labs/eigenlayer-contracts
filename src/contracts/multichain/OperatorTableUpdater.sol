@@ -63,13 +63,15 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
     function confirmGlobalTableRoot(
         BN254Certificate calldata globalTableRootCert,
         bytes32 globalTableRoot,
-        uint32 referenceTimestamp
+        uint32 referenceTimestamp,
+        uint32 referenceBlockNumber
     ) external {
         // Table roots can only be updated for current or past timestamps and after the latest reference timestamp
         require(referenceTimestamp <= block.timestamp, GlobalTableRootInFuture());
         require(referenceTimestamp > _latestReferenceTimestamp, GlobalTableRootStale());
         require(
-            globalTableRootCert.messageHash == getGlobalTableUpdateMessageHash(globalTableRoot, referenceTimestamp),
+            globalTableRootCert.messageHash
+                == getGlobalTableUpdateMessageHash(globalTableRoot, referenceTimestamp, referenceBlockNumber),
             InvalidMessageHash()
         );
 
@@ -82,8 +84,10 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
 
         require(isValid, CertificateInvalid());
 
-        // Update the global table root
+        // Update the global table root & reference timestamps
         _latestReferenceTimestamp = referenceTimestamp;
+        _referenceBlockNumbers[referenceTimestamp] = referenceBlockNumber;
+        _referenceTimestamps[referenceBlockNumber] = referenceTimestamp;
         _globalTableRoots[referenceTimestamp] = globalTableRoot;
 
         emit NewGlobalTableRoot(referenceTimestamp, globalTableRoot);
@@ -196,11 +200,33 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
     }
 
     /// @inheritdoc IOperatorTableUpdater
+    function getLatestReferenceBlockNumber() external view returns (uint32) {
+        return _referenceBlockNumbers[_latestReferenceTimestamp];
+    }
+
+    /// @inheritdoc IOperatorTableUpdater
+    function getReferenceBlockNumberByTimestamp(
+        uint32 referenceTimestamp
+    ) external view returns (uint32) {
+        return _referenceBlockNumbers[referenceTimestamp];
+    }
+
+    /// @inheritdoc IOperatorTableUpdater
+    function getReferenceTimestampByBlockNumber(
+        uint32 referenceBlockNumber
+    ) external view returns (uint32) {
+        return _referenceTimestamps[referenceBlockNumber];
+    }
+
+    /// @inheritdoc IOperatorTableUpdater
     function getGlobalTableUpdateMessageHash(
         bytes32 globalTableRoot,
-        uint32 referenceTimestamp
+        uint32 referenceTimestamp,
+        uint32 referenceBlockNumber
     ) public pure returns (bytes32) {
-        return keccak256(abi.encode(GLOBAL_TABLE_ROOT_CERT_TYPEHASH, globalTableRoot, referenceTimestamp));
+        return keccak256(
+            abi.encode(GLOBAL_TABLE_ROOT_CERT_TYPEHASH, globalTableRoot, referenceTimestamp, referenceBlockNumber)
+        );
     }
 
     /// @inheritdoc IOperatorTableUpdater
