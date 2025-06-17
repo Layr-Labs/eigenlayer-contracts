@@ -65,13 +65,15 @@ interface IOperatorTableUpdater is
      * @param globalTableRootCert certificate of the root
      * @param globalTableRoot merkle root of all operatorSet tables
      * @param referenceTimestamp timestamp of the root
+     * @param referenceBlockNumber block number of the root
      * @dev Any entity can submit with a valid certificate signed off by the `globalRootConfirmerSet`
      * @dev The `msgHash` in the `globalOperatorTableRootCert` is the hash of the `globalOperatorTableRoot`
      */
     function confirmGlobalTableRoot(
         BN254Certificate calldata globalTableRootCert,
         bytes32 globalTableRoot,
-        uint32 referenceTimestamp
+        uint32 referenceTimestamp,
+        uint32 referenceBlockNumber
     ) external;
 
     /**
@@ -157,17 +159,20 @@ interface IOperatorTableUpdater is
      * @return The reference block number for the given reference timestamp
      */
     function getReferenceBlockNumber(
-        uint32 referenceTimestamp) external view returns (uint32);
+        uint32 referenceTimestamp
+    ) external view returns (uint32);
 
     /**
      * @notice Get the message hash for the certificate of a global table root update
      * @param globalTableRoot the global table root
      * @param referenceTimestamp the reference timestamp
+     * @param referenceBlockNumber the reference block number
      * @return The message hash for a global table root
      */
     function getGlobalTableUpdateMessageHash(
         bytes32 globalTableRoot,
-        uint32 referenceTimestamp
+        uint32 referenceTimestamp,
+        uint32 referenceBlockNumber
     ) external view returns (bytes32);
 
     /**

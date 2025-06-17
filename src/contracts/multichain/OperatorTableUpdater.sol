@@ -70,7 +70,8 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
         require(referenceTimestamp <= block.timestamp, GlobalTableRootInFuture());
         require(referenceTimestamp > _latestReferenceTimestamp, GlobalTableRootStale());
         require(
-            globalTableRootCert.messageHash == getGlobalTableUpdateMessageHash(globalTableRoot, referenceTimestamp, referenceBlockNumber),
+            globalTableRootCert.messageHash
+                == getGlobalTableUpdateMessageHash(globalTableRoot, referenceTimestamp, referenceBlockNumber),
             InvalidMessageHash()
         );
 
@@ -215,7 +216,9 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
         uint32 referenceTimestamp,
         uint32 referenceBlockNumber
     ) public pure returns (bytes32) {
-        return keccak256(abi.encode(GLOBAL_TABLE_ROOT_CERT_TYPEHASH, globalTableRoot, referenceTimestamp, referenceBlockNumber));
+        return keccak256(
+            abi.encode(GLOBAL_TABLE_ROOT_CERT_TYPEHASH, globalTableRoot, referenceTimestamp, referenceBlockNumber)
+        );
     }
 
     /// @inheritdoc IOperatorTableUpdater

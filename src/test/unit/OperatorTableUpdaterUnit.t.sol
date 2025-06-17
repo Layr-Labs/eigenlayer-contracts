@@ -166,9 +166,11 @@ contract OperatorTableUpdaterUnitTests is
     /// @dev Updates the global table root in the BN254 certificate verifier
     function _updateGlobalTableRoot(bytes32 globalTableRoot) internal {
         BN254Certificate memory mockCertificate;
-        mockCertificate.messageHash = operatorTableUpdater.getGlobalTableUpdateMessageHash(globalTableRoot, uint32(block.timestamp));
+        uint32 referenceBlockNumber = uint32(block.number);
+        mockCertificate.messageHash =
+            operatorTableUpdater.getGlobalTableUpdateMessageHash(globalTableRoot, uint32(block.timestamp), referenceBlockNumber);
         _setIsValidCertificate(mockCertificate, true);
-        operatorTableUpdater.confirmGlobalTableRoot(mockCertificate, globalTableRoot, uint32(block.timestamp));
+        operatorTableUpdater.confirmGlobalTableRoot(mockCertificate, globalTableRoot, uint32(block.timestamp), referenceBlockNumber);
     }
 }
 
@@ -204,52 +206,62 @@ contract OperatorTableUpdaterUnitTests_confirmGlobalTableRoot is OperatorTableUp
 
     function testFuzz_revert_futureTableRoot(Randomness r) public rand(r) {
         uint32 referenceTimestamp = r.Uint32(uint32(block.timestamp + 1), type(uint32).max);
+        uint32 referenceBlockNumber = r.Uint32();
 
         cheats.expectRevert(GlobalTableRootInFuture.selector);
-        operatorTableUpdater.confirmGlobalTableRoot(mockCertificate, bytes32(0), referenceTimestamp + 1);
+        operatorTableUpdater.confirmGlobalTableRoot(mockCertificate, bytes32(0), referenceTimestamp + 1, referenceBlockNumber);
     }
 
     function testFuzz_revert_staleCertificate(Randomness r) public rand(r) {
-        mockCertificate.messageHash = operatorTableUpdater.getGlobalTableUpdateMessageHash(bytes32(0), uint32(block.timestamp));
+        uint32 referenceBlockNumber = uint32(block.number);
+        mockCertificate.messageHash =
+            operatorTableUpdater.getGlobalTableUpdateMessageHash(bytes32(0), uint32(block.timestamp), referenceBlockNumber);
         _setIsValidCertificate(mockCertificate, true);
-        operatorTableUpdater.confirmGlobalTableRoot(mockCertificate, bytes32(0), uint32(block.timestamp));
+        operatorTableUpdater.confirmGlobalTableRoot(mockCertificate, bytes32(0), uint32(block.timestamp), referenceBlockNumber);
 
         uint32 referenceTimestamp = r.Uint32(0, operatorTableUpdater.getLatestReferenceTimestamp() - 1);
         cheats.expectRevert(GlobalTableRootStale.selector);
-        operatorTableUpdater.confirmGlobalTableRoot(mockCertificate, bytes32(0), referenceTimestamp);
+        operatorTableUpdater.confirmGlobalTableRoot(mockCertificate, bytes32(0), referenceTimestamp, referenceBlockNumber);
     }
 
     function testFuzz_revert_InvalidMessageHash(Randomness r) public rand(r) {
         bytes32 invalidTableRoot = bytes32(r.Uint256(1, type(uint).max));
         mockCertificate.messageHash = invalidTableRoot;
+        uint32 referenceBlockNumber = r.Uint32();
 
         cheats.expectRevert(InvalidMessageHash.selector);
-        operatorTableUpdater.confirmGlobalTableRoot(mockCertificate, bytes32(0), uint32(block.timestamp));
+        operatorTableUpdater.confirmGlobalTableRoot(mockCertificate, bytes32(0), uint32(block.timestamp), referenceBlockNumber);
     }
 
     function test_revert_invalidCertificate() public {
-        mockCertificate.messageHash = operatorTableUpdater.getGlobalTableUpdateMessageHash(bytes32(0), uint32(block.timestamp));
+        uint32 referenceBlockNumber = uint32(block.number);
+        mockCertificate.messageHash =
+            operatorTableUpdater.getGlobalTableUpdateMessageHash(bytes32(0), uint32(block.timestamp), referenceBlockNumber);
         _setIsValidCertificate(mockCertificate, false);
         cheats.expectRevert(CertificateInvalid.selector);
-        operatorTableUpdater.confirmGlobalTableRoot(mockCertificate, bytes32(0), uint32(block.timestamp));
+        operatorTableUpdater.confirmGlobalTableRoot(mockCertificate, bytes32(0), uint32(block.timestamp), referenceBlockNumber);
     }
 
     function testFuzz_correctness(Randomness r) public rand(r) {
         uint32 referenceTimestamp = r.Uint32(operatorTableUpdater.getLatestReferenceTimestamp() + 1, type(uint32).max);
+        uint32 referenceBlockNumber = r.Uint32();
         cheats.warp(uint(referenceTimestamp));
         bytes32 globalTableRoot = bytes32(r.Uint256(1, type(uint).max));
-        mockCertificate.messageHash = operatorTableUpdater.getGlobalTableUpdateMessageHash(globalTableRoot, referenceTimestamp);
+        mockCertificate.messageHash =
+            operatorTableUpdater.getGlobalTableUpdateMessageHash(globalTableRoot, referenceTimestamp, referenceBlockNumber);
         _setIsValidCertificate(mockCertificate, true);
 
         // Expect the global table root to be updated
         cheats.expectEmit(true, true, true, true);
         emit NewGlobalTableRoot(referenceTimestamp, globalTableRoot);
-        operatorTableUpdater.confirmGlobalTableRoot(mockCertificate, globalTableRoot, referenceTimestamp);
+        operatorTableUpdater.confirmGlobalTableRoot(mockCertificate, globalTableRoot, referenceTimestamp, referenceBlockNumber);
 
         // Expect the global table root to be updated
         assertEq(operatorTableUpdater.getGlobalTableRootByTimestamp(referenceTimestamp), globalTableRoot);
         assertEq(operatorTableUpdater.getCurrentGlobalTableRoot(), globalTableRoot);
         assertEq(operatorTableUpdater.getLatestReferenceTimestamp(), referenceTimestamp);
+        assertEq(operatorTableUpdater.getLatestReferenceBlockNumber(), referenceBlockNumber);
+        assertEq(operatorTableUpdater.getReferenceBlockNumber(referenceTimestamp), referenceBlockNumber);
     }
 }
 
