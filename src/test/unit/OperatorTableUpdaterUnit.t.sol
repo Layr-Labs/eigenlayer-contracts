@@ -495,10 +495,11 @@ contract OperatorTableUpdaterUnitTests_getters is OperatorTableUpdaterUnitTests 
         uint32 referenceBlockNumber = r.Uint32();
         cheats.warp(uint(referenceTimestamp));
         bytes32 globalTableRoot = bytes32(r.Uint256(1, type(uint).max));
-        
+
         // Set a global table root
         BN254Certificate memory mockCertificate;
-        mockCertificate.messageHash = operatorTableUpdater.getGlobalTableUpdateMessageHash(globalTableRoot, referenceTimestamp, referenceBlockNumber);
+        mockCertificate.messageHash =
+            operatorTableUpdater.getGlobalTableUpdateMessageHash(globalTableRoot, referenceTimestamp, referenceBlockNumber);
         _setIsValidCertificate(mockCertificate, true);
         operatorTableUpdater.confirmGlobalTableRoot(mockCertificate, globalTableRoot, referenceTimestamp, referenceBlockNumber);
 
@@ -526,15 +527,19 @@ contract OperatorTableUpdaterUnitTests_getters is OperatorTableUpdaterUnitTests 
         bytes32 globalTableRoot = bytes32(r.Uint256());
         uint32 referenceTimestamp = r.Uint32();
         uint32 referenceBlockNumber = r.Uint32();
-        
-        bytes32 messageHash = operatorTableUpdater.getGlobalTableUpdateMessageHash(globalTableRoot, referenceTimestamp, referenceBlockNumber);
-        
+
+        bytes32 messageHash =
+            operatorTableUpdater.getGlobalTableUpdateMessageHash(globalTableRoot, referenceTimestamp, referenceBlockNumber);
+
         // Verify the hash is deterministic
-        bytes32 messageHash2 = operatorTableUpdater.getGlobalTableUpdateMessageHash(globalTableRoot, referenceTimestamp, referenceBlockNumber);
+        bytes32 messageHash2 =
+            operatorTableUpdater.getGlobalTableUpdateMessageHash(globalTableRoot, referenceTimestamp, referenceBlockNumber);
         assertEq(messageHash, messageHash2);
-        
+
         // Verify hash changes with different inputs
-        bytes32 differentHash = operatorTableUpdater.getGlobalTableUpdateMessageHash(bytes32(uint256(globalTableRoot) + 1), referenceTimestamp, referenceBlockNumber);
+        bytes32 differentHash = operatorTableUpdater.getGlobalTableUpdateMessageHash(
+            bytes32(uint(globalTableRoot) + 1), referenceTimestamp, referenceBlockNumber
+        );
         assertTrue(messageHash != differentHash);
     }
 }
