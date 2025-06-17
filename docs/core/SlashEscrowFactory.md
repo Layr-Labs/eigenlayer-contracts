@@ -16,6 +16,8 @@ SlashEscrow:
 ## Overview
 The `SlashEscrowFactory` handles the burning or redistribution of slashed funds out of the EigenLayer protocol. The `SlashEscrowFactory` is responsible for (i) enforcing an escrow delay upon an AVS calling [`slashOperator`](./AllocationManager.md#slashoperator), (ii) deploying the `SlashEscrow` for each slash, and (iii) releasing funds from the escrow contract upon completion of a the escrow delay. 
 
+> **Note:** If the protocol is paused due to a security incident, slashed funds will remain locked in the `SlashEscrow` contracts. A protocol upgrade would be required to rescue these funds.
+
 ## Parameterization
 * `DEFAULT_BURN_ADDRESS = 0x00000000000000000000000000000000000E16E4`
     * The address to which burnt funds are sent
@@ -30,7 +32,6 @@ An escrow is initiated for each slash triggered by an AVS. A slash can contain m
 *[`SlashEscrowFactory.releaseSlashEscrowByStrategy`](#releaseslashescrow)
 
 #### `initiateSlashEscrow`
-
 ```solidity
 /**
  * @notice Locks up a escrow.
@@ -83,8 +84,7 @@ SlashEscrows are deployed deterministically using [Open Zeppelin's Clones Upgrad
  * @notice Releases an escrow by transferring tokens from the `SlashEscrow` to the operator set's redistribution recipient.
  * @param operatorSet The operator set whose escrow is being released.
  * @param slashId The slash ID of the escrow that is being released.
- * @dev The caller must be the escrow recipient, unless the escrow recipient
- * is the default burn address in which case anyone can call.
+ * @dev This method is permissionless, anyone can call it.
  * @dev The slash escrow is released once the delay for ALL strategies has elapsed.
  */
 function releaseSlashEscrow(
@@ -97,8 +97,7 @@ external onlyWhenNotPaused(PAUSED_RELEASE_ESCROW);
  * @param operatorSet The operator set whose escrow is being released.
  * @param slashId The slash ID of the escrow that is being released.
  * @param strategy The strategy whose escrow is being released.
- * @dev The caller must be the redistribution recipient, unless the redistribution recipient
- * is the default burn address in which case anyone can call.
+ * @dev This method is permissionless, anyone can call it.
  * @dev The slash escrow is released once the delay for ALL strategies has elapsed.
  */
 function releaseSlashEscrowByStrategy(
@@ -121,13 +120,12 @@ To accommodate the unlimited number of strategies that can be added to an operat
     * Remove the `strategy` from the `_pendingStrategiesForSlashId`
 * If all strategies from an operatorSet/slashId have been released:
     * Remove the `slashId` from `_pendingSlashIds`
-    * Delete the start block for the `slashId`
+    * Delete the complete block for the `slashId`
 * If the `operatorSet` has no more pending slashes, remove it from `pendingOperatorSets` 
 
 *Requirements*:
 * The global paused status MUST NOT be set: `PAUSED_RELEASE_ESCROW`
 * The escrow paused status MUST NOT be set: `pauseEscrow`
-* If the operatorSet is redistributable, caller MUST be the `redistributionRecipient`
 * The escrow delay MUST have elapsed
 
 ## SlashEscrow
@@ -177,13 +175,14 @@ The following methods concern the `owner` and its abilities in the `SlashEscrowF
 ```solidity
 /**
  * @notice Sets the delay for the escrow of all strategies underlying tokens globally.
+ * @dev This delay setting only applies to new slashes and does not affect existing ones.
  * @param delay The delay for the escrow.
  */
 function setGlobalEscrowDelay(
     uint32 delay
 ) external onlyOwner;
 ```
-Sets the global escrow delay observed by all strategies. *Note: If this value is updated, all previous escrows will observe the new delay.*
+Sets the global escrow delay observed by all strategies. *Note: If this value is updated, previously existing escrows will not be affected.*
 
 *Effects*:
 * Sets the `_globalEscrowDelayBlocks`
@@ -198,6 +197,7 @@ Sets the global escrow delay observed by all strategies. *Note: If this value is
 /**
  * @notice Sets the delay for the escrow of a strategies underlying token.
  * @dev The maximum of the strategy and global delay is used
+ * @dev This delay setting only applies to new slashes and does not affect existing ones.
  * @param strategy The strategy whose escrow delay is being set.
  * @param delay The delay for the escrow.
  */
@@ -207,7 +207,7 @@ function setStrategyEscrowDelay(
 ) external onlyOwner;
 ```
 
-Sets the delay for a given strategy. *Note: If this value is updated, all previous escrows will observe the new delay.* 
+Sets the delay for a given strategy. *Note: If this value is updated, previously existing escrows will not be affected.*
 
 *Effects*:
 * Updates the `_strategyEscrowDelayBlocks` for the given `strategy`

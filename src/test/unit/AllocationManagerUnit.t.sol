@@ -13,6 +13,8 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
     /// Constants
     /// -----------------------------------------------------------------------
 
+    address internal constant DEFAULT_BURN_ADDRESS = 0x00000000000000000000000000000000000E16E4;
+
     /// NOTE: Raising these values directly increases cpu time for tests.
     uint internal constant FUZZ_MAX_ALLOCATIONS = 8;
     uint internal constant FUZZ_MAX_STRATS = 8;
@@ -3745,8 +3747,6 @@ contract AllocationManagerUnitTests_removeStrategiesFromOperatorSet is Allocatio
 contract AllocationManagerUnitTests_createOperatorSets is AllocationManagerUnitTests {
     using ArrayLib for *;
 
-    address internal constant DEFAULT_BURN_ADDRESS = 0x00000000000000000000000000000000000E16E4;
-
     function testRevert_createOperatorSets_InvalidOperatorSet() public {
         cheats.prank(defaultAVS);
         cheats.expectRevert(InvalidOperatorSet.selector);
@@ -3833,6 +3833,21 @@ contract AllocationManagerUnitTests_createRedistributingOperatorSets is Allocati
 
         cheats.prank(avs);
         cheats.expectRevert(IPausable.InputAddressZero.selector);
+        allocationManager.createRedistributingOperatorSets(
+            avs, CreateSetParams(defaultOperatorSet.id, defaultStrategies).toArray(), redistributionRecipients
+        );
+    }
+
+    function testRevert_createRedistributingOperatorSets_InvalidRedistributionRecipient(Randomness r) public rand(r) {
+        address avs = r.Address();
+        address[] memory redistributionRecipients = new address[](1);
+        redistributionRecipients[0] = DEFAULT_BURN_ADDRESS;
+
+        cheats.prank(avs);
+        allocationManager.updateAVSMetadataURI(avs, "https://example.com");
+
+        cheats.prank(avs);
+        cheats.expectRevert(InvalidRedistributionRecipient.selector);
         allocationManager.createRedistributingOperatorSets(
             avs, CreateSetParams(defaultOperatorSet.id, defaultStrategies).toArray(), redistributionRecipients
         );

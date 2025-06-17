@@ -99,9 +99,6 @@ contract SlashEscrowFactoryUnitTests is EigenLayerUnitTestSetup, ISlashEscrowFac
             emit EscrowComplete(operatorSet, slashId, strategies[i], redistributionRecipient);
         }
 
-        // If the redistribution recipient is any address
-        if (redistributionRecipient != DEFAULT_BURN_ADDRESS) cheats.prank(defaultRedistributionRecipient);
-        else cheats.prank(cheats.randomAddress());
         factory.releaseSlashEscrow(operatorSet, slashId);
     }
 
@@ -109,10 +106,6 @@ contract SlashEscrowFactoryUnitTests is EigenLayerUnitTestSetup, ISlashEscrowFac
     /// - Asserts that the `Escrow` event is emitted
     function _releaseSlashEscrowByStrategy(OperatorSet memory operatorSet, uint slashId, IStrategy strategy) internal {
         address redistributionRecipient = allocationManagerMock.getRedistributionRecipient(operatorSet);
-        // If the redistribution recipient is any address
-        if (redistributionRecipient != DEFAULT_BURN_ADDRESS) cheats.prank(redistributionRecipient);
-        else cheats.prank(cheats.randomAddress());
-
         cheats.expectEmit(true, true, true, true);
         emit EscrowComplete(operatorSet, slashId, strategy, redistributionRecipient);
 
@@ -151,9 +144,6 @@ contract SlashEscrowFactoryUnitTests is EigenLayerUnitTestSetup, ISlashEscrowFac
 
         assertEq(strategies.length, expectedCount);
         assertEq(factory.getTotalPendingStrategiesForSlashId(operatorSet, slashId), expectedCount);
-
-        // Assert that the start block for the (operator set, slash ID) is correct.
-        assertEq(factory.getEscrowStartBlock(operatorSet, slashId), uint32(block.number));
 
         // Assert that the escrow is deployed
         assertEq(factory.computeSlashEscrowSalt(operatorSet, slashId), keccak256(abi.encodePacked(operatorSet.key(), slashId)));
@@ -211,18 +201,10 @@ contract SlashEscrowFactoryUnitTests_initiateSlashEscrow is SlashEscrowFactoryUn
 }
 
 contract SlashEscrowFactoryUnitTests_releaseSlashEscrow is SlashEscrowFactoryUnitTests {
-    /// @dev Asserts that the function reverts if the caller is not the redistribution recipient.
-    function testFuzz_releaseSlashEscrow_OnlyRedistributionRecipient(uint underlyingAmount) public {
-        _initiateSlashEscrow(defaultOperatorSet, defaultSlashId, defaultStrategy, defaultToken, underlyingAmount);
-        cheats.expectRevert(ISlashEscrowFactoryErrors.OnlyRedistributionRecipient.selector);
-        factory.releaseSlashEscrow(defaultOperatorSet, defaultSlashId);
-    }
-
     function testFuzz_releaseSlashEscrow_globalPause(uint underlyingAmount) public {
         _initiateSlashEscrow(defaultOperatorSet, defaultSlashId, defaultStrategy, defaultToken, underlyingAmount);
         cheats.prank(pauser);
         factory.pause(2 ** PAUSED_RELEASE_ESCROW);
-        cheats.prank(defaultRedistributionRecipient);
         cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         factory.releaseSlashEscrow(defaultOperatorSet, defaultSlashId);
     }
@@ -232,7 +214,6 @@ contract SlashEscrowFactoryUnitTests_releaseSlashEscrow is SlashEscrowFactoryUni
         _initiateSlashEscrow(defaultOperatorSet, defaultSlashId, defaultStrategy, defaultToken, underlyingAmount);
         cheats.prank(pauser);
         factory.pauseEscrow(defaultOperatorSet, defaultSlashId);
-        cheats.prank(defaultRedistributionRecipient);
         cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         factory.releaseSlashEscrow(defaultOperatorSet, defaultSlashId);
     }
@@ -240,7 +221,6 @@ contract SlashEscrowFactoryUnitTests_releaseSlashEscrow is SlashEscrowFactoryUni
     /// @dev Asserts that the function reverts if the operator set and slash ID do not exist.
     /// NOTE: `releaseSlashEscrow` does not revert when a slash ID does not exist for an operator set.
     function testFuzz_releaseSlashEscrow_nonexistentSlashIdForOperatorSet(uint underlyingAmount) public {
-        cheats.prank(defaultRedistributionRecipient);
         factory.releaseSlashEscrow(defaultOperatorSet, defaultSlashId);
         assertFalse(factory.isPendingOperatorSet(defaultOperatorSet));
         assertFalse(factory.isPendingSlashId(defaultOperatorSet, defaultSlashId));
@@ -249,7 +229,6 @@ contract SlashEscrowFactoryUnitTests_releaseSlashEscrow is SlashEscrowFactoryUni
     function testFuzz_releaseSlashEscrow_delayNotElapsed(uint underlyingAmount) public {
         _initiateSlashEscrow(defaultOperatorSet, defaultSlashId, defaultStrategy, defaultToken, underlyingAmount);
         cheats.roll(block.number + defaultGlobalDelayBlocks);
-        cheats.prank(defaultRedistributionRecipient);
         cheats.expectRevert(ISlashEscrowFactoryErrors.EscrowDelayNotElapsed.selector);
         factory.releaseSlashEscrow(defaultOperatorSet, defaultSlashId);
     }
@@ -306,7 +285,7 @@ contract SlashEscrowFactoryUnitTests_releaseSlashEscrow is SlashEscrowFactoryUni
         }
 
         // Assert that the start block for the (operator set, slash ID) is no longer set.
-        assertEq(factory.getEscrowStartBlock(defaultOperatorSet, defaultSlashId), 0);
+        assertEq(factory.getEscrowCompleteBlock(defaultOperatorSet, defaultSlashId), 0);
     }
 
     /// @dev Tests that multiple strategies with different delays are processed correctly
@@ -375,7 +354,7 @@ contract SlashEscrowFactoryUnitTests_releaseSlashEscrow is SlashEscrowFactoryUni
         }
 
         // Verify that the start block is cleared
-        assertEq(factory.getEscrowStartBlock(defaultOperatorSet, defaultSlashId), 0);
+        assertEq(factory.getEscrowCompleteBlock(defaultOperatorSet, defaultSlashId), 0);
     }
 
     /// @dev Tests that operatorSets are only cleared once all slash IDs are released
@@ -423,18 +402,10 @@ contract SlashEscrowFactoryUnitTests_releaseSlashEscrow is SlashEscrowFactoryUni
 }
 
 contract SlashEscrowFactoryUnitTests_releaseSlashEscrowByStrategy is SlashEscrowFactoryUnitTests {
-    /// @dev Asserts that the function reverts if the caller is not the redistribution recipient.
-    function testFuzz_releaseSlashEscrowByStrategy_OnlyRedistributionRecipient(uint underlyingAmount) public {
-        _initiateSlashEscrow(defaultOperatorSet, defaultSlashId, defaultStrategy, defaultToken, underlyingAmount);
-        cheats.expectRevert(ISlashEscrowFactoryErrors.OnlyRedistributionRecipient.selector);
-        factory.releaseSlashEscrowByStrategy(defaultOperatorSet, defaultSlashId, defaultStrategy);
-    }
-
     function testFuzz_releaseSlashEscrowByStrategy_globalPause(uint underlyingAmount) public {
         _initiateSlashEscrow(defaultOperatorSet, defaultSlashId, defaultStrategy, defaultToken, underlyingAmount);
         cheats.prank(pauser);
         factory.pause(2 ** PAUSED_RELEASE_ESCROW);
-        cheats.prank(defaultRedistributionRecipient);
         cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         factory.releaseSlashEscrowByStrategy(defaultOperatorSet, defaultSlashId, defaultStrategy);
     }
@@ -444,7 +415,6 @@ contract SlashEscrowFactoryUnitTests_releaseSlashEscrowByStrategy is SlashEscrow
         _initiateSlashEscrow(defaultOperatorSet, defaultSlashId, defaultStrategy, defaultToken, underlyingAmount);
         cheats.prank(pauser);
         factory.pauseEscrow(defaultOperatorSet, defaultSlashId);
-        cheats.prank(defaultRedistributionRecipient);
         cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         factory.releaseSlashEscrowByStrategy(defaultOperatorSet, defaultSlashId, defaultStrategy);
     }
@@ -452,7 +422,6 @@ contract SlashEscrowFactoryUnitTests_releaseSlashEscrowByStrategy is SlashEscrow
     /// @dev Asserts that the function reverts if the operator set and slash ID do not exist.
     /// NOTE: `releaseSlashEscrowByStrategy` DOES revert when a slash ID does not exist for an operator set.
     function testFuzz_releaseSlashEscrowByStrategy_nonexistentSlashIdForOperatorSet(uint underlyingAmount) public {
-        cheats.prank(defaultRedistributionRecipient);
         cheats.expectRevert();
         factory.releaseSlashEscrowByStrategy(defaultOperatorSet, defaultSlashId, defaultStrategy);
         assertFalse(factory.isPendingOperatorSet(defaultOperatorSet));
@@ -462,7 +431,6 @@ contract SlashEscrowFactoryUnitTests_releaseSlashEscrowByStrategy is SlashEscrow
     function testFuzz_releaseSlashEscrowByStrategy_delayNotElapsed(uint underlyingAmount) public {
         _initiateSlashEscrow(defaultOperatorSet, defaultSlashId, defaultStrategy, defaultToken, underlyingAmount);
         cheats.roll(block.number + defaultGlobalDelayBlocks);
-        cheats.prank(defaultRedistributionRecipient);
         cheats.expectRevert(ISlashEscrowFactoryErrors.EscrowDelayNotElapsed.selector);
         factory.releaseSlashEscrowByStrategy(defaultOperatorSet, defaultSlashId, defaultStrategy);
     }
@@ -470,7 +438,6 @@ contract SlashEscrowFactoryUnitTests_releaseSlashEscrowByStrategy is SlashEscrow
     function testFuzz_releaseSlashEscrowByStrategy_multipleStrategies(uint underlyingAmount) public {
         _initiateSlashEscrow(defaultOperatorSet, defaultSlashId, defaultStrategy, defaultToken, underlyingAmount);
         cheats.roll(block.number + defaultGlobalDelayBlocks);
-        cheats.prank(defaultRedistributionRecipient);
         cheats.expectRevert(ISlashEscrowFactoryErrors.EscrowDelayNotElapsed.selector);
         factory.releaseSlashEscrowByStrategy(defaultOperatorSet, defaultSlashId, defaultStrategy);
     }
@@ -539,7 +506,7 @@ contract SlashEscrowFactoryUnitTests_releaseSlashEscrowByStrategy is SlashEscrow
         }
 
         // Assert that the start block for the (operator set, slash ID) is no longer set.
-        assertEq(factory.getEscrowStartBlock(defaultOperatorSet, defaultSlashId), 0);
+        assertEq(factory.getEscrowCompleteBlock(defaultOperatorSet, defaultSlashId), 0);
     }
 
     /// @dev Tests that multiple strategies can be burned or redistributed across multiple calls
@@ -599,7 +566,7 @@ contract SlashEscrowFactoryUnitTests_releaseSlashEscrowByStrategy is SlashEscrow
         }
 
         // Assert that the start block for the (operator set, slash ID) is no longer set.
-        assertEq(factory.getEscrowStartBlock(defaultOperatorSet, defaultSlashId), 0);
+        assertEq(factory.getEscrowCompleteBlock(defaultOperatorSet, defaultSlashId), 0);
     }
 }
 
@@ -619,7 +586,6 @@ contract SlashEscrowFactoryUnitTests_pauseEscrow is SlashEscrowFactoryUnitTests 
 
         _rollForwardDefaultEscrowDelay();
 
-        cheats.prank(defaultRedistributionRecipient);
         cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         factory.releaseSlashEscrow(defaultOperatorSet, defaultSlashId);
     }
@@ -641,7 +607,6 @@ contract SlashEscrowFactoryUnitTests_unpauseEscrow is SlashEscrowFactoryUnitTest
 
         _rollForwardDefaultEscrowDelay();
 
-        cheats.prank(defaultRedistributionRecipient);
         cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         factory.releaseSlashEscrow(defaultOperatorSet, defaultSlashId);
 
@@ -708,6 +673,41 @@ contract SlashEscrowFactoryUnitTests_getEscrowDelay is SlashEscrowFactoryUnitTes
 
         // The complete block should be the maximum delay across all strategies
         assertEq(factory.getEscrowCompleteBlock(defaultOperatorSet, defaultSlashId), block.number + delays[numStrategies - 1] + 1);
+    }
+
+    function testFuzz_getEscrowCompleteBlock_multipleSlashes(uint r) public {
+        uint startBlock = block.number;
+        uint32 firstDelay = uint32(1 days / 12 seconds);
+        uint32 secondDelay = uint32(2 days / 12 seconds);
+
+        IStrategy[] memory strategies = new IStrategy[](1);
+        MockERC20[] memory tokens = new MockERC20[](1);
+        uint[] memory underlyingAmounts = new uint[](1);
+        strategies[0] = IStrategy(cheats.randomAddress());
+        tokens[0] = new MockERC20();
+        underlyingAmounts[0] = uint96(cheats.randomUint());
+
+        cheats.prank(defaultOwner);
+        factory.setGlobalEscrowDelay(firstDelay);
+
+        _initiateSlashEscrow(defaultOperatorSet, defaultSlashId, strategies[0], tokens[0], underlyingAmounts[0]);
+
+        cheats.prank(defaultOwner);
+        factory.setGlobalEscrowDelay(secondDelay);
+
+        uint secondSlashId = defaultSlashId + 1;
+        _initiateSlashEscrow(defaultOperatorSet, secondSlashId, strategies[0], tokens[0], underlyingAmounts[0]);
+
+        assertEq(factory.getEscrowCompleteBlock(defaultOperatorSet, defaultSlashId), startBlock + firstDelay + 1);
+        assertEq(factory.getEscrowCompleteBlock(defaultOperatorSet, secondSlashId), startBlock + secondDelay + 1);
+
+        cheats.roll(startBlock + firstDelay + 1);
+        _mockStrategyUnderlyingTokenCall(strategies[0], address(tokens[0]));
+        _releaseSlashEscrow(defaultOperatorSet, defaultSlashId);
+
+        cheats.roll(startBlock + secondDelay + 1);
+        _mockStrategyUnderlyingTokenCall(strategies[0], address(tokens[0]));
+        _releaseSlashEscrow(defaultOperatorSet, secondSlashId);
     }
 }
 

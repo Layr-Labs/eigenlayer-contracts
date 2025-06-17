@@ -9,9 +9,6 @@ interface ISlashEscrowFactoryErrors {
     /// @notice Thrown when a caller is not the strategy manager.
     error OnlyStrategyManager();
 
-    /// @notice Thrown when a caller is not the redistribution recipient.
-    error OnlyRedistributionRecipient();
-
     /// @notice Thrown when a escrow is not mature.
     error EscrowNotMature();
 
@@ -61,8 +58,7 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
      * @notice Releases an escrow by transferring tokens from the `SlashEscrow` to the operator set's redistribution recipient.
      * @param operatorSet The operator set whose escrow is being released.
      * @param slashId The slash ID of the escrow that is being released.
-     * @dev The caller must be the escrow recipient, unless the escrow recipient
-     * is the default burn address in which case anyone can call.
+     * @dev This method is permissionless, anyone can call it.
      * @dev The slash escrow is released once the delay for ALL strategies has elapsed.
      */
     function releaseSlashEscrow(OperatorSet calldata operatorSet, uint256 slashId) external;
@@ -72,8 +68,7 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
      * @param operatorSet The operator set whose escrow is being released.
      * @param slashId The slash ID of the escrow that is being released.
      * @param strategy The strategy whose escrow is being released.
-     * @dev The caller must be the redistribution recipient, unless the redistribution recipient
-     * is the default burn address in which case anyone can call.
+     * @dev This method is permissionless, anyone can call it.
      * @dev The slash escrow is released once the delay for ALL strategies has elapsed.
      */
     function releaseSlashEscrowByStrategy(
@@ -83,14 +78,17 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
     ) external;
 
     /**
-     * @notice Pauses a escrow.
+     * @notice Pauses an individual slash escrow.
      * @param operatorSet The operator set whose escrow is being paused.
      * @param slashId The slash ID of the escrow that is being paused.
+     * @dev Allows governance to pause a specific slash escrow in response to security incidents or other emergencies.
+     * @dev When paused, the slashed funds become locked and can only be rescued through a protocol upgrade.
+     * @dev To pause all escrows simultaneously, use the `pauseAll()` function instead.
      */
     function pauseEscrow(OperatorSet calldata operatorSet, uint256 slashId) external;
 
     /**
-     * @notice Unpauses a escrow.
+     * @notice Unpauses an individual slash escrow.
      * @param operatorSet The operator set whose escrow is being unpaused.
      * @param slashId The slash ID of the escrow that is being unpaused.
      */
@@ -99,6 +97,7 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
     /**
      * @notice Sets the delay for the escrow of a strategies underlying token.
      * @dev The largest of all strategy delays or global delay will be used.
+     * @dev This delay setting only applies to new slashes and does not affect existing ones.
      * @param strategy The strategy whose escrow delay is being set.
      * @param delay The delay for the escrow.
      */
@@ -106,6 +105,7 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
 
     /**
      * @notice Sets a global delay applicable to all strategies.
+     * @dev This delay setting only applies to new slashes and does not affect existing ones.
      * @param delay The delay for the escrow.
      */
     function setGlobalEscrowDelay(
@@ -228,14 +228,6 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
      * @return The paused status of the escrow.
      */
     function isEscrowPaused(OperatorSet calldata operatorSet, uint256 slashId) external view returns (bool);
-
-    /**
-     * @notice Returns the start block for a slash ID.
-     * @param operatorSet The operator set whose start block is being queried.
-     * @param slashId The slash ID of the start block that is being queried.
-     * @return The start block.
-     */
-    function getEscrowStartBlock(OperatorSet calldata operatorSet, uint256 slashId) external view returns (uint256);
 
     /**
      * @notice Returns the block at which the escrow can be released.
