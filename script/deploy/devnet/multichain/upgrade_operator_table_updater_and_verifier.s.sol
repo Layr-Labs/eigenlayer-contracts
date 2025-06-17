@@ -85,7 +85,7 @@ contract UpgradeOperatorTableUpdaterAndVerifier is Script, Test {
             avs: 0xD638d3779456898dff17EBFe5D62F5B7a92D61d7,
             id: 0
         });
-        bn254CertificateVerifierProxy.setMaxStalenessPeriod(opSet, 7 days);
+        bn254CertificateVerifierProxy.setMaxStalenessPeriod(opSet, 0 days);
         console.log("Max staleness period set successfully!");
         
         vm.stopBroadcast();
