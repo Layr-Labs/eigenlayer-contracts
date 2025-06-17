@@ -317,8 +317,8 @@ contract BN254OperatorSet_CalculateWeights is IntegrationCheckUtils {
             "Operator2 weight should remain unchanged"
         );
 
-        // Verify aggregate pubkey is still the same even though operator1's weight is 0
-        assertEq(operatorSetInfo.aggregatePubkey.X, expectedApk.X, "Aggregate pubkey X should match");
-        assertEq(operatorSetInfo.aggregatePubkey.Y, expectedApk.Y, "Aggregate pubkey Y should match");
+        // Verify aggregate pubkey has changed
+        assertEq(operatorSetInfo.aggregatePubkey.X, bn254G1Key2.X, "Aggregate pubkey X should match");
+        assertEq(operatorSetInfo.aggregatePubkey.Y, bn254G1Key2.Y, "Aggregate pubkey Y should match");
     }
 }
