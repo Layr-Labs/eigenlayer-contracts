@@ -283,6 +283,50 @@ contract OperatorTableUpdaterUnitTests_updateOperatorTable_BN254 is OperatorTabl
         operatorTableUpdater.updateOperatorTable(uint32(block.timestamp), bytes32(0), 0, new bytes(0), operatorTable);
     }
 
+    function testFuzz_BN254_revert_invalidGlobalTableRoot(Randomness r) public rand(r) {
+        // Generate random operatorSetInfo and operatorSetConfig
+        BN254OperatorSetInfo memory operatorSetInfo = _generateRandomBN254OperatorSetInfo(r);
+        bytes memory operatorSetInfoBytes = abi.encode(operatorSetInfo);
+        OperatorSetConfig memory operatorSetConfig = _generateRandomOperatorSetConfig(r);
+        bytes memory operatorTable = abi.encode(defaultOperatorSet, CurveType.BN254, operatorSetConfig, operatorSetInfoBytes);
+        bytes32 operatorSetLeafHash = keccak256(operatorTable);
+
+        // Include the operatorSetInfo and operatorSetConfig in the global table root & set it
+        (bytes32 globalTableRoot, uint32 operatorSetIndex, bytes32[] memory leaves) = _createGlobalTableRoot(r, operatorSetLeafHash);
+        _updateGlobalTableRoot(globalTableRoot);
+
+        // Generate proof for the operatorSetInfo and operatorSetConfig
+        bytes memory proof = Merkle.getProofKeccak(leaves, operatorSetIndex);
+
+        // Try to update with a different global table root
+        bytes32 wrongGlobalTableRoot = bytes32(r.Uint256(1, type(uint).max));
+        cheats.expectRevert(InvalidGlobalTableRoot.selector);
+        operatorTableUpdater.updateOperatorTable(uint32(block.timestamp), wrongGlobalTableRoot, operatorSetIndex, proof, operatorTable);
+    }
+
+    function testFuzz_BN254_revert_invalidOperatorSetProof(Randomness r) public rand(r) {
+        // Generate random operatorSetInfo and operatorSetConfig
+        BN254OperatorSetInfo memory operatorSetInfo = _generateRandomBN254OperatorSetInfo(r);
+        bytes memory operatorSetInfoBytes = abi.encode(operatorSetInfo);
+        OperatorSetConfig memory operatorSetConfig = _generateRandomOperatorSetConfig(r);
+        bytes memory operatorTable = abi.encode(defaultOperatorSet, CurveType.BN254, operatorSetConfig, operatorSetInfoBytes);
+        bytes32 operatorSetLeafHash = keccak256(operatorTable);
+
+        // Include the operatorSetInfo and operatorSetConfig in the global table root & set it
+        (bytes32 globalTableRoot, uint32 operatorSetIndex, bytes32[] memory leaves) = _createGlobalTableRoot(r, operatorSetLeafHash);
+        _updateGlobalTableRoot(globalTableRoot);
+
+        // Generate an invalid proof
+        bytes memory invalidProof = new bytes(32 * r.Uint256(1, 10));
+        for (uint i = 0; i < invalidProof.length; i++) {
+            invalidProof[i] = bytes1(uint8(r.Uint256(0, 255)));
+        }
+
+        // Try to update with invalid proof
+        cheats.expectRevert(InvalidOperatorSetProof.selector);
+        operatorTableUpdater.updateOperatorTable(uint32(block.timestamp), globalTableRoot, operatorSetIndex, invalidProof, operatorTable);
+    }
+
     function testFuzz_BN254_correctness(Randomness r) public rand(r) {
         // Generate random operatorSetInfo and operatorSetConfig
         BN254OperatorSetInfo memory operatorSetInfo = _generateRandomBN254OperatorSetInfo(r);
@@ -362,6 +406,29 @@ contract OperatorTableUpdaterUnitTests_updateOperatorTable_ECDSA is OperatorTabl
     }
 }
 
+contract OperatorTableUpdaterUnitTests_updateOperatorTable_InvalidCurveType is OperatorTableUpdaterUnitTests {
+    function testFuzz_revert_invalidCurveType(Randomness r) public rand(r) {
+        // Generate random operatorSetInfo and operatorSetConfig with invalid curve type
+        BN254OperatorSetInfo memory operatorSetInfo = _generateRandomBN254OperatorSetInfo(r);
+        bytes memory operatorSetInfoBytes = abi.encode(operatorSetInfo);
+        OperatorSetConfig memory operatorSetConfig = _generateRandomOperatorSetConfig(r);
+        // Use CurveType.NONE (0) which is invalid
+        bytes memory operatorTable = abi.encode(defaultOperatorSet, CurveType.NONE, operatorSetConfig, operatorSetInfoBytes);
+        bytes32 operatorSetLeafHash = keccak256(operatorTable);
+
+        // Include the operatorSetInfo and operatorSetConfig in the global table root & set it
+        (bytes32 globalTableRoot, uint32 operatorSetIndex, bytes32[] memory leaves) = _createGlobalTableRoot(r, operatorSetLeafHash);
+        _updateGlobalTableRoot(globalTableRoot);
+
+        // Generate proof for the operatorSetInfo and operatorSetConfig
+        bytes memory proof = Merkle.getProofKeccak(leaves, operatorSetIndex);
+
+        // Should revert with InvalidCurveType when trying to update with CurveType.NONE
+        cheats.expectRevert(InvalidCurveType.selector);
+        operatorTableUpdater.updateOperatorTable(uint32(block.timestamp), globalTableRoot, operatorSetIndex, proof, operatorTable);
+    }
+}
+
 contract OperatorTableUpdaterUnitTests_multipleCurveTypes is OperatorTableUpdaterUnitTests {
     function testFuzz_correctness(Randomness r) public rand(r) {
         // Generate random BN254 operatorSetInfo and operatorSetConfig
@@ -419,6 +486,56 @@ contract OperatorTableUpdaterUnitTests_getCertificateVerifier is OperatorTableUp
         if (curveType == CurveType.BN254) assertEq(certificateVerifier, address(bn254CertificateVerifierMock));
         else if (curveType == CurveType.ECDSA) assertEq(certificateVerifier, address(ecdsaCertificateVerifierMock));
         else revert("Invalid State");
+    }
+}
+
+contract OperatorTableUpdaterUnitTests_getters is OperatorTableUpdaterUnitTests {
+    function testFuzz_getGlobalTableRootByTimestamp(Randomness r) public rand(r) {
+        uint32 referenceTimestamp = r.Uint32(operatorTableUpdater.getLatestReferenceTimestamp() + 1, type(uint32).max);
+        uint32 referenceBlockNumber = r.Uint32();
+        cheats.warp(uint(referenceTimestamp));
+        bytes32 globalTableRoot = bytes32(r.Uint256(1, type(uint).max));
+        
+        // Set a global table root
+        BN254Certificate memory mockCertificate;
+        mockCertificate.messageHash = operatorTableUpdater.getGlobalTableUpdateMessageHash(globalTableRoot, referenceTimestamp, referenceBlockNumber);
+        _setIsValidCertificate(mockCertificate, true);
+        operatorTableUpdater.confirmGlobalTableRoot(mockCertificate, globalTableRoot, referenceTimestamp, referenceBlockNumber);
+
+        // Test getters
+        assertEq(operatorTableUpdater.getGlobalTableRootByTimestamp(referenceTimestamp), globalTableRoot);
+        assertEq(operatorTableUpdater.getCurrentGlobalTableRoot(), globalTableRoot);
+        assertEq(operatorTableUpdater.getLatestReferenceTimestamp(), referenceTimestamp);
+        assertEq(operatorTableUpdater.getLatestReferenceBlockNumber(), referenceBlockNumber);
+        assertEq(operatorTableUpdater.getReferenceBlockNumberByTimestamp(referenceTimestamp), referenceBlockNumber);
+        assertEq(operatorTableUpdater.getReferenceTimestampByBlockNumber(referenceBlockNumber), referenceTimestamp);
+    }
+
+    function test_getGlobalRootConfirmerSet() public view {
+        OperatorSet memory confirmerSet = operatorTableUpdater.getGlobalRootConfirmerSet();
+        assertEq(confirmerSet.avs, globalRootConfirmerSet.avs);
+        assertEq(confirmerSet.id, globalRootConfirmerSet.id);
+    }
+
+    function test_getGlobalConfirmerSetReferenceTimestamp() public view {
+        uint32 timestamp = operatorTableUpdater.getGlobalConfirmerSetReferenceTimestamp();
+        assertEq(timestamp, uint32(block.timestamp - 1));
+    }
+
+    function testFuzz_getGlobalTableUpdateMessageHash(Randomness r) public rand(r) {
+        bytes32 globalTableRoot = bytes32(r.Uint256());
+        uint32 referenceTimestamp = r.Uint32();
+        uint32 referenceBlockNumber = r.Uint32();
+        
+        bytes32 messageHash = operatorTableUpdater.getGlobalTableUpdateMessageHash(globalTableRoot, referenceTimestamp, referenceBlockNumber);
+        
+        // Verify the hash is deterministic
+        bytes32 messageHash2 = operatorTableUpdater.getGlobalTableUpdateMessageHash(globalTableRoot, referenceTimestamp, referenceBlockNumber);
+        assertEq(messageHash, messageHash2);
+        
+        // Verify hash changes with different inputs
+        bytes32 differentHash = operatorTableUpdater.getGlobalTableUpdateMessageHash(bytes32(uint256(globalTableRoot) + 1), referenceTimestamp, referenceBlockNumber);
+        assertTrue(messageHash != differentHash);
     }
 }
 
