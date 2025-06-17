@@ -90,7 +90,7 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
         _referenceTimestamps[referenceBlockNumber] = referenceTimestamp;
         _globalTableRoots[referenceTimestamp] = globalTableRoot;
 
-        emit NewGlobalTableRoot(referenceTimestamp, globalTableRoot);
+        emit NewGlobalTableRoot(referenceTimestamp, globalTableRoot, referenceBlockNumber);
     }
 
     /// @inheritdoc IOperatorTableUpdater

@@ -36,8 +36,9 @@ interface IOperatorTableUpdaterEvents {
      * @notice Emitted when a new global table root is set
      * @param referenceTimestamp the timestamp of the global table root
      * @param globalTableRoot the root of the global table
+     * @param referenceBlockNumber the block number of the global table root
      */
-    event NewGlobalTableRoot(uint32 indexed referenceTimestamp, bytes32 indexed globalTableRoot);
+    event NewGlobalTableRoot(uint32 indexed referenceTimestamp, bytes32 indexed globalTableRoot, uint32 indexed referenceBlockNumber);
 
     /**
      * @notice Emitted when the global root confirmer set is updated
