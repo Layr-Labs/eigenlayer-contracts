@@ -46,7 +46,7 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
         }
         releases[releaseId].upgradeByTime = release.upgradeByTime;
 
-        emit ReleasePublished(operatorSet, release);
+        emit ReleasePublished(operatorSet, releaseId, release);
     }
 
     /**

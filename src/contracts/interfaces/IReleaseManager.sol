@@ -29,8 +29,9 @@ interface IReleaseManagerTypes {
 interface IReleaseManagerEvents is IReleaseManagerTypes {
     /// @notice Emitted when a new release is published.
     /// @param operatorSet The operator set this release is for.
+    /// @param releaseId The id of the release that was published.
     /// @param release The release that was published.
-    event ReleasePublished(OperatorSet indexed operatorSet, Release release);
+    event ReleasePublished(OperatorSet indexed operatorSet, uint256 indexed releaseId, Release release);
 }
 
 interface IReleaseManager is IReleaseManagerErrors, IReleaseManagerEvents {

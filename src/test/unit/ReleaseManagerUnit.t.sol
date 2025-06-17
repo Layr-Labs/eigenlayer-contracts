@@ -137,7 +137,7 @@ contract ReleaseManagerUnitTests_publishRelease is ReleaseManagerUnitTests {
     function test_publishSingleRelease() public {
         // Check event emission
         vm.expectEmit(true, true, true, true, address(releaseManager));
-        emit ReleasePublished(defaultOperatorSet, defaultRelease);
+        emit ReleasePublished(defaultOperatorSet, 0, defaultRelease);
 
         // Publish release
         uint releaseId = _publishRelease(defaultOperatorSet, defaultRelease);
@@ -160,7 +160,7 @@ contract ReleaseManagerUnitTests_publishRelease is ReleaseManagerUnitTests {
 
             // Check event
             vm.expectEmit(true, true, true, true, address(releaseManager));
-            emit ReleasePublished(defaultOperatorSet, release);
+            emit ReleasePublished(defaultOperatorSet, i, release);
 
             // Publish and verify ID
             uint releaseId = _publishRelease(defaultOperatorSet, release);
