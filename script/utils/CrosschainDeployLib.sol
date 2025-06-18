@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
+import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+
 ICreateX constant createx = ICreateX(0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed);
 
 interface ICreateX {
@@ -14,7 +16,7 @@ interface ICreateX {
 library CrosschainDeployLib {
     bytes11 constant DEFAULT_CROSSCHAIN_SALT = bytes11(uint88(0xE15E4));
 
-    /// @notice Deploys a contract with CreateX.
+    /// @notice Deploys a crosschain contract with CreateX.
     /// @param initCode The initialization code for the contract.
     /// @param salt The entropy for the deployment.
     /// @return The address of the deployed contract.
@@ -22,13 +24,40 @@ library CrosschainDeployLib {
         return createx.deployCreate2(computeSalt(msg.sender, salt), initCode);
     }
 
-    /// @notice Deploys a contract with CreateX.
+    /// @notice Deploys a crosschain contract with CreateX.
     /// @param initCode The initialization code for the contract.
     /// @return The address of the deployed contract.
     function deployCrosschain(
         bytes memory initCode
     ) internal returns (address) {
         return deployCrosschain(initCode, DEFAULT_CROSSCHAIN_SALT);
+    }
+
+    /// @notice Deploys a crosschain transparent upgradeable proxy with CreateX.
+    /// @dev The initial admin is the EOA that calls this function.
+    /// @param implementation The implementation contract address.
+    /// @param admin The admin address.
+    /// @param data The initialization calldata.
+    /// @return proxy The address of the deployed proxy.
+    function deployCrosschainProxy(
+        address implementation,
+        address admin,
+        bytes memory data
+    ) internal returns (ITransparentUpgradeableProxy proxy) {
+        proxy = ITransparentUpgradeableProxy(
+            deployCrosschain(computeTransparentUpgradeableProxyInitCode(implementation, msg.sender, data))
+        );
+        proxy.changeAdmin(admin);
+    }
+
+    /// @notice Deploys a crosschain transparent upgradeable proxy with CreateX.
+    /// @dev The initial admin is the EOA that calls this function.
+    /// @param implementation The implementation contract address.
+    /// @return The address of the deployed proxy.
+    function deployCrosschainProxy(
+        address implementation
+    ) internal returns (ITransparentUpgradeableProxy) {
+        return deployCrosschainProxy(implementation, msg.sender, "");
     }
 
     /// @notice Returns the cross-chain address of a contract.
@@ -62,5 +91,18 @@ library CrosschainDeployLib {
                 salt
             )
         );
+    }
+
+    /// @notice Returns the initialization code for a transparent upgradeable proxy.
+    /// @param implementation The implementation contract address.
+    /// @param admin The admin address.
+    /// @param data The initialization calldata.
+    /// @return The initcode for a transparent upgradeable proxy.
+    function computeTransparentUpgradeableProxyInitCode(
+        address implementation,
+        address admin,
+        bytes memory data
+    ) internal pure returns (bytes memory) {
+        return abi.encodePacked(type(TransparentUpgradeableProxy).creationCode, abi.encode(implementation, admin, data));
     }
 }

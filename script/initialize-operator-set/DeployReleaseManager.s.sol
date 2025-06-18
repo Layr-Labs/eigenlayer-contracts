@@ -2,7 +2,6 @@
 pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
-import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "src/contracts/core/ReleaseManager.sol";
 import "src/contracts/permissions/PermissionController.sol";
 import "../utils/CrosschainDeployLib.sol";
@@ -29,18 +28,14 @@ contract DeployFromScratch is Script, Test {
     function run() public {
         // Deploy the empty contract, MUST be on all chains at the same address.
         emptyContract = type(EmptyContract).creationCode.deployCrosschain();
-
         // Deploy the release manager implementation.
         releaseManagerImplementation = new ReleaseManager(permissionController, semver);
-
-        // Compute the init code for the proxy given constructor arguments.
-        bytes memory proxyInitCode =
-            abi.encodePacked(type(TransparentUpgradeableProxy).creationCode, abi.encode(emptyContract, msg.sender, ""));
-
         // Deploy the proxy with EOA as admin, and empty contract as implementation.
-        releaseManager = ReleaseManager(proxyInitCode.deployCrosschain());
+        releaseManager = ReleaseManager(address(emptyContract.deployCrosschainProxy(msg.sender, "")));
 
-        // Set the admin to the proxy admin.
-        ITransparentUpgradeableProxy(address(releaseManager)).changeAdmin(address(eigenLayerProxyAdmin));
+        // Upgrade the proxy to the release manager implementation and set the admin to the proxy admin.
+        ITransparentUpgradeableProxy proxy = ITransparentUpgradeableProxy(address(releaseManager));
+        proxy.upgradeTo(address(releaseManagerImplementation));
+        proxy.changeAdmin(address(eigenLayerProxyAdmin));
     }
 }
