@@ -118,16 +118,13 @@ abstract contract ECDSATableCalculatorBase is IECDSATableCalculator {
 
             // Get the ECDSA address (public key) for the operator
             address ecdsaAddress = keyRegistrar.getECDSAAddress(operatorSet, operators[i]);
-            
+
             // Create the ECDSAOperatorInfo struct
-            operatorInfos[infoIndex] = ECDSAOperatorInfo({
-                pubkey: ecdsaAddress,
-                weights: weights[i]
-            });
+            operatorInfos[infoIndex] = ECDSAOperatorInfo({pubkey: ecdsaAddress, weights: weights[i]});
 
             infoIndex++;
         }
 
         return operatorInfos;
     }
-} 
+}

@@ -110,12 +110,7 @@ contract ECDSATableCalculatorBaseUnitTests is EigenLayerMultichainUnitTestSetup,
     }
 
     // Helper functions
-    function _registerOperatorKey(
-        address operator,
-        OperatorSet memory operatorSet,
-        address ecdsaAddress,
-        uint privKey
-    ) internal {
+    function _registerOperatorKey(address operator, OperatorSet memory operatorSet, address ecdsaAddress, uint privKey) internal {
         bytes memory signature = _generateECDSASignature(operator, operatorSet, ecdsaAddress, privKey);
 
         vm.prank(operator);
@@ -128,7 +123,7 @@ contract ECDSATableCalculatorBaseUnitTests is EigenLayerMultichainUnitTestSetup,
         returns (bytes memory)
     {
         bytes32 messageHash = keyRegistrar.getECDSAKeyRegistrationMessageHash(operator, operatorSet, ecdsaAddress);
-        
+
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(privKey, messageHash);
         return abi.encodePacked(r, s, v);
     }
@@ -498,4 +493,4 @@ contract ECDSATableCalculatorBaseUnitTests_getOperatorWeight is ECDSATableCalcul
         address differentOperator = address(uint160(uint(uint160(operator)) + 1));
         assertEq(calculator.getOperatorWeight(defaultOperatorSet, differentOperator), 0, "Different operator should return 0");
     }
-} 
+}

@@ -76,4 +76,4 @@ contract ECDSATableCalculator is ECDSATableCalculatorBase {
 
         return (operators, weights);
     }
-} 
+}
