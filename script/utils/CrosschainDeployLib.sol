@@ -54,7 +54,7 @@ library CrosschainDeployLib {
     /// @return The encoded salt.
     /// Deployer EOA (20 bytes) | Cross-chain flag (1 byte) | Entropy (11 bytes)
     /// 0xbebebebebebebebebebebebebebebebebebebebe|ff|1212121212121212121212
-    function computeSalt(address eoa, bytes11 salt) internal view returns (bytes32) {
+    function computeSalt(address eoa, bytes11 salt) internal pure returns (bytes32) {
         return bytes32(
             bytes.concat(
                 bytes20(eoa),
