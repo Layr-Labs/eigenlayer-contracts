@@ -93,22 +93,9 @@ abstract contract ECDSATableCalculatorBase is IECDSATableCalculator {
             return new ECDSAOperatorInfo[](0);
         }
 
-        // Count operators with registered ECDSA keys
+        // Create the operator infos array with maximum possible size
+        operatorInfos = new ECDSAOperatorInfo[](operators.length);
         uint256 operatorCount = 0;
-        for (uint256 i = 0; i < operators.length; i++) {
-            if (keyRegistrar.isRegistered(operatorSet, operators[i])) {
-                operatorCount++;
-            }
-        }
-
-        // If no operators have registered keys, return empty array
-        if (operatorCount == 0) {
-            return new ECDSAOperatorInfo[](0);
-        }
-
-        // Create the operator infos array
-        operatorInfos = new ECDSAOperatorInfo[](operatorCount);
-        uint256 infoIndex = 0;
 
         for (uint256 i = 0; i < operators.length; i++) {
             // Skip if the operator has not registered their ECDSA key
@@ -120,9 +107,19 @@ abstract contract ECDSATableCalculatorBase is IECDSATableCalculator {
             address ecdsaAddress = keyRegistrar.getECDSAAddress(operatorSet, operators[i]);
 
             // Create the ECDSAOperatorInfo struct
-            operatorInfos[infoIndex] = ECDSAOperatorInfo({pubkey: ecdsaAddress, weights: weights[i]});
+            operatorInfos[operatorCount] = ECDSAOperatorInfo({pubkey: ecdsaAddress, weights: weights[i]});
 
-            infoIndex++;
+            operatorCount++;
+        }
+
+        // If no operators have registered keys, return empty array
+        if (operatorCount == 0) {
+            return new ECDSAOperatorInfo[](0);
+        }
+
+        // Resize the array to the actual number of operators with registered keys
+        assembly {
+            mstore(operatorInfos, operatorCount)
         }
 
         return operatorInfos;
