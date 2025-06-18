@@ -23,18 +23,15 @@ contract DeployFromScratch is Script, Test {
 
     ReleaseManager releaseManager;
     ReleaseManager releaseManagerImplementation;
-
-    EmptyContract emptyContract;
+    ProxyAdmin eigenLayerProxyAdmin;
+    address emptyContract;
 
     function run() public {
-        emptyContract = new EmptyContract(); // NOTE: need some initial contract that's on all chains...
-
-        // Compute the init code for the release manager implementation given constructor arguments.
-        bytes memory implementationInitCode =
-            abi.encodePacked(type(ReleaseManager).creationCode, abi.encode(permissionController, semver));
+        // Deploy the empty contract, MUST be on all chains at the same address.
+        emptyContract = type(EmptyContract).creationCode.deployCrosschain();
 
         // Deploy the release manager implementation.
-        releaseManagerImplementation = ReleaseManager(implementationInitCode.deployCrosschain());
+        releaseManagerImplementation = new ReleaseManager(permissionController, semver);
 
         // Compute the init code for the proxy given constructor arguments.
         bytes memory proxyInitCode =
@@ -42,5 +39,8 @@ contract DeployFromScratch is Script, Test {
 
         // Deploy the proxy with EOA as admin, and empty contract as implementation.
         releaseManager = ReleaseManager(proxyInitCode.deployCrosschain());
+
+        // Set the admin to the proxy admin.
+        ITransparentUpgradeableProxy(address(releaseManager)).changeAdmin(address(eigenLayerProxyAdmin));
     }
 }
