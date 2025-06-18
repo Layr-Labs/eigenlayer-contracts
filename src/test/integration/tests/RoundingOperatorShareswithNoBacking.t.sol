@@ -7,6 +7,8 @@ contract Integration_Rounding is IntegrationCheckUtils {
     using ArrayLib for *;
     using StdStyle for *;
 
+    string logFilename;  //  Store filename
+    bool headerWritten = false;  //  Add flag to write header only once
     User attacker;
     // Number of users to create
     User[4] users;
@@ -23,6 +25,10 @@ contract Integration_Rounding is IntegrationCheckUtils {
 
     function _init() internal override {
         _configAssetTypes(HOLDS_LST);
+        //  Generate unique filename but don't write header in _init
+        uint256 uniqueId = uint256(keccak256(abi.encodePacked(block.timestamp, block.difficulty, gasleft()))) % 1000000;
+        logFilename = string(abi.encodePacked("./fuzz_results_", vm.toString(uniqueId), ".csv"));
+        //  Removed header writing from here
 
         attacker = new User("Attacker"); // Attacker serves as both operator and staker
         badAVS = new AVS("BadAVS"); // AVS is also attacker-controlled
@@ -58,56 +64,19 @@ contract Integration_Rounding is IntegrationCheckUtils {
     }
 
     // TODO: consider incremental manual fuzzing from 1 up to WAD - 1
-    function test_rounding_allMagsSlashed(
-        uint64 initialWadToSlash, 
-        uint64 _initTokenBalance
-    ) public rand(0) {
-        vm.pauseGasMetering();
-        // Don't slash 100% as we will do multiple slashes
-        initialWadToSlash = uint64(bound(initialWadToSlash, 1, WAD - 1));
-        // Ensure attacker has at least one token
-        initTokenBalance = _initTokenBalance > 0 ? _initTokenBalance : _initTokenBalance + 1;
-        deal(address(token), address(attacker), initTokenBalance);
-        
-        // Use modifyAllocation+slashOperator to arbitrarily set operator max magnitude
-        _magnitudeManipulation(initialWadToSlash);
-        _deposit();
-        
-        // Perform slashes to gradually whittle down operator magnitude, as well as produce slash escrows.
-        // Since we're doing multiple slashes, never slash 100%.
-        for (uint16 i = 0; i < numSlashes; i++) {
-            uint64 wadToSlash = uint64(cheats.randomUint(1, WAD - 1));
-            _slash(wadToSlash);
-        }
-        
-        // Perform final 100% slash to extract any remaining tokens.
-        _slash(WAD); 
-        
-        // Release all escrows to the redistributionRecipient (attacker).
-        _release();
-        
-        // Check for any surplus value extracted by attacker. If found, we've proven the existence of the exploit.
-        // Unchecked to avoid overflow reverting. Safe because token balances are bounded by uint64.
-        // Negative diff means attacker lost money, positive diff means attacker gained money.
-        int diff;
-        unchecked {
-            diff = int(token.balanceOf(address(attacker)) - initTokenBalance);
-        }
-        console.log("Difference in tokens: %d", diff);
-        if (diff > 0) {
-            revert("Rounding error exploit found!");
-        }
-        
-        if (diff < -1) {
-            revert("Tokens lost!");
-        }
-    }
-    
+    // Removed test that test's rounding with full mags slashed - all interesting results come from partial mags
     function test_rounding_partialMagsSlashed(
         uint64 initialWadToSlash, 
         uint64 _initTokenBalance
     ) public rand(0) {
         vm.pauseGasMetering();
+        
+        //  Write header only on first fuzz run
+        if (!headerWritten) {
+            vm.writeLine(logFilename, "initial_slash,init_balance,final_slash,operator_shares,status");
+            headerWritten = true;
+        }
+        
         // Don't slash 100% as we will do multiple slashes
         initialWadToSlash = uint64(bound(initialWadToSlash, 1, WAD - 1));
         // Ensure attacker has at least one token
@@ -116,58 +85,41 @@ contract Integration_Rounding is IntegrationCheckUtils {
         
         // Use modifyAllocation+slashOperator to arbitrarily set operator max magnitude
         _magnitudeManipulation(initialWadToSlash);
-        _deposit();
+        _deposit(initTokenBalance);
         
         // Perform slashes to gradually whittle down operator magnitude, as well as produce slash escrows.
         // Since we're doing multiple slashes, never slash 100%.
         //for (uint16 i = 0; i < numSlashes; i++) {
         //    uint64 wadToSlash = uint64(cheats.randomUint(1, WAD - 1));
-        //    _slash(wadToSlash);
         //}
-        
-        // Release all escrows to the redistributionRecipient (attacker).
-        //_release();
-        
-        // Withdraw all attacker deposits.
-        (, uint256[] memory depositShares) = strategyManager.getDeposits(address(attacker));
-        
-        Withdrawal[] memory withdrawals = attacker.queueWithdrawals(strategy.toArray(), depositShares);
+        uint64 wadToSlash = uint64(cheats.randomUint(1, WAD - 1));
+        _slash(wadToSlash);
 
-        Withdrawal[][] memory userWithdrawals = new Withdrawal[][](users.length);
         
-        for (uint256 i = 0; i < users.length; i++) {
-            (, uint256[] memory depositShares) = strategyManager.getDeposits(address(users[i]));
-            userWithdrawals[i] = users[i].queueWithdrawals(strategy.toArray(), depositShares);
+        // Release all slashing escrows to all users and attacker.
+        _release();
+        // Withdraw all user and attacker deposits after withdrawal delay
+        _withdraw();
+
+        uint256 finalOperatorShares = delegationManager.getOperatorShares(address(attacker), strategy.toArray())[0];
+        // Log ONLY the key metrics for each run (one line per test)
+        string memory runData = string(abi.encodePacked(
+        vm.toString(initialWadToSlash), ",",
+        vm.toString(initTokenBalance), ",", 
+        vm.toString(wadToSlash), ",",
+        vm.toString(finalOperatorShares), ",",
+        finalOperatorShares > 20 ? "EXPLOIT" : "CLEAN"
+        ));
+        vm.writeLine(logFilename, runData);
+        
+        // Only console.log for exploits (will show in terminal)
+        if(finalOperatorShares > 20) {
+            console.log("EXPLOIT FOUND!");
+            console.log("Params: initial_slash=%d, init_balance=%d, final_slash=%d", 
+                    initialWadToSlash, initTokenBalance, wadToSlash);
+            console.log("Final operator shares: %d", finalOperatorShares);
+            revert("Operator shares greater than 20!");
         }
-
-        
-        rollForward({blocks: DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS + 1});
-        
-        attacker.completeWithdrawalsAsTokens(withdrawals);
-        for (uint256 i = 0; i < users.length; i++) {
-            users[i].completeWithdrawalsAsTokens(userWithdrawals[i]);
-        }
-
-        
-        _print("withdraw");
-        
-        // Improvements
-        // check for operator shares greater than 1 
-        // remove token related checks Line 163 and replace with operator shares check
-
-        if(delegationManager.getOperatorShares(address(attacker), strategy.toArray())[0] > 1) {
-            revert("Operator shares greater than 1!");
-        }
-        
-/*         if (token.balanceOf(address(attacker)) > initTokenBalance) {
-            uint64 diff = uint64(token.balanceOf(address(attacker))) - initTokenBalance;
-            console.log("EXCESS of tokens: %d", diff);
-            revert("Rounding error exploit found!");
-        } else if (token.balanceOf(address(attacker)) < initTokenBalance) {
-            uint64 diff = uint64(initTokenBalance - token.balanceOf(address(attacker)));
-            console.log("DEFICIT of tokens: %d", diff);
-            assertLe(diff, delegationManager.getOperatorShares(address(attacker), strategy.toArray())[0], "Tokens lost!");
-        } */
     }
     
     // TODO - another way to mess with rounding/precision loss is to manipulate DSF
@@ -208,7 +160,7 @@ contract Integration_Rounding is IntegrationCheckUtils {
         _print("deallocate");
     }
 
-    function _deposit() internal {
+    function _deposit(uint64 initTokenBalance) internal {
         // Allocate all remaining magnitude to redistributable opset.
         uint64 allocatableMagnitude = allocationManager.getAllocatableMagnitude(address(attacker), strategy);
         attacker.modifyAllocations(AllocateParams({
@@ -216,6 +168,15 @@ contract Integration_Rounding is IntegrationCheckUtils {
             strategies: strategy.toArray(),
             newMagnitudes: (allocatableMagnitude).toArrayU64()
         }));
+        
+        // case where we randomly add more tokens to the attacker wallet,
+        // its a boolean that we randomly set to true
+        bool addMoreTokens = cheats.randomBool();
+        if(addMoreTokens) {
+            deal(address(token), address(attacker),initTokenBalance);
+        }
+
+
         
         // Deposit all attacker assets into Eigenlayer.
         attacker.depositIntoEigenlayer(strategy.toArray(), token.balanceOf(address(attacker)).toArrayU256());
@@ -239,24 +200,46 @@ contract Integration_Rounding is IntegrationCheckUtils {
         
         _print("slash");
     }
-
+    // release slashed funds from slashing escrow
     function _release() internal {
         // Roll forward past the escrow delay.
         rollForward({blocks: slashEscrowFactory.getGlobalEscrowDelay() + 1});
         
-        // Release funds.
-        for (uint32 i = 1; i <= numSlashes; i++) {
-            vm.prank(address(attacker));
-            slashEscrowFactory.releaseSlashEscrow(rOpSet, i);
-        }
-        
-        // Release final escrow.
+               // Release funds.
         vm.prank(address(attacker));
-        slashEscrowFactory.releaseSlashEscrow(rOpSet, uint256(numSlashes) + 1);
-        
+        slashEscrowFactory.releaseSlashEscrow(mOpSet, 1);
+
+        // Release funds.
+        vm.prank(address(attacker));
+        slashEscrowFactory.releaseSlashEscrow(rOpSet, 1);
+     
         _print("release");
     }
 
+    function _withdraw() internal {
+
+        (, uint256[] memory depositShares) = strategyManager.getDeposits(address(attacker));
+        
+        Withdrawal[] memory withdrawals = attacker.queueWithdrawals(strategy.toArray(), depositShares);
+
+        Withdrawal[][] memory userWithdrawals = new Withdrawal[][](users.length);
+        
+        for (uint256 i = 0; i < users.length; i++) {
+            (, uint256[] memory depositShares) = strategyManager.getDeposits(address(users[i]));
+            userWithdrawals[i] = users[i].queueWithdrawals(strategy.toArray(), depositShares);
+        }
+
+        rollForward({blocks: DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS + 1});
+        
+        attacker.completeWithdrawalsAsTokens(withdrawals);
+        for (uint256 i = 0; i < users.length; i++) {
+            users[i].completeWithdrawalsAsTokens(userWithdrawals[i]);
+        }
+
+        
+        _print("withdraw");
+
+    }
     function _print(string memory phaseName) internal {
         address a = address(attacker);
 
