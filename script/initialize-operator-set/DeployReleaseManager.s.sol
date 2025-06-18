@@ -37,10 +37,8 @@ contract DeployFromScratch is Script, Test {
         releaseManagerImplementation = ReleaseManager(implementationInitCode.deployCrosschain());
 
         // Compute the init code for the proxy given constructor arguments.
-        bytes memory proxyInitCode = abi.encodePacked(
-            type(TransparentUpgradeableProxy).creationCode,
-            abi.encode(releaseManagerImplementation, msg.sender, emptyContract)
-        );
+        bytes memory proxyInitCode =
+            abi.encodePacked(type(TransparentUpgradeableProxy).creationCode, abi.encode(emptyContract, msg.sender, ""));
 
         // Deploy the proxy with EOA as admin, and empty contract as implementation.
         releaseManager = ReleaseManager(proxyInitCode.deployCrosschain());
