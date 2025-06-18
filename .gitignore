@@ -54,3 +54,4 @@ populate_src*
 
 # cerota
 .certora_internal/*
+/snapshots/
