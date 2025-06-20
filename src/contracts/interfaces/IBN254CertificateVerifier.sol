@@ -11,7 +11,7 @@ interface IBN254CertificateVerifierTypes is IBN254TableCalculatorTypes {
      * @notice A witness for an operator
      * @param operatorIndex the index of the nonsigner in the `BN254OperatorInfo` tree
      * @param operatorInfoProofs merkle proofs of the nonsigner at the index. Empty if operator is in cache.
-     * @param operatorInfo the `BN254OperatorInfo` for the operator
+     * @param operatorInfo the `BN254OperatorInfo` for the operator. Empty if operator is in cache
      */
     struct BN254OperatorInfoWitness {
         uint32 operatorIndex;
@@ -110,4 +110,58 @@ interface IBN254CertificateVerifier is
         BN254Certificate memory cert,
         uint256[] memory totalStakeNominalThresholds
     ) external returns (bool);
+
+    /**
+     * @notice Attempts signature verification with gas limit for safety
+     * @param msgHash The message hash that was signed
+     * @param aggPubkey The aggregate public key of signers
+     * @param apkG2 The G2 point representation of the aggregate public key
+     * @param signature The BLS signature to verify
+     * @return pairingSuccessful Whether the pairing operation completed successfully
+     * @return signatureValid Whether the signature is valid
+     */
+    function trySignatureVerification(
+        bytes32 msgHash,
+        BN254.G1Point memory aggPubkey,
+        BN254.G2Point memory apkG2,
+        BN254.G1Point memory signature
+    ) external view returns (bool pairingSuccessful, bool signatureValid);
+
+    /**
+     * @notice Get cached nonsigner operator info
+     * @param operatorSet The operator set
+     * @param referenceTimestamp The reference timestamp
+     * @param operatorIndex The operator index
+     * @return The cached operator info
+     * @dev If the operator is not in the cache, the operator info will be empty
+     */
+    function getNonsignerOperatorInfo(
+        OperatorSet memory operatorSet,
+        uint32 referenceTimestamp,
+        uint256 operatorIndex
+    ) external view returns (BN254OperatorInfo memory);
+
+    /**
+     * @notice Check if a nonsigner is cached
+     * @param operatorSet The operator set
+     * @param referenceTimestamp The reference timestamp
+     * @param operatorIndex The operator index
+     * @return Whether the operator is cached
+     */
+    function isNonsignerCached(
+        OperatorSet memory operatorSet,
+        uint32 referenceTimestamp,
+        uint256 operatorIndex
+    ) external view returns (bool);
+
+    /**
+     * @notice Get operator set info for a timestamp
+     * @param operatorSet The operator set
+     * @param referenceTimestamp The reference timestamp
+     * @return The operator set info
+     */
+    function getOperatorSetInfo(
+        OperatorSet memory operatorSet,
+        uint32 referenceTimestamp
+    ) external view returns (BN254OperatorSetInfo memory);
 }
