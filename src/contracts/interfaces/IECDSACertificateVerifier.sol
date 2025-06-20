@@ -84,4 +84,50 @@ interface IECDSACertificateVerifier is IECDSACertificateVerifierEvents, IBaseCer
         ECDSACertificate memory cert,
         uint256[] memory totalStakeNominalThresholds
     ) external returns (bool);
+
+    /**
+     * @notice Get operator infos for a timestamp
+     * @param operatorSet The operator set
+     * @param referenceTimestamp The reference timestamp
+     * @return The operator infos
+     */
+    function getOperatorInfos(
+        OperatorSet calldata operatorSet,
+        uint32 referenceTimestamp
+    ) external view returns (ECDSAOperatorInfo[] memory);
+
+    /**
+     * @notice Get a single operator info by index
+     * @param operatorSet The operator set
+     * @param referenceTimestamp The reference timestamp
+     * @param operatorIndex The index of the operator
+     * @return The operator info
+     */
+    function getOperatorInfo(
+        OperatorSet calldata operatorSet,
+        uint32 referenceTimestamp,
+        uint32 operatorIndex
+    ) external view returns (ECDSAOperatorInfo memory);
+
+    /**
+     * @notice Get the total number of operators for a given reference timestamp
+     * @param operatorSet The operator set
+     * @param referenceTimestamp The reference timestamp
+     * @return The number of operators
+     */
+    function getOperatorCount(
+        OperatorSet calldata operatorSet,
+        uint32 referenceTimestamp
+    ) external view returns (uint32);
+
+    /**
+     * @notice Get the total stakes for all operators at a given reference timestamp
+     * @param operatorSet The operator set to calculate stakes for
+     * @param referenceTimestamp The reference timestamp
+     * @return totalStakes The total stakes for all operators
+     */
+    function getTotalStakes(
+        OperatorSet calldata operatorSet,
+        uint32 referenceTimestamp
+    ) external view returns (uint256[] memory);
 }
