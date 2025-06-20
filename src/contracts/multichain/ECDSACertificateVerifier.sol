@@ -116,6 +116,104 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
         emit TableUpdated(operatorSet, referenceTimestamp, operatorInfos);
     }
 
+    ///@inheritdoc IECDSACertificateVerifier
+    function verifyCertificate(
+        OperatorSet calldata operatorSet,
+        ECDSACertificate calldata cert
+    ) external view returns (uint256[] memory) {
+        return _verifyECDSACertificate(operatorSet, cert);
+    }
+
+    ///@inheritdoc IECDSACertificateVerifier
+    function verifyCertificateProportion(
+        OperatorSet calldata operatorSet,
+        ECDSACertificate calldata cert,
+        uint16[] calldata totalStakeProportionThresholds
+    ) external view returns (bool) {
+        uint256[] memory signedStakes = _verifyECDSACertificate(operatorSet, cert);
+        uint256[] memory totalStakes = getTotalStakes(operatorSet, cert.referenceTimestamp);
+        require(signedStakes.length == totalStakeProportionThresholds.length, ArrayLengthMismatch());
+        for (uint256 i = 0; i < signedStakes.length; i++) {
+            uint256 threshold = (totalStakes[i] * totalStakeProportionThresholds[i]) / 10_000;
+            if (signedStakes[i] < threshold) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    ///@inheritdoc IECDSACertificateVerifier
+    function verifyCertificateNominal(
+        OperatorSet calldata operatorSet,
+        ECDSACertificate calldata cert,
+        uint256[] memory totalStakeNominalThresholds
+    ) external view returns (bool) {
+        uint256[] memory signedStakes = _verifyECDSACertificate(operatorSet, cert);
+        if (signedStakes.length != totalStakeNominalThresholds.length) revert ArrayLengthMismatch();
+        for (uint256 i = 0; i < signedStakes.length; i++) {
+            if (signedStakes[i] < totalStakeNominalThresholds[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /// @inheritdoc IECDSACertificateVerifier
+    function getOperatorInfos(
+        OperatorSet memory operatorSet,
+        uint32 referenceTimestamp
+    ) external view returns (ECDSAOperatorInfo[] memory) {
+        bytes32 operatorSetKey = operatorSet.key();
+        uint32 numOperators = uint32(_numOperators[operatorSetKey][referenceTimestamp]);
+        ECDSAOperatorInfo[] memory operatorInfos = new ECDSAOperatorInfo[](numOperators);
+
+        for (uint32 i = 0; i < numOperators; i++) {
+            operatorInfos[i] = _operatorInfos[operatorSetKey][referenceTimestamp][i];
+        }
+
+        return operatorInfos;
+    }
+
+    /// @inheritdoc IECDSACertificateVerifier
+    function getOperatorInfo(
+        OperatorSet memory operatorSet,
+        uint32 referenceTimestamp,
+        uint32 operatorIndex
+    ) external view returns (ECDSAOperatorInfo memory) {
+        bytes32 operatorSetKey = operatorSet.key();
+        require(operatorIndex < _numOperators[operatorSetKey][referenceTimestamp], "Operator index out of bounds");
+        return _operatorInfos[operatorSetKey][referenceTimestamp][operatorIndex];
+    }
+
+    /// @inheritdoc IECDSACertificateVerifier
+    function getOperatorCount(
+        OperatorSet memory operatorSet,
+        uint32 referenceTimestamp
+    ) external view returns (uint32) {
+        bytes32 operatorSetKey = operatorSet.key();
+        return uint32(_numOperators[operatorSetKey][referenceTimestamp]);
+    }
+
+    /// @inheritdoc IECDSACertificateVerifier
+    function getTotalStakes(
+        OperatorSet calldata operatorSet,
+        uint32 referenceTimestamp
+    ) public view returns (uint256[] memory) {
+        bytes32 operatorSetKey = operatorSet.key();
+        require(_latestReferenceTimestamps[operatorSetKey] == referenceTimestamp, ReferenceTimestampDoesNotExist());
+        uint256 operatorCount = _numOperators[operatorSetKey][referenceTimestamp];
+        require(operatorCount > 0, ReferenceTimestampDoesNotExist());
+        uint256 stakeTypesCount = _operatorInfos[operatorSetKey][referenceTimestamp][0].weights.length;
+        uint256[] memory totalStakes = new uint256[](stakeTypesCount);
+        for (uint256 i = 0; i < operatorCount; i++) {
+            uint256[] memory weights = _operatorInfos[operatorSetKey][referenceTimestamp][uint32(i)].weights;
+            for (uint256 j = 0; j < weights.length && j < stakeTypesCount; j++) {
+                totalStakes[j] += weights[j];
+            }
+        }
+        return totalStakes;
+    }
+
     /**
      * @notice Internal function to verify a certificate
      * @param cert The certificate to verify
@@ -134,7 +232,7 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
         require(_latestReferenceTimestamps[operatorSetKey] == cert.referenceTimestamp, ReferenceTimestampDoesNotExist());
 
         // Get the total stakes
-        uint256[] memory totalStakes = _getTotalStakes(operatorSet, cert.referenceTimestamp);
+        uint256[] memory totalStakes = getTotalStakes(operatorSet, cert.referenceTimestamp);
         uint256[] memory signedStakes = new uint256[](totalStakes.length);
 
         // Compute the EIP-712 digest for signature recovery
@@ -173,48 +271,6 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
         }
 
         return signedStakes;
-    }
-
-    ///@inheritdoc IECDSACertificateVerifier
-    function verifyCertificate(
-        OperatorSet calldata operatorSet,
-        ECDSACertificate calldata cert
-    ) external view returns (uint256[] memory) {
-        return _verifyECDSACertificate(operatorSet, cert);
-    }
-
-    ///@inheritdoc IECDSACertificateVerifier
-    function verifyCertificateProportion(
-        OperatorSet calldata operatorSet,
-        ECDSACertificate calldata cert,
-        uint16[] calldata totalStakeProportionThresholds
-    ) external view returns (bool) {
-        uint256[] memory signedStakes = _verifyECDSACertificate(operatorSet, cert);
-        uint256[] memory totalStakes = _getTotalStakes(operatorSet, cert.referenceTimestamp);
-        require(signedStakes.length == totalStakeProportionThresholds.length, ArrayLengthMismatch());
-        for (uint256 i = 0; i < signedStakes.length; i++) {
-            uint256 threshold = (totalStakes[i] * totalStakeProportionThresholds[i]) / 10_000;
-            if (signedStakes[i] < threshold) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    ///@inheritdoc IECDSACertificateVerifier
-    function verifyCertificateNominal(
-        OperatorSet calldata operatorSet,
-        ECDSACertificate calldata cert,
-        uint256[] memory totalStakeNominalThresholds
-    ) external view returns (bool) {
-        uint256[] memory signedStakes = _verifyECDSACertificate(operatorSet, cert);
-        if (signedStakes.length != totalStakeNominalThresholds.length) revert ArrayLengthMismatch();
-        for (uint256 i = 0; i < signedStakes.length; i++) {
-            if (signedStakes[i] < totalStakeNominalThresholds[i]) {
-                return false;
-            }
-        }
-        return true;
     }
 
     /**
@@ -260,51 +316,5 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
         }
 
         return (signers, true);
-    }
-
-    /**
-     * @notice Get operator infos for a timestamp
-     * @param operatorSet The operator set
-     * @param referenceTimestamp The reference timestamp
-     * @return The operator infos
-     */
-    function getOperatorInfos(
-        OperatorSet memory operatorSet,
-        uint32 referenceTimestamp
-    ) external view returns (ECDSAOperatorInfo[] memory) {
-        bytes32 operatorSetKey = operatorSet.key();
-        uint32 numOperators = uint32(_numOperators[operatorSetKey][referenceTimestamp]);
-        ECDSAOperatorInfo[] memory operatorInfos = new ECDSAOperatorInfo[](numOperators);
-
-        for (uint32 i = 0; i < numOperators; i++) {
-            operatorInfos[i] = _operatorInfos[operatorSetKey][referenceTimestamp][i];
-        }
-
-        return operatorInfos;
-    }
-
-    /**
-     * @notice Calculate the total stakes for all operators at a given reference timestamp
-     * @param operatorSet The operator set to calculate stakes for
-     * @param referenceTimestamp The reference timestamp
-     * @return totalStakes The total stakes for all operators
-     */
-    function _getTotalStakes(
-        OperatorSet calldata operatorSet,
-        uint32 referenceTimestamp
-    ) internal view returns (uint256[] memory totalStakes) {
-        bytes32 operatorSetKey = operatorSet.key();
-        require(_latestReferenceTimestamps[operatorSetKey] == referenceTimestamp, ReferenceTimestampDoesNotExist());
-        uint256 operatorCount = _numOperators[operatorSetKey][referenceTimestamp];
-        require(operatorCount > 0, ReferenceTimestampDoesNotExist());
-        uint256 stakeTypesCount = _operatorInfos[operatorSetKey][referenceTimestamp][0].weights.length;
-        totalStakes = new uint256[](stakeTypesCount);
-        for (uint256 i = 0; i < operatorCount; i++) {
-            uint256[] memory weights = _operatorInfos[operatorSetKey][referenceTimestamp][uint32(i)].weights;
-            for (uint256 j = 0; j < weights.length && j < stakeTypesCount; j++) {
-                totalStakes[j] += weights[j];
-            }
-        }
-        return totalStakes;
     }
 }
