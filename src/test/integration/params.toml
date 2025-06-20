@@ -1,0 +1,12 @@
+printLast = 5
+printEvery = 1
+writeJSON = 0
+
+prevDepositShares = 496
+iterations = 0
+
+startDSF = 1000000000000000000
+startShares = 1
+startSharesToAdd = 2
+maxMagDecrease = 0
+contIterations = 3
