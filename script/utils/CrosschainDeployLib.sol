@@ -1,0 +1,108 @@
+// SPDX-License-Identifier: BUSL-1.1
+pragma solidity ^0.8.12;
+
+import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+
+ICreateX constant createx = ICreateX(0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed);
+
+interface ICreateX {
+    function deployCreate2(bytes32 salt, bytes memory initCode) external payable returns (address newContract);
+    function computeCreate2Address(
+        bytes32 salt,
+        bytes32 initCodeHash
+    ) external view returns (address computedAddress);
+}
+
+library CrosschainDeployLib {
+    bytes11 constant DEFAULT_CROSSCHAIN_SALT = bytes11(uint88(0xE15E4));
+
+    /// @notice Deploys a crosschain contract with CreateX.
+    /// @param initCode The initialization code for the contract.
+    /// @param salt The entropy for the deployment.
+    /// @return The address of the deployed contract.
+    function deployCrosschain(bytes memory initCode, bytes11 salt) internal returns (address) {
+        return createx.deployCreate2(computeSalt(msg.sender, salt), initCode);
+    }
+
+    /// @notice Deploys a crosschain contract with CreateX.
+    /// @param initCode The initialization code for the contract.
+    /// @return The address of the deployed contract.
+    function deployCrosschain(
+        bytes memory initCode
+    ) internal returns (address) {
+        return deployCrosschain(initCode, DEFAULT_CROSSCHAIN_SALT);
+    }
+
+    /// @notice Deploys a crosschain transparent upgradeable proxy with CreateX.
+    /// @dev The initial admin is the EOA that calls this function.
+    /// @param implementation The implementation contract address.
+    /// @param admin The admin address.
+    /// @param data The initialization calldata.
+    /// @return proxy The address of the deployed proxy.
+    function deployCrosschainProxy(
+        address implementation,
+        address admin,
+        bytes memory data
+    ) internal returns (ITransparentUpgradeableProxy proxy) {
+        proxy = ITransparentUpgradeableProxy(
+            deployCrosschain(computeTransparentUpgradeableProxyInitCode(implementation, msg.sender, data))
+        );
+        proxy.changeAdmin(admin);
+    }
+
+    /// @notice Deploys a crosschain transparent upgradeable proxy with CreateX.
+    /// @dev The initial admin is the EOA that calls this function.
+    /// @param implementation The implementation contract address.
+    /// @return The address of the deployed proxy.
+    function deployCrosschainProxy(
+        address implementation
+    ) internal returns (ITransparentUpgradeableProxy) {
+        return deployCrosschainProxy(implementation, msg.sender, "");
+    }
+
+    /// @notice Returns the cross-chain address of a contract.
+    /// @param eoa The EOA address of the deployer.
+    /// @param initCodeHash The hash of the initialization code.
+    /// @param salt The entropy for the deployment.
+    /// @return The predicted address of the contract.
+    function getCrosschainAddress(address eoa, bytes32 initCodeHash, bytes11 salt) internal view returns (address) {
+        return createx.computeCreate2Address(computeSalt(eoa, salt), initCodeHash);
+    }
+
+    /// @notice Returns the cross-chain address of a contract.
+    /// @param eoa The EOA address of the deployer.
+    /// @param initCodeHash The hash of the initialization code.
+    /// @return The predicted address of the contract.
+    function getCrosschainAddress(address eoa, bytes32 initCodeHash) internal view returns (address) {
+        return getCrosschainAddress(eoa, initCodeHash, DEFAULT_CROSSCHAIN_SALT);
+    }
+
+    /// @notice Returns the encoded salt for a CreateX deployment.
+    /// @param eoa The EOA address of the deployer.
+    /// @param salt The entropy for the deployment.
+    /// @return The encoded salt.
+    /// Deployer EOA (20 bytes) | Cross-chain flag (1 byte) | Entropy (11 bytes)
+    /// 0xbebebebebebebebebebebebebebebebebebebebe|ff|1212121212121212121212
+    function computeSalt(address eoa, bytes11 salt) internal pure returns (bytes32) {
+        return bytes32(
+            bytes.concat(
+                bytes20(eoa),
+                bytes1(uint8(1)), // Cross-chain deployments are allowed (0: false, 1: true)
+                salt
+            )
+        );
+    }
+
+    /// @notice Returns the initialization code for a transparent upgradeable proxy.
+    /// @param implementation The implementation contract address.
+    /// @param admin The admin address.
+    /// @param data The initialization calldata.
+    /// @return The initcode for a transparent upgradeable proxy.
+    function computeTransparentUpgradeableProxyInitCode(
+        address implementation,
+        address admin,
+        bytes memory data
+    ) internal pure returns (bytes memory) {
+        return abi.encodePacked(type(TransparentUpgradeableProxy).creationCode, abi.encode(implementation, admin, data));
+    }
+}
