@@ -26,6 +26,8 @@ contract CrossChainRegistryUnitTests is
     uint8 constant PAUSED_CHAIN_WHITELIST = 4;
 
     // Test state variables
+    CrossChainRegistry crossChainRegistry;
+    CrossChainRegistry crossChainRegistryImplementation;
     address defaultAVS;
     address notPermissioned = address(0xDEAD);
     OperatorSet defaultOperatorSet;
@@ -38,6 +40,30 @@ contract CrossChainRegistryUnitTests is
 
     function setUp() public virtual override {
         EigenLayerMultichainUnitTestSetup.setUp();
+
+        // Deploy CrossChainRegistry implementation
+        crossChainRegistryImplementation = new CrossChainRegistry(
+            IAllocationManager(address(allocationManagerMock)),
+            IKeyRegistrar(address(keyRegistrar)),
+            IPermissionController(address(permissionController)),
+            pauserRegistry,
+            "1.0.0"
+        );
+
+        // Deploy CrossChainRegistry proxy
+        crossChainRegistry = CrossChainRegistry(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(crossChainRegistryImplementation),
+                    address(eigenLayerProxyAdmin),
+                    abi.encodeWithSelector(
+                        CrossChainRegistry.initialize.selector,
+                        address(this), // initial owner
+                        0 // initial paused status
+                    )
+                )
+            )
+        );
 
         // Set up default test values
         defaultAVS = cheats.randomAddress();

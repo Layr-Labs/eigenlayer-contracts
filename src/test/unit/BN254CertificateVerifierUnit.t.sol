@@ -4,60 +4,68 @@ pragma solidity ^0.8.27;
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "forge-std/Test.sol";
 
+import "src/test/utils/EigenLayerMultichainUnitTestSetup.sol";
 import "src/contracts/libraries/BN254.sol";
 import "src/contracts/libraries/Merkle.sol";
 import "src/contracts/libraries/OperatorSetLib.sol";
 import "src/contracts/multichain/BN254CertificateVerifier.sol";
 import "src/contracts/interfaces/IOperatorTableUpdater.sol";
+import "src/contracts/interfaces/IBaseCertificateVerifier.sol";
 import "src/contracts/interfaces/IBN254CertificateVerifier.sol";
 import "src/contracts/interfaces/IBN254TableCalculator.sol";
 import "src/contracts/interfaces/ICrossChainRegistry.sol";
 
-contract BN254CertificateVerifierTest is Test {
+/**
+ * @title BN254CertificateVerifierUnitTests
+ * @notice Base contract for all BN254CertificateVerifier unit tests
+ */
+contract BN254CertificateVerifierUnitTests is
+    EigenLayerMultichainUnitTestSetup,
+    IBaseCertificateVerifierErrors,
+    IBN254CertificateVerifierTypes,
+    IBN254CertificateVerifierErrors,
+    ICrossChainRegistryTypes
+{
     using BN254 for BN254.G1Point;
+    using Merkle for bytes;
+    using OperatorSetLib for OperatorSet;
 
-    // Contract being tested
+    // Constants
+    uint16 constant BPS_DENOMINATOR = 10_000;
+
+    // Contracts
+    BN254CertificateVerifier bn254CertificateVerifierImplementation;
     BN254CertificateVerifier verifier;
 
     // Test accounts
     address owner = address(0x1);
-    address tableUpdater = address(0x2);
-    address nonOwner = address(0x3);
     address operatorSetOwner = address(0x4);
 
-    // Test data
+    // Defaults
     uint32 numOperators = 4;
-    uint32 maxStaleness = 3600; // 1 hour max staleness
-
-    // Create an OperatorSet for testing
-    OperatorSet testOperatorSet;
+    uint32 defaultMaxStaleness = 3600; // 1 hour max staleness
+    OperatorSet defaultOperatorSet;
+    OperatorSetConfig defaultOperatorSetConfig;
 
     // BLS signature specific fields
-    bytes32 msgHash;
+    bytes32 defaultMsgHash = keccak256(abi.encodePacked("test message"));
     uint aggSignerPrivKey = 69;
     BN254.G2Point aggSignerApkG2; // G2 public key corresponding to aggSignerPrivKey
 
-    // Events
-    event TableUpdated(
-        OperatorSet indexed operatorSet, uint32 referenceTimestamp, IBN254TableCalculatorTypes.BN254OperatorSetInfo operatorSetInfo
-    );
+    function setUp() public virtual override {
+        // Setup Mocks
+        super.setUp();
 
-    function setUp() public virtual {
-        vm.warp(1_000_000); // Set block timestamp
+        defaultOperatorSet = OperatorSet({avs: address(0x5), id: 0});
 
-        testOperatorSet.avs = address(0x5);
-        testOperatorSet.id = 1;
+        defaultOperatorSetConfig = OperatorSetConfig({owner: operatorSetOwner, maxStalenessPeriod: defaultMaxStaleness});
 
-        // Deploy implementation
-        BN254CertificateVerifier implementation = new BN254CertificateVerifier(IOperatorTableUpdater(tableUpdater));
-
-        // Deploy proxy and initialize
-        ERC1967Proxy proxy = new ERC1967Proxy(address(implementation), "");
-
-        verifier = BN254CertificateVerifier(address(proxy));
-
-        // Set standard test message hash
-        msgHash = keccak256(abi.encodePacked("test message"));
+        // Deploy Contracts
+        bn254CertificateVerifierImplementation =
+            new BN254CertificateVerifier(IOperatorTableUpdater(address(operatorTableUpdaterMock)), "1.0.0");
+        verifier = BN254CertificateVerifier(
+            address(new TransparentUpgradeableProxy(address(bn254CertificateVerifierImplementation), address(eigenLayerProxyAdmin), ""))
+        );
 
         // Set up the aggregate public key in G2
         aggSignerApkG2.X[1] = 19_101_821_850_089_705_274_637_533_855_249_918_363_070_101_489_527_618_151_493_230_256_975_900_223_847;
@@ -66,13 +74,13 @@ contract BN254CertificateVerifierTest is Test {
         aggSignerApkG2.Y[0] = 4_185_483_097_059_047_421_902_184_823_581_361_466_320_657_066_600_218_863_748_375_739_772_335_928_910;
     }
 
-    // Generate signer and non-signer private keys
-    function generateSignerAndNonSignerPrivateKeys(uint pseudoRandomNumber, uint numSigners, uint numNonSigners)
+    // Helper functions
+    function _generateSignerAndNonSignerPrivateKeys(uint pseudoRandomNumber, uint numSigners, uint numNonSigners)
         internal
         view
-        returns (uint[] memory, uint[] memory)
+        returns (uint[] memory signerPrivKeys, uint[] memory nonSignerPrivKeys)
     {
-        uint[] memory signerPrivKeys = new uint[](numSigners);
+        signerPrivKeys = new uint[](numSigners);
         uint sum = 0;
 
         // Generate numSigners-1 random keys
@@ -85,7 +93,7 @@ contract BN254CertificateVerifierTest is Test {
         signerPrivKeys[numSigners - 1] = addmod(aggSignerPrivKey, BN254.FR_MODULUS - sum % BN254.FR_MODULUS, BN254.FR_MODULUS);
 
         // Generate non-signer keys
-        uint[] memory nonSignerPrivKeys = new uint[](numNonSigners);
+        nonSignerPrivKeys = new uint[](numNonSigners);
         for (uint i = 0; i < numNonSigners; i++) {
             nonSignerPrivKeys[i] = uint(keccak256(abi.encodePacked("nonSignerPrivateKey", pseudoRandomNumber, i))) % BN254.FR_MODULUS;
         }
@@ -93,69 +101,61 @@ contract BN254CertificateVerifierTest is Test {
         // Sort nonSignerPrivateKeys in order of ascending pubkeyHash
         for (uint i = 1; i < nonSignerPrivKeys.length; i++) {
             uint privateKey = nonSignerPrivKeys[i];
-            bytes32 pubkeyHash = toPubkeyHash(privateKey);
+            bytes32 pubkeyHash = _toPubkeyHash(privateKey);
             uint j = i;
 
-            // Move elements that are greater than the current key ahead
-            while (j > 0 && toPubkeyHash(nonSignerPrivKeys[j - 1]) > pubkeyHash) {
+            while (j > 0 && _toPubkeyHash(nonSignerPrivKeys[j - 1]) > pubkeyHash) {
                 nonSignerPrivKeys[j] = nonSignerPrivKeys[j - 1];
                 j--;
             }
             nonSignerPrivKeys[j] = privateKey;
         }
-
-        return (signerPrivKeys, nonSignerPrivKeys);
     }
 
-    // Helper to hash a public key
-    function toPubkeyHash(uint privKey) internal view returns (bytes32) {
+    function _toPubkeyHash(uint privKey) internal view returns (bytes32) {
         return BN254.generatorG1().scalar_mul(privKey).hashG1Point();
     }
 
-    // Create operators with split keys
-    function createOperatorsWithSplitKeys(uint pseudoRandomNumber, uint numSigners, uint numNonSigners)
+    function _createOperatorsWithSplitKeys(uint pseudoRandomNumber, uint numSigners, uint numNonSigners)
         internal
         view
-        returns (IBN254TableCalculatorTypes.BN254OperatorInfo[] memory, uint32[] memory, BN254.G1Point memory)
+        returns (BN254OperatorInfo[] memory operators, uint32[] memory nonSignerIndices, BN254.G1Point memory signature)
     {
         require(numSigners + numNonSigners == numOperators, "Total operators mismatch");
 
         // Generate private keys
         (uint[] memory signerPrivKeys, uint[] memory nonSignerPrivKeys) =
-            generateSignerAndNonSignerPrivateKeys(pseudoRandomNumber, numSigners, numNonSigners);
+            _generateSignerAndNonSignerPrivateKeys(pseudoRandomNumber, numSigners, numNonSigners);
 
         // Create all operators
-        IBN254TableCalculatorTypes.BN254OperatorInfo[] memory ops = new IBN254TableCalculatorTypes.BN254OperatorInfo[](numOperators);
+        operators = new BN254OperatorInfo[](numOperators);
 
         // Track indices of non-signers
-        uint32[] memory nonSignerIndices = new uint32[](numNonSigners);
+        nonSignerIndices = new uint32[](numNonSigners);
 
         // Create signers first
         for (uint32 i = 0; i < numSigners; i++) {
-            ops[i].pubkey = BN254.generatorG1().scalar_mul(signerPrivKeys[i]);
-            ops[i].weights = new uint[](2);
-            ops[i].weights[0] = uint(100 + i * 10);
-            ops[i].weights[1] = uint(200 + i * 20);
+            operators[i].pubkey = BN254.generatorG1().scalar_mul(signerPrivKeys[i]);
+            operators[i].weights = new uint[](2);
+            operators[i].weights[0] = uint(100 + i * 10);
+            operators[i].weights[1] = uint(200 + i * 20);
         }
 
         // Create non-signers
         for (uint32 i = 0; i < numNonSigners; i++) {
             uint32 idx = uint32(numSigners + i);
-            ops[idx].pubkey = BN254.generatorG1().scalar_mul(nonSignerPrivKeys[i]);
-            ops[idx].weights = new uint[](2);
-            ops[idx].weights[0] = uint(100 + idx * 10);
-            ops[idx].weights[1] = uint(200 + idx * 20);
+            operators[idx].pubkey = BN254.generatorG1().scalar_mul(nonSignerPrivKeys[i]);
+            operators[idx].weights = new uint[](2);
+            operators[idx].weights[0] = uint(100 + idx * 10);
+            operators[idx].weights[1] = uint(200 + idx * 20);
             nonSignerIndices[i] = idx;
         }
 
         // Calculate aggregate signature for the signers
-        BN254.G1Point memory signature = BN254.hashToG1(msgHash).scalar_mul(aggSignerPrivKey);
-
-        return (ops, nonSignerIndices, signature);
+        signature = BN254.hashToG1(defaultMsgHash).scalar_mul(aggSignerPrivKey);
     }
 
-    // Build a complete and correct merkle tree from operator infos
-    function getMerkleRoot(IBN254TableCalculatorTypes.BN254OperatorInfo[] memory ops) internal returns (bytes32 root) {
+    function _getMerkleRoot(BN254OperatorInfo[] memory ops) internal pure returns (bytes32 root) {
         bytes32[] memory leaves = new bytes32[](ops.length);
         for (uint i = 0; i < ops.length; i++) {
             leaves[i] = keccak256(abi.encode(ops[i]));
@@ -163,10 +163,7 @@ contract BN254CertificateVerifierTest is Test {
         root = Merkle.merkleizeKeccak(leaves);
     }
 
-    function getMerkleProof(IBN254TableCalculatorTypes.BN254OperatorInfo[] memory ops, uint32 operatorIndex)
-        internal
-        returns (bytes memory proof)
-    {
+    function _getMerkleProof(BN254OperatorInfo[] memory ops, uint32 operatorIndex) internal pure returns (bytes memory proof) {
         bytes32[] memory leaves = new bytes32[](ops.length);
         for (uint i = 0; i < ops.length; i++) {
             leaves[i] = keccak256(abi.encode(ops[i]));
@@ -174,32 +171,24 @@ contract BN254CertificateVerifierTest is Test {
         proof = Merkle.getProofKeccak(leaves, operatorIndex);
     }
 
-    // Create operator set info
-    function createOperatorSetInfo(IBN254TableCalculatorTypes.BN254OperatorInfo[] memory ops)
-        internal
-        returns (IBN254TableCalculatorTypes.BN254OperatorSetInfo memory)
-    {
+    function _createOperatorSetInfo(BN254OperatorInfo[] memory ops) internal view returns (BN254OperatorSetInfo memory) {
         uint32 _numOperators = uint32(ops.length);
-        bytes32 operatorInfoTreeRoot = getMerkleRoot(ops);
+        bytes32 operatorInfoTreeRoot = _getMerkleRoot(ops);
 
-        // Create aggregate public key (sum of all operator pubkeys)
+        // Create aggregate public key
         BN254.G1Point memory aggregatePubkey = BN254.G1Point(0, 0);
 
-        // Create total weights (sum of all operator weights)
+        // Create total weights
         uint[] memory _totalWeights = new uint[](2);
 
         for (uint32 i = 0; i < _numOperators; i++) {
-            // Add pubkey to aggregate
             aggregatePubkey = aggregatePubkey.plus(ops[i].pubkey);
-
-            // Add weights to total
             for (uint j = 0; j < 2; j++) {
                 _totalWeights[j] += ops[i].weights[j];
             }
         }
 
-        // Create the operator set info
-        return IBN254TableCalculatorTypes.BN254OperatorSetInfo({
+        return BN254OperatorSetInfo({
             numOperators: _numOperators,
             aggregatePubkey: aggregatePubkey,
             totalWeights: _totalWeights,
@@ -207,30 +196,25 @@ contract BN254CertificateVerifierTest is Test {
         });
     }
 
-    // Helper to create a certificate with real BLS signature
-    function createCertificate(
+    function _createCertificate(
         uint32 referenceTimestamp,
         bytes32 messageHash,
         uint32[] memory nonSignerIndices,
-        IBN254TableCalculatorTypes.BN254OperatorInfo[] memory ops,
+        BN254OperatorInfo[] memory ops,
         BN254.G1Point memory signature
-    ) internal returns (IBN254CertificateVerifierTypes.BN254Certificate memory) {
+    ) internal view returns (BN254Certificate memory) {
         // Create witnesses for non-signers
-        IBN254CertificateVerifierTypes.BN254OperatorInfoWitness[] memory witnesses =
-            new IBN254CertificateVerifierTypes.BN254OperatorInfoWitness[](nonSignerIndices.length);
+        BN254OperatorInfoWitness[] memory witnesses = new BN254OperatorInfoWitness[](nonSignerIndices.length);
 
         for (uint i = 0; i < nonSignerIndices.length; i++) {
             uint32 nonSignerIndex = nonSignerIndices[i];
-            bytes memory proof = getMerkleProof(ops, nonSignerIndex);
+            bytes memory proof = _getMerkleProof(ops, nonSignerIndex);
 
-            witnesses[i] = IBN254CertificateVerifierTypes.BN254OperatorInfoWitness({
-                operatorIndex: nonSignerIndex,
-                operatorInfoProof: proof,
-                operatorInfo: ops[nonSignerIndex]
-            });
+            witnesses[i] =
+                BN254OperatorInfoWitness({operatorIndex: nonSignerIndex, operatorInfoProof: proof, operatorInfo: ops[nonSignerIndex]});
         }
 
-        return IBN254CertificateVerifierTypes.BN254Certificate({
+        return BN254Certificate({
             referenceTimestamp: referenceTimestamp,
             messageHash: messageHash,
             signature: signature,
@@ -239,388 +223,103 @@ contract BN254CertificateVerifierTest is Test {
         });
     }
 
-    // Helper to create operator set config
-    function createOperatorSetConfig() internal view returns (ICrossChainRegistryTypes.OperatorSetConfig memory) {
-        return ICrossChainRegistryTypes.OperatorSetConfig({owner: operatorSetOwner, maxStalenessPeriod: maxStaleness});
+    function _updateOperatorTable(Randomness r, uint numSigners, uint numNonsigners)
+        internal
+        returns (
+            BN254OperatorInfo[] memory operatorInfos,
+            BN254OperatorSetInfo memory operatorSetInfo,
+            uint32 referenceTimestamp,
+            uint32[] memory nonSignerIndices,
+            BN254.G1Point memory signature
+        )
+    {
+        // Generate seed and reference timestamp
+        uint seed = r.Uint256();
+        referenceTimestamp = r.Uint32(uint32(block.timestamp + 1), uint32(block.timestamp + 1000));
+
+        // Create operators
+        (operatorInfos, nonSignerIndices, signature) = _createOperatorsWithSplitKeys(seed, numSigners, numNonsigners);
+        operatorSetInfo = _createOperatorSetInfo(operatorInfos);
+
+        // Update operator table
+        vm.prank(address(operatorTableUpdaterMock));
+        verifier.updateOperatorTable(defaultOperatorSet, referenceTimestamp, operatorSetInfo, defaultOperatorSetConfig);
     }
 
-    // Test updating the operator table
-    function testUpdateOperatorTable() public {
+    function _initializeOperatorTableBase() internal returns (uint32 referenceTimestamp) {
+        (BN254OperatorInfo[] memory operatorInfos, uint32[] memory nonSignerIndices, BN254.G1Point memory signature) =
+            _createOperatorsWithSplitKeys(123, numOperators, 0);
+        BN254OperatorSetInfo memory operatorSetInfo = _createOperatorSetInfo(operatorInfos);
+        vm.prank(address(operatorTableUpdaterMock));
+        verifier.updateOperatorTable(defaultOperatorSet, uint32(block.timestamp), operatorSetInfo, defaultOperatorSetConfig);
+    }
+}
+
+/**
+ * @title BN254CertificateVerifierUnitTests_updateOperatorTable
+ * @notice Unit tests for BN254CertificateVerifier.updateOperatorTable
+ */
+contract BN254CertificateVerifierUnitTests_updateOperatorTable is BN254CertificateVerifierUnitTests, IBN254CertificateVerifierEvents {
+    function test_revert_notTableUpdater() public {
         uint32 referenceTimestamp = uint32(block.timestamp);
+        (BN254OperatorInfo[] memory operators,,) = _createOperatorsWithSplitKeys(123, 3, 1);
+        BN254OperatorSetInfo memory operatorSetInfo = _createOperatorSetInfo(operators);
 
-        // Create operators with split keys - 3 signers, 1 non-signer
-        (IBN254TableCalculatorTypes.BN254OperatorInfo[] memory operators,,) = createOperatorsWithSplitKeys(123, 3, 1);
+        vm.prank(address(0x100));
+        vm.expectRevert(OnlyTableUpdater.selector);
+        verifier.updateOperatorTable(defaultOperatorSet, referenceTimestamp, operatorSetInfo, defaultOperatorSetConfig);
+    }
 
-        // Create operator set info
-        IBN254TableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo = createOperatorSetInfo(operators);
+    function test_revert_staleTimestamp() public {
+        vm.warp(1000);
+        uint32 firstTimestamp = uint32(block.timestamp);
+        uint32 staleTimestamp = firstTimestamp - 100;
 
-        // Create operator set config
-        ICrossChainRegistryTypes.OperatorSetConfig memory operatorSetConfig = createOperatorSetConfig();
+        (BN254OperatorInfo[] memory operators,,) = _createOperatorsWithSplitKeys(123, 3, 1);
+        BN254OperatorSetInfo memory operatorSetInfo = _createOperatorSetInfo(operators);
 
-        vm.startPrank(tableUpdater);
+        vm.startPrank(address(operatorTableUpdaterMock));
 
-        // Update the operator table
-        verifier.updateOperatorTable(testOperatorSet, referenceTimestamp, operatorSetInfo, operatorSetConfig);
+        // First update should succeed
+        verifier.updateOperatorTable(defaultOperatorSet, firstTimestamp, operatorSetInfo, defaultOperatorSetConfig);
+
+        // Second update with earlier timestamp should fail
+        vm.expectRevert(TableUpdateStale.selector);
+        verifier.updateOperatorTable(defaultOperatorSet, staleTimestamp, operatorSetInfo, defaultOperatorSetConfig);
 
         vm.stopPrank();
+    }
+
+    function testFuzz_updateOperatorTable_correctness(Randomness r) public rand(r) {
+        uint seed = r.Uint256();
+        uint numSigners = r.Uint256(1, numOperators);
+        uint nonSigners = numOperators - numSigners;
+        (BN254OperatorInfo[] memory operators,,) = _createOperatorsWithSplitKeys(seed, numSigners, nonSigners);
+        BN254OperatorSetInfo memory operatorSetInfo = _createOperatorSetInfo(operators);
+
+        // Expect event
+        uint32 referenceTimestamp = uint32(block.timestamp);
+        vm.expectEmit(true, true, true, true, address(verifier));
+        emit TableUpdated(defaultOperatorSet, referenceTimestamp, operatorSetInfo);
+
+        vm.prank(address(operatorTableUpdaterMock));
+        verifier.updateOperatorTable(defaultOperatorSet, referenceTimestamp, operatorSetInfo, defaultOperatorSetConfig);
 
         // Verify storage updates
-        assertEq(verifier.latestReferenceTimestamp(testOperatorSet), referenceTimestamp, "Reference timestamp not updated correctly");
-        assertEq(verifier.getOperatorSetOwner(testOperatorSet), operatorSetOwner, "Operator set owner not stored correctly");
-        assertEq(verifier.maxOperatorTableStaleness(testOperatorSet), maxStaleness, "Max staleness not stored correctly");
+        assertEq(verifier.latestReferenceTimestamp(defaultOperatorSet), referenceTimestamp, "Reference timestamp mismatch");
+        assertEq(verifier.getOperatorSetOwner(defaultOperatorSet), operatorSetOwner, "Operator set owner mismatch");
+        assertEq(verifier.maxOperatorTableStaleness(defaultOperatorSet), defaultMaxStaleness, "Max staleness mismatch");
 
         // Verify operator set info was stored correctly
-        IBN254TableCalculatorTypes.BN254OperatorSetInfo memory storedOperatorSetInfo =
-            verifier.getOperatorSetInfo(testOperatorSet, referenceTimestamp);
+        BN254OperatorSetInfo memory storedOperatorSetInfo = verifier.getOperatorSetInfo(defaultOperatorSet, referenceTimestamp);
 
-        assertEq(storedOperatorSetInfo.numOperators, operatorSetInfo.numOperators, "Num operators not stored correctly");
-        assertEq(storedOperatorSetInfo.aggregatePubkey.X, operatorSetInfo.aggregatePubkey.X, "Aggregate pubkey X not stored correctly");
-        assertEq(storedOperatorSetInfo.aggregatePubkey.Y, operatorSetInfo.aggregatePubkey.Y, "Aggregate pubkey Y not stored correctly");
-        assertEq(storedOperatorSetInfo.operatorInfoTreeRoot, operatorSetInfo.operatorInfoTreeRoot, "Tree root not stored correctly");
+        assertEq(storedOperatorSetInfo.numOperators, operatorSetInfo.numOperators, "Num operators mismatch");
+        assertEq(storedOperatorSetInfo.aggregatePubkey.X, operatorSetInfo.aggregatePubkey.X, "Aggregate pubkey X mismatch");
+        assertEq(storedOperatorSetInfo.aggregatePubkey.Y, operatorSetInfo.aggregatePubkey.Y, "Aggregate pubkey Y mismatch");
+        assertEq(storedOperatorSetInfo.operatorInfoTreeRoot, operatorSetInfo.operatorInfoTreeRoot, "Tree root mismatch");
     }
 
-    // Test verifyCertificate with actual BLS signature validation and multiple signers
-    function testVerifyCertificate() public {
-        uint32 referenceTimestamp = uint32(block.timestamp);
-
-        // Create operators with split keys - 3 signers, 1 non-signer
-        uint pseudoRandomNumber = 123;
-        (IBN254TableCalculatorTypes.BN254OperatorInfo[] memory operators, uint32[] memory nonSignerIndices, BN254.G1Point memory signature)
-        = createOperatorsWithSplitKeys(pseudoRandomNumber, 3, 1);
-
-        // Create operator set info
-        IBN254TableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo = createOperatorSetInfo(operators);
-
-        // Create operator set config
-        ICrossChainRegistryTypes.OperatorSetConfig memory operatorSetConfig = createOperatorSetConfig();
-
-        vm.prank(tableUpdater);
-        verifier.updateOperatorTable(testOperatorSet, referenceTimestamp, operatorSetInfo, operatorSetConfig);
-
-        // Create certificate with real BLS signature
-        IBN254CertificateVerifierTypes.BN254Certificate memory cert =
-            createCertificate(referenceTimestamp, msgHash, nonSignerIndices, operators, signature);
-
-        uint[] memory signedStakes = verifier.verifyCertificate(testOperatorSet, cert);
-
-        // Check that the signed stakes are correct
-        assertEq(signedStakes.length, 2, "Wrong number of stake types");
-
-        // Calculate expected signed stakes
-        uint[] memory expectedSignedStakes = new uint[](2);
-
-        // Start with total stakes
-        expectedSignedStakes[0] = operatorSetInfo.totalWeights[0];
-        expectedSignedStakes[1] = operatorSetInfo.totalWeights[1];
-
-        // Subtract non-signer stakes
-        for (uint i = 0; i < nonSignerIndices.length; i++) {
-            uint32 nonSignerIndex = nonSignerIndices[i];
-            expectedSignedStakes[0] -= operators[nonSignerIndex].weights[0];
-            expectedSignedStakes[1] -= operators[nonSignerIndex].weights[1];
-        }
-
-        assertEq(signedStakes[0], expectedSignedStakes[0], "Wrong signed stake for type 0");
-        assertEq(signedStakes[1], expectedSignedStakes[1], "Wrong signed stake for type 1");
-    }
-
-    // Test verifyCertificate with a different distribution of signers/non-signers
-    function testVerifyCertificateDifferentSplit() public {
-        uint32 referenceTimestamp = uint32(block.timestamp);
-
-        // Create operators with split keys - 2 signers, 2 non-signers
-        uint pseudoRandomNumber = 456;
-        (IBN254TableCalculatorTypes.BN254OperatorInfo[] memory operators, uint32[] memory nonSignerIndices, BN254.G1Point memory signature)
-        = createOperatorsWithSplitKeys(pseudoRandomNumber, 2, 2);
-
-        // Create operator set info
-        IBN254TableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo = createOperatorSetInfo(operators);
-
-        // Create operator set config
-        ICrossChainRegistryTypes.OperatorSetConfig memory operatorSetConfig = createOperatorSetConfig();
-
-        vm.prank(tableUpdater);
-        verifier.updateOperatorTable(testOperatorSet, referenceTimestamp, operatorSetInfo, operatorSetConfig);
-
-        // Create certificate with real BLS signature
-        IBN254CertificateVerifierTypes.BN254Certificate memory cert =
-            createCertificate(referenceTimestamp, msgHash, nonSignerIndices, operators, signature);
-
-        // No mocking needed - verify certificate with real verification
-        uint[] memory signedStakes = verifier.verifyCertificate(testOperatorSet, cert);
-
-        // Calculate expected signed stakes
-        uint[] memory expectedSignedStakes = new uint[](2);
-
-        // Start with total stakes
-        expectedSignedStakes[0] = operatorSetInfo.totalWeights[0];
-        expectedSignedStakes[1] = operatorSetInfo.totalWeights[1];
-
-        // Subtract non-signer stakes
-        for (uint i = 0; i < nonSignerIndices.length; i++) {
-            uint32 nonSignerIndex = nonSignerIndices[i];
-            expectedSignedStakes[0] -= operators[nonSignerIndex].weights[0];
-            expectedSignedStakes[1] -= operators[nonSignerIndex].weights[1];
-        }
-
-        assertEq(signedStakes[0], expectedSignedStakes[0], "Wrong signed stake for type 0");
-        assertEq(signedStakes[1], expectedSignedStakes[1], "Wrong signed stake for type 1");
-    }
-
-    // Test verifyCertificateProportion
-    function testVerifyCertificateProportion() public {
-        uint32 referenceTimestamp = uint32(block.timestamp);
-
-        // Create operators with split keys - 3 signers, 1 non-signer
-        uint pseudoRandomNumber = 789;
-        (IBN254TableCalculatorTypes.BN254OperatorInfo[] memory operators, uint32[] memory nonSignerIndices, BN254.G1Point memory signature)
-        = createOperatorsWithSplitKeys(pseudoRandomNumber, 3, 1);
-
-        // Create operator set info
-        IBN254TableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo = createOperatorSetInfo(operators);
-
-        // Create operator set config
-        ICrossChainRegistryTypes.OperatorSetConfig memory operatorSetConfig = createOperatorSetConfig();
-
-        vm.prank(tableUpdater);
-        verifier.updateOperatorTable(testOperatorSet, referenceTimestamp, operatorSetInfo, operatorSetConfig);
-
-        // Create certificate with real BLS signature
-        IBN254CertificateVerifierTypes.BN254Certificate memory cert =
-            createCertificate(referenceTimestamp, msgHash, nonSignerIndices, operators, signature);
-
-        // Set thresholds at 60% of total stake for each type
-        uint16[] memory thresholds = new uint16[](2);
-        thresholds[0] = 6000; // 60%
-        thresholds[1] = 6000; // 60%
-
-        // Verify certificate meets thresholds - no mocking needed
-        bool meetsThresholds = verifier.verifyCertificateProportion(testOperatorSet, cert, thresholds);
-
-        // With 3 signers out of 4, should meet 60% threshold
-        assertTrue(meetsThresholds, "Certificate should meet thresholds");
-
-        // Try with higher threshold that shouldn't be met
-        thresholds[0] = 9000; // 90%
-        thresholds[1] = 9000; // 90%
-
-        meetsThresholds = verifier.verifyCertificateProportion(testOperatorSet, cert, thresholds);
-
-        // Calculate percentage of signed stakes to determine if it should meet threshold
-        uint[] memory signedStakes = verifier.verifyCertificate(testOperatorSet, cert);
-        uint signedPercentage0 = (signedStakes[0] * 10_000) / operatorSetInfo.totalWeights[0];
-        uint signedPercentage1 = (signedStakes[1] * 10_000) / operatorSetInfo.totalWeights[1];
-
-        bool shouldMeetThreshold = (signedPercentage0 >= 9000) && (signedPercentage1 >= 9000);
-        assertEq(meetsThresholds, shouldMeetThreshold, "Certificate threshold check incorrect");
-    }
-
-    // Test with invalid signature (wrong message hash)
-    function testVerifyCertificateInvalidSignature() public {
-        uint32 referenceTimestamp = uint32(block.timestamp);
-
-        // Create operators with split keys - 3 signers, 1 non-signer
-        uint pseudoRandomNumber = 123;
-        (IBN254TableCalculatorTypes.BN254OperatorInfo[] memory operators, uint32[] memory nonSignerIndices, BN254.G1Point memory signature)
-        = createOperatorsWithSplitKeys(pseudoRandomNumber, 3, 1);
-
-        // Create operator set info
-        IBN254TableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo = createOperatorSetInfo(operators);
-
-        // Create operator set config
-        ICrossChainRegistryTypes.OperatorSetConfig memory operatorSetConfig = createOperatorSetConfig();
-
-        vm.prank(tableUpdater);
-        verifier.updateOperatorTable(testOperatorSet, referenceTimestamp, operatorSetInfo, operatorSetConfig);
-
-        // Create certificate with real BLS signature but WRONG message hash
-        bytes32 wrongHash = keccak256("wrong message");
-
-        IBN254CertificateVerifierTypes.BN254Certificate memory cert = createCertificate(
-            referenceTimestamp,
-            wrongHash, // Use wrong hash here
-            nonSignerIndices,
-            operators,
-            signature // Signature is for original msgHash, not wrongHash
-        );
-
-        // Verification should fail without mocking
-        vm.expectRevert(abi.encodeWithSignature("VerificationFailed()"));
-        verifier.verifyCertificate(testOperatorSet, cert);
-    }
-
-    // Test certificate with stale timestamp (should fail)
-    function testVerifyCertificateStaleTimestamp() public {
-        uint32 referenceTimestamp = uint32(block.timestamp);
-
-        // Create operators with split keys - 3 signers, 1 non-signer
-        uint pseudoRandomNumber = 123;
-        (IBN254TableCalculatorTypes.BN254OperatorInfo[] memory operators, uint32[] memory nonSignerIndices, BN254.G1Point memory signature)
-        = createOperatorsWithSplitKeys(pseudoRandomNumber, 3, 1);
-
-        // Create operator set info
-        IBN254TableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo = createOperatorSetInfo(operators);
-
-        // Create operator set config
-        ICrossChainRegistryTypes.OperatorSetConfig memory operatorSetConfig = createOperatorSetConfig();
-
-        vm.prank(tableUpdater);
-        verifier.updateOperatorTable(testOperatorSet, referenceTimestamp, operatorSetInfo, operatorSetConfig);
-
-        // Create certificate with real BLS signature
-        IBN254CertificateVerifierTypes.BN254Certificate memory cert =
-            createCertificate(referenceTimestamp, msgHash, nonSignerIndices, operators, signature);
-
-        // Jump forward in time beyond the max staleness
-        vm.warp(block.timestamp + maxStaleness + 1);
-
-        // Verification should fail due to staleness
-        vm.expectRevert(abi.encodeWithSignature("CertificateStale()"));
-        verifier.verifyCertificate(testOperatorSet, cert);
-    }
-
-    // Test verifyCertificateNominal functionality
-    function testVerifyCertificateNominal() public {
-        uint32 referenceTimestamp = uint32(block.timestamp);
-
-        // Create operators with split keys - 3 signers, 1 non-signer
-        uint pseudoRandomNumber = 567;
-        (IBN254TableCalculatorTypes.BN254OperatorInfo[] memory operators, uint32[] memory nonSignerIndices, BN254.G1Point memory signature)
-        = createOperatorsWithSplitKeys(pseudoRandomNumber, 3, 1);
-
-        // Create operator set info
-        IBN254TableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo = createOperatorSetInfo(operators);
-
-        // Create operator set config
-        ICrossChainRegistryTypes.OperatorSetConfig memory operatorSetConfig = createOperatorSetConfig();
-
-        vm.prank(tableUpdater);
-        verifier.updateOperatorTable(testOperatorSet, referenceTimestamp, operatorSetInfo, operatorSetConfig);
-
-        // Create certificate with real BLS signature
-        IBN254CertificateVerifierTypes.BN254Certificate memory cert =
-            createCertificate(referenceTimestamp, msgHash, nonSignerIndices, operators, signature);
-
-        // Get the signed stakes first
-        uint[] memory signedStakes = verifier.verifyCertificate(testOperatorSet, cert);
-
-        // Test with thresholds lower than signed stakes (should pass)
-        uint[] memory passThresholds = new uint[](2);
-        passThresholds[0] = signedStakes[0] - 10;
-        passThresholds[1] = signedStakes[1] - 10;
-
-        bool meetsThresholds = verifier.verifyCertificateNominal(testOperatorSet, cert, passThresholds);
-        assertTrue(meetsThresholds, "Certificate should meet nominal thresholds");
-
-        // Test with thresholds higher than signed stakes (should fail)
-        uint[] memory failThresholds = new uint[](2);
-        failThresholds[0] = signedStakes[0] + 10;
-        failThresholds[1] = signedStakes[1] + 10;
-
-        meetsThresholds = verifier.verifyCertificateNominal(testOperatorSet, cert, failThresholds);
-        assertFalse(meetsThresholds, "Certificate should not meet impossible nominal thresholds");
-    }
-
-    // Test with no non-signers (all operators sign)
-    function testVerifyCertificateAllSigners() public {
-        uint32 referenceTimestamp = uint32(block.timestamp);
-
-        // Create operators with all signers
-        uint pseudoRandomNumber = 999;
-        (IBN254TableCalculatorTypes.BN254OperatorInfo[] memory operators,, BN254.G1Point memory signature) =
-            createOperatorsWithSplitKeys(pseudoRandomNumber, numOperators, 0);
-
-        // Create operator set info
-        IBN254TableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo = createOperatorSetInfo(operators);
-
-        // Create operator set config
-        ICrossChainRegistryTypes.OperatorSetConfig memory operatorSetConfig = createOperatorSetConfig();
-
-        vm.prank(tableUpdater);
-        verifier.updateOperatorTable(testOperatorSet, referenceTimestamp, operatorSetInfo, operatorSetConfig);
-
-        // Create certificate with no non-signers
-        IBN254CertificateVerifierTypes.BN254Certificate memory cert = IBN254CertificateVerifierTypes.BN254Certificate({
-            referenceTimestamp: referenceTimestamp,
-            messageHash: msgHash,
-            signature: signature,
-            apk: aggSignerApkG2,
-            nonSignerWitnesses: new IBN254CertificateVerifierTypes.BN254OperatorInfoWitness[](0)
-        });
-
-        // Verify certificate
-        uint[] memory signedStakes = verifier.verifyCertificate(testOperatorSet, cert);
-
-        // All stakes should be signed
-        assertEq(signedStakes[0], operatorSetInfo.totalWeights[0], "All stake should be signed for type 0");
-        assertEq(signedStakes[1], operatorSetInfo.totalWeights[1], "All stake should be signed for type 1");
-    }
-
-    // Test with invalid operator tree root
-    function testVerifyCertificateInvalidOperatorTreeRoot() public {
-        uint32 referenceTimestamp = uint32(block.timestamp);
-
-        // Create operators with split keys - 3 signers, 1 non-signer
-        uint pseudoRandomNumber = 123;
-        (IBN254TableCalculatorTypes.BN254OperatorInfo[] memory operators, uint32[] memory nonSignerIndices, BN254.G1Point memory signature)
-        = createOperatorsWithSplitKeys(pseudoRandomNumber, 3, 1);
-
-        // Create operator set info with CORRECT tree root
-        IBN254TableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo = createOperatorSetInfo(operators);
-
-        // Create operator set config
-        ICrossChainRegistryTypes.OperatorSetConfig memory operatorSetConfig = createOperatorSetConfig();
-
-        // Modify the tree root to be invalid AFTER creating the info
-        operatorSetInfo.operatorInfoTreeRoot = keccak256("invalid root");
-
-        vm.prank(tableUpdater);
-        verifier.updateOperatorTable(testOperatorSet, referenceTimestamp, operatorSetInfo, operatorSetConfig);
-
-        // Create certificate with real BLS signature but proofs won't match the invalid root
-        IBN254CertificateVerifierTypes.BN254Certificate memory cert =
-            createCertificate(referenceTimestamp, msgHash, nonSignerIndices, operators, signature);
-
-        // Verification should fail due to invalid merkle proofs
-        vm.expectRevert(abi.encodeWithSignature("VerificationFailed()"));
-        verifier.verifyCertificate(testOperatorSet, cert);
-    }
-
-    // Test with invalid reference timestamp
-    function testInvalidReferenceTimestamp() public {
-        uint32 existingReferenceTimestamp = uint32(block.timestamp);
-        uint32 nonExistentTimestamp = existingReferenceTimestamp + 1000;
-
-        // Create operators with split keys - 3 signers, 1 non-signer
-        uint pseudoRandomNumber = 123;
-        (IBN254TableCalculatorTypes.BN254OperatorInfo[] memory operators, uint32[] memory nonSignerIndices, BN254.G1Point memory signature)
-        = createOperatorsWithSplitKeys(pseudoRandomNumber, 3, 1);
-
-        // Create operator set info
-        IBN254TableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo = createOperatorSetInfo(operators);
-
-        // Create operator set config
-        ICrossChainRegistryTypes.OperatorSetConfig memory operatorSetConfig = createOperatorSetConfig();
-
-        vm.prank(tableUpdater);
-        verifier.updateOperatorTable(testOperatorSet, existingReferenceTimestamp, operatorSetInfo, operatorSetConfig);
-
-        // Create certificate using a non-existent timestamp
-        IBN254CertificateVerifierTypes.BN254Certificate memory cert = IBN254CertificateVerifierTypes.BN254Certificate({
-            referenceTimestamp: nonExistentTimestamp,
-            messageHash: msgHash,
-            signature: signature,
-            apk: aggSignerApkG2,
-            nonSignerWitnesses: new IBN254CertificateVerifierTypes.BN254OperatorInfoWitness[](0)
-        });
-
-        // Verification should fail due to timestamp not existing
-        vm.expectRevert(abi.encodeWithSignature("ReferenceTimestampDoesNotExist()"));
-        verifier.verifyCertificate(testOperatorSet, cert);
-    }
-
-    // Test multiple operator sets
-    function testMultipleOperatorSets() public {
+    function test_multiple() public {
         // Create two different operator sets
         OperatorSet memory operatorSet1 = OperatorSet({avs: address(0x10), id: 1});
         OperatorSet memory operatorSet2 = OperatorSet({avs: address(0x20), id: 2});
@@ -628,24 +327,24 @@ contract BN254CertificateVerifierTest is Test {
         uint32 referenceTimestamp = uint32(block.timestamp);
 
         // Create operators for each set
-        (IBN254TableCalculatorTypes.BN254OperatorInfo[] memory operators1,,) = createOperatorsWithSplitKeys(111, 3, 1);
-        (IBN254TableCalculatorTypes.BN254OperatorInfo[] memory operators2,,) = createOperatorsWithSplitKeys(222, 2, 2);
+        (BN254OperatorInfo[] memory operators1,,) = _createOperatorsWithSplitKeys(111, 3, 1);
+        (BN254OperatorInfo[] memory operators2,,) = _createOperatorsWithSplitKeys(222, 2, 2);
 
         // Create operator set infos
-        IBN254TableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo1 = createOperatorSetInfo(operators1);
-        IBN254TableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo2 = createOperatorSetInfo(operators2);
+        BN254OperatorSetInfo memory operatorSetInfo1 = _createOperatorSetInfo(operators1);
+        BN254OperatorSetInfo memory operatorSetInfo2 = _createOperatorSetInfo(operators2);
 
         // Create operator set configs with different owners
-        ICrossChainRegistryTypes.OperatorSetConfig memory config1 = ICrossChainRegistryTypes.OperatorSetConfig({
+        OperatorSetConfig memory config1 = OperatorSetConfig({
             owner: address(0x100),
             maxStalenessPeriod: 1800 // 30 minutes
         });
-        ICrossChainRegistryTypes.OperatorSetConfig memory config2 = ICrossChainRegistryTypes.OperatorSetConfig({
+        OperatorSetConfig memory config2 = OperatorSetConfig({
             owner: address(0x200),
             maxStalenessPeriod: 7200 // 2 hours
         });
 
-        vm.startPrank(tableUpdater);
+        vm.startPrank(address(operatorTableUpdaterMock));
 
         // Update both operator tables
         verifier.updateOperatorTable(operatorSet1, referenceTimestamp, operatorSetInfo1, config1);
@@ -664,8 +363,8 @@ contract BN254CertificateVerifierTest is Test {
         assertEq(verifier.latestReferenceTimestamp(operatorSet2), referenceTimestamp, "OperatorSet2 timestamp incorrect");
 
         // Verify operator set infos are stored independently
-        IBN254TableCalculatorTypes.BN254OperatorSetInfo memory storedInfo1 = verifier.getOperatorSetInfo(operatorSet1, referenceTimestamp);
-        IBN254TableCalculatorTypes.BN254OperatorSetInfo memory storedInfo2 = verifier.getOperatorSetInfo(operatorSet2, referenceTimestamp);
+        BN254OperatorSetInfo memory storedInfo1 = verifier.getOperatorSetInfo(operatorSet1, referenceTimestamp);
+        BN254OperatorSetInfo memory storedInfo2 = verifier.getOperatorSetInfo(operatorSet2, referenceTimestamp);
 
         assertEq(storedInfo1.numOperators, 4, "OperatorSet1 should have 4 operators");
         assertEq(storedInfo2.numOperators, 4, "OperatorSet2 should have 4 operators");
@@ -673,86 +372,558 @@ contract BN254CertificateVerifierTest is Test {
         // Verify they have different tree roots (since operators are different)
         assertTrue(storedInfo1.operatorInfoTreeRoot != storedInfo2.operatorInfoTreeRoot, "Tree roots should be different");
     }
+}
 
-    // Test access control for operator table updates
-    function testOperatorTableUpdateAccessControl() public {
-        uint32 referenceTimestamp = uint32(block.timestamp);
+/**
+ * @title BN254CertificateVerifierUnitTests_verifyCertificate
+ * @notice Unit tests for BN254CertificateVerifier.verifyCertificate
+ */
+contract BN254CertificateVerifierUnitTests_verifyCertificate is BN254CertificateVerifierUnitTests {
+    function test_revert_certificateStale() public {
+        uint32 referenceTimestamp = _initializeOperatorTableBase();
+        BN254Certificate memory cert;
+        cert.referenceTimestamp = referenceTimestamp;
 
-        // Create operators
-        (IBN254TableCalculatorTypes.BN254OperatorInfo[] memory operators,,) = createOperatorsWithSplitKeys(123, 3, 1);
+        // Jump forward in time beyond the max staleness
+        vm.warp(block.timestamp + defaultMaxStaleness + 1);
 
-        IBN254TableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo = createOperatorSetInfo(operators);
-        ICrossChainRegistryTypes.OperatorSetConfig memory operatorSetConfig = createOperatorSetConfig();
-
-        // Try to update with non-authorized account
-        vm.prank(nonOwner);
-        vm.expectRevert(abi.encodeWithSignature("OnlyTableUpdater()"));
-        verifier.updateOperatorTable(testOperatorSet, referenceTimestamp, operatorSetInfo, operatorSetConfig);
-
-        // Should succeed with authorized account
-        vm.prank(tableUpdater);
-        verifier.updateOperatorTable(testOperatorSet, referenceTimestamp, operatorSetInfo, operatorSetConfig);
+        vm.expectRevert(CertificateStale.selector);
+        verifier.verifyCertificate(defaultOperatorSet, cert);
     }
 
-    // Test stale table update (timestamp not increasing)
-    function testStaleTableUpdate() public {
-        uint32 firstTimestamp = uint32(block.timestamp);
-        uint32 staleTimestamp = firstTimestamp - 100; // Earlier timestamp
+    function test_revert_referenceTimestampDoesNotExist() public {
+        uint32 referenceTimestamp = _initializeOperatorTableBase();
+        uint32 nonExistentTimestamp = referenceTimestamp + 1000;
 
-        // Create operators
-        (IBN254TableCalculatorTypes.BN254OperatorInfo[] memory operators,,) = createOperatorsWithSplitKeys(123, 3, 1);
+        BN254Certificate memory cert;
+        cert.referenceTimestamp = nonExistentTimestamp;
 
-        IBN254TableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo = createOperatorSetInfo(operators);
-        ICrossChainRegistryTypes.OperatorSetConfig memory operatorSetConfig = createOperatorSetConfig();
-
-        vm.startPrank(tableUpdater);
-
-        // First update should succeed
-        verifier.updateOperatorTable(testOperatorSet, firstTimestamp, operatorSetInfo, operatorSetConfig);
-
-        // Second update with earlier timestamp should fail
-        vm.expectRevert(abi.encodeWithSignature("TableUpdateStale()"));
-        verifier.updateOperatorTable(testOperatorSet, staleTimestamp, operatorSetInfo, operatorSetConfig);
-
-        vm.stopPrank();
+        vm.expectRevert(ReferenceTimestampDoesNotExist.selector);
+        verifier.verifyCertificate(defaultOperatorSet, cert);
     }
 
-    // Test operator info caching
-    function testOperatorInfoCaching() public {
-        uint32 referenceTimestamp = uint32(block.timestamp);
+    function test_revert_invalidOperatorIndex() public {
+        // Update operator table
+        (BN254OperatorInfo[] memory operatorInfos, uint32[] memory nonSignerIndices, BN254.G1Point memory signature) =
+            _createOperatorsWithSplitKeys(123, numOperators, 0);
+        BN254OperatorSetInfo memory operatorSetInfo = _createOperatorSetInfo(operatorInfos);
+        vm.prank(address(operatorTableUpdaterMock));
+        verifier.updateOperatorTable(defaultOperatorSet, uint32(block.timestamp), operatorSetInfo, defaultOperatorSetConfig);
 
-        // Create operators with split keys - 2 signers, 2 non-signers
-        uint pseudoRandomNumber = 456;
-        (IBN254TableCalculatorTypes.BN254OperatorInfo[] memory operators, uint32[] memory nonSignerIndices, BN254.G1Point memory signature)
-        = createOperatorsWithSplitKeys(pseudoRandomNumber, 2, 2);
+        // Create certificate with invalid operator index
+        BN254OperatorInfoWitness[] memory witnesses = new BN254OperatorInfoWitness[](1);
+        witnesses[0] = BN254OperatorInfoWitness({
+            operatorIndex: uint32(operatorSetInfo.numOperators), // Out of bounds, since we only have 1 nonsigner
+            operatorInfoProof: new bytes(32),
+            operatorInfo: operatorInfos[0]
+        });
 
-        IBN254TableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo = createOperatorSetInfo(operators);
-        ICrossChainRegistryTypes.OperatorSetConfig memory operatorSetConfig = createOperatorSetConfig();
+        BN254Certificate memory cert = BN254Certificate({
+            referenceTimestamp: uint32(block.timestamp),
+            messageHash: defaultMsgHash,
+            signature: signature,
+            apk: aggSignerApkG2,
+            nonSignerWitnesses: witnesses
+        });
 
-        vm.prank(tableUpdater);
-        verifier.updateOperatorTable(testOperatorSet, referenceTimestamp, operatorSetInfo, operatorSetConfig);
+        vm.expectRevert(InvalidOperatorIndex.selector);
+        verifier.verifyCertificate(defaultOperatorSet, cert);
+    }
 
-        // Create certificate with real BLS signature
-        IBN254CertificateVerifierTypes.BN254Certificate memory cert =
-            createCertificate(referenceTimestamp, msgHash, nonSignerIndices, operators, signature);
+    function test_revert_invalidMerkleProof() public {
+        // Update operator table
+        (BN254OperatorInfo[] memory operatorInfos, uint32[] memory nonSignerIndices, BN254.G1Point memory signature) =
+            _createOperatorsWithSplitKeys(123, 3, 1);
+        BN254OperatorSetInfo memory operatorSetInfo = _createOperatorSetInfo(operatorInfos);
+        vm.prank(address(operatorTableUpdaterMock));
+        verifier.updateOperatorTable(defaultOperatorSet, uint32(block.timestamp), operatorSetInfo, defaultOperatorSetConfig);
+
+        // Create certificate with invalid merkle proof
+        BN254OperatorInfoWitness[] memory witnesses = new BN254OperatorInfoWitness[](1);
+        witnesses[0] = BN254OperatorInfoWitness({
+            operatorIndex: nonSignerIndices[0],
+            operatorInfoProof: new bytes(32), // Invalid proof
+            operatorInfo: operatorInfos[nonSignerIndices[0]]
+        });
+
+        BN254Certificate memory cert = BN254Certificate({
+            referenceTimestamp: uint32(block.timestamp),
+            messageHash: defaultMsgHash,
+            signature: signature,
+            apk: aggSignerApkG2,
+            nonSignerWitnesses: witnesses
+        });
+
+        vm.expectRevert(VerificationFailed.selector);
+        verifier.verifyCertificate(defaultOperatorSet, cert);
+    }
+
+    function test_revert_invalidSignature() public {
+        // Update operator table
+        (BN254OperatorInfo[] memory operatorInfos, uint32[] memory nonSignerIndices, BN254.G1Point memory signature) =
+            _createOperatorsWithSplitKeys(123, numOperators, 0);
+        BN254OperatorSetInfo memory operatorSetInfo = _createOperatorSetInfo(operatorInfos);
+        vm.prank(address(operatorTableUpdaterMock));
+        verifier.updateOperatorTable(defaultOperatorSet, uint32(block.timestamp), operatorSetInfo, defaultOperatorSetConfig);
+
+        // Create certificate with wrong message hash
+        bytes32 wrongHash = keccak256("wrong message");
+
+        BN254Certificate memory cert = _createCertificate(
+            uint32(block.timestamp),
+            wrongHash, // Wrong hash
+            nonSignerIndices,
+            operatorInfos,
+            signature // Signature is for original defaultMsgHash
+        );
+
+        vm.expectRevert(VerificationFailed.selector);
+        verifier.verifyCertificate(defaultOperatorSet, cert);
+    }
+
+    function testFuzz_verifyCertificate_allSigners(Randomness r) public rand(r) {
+        (, BN254OperatorSetInfo memory allSignerOpSetInfo, uint32 referenceTimestamp,, BN254.G1Point memory signature) =
+            _updateOperatorTable(r, numOperators, 0);
+
+        // Create certificate with no non-signers
+        BN254Certificate memory cert = BN254Certificate({
+            referenceTimestamp: referenceTimestamp,
+            messageHash: defaultMsgHash,
+            signature: signature,
+            apk: aggSignerApkG2,
+            nonSignerWitnesses: new BN254OperatorInfoWitness[](0)
+        });
+
+        uint[] memory signedStakes = verifier.verifyCertificate(defaultOperatorSet, cert);
+
+        // All stakes should be signed
+        assertEq(signedStakes[0], allSignerOpSetInfo.totalWeights[0], "All stake should be signed for type 0");
+        assertEq(signedStakes[1], allSignerOpSetInfo.totalWeights[1], "All stake should be signed for type 1");
+    }
+
+    function testFuzz_verifyCertificate_someNonSigners(Randomness r) public rand(r) {
+        // Create operators and update operator table
+        uint numSigners = r.Uint256(1, numOperators - 1);
+        uint nonSigners = numOperators - numSigners;
+        (
+            BN254OperatorInfo[] memory operators,
+            BN254OperatorSetInfo memory newOperatorSetInfo,
+            uint32 referenceTimestamp,
+            uint32[] memory nonSignerIndices,
+            BN254.G1Point memory signature
+        ) = _updateOperatorTable(r, numSigners, nonSigners);
+
+        BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators, signature);
+
+        uint[] memory signedStakes = verifier.verifyCertificate(defaultOperatorSet, cert);
+
+        // Check that the signed stakes are correct
+        assertEq(signedStakes.length, 2, "Wrong number of stake types");
+
+        // Calculate expected signed stakes
+        uint[] memory expectedSignedStakes = new uint[](2);
+        expectedSignedStakes[0] = newOperatorSetInfo.totalWeights[0];
+        expectedSignedStakes[1] = newOperatorSetInfo.totalWeights[1];
+
+        // Subtract non-signer stakes
+        for (uint i = 0; i < nonSignerIndices.length; i++) {
+            uint32 nonSignerIndex = nonSignerIndices[i];
+            expectedSignedStakes[0] -= operators[nonSignerIndex].weights[0];
+            expectedSignedStakes[1] -= operators[nonSignerIndex].weights[1];
+        }
+
+        assertEq(signedStakes[0], expectedSignedStakes[0], "Wrong signed stake for type 0");
+        assertEq(signedStakes[1], expectedSignedStakes[1], "Wrong signed stake for type 1");
+    }
+
+    function test_verifyCertificate_cachesOperatorInfo(Randomness r) public rand(r) {
+        // Create operators
+        uint numSigners = r.Uint256(1, numOperators - 1);
+        uint nonSigners = numOperators - numSigners;
+        (BN254OperatorInfo[] memory operators,, uint32 referenceTimestamp, uint32[] memory nonSignerIndices, BN254.G1Point memory signature)
+        = _updateOperatorTable(r, numSigners, nonSigners);
+
+        BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators, signature);
 
         // First verification should cache the operator infos
-        verifier.verifyCertificate(testOperatorSet, cert);
+        verifier.verifyCertificate(defaultOperatorSet, cert);
 
         // Check that operator infos are now cached
         for (uint i = 0; i < nonSignerIndices.length; i++) {
             uint32 nonSignerIndex = nonSignerIndices[i];
-            IBN254TableCalculatorTypes.BN254OperatorInfo memory cachedInfo =
-                verifier.getOperatorInfo(testOperatorSet, referenceTimestamp, nonSignerIndex);
+            BN254OperatorInfo memory cachedInfo = verifier.getNonsignerOperatorInfo(defaultOperatorSet, referenceTimestamp, nonSignerIndex);
 
             // Cached info should match original
             assertEq(cachedInfo.pubkey.X, operators[nonSignerIndex].pubkey.X, "Cached pubkey X mismatch");
             assertEq(cachedInfo.pubkey.Y, operators[nonSignerIndex].pubkey.Y, "Cached pubkey Y mismatch");
             assertEq(cachedInfo.weights[0], operators[nonSignerIndex].weights[0], "Cached weight 0 mismatch");
             assertEq(cachedInfo.weights[1], operators[nonSignerIndex].weights[1], "Cached weight 1 mismatch");
+            assertTrue(verifier.isNonsignerCached(defaultOperatorSet, referenceTimestamp, nonSignerIndex), "Operator should be cached");
         }
 
-        // Second verification should use cached data (should still work)
-        verifier.verifyCertificate(testOperatorSet, cert);
+        // Second verification should use cached data. We don't have to provide an operatorInfoProof for the non-signers
+        // since they are in the cache.
+        BN254OperatorInfo memory emptyOperatorInfo;
+        for (uint i = 0; i < nonSignerIndices.length; i++) {
+            cert.nonSignerWitnesses[i].operatorInfoProof = new bytes(0);
+            cert.nonSignerWitnesses[i].operatorInfo = emptyOperatorInfo;
+        }
+        verifier.verifyCertificate(defaultOperatorSet, cert);
+    }
+}
+
+/**
+ * @title BN254CertificateVerifierUnitTests_verifyCertificateProportion
+ * @notice Unit tests for BN254CertificateVerifier.verifyCertificateProportion
+ */
+contract BN254CertificateVerifierUnitTests_verifyCertificateProportion is BN254CertificateVerifierUnitTests {
+    function testFuzz_revert_arrayLengthMismatch(Randomness r) public rand(r) {
+        // Update operator table
+        (BN254OperatorInfo[] memory operators,, uint32 referenceTimestamp, uint32[] memory nonSignerIndices, BN254.G1Point memory signature)
+        = _updateOperatorTable(r, numOperators, 0); // 0 nonsigners
+
+        BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators, signature);
+
+        uint16[] memory wrongLengthThresholds = new uint16[](1); // Should be 2
+        wrongLengthThresholds[0] = 6000;
+
+        vm.expectRevert(ArrayLengthMismatch.selector);
+        verifier.verifyCertificateProportion(defaultOperatorSet, cert, wrongLengthThresholds);
+    }
+
+    function testFuzz_verifyCertificateProportion_meetsThresholds(Randomness r) public rand(r) {
+        // Update operator table
+        uint numSigners = r.Uint256(1, numOperators - 1);
+        uint numNonsigners = numOperators - numSigners;
+        (BN254OperatorInfo[] memory operators,, uint32 referenceTimestamp, uint32[] memory nonSignerIndices, BN254.G1Point memory signature)
+        = _updateOperatorTable(r, numSigners, numNonsigners);
+
+        BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators, signature);
+
+        // Set thresholds at 60% of total stake for each type
+        uint16[] memory thresholds = new uint16[](2);
+        thresholds[0] = 6000; // 60%
+        thresholds[1] = 6000; // 60%
+
+        bool meetsThresholds = verifier.verifyCertificateProportion(defaultOperatorSet, cert, thresholds);
+
+        // Calculate expected result based on the number of signers
+        // With numSigners out of numOperators, check if it meets 60% threshold
+        uint signedPercentage = (numSigners * 10_000) / numOperators;
+        bool expectedResult = signedPercentage >= 6000;
+
+        assertEq(meetsThresholds, expectedResult, "Certificate threshold check incorrect");
+    }
+
+    function testFuzz_verifyCertificateProportion_doesNotMeetThresholds(Randomness r) public rand(r) {
+        // Update operator table with a specific split to ensure some thresholds won't be met
+        uint numSigners = r.Uint256(1, numOperators / 2); // At most half signers
+        uint numNonsigners = numOperators - numSigners;
+        (
+            BN254OperatorInfo[] memory operators,
+            BN254OperatorSetInfo memory operatorSetInfo,
+            uint32 referenceTimestamp,
+            uint32[] memory nonSignerIndices,
+            BN254.G1Point memory signature
+        ) = _updateOperatorTable(r, numSigners, numNonsigners);
+
+        BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators, signature);
+
+        // Try with higher threshold that shouldn't be met
+        uint16[] memory thresholds = new uint16[](2);
+        thresholds[0] = 9000; // 90%
+        thresholds[1] = 9000; // 90%
+
+        bool meetsThresholds = verifier.verifyCertificateProportion(defaultOperatorSet, cert, thresholds);
+
+        // Calculate percentage of signed stakes to determine if it should meet threshold
+        uint[] memory signedStakes = verifier.verifyCertificate(defaultOperatorSet, cert);
+        uint signedPercentage0 = (signedStakes[0] * 10_000) / operatorSetInfo.totalWeights[0];
+        uint signedPercentage1 = (signedStakes[1] * 10_000) / operatorSetInfo.totalWeights[1];
+
+        bool shouldMeetThreshold = (signedPercentage0 >= 9000) && (signedPercentage1 >= 9000);
+        assertEq(meetsThresholds, shouldMeetThreshold, "Certificate threshold check incorrect");
+    }
+
+    /// @notice Fuzz against random thresholds
+    function testFuzz_verifyCertificateProportion_thresholds(Randomness r, uint16 threshold0, uint16 threshold1) public rand(r) {
+        // Update operator table with random split
+        uint numSigners = r.Uint256(1, numOperators);
+        uint numNonsigners = numOperators - numSigners;
+        (
+            BN254OperatorInfo[] memory operators,
+            BN254OperatorSetInfo memory operatorSetInfo,
+            uint32 referenceTimestamp,
+            uint32[] memory nonSignerIndices,
+            BN254.G1Point memory signature
+        ) = _updateOperatorTable(r, numSigners, numNonsigners);
+
+        BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators, signature);
+
+        threshold0 = uint16(bound(threshold0, 0, 10_000)); // 0% to 100%
+        threshold1 = uint16(bound(threshold1, 0, 10_000)); // 0% to 100%
+
+        uint16[] memory thresholds = new uint16[](2);
+        thresholds[0] = threshold0;
+        thresholds[1] = threshold1;
+
+        bool meetsThresholds = verifier.verifyCertificateProportion(defaultOperatorSet, cert, thresholds);
+
+        // Calculate expected result
+        uint[] memory signedStakes = verifier.verifyCertificate(defaultOperatorSet, cert);
+        bool expectedResult = true;
+        for (uint i = 0; i < 2; i++) {
+            uint threshold = (operatorSetInfo.totalWeights[i] * thresholds[i]) / 10_000;
+            if (signedStakes[i] < threshold) {
+                expectedResult = false;
+                break;
+            }
+        }
+
+        assertEq(meetsThresholds, expectedResult, "Threshold calculation mismatch");
+    }
+}
+
+/**
+ * @title BN254CertificateVerifierUnitTests_verifyCertificateNominal
+ * @notice Unit tests for BN254CertificateVerifier.verifyCertificateNominal
+ */
+contract BN254CertificateVerifierUnitTests_verifyCertificateNominal is BN254CertificateVerifierUnitTests {
+    function testFuzz_revert_arrayLengthMismatch(Randomness r) public rand(r) {
+        // Update operator table
+        uint numSigners = r.Uint256(1, numOperators - 1);
+        uint numNonsigners = numOperators - numSigners;
+        (BN254OperatorInfo[] memory operators,, uint32 referenceTimestamp, uint32[] memory nonSignerIndices, BN254.G1Point memory signature)
+        = _updateOperatorTable(r, numSigners, numNonsigners);
+
+        BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators, signature);
+
+        uint[] memory wrongLengthThresholds = new uint[](1); // Should be 2
+        wrongLengthThresholds[0] = 100;
+
+        vm.expectRevert(ArrayLengthMismatch.selector);
+        verifier.verifyCertificateNominal(defaultOperatorSet, cert, wrongLengthThresholds);
+    }
+
+    function testFuzz_verifyCertificateNominal_meetsThresholds(Randomness r) public rand(r) {
+        // Update operator table
+        uint numSigners = r.Uint256(1, numOperators);
+        uint numNonsigners = numOperators - numSigners;
+        (BN254OperatorInfo[] memory operators,, uint32 referenceTimestamp, uint32[] memory nonSignerIndices, BN254.G1Point memory signature)
+        = _updateOperatorTable(r, numSigners, numNonsigners);
+
+        BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators, signature);
+
+        // Get the signed stakes for reference
+        uint[] memory signedStakes = verifier.verifyCertificate(defaultOperatorSet, cert);
+
+        // Test with thresholds lower than signed stakes (should pass)
+        uint[] memory passThresholds = new uint[](2);
+        passThresholds[0] = signedStakes[0] > 10 ? signedStakes[0] - 10 : 0;
+        passThresholds[1] = signedStakes[1] > 10 ? signedStakes[1] - 10 : 0;
+
+        bool meetsThresholds = verifier.verifyCertificateNominal(defaultOperatorSet, cert, passThresholds);
+        assertTrue(meetsThresholds, "Certificate should meet nominal thresholds");
+    }
+
+    function testFuzz_verifyCertificateNominal_doesNotMeetThresholds(Randomness r) public rand(r) {
+        // Update operator table
+        uint numSigners = r.Uint256(1, numOperators - 1); // Ensure at least one non-signer
+        uint numNonsigners = numOperators - numSigners;
+        (BN254OperatorInfo[] memory operators,, uint32 referenceTimestamp, uint32[] memory nonSignerIndices, BN254.G1Point memory signature)
+        = _updateOperatorTable(r, numSigners, numNonsigners);
+
+        BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators, signature);
+
+        // Get the signed stakes for reference
+        uint[] memory signedStakes = verifier.verifyCertificate(defaultOperatorSet, cert);
+
+        // Test with thresholds higher than signed stakes (should fail)
+        uint[] memory failThresholds = new uint[](2);
+        failThresholds[0] = signedStakes[0] + 10;
+        failThresholds[1] = signedStakes[1] + 10;
+
+        bool meetsThresholds = verifier.verifyCertificateNominal(defaultOperatorSet, cert, failThresholds);
+        assertFalse(meetsThresholds, "Certificate should not meet impossible nominal thresholds");
+    }
+
+    /// @notice Fuzz against random thresholds
+    function testFuzz_verifyCertificateNominal_thresholds(Randomness r, uint threshold0, uint threshold1) public rand(r) {
+        // Update operator table
+        uint numSigners = r.Uint256(1, numOperators);
+        uint numNonsigners = numOperators - numSigners;
+        (BN254OperatorInfo[] memory operators,, uint32 referenceTimestamp, uint32[] memory nonSignerIndices, BN254.G1Point memory signature)
+        = _updateOperatorTable(r, numSigners, numNonsigners);
+
+        BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators, signature);
+
+        // Get the signed stakes for reference
+        uint[] memory signedStakes = verifier.verifyCertificate(defaultOperatorSet, cert);
+
+        // Bound thresholds to reasonable values
+        threshold0 = bound(threshold0, 0, signedStakes[0] * 2);
+        threshold1 = bound(threshold1, 0, signedStakes[1] * 2);
+
+        uint[] memory thresholds = new uint[](2);
+        thresholds[0] = threshold0;
+        thresholds[1] = threshold1;
+
+        bool meetsThresholds = verifier.verifyCertificateNominal(defaultOperatorSet, cert, thresholds);
+
+        // Expected result
+        bool expectedResult = (signedStakes[0] >= threshold0) && (signedStakes[1] >= threshold1);
+
+        assertEq(meetsThresholds, expectedResult, "Nominal threshold check mismatch");
+    }
+}
+
+/**
+ * @title BN254CertificateVerifierUnitTests_ViewFunctions
+ * @notice Unit tests for BN254CertificateVerifier view functions
+ */
+contract BN254CertificateVerifierUnitTests_ViewFunctions is BN254CertificateVerifierUnitTests {
+    uint32 referenceTimestamp;
+    BN254OperatorSetInfo operatorSetInfo;
+    OperatorSetConfig operatorSetConfig;
+
+    function setUp() public override {
+        super.setUp();
+        referenceTimestamp = uint32(block.timestamp);
+
+        (BN254OperatorInfo[] memory operators,,) = _createOperatorsWithSplitKeys(123, 3, 1);
+        operatorSetInfo = _createOperatorSetInfo(operators);
+
+        vm.prank(address(operatorTableUpdaterMock));
+        verifier.updateOperatorTable(defaultOperatorSet, referenceTimestamp, operatorSetInfo, defaultOperatorSetConfig);
+    }
+
+    function test_getOperatorSetOwner() public view {
+        address owner = verifier.getOperatorSetOwner(defaultOperatorSet);
+        assertEq(owner, operatorSetOwner, "Operator set owner mismatch");
+    }
+
+    function test_maxOperatorTableStaleness() public view {
+        uint32 staleness = verifier.maxOperatorTableStaleness(defaultOperatorSet);
+        assertEq(staleness, defaultMaxStaleness, "Max staleness mismatch");
+    }
+
+    function test_latestReferenceTimestamp() public view {
+        uint32 timestamp = verifier.latestReferenceTimestamp(defaultOperatorSet);
+        assertEq(timestamp, referenceTimestamp, "Latest reference timestamp mismatch");
+    }
+
+    function test_getOperatorSetInfo() public view {
+        BN254OperatorSetInfo memory retrievedInfo = verifier.getOperatorSetInfo(defaultOperatorSet, referenceTimestamp);
+
+        assertEq(retrievedInfo.numOperators, operatorSetInfo.numOperators, "Num operators mismatch");
+        assertEq(retrievedInfo.aggregatePubkey.X, operatorSetInfo.aggregatePubkey.X, "Aggregate pubkey X mismatch");
+        assertEq(retrievedInfo.aggregatePubkey.Y, operatorSetInfo.aggregatePubkey.Y, "Aggregate pubkey Y mismatch");
+        assertEq(retrievedInfo.operatorInfoTreeRoot, operatorSetInfo.operatorInfoTreeRoot, "Tree root mismatch");
+        assertEq(retrievedInfo.totalWeights.length, operatorSetInfo.totalWeights.length, "Total weights length mismatch");
+        for (uint i = 0; i < retrievedInfo.totalWeights.length; i++) {
+            assertEq(retrievedInfo.totalWeights[i], operatorSetInfo.totalWeights[i], "Total weight mismatch");
+        }
+    }
+
+    function test_getNonsignerOperatorInfo() public {
+        // First cache some operator info
+        (BN254OperatorInfo[] memory operators, uint32[] memory nonSignerIndices, BN254.G1Point memory signature) =
+            _createOperatorsWithSplitKeys(123, 3, 1);
+
+        BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators, signature);
+
+        // Verify certificate to cache operator info
+        verifier.verifyCertificate(defaultOperatorSet, cert);
+
+        // Get cached operator info
+        uint32 operatorIndex = nonSignerIndices[0];
+        BN254OperatorInfo memory cachedInfo = verifier.getNonsignerOperatorInfo(defaultOperatorSet, referenceTimestamp, operatorIndex);
+
+        assertEq(cachedInfo.pubkey.X, operators[operatorIndex].pubkey.X, "Cached pubkey X mismatch");
+        assertEq(cachedInfo.pubkey.Y, operators[operatorIndex].pubkey.Y, "Cached pubkey Y mismatch");
+        assertEq(cachedInfo.weights[0], operators[operatorIndex].weights[0], "Cached weight 0 mismatch");
+        assertEq(cachedInfo.weights[1], operators[operatorIndex].weights[1], "Cached weight 1 mismatch");
+    }
+
+    function test_isNonsignerCached() public {
+        // First cache some operator info
+        (BN254OperatorInfo[] memory operators, uint32[] memory nonSignerIndices, BN254.G1Point memory signature) =
+            _createOperatorsWithSplitKeys(123, 3, 1);
+
+        BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators, signature);
+
+        // Non-signer index should be not cached prior to verification
+        assertFalse(
+            verifier.isNonsignerCached(defaultOperatorSet, referenceTimestamp, nonSignerIndices[0]),
+            "Nonsigner operator info should not be cached"
+        );
+
+        // Verify certificate to cache operator info
+        verifier.verifyCertificate(defaultOperatorSet, cert);
+
+        // Check that the non-signer operator info is cached
+        assertTrue(
+            verifier.isNonsignerCached(defaultOperatorSet, referenceTimestamp, nonSignerIndices[0]),
+            "Nonsigner operator info should be cached"
+        );
+
+        // Assert that the signers are NOT cached
+        for (uint i = 0; i < operators.length; i++) {
+            if (i != nonSignerIndices[0]) {
+                assertFalse(
+                    verifier.isNonsignerCached(defaultOperatorSet, referenceTimestamp, i), "Signer operator info should not be cached"
+                );
+            }
+        }
+    }
+}
+
+/**
+ * @title BN254CertificateVerifierUnitTests_trySignatureVerification
+ * @notice Unit tests for BN254CertificateVerifier.trySignatureVerification
+ */
+contract BN254CertificateVerifierUnitTests_trySignatureVerification is BN254CertificateVerifierUnitTests {
+    function testFuzz_trySignatureVerification_validSignature(Randomness r) public rand(r) {
+        // Create all operators as signers
+        (BN254OperatorInfo[] memory operators,, BN254.G1Point memory validSignature) =
+            _createOperatorsWithSplitKeys(r.Uint256(), numOperators, 0);
+        BN254OperatorSetInfo memory operatorSetInfo = _createOperatorSetInfo(operators);
+
+        // Verify signature
+        (bool pairingSuccessful, bool signatureValid) =
+            verifier.trySignatureVerification(defaultMsgHash, operatorSetInfo.aggregatePubkey, aggSignerApkG2, validSignature);
+
+        assertTrue(pairingSuccessful, "Pairing should be successful");
+        assertTrue(signatureValid, "Signature should be valid");
+    }
+
+    function testFuzz_trySignatureVerification_invalidPairing(Randomness r) public rand(r) {
+        // Create valid signature with one set of operators
+        (BN254OperatorInfo[] memory operators,, BN254.G1Point memory validSignature) =
+            _createOperatorsWithSplitKeys(r.Uint256(), numOperators, 0);
+        BN254OperatorSetInfo memory operatorSetInfo = _createOperatorSetInfo(operators);
+
+        // Try to verify signature with invalid message hash
+        bytes32 invalidMsgHash = bytes32(uint(1));
+        (bool pairingSuccessful, bool signatureValid) =
+            verifier.trySignatureVerification(invalidMsgHash, operatorSetInfo.aggregatePubkey, aggSignerApkG2, validSignature);
+
+        assertFalse(pairingSuccessful, "Pairing should be unsuccessful");
+        assertTrue(signatureValid, "Signature should be valid");
+    }
+
+    function testFuzz_trySignatureVerification_invalidSigAndPairing(Randomness r) public rand(r) {
+        // Create valid signature with one set of operators
+        (BN254OperatorInfo[] memory operators,, BN254.G1Point memory validSignature) =
+            _createOperatorsWithSplitKeys(r.Uint256(), numOperators, 0);
+        BN254OperatorSetInfo memory operatorSetInfo = _createOperatorSetInfo(operators);
+
+        // Try to verify signature with invalid apk
+        aggSignerApkG2.X[0] += 1; // Invalid apk
+        (bool pairingSuccessful, bool signatureValid) =
+            verifier.trySignatureVerification(defaultMsgHash, operatorSetInfo.aggregatePubkey, aggSignerApkG2, validSignature);
+
+        assertFalse(pairingSuccessful, "Pairing should be unsuccessful");
+        assertFalse(signatureValid, "Signature should be invalid");
     }
 }
