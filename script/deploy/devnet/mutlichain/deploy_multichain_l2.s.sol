@@ -62,7 +62,7 @@ contract DeployMultichain_L2 is Script, Test {
         operatorTableUpdaterImplementation = new OperatorTableUpdater(
             bn254CertificateVerifier, IECDSACertificateVerifier(address(emptyContract)), "0.0.1"
         );
-        bn254CertificateVerifierImplementation = new BN254CertificateVerifier(operatorTableUpdater);
+        bn254CertificateVerifierImplementation = new BN254CertificateVerifier(operatorTableUpdater, "1.0.0");
 
         // Third, upgrade the proxies to point to the new implementations
         proxyAdmin.upgrade(
