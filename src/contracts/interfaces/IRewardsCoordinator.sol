@@ -51,13 +51,13 @@ interface IRewardsCoordinatorErrors {
     error DurationExceedsMax();
     /// @dev Thrown when input `duration` is zero.
     error DurationIsZero();
-    /// @dev Thrown when input `duration` is not evenly divisble by CALCULATION_INTERVAL_SECONDS.
+    /// @dev Thrown when input `duration` is not evenly divisible by CALCULATION_INTERVAL_SECONDS.
     error InvalidDurationRemainder();
-    /// @dev Thrown when GENESIS_REWARDS_TIMESTAMP is not evenly divisble by CALCULATION_INTERVAL_SECONDS.
+    /// @dev Thrown when GENESIS_REWARDS_TIMESTAMP is not evenly divisible by CALCULATION_INTERVAL_SECONDS.
     error InvalidGenesisRewardsTimestampRemainder();
-    /// @dev Thrown when CALCULATION_INTERVAL_SECONDS is not evenly divisble by SNAPSHOT_CADENCE.
+    /// @dev Thrown when CALCULATION_INTERVAL_SECONDS is not evenly divisible by SNAPSHOT_CADENCE.
     error InvalidCalculationIntervalSecondsRemainder();
-    /// @dev Thrown when `startTimestamp` is not evenly divisble by CALCULATION_INTERVAL_SECONDS.
+    /// @dev Thrown when `startTimestamp` is not evenly divisible by CALCULATION_INTERVAL_SECONDS.
     error InvalidStartTimestampRemainder();
     /// @dev Thrown when `startTimestamp` is too far in the future.
     error StartTimestampTooFarInFuture();
