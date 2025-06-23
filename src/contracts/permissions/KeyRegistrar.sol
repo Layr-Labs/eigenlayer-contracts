@@ -9,6 +9,7 @@ import "../mixins/PermissionControllerMixin.sol";
 import "../mixins/SignatureUtilsMixin.sol";
 import "../interfaces/IPermissionController.sol";
 import "../interfaces/IAllocationManager.sol";
+import "../interfaces/IKeyRegistrar.sol";
 import "../libraries/OperatorSetLib.sol";
 import "./KeyRegistrarStorage.sol";
 
@@ -89,7 +90,16 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
 
     /// @inheritdoc IKeyRegistrar
     function deregisterKey(address operator, OperatorSet memory operatorSet) external {
-        require(address(allocationManager.getAVSRegistrar(operatorSet.avs)) == msg.sender, InvalidPermissions());
+        // Check if the caller is the AVS registrar (AVS-initiated deregistration)
+        bool isAVSCall = address(allocationManager.getAVSRegistrar(operatorSet.avs)) == msg.sender;
+        
+        // If it's not an AVS call, check if the caller is the operator or authorized
+        if (!isAVSCall) {
+            require(_checkCanCall(operator), InvalidPermissions());
+            
+            // Operators can only deregister if they are not slashable for this operator set
+            require(!allocationManager.isOperatorSlashable(operator, operatorSet), OperatorStillSlashable(operatorSet, operator));
+        }
 
         CurveType curveType = operatorSetCurveTypes[operatorSet.key()];
         require(curveType != CurveType.NONE, OperatorSetNotConfigured());
