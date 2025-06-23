@@ -562,6 +562,106 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificate is ECDSACertificate
             assertEq(storedOperators[i].pubkey, secondOperators[i].pubkey, "Operator pubkey mismatch");
         }
     }
+
+    function test_revert_signerNotOperator() public {
+        // Create operators and update the table
+        uint32 referenceTimestamp = uint32(block.timestamp);
+        (
+            IECDSACertificateVerifierTypes.ECDSAOperatorInfo[] memory operators,
+            ,
+            
+        ) = _createOperatorsWithSplitKeys(123, 4, 0);
+
+        vm.prank(address(operatorTableUpdaterMock));
+        verifier.updateOperatorTable(defaultOperatorSet, referenceTimestamp, operators, defaultOperatorSetConfig);
+
+        // Create a private key for a non-operator signer
+        uint nonOperatorPrivKey = uint(keccak256(abi.encodePacked("nonOperator", block.timestamp)));
+        if (nonOperatorPrivKey == 0) nonOperatorPrivKey = 1;
+
+        // Create certificate with the non-operator as a signer
+        bytes32 signableDigest = verifier.calculateCertificateDigest(referenceTimestamp, defaultMsgHash);
+        
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(nonOperatorPrivKey, signableDigest);
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        IECDSACertificateVerifierTypes.ECDSACertificate memory cert = IECDSACertificateVerifierTypes.ECDSACertificate({
+            referenceTimestamp: referenceTimestamp,
+            messageHash: defaultMsgHash,
+            sig: signature
+        });
+
+        // Should revert because the signer is not an operator
+        vm.expectRevert(VerificationFailed.selector);
+        verifier.verifyCertificate(defaultOperatorSet, cert);
+    }
+
+    function test_revert_signaturesNotOrdered() public {
+        // Create operators with at least 2 signers
+        uint32 referenceTimestamp = uint32(block.timestamp);
+        uint[] memory signerPrivKeys = new uint[](2);
+        
+        // Create two private keys where the first address is greater than the second
+        signerPrivKeys[0] = uint(keccak256(abi.encodePacked("signer1")));
+        signerPrivKeys[1] = uint(keccak256(abi.encodePacked("signer2"))); 
+        
+        // Ensure valid private keys
+        if (signerPrivKeys[0] == 0) signerPrivKeys[0] = 1;
+        if (signerPrivKeys[1] == 0) signerPrivKeys[1] = 1;
+        
+        // Make sure addr0 > addr1 by adjusting keys if needed
+        address addr0 = vm.addr(signerPrivKeys[0]);
+        address addr1 = vm.addr(signerPrivKeys[1]);
+        
+        // If addr0 < addr1, swap the keys to ensure we get the wrong order
+        if (addr0 < addr1) {
+            uint temp = signerPrivKeys[0];
+            signerPrivKeys[0] = signerPrivKeys[1];
+            signerPrivKeys[1] = temp;
+            addr0 = vm.addr(signerPrivKeys[0]);
+            addr1 = vm.addr(signerPrivKeys[1]);
+        }
+        
+        // Create operators with these addresses
+        IECDSACertificateVerifierTypes.ECDSAOperatorInfo[] memory operators = 
+            new IECDSACertificateVerifierTypes.ECDSAOperatorInfo[](2);
+        
+        operators[0].pubkey = addr0;
+        operators[0].weights = new uint[](2);
+        operators[0].weights[0] = 100;
+        operators[0].weights[1] = 200;
+        
+        operators[1].pubkey = addr1;
+        operators[1].weights = new uint[](2);
+        operators[1].weights[0] = 100;
+        operators[1].weights[1] = 200;
+
+        vm.prank(address(operatorTableUpdaterMock));
+        verifier.updateOperatorTable(defaultOperatorSet, referenceTimestamp, operators, defaultOperatorSetConfig);
+
+        // Create signatures in the WRONG order (higher address first)
+        bytes32 signableDigest = verifier.calculateCertificateDigest(referenceTimestamp, defaultMsgHash);
+        
+        // Sign with both keys but put them in wrong order (addr0 > addr1)
+        (uint8 v0, bytes32 r0, bytes32 s0) = vm.sign(signerPrivKeys[0], signableDigest);
+        (uint8 v1, bytes32 r1, bytes32 s1) = vm.sign(signerPrivKeys[1], signableDigest);
+        
+        // Concatenate signatures in wrong order (higher address first)
+        bytes memory signatures = bytes.concat(
+            abi.encodePacked(r0, s0, v0),
+            abi.encodePacked(r1, s1, v1)
+        );
+
+        IECDSACertificateVerifierTypes.ECDSACertificate memory cert = IECDSACertificateVerifierTypes.ECDSACertificate({
+            referenceTimestamp: referenceTimestamp,
+            messageHash: defaultMsgHash,
+            sig: signatures
+        });
+
+        // Should revert because signatures are not ordered by address
+        vm.expectRevert(VerificationFailed.selector);
+        verifier.verifyCertificate(defaultOperatorSet, cert);
+    }
 }
 
 /**
