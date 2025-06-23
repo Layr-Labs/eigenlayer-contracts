@@ -18,6 +18,25 @@ contract Integration_Rounding is IntegrationCheckUtils {
     OperatorSet rOpSet; // Redistributable opset used to exploit precision loss and trigger redistribution
 
     uint16 numSlashes = 100; // TODO: transform into envvar
+    
+    // CSV file tracking
+    string private csvPath;
+    uint256 private testRunId;
+    bool private csvInitialized;
+    
+    // Struct to hold CSV data to avoid stack too deep
+    struct CSVData {
+        uint256 tokenBalance;
+        uint256 depositShares;
+        uint256 withdrawableShares;
+        uint256 operatorShares;
+        uint256 maxMag;
+        uint256 totalAllocated;
+        uint256 totalAvailable;
+        uint256 allocatedMOpSet;
+        uint256 allocatedROpSet;
+        uint256 dsf;
+    }
 
     function _init() internal override {
         _configAssetTypes(HOLDS_LST);
@@ -44,7 +63,30 @@ contract Integration_Rounding is IntegrationCheckUtils {
         attacker.registerForOperatorSet(mOpSet);
         attacker.registerForOperatorSet(rOpSet);
 
-        _print("setup");
+        // Initialize CSV tracking
+        _initializeCSV();
+
+        _writePhaseData("setup", 0, 0);
+    }
+
+    function _initializeCSV() private {
+        // Check if CSV filename is provided via environment variable
+        try vm.envString("CSV_FILENAME") returns (string memory customFilename) {
+            csvPath = customFilename;
+        } catch {
+            // Generate unique filename with timestamp and random seed
+            testRunId = uint256(keccak256(abi.encodePacked(block.timestamp, block.prevrandao)));
+            csvPath = string(abi.encodePacked(
+                "rounding_test_results_",
+                vm.toString(testRunId % 1000000), // Use last 6 digits for shorter filename
+                ".csv"
+            ));
+        }
+        
+        // Write CSV headers
+        string memory headers = "test_name,phase,initial_max_mag,init_token_balance,token_balance,deposit_shares,withdrawable_shares,operator_shares,init_mag,max_mag,total_allocated,total_available,allocated_mOpSet,allocated_rOpSet,dsf,slash_count,precision_loss,test_result";
+        vm.writeLine(csvPath, headers);
+        csvInitialized = true;
     }
 
     /**
@@ -93,7 +135,10 @@ contract Integration_Rounding is IntegrationCheckUtils {
 
         // Check for precision loss.
         // Note: No precision loss expected after all magnitude is slashed.
-        checkForPrecisionLoss(0);
+        (bool success, uint256 actualLoss) = _checkForPrecisionLoss(0);
+        
+        // Write final result to CSV
+        _writeTestResult("test_rounding_allMagsSlashed", "final", _initialMaxMag, actualLoss, success ? "PASS" : "FAIL");
     }
 
     /**
@@ -137,7 +182,10 @@ contract Integration_Rounding is IntegrationCheckUtils {
         // Max precision loss for this test is observed to correspond to residual operator shares.
         // TODO: Explore root cause of this precision loss.
         uint operatorShares = delegationManager.getOperatorShares(address(attacker), strategy.toArray())[0];
-        checkForPrecisionLoss(operatorShares);
+        (bool success, uint256 actualLoss) = _checkForPrecisionLoss(operatorShares);
+        
+        // Write final result to CSV
+        _writeTestResult("test_rounding_partialMagsSlashed", "final", _initialMaxMag, actualLoss, success ? "PASS" : "FAIL");
     }
 
     // TODO: consider parameterizing "honest" stake to see how strategy exchange rate is affected
@@ -193,7 +241,10 @@ contract Integration_Rounding is IntegrationCheckUtils {
         _release();
 
         // Note: In this test case, the attacker burns funds to attempt to manipulate the strategy's exchange rate. As such, severe token loss is expected.
-        checkForPrecisionLoss(initTokenBalance);
+        (bool success, uint256 actualLoss) = _checkForPrecisionLoss(initTokenBalance);
+        
+        // Write final result to CSV
+        _writeTestResult("test_rounding_strategySharesManipulation_allMagsSlashed", "final", _initialMaxMag, actualLoss, success ? "PASS" : "FAIL");
     }
 
     /**
@@ -248,7 +299,10 @@ contract Integration_Rounding is IntegrationCheckUtils {
         _withdraw();
 
         // Note: In this test case, the attacker burns funds to attempt to manipulate the strategy's exchange rate. As such, severe token loss is expected.
-        checkForPrecisionLoss(initTokenBalance);
+        (bool success, uint256 actualLoss) = _checkForPrecisionLoss(initTokenBalance);
+        
+        // Write final result to CSV
+        _writeTestResult("test_rounding_strategySharesManipulation_partialMagsSlashed", "final", _initialMaxMag, actualLoss, success ? "PASS" : "FAIL");
     }
 
     /**
@@ -260,20 +314,23 @@ contract Integration_Rounding is IntegrationCheckUtils {
     // @notice Check for any precision loss.
     //         First case means attacker gained money. If found, we've proven the existence of an exploit.
     //         Second case means attacker lost money. This demonstrates precision loss, with maxLoss as the upper bound.
-    // @dev Reverts if attacker has gained _any_ tokens, or if token loss is greater than maxLoss.
-    function checkForPrecisionLoss(uint256 maxLoss) internal {
+    // @dev Returns (success, actualLoss) where success indicates test passed
+    function _checkForPrecisionLoss(uint256 maxLoss) internal returns (bool success, uint256 actualLoss) {
         if (token.balanceOf(address(attacker)) > initTokenBalance) {
             uint64 diff = uint64(token.balanceOf(address(attacker))) - initTokenBalance;
-            console.log("EXCESS of tokens: %d", diff);
-            console.log("maxLoss: %d", maxLoss);
+            actualLoss = 0; // Actually a gain
+            success = false;
             // ANY tokens gained is an exploit.
             revert("Rounding error exploit found!");
         } else if (token.balanceOf(address(attacker)) < initTokenBalance) {
             uint64 diff = uint64(initTokenBalance - token.balanceOf(address(attacker)));
-            console.log("DEFICIT of tokens: %d", diff);
-            console.log("maxLoss: %d", maxLoss);
+            actualLoss = diff;
+            success = diff <= maxLoss;
             // Check against provided tolerance.
             assertLe(diff, maxLoss, "Tokens lost!");
+        } else {
+            actualLoss = 0;
+            success = true;
         }
     }
 
@@ -286,7 +343,7 @@ contract Integration_Rounding is IntegrationCheckUtils {
             newMagnitudes: WAD.toArrayU64()
         }));
 
-        _print("allocate");
+        _writePhaseData("allocate", _initialMaxMag, 0);
 
         uint64 wadToSlash = WAD - _initialMaxMag;
         // Slash operator to arbitrary mag.
@@ -298,9 +355,7 @@ contract Integration_Rounding is IntegrationCheckUtils {
             description: "manipulation!"
         }));
 
-        // TODO: print "wadsToSlash"
-
-        _print("slash");
+        _writePhaseData("slash", _initialMaxMag, 1);
 
         // Deallocate magnitude from operator set.
         attacker.modifyAllocations(AllocateParams({
@@ -311,7 +366,7 @@ contract Integration_Rounding is IntegrationCheckUtils {
 
         rollForward({blocks: DEALLOCATION_DELAY + 1});
 
-        _print("deallocate");
+        _writePhaseData("deallocate", _initialMaxMag, 0);
     }
 
     function _depositAll() internal {
@@ -326,7 +381,7 @@ contract Integration_Rounding is IntegrationCheckUtils {
         // Deposit all attacker assets into Eigenlayer.
         attacker.depositIntoEigenlayer(strategy.toArray(), token.balanceOf(address(attacker)).toArrayU256());
 
-        _print("depositAll");
+        _writePhaseData("depositAll", 0, 0);
     }
 
     function _slash(uint64 wadToSlash) internal {
@@ -339,7 +394,7 @@ contract Integration_Rounding is IntegrationCheckUtils {
             description: "final slash"
         }));
 
-        _print("slash");
+        _writePhaseData("slash", 0, 0);
     }
 
     function _release() internal {
@@ -356,7 +411,7 @@ contract Integration_Rounding is IntegrationCheckUtils {
         vm.prank(address(attacker));
         slashEscrowFactory.releaseSlashEscrow(rOpSet, uint256(numSlashes) + 1);
 
-        _print("release");
+        _writePhaseData("release", 0, 0);
     }
 
     function _withdraw() internal {
@@ -368,52 +423,122 @@ contract Integration_Rounding is IntegrationCheckUtils {
 
         attacker.completeWithdrawalsAsTokens(withdrawals);
 
-        _print("withdraw");
+        _writePhaseData("withdraw", 0, 0);
+    }
+    
+    function _collectCSVData() internal returns (CSVData memory data) {
+        address a = address(attacker);
+        
+        // Get share data
+        (uint[] memory withdrawableArr, uint[] memory depositArr) = delegationManager.getWithdrawableShares(a, strategy.toArray());
+        data.withdrawableShares = withdrawableArr.length == 0 ? 0 : withdrawableArr[0];
+        data.depositShares = depositArr.length == 0 ? 0 : depositArr[0];
+        data.operatorShares = delegationManager.operatorShares(a, strategy);
+        
+        // Get allocation data
+        Allocation memory mAlloc = allocationManager.getAllocation(a, mOpSet, strategy);
+        Allocation memory rAlloc = allocationManager.getAllocation(a, rOpSet, strategy);
+        data.allocatedMOpSet = mAlloc.currentMagnitude;
+        data.allocatedROpSet = rAlloc.currentMagnitude;
+        
+        // Get other data
+        data.tokenBalance = token.balanceOf(a);
+        data.maxMag = allocationManager.getMaxMagnitude(a, strategy);
+        data.totalAllocated = allocationManager.getEncumberedMagnitude(a, strategy);
+        data.totalAvailable = allocationManager.getAllocatableMagnitude(a, strategy);
+        data.dsf = delegationManager.depositScalingFactor(a, strategy);
     }
 
-    function _print(string memory phaseName) internal {
-        address a = address(attacker);
-
-        console.log("");
-        console.log("===Attacker Info: %s phase===".cyan(), phaseName);
-
-        {
-            console.log("\nRaw Assets:".magenta());
-            console.log(" - token: %s", token.symbol());
-            console.log(" - held balance: %d", token.balanceOf(a));
-            // TODO - amt deposited, possibly keep track of this separately?
-        }
-
-        {
-            console.log("\nShares:".magenta());
-
-            (uint[] memory withdrawableArr, uint[] memory depositArr)
-                = delegationManager.getWithdrawableShares(a, strategy.toArray());
-            uint withdrawableShares = withdrawableArr.length == 0 ? 0 : withdrawableArr[0];
-            uint depositShares = depositArr.length == 0 ? 0 : depositArr[0];
-            console.log(" - deposit shares: %d", depositShares);
-            console.log(" - withdrawable shares: %d", withdrawableShares);
-            console.log(" - operator shares: %d", delegationManager.operatorShares(a, strategy));
-        }
-
-        {
-            console.log("\nScaling:".magenta());
-
-            Allocation memory mAlloc = allocationManager.getAllocation(a, mOpSet, strategy);
-            Allocation memory rAlloc = allocationManager.getAllocation(a, rOpSet, strategy);
-
-            console.log(" - Init Mag: %d", WAD);
-            console.log(
-                " - Max Mag:  %d\n   -- Total Allocated: %d\n   -- Total Available: %d",
-                allocationManager.getMaxMagnitude(a, strategy),
-                allocationManager.getEncumberedMagnitude(a, strategy),
-                allocationManager.getAllocatableMagnitude(a, strategy)
-            );
-            console.log(" - Allocated to mOpSet: %d", mAlloc.currentMagnitude);
-            console.log(" - Allocated to rOpSet: %d", rAlloc.currentMagnitude);
-            console.log(" - DSF: %d", delegationManager.depositScalingFactor(a, strategy));
-        }
-
-        console.log("\n  ===\n".cyan());
+    function _writePhaseData(string memory phaseName, uint64 _initialMaxMag, uint256 slashCount) internal {
+        if (!csvInitialized) return;
+        
+        // Collect all data in struct
+        CSVData memory data = _collectCSVData();
+        
+        // Write row part 1
+        string memory row = string(abi.encodePacked(
+            "current_test,",
+            phaseName, ",",
+            vm.toString(_initialMaxMag), ",",
+            vm.toString(initTokenBalance), ","
+        ));
+        
+        // Write row part 2
+        row = string(abi.encodePacked(
+            row,
+            vm.toString(data.tokenBalance), ",",
+            vm.toString(data.depositShares), ",",
+            vm.toString(data.withdrawableShares), ",",
+            vm.toString(data.operatorShares), ","
+        ));
+        
+        // Write row part 3
+        row = string(abi.encodePacked(
+            row,
+            vm.toString(WAD), ",",
+            vm.toString(data.maxMag), ",",
+            vm.toString(data.totalAllocated), ",",
+            vm.toString(data.totalAvailable), ","
+        ));
+        
+        // Write row part 4
+        row = string(abi.encodePacked(
+            row,
+            vm.toString(data.allocatedMOpSet), ",",
+            vm.toString(data.allocatedROpSet), ",",
+            vm.toString(data.dsf), ",",
+            vm.toString(slashCount), ",",
+            "0,RUNNING"
+        ));
+        
+        vm.writeLine(csvPath, row);
+    }
+    
+    function _writeTestResult(
+        string memory testName, 
+        string memory phase, 
+        uint64 _initialMaxMag, 
+        uint256 precisionLoss, 
+        string memory result
+    ) internal {
+        if (!csvInitialized) return;
+        
+        // Collect all data in struct
+        CSVData memory data = _collectCSVData();
+        
+        // Write row in parts
+        string memory row = string(abi.encodePacked(
+            testName, ",",
+            phase, ",",
+            vm.toString(_initialMaxMag), ",",
+            vm.toString(initTokenBalance), ","
+        ));
+        
+        row = string(abi.encodePacked(
+            row,
+            vm.toString(data.tokenBalance), ",",
+            vm.toString(data.depositShares), ",",
+            vm.toString(data.withdrawableShares), ",",
+            vm.toString(data.operatorShares), ","
+        ));
+        
+        row = string(abi.encodePacked(
+            row,
+            vm.toString(WAD), ",",
+            vm.toString(data.maxMag), ",",
+            vm.toString(data.totalAllocated), ",",
+            vm.toString(data.totalAvailable), ","
+        ));
+        
+        row = string(abi.encodePacked(
+            row,
+            "0,0,", // mOpSet and rOpSet allocations (likely 0 at end)
+            vm.toString(data.dsf), ",",
+            vm.toString(numSlashes + 1), ",",
+            vm.toString(precisionLoss), ",",
+            result
+        ));
+        
+        vm.writeLine(csvPath, row);
     }
 }
