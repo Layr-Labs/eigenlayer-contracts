@@ -3,11 +3,11 @@ pragma solidity ^0.8.27;
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 
-import {BN254} from "../libraries/BN254.sol";
-import {BN254SignatureVerifier} from "../libraries/BN254SignatureVerifier.sol";
-import {Merkle} from "../libraries/Merkle.sol";
-import {OperatorSet} from "../libraries/OperatorSetLib.sol";
-
+import "../libraries/BN254.sol";
+import "../libraries/BN254SignatureVerifier.sol";
+import "../libraries/Merkle.sol";
+import "../libraries/OperatorSetLib.sol";
+import "../mixins/SemVerMixin.sol";
 import "./BN254CertificateVerifierStorage.sol";
 
 /**
@@ -16,7 +16,7 @@ import "./BN254CertificateVerifierStorage.sol";
  * @dev This contract uses BN254 curves for signature verification and
  *      caches operator information for efficient verification
  */
-contract BN254CertificateVerifier is Initializable, BN254CertificateVerifierStorage {
+contract BN254CertificateVerifier is Initializable, BN254CertificateVerifierStorage, SemVerMixin {
     using Merkle for bytes;
     using BN254 for BN254.G1Point;
 
@@ -42,36 +42,20 @@ contract BN254CertificateVerifier is Initializable, BN254CertificateVerifierStor
      * @notice Constructor for the certificate verifier
      * @dev Disables initializers to prevent implementation initialization
      * @param _operatorTableUpdater Address authorized to update operator tables
+     * @param _version The semantic version of the contract
      */
     constructor(
-        IOperatorTableUpdater _operatorTableUpdater
-    ) BN254CertificateVerifierStorage(_operatorTableUpdater) {
+        IOperatorTableUpdater _operatorTableUpdater,
+        string memory _version
+    ) BN254CertificateVerifierStorage(_operatorTableUpdater) SemVerMixin(_version) {
         _disableInitializers();
     }
 
-    ///@inheritdoc IBaseCertificateVerifier
-    function getOperatorSetOwner(
-        OperatorSet memory operatorSet
-    ) external view returns (address) {
-        bytes32 operatorSetKey = operatorSet.key();
-        return _operatorSetOwners[operatorSetKey];
-    }
-
-    ///@inheritdoc IBaseCertificateVerifier
-    function maxOperatorTableStaleness(
-        OperatorSet memory operatorSet
-    ) external view returns (uint32) {
-        bytes32 operatorSetKey = operatorSet.key();
-        return _maxStalenessPeriods[operatorSetKey];
-    }
-
-    ///@inheritdoc IBaseCertificateVerifier
-    function latestReferenceTimestamp(
-        OperatorSet memory operatorSet
-    ) external view returns (uint32) {
-        bytes32 operatorSetKey = operatorSet.key();
-        return _latestReferenceTimestamps[operatorSetKey];
-    }
+    /**
+     *
+     *                         EXTERNAL FUNCTIONS
+     *
+     */
 
     ///@inheritdoc IBN254CertificateVerifier
     function updateOperatorTable(
@@ -148,21 +132,13 @@ contract BN254CertificateVerifier is Initializable, BN254CertificateVerifierStor
         return true;
     }
 
-    /**
-     * @notice Attempts signature verification with gas limit for safety
-     * @param msgHash The message hash that was signed
-     * @param aggPubkey The aggregate public key of signers
-     * @param apkG2 The G2 point representation of the aggregate public key
-     * @param signature The BLS signature to verify
-     * @return pairingSuccessful Whether the pairing operation completed successfully
-     * @return signatureValid Whether the signature is valid
-     */
+    ///@inheritdoc IBN254CertificateVerifier
     function trySignatureVerification(
         bytes32 msgHash,
         BN254.G1Point memory aggPubkey,
         BN254.G2Point memory apkG2,
         BN254.G1Point memory signature
-    ) internal view returns (bool pairingSuccessful, bool signatureValid) {
+    ) public view returns (bool pairingSuccessful, bool signatureValid) {
         return BN254SignatureVerifier.verifySignature(
             msgHash,
             signature,
@@ -172,6 +148,12 @@ contract BN254CertificateVerifier is Initializable, BN254CertificateVerifierStor
             PAIRING_EQUALITY_CHECK_GAS
         );
     }
+
+    /**
+     *
+     *                         INTERNAL FUNCTIONS
+     *
+     */
 
     /**
      * @notice Internal function to verify a certificate
@@ -232,7 +214,7 @@ contract BN254CertificateVerifier is Initializable, BN254CertificateVerifierStor
             require(witness.operatorIndex < ctx.operatorSetInfo.numOperators, InvalidOperatorIndex());
 
             BN254OperatorInfo memory operatorInfo =
-                _getOrCacheOperatorInfo(ctx.operatorSetKey, cert.referenceTimestamp, witness);
+                _getOrCacheNonsignerOperatorInfo(ctx.operatorSetKey, cert.referenceTimestamp, witness);
 
             nonSignerApk = nonSignerApk.plus(operatorInfo.pubkey);
 
@@ -252,12 +234,12 @@ contract BN254CertificateVerifier is Initializable, BN254CertificateVerifierStor
      * @param witness The operator info witness containing proof data
      * @return operatorInfo The verified operator information
      */
-    function _getOrCacheOperatorInfo(
+    function _getOrCacheNonsignerOperatorInfo(
         bytes32 operatorSetKey,
         uint32 referenceTimestamp,
         BN254OperatorInfoWitness memory witness
     ) internal returns (BN254OperatorInfo memory operatorInfo) {
-        BN254OperatorInfo storage cachedInfo = _operatorInfos[operatorSetKey][referenceTimestamp][witness.operatorIndex];
+        BN254OperatorInfo memory cachedInfo = _operatorInfos[operatorSetKey][referenceTimestamp][witness.operatorIndex];
 
         // Check if operator info is cached using pubkey existence (weights can be 0)
         bool isInfoCached = (cachedInfo.pubkey.X != 0 || cachedInfo.pubkey.Y != 0);
@@ -317,13 +299,13 @@ contract BN254CertificateVerifier is Initializable, BN254CertificateVerifierStor
     }
 
     /**
-     * @notice Get cached operator info
-     * @param operatorSet The operator set
-     * @param referenceTimestamp The reference timestamp
-     * @param operatorIndex The operator index
-     * @return The cached operator info
+     *
+     *                         VIEW FUNCTIONS
+     *
      */
-    function getOperatorInfo(
+
+    ///@inheritdoc IBN254CertificateVerifier
+    function getNonsignerOperatorInfo(
         OperatorSet memory operatorSet,
         uint32 referenceTimestamp,
         uint256 operatorIndex
@@ -332,12 +314,19 @@ contract BN254CertificateVerifier is Initializable, BN254CertificateVerifierStor
         return _operatorInfos[operatorSetKey][referenceTimestamp][operatorIndex];
     }
 
-    /**
-     * @notice Get operator set info for a timestamp
-     * @param operatorSet The operator set
-     * @param referenceTimestamp The reference timestamp
-     * @return The operator set info
-     */
+    ///@inheritdoc IBN254CertificateVerifier
+    function isNonsignerCached(
+        OperatorSet memory operatorSet,
+        uint32 referenceTimestamp,
+        uint256 operatorIndex
+    ) external view returns (bool) {
+        bytes32 operatorSetKey = operatorSet.key();
+        BN254OperatorInfo memory operatorInfo = _operatorInfos[operatorSetKey][referenceTimestamp][operatorIndex];
+        // Check if operator info is cached using pubkey existence (weights can be 0)
+        return operatorInfo.pubkey.X != 0 && operatorInfo.pubkey.Y != 0;
+    }
+
+    ///@inheritdoc IBN254CertificateVerifier
     function getOperatorSetInfo(
         OperatorSet memory operatorSet,
         uint32 referenceTimestamp
@@ -346,9 +335,27 @@ contract BN254CertificateVerifier is Initializable, BN254CertificateVerifierStor
         return _operatorSetInfos[operatorSetKey][referenceTimestamp];
     }
 
-    /// @dev Only used in a test environment
-    function setMaxStalenessPeriod(OperatorSet memory operatorSet, uint32 maxStalenessPeriod) external {
+    ///@inheritdoc IBaseCertificateVerifier
+    function getOperatorSetOwner(
+        OperatorSet memory operatorSet
+    ) external view returns (address) {
         bytes32 operatorSetKey = operatorSet.key();
-        _maxStalenessPeriods[operatorSetKey] = maxStalenessPeriod;
+        return _operatorSetOwners[operatorSetKey];
+    }
+
+    ///@inheritdoc IBaseCertificateVerifier
+    function maxOperatorTableStaleness(
+        OperatorSet memory operatorSet
+    ) external view returns (uint32) {
+        bytes32 operatorSetKey = operatorSet.key();
+        return _maxStalenessPeriods[operatorSetKey];
+    }
+
+    ///@inheritdoc IBaseCertificateVerifier
+    function latestReferenceTimestamp(
+        OperatorSet memory operatorSet
+    ) external view returns (uint32) {
+        bytes32 operatorSetKey = operatorSet.key();
+        return _latestReferenceTimestamps[operatorSetKey];
     }
 }
