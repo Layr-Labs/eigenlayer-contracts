@@ -38,56 +38,10 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
     }
 
     /**
-     * @notice Override domainSeparator to not include chainId
-     * @return The domain separator hash without chainId
+     *
+     *                         EXTERNAL FUNCTIONS
+     *
      */
-    function domainSeparator() public view override returns (bytes32) {
-        return keccak256(
-            abi.encode(
-                EIP712_DOMAIN_TYPEHASH_NO_CHAINID,
-                keccak256(bytes("EigenLayer")),
-                keccak256(bytes(_majorVersion())),
-                address(this)
-            )
-        );
-    }
-
-    /**
-     * @notice Calculate the EIP-712 digest for a certificate
-     * @param referenceTimestamp The reference timestamp
-     * @param messageHash The message hash
-     * @return The EIP-712 digest
-     * @dev This function is public to allow offchain tools to calculate the same digest
-     * @dev Note: This does not support smart contract based signatures for multichain
-     */
-    function calculateCertificateDigest(uint32 referenceTimestamp, bytes32 messageHash) public view returns (bytes32) {
-        bytes32 structHash = keccak256(abi.encode(ECDSA_CERTIFICATE_TYPEHASH, referenceTimestamp, messageHash));
-        return _calculateSignableDigest(structHash);
-    }
-
-    ///@inheritdoc IBaseCertificateVerifier
-    function getOperatorSetOwner(
-        OperatorSet memory operatorSet
-    ) external view returns (address) {
-        bytes32 operatorSetKey = operatorSet.key();
-        return _operatorSetOwners[operatorSetKey];
-    }
-
-    ///@inheritdoc IBaseCertificateVerifier
-    function maxOperatorTableStaleness(
-        OperatorSet memory operatorSet
-    ) external view returns (uint32) {
-        bytes32 operatorSetKey = operatorSet.key();
-        return _maxStalenessPeriods[operatorSetKey];
-    }
-
-    ///@inheritdoc IBaseCertificateVerifier
-    function latestReferenceTimestamp(
-        OperatorSet memory operatorSet
-    ) external view returns (uint32) {
-        bytes32 operatorSetKey = operatorSet.key();
-        return _latestReferenceTimestamps[operatorSetKey];
-    }
 
     ///@inheritdoc IECDSACertificateVerifier
     function updateOperatorTable(
@@ -158,62 +112,6 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
         return true;
     }
 
-    /// @inheritdoc IECDSACertificateVerifier
-    function getOperatorInfos(
-        OperatorSet memory operatorSet,
-        uint32 referenceTimestamp
-    ) external view returns (ECDSAOperatorInfo[] memory) {
-        bytes32 operatorSetKey = operatorSet.key();
-        uint32 numOperators = uint32(_numOperators[operatorSetKey][referenceTimestamp]);
-        ECDSAOperatorInfo[] memory operatorInfos = new ECDSAOperatorInfo[](numOperators);
-
-        for (uint32 i = 0; i < numOperators; i++) {
-            operatorInfos[i] = _operatorInfos[operatorSetKey][referenceTimestamp][i];
-        }
-
-        return operatorInfos;
-    }
-
-    /// @inheritdoc IECDSACertificateVerifier
-    function getOperatorInfo(
-        OperatorSet memory operatorSet,
-        uint32 referenceTimestamp,
-        uint32 operatorIndex
-    ) external view returns (ECDSAOperatorInfo memory) {
-        bytes32 operatorSetKey = operatorSet.key();
-        require(operatorIndex < _numOperators[operatorSetKey][referenceTimestamp], "Operator index out of bounds");
-        return _operatorInfos[operatorSetKey][referenceTimestamp][operatorIndex];
-    }
-
-    /// @inheritdoc IECDSACertificateVerifier
-    function getOperatorCount(
-        OperatorSet memory operatorSet,
-        uint32 referenceTimestamp
-    ) external view returns (uint32) {
-        bytes32 operatorSetKey = operatorSet.key();
-        return uint32(_numOperators[operatorSetKey][referenceTimestamp]);
-    }
-
-    /// @inheritdoc IECDSACertificateVerifier
-    function getTotalStakes(
-        OperatorSet calldata operatorSet,
-        uint32 referenceTimestamp
-    ) public view returns (uint256[] memory) {
-        bytes32 operatorSetKey = operatorSet.key();
-        require(_latestReferenceTimestamps[operatorSetKey] == referenceTimestamp, ReferenceTimestampDoesNotExist());
-        uint256 operatorCount = _numOperators[operatorSetKey][referenceTimestamp];
-        require(operatorCount > 0, ReferenceTimestampDoesNotExist());
-        uint256 stakeTypesCount = _operatorInfos[operatorSetKey][referenceTimestamp][0].weights.length;
-        uint256[] memory totalStakes = new uint256[](stakeTypesCount);
-        for (uint256 i = 0; i < operatorCount; i++) {
-            uint256[] memory weights = _operatorInfos[operatorSetKey][referenceTimestamp][uint32(i)].weights;
-            for (uint256 j = 0; j < weights.length && j < stakeTypesCount; j++) {
-                totalStakes[j] += weights[j];
-            }
-        }
-        return totalStakes;
-    }
-
     /**
      * @notice Internal function to verify a certificate
      * @param cert The certificate to verify
@@ -274,6 +172,12 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
     }
 
     /**
+     *
+     *                         INTERNAL FUNCTIONS
+     *
+     */
+
+    /**
      * @notice Parse signatures from the concatenated signature bytes
      * @param messageHash The message hash that was signed
      * @param signatures The concatenated signatures
@@ -316,5 +220,109 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
         }
 
         return (signers, true);
+    }
+
+    /**
+     *
+     *                         VIEW FUNCTIONS
+     *
+     */
+
+    ///@inheritdoc IBaseCertificateVerifier
+    function getOperatorSetOwner(
+        OperatorSet memory operatorSet
+    ) external view returns (address) {
+        bytes32 operatorSetKey = operatorSet.key();
+        return _operatorSetOwners[operatorSetKey];
+    }
+
+    ///@inheritdoc IBaseCertificateVerifier
+    function maxOperatorTableStaleness(
+        OperatorSet memory operatorSet
+    ) external view returns (uint32) {
+        bytes32 operatorSetKey = operatorSet.key();
+        return _maxStalenessPeriods[operatorSetKey];
+    }
+
+    ///@inheritdoc IBaseCertificateVerifier
+    function latestReferenceTimestamp(
+        OperatorSet memory operatorSet
+    ) external view returns (uint32) {
+        bytes32 operatorSetKey = operatorSet.key();
+        return _latestReferenceTimestamps[operatorSetKey];
+    }
+
+    /// @inheritdoc IECDSACertificateVerifier
+    function getOperatorInfos(
+        OperatorSet memory operatorSet,
+        uint32 referenceTimestamp
+    ) external view returns (ECDSAOperatorInfo[] memory) {
+        bytes32 operatorSetKey = operatorSet.key();
+        uint32 numOperators = uint32(_numOperators[operatorSetKey][referenceTimestamp]);
+        ECDSAOperatorInfo[] memory operatorInfos = new ECDSAOperatorInfo[](numOperators);
+
+        for (uint32 i = 0; i < numOperators; i++) {
+            operatorInfos[i] = _operatorInfos[operatorSetKey][referenceTimestamp][i];
+        }
+
+        return operatorInfos;
+    }
+
+    /// @inheritdoc IECDSACertificateVerifier
+    function getOperatorInfo(
+        OperatorSet memory operatorSet,
+        uint32 referenceTimestamp,
+        uint32 operatorIndex
+    ) external view returns (ECDSAOperatorInfo memory) {
+        bytes32 operatorSetKey = operatorSet.key();
+        require(operatorIndex < _numOperators[operatorSetKey][referenceTimestamp], "Operator index out of bounds");
+        return _operatorInfos[operatorSetKey][referenceTimestamp][operatorIndex];
+    }
+
+    /// @inheritdoc IECDSACertificateVerifier
+    function getOperatorCount(
+        OperatorSet memory operatorSet,
+        uint32 referenceTimestamp
+    ) external view returns (uint32) {
+        bytes32 operatorSetKey = operatorSet.key();
+        return uint32(_numOperators[operatorSetKey][referenceTimestamp]);
+    }
+
+    /// @inheritdoc IECDSACertificateVerifier
+    function getTotalStakes(
+        OperatorSet calldata operatorSet,
+        uint32 referenceTimestamp
+    ) public view returns (uint256[] memory) {
+        bytes32 operatorSetKey = operatorSet.key();
+        require(_latestReferenceTimestamps[operatorSetKey] == referenceTimestamp, ReferenceTimestampDoesNotExist());
+        uint256 operatorCount = _numOperators[operatorSetKey][referenceTimestamp];
+        require(operatorCount > 0, ReferenceTimestampDoesNotExist());
+        uint256 stakeTypesCount = _operatorInfos[operatorSetKey][referenceTimestamp][0].weights.length;
+        uint256[] memory totalStakes = new uint256[](stakeTypesCount);
+        for (uint256 i = 0; i < operatorCount; i++) {
+            uint256[] memory weights = _operatorInfos[operatorSetKey][referenceTimestamp][uint32(i)].weights;
+            for (uint256 j = 0; j < weights.length && j < stakeTypesCount; j++) {
+                totalStakes[j] += weights[j];
+            }
+        }
+        return totalStakes;
+    }
+
+    /// @inheritdoc IECDSACertificateVerifier
+    function domainSeparator() public view override(IECDSACertificateVerifier, SignatureUtilsMixin) returns (bytes32) {
+        return keccak256(
+            abi.encode(
+                EIP712_DOMAIN_TYPEHASH_NO_CHAINID,
+                keccak256(bytes("EigenLayer")),
+                keccak256(bytes(_majorVersion())),
+                address(this)
+            )
+        );
+    }
+
+    /// @inheritdoc IECDSACertificateVerifier
+    function calculateCertificateDigest(uint32 referenceTimestamp, bytes32 messageHash) public view returns (bytes32) {
+        bytes32 structHash = keccak256(abi.encode(ECDSA_CERTIFICATE_TYPEHASH, referenceTimestamp, messageHash));
+        return _calculateSignableDigest(structHash);
     }
 }
