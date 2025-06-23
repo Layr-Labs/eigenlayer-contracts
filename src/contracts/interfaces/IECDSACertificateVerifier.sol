@@ -130,4 +130,24 @@ interface IECDSACertificateVerifier is IECDSACertificateVerifierEvents, IBaseCer
         OperatorSet calldata operatorSet,
         uint32 referenceTimestamp
     ) external view returns (uint256[] memory);
+
+    /**
+     * @notice Override domainSeparator to not include chainId
+     * @return The domain separator hash without chainId
+     * @dev This function overrides the base domainSeparator to not include chainId
+     */
+    function domainSeparator() external view returns (bytes32);
+
+    /**
+     * @notice Calculate the EIP-712 digest for a certificate
+     * @param referenceTimestamp The reference timestamp
+     * @param messageHash The message hash
+     * @return The EIP-712 digest
+     * @dev This function is public to allow offchain tools to calculate the same digest
+     * @dev Note: This does not support smart contract based signatures for multichain
+     */
+    function calculateCertificateDigest(
+        uint32 referenceTimestamp,
+        bytes32 messageHash
+    ) external view returns (bytes32);
 }
