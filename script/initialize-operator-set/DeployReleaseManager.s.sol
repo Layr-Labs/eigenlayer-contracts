@@ -4,12 +4,10 @@ pragma solidity ^0.8.27;
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "src/contracts/core/ReleaseManager.sol";
 import "src/contracts/permissions/PermissionController.sol";
-import "../utils/CrosschainDeployLib.sol";
+import "script/utils/CrosschainDeployLib.sol";
 
 import "forge-std/Script.sol";
 import "forge-std/Test.sol";
-
-contract EmptyContract {}
 
 contract DeployFromScratch is Script, Test {
     using CrosschainDeployLib for *;
@@ -18,24 +16,17 @@ contract DeployFromScratch is Script, Test {
 
     PermissionController constant permissionController =
         PermissionController(0x0000000000000000000000000000000000000000);
+
     string semver = "0.0.0";
 
-    ReleaseManager releaseManager;
-    ReleaseManager releaseManagerImplementation;
-    ProxyAdmin eigenLayerProxyAdmin;
-    address emptyContract;
+    ProxyAdmin proxyAdmin;
 
     function run() public {
-        // Deploy the empty contract, MUST be on all chains at the same address.
-        emptyContract = type(EmptyContract).creationCode.deployCrosschain();
-        // Deploy the release manager implementation.
-        releaseManagerImplementation = new ReleaseManager(permissionController, semver);
-        // Deploy the proxy with EOA as admin, and empty contract as implementation.
-        releaseManager = ReleaseManager(address(emptyContract.deployCrosschainProxy(msg.sender, "")));
-
-        // Upgrade the proxy to the release manager implementation and set the admin to the proxy admin.
-        ITransparentUpgradeableProxy proxy = ITransparentUpgradeableProxy(address(releaseManager));
-        proxy.upgradeTo(address(releaseManagerImplementation));
-        proxy.changeAdmin(address(eigenLayerProxyAdmin));
+        address emptyContract = type(EmptyContract).creationCode.deployCrosschain();
+        ReleaseManager proxy =
+            ReleaseManager(address(emptyContract.deployCrosschainProxy({salt: bytes11(uint88(0x1234))})));
+        ReleaseManager implementation = new ReleaseManager(permissionController, semver);
+        ITransparentUpgradeableProxy(address(proxy)).upgradeTo(address(implementation));
+        ITransparentUpgradeableProxy(address(proxy)).changeAdmin(address(proxyAdmin));
     }
 }
