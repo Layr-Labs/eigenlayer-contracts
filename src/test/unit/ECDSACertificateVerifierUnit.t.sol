@@ -517,11 +517,7 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificate is ECDSACertificate
     function test_updateOperatorsAndVerify() public {
         // First update with initial operators
         uint32 firstTimestamp = uint32(block.timestamp);
-        (
-            IECDSACertificateVerifierTypes.ECDSAOperatorInfo[] memory firstOperators,
-            ,
-            
-        ) = _createOperatorsWithSplitKeys(123, 3, 1);
+        (IECDSACertificateVerifierTypes.ECDSAOperatorInfo[] memory firstOperators,,) = _createOperatorsWithSplitKeys(123, 3, 1);
 
         vm.prank(address(operatorTableUpdaterMock));
         verifier.updateOperatorTable(defaultOperatorSet, firstTimestamp, firstOperators, defaultOperatorSetConfig);
