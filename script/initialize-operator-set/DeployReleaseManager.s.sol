@@ -22,7 +22,7 @@ contract DeployFromScratch is Script, Test {
     ProxyAdmin proxyAdmin;
 
     function run() public {
-        address emptyContract = type(EmptyContract).creationCode.deployCrosschain();
+        address emptyContract = CrosschainDeployLib.deployEmptyContract();
         ReleaseManager proxy =
             ReleaseManager(address(emptyContract.deployCrosschainProxy({salt: bytes11(uint88(0x1234))})));
         ReleaseManager implementation = new ReleaseManager(permissionController, semver);
