@@ -92,13 +92,16 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
     function deregisterKey(address operator, OperatorSet memory operatorSet) external {
         // Check if the caller is the AVS registrar (AVS-initiated deregistration)
         bool isAVSCall = address(allocationManager.getAVSRegistrar(operatorSet.avs)) == msg.sender;
-        
+
         // If it's not an AVS call, check if the caller is the operator or authorized
         if (!isAVSCall) {
             require(_checkCanCall(operator), InvalidPermissions());
-            
+
             // Operators can only deregister if they are not slashable for this operator set
-            require(!allocationManager.isOperatorSlashable(operator, operatorSet), OperatorStillSlashable(operatorSet, operator));
+            require(
+                !allocationManager.isOperatorSlashable(operator, operatorSet),
+                OperatorStillSlashable(operatorSet, operator)
+            );
         }
 
         CurveType curveType = operatorSetCurveTypes[operatorSet.key()];
