@@ -654,6 +654,77 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificate is ECDSACertificate
         vm.expectRevert(VerificationFailed.selector);
         verifier.verifyCertificate(defaultOperatorSet, cert);
     }
+
+    function test_revert_invalidSignatureRecoveryError() public {
+        // Create operators and update the table
+        uint32 referenceTimestamp = uint32(block.timestamp);
+        (IECDSACertificateVerifierTypes.ECDSAOperatorInfo[] memory operators,,) = _createOperatorsWithSplitKeys(123, 4, 0);
+
+        vm.prank(address(operatorTableUpdaterMock));
+        verifier.updateOperatorTable(defaultOperatorSet, referenceTimestamp, operators, defaultOperatorSetConfig);
+
+        // Create an invalid signature with invalid s value (too large)
+        // This will cause ECDSA.tryRecover to return RecoverError.InvalidSignatureS
+        bytes memory invalidSignature = new bytes(65);
+        // Set r to a valid value
+        bytes32 r = bytes32(uint(0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef));
+        // Set s to a value that's too large (> N/2)
+        bytes32 s = bytes32(uint(0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141));
+        uint8 v = 27;
+
+        // Pack the signature
+        for (uint i = 0; i < 32; i++) {
+            invalidSignature[i] = r[i];
+            invalidSignature[i + 32] = s[i];
+        }
+        invalidSignature[64] = bytes1(v);
+
+        IECDSACertificateVerifierTypes.ECDSACertificate memory cert = IECDSACertificateVerifierTypes.ECDSACertificate({
+            referenceTimestamp: referenceTimestamp,
+            messageHash: defaultMsgHash,
+            sig: invalidSignature
+        });
+
+        // Should revert because signature recovery returns an error
+        vm.expectRevert(VerificationFailed.selector);
+        verifier.verifyCertificate(defaultOperatorSet, cert);
+    }
+
+    function test_revert_recoveredAddressZero() public {
+        // Create operators and update the table
+        uint32 referenceTimestamp = uint32(block.timestamp);
+        (IECDSACertificateVerifierTypes.ECDSAOperatorInfo[] memory operators,,) = _createOperatorsWithSplitKeys(123, 4, 0);
+
+        vm.prank(address(operatorTableUpdaterMock));
+        verifier.updateOperatorTable(defaultOperatorSet, referenceTimestamp, operators, defaultOperatorSetConfig);
+
+        // Create a signature that will recover to address(0)
+        // This happens when v, r, s are valid but don't correspond to any valid signature
+        bytes memory zeroRecoverySignature = new bytes(65);
+
+        // These specific values will cause ecrecover to return address(0)
+        // while still being within valid ranges
+        bytes32 r = bytes32(uint(1));
+        bytes32 s = bytes32(uint(1));
+        uint8 v = 27;
+
+        // Pack the signature
+        for (uint i = 0; i < 32; i++) {
+            zeroRecoverySignature[i] = r[i];
+            zeroRecoverySignature[i + 32] = s[i];
+        }
+        zeroRecoverySignature[64] = bytes1(v);
+
+        IECDSACertificateVerifierTypes.ECDSACertificate memory cert = IECDSACertificateVerifierTypes.ECDSACertificate({
+            referenceTimestamp: referenceTimestamp,
+            messageHash: defaultMsgHash,
+            sig: zeroRecoverySignature
+        });
+
+        // Should revert because recovered address is zero
+        vm.expectRevert(VerificationFailed.selector);
+        verifier.verifyCertificate(defaultOperatorSet, cert);
+    }
 }
 
 /**
