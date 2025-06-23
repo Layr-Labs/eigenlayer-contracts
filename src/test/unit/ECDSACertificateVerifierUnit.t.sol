@@ -1085,15 +1085,11 @@ contract ECDSACertificateVerifierUnitTests_ViewFunctions is ECDSACertificateVeri
     }
 
     function test_revert_indexOutOfBounds() public {
-<<<<<<< HEAD
-        IECDSACertificateVerifierTypes.ECDSAOperatorInfo[] memory operators = _getOperators();
-=======
         uint32 referenceTimestamp = uint32(block.timestamp);
         (IECDSACertificateVerifierTypes.ECDSAOperatorInfo[] memory operators,,) = _createOperatorsWithSplitKeys(123, 3, 1);
 
         vm.prank(address(operatorTableUpdaterMock));
         verifier.updateOperatorTable(defaultOperatorSet, referenceTimestamp, operators, defaultOperatorSetConfig);
->>>>>>> 5c0cf37c (chore: update tests)
 
         // Try to get operator info with out of bounds index
         uint32 outOfBoundsIndex = uint32(operators.length);
@@ -1110,11 +1106,7 @@ contract ECDSACertificateVerifierUnitTests_ViewFunctions is ECDSACertificateVeri
     }
 
     function test_revert_noOperators() public {
-<<<<<<< HEAD
         uint32 referenceTimestamp = uint32(block.timestamp) + 1;
-=======
-        uint32 referenceTimestamp = uint32(block.timestamp);
->>>>>>> 5c0cf37c (chore: update tests)
 
         // Create empty operator array
         IECDSACertificateVerifierTypes.ECDSAOperatorInfo[] memory operators = new IECDSACertificateVerifierTypes.ECDSAOperatorInfo[](0);
