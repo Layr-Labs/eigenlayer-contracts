@@ -577,6 +577,10 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificate is ECDSACertificate
 
         // Create certificate with the non-operator as a signer
         bytes32 signableDigest = verifier.calculateCertificateDigest(referenceTimestamp, defaultMsgHash);
+<<<<<<< HEAD
+=======
+
+>>>>>>> c14086cc (chore: format)
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(nonOperatorPrivKey, signableDigest);
         bytes memory signature = abi.encodePacked(r, s, v);
 
