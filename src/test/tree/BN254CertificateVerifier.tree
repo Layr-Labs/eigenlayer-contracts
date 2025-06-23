@@ -1,0 +1,56 @@
+.
+└── BN254CertificateVerifier (**** denotes that integration tests are needed to fully validate path)
+    ├── when updateOperatorTable is called
+    │   ├── given that the caller is not the table updater
+    │   │   └── it should revert
+    │   ├── given that the reference timestamp is not greater than the latest
+    │   │   └── it should revert
+    │   └── given that all parameters are valid
+    │       └── it should update operator set info, timestamp, owner, and staleness period & emit event
+    ├── when verifyCertificate is called
+    │   ├── given that the reference timestamp does not exist
+    │   │   └── it should revert
+    │   ├── given that the certificate is stale
+    │   │   └── it should revert
+    │   ├── given that a non-signer witness has invalid operator index
+    │   │   └── it should revert
+    │   ├── given that a non-signer witness has invalid merkle proof
+    │   │   └── it should revert
+    │   ├── given that the signature is invalid
+    │   │   └── it should revert
+    │   ├── given that all operators are signers
+    │   │   └── it should return full stake amounts
+    │   ├── given that some operators are non-signers
+    │   │   └── it should deduct non-signer stakes from total
+    │   └── given that operator info is not cached
+    │       └── it should cache operator info after verification
+    ├── when verifyCertificateProportion is called
+    │   ├── given that array lengths mismatch
+    │   │   └── it should revert
+    │   ├── given that the certificate meets thresholds
+    │   │   └── it should return true
+    │   └── given that the certificate does not meet thresholds
+    │       └── it should return false
+    ├── when verifyCertificateNominal is called
+    │   ├── given that array lengths mismatch
+    │   │   └── it should revert
+    │   ├── given that the certificate meets thresholds
+    │   │   └── it should return true
+    │   └── given that the certificate does not meet thresholds
+    │       └── it should return false
+    ├── when trySignatureVerification is called
+    │   ├── given a valid signature
+    │   │   └── it should return pairing successful and signature valid
+    │   └── given an invalid signature
+    │       └── it should return pairing successful and signature invalid
+    └── when view functions are called
+        ├── getOperatorSetOwner
+        │   └── it should return the correct owner address
+        ├── maxOperatorTableStaleness
+        │   └── it should return the correct staleness period
+        ├── latestReferenceTimestamp
+        │   └── it should return the latest timestamp
+        ├── getOperatorSetInfo
+        │   └── it should return the correct operator set info
+        └── getOperatorInfo
+            └── it should return the cached operator info 
