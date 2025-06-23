@@ -465,6 +465,107 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificate is ECDSACertificate
         assertEq(signedStakes[0], expectedSignedStakes[0], "Wrong signed stake for type 0");
         assertEq(signedStakes[1], expectedSignedStakes[1], "Wrong signed stake for type 1");
     }
+
+    function test_updateStalenessAndVerify() public {
+        // Initial setup with default staleness (3600)
+        uint32 firstTimestamp = uint32(block.timestamp);
+        (
+            IECDSACertificateVerifierTypes.ECDSAOperatorInfo[] memory operators,
+            uint32[] memory nonSignerIndices,
+            uint[] memory signerPrivKeys
+        ) = _createOperatorsWithSplitKeys(123, 4, 0);
+
+        vm.prank(address(operatorTableUpdaterMock));
+        verifier.updateOperatorTable(defaultOperatorSet, firstTimestamp, operators, defaultOperatorSetConfig);
+
+        // Warp past the staleness period (3601 seconds)
+        vm.warp(block.timestamp + 3601);
+
+        // Update table again with new staleness period (7200) and new owner
+        uint32 secondTimestamp = uint32(block.timestamp);
+        ICrossChainRegistryTypes.OperatorSetConfig memory newConfig = ICrossChainRegistryTypes.OperatorSetConfig({
+            owner: address(0x999),
+            maxStalenessPeriod: 7200 // 2 hours
+        });
+
+        vm.prank(address(operatorTableUpdaterMock));
+        verifier.updateOperatorTable(defaultOperatorSet, secondTimestamp, operators, newConfig);
+
+        // Warp past old staleness period (3601) but within new staleness period
+        vm.warp(block.timestamp + 3601);
+
+        // Create and verify certificate - should succeed with new staleness period
+        IECDSACertificateVerifierTypes.ECDSACertificate memory cert =
+            _createCertificate(secondTimestamp, defaultMsgHash, nonSignerIndices, operators, signerPrivKeys);
+
+        uint[] memory signedStakes = verifier.verifyCertificate(defaultOperatorSet, cert);
+
+        // Verify all stakes are signed
+        uint[] memory totalStakes = new uint[](2);
+        for (uint i = 0; i < operators.length; i++) {
+            totalStakes[0] += operators[i].weights[0];
+            totalStakes[1] += operators[i].weights[1];
+        }
+        assertEq(signedStakes[0], totalStakes[0], "All stake should be signed for type 0");
+        assertEq(signedStakes[1], totalStakes[1], "All stake should be signed for type 1");
+
+        // Verify the new config is applied
+        assertEq(verifier.maxOperatorTableStaleness(defaultOperatorSet), 7200, "New staleness period not applied");
+        assertEq(verifier.getOperatorSetOwner(defaultOperatorSet), address(0x999), "New owner not applied");
+    }
+
+    function test_updateOperatorsAndVerify() public {
+        // First update with initial operators
+        uint32 firstTimestamp = uint32(block.timestamp);
+        (
+            IECDSACertificateVerifierTypes.ECDSAOperatorInfo[] memory firstOperators,
+            ,
+            
+        ) = _createOperatorsWithSplitKeys(123, 3, 1);
+
+        vm.prank(address(operatorTableUpdaterMock));
+        verifier.updateOperatorTable(defaultOperatorSet, firstTimestamp, firstOperators, defaultOperatorSetConfig);
+
+        // Advance time and update with new operators
+        vm.warp(block.timestamp + 100);
+        uint32 secondTimestamp = uint32(block.timestamp);
+        (
+            IECDSACertificateVerifierTypes.ECDSAOperatorInfo[] memory secondOperators,
+            uint32[] memory nonSignerIndices,
+            uint[] memory signerPrivKeys
+        ) = _createOperatorsWithSplitKeys(456, 2, 2); // Different seed for different operators
+
+        vm.prank(address(operatorTableUpdaterMock));
+        verifier.updateOperatorTable(defaultOperatorSet, secondTimestamp, secondOperators, defaultOperatorSetConfig);
+
+        // Create certificate with new operators
+        IECDSACertificateVerifierTypes.ECDSACertificate memory cert =
+            _createCertificate(secondTimestamp, defaultMsgHash, nonSignerIndices, secondOperators, signerPrivKeys);
+
+        uint[] memory signedStakes = verifier.verifyCertificate(defaultOperatorSet, cert);
+
+        // Verify only signers' stakes are counted
+        uint[] memory expectedSignedStakes = new uint[](2);
+        // First 2 operators are signers
+        for (uint i = 0; i < 2; i++) {
+            expectedSignedStakes[0] += secondOperators[i].weights[0];
+            expectedSignedStakes[1] += secondOperators[i].weights[1];
+        }
+
+        assertEq(signedStakes[0], expectedSignedStakes[0], "Wrong signed stake for type 0");
+        assertEq(signedStakes[1], expectedSignedStakes[1], "Wrong signed stake for type 1");
+
+        // Verify the latest timestamp is updated
+        assertEq(verifier.latestReferenceTimestamp(defaultOperatorSet), secondTimestamp, "Latest timestamp not updated");
+
+        // Verify new operators are stored
+        IECDSACertificateVerifierTypes.ECDSAOperatorInfo[] memory storedOperators =
+            verifier.getOperatorInfos(defaultOperatorSet, secondTimestamp);
+        assertEq(storedOperators.length, secondOperators.length, "Operator count mismatch");
+        for (uint i = 0; i < secondOperators.length; i++) {
+            assertEq(storedOperators[i].pubkey, secondOperators[i].pubkey, "Operator pubkey mismatch");
+        }
+    }
 }
 
 /**
