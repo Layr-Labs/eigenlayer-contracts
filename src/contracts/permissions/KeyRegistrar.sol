@@ -89,10 +89,7 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
     }
 
     /// @inheritdoc IKeyRegistrar
-    function deregisterKey(address operator, OperatorSet memory operatorSet) external {
-        // Only the operator or authorized addresses can deregister keys
-        require(_checkCanCall(operator), InvalidPermissions());
-
+    function deregisterKey(address operator, OperatorSet memory operatorSet) external checkCanCall(operator) {
         // Operators can only deregister if they are not slashable for this operator set
         require(
             !allocationManager.isOperatorSlashable(operator, operatorSet), OperatorStillSlashable(operatorSet, operator)
