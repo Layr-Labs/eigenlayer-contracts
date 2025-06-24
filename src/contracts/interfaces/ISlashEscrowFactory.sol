@@ -14,9 +14,6 @@ interface ISlashEscrowFactoryErrors {
 
     /// @notice Thrown when a escrow is not mature.
     error EscrowNotMature();
-
-    /// @notice Thrown when the escrow delay has not elapsed.
-    error EscrowDelayNotElapsed();
 }
 
 interface ISlashEscrowFactoryEvents {
@@ -31,22 +28,16 @@ interface ISlashEscrowFactoryEvents {
 
     /// @notice Emitted when a escrow is unpaused.
     event EscrowUnpaused(OperatorSet operatorSet, uint256 slashId);
-
-    /// @notice Emitted when a global escrow delay is set.
-    event GlobalEscrowDelaySet(uint32 delay);
-
-    /// @notice Emitted when a escrow delay is set.
-    event StrategyEscrowDelaySet(IStrategy strategy, uint32 delay);
 }
 
 interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryEvents {
     /**
-     * @notice Initializes the initial owner and paused status.
-     * @param initialOwner The initial owner of the router.
+     * @notice Initializes the paused status.
      * @param initialPausedStatus The initial paused status of the router.
-     * @param initialGlobalDelayBlocks The initial global escrow delay.
      */
-    function initialize(address initialOwner, uint256 initialPausedStatus, uint32 initialGlobalDelayBlocks) external;
+    function initialize(
+        uint256 initialPausedStatus
+    ) external;
 
     /**
      * @notice Initiates a slash escrow.
@@ -63,7 +54,6 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
      * @param slashId The slash ID of the escrow that is being released.
      * @dev The caller must be the escrow recipient, unless the escrow recipient
      * is the default burn address in which case anyone can call.
-     * @dev The slash escrow is released once the delay for ALL strategies has elapsed.
      */
     function releaseSlashEscrow(OperatorSet calldata operatorSet, uint256 slashId) external;
 
@@ -74,7 +64,6 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
      * @param strategy The strategy whose escrow is being released.
      * @dev The caller must be the redistribution recipient, unless the redistribution recipient
      * is the default burn address in which case anyone can call.
-     * @dev The slash escrow is released once the delay for ALL strategies has elapsed.
      */
     function releaseSlashEscrowByStrategy(
         OperatorSet calldata operatorSet,
@@ -98,24 +87,6 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
      * @param slashId The slash ID of the escrow that is being unpaused.
      */
     function unpauseEscrow(OperatorSet calldata operatorSet, uint256 slashId) external;
-
-    /**
-     * @notice Sets the delay for the escrow of a strategies underlying token.
-     * @dev The largest of all strategy delays or global delay will be used.
-     * @dev This delay setting only applies to new slashes and does not affect existing ones.
-     * @param strategy The strategy whose escrow delay is being set.
-     * @param delay The delay for the escrow.
-     */
-    function setStrategyEscrowDelay(IStrategy strategy, uint32 delay) external;
-
-    /**
-     * @notice Sets a global delay applicable to all strategies.
-     * @dev This delay setting only applies to new slashes and does not affect existing ones.
-     * @param delay The delay for the escrow.
-     */
-    function setGlobalEscrowDelay(
-        uint32 delay
-    ) external;
 
     /**
      * @notice Returns the operator sets that have pending escrows.
@@ -147,21 +118,15 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
     ) external view returns (uint256[] memory);
 
     /**
-     * @notice Returns the pending escrows and their release blocks.
+     * @notice Returns the pending escrows.
      * @return operatorSets The pending operator sets.
      * @return isRedistributing Whether the operator set is redistributing.
      * @return slashIds The pending slash IDs for each operator set. Indexed by operator set.
-     * @return completeBlocks The block at which a slashID can be released. Indexed by [operatorSet][slashId]
      */
     function getPendingEscrows()
         external
         view
-        returns (
-            OperatorSet[] memory operatorSets,
-            bool[] memory isRedistributing,
-            uint256[][] memory slashIds,
-            uint32[][] memory completeBlocks
-        );
+        returns (OperatorSet[] memory operatorSets, bool[] memory isRedistributing, uint256[][] memory slashIds);
 
     /**
      * @notice Returns the total number of slash IDs for an operator set.
@@ -233,29 +198,6 @@ interface ISlashEscrowFactory is ISlashEscrowFactoryErrors, ISlashEscrowFactoryE
      * @return The paused status of the escrow.
      */
     function isEscrowPaused(OperatorSet calldata operatorSet, uint256 slashId) external view returns (bool);
-
-    /**
-     * @notice Returns the block at which the escrow can be released.
-     * @param operatorSet The operator set whose start block is being queried.
-     * @param slashId The slash ID of the start block that is being queried.
-     * @return The block at which the escrow can be released.
-     */
-    function getEscrowCompleteBlock(OperatorSet calldata operatorSet, uint256 slashId) external view returns (uint32);
-
-    /**
-     * @notice Returns the escrow delay for a strategy.
-     * @param strategy The strategy whose escrow delay is being queried.
-     * @return The escrow delay.
-     */
-    function getStrategyEscrowDelay(
-        IStrategy strategy
-    ) external view returns (uint32);
-
-    /**
-     * @notice Returns the global escrow delay.
-     * @return The global escrow delay.
-     */
-    function getGlobalEscrowDelay() external view returns (uint32);
 
     /**
      * @notice Returns the salt for a slash escrow.

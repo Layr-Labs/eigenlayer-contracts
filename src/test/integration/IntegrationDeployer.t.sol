@@ -289,11 +289,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         _upgradeProxies();
 
         // Initialize the newly-deployed proxy
-        slashEscrowFactory.initialize({
-            initialOwner: communityMultisig,
-            initialPausedStatus: 0,
-            initialGlobalDelayBlocks: INITIAL_GLOBAL_DELAY_BLOCKS
-        });
+        slashEscrowFactory.initialize({initialPausedStatus: 0});
 
         cheats.stopPrank();
     }
@@ -442,11 +438,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
         strategyFactory.initialize({_initialOwner: executorMultisig, _initialPausedStatus: 0, _strategyBeacon: strategyBeacon});
 
-        slashEscrowFactory.initialize({
-            initialOwner: communityMultisig,
-            initialPausedStatus: 0,
-            initialGlobalDelayBlocks: INITIAL_GLOBAL_DELAY_BLOCKS
-        });
+        slashEscrowFactory.initialize({initialPausedStatus: 0});
     }
 
     /// @dev Deploy a strategy and its underlying token, push to global lists of tokens/strategies, and whitelist

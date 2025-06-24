@@ -22,7 +22,6 @@ contract SlashEscrowFactoryUnitTests is EigenLayerUnitTestSetup, ISlashEscrowFac
     address defaultRedistributionRecipient;
     address defaultOwner;
     SlashEscrow slashEscrowImplementation;
-    uint32 defaultGlobalDelayBlocks = uint32(4 days / 12 seconds);
 
     function setUp() public virtual override {
         EigenLayerUnitTestSetup.setUp();
@@ -49,14 +48,10 @@ contract SlashEscrowFactoryUnitTests is EigenLayerUnitTestSetup, ISlashEscrowFac
                         )
                     ),
                     address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(SlashEscrowFactory.initialize.selector, defaultOwner, 0, uint32(defaultGlobalDelayBlocks))
+                    abi.encodeWithSelector(SlashEscrowFactory.initialize.selector, 0)
                 )
             )
         );
-    }
-
-    function _rollForwardDefaultEscrowDelay() internal {
-        cheats.roll(block.number + defaultGlobalDelayBlocks + 1);
     }
 
     /// @dev Sets the return value for the next call to `strategy.underlyingToken()`.
@@ -172,7 +167,6 @@ contract SlashEscrowFactoryUnitTests_initialize is SlashEscrowFactoryUnitTests {
         assertEq(address(factory.strategyManager()), address(strategyManagerMock));
         assertEq(address(factory.pauserRegistry()), address(pauserRegistry));
         assertEq(address(factory.slashEscrowImplementation()), address(slashEscrowImplementation));
-        assertEq(factory.getGlobalEscrowDelay(), defaultGlobalDelayBlocks);
         assertEq(factory.paused(), 0);
     }
 }
@@ -243,14 +237,6 @@ contract SlashEscrowFactoryUnitTests_releaseSlashEscrow is SlashEscrowFactoryUni
         assertFalse(factory.isPendingSlashId(defaultOperatorSet, defaultSlashId));
     }
 
-    function testFuzz_releaseSlashEscrow_delayNotElapsed(uint underlyingAmount) public {
-        _initiateSlashEscrow(defaultOperatorSet, defaultSlashId, defaultStrategy, defaultToken, underlyingAmount);
-        cheats.roll(block.number + defaultGlobalDelayBlocks);
-        cheats.prank(defaultRedistributionRecipient);
-        cheats.expectRevert(ISlashEscrowFactoryErrors.EscrowDelayNotElapsed.selector);
-        factory.releaseSlashEscrow(defaultOperatorSet, defaultSlashId);
-    }
-
     /// @dev Tests that multiple strategies can be burned or redistributed in a single call
     function testFuzz_releaseSlashEscrow_multipleStrategies_sameDelay(uint r) public {
         // Initialize arrays to store test data for multiple strategies
@@ -275,9 +261,6 @@ contract SlashEscrowFactoryUnitTests_releaseSlashEscrow is SlashEscrowFactoryUni
             _checkStartEscrows(defaultOperatorSet, defaultSlashId, strategies[i], tokens[i], underlyingAmounts[i], i + 1);
         }
 
-        // Advance time to allow escrow to occur
-        _rollForwardDefaultEscrowDelay();
-
         // Set up mock calls for each strategy's underlying token
         for (uint i = 0; i < numStrategies; i++) {
             _mockStrategyUnderlyingTokenCall(strategies[i], address(tokens[i]));
@@ -301,78 +284,6 @@ contract SlashEscrowFactoryUnitTests_releaseSlashEscrow is SlashEscrowFactoryUni
         for (uint i = 0; i < numStrategies; i++) {
             assertEq(_getPendingUnderlyingAmountForStrategy(defaultOperatorSet, defaultSlashId, strategies[i], tokens[i]), 0);
         }
-
-        // Assert that the start block for the (operator set, slash ID) is no longer set.
-        assertEq(factory.getEscrowCompleteBlock(defaultOperatorSet, defaultSlashId), 0);
-    }
-
-    /// @dev Tests that multiple strategies with different delays are processed correctly
-    function testFuzz_releaseSlashEscrow_multipleStrategies_differentDelays(uint r) public {
-        // Initialize arrays to store test data for multiple strategies
-        uint numStrategies = bound(r, 2, 10);
-        IStrategy[] memory strategies = new IStrategy[](numStrategies);
-        MockERC20[] memory tokens = new MockERC20[](numStrategies);
-        uint[] memory underlyingAmounts = new uint[](numStrategies);
-        uint32[] memory delays = new uint32[](numStrategies);
-
-        // Randomly update the redistribution to be the default burn address
-        _setRedistributionRecipient(r % 2 == 0);
-
-        // Set global delay less than all the strategy delays.
-        cheats.prank(defaultOwner);
-        factory.setGlobalEscrowDelay(0.5 days / 12 seconds);
-
-        // Set up each strategy with random data and different delays
-        for (uint i = 0; i < numStrategies; i++) {
-            // Generate random strategy address and token
-            strategies[i] = IStrategy(cheats.randomAddress());
-            tokens[i] = new MockERC20();
-            underlyingAmounts[i] = cheats.randomUint();
-
-            // Set different delays for each strategy (increasing delays)
-            delays[i] = uint32((i + 1) * 1 days / 12 seconds); // 1 day, 2 days, 3 days, etc.
-
-            // Set the strategy-specific delay
-            cheats.prank(defaultOwner);
-            factory.setStrategyEscrowDelay(strategies[i], delays[i]);
-
-            // Start escrow for this strategy
-            _initiateSlashEscrow(defaultOperatorSet, defaultSlashId, strategies[i], tokens[i], underlyingAmounts[i]);
-            // Verify the escrow was started correctly
-            _checkStartEscrows(defaultOperatorSet, defaultSlashId, strategies[i], tokens[i], underlyingAmounts[i], i + 1);
-        }
-
-        // Assert that we cannot release the slash escrow until the delay has elapsed for ALL strategies
-        cheats.roll(block.number + 1 days / 12 seconds * numStrategies);
-        cheats.prank(defaultRedistributionRecipient);
-        cheats.expectRevert(ISlashEscrowFactoryErrors.EscrowDelayNotElapsed.selector);
-        factory.releaseSlashEscrow(defaultOperatorSet, defaultSlashId);
-
-        // Roll forward to the next block
-        cheats.roll(block.number + 1);
-
-        // Set up mock calls for each strategy's underlying token
-        for (uint i = 0; i < numStrategies; i++) {
-            _mockStrategyUnderlyingTokenCall(strategies[i], address(tokens[i]));
-        }
-
-        // Execute the escrow
-        _releaseSlashEscrow(defaultOperatorSet, defaultSlashId);
-
-        // Verify that all strategies have been processed
-        assertFalse(factory.isPendingOperatorSet(defaultOperatorSet));
-        assertFalse(factory.isPendingSlashId(defaultOperatorSet, defaultSlashId));
-        assertEq(factory.getTotalPendingOperatorSets(), 0);
-        assertEq(factory.getTotalPendingSlashIds(defaultOperatorSet), 0);
-        assertEq(factory.getTotalPendingStrategiesForSlashId(defaultOperatorSet, defaultSlashId), 0);
-
-        // Verify that all underlying amounts are cleared
-        for (uint i = 0; i < numStrategies; i++) {
-            assertEq(_getPendingUnderlyingAmountForStrategy(defaultOperatorSet, defaultSlashId, strategies[i], tokens[i]), 0);
-        }
-
-        // Verify that the start block is cleared
-        assertEq(factory.getEscrowCompleteBlock(defaultOperatorSet, defaultSlashId), 0);
     }
 
     /// @dev Tests that operatorSets are only cleared once all slash IDs are released
@@ -395,8 +306,6 @@ contract SlashEscrowFactoryUnitTests_releaseSlashEscrow is SlashEscrowFactoryUni
             // Verify the escrow was started correctly
             _checkStartEscrows(defaultOperatorSet, defaultSlashId + i, strategies[0], tokens[0], underlyingAmounts[0], 1);
         }
-
-        _rollForwardDefaultEscrowDelay();
 
         // Release the first n-1 slash escrows
         for (uint i = 0; i < numEscrows - 1; i++) {
@@ -456,24 +365,8 @@ contract SlashEscrowFactoryUnitTests_releaseSlashEscrowByStrategy is SlashEscrow
         assertFalse(factory.isPendingSlashId(defaultOperatorSet, defaultSlashId));
     }
 
-    function testFuzz_releaseSlashEscrowByStrategy_delayNotElapsed(uint underlyingAmount) public {
-        _initiateSlashEscrow(defaultOperatorSet, defaultSlashId, defaultStrategy, defaultToken, underlyingAmount);
-        cheats.roll(block.number + defaultGlobalDelayBlocks);
-        cheats.prank(defaultRedistributionRecipient);
-        cheats.expectRevert(ISlashEscrowFactoryErrors.EscrowDelayNotElapsed.selector);
-        factory.releaseSlashEscrowByStrategy(defaultOperatorSet, defaultSlashId, defaultStrategy);
-    }
-
-    function testFuzz_releaseSlashEscrowByStrategy_multipleStrategies(uint underlyingAmount) public {
-        _initiateSlashEscrow(defaultOperatorSet, defaultSlashId, defaultStrategy, defaultToken, underlyingAmount);
-        cheats.roll(block.number + defaultGlobalDelayBlocks);
-        cheats.prank(defaultRedistributionRecipient);
-        cheats.expectRevert(ISlashEscrowFactoryErrors.EscrowDelayNotElapsed.selector);
-        factory.releaseSlashEscrowByStrategy(defaultOperatorSet, defaultSlashId, defaultStrategy);
-    }
-
     /// @dev Tests that multiple strategies can be burned or redistributed across multiple calls
-    function testFuzz_releaseSlashEscrowByStrategy__multipleStrategies_sameDelay(uint r) public {
+    function testFuzz_releaseSlashEscrowByStrategy__multipleStrategies(uint r) public {
         // Initialize arrays to store test data for multiple strategies
         uint numStrategies = bound(r, 2, 10);
         IStrategy[] memory strategies = new IStrategy[](numStrategies);
@@ -495,9 +388,6 @@ contract SlashEscrowFactoryUnitTests_releaseSlashEscrowByStrategy is SlashEscrow
             // Verify the escrow was started correctly
             _checkStartEscrows(defaultOperatorSet, defaultSlashId, strategies[i], tokens[i], underlyingAmounts[i], i + 1);
         }
-
-        // Advance time to allow escrow to occur
-        _rollForwardDefaultEscrowDelay();
 
         // Set up mock calls for each strategy's underlying token
         for (uint i = 0; i < numStrategies; i++) {
@@ -534,9 +424,6 @@ contract SlashEscrowFactoryUnitTests_releaseSlashEscrowByStrategy is SlashEscrow
         for (uint i = 0; i < numStrategies; i++) {
             assertEq(_getPendingUnderlyingAmountForStrategy(defaultOperatorSet, defaultSlashId, strategies[i], tokens[i]), 0);
         }
-
-        // Assert that the start block for the (operator set, slash ID) is no longer set.
-        assertEq(factory.getEscrowCompleteBlock(defaultOperatorSet, defaultSlashId), 0);
     }
 
     /// @dev Tests that multiple strategies can be burned or redistributed across multiple calls
@@ -562,9 +449,6 @@ contract SlashEscrowFactoryUnitTests_releaseSlashEscrowByStrategy is SlashEscrow
             // Verify the escrow was started correctly
             _checkStartEscrows(defaultOperatorSet, defaultSlashId, strategies[i], tokens[i], underlyingAmounts[i], i + 1);
         }
-
-        // Advance time to allow escrow to occur
-        _rollForwardDefaultEscrowDelay();
 
         // Release the first index
         _releaseSlashEscrowByStrategy(defaultOperatorSet, defaultSlashId, strategies[0]);
@@ -594,9 +478,6 @@ contract SlashEscrowFactoryUnitTests_releaseSlashEscrowByStrategy is SlashEscrow
         for (uint i = 0; i < numStrategies; i++) {
             assertEq(_getPendingUnderlyingAmountForStrategy(defaultOperatorSet, defaultSlashId, strategies[i], tokens[i]), 0);
         }
-
-        // Assert that the start block for the (operator set, slash ID) is no longer set.
-        assertEq(factory.getEscrowCompleteBlock(defaultOperatorSet, defaultSlashId), 0);
     }
 }
 
@@ -613,8 +494,6 @@ contract SlashEscrowFactoryUnitTests_pauseEscrow is SlashEscrowFactoryUnitTests 
         cheats.prank(pauser);
         factory.pauseEscrow(defaultOperatorSet, defaultSlashId);
         assertTrue(factory.isEscrowPaused(defaultOperatorSet, defaultSlashId));
-
-        _rollForwardDefaultEscrowDelay();
 
         cheats.prank(defaultRedistributionRecipient);
         cheats.expectRevert(IPausable.CurrentlyPaused.selector);
@@ -636,8 +515,6 @@ contract SlashEscrowFactoryUnitTests_unpauseEscrow is SlashEscrowFactoryUnitTest
         factory.pauseEscrow(defaultOperatorSet, defaultSlashId);
         assertTrue(factory.isEscrowPaused(defaultOperatorSet, defaultSlashId));
 
-        _rollForwardDefaultEscrowDelay();
-
         cheats.prank(defaultRedistributionRecipient);
         cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         factory.releaseSlashEscrow(defaultOperatorSet, defaultSlashId);
@@ -649,113 +526,6 @@ contract SlashEscrowFactoryUnitTests_unpauseEscrow is SlashEscrowFactoryUnitTest
         // Should not revert...
         _mockStrategyUnderlyingTokenCall(defaultStrategy, address(defaultToken));
         _releaseSlashEscrow(defaultOperatorSet, defaultSlashId);
-    }
-}
-
-contract SlashEscrowFactoryUnitTests_setStrategyEscrowDelay is SlashEscrowFactoryUnitTests {
-    function test_setStrategyEscrowDelay_onlyOwner() public {
-        cheats.prank(cheats.randomAddress());
-        cheats.expectRevert("Ownable: caller is not the owner");
-        factory.setStrategyEscrowDelay(defaultStrategy, uint32(25));
-    }
-
-    function testFuzz_setStrategyEscrowDelay_correctness(uint32 delay) public {
-        delay = uint32(bound(delay, defaultGlobalDelayBlocks + 1, type(uint).max));
-        cheats.prank(defaultOwner);
-        cheats.expectEmit(true, true, true, true);
-        emit StrategyEscrowDelaySet(defaultStrategy, delay);
-        factory.setStrategyEscrowDelay(defaultStrategy, delay);
-        // Returns strategy delay since strategy delay is larger than global delay.
-        assertEq(factory.getStrategyEscrowDelay(defaultStrategy), delay);
-    }
-}
-
-contract SlashEscrowFactoryUnitTests_getEscrowDelay is SlashEscrowFactoryUnitTests {
-    function testFuzz_getEscrowDelay_correctness(uint r) public {
-        // Initialize arrays to store test data for multiple strategies
-        uint numStrategies = bound(r, 2, 10);
-        IStrategy[] memory strategies = new IStrategy[](numStrategies);
-        MockERC20[] memory tokens = new MockERC20[](numStrategies);
-        uint[] memory underlyingAmounts = new uint[](numStrategies);
-        uint32[] memory delays = new uint32[](numStrategies);
-
-        // Set global delay less than all the strategy delays.
-        cheats.prank(defaultOwner);
-        factory.setGlobalEscrowDelay(0.5 days / 12 seconds);
-
-        // Set up each strategy with random data and different delays
-        for (uint i = 0; i < numStrategies; i++) {
-            // Generate random strategy address and token
-            strategies[i] = IStrategy(cheats.randomAddress());
-            tokens[i] = new MockERC20();
-            underlyingAmounts[i] = cheats.randomUint();
-
-            // Set different delays for each strategy (increasing delays)
-            delays[i] = uint32((i + 1) * 1 days / 12 seconds); // 1 day, 2 days, 3 days, etc.
-
-            // Set the strategy-specific delay
-            cheats.prank(defaultOwner);
-            factory.setStrategyEscrowDelay(strategies[i], delays[i]);
-
-            // Start escrow for this strategy
-            _initiateSlashEscrow(defaultOperatorSet, defaultSlashId, strategies[i], tokens[i], underlyingAmounts[i]);
-            // Verify the escrow was started correctly
-            _checkStartEscrows(defaultOperatorSet, defaultSlashId, strategies[i], tokens[i], underlyingAmounts[i], i + 1);
-        }
-
-        // The complete block should be the maximum delay across all strategies
-        assertEq(factory.getEscrowCompleteBlock(defaultOperatorSet, defaultSlashId), block.number + delays[numStrategies - 1] + 1);
-    }
-
-    function testFuzz_getEscrowCompleteBlock_multipleSlashes(uint r) public {
-        uint startBlock = block.number;
-        uint32 firstDelay = uint32(1 days / 12 seconds);
-        uint32 secondDelay = uint32(2 days / 12 seconds);
-
-        IStrategy[] memory strategies = new IStrategy[](1);
-        MockERC20[] memory tokens = new MockERC20[](1);
-        uint[] memory underlyingAmounts = new uint[](1);
-        strategies[0] = IStrategy(cheats.randomAddress());
-        tokens[0] = new MockERC20();
-        underlyingAmounts[0] = uint96(cheats.randomUint());
-
-        cheats.prank(defaultOwner);
-        factory.setGlobalEscrowDelay(firstDelay);
-
-        _initiateSlashEscrow(defaultOperatorSet, defaultSlashId, strategies[0], tokens[0], underlyingAmounts[0]);
-
-        cheats.prank(defaultOwner);
-        factory.setGlobalEscrowDelay(secondDelay);
-
-        uint secondSlashId = defaultSlashId + 1;
-        _initiateSlashEscrow(defaultOperatorSet, secondSlashId, strategies[0], tokens[0], underlyingAmounts[0]);
-
-        assertEq(factory.getEscrowCompleteBlock(defaultOperatorSet, defaultSlashId), startBlock + firstDelay + 1);
-        assertEq(factory.getEscrowCompleteBlock(defaultOperatorSet, secondSlashId), startBlock + secondDelay + 1);
-
-        cheats.roll(startBlock + firstDelay + 1);
-        _mockStrategyUnderlyingTokenCall(strategies[0], address(tokens[0]));
-        _releaseSlashEscrow(defaultOperatorSet, defaultSlashId);
-
-        cheats.roll(startBlock + secondDelay + 1);
-        _mockStrategyUnderlyingTokenCall(strategies[0], address(tokens[0]));
-        _releaseSlashEscrow(defaultOperatorSet, secondSlashId);
-    }
-}
-
-contract SlashEscrowFactoryUnitTests_setGlobalEscrowDelay is SlashEscrowFactoryUnitTests {
-    function test_setGlobalEscrowDelay_onlyOwner() public {
-        cheats.prank(cheats.randomAddress());
-        cheats.expectRevert("Ownable: caller is not the owner");
-        factory.setGlobalEscrowDelay(100);
-    }
-
-    function testFuzz_setGlobalEscrowDelay_correctness(uint32 delay) public {
-        cheats.prank(defaultOwner);
-        cheats.expectEmit(true, true, true, true);
-        emit GlobalEscrowDelaySet(delay);
-        factory.setGlobalEscrowDelay(delay);
-        assertEq(factory.getGlobalEscrowDelay(), delay);
     }
 }
 
@@ -834,49 +604,6 @@ contract SlashEscrowFactoryUnitTests_getPendingEscrows is SlashEscrowFactoryUnit
     }
 }
 
-contract SlashEscrowFactoryUnitTests_getEscrowCompleteBlock is SlashEscrowFactoryUnitTests {
-    function test_getEscrowCompleteBlock() public {
-        _initiateSlashEscrow(defaultOperatorSet, defaultSlashId, defaultStrategy, defaultToken, 100);
-        assertEq(factory.getEscrowCompleteBlock(defaultOperatorSet, defaultSlashId), block.number + defaultGlobalDelayBlocks + 1);
-    }
-
-    function testFuzz_getEscrowCompleteBlock_multipleStrategies(uint r) public {
-        // Initialize arrays to store test data for multiple strategies
-        uint numStrategies = bound(r, 2, 10);
-        IStrategy[] memory strategies = new IStrategy[](numStrategies);
-        MockERC20[] memory tokens = new MockERC20[](numStrategies);
-        uint[] memory underlyingAmounts = new uint[](numStrategies);
-        uint32[] memory delays = new uint32[](numStrategies);
-
-        // Set global delay less than all the strategy delays.
-        cheats.prank(defaultOwner);
-        factory.setGlobalEscrowDelay(0.5 days / 12 seconds);
-
-        // Set up each strategy with random data and different delays
-        for (uint i = 0; i < numStrategies; i++) {
-            // Generate random strategy address and token
-            strategies[i] = IStrategy(cheats.randomAddress());
-            tokens[i] = new MockERC20();
-            underlyingAmounts[i] = cheats.randomUint();
-
-            // Set different delays for each strategy (increasing delays)
-            delays[i] = uint32((i + 1) * 1 days / 12 seconds); // 1 day, 2 days, 3 days, etc.
-
-            // Set the strategy-specific delay
-            cheats.prank(defaultOwner);
-            factory.setStrategyEscrowDelay(strategies[i], delays[i]);
-
-            // Start escrow for this strategy
-            _initiateSlashEscrow(defaultOperatorSet, defaultSlashId, strategies[i], tokens[i], underlyingAmounts[i]);
-            // Verify the escrow was started correctly
-            _checkStartEscrows(defaultOperatorSet, defaultSlashId, strategies[i], tokens[i], underlyingAmounts[i], i + 1);
-        }
-
-        // The complete block should be the maximum delay across all strategies
-        assertEq(factory.getEscrowCompleteBlock(defaultOperatorSet, defaultSlashId), block.number + delays[numStrategies - 1] + 1);
-    }
-}
-
 contract SlashEscrowFactoryUnitTests_getPendingEscrowsFull is SlashEscrowFactoryUnitTests {
     function test_getPendingEscrows() public {
         uint32 dayInBlocks = 1 days / 12 seconds;
@@ -889,21 +616,13 @@ contract SlashEscrowFactoryUnitTests_getPendingEscrowsFull is SlashEscrowFactory
         cheats.roll(block.number + dayInBlocks);
         _initiateSlashEscrow(defaultOperatorSet, defaultSlashId + 2, defaultStrategy, defaultToken, 100);
 
-        (OperatorSet[] memory operatorSets, bool[] memory isRedistributing, uint[][] memory slashIds, uint32[][] memory completeBlocks) =
-            factory.getPendingEscrows();
+        (OperatorSet[] memory operatorSets, bool[] memory isRedistributing, uint[][] memory slashIds) = factory.getPendingEscrows();
         assertEq(operatorSets.length, 1);
         assertEq(operatorSets[0].key(), defaultOperatorSet.key());
         assertEq(isRedistributing.length, 1);
         assertEq(isRedistributing[0], true);
         assertEq(slashIds.length, 1);
         assertEq(slashIds[0].length, 3);
-        assertEq(completeBlocks.length, 1);
-        assertEq(completeBlocks[0].length, 3);
-
-        // Assert that the complete blocks are correct
-        assertEq(completeBlocks[0][0], initialBlock + defaultGlobalDelayBlocks + 1);
-        assertEq(completeBlocks[0][1], initialBlock + defaultGlobalDelayBlocks + dayInBlocks + 1);
-        assertEq(completeBlocks[0][2], initialBlock + defaultGlobalDelayBlocks + dayInBlocks * 2 + 1);
     }
 }
 

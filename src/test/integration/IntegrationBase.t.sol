@@ -2795,14 +2795,6 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         return slashEscrowFactory.isPendingSlashId(operatorSet, slashId);
     }
 
-    function _getPrevEscrowCompleteBlock(OperatorSet memory operatorSet, uint slashId) internal timewarp returns (uint) {
-        return _getEscrowCompleteBlock(operatorSet, slashId);
-    }
-
-    function _getEscrowCompleteBlock(OperatorSet memory operatorSet, uint slashId) internal view returns (uint) {
-        return slashEscrowFactory.getEscrowCompleteBlock(operatorSet, slashId);
-    }
-
     function _getPrevIsDeployedSlashEscrow(OperatorSet memory operatorSet, uint slashId) internal timewarp returns (bool) {
         return _getIsDeployedSlashEscrow(operatorSet, slashId);
     }
