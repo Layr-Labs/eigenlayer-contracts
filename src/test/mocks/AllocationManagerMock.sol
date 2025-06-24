@@ -26,6 +26,7 @@ contract AllocationManagerMock is Test {
     mapping(bytes32 operatorSetKey => IStrategy[] strategies) internal _strategies;
     mapping(bytes32 operatorSetKey => mapping(address operator => mapping(IStrategy strategy => uint minimumSlashableStake))) internal
         _minimumSlashableStake;
+    mapping(bytes32 operatorSetKey => mapping(address operator => bool)) internal _isOperatorSlashable;
 
     function getSlashCount(OperatorSet memory operatorSet) external view returns (uint) {
         return _getSlashCount[operatorSet.key()];
@@ -148,5 +149,13 @@ contract AllocationManagerMock is Test {
         }
 
         return minimumSlashableStake;
+    }
+
+    function isOperatorSlashable(address operator, OperatorSet memory operatorSet) external view returns (bool) {
+        return _isOperatorSlashable[operatorSet.key()][operator];
+    }
+
+    function setIsOperatorSlashable(address operator, OperatorSet memory operatorSet, bool isSlashable) external {
+        _isOperatorSlashable[operatorSet.key()][operator] = isSlashable;
     }
 }

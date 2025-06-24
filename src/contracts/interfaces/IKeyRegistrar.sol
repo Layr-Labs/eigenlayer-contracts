@@ -16,6 +16,7 @@ interface IKeyRegistrarErrors {
     error ConfigurationAlreadySet();
     error OperatorSetNotConfigured();
     error KeyNotFound(OperatorSet operatorSet, address operator);
+    error OperatorStillSlashable(OperatorSet operatorSet, address operator);
 }
 
 interface IKeyRegistrarTypes {
@@ -69,8 +70,9 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @notice Deregisters a cryptographic key for an operator with a specific operator set
      * @param operator Address of the operator to deregister key for
      * @param operatorSet The operator set to deregister the key from
-     * @dev Can be called by avs directly or by addresses they've authorized via PermissionController
+     * @dev Can be called by the operator directly or by addresses they've authorized via PermissionController
      * @dev Reverts if key was not registered
+     * @dev Reverts if operator is still slashable for the operator set (prevents key rotation while slashable)
      * @dev Keys remain in global key registry to prevent reuse
      */
     function deregisterKey(address operator, OperatorSet memory operatorSet) external;
