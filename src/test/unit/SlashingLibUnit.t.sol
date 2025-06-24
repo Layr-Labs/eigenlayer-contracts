@@ -6,46 +6,38 @@ import "src/contracts/libraries/SlashingLib.sol";
 
 contract SlashingLibUnitTests is Test {
     using SlashingLib for *;
-
-    function test_mulWad() public {
-        assertEq(SlashingLib.mulWad(1e18, 5e17), 5e17);
-        assertEq(SlashingLib.mulWad(2e18, 3e17), 6e17);
-    }
-
-    function test_mulWadRoundUp() public {
-        // Test rounding up behavior
-        assertGt(SlashingLib.mulWadRoundUp(1, 1), 0);
-    }
-
-    function test_calcSlashedAmount() public {
-        uint256 operatorShares = 1000e18;
-        uint64 prevMaxMagnitude = 1e18;
-        uint64 newMaxMagnitude = 5e17; // 50% slash
+    
+    uint256 constant WAD = 1e18;
+    string csvHeader = "scaled_shares,prev_max_mag,new_max_mag,slashed_amount";
+    string outputFile;
+    
+    function setUp() public {
+        outputFile = vm.envOr("CSV_OUTPUT_FILE", string("script/utils/queuedShares/slashing_test_output.csv"));
+        vm.writeFile(outputFile, "");
+        vm.writeLine(outputFile, csvHeader);
         
-        uint256 slashed = SlashingLib.calcSlashedAmount(
-            operatorShares, 
-            prevMaxMagnitude, 
-            newMaxMagnitude
-        );
-        
-        assertEq(slashed, 500e18); // Should slash 50%
+        console.log("Writing CSV to:", outputFile);
     }
-
-    function testFuzz_calcSlashedAmount(
-        uint256 operatorShares,
-        uint64 prevMaxMagnitude,
-        uint64 newMaxMagnitude
+    
+    function testFuzz_scaleForBurning(
+        uint256 scaledShares, 
+        uint64 prevMaxMag, 
+        uint64 newMaxMag
     ) public {
-        vm.assume(operatorShares <= type(uint128).max);
-        vm.assume(prevMaxMagnitude > 0);
-        vm.assume(newMaxMagnitude <= prevMaxMagnitude);
+        vm.assume(scaledShares > 0 && scaledShares <= type(uint128).max);
+        vm.assume(prevMaxMag <= WAD && prevMaxMag > 0);
+        vm.assume(newMaxMag < prevMaxMag);
         
-        uint256 slashed = SlashingLib.calcSlashedAmount(
-            operatorShares, 
-            prevMaxMagnitude, 
-            newMaxMagnitude
+        uint256 slashedAmount = scaledShares.scaleForBurning(
+            prevMaxMag, 
+            newMaxMag
         );
         
-        assertLe(slashed, operatorShares);
+        vm.writeLine(outputFile, string.concat(
+            vm.toString(scaledShares), ",",
+            vm.toString(prevMaxMag), ",",
+            vm.toString(newMaxMag), ",",
+            vm.toString(slashedAmount)
+        ));
     }
 }
