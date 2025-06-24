@@ -4,6 +4,9 @@ Foundry Test Driver for SlashingLib Analysis
 
 DEPENDENCIES:
 Run this command to install all required packages:
+    pip install -r requirements.txt
+
+Or run this command to install all required packages manually:
     pip install pandas numpy matplotlib seaborn
 
 Or individually:
