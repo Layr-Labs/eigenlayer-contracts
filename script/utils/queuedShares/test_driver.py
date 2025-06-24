@@ -21,6 +21,7 @@ from decimal import Decimal, getcontext
 import json
 import argparse
 from typing import Dict, List, Tuple, Optional
+import os
 
 # Third-party imports (will fail with clear error if not installed)
 import pandas as pd
@@ -34,14 +35,19 @@ getcontext().prec = 50
 class SlashingTestDriver:
     """Driver class for running and analyzing SlashingLib tests"""
     
-    def __init__(self):
+    def __init__(self, output_dir: str = "./output"):
         self.WAD = Decimal('1000000000000000000')  # 1e18
         self.results = {}
+        
+        # Keep output directory relative to current working directory
+        self.output_dir = Path(output_dir)
+        self.output_dir.mkdir(exist_ok=True)
+        print(f"📁 Output directory: {self.output_dir.absolute()}")
         
     def run_foundry_test(self, config: Dict) -> str:
         """Run Foundry test with specified configuration"""
         
-        output_file = config.get('output_file', './slashing_analysis.csv')
+        output_file = config.get('output_file', str(self.output_dir / 'slashing_analysis.csv'))
         fuzz_runs = config.get('fuzz_runs', 100)
         fuzz_seed = config.get('fuzz_seed', None)
         test_name = config.get('test_name', 'testFuzz_scaleForBurning')
@@ -60,23 +66,31 @@ class SlashingTestDriver:
         if fuzz_seed is not None:
             cmd.extend(['--fuzz-seed', str(fuzz_seed)])
         
+        # Convert to absolute path so Foundry can find it regardless of working directory
+        absolute_output_file = str(Path(output_file).resolve())
+        
         # Set environment variables
         env = {
-            **subprocess.os.environ,  # Include existing environment
-            'CSV_OUTPUT_FILE': output_file,
+            **subprocess.os.environ,
+            'CSV_OUTPUT_FILE': absolute_output_file,  # Use absolute path
             **config.get('env', {})
         }
         
+        # Run Foundry from current directory (not repo root)
+        script_dir = Path(__file__).parent
+        
         try:
             print(f"🔧 Command: {' '.join(cmd)}")
-            print(f"🌍 CSV_OUTPUT_FILE: {output_file}")
+            print(f"🌍 CSV_OUTPUT_FILE: {absolute_output_file}")
+            print(f"📁 Working directory: {script_dir}")
             
             result = subprocess.run(
                 cmd,
                 capture_output=True,
                 text=True,
                 timeout=300,
-                env=env
+                env=env,
+                cwd=script_dir  # Run from script directory, not repo root
             )
             
             # Check if test actually ran fuzz cases
@@ -272,7 +286,7 @@ class SlashingTestDriver:
         print("✅ Precision analysis completed")
         return analysis
     
-    def generate_visualizations(self, df: pd.DataFrame, output_dir: str = './plots'):
+    def generate_visualizations(self, df: pd.DataFrame, output_subdir: str = 'plots'):
         """Generate comprehensive visualizations with better error handling"""
         
         print("📊 Generating visualizations...")
@@ -284,7 +298,9 @@ class SlashingTestDriver:
         if len(df) < 10:
             print(f"⚠️ Warning: Only {len(df)} data points - visualizations may not be meaningful")
         
-        Path(output_dir).mkdir(exist_ok=True)
+        # Create plots subdirectory within output directory
+        plot_dir = self.output_dir / output_subdir
+        plot_dir.mkdir(exist_ok=True)
         
         # Set style with error handling
         try:
@@ -373,10 +389,10 @@ class SlashingTestDriver:
                     ax4.text(0.5, 0.5, 'No comparison data', ha='center', va='center', transform=ax4.transAxes)
             
             plt.tight_layout()
-            plt.savefig(f'{output_dir}/precision_analysis.png', dpi=300, bbox_inches='tight')
+            plt.savefig(plot_dir / 'precision_analysis.png', dpi=300, bbox_inches='tight')
             plt.close()
             
-            print(f"✅ Basic visualizations saved to {output_dir}/")
+            print(f"✅ Basic visualizations saved to {plot_dir}/")
             
             # Skip complex visualizations if we have data issues
             if len(df) < 20:
@@ -405,7 +421,7 @@ class SlashingTestDriver:
             ax.text(0.1, 0.5, summary_text, transform=ax.transAxes, fontfamily='monospace', fontsize=8)
             ax.set_title('Data Summary (Visualization Failed)')
             ax.axis('off')
-            plt.savefig(f'{output_dir}/data_summary.png', dpi=300, bbox_inches='tight')
+            plt.savefig(plot_dir / 'data_summary.png', dpi=300, bbox_inches='tight')
             plt.close()
     
     def save_enhanced_csv(self, df: pd.DataFrame, output_file: str):
@@ -425,39 +441,53 @@ class SlashingTestDriver:
         print("🎯 Starting complete SlashingLib analysis...")
         print("=" * 50)
         
-        # Step 1: Run Foundry test
-        csv_file = self.run_foundry_test(config)
-        if not csv_file:
-            print("❌ Failed to run Foundry test")
-            return
+        # Change to repo root for consistency
+        original_cwd = Path.cwd()
+        repo_root = Path(__file__).parent
+        while not (repo_root / 'foundry.toml').exists() and repo_root.parent != repo_root:
+            repo_root = repo_root.parent
         
-        # Step 2: Read CSV data
-        df = self.read_csv_data(csv_file)
-        if df is None:
-            print("❌ Failed to read CSV data")
-            return
-        
-        # Step 3: Calculate theoretical results
-        df = self.calculate_theoretical_results(df)
-        
-        # Step 4: Perform precision analysis
-        analysis = self.analyze_precision(df)
-        
-        # Step 5: Generate visualizations
-        self.generate_visualizations(df, config.get('plot_dir', './plots'))
-        
-        # Step 6: Save enhanced data and reports
-        enhanced_csv = config.get('enhanced_csv', './enhanced_slashing_analysis.csv')
-        report_file = config.get('report_file', './analysis_report.json')
-        
-        self.save_enhanced_csv(df, enhanced_csv)
-        self.save_analysis_report(analysis, report_file)
-        
-        # Step 7: Print summary
-        self._print_summary(analysis)
-        
-        print("🎉 Complete analysis finished!")
-        return df, analysis
+        try:
+            os.chdir(repo_root)
+            print(f"📁 Changed working directory to: {repo_root}")
+            
+            # Step 1: Run Foundry test
+            csv_file = self.run_foundry_test(config)
+            if not csv_file:
+                print("❌ Failed to run Foundry test")
+                return None
+            
+            # Step 2: Read CSV data
+            df = self.read_csv_data(csv_file)
+            if df is None:
+                print("❌ Failed to read CSV data")
+                return None
+            
+            # Step 3: Calculate theoretical results
+            df = self.calculate_theoretical_results(df)
+            
+            # Step 4: Perform precision analysis
+            analysis = self.analyze_precision(df)
+            
+            # Step 5: Generate visualizations
+            self.generate_visualizations(df, config.get('plot_subdir', 'plots'))
+            
+            # Step 6: Save enhanced data and reports
+            enhanced_csv = config.get('enhanced_csv', str(self.output_dir / 'enhanced_slashing_analysis.csv'))
+            report_file = config.get('report_file', str(self.output_dir / 'analysis_report.json'))
+            
+            self.save_enhanced_csv(df, enhanced_csv)
+            self.save_analysis_report(analysis, report_file)
+            
+            # Step 7: Print summary
+            self._print_summary(analysis)
+            
+            print("🎉 Complete analysis finished!")
+            return df, analysis
+            
+        finally:
+            # Always restore original working directory
+            os.chdir(original_cwd)
     
     def _print_summary(self, analysis: Dict):
         """Print analysis summary to console"""
@@ -484,28 +514,36 @@ def main():
     parser = argparse.ArgumentParser(description='Drive SlashingLib Foundry tests and perform analysis')
     parser.add_argument('--fuzz-runs', type=int, default=500, help='Number of fuzz runs')
     parser.add_argument('--fuzz-seed', type=int, help='Fuzz seed for reproducibility')
-    parser.add_argument('--output-csv', default='./slashing_test_output.csv', help='Output CSV file')
-    parser.add_argument('--enhanced-csv', default='./enhanced_slashing_analysis.csv', help='Enhanced CSV with calculations')
-    parser.add_argument('--report', default='./analysis_report.json', help='Analysis report file')
-    parser.add_argument('--plot-dir', default='./plots', help='Directory for plots')
+    parser.add_argument('--output-dir', default='output', help='Output directory relative to repo root')
+    parser.add_argument('--output-csv', default='slashing_test_output.csv', help='Output CSV filename (within output dir)')
+    parser.add_argument('--enhanced-csv', default='enhanced_slashing_analysis.csv', help='Enhanced CSV filename (within output dir)')
+    parser.add_argument('--report', default='analysis_report.json', help='Analysis report filename (within output dir)')
+    parser.add_argument('--plot-subdir', default='plots', help='Subdirectory for plots (within output dir)')
     parser.add_argument('--test-name', default='testFuzz_scaleForBurning', help='Foundry test name')
     
     args = parser.parse_args()
     
-    # Configuration
+    # Create driver with output directory
+    driver = SlashingTestDriver(output_dir=args.output_dir)
+    
+    # Configuration - all paths now relative to output directory
     config = {
         'fuzz_runs': args.fuzz_runs,
         'fuzz_seed': args.fuzz_seed,
-        'output_file': args.output_csv,
-        'enhanced_csv': args.enhanced_csv,
-        'report_file': args.report,
-        'plot_dir': args.plot_dir,
+        'output_file': str(Path(args.output_dir) / args.output_csv),
+        'enhanced_csv': str(driver.output_dir / args.enhanced_csv),
+        'report_file': str(driver.output_dir / args.report),
+        'plot_subdir': args.plot_subdir,
         'test_name': args.test_name,
     }
     
     # Run analysis
-    driver = SlashingTestDriver()
-    df, analysis = driver.run_complete_analysis(config)
+    result = driver.run_complete_analysis(config)
+    if result is not None:
+        df, analysis = result
+    else:
+        print("❌ Analysis failed")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
