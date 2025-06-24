@@ -9,7 +9,7 @@ abstract contract OperatorTableUpdaterStorage is IOperatorTableUpdater {
     // Constants
 
     bytes32 public constant GLOBAL_TABLE_ROOT_CERT_TYPEHASH =
-        keccak256("GlobalTableRootCert(bytes32 globalTableRoot,uint32 referenceTimestamp)");
+        keccak256("GlobalTableRootCert(bytes32 globalTableRoot,uint32 referenceTimestamp,uint32 referenceBlockNumber)");
 
     /// @notice The maximum BPS value
     uint16 public constant MAX_BPS = 10_000;
@@ -42,6 +42,9 @@ abstract contract OperatorTableUpdaterStorage is IOperatorTableUpdater {
     /// @notice Mapping from reference block number to reference timestamp
     mapping(uint32 referenceBlockNumber => uint32 referenceTimestamp) internal _referenceTimestamps;
 
+    /// @notice Mapping from global table root to validity status
+    mapping(bytes32 globalTableRoot => bool valid) internal _isRootValid;
+
     // Constructor
     constructor(
         IBN254CertificateVerifier _bn254CertificateVerifier,
@@ -56,5 +59,5 @@ abstract contract OperatorTableUpdaterStorage is IOperatorTableUpdater {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[44] private __gap;
+    uint256[42] private __gap;
 }
