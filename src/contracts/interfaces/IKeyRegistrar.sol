@@ -71,7 +71,6 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @param operator Address of the operator to deregister key for
      * @param operatorSet The operator set to deregister the key from
      * @dev Can be called by the operator directly or by addresses they've authorized via PermissionController
-     * @dev Can be called by the AVS directly or by addresses they've authorized via PermissionController
      * @dev Reverts if key was not registered
      * @dev Reverts if operator is still slashable for the operator set (prevents key rotation while slashable)
      * @dev Keys remain in global key registry to prevent reuse

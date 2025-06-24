@@ -438,7 +438,7 @@ contract KeyRegistrarUnitTests is EigenLayerUnitTestSetup {
     function testDeregisterKey_RevertOperatorSetNotConfigured() public {
         OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
 
-        vm.prank(avs1);
+        vm.prank(operator1);
         vm.expectRevert(IKeyRegistrarErrors.OperatorSetNotConfigured.selector);
         keyRegistrar.deregisterKey(operator1, operatorSet);
     }
@@ -540,7 +540,10 @@ contract KeyRegistrarUnitTests is EigenLayerUnitTestSetup {
         bytes32 keyHash = keccak256(ecdsaKey1);
         assertTrue(keyRegistrar.isKeyGloballyRegistered(keyHash));
 
-        vm.prank(avs1);
+        // Set operator as not slashable
+        allocationManagerMock.setIsOperatorSlashable(operator1, operatorSet1, false);
+
+        vm.prank(operator1);
         keyRegistrar.deregisterKey(operator1, operatorSet1);
 
         // Key should still be globally registered after deregistration
@@ -571,7 +574,10 @@ contract KeyRegistrarUnitTests is EigenLayerUnitTestSetup {
         bytes32 keyHash = BN254.hashG1Point(bn254G1Key1);
         assertTrue(keyRegistrar.isKeyGloballyRegistered(keyHash));
 
-        vm.prank(avs1);
+        // Set operator as not slashable
+        allocationManagerMock.setIsOperatorSlashable(operator1, operatorSet1, false);
+
+        vm.prank(operator1);
         keyRegistrar.deregisterKey(operator1, operatorSet1);
 
         // Key should still be globally registered after deregistration
@@ -787,7 +793,10 @@ contract KeyRegistrarUnitTests is EigenLayerUnitTestSetup {
         vm.prank(operator1);
         keyRegistrar.registerKey(operator1, operatorSet, ecdsaKey1, signature);
 
-        vm.prank(avs1);
+        // Set operator as not slashable
+        allocationManagerMock.setIsOperatorSlashable(operator1, operatorSet, false);
+
+        vm.prank(operator1);
         vm.expectEmit(true, true, true, true);
         emit KeyDeregistered(operatorSet, operator1, IKeyRegistrarTypes.CurveType.ECDSA);
         keyRegistrar.deregisterKey(operator1, operatorSet);
@@ -806,7 +815,10 @@ contract KeyRegistrarUnitTests is EigenLayerUnitTestSetup {
         vm.prank(operator1);
         keyRegistrar.registerKey(operator1, operatorSet, bn254Key1, signature);
 
-        vm.prank(avs1);
+        // Set operator as not slashable
+        allocationManagerMock.setIsOperatorSlashable(operator1, operatorSet, false);
+
+        vm.prank(operator1);
         vm.expectEmit(true, true, true, true);
         emit KeyDeregistered(operatorSet, operator1, IKeyRegistrarTypes.CurveType.BN254);
         keyRegistrar.deregisterKey(operator1, operatorSet);
@@ -820,7 +832,7 @@ contract KeyRegistrarUnitTests is EigenLayerUnitTestSetup {
         vm.prank(avs1);
         keyRegistrar.configureOperatorSet(operatorSet, IKeyRegistrarTypes.CurveType.ECDSA);
 
-        vm.prank(avs1);
+        vm.prank(operator1);
         vm.expectRevert(abi.encodeWithSelector(IKeyRegistrarErrors.KeyNotFound.selector, operatorSet, operator1));
         keyRegistrar.deregisterKey(operator1, operatorSet);
     }
@@ -876,28 +888,5 @@ contract KeyRegistrarUnitTests is EigenLayerUnitTestSetup {
         keyRegistrar.deregisterKey(operator1, operatorSet);
 
         assertTrue(keyRegistrar.isRegistered(operatorSet, operator1));
-    }
-
-    function testDeregisterKey_AVSCanAlwaysDeregister() public {
-        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
-
-        vm.prank(avs1);
-        keyRegistrar.configureOperatorSet(operatorSet, IKeyRegistrarTypes.CurveType.ECDSA);
-
-        bytes memory signature = _generateECDSASignature(operator1, operatorSet, ecdsaAddress1, ecdsaPrivKey1);
-
-        vm.prank(operator1);
-        keyRegistrar.registerKey(operator1, operatorSet, ecdsaKey1, signature);
-
-        // Set operator as slashable
-        allocationManagerMock.setIsOperatorSlashable(operator1, operatorSet, true);
-
-        // AVS should still be able to deregister even when operator is slashable
-        vm.prank(avs1);
-        vm.expectEmit(true, true, true, true);
-        emit KeyDeregistered(operatorSet, operator1, IKeyRegistrarTypes.CurveType.ECDSA);
-        keyRegistrar.deregisterKey(operator1, operatorSet);
-
-        assertFalse(keyRegistrar.isRegistered(operatorSet, operator1));
     }
 }
