@@ -31,6 +31,7 @@ from datetime import datetime
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import numpy as np
 
 # Set high precision for exact calculations
 getcontext().prec = 50
@@ -410,6 +411,14 @@ class SlashingTestDriver:
                 print(f"🔧 Converting column '{col}' to numeric")
                 df[col] = pd.to_numeric(df[col], errors='coerce')
         
+        # Generate 2D visualizations (existing code)
+        self._generate_2d_plots(df, plot_dir)
+        
+        # Generate 3D visualizations (new!)
+        self._generate_3d_plots(df, plot_dir)
+    
+    def _generate_2d_plots(self, df: pd.DataFrame, plot_dir: Path):
+        """Generate existing 2D plots"""
         try:
             # Figure 1: Error Distribution
             fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(15, 12))
@@ -491,7 +500,7 @@ class SlashingTestDriver:
             # Additional plots can go here...
             
         except Exception as e:
-            print(f"⚠️ Error generating visualizations: {e}")
+            print(f"⚠️ Error generating 2D visualizations: {e}")
             print("📊 Generating basic summary instead...")
             
             # Create a simple text summary plot
@@ -512,6 +521,149 @@ class SlashingTestDriver:
             ax.axis('off')
             plt.savefig(plot_dir / 'data_summary.png', dpi=300, bbox_inches='tight')
             plt.close()
+    
+    def _generate_3d_plots(self, df: pd.DataFrame, plot_dir: Path):
+        """Generate 3D visualizations to show error patterns in input space"""
+        
+        try:
+            from mpl_toolkits.mplot3d import Axes3D
+            
+            print("🎯 Generating 3D error analysis...")
+            
+            # Prepare data
+            valid_data = df[['scaled_shares', 'prev_max_mag', 'slash_percentage', 'error']].dropna()
+            
+            if len(valid_data) < 10:
+                print("⚠️ Insufficient data for 3D visualization")
+                return
+            
+            # Create figure with multiple 3D subplots
+            fig = plt.figure(figsize=(20, 15))
+            
+            # Plot 1: 3D Scatter with Error as Color
+            ax1 = fig.add_subplot(2, 2, 1, projection='3d')
+            
+            x = valid_data['scaled_shares']
+            y = valid_data['prev_max_mag'] 
+            z = valid_data['slash_percentage']
+            colors = valid_data['error']
+            
+            scatter = ax1.scatter(x, y, z, c=colors, cmap='viridis', s=20, alpha=0.6)
+            ax1.set_xlabel('Scaled Shares')
+            ax1.set_ylabel('Max Magnitude')
+            ax1.set_zlabel('Slash Percentage (%)')
+            ax1.set_title('Error Distribution in 3D Input Space')
+            plt.colorbar(scatter, ax=ax1, label='Absolute Error', shrink=0.8)
+            
+            # Plot 2: 3D Scatter with Error as Size
+            ax2 = fig.add_subplot(2, 2, 2, projection='3d')
+            
+            # Normalize error for sizing (avoid zero-size points)
+            error_sizes = 20 + (valid_data['error'] / valid_data['error'].max()) * 100
+            
+            ax2.scatter(x, y, z, s=error_sizes, c='red', alpha=0.4)
+            ax2.set_xlabel('Scaled Shares')
+            ax2.set_ylabel('Max Magnitude') 
+            ax2.set_zlabel('Slash Percentage (%)')
+            ax2.set_title('Error Magnitude as Point Size')
+            
+            # Plot 3: High Error Cases Only (threshold-based)
+            ax3 = fig.add_subplot(2, 2, 3, projection='3d')
+            
+            error_threshold = valid_data['error'].quantile(0.9)  # Top 10% errors
+            high_error_data = valid_data[valid_data['error'] > error_threshold]
+            
+            if len(high_error_data) > 0:
+                ax3.scatter(high_error_data['scaled_shares'], 
+                           high_error_data['prev_max_mag'],
+                           high_error_data['slash_percentage'],
+                           c='red', s=50, alpha=0.8)
+                ax3.set_xlabel('Scaled Shares')
+                ax3.set_ylabel('Max Magnitude')
+                ax3.set_zlabel('Slash Percentage (%)')
+                ax3.set_title(f'High Error Cases (>{error_threshold:.6f})')
+            else:
+                ax3.text(0.5, 0.5, 0.5, 'No high error cases', transform=ax3.transData)
+            
+            # Plot 4: Log-scale Error (if useful)
+            ax4 = fig.add_subplot(2, 2, 4, projection='3d')
+            
+            # Only plot non-zero errors for log scale
+            nonzero_errors = valid_data[valid_data['error'] > 0]
+            
+            if len(nonzero_errors) > 0:
+                log_errors = np.log10(nonzero_errors['error'])
+                scatter4 = ax4.scatter(nonzero_errors['scaled_shares'],
+                                      nonzero_errors['prev_max_mag'],
+                                      nonzero_errors['slash_percentage'],
+                                      c=log_errors, cmap='plasma', s=20, alpha=0.6)
+                ax4.set_xlabel('Scaled Shares')
+                ax4.set_ylabel('Max Magnitude')
+                ax4.set_zlabel('Slash Percentage (%)')
+                ax4.set_title('Log10(Error) Distribution')
+                plt.colorbar(scatter4, ax=ax4, label='Log10(Error)', shrink=0.8)
+            
+            plt.tight_layout()
+            plt.savefig(plot_dir / 'error_3d_analysis.png', dpi=300, bbox_inches='tight')
+            plt.close()
+            
+            # Generate interactive 3D plot (optional)
+            self._generate_interactive_3d(valid_data, plot_dir)
+            
+            print(f"✅ 3D visualizations saved to {plot_dir}/")
+            
+        except ImportError:
+            print("⚠️ 3D plotting requires matplotlib with 3D support")
+        except Exception as e:
+            print(f"⚠️ Error generating 3D visualizations: {e}")
+
+    def _generate_interactive_3d(self, df: pd.DataFrame, plot_dir: Path):
+        """Generate interactive 3D plot using plotly (if available)"""
+        
+        try:
+            import plotly.graph_objects as go
+            import plotly.express as px
+            
+            print("🌐 Generating interactive 3D plot...")
+            
+            # Create interactive 3D scatter plot
+            fig = go.Figure(data=[go.Scatter3d(
+                x=df['scaled_shares'],
+                y=df['prev_max_mag'],
+                z=df['slash_percentage'],
+                mode='markers',
+                marker=dict(
+                    size=5,
+                    color=df['error'],
+                    colorscale='Viridis',
+                    colorbar=dict(title="Absolute Error"),
+                    showscale=True
+                ),
+                text=[f'Shares: {s}<br>Mag: {m}<br>Slash: {sl:.1f}%<br>Error: {e:.6f}' 
+                      for s, m, sl, e in zip(df['scaled_shares'], df['prev_max_mag'], 
+                                            df['slash_percentage'], df['error'])],
+                hovertemplate='%{text}<extra></extra>'
+            )])
+            
+            fig.update_layout(
+                title='Interactive 3D Error Analysis',
+                scene=dict(
+                    xaxis_title='Scaled Shares',
+                    yaxis_title='Max Magnitude',
+                    zaxis_title='Slash Percentage (%)'
+                ),
+                width=800,
+                height=600
+            )
+            
+            # Save as HTML
+            fig.write_html(plot_dir / 'interactive_3d_error.html')
+            print(f"📱 Interactive 3D plot saved to {plot_dir / 'interactive_3d_error.html'}")
+            
+        except ImportError:
+            print("💡 Install plotly for interactive 3D plots: pip install plotly")
+        except Exception as e:
+            print(f"⚠️ Error generating interactive plot: {e}")
     
     def save_enhanced_csv(self, df: pd.DataFrame, output_file: str):
         """Save enhanced CSV with all calculations"""
