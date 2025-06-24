@@ -14,12 +14,8 @@ import "src/test/utils/EigenLayerMultichainUnitTestSetup.sol";
 import "src/contracts/libraries/OperatorSetLib.sol";
 import "src/contracts/interfaces/ISignatureUtilsMixin.sol";
 
-/**
- * @title KeyRegistrarUnitTests
- * @notice Base contract for all KeyRegistrar unit tests
- */
-contract KeyRegistrarUnitTests is 
-    EigenLayerMultichainUnitTestSetup, 
+contract KeyRegistrarUnitTests is
+    EigenLayerMultichainUnitTestSetup,
     IKeyRegistrarErrors,
     IKeyRegistrarEvents,
     ISignatureUtilsMixinErrors
@@ -58,6 +54,7 @@ contract KeyRegistrarUnitTests is
     bytes public bn254Key2;
 
     function setUp() public virtual override {
+        // The KeyRegistrar is deployed in the setUp of the EigenLayerMultichainUnitTestSetup
         EigenLayerMultichainUnitTestSetup.setUp();
 
         // Set up ECDSA addresses that correspond to the private keys
@@ -119,7 +116,35 @@ contract KeyRegistrarUnitTests is
  * @notice Unit tests for KeyRegistrar.configureOperatorSet
  */
 contract KeyRegistrarUnitTests_configureOperatorSet is KeyRegistrarUnitTests {
-    function test_configureOperatorSet() public {
+    function test_revert_unauthorized() public {
+        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
+
+        vm.prank(operator1);
+        vm.expectRevert(PermissionControllerMixin.InvalidPermissions.selector);
+        keyRegistrar.configureOperatorSet(operatorSet, CurveType.ECDSA);
+    }
+
+    function test_revert_invalidCurveType() public {
+        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
+
+        vm.prank(avs1);
+        vm.expectRevert(InvalidCurveType.selector);
+        keyRegistrar.configureOperatorSet(operatorSet, CurveType.NONE);
+    }
+
+    function test_revert_configurationAlreadySet() public {
+        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
+
+        vm.startPrank(avs1);
+        keyRegistrar.configureOperatorSet(operatorSet, CurveType.ECDSA);
+
+        // Try configuring the same curve type again
+        vm.expectRevert(ConfigurationAlreadySet.selector);
+        keyRegistrar.configureOperatorSet(operatorSet, CurveType.ECDSA);
+        vm.stopPrank();
+    }
+
+    function test_configureOperatorSet_ECDSA() public {
         OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
 
         vm.prank(avs1);
@@ -129,14 +154,6 @@ contract KeyRegistrarUnitTests_configureOperatorSet is KeyRegistrarUnitTests {
 
         CurveType curveType = keyRegistrar.getOperatorSetCurveType(operatorSet);
         assertEq(uint8(curveType), uint8(CurveType.ECDSA));
-    }
-
-    function test_revert_unauthorized() public {
-        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
-
-        vm.prank(operator1);
-        vm.expectRevert(PermissionControllerMixin.InvalidPermissions.selector);
-        keyRegistrar.configureOperatorSet(operatorSet, CurveType.ECDSA);
     }
 
     function test_configureOperatorSet_BN254() public {
@@ -149,25 +166,6 @@ contract KeyRegistrarUnitTests_configureOperatorSet is KeyRegistrarUnitTests {
 
         CurveType curveType = keyRegistrar.getOperatorSetCurveType(operatorSet);
         assertEq(uint8(curveType), uint8(CurveType.BN254));
-    }
-
-    function test_revert_configurationAlreadySet() public {
-        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
-
-        vm.prank(avs1);
-        keyRegistrar.configureOperatorSet(operatorSet, CurveType.ECDSA);
-
-        vm.prank(avs1);
-        vm.expectRevert(ConfigurationAlreadySet.selector);
-        keyRegistrar.configureOperatorSet(operatorSet, CurveType.BN254);
-    }
-
-    function test_revert_invalidCurveType() public {
-        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
-
-        vm.prank(avs1);
-        vm.expectRevert(InvalidCurveType.selector);
-        keyRegistrar.configureOperatorSet(operatorSet, CurveType.NONE);
     }
 
     function test_multipleOperatorSets() public {
@@ -195,27 +193,6 @@ contract KeyRegistrarUnitTests_configureOperatorSet is KeyRegistrarUnitTests {
  * @notice Unit tests for KeyRegistrar.registerKey with ECDSA keys
  */
 contract KeyRegistrarUnitTests_registerKey_ECDSA is KeyRegistrarUnitTests {
-    function test_registerECDSAKey() public {
-        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
-
-        vm.prank(avs1);
-        keyRegistrar.configureOperatorSet(operatorSet, CurveType.ECDSA);
-
-        bytes memory signature = _generateECDSASignature(operator1, operatorSet, ecdsaAddress1, ecdsaPrivKey1);
-
-        vm.prank(operator1);
-        vm.expectEmit(true, true, true, true);
-        emit KeyRegistered(operatorSet, operator1, CurveType.ECDSA, ecdsaKey1);
-        keyRegistrar.registerKey(operator1, operatorSet, ecdsaKey1, signature);
-
-        assertTrue(keyRegistrar.isRegistered(operatorSet, operator1));
-        bytes memory storedKey = keyRegistrar.getECDSAKey(operatorSet, operator1);
-        assertEq(storedKey, ecdsaKey1);
-
-        address storedAddress = keyRegistrar.getECDSAAddress(operatorSet, operator1);
-        assertEq(storedAddress, ecdsaAddress1);
-    }
-
     function test_revert_invalidFormat() public {
         OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
 
@@ -340,6 +317,27 @@ contract KeyRegistrarUnitTests_registerKey_ECDSA is KeyRegistrarUnitTests {
         vm.expectRevert(InvalidKeyFormat.selector);
         keyRegistrar.registerKey(operator1, operatorSet, bn254Key1, signature);
     }
+
+    function test_registerECDSAKey() public {
+        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
+
+        vm.prank(avs1);
+        keyRegistrar.configureOperatorSet(operatorSet, CurveType.ECDSA);
+
+        bytes memory signature = _generateECDSASignature(operator1, operatorSet, ecdsaAddress1, ecdsaPrivKey1);
+
+        vm.prank(operator1);
+        vm.expectEmit(true, true, true, true);
+        emit KeyRegistered(operatorSet, operator1, CurveType.ECDSA, ecdsaKey1);
+        keyRegistrar.registerKey(operator1, operatorSet, ecdsaKey1, signature);
+
+        assertTrue(keyRegistrar.isRegistered(operatorSet, operator1));
+        bytes memory storedKey = keyRegistrar.getECDSAKey(operatorSet, operator1);
+        assertEq(storedKey, ecdsaKey1);
+
+        address storedAddress = keyRegistrar.getECDSAAddress(operatorSet, operator1);
+        assertEq(storedAddress, ecdsaAddress1);
+    }
 }
 
 /**
@@ -347,25 +345,6 @@ contract KeyRegistrarUnitTests_registerKey_ECDSA is KeyRegistrarUnitTests {
  * @notice Unit tests for KeyRegistrar.registerKey with BN254 keys
  */
 contract KeyRegistrarUnitTests_registerKey_BN254 is KeyRegistrarUnitTests {
-    function test_registerBN254Key() public {
-        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
-
-        vm.prank(avs1);
-        keyRegistrar.configureOperatorSet(operatorSet, CurveType.BN254);
-
-        bytes memory signature = _generateBN254Signature(operator1, operatorSet, bn254Key1, bn254PrivKey1);
-
-        vm.prank(operator1);
-        vm.expectEmit(true, true, true, true);
-        emit KeyRegistered(operatorSet, operator1, CurveType.BN254, bn254Key1);
-        keyRegistrar.registerKey(operator1, operatorSet, bn254Key1, signature);
-
-        assertTrue(keyRegistrar.isRegistered(operatorSet, operator1));
-        (BN254.G1Point memory storedG1, BN254.G2Point memory storedG2) = keyRegistrar.getBN254Key(operatorSet, operator1);
-        assertEq(storedG1.X, bn254G1Key1.X);
-        assertEq(storedG1.Y, bn254G1Key1.Y);
-    }
-
     function test_revert_zeroPubkey() public {
         OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
 
@@ -499,6 +478,29 @@ contract KeyRegistrarUnitTests_registerKey_BN254 is KeyRegistrarUnitTests {
         assertEq(storedG2.Y[0], bn254G2Key2.Y[0]);
         assertEq(storedG2.Y[1], bn254G2Key2.Y[1]);
     }
+
+    function test_registerBN254Key() public {
+        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
+
+        vm.prank(avs1);
+        keyRegistrar.configureOperatorSet(operatorSet, CurveType.BN254);
+
+        bytes memory signature = _generateBN254Signature(operator1, operatorSet, bn254Key1, bn254PrivKey1);
+
+        vm.prank(operator1);
+        vm.expectEmit(true, true, true, true);
+        emit KeyRegistered(operatorSet, operator1, CurveType.BN254, bn254Key1);
+        keyRegistrar.registerKey(operator1, operatorSet, bn254Key1, signature);
+
+        assertTrue(keyRegistrar.isRegistered(operatorSet, operator1));
+        (BN254.G1Point memory storedG1, BN254.G2Point memory storedG2) = keyRegistrar.getBN254Key(operatorSet, operator1);
+        assertEq(storedG1.X, bn254G1Key1.X);
+        assertEq(storedG1.Y, bn254G1Key1.Y);
+        assertEq(storedG2.X[0], bn254G2Key1.X[0]);
+        assertEq(storedG2.X[1], bn254G2Key1.X[1]);
+        assertEq(storedG2.Y[0], bn254G2Key1.Y[0]);
+        assertEq(storedG2.Y[1], bn254G2Key1.Y[1]);
+    }
 }
 
 /**
@@ -506,6 +508,55 @@ contract KeyRegistrarUnitTests_registerKey_BN254 is KeyRegistrarUnitTests {
  * @notice Unit tests for KeyRegistrar.deregisterKey
  */
 contract KeyRegistrarUnitTests_deregisterKey is KeyRegistrarUnitTests {
+    function test_revert_keyNotFound() public {
+        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
+
+        vm.prank(avs1);
+        keyRegistrar.configureOperatorSet(operatorSet, CurveType.ECDSA);
+
+        vm.prank(operator1);
+        vm.expectRevert(abi.encodeWithSelector(KeyNotFound.selector, operatorSet, operator1));
+        keyRegistrar.deregisterKey(operator1, operatorSet);
+    }
+
+    function test_revert_unauthorized() public {
+        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
+
+        vm.prank(operator2); // operator2 is not authorized to call on behalf of operator1
+        vm.expectRevert(PermissionControllerMixin.InvalidPermissions.selector);
+        keyRegistrar.deregisterKey(operator1, operatorSet);
+    }
+
+    function test_revert_operatorStillSlashable() public {
+        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
+
+        vm.prank(avs1);
+        keyRegistrar.configureOperatorSet(operatorSet, CurveType.ECDSA);
+
+        bytes memory signature = _generateECDSASignature(operator1, operatorSet, ecdsaAddress1, ecdsaPrivKey1);
+
+        vm.prank(operator1);
+        keyRegistrar.registerKey(operator1, operatorSet, ecdsaKey1, signature);
+
+        // Set operator as slashable
+        allocationManagerMock.setIsOperatorSlashable(operator1, operatorSet, true);
+
+        // Operator should not be able to deregister their key when still slashable
+        vm.prank(operator1);
+        vm.expectRevert(abi.encodeWithSelector(OperatorStillSlashable.selector, operatorSet, operator1));
+        keyRegistrar.deregisterKey(operator1, operatorSet);
+
+        assertTrue(keyRegistrar.isRegistered(operatorSet, operator1));
+    }
+
+    function test_revert_operatorSetNotConfigured() public {
+        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
+
+        vm.prank(operator1);
+        vm.expectRevert(OperatorSetNotConfigured.selector);
+        keyRegistrar.deregisterKey(operator1, operatorSet);
+    }
+
     function test_deregisterKey_ECDSA() public {
         OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
 
@@ -549,78 +600,6 @@ contract KeyRegistrarUnitTests_deregisterKey is KeyRegistrarUnitTests {
 
         assertFalse(keyRegistrar.isRegistered(operatorSet, operator1));
     }
-
-    function test_revert_keyNotFound() public {
-        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
-
-        vm.prank(avs1);
-        keyRegistrar.configureOperatorSet(operatorSet, CurveType.ECDSA);
-
-        vm.prank(operator1);
-        vm.expectRevert(abi.encodeWithSelector(KeyNotFound.selector, operatorSet, operator1));
-        keyRegistrar.deregisterKey(operator1, operatorSet);
-    }
-
-    function test_revert_unauthorized() public {
-        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
-
-        vm.prank(operator2); // operator2 is not authorized to call on behalf of operator1
-        vm.expectRevert(PermissionControllerMixin.InvalidPermissions.selector);
-        keyRegistrar.deregisterKey(operator1, operatorSet);
-    }
-
-    function test_deregisterKey_operatorNotSlashable() public {
-        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
-
-        vm.prank(avs1);
-        keyRegistrar.configureOperatorSet(operatorSet, CurveType.ECDSA);
-
-        bytes memory signature = _generateECDSASignature(operator1, operatorSet, ecdsaAddress1, ecdsaPrivKey1);
-
-        vm.prank(operator1);
-        keyRegistrar.registerKey(operator1, operatorSet, ecdsaKey1, signature);
-
-        // Set operator as not slashable
-        allocationManagerMock.setIsOperatorSlashable(operator1, operatorSet, false);
-
-        // Operator should be able to deregister their key when not slashable
-        vm.prank(operator1);
-        vm.expectEmit(true, true, true, true);
-        emit KeyDeregistered(operatorSet, operator1, CurveType.ECDSA);
-        keyRegistrar.deregisterKey(operator1, operatorSet);
-
-        assertFalse(keyRegistrar.isRegistered(operatorSet, operator1));
-    }
-
-    function test_revert_operatorStillSlashable() public {
-        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
-
-        vm.prank(avs1);
-        keyRegistrar.configureOperatorSet(operatorSet, CurveType.ECDSA);
-
-        bytes memory signature = _generateECDSASignature(operator1, operatorSet, ecdsaAddress1, ecdsaPrivKey1);
-
-        vm.prank(operator1);
-        keyRegistrar.registerKey(operator1, operatorSet, ecdsaKey1, signature);
-
-        // Set operator as slashable
-        allocationManagerMock.setIsOperatorSlashable(operator1, operatorSet, true);
-
-        // Operator should not be able to deregister their key when still slashable
-        vm.prank(operator1);
-        vm.expectRevert(abi.encodeWithSelector(OperatorStillSlashable.selector, operatorSet, operator1));
-        keyRegistrar.deregisterKey(operator1, operatorSet);
-
-        assertTrue(keyRegistrar.isRegistered(operatorSet, operator1));
-    }
-
-    function test_revert_operatorSetNotConfigured() public {
-        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
-
-        vm.prank(operator1);
-        vm.expectRevert(OperatorSetNotConfigured.selector);
-        keyRegistrar.deregisterKey(operator1, operatorSet);
-    }
 }
 
 /**
@@ -639,7 +618,6 @@ contract KeyRegistrarUnitTests_checkKey is KeyRegistrarUnitTests {
         vm.prank(operator1);
         keyRegistrar.registerKey(operator1, operatorSet, ecdsaKey1, signature);
 
-        vm.prank(avs1);
         bool hasKey = keyRegistrar.checkKey(operatorSet, operator1);
         assertTrue(hasKey);
     }
@@ -655,7 +633,6 @@ contract KeyRegistrarUnitTests_checkKey is KeyRegistrarUnitTests {
         vm.prank(operator1);
         keyRegistrar.registerKey(operator1, operatorSet, bn254Key1, signature);
 
-        vm.prank(avs1);
         bool hasKey = keyRegistrar.checkKey(operatorSet, operator1);
         assertTrue(hasKey);
     }
@@ -666,7 +643,6 @@ contract KeyRegistrarUnitTests_checkKey is KeyRegistrarUnitTests {
         vm.prank(avs1);
         keyRegistrar.configureOperatorSet(operatorSet, CurveType.ECDSA);
 
-        vm.prank(avs1);
         bool hasKey = keyRegistrar.checkKey(operatorSet, operator1);
         assertFalse(hasKey);
     }
@@ -674,7 +650,6 @@ contract KeyRegistrarUnitTests_checkKey is KeyRegistrarUnitTests {
     function test_revert_operatorSetNotConfigured() public {
         OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
 
-        vm.prank(avs1);
         vm.expectRevert(OperatorSetNotConfigured.selector);
         keyRegistrar.checkKey(operatorSet, operator1);
     }
@@ -956,6 +931,8 @@ contract KeyRegistrarUnitTests_CrossCurveInteraction is KeyRegistrarUnitTests {
  * @notice Unit tests for signature verification in KeyRegistrar
  */
 contract KeyRegistrarUnitTests_SignatureVerification is KeyRegistrarUnitTests {
+    using BN254 for BN254.G1Point;
+
     function test_verifyBN254Signature() public {
         bytes32 messageHash = keccak256("test message");
 
