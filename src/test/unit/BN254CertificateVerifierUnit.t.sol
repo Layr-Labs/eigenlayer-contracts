@@ -407,11 +407,7 @@ contract BN254CertificateVerifierUnitTests_verifyCertificate is BN254Certificate
         uint32 referenceTimestamp = _initializeOperatorTableBase();
 
         // Mock the operatorTableUpdater to return false for isRootValidByTimestamp
-        vm.mockCall(
-            address(operatorTableUpdaterMock),
-            abi.encodeWithSelector(IOperatorTableUpdater.isRootValidByTimestamp.selector, referenceTimestamp),
-            abi.encode(false)
-        );
+        operatorTableUpdaterMock.invalidateRoot(referenceTimestamp);
 
         BN254Certificate memory cert;
         cert.referenceTimestamp = referenceTimestamp;

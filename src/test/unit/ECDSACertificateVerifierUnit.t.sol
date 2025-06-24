@@ -381,12 +381,7 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificate is ECDSACertificate
         // Initialize operator table with a valid root
         uint32 referenceTimestamp = _initializeOperatorTableBase();
 
-        // Mock the operatorTableUpdater to return false for isRootValidByTimestamp
-        vm.mockCall(
-            address(operatorTableUpdaterMock),
-            abi.encodeWithSelector(IOperatorTableUpdater.isRootValidByTimestamp.selector, referenceTimestamp),
-            abi.encode(false)
-        );
+        operatorTableUpdaterMock.invalidateRoot(referenceTimestamp);
 
         IECDSACertificateVerifierTypes.ECDSACertificate memory cert;
         cert.referenceTimestamp = referenceTimestamp;
