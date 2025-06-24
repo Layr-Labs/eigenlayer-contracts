@@ -39,8 +39,9 @@ class SlashingTestDriver:
         self.WAD = Decimal('1000000000000000000')  # 1e18
         self.results = {}
         
-        # Keep output directory relative to current working directory
-        self.output_dir = Path(output_dir)
+        # Create output directory relative to THIS script's location
+        script_dir = Path(__file__).parent
+        self.output_dir = script_dir / output_dir.lstrip('./')
         self.output_dir.mkdir(exist_ok=True)
         print(f"📁 Output directory: {self.output_dir.absolute()}")
         
@@ -66,23 +67,26 @@ class SlashingTestDriver:
         if fuzz_seed is not None:
             cmd.extend(['--fuzz-seed', str(fuzz_seed)])
         
-        # Convert to absolute path so Foundry can find it regardless of working directory
+        # Always use absolute path so Foundry can find it from any working directory
         absolute_output_file = str(Path(output_file).resolve())
         
         # Set environment variables
         env = {
-            **subprocess.os.environ,
-            'CSV_OUTPUT_FILE': absolute_output_file,  # Use absolute path
+            **subprocess.os.environ,  # Include existing environment
+            'CSV_OUTPUT_FILE': absolute_output_file,  # Absolute path for Foundry
             **config.get('env', {})
         }
         
-        # Run Foundry from current directory (not repo root)
-        script_dir = Path(__file__).parent
+        # Find repo root for Foundry to run from (it needs foundry.toml)
+        repo_root = Path(__file__).parent
+        while not (repo_root / 'foundry.toml').exists() and repo_root.parent != repo_root:
+            repo_root = repo_root.parent
         
         try:
             print(f"🔧 Command: {' '.join(cmd)}")
             print(f"🌍 CSV_OUTPUT_FILE: {absolute_output_file}")
-            print(f"📁 Working directory: {script_dir}")
+            print(f"📁 Foundry working directory: {repo_root}")
+            print(f"📁 Output will be saved to: {self.output_dir}")
             
             result = subprocess.run(
                 cmd,
@@ -90,7 +94,7 @@ class SlashingTestDriver:
                 text=True,
                 timeout=300,
                 env=env,
-                cwd=script_dir  # Run from script directory, not repo root
+                cwd=repo_root  # Foundry runs from repo root
             )
             
             # Check if test actually ran fuzz cases
@@ -105,13 +109,13 @@ class SlashingTestDriver:
                 print("STDERR:", result.stderr)
                 return None
             
-            # Verify file exists and has data
-            if not Path(output_file).exists():
-                print(f"❌ Output file not created: {output_file}")
+            # Verify file exists at the absolute path we specified
+            if not Path(absolute_output_file).exists():
+                print(f"❌ Output file not created: {absolute_output_file}")
                 return None
             
             # Check if file has actual data (more than just header)
-            with open(output_file, 'r') as f:
+            with open(absolute_output_file, 'r') as f:
                 lines = f.readlines()
                 if len(lines) <= 1:
                     print(f"⚠️ Warning: CSV file only has {len(lines)} lines (header only)")
@@ -122,7 +126,7 @@ class SlashingTestDriver:
                     return None
             
             print(f"✅ Foundry test completed - {len(lines)-1} data rows generated")
-            return output_file
+            return absolute_output_file  # Return absolute path for consistency
             
         except subprocess.TimeoutExpired:
             print("⏰ Test timed out")
@@ -514,7 +518,7 @@ def main():
     parser = argparse.ArgumentParser(description='Drive SlashingLib Foundry tests and perform analysis')
     parser.add_argument('--fuzz-runs', type=int, default=500, help='Number of fuzz runs')
     parser.add_argument('--fuzz-seed', type=int, help='Fuzz seed for reproducibility')
-    parser.add_argument('--output-dir', default='output', help='Output directory relative to repo root')
+    parser.add_argument('--output-dir', default='output', help='Output subdirectory within queuedShares')
     parser.add_argument('--output-csv', default='slashing_test_output.csv', help='Output CSV filename (within output dir)')
     parser.add_argument('--enhanced-csv', default='enhanced_slashing_analysis.csv', help='Enhanced CSV filename (within output dir)')
     parser.add_argument('--report', default='analysis_report.json', help='Analysis report filename (within output dir)')
@@ -523,14 +527,14 @@ def main():
     
     args = parser.parse_args()
     
-    # Create driver with output directory
+    # Create driver with output directory (relative to script location)
     driver = SlashingTestDriver(output_dir=args.output_dir)
     
-    # Configuration - all paths now relative to output directory
+    # Configuration - all paths within the queuedShares output directory
     config = {
         'fuzz_runs': args.fuzz_runs,
         'fuzz_seed': args.fuzz_seed,
-        'output_file': str(Path(args.output_dir) / args.output_csv),
+        'output_file': str(driver.output_dir / args.output_csv),
         'enhanced_csv': str(driver.output_dir / args.enhanced_csv),
         'report_file': str(driver.output_dir / args.report),
         'plot_subdir': args.plot_subdir,
@@ -541,6 +545,7 @@ def main():
     result = driver.run_complete_analysis(config)
     if result is not None:
         df, analysis = result
+        print(f"🎉 All output saved to: {driver.output_dir}")
     else:
         print("❌ Analysis failed")
         sys.exit(1)
