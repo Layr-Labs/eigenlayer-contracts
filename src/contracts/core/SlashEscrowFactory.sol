@@ -226,9 +226,6 @@ contract SlashEscrowFactory is
         if (totalPendingForSlashId == 0) {
             pendingSlashIds.remove(slashId);
 
-            // Delete the start block for the slash ID.
-            delete _slashIdToCompleteBlock[operatorSet.key()][slashId];
-
             // If there are no more slash IDs for the operator set, remove the operator set from the pending operator sets set.
             if (pendingSlashIds.length() == 0) {
                 pendingOperatorSets.remove(operatorSet.key());
