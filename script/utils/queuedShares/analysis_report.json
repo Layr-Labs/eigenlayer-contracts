@@ -1,0 +1,48 @@
+{
+  "total_cases": 258,
+  "data_types": {
+    "scaled_shares": "float64",
+    "prev_max_mag": "float64",
+    "new_max_mag": "float64",
+    "slashed_amount": "float64",
+    "theoretical_result": "float64",
+    "error": "float64",
+    "relative_error_percent": "float64",
+    "magnitude_ratio": "float64",
+    "slash_percentage": "float64"
+  },
+  "cases_with_error": 258,
+  "cases_with_large_error": 40,
+  "max_error": 1.7114558362226932e+19,
+  "mean_error": 1.0385569067424883e+17,
+  "median_error": 9.22362161909e-07,
+  "std_error": 1.2207938244070828e+18,
+  "max_relative_error": 100.0,
+  "mean_relative_error": 67.2714349665004,
+  "error_by_slash_range": {
+    "count": {
+      "0-10%": 10,
+      "10-25%": 12,
+      "25-50%": 19,
+      "50-75%": 28,
+      "75-90%": 25,
+      "90-100%": 164
+    },
+    "mean": {
+      "0-10%": 158809600.0,
+      "10-25%": 0.024484,
+      "25-50%": 0.0,
+      "50-75%": 14.310133,
+      "75-90%": 166445211058.9595,
+      "90-100%": 1.633827075075477e+17
+    },
+    "max": {
+      "0-10%": 1588096000.0,
+      "10-25%": 0.293804,
+      "25-50%": 5e-06,
+      "50-75%": 400.0,
+      "75-90%": 4161129960677.782,
+      "90-100%": 1.7114558362226932e+19
+    }
+  }
+}

@@ -7,7 +7,6 @@ import "src/contracts/libraries/SlashingLib.sol";
 contract SlashingLibUnitTests is Test {
     using SlashingLib for *;
     
-    uint256 constant WAD = 1e18;
     string csvHeader = "scaled_shares,prev_max_mag,new_max_mag,slashed_amount";
     string outputFile;
     
