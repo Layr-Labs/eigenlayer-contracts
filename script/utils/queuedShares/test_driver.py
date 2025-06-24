@@ -29,7 +29,6 @@ from datetime import datetime
 
 # Third-party imports (will fail with clear error if not installed)
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
