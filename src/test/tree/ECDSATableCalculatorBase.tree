@@ -1,0 +1,34 @@
+.
+└── ECDSATableCalculatorBase (**** denotes that integration tests are needed to fully validate path)
+    ├── when calculateOperatorTable is called
+    │   ├── given that no operators are in the set
+    │   │   └── it should return empty operator info array
+    │   ├── given that operators exist but none have registered keys
+    │   │   └── it should return empty operator info array  
+    │   ├── given that all operators have registered keys
+    │   │   └── it should return operator infos with correct pubkeys and weights
+    │   ├── given that operators have multiple weight types
+    │   │   └── it should return operator infos with all weight types correctly
+    │   ├── given that some operators have registered keys and some have not
+    │   │   └── it should only include registered operators in the result
+    │   └── given that a single operator is registered
+    │       └── it should return single operator info with correct data
+    ├── when calculateOperatorTableBytes is called
+    │   ├── given valid operator set with registered operators
+    │   │   └── it should encode operator infos correctly as bytes
+    │   └── given various weight values (fuzz test)
+    │       └── it should encode and decode weights correctly
+    ├── when getOperatorWeights is called
+    │   ├── given operators and weights are set
+    │   │   └── it should return the implementation result correctly
+    │   └── given various numbers of operators (fuzz test)
+    │       └── it should return correct operator and weight arrays
+    └── when getOperatorWeight is called
+        ├── given that the operator exists in the set
+        │   └── it should return the correct weight
+        ├── given that the operator does not exist in the set
+        │   └── it should return 0
+        ├── given that the operator set is empty
+        │   └── it should return 0
+        └── given various operator and weight combinations (fuzz test)
+            └── it should return correct weight or 0 
