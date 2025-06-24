@@ -577,10 +577,7 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificate is ECDSACertificate
 
         // Create certificate with the non-operator as a signer
         bytes32 signableDigest = verifier.calculateCertificateDigest(referenceTimestamp, defaultMsgHash);
-<<<<<<< HEAD
-=======
 
->>>>>>> c14086cc (chore: format)
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(nonOperatorPrivKey, signableDigest);
         bytes memory signature = abi.encodePacked(r, s, v);
 
@@ -628,6 +625,7 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificate is ECDSACertificate
         operators[0].weights = new uint[](2);
         operators[0].weights[0] = 100;
         operators[0].weights[1] = 200;
+
         operators[1].pubkey = addr1;
         operators[1].weights = new uint[](2);
         operators[1].weights[0] = 100;
@@ -1087,11 +1085,7 @@ contract ECDSACertificateVerifierUnitTests_ViewFunctions is ECDSACertificateVeri
     }
 
     function test_revert_indexOutOfBounds() public {
-        uint32 referenceTimestamp = uint32(block.timestamp);
-        (IECDSACertificateVerifierTypes.ECDSAOperatorInfo[] memory operators,,) = _createOperatorsWithSplitKeys(123, 3, 1);
-
-        vm.prank(address(operatorTableUpdaterMock));
-        verifier.updateOperatorTable(defaultOperatorSet, referenceTimestamp, operators, defaultOperatorSetConfig);
+        IECDSACertificateVerifierTypes.ECDSAOperatorInfo[] memory operators = _getOperators();
 
         // Try to get operator info with out of bounds index
         uint32 outOfBoundsIndex = uint32(operators.length);
