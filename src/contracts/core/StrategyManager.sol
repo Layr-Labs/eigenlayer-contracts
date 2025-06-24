@@ -54,11 +54,10 @@ contract StrategyManager is
      */
     constructor(
         IDelegationManager _delegation,
-        ISlashEscrowFactory _slashEscrowFactory,
         IPauserRegistry _pauserRegistry,
         string memory _version
     )
-        StrategyManagerStorage(_delegation, _slashEscrowFactory)
+        StrategyManagerStorage(_delegation)
         Pausable(_pauserRegistry)
         SignatureUtilsMixin(_version)
     {
@@ -162,8 +161,6 @@ contract StrategyManager is
         // Add the shares to the operator set's burn or redistributable shares.
         require(burnOrRedistributableShares.set(address(strategy), sharesToBurn), StrategyAlreadyInSlash());
 
-        // Notify the `SlashEscrowFactory` contract that it received underlying tokens to burn or redistribute.
-        slashEscrowFactory.initiateSlashEscrow(operatorSet, slashId, strategy);
         emit BurnOrRedistributableSharesIncreased(operatorSet, slashId, strategy, sharesToBurn);
     }
 
@@ -199,9 +196,9 @@ contract StrategyManager is
 
         uint256 amountOut;
         if (sharesToRemove != 0) {
-            // Withdraw the shares to the slash escrow.
+            // Withdraw the shares to the burn address.
             amountOut = IStrategy(strategy).withdraw({
-                recipient: address(slashEscrowFactory.getSlashEscrow(operatorSet, slashId)),
+                recipient: DEFAULT_BURN_ADDRESS,
                 token: IStrategy(strategy).underlyingToken(),
                 amountShares: sharesToRemove
             });

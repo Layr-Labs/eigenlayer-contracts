@@ -44,7 +44,6 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEv
         EigenLayerUnitTestSetup.setUp();
         strategyManagerImplementation = new StrategyManager(
             IDelegationManager(address(delegationManagerMock)),
-            ISlashEscrowFactory(address(slashEscrowFactoryMock)),
             pauserRegistry,
             "9.9.9"
         );
