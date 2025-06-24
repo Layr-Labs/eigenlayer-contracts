@@ -25,6 +25,7 @@ import json
 import argparse
 from typing import Dict, List, Tuple, Optional
 import os
+from datetime import datetime
 
 # Third-party imports (will fail with clear error if not installed)
 import pandas as pd
@@ -38,15 +39,64 @@ getcontext().prec = 50
 class SlashingTestDriver:
     """Driver class for running and analyzing SlashingLib tests"""
     
-    def __init__(self, output_dir: str = "./output"):
+    def __init__(self, output_dir: str = "./output", make_unique: bool = True):
         self.WAD = Decimal('1000000000000000000')  # 1e18
         self.results = {}
+        self.make_unique = make_unique
         
         # Create output directory relative to THIS script's location
         script_dir = Path(__file__).parent
-        self.output_dir = script_dir / output_dir.lstrip('./')
-        self.output_dir.mkdir(exist_ok=True)
+        base_output_dir = script_dir / output_dir.lstrip('./')
+        
+        if make_unique:
+            # Create unique run directory with timestamp
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            self.run_id = timestamp
+            self.output_dir = base_output_dir / f"run_{timestamp}"
+        else:
+            self.output_dir = base_output_dir
+            self.run_id = "static"
+        
+        self.output_dir.mkdir(parents=True, exist_ok=True)
         print(f"📁 Output directory: {self.output_dir.absolute()}")
+        
+    def update_run_id_with_config(self, config: Dict):
+        """Update run ID with seed and fuzz runs info after config is available"""
+        if not self.make_unique:
+            return
+            
+        fuzz_runs = config.get('fuzz_runs', 500)
+        fuzz_seed = config.get('fuzz_seed', None)
+        
+        # Create a more descriptive run ID
+        base_timestamp = self.run_id
+        
+        if fuzz_seed is not None:
+            run_descriptor = f"run_{base_timestamp}_seed{fuzz_seed}_runs{fuzz_runs}"
+        else:
+            run_descriptor = f"run_{base_timestamp}_runs{fuzz_runs}"
+        
+        # Rename the directory if it's different
+        new_output_dir = self.output_dir.parent / run_descriptor
+        if new_output_dir != self.output_dir:
+            try:
+                self.output_dir.rename(new_output_dir)
+                old_output_dir = self.output_dir
+                self.output_dir = new_output_dir
+                self.run_id = run_descriptor.replace("run_", "")
+                print(f"📁 Updated output directory: {self.output_dir.absolute()}")
+                
+                # Update config paths to point to the new directory
+                for key in ['output_file', 'enhanced_csv', 'report_file']:
+                    if key in config:
+                        old_path = Path(config[key])
+                        # Replace the old output directory with the new one in the path
+                        new_path = str(old_path).replace(str(old_output_dir), str(new_output_dir))
+                        config[key] = new_path
+                        print(f"📝 Updated {key}: {new_path}")
+                    
+            except Exception as e:
+                print(f"⚠️ Could not rename directory: {e}")
         
     def run_foundry_test(self, config: Dict) -> str:
         """Run Foundry test with specified configuration"""
@@ -57,6 +107,8 @@ class SlashingTestDriver:
         test_name = config.get('test_name', 'testFuzz_scaleForBurning')
         
         print(f"🚀 Running Foundry test with {fuzz_runs} runs...")
+        if fuzz_seed is not None:
+            print(f"🎲 Using seed: {fuzz_seed}")
         print(f"📄 Output file: {output_file}")
         
         # Build command
@@ -129,6 +181,10 @@ class SlashingTestDriver:
                     return None
             
             print(f"✅ Foundry test completed - {len(lines)-1} data rows generated")
+            
+            # Save run metadata
+            self._save_run_metadata(config, len(lines)-1)
+            
             return absolute_output_file  # Return absolute path for consistency
             
         except subprocess.TimeoutExpired:
@@ -138,6 +194,33 @@ class SlashingTestDriver:
             print(f"💥 Error running test: {e}")
             return None
     
+    def _save_run_metadata(self, config: Dict, data_rows: int):
+        """Save metadata about this run for future reference"""
+        
+        metadata = {
+            'run_id': self.run_id,
+            'timestamp': datetime.now().isoformat(),
+            'config': {
+                'fuzz_runs': config.get('fuzz_runs'),
+                'fuzz_seed': config.get('fuzz_seed'),
+                'test_name': config.get('test_name'),
+            },
+            'results': {
+                'data_rows_generated': data_rows,
+                'output_directory': str(self.output_dir),
+            },
+            'environment': {
+                'python_version': sys.version,
+                'working_directory': str(Path.cwd()),
+            }
+        }
+        
+        metadata_file = self.output_dir / 'run_metadata.json'
+        with open(metadata_file, 'w') as f:
+            json.dump(metadata, f, indent=2)
+        
+        print(f"📋 Run metadata saved to {metadata_file}")
+
     def read_csv_data(self, csv_file: str) -> Optional[pd.DataFrame]:
         """Read and validate CSV data from Foundry test with proper data types"""
         
@@ -448,6 +531,16 @@ class SlashingTestDriver:
         print("🎯 Starting complete SlashingLib analysis...")
         print("=" * 50)
         
+        # Update run ID with configuration details BEFORE using paths
+        self.update_run_id_with_config(config)
+        
+        # Recreate config with updated paths
+        config.update({
+            'output_file': str(self.output_dir / Path(config['output_file']).name),
+            'enhanced_csv': str(self.output_dir / Path(config['enhanced_csv']).name),
+            'report_file': str(self.output_dir / Path(config['report_file']).name),
+        })
+        
         # Change to repo root for consistency
         original_cwd = Path.cwd()
         repo_root = Path(__file__).parent
@@ -489,6 +582,9 @@ class SlashingTestDriver:
             # Step 7: Print summary
             self._print_summary(analysis)
             
+            # Step 8: Save final summary
+            self._save_run_summary(config, analysis)
+            
             print("🎉 Complete analysis finished!")
             return df, analysis
             
@@ -514,6 +610,50 @@ class SlashingTestDriver:
             print("Examples of problematic cases:")
             for i, case in enumerate(analysis['problematic_cases']['examples']):
                 print(f"  {i+1}. Shares: {case['scaled_shares']}, Prev: {case['prev_max_mag']}, New: {case['new_max_mag']}, Error: {case['error']}")
+    
+    def _save_run_summary(self, config: Dict, analysis: Dict):
+        """Save a human-readable summary of the run"""
+        
+        summary_file = self.output_dir / 'README.md'
+        
+        fuzz_seed = config.get('fuzz_seed', 'random')
+        fuzz_runs = config.get('fuzz_runs', 500)
+        
+        summary_content = f"""# SlashingLib Analysis Run
+
+## Run Configuration
+- **Run ID**: {self.run_id}
+- **Timestamp**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+- **Fuzz Runs**: {fuzz_runs}
+- **Fuzz Seed**: {fuzz_seed}
+- **Test**: {config.get('test_name', 'testFuzz_scaleForBurning')}
+
+## Results Summary
+- **Total test cases**: {analysis['total_cases']}
+- **Cases with errors**: {analysis['cases_with_error']} ({analysis['cases_with_error']/analysis['total_cases']*100:.2f}%)
+- **Cases with large errors (>1)**: {analysis['cases_with_large_error']}
+- **Maximum error**: {analysis['max_error']:.6f}
+- **Average error**: {analysis['mean_error']:.6f}
+- **Maximum relative error**: {analysis['max_relative_error']:.6f}%
+
+## Files Generated
+- `slashing_test_output.csv` - Raw test data from Foundry
+- `enhanced_slashing_analysis.csv` - Enhanced data with theoretical calculations
+- `analysis_report.json` - Detailed analysis in JSON format
+- `run_metadata.json` - Run configuration and metadata
+- `plots/precision_analysis.png` - Visualization of precision analysis
+
+## Reproducibility
+To reproduce this exact run:
+```bash
+python3 test_driver.py --fuzz-runs {fuzz_runs} --fuzz-seed {fuzz_seed} --no-unique
+```
+"""
+        
+        with open(summary_file, 'w') as f:
+            f.write(summary_content)
+        
+        print(f"📄 Run summary saved to {summary_file}")
 
 def main():
     """Main function with command line interface"""
@@ -521,19 +661,20 @@ def main():
     parser = argparse.ArgumentParser(description='Drive SlashingLib Foundry tests and perform analysis')
     parser.add_argument('--fuzz-runs', type=int, default=500, help='Number of fuzz runs')
     parser.add_argument('--fuzz-seed', type=int, help='Fuzz seed for reproducibility')
-    parser.add_argument('--output-dir', default='output', help='Output subdirectory within queuedShares')
-    parser.add_argument('--output-csv', default='slashing_test_output.csv', help='Output CSV filename (within output dir)')
-    parser.add_argument('--enhanced-csv', default='enhanced_slashing_analysis.csv', help='Enhanced CSV filename (within output dir)')
-    parser.add_argument('--report', default='analysis_report.json', help='Analysis report filename (within output dir)')
-    parser.add_argument('--plot-subdir', default='plots', help='Subdirectory for plots (within output dir)')
+    parser.add_argument('--output-dir', default='output', help='Base output directory within queuedShares')
+    parser.add_argument('--no-unique', action='store_true', help='Disable unique run directories (overwrites previous runs)')
+    parser.add_argument('--output-csv', default='slashing_test_output.csv', help='Output CSV filename (within run dir)')
+    parser.add_argument('--enhanced-csv', default='enhanced_slashing_analysis.csv', help='Enhanced CSV filename (within run dir)')
+    parser.add_argument('--report', default='analysis_report.json', help='Analysis report filename (within run dir)')
+    parser.add_argument('--plot-subdir', default='plots', help='Subdirectory for plots (within run dir)')
     parser.add_argument('--test-name', default='testFuzz_scaleForBurning', help='Foundry test name')
     
     args = parser.parse_args()
     
     # Create driver with output directory (relative to script location)
-    driver = SlashingTestDriver(output_dir=args.output_dir)
+    driver = SlashingTestDriver(output_dir=args.output_dir, make_unique=not args.no_unique)
     
-    # Configuration - all paths within the queuedShares output directory
+    # Configuration - all paths within the unique run directory
     config = {
         'fuzz_runs': args.fuzz_runs,
         'fuzz_seed': args.fuzz_seed,
@@ -549,6 +690,7 @@ def main():
     if result is not None:
         df, analysis = result
         print(f"🎉 All output saved to: {driver.output_dir}")
+        print(f"🔖 Run ID: {driver.run_id}")
     else:
         print("❌ Analysis failed")
         sys.exit(1)
