@@ -4,7 +4,6 @@ pragma solidity ^0.8.27;
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin-upgrades/contracts/proxy/ClonesUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
-import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 import "../permissions/Pausable.sol";
 import "../mixins/SemVerMixin.sol";
@@ -13,7 +12,6 @@ import "./SlashEscrowFactoryStorage.sol";
 contract SlashEscrowFactory is
     Initializable,
     SlashEscrowFactoryStorage,
-    OwnableUpgradeable,
     Pausable,
     SemVerMixin,
     ReentrancyGuardUpgradeable
@@ -49,13 +47,9 @@ contract SlashEscrowFactory is
 
     /// @inheritdoc ISlashEscrowFactory
     function initialize(
-        address initialOwner,
-        uint256 initialPausedStatus,
-        uint32 initialGlobalDelayBlocks
+        uint256 initialPausedStatus
     ) external initializer {
-        _transferOwnership(initialOwner);
         _setPausedStatus(initialPausedStatus);
-        _setGlobalEscrowDelay(initialGlobalDelayBlocks);
     }
 
     /**
@@ -88,20 +82,6 @@ contract SlashEscrowFactory is
 
         // Add the strategy to the pending strategies for the slash ID.
         pendingStrategiesForSlashId.add(address(strategy));
-
-        // Calculate the complete block for the strategy, and fetch the current complete block.
-        // The escrow delay for a strategy is determined by taking the maximum of:
-        // 1. The global escrow delay (applies to all strategies).
-        // 2. The strategy-specific delay (if set).
-        uint32 completeBlock = uint32(block.number + getStrategyEscrowDelay(strategy) + 1);
-        uint32 currentCompleteBlock = _slashIdToCompleteBlock[operatorSet.key()][slashId];
-
-        // Only update the maturity block if the new calculated maturity block (with the strategy delay)
-        // is further in the future than the currently stored value. This ensures the escrow cannot be released
-        // before the longest required delay among all strategies for this slashId.
-        if (completeBlock > currentCompleteBlock) {
-            _slashIdToCompleteBlock[operatorSet.key()][slashId] = completeBlock;
-        }
 
         // Emit the start escrow event. We can use the block.number here because all strategies
         // in a given operatorSet/slashId will have their escrow initiated in the same transaction.
@@ -190,25 +170,6 @@ contract SlashEscrowFactory is
 
     /**
      *
-     *                         OWNER ACTIONS
-     *
-     */
-
-    /// @inheritdoc ISlashEscrowFactory
-    function setGlobalEscrowDelay(
-        uint32 delay
-    ) external onlyOwner {
-        _setGlobalEscrowDelay(delay);
-    }
-
-    /// @inheritdoc ISlashEscrowFactory
-    function setStrategyEscrowDelay(IStrategy strategy, uint32 delay) external onlyOwner {
-        _strategyEscrowDelayBlocks[address(strategy)] = delay;
-        emit StrategyEscrowDelaySet(strategy, delay);
-    }
-
-    /**
-     *
      *                         HELPERS
      *
      */
@@ -226,11 +187,6 @@ contract SlashEscrowFactory is
 
         // Assert that the slash ID is not paused
         require(!isEscrowPaused(operatorSet, slashId), IPausable.CurrentlyPaused());
-
-        // Assert that the escrow delay has elapsed
-        // `getEscrowCompleteBlock` returns the block number at which the escrow can be released, so
-        // we require that the current block number is greater than OR equal to the complete block.
-        require(block.number >= getEscrowCompleteBlock(operatorSet, slashId), EscrowDelayNotElapsed());
     }
 
     /// @notice Processes the slash escrow for a single strategy.
@@ -278,14 +234,6 @@ contract SlashEscrowFactory is
                 pendingOperatorSets.remove(operatorSet.key());
             }
         }
-    }
-
-    /// @notice Sets the global escrow delay.
-    function _setGlobalEscrowDelay(
-        uint32 delay
-    ) internal {
-        _globalEscrowDelayBlocks = delay;
-        emit GlobalEscrowDelaySet(delay);
     }
 
     /**
@@ -347,17 +295,11 @@ contract SlashEscrowFactory is
     function getPendingEscrows()
         external
         view
-        returns (
-            OperatorSet[] memory operatorSets,
-            bool[] memory isRedistributing,
-            uint256[][] memory slashIds,
-            uint32[][] memory completeBlocks
-        )
+        returns (OperatorSet[] memory operatorSets, bool[] memory isRedistributing, uint256[][] memory slashIds)
     {
         operatorSets = getPendingOperatorSets();
         isRedistributing = new bool[](operatorSets.length);
         slashIds = new uint256[][](operatorSets.length);
-        completeBlocks = new uint32[][](operatorSets.length);
 
         // Populate all arrays.
         for (uint256 i = 0; i < operatorSets.length; i++) {
@@ -366,12 +308,6 @@ contract SlashEscrowFactory is
 
             // Get the pending slash IDs for the operator set.
             slashIds[i] = getPendingSlashIds(operatorSets[i]);
-
-            // For each slashId, get the complete block.
-            completeBlocks[i] = new uint32[](slashIds[i].length);
-            for (uint256 j = 0; j < slashIds[i].length; j++) {
-                completeBlocks[i][j] = getEscrowCompleteBlock(operatorSets[i], slashIds[i][j]);
-            }
         }
     }
 
@@ -434,27 +370,6 @@ contract SlashEscrowFactory is
     /// @inheritdoc ISlashEscrowFactory
     function isEscrowPaused(OperatorSet calldata operatorSet, uint256 slashId) public view returns (bool) {
         return _paused[operatorSet.key()][slashId] || paused(PAUSED_RELEASE_ESCROW);
-    }
-
-    /// @inheritdoc ISlashEscrowFactory
-    function getEscrowCompleteBlock(OperatorSet memory operatorSet, uint256 slashId) public view returns (uint32) {
-        return _slashIdToCompleteBlock[operatorSet.key()][slashId];
-    }
-
-    /// @inheritdoc ISlashEscrowFactory
-    function getStrategyEscrowDelay(
-        IStrategy strategy
-    ) public view returns (uint32) {
-        uint32 globalDelay = _globalEscrowDelayBlocks;
-        uint32 strategyDelay = _strategyEscrowDelayBlocks[address(strategy)];
-
-        // Return whichever delay is greater.
-        return strategyDelay > globalDelay ? strategyDelay : globalDelay;
-    }
-
-    /// @inheritdoc ISlashEscrowFactory
-    function getGlobalEscrowDelay() external view returns (uint32) {
-        return _globalEscrowDelayBlocks;
     }
 
     /// @inheritdoc ISlashEscrowFactory
