@@ -10,14 +10,14 @@ import "src/contracts/libraries/OperatorSetLib.sol";
 import "forge-std/Script.sol";
 import "forge-std/Test.sol";
 
-// forge script script/deploy/devnet/mutlichain/register_allocate_operators.s.sol --rpc-url $HOLESKY_RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run()"
+// forge script script/deploy/devnet/mutlichain/register_allocate_operators.s.sol --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --broadcast --sig "run()"
 contract RegisterAllocateOperators is Script, Test {
     using stdJson for string;
 
     // Admin that can perform actions on behalf of the operatorSet
     address superAdmin = 0x8D8A8D3f88f6a6DA2083D865062bFBE3f1cfc293;
     address avs = 0x8D8A8D3f88f6a6DA2083D865062bFBE3f1cfc293;
-    uint32 operatorSetId = 0;
+    uint32 operatorSetId = 1;
 
     // Contracts
     AllocationManager public allocationManager = AllocationManager(0xFdD5749e11977D60850E06bF5B13221Ad95eb6B4);
@@ -26,8 +26,8 @@ contract RegisterAllocateOperators is Script, Test {
     function run() public {
         // Create operators array
         address[] memory operators = new address[](2);
-        operators[0] = 0x34760F43f4A0cC6077Ee2b10A4f5A56Ff2B0D0Ba;
-        operators[1] = 0x661344B4e1da1410F243335E4B249820070b8143;
+        operators[0] = 0x8F3bd2b7E3Ae92ce2305a8b28741684E34bAe49E;
+        operators[1] = 0xF318c6D757d095Ba6dea320B3fE366c41b460c7b;
 
         // Create operator set struct
         OperatorSet memory operatorSet = OperatorSet({avs: avs, id: operatorSetId});

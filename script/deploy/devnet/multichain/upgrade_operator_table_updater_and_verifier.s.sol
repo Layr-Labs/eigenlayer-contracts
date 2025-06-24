@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.so
 // Core Contracts
 import "src/contracts/multichain/OperatorTableUpdater.sol";
 import "src/contracts/multichain/BN254CertificateVerifier.sol";
-import "src/contracts/interfaces/IECDSACertificateVerifier.sol";
+import "src/contracts/multichain/ECDSACertificateVerifier.sol";
 
 // Forge
 import "forge-std/Script.sol";
@@ -16,8 +16,16 @@ import "forge-std/Test.sol";
 
 // Run with:
 // forge script script/deploy/devnet/multichain/upgrade_operator_table_updater_and_verifier.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run()"
+/**
+ * @title UpgradeOperatorTableUpdaterAndVerifiers
+ * @notice Upgrades OperatorTableUpdater, BN254CertificateVerifier, and ECDSACertificateVerifier contracts
+ * @dev Handles circular dependencies by deploying in a specific order
+ */
 contract UpgradeOperatorTableUpdaterAndVerifier is Script, Test {
     // ========== STATE VARIABLES ==========
+    
+    // Version for the upgrade
+    string public constant VERSION = "1.0.0";
     
     // Proxy Admin (controls upgrades)
     ProxyAdmin public proxyAdmin = ProxyAdmin(0xb5Aa3De8Fb7AD2e418da9CD70D2824FE93Ce68a5);
@@ -25,19 +33,16 @@ contract UpgradeOperatorTableUpdaterAndVerifier is Script, Test {
     // Existing Proxy Addresses
     OperatorTableUpdater public operatorTableUpdaterProxy = OperatorTableUpdater(0xd7230B89E5E2ed1FD068F0FF9198D7960243f12a);
     BN254CertificateVerifier public bn254CertificateVerifierProxy = BN254CertificateVerifier(0xf462d03A82C1F3496B0DFe27E978318eD1720E1f);
-    
-    // Dependencies for OperatorTableUpdater constructor
-    // Note: For ECDSA verifier, you can use address(0) or an empty contract if not needed
-    IECDSACertificateVerifier public ecdsaCertificateVerifier = IECDSACertificateVerifier(address(0));
-    string public constant VERSION = "0.0.2"; // Update version for the upgrade
+    ECDSACertificateVerifier public ecdsaCertificateVerifierProxy = ECDSACertificateVerifier(0xF9BDd6af3Fb02659101cbb776DC7cb4879c93d8A);
     
     // New Implementation contracts (will be deployed)
     OperatorTableUpdater public operatorTableUpdaterImplementation;
     BN254CertificateVerifier public bn254CertificateVerifierImplementation;
+    ECDSACertificateVerifier public ecdsaCertificateVerifierImplementation;
     
     function run() public {
         uint256 chainId = block.chainid;
-        emit log_named_uint("Upgrading contracts on ChainID", chainId);
+        emit log_named_uint("Upgrading OperatorTableUpdater and Certificate Verifiers on ChainID", chainId);
         
         /**
          *
@@ -47,11 +52,11 @@ contract UpgradeOperatorTableUpdaterAndVerifier is Script, Test {
         vm.startBroadcast();
         
         // Due to circular dependency, we need to deploy in a specific order:
-        // 1. Deploy OperatorTableUpdater implementation using existing BN254CertificateVerifier proxy
+        // 1. Deploy OperatorTableUpdater implementation using existing certificate verifier proxies
         console.log("Deploying new OperatorTableUpdater implementation...");
         operatorTableUpdaterImplementation = new OperatorTableUpdater(
             bn254CertificateVerifierProxy,  // Use existing proxy
-            ecdsaCertificateVerifier,
+            ecdsaCertificateVerifierProxy,  // Use existing proxy
             VERSION
         );
         console.log("OperatorTableUpdater implementation deployed at:", address(operatorTableUpdaterImplementation));
@@ -64,10 +69,11 @@ contract UpgradeOperatorTableUpdaterAndVerifier is Script, Test {
         );
         console.log("OperatorTableUpdater proxy upgraded successfully!");
         
-        // 3. Now deploy BN254CertificateVerifier implementation using the upgraded OperatorTableUpdater proxy
+        // 3. Deploy BN254CertificateVerifier implementation using the upgraded OperatorTableUpdater proxy
         console.log("\nDeploying new BN254CertificateVerifier implementation...");
         bn254CertificateVerifierImplementation = new BN254CertificateVerifier(
-            operatorTableUpdaterProxy  // Use the upgraded proxy
+            operatorTableUpdaterProxy,  // Use the upgraded proxy
+            VERSION
         );
         console.log("BN254CertificateVerifier implementation deployed at:", address(bn254CertificateVerifierImplementation));
         
@@ -78,15 +84,22 @@ contract UpgradeOperatorTableUpdaterAndVerifier is Script, Test {
             address(bn254CertificateVerifierImplementation)
         );
         console.log("BN254CertificateVerifier proxy upgraded successfully!");
-
-        // 5. Set the max staleness period for the operator set
-        console.log("\nSetting max staleness period for the operator set...");
-        OperatorSet memory opSet = OperatorSet({
-            avs: 0xD638d3779456898dff17EBFe5D62F5B7a92D61d7,
-            id: 0
-        });
-        bn254CertificateVerifierProxy.setMaxStalenessPeriod(opSet, 0 days);
-        console.log("Max staleness period set successfully!");
+        
+        // 5. Deploy ECDSACertificateVerifier implementation using the upgraded OperatorTableUpdater proxy
+        console.log("\nDeploying new ECDSACertificateVerifier implementation...");
+        ecdsaCertificateVerifierImplementation = new ECDSACertificateVerifier(
+            operatorTableUpdaterProxy,  // Use the upgraded proxy
+            VERSION
+        );
+        console.log("ECDSACertificateVerifier implementation deployed at:", address(ecdsaCertificateVerifierImplementation));
+        
+        // 6. Upgrade ECDSACertificateVerifier proxy
+        console.log("\nUpgrading ECDSACertificateVerifier proxy...");
+        proxyAdmin.upgrade(
+            ITransparentUpgradeableProxy(payable(address(ecdsaCertificateVerifierProxy))),
+            address(ecdsaCertificateVerifierImplementation)
+        );
+        console.log("ECDSACertificateVerifier proxy upgraded successfully!");
         
         vm.stopBroadcast();
         
@@ -118,50 +131,65 @@ contract UpgradeOperatorTableUpdaterAndVerifier is Script, Test {
         console.log("  Proxy address:", address(bn254CertificateVerifierProxy));
         console.log("  New implementation:", address(bn254CertificateVerifierImplementation));
         
+        // Check ECDSACertificateVerifier
+        console.log("\nECDSACertificateVerifier:");
+        console.log("  Proxy address:", address(ecdsaCertificateVerifierProxy));
+        console.log("  New implementation:", address(ecdsaCertificateVerifierImplementation));
+        console.log("  Version:", ecdsaCertificateVerifierProxy.version());
+        console.log("  OperatorTableUpdater:", address(ecdsaCertificateVerifierProxy.operatorTableUpdater()));
+        
         /**
          *
          *                     OUTPUT
          *
          */
-        string memory parent_object = "parent object";
+        // string memory parent_object = "parent object";
         
-        // Serialize upgrade information
-        string memory upgrade_info = "upgrade_info";
-        vm.serializeAddress(upgrade_info, "proxyAdmin", address(proxyAdmin));
-        vm.serializeAddress(upgrade_info, "operatorTableUpdaterProxy", address(operatorTableUpdaterProxy));
-        vm.serializeAddress(upgrade_info, "operatorTableUpdaterNewImpl", address(operatorTableUpdaterImplementation));
-        vm.serializeAddress(upgrade_info, "bn254CertificateVerifierProxy", address(bn254CertificateVerifierProxy));
-        vm.serializeAddress(upgrade_info, "bn254CertificateVerifierNewImpl", address(bn254CertificateVerifierImplementation));
-        vm.serializeString(upgrade_info, "version", VERSION);
-        string memory upgrade_info_output = vm.serializeUint(upgrade_info, "timestamp", block.timestamp);
+        // // Serialize upgrade information
+        // string memory upgrade_info = "upgrade_info";
+        // vm.serializeAddress(upgrade_info, "proxyAdmin", address(proxyAdmin));
+        // vm.serializeAddress(upgrade_info, "operatorTableUpdaterProxy", address(operatorTableUpdaterProxy));
+        // vm.serializeAddress(upgrade_info, "operatorTableUpdaterNewImpl", address(operatorTableUpdaterImplementation));
+        // vm.serializeAddress(upgrade_info, "bn254CertificateVerifierProxy", address(bn254CertificateVerifierProxy));
+        // vm.serializeAddress(upgrade_info, "bn254CertificateVerifierNewImpl", address(bn254CertificateVerifierImplementation));
+        // vm.serializeAddress(upgrade_info, "ecdsaCertificateVerifierProxy", address(ecdsaCertificateVerifierProxy));
+        // vm.serializeAddress(upgrade_info, "ecdsaCertificateVerifierNewImpl", address(ecdsaCertificateVerifierImplementation));
+        // vm.serializeString(upgrade_info, "version", VERSION);
+        // string memory upgrade_info_output = vm.serializeUint(upgrade_info, "timestamp", block.timestamp);
         
-        // Serialize dependencies
-        string memory dependencies = "dependencies";
-        string memory dependencies_output = vm.serializeAddress(dependencies, "ecdsaCertificateVerifier", address(ecdsaCertificateVerifier));
+        // // Serialize dependencies
+        // string memory dependencies = "dependencies";
+        // string memory dependencies_output = vm.serializeString(dependencies, "note", "All dependencies are upgraded as proxies");
         
-        // Serialize state after upgrade
-        string memory state_info = "state_after_upgrade";
-        vm.serializeUint(state_info, "latestReferenceTimestamp", operatorTableUpdaterProxy.getLatestReferenceTimestamp());
-        string memory state_info_output = vm.serializeUint(state_info, "globalRootConfirmationThreshold", operatorTableUpdaterProxy.globalRootConfirmationThreshold());
+        // // Serialize state after upgrade
+        // string memory state_info = "state_after_upgrade";
+        // vm.serializeUint(state_info, "latestReferenceTimestamp", operatorTableUpdaterProxy.getLatestReferenceTimestamp());
+        // string memory state_info_output = vm.serializeUint(state_info, "globalRootConfirmationThreshold", operatorTableUpdaterProxy.globalRootConfirmationThreshold());
         
-        // Combine outputs
-        vm.serializeString(parent_object, "upgrade_info", upgrade_info_output);
-        vm.serializeString(parent_object, "dependencies", dependencies_output);
-        vm.serializeString(parent_object, "state_after_upgrade", state_info_output);
-        string memory finalJson = vm.serializeUint(parent_object, "chainId", chainId);
+        // // Combine outputs
+        // vm.serializeString(parent_object, "upgrade_info", upgrade_info_output);
+        // vm.serializeString(parent_object, "dependencies", dependencies_output);
+        // vm.serializeString(parent_object, "state_after_upgrade", state_info_output);
+        // string memory finalJson = vm.serializeUint(parent_object, "chainId", chainId);
         
-        // Write to file
-        vm.writeJson(
-            finalJson,
-            string.concat(
-                "script/output/devnet/multichain/upgrade_operator_table_updater_and_verifier_chainid_",
-                vm.toString(block.chainid),
-                "_",
-                vm.toString(block.timestamp),
-                ".json"
-            )
-        );
+        // // Write to file
+        // vm.writeJson(
+        //     finalJson,
+        //     string.concat(
+        //         "script/output/devnet/multichain/upgrade_operator_table_updater_and_verifiers_chainid_",
+        //         vm.toString(block.chainid),
+        //         "_",
+        //         vm.toString(block.timestamp),
+        //         ".json"
+        //     )
+        // );
         
         console.log("\nUpgrade complete! Output written to file.");
+        console.log("\n========================================");
+        console.log("UPGRADED CONTRACTS:");
+        console.log("OperatorTableUpdater:", address(operatorTableUpdaterProxy));
+        console.log("BN254CertificateVerifier:", address(bn254CertificateVerifierProxy));
+        console.log("ECDSACertificateVerifier:", address(ecdsaCertificateVerifierProxy));
+        console.log("========================================\n");
     }
 } 
