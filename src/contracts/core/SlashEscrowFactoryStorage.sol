@@ -42,17 +42,8 @@ abstract contract SlashEscrowFactoryStorage is ISlashEscrowFactory {
     mapping(bytes32 operatorSetKey => mapping(uint256 slashId => EnumerableSet.AddressSet)) internal
         _pendingStrategiesForSlashId;
 
-    /// @dev Returns the start block for a given slash ID.
-    mapping(bytes32 operatorSetKey => mapping(uint256 slashId => uint32 completeBlock)) internal _slashIdToCompleteBlock;
-
     /// @notice Returns the paused status for a given operator set and slash ID.
     mapping(bytes32 operatorSetKey => mapping(uint256 slashId => bool paused)) internal _paused;
-
-    /// @dev Returns the global escrow delay for all strategies.
-    uint32 internal _globalEscrowDelayBlocks;
-
-    /// @dev Returns the escrow delay for a given strategy.
-    mapping(address strategy => uint32 delay) internal _strategyEscrowDelayBlocks;
 
     // Constructor
 
@@ -71,5 +62,5 @@ abstract contract SlashEscrowFactoryStorage is ISlashEscrowFactory {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[42] private __gap;
+    uint256[44] private __gap;
 }
