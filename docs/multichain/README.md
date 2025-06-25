@@ -9,13 +9,12 @@ This document provides an overview of system components, contracts, and user rol
 #### Contents
 
 * [System Diagram](#system-diagram)
-* [System Components](#system-components)
-    * [Source Chain](#source-chain)
-        * [`CrossChainRegistry`](#cross-chain-registry)
-        * [`OperatorTableCalculator](#operator-table-calculator)
-    * [Destination Chain](#destination-chain)
-        * [`OperatorTableUpdater`](#operator-table-updater)
-        * [`CertificateVerifier](#certificate-verifier)
+* [Source Chain](#source-chain)
+    * [`CrossChainRegistry`](#cross-chain-registry)
+    * [`OperatorTableCalculator](#operator-table-calculator)
+* [Destination Chain](#destination-chain)
+    * [`OperatorTableUpdater`](#operator-table-updater)
+    * [`CertificateVerifier](#certificate-verifier)
 * [Roles and Actors](#roles-and-actors)
 
 ### System Diagram
@@ -67,15 +66,11 @@ Transporter --> OperatorTableUpdater: Confirms Root, Updates Tables
 OperatorTableUpdater --> CertificateVerifier: Updates table
 ```
 
-### System Contents
-
-* [System Components](#system-components)
-
-#### Source Chain
+### Source Chain
 
 Source chain contracts are deployed to Ethereum Mainnet. 
 
-##### Cross Chain Registry
+#### Cross Chain Registry
 
 | File | Type | Proxy |
 | -------- | -------- | -------- |
@@ -87,7 +82,7 @@ This contract enables AVSs to register to have their stakes transported to suppo
 
 See full documentation in [`/source/CrossChainRegistry.md`](./source/CrossChainRegistry.md). 
 
-##### Operator Table Calculator
+#### Operator Table Calculator
 
 | File | Type |
 | -------- | -------- |
@@ -98,11 +93,11 @@ These contracts are **deployed by an AVS** and define custom stake weights of op
 
 See full documentation in [`/source/OperatorTableCalculator.md`](./source/OperatorTableCalculator.md).
 
-#### Destination Chain
+### Destination Chain
 
 Destination chain contracts receive transported stake weights from an offchain service. Consumers of an operatorSet use transported stakes to verify tasks computed off-chain.
 
-##### Operator Table Updater
+#### Operator Table Updater
 
 | File | Type | Proxy |
 | -------- | -------- | -------- |
@@ -114,7 +109,7 @@ The `operatorTableUpdater` carries out two basic functions:
 
 See full documentation in [`/destination/OperatorTableUpdater.md`](./destination/OperatorTableUpdater.md). 
 
-##### Certificate Verifier
+#### Certificate Verifier
 
 | File | Type | Proxy |
 | -------- | -------- | -------- |
