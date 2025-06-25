@@ -1,7 +1,7 @@
 ## OperatorTableCalculator
 
 | File | Type | Notes |
-| -------- | -------- | -------- |
+| -------- | -------- | 
 | [`ECDSATableCalculatorBase.sol`](../../../src/contracts/multichain/ECDSATableCalculatorBase.sol) | Abstract | Base functionality for ECDSA operator tables |
 | [`BN254TableCalculatorBase.sol`](../../../src/contracts/multichain/BN254TableCalculatorBase.sol) | Abstract | Base functionality for BN254 operator tables |
 
@@ -13,11 +13,15 @@ Interfaces:
 | [`IECDSATableCalculator.sol`](../../../src/contracts/interfaces/IECDSATableCalculator.sol) | ECDSA-specific interface |
 | [`IBN254TableCalculator.sol`](../../../src/contracts/interfaces/IBN254TableCalculator.sol) | BN254-specific interface |
 
+---
+
 ## Overview
 
 The OperatorTableCalculator contracts are responsible for calculating operator tables that are used in the multichain protocol. These tables contain operator information (public keys and weights) that are read from  the [`CrossChainRegistry`](./CrossChainRegistry.md) to transport stakes.
 
 The base contracts (`ECDSATableCalculatorBase` and `BN254TableCalculatorBase`) provide the core logic for table calculation, while leaving weight calculation as an unimplemented method to be implemented by derived contracts. 
+
+---
 
 ## ECDSATableCalculatorBase
 
@@ -76,7 +80,7 @@ function calculateOperatorTableBytes(
 ) external view returns (bytes memory operatorTableBytes);
 ```
 
-Returns the ABI-encoded bytes representation of the operator table, which is used by the `CrossChainRegistry`. 
+Returns the ABI-encoded bytes representation of the operator table, which is used by the `CrossChainRegistry` to calculate the operatorTable. 
 
 *Returns*:
 * ABI-encoded array of `ECDSAOperatorInfo` structs
@@ -109,6 +113,8 @@ In addition, an AVS can have custom calculation methodologies that include:
 
 An example integration is defined by [`ECDSATableCalculator`](../../../src/contracts/multichain/ECDSATableCalculator.sol)
 
+---
+
 ## BN254TableCalculatorBase
 
 The `BN254TableCalculatorBase` provides base functionality for calculating BN254 operator tables.
@@ -137,7 +143,7 @@ struct BN254OperatorSetInfo {
     bytes32 operatorInfoTreeRoot;
     uint256 numOperators;
     BN254.G1Point aggregatePubkey;
-    uint256[] 
+    uint256[] totalWeights;
 }
 
 /**
@@ -170,6 +176,24 @@ Calculates and returns a `BN254OperatorSetInfo` struct containing:
 * Returns the complete operator set information
 
 BN254 tables take advantage of signature aggregation. As such, we add operator's weights to the total weights. We generate a merkle root that contains individual operator stakes (`BN254OperatorInfo`) to lower transport costs. See [`BN254CertificateVerifier`](../destination/CertificateVerifier.md) for more information on the caching and verification scheme. 
+
+#### `calculateOperatorTableBytes`
+
+```solidity
+/**
+ * @notice Calculates the operator table bytes for a given operatorSet
+ * @param operatorSet The operatorSet to calculate the operator table for
+ * @return operatorTableBytes The encoded operator table bytes
+ */
+function calculateOperatorTableBytes(
+    OperatorSet calldata operatorSet
+) external view returns (bytes memory operatorTableBytes);
+```
+
+Returns the ABI-encoded bytes representation of the operator table, which is used by the `CrossChainRegistry` to calculate the operatorTable.
+
+*Returns*:
+* ABI-encoded `BN254OperatorSetInfo` struct
 
 #### `getOperatorInfos`
 

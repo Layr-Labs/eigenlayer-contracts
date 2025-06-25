@@ -14,12 +14,14 @@ Libraries and Mixins:
 
 ## Overview
 
-The `CrossChainRegistry` manages the registration/deregistration of operatorSets to the multichain protocol. The contract also exposes read-only functions to calculate an operator table, which is used offchain by the `Generator` to generate a `GlobalTableRoot` and `Transporter` to transport the operator table. See [`ELIP-007](https://github.com/eigenfoundation/ELIPs/blob/main/ELIPs/ELIP-007.md) for more information.  
+The `CrossChainRegistry` manages the registration/deregistration of operatorSets to the multichain protocol. The contract also exposes read-only functions to calculate an operator table, which is used offchain by the `Generator` to generate a `GlobalTableRoot` and `Transporter` to transport the operator table. See [ELIP-007](https://github.com/eigenfoundation/ELIPs/blob/main/ELIPs/ELIP-007.md) for more information.  
 
 ## Parameterization
-* `SupportedChains` (via `getSupportedChains`) are Mainnet and Base
+* `SupportedChains` (via `getSupportedChains`) are `Mainnet` and `Base`
     * These are chains to which tables can be transported to
-    * On Testnet, the supported chains are Sepolia and Base-Sepolia
+    * On Testnet, the supported chains are `Sepolia` and `Base-Sepolia`
+
+---
 
 ## Create/Remove Generation Reservation
 A generation reservation registers the operatorSet to be included in the `GlobalTableRoot` and transported to an avs-defined set of destination chains. AVSs do not have to pay for reservations.  
@@ -93,6 +95,8 @@ Removes a generation reservation for a given `operatorSet` and clears all associ
 * Caller MUST be UAM permissioned for `operatorSet.avs`
 * The `operatorSet` MUST exist in the `AllocationManager`
 * A generation reservation MUST exist for the `operatorSet`
+
+---
 
 ## Update Configuration
 For a given operatorSet, an AVS can set the [`OperatorTableCalculator`](./OperatorTableCalculator.md) and `OperatorSetConfig`, which is an `owner` and `maxStalenessPeriod` transported to each chain. The [`CertificateVerifier`](../destination/CertificateVerifier.md) has more information on the `maxStalenessPeriod`. 
@@ -216,6 +220,8 @@ Removes destination chain IDs from the transport list for a given `operatorSet`.
 * Each `chainID` MUST exist in the transport destinations
 * At least one transport destination MUST remain after removal (use `removeGenerationReservation` to remove all)
 
+---
+
 ## System Configuration
 The `owner` of the `CrossChainRegistry` can update the whitelisted chain IDs. If a chainID is not whitelisted, it cannot be transported to. 
 
@@ -270,3 +276,11 @@ Removes chain IDs from the global whitelist, preventing them from being used as 
 * Caller MUST be the `owner` of the contract
 * The global paused status MUST NOT be set: `PAUSED_CHAIN_WHITELIST`
 * Each `chainID` MUST be currently whitelisted 
+
+---
+
+## Offchain View Functions
+
+The `Generator` and `Transporter` the below view functions to generate and transport tables:
+
+### 
