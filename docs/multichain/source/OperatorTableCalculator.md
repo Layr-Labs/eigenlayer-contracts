@@ -175,7 +175,7 @@ Calculates and returns a `BN254OperatorSetInfo` struct containing:
 * Constructs a merkle tree from all operator info leaves
 * Returns the complete operator set information
 
-BN254 tables take advantage of signature aggregation. As such, we add operator's weights to the total weights. We generate a merkle root that contains individual operator stakes (`BN254OperatorInfo`) to lower transport costs. See [`BN254CertificateVerifier`](../destination/CertificateVerifier.md) for more information on the caching and verification scheme. 
+BN254 tables take advantage of signature aggregation. As such, we add operator's weights to the total weights. We generate a merkle root that contains individual operator stakes (`BN254OperatorInfo`) to lower transport costs. See [`BN254CertificateVerifier`](../destination/CertificateVerifier.md#bn254certificateverifier) for more information on the caching and verification scheme. 
 
 #### `calculateOperatorTableBytes`
 

@@ -283,4 +283,43 @@ Removes chain IDs from the global whitelist, preventing them from being used as 
 
 The `Generator` and `Transporter` the below view functions to generate and transport tables:
 
-### 
+1. `getActiveGenerationReserations`: Gets the operatorSets to be included in the `globalTableRoot`
+
+```solidity
+    /**
+     * @notice Gets the active generation reservations
+     * @return An array of operatorSets with active generationReservations
+     */
+    function getActiveGenerationReservations() external view returns (OperatorSet[] memory);
+```
+
+2. `calculateOperatorTableBytes`: Calculates the operator table bytes, which is then merkleized into the `globalTableRoot` offchain
+
+```solidity
+/**
+ * @notice Calculates the operatorTableBytes for a given operatorSet
+ * @param operatorSet the operatorSet to calculate the operator table for
+ * @return the encoded operatorTableBytes containing:
+ *         - operatorSet details
+ *         - curve type from KeyRegistrar
+ *         - operator set configuration
+ *         - calculated operator table from the calculator contract
+ * @dev This function aggregates data from multiple sources for cross-chain transport
+ */
+function calculateOperatorTableBytes(
+    OperatorSet calldata operatorSet
+) external view returns (bytes memory);
+```
+
+3. `getTransportDestinations`: List of chains to transport to
+
+```solidity
+/**
+ * @notice Gets the transport destinations for a given operatorSet
+ * @param operatorSet the operatorSet to get the transport destinations for
+ * @return An array of chainIDs that the operatorSet is configured to transport to
+ */
+function getTransportDestinations(
+    OperatorSet memory operatorSet
+) external view returns (uint256[] memory);
+```
