@@ -9,7 +9,6 @@ import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
 // For TOML parsing
 import {stdToml} from "forge-std/StdToml.sol";
-import "forge-std/console.sol";
 
 /**
  * Purpose: use an EOA to deploy all of the new contracts for this upgrade.
