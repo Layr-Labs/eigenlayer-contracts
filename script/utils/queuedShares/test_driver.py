@@ -303,8 +303,7 @@ class SlashingTestDriver:
             solidity_result = Decimal(str(row['slashed_amount']))
             
             # Theoretical calculation: scaledShares * (prevMaxMag - newMaxMag) / WAD
-            magnitude_diff = prev_max_mag - new_max_mag
-            theoretical_result = (scaled_shares * magnitude_diff) / self.WAD
+            theoretical_result = (scaled_shares * (1 - new_max_mag / prev_max_mag))
             
             # Calculate error
             error = abs(solidity_result - theoretical_result)
