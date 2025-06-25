@@ -238,7 +238,7 @@ contract Deploy is EOADeployer {
         if (Env.isDestinationChain()) {
             // Validate OperatorTableUpdater
             OperatorTableUpdater operatorTableUpdater = Env.proxy.operatorTableUpdater();
-            assertTrue(operatorTableUpdater.owner() == Env.opsMultisig(), "otu.owner invalid");
+            assertTrue(operatorTableUpdater.owner() == Env.opsMultisig(), "out.owner invalid");
             // TODO: add checks on global root confirmer set
 
             // Validate ECDSACertificateVerifier
@@ -339,14 +339,14 @@ contract Deploy is EOADeployer {
                 assertTrue(
                     address(operatorTableUpdater.bn254CertificateVerifier())
                         == address(Env.proxy.bn254CertificateVerifier()),
-                    "otu.bn254CertificateVerifier invalid"
+                    "out.bn254CertificateVerifier invalid"
                 );
                 assertTrue(
                     address(operatorTableUpdater.ecdsaCertificateVerifier())
                         == address(Env.proxy.ecdsaCertificateVerifier()),
-                    "otu.ecdsaCertificateVerifier invalid"
+                    "out.ecdsaCertificateVerifier invalid"
                 );
-                assertEq(operatorTableUpdater.version(), Env.deployVersion(), "otu.version failed");
+                assertEq(operatorTableUpdater.version(), Env.deployVersion(), "out.version failed");
             }
 
             {
@@ -470,11 +470,11 @@ contract Deploy is EOADeployer {
             assertEq(operatorTableUpdater.version(), Env.deployVersion(), "operatorTableUpdater version mismatch");
             assertTrue(
                 operatorTableUpdater.bn254CertificateVerifier() == Env.proxy.bn254CertificateVerifier(),
-                "otu.bn254CertificateVerifier mismatch"
+                "out.bn254CertificateVerifier mismatch"
             );
             assertTrue(
                 operatorTableUpdater.ecdsaCertificateVerifier() == Env.proxy.ecdsaCertificateVerifier(),
-                "otu.ecdsaCertificateVerifier mismatch"
+                "out.ecdsaCertificateVerifier mismatch"
             );
 
             ECDSACertificateVerifier ecdsaCertificateVerifier = Env.proxy.ecdsaCertificateVerifier();
