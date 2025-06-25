@@ -27,6 +27,8 @@ This document provides an overview of system components, contracts, and user rol
 
 ---
 
+### System Diagram
+
 ```mermaid
 classDiagram 
 direction TD
