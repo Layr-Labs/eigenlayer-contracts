@@ -174,7 +174,7 @@ library Env {
     }
 
     function CROSS_CHAIN_REGISTRY_PAUSE_STATUS() internal view returns (uint256) {
-        return _envU256("CROSS_CHAIN_REGISTRY_PAUSE_STATUS");
+        return _envU256("CROSS_CHAIN_REGISTRY_INIT_PAUSE_STATUS");
     }
 
     function isSourceChain() internal view returns (bool) {
@@ -576,5 +576,10 @@ library Env {
         address _proxy
     ) internal view returns (address) {
         return ProxyAdmin(Env.proxyAdmin()).getProxyAdmin(ITransparentUpgradeableProxy(_proxy));
+    }
+
+    /// @dev Returns the address of the deployer required for multichain deployment
+    function _multichainDeployer() internal pure returns (address) {
+        return address(0);
     }
 }
