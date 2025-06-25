@@ -77,7 +77,7 @@ OperatorTableUpdater --> CertificateVerifier: Updates table
 
 Source chain contracts are deployed to Ethereum Mainnet. 
 
-#### Cross Chain Registry
+* [System Components](#system-components)
 
 | File | Type | Proxy |
 | -------- | -------- | -------- |
