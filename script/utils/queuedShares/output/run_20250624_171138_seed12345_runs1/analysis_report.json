@@ -1,0 +1,33 @@
+{
+  "total_cases": 1,
+  "data_types": {
+    "scaled_shares": "float64",
+    "prev_max_mag": "float64",
+    "new_max_mag": "float64",
+    "slashed_amount": "float64",
+    "theoretical_result": "float64",
+    "error": "float64",
+    "relative_error_percent": "float64",
+    "magnitude_ratio": "float64",
+    "slash_percentage": "float64"
+  },
+  "cases_with_error": 1,
+  "cases_with_large_error": 1,
+  "max_error": 2781.706017631276,
+  "mean_error": 2781.706017631276,
+  "median_error": 2781.706017631276,
+  "std_error": NaN,
+  "max_relative_error": 100.0,
+  "mean_relative_error": 100.0,
+  "error_by_slash_range": {
+    "count": {
+      "90-100%": 1
+    },
+    "mean": {
+      "90-100%": 2781.706018
+    },
+    "max": {
+      "90-100%": 2781.706018
+    }
+  }
+}

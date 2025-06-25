@@ -1,0 +1,17 @@
+{
+  "run_id": "20250624_171138_seed12345_runs1",
+  "timestamp": "2025-06-24T17:11:39.416321",
+  "config": {
+    "fuzz_runs": 1,
+    "fuzz_seed": 12345,
+    "test_name": "testFuzz_scaleForBurning"
+  },
+  "results": {
+    "data_rows_generated": 1,
+    "output_directory": "/Users/nadir/Code/eigenlayer-contracts/script/utils/queuedShares/output/run_20250624_171138_seed12345_runs1"
+  },
+  "environment": {
+    "python_version": "3.9.6 (default, Apr 30 2025, 02:07:17) \n[Clang 17.0.0 (clang-1700.0.13.5)]",
+    "working_directory": "/Users/nadir/Code/eigenlayer-contracts"
+  }
+}
