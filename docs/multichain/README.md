@@ -16,6 +16,8 @@ This document provides an overview of system components, contracts, and user rol
     * [`OperatorTableUpdater`](#operator-table-updater)
     * [`CertificateVerifier`](#certificate-verifier)
 * [Roles and Actors](#roles-and-actors)
+* [Common User Flows](#common-user-flows)
+    * [Register for Generation/Transport](#registering-for-generationtransport)
 
 ### System Diagram
 
@@ -65,6 +67,7 @@ Transporter --> Generator: Gets Root
 Transporter --> OperatorTableUpdater: Confirms Root, Updates Tables
 OperatorTableUpdater --> CertificateVerifier: Updates table
 ```
+---
 
 ### Source Chain
 
@@ -93,6 +96,8 @@ These contracts are **deployed by an AVS** and define custom stake weights of op
 
 See full documentation in [`/source/OperatorTableCalculator.md`](./source/OperatorTableCalculator.md).
 
+---
+
 ### Destination Chain
 
 Destination chain contracts receive transported stake weights from an offchain service. The supported destination chains are Mainnet and Base. 
@@ -118,6 +123,8 @@ See full documentation in [`/destination/OperatorTableUpdater.md`](./destination
 
 See full documentation in [`/destination/CertificateVerifier.md`](./destination/CertificateVerifier.md). 
 
+---
+
 ### Roles and Actors
 
 #### AVS
@@ -142,3 +149,13 @@ The `Transporter` serves two purposes:
 * **Transport** operator tables to all destination chains
 
 Note: The Transport of the `GlobalTableRoot` and Operator Tables is *permissionless*. Any entity can transport the `GlobalTableRoot` with a valid certificate from the `Generator`. In addition, any entity can update the table with a valid merkle proof. See the [sidecar](https://github.com/Layr-Labs/sidecar) for how to run a transporter. 
+
+---
+
+### Common User Flows
+
+#### Registering for Generation/Transport
+
+Registering for generation/transport is done by the AVS. The AVS *MUST* set the `KeyType` in the `KeyRegistrar`, even if it is not using the `KeyRegistrar` for storing operator keys. 
+
+![.](../images/multichain-registration.png)
