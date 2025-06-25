@@ -1,8 +1,8 @@
 ## OperatorTableUpdater
 
-| File | Notes |
+| File | Type | Proxy |
 | -------- | -------- |
-| [`OperatorTableUpdater.sol`](../../../src/contracts/multichain/OperatorTableUpdater.sol) | Updates operator tables on destination chains |
+| [`OperatorTableUpdater.sol`](../../../src/contracts/multichain/OperatorTableUpdater.sol) | Singleton | Transparent Proxy |
 
 Libraries and Mixins:
 

@@ -1,8 +1,8 @@
 ## CrossChainRegistry
 
-| File | Notes | |
-| -------- | -------- | -------- |
-| [`CrossChainRegistry.sol`](../../src/contracts/multichain/CrossChainRegistry.sol) | |
+| File | Type | Proxy |
+| -------- | -------- |
+| [`CrossChainRegistry.sol`](../../src/contracts/multichain/CrossChainRegistry.sol) | Singleton | Transparent Proxy |
 
 Libraries and Mixins:
 
