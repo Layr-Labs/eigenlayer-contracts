@@ -81,7 +81,7 @@
     fs_permissions = [{ access = "read-write", path = "./"}]
 
     gas_limit = "18446744073709551615" # 2^64-1
-    memory_limit = 1073741824
+    memory_limit = 9223372036854775807 # 2^63-1
 
 [profile.default.fmt]
     # Single-line vs multi-line statement blocks

@@ -1,12 +1,110 @@
-printLast = 5
-printEvery = 1
-writeJSON = 0
+# 1e18 = 1000000000000000000
 
-prevDepositShares = 496
+## max extract
+# operatorShares = 10000000000000000000000000 # 1e18
+operatorSharesExp = 32
+# wadsToSlash = 1000000000000000000 # 1e18
+# wadsToSlash = 950000000000000000
+# wadsToSlash = 1000000000 # 1e9
+wadsToSlash = 500000000000000000
+
+
+## scratch
+numIterations = 100000
+# 0: _randomS
+# 1: _randomD
+# 2: _contrivedS
+# 3: _contrivedD
+genMethod = 3
+contrivedShares = 1000000000000000000 # 1e18
+contrivedDiff = 900000000000000000 # 9e17
+
+prevDepositShares = 10
 iterations = 0
 
 startDSF = 1000000000000000000
-startShares = 1
-startSharesToAdd = 2
+startShares = 100
+startSharesToAdd = 1
 maxMagDecrease = 0
-contIterations = 3
+contIterations = 1000
+
+fuzzRuns = 100000
+sequenceLength = 106
+
+seqStartDSF = 1000000000000000000
+seqStartShares = 1000000
+
+# Operations:
+# 0 -> deposit `amount` shares
+# 1 -> queue withdrawal `amount` shares
+# 2 -> continue previous operation `amount` times
+# 3 -> continue previous two operations `amount` times
+## Original
+[[sequence]]
+amount = 1
+operation = 0
+
+[[sequence]]
+amount = 1000011
+operation = 2
+
+[[sequence]]
+amount = 1
+operation = 0
+
+[[sequence]]
+amount = 1
+operation = 0
+
+[[sequence]]
+amount = 1
+operation = 0
+
+[[sequence]]
+amount = 1
+operation = 0
+
+[[sequence]]
+amount = 1
+operation = 0
+
+# output instructions for all tests
+[init]
+printEvery = 3
+printLast = 4
+writeJSON = true
+writeLocation = "src/test/integration/output.json"
+
+# prefaced a_, b_, because foundry's TOML -> struct conversion depends on alphabetical order
+
+[generate]
+a_totalShares = 100
+b_wadsInWithdrawalQueue = 1000000000000000000
+# b_wadsInWithdrawalQueue = 0
+c_maxMagnitudeExp = 18
+d_numDataPoints = 100
+
+# Plot/Line/Labels
+m_plotName = "1e3_max_mag"
+n_lineLabel = "100%_in_withdrawal_queue"
+
+# File IO
+t_writeToFile = true
+u_writeLocationBase = "src/test/integration/"
+v_fileName = "output.json"
+
+# 00_001 run
+# [generate]
+# a_totalShares = 1000000000000000000 # 1e18
+# b_wadsInWithdrawalQueue = 1000
+# c_maxMagnitudeExp = 3
+# d_numDataPoints = 10
+
+# # Plot/Line/Labels
+# m_plotName = "1e3_max_mag"
+# n_lineLabel = "00_001%_in_withdrawal_queue"
+
+# # File IO
+# t_writeToFile = true
+# u_writeLocationBase = "src/test/integration/"
+# v_fileName = "output.json"
