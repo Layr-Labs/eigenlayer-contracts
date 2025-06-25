@@ -11,10 +11,10 @@ This document provides an overview of system components, contracts, and user rol
 * [System Diagram](#system-diagram)
 * [Source Chain](#source-chain)
     * [`CrossChainRegistry`](#cross-chain-registry)
-    * [`OperatorTableCalculator](#operator-table-calculator)
+    * [`OperatorTableCalculator`](#operator-table-calculator)
 * [Destination Chain](#destination-chain)
     * [`OperatorTableUpdater`](#operator-table-updater)
-    * [`CertificateVerifier](#certificate-verifier)
+    * [`CertificateVerifier`](#certificate-verifier)
 * [Roles and Actors](#roles-and-actors)
 
 ### System Diagram
@@ -95,7 +95,7 @@ See full documentation in [`/source/OperatorTableCalculator.md`](./source/Operat
 
 ### Destination Chain
 
-Destination chain contracts receive transported stake weights from an offchain service. Consumers of an operatorSet use transported stakes to verify tasks computed off-chain.
+Destination chain contracts receive transported stake weights from an offchain service. The supported destination chains are Mainnet and Base. 
 
 #### Operator Table Updater
 
