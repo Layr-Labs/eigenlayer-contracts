@@ -209,6 +209,24 @@ Returns the ABI-encoded bytes representation of the operator table, which is use
 *Returns*:
 * ABI-encoded `BN254OperatorSetInfo` struct
 
+#### `calculateOperatorTableBytes`
+
+```solidity
+/**
+ * @notice Calculates the operator table bytes for a given operatorSet
+ * @param operatorSet The operatorSet to calculate the operator table for
+ * @return operatorTableBytes The encoded operator table bytes
+ */
+function calculateOperatorTableBytes(
+    OperatorSet calldata operatorSet
+) external view returns (bytes memory operatorTableBytes);
+```
+
+Returns the ABI-encoded bytes representation of the operator table, which is used by the `CrossChainRegistry` to calculate the operatorTable.
+
+*Returns*:
+* ABI-encoded `BN254OperatorSetInfo` struct
+
 #### `getOperatorInfos`
 
 ```solidity
