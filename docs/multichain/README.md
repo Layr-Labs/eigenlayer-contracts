@@ -21,9 +21,9 @@ This document provides an overview of system components, contracts, and user rol
 * [Common User Flows](#common-user-flows)
     * [Register for Generation/Transport](#registering-for-generationtransport)
 
-### System Diagram
-
 ---
+
+### System Diagram
 
 ```mermaid
 classDiagram 
