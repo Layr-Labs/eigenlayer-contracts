@@ -4,11 +4,20 @@ pragma solidity ^0.8.12;
 import {EOADeployer} from "zeus-templates/templates/EOADeployer.sol";
 import "../Env.sol";
 
+import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
+
+// For TOML parsing
+import {stdToml} from "forge-std/StdToml.sol";
+import "forge-std/console.sol";
+
 /**
  * Purpose: use an EOA to deploy all of the new contracts for this upgrade.
  */
 contract Deploy is EOADeployer {
     using Env for *;
+    using OperatorSetLib for OperatorSet;
+    using stdToml for string;
 
     /// forgefmt: disable-next-item
     function _runAsEOA() internal override {
@@ -86,10 +95,7 @@ contract Deploy is EOADeployer {
         deployImpl({
             name: type(ReleaseManager).name,
             deployedTo: address(
-                new ReleaseManager({
-                    _permissionController: Env.proxy.permissionController(),
-                    _version: Env.deployVersion()
-                })
+                new ReleaseManager({_permissionController: Env.proxy.permissionController(), _version: Env.deployVersion()})
             )
         });
 
@@ -112,8 +118,12 @@ contract Deploy is EOADeployer {
             return;
         }
 
+        // TODO: update zeus test to inject the multichain deployer
+        // require(msg.sender == Env._multichainDeployer(), "msg.sender must be the multichain deployer");
+
         // Deploy or get the empty contract for the destination chain
-        address emptyContract = address(Env.impl.emptyContract());
+        // TODO: update to use the empty contract from the multichain deployer
+        address emptyContract = address(new EmptyContract());
 
         // 1. Deploy the proxies pointing to an empty contract
         deployProxy({
@@ -163,22 +173,7 @@ contract Deploy is EOADeployer {
             )
         });
 
-        // 3. Upgrade the proxies to point to the new implementations
-        // TODO: remove these dummy parameters
-        OperatorSet memory dummyOperatorSet = OperatorSet({avs: address(0), id: 0});
-        IBN254TableCalculatorTypes.BN254OperatorSetInfo memory dummyBN254Info;
-        ICrossChainRegistry.OperatorSetConfig memory dummyConfig;
-
-        ITransparentUpgradeableProxy operatorTableUpdaterProxy =
-            ITransparentUpgradeableProxy(payable(address(Env.proxy.operatorTableUpdater())));
-        operatorTableUpdaterProxy.upgradeToAndCall(
-            address(Env.impl.operatorTableUpdater()),
-            abi.encodeCall(
-                OperatorTableUpdater.initialize,
-                (Env.opsMultisig(), dummyOperatorSet, 0, 0, dummyBN254Info, dummyConfig)
-            )
-        );
-
+        // 3. Upgrade the proxies to point to the actual implementations
         ITransparentUpgradeableProxy ecdsaCertificateVerifierProxy =
             ITransparentUpgradeableProxy(payable(address(Env.proxy.ecdsaCertificateVerifier())));
         ecdsaCertificateVerifierProxy.upgradeTo(address(Env.impl.ecdsaCertificateVerifier()));
@@ -187,10 +182,28 @@ contract Deploy is EOADeployer {
             ITransparentUpgradeableProxy(payable(address(Env.proxy.bn254CertificateVerifier())));
         bn254CertificateVerifierProxy.upgradeTo(address(Env.impl.bn254CertificateVerifier()));
 
+        OperatorTableUpdaterInitParams memory initParams = _getTableUpdaterInitParams();
+        ITransparentUpgradeableProxy operatorTableUpdaterProxy =
+            ITransparentUpgradeableProxy(payable(address(Env.proxy.operatorTableUpdater())));
+        operatorTableUpdaterProxy.upgradeToAndCall(
+            address(Env.impl.operatorTableUpdater()),
+            abi.encodeCall(
+                OperatorTableUpdater.initialize,
+                (
+                    Env.opsMultisig(),
+                    initParams.globalRootConfirmerSet,
+                    initParams.globalRootConfirmationThreshold,
+                    initParams.referenceTimestamp,
+                    initParams.globalRootConfirmerSetInfo,
+                    initParams.globalRootConfirmerSetConfig
+                )
+            )
+        );
+
         // 4. Transfer proxy admin ownership
-        ProxyAdmin(msg.sender).changeProxyAdmin(operatorTableUpdaterProxy, Env.proxyAdmin());
-        ProxyAdmin(msg.sender).changeProxyAdmin(ecdsaCertificateVerifierProxy, Env.proxyAdmin());
-        ProxyAdmin(msg.sender).changeProxyAdmin(bn254CertificateVerifierProxy, Env.proxyAdmin());
+        operatorTableUpdaterProxy.changeAdmin(Env.proxyAdmin());
+        ecdsaCertificateVerifierProxy.changeAdmin(Env.proxyAdmin());
+        bn254CertificateVerifierProxy.changeAdmin(Env.proxyAdmin());
     }
 
     function testScript() public virtual {
@@ -527,5 +540,69 @@ contract Deploy is EOADeployer {
 
     function _strEq(string memory a, string memory b) private pure returns (bool) {
         return keccak256(bytes(a)) == keccak256(bytes(b));
+    }
+
+    // In order to not clutter the Zeus Env, we define our operator table updater init params here
+    function _getTableUpdaterInitParams() internal view returns (OperatorTableUpdaterInitParams memory) {
+        OperatorTableUpdaterInitParams memory initParams;
+
+        if (_strEq(Env.env(), "preprod")) {
+            initParams = _parseToml("script/releases/v1.7.0-multichain/configs/preprod.toml");
+        }
+        // NOTE: For testnet-holesky and testnet-hoodi, the operator table updater is not used
+        else if (_strEq(Env.env(), "testnet-sepolia") || _strEq(Env.env(), "testnet-base-sepolia")) {
+            initParams = _parseToml("script/releases/v1.7.0-multichain/configs/testnet.toml");
+        } else if (_strEq(Env.env(), "mainnet") || _strEq(Env.env(), "mainnet-base")) {
+            initParams = _parseToml("script/releases/v1.7.0-multichain/configs/mainnet.toml");
+        }
+
+        return initParams;
+    }
+
+    function _parseToml(
+        string memory path
+    ) internal view returns (OperatorTableUpdaterInitParams memory initParams) {
+        // Read the TOML file
+        string memory root = vm.projectRoot();
+        string memory fullPath = string.concat(root, "/", path);
+        string memory toml = vm.readFile(fullPath);
+
+        // Parse globalRootConfirmationThreshold
+        initParams.globalRootConfirmationThreshold = uint16(toml.readUint(".globalRootConfirmationThreshold"));
+
+        // Parse referenceTimestamp
+        initParams.referenceTimestamp = uint32(toml.readUint(".referenceTimestamp"));
+
+        // Parse globalRootConfirmerSet
+        address avs = toml.readAddress(".globalRootConfirmerSet.avs");
+        uint32 id = uint32(toml.readUint(".globalRootConfirmerSet.id"));
+        initParams.globalRootConfirmerSet = OperatorSet({avs: avs, id: id});
+
+        // Parse globalRootConfirmerSetConfig
+        address owner = toml.readAddress(".globalRootConfirmerSetConfig.owner");
+        uint32 maxStalenessPeriod = uint32(toml.readUint(".globalRootConfirmerSetConfig.maxStalenessPeriod"));
+        initParams.globalRootConfirmerSetConfig =
+            ICrossChainRegistryTypes.OperatorSetConfig({owner: owner, maxStalenessPeriod: maxStalenessPeriod});
+
+        // Parse globalRootConfirmerSetInfo
+        initParams.globalRootConfirmerSetInfo.numOperators =
+            uint256(toml.readUint(".globalRootConfirmerSetInfo.numOperators"));
+        initParams.globalRootConfirmerSetInfo.operatorInfoTreeRoot =
+            toml.readBytes32(".globalRootConfirmerSetInfo.operatorInfoTreeRoot");
+        initParams.globalRootConfirmerSetInfo.totalWeights =
+            toml.readUintArray(".globalRootConfirmerSetInfo.totalWeights");
+        uint256 apkX = toml.readUint(".globalRootConfirmerSetInfo.aggregatePubkey.X");
+        uint256 apkY = toml.readUint(".globalRootConfirmerSetInfo.aggregatePubkey.Y");
+        initParams.globalRootConfirmerSetInfo.aggregatePubkey = BN254.G1Point({X: apkX, Y: apkY});
+
+        return initParams;
+    }
+
+    struct OperatorTableUpdaterInitParams {
+        uint16 globalRootConfirmationThreshold;
+        OperatorSet globalRootConfirmerSet;
+        ICrossChainRegistry.OperatorSetConfig globalRootConfirmerSetConfig;
+        IBN254TableCalculatorTypes.BN254OperatorSetInfo globalRootConfirmerSetInfo;
+        uint32 referenceTimestamp;
     }
 }
