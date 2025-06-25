@@ -127,7 +127,7 @@ See full documentation in [`/destination/CertificateVerifier.md`](./destination/
 
 #### AVS
 
-An AVS is an entity that uses delegated or slashable security from operators to execute off-chain tasks.   
+An AVS is an entity that uses delegated or slashable security from operators to execute off-chain tasks. Consumers of an AVS utilize the `CertificateVerifier` to validate tasks. 
 
 *Flows:*
 * AVSs **register** for transporting their stakes via the `CrossChainRegistry`
