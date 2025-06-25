@@ -74,7 +74,7 @@ interface IBN254CertificateVerifier is
      * @param operatorSet the operatorSet that the certificate is for
      * @param cert a certificate
      * @return signedStakes amount of stake that signed the certificate for each stake
-     * type
+     * type. Each index corresponds to a stake type in the `totalWeights` array in the `BN254OperatorSetInfo`.
      */
     function verifyCertificate(
         OperatorSet memory operatorSet,
@@ -86,8 +86,9 @@ interface IBN254CertificateVerifier is
      * provided portions of the total stake on the AVS
      * @param operatorSet the operatorSet that the certificate is for
      * @param cert a certificate
-     * @param totalStakeProportionThresholds the proportion of total stake that
-     * the signed stake of the certificate should meet
+     * @param totalStakeProportionThresholds the proportion, in BPS,of total stake that
+     * the signed stake of the certificate should meet. Each index corresponds to
+     * a stake type in the `totalWeights` array in the `BN254OperatorSetInfo`.
      * @return whether or not certificate is valid and meets thresholds
      */
     function verifyCertificateProportion(
@@ -102,7 +103,8 @@ interface IBN254CertificateVerifier is
      * @param operatorSet the operatorSet that the certificate is for
      * @param cert a certificate
      * @param totalStakeNominalThresholds the nominal amount of stake that
-     * the signed stake of the certificate should meet
+     * the signed stake of the certificate should meet. Each index corresponds to
+     * a stake type in the `totalWeights` array in the `BN254OperatorSetInfo`.
      * @return whether or not certificate is valid and meets thresholds
      */
     function verifyCertificateNominal(

@@ -3,8 +3,6 @@
 | File | Notes |
 | -------- | -------- |
 | [`OperatorTableUpdater.sol`](../../../src/contracts/multichain/OperatorTableUpdater.sol) | Updates operator tables on destination chains |
-| [`OperatorTableUpdaterStorage.sol`](../../../src/contracts/multichain/OperatorTableUpdaterStorage.sol) | Storage layout and state variables |
-| [`IOperatorTableUpdater.sol`](../../../src/contracts/interfaces/IOperatorTableUpdater.sol) | Interface |
 
 Libraries and Mixins:
 
@@ -35,11 +33,13 @@ Global table roots must be confirmed by the `globalRootConfirmerSet` (ie. `Gener
 
 ```solidity
 /**
- * @notice Confirms a global table root with a BN254 certificate
- * @param globalTableRootCert The BN254 certificate confirming the global table root
- * @param globalTableRoot The global table root being confirmed
- * @param referenceTimestamp The reference timestamp for the global table root
- * @param referenceBlockNumber The reference block number for the global table root
+ * @notice Confirms Global operator table root
+ * @param globalTableRootCert certificate of the root
+ * @param globalTableRoot merkle root of all operatorSet tables
+ * @param referenceTimestamp timestamp of the root
+ * @param referenceBlockNumber block number of the root
+ * @dev Any entity can submit with a valid certificate signed off by the `globalRootConfirmerSet`
+ * @dev The `msgHash` in the `globalOperatorTableRootCert` is the hash of the `globalOperatorTableRoot`
  */
 function confirmGlobalTableRoot(
     BN254Certificate calldata globalTableRootCert,
@@ -75,12 +75,13 @@ Once a global root is confirmed, individual operator tables can be updated by pr
 
 ```solidity
 /**
- * @notice Updates an operator table for a specific operator set
- * @param referenceTimestamp The reference timestamp of the operator table
- * @param globalTableRoot The global table root to verify against
- * @param operatorSetIndex The index of the operator set in the global table
- * @param proof The merkle proof for the operator table
- * @param operatorTableBytes The encoded operator table data
+ * @notice Updates an operator table
+ * @param referenceTimestamp the reference block number of the globalTableRoot
+ * @param globalTableRoot the new globalTableRoot
+ * @param operatorSetIndex the index of the given operatorSet being updated
+ * @param proof the proof of the leaf at index against the globalTableRoot
+ * @param operatorTableBytes the bytes of the operator table
+ * @dev Depending on the decoded KeyType, the tableInfo will be decoded
  */
 function updateOperatorTable(
     uint32 referenceTimestamp,
@@ -115,12 +116,14 @@ The `owner` can configure the `globalRootConfirmerSet` and confirmation paramete
 
 ```solidity
 /**
- * @notice Sets the operator set that confirms global table roots
- * @param operatorSet The new global root confirmer set
+ * @notice Set the operatorSet which certifies against global roots
+ * @param operatorSet the operatorSet which certifies against global roots
+ * @dev The `operatorSet` is used to verify the certificate of the global table root
+ * @dev Only callable by the owner of the contract
  */
 function setGlobalRootConfirmerSet(
     OperatorSet calldata operatorSet
-) external onlyOwner;
+) external;
 ```
 
 Updates the operator set responsible for confirming global table roots.
@@ -136,12 +139,13 @@ Updates the operator set responsible for confirming global table roots.
 
 ```solidity
 /**
- * @notice Sets the threshold for global root confirmation
+ * @notice The threshold, in bps, for a global root to be signed off on and updated
  * @param bps The threshold in basis points
+ * @dev Only callable by the owner of the contract
  */
 function setGlobalRootConfirmationThreshold(
     uint16 bps
-) external onlyOwner;
+) external;
 ```
 
 Sets the stake proportion threshold required for confirming global table roots.
@@ -158,12 +162,13 @@ Sets the stake proportion threshold required for confirming global table roots.
 
 ```solidity
 /**
- * @notice Disables a previously confirmed global table root
- * @param globalTableRoot The root to disable
+ * @notice Disables a global table root
+ * @param globalTableRoot the global table root to disable
+ * @dev Only callable by the owner of the contract
  */
 function disableRoot(
     bytes32 globalTableRoot
-) external onlyOwner;
+) external;
 ```
 
 Disables a global table root, preventing further operator table updates against it. This function also prevents the `CertificateVerifier` from verifying certificates. The function is intended to prevent a malicious or invalid root from being used by downstream consumers. 
@@ -181,15 +186,18 @@ Disables a global table root, preventing further operator table updates against 
 ```solidity
 /**
  * @notice Updates the operator table for the global root confirmer set
- * @param referenceTimestamp The reference timestamp for the update
- * @param globalRootConfirmerSetInfo The BN254 operator set info
- * @param globalRootConfirmerSetConfig The operator set config
+ * @param referenceTimestamp The reference timestamp of the operator table update
+ * @param globalRootConfirmerSetInfo The operatorSetInfo for the global root confirmer set
+ * @param globalRootConfirmerSetConfig The operatorSetConfig for the global root confirmer set
+ * @dev We have a separate function for updating this operatorSet since it's not transported and updated
+ *      in the same way as the other operatorSets
+ * @dev Only callable by the owner of the contract
  */
 function updateGlobalRootConfirmerSet(
     uint32 referenceTimestamp,
     BN254OperatorSetInfo calldata globalRootConfirmerSetInfo,
     OperatorSetConfig calldata globalRootConfirmerSetConfig
-) external onlyOwner;
+) external;
 ```
 
 Updates the operator table for the `globalRootConfirmerSet` itself, enabling it to sign future global roots.

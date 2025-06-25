@@ -39,6 +39,7 @@ The `ECDSATableCalculatorBase` provides base functionality for calculating ECDSA
  * @param weights The weights of the operator for a single operatorSet
  * @dev The `weights` array can be defined as a list of arbitrary groupings. For example,
  * it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]
+ * @dev The `weights` array should be the same length for each operator in the operatorSet.
  */
 struct ECDSAOperatorInfo {
     address pubkey;
@@ -46,9 +47,10 @@ struct ECDSAOperatorInfo {
 }
 
 /**
- * @notice Calculates the operator table for a given operatorSet
- * @param operatorSet The operatorSet to calculate the operator table for
- * @return operatorInfos The operator table for the given operatorSet
+ * @notice calculates the operatorInfos for a given operatorSet
+ * @param operatorSet the operatorSet to calculate the operator table for
+ * @return operatorInfos the list of operatorInfos for the given operatorSet
+ * @dev The output of this function is converted to bytes via the `calculateOperatorTableBytes` function
  */
 function calculateOperatorTable(
     OperatorSet calldata operatorSet
@@ -124,10 +126,21 @@ The `BN254TableCalculatorBase` provides base functionality for calculating BN254
 #### `calculateOperatorTable`
 
 ```solidity
+/**
+ * @notice A struct that contains information about a single operator
+ * @param pubkey The G1 public key of the operator.
+ * @param weights The weights of the operator for a single operatorSet.
+ * @dev The `weights` array can be defined as a list of arbitrary groupings. For example,
+ * it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]
+ */
+struct BN254OperatorInfo {
+    BN254.G1Point pubkey;
+    uint256[] weights;
+}
 
 /**
  * @notice A struct that contains information about all operators for a given operatorSet
- * @param operatorInfoTreeRoot The root of the operatorInfo tree.
+ * @param operatorInfoTreeRoot The root of the operatorInfo tree. Each leaf is a `BN254OperatorInfo` struct
  * @param numOperators The number of operators in the operatorSet.
  * @param aggregatePubkey The aggregate G1 public key of the operators in the operatorSet.
  * @param totalWeights The total weights of the operators in the operatorSet.
@@ -135,7 +148,7 @@ The `BN254TableCalculatorBase` provides base functionality for calculating BN254
  * @dev The operatorInfoTreeRoot is the root of a merkle tree that contains the operatorInfos for each operator in the operatorSet.
  * It is calculated in this function and used by the `IBN254CertificateVerifier` to verify stakes against the non-signing operators
  *
- * @dev Retrieval of the `aggregatePubKey` depends on maintaining a key registry contract, see `BLSAPKRegistry` for an example implementation.
+ * @dev Retrieval of the `aggregatePubKey` depends on maintaining a key registry contract, see `BN254TableCalculatorBase` for an example implementation.
  *
  * @dev The `totalWeights` array should be the same length as each individual `weights` array in `operatorInfos`.
  */
@@ -147,9 +160,10 @@ struct BN254OperatorSetInfo {
 }
 
 /**
- * @notice Calculates the operator table for a given operatorSet
- * @param operatorSet The operatorSet to calculate the operator table for
- * @return operatorSetInfo The operator table for the given operatorSet
+ * @notice calculates the operatorInfos for a given operatorSet
+ * @param operatorSet the operatorSet to calculate the operator table for
+ * @return operatorSetInfo the operatorSetInfo for the given operatorSet
+ * @dev The output of this function is converted to bytes via the `calculateOperatorTableBytes` function
  */
 function calculateOperatorTable(
     OperatorSet calldata operatorSet
@@ -199,25 +213,13 @@ Returns the ABI-encoded bytes representation of the operator table, which is use
 
 ```solidity
 /**
- * @notice A struct that contains information about a single operator
- * @param pubkey The G1 public key of the operator.
- * @param weights The weights of the operator for a single operatorSet.
- * @dev The `weights` array can be defined as a list of arbitrary groupings. For example,
- * it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]
- */
-struct BN254OperatorInfo {
-    BN254.G1Point pubkey;
-    uint256[] weights;
-}
-
-/**
- * @notice Gets the operator infos for a given operatorSet
- * @param operatorSet The operatorSet to get the operator infos for
- * @return BN254OperatorInfo[] Array of operator information
+ * @notice Get the operatorInfos for a given operatorSet
+ * @param operatorSet the operatorSet to get the operatorInfos for
+ * @return operatorInfos the operatorInfos for the given operatorSet
  */
 function getOperatorInfos(
     OperatorSet calldata operatorSet
-) external view returns (BN254OperatorInfo[] memory);
+) external view returns (BN254OperatorInfo[] memory operatorInfos);
 ```
 
 Returns an array of `BN254OperatorInfo` structs for all operators in the operatorSet who have registered BN254 keys.

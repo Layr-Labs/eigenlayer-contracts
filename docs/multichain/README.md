@@ -1,10 +1,10 @@
-[elip-007]: https://github.com/eigenfoundation/ELIPs/blob/main/ELIPs/ELIP-007.md
+[elip-008]: https://github.com/eigenfoundation/ELIPs/blob/main/ELIPs/ELIP-008.md
 
 ## Multichain Docs
 
 The EigenLayer multichain protocol enables *consumption* of EigenLayer L1 stake on supported destination chains. For launch the source chain is Ethereum Mainnet and the destination chains are Ethereum Mainnet and Base. 
 
-This document provides an overview of system components, contracts, and user roles and is up-to-date with the latest [ELIP-007][elip-007]. Further documentation on the specific contracts can be found in this folder. 
+This document provides an overview of system components, contracts, and user roles and is up-to-date with the latest [ELIP-008][elip-008]. Further documentation on the specific contracts can be found in this folder. 
 
 ---
 

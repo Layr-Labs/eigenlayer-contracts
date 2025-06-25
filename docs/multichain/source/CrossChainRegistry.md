@@ -14,7 +14,19 @@ Libraries and Mixins:
 
 ## Overview
 
-The `CrossChainRegistry` manages the registration/deregistration of operatorSets to the multichain protocol. The contract also exposes read-only functions to calculate an operator table, which is used offchain by the `Generator` to generate a `GlobalTableRoot` and `Transporter` to transport the operator table. See [ELIP-007](https://github.com/eigenfoundation/ELIPs/blob/main/ELIPs/ELIP-007.md) for more information.  
+The `CrossChainRegistry` manages the registration/deregistration of operatorSets to the multichain protocol. The contract also exposes read-only functions to calculate an operator table, which is used offchain by the `Generator` to generate a `GlobalTableRoot` and `Transporter` to transport the operator table. See [ELIP-007](https://github.com/eigenfoundation/ELIPs/blob/main/ELIPs/ELIP-007.md) for more information.
+
+```solidity
+/**
+ * @notice A per-operatorSet configuration struct that is transported from the CrossChainRegistry on L1.
+ * @param owner the permissioned owner of the OperatorSet on L2 that can call the CertificateVerifier specific setters
+ * @param maxStalenessPeriod the maximum staleness period of the operatorSet
+ */
+struct OperatorSetConfig {
+    address owner;
+    uint32 maxStalenessPeriod;
+}
+```  
 
 ## Parameterization
 * `SupportedChains` (via `getSupportedChains`) are `Mainnet` and `Base`
@@ -234,10 +246,7 @@ The `owner` of the `CrossChainRegistry` can update the whitelisted chain IDs. If
  * @param operatorTableUpdaters the operatorTableUpdaters for each whitelisted chainID
  * @dev msg.sender must be the owner of the CrossChainRegistry
  */
-function addChainIDsToWhitelist(
-    uint256[] calldata chainIDs, 
-    address[] calldata operatorTableUpdaters
-) external;
+function addChainIDsToWhitelist(uint256[] calldata chainIDs, address[] calldata operatorTableUpdaters) external;
 ```
 
 Adds chain IDs to the global whitelist, enabling them as valid transport destinations. Each chain ID is associated with an operator table updater address that will be responsible for updating operator tables on that chain.
@@ -281,16 +290,16 @@ Removes chain IDs from the global whitelist, preventing them from being used as 
 
 ## Offchain View Functions
 
-The `Generator` and `Transporter` the below view functions to generate and transport tables:
+The `Generator` and `Transporter` use the below view functions to generate and transport tables:
 
-1. `getActiveGenerationReserations`: Gets the operatorSets to be included in the `globalTableRoot`
+1. `getActiveGenerationReservations`: Gets the operatorSets to be included in the `globalTableRoot`
 
 ```solidity
-    /**
-     * @notice Gets the active generation reservations
-     * @return An array of operatorSets with active generationReservations
-     */
-    function getActiveGenerationReservations() external view returns (OperatorSet[] memory);
+/**
+ * @notice Gets the active generation reservations
+ * @return An array of operatorSets with active generationReservations
+ */
+function getActiveGenerationReservations() external view returns (OperatorSet[] memory);
 ```
 
 2. `calculateOperatorTableBytes`: Calculates the operator table bytes, which is then merkleized into the `globalTableRoot` offchain
@@ -311,15 +320,13 @@ function calculateOperatorTableBytes(
 ) external view returns (bytes memory);
 ```
 
-3. `getTransportDestinations`: List of chains to transport to
+3. `getActiveTransportReservations`: Gets all operatorSets with active transport reservations and their destinations
 
 ```solidity
 /**
- * @notice Gets the transport destinations for a given operatorSet
- * @param operatorSet the operatorSet to get the transport destinations for
+ * @notice Gets the active transport reservations
+ * @return An array of operatorSets with active transport reservations
  * @return An array of chainIDs that the operatorSet is configured to transport to
  */
-function getTransportDestinations(
-    OperatorSet memory operatorSet
-) external view returns (uint256[] memory);
+function getActiveTransportReservations() external view returns (OperatorSet[] memory, uint256[][] memory);
 ```
