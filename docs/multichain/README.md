@@ -6,7 +6,9 @@ The EigenLayer multichain protocol enables *consumption* of EigenLayer L1 stake 
 
 This document provides an overview of system components, contracts, and user roles and is up-to-date with the latest [ELIP-007][elip-007]. Further documentation on the specific contracts can be found in this folder. 
 
-#### Contents
+---
+
+### Contents
 
 * [System Diagram](#system-diagram)
 * [Source Chain](#source-chain)
@@ -20,6 +22,8 @@ This document provides an overview of system components, contracts, and user rol
     * [Register for Generation/Transport](#registering-for-generationtransport)
 
 ### System Diagram
+
+---
 
 ```mermaid
 classDiagram 
