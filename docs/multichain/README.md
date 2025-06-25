@@ -97,6 +97,8 @@ See full documentation in the [middleware repository](https://github.com/Layr-La
 
 ---
 
+---
+
 ### Destination Chain
 
 Destination chain contracts receive transported stake weights from an offchain service. The supported destination chains are Mainnet and Base. 
