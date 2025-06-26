@@ -21,7 +21,7 @@ import "src/contracts/libraries/BN254.sol";
 import "forge-std/Script.sol";
 import "forge-std/Test.sol";
 
-// forge script script/deploy/devnet/mutlichain/deploy_multichain_l2.s.sol --rpc-url $RPC_HOLESKY --private-key $PRIVATE_KEY --broadcast --sig "run()" --verify $ETHERSCAN_API_KEY
+// forge script script/deploy/devnet/mutlichain/deploy_multichain_l2.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast --sig "run()" --verify $ETHERSCAN_API_KEY
 contract DeployMultichain_L2 is Script, Test {
     address globalOwner = 0xDA29BB71669f46F2a779b4b62f03644A84eE3479;
 
@@ -137,7 +137,7 @@ contract DeployMultichain_L2 is Script, Test {
         uint16 globalRootConfirmationThreshold = 10_000;
 
         // Use current block timestamp as reference timestamp
-        uint32 referenceTimestamp = uint32(block.timestamp);
+        uint32 referenceTimestamp = uint32(1749246396);
 
         // Initialize the operatorTableUpdater
         vm.startBroadcast();
