@@ -1639,7 +1639,7 @@ contract StrategyManagerUnitTests_pendingOperatorSetsAndSlashIds is StrategyMana
     /// @notice Test edge case with zero shares
     function test_pendingTracking_zeroShares() external {
         IStrategy strategy = dummyStrat;
-        
+
         // Add shares with zero amount
         cheats.prank(address(delegationManagerMock));
         strategyManager.increaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, strategy, 0);
@@ -1658,7 +1658,7 @@ contract StrategyManagerUnitTests_pendingOperatorSetsAndSlashIds is StrategyMana
         strategies[0] = dummyStrat;
         strategies[1] = dummyStrat2;
         strategies[2] = dummyStrat3;
-        
+
         uint shares = 100;
 
         // Create multiple operator sets
@@ -1676,7 +1676,7 @@ contract StrategyManagerUnitTests_pendingOperatorSetsAndSlashIds is StrategyMana
         strategyManager.increaseBurnOrRedistributableShares(operatorSets[0], 0, strategies[0], shares);
         strategyManager.increaseBurnOrRedistributableShares(operatorSets[0], 0, strategies[1], shares);
         strategyManager.increaseBurnOrRedistributableShares(operatorSets[0], 1, strategies[2], shares);
-        
+
         // OperatorSet 1: slash ID 0 with all strategies
         strategyManager.increaseBurnOrRedistributableShares(operatorSets[1], 0, strategies[0], shares);
         strategyManager.increaseBurnOrRedistributableShares(operatorSets[1], 0, strategies[1], shares);
@@ -1686,7 +1686,7 @@ contract StrategyManagerUnitTests_pendingOperatorSetsAndSlashIds is StrategyMana
         // Fund all strategies with enough balance for all potential withdrawals
         // Each strategy needs enough for all operator sets that will withdraw from it
         _depositIntoStrategySuccessfully(strategies[0], address(this), shares * 2); // Used by both operator sets
-        _depositIntoStrategySuccessfully(strategies[1], address(this), shares * 2); // Used by both operator sets  
+        _depositIntoStrategySuccessfully(strategies[1], address(this), shares * 2); // Used by both operator sets
         _depositIntoStrategySuccessfully(strategies[2], address(this), shares * 2); // Used by both operator sets
 
         // Clear operatorSet[0] slash ID 0 (should not remove operatorSet[0] from pending)
