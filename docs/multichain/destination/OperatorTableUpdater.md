@@ -1,7 +1,7 @@
 ## OperatorTableUpdater
 
 | File | Type | Proxy |
-| -------- | -------- |
+| -------- | -------- |  -------- | 
 | [`OperatorTableUpdater.sol`](../../../src/contracts/multichain/OperatorTableUpdater.sol) | Singleton | Transparent Proxy |
 
 Libraries and Mixins:
