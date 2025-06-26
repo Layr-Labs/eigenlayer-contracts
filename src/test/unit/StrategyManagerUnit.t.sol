@@ -43,9 +43,7 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEv
     function setUp() public override {
         EigenLayerUnitTestSetup.setUp();
         strategyManagerImplementation = new StrategyManager(
-            IDelegationManager(address(delegationManagerMock)),
-            pauserRegistry,
-            "9.9.9"
+            IAllocationManager(address(allocationManagerMock)), IDelegationManager(address(delegationManagerMock)), pauserRegistry, "9.9.9"
         );
         strategyManager = StrategyManager(
             address(
@@ -1210,14 +1208,14 @@ contract StrategyManagerUnitTests_clearBurnOrRedistributableShares is StrategyMa
         emit BurnOrRedistributableSharesDecreased(defaultOperatorSet, defaultSlashId, strategy, shares);
         strategyManager.clearBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
 
-        (IStrategy[] memory escrowStrats, uint[] memory escrowShares) =
+        (IStrategy[] memory slashStrats, uint[] memory slashShares) =
             strategyManager.getBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
-        assertEq(escrowStrats.length, 0, "strats length should be 0");
-        assertEq(escrowShares.length, 0, "shares length should be 0");
+        assertEq(slashStrats.length, 0, "strats length should be 0");
+        assertEq(slashShares.length, 0, "shares length should be 0");
         assertEq(strategyManager.getBurnOrRedistributableCount(defaultOperatorSet, defaultSlashId), 0, "count should be 0");
 
-        address slashEscrow = slashEscrowFactoryMock.getSlashEscrow(defaultOperatorSet, defaultSlashId);
-        assertEq(dummyToken.balanceOf(slashEscrow), shares, "strategy balance of slash escrow invalid");
+        address redistributionRecipient = allocationManagerMock.getRedistributionRecipient(defaultOperatorSet);
+        assertEq(dummyToken.balanceOf(redistributionRecipient), shares, "strategy balance of redistribution recipient invalid");
         assertEq(dummyToken.balanceOf(address(strategy)), 0, "strategy balance should be 0");
     }
 
@@ -1232,14 +1230,14 @@ contract StrategyManagerUnitTests_clearBurnOrRedistributableShares is StrategyMa
         emit BurnOrRedistributableSharesDecreased(defaultOperatorSet, defaultSlashId, strategy, shares);
         strategyManager.clearBurnOrRedistributableSharesByStrategy(defaultOperatorSet, defaultSlashId, strategy);
 
-        (IStrategy[] memory escrowStrats, uint[] memory escrowShares) =
+        (IStrategy[] memory slashStrats, uint[] memory slashShares) =
             strategyManager.getBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
-        assertEq(escrowStrats.length, 0, "strats length should be 0");
-        assertEq(escrowShares.length, 0, "shares length should be 0");
+        assertEq(slashStrats.length, 0, "strats length should be 0");
+        assertEq(slashShares.length, 0, "shares length should be 0");
         assertEq(strategyManager.getBurnOrRedistributableCount(defaultOperatorSet, defaultSlashId), 0, "count should be 0");
 
-        address slashEscrow = slashEscrowFactoryMock.getSlashEscrow(defaultOperatorSet, defaultSlashId);
-        assertEq(dummyToken.balanceOf(slashEscrow), shares, "strategy balance of slash escrow invalid");
+        address redistributionRecipient = allocationManagerMock.getRedistributionRecipient(defaultOperatorSet);
+        assertEq(dummyToken.balanceOf(redistributionRecipient), shares, "strategy balance of redistribution recipient invalid");
         assertEq(dummyToken.balanceOf(address(strategy)), 0, "strategy balance should be 0");
     }
 
@@ -1261,15 +1259,15 @@ contract StrategyManagerUnitTests_clearBurnOrRedistributableShares is StrategyMa
 
         strategyManager.clearBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
 
-        (IStrategy[] memory escrowStrats, uint[] memory escrowShares) =
+        (IStrategy[] memory slashStrats, uint[] memory slashShares) =
             strategyManager.getBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
-        assertEq(escrowStrats.length, 0, "strats length should be 0");
-        assertEq(escrowShares.length, 0, "shares length should be 0");
+        assertEq(slashStrats.length, 0, "strats length should be 0");
+        assertEq(slashShares.length, 0, "shares length should be 0");
         assertEq(strategyManager.getBurnOrRedistributableCount(defaultOperatorSet, defaultSlashId), 0, "count should be 0");
 
         // The dummyStrats all have the same token, assert total balance
-        address slashEscrow = slashEscrowFactoryMock.getSlashEscrow(defaultOperatorSet, defaultSlashId);
-        assertEq(dummyToken.balanceOf(slashEscrow), totalSharesToAdd, "total balance should be total shares to add");
+        address defaultRedistributionRecipient = allocationManagerMock.getRedistributionRecipient(defaultOperatorSet);
+        assertEq(dummyToken.balanceOf(defaultRedistributionRecipient), totalSharesToAdd, "total balance should be total shares to add");
         assertEq(dummyToken.balanceOf(address(strategies[0])), 0, "strategy balance should be 0");
         assertEq(dummyToken.balanceOf(address(strategies[1])), 0, "strategy balance should be 0");
         assertEq(dummyToken.balanceOf(address(strategies[2])), 0, "strategy balance should be 0");
@@ -1311,8 +1309,8 @@ contract StrategyManagerUnitTests_clearBurnOrRedistributableShares is StrategyMa
         }
 
         // The dummyStrats all have the same token, assert total balance
-        address slashEscrow = slashEscrowFactoryMock.getSlashEscrow(defaultOperatorSet, defaultSlashId);
-        assertEq(dummyToken.balanceOf(slashEscrow), totalShares, "total balance should be total shares to add");
+        address redistributionRecipient = allocationManagerMock.getRedistributionRecipient(defaultOperatorSet);
+        assertEq(dummyToken.balanceOf(redistributionRecipient), totalShares, "total balance should be total shares to add");
         assertEq(dummyToken.balanceOf(address(strategies[0])), 0, "strategy balance should be 0");
         assertEq(dummyToken.balanceOf(address(strategies[1])), 0, "strategy balance should be 0");
         assertEq(dummyToken.balanceOf(address(strategies[2])), 0, "strategy balance should be 0");

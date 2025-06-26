@@ -1108,21 +1108,6 @@ contract IntegrationCheckUtils is IntegrationBase {
         );
     }
 
-    function check_releaseSlashEscrow_State(
-        OperatorSet memory operatorSet,
-        uint slashId,
-        IStrategy[] memory strategies,
-        uint[] memory initTokenBalances,
-        address redistributionRecipient
-    ) internal {
-        assert_HasUnderlyingTokenBalances(
-            User(payable(redistributionRecipient)),
-            strategies,
-            initTokenBalances,
-            "redistribution recipient should have underlying token balances"
-        );
-    }
-
     /**
      *
      *                             DUAL SLASHING CHECKS

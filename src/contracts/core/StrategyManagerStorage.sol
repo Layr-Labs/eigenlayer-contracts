@@ -3,6 +3,7 @@ pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 
+import "../interfaces/IAllocationManager.sol";
 import "../interfaces/IAVSDirectory.sol";
 import "../interfaces/IDelegationManager.sol";
 import "../interfaces/IEigenPodManager.sol";
@@ -32,6 +33,8 @@ abstract contract StrategyManagerStorage is IStrategyManager {
     address public constant DEFAULT_BURN_ADDRESS = 0x00000000000000000000000000000000000E16E4;
 
     // Immutables
+
+    IAllocationManager public immutable allocationManager;
 
     IDelegationManager public immutable delegation;
 
@@ -84,7 +87,8 @@ abstract contract StrategyManagerStorage is IStrategyManager {
     /**
      * @param _delegation The delegation contract of EigenLayer.
      */
-    constructor(IDelegationManager _delegation) {
+    constructor(IAllocationManager _allocationManager, IDelegationManager _delegation) {
+        allocationManager = _allocationManager;
         delegation = _delegation;
     }
 
