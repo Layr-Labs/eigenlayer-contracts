@@ -1507,3 +1507,212 @@ contract StrategyManagerUnitTests_removeStrategiesFromDepositWhitelist is Strate
         }
     }
 }
+
+contract StrategyManagerUnitTests_pendingOperatorSetsAndSlashIds is StrategyManagerUnitTests {
+    /// @notice Test that pending operator sets and slash IDs are properly tracked
+    function test_pendingTracking_singleOperatorSet_singleSlashId() external {
+        IStrategy strategy = dummyStrat;
+        uint shares = 100;
+
+        // Add shares for a single operator set and slash ID
+        cheats.prank(address(delegationManagerMock));
+        strategyManager.increaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, strategy, shares);
+        _depositIntoStrategySuccessfully(strategy, address(this), shares);
+
+        // Clear the shares
+        strategyManager.clearBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
+
+        // Verify that we can add the same operator set and slash ID again
+        // This proves they were properly removed from the pending sets
+        cheats.prank(address(delegationManagerMock));
+        strategyManager.increaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, strategy, shares);
+    }
+
+    /// @notice Test tracking with multiple slash IDs for the same operator set
+    function test_pendingTracking_singleOperatorSet_multipleSlashIds() external {
+        IStrategy strategy = dummyStrat;
+        uint shares = 100;
+        uint numSlashIds = 3;
+
+        // Add shares for multiple slash IDs
+        for (uint i = 0; i < numSlashIds; i++) {
+            cheats.prank(address(delegationManagerMock));
+            strategyManager.increaseBurnOrRedistributableShares(defaultOperatorSet, i, strategy, shares);
+            _depositIntoStrategySuccessfully(strategy, address(this), shares);
+        }
+
+        // Clear shares for first slash ID only
+        strategyManager.clearBurnOrRedistributableShares(defaultOperatorSet, 0);
+
+        // Verify we can re-add slash ID 0 (proves it was removed from pending)
+        cheats.prank(address(delegationManagerMock));
+        strategyManager.increaseBurnOrRedistributableShares(defaultOperatorSet, 0, strategy, shares);
+        _depositIntoStrategySuccessfully(strategy, address(this), shares);
+
+        // Clear all remaining slash IDs
+        for (uint i = 0; i <= numSlashIds; i++) {
+            if (strategyManager.getBurnOrRedistributableCount(defaultOperatorSet, i) > 0) {
+                strategyManager.clearBurnOrRedistributableShares(defaultOperatorSet, i);
+            }
+        }
+
+        // Verify we can re-add all slash IDs (proves operator set was removed when last slash ID was cleared)
+        for (uint i = 0; i < numSlashIds; i++) {
+            cheats.prank(address(delegationManagerMock));
+            strategyManager.increaseBurnOrRedistributableShares(defaultOperatorSet, i, strategy, shares);
+        }
+    }
+
+    /// @notice Test tracking with multiple operator sets
+    function test_pendingTracking_multipleOperatorSets() external {
+        IStrategy strategy = dummyStrat;
+        uint shares = 100;
+
+        // Create multiple operator sets
+        OperatorSet memory operatorSet1 = OperatorSet(address(0x1), 1);
+        OperatorSet memory operatorSet2 = OperatorSet(address(0x2), 2);
+        OperatorSet memory operatorSet3 = OperatorSet(address(0x3), 3);
+
+        // Set up redistribution recipients for each operator set
+        allocationManagerMock.setRedistributionRecipient(operatorSet1, address(0x100));
+        allocationManagerMock.setRedistributionRecipient(operatorSet2, address(0x200));
+        allocationManagerMock.setRedistributionRecipient(operatorSet3, address(0x300));
+
+        // Add shares for each operator set
+        cheats.startPrank(address(delegationManagerMock));
+        strategyManager.increaseBurnOrRedistributableShares(operatorSet1, 1, strategy, shares);
+        strategyManager.increaseBurnOrRedistributableShares(operatorSet2, 2, strategy, shares);
+        strategyManager.increaseBurnOrRedistributableShares(operatorSet3, 3, strategy, shares);
+        cheats.stopPrank();
+
+        // Fund the strategy
+        _depositIntoStrategySuccessfully(strategy, address(this), shares * 3);
+
+        // Clear shares for operatorSet1
+        strategyManager.clearBurnOrRedistributableShares(operatorSet1, 1);
+
+        // Verify we can re-add operatorSet1 (proves it was removed from pending)
+        cheats.prank(address(delegationManagerMock));
+        strategyManager.increaseBurnOrRedistributableShares(operatorSet1, 1, strategy, shares);
+
+        // Clear remaining operator sets
+        strategyManager.clearBurnOrRedistributableShares(operatorSet2, 2);
+        strategyManager.clearBurnOrRedistributableShares(operatorSet3, 3);
+    }
+
+    /// @notice Test that partially clearing shares doesn't remove the tracking
+    function test_pendingTracking_partialClear() external {
+        IStrategy strategy1 = dummyStrat;
+        IStrategy strategy2 = dummyStrat2;
+        uint shares = 100;
+
+        // Add shares for two strategies
+        cheats.startPrank(address(delegationManagerMock));
+        strategyManager.increaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, strategy1, shares);
+        strategyManager.increaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, strategy2, shares);
+        cheats.stopPrank();
+
+        // Fund the strategies
+        _depositIntoStrategySuccessfully(strategy1, address(this), shares);
+        _depositIntoStrategySuccessfully(strategy2, address(this), shares);
+
+        // Clear only strategy1
+        strategyManager.clearBurnOrRedistributableSharesByStrategy(defaultOperatorSet, defaultSlashId, strategy1);
+
+        // Verify strategy2 still has shares
+        assertEq(
+            strategyManager.getBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, strategy2),
+            shares,
+            "strategy2 should still have shares"
+        );
+
+        // Try to add strategy1 again - this should succeed, but strategy2 would fail
+        cheats.prank(address(delegationManagerMock));
+        strategyManager.increaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, strategy1, shares);
+
+        // Try to add strategy2 again - this should revert
+        cheats.prank(address(delegationManagerMock));
+        cheats.expectRevert(IStrategyManagerErrors.StrategyAlreadyInSlash.selector);
+        strategyManager.increaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, strategy2, shares);
+    }
+
+    /// @notice Test edge case with zero shares
+    function test_pendingTracking_zeroShares() external {
+        IStrategy strategy = dummyStrat;
+        
+        // Add shares with zero amount
+        cheats.prank(address(delegationManagerMock));
+        strategyManager.increaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, strategy, 0);
+
+        // Clear should handle zero shares gracefully
+        strategyManager.clearBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
+
+        // Should be able to add again
+        cheats.prank(address(delegationManagerMock));
+        strategyManager.increaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, strategy, 100);
+    }
+
+    /// @notice Test complex scenario with multiple operator sets and slash IDs
+    function test_pendingTracking_complexScenario() external {
+        IStrategy[] memory strategies = new IStrategy[](3);
+        strategies[0] = dummyStrat;
+        strategies[1] = dummyStrat2;
+        strategies[2] = dummyStrat3;
+        
+        uint shares = 100;
+
+        // Create multiple operator sets
+        OperatorSet[] memory operatorSets = new OperatorSet[](2);
+        operatorSets[0] = OperatorSet(address(0x1), 1);
+        operatorSets[1] = OperatorSet(address(0x2), 2);
+
+        // Set up redistribution recipients
+        allocationManagerMock.setRedistributionRecipient(operatorSets[0], address(0x100));
+        allocationManagerMock.setRedistributionRecipient(operatorSets[1], address(0x200));
+
+        // Add shares for multiple combinations
+        cheats.startPrank(address(delegationManagerMock));
+        // OperatorSet 0: slash IDs 0 and 1 with different strategies
+        strategyManager.increaseBurnOrRedistributableShares(operatorSets[0], 0, strategies[0], shares);
+        strategyManager.increaseBurnOrRedistributableShares(operatorSets[0], 0, strategies[1], shares);
+        strategyManager.increaseBurnOrRedistributableShares(operatorSets[0], 1, strategies[2], shares);
+        
+        // OperatorSet 1: slash ID 0 with all strategies
+        strategyManager.increaseBurnOrRedistributableShares(operatorSets[1], 0, strategies[0], shares);
+        strategyManager.increaseBurnOrRedistributableShares(operatorSets[1], 0, strategies[1], shares);
+        strategyManager.increaseBurnOrRedistributableShares(operatorSets[1], 0, strategies[2], shares);
+        cheats.stopPrank();
+
+        // Fund all strategies with enough balance for all potential withdrawals
+        // Each strategy needs enough for all operator sets that will withdraw from it
+        _depositIntoStrategySuccessfully(strategies[0], address(this), shares * 2); // Used by both operator sets
+        _depositIntoStrategySuccessfully(strategies[1], address(this), shares * 2); // Used by both operator sets  
+        _depositIntoStrategySuccessfully(strategies[2], address(this), shares * 2); // Used by both operator sets
+
+        // Clear operatorSet[0] slash ID 0 (should not remove operatorSet[0] from pending)
+        strategyManager.clearBurnOrRedistributableShares(operatorSets[0], 0);
+
+        // Verify we can re-add strategies to operatorSet[0] slash ID 0
+        cheats.startPrank(address(delegationManagerMock));
+        strategyManager.increaseBurnOrRedistributableShares(operatorSets[0], 0, strategies[0], shares);
+        strategyManager.increaseBurnOrRedistributableShares(operatorSets[0], 0, strategies[1], shares);
+        cheats.stopPrank();
+
+        // Fund strategies again for the re-added shares
+        _depositIntoStrategySuccessfully(strategies[0], address(this), shares);
+        _depositIntoStrategySuccessfully(strategies[1], address(this), shares);
+
+        // Clear operatorSet[0] completely
+        strategyManager.clearBurnOrRedistributableShares(operatorSets[0], 0);
+        strategyManager.clearBurnOrRedistributableShares(operatorSets[0], 1);
+
+        // Clear operatorSet[1]
+        strategyManager.clearBurnOrRedistributableShares(operatorSets[1], 0);
+
+        // Verify we can re-add everything
+        cheats.startPrank(address(delegationManagerMock));
+        strategyManager.increaseBurnOrRedistributableShares(operatorSets[0], 0, strategies[0], shares);
+        strategyManager.increaseBurnOrRedistributableShares(operatorSets[1], 0, strategies[0], shares);
+        cheats.stopPrank();
+    }
+}

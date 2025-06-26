@@ -2,6 +2,7 @@
 pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import "../interfaces/IAllocationManager.sol";
 import "../interfaces/IAVSDirectory.sol";
@@ -82,6 +83,12 @@ abstract contract StrategyManagerStorage is IStrategyManager {
     mapping(bytes32 operatorSetKey => mapping(uint256 slashId => EnumerableMap.AddressToUintMap)) internal
         _burnOrRedistributableShares;
 
+    /// @notice Returns a list of operator sets who have pending burn or redistributable shares.
+    EnumerableSet.Bytes32Set internal _pendingOperatorSets;
+
+    /// @notice Returns a list of slash ids for each operator set who have pending burn or redistributable shares.
+    mapping(bytes32 operatorSetKey => EnumerableSet.UintSet) internal _pendingSlashIds;
+
     // Construction
 
     /**
@@ -97,5 +104,5 @@ abstract contract StrategyManagerStorage is IStrategyManager {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[35] private __gap;
+    uint256[31] private __gap;
 }
