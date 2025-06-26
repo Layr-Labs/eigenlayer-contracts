@@ -22,7 +22,7 @@ The contract supports both BN254 and ECDSA operator tables and routes updates to
 Upon initialization, the `globalRootConfirmerSet` (ie. `Generator`) is updated. This operatorSet is a *"shadow-operatorSet"*. It does not exist in the core protocol, does not have stake backing it, and is not transported to other chains via the multichain protocol. It can only be updated upon initialization or by a [privileged role](#updateglobalrootconfirmerset). This entity is the same across all destination chains. 
 
 * `GlobalRootConfirmerSet`, also known as the `Generator`, is an EigenLabs-run entity that signs off on `GlobalTableRoots`. The operatorSet is of size 1. 
-* `maxStalenessPeriod`: 0. Set to zero to confirm roots without updating the `globalConfirmerOperatorSet`. See [`CertificateVerifier`](./CertificateVerifier.md#bn254certificateverifier) for specifics
+* `maxStalenessPeriod`: 0. Set to zero to confirm roots without updating the `globalConfirmerOperatorSet`. See [`CertificateVerifier`](./CertificateVerifier.md#overview) for specifics
 * `globalRootConfirmationThreshold`: 10000. The threshold in basis points required for global root confirmation. Since the operatorSet is of size 1 a single signature is needed
 * `referenceTimestamp`: A past timestamp at which the `globalRootConfirmerSet` is generated. This value is set to the initial `latestReferenceTimestamp` in the `OperatorTableUpdater. It is the same across all destination chains, even for destination chains that are supported after the initial deployment
 
