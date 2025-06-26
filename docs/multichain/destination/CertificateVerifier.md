@@ -26,6 +26,8 @@ The CertificateVerifier contracts are responsible for verifying certificates fro
 
 Both verifiers implement staleness checks based on a `maxStalenessPeriod` to ensure certificates are not verified against outdated operator information. 
 
+*Note: Setting a max staleness period to 0 enables certificates to be confirmed against any `referenceTimestamp`*. 
+
 ---
 
 ## ECDSACertificateVerifier
