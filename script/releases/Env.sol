@@ -92,8 +92,6 @@ library Env {
         return _envAddress("proxyAdmin");
     }
 
-
-
     function ethPOS() internal view returns (IETHPOSDeposit) {
         return IETHPOSDeposit(_envAddress("ethPOS"));
     }
@@ -323,8 +321,6 @@ library Env {
     ) internal view returns (StrategyFactory) {
         return StrategyFactory(_deployedImpl(type(StrategyFactory).name));
     }
-
-
 
     /**
      * token/

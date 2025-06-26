@@ -321,7 +321,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS,
             version
         );
-        strategyManagerImplementation = new StrategyManager(delegationManager, eigenLayerPauserReg, version);
+        strategyManagerImplementation = new StrategyManager(allocationManager, delegationManager, eigenLayerPauserReg, version);
         rewardsCoordinatorImplementation = new RewardsCoordinator(
             IRewardsCoordinatorTypes.RewardsCoordinatorConstructorParams({
                 delegationManager: delegationManager,

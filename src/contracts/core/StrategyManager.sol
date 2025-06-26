@@ -53,14 +53,11 @@ contract StrategyManager is
      * @param _delegation The delegation contract of EigenLayer.
      */
     constructor(
+        IAllocationManager _allocationManager,
         IDelegationManager _delegation,
         IPauserRegistry _pauserRegistry,
         string memory _version
-    )
-        StrategyManagerStorage(_delegation)
-        Pausable(_pauserRegistry)
-        SignatureUtilsMixin(_version)
-    {
+    ) StrategyManagerStorage(_allocationManager, _delegation) Pausable(_pauserRegistry) SignatureUtilsMixin(_version) {
         _disableInitializers();
     }
 
@@ -168,7 +165,7 @@ contract StrategyManager is
     function clearBurnOrRedistributableShares(
         OperatorSet calldata operatorSet,
         uint256 slashId
-    ) external returns (uint256[] memory) {
+    ) external nonReentrant returns (uint256[] memory) {
         // Get the strategies to clear.
         address[] memory strategies = _burnOrRedistributableShares[operatorSet.key()][slashId].keys();
         uint256 length = strategies.length;
@@ -176,7 +173,12 @@ contract StrategyManager is
 
         // Note: We don't need to iterate backwards since we're indexing into the `EnumerableMap` directly.
         for (uint256 i = 0; i < length; ++i) {
-            amounts[i] = clearBurnOrRedistributableSharesByStrategy(operatorSet, slashId, IStrategy(strategies[i]));
+            amounts[i] = _clearBurnOrRedistributableShares({
+                operatorSet: operatorSet,
+                slashId: slashId,
+                strategy: IStrategy(strategies[i]),
+                recipient: allocationManager.getRedistributionRecipient(operatorSet)
+            });
         }
 
         return amounts;
@@ -187,27 +189,13 @@ contract StrategyManager is
         OperatorSet calldata operatorSet,
         uint256 slashId,
         IStrategy strategy
-    ) public nonReentrant returns (uint256) {
-        EnumerableMap.AddressToUintMap storage burnOrRedistributableShares =
-            _burnOrRedistributableShares[operatorSet.key()][slashId];
-
-        (, uint256 sharesToRemove) = burnOrRedistributableShares.tryGet(address(strategy));
-        burnOrRedistributableShares.remove(address(strategy));
-
-        uint256 amountOut;
-        if (sharesToRemove != 0) {
-            // Withdraw the shares to the burn address.
-            amountOut = IStrategy(strategy).withdraw({
-                recipient: DEFAULT_BURN_ADDRESS,
-                token: IStrategy(strategy).underlyingToken(),
-                amountShares: sharesToRemove
-            });
-
-            // Emit an event to notify the that burnable shares have been decreased.
-            emit BurnOrRedistributableSharesDecreased(operatorSet, slashId, strategy, sharesToRemove);
-        }
-
-        return amountOut;
+    ) external nonReentrant returns (uint256) {
+        return _clearBurnOrRedistributableShares({
+            operatorSet: operatorSet,
+            slashId: slashId,
+            strategy: strategy,
+            recipient: allocationManager.getRedistributionRecipient(operatorSet)
+        });
     }
 
     /// @inheritdoc IStrategyManager
@@ -382,6 +370,41 @@ contract StrategyManager is
         require(j != stratsLength, StrategyNotFound());
         // pop off the last entry in the list of strategies
         stakerStrategyList[staker].pop();
+    }
+
+    /**
+     * @notice Clears burn/redistributable shares and sends underlying tokens to recipient.
+     * @param operatorSet The operator set to clear the shares for.
+     * @param slashId The slash id to clear the shares for.
+     * @param strategy The strategy to clear the shares for.
+     * @param recipient The recipient to withdraw the shares to.
+     */
+    function _clearBurnOrRedistributableShares(
+        OperatorSet calldata operatorSet,
+        uint256 slashId,
+        IStrategy strategy,
+        address recipient
+    ) internal returns (uint256) {
+        EnumerableMap.AddressToUintMap storage burnOrRedistributableShares =
+            _burnOrRedistributableShares[operatorSet.key()][slashId];
+
+        (, uint256 sharesToRemove) = burnOrRedistributableShares.tryGet(address(strategy));
+        burnOrRedistributableShares.remove(address(strategy));
+
+        uint256 amountOut;
+        if (sharesToRemove != 0) {
+            // Withdraw the shares to the burn address.
+            amountOut = IStrategy(strategy).withdraw({
+                recipient: recipient,
+                token: IStrategy(strategy).underlyingToken(),
+                amountShares: sharesToRemove
+            });
+
+            // Emit an event to notify the that burnable shares have been decreased.
+            emit BurnOrRedistributableSharesDecreased(operatorSet, slashId, strategy, sharesToRemove);
+        }
+
+        return amountOut;
     }
 
     /**

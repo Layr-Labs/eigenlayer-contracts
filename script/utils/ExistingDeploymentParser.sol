@@ -135,8 +135,6 @@ contract ExistingDeploymentParser is Script, Logger {
     StrategyBase public baseStrategyImplementation;
     StrategyBase public strategyFactoryBeaconImplementation;
 
-
-
     // Token
     ProxyAdmin public tokenProxyAdmin;
     IEigen public EIGEN;
