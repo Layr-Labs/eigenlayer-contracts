@@ -5,7 +5,11 @@
     "phases": [
         {
             "type": "eoa",
-            "filename": "1-deployContracts.s.sol"
+            "filename": "deploySourceChain.s.sol"
+        },
+        {
+            "type": "eoa",
+            "filename": "deployDestinationChain.s.sol"
         }
     ]
 }
