@@ -1,0 +1,21 @@
+{
+  "1e3_max_mag": {
+    "0%_in_withdrawal_queue": {
+
+    },
+    "00_001%_in_withdrawal_queue": {
+
+    },
+    "10%_in_withdrawal_queue": {
+
+    },
+    "50%_in_withdrawal_queue": {
+
+    },
+    "90%_in_withdrawal_queue": {
+
+    },
+    "99_999%_in_withdrawal_queue": {},
+    "100%_in_withdrawal_queue": {}
+  }
+}
