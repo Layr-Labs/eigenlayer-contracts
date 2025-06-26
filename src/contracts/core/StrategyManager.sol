@@ -31,6 +31,8 @@ contract StrategyManager is
     using SlashingLib for *;
     using SafeERC20 for IERC20;
     using EnumerableMap for EnumerableMap.AddressToUintMap;
+    using EnumerableSet for EnumerableSet.Bytes32Set;
+    using EnumerableSet for EnumerableSet.UintSet;
 
     modifier onlyStrategyWhitelister() {
         require(msg.sender == strategyWhitelister, OnlyStrategyWhitelister());
@@ -157,6 +159,10 @@ contract StrategyManager is
         // This should never happen because the `AllocationManager` ensures that strategies for a given slash are unique.
         // Add the shares to the operator set's burn or redistributable shares.
         require(burnOrRedistributableShares.set(address(strategy), sharesToBurn), StrategyAlreadyInSlash());
+
+        // NOTE: Duplicate operator sets and slash ids will not revert, but will not be added.
+        _pendingOperatorSets.add(operatorSet.key());
+        _pendingSlashIds[operatorSet.key()].add(slashId);
 
         emit BurnOrRedistributableSharesIncreased(operatorSet, slashId, strategy, sharesToBurn);
     }
@@ -399,6 +405,14 @@ contract StrategyManager is
                 token: IStrategy(strategy).underlyingToken(),
                 amountShares: sharesToRemove
             });
+
+            // Remove the slash id from the pending slash ids.
+            _pendingSlashIds[operatorSet.key()].remove(slashId);
+
+            // If there are no more pending slash ids for this operator set, remove the operator set from the pending operator sets.
+            if (_pendingSlashIds[operatorSet.key()].length() == 0) {
+                _pendingOperatorSets.remove(operatorSet.key());
+            }
 
             // Emit an event to notify the that burnable shares have been decreased.
             emit BurnOrRedistributableSharesDecreased(operatorSet, slashId, strategy, sharesToRemove);
