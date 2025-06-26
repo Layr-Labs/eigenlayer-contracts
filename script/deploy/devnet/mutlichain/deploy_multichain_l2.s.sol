@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.so
 // Core Contracats
 import "src/contracts/multichain/OperatorTableUpdater.sol";
 import "src/contracts/multichain/BN254CertificateVerifier.sol";
-import "src/contracts/interfaces/IECDSATableCalculator.sol";
+import "src/contracts/multichain/ECDSACertificateVerifier.sol";
 import "src/test/mocks/EmptyContract.sol";
 
 // Import the necessary types
@@ -32,6 +32,8 @@ contract DeployMultichain_L2 is Script, Test {
     OperatorTableUpdater public operatorTableUpdaterImplementation;
     BN254CertificateVerifier public bn254CertificateVerifier;
     BN254CertificateVerifier public bn254CertificateVerifierImplementation;
+    ECDSACertificateVerifier public ecdsaCertificateVerifier;
+    ECDSACertificateVerifier public ecdsaCertificateVerifierImplementation;
 
     function run() public {
         uint256 chainId = block.chainid;
@@ -58,11 +60,17 @@ contract DeployMultichain_L2 is Script, Test {
             address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), ""))
         );
 
+        // ECDSA Certificate Verifier
+        ecdsaCertificateVerifier = ECDSACertificateVerifier(
+            address(new TransparentUpgradeableProxy(address(emptyContract), address(proxyAdmin), ""))
+        );
+
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
         operatorTableUpdaterImplementation = new OperatorTableUpdater(
-            bn254CertificateVerifier, IECDSACertificateVerifier(address(emptyContract)), "0.0.1"
+            bn254CertificateVerifier, ecdsaCertificateVerifier, "1.0.0"
         );
         bn254CertificateVerifierImplementation = new BN254CertificateVerifier(operatorTableUpdater, "1.0.0");
+        ecdsaCertificateVerifierImplementation = new ECDSACertificateVerifier(operatorTableUpdater, "1.0.0");
 
         // Third, upgrade the proxies to point to the new implementations
         proxyAdmin.upgrade(
@@ -73,6 +81,11 @@ contract DeployMultichain_L2 is Script, Test {
         proxyAdmin.upgrade(
             ITransparentUpgradeableProxy(payable(address(bn254CertificateVerifier))),
             address(bn254CertificateVerifierImplementation)
+        );
+
+        proxyAdmin.upgrade(
+            ITransparentUpgradeableProxy(payable(address(ecdsaCertificateVerifier))),
+            address(ecdsaCertificateVerifierImplementation)
         );
 
         proxyAdmin.transferOwnership(globalOwner);
@@ -151,6 +164,10 @@ contract DeployMultichain_L2 is Script, Test {
         vm.serializeAddress(deployed_addresses, "operatorTableUpdater", address(operatorTableUpdater));
         vm.serializeAddress(
             deployed_addresses, "operatorTableUpdaterImplementation", address(operatorTableUpdaterImplementation)
+        );
+        vm.serializeAddress(deployed_addresses, "ecdsaCertificateVerifier", address(ecdsaCertificateVerifier));
+        vm.serializeAddress(
+            deployed_addresses, "ecdsaCertificateVerifierImplementation", address(ecdsaCertificateVerifierImplementation)
         );
         vm.serializeAddress(deployed_addresses, "bn254CertificateVerifier", address(bn254CertificateVerifier));
         string memory deployed_addresses_output = vm.serializeAddress(

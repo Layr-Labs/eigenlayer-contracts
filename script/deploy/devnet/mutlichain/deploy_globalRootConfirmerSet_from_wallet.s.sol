@@ -5,29 +5,63 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "src/test/utils/OperatorWalletLib.sol";
 import "src/contracts/interfaces/IBN254TableCalculator.sol";
 import "src/contracts/interfaces/ICrossChainRegistry.sol";
-
+import "src/contracts/libraries/BN254.sol";
 import "src/contracts/libraries/Merkle.sol";
 
 import "forge-std/Script.sol";
 import "forge-std/Test.sol";
 
-// forge script script/deploy/devnet/mutlichain/deploy_globalRootConfirmerSet.s.sol --sig "run(string memory)" $SEED
-contract DeployGlobalRootConfirmerSet is Script, Test {
+// forge script script/deploy/devnet/mutlichain/deploy_globalRootConfirmerSet_from_wallet.s.sol --sig "run()"
+contract DeployGlobalRootConfirmerSetFromWallet is Script, Test {
     using Strings for uint256;
     using Merkle for bytes32[];
     using BN254 for BN254.G1Point;
 
-    function run(
-        string memory salt
-    ) public {
+    struct WalletData {
+        address addr;
+        uint256 privateKey;
+    }
+
+    struct BlsWalletData {
+        uint256 privateKey;
+        BN254.G1Point publicKeyG1;
+        BN254.G2Point publicKeyG2;
+    }
+
+    struct OperatorData {
+        WalletData wallet;
+        BlsWalletData blsWallet;
+    }
+
+    function run() public {
         /**
          *
-         *                     WALLET CREATION
+         *                     READ WALLET DATA FROM JSON
          *
          */
 
-        // 1. Create a BN254 Wallet
-        Operator memory operator = OperatorWalletLib.createOperator(salt);
+        // Read the JSON file
+        string memory json = vm.readFile("script/output/devnet/multichain/operatorWallet.json");
+
+        // Parse the wallet data
+        OperatorData memory operatorData;
+        
+        // Parse regular wallet
+        operatorData.wallet.addr = vm.parseJsonAddress(json, ".wallet.address");
+        operatorData.wallet.privateKey = vm.parseJsonUint(json, ".wallet.privateKey");
+        
+        // Parse BLS wallet
+        operatorData.blsWallet.privateKey = vm.parseJsonUint(json, ".blsWallet.privateKey");
+        
+        // Parse publicKeyG1
+        operatorData.blsWallet.publicKeyG1.X = vm.parseJsonUint(json, ".blsWallet.publicKeyG1.x");
+        operatorData.blsWallet.publicKeyG1.Y = vm.parseJsonUint(json, ".blsWallet.publicKeyG1.y");
+        
+        // Parse publicKeyG2
+        operatorData.blsWallet.publicKeyG2.X[0] = vm.parseJsonUint(json, ".blsWallet.publicKeyG2.x0");
+        operatorData.blsWallet.publicKeyG2.X[1] = vm.parseJsonUint(json, ".blsWallet.publicKeyG2.x1");
+        operatorData.blsWallet.publicKeyG2.Y[0] = vm.parseJsonUint(json, ".blsWallet.publicKeyG2.y0");
+        operatorData.blsWallet.publicKeyG2.Y[1] = vm.parseJsonUint(json, ".blsWallet.publicKeyG2.y1");
 
         /**
          *
@@ -44,16 +78,19 @@ contract DeployGlobalRootConfirmerSet is Script, Test {
         weights[0] = 1;
         operatorSetInfo.totalWeights = weights;
 
-        // 3. Set the apk
+        // 3. Set the apk (aggregate public key)
         BN254.G1Point memory aggregatePubkey;
-        aggregatePubkey = aggregatePubkey.plus(operator.signingKey.publicKeyG1);
+        aggregatePubkey = aggregatePubkey.plus(operatorData.blsWallet.publicKeyG1);
         operatorSetInfo.aggregatePubkey = aggregatePubkey;
 
         // 4. Set the operatorInfoTreeRoot
         bytes32[] memory operatorInfoLeaves = new bytes32[](1);
         operatorInfoLeaves[0] = keccak256(
             abi.encode(
-                IBN254TableCalculatorTypes.BN254OperatorInfo({pubkey: operator.signingKey.publicKeyG1, weights: weights})
+                IBN254TableCalculatorTypes.BN254OperatorInfo({
+                    pubkey: operatorData.blsWallet.publicKeyG1, 
+                    weights: weights
+                })
             )
         );
         operatorSetInfo.operatorInfoTreeRoot = operatorInfoLeaves.merkleizeKeccak();
@@ -64,7 +101,7 @@ contract DeployGlobalRootConfirmerSet is Script, Test {
          *
          */
         ICrossChainRegistry.OperatorSetConfig memory operatorSetConfig;
-        operatorSetConfig.owner = operator.key.addr;
+        operatorSetConfig.owner = operatorData.wallet.addr;
         operatorSetConfig.maxStalenessPeriod = 0;
 
         /**
@@ -99,52 +136,10 @@ contract DeployGlobalRootConfirmerSet is Script, Test {
         vm.serializeString(parent_object, "operatorSetInfo", operatorSetInfoOutput);
         string memory finalJson = vm.serializeString(parent_object, "operatorSetConfig", operatorSetConfigOutput);
 
-        vm.writeJson(finalJson, "script/output/devnet/multichain/globalRootOperatorInfo.json");
+        // Write to the output file
+        vm.writeJson(finalJson, "script/output/devnet/multichain/globalRootOperatorInfo_from_wallet.json");
 
-        /**
-         *
-         *                     OUTPUT - BLS WALLET
-         *
-         */
-
-        // Write operator data to a separate function to avoid stack too deep
-        _writeOperatorData(operator);
+        console.log("Successfully generated operator set info from wallet data");
+        console.log("Output written to: script/output/devnet/multichain/globalRootOperatorInfo_from_wallet.json");
     }
-
-    function _writeOperatorData(
-        Operator memory operator
-    ) internal {
-        string memory operator_object = "operator";
-
-        // Serialize regular wallet info
-        string memory wallet_object = "wallet";
-        vm.serializeUint(wallet_object, "privateKey", operator.key.privateKey);
-        string memory walletOutput = vm.serializeAddress(wallet_object, "address", operator.key.addr);
-
-        // Serialize BLS wallet info
-        string memory blsWallet_object = "blsWallet";
-        vm.serializeUint(blsWallet_object, "privateKey", operator.signingKey.privateKey);
-
-        // Serialize publicKeyG1
-        string memory publicKeyG1_object = "publicKeyG1";
-        vm.serializeUint(publicKeyG1_object, "x", operator.signingKey.publicKeyG1.X);
-        string memory publicKeyG1Output = vm.serializeUint(publicKeyG1_object, "y", operator.signingKey.publicKeyG1.Y);
-        vm.serializeString(blsWallet_object, "publicKeyG1", publicKeyG1Output);
-
-        // Serialize publicKeyG2
-        string memory publicKeyG2_object = "publicKeyG2";
-        vm.serializeUint(publicKeyG2_object, "x0", operator.signingKey.publicKeyG2.X[0]);
-        vm.serializeUint(publicKeyG2_object, "x1", operator.signingKey.publicKeyG2.X[1]);
-        vm.serializeUint(publicKeyG2_object, "y0", operator.signingKey.publicKeyG2.Y[0]);
-        string memory publicKeyG2Output =
-            vm.serializeUint(publicKeyG2_object, "y1", operator.signingKey.publicKeyG2.Y[1]);
-        string memory blsWalletOutput = vm.serializeString(blsWallet_object, "publicKeyG2", publicKeyG2Output);
-
-        // Combine wallet and blsWallet into operator object
-        vm.serializeString(operator_object, "wallet", walletOutput);
-        string memory operatorOutput = vm.serializeString(operator_object, "blsWallet", blsWalletOutput);
-
-        // Write to separate file
-        vm.writeJson(operatorOutput, "script/output/devnet/multichain/operatorWallet.json");
-    }
-}
+} 
