@@ -19,9 +19,13 @@ The `OperatorTableUpdater` is responsible for updating the `GlobalTableRoot` and
 The contract supports both BN254 and ECDSA operator tables and routes updates to the appropriate certificate verifier based on the curve type.
 
 ## Parameterization
-* `GlobalRootConfirmerSet`, also known as the `Generator`, is an EigenLabs-run entity that signs off on `GlobalTableRoots`. 
-    * `maxStalenessPeriod`: 0. Set to zero to confirm roots without updating the operatorSet. See [`CertificateVerifier`](./CertificateVerifier.md#bn254certificateverifier) for specifics
-    * `globalRootConfirmationThreshold`: 10000. The threshold in basis points required for global root confirmation
+Upon initialization, the `globalRootConfirmerSet` (ie. `Generator`) is updated. This operatorSet is a *"shadow-operatorSet"*. It does not exist in the core protocol, does not have stake backing it, and is not transported to other chains via the multichain protocol. It can only be updated upon initialization or by a [privileged role](#updateglobalrootconfirmerset). This entity is the same across all destination chains. 
+
+* `GlobalRootConfirmerSet`, also known as the `Generator`, is an EigenLabs-run entity that signs off on `GlobalTableRoots`. The operatorSet is of size 1. 
+* `maxStalenessPeriod`: 0. Set to zero to confirm roots without updating the `globalConfirmerOperatorSet`. See [`CertificateVerifier`](./CertificateVerifier.md#bn254certificateverifier) for specifics
+* `globalRootConfirmationThreshold`: 10000. The threshold in basis points required for global root confirmation. Since the operatorSet is of size 1 a single signature is needed
+* `referenceTimestamp`: A past timestamp at which the `globalRootConfirmerSet` is generated. This value is set to the initial `latestReferenceTimestamp` in the `OperatorTableUpdater. It is the same across all destination chains, even for destination chains that are supported after the initial deployment
+
 
 ---
 
@@ -105,6 +109,7 @@ Updates an operator table by verifying its inclusion in a confirmed global table
 * The `referenceTimestamp` MUST be greater than the latest timestamp for the operator set
 * The merkle proof MUST verify the operator table's inclusion in the global root
 * The `globalTableRoot` at `referenceTimestamp` MUST match the provided root
+* Meets all requirements in [`ecdsaCertificateVerifier.updateOperatorTable`](./CertificateVerifier.md#updateoperatortable) or [`bn254CertificateVerifier.updateOperatorTable`](./CertificateVerifier.md#updateoperatortable-1)
 
 ---
 
@@ -200,10 +205,11 @@ function updateGlobalRootConfirmerSet(
 ) external;
 ```
 
-Updates the operator table for the `globalRootConfirmerSet` itself, enabling it to sign future global roots.
+Updates the operator table for the `globalRootConfirmerSet` itself. This operatorSet is a ["shadow-operatorSet"](#parameterization), so it must be updated manually
 
 *Effects*:
 * Calls `bn254CertificateVerifier.updateOperatorTable` for the `globalRootConfirmerSet`
 
 *Requirements*:
 * Caller MUST be the `owner`
+* Meet all requirements in [`bn254CertificateVerifier.updateOperatorTable`](../destination/CertificateVerifier.md#updateoperatortable-1)
