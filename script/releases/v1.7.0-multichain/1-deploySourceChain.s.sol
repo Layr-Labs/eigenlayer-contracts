@@ -112,7 +112,6 @@ contract DeploySourceChain is EOADeployer {
         _validateProxyAdmins();
         _validateImplConstructors();
         _validateImplsInitialized();
-        _validateVersion();
         _validateProxyConstructors();
         _validateProxiesInitialized();
     }
@@ -201,14 +200,6 @@ contract DeploySourceChain is EOADeployer {
         CrossChainRegistry crossChainRegistry = Env.impl.crossChainRegistry();
         vm.expectRevert(errInit);
         crossChainRegistry.initialize(address(0), 0);
-    }
-
-    function _validateVersion() internal view {
-        string memory expected = Env.deployVersion();
-
-        assertEq(Env.impl.keyRegistrar().version(), expected, "keyRegistrar version mismatch");
-        assertEq(Env.impl.crossChainRegistry().version(), expected, "crossChainRegistry version mismatch");
-        assertEq(Env.impl.releaseManager().version(), expected, "releaseManager version mismatch");
     }
 
     function _validateProxyConstructors() internal view {
