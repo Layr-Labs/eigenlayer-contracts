@@ -15,10 +15,6 @@ import "src/contracts/core/RewardsCoordinator.sol";
 import "src/contracts/interfaces/IRewardsCoordinator.sol";
 import "src/contracts/core/StrategyManager.sol";
 
-/// slashEscrow/
-import "src/contracts/core/SlashEscrow.sol";
-import "src/contracts/core/SlashEscrowFactory.sol";
-
 /// permissions/
 import "src/contracts/permissions/PauserRegistry.sol";
 import "src/contracts/permissions/PermissionController.sol";
@@ -94,10 +90,6 @@ library Env {
 
     function proxyAdmin() internal view returns (address) {
         return _envAddress("proxyAdmin");
-    }
-
-    function slashEscrowProxyAdmin() internal view returns (address) {
-        return _envAddress("slashEscrowProxyAdmin");
     }
 
     function ethPOS() internal view returns (IETHPOSDeposit) {
@@ -328,27 +320,6 @@ library Env {
         DeployedImpl
     ) internal view returns (StrategyFactory) {
         return StrategyFactory(_deployedImpl(type(StrategyFactory).name));
-    }
-
-    /**
-     * slashEscrow/
-     */
-    function slashEscrow(
-        DeployedImpl
-    ) internal view returns (SlashEscrow) {
-        return SlashEscrow(_deployedImpl(type(SlashEscrow).name));
-    }
-
-    function slashEscrowFactory(
-        DeployedProxy
-    ) internal view returns (SlashEscrowFactory) {
-        return SlashEscrowFactory(_deployedProxy(type(SlashEscrowFactory).name));
-    }
-
-    function slashEscrowFactory(
-        DeployedImpl
-    ) internal view returns (SlashEscrowFactory) {
-        return SlashEscrowFactory(_deployedImpl(type(SlashEscrowFactory).name));
     }
 
     /**
