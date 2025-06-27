@@ -3,9 +3,9 @@ pragma solidity >=0.5.0;
 
 import {OperatorSet} from "../libraries/OperatorSetLib.sol";
 import "./IBaseCertificateVerifier.sol";
-import "./IECDSATableCalculator.sol";
+import "./IOperatorTableCalculator.sol";
 
-interface IECDSACertificateVerifierTypes is IECDSATableCalculatorTypes {
+interface IECDSACertificateVerifierTypes is IOperatorTableCalculatorTypes {
     // Errors
     error InvalidSignatureLength();
 
