@@ -91,14 +91,9 @@ See full documentation in [`/source/CrossChainRegistry.md`](./source/CrossChainR
 
 #### Operator Table Calculator
 
-| File | Type |
-| -------- | -------- |
-| [`BN254TableCalculatorBase.sol`](../../src/contracts/multichain/BN254TableCalculatorBase.sol) | Abstract Contract |
-| [`ECDSATableCalculatorBase.sol`](../../src/contracts/multichain/BN254TableCalculatorBase.sol) | Abstract Contract |
+These contracts are **deployed by an AVS** and define custom stake weights of operators in an operatorSet. They are segmented by key-type. 
 
-These contracts are **deployed by an AVS** and define custom stake weights of operators in an operatorSet. The contracts are segmented by supported key-type (ECDSA & BN254). 
-
-See full documentation in [`/source/OperatorTableCalculator.md`](./source/OperatorTableCalculator.md).
+See full documentation in the [middleware repository](https://github.com/Layr-Labs/eigenlayer-middleware/tree/dev/docs).
 
 ---
 
