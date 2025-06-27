@@ -3,8 +3,6 @@ pragma solidity >=0.5.0;
 
 import "../libraries/OperatorSetLib.sol";
 
-import "./IECDSATableCalculator.sol";
-import "./IBN254TableCalculator.sol";
 import "./IECDSACertificateVerifier.sol";
 import "./IBN254CertificateVerifier.sol";
 import "./IKeyRegistrar.sol";
@@ -63,8 +61,8 @@ interface IOperatorTableUpdaterEvents {
 interface IOperatorTableUpdater is
     IOperatorTableUpdaterErrors,
     IOperatorTableUpdaterEvents,
-    IECDSACertificateVerifierTypes,
     IBN254CertificateVerifierTypes,
+    IECDSACertificateVerifierTypes,
     IKeyRegistrarTypes,
     ICrossChainRegistryTypes
 {
