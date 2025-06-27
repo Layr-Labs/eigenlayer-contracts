@@ -113,8 +113,8 @@ Destination chain contracts receive transported stake weights from an offchain s
 | [`OperatorTableUpdater.sol`](../../src/contracts/multichain/OperatorTableUpdater.sol) | Singleton | Transparent proxy |
 
 The `operatorTableUpdater` carries out two basic functions:
-* Updates of the `globalTableRoot` via a signed certificate from the *off-chain* `generator`
-* Updating operator tables via merkle proofs against the `globalTableRoot`
+* Updating the `globalTableRoot` via a signed certificate from the *off-chain* `generator`. This is a permissionless function. 
+* Updating operator tables via merkle proofs against the `globalTableRoot`. This is a permissionless function. 
 
 See full documentation in [`/destination/OperatorTableUpdater.md`](./destination/OperatorTableUpdater.md). 
 
@@ -124,6 +124,8 @@ See full documentation in [`/destination/OperatorTableUpdater.md`](./destination
 | -------- | -------- | -------- |
 | [`BN254CertificateVerifier`](../../src/contracts/multichain/BN254CertificateVerifier.sol) | Singleton | Transparent proxy |
 | [`ECDSACertificateVerifier`](../../src/contracts/multichain/ECDSACertificateVerifier.sol) | Singleton | Transparent proxy |
+
+A `Certificate` is a proof of a task being executed offchain by the operators of an operatorSet. Two types of key material are supported: ECDSA and BN254. 
 
 See full documentation in [`/destination/CertificateVerifier.md`](./destination/CertificateVerifier.md). 
 
@@ -144,7 +146,7 @@ An AVS is an entity that uses delegated or slashable security from operators to 
 The `Generator` is an EigenLabs-operated entity that calculates and signs off on the `GlobalTableRoot` for all operatorSets that have requested to be transported to a `DestinationChain`. For the pilot program, there is no stake backing the `Generator` and it is not slashable. 
 
 *Offchain Flows:*
-* The generator **calculates** and **signs** the `GlobalTableRoot`
+* The generator **calculates** and **signs** the `GlobalTableRoot`. Within the contracts, this is referred to as the `globalRootConfirmerSet`. 
 
 #### Transporter
 
