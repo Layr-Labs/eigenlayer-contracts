@@ -24,16 +24,16 @@ library CrosschainDeployLib {
     /// Write
     /// -----------------------------------------------------------------------
 
-    /*
+    /**
      * @notice Deploys a crosschain empty contract.
      * @dev The empty contract MUST stay consistent across all chains/deployments.
      * @dev The empty contract MUST always be deployed with the same salt.
      */
-    function deployEmptyContract() internal returns (address) {
+    function deployEmptyContract(address deployer) internal returns (address) {
         address computedAddress =
-            computeCrosschainAddress(msg.sender, keccak256(type(EmptyContract).creationCode), EMPTY_CONTRACT_SALT);
+            computeCrosschainAddress(deployer, keccak256(type(EmptyContract).creationCode), EMPTY_CONTRACT_SALT);
         if (computedAddress.code.length != 0) return computedAddress;
-        return type(EmptyContract).creationCode.deployCrosschain(EMPTY_CONTRACT_SALT);
+        return type(EmptyContract).creationCode.deployCrosschain(deployer, EMPTY_CONTRACT_SALT);
     }
 
     /*
@@ -44,23 +44,23 @@ library CrosschainDeployLib {
      * type(EmptyContract).creationCode.deployCrosschain(EMPTY_CONTRACT_SALT)
      * ```
      */
-    function deployCrosschain(bytes memory initCode, bytes11 salt) internal returns (address) {
-        return createx.deployCreate2(computeProtectedSalt(msg.sender, salt), initCode);
+    function deployCrosschain(bytes memory initCode, address deployer, bytes11 salt) internal returns (address) {
+        return createx.deployCreate2(computeProtectedSalt(deployer, salt), initCode);
     }
 
-    /*
-     * @notice Deploys a crosschain contract using CreateX with the `DEFAULT_SALT`.
-     *
-     * @dev Example usage:
-     * ```solidity
-     * address emptyContract = type(EmptyContract).creationCode.deployCrosschain();
-     * ```
-     */
-    function deployCrosschain(
-        bytes memory initCode
-    ) internal returns (address) {
-        return deployCrosschain(initCode, EMPTY_CONTRACT_SALT);
-    }
+    // /*
+    //  * @notice Deploys a crosschain contract using CreateX with the `DEFAULT_SALT`.
+    //  *
+    //  * @dev Example usage:
+    //  * ```solidity
+    //  * address emptyContract = type(EmptyContract).creationCode.deployCrosschain();
+    //  * ```
+    //  */
+    // function deployCrosschain(
+    //     bytes memory initCode
+    // ) internal returns (address) {
+    //     return deployCrosschain(initCode, EMPTY_CONTRACT_SALT);
+    // }
 
     /*
      * @notice Deploys a crosschain `TransparentUpgradeableProxy` using CreateX.
@@ -77,24 +77,24 @@ library CrosschainDeployLib {
      * ITransparentUpgradeableProxy(address(proxy)).changeAdmin(address(admin));
      * ```
      */
-    function deployCrosschainProxy(
-        address implementation,
-        bytes11 salt
-    ) internal returns (ITransparentUpgradeableProxy) {
-        return ITransparentUpgradeableProxy(
-            deployCrosschain(computeUpgradeableProxyInitCode(implementation, msg.sender), salt)
-        );
-    }
+    // function deployCrosschainProxy(
+    //     address implementation,
+    //     bytes11 salt
+    // ) internal returns (ITransparentUpgradeableProxy) {
+    //     return ITransparentUpgradeableProxy(
+    //         deployCrosschain(computeUpgradeableProxyInitCode(implementation, msg.sender), salt)
+    //     );
+    // }
 
-    /**
-     * @notice Deploys a crosschain name salted `TransparentUpgradeableProxy` using CreateX.
-     */
-    function deployCrosschainProxy(
-        address implementation,
-        string memory name
-    ) internal returns (ITransparentUpgradeableProxy) {
-        return deployCrosschainProxy(implementation, bytes11(keccak256(bytes(name))));
-    }
+    // /**
+    //  * @notice Deploys a crosschain name salted `TransparentUpgradeableProxy` using CreateX.
+    //  */
+    // function deployCrosschainProxy(
+    //     address implementation,
+    //     string memory name
+    // ) internal returns (ITransparentUpgradeableProxy) {
+    //     return deployCrosschainProxy(implementation, bytes11(keccak256(bytes(name))));
+    // }
 
     /// -----------------------------------------------------------------------
     /// Helpers
