@@ -86,6 +86,16 @@ library CrosschainDeployLib {
         );
     }
 
+    /**
+     * @notice Deploys a crosschain name salted `TransparentUpgradeableProxy` using CreateX.
+     */
+    function deployCrosschainProxy(
+        address implementation,
+        string memory name
+    ) internal returns (ITransparentUpgradeableProxy) {
+        return deployCrosschainProxy(implementation, bytes11(keccak256(bytes(name))));
+    }
+
     /// -----------------------------------------------------------------------
     /// Helpers
     /// -----------------------------------------------------------------------
