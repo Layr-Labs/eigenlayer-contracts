@@ -377,6 +377,19 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificate is ECDSACertificate
         verifier.verifyCertificate(defaultOperatorSet, cert);
     }
 
+    function test_revert_rootDisabled() public {
+        // Initialize operator table with a valid root
+        uint32 referenceTimestamp = _initializeOperatorTableBase();
+
+        operatorTableUpdaterMock.invalidateRoot(referenceTimestamp);
+
+        IECDSACertificateVerifierTypes.ECDSACertificate memory cert;
+        cert.referenceTimestamp = referenceTimestamp;
+
+        vm.expectRevert(RootDisabled.selector);
+        verifier.verifyCertificate(defaultOperatorSet, cert);
+    }
+
     function test_revert_invalidSignature() public {
         // Update operator table
         (

@@ -279,8 +279,30 @@ contract OperatorTableUpdaterUnitTests_updateOperatorTable_BN254 is OperatorTabl
         bytes memory operatorTable =
             abi.encode(defaultOperatorSet, CurveType.BN254, _generateRandomOperatorSetConfig(r), emptyOperatorSetInfo);
 
+        // First create a valid root so we don't get InvalidRoot error
+        bytes32 globalTableRoot = bytes32(r.Uint256(1, type(uint).max));
+        _updateGlobalTableRoot(globalTableRoot);
+
         cheats.expectRevert(TableUpdateForPastTimestamp.selector);
-        operatorTableUpdater.updateOperatorTable(uint32(block.timestamp), bytes32(0), 0, new bytes(0), operatorTable);
+        operatorTableUpdater.updateOperatorTable(uint32(block.timestamp), globalTableRoot, 0, new bytes(0), operatorTable);
+    }
+
+    function testFuzz_BN254_revert_rootDisabled(Randomness r) public rand(r) {
+        BN254OperatorSetInfo memory emptyOperatorSetInfo;
+        bytes memory operatorTable =
+            abi.encode(defaultOperatorSet, CurveType.BN254, _generateRandomOperatorSetConfig(r), emptyOperatorSetInfo);
+
+        // Disable the root
+        bytes32 globalTableRoot = bytes32(r.Uint256(1, type(uint).max));
+        // First need to create a valid root before we can disable it
+        _updateGlobalTableRoot(globalTableRoot);
+        operatorTableUpdater.disableRoot(globalTableRoot);
+
+        // Try to update with a disabled global table root
+        bytes memory proof = new bytes(32);
+        uint32 operatorSetIndex = 0;
+        cheats.expectRevert(InvalidRoot.selector);
+        operatorTableUpdater.updateOperatorTable(uint32(block.timestamp), globalTableRoot, operatorSetIndex, proof, operatorTable);
     }
 
     function testFuzz_BN254_revert_invalidGlobalTableRoot(Randomness r) public rand(r) {
@@ -293,15 +315,22 @@ contract OperatorTableUpdaterUnitTests_updateOperatorTable_BN254 is OperatorTabl
 
         // Include the operatorSetInfo and operatorSetConfig in the global table root & set it
         (bytes32 globalTableRoot, uint32 operatorSetIndex, bytes32[] memory leaves) = _createGlobalTableRoot(r, operatorSetLeafHash);
+        uint32 originalTimestamp = uint32(block.timestamp);
         _updateGlobalTableRoot(globalTableRoot);
 
-        // Generate proof for the operatorSetInfo and operatorSetConfig
+        // Create a different valid root at a different timestamp
+        bytes32 wrongGlobalTableRoot = bytes32(r.Uint256(uint(globalTableRoot) + 1, type(uint).max));
+        cheats.warp(block.timestamp + 1);
+        _updateGlobalTableRoot(wrongGlobalTableRoot);
+
+        // Generate proof for the operatorSetInfo and operatorSetConfig (still valid for original root)
         bytes memory proof = Merkle.getProofKeccak(leaves, operatorSetIndex);
 
-        // Try to update with a different global table root
-        bytes32 wrongGlobalTableRoot = bytes32(r.Uint256(1, type(uint).max));
+        // Try to update with a global table root that exists but doesn't match the reference timestamp
+        // The error should be InvalidGlobalTableRoot because the global table root at originalTimestamp
+        // doesn't match wrongGlobalTableRoot
         cheats.expectRevert(InvalidGlobalTableRoot.selector);
-        operatorTableUpdater.updateOperatorTable(uint32(block.timestamp), wrongGlobalTableRoot, operatorSetIndex, proof, operatorTable);
+        operatorTableUpdater.updateOperatorTable(originalTimestamp, wrongGlobalTableRoot, operatorSetIndex, proof, operatorTable);
     }
 
     function testFuzz_BN254_revert_invalidOperatorSetProof(Randomness r) public rand(r) {
@@ -363,7 +392,26 @@ contract OperatorTableUpdaterUnitTests_updateOperatorTable_ECDSA is OperatorTabl
         ecdsaCertificateVerifierMock.setLatestReferenceTimestamp(operatorSet, referenceTimestamp);
     }
 
-    function testFuzz_revert_ECDSA_staleTableUpdate(Randomness r) public rand(r) {
+    function testFuzz_ECDSA_revert_rootDisabled(Randomness r) public rand(r) {
+        // Generate random operatorSetInfo and operatorSetConfig
+        ECDSAOperatorInfo[] memory emptyOperatorSetInfo;
+        bytes memory operatorTable =
+            abi.encode(defaultOperatorSet, CurveType.ECDSA, _generateRandomOperatorSetConfig(r), emptyOperatorSetInfo);
+
+        // Disable the root
+        bytes32 globalTableRoot = bytes32(r.Uint256(1, type(uint).max));
+        // First need to create a valid root before we can disable it
+        _updateGlobalTableRoot(globalTableRoot);
+        operatorTableUpdater.disableRoot(globalTableRoot);
+
+        // Try to update with a disabled global table root
+        bytes memory proof = new bytes(32);
+        uint32 operatorSetIndex = 0;
+        cheats.expectRevert(InvalidRoot.selector);
+        operatorTableUpdater.updateOperatorTable(uint32(block.timestamp), globalTableRoot, operatorSetIndex, proof, operatorTable);
+    }
+
+    function testFuzz_ECDSA_revert_staleTableUpdate(Randomness r) public rand(r) {
         uint32 referenceTimestamp = r.Uint32(uint32(block.timestamp), type(uint32).max);
         _setLatestReferenceTimestampECDSA(defaultOperatorSet, referenceTimestamp);
         ECDSAOperatorInfo[] memory emptyOperatorSetInfo;
@@ -371,8 +419,12 @@ contract OperatorTableUpdaterUnitTests_updateOperatorTable_ECDSA is OperatorTabl
         bytes memory operatorTable =
             abi.encode(defaultOperatorSet, CurveType.ECDSA, _generateRandomOperatorSetConfig(r), emptyOperatorSetInfo);
 
+        // First create a valid root so we don't get InvalidRoot error
+        bytes32 globalTableRoot = bytes32(r.Uint256(1, type(uint).max));
+        _updateGlobalTableRoot(globalTableRoot);
+
         cheats.expectRevert(TableUpdateForPastTimestamp.selector);
-        operatorTableUpdater.updateOperatorTable(uint32(block.timestamp), bytes32(0), 0, new bytes(0), operatorTable);
+        operatorTableUpdater.updateOperatorTable(uint32(block.timestamp), globalTableRoot, 0, new bytes(0), operatorTable);
     }
 
     function testFuzz_ECDSA_correctness(Randomness r) public rand(r) {
@@ -603,5 +655,206 @@ contract OperatorTableUpdaterUnitTests_setGlobalRootConfirmationThreshold is Ope
         // Verify the storage was updated
         uint16 updatedThreshold = operatorTableUpdater.globalRootConfirmationThreshold();
         assertEq(updatedThreshold, newThreshold);
+    }
+}
+
+contract OperatorTableUpdaterUnitTests_disableRoot is OperatorTableUpdaterUnitTests {
+    function testFuzz_revert_onlyOwner(Randomness r) public rand(r) {
+        address invalidCaller = r.Address();
+        cheats.assume(invalidCaller != address(this));
+        bytes32 globalTableRoot = bytes32(r.Uint256());
+
+        // Should revert when called by non-owner
+        cheats.prank(invalidCaller);
+        cheats.expectRevert("Ownable: caller is not the owner");
+        operatorTableUpdater.disableRoot(globalTableRoot);
+    }
+
+    function testFuzz_revert_invalidRoot(Randomness r) public rand(r) {
+        bytes32 globalTableRoot = bytes32(r.Uint256());
+
+        // Verify the root is not valid initially
+        assertFalse(operatorTableUpdater.isRootValid(globalTableRoot));
+
+        // Should revert when trying to disable a non-existent/invalid root
+        cheats.expectRevert(InvalidRoot.selector);
+        operatorTableUpdater.disableRoot(globalTableRoot);
+    }
+
+    function testFuzz_correctness(Randomness r) public rand(r) {
+        bytes32 globalTableRoot = bytes32(r.Uint256());
+
+        // First create a valid root
+        _updateGlobalTableRoot(globalTableRoot);
+
+        // Verify the root is valid
+        assertTrue(operatorTableUpdater.isRootValid(globalTableRoot));
+
+        // Disable the root
+        cheats.expectEmit(true, true, true, true);
+        emit GlobalRootDisabled(globalTableRoot);
+        operatorTableUpdater.disableRoot(globalTableRoot);
+
+        // Verify the root is now invalid
+        assertFalse(operatorTableUpdater.isRootValid(globalTableRoot));
+    }
+}
+
+contract OperatorTableUpdaterUnitTests_updateGlobalRootConfirmerSet is OperatorTableUpdaterUnitTests {
+    function testFuzz_revert_onlyOwner(Randomness r) public rand(r) {
+        address invalidCaller = r.Address();
+        cheats.assume(invalidCaller != address(this));
+        BN254OperatorSetInfo memory operatorSetInfo;
+        OperatorSetConfig memory operatorSetConfig;
+
+        // Should revert when called by non-owner
+        cheats.prank(invalidCaller);
+        cheats.expectRevert("Ownable: caller is not the owner");
+        operatorTableUpdater.updateGlobalRootConfirmerSet(uint32(block.timestamp), operatorSetInfo, operatorSetConfig);
+    }
+
+    function testFuzz_correctness(Randomness r) public rand(r) {
+        // Generate random operator set info and config
+        BN254OperatorSetInfo memory operatorSetInfo = _generateRandomBN254OperatorSetInfo(r);
+        OperatorSetConfig memory operatorSetConfig = _generateRandomOperatorSetConfig(r);
+        uint32 referenceTimestamp = r.Uint32(uint32(block.timestamp), type(uint32).max);
+
+        // Update the global root confirmer set
+        cheats.expectCall(
+            address(bn254CertificateVerifierMock),
+            abi.encodeWithSelector(
+                IBN254CertificateVerifier.updateOperatorTable.selector,
+                globalRootConfirmerSet,
+                referenceTimestamp,
+                operatorSetInfo,
+                operatorSetConfig
+            )
+        );
+        operatorTableUpdater.updateGlobalRootConfirmerSet(referenceTimestamp, operatorSetInfo, operatorSetConfig);
+
+        // Check that the globalRootConfirmerSet is updated
+        OperatorSet memory updatedGlobalRootConfirmerSet = operatorTableUpdater.getGlobalRootConfirmerSet();
+        assertEq(updatedGlobalRootConfirmerSet.avs, globalRootConfirmerSet.avs);
+        assertEq(updatedGlobalRootConfirmerSet.id, globalRootConfirmerSet.id);
+    }
+}
+
+contract OperatorTableUpdaterUnitTests_isRootValid is OperatorTableUpdaterUnitTests {
+    function testFuzz_isRootValid_byRoot(Randomness r) public rand(r) {
+        bytes32 globalTableRoot = bytes32(r.Uint256());
+
+        // Initially should not be valid
+        assertFalse(operatorTableUpdater.isRootValid(globalTableRoot));
+
+        // Create a valid root
+        _updateGlobalTableRoot(globalTableRoot);
+
+        // Should now be valid
+        assertTrue(operatorTableUpdater.isRootValid(globalTableRoot));
+
+        // Disable the root
+        operatorTableUpdater.disableRoot(globalTableRoot);
+
+        // Should now be invalid
+        assertFalse(operatorTableUpdater.isRootValid(globalTableRoot));
+    }
+
+    function testFuzz_isRootValidByTimestamp(Randomness r) public rand(r) {
+        // Set a global table root for a specific timestamp
+        uint32 referenceTimestamp = r.Uint32(operatorTableUpdater.getLatestReferenceTimestamp() + 1, type(uint32).max);
+        uint32 referenceBlockNumber = r.Uint32();
+        cheats.warp(uint(referenceTimestamp));
+        bytes32 globalTableRoot = bytes32(r.Uint256(1, type(uint).max));
+
+        BN254Certificate memory mockCertificate;
+        mockCertificate.messageHash =
+            operatorTableUpdater.getGlobalTableUpdateMessageHash(globalTableRoot, referenceTimestamp, referenceBlockNumber);
+        _setIsValidCertificate(mockCertificate, true);
+        operatorTableUpdater.confirmGlobalTableRoot(mockCertificate, globalTableRoot, referenceTimestamp, referenceBlockNumber);
+
+        // Should be valid
+        assertTrue(operatorTableUpdater.isRootValidByTimestamp(referenceTimestamp));
+
+        // Disable the root
+        operatorTableUpdater.disableRoot(globalTableRoot);
+
+        // Should now be invalid when queried by timestamp
+        assertFalse(operatorTableUpdater.isRootValidByTimestamp(referenceTimestamp));
+    }
+}
+
+contract OperatorTableUpdaterUnitTests_IntegrationScenarios is OperatorTableUpdaterUnitTests {
+    function test_disableRoot_updateConfirmerSet_confirmGlobalTableRoot_succeeds() public {
+        // Step 1: Set an initial global table root
+        bytes32 oldGlobalTableRoot = bytes32(uint(1));
+        _updateGlobalTableRoot(oldGlobalTableRoot);
+
+        // Step 2: Disable the old root
+        operatorTableUpdater.disableRoot(oldGlobalTableRoot);
+
+        // Step 3: Set a new global root confirmer set
+        OperatorSet memory newGlobalRootConfirmerSet = OperatorSet({avs: address(0xBEEF), id: 1});
+        operatorTableUpdater.setGlobalRootConfirmerSet(newGlobalRootConfirmerSet);
+
+        // Step 4: Update the global root confirmer set operator table
+        BN254OperatorSetInfo memory newOperatorSetInfo = BN254OperatorSetInfo({
+            operatorInfoTreeRoot: bytes32(uint(2)),
+            numOperators: 2,
+            aggregatePubkey: BN254.G1Point({X: 3, Y: 4}),
+            totalWeights: new uint[](1)
+        });
+        newOperatorSetInfo.totalWeights[0] = 100 ether;
+        OperatorSetConfig memory newOperatorSetConfig = OperatorSetConfig({owner: address(0xBEEF), maxStalenessPeriod: 20_000});
+
+        // Set the confirmer set reference timestamp in the mock
+        bn254CertificateVerifierMock.setLatestReferenceTimestamp(newGlobalRootConfirmerSet, uint32(block.timestamp));
+
+        operatorTableUpdater.updateGlobalRootConfirmerSet(uint32(block.timestamp), newOperatorSetInfo, newOperatorSetConfig);
+
+        // Step 5: Confirm a new global table root with the new confirmer set
+        bytes32 newGlobalTableRoot = bytes32(uint(2));
+        uint32 newReferenceTimestamp = uint32(block.timestamp + 1);
+        uint32 newReferenceBlockNumber = uint32(block.number + 1);
+
+        BN254Certificate memory newCertificate;
+        newCertificate.messageHash =
+            operatorTableUpdater.getGlobalTableUpdateMessageHash(newGlobalTableRoot, newReferenceTimestamp, newReferenceBlockNumber);
+
+        // Set the certificate as valid for the new confirmer set
+        _setIsValidCertificate(newCertificate, true);
+
+        cheats.warp(newReferenceTimestamp);
+
+        // This should succeed with the new confirmer set
+        cheats.expectEmit(true, true, true, true);
+        emit NewGlobalTableRoot(newReferenceTimestamp, newGlobalTableRoot);
+        operatorTableUpdater.confirmGlobalTableRoot(newCertificate, newGlobalTableRoot, newReferenceTimestamp, newReferenceBlockNumber);
+
+        // Verify the new root was set
+        assertEq(operatorTableUpdater.getCurrentGlobalTableRoot(), newGlobalTableRoot);
+    }
+
+    function test_setNewConfirmerSet_withoutUpdatingTable_confirmGlobalTableRoot_fails() public {
+        // Step 1: Set a new global root confirmer set without updating its operator table
+        OperatorSet memory newGlobalRootConfirmerSet = OperatorSet({avs: address(0xDEAD), id: 2});
+        operatorTableUpdater.setGlobalRootConfirmerSet(newGlobalRootConfirmerSet);
+
+        // Step 2: Try to confirm a new global table root
+        bytes32 newGlobalTableRoot = bytes32(uint(3));
+        uint32 newReferenceTimestamp = uint32(block.timestamp + 1);
+        uint32 newReferenceBlockNumber = uint32(block.number + 1);
+
+        BN254Certificate memory newCertificate;
+        newCertificate.messageHash =
+            operatorTableUpdater.getGlobalTableUpdateMessageHash(newGlobalTableRoot, newReferenceTimestamp, newReferenceBlockNumber);
+
+        // Simulate that the certificate verification should fail because we have a new confirmer set
+        _setIsValidCertificate(newCertificate, false);
+
+        cheats.warp(newReferenceTimestamp);
+
+        // This should fail because the operator table for the new confirmer set was not updated
+        cheats.expectRevert(CertificateInvalid.selector);
+        operatorTableUpdater.confirmGlobalTableRoot(newCertificate, newGlobalTableRoot, newReferenceTimestamp, newReferenceBlockNumber);
     }
 }
