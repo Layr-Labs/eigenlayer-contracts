@@ -4,8 +4,6 @@ pragma solidity ^0.8.12;
 import {MultisigBuilder} from "zeus-templates/templates/MultisigBuilder.sol";
 import "../Env.sol";
 
-import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-
 /**
  * Purpose: Deploy proxy contracts for the destination chain using a multisig.
  */

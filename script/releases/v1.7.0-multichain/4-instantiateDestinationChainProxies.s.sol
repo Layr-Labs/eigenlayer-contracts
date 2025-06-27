@@ -6,9 +6,6 @@ import {DeployDestinationChainProxies} from "./2-deployDestinationChainProxies.s
 import {DeployDestinationChainImpls} from "./3-deployDestinationChainImpls.s.sol";
 import "../Env.sol";
 
-import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
-
 import "src/contracts/interfaces/ICrossChainRegistry.sol";
 import "src/contracts/interfaces/IBN254TableCalculator.sol";
 import "src/contracts/libraries/OperatorSetLib.sol";
