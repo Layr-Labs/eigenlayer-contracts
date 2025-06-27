@@ -14,7 +14,7 @@ The deployments on `mainnet`, `holesky`, `sepolia`, and `hoodi` are on the below
 | -------- | -------- |
 | Mainnet Ethereum | [`v1.4.1`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.4.1) |
 | Testnet Holesky | [`v1.6.0-rc.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.6.0-rc.0) |
-| Testnet Sepolia | [`v1.5.0-rc.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.5.0-rc.0) |
+| Testnet Sepolia | [`v1.5.0-rc.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.6.0-rc.0) |
 | Testnet Hoodi | [`v1.6.0-rc.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.6.0-rc.0) |
 
 ### Current Deployment Contracts
