@@ -49,6 +49,14 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
         emit ReleasePublished(operatorSet, releaseId, release);
     }
 
+    /// @inheritdoc IReleaseManager
+    function publishMetadataURI(
+        OperatorSet calldata operatorSet,
+        string calldata metadataURI
+    ) external checkCanCall(operatorSet.avs) {
+        emit MetadataURIPublished(operatorSet, metadataURI);
+    }
+
     /**
      *
      *                         VIEW FUNCTIONS

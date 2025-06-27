@@ -11,10 +11,10 @@ interface IReleaseManagerErrors {
 interface IReleaseManagerTypes {
     /// @notice Represents a software artifact with its digest and registry URL.
     /// @param digest The hash digest of the artifact.
-    /// @param registryUrl The URL where the artifact can be found.
+    /// @param registry Where the artifact can be found.
     struct Artifact {
         bytes32 digest;
-        string registryUrl;
+        string registry;
     }
 
     /// @notice Represents a release containing multiple artifacts and an upgrade deadline.
@@ -32,6 +32,11 @@ interface IReleaseManagerEvents is IReleaseManagerTypes {
     /// @param releaseId The id of the release that was published.
     /// @param release The release that was published.
     event ReleasePublished(OperatorSet indexed operatorSet, uint256 indexed releaseId, Release release);
+
+    /// @notice Emitted when a metadata URI is published.
+    /// @param operatorSet The operator set this metadata URI is for.
+    /// @param metadataURI The metadata URI that was published.
+    event MetadataURIPublished(OperatorSet indexed operatorSet, string metadataURI);
 }
 
 interface IReleaseManager is IReleaseManagerErrors, IReleaseManagerEvents {
@@ -49,6 +54,11 @@ interface IReleaseManager is IReleaseManagerErrors, IReleaseManagerEvents {
         OperatorSet calldata operatorSet,
         Release calldata release
     ) external returns (uint256 releaseId);
+
+    /// @notice Publishes a metadata URI for an operator set.
+    /// @param operatorSet The operator set this metadata URI is for.
+    /// @param metadataURI The metadata URI that was published.
+    function publishMetadataURI(OperatorSet calldata operatorSet, string calldata metadataURI) external;
 
     /**
      *
