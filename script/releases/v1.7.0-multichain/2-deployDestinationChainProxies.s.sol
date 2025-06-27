@@ -6,7 +6,6 @@ import "../Env.sol";
 
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-
 /**
  * Purpose: Deploy proxy contracts for the destination chain using a multisig.
  */
@@ -14,7 +13,7 @@ contract DeployDestinationChainProxies is MultisigBuilder {
     using Env for *;
 
     /// forgefmt: disable-next-item
-    function _runAsMultisig() internal override prank(Env.multichainDeployerMultisig()) {
+    function _runAsMultisig() internal virtual override prank(Env.multichainDeployerMultisig()) {
         // If we're not on a destination chain, we don't need to deploy any contracts
         if (!Env.isDestinationChain()) {
             return;
@@ -50,17 +49,10 @@ contract DeployDestinationChainProxies is MultisigBuilder {
             return;
         }
 
-        _runAsMultisig();
+        // Deploy Proxies
+        execute();
 
-        _validateProxiesDeployed();
         _validateProxyAdminIsMultisig();
-    }
-
-    /// @dev Validate that proxy contracts are deployed
-    function _validateProxiesDeployed() internal view {
-        assertTrue(address(Env.proxy.operatorTableUpdater()) != address(0), "operatorTableUpdater proxy not deployed");
-        assertTrue(address(Env.proxy.ecdsaCertificateVerifier()) != address(0), "ecdsaCertificateVerifier proxy not deployed");
-        assertTrue(address(Env.proxy.bn254CertificateVerifier()) != address(0), "bn254CertificateVerifier proxy not deployed");
     }
 
     /// @dev Validate that proxies are owned by the multisig (temporarily)
@@ -80,4 +72,4 @@ contract DeployDestinationChainProxies is MultisigBuilder {
             "bn254CertificateVerifier proxyAdmin should be multisig"
         );
     }
-} 
+}

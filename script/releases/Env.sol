@@ -586,8 +586,7 @@ library Env {
         return ProxyAdmin(Env.proxyAdmin()).getProxyAdmin(ITransparentUpgradeableProxy(_proxy));
     }
 
-    /// @dev Returns the address of the deployer required for multichain deployment
-    function _multichainDeployer() internal pure returns (address) {
-        return address(0);
+    function _strEq(string memory a, string memory b) internal pure returns (bool) {
+        return keccak256(bytes(a)) == keccak256(bytes(b));
     }
 }

@@ -59,19 +59,16 @@ contract DeployDestinationChainImpls is EOADeployer, DeployDestinationChainProxi
             return;
         }
 
+        // 1. Deploy destination chain proxies
+        DeployDestinationChainProxies._runAsMultisig();
+
+        // 2. Deploy destination chain impls
         _runAsEOA();
-    
-        _validateImplsDeployed();
+
+        // Validate the destination chain
         _validateImplConstructors();
         _validateImplsInitialized();
         _validateVersion();
-    }
-
-    /// @dev Validate that implementation contracts are deployed
-    function _validateImplsDeployed() internal view {
-        assertTrue(address(Env.impl.operatorTableUpdater()) != address(0), "operatorTableUpdater impl not deployed");
-        assertTrue(address(Env.impl.ecdsaCertificateVerifier()) != address(0), "ecdsaCertificateVerifier impl not deployed");
-        assertTrue(address(Env.impl.bn254CertificateVerifier()) != address(0), "bn254CertificateVerifier impl not deployed");
     }
 
     /// @dev Validate the immutables set in the new implementation constructors
@@ -143,4 +140,4 @@ contract DeployDestinationChainImpls is EOADeployer, DeployDestinationChainProxi
         assertEq(Env.impl.ecdsaCertificateVerifier().version(), expected, "ecdsaCertificateVerifier version mismatch");
         assertEq(Env.impl.bn254CertificateVerifier().version(), expected, "bn254CertificateVerifier version mismatch");
     }
-} 
+}

@@ -2,6 +2,8 @@
 pragma solidity ^0.8.12;
 
 import {MultisigBuilder} from "zeus-templates/templates/MultisigBuilder.sol";
+import {DeployDestinationChainProxies} from "./2-deployDestinationChainProxies.s.sol";
+import {DeployDestinationChainImpls} from "./3-deployDestinationChainImpls.s.sol";
 import "../Env.sol";
 
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
@@ -18,7 +20,7 @@ import {stdToml} from "forge-std/StdToml.sol";
 /**
  * Purpose: Upgrade proxies to point to implementations and transfer control to ProxyAdmin.
  */
-contract InstantiateDestinationChainProxies is MultisigBuilder {
+contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
     using Env for *;
     using OperatorSetLib for OperatorSet;
     using stdToml for string;
@@ -33,14 +35,17 @@ contract InstantiateDestinationChainProxies is MultisigBuilder {
         vm.startBroadcast();
 
         // Upgrade the proxies to point to the actual implementations
+        // ECDSACertificateVerifier
         ITransparentUpgradeableProxy ecdsaCertificateVerifierProxy =
             ITransparentUpgradeableProxy(payable(address(Env.proxy.ecdsaCertificateVerifier())));
         ecdsaCertificateVerifierProxy.upgradeTo(address(Env.impl.ecdsaCertificateVerifier()));
 
+        // BN254CertificateVerifier
         ITransparentUpgradeableProxy bn254CertificateVerifierProxy =
             ITransparentUpgradeableProxy(payable(address(Env.proxy.bn254CertificateVerifier())));
         bn254CertificateVerifierProxy.upgradeTo(address(Env.impl.bn254CertificateVerifier()));
 
+        // OperatorTableUpdater - we also initialize this contract
         OperatorTableUpdaterInitParams memory initParams = _getTableUpdaterInitParams();
         ITransparentUpgradeableProxy operatorTableUpdaterProxy =
             ITransparentUpgradeableProxy(payable(address(Env.proxy.operatorTableUpdater())));
@@ -67,13 +72,22 @@ contract InstantiateDestinationChainProxies is MultisigBuilder {
         vm.stopBroadcast();
     }
 
-    function testScript() public virtual {
+    function testScript() public virtual override {
         if (!Env.isDestinationChain()) {
             return;
         }
 
-        _runAsMultisig();
+        // 1. Deploy the destination chain contracts
+        DeployDestinationChainProxies._runAsMultisig();
+        _unsafeResetHasPranked(); // reset hasPranked so we can use it in the execute()
 
+        // 2. Deploy the destination chain impls
+        DeployDestinationChainImpls._runAsEOA();
+
+        // 3. Instantiate the destination chain proxies
+        execute();
+
+        // 4. Validate the destination chain
         _validateStorage();
         _validateProxyAdmins();
         _validateProxyConstructors();
@@ -171,21 +185,17 @@ contract InstantiateDestinationChainProxies is MultisigBuilder {
         assertFalse(b, err);
     }
 
-    function _strEq(string memory a, string memory b) private pure returns (bool) {
-        return keccak256(bytes(a)) == keccak256(bytes(b));
-    }
-
     // In order to not clutter the Zeus Env, we define our operator table updater init params here
     function _getTableUpdaterInitParams() internal view returns (OperatorTableUpdaterInitParams memory) {
         OperatorTableUpdaterInitParams memory initParams;
 
-        if (_strEq(Env.env(), "preprod")) {
+        if (Env._strEq(Env.env(), "preprod")) {
             initParams = _parseToml("script/releases/v1.7.0-multichain/configs/preprod.toml");
         }
         // NOTE: For testnet-holesky and testnet-hoodi, the operator table updater is not used
-        else if (_strEq(Env.env(), "testnet-sepolia") || _strEq(Env.env(), "testnet-base-sepolia")) {
+        else if (Env._strEq(Env.env(), "testnet-sepolia") || Env._strEq(Env.env(), "testnet-base-sepolia")) {
             initParams = _parseToml("script/releases/v1.7.0-multichain/configs/testnet.toml");
-        } else if (_strEq(Env.env(), "mainnet") || _strEq(Env.env(), "mainnet-base")) {
+        } else if (Env._strEq(Env.env(), "mainnet") || Env._strEq(Env.env(), "mainnet-base")) {
             initParams = _parseToml("script/releases/v1.7.0-multichain/configs/mainnet.toml");
         }
 
@@ -238,4 +248,4 @@ contract InstantiateDestinationChainProxies is MultisigBuilder {
         IBN254TableCalculatorTypes.BN254OperatorSetInfo globalRootConfirmerSetInfo;
         uint32 referenceTimestamp;
     }
-} 
+}

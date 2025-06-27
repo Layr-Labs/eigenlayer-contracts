@@ -2,22 +2,22 @@
 globalRootConfirmationThreshold = 10000
 
 # Reference timestamp
-referenceTimestamp = 1700000000
+referenceTimestamp = 1751028677
 
 # Global root confirmer set configuration
 [globalRootConfirmerSet]
-avs = "0x0000000000000000000000000000000000000042"
+avs = "0xDA29BB71669f46F2a779b4b62f03644A84eE3479"
 id = 0
 
 # Global root confirmer set config
 [globalRootConfirmerSetConfig]
 maxStalenessPeriod = 0
-owner = "0x0000000000000000000000000000000000000042"
+owner = "0xDA29BB71669f46F2a779b4b62f03644A84eE3479"
 
 # Global root confirmer set info
 [globalRootConfirmerSetInfo]
 numOperators = 1
-operatorInfoTreeRoot = "0x0000000000000000000000000000000000000000000000000000000000000001"
+operatorInfoTreeRoot = "0x7e797005c328e512463b7cea386033f479419525ee4a116ee15040932931ec88"
 totalWeights = [1]
 [globalRootConfirmerSetInfo.aggregatePubkey]
 X = "8045752976001954565743564925836749899871734869304640210865855307842893376971"
