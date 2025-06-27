@@ -476,9 +476,12 @@ contract ReleaseManagerUnitTests_isValidRelease is ReleaseManagerUnitTests {
 }
 
 contract ReleaseManagerUnitTests_publishMetadataURI is ReleaseManagerUnitTests {
-    function test_revert_publishMetadataURI_Correctness() public {
+    function test_publishMetadataURI_Correctness() public {
+        string memory registry = "https://example.com/metadata";
         cheats.expectEmit(true, true, true, true, address(releaseManager));
-        emit MetadataURIPublished(defaultOperatorSet, "https://example.com/metadata");
-        releaseManager.publishMetadataURI(defaultOperatorSet, "https://example.com/metadata");
+        emit MetadataURIPublished(defaultOperatorSet, registry);
+
+        cheats.prank(defaultAVS);
+        releaseManager.publishMetadataURI(defaultOperatorSet, registry);
     }
 }
