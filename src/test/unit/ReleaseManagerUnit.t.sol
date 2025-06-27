@@ -47,8 +47,8 @@ contract ReleaseManagerUnitTests is EigenLayerUnitTestSetup, IReleaseManagerErro
         // Setup default test data
         defaultOperatorSet = OperatorSet(defaultAVS, 0);
 
-        defaultArtifacts.push(Artifact({digest: keccak256("artifact1"), registryUrl: "https://example.com/artifact1"}));
-        defaultArtifacts.push(Artifact({digest: keccak256("artifact2"), registryUrl: "https://example.com/artifact2"}));
+        defaultArtifacts.push(Artifact({digest: keccak256("artifact1"), registry: "https://example.com/artifact1"}));
+        defaultArtifacts.push(Artifact({digest: keccak256("artifact2"), registry: "https://example.com/artifact2"}));
 
         defaultRelease.upgradeByTime = uint32(block.timestamp + 1 days);
 
@@ -69,7 +69,7 @@ contract ReleaseManagerUnitTests is EigenLayerUnitTestSetup, IReleaseManagerErro
         for (uint i = 0; i < numArtifacts; i++) {
             artifacts[i] = Artifact({
                 digest: keccak256(abi.encodePacked("artifact", i)),
-                registryUrl: string(abi.encodePacked("https://example.com/artifact", i))
+                registry: string(abi.encodePacked("https://example.com/artifact", i))
             });
         }
         return _createRelease(artifacts, upgradeByTime);
@@ -92,7 +92,7 @@ contract ReleaseManagerUnitTests is EigenLayerUnitTestSetup, IReleaseManagerErro
 
         for (uint i = 0; i < actualRelease.artifacts.length; i++) {
             assertEq(actualRelease.artifacts[i].digest, expectedRelease.artifacts[i].digest, "artifact digest mismatch");
-            assertEq(actualRelease.artifacts[i].registryUrl, expectedRelease.artifacts[i].registryUrl, "artifact registryUrl mismatch");
+            assertEq(actualRelease.artifacts[i].registry, expectedRelease.artifacts[i].registry, "artifact registry mismatch");
         }
 
         console.log("Success!".green().bold());

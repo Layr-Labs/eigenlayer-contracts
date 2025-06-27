@@ -11,10 +11,10 @@ interface IReleaseManagerErrors {
 interface IReleaseManagerTypes {
     /// @notice Represents a software artifact with its digest and registry URL.
     /// @param digest The hash digest of the artifact.
-    /// @param registryUrl The URL where the artifact can be found.
+    /// @param registry Where the artifact can be found.
     struct Artifact {
         bytes32 digest;
-        string registryUrl;
+        string registry;
     }
 
     /// @notice Represents a release containing multiple artifacts and an upgrade deadline.
