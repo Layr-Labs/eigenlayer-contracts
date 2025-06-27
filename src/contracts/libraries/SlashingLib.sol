@@ -138,7 +138,7 @@ library SlashingLib {
             .divWad(slashingFactor);
 
         dsf._scalingFactor = newDepositScalingFactor;
-        
+
         // Avoid potential underflow.
         require(newDepositScalingFactor != 0, InvalidDepositScalingFactor());
     }
