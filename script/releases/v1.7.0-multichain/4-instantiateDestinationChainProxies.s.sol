@@ -29,8 +29,6 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
             return;
         }
 
-        vm.startBroadcast();
-
         // Upgrade the proxies to point to the actual implementations
         // ECDSACertificateVerifier
         ITransparentUpgradeableProxy ecdsaCertificateVerifierProxy =
@@ -65,8 +63,6 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
         operatorTableUpdaterProxy.changeAdmin(Env.proxyAdmin());
         ecdsaCertificateVerifierProxy.changeAdmin(Env.proxyAdmin());
         bn254CertificateVerifierProxy.changeAdmin(Env.proxyAdmin());
-
-        vm.stopBroadcast();
     }
 
     function testScript() public virtual override {
