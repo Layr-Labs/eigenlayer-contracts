@@ -368,7 +368,7 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificate is ECDSACertificate
 
     function test_revert_emptySignatures() public {
         uint32 referenceTimestamp = _initializeOperatorTableBase();
-        
+
         // Create certificate with empty signatures
         IECDSACertificateVerifierTypes.ECDSACertificate memory cert = IECDSACertificateVerifierTypes.ECDSACertificate({
             referenceTimestamp: referenceTimestamp,
