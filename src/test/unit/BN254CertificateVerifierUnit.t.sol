@@ -402,6 +402,20 @@ contract BN254CertificateVerifierUnitTests_verifyCertificate is BN254Certificate
         verifier.verifyCertificate(defaultOperatorSet, cert);
     }
 
+    function test_revert_rootDisabled() public {
+        // Initialize operator table with a valid root
+        uint32 referenceTimestamp = _initializeOperatorTableBase();
+
+        // Mock the operatorTableUpdater to return false for isRootValidByTimestamp
+        operatorTableUpdaterMock.invalidateRoot(referenceTimestamp);
+
+        BN254Certificate memory cert;
+        cert.referenceTimestamp = referenceTimestamp;
+
+        vm.expectRevert(RootDisabled.selector);
+        verifier.verifyCertificate(defaultOperatorSet, cert);
+    }
+
     function test_revert_invalidOperatorIndex() public {
         // Update operator table
         (BN254OperatorInfo[] memory operatorInfos, uint32[] memory nonSignerIndices, BN254.G1Point memory signature) =

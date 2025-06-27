@@ -43,11 +43,7 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
         _transferOwnership(owner);
         _setGlobalRootConfirmerSet(_globalRootConfirmerSet);
         _setGlobalRootConfirmationThreshold(_globalRootConfirmationThreshold);
-
-        // Update the operator table for the global root confirmer set
-        bn254CertificateVerifier.updateOperatorTable(
-            _globalRootConfirmerSet, referenceTimestamp, globalRootConfirmerSetInfo, globalRootConfirmerSetConfig
-        );
+        _updateGlobalRootConfirmerSet(referenceTimestamp, globalRootConfirmerSetInfo, globalRootConfirmerSetConfig);
 
         // Set the latest reference timestamp
         _latestReferenceTimestamp = referenceTimestamp;
@@ -89,6 +85,7 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
         _referenceBlockNumbers[referenceTimestamp] = referenceBlockNumber;
         _referenceTimestamps[referenceBlockNumber] = referenceTimestamp;
         _globalTableRoots[referenceTimestamp] = globalTableRoot;
+        _isRootValid[globalTableRoot] = true;
 
         emit NewGlobalTableRoot(referenceTimestamp, globalTableRoot);
     }
@@ -107,6 +104,9 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
             OperatorSetConfig memory operatorSetConfig,
             bytes memory operatorTableInfo
         ) = _decodeOperatorTableBytes(operatorTableBytes);
+
+        // Check that the `globalTableRoot` is not disabled
+        require(_isRootValid[globalTableRoot], InvalidRoot());
 
         // Check that the `referenceTimestamp` is greater than the latest reference timestamp
         require(
@@ -156,6 +156,26 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
         uint16 bps
     ) external onlyOwner {
         _setGlobalRootConfirmationThreshold(bps);
+    }
+
+    /// @inheritdoc IOperatorTableUpdater
+    function disableRoot(
+        bytes32 globalTableRoot
+    ) external onlyOwner {
+        // Check that the root already exists and is not disabled
+        require(_isRootValid[globalTableRoot], InvalidRoot());
+
+        _isRootValid[globalTableRoot] = false;
+        emit GlobalRootDisabled(globalTableRoot);
+    }
+
+    /// @inheritdoc IOperatorTableUpdater
+    function updateGlobalRootConfirmerSet(
+        uint32 referenceTimestamp,
+        BN254OperatorSetInfo calldata globalRootConfirmerSetInfo,
+        OperatorSetConfig calldata globalRootConfirmerSetConfig
+    ) external onlyOwner {
+        _updateGlobalRootConfirmerSet(referenceTimestamp, globalRootConfirmerSetInfo, globalRootConfirmerSetConfig);
     }
 
     /**
@@ -236,6 +256,20 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
         );
     }
 
+    /// @inheritdoc IOperatorTableUpdater
+    function isRootValid(
+        bytes32 globalTableRoot
+    ) public view returns (bool) {
+        return _isRootValid[globalTableRoot];
+    }
+
+    /// @inheritdoc IOperatorTableUpdater
+    function isRootValidByTimestamp(
+        uint32 referenceTimestamp
+    ) external view returns (bool) {
+        return _isRootValid[_globalTableRoots[referenceTimestamp]];
+    }
+
     /**
      *
      *                         INTERNAL HELPERS
@@ -294,6 +328,22 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
         require(bps <= MAX_BPS, InvalidConfirmationThreshold());
         globalRootConfirmationThreshold = bps;
         emit GlobalRootConfirmationThresholdUpdated(bps);
+    }
+
+    /**
+     * @notice Updates the operator table for the global root confirmer set
+     * @param referenceTimestamp The reference timestamp of the operator table update
+     * @param globalRootConfirmerSetInfo The operatorSetInfo for the global root confirmer set
+     * @param globalRootConfirmerSetConfig The operatorSetConfig for the global root confirmer set
+     */
+    function _updateGlobalRootConfirmerSet(
+        uint32 referenceTimestamp,
+        BN254OperatorSetInfo calldata globalRootConfirmerSetInfo,
+        OperatorSetConfig calldata globalRootConfirmerSetConfig
+    ) internal {
+        bn254CertificateVerifier.updateOperatorTable(
+            _globalRootConfirmerSet, referenceTimestamp, globalRootConfirmerSetInfo, globalRootConfirmerSetConfig
+        );
     }
 
     /**

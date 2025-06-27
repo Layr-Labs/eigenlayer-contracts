@@ -29,6 +29,8 @@ interface IOperatorTableUpdaterErrors {
     error InvalidConfirmationThreshold();
     /// @notice Thrown when the curve type is invalid
     error InvalidCurveType();
+    /// @notice Thrown when a root is invalid
+    error InvalidRoot();
 }
 
 interface IOperatorTableUpdaterEvents {
@@ -50,6 +52,12 @@ interface IOperatorTableUpdaterEvents {
      * @param bps The threshold, in bps, for a global root to be signed off on and updated
      */
     event GlobalRootConfirmationThresholdUpdated(uint16 bps);
+
+    /**
+     * @notice Emitted when a global table root is disabled
+     * @param globalTableRoot the global table root that was disabled
+     */
+    event GlobalRootDisabled(bytes32 indexed globalTableRoot);
 }
 
 interface IOperatorTableUpdater is
@@ -95,6 +103,21 @@ interface IOperatorTableUpdater is
     ) external;
 
     /**
+     * @notice Updates the operator table for the global root confirmer set
+     * @param referenceTimestamp The reference timestamp of the operator table update
+     * @param globalRootConfirmerSetInfo The operatorSetInfo for the global root confirmer set
+     * @param globalRootConfirmerSetConfig The operatorSetConfig for the global root confirmer set
+     * @dev We have a separate function for updating this operatorSet since it's not transported and updated
+     *      in the same way as the other operatorSets
+     * @dev Only callable by the owner of the contract
+     */
+    function updateGlobalRootConfirmerSet(
+        uint32 referenceTimestamp,
+        BN254OperatorSetInfo calldata globalRootConfirmerSetInfo,
+        OperatorSetConfig calldata globalRootConfirmerSetConfig
+    ) external;
+
+    /**
      * @notice Updates an operator table
      * @param referenceTimestamp the reference block number of the globalTableRoot
      * @param globalTableRoot the new globalTableRoot
@@ -109,6 +132,15 @@ interface IOperatorTableUpdater is
         uint32 operatorSetIndex,
         bytes calldata proof,
         bytes calldata operatorTableBytes
+    ) external;
+
+    /**
+     * @notice Disables a global table root
+     * @param globalTableRoot the global table root to disable
+     * @dev Only callable by the owner of the contract
+     */
+    function disableRoot(
+        bytes32 globalTableRoot
     ) external;
 
     /**
@@ -190,4 +222,22 @@ interface IOperatorTableUpdater is
      * @dev In V1, we only update the table of the global root confirmer set on initial deployment, and never update it again.
      */
     function getGlobalConfirmerSetReferenceTimestamp() external view returns (uint32);
+
+    /**
+     * @notice Get the validity status of a global table root
+     * @param globalTableRoot the global table root
+     * @return The validity status of the global table root
+     */
+    function isRootValid(
+        bytes32 globalTableRoot
+    ) external view returns (bool);
+
+    /**
+     * @notice Get the validity status of a global table root by timestamp
+     * @param referenceTimestamp the reference timestamp
+     * @return The validity status of the global table root
+     */
+    function isRootValidByTimestamp(
+        uint32 referenceTimestamp
+    ) external view returns (bool);
 }

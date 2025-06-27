@@ -25,6 +25,8 @@ interface IBaseCertificateVerifierErrors {
     error ReferenceTimestampDoesNotExist();
     /// @notice Thrown when certificate verification fails
     error VerificationFailed();
+    /// @notice Thrown when the global table root is disabled
+    error RootDisabled();
 }
 
 /// @notice A base interface that verifies certificates for a given operatorSet

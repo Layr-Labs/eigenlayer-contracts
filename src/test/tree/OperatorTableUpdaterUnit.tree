@@ -19,6 +19,8 @@
     ├── when updateOperatorTable is called
     │   ├── given that the reference timestamp is not greater than operator set's latest
     │   │   └── it should revert with TableUpdateForPastTimestamp
+    │   ├── given that the global table root is not valid
+    │   │   └── it should revert with InvalidRoot
     │   ├── given that the global table root does not match the reference timestamp
     │   │   └── it should revert with InvalidGlobalTableRoot
     │   ├── given that the merkle proof is invalid
@@ -41,6 +43,22 @@
     │   │   └── it should revert with InvalidConfirmationThreshold
     │   └── given that the caller is owner and threshold is valid
     │       └── it should update the threshold & emit GlobalRootConfirmationThresholdUpdated event
+    ├── when disableRoot is called
+    │   ├── given that the caller is not the owner
+    │   │   └── it should revert
+    │   ├── given that the root is invalid or doesn't exist
+    │   │   └── it should revert with InvalidRoot
+    │   └── given that the caller is the owner and root is valid
+    │       └── it should disable the root & emit GlobalRootDisabled event
+    ├── when updateGlobalRootConfirmerSet is called
+    │   ├── given that the caller is not the owner
+    │   │   └── it should revert
+    │   └── given that the caller is the owner
+    │       └── it should update the global root confirmer set table
+    ├── when isRootValid(bytes32) is called
+    │   └── it should return the validity status of the given global table root
+    ├── when isRootValidByTimestamp(uint32) is called
+    │   └── it should return the validity status of the global table root at the given reference timestamp
     ├── when getGlobalTableRootByTimestamp is called
     │   └── it should return the global table root for the given timestamp
     ├── when getCurrentGlobalTableRoot is called
@@ -65,4 +83,4 @@
     ├── when getGlobalTableUpdateMessageHash is called
     │   └── it should return the keccak256 hash of encoded typehash, root, timestamp, and block number
     └── when getGlobalConfirmerSetReferenceTimestamp is called
-        └── it should return the latest reference timestamp for the global root confirmer set 
+        └── it should return the latest reference timestamp for the global root confirmer set

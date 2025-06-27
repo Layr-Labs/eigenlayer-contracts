@@ -194,6 +194,9 @@ contract BN254CertificateVerifier is Initializable, BN254CertificateVerifierStor
     function _validateCertificateTimestamp(bytes32 operatorSetKey, uint32 referenceTimestamp) internal view {
         uint32 maxStaleness = _maxStalenessPeriods[operatorSetKey];
         require(maxStaleness == 0 || block.timestamp <= referenceTimestamp + maxStaleness, CertificateStale());
+
+        // Assert that the root that corresponds to the reference timestamp is not disabled
+        require(operatorTableUpdater.isRootValidByTimestamp(referenceTimestamp), RootDisabled());
     }
 
     /**
