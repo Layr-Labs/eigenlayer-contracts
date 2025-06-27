@@ -180,7 +180,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS = 50;
         DEALLOCATION_DELAY = 50;
         ALLOCATION_CONFIGURATION_DELAY = 75;
-        BN254_TABLE_CALCULATOR_LOOKAHEAD_BLOCKS = 50;
 
         REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS = 86_400;
         REWARDS_COORDINATOR_MAX_REWARDS_DURATION = 6_048_000;
@@ -377,7 +376,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
         // multichain
         keyRegistrarImplementation = new KeyRegistrar(permissionController, allocationManager, "9.9.9");
-        bn254TableCalculator = new BN254TableCalculator(keyRegistrar, allocationManager, BN254_TABLE_CALCULATOR_LOOKAHEAD_BLOCKS);
     }
 
     function _upgradeProxies() public noTracing {
