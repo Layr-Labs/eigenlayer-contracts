@@ -5,11 +5,19 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin-upgrades/contracts/proxy/ClonesUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
+import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 import "../permissions/Pausable.sol";
 import "../mixins/SemVerMixin.sol";
 import "./SlashEscrowFactoryStorage.sol";
 
-contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, OwnableUpgradeable, Pausable, SemVerMixin {
+contract SlashEscrowFactory is
+    Initializable,
+    SlashEscrowFactoryStorage,
+    OwnableUpgradeable,
+    Pausable,
+    SemVerMixin,
+    ReentrancyGuardUpgradeable
+{
     using SafeERC20 for IERC20;
     using OperatorSetLib for *;
     using EnumerableSet for *;
@@ -73,16 +81,27 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
             // Deploy the `SlashEscrow`.
             _deploySlashEscrow(operatorSet, slashId);
 
-            // Update the pending mappings
+            // Update the pending mappings.
             _pendingOperatorSets.add(operatorSet.key());
             pendingSlashIds.add(slashId);
-
-            // Set the start block for the slash ID.
-            _slashIdToStartBlock[operatorSet.key()][slashId] = uint32(block.number);
         }
 
         // Add the strategy to the pending strategies for the slash ID.
         pendingStrategiesForSlashId.add(address(strategy));
+
+        // Calculate the complete block for the strategy, and fetch the current complete block.
+        // The escrow delay for a strategy is determined by taking the maximum of:
+        // 1. The global escrow delay (applies to all strategies).
+        // 2. The strategy-specific delay (if set).
+        uint32 completeBlock = uint32(block.number + getStrategyEscrowDelay(strategy) + 1);
+        uint32 currentCompleteBlock = _slashIdToCompleteBlock[operatorSet.key()][slashId];
+
+        // Only update the maturity block if the new calculated maturity block (with the strategy delay)
+        // is further in the future than the currently stored value. This ensures the escrow cannot be released
+        // before the longest required delay among all strategies for this slashId.
+        if (completeBlock > currentCompleteBlock) {
+            _slashIdToCompleteBlock[operatorSet.key()][slashId] = completeBlock;
+        }
 
         // Emit the start escrow event. We can use the block.number here because all strategies
         // in a given operatorSet/slashId will have their escrow initiated in the same transaction.
@@ -93,7 +112,7 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
     function releaseSlashEscrow(
         OperatorSet calldata operatorSet,
         uint256 slashId
-    ) external onlyWhenNotPaused(PAUSED_RELEASE_ESCROW) {
+    ) external onlyWhenNotPaused(PAUSED_RELEASE_ESCROW) nonReentrant {
         address redistributionRecipient = allocationManager.getRedistributionRecipient(operatorSet);
 
         _checkReleaseSlashEscrow(operatorSet, slashId, redistributionRecipient);
@@ -125,7 +144,7 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
         OperatorSet calldata operatorSet,
         uint256 slashId,
         IStrategy strategy
-    ) external virtual onlyWhenNotPaused(PAUSED_RELEASE_ESCROW) {
+    ) external virtual onlyWhenNotPaused(PAUSED_RELEASE_ESCROW) nonReentrant {
         address redistributionRecipient = allocationManager.getRedistributionRecipient(operatorSet);
 
         _checkReleaseSlashEscrow(operatorSet, slashId, redistributionRecipient);
@@ -252,7 +271,7 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
             pendingSlashIds.remove(slashId);
 
             // Delete the start block for the slash ID.
-            delete _slashIdToStartBlock[operatorSet.key()][slashId];
+            delete _slashIdToCompleteBlock[operatorSet.key()][slashId];
 
             // If there are no more slash IDs for the operator set, remove the operator set from the pending operator sets set.
             if (pendingSlashIds.length() == 0) {
@@ -418,25 +437,8 @@ contract SlashEscrowFactory is Initializable, SlashEscrowFactoryStorage, Ownable
     }
 
     /// @inheritdoc ISlashEscrowFactory
-    function getEscrowStartBlock(OperatorSet memory operatorSet, uint256 slashId) public view returns (uint256) {
-        return _slashIdToStartBlock[operatorSet.key()][slashId];
-    }
-
-    /// @inheritdoc ISlashEscrowFactory
     function getEscrowCompleteBlock(OperatorSet memory operatorSet, uint256 slashId) public view returns (uint32) {
-        IStrategy[] memory strategies = getPendingStrategiesForSlashId(operatorSet, slashId);
-
-        // Loop through all strategies and return the max delay
-        uint32 maxStrategyDelay;
-        for (uint256 i = 0; i < strategies.length; ++i) {
-            uint32 delay = getStrategyEscrowDelay(IStrategy(address(strategies[i])));
-            if (delay > maxStrategyDelay) {
-                maxStrategyDelay = delay;
-            }
-        }
-
-        // The escrow can be released once the max strategy delay has elapsed.
-        return uint32(getEscrowStartBlock(operatorSet, slashId) + maxStrategyDelay + 1);
+        return _slashIdToCompleteBlock[operatorSet.key()][slashId];
     }
 
     /// @inheritdoc ISlashEscrowFactory
