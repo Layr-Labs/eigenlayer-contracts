@@ -74,7 +74,7 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         require(curveType != CurveType.NONE, OperatorSetNotConfigured());
 
         // Check if the operator is already registered to the operatorSet
-        require(!operatorKeyInfo[operatorSet.key()][operator].isRegistered, KeyAlreadyRegistered());
+        require(!_operatorKeyInfo[operatorSet.key()][operator].isRegistered, KeyAlreadyRegistered());
 
         // Register key based on curve type - both now require signature verification
         if (curveType == CurveType.ECDSA) {
