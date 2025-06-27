@@ -474,3 +474,11 @@ contract ReleaseManagerUnitTests_isValidRelease is ReleaseManagerUnitTests {
         assertEq(isLatest, true, "second release should be the latest");
     }
 }
+
+contract ReleaseManagerUnitTests_publishMetadataURI is ReleaseManagerUnitTests {
+    function test_revert_publishMetadataURI_Correctness() public {
+        cheats.expectEmit(true, true, true, true, address(releaseManager));
+        emit MetadataURIPublished(defaultOperatorSet, "https://example.com/metadata");
+        releaseManager.publishMetadataURI(defaultOperatorSet, "https://example.com/metadata");
+    }
+}
