@@ -55,10 +55,10 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         require(curveType == CurveType.ECDSA || curveType == CurveType.BN254, InvalidCurveType());
 
         // Prevent overwriting existing configurations
-        CurveType _curveType = operatorSetCurveTypes[operatorSet.key()];
+        CurveType _curveType = _operatorSetCurveTypes[operatorSet.key()];
         require(_curveType == CurveType.NONE, ConfigurationAlreadySet());
 
-        operatorSetCurveTypes[operatorSet.key()] = curveType;
+        _operatorSetCurveTypes[operatorSet.key()] = curveType;
 
         emit OperatorSetConfigured(operatorSet, curveType);
     }
@@ -70,11 +70,11 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         bytes calldata keyData,
         bytes calldata signature
     ) external checkCanCall(operator) {
-        CurveType curveType = operatorSetCurveTypes[operatorSet.key()];
+        CurveType curveType = _operatorSetCurveTypes[operatorSet.key()];
         require(curveType != CurveType.NONE, OperatorSetNotConfigured());
 
         // Check if the key is already registered
-        require(!operatorKeyInfo[operatorSet.key()][operator].isRegistered, KeyAlreadyRegistered());
+        require(!_operatorKeyInfo[operatorSet.key()][operator].isRegistered, KeyAlreadyRegistered());
 
         // Register key based on curve type - both now require signature verification
         if (curveType == CurveType.ECDSA) {
@@ -95,25 +95,25 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
             !allocationManager.isOperatorSlashable(operator, operatorSet), OperatorStillSlashable(operatorSet, operator)
         );
 
-        CurveType curveType = operatorSetCurveTypes[operatorSet.key()];
+        CurveType curveType = _operatorSetCurveTypes[operatorSet.key()];
         require(curveType != CurveType.NONE, OperatorSetNotConfigured());
 
-        KeyInfo memory keyInfo = operatorKeyInfo[operatorSet.key()][operator];
+        KeyInfo memory keyInfo = _operatorKeyInfo[operatorSet.key()][operator];
 
         require(keyInfo.isRegistered, KeyNotFound(operatorSet, operator));
 
         // Clear key info
-        delete operatorKeyInfo[operatorSet.key()][operator];
+        delete _operatorKeyInfo[operatorSet.key()][operator];
 
         emit KeyDeregistered(operatorSet, operator, curveType);
     }
 
     /// @inheritdoc IKeyRegistrar
     function checkKey(OperatorSet memory operatorSet, address operator) external view returns (bool) {
-        CurveType curveType = operatorSetCurveTypes[operatorSet.key()];
+        CurveType curveType = _operatorSetCurveTypes[operatorSet.key()];
         require(curveType != CurveType.NONE, OperatorSetNotConfigured());
 
-        KeyInfo memory keyInfo = operatorKeyInfo[operatorSet.key()][operator];
+        KeyInfo memory keyInfo = _operatorKeyInfo[operatorSet.key()][operator];
         return keyInfo.isRegistered;
     }
 
@@ -148,7 +148,7 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         bytes32 keyHash = _getKeyHashForKeyData(keyData, CurveType.ECDSA);
 
         // Check global uniqueness
-        require(!globalKeyRegistry[keyHash], KeyAlreadyRegistered());
+        require(!_globalKeyRegistry[keyHash], KeyAlreadyRegistered());
 
         // Get the signable digest for the ECDSA key registration message
         bytes32 signableDigest = getECDSAKeyRegistrationMessageHash(operator, operatorSet, keyAddress);
@@ -203,7 +203,7 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
 
         // Calculate key hash and check global uniqueness
         bytes32 keyHash = _getKeyHashForKeyData(keyData, CurveType.BN254);
-        require(!globalKeyRegistry[keyHash], KeyAlreadyRegistered());
+        require(!_globalKeyRegistry[keyHash], KeyAlreadyRegistered());
 
         // Store key data
         _storeKeyData(operatorSet, operator, keyData, keyHash);
@@ -223,10 +223,10 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         bytes32 keyHash
     ) internal {
         // Store key data
-        operatorKeyInfo[operatorSet.key()][operator] = KeyInfo({isRegistered: true, keyData: pubkey});
+        _operatorKeyInfo[operatorSet.key()][operator] = KeyInfo({isRegistered: true, keyData: pubkey});
 
         // Update global key registry
-        globalKeyRegistry[keyHash] = true;
+        _globalKeyRegistry[keyHash] = true;
     }
 
     /**
@@ -254,14 +254,14 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
 
     /// @inheritdoc IKeyRegistrar
     function isRegistered(OperatorSet memory operatorSet, address operator) external view returns (bool) {
-        return operatorKeyInfo[operatorSet.key()][operator].isRegistered;
+        return _operatorKeyInfo[operatorSet.key()][operator].isRegistered;
     }
 
     /// @inheritdoc IKeyRegistrar
     function getOperatorSetCurveType(
         OperatorSet memory operatorSet
     ) external view returns (CurveType) {
-        return operatorSetCurveTypes[operatorSet.key()];
+        return _operatorSetCurveTypes[operatorSet.key()];
     }
 
     /// @inheritdoc IKeyRegistrar
@@ -270,10 +270,10 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         address operator
     ) external view returns (BN254.G1Point memory g1Point, BN254.G2Point memory g2Point) {
         // Validate operator set curve type
-        CurveType curveType = operatorSetCurveTypes[operatorSet.key()];
+        CurveType curveType = _operatorSetCurveTypes[operatorSet.key()];
         require(curveType == CurveType.BN254, InvalidCurveType());
 
-        KeyInfo memory keyInfo = operatorKeyInfo[operatorSet.key()][operator];
+        KeyInfo memory keyInfo = _operatorKeyInfo[operatorSet.key()][operator];
 
         if (!keyInfo.isRegistered) {
             // Create default values for an empty key
@@ -290,10 +290,10 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
     /// @inheritdoc IKeyRegistrar
     function getECDSAKey(OperatorSet memory operatorSet, address operator) public view returns (bytes memory) {
         // Validate operator set curve type
-        CurveType curveType = operatorSetCurveTypes[operatorSet.key()];
+        CurveType curveType = _operatorSetCurveTypes[operatorSet.key()];
         require(curveType == CurveType.ECDSA, InvalidCurveType());
 
-        KeyInfo memory keyInfo = operatorKeyInfo[operatorSet.key()][operator];
+        KeyInfo memory keyInfo = _operatorKeyInfo[operatorSet.key()][operator];
         return keyInfo.keyData; // Returns the 20-byte address as bytes
     }
 
@@ -306,13 +306,13 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
     function isKeyGloballyRegistered(
         bytes32 keyHash
     ) external view returns (bool) {
-        return globalKeyRegistry[keyHash];
+        return _globalKeyRegistry[keyHash];
     }
 
     /// @inheritdoc IKeyRegistrar
     function getKeyHash(OperatorSet memory operatorSet, address operator) external view returns (bytes32) {
-        KeyInfo memory keyInfo = operatorKeyInfo[operatorSet.key()][operator];
-        CurveType curveType = operatorSetCurveTypes[operatorSet.key()];
+        KeyInfo memory keyInfo = _operatorKeyInfo[operatorSet.key()][operator];
+        CurveType curveType = _operatorSetCurveTypes[operatorSet.key()];
 
         if (!keyInfo.isRegistered) {
             return bytes32(0);
