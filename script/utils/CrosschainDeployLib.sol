@@ -65,7 +65,7 @@ library CrosschainDeployLib {
     /*
      * @notice Deploys a crosschain `TransparentUpgradeableProxy` using CreateX.
      * @dev The initial admin is msg.sender.
-     * @dev The implementation MUST also be determinstic to ensure the contract can be deployed on all chains.
+     * @dev The implementation MUST also be deterministic to ensure the contract can be deployed on all chains.
      * @dev The salt MUST be unique for each proxy deployment sharing the same implementation otherwise address collisions WILL occur.
      *
      * @dev Example usage:
