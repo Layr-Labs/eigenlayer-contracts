@@ -21,13 +21,13 @@ abstract contract KeyRegistrarStorage is IKeyRegistrar {
     // Mutatables
 
     /// @dev Maps (operatorSetKey, operator) to their key info
-    mapping(bytes32 => mapping(address => KeyInfo)) internal operatorKeyInfo;
+    mapping(bytes32 operatorSetKey => mapping(address operator => KeyInfo keyInfo)) internal _operatorKeyInfo;
 
     /// @dev Maps operatorSetKey to the key type
-    mapping(bytes32 => CurveType) internal operatorSetCurveTypes;
+    mapping(bytes32 operatorSetKey => CurveType curveType) internal _operatorSetCurveTypes;
 
     /// @dev Global mapping of key hash to registration status - enforces global uniqueness
-    mapping(bytes32 => bool) internal globalKeyRegistry;
+    mapping(bytes32 keyHash => bool isRegistered) internal _globalKeyRegistry;
 
     // Construction
 
