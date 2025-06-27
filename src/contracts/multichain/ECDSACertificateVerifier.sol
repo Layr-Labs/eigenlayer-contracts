@@ -129,6 +129,9 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
         // Assert that the reference timestamp exists
         require(_latestReferenceTimestamps[operatorSetKey] == cert.referenceTimestamp, ReferenceTimestampDoesNotExist());
 
+        // Assert that the root that corresponds to the reference timestamp is not disabled
+        require(operatorTableUpdater.isRootValidByTimestamp(cert.referenceTimestamp), RootDisabled());
+
         // Get the total stakes
         uint256[] memory totalStakes = getTotalStakes(operatorSet, cert.referenceTimestamp);
         uint256[] memory signedStakes = new uint256[](totalStakes.length);
