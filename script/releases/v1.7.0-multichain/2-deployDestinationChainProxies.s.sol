@@ -17,8 +17,6 @@ contract DeployDestinationChainProxies is MultisigBuilder {
             return;
         }
 
-        vm.startBroadcast();
-
         // Deploy or get the empty contract for the destination chain
         // address emptyContract = address(Env.impl.emptyContract());
 
@@ -39,7 +37,7 @@ contract DeployDestinationChainProxies is MultisigBuilder {
         //     deployedTo: address(new TransparentUpgradeableProxy({_logic: emptyContract, admin_: Env.multichainDeployerMultisig(), _data: ""}))
         // });
 
-        vm.stopBroadcast();
+        // TODO: compute the expected address of each proxy. Add to zeus env. 
     }
 
     function testScript() public virtual {
@@ -53,7 +51,7 @@ contract DeployDestinationChainProxies is MultisigBuilder {
         _validateProxyAdminIsMultisig();
     }
 
-    /// @dev Validate that proxies are owned by the multisig (temporarily)
+    /// @dev Validate that proxies are owned by the multichain deployer multisig (temporarily)
     function _validateProxyAdminIsMultisig() internal view {
         address multisig = Env.multichainDeployerMultisig();
 
