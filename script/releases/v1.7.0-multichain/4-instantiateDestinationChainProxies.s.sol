@@ -1,97 +1,38 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
-import {EOADeployer} from "zeus-templates/templates/EOADeployer.sol";
+import {MultisigBuilder} from "zeus-templates/templates/MultisigBuilder.sol";
 import "../Env.sol";
 
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
+import "src/contracts/interfaces/ICrossChainRegistry.sol";
+import "src/contracts/interfaces/IBN254TableCalculator.sol";
+import "src/contracts/libraries/OperatorSetLib.sol";
+import "src/contracts/libraries/BN254.sol";
+
 // For TOML parsing
 import {stdToml} from "forge-std/StdToml.sol";
 
-// Import OperatorSetLib and OperatorSet
-import {OperatorSet} from "src/contracts/libraries/OperatorSetLib.sol";
-import "src/contracts/libraries/OperatorSetLib.sol";
-
-// Import required interfaces
-import {ICrossChainRegistryTypes} from "src/contracts/interfaces/ICrossChainRegistry.sol";
-import {IBN254TableCalculatorTypes} from "src/contracts/interfaces/IBN254TableCalculator.sol";
-import {BN254} from "src/contracts/libraries/BN254.sol";
-
 /**
- * Purpose: use an EOA to deploy all of the new destination chain contracts for this upgrade.
+ * Purpose: Upgrade proxies to point to implementations and transfer control to ProxyAdmin.
  */
-contract DeployDestinationChain is EOADeployer {
+contract InstantiateDestinationChainProxies is MultisigBuilder {
     using Env for *;
     using OperatorSetLib for OperatorSet;
     using stdToml for string;
 
     /// forgefmt: disable-next-item
-    function _runAsEOA() internal override {
-        // If we're not on a destination chain, we don't need to deploy any contracts
+    function _runAsMultisig() internal override prank(Env.multichainDeployerMultisig()) {
+        // If we're not on a destination chain, we don't need to do anything
         if (!Env.isDestinationChain()) {
             return;
         }
 
         vm.startBroadcast();
 
-        // TODO: update zeus test to inject the multichain deployer
-        // require(msg.sender == Env._multichainDeployer(), "msg.sender must be the multichain deployer");
-
-        // Deploy or get the empty contract for the destination chain
-        // TODO: update to use the empty contract from the multichain deployer
-        address emptyContract = address(new EmptyContract());
-
-        // 1. Deploy the proxies pointing to an empty contract
-        deployProxy({
-            name: type(OperatorTableUpdater).name,
-            deployedTo: address(new TransparentUpgradeableProxy({_logic: emptyContract, admin_: msg.sender, _data: ""}))
-        });
-
-        deployProxy({
-            name: type(ECDSACertificateVerifier).name,
-            deployedTo: address(new TransparentUpgradeableProxy({_logic: emptyContract, admin_: msg.sender, _data: ""}))
-        });
-
-        deployProxy({
-            name: type(BN254CertificateVerifier).name,
-            deployedTo: address(new TransparentUpgradeableProxy({_logic: emptyContract, admin_: msg.sender, _data: ""}))
-        });
-
-        // 2. Deploy the implementations
-        deployImpl({
-            name: type(OperatorTableUpdater).name,
-            deployedTo: address(
-                new OperatorTableUpdater({
-                    _bn254CertificateVerifier: Env.proxy.bn254CertificateVerifier(),
-                    _ecdsaCertificateVerifier: Env.proxy.ecdsaCertificateVerifier(),
-                    _version: Env.deployVersion()
-                })
-            )
-        });
-
-        deployImpl({
-            name: type(ECDSACertificateVerifier).name,
-            deployedTo: address(
-                new ECDSACertificateVerifier({
-                    _operatorTableUpdater: Env.proxy.operatorTableUpdater(),
-                    _version: Env.deployVersion()
-                })
-            )
-        });
-
-        deployImpl({
-            name: type(BN254CertificateVerifier).name,
-            deployedTo: address(
-                new BN254CertificateVerifier({
-                    _operatorTableUpdater: Env.proxy.operatorTableUpdater(),
-                    _version: Env.deployVersion()
-                })
-            )
-        });
-
-        // 3. Upgrade the proxies to point to the actual implementations
+        // Upgrade the proxies to point to the actual implementations
         ITransparentUpgradeableProxy ecdsaCertificateVerifierProxy =
             ITransparentUpgradeableProxy(payable(address(Env.proxy.ecdsaCertificateVerifier())));
         ecdsaCertificateVerifierProxy.upgradeTo(address(Env.impl.ecdsaCertificateVerifier()));
@@ -118,7 +59,7 @@ contract DeployDestinationChain is EOADeployer {
             )
         );
 
-        // 4. Transfer proxy admin ownership
+        // Transfer proxy admin ownership
         operatorTableUpdaterProxy.changeAdmin(Env.proxyAdmin());
         ecdsaCertificateVerifierProxy.changeAdmin(Env.proxyAdmin());
         bn254CertificateVerifierProxy.changeAdmin(Env.proxyAdmin());
@@ -131,13 +72,10 @@ contract DeployDestinationChain is EOADeployer {
             return;
         }
 
-        _runAsEOA();
+        _runAsMultisig();
 
         _validateStorage();
         _validateProxyAdmins();
-        _validateImplConstructors();
-        _validateImplsInitialized();
-        _validateVersion();
         _validateProxyConstructors();
         _validateProxiesInitialized();
     }
@@ -176,76 +114,6 @@ contract DeployDestinationChain is EOADeployer {
         );
     }
 
-    /// @dev Validate the immutables set in the new implementation constructors
-    function _validateImplConstructors() internal view {
-        {
-            /// OperatorTableUpdater
-            OperatorTableUpdater operatorTableUpdater = Env.impl.operatorTableUpdater();
-            assertTrue(
-                address(operatorTableUpdater.bn254CertificateVerifier())
-                    == address(Env.proxy.bn254CertificateVerifier()),
-                "out.bn254CertificateVerifier invalid"
-            );
-            assertTrue(
-                address(operatorTableUpdater.ecdsaCertificateVerifier())
-                    == address(Env.proxy.ecdsaCertificateVerifier()),
-                "out.ecdsaCertificateVerifier invalid"
-            );
-            assertEq(operatorTableUpdater.version(), Env.deployVersion(), "out.version failed");
-        }
-
-        {
-            /// ECDSACertificateVerifier
-            ECDSACertificateVerifier ecdsaCertificateVerifier = Env.impl.ecdsaCertificateVerifier();
-            assertTrue(
-                address(ecdsaCertificateVerifier.operatorTableUpdater()) == address(Env.proxy.operatorTableUpdater()),
-                "ecv.operatorTableUpdater invalid"
-            );
-            assertEq(ecdsaCertificateVerifier.version(), Env.deployVersion(), "ecv.version failed");
-        }
-
-        {
-            /// BN254CertificateVerifier
-            BN254CertificateVerifier bn254CertificateVerifier = Env.impl.bn254CertificateVerifier();
-            assertTrue(
-                address(bn254CertificateVerifier.operatorTableUpdater()) == address(Env.proxy.operatorTableUpdater()),
-                "b254cv.operatorTableUpdater invalid"
-            );
-            assertEq(bn254CertificateVerifier.version(), Env.deployVersion(), "b254cv.version failed");
-        }
-    }
-
-    /// @dev Call initialize on all deployed implementations to ensure initializers are disabled
-    function _validateImplsInitialized() internal {
-        bytes memory errInit = "Initializable: contract is already initialized";
-
-        /// OperatorTableUpdater - dummy parameters
-        OperatorTableUpdater operatorTableUpdater = Env.impl.operatorTableUpdater();
-        OperatorSet memory dummyOperatorSet = OperatorSet({avs: address(0), id: 0});
-        IBN254TableCalculatorTypes.BN254OperatorSetInfo memory dummyBN254Info;
-        ICrossChainRegistry.OperatorSetConfig memory dummyConfig;
-
-        vm.expectRevert(errInit);
-        operatorTableUpdater.initialize(
-            address(0), // owner
-            dummyOperatorSet, // globalRootConfirmerSet
-            0, // globalRootConfirmationThreshold
-            0, // referenceTimestamp
-            dummyBN254Info, // globalRootConfirmerSetInfo
-            dummyConfig // globalRootConfirmerSetConfig
-        );
-
-        // ECDSACertificateVerifier and BN254CertificateVerifier don't have initialize functions
-    }
-
-    function _validateVersion() internal view {
-        string memory expected = Env.deployVersion();
-
-        assertEq(Env.impl.operatorTableUpdater().version(), expected, "operatorTableUpdater version mismatch");
-        assertEq(Env.impl.ecdsaCertificateVerifier().version(), expected, "ecdsaCertificateVerifier version mismatch");
-        assertEq(Env.impl.bn254CertificateVerifier().version(), expected, "bn254CertificateVerifier version mismatch");
-    }
-
     function _validateProxyConstructors() internal view {
         OperatorTableUpdater operatorTableUpdater = Env.proxy.operatorTableUpdater();
         assertEq(operatorTableUpdater.version(), Env.deployVersion(), "operatorTableUpdater version mismatch");
@@ -280,7 +148,7 @@ contract DeployDestinationChain is EOADeployer {
         OperatorTableUpdater operatorTableUpdater = Env.proxy.operatorTableUpdater();
         OperatorSet memory dummyOperatorSet = OperatorSet({avs: address(0), id: 0});
         IBN254TableCalculatorTypes.BN254OperatorSetInfo memory dummyBN254Info;
-        ICrossChainRegistry.OperatorSetConfig memory dummyConfig;
+        ICrossChainRegistryTypes.OperatorSetConfig memory dummyConfig;
 
         vm.expectRevert(errInit);
         operatorTableUpdater.initialize(
@@ -366,8 +234,8 @@ contract DeployDestinationChain is EOADeployer {
     struct OperatorTableUpdaterInitParams {
         uint16 globalRootConfirmationThreshold;
         OperatorSet globalRootConfirmerSet;
-        ICrossChainRegistry.OperatorSetConfig globalRootConfirmerSetConfig;
+        ICrossChainRegistryTypes.OperatorSetConfig globalRootConfirmerSetConfig;
         IBN254TableCalculatorTypes.BN254OperatorSetInfo globalRootConfirmerSetInfo;
         uint32 referenceTimestamp;
     }
-}
+} 

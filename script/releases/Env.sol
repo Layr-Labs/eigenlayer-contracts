@@ -105,6 +105,14 @@ library Env {
         return _envAddress("pauserMultisig");
     }
 
+    function multichainDeployerMultisig() internal view returns (address) {
+        return _envAddress("multichainDeployerMultisig");
+    }
+
+    function createX() internal view returns (address) {
+        return _envAddress("createX");
+    }
+
     function proxyAdmin() internal view returns (address) {
         return _envAddress("proxyAdmin");
     }
