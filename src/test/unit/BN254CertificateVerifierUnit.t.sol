@@ -12,7 +12,6 @@ import "src/contracts/multichain/BN254CertificateVerifier.sol";
 import "src/contracts/interfaces/IOperatorTableUpdater.sol";
 import "src/contracts/interfaces/IBaseCertificateVerifier.sol";
 import "src/contracts/interfaces/IBN254CertificateVerifier.sol";
-import "src/contracts/interfaces/IBN254TableCalculator.sol";
 import "src/contracts/interfaces/ICrossChainRegistry.sol";
 
 /**
