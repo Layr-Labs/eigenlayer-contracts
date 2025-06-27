@@ -3,10 +3,10 @@ pragma solidity >=0.5.0;
 
 import {BN254} from "../libraries/BN254.sol";
 import {OperatorSet} from "../libraries/OperatorSetLib.sol";
-import "./IBN254TableCalculator.sol";
+import "./IOperatorTableCalculator.sol";
 import "./IBaseCertificateVerifier.sol";
 
-interface IBN254CertificateVerifierTypes is IBN254TableCalculatorTypes {
+interface IBN254CertificateVerifierTypes is IOperatorTableCalculatorTypes {
     /**
      * @notice A witness for an operator
      * @param operatorIndex the index of the nonsigner in the `BN254OperatorInfo` tree
