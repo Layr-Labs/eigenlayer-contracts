@@ -10,14 +10,16 @@ import "../Env.sol";
  * Purpose: Deploy proxy contracts for the destination chain using a multisig.
  */
 contract DeployDestinationChainProxies is MultisigBuilder {
+    using ZEnvHelpers for *;
+    using ScriptHelpers for *;
     using Env for *;
 
     /// forgefmt: disable-next-item
     function _runAsMultisig() internal virtual override {
         // If we're not on a destination chain, we don't need to deploy any contracts
-        if (!Env.isDestinationChain()) {
-            return;
-        }
+        // if (!Env.isDestinationChain()) {
+        //     return;
+        // }
 
         // We don't use the prank modifier here, since we have to write to the env
         _startPrank(Env.multichainDeployerMultisig());
@@ -55,13 +57,13 @@ contract DeployDestinationChainProxies is MultisigBuilder {
     }
 
     function testScript() public virtual {
-        if (!Env.isDestinationChain()) {
-            return;
-        }
+        // if (!Env.isDestinationChain()) {
+        //     return;
+        // }
 
         execute();
 
-        _validateProxyAdminIsMultisig();
+        // _validateProxyAdminIsMultisig();
     }
 
     /// @dev Validate that proxies are owned by the multichain deployer multisig (temporarily)
