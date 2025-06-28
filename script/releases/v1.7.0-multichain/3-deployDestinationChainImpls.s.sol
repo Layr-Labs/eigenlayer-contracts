@@ -3,6 +3,7 @@ pragma solidity ^0.8.12;
 
 import {EOADeployer} from "zeus-templates/templates/EOADeployer.sol";
 import {DeployDestinationChainProxies} from "./2-deployDestinationChainProxies.s.sol";
+import "src/contracts/interfaces/IOperatorTableCalculator.sol";
 import "../Env.sol";
 
 /**
@@ -117,7 +118,7 @@ contract DeployDestinationChainImpls is EOADeployer, DeployDestinationChainProxi
         /// OperatorTableUpdater - dummy parameters
         OperatorTableUpdater operatorTableUpdater = Env.impl.operatorTableUpdater();
         OperatorSet memory dummyOperatorSet = OperatorSet({avs: address(0), id: 0});
-        IBN254TableCalculatorTypes.BN254OperatorSetInfo memory dummyBN254Info;
+        IOperatorTableCalculatorTypes.BN254OperatorSetInfo memory dummyBN254Info;
         ICrossChainRegistryTypes.OperatorSetConfig memory dummyConfig;
 
         vm.expectRevert(errInit);

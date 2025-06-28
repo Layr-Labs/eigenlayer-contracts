@@ -7,7 +7,7 @@ import {DeployDestinationChainImpls} from "./3-deployDestinationChainImpls.s.sol
 import "../Env.sol";
 
 import "src/contracts/interfaces/ICrossChainRegistry.sol";
-import "src/contracts/interfaces/IBN254TableCalculator.sol";
+import "src/contracts/interfaces/IOperatorTableCalculator.sol";
 import "src/contracts/libraries/OperatorSetLib.sol";
 import "src/contracts/libraries/BN254.sol";
 
@@ -154,7 +154,7 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
         /// OperatorTableUpdater - dummy parameters
         OperatorTableUpdater operatorTableUpdater = Env.proxy.operatorTableUpdater();
         OperatorSet memory dummyOperatorSet = OperatorSet({avs: address(0), id: 0});
-        IBN254TableCalculatorTypes.BN254OperatorSetInfo memory dummyBN254Info;
+        IOperatorTableCalculatorTypes.BN254OperatorSetInfo memory dummyBN254Info;
         ICrossChainRegistryTypes.OperatorSetConfig memory dummyConfig;
 
         vm.expectRevert(errInit);
@@ -238,7 +238,7 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
         uint16 globalRootConfirmationThreshold;
         OperatorSet globalRootConfirmerSet;
         ICrossChainRegistryTypes.OperatorSetConfig globalRootConfirmerSetConfig;
-        IBN254TableCalculatorTypes.BN254OperatorSetInfo globalRootConfirmerSetInfo;
+        IOperatorTableCalculatorTypes.BN254OperatorSetInfo globalRootConfirmerSetInfo;
         uint32 referenceTimestamp;
     }
 }
