@@ -164,4 +164,70 @@ library Merkle {
         //the first node in the layer is the root
         return layer[0];
     }
+
+    /**
+     * @notice this function returns the merkle root of a tree created from a set of leaves using keccak as its hash function
+     * @param leaves the leaves of the merkle tree
+     * @return The computed Merkle root of the tree.
+     */
+    function merkleizeKeccak(
+        bytes32[] memory leaves
+    ) internal pure returns (bytes32) {
+        // TODO: very inefficient, use ZERO_HASHES
+        // pad to the next power of 2
+        uint256 numNodesInLayer = 1;
+        while (numNodesInLayer < leaves.length) {
+            numNodesInLayer *= 2;
+        }
+        bytes32[] memory layer = new bytes32[](numNodesInLayer);
+        for (uint256 i = 0; i < leaves.length; i++) {
+            layer[i] = leaves[i];
+        }
+
+        //while we haven't computed the root
+        while (numNodesInLayer != 1) {
+            uint256 numNodesInNextLayer = numNodesInLayer / 2;
+            //overwrite the first numNodesInLayer nodes in layer with the pairwise hashes of their children
+            for (uint256 i = 0; i < numNodesInNextLayer; i++) {
+                layer[i] = keccak256(abi.encodePacked(layer[2 * i], layer[2 * i + 1]));
+            }
+            //the next layer above has half as many nodes
+            numNodesInLayer = numNodesInNextLayer;
+        }
+        //the first node in the layer is the root
+        return layer[0];
+    }
+
+    function getProofKeccak(bytes32[] memory leaves, uint256 index) internal pure returns (bytes memory proof) {
+        // TODO: very inefficient, use ZERO_HASHES
+        // pad to the next power of 2
+        uint256 numNodesInLayer = 1;
+        while (numNodesInLayer < leaves.length) {
+            numNodesInLayer *= 2;
+        }
+        bytes32[] memory layer = new bytes32[](numNodesInLayer);
+        for (uint256 i = 0; i < leaves.length; i++) {
+            layer[i] = leaves[i];
+        }
+
+        //while we haven't computed the root
+        while (numNodesInLayer != 1) {
+            //overwrite the first numNodesInLayer nodes in layer with the pairwise hashes of their children
+            for (uint256 i = 0; i < layer.length; i++) {
+                if (i == index) {
+                    uint256 siblingIndex = i + 1 - 2 * (i % 2);
+                    proof = abi.encodePacked(proof, layer[siblingIndex]);
+                    index /= 2;
+                }
+            }
+
+            uint256 numNodesInNextLayer = numNodesInLayer / 2;
+            //overwrite the first numNodesInLayer nodes in layer with the pairwise hashes of their children
+            for (uint256 i = 0; i < numNodesInNextLayer; i++) {
+                layer[i] = keccak256(abi.encodePacked(layer[2 * i], layer[2 * i + 1]));
+            }
+            //the next layer above has half as many nodes
+            numNodesInLayer = numNodesInNextLayer;
+        }
+    }
 }

@@ -1,0 +1,115 @@
+.
+└── KeyRegistrar (**** denotes that integration tests are needed to fully validate path)
+    ├── when configureOperatorSet is called
+    │   ├── given that the caller does not have permission
+    │   │   └── it should revert
+    │   ├── given that the curve type is NONE
+    │   │   └── it should revert
+    │   ├── given that the curve type is invalid (not ECDSA or BN254)
+    │   │   └── it should revert
+    │   ├── given that the operator set configuration already exists
+    │   │   └── it should revert
+    │   └── given that all parameters are valid
+    │       ├── given that the curve type is ECDSA
+    │       │   └── it should configure the operator set for ECDSA and emit OperatorSetConfigured
+    │       └── given that the curve type is BN254
+    │           └── it should configure the operator set for BN254 and emit OperatorSetConfigured
+    ├── when registerKey is called
+    │   ├── given that the caller does not have permission
+    │   │   └── it should revert
+    │   ├── given that the operator set is not configured
+    │   │   └── it should revert
+    │   ├── given that the key is already registered for this operator set
+    │   │   └── it should revert
+    │   ├── given that the operator set is configured for ECDSA
+    │   │   ├── given that the key data length is not 20 bytes
+    │   │   │   └── it should revert
+    │   │   ├── given that the decoded address is zero
+    │   │   │   └── it should revert
+    │   │   ├── given that the key hash is already globally registered
+    │   │   │   └── it should revert
+    │   │   ├── given that the signature is invalid
+    │   │   │   └── it should revert
+    │   │   └── given that all validations pass
+    │   │       └── it should register the ECDSA key, update global registry, and emit KeyRegistered
+    │   └── given that the operator set is configured for BN254
+    │       ├── given that the G1 point is zero (0,0)
+    │       │   └── it should revert
+    │       ├── given that the signature verification fails
+    │       │   └── it should revert
+    │       ├── given that the key hash is already globally registered
+    │       │   └── it should revert
+    │       └── given that all validations pass
+    │           └── it should register the BN254 key, update global registry, and emit KeyRegistered
+    ├── when deregisterKey is called
+    │   ├── given that the caller does not have permission
+    │   │   └── it should revert
+    │   ├── given that the operator is still slashable for this operator set ****
+    │   │   └── it should revert
+    │   ├── given that the operator set is not configured
+    │   │   └── it should revert
+    │   ├── given that the key is not registered
+    │   │   └── it should revert
+    │   └── given that all conditions are met
+    │       ├── given that the operator set uses ECDSA
+    │       │   └── it should delete the key info and emit KeyDeregistered (global registry remains)
+    │       └── given that the operator set uses BN254
+    │           └── it should delete the key info and emit KeyDeregistered (global registry remains)
+    ├── when checkKey is called
+    │   ├── given that the operator set is not configured
+    │   │   └── it should revert
+    │   ├── given that the operator has a registered key
+    │   │   └── it should return true
+    │   └── given that the operator does not have a registered key
+    │       └── it should return false
+    ├── when isRegistered is called
+    │   ├── given that the operator has a registered key for the operator set
+    │   │   └── it should return true
+    │   └── given that the operator does not have a registered key for the operator set
+    │       └── it should return false
+    ├── when getOperatorSetCurveType is called
+    │   ├── given that the operator set is not configured
+    │   │   └── it should return CurveType.NONE
+    │   ├── given that the operator set is configured for ECDSA
+    │   │   └── it should return CurveType.ECDSA
+    │   └── given that the operator set is configured for BN254
+    │       └── it should return CurveType.BN254
+    ├── when getBN254Key is called
+    │   ├── given that the operator set is not configured for BN254
+    │   │   └── it should revert
+    │   ├── given that the operator is not registered
+    │   │   └── it should return zero G1 and G2 points
+    │   └── given that the operator is registered
+    │       └── it should return the decoded G1 and G2 points
+    ├── when getECDSAKey is called
+    │   ├── given that the operator set is not configured for ECDSA
+    │   │   └── it should revert
+    │   ├── given that the operator is not registered
+    │   │   └── it should return empty bytes
+    │   └── given that the operator is registered
+    │       └── it should return the 20-byte address as bytes
+    ├── when getECDSAAddress is called
+    │   ├── given that the operator set is not configured for ECDSA
+    │   │   └── it should revert
+    │   ├── given that the operator is not registered
+    │   │   └── it should return address(0)
+    │   └── given that the operator is registered
+    │       └── it should return the decoded address
+    ├── when isKeyGloballyRegistered is called
+    │   ├── given that the key hash exists in global registry
+    │   │   └── it should return true
+    │   └── given that the key hash does not exist in global registry
+    │       └── it should return false
+    ├── when getKeyHash is called
+    │   ├── given that the operator is not registered
+    │   │   └── it should return bytes32(0)
+    │   ├── given that the operator has an ECDSA key
+    │   │   └── it should return keccak256 of the key data
+    │   └── given that the operator has a BN254 key
+    │       └── it should return the BN254 G1 point hash
+    ├── when getECDSAKeyRegistrationMessageHash is called
+    │   └── it should return the EIP-712 compliant message hash for ECDSA registration
+    ├── when getBN254KeyRegistrationMessageHash is called
+    │   └── it should return the EIP-712 compliant message hash for BN254 registration
+    └── when encodeBN254KeyData is called
+        └── it should return the encoded bytes of G1 and G2 points 

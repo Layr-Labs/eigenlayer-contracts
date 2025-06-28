@@ -1,0 +1,111 @@
+.
+└── CrossChainRegistry (**** denotes that integration tests are needed to fully validate path)
+    ├── when initialize is called
+    │   ├── given that the contract is already initialized
+    │   │   └── it should revert
+    │   └── given that the contract is not initialized
+    │       └── it should set the owner and paused status correctly
+    ├── when createGenerationReservation is called
+    │   ├── given that the function is paused
+    │   │   └── it should revert
+    │   ├── given that the caller does not have permission
+    │   │   └── it should revert
+    │   ├── given that the operator set is invalid
+    │   │   └── it should revert
+    │   ├── given that a generation reservation already exists
+    │   │   └── it should revert
+    │   ├── given that the chain IDs array is empty
+    │   │   └── it should revert
+    │   ├── given that a chain ID is not whitelisted
+    │   │   └── it should revert
+    │   └── given that all parameters are valid
+    │       └── it should create the reservation, set calculator, config, and destinations & emit events
+    ├── when removeGenerationReservation is called
+    │   ├── given that the function is paused
+    │   │   └── it should revert
+    │   ├── given that the caller does not have permission
+    │   │   └── it should revert
+    │   ├── given that the operator set is invalid
+    │   │   └── it should revert
+    │   ├── given that the generation reservation does not exist
+    │   │   └── it should revert
+    │   └── given that a valid reservation exists
+    │       └── it should remove all storage and emit events
+    ├── when setOperatorTableCalculator is called
+    │   ├── given that the function is paused
+    │   │   └── it should revert
+    │   ├── given that the caller does not have permission
+    │   │   └── it should revert
+    │   ├── given that the operator set is invalid
+    │   │   └── it should revert
+    │   ├── given that the generation reservation does not exist
+    │   │   └── it should revert
+    │   └── given that all parameters are valid
+    │       └── it should update the calculator and emit event
+    ├── when setOperatorSetConfig is called
+    │   ├── given that the function is paused
+    │   │   └── it should revert
+    │   ├── given that the caller does not have permission
+    │   │   └── it should revert
+    │   ├── given that the operator set is invalid
+    │   │   └── it should revert
+    │   ├── given that the generation reservation does not exist
+    │   │   └── it should revert
+    │   └── given that all parameters are valid
+    │       └── it should update the config and emit event
+    ├── when addTransportDestinations is called
+    │   ├── given that the function is paused
+    │   │   └── it should revert
+    │   ├── given that the caller does not have permission
+    │   │   └── it should revert
+    │   ├── given that the operator set is invalid
+    │   │   └── it should revert
+    │   ├── given that the generation reservation does not exist
+    │   │   └── it should revert
+    │   ├── given that the chain IDs array is empty
+    │   │   └── it should revert
+    │   ├── given that a chain ID is not whitelisted
+    │   │   └── it should revert
+    │   ├── given that a transport destination already exists
+    │   │   └── it should revert
+    │   └── given that all parameters are valid
+    │       └── it should add the destinations and emit events
+    ├── when removeTransportDestinations is called
+    │   ├── given that the function is paused
+    │   │   └── it should revert
+    │   ├── given that the caller does not have permission
+    │   │   └── it should revert
+    │   ├── given that the operator set is invalid
+    │   │   └── it should revert
+    │   ├── given that the generation reservation does not exist
+    │   │   └── it should revert
+    │   ├── given that the chain IDs array is empty
+    │   │   └── it should revert
+    │   ├── given that a transport destination is not found
+    │   │   └── it should revert
+    │   ├── given that removing would leave zero destinations
+    │   │   └── it should revert
+    │   └── given that all parameters are valid
+    │       └── it should remove the destinations and emit events
+    ├── when addChainIDsToWhitelist is called
+    │   ├── given that the caller is not the owner
+    │   │   └── it should revert
+    │   ├── given that the function is paused
+    │   │   └── it should revert
+    │   ├── given that array lengths mismatch
+    │   │   └── it should revert
+    │   ├── given that a chain ID is zero
+    │   │   └── it should revert
+    │   ├── given that a chain ID is already whitelisted
+    │   │   └── it should revert
+    │   └── given that all parameters are valid
+    │       └── it should add chains to whitelist and emit events
+    └── when removeChainIDsFromWhitelist is called
+        ├── given that the caller is not the owner
+        │   └── it should revert
+        ├── given that the function is paused
+        │   └── it should revert
+        ├── given that a chain ID is not whitelisted
+        │   └── it should revert
+        └── given that all parameters are valid
+            └── it should remove chains from whitelist and emit events 

@@ -531,6 +531,13 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
     ) external view returns (bool isSet, uint32 delay);
 
     /**
+     * @notice Returns the number of blocks between an operator deallocating magnitude and the magnitude becoming
+     * unslashable and then being able to be reallocated to another operator set. Note that unlike the allocation delay
+     * which is configurable by the operator, the DEALLOCATION_DELAY is globally fixed and cannot be changed.
+     */
+    function DEALLOCATION_DELAY() external view returns (uint32 delay);
+
+    /**
      * @notice Returns a list of all operator sets the operator is registered for
      * @param operator The operator address to query.
      */

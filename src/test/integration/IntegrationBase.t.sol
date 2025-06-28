@@ -136,6 +136,30 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         ++numAVSs;
     }
 
+    function _newRandomAVS_WithBN254() internal returns (AVS avs, OperatorSet[] memory operatorSets) {
+        string memory avsName = string.concat("avs", numAVSs.toString());
+        avs = _genRandAVS(avsName);
+        avs.updateAVSMetadataURI("https://example.com");
+        operatorSets = avs.createOperatorSets(_randomStrategies());
+
+        for (uint i = 0; i < operatorSets.length; i++) {
+            avs.configureOperatorSet(operatorSets[i], IKeyRegistrarTypes.CurveType.BN254);
+        }
+        ++numAVSs;
+    }
+
+    function _newRandomAVS_WithECDSA() internal returns (AVS avs, OperatorSet[] memory operatorSets) {
+        string memory avsName = string.concat("avs", numAVSs.toString());
+        avs = _genRandAVS(avsName);
+        avs.updateAVSMetadataURI("https://example.com");
+        operatorSets = avs.createOperatorSets(_randomStrategies());
+
+        for (uint i = 0; i < operatorSets.length; i++) {
+            avs.configureOperatorSet(operatorSets[i], IKeyRegistrarTypes.CurveType.ECDSA);
+        }
+        ++numAVSs;
+    }
+
     /// @dev Send a random amount of ETH (up to 10 gwei) to the destination via `call`,
     /// triggering its fallback function. Sends a gwei-divisible amount as well as a
     /// non-gwei-divisible amount.
