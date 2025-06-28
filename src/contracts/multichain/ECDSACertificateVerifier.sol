@@ -103,7 +103,7 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
         uint256[] memory totalStakeNominalThresholds
     ) external view returns (bool) {
         uint256[] memory signedStakes = _verifyECDSACertificate(operatorSet, cert);
-        if (signedStakes.length != totalStakeNominalThresholds.length) revert ArrayLengthMismatch();
+        require(signedStakes.length == totalStakeNominalThresholds.length, ArrayLengthMismatch());
         for (uint256 i = 0; i < signedStakes.length; i++) {
             if (signedStakes[i] < totalStakeNominalThresholds[i]) {
                 return false;
@@ -194,7 +194,7 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
         bytes memory signatures
     ) internal view returns (address[] memory signers, bool valid) {
         // Each ECDSA signature is 65 bytes: r (32 bytes) + s (32 bytes) + v (1 byte)
-        if (signatures.length % 65 != 0) revert InvalidSignatureLength();
+        require(signatures.length > 0 && signatures.length % 65 == 0, InvalidSignatureLength());
 
         uint256 signatureCount = signatures.length / 65;
         signers = new address[](signatureCount);
