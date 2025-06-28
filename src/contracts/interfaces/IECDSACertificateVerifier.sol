@@ -13,7 +13,7 @@ interface IECDSACertificateVerifierTypes is IOperatorTableCalculatorTypes {
      * @notice A ECDSA Certificate
      * @param referenceTimestamp the timestamp at which the certificate was created
      * @param messageHash the hash of the message that was signed by operators
-     * @param signature the concatenated signature of each signing operator
+     * @param sig the concatenated signature of each signing operator
      */
     struct ECDSACertificate {
         uint32 referenceTimestamp;
@@ -50,7 +50,7 @@ interface IECDSACertificateVerifier is IECDSACertificateVerifierEvents, IBaseCer
      * @notice verifies a certificate
      * @param cert a certificate
      * @return signedStakes amount of stake that signed the certificate for each stake
-     * type
+     * type. Each index corresponds to a stake type in the `weights` array in the `ECDSAOperatorInfo`
      */
     function verifyCertificate(
         OperatorSet calldata operatorSet,
@@ -61,8 +61,9 @@ interface IECDSACertificateVerifier is IECDSACertificateVerifierEvents, IBaseCer
      * @notice verifies a certificate and makes sure that the signed stakes meet
      * provided portions of the total stake on the AVS
      * @param cert a certificate
-     * @param totalStakeProportionThresholds the proportion of total stake that
-     * the signed stake of the certificate should meet
+     * @param totalStakeProportionThresholds the proportion, in BPS, of total stake that
+     * the signed stake of the certificate should meet. Each index corresponds to
+     * a stake type in the `weights` array in the `ECDSAOperatorInfo`
      * @return Whether or not the certificate is valid and meets thresholds
      */
     function verifyCertificateProportion(
@@ -75,8 +76,9 @@ interface IECDSACertificateVerifier is IECDSACertificateVerifierEvents, IBaseCer
      * @notice verifies a certificate and makes sure that the signed stakes meet
      * provided portions of the total stake on the AVS
      * @param cert a certificate
-     * @param totalStakeNominalThresholds the proportion of total stake that
-     * the signed stake of the certificate should meet
+     * @param totalStakeNominalThresholds the nominal amount of total stake that
+     * the signed stake of the certificate should meet. Each index corresponds to
+     * a stake type in the `weights` array in the `ECDSAOperatorInfo`
      * @return Whether or not the certificate is valid and meets thresholds
      */
     function verifyCertificateNominal(
