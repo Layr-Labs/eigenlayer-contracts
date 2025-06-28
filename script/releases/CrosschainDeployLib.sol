@@ -15,8 +15,6 @@ interface ICreateX {
     ) external view returns (address computedAddress);
 }
 
-bytes11 constant EMPTY_CONTRACT_SALT = bytes11(uint88(0xffffffffffffffffffffff));
-
 library CrosschainDeployLib {
     using CrosschainDeployLib for *;
 
@@ -24,16 +22,44 @@ library CrosschainDeployLib {
     /// Write
     /// -----------------------------------------------------------------------
 
-    /**
+    /*
      * @notice Deploys a crosschain empty contract.
      * @dev The empty contract MUST stay consistent across all chains/deployments.
      * @dev The empty contract MUST always be deployed with the same salt.
      */
-    function deployEmptyContract(address deployer) internal returns (address) {
+    function deployEmptyContract(
+        address deployer
+    ) internal returns (address) {
         address computedAddress =
-            computeCrosschainAddress(deployer, keccak256(type(EmptyContract).creationCode), EMPTY_CONTRACT_SALT);
+            computeCrosschainAddress(deployer, keccak256(type(EmptyContract).creationCode), type(EmptyContract).name);
         if (computedAddress.code.length != 0) return computedAddress;
-        return type(EmptyContract).creationCode.deployCrosschain(deployer, EMPTY_CONTRACT_SALT);
+        return _deployCrosschain(deployer, type(EmptyContract).creationCode, type(EmptyContract).name);
+    }
+
+    /*
+     * @notice Deploys a crosschain `TransparentUpgradeableProxy` using CreateX.
+     * @dev The initial admin is the deployer.
+     * @dev The implementation MUST also be deterministic to ensure the contract can be deployed on all chains.
+     * @dev The salt MUST be unique for each proxy deployment sharing the same implementation otherwise address collisions WILL occur.
+     * @dev The `admin` is also assumed to be the deployer.
+     *
+     * @dev Example usage:
+     * ```solidity
+     * bytes11 salt = bytes11(uint88(0xffffffffffffffffffffff));
+     * address emptyContract = type(EmptyContract).creationCode.deployCrosschain(deployer);
+     * address proxy = emptyContract.deployCrosschainProxy(deployer, salt); 
+     * ITransparentUpgradeableProxy(address(proxy)).upgradeTo(address(implementation));
+     * ITransparentUpgradeableProxy(address(proxy)).changeAdmin(address(admin));
+     * ```
+     */
+    function deployCrosschainProxy(
+        address adminAndDeployer,
+        address implementation,
+        string memory name
+    ) internal returns (ITransparentUpgradeableProxy) {
+        return ITransparentUpgradeableProxy(
+            _deployCrosschain(adminAndDeployer, computeUpgradeableProxyInitCode(implementation, adminAndDeployer), name)
+        );
     }
 
     /*
@@ -41,60 +67,12 @@ library CrosschainDeployLib {
      *
      * @dev Example usage:
      * ```solidity
-     * type(EmptyContract).creationCode.deployCrosschain(EMPTY_CONTRACT_SALT)
+     * type(EmptyContract).creationCode.deployCrosschain(deployer, EMPTY_CONTRACT_SALT)
      * ```
      */
-    function deployCrosschain(bytes memory initCode, address deployer, bytes11 salt) internal returns (address) {
-        return createx.deployCreate2(computeProtectedSalt(deployer, salt), initCode);
+    function _deployCrosschain(address deployer, bytes memory initCode, string memory name) private returns (address) {
+        return createx.deployCreate2(computeProtectedSalt(deployer, name), initCode);
     }
-
-    // /*
-    //  * @notice Deploys a crosschain contract using CreateX with the `DEFAULT_SALT`.
-    //  *
-    //  * @dev Example usage:
-    //  * ```solidity
-    //  * address emptyContract = type(EmptyContract).creationCode.deployCrosschain();
-    //  * ```
-    //  */
-    // function deployCrosschain(
-    //     bytes memory initCode
-    // ) internal returns (address) {
-    //     return deployCrosschain(initCode, EMPTY_CONTRACT_SALT);
-    // }
-
-    /*
-     * @notice Deploys a crosschain `TransparentUpgradeableProxy` using CreateX.
-     * @dev The initial admin is msg.sender.
-     * @dev The implementation MUST also be deterministic to ensure the contract can be deployed on all chains.
-     * @dev The salt MUST be unique for each proxy deployment sharing the same implementation otherwise address collisions WILL occur.
-     *
-     * @dev Example usage:
-     * ```solidity
-     * bytes11 salt = bytes11(uint88(0xffffffffffffffffffffff));
-     * address emptyContract = type(EmptyContract).creationCode.deployCrosschain();
-     * address proxy = emptyContract.deployCrosschainProxy(salt); 
-     * ITransparentUpgradeableProxy(address(proxy)).upgradeTo(address(implementation));
-     * ITransparentUpgradeableProxy(address(proxy)).changeAdmin(address(admin));
-     * ```
-     */
-    // function deployCrosschainProxy(
-    //     address implementation,
-    //     bytes11 salt
-    // ) internal returns (ITransparentUpgradeableProxy) {
-    //     return ITransparentUpgradeableProxy(
-    //         deployCrosschain(computeUpgradeableProxyInitCode(implementation, msg.sender), salt)
-    //     );
-    // }
-
-    // /**
-    //  * @notice Deploys a crosschain name salted `TransparentUpgradeableProxy` using CreateX.
-    //  */
-    // function deployCrosschainProxy(
-    //     address implementation,
-    //     string memory name
-    // ) internal returns (ITransparentUpgradeableProxy) {
-    //     return deployCrosschainProxy(implementation, bytes11(keccak256(bytes(name))));
-    // }
 
     /// -----------------------------------------------------------------------
     /// Helpers
@@ -110,10 +88,15 @@ library CrosschainDeployLib {
         return bytes32(
             bytes.concat(
                 bytes20(deployer),
-                bytes1(uint8(1)), // Cross-chain deployments are allowed (0: false, 1: true)
+                bytes1(uint8(0)), // Cross-chain redeploy protection disabled (0: false, 1: true)
                 bytes11(salt)
             )
         );
+    }
+
+    /// @dev Helper to compute the protected salt for a given name.
+    function computeProtectedSalt(address deployer, string memory name) internal pure returns (bytes32) {
+        return computeProtectedSalt(deployer, bytes11(keccak256(bytes(name))));
     }
 
     /*
@@ -127,25 +110,24 @@ library CrosschainDeployLib {
         return abi.encodePacked(type(TransparentUpgradeableProxy).creationCode, abi.encode(implementation, admin, ""));
     }
 
-    /*
-     * @notice Returns the predicted address of a contract deployed with CreateX.
-     */
     function computeCrosschainAddress(
         address deployer,
         bytes32 initCodeHash,
-        bytes11 salt
+        string memory name
     ) internal view returns (address) {
-        return createx.computeCreate2Address(computeProtectedSalt(deployer, salt), initCodeHash);
+        return createx.computeCreate2Address(computeProtectedSalt(deployer, name), initCodeHash);
     }
 
     /*
      * @notice Returns the predicted address of a `TransparentUpgradeableProxy` deployed with CreateX.
      */
     function computeCrosschainUpgradeableProxyAddress(
+        address adminAndDeployer,
         address implementation,
-        address admin,
-        bytes11 salt
+        string memory name
     ) internal view returns (address) {
-        return computeCrosschainAddress(admin, keccak256(computeUpgradeableProxyInitCode(implementation, admin)), salt);
+        return computeCrosschainAddress(
+            adminAndDeployer, keccak256(computeUpgradeableProxyInitCode(implementation, adminAndDeployer)), name
+        );
     }
 }

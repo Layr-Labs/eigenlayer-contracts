@@ -29,7 +29,9 @@ library CrosschainDeployLib {
      * @dev The empty contract MUST stay consistent across all chains/deployments.
      * @dev The empty contract MUST always be deployed with the same salt.
      */
-    function deployEmptyContract(address deployer) internal returns (address) {
+    function deployEmptyContract(
+        address deployer
+    ) internal returns (address) {
         address computedAddress =
             computeCrosschainAddress(deployer, keccak256(type(EmptyContract).creationCode), EMPTY_CONTRACT_SALT);
         if (computedAddress.code.length != 0) return computedAddress;
@@ -56,13 +58,9 @@ library CrosschainDeployLib {
      * address emptyContract = type(EmptyContract).creationCode.deployCrosschain(deployer);
      * ```
      */
-    function deployCrosschain(
-        bytes memory initCode,
-        address deployer
-    ) internal returns (address) {
+    function deployCrosschain(bytes memory initCode, address deployer) internal returns (address) {
         return deployCrosschain(initCode, deployer, EMPTY_CONTRACT_SALT);
     }
-
 
     /**
      * @notice Deploys a crosschain `TransparentUpgradeableProxy` using CreateX.
@@ -74,7 +72,7 @@ library CrosschainDeployLib {
      * ```solidity
      * bytes11 salt = bytes11(uint88(0xffffffffffffffffffffff));
      * address emptyContract = type(EmptyContract).creationCode.deployCrosschain(deployer);
-     * address proxy = emptyContract.deployCrosschainProxy(deployer,salt); 
+     * address proxy = emptyContract.deployCrosschainProxy(deployer,salt);
      * ITransparentUpgradeableProxy(address(proxy)).upgradeTo(address(implementation));
      * ITransparentUpgradeableProxy(address(proxy)).changeAdmin(address(admin));
      * ```
