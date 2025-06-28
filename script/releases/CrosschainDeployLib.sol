@@ -30,9 +30,6 @@ library CrosschainDeployLib {
     function deployEmptyContract(
         address deployer
     ) internal returns (address) {
-        address computedAddress =
-            computeCrosschainAddress(deployer, keccak256(type(EmptyContract).creationCode), type(EmptyContract).name);
-        if (computedAddress.code.length != 0) return computedAddress;
         return _deployCrosschain(deployer, type(EmptyContract).creationCode, type(EmptyContract).name);
     }
 
