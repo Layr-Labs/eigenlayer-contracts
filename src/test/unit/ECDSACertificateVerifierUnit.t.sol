@@ -366,6 +366,20 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificate is ECDSACertificate
         verifier.verifyCertificate(defaultOperatorSet, cert);
     }
 
+    function test_revert_emptySignatures() public {
+        uint32 referenceTimestamp = _initializeOperatorTableBase();
+
+        // Create certificate with empty signatures
+        IECDSACertificateVerifierTypes.ECDSACertificate memory cert = IECDSACertificateVerifierTypes.ECDSACertificate({
+            referenceTimestamp: referenceTimestamp,
+            messageHash: defaultMsgHash,
+            sig: "" // Empty signatures
+        });
+
+        vm.expectRevert(InvalidSignatureLength.selector);
+        verifier.verifyCertificate(defaultOperatorSet, cert);
+    }
+
     function test_revert_referenceTimestampDoesNotExist() public {
         uint32 referenceTimestamp = _initializeOperatorTableBase();
         uint32 nonExistentTimestamp = referenceTimestamp + 1000;
