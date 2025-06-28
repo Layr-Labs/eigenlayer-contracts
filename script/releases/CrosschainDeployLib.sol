@@ -88,7 +88,7 @@ library CrosschainDeployLib {
         return bytes32(
             bytes.concat(
                 bytes20(deployer),
-                bytes1(uint8(0)), // Cross-chain redeploy protection disabled (0: false, 1: true)
+                bytes1(uint8(0)), // Cross-chain redeploy protection enabled (0: false, 1: true)
                 bytes11(salt)
             )
         );
