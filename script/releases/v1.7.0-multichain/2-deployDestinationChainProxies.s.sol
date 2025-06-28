@@ -17,9 +17,9 @@ contract DeployDestinationChainProxies is MultisigBuilder {
     /// forgefmt: disable-next-item
     function _runAsMultisig() internal virtual override {
         // If we're not on a destination chain, we don't need to deploy any contracts
-        // if (!Env.isDestinationChain()) {
-        //     return;
-        // }
+        if (!Env.isDestinationChain()) {
+            return;
+        }
 
         // We don't use the prank modifier here, since we have to write to the env
         _startPrank(Env.multichainDeployerMultisig());
@@ -50,20 +50,28 @@ contract DeployDestinationChainProxies is MultisigBuilder {
         _stopPrank();
 
         // Save all the contracts to the env
+<<<<<<< HEAD
         _unsafeAddImplContract(type(EmptyContract).name, emptyContract);
         _unsafeAddProxyContract(type(OperatorTableUpdater).name, address(operatorTableUpdaterProxy));
         _unsafeAddProxyContract(type(ECDSACertificateVerifier).name, address(ecdsaCertificateVerifierProxy));
         _unsafeAddProxyContract(type(BN254CertificateVerifier).name, address(bn254CertificateVerifierProxy));
+=======
+        // NOTE: This is an antipattern, we should update the ZEnvHelpers to support this
+        ZEnvHelpers.state().__updateContract(type(EmptyContract).name.impl(), address(emptyContract));
+        ZEnvHelpers.state().__updateContract(type(OperatorTableUpdater).name.proxy(), address(operatorTableUpdaterProxy));
+        ZEnvHelpers.state().__updateContract(type(ECDSACertificateVerifier).name.proxy(), address(ecdsaCertificateVerifierProxy));
+        ZEnvHelpers.state().__updateContract(type(BN254CertificateVerifier).name.proxy(), address(bn254CertificateVerifierProxy));
+>>>>>>> 8c437bcc (chore: push)
     }
 
     function testScript() public virtual {
-        // if (!Env.isDestinationChain()) {
-        //     return;
-        // }
+        if (!Env.isDestinationChain()) {
+            return;
+        }
 
         execute();
 
-        // _validateProxyAdminIsMultisig();
+        _validateProxyAdminIsMultisig();
     }
 
     /// @dev Validate that proxies are owned by the multichain deployer multisig (temporarily)

@@ -91,6 +91,11 @@ library CrosschainDeployLib {
         );
     }
 
+    /// @dev Helper to compute the protected salt for a given name.
+    function computeProtectedSalt(address deployer, string memory name) internal pure returns (bytes32) {
+        return computeProtectedSalt(deployer, bytes11(keccak256(bytes(name))));
+    }
+
     /*
      * @notice Returns the initialization code for a transparent upgradeable proxy.
      * @dev The returned init code does not include metadata typically appended by the compiler.
