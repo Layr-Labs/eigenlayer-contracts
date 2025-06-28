@@ -135,6 +135,7 @@ Verifies an ECDSA certificate by checking individual signatures from operators. 
 * The certificate MUST NOT be stale (based on `maxStalenessPeriod`)
 * The root at `referenceTimestamp` MUST be valid (not disabled)
 * The operator table MUST exist for the `referenceTimestamp`
+* Signatures MUST be proper length
 * Signatures MUST be ordered by signer address (ascending)
 * All signers MUST be registered operators
 * Each signature MUST be valid
