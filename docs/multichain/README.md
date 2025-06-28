@@ -25,10 +25,6 @@ This document provides an overview of system components, contracts, and user rol
 
 ### System Diagram
 
----
-
-### System Diagram
-
 ```mermaid
 classDiagram 
 direction TD
@@ -81,7 +77,7 @@ OperatorTableUpdater --> CertificateVerifier: Updates table
 
 Source chain contracts are deployed to Ethereum Mainnet. 
 
-* [System Components](#system-components)
+#### Cross Chain Registry
 
 | File | Type | Proxy |
 | -------- | -------- | -------- |
@@ -98,8 +94,6 @@ See full documentation in [`/source/CrossChainRegistry.md`](./source/CrossChainR
 These contracts are **deployed by an AVS** and define custom stake weights of operators in an operatorSet. They are segmented by key-type. 
 
 See full documentation in the [middleware repository](https://github.com/Layr-Labs/eigenlayer-middleware/tree/dev/docs).
-
----
 
 ---
 
