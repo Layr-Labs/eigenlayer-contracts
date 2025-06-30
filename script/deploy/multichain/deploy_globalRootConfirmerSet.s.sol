@@ -20,17 +20,12 @@ contract DeployGlobalRootConfirmerSet is Script, Test {
 
     address internal constant AVS = 0xDA29BB71669f46F2a779b4b62f03644A84eE3479;
 
-
-    function run(
-        string memory network,
-        string memory salt
-    ) public {
+    function run(string memory network, string memory salt) public {
         /**
          *
          *                     WALLET CREATION
          *
          */
-
         require(_strEq(network, "preprod") || _strEq(network, "testnet"), "Invalid network");
 
         // 1. Create a BN254 Wallet using random salt
@@ -60,7 +55,10 @@ contract DeployGlobalRootConfirmerSet is Script, Test {
         bytes32[] memory operatorInfoLeaves = new bytes32[](1);
         operatorInfoLeaves[0] = keccak256(
             abi.encode(
-                IOperatorTableCalculatorTypes.BN254OperatorInfo({pubkey: operator.signingKey.publicKeyG1, weights: weights})
+                IOperatorTableCalculatorTypes.BN254OperatorInfo({
+                    pubkey: operator.signingKey.publicKeyG1,
+                    weights: weights
+                })
             )
         );
         operatorSetInfo.operatorInfoTreeRoot = operatorInfoLeaves.merkleizeKeccak();
@@ -79,7 +77,7 @@ contract DeployGlobalRootConfirmerSet is Script, Test {
          *                     OUTPUT - OPERATOR SET INFO (TOML FORMAT)
          *
          */
-        
+
         // Write operator set info to TOML file
         _writeOperatorSetToml(network, operatorSetInfo, operatorSetConfig);
 
@@ -93,10 +91,7 @@ contract DeployGlobalRootConfirmerSet is Script, Test {
         _writeOperatorData(operator, network);
     }
 
-    function _writeOperatorData(
-        Operator memory operator,
-        string memory network
-    ) internal {
+    function _writeOperatorData(Operator memory operator, string memory network) internal {
         string memory operator_object = "operator";
 
         // Serialize regular wallet info
@@ -131,7 +126,7 @@ contract DeployGlobalRootConfirmerSet is Script, Test {
         string memory walletOutputPath = string.concat("script/deploy/multichain/", network, ".wallet.json");
         vm.writeJson(operatorOutput, walletOutputPath);
     }
-    
+
     function _writeOperatorSetToml(
         string memory network,
         IOperatorTableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo,
@@ -139,35 +134,38 @@ contract DeployGlobalRootConfirmerSet is Script, Test {
     ) internal {
         // Build JSON object using serializeJson
         string memory json_obj = "toml_output";
-        
+
         // Top level fields
-        vm.serializeUint(json_obj, "globalRootConfirmationThreshold", 10000);
+        vm.serializeUint(json_obj, "globalRootConfirmationThreshold", 10_000);
         vm.serializeUint(json_obj, "referenceTimestamp", block.timestamp);
-        
+
         // globalRootConfirmerSet object
         string memory confirmerSet_obj = "globalRootConfirmerSet";
         vm.serializeString(confirmerSet_obj, "avs", AVS.toHexString());
         string memory confirmerSetOutput = vm.serializeUint(confirmerSet_obj, "id", 0);
         vm.serializeString(json_obj, "globalRootConfirmerSet", confirmerSetOutput);
-        
+
         // globalRootConfirmerSetConfig object
         string memory confirmerSetConfig_obj = "globalRootConfirmerSetConfig";
         vm.serializeUint(confirmerSetConfig_obj, "maxStalenessPeriod", operatorSetConfig.maxStalenessPeriod);
-        string memory confirmerSetConfigOutput = vm.serializeAddress(confirmerSetConfig_obj, "owner", operatorSetConfig.owner);
+        string memory confirmerSetConfigOutput =
+            vm.serializeAddress(confirmerSetConfig_obj, "owner", operatorSetConfig.owner);
         vm.serializeString(json_obj, "globalRootConfirmerSetConfig", confirmerSetConfigOutput);
-        
+
         // globalRootConfirmerSetInfo object
         string memory confirmerSetInfo_obj = "globalRootConfirmerSetInfo";
         vm.serializeUint(confirmerSetInfo_obj, "numOperators", operatorSetInfo.numOperators);
         vm.serializeBytes32(confirmerSetInfo_obj, "operatorInfoTreeRoot", operatorSetInfo.operatorInfoTreeRoot);
         vm.serializeUint(confirmerSetInfo_obj, "totalWeights", operatorSetInfo.totalWeights);
-        
+
         // aggregatePubkey nested object
         string memory aggregatePubkey_obj = "aggregatePubkey";
         vm.serializeString(aggregatePubkey_obj, "X", operatorSetInfo.aggregatePubkey.X.toString());
-        string memory aggregatePubkeyOutput = vm.serializeString(aggregatePubkey_obj, "Y", operatorSetInfo.aggregatePubkey.Y.toString());
-        
-        string memory confirmerSetInfoOutput = vm.serializeString(confirmerSetInfo_obj, "aggregatePubkey", aggregatePubkeyOutput);
+        string memory aggregatePubkeyOutput =
+            vm.serializeString(aggregatePubkey_obj, "Y", operatorSetInfo.aggregatePubkey.Y.toString());
+
+        string memory confirmerSetInfoOutput =
+            vm.serializeString(confirmerSetInfo_obj, "aggregatePubkey", aggregatePubkeyOutput);
         string memory finalJson = vm.serializeString(json_obj, "globalRootConfirmerSetInfo", confirmerSetInfoOutput);
 
         // Write TOML file using writeToml
