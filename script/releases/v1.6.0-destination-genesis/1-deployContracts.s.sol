@@ -13,7 +13,7 @@ contract DeployDestinationGenesis is EOADeployer {
         }
 
         // Setup safe seploy parameters
-        uint256 salt = uint256(keccak256(abi.encode(block.timestamp, block.chainid))); // Pseudo-random salt
+        uint256 salt = uint256(keccak256(abi.encode(block.chainid, block.timestamp))); // Pseudo-random salt
         address[] memory initialOwners = new address[](1);
         initialOwners[0] = msg.sender;
 
@@ -55,7 +55,7 @@ contract DeployDestinationGenesis is EOADeployer {
         _runAsEOA();
 
         // Check proxyAdmin owner
-        assertEq(Env.proxyAdmin(), Env.opsMultisig());
+        assertEq(ProxyAdmin(Env.proxyAdmin()).owner(), Env.opsMultisig());
 
         // Check that the multisigs are non-zero
         assertNotEq(Env.opsMultisig(), address(0));
