@@ -14,24 +14,29 @@ Libraries and Mixins:
 
 ## Overview
 
-The `OperatorTableUpdater` is responsible for updating the `GlobalTableRoot` and updating operator tables from merkle proofs against the `GlobalTableRoot`. The contract is deployed on every destination chain. The contract maintains a set of valid global table roots that are confirmed by a designated global root confirmer set, and allows updating individual operator tables by providing merkle proofs against these roots.
+The `OperatorTableUpdater` is responsible for updating the `GlobalTableRoot` and updating operator tables from merkle proofs against the `GlobalTableRoot`. The contract is deployed on every destination chain. The contract maintains a set of valid global table roots that are confirmed by a designated generator, and allows updating individual operator tables by providing merkle proofs against these roots.
 
 The contract supports both BN254 and ECDSA operator tables and routes updates to the appropriate certificate verifier based on the curve type.
 
 ## Parameterization
-Upon initialization, the `globalRootConfirmerSet` (ie. `Generator`) is updated. This operatorSet is a *"shadow-operatorSet"*. It does not exist in the core protocol, does not have stake backing it, and is not transported to other chains via the multichain protocol. It can only be updated upon initialization or by a [privileged role](#updateglobalrootconfirmerset). This entity is the same across all destination chains. 
+Upon initialization, the `generator` is updated. The `generator` is represented in storage as an operatorSet. The `generator` should be considered a ghost-operatorSet` since it does not exist in the core protocol, does not have stake backing it, and is not transported to other chains via the multichain protocol. It can only be updated upon initialization or by a [privileged role](#updategenerator). This entity is the same across all destination chains. 
 
-* `GlobalRootConfirmerSet`, also known as the `Generator`, is an EigenLabs-run entity that signs off on `GlobalTableRoots`. The operatorSet is of size 1. 
-* `maxStalenessPeriod`: 0. Set to zero to confirm roots without updating the `globalConfirmerOperatorSet`. See [`CertificateVerifier`](./CertificateVerifier.md#overview) for specifics
-* `globalRootConfirmationThreshold`: 10000. The threshold in basis points required for global root confirmation. Since the operatorSet is of size 1 a single signature is needed
-* `referenceTimestamp`: A past timestamp at which the `globalRootConfirmerSet` is generated. This value is set to the initial `latestReferenceTimestamp` in the `OperatorTableUpdater. It is the same across all destination chains, even for destination chains that are supported after the initial deployment
+The following values are set upon initialization: 
+
+* `generator` is an EigenLabs-run entity that signs off on `globalTableRoots`. The operatorSet is of size 1. 
+* `globalRootConfirmationThreshold`: 10000. The threshold in basis points required for global root confirmation. Since the operatorSet is of size 1 a single signature is needed.
+* `referenceTimestamp`: A past timestamp at which the `generator` is set. We hardcode this value to 1 upon initialization. This value is also the `latestReferenceTimestamp`. Once roots are updated, the `latestReferenceTimestamp` will increase. *Note: the reference timestamp for the `generator`, given by `operatorTableUpdater.getGeneratorReferenceTimestamp` will remain 1 unless [`updateGenerator`](#updategenerator) is called*.
+* `generatorInfo`: The key material needed to verify certificates of the `generator`
+* `operatorSetConfig`: A configuration for the `generator` 
+    * `maxStalenessPeriod`: 0. Set to zero to confirm `globalTableRoots` without updating the `generator` operatorSet. See [`CertificateVerifier`](./CertificateVerifier.md#overview) for specifics`OperatorTableUpdater`. It is the same across all destination chains, even for destination chains that are supported after the initial deployment. 
+    * `owner`: Unused parameter for `Generator`
 
 
 ---
 
 ## Global Root Confirmation
 
-Global table roots must be confirmed by the `globalRootConfirmerSet` (ie. `Generator`) before operator tables can be updated against them.
+Global table roots must be confirmed by the `generator` before operator tables can be updated against them.
 
 ### `confirmGlobalTableRoot`
 
@@ -42,7 +47,7 @@ Global table roots must be confirmed by the `globalRootConfirmerSet` (ie. `Gener
  * @param globalTableRoot merkle root of all operatorSet tables
  * @param referenceTimestamp timestamp of the root
  * @param referenceBlockNumber block number of the root
- * @dev Any entity can submit with a valid certificate signed off by the `globalRootConfirmerSet`
+ * @dev Any entity can submit with a valid certificate signed off by the `generator`
  * @dev The `msgHash` in the `globalOperatorTableRootCert` is the hash of the `globalOperatorTableRoot`
  */
 function confirmGlobalTableRoot(
@@ -53,7 +58,7 @@ function confirmGlobalTableRoot(
 ) external;
 ```
 
-Confirms a new global table root by verifying a BN254 certificate signed by the `globalRootConfirmerSet`. See [`BN254CertificateVerifier`](./CertificateVerifier.md#bn254certificateverifier) for certificate verification. Roots are append only and cannot be overridden, only [disabled](#disableroot). 
+Confirms a new global table root by verifying a BN254 certificate signed by the `generator`. See [`BN254CertificateVerifier`](./CertificateVerifier.md#bn254certificateverifier) for certificate verification. Roots are append only and cannot be overridden, only [disabled](#disableroot). 
 
 *Effects*:
 * Updates `_latestReferenceTimestamp` to the new `referenceTimestamp`
@@ -115,9 +120,9 @@ Updates an operator table by verifying its inclusion in a confirmed global table
 
 ## System Configuration
 
-The `owner` can configure the `globalRootConfirmerSet` and confirmation parameters.
+The `owner` can configure the `generator` and confirmation parameters.
 
-### `setGlobalRootConfirmerSet`
+### `setGenerator`
 
 ```solidity
 /**
@@ -126,7 +131,7 @@ The `owner` can configure the `globalRootConfirmerSet` and confirmation paramete
  * @dev The `operatorSet` is used to verify the certificate of the global table root
  * @dev Only callable by the owner of the contract
  */
-function setGlobalRootConfirmerSet(
+function setGenerator(
     OperatorSet calldata operatorSet
 ) external;
 ```
@@ -134,8 +139,8 @@ function setGlobalRootConfirmerSet(
 Updates the operator set responsible for confirming global table roots.
 
 *Effects*:
-* Updates `_globalRootConfirmerSet` to the new `operatorSet`
-* Emits a `GlobalRootConfirmerSetUpdated` event
+* Updates `_generator` to the new `operatorSet`
+* Emits a `GeneratorUpdated` event
 
 *Requirements*:
 * Caller MUST be the `owner`
@@ -186,29 +191,29 @@ Disables a global table root, preventing further operator table updates against 
 * Caller MUST be the `owner`
 * The `globalTableRoot` MUST exist and be currently valid
 
-### `updateGlobalRootConfirmerSet`
+### `updateGenerator`
 
 ```solidity
 /**
- * @notice Updates the operator table for the global root confirmer set
+ * @notice Updates the operator table for the generator
  * @param referenceTimestamp The reference timestamp of the operator table update
- * @param globalRootConfirmerSetInfo The operatorSetInfo for the global root confirmer set
- * @param globalRootConfirmerSetConfig The operatorSetConfig for the global root confirmer set
+ * @param generatorInfo The operatorSetInfo for the generator
+ * @param generatorConfig The operatorSetConfig for the generator
  * @dev We have a separate function for updating this operatorSet since it's not transported and updated
  *      in the same way as the other operatorSets
  * @dev Only callable by the owner of the contract
  */
-function updateGlobalRootConfirmerSet(
+function updateGenerator(
     uint32 referenceTimestamp,
-    BN254OperatorSetInfo calldata globalRootConfirmerSetInfo,
-    OperatorSetConfig calldata globalRootConfirmerSetConfig
+    BN254OperatorSetInfo calldata generatorInfo,
+    OperatorSetConfig calldata generatorConfig
 ) external;
 ```
 
-Updates the operator table for the `globalRootConfirmerSet` itself. This operatorSet is a ["shadow-operatorSet"](#parameterization), so it must be updated manually
+Updates the operator table for the `generator` itself. This operatorSet is a ["shadow-operatorSet"](#parameterization), so it must be updated manually
 
 *Effects*:
-* Calls `bn254CertificateVerifier.updateOperatorTable` for the `globalRootConfirmerSet`
+* Calls `bn254CertificateVerifier.updateOperatorTable` for the `generator`
 
 *Requirements*:
 * Caller MUST be the `owner`

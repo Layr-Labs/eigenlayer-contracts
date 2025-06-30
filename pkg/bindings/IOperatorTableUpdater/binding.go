@@ -85,7 +85,7 @@ type OperatorSet struct {
 
 // IOperatorTableUpdaterMetaData contains all meta data concerning the IOperatorTableUpdater contract.
 var IOperatorTableUpdaterMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"confirmGlobalTableRoot\",\"inputs\":[{\"name\":\"globalTableRootCert\",\"type\":\"tuple\",\"internalType\":\"structIBN254CertificateVerifierTypes.BN254Certificate\",\"components\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"messageHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"signature\",\"type\":\"tuple\",\"internalType\":\"structBN254.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"apk\",\"type\":\"tuple\",\"internalType\":\"structBN254.G2Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256[2]\",\"internalType\":\"uint256[2]\"},{\"name\":\"Y\",\"type\":\"uint256[2]\",\"internalType\":\"uint256[2]\"}]},{\"name\":\"nonSignerWitnesses\",\"type\":\"tuple[]\",\"internalType\":\"structIBN254CertificateVerifierTypes.BN254OperatorInfoWitness[]\",\"components\":[{\"name\":\"operatorIndex\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"operatorInfoProof\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"operatorInfo\",\"type\":\"tuple\",\"internalType\":\"structIOperatorTableCalculatorTypes.BN254OperatorInfo\",\"components\":[{\"name\":\"pubkey\",\"type\":\"tuple\",\"internalType\":\"structBN254.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"weights\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}]}]}]},{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"referenceBlockNumber\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"disableRoot\",\"inputs\":[{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"getCertificateVerifier\",\"inputs\":[{\"name\":\"curveType\",\"type\":\"uint8\",\"internalType\":\"enumIKeyRegistrarTypes.CurveType\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrentGlobalTableRoot\",\"inputs\":[],\"outputs\":[{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getGlobalConfirmerSetReferenceTimestamp\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getGlobalRootConfirmerSet\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getGlobalTableRootByTimestamp\",\"inputs\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"tableRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getGlobalTableUpdateMessageHash\",\"inputs\":[{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"referenceBlockNumber\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getLatestReferenceBlockNumber\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getLatestReferenceTimestamp\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getReferenceBlockNumberByTimestamp\",\"inputs\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getReferenceTimestampByBlockNumber\",\"inputs\":[{\"name\":\"referenceBlockNumber\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isRootValid\",\"inputs\":[{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isRootValidByTimestamp\",\"inputs\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"setGlobalRootConfirmationThreshold\",\"inputs\":[{\"name\":\"bps\",\"type\":\"uint16\",\"internalType\":\"uint16\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setGlobalRootConfirmerSet\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"updateGlobalRootConfirmerSet\",\"inputs\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"globalRootConfirmerSetInfo\",\"type\":\"tuple\",\"internalType\":\"structIOperatorTableCalculatorTypes.BN254OperatorSetInfo\",\"components\":[{\"name\":\"operatorInfoTreeRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"numOperators\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"aggregatePubkey\",\"type\":\"tuple\",\"internalType\":\"structBN254.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"totalWeights\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}]},{\"name\":\"globalRootConfirmerSetConfig\",\"type\":\"tuple\",\"internalType\":\"structICrossChainRegistryTypes.OperatorSetConfig\",\"components\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"maxStalenessPeriod\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"updateOperatorTable\",\"inputs\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"operatorSetIndex\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"proof\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"operatorTableBytes\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"GlobalRootConfirmationThresholdUpdated\",\"inputs\":[{\"name\":\"bps\",\"type\":\"uint16\",\"indexed\":false,\"internalType\":\"uint16\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"GlobalRootConfirmerSetUpdated\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"GlobalRootDisabled\",\"inputs\":[{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"NewGlobalTableRoot\",\"inputs\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"indexed\":true,\"internalType\":\"uint32\"},{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"CertificateInvalid\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"GlobalTableRootInFuture\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"GlobalTableRootStale\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidConfirmationThreshold\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidCurveType\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidGlobalTableRoot\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidMessageHash\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidOperatorSetProof\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidRoot\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidSignatureLength\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"TableUpdateForPastTimestamp\",\"inputs\":[]}]",
+	ABI: "[{\"type\":\"function\",\"name\":\"confirmGlobalTableRoot\",\"inputs\":[{\"name\":\"globalTableRootCert\",\"type\":\"tuple\",\"internalType\":\"structIBN254CertificateVerifierTypes.BN254Certificate\",\"components\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"messageHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"signature\",\"type\":\"tuple\",\"internalType\":\"structBN254.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"apk\",\"type\":\"tuple\",\"internalType\":\"structBN254.G2Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256[2]\",\"internalType\":\"uint256[2]\"},{\"name\":\"Y\",\"type\":\"uint256[2]\",\"internalType\":\"uint256[2]\"}]},{\"name\":\"nonSignerWitnesses\",\"type\":\"tuple[]\",\"internalType\":\"structIBN254CertificateVerifierTypes.BN254OperatorInfoWitness[]\",\"components\":[{\"name\":\"operatorIndex\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"operatorInfoProof\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"operatorInfo\",\"type\":\"tuple\",\"internalType\":\"structIOperatorTableCalculatorTypes.BN254OperatorInfo\",\"components\":[{\"name\":\"pubkey\",\"type\":\"tuple\",\"internalType\":\"structBN254.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"weights\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}]}]}]},{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"referenceBlockNumber\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"disableRoot\",\"inputs\":[{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"getCertificateVerifier\",\"inputs\":[{\"name\":\"curveType\",\"type\":\"uint8\",\"internalType\":\"enumIKeyRegistrarTypes.CurveType\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrentGlobalTableRoot\",\"inputs\":[],\"outputs\":[{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getGenerator\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getGeneratorReferenceTimestamp\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getGlobalTableRootByTimestamp\",\"inputs\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"tableRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getGlobalTableUpdateMessageHash\",\"inputs\":[{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"referenceBlockNumber\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getLatestReferenceBlockNumber\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getLatestReferenceTimestamp\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getReferenceBlockNumberByTimestamp\",\"inputs\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getReferenceTimestampByBlockNumber\",\"inputs\":[{\"name\":\"referenceBlockNumber\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isRootValid\",\"inputs\":[{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isRootValidByTimestamp\",\"inputs\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"setGenerator\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setGlobalRootConfirmationThreshold\",\"inputs\":[{\"name\":\"bps\",\"type\":\"uint16\",\"internalType\":\"uint16\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"updateGenerator\",\"inputs\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"GeneratorInfo\",\"type\":\"tuple\",\"internalType\":\"structIOperatorTableCalculatorTypes.BN254OperatorSetInfo\",\"components\":[{\"name\":\"operatorInfoTreeRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"numOperators\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"aggregatePubkey\",\"type\":\"tuple\",\"internalType\":\"structBN254.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"totalWeights\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}]},{\"name\":\"GeneratorConfig\",\"type\":\"tuple\",\"internalType\":\"structICrossChainRegistryTypes.OperatorSetConfig\",\"components\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"maxStalenessPeriod\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"updateOperatorTable\",\"inputs\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"operatorSetIndex\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"proof\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"operatorTableBytes\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"GeneratorUpdated\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"GlobalRootConfirmationThresholdUpdated\",\"inputs\":[{\"name\":\"bps\",\"type\":\"uint16\",\"indexed\":false,\"internalType\":\"uint16\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"GlobalRootDisabled\",\"inputs\":[{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"NewGlobalTableRoot\",\"inputs\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"indexed\":true,\"internalType\":\"uint32\"},{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"CertificateInvalid\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"GlobalTableRootInFuture\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"GlobalTableRootStale\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidConfirmationThreshold\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidCurveType\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidGlobalTableRoot\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidMessageHash\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidOperatorSetProof\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidRoot\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidSignatureLength\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"TableUpdateForPastTimestamp\",\"inputs\":[]}]",
 }
 
 // IOperatorTableUpdaterABI is the input ABI used to generate the binding from.
@@ -296,43 +296,12 @@ func (_IOperatorTableUpdater *IOperatorTableUpdaterCallerSession) GetCurrentGlob
 	return _IOperatorTableUpdater.Contract.GetCurrentGlobalTableRoot(&_IOperatorTableUpdater.CallOpts)
 }
 
-// GetGlobalConfirmerSetReferenceTimestamp is a free data retrieval call binding the contract method 0x0f3f8edd.
+// GetGenerator is a free data retrieval call binding the contract method 0x1e2ca260.
 //
-// Solidity: function getGlobalConfirmerSetReferenceTimestamp() view returns(uint32)
-func (_IOperatorTableUpdater *IOperatorTableUpdaterCaller) GetGlobalConfirmerSetReferenceTimestamp(opts *bind.CallOpts) (uint32, error) {
+// Solidity: function getGenerator() view returns((address,uint32))
+func (_IOperatorTableUpdater *IOperatorTableUpdaterCaller) GetGenerator(opts *bind.CallOpts) (OperatorSet, error) {
 	var out []interface{}
-	err := _IOperatorTableUpdater.contract.Call(opts, &out, "getGlobalConfirmerSetReferenceTimestamp")
-
-	if err != nil {
-		return *new(uint32), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(uint32)).(*uint32)
-
-	return out0, err
-
-}
-
-// GetGlobalConfirmerSetReferenceTimestamp is a free data retrieval call binding the contract method 0x0f3f8edd.
-//
-// Solidity: function getGlobalConfirmerSetReferenceTimestamp() view returns(uint32)
-func (_IOperatorTableUpdater *IOperatorTableUpdaterSession) GetGlobalConfirmerSetReferenceTimestamp() (uint32, error) {
-	return _IOperatorTableUpdater.Contract.GetGlobalConfirmerSetReferenceTimestamp(&_IOperatorTableUpdater.CallOpts)
-}
-
-// GetGlobalConfirmerSetReferenceTimestamp is a free data retrieval call binding the contract method 0x0f3f8edd.
-//
-// Solidity: function getGlobalConfirmerSetReferenceTimestamp() view returns(uint32)
-func (_IOperatorTableUpdater *IOperatorTableUpdaterCallerSession) GetGlobalConfirmerSetReferenceTimestamp() (uint32, error) {
-	return _IOperatorTableUpdater.Contract.GetGlobalConfirmerSetReferenceTimestamp(&_IOperatorTableUpdater.CallOpts)
-}
-
-// GetGlobalRootConfirmerSet is a free data retrieval call binding the contract method 0x46282889.
-//
-// Solidity: function getGlobalRootConfirmerSet() view returns((address,uint32))
-func (_IOperatorTableUpdater *IOperatorTableUpdaterCaller) GetGlobalRootConfirmerSet(opts *bind.CallOpts) (OperatorSet, error) {
-	var out []interface{}
-	err := _IOperatorTableUpdater.contract.Call(opts, &out, "getGlobalRootConfirmerSet")
+	err := _IOperatorTableUpdater.contract.Call(opts, &out, "getGenerator")
 
 	if err != nil {
 		return *new(OperatorSet), err
@@ -344,18 +313,49 @@ func (_IOperatorTableUpdater *IOperatorTableUpdaterCaller) GetGlobalRootConfirme
 
 }
 
-// GetGlobalRootConfirmerSet is a free data retrieval call binding the contract method 0x46282889.
+// GetGenerator is a free data retrieval call binding the contract method 0x1e2ca260.
 //
-// Solidity: function getGlobalRootConfirmerSet() view returns((address,uint32))
-func (_IOperatorTableUpdater *IOperatorTableUpdaterSession) GetGlobalRootConfirmerSet() (OperatorSet, error) {
-	return _IOperatorTableUpdater.Contract.GetGlobalRootConfirmerSet(&_IOperatorTableUpdater.CallOpts)
+// Solidity: function getGenerator() view returns((address,uint32))
+func (_IOperatorTableUpdater *IOperatorTableUpdaterSession) GetGenerator() (OperatorSet, error) {
+	return _IOperatorTableUpdater.Contract.GetGenerator(&_IOperatorTableUpdater.CallOpts)
 }
 
-// GetGlobalRootConfirmerSet is a free data retrieval call binding the contract method 0x46282889.
+// GetGenerator is a free data retrieval call binding the contract method 0x1e2ca260.
 //
-// Solidity: function getGlobalRootConfirmerSet() view returns((address,uint32))
-func (_IOperatorTableUpdater *IOperatorTableUpdaterCallerSession) GetGlobalRootConfirmerSet() (OperatorSet, error) {
-	return _IOperatorTableUpdater.Contract.GetGlobalRootConfirmerSet(&_IOperatorTableUpdater.CallOpts)
+// Solidity: function getGenerator() view returns((address,uint32))
+func (_IOperatorTableUpdater *IOperatorTableUpdaterCallerSession) GetGenerator() (OperatorSet, error) {
+	return _IOperatorTableUpdater.Contract.GetGenerator(&_IOperatorTableUpdater.CallOpts)
+}
+
+// GetGeneratorReferenceTimestamp is a free data retrieval call binding the contract method 0x7551ba34.
+//
+// Solidity: function getGeneratorReferenceTimestamp() view returns(uint32)
+func (_IOperatorTableUpdater *IOperatorTableUpdaterCaller) GetGeneratorReferenceTimestamp(opts *bind.CallOpts) (uint32, error) {
+	var out []interface{}
+	err := _IOperatorTableUpdater.contract.Call(opts, &out, "getGeneratorReferenceTimestamp")
+
+	if err != nil {
+		return *new(uint32), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(uint32)).(*uint32)
+
+	return out0, err
+
+}
+
+// GetGeneratorReferenceTimestamp is a free data retrieval call binding the contract method 0x7551ba34.
+//
+// Solidity: function getGeneratorReferenceTimestamp() view returns(uint32)
+func (_IOperatorTableUpdater *IOperatorTableUpdaterSession) GetGeneratorReferenceTimestamp() (uint32, error) {
+	return _IOperatorTableUpdater.Contract.GetGeneratorReferenceTimestamp(&_IOperatorTableUpdater.CallOpts)
+}
+
+// GetGeneratorReferenceTimestamp is a free data retrieval call binding the contract method 0x7551ba34.
+//
+// Solidity: function getGeneratorReferenceTimestamp() view returns(uint32)
+func (_IOperatorTableUpdater *IOperatorTableUpdaterCallerSession) GetGeneratorReferenceTimestamp() (uint32, error) {
+	return _IOperatorTableUpdater.Contract.GetGeneratorReferenceTimestamp(&_IOperatorTableUpdater.CallOpts)
 }
 
 // GetGlobalTableRootByTimestamp is a free data retrieval call binding the contract method 0xc5916a39.
@@ -648,6 +648,27 @@ func (_IOperatorTableUpdater *IOperatorTableUpdaterTransactorSession) DisableRoo
 	return _IOperatorTableUpdater.Contract.DisableRoot(&_IOperatorTableUpdater.TransactOpts, globalTableRoot)
 }
 
+// SetGenerator is a paid mutator transaction binding the contract method 0x77d90e94.
+//
+// Solidity: function setGenerator((address,uint32) operatorSet) returns()
+func (_IOperatorTableUpdater *IOperatorTableUpdaterTransactor) SetGenerator(opts *bind.TransactOpts, operatorSet OperatorSet) (*types.Transaction, error) {
+	return _IOperatorTableUpdater.contract.Transact(opts, "setGenerator", operatorSet)
+}
+
+// SetGenerator is a paid mutator transaction binding the contract method 0x77d90e94.
+//
+// Solidity: function setGenerator((address,uint32) operatorSet) returns()
+func (_IOperatorTableUpdater *IOperatorTableUpdaterSession) SetGenerator(operatorSet OperatorSet) (*types.Transaction, error) {
+	return _IOperatorTableUpdater.Contract.SetGenerator(&_IOperatorTableUpdater.TransactOpts, operatorSet)
+}
+
+// SetGenerator is a paid mutator transaction binding the contract method 0x77d90e94.
+//
+// Solidity: function setGenerator((address,uint32) operatorSet) returns()
+func (_IOperatorTableUpdater *IOperatorTableUpdaterTransactorSession) SetGenerator(operatorSet OperatorSet) (*types.Transaction, error) {
+	return _IOperatorTableUpdater.Contract.SetGenerator(&_IOperatorTableUpdater.TransactOpts, operatorSet)
+}
+
 // SetGlobalRootConfirmationThreshold is a paid mutator transaction binding the contract method 0x2370356c.
 //
 // Solidity: function setGlobalRootConfirmationThreshold(uint16 bps) returns()
@@ -669,46 +690,25 @@ func (_IOperatorTableUpdater *IOperatorTableUpdaterTransactorSession) SetGlobalR
 	return _IOperatorTableUpdater.Contract.SetGlobalRootConfirmationThreshold(&_IOperatorTableUpdater.TransactOpts, bps)
 }
 
-// SetGlobalRootConfirmerSet is a paid mutator transaction binding the contract method 0x0371406e.
+// UpdateGenerator is a paid mutator transaction binding the contract method 0xe944e0a8.
 //
-// Solidity: function setGlobalRootConfirmerSet((address,uint32) operatorSet) returns()
-func (_IOperatorTableUpdater *IOperatorTableUpdaterTransactor) SetGlobalRootConfirmerSet(opts *bind.TransactOpts, operatorSet OperatorSet) (*types.Transaction, error) {
-	return _IOperatorTableUpdater.contract.Transact(opts, "setGlobalRootConfirmerSet", operatorSet)
+// Solidity: function updateGenerator(uint32 referenceTimestamp, (bytes32,uint256,(uint256,uint256),uint256[]) GeneratorInfo, (address,uint32) GeneratorConfig) returns()
+func (_IOperatorTableUpdater *IOperatorTableUpdaterTransactor) UpdateGenerator(opts *bind.TransactOpts, referenceTimestamp uint32, GeneratorInfo IOperatorTableCalculatorTypesBN254OperatorSetInfo, GeneratorConfig ICrossChainRegistryTypesOperatorSetConfig) (*types.Transaction, error) {
+	return _IOperatorTableUpdater.contract.Transact(opts, "updateGenerator", referenceTimestamp, GeneratorInfo, GeneratorConfig)
 }
 
-// SetGlobalRootConfirmerSet is a paid mutator transaction binding the contract method 0x0371406e.
+// UpdateGenerator is a paid mutator transaction binding the contract method 0xe944e0a8.
 //
-// Solidity: function setGlobalRootConfirmerSet((address,uint32) operatorSet) returns()
-func (_IOperatorTableUpdater *IOperatorTableUpdaterSession) SetGlobalRootConfirmerSet(operatorSet OperatorSet) (*types.Transaction, error) {
-	return _IOperatorTableUpdater.Contract.SetGlobalRootConfirmerSet(&_IOperatorTableUpdater.TransactOpts, operatorSet)
+// Solidity: function updateGenerator(uint32 referenceTimestamp, (bytes32,uint256,(uint256,uint256),uint256[]) GeneratorInfo, (address,uint32) GeneratorConfig) returns()
+func (_IOperatorTableUpdater *IOperatorTableUpdaterSession) UpdateGenerator(referenceTimestamp uint32, GeneratorInfo IOperatorTableCalculatorTypesBN254OperatorSetInfo, GeneratorConfig ICrossChainRegistryTypesOperatorSetConfig) (*types.Transaction, error) {
+	return _IOperatorTableUpdater.Contract.UpdateGenerator(&_IOperatorTableUpdater.TransactOpts, referenceTimestamp, GeneratorInfo, GeneratorConfig)
 }
 
-// SetGlobalRootConfirmerSet is a paid mutator transaction binding the contract method 0x0371406e.
+// UpdateGenerator is a paid mutator transaction binding the contract method 0xe944e0a8.
 //
-// Solidity: function setGlobalRootConfirmerSet((address,uint32) operatorSet) returns()
-func (_IOperatorTableUpdater *IOperatorTableUpdaterTransactorSession) SetGlobalRootConfirmerSet(operatorSet OperatorSet) (*types.Transaction, error) {
-	return _IOperatorTableUpdater.Contract.SetGlobalRootConfirmerSet(&_IOperatorTableUpdater.TransactOpts, operatorSet)
-}
-
-// UpdateGlobalRootConfirmerSet is a paid mutator transaction binding the contract method 0x1ab78d90.
-//
-// Solidity: function updateGlobalRootConfirmerSet(uint32 referenceTimestamp, (bytes32,uint256,(uint256,uint256),uint256[]) globalRootConfirmerSetInfo, (address,uint32) globalRootConfirmerSetConfig) returns()
-func (_IOperatorTableUpdater *IOperatorTableUpdaterTransactor) UpdateGlobalRootConfirmerSet(opts *bind.TransactOpts, referenceTimestamp uint32, globalRootConfirmerSetInfo IOperatorTableCalculatorTypesBN254OperatorSetInfo, globalRootConfirmerSetConfig ICrossChainRegistryTypesOperatorSetConfig) (*types.Transaction, error) {
-	return _IOperatorTableUpdater.contract.Transact(opts, "updateGlobalRootConfirmerSet", referenceTimestamp, globalRootConfirmerSetInfo, globalRootConfirmerSetConfig)
-}
-
-// UpdateGlobalRootConfirmerSet is a paid mutator transaction binding the contract method 0x1ab78d90.
-//
-// Solidity: function updateGlobalRootConfirmerSet(uint32 referenceTimestamp, (bytes32,uint256,(uint256,uint256),uint256[]) globalRootConfirmerSetInfo, (address,uint32) globalRootConfirmerSetConfig) returns()
-func (_IOperatorTableUpdater *IOperatorTableUpdaterSession) UpdateGlobalRootConfirmerSet(referenceTimestamp uint32, globalRootConfirmerSetInfo IOperatorTableCalculatorTypesBN254OperatorSetInfo, globalRootConfirmerSetConfig ICrossChainRegistryTypesOperatorSetConfig) (*types.Transaction, error) {
-	return _IOperatorTableUpdater.Contract.UpdateGlobalRootConfirmerSet(&_IOperatorTableUpdater.TransactOpts, referenceTimestamp, globalRootConfirmerSetInfo, globalRootConfirmerSetConfig)
-}
-
-// UpdateGlobalRootConfirmerSet is a paid mutator transaction binding the contract method 0x1ab78d90.
-//
-// Solidity: function updateGlobalRootConfirmerSet(uint32 referenceTimestamp, (bytes32,uint256,(uint256,uint256),uint256[]) globalRootConfirmerSetInfo, (address,uint32) globalRootConfirmerSetConfig) returns()
-func (_IOperatorTableUpdater *IOperatorTableUpdaterTransactorSession) UpdateGlobalRootConfirmerSet(referenceTimestamp uint32, globalRootConfirmerSetInfo IOperatorTableCalculatorTypesBN254OperatorSetInfo, globalRootConfirmerSetConfig ICrossChainRegistryTypesOperatorSetConfig) (*types.Transaction, error) {
-	return _IOperatorTableUpdater.Contract.UpdateGlobalRootConfirmerSet(&_IOperatorTableUpdater.TransactOpts, referenceTimestamp, globalRootConfirmerSetInfo, globalRootConfirmerSetConfig)
+// Solidity: function updateGenerator(uint32 referenceTimestamp, (bytes32,uint256,(uint256,uint256),uint256[]) GeneratorInfo, (address,uint32) GeneratorConfig) returns()
+func (_IOperatorTableUpdater *IOperatorTableUpdaterTransactorSession) UpdateGenerator(referenceTimestamp uint32, GeneratorInfo IOperatorTableCalculatorTypesBN254OperatorSetInfo, GeneratorConfig ICrossChainRegistryTypesOperatorSetConfig) (*types.Transaction, error) {
+	return _IOperatorTableUpdater.Contract.UpdateGenerator(&_IOperatorTableUpdater.TransactOpts, referenceTimestamp, GeneratorInfo, GeneratorConfig)
 }
 
 // UpdateOperatorTable is a paid mutator transaction binding the contract method 0x9ea94778.
@@ -730,6 +730,140 @@ func (_IOperatorTableUpdater *IOperatorTableUpdaterSession) UpdateOperatorTable(
 // Solidity: function updateOperatorTable(uint32 referenceTimestamp, bytes32 globalTableRoot, uint32 operatorSetIndex, bytes proof, bytes operatorTableBytes) returns()
 func (_IOperatorTableUpdater *IOperatorTableUpdaterTransactorSession) UpdateOperatorTable(referenceTimestamp uint32, globalTableRoot [32]byte, operatorSetIndex uint32, proof []byte, operatorTableBytes []byte) (*types.Transaction, error) {
 	return _IOperatorTableUpdater.Contract.UpdateOperatorTable(&_IOperatorTableUpdater.TransactOpts, referenceTimestamp, globalTableRoot, operatorSetIndex, proof, operatorTableBytes)
+}
+
+// IOperatorTableUpdaterGeneratorUpdatedIterator is returned from FilterGeneratorUpdated and is used to iterate over the raw logs and unpacked data for GeneratorUpdated events raised by the IOperatorTableUpdater contract.
+type IOperatorTableUpdaterGeneratorUpdatedIterator struct {
+	Event *IOperatorTableUpdaterGeneratorUpdated // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *IOperatorTableUpdaterGeneratorUpdatedIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(IOperatorTableUpdaterGeneratorUpdated)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(IOperatorTableUpdaterGeneratorUpdated)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *IOperatorTableUpdaterGeneratorUpdatedIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *IOperatorTableUpdaterGeneratorUpdatedIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// IOperatorTableUpdaterGeneratorUpdated represents a GeneratorUpdated event raised by the IOperatorTableUpdater contract.
+type IOperatorTableUpdaterGeneratorUpdated struct {
+	OperatorSet OperatorSet
+	Raw         types.Log // Blockchain specific contextual infos
+}
+
+// FilterGeneratorUpdated is a free log retrieval operation binding the contract event 0x3463431b09dfd43dec7349f8f24acfa753fe4cf40a26235402d213373df15856.
+//
+// Solidity: event GeneratorUpdated((address,uint32) operatorSet)
+func (_IOperatorTableUpdater *IOperatorTableUpdaterFilterer) FilterGeneratorUpdated(opts *bind.FilterOpts) (*IOperatorTableUpdaterGeneratorUpdatedIterator, error) {
+
+	logs, sub, err := _IOperatorTableUpdater.contract.FilterLogs(opts, "GeneratorUpdated")
+	if err != nil {
+		return nil, err
+	}
+	return &IOperatorTableUpdaterGeneratorUpdatedIterator{contract: _IOperatorTableUpdater.contract, event: "GeneratorUpdated", logs: logs, sub: sub}, nil
+}
+
+// WatchGeneratorUpdated is a free log subscription operation binding the contract event 0x3463431b09dfd43dec7349f8f24acfa753fe4cf40a26235402d213373df15856.
+//
+// Solidity: event GeneratorUpdated((address,uint32) operatorSet)
+func (_IOperatorTableUpdater *IOperatorTableUpdaterFilterer) WatchGeneratorUpdated(opts *bind.WatchOpts, sink chan<- *IOperatorTableUpdaterGeneratorUpdated) (event.Subscription, error) {
+
+	logs, sub, err := _IOperatorTableUpdater.contract.WatchLogs(opts, "GeneratorUpdated")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(IOperatorTableUpdaterGeneratorUpdated)
+				if err := _IOperatorTableUpdater.contract.UnpackLog(event, "GeneratorUpdated", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseGeneratorUpdated is a log parse operation binding the contract event 0x3463431b09dfd43dec7349f8f24acfa753fe4cf40a26235402d213373df15856.
+//
+// Solidity: event GeneratorUpdated((address,uint32) operatorSet)
+func (_IOperatorTableUpdater *IOperatorTableUpdaterFilterer) ParseGeneratorUpdated(log types.Log) (*IOperatorTableUpdaterGeneratorUpdated, error) {
+	event := new(IOperatorTableUpdaterGeneratorUpdated)
+	if err := _IOperatorTableUpdater.contract.UnpackLog(event, "GeneratorUpdated", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
 }
 
 // IOperatorTableUpdaterGlobalRootConfirmationThresholdUpdatedIterator is returned from FilterGlobalRootConfirmationThresholdUpdated and is used to iterate over the raw logs and unpacked data for GlobalRootConfirmationThresholdUpdated events raised by the IOperatorTableUpdater contract.
@@ -860,140 +994,6 @@ func (_IOperatorTableUpdater *IOperatorTableUpdaterFilterer) WatchGlobalRootConf
 func (_IOperatorTableUpdater *IOperatorTableUpdaterFilterer) ParseGlobalRootConfirmationThresholdUpdated(log types.Log) (*IOperatorTableUpdaterGlobalRootConfirmationThresholdUpdated, error) {
 	event := new(IOperatorTableUpdaterGlobalRootConfirmationThresholdUpdated)
 	if err := _IOperatorTableUpdater.contract.UnpackLog(event, "GlobalRootConfirmationThresholdUpdated", log); err != nil {
-		return nil, err
-	}
-	event.Raw = log
-	return event, nil
-}
-
-// IOperatorTableUpdaterGlobalRootConfirmerSetUpdatedIterator is returned from FilterGlobalRootConfirmerSetUpdated and is used to iterate over the raw logs and unpacked data for GlobalRootConfirmerSetUpdated events raised by the IOperatorTableUpdater contract.
-type IOperatorTableUpdaterGlobalRootConfirmerSetUpdatedIterator struct {
-	Event *IOperatorTableUpdaterGlobalRootConfirmerSetUpdated // Event containing the contract specifics and raw log
-
-	contract *bind.BoundContract // Generic contract to use for unpacking event data
-	event    string              // Event name to use for unpacking event data
-
-	logs chan types.Log        // Log channel receiving the found contract events
-	sub  ethereum.Subscription // Subscription for errors, completion and termination
-	done bool                  // Whether the subscription completed delivering logs
-	fail error                 // Occurred error to stop iteration
-}
-
-// Next advances the iterator to the subsequent event, returning whether there
-// are any more events found. In case of a retrieval or parsing error, false is
-// returned and Error() can be queried for the exact failure.
-func (it *IOperatorTableUpdaterGlobalRootConfirmerSetUpdatedIterator) Next() bool {
-	// If the iterator failed, stop iterating
-	if it.fail != nil {
-		return false
-	}
-	// If the iterator completed, deliver directly whatever's available
-	if it.done {
-		select {
-		case log := <-it.logs:
-			it.Event = new(IOperatorTableUpdaterGlobalRootConfirmerSetUpdated)
-			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-				it.fail = err
-				return false
-			}
-			it.Event.Raw = log
-			return true
-
-		default:
-			return false
-		}
-	}
-	// Iterator still in progress, wait for either a data or an error event
-	select {
-	case log := <-it.logs:
-		it.Event = new(IOperatorTableUpdaterGlobalRootConfirmerSetUpdated)
-		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-			it.fail = err
-			return false
-		}
-		it.Event.Raw = log
-		return true
-
-	case err := <-it.sub.Err():
-		it.done = true
-		it.fail = err
-		return it.Next()
-	}
-}
-
-// Error returns any retrieval or parsing error occurred during filtering.
-func (it *IOperatorTableUpdaterGlobalRootConfirmerSetUpdatedIterator) Error() error {
-	return it.fail
-}
-
-// Close terminates the iteration process, releasing any pending underlying
-// resources.
-func (it *IOperatorTableUpdaterGlobalRootConfirmerSetUpdatedIterator) Close() error {
-	it.sub.Unsubscribe()
-	return nil
-}
-
-// IOperatorTableUpdaterGlobalRootConfirmerSetUpdated represents a GlobalRootConfirmerSetUpdated event raised by the IOperatorTableUpdater contract.
-type IOperatorTableUpdaterGlobalRootConfirmerSetUpdated struct {
-	OperatorSet OperatorSet
-	Raw         types.Log // Blockchain specific contextual infos
-}
-
-// FilterGlobalRootConfirmerSetUpdated is a free log retrieval operation binding the contract event 0x20100394950e66014c25009b45d12b675210a6e7a002044a0e3de6544e3c4b37.
-//
-// Solidity: event GlobalRootConfirmerSetUpdated((address,uint32) operatorSet)
-func (_IOperatorTableUpdater *IOperatorTableUpdaterFilterer) FilterGlobalRootConfirmerSetUpdated(opts *bind.FilterOpts) (*IOperatorTableUpdaterGlobalRootConfirmerSetUpdatedIterator, error) {
-
-	logs, sub, err := _IOperatorTableUpdater.contract.FilterLogs(opts, "GlobalRootConfirmerSetUpdated")
-	if err != nil {
-		return nil, err
-	}
-	return &IOperatorTableUpdaterGlobalRootConfirmerSetUpdatedIterator{contract: _IOperatorTableUpdater.contract, event: "GlobalRootConfirmerSetUpdated", logs: logs, sub: sub}, nil
-}
-
-// WatchGlobalRootConfirmerSetUpdated is a free log subscription operation binding the contract event 0x20100394950e66014c25009b45d12b675210a6e7a002044a0e3de6544e3c4b37.
-//
-// Solidity: event GlobalRootConfirmerSetUpdated((address,uint32) operatorSet)
-func (_IOperatorTableUpdater *IOperatorTableUpdaterFilterer) WatchGlobalRootConfirmerSetUpdated(opts *bind.WatchOpts, sink chan<- *IOperatorTableUpdaterGlobalRootConfirmerSetUpdated) (event.Subscription, error) {
-
-	logs, sub, err := _IOperatorTableUpdater.contract.WatchLogs(opts, "GlobalRootConfirmerSetUpdated")
-	if err != nil {
-		return nil, err
-	}
-	return event.NewSubscription(func(quit <-chan struct{}) error {
-		defer sub.Unsubscribe()
-		for {
-			select {
-			case log := <-logs:
-				// New log arrived, parse the event and forward to the user
-				event := new(IOperatorTableUpdaterGlobalRootConfirmerSetUpdated)
-				if err := _IOperatorTableUpdater.contract.UnpackLog(event, "GlobalRootConfirmerSetUpdated", log); err != nil {
-					return err
-				}
-				event.Raw = log
-
-				select {
-				case sink <- event:
-				case err := <-sub.Err():
-					return err
-				case <-quit:
-					return nil
-				}
-			case err := <-sub.Err():
-				return err
-			case <-quit:
-				return nil
-			}
-		}
-	}), nil
-}
-
-// ParseGlobalRootConfirmerSetUpdated is a log parse operation binding the contract event 0x20100394950e66014c25009b45d12b675210a6e7a002044a0e3de6544e3c4b37.
-//
-// Solidity: event GlobalRootConfirmerSetUpdated((address,uint32) operatorSet)
-func (_IOperatorTableUpdater *IOperatorTableUpdaterFilterer) ParseGlobalRootConfirmerSetUpdated(log types.Log) (*IOperatorTableUpdaterGlobalRootConfirmerSetUpdated, error) {
-	event := new(IOperatorTableUpdaterGlobalRootConfirmerSetUpdated)
-	if err := _IOperatorTableUpdater.contract.UnpackLog(event, "GlobalRootConfirmerSetUpdated", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
