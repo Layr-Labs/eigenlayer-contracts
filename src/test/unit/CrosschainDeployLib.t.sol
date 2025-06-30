@@ -29,9 +29,6 @@ contract CrosschainDeployLibTest is Test {
             CrosschainDeployLib.computeCrosschainAddress(deployer, keccak256(type(EmptyContract).creationCode), "EmptyContract"),
             holeskyExpected
         );
-        assertEq(
-            CrosschainDeployLib.computeCrosschainUpgradeableProxyAddress(deployer, holeskyExpected, "ExampleContract"),
-            holeskyProxy
-        );
+        assertEq(CrosschainDeployLib.computeCrosschainUpgradeableProxyAddress(deployer, holeskyExpected, "ExampleContract"), holeskyProxy);
     }
 }
