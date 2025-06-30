@@ -81,19 +81,14 @@ library CrosschainDeployLib {
      * @dev The salt is structured as: Deployer EOA (20 bytes) | Cross-chain flag (1 byte) | Entropy (11 bytes)
      * @dev Example: 0xbebebebebebebebebebebebebebebebebebebebe|ff|1212121212121212121212
      */
-    function computeProtectedSalt(address deployer, bytes11 salt) internal pure returns (bytes32) {
+    function computeProtectedSalt(address deployer, string memory name) internal pure returns (bytes32) {
         return bytes32(
             bytes.concat(
                 bytes20(deployer),
                 bytes1(uint8(0)), // Cross-chain redeploy protection enabled (0: false, 1: true)
-                bytes11(salt)
+                bytes11(keccak256(bytes(name))) // salt
             )
         );
-    }
-
-    /// @dev Helper to compute the protected salt for a given name.
-    function computeProtectedSalt(address deployer, string memory name) internal pure returns (bytes32) {
-        return computeProtectedSalt(deployer, bytes11(keccak256(bytes(name))));
     }
 
     /*
@@ -107,16 +102,32 @@ library CrosschainDeployLib {
         return abi.encodePacked(type(TransparentUpgradeableProxy).creationCode, abi.encode(implementation, admin, ""));
     }
 
+    /*
+     * @notice Computes the deterministic address where a crosschain contract will be deployed.
+     * @dev Uses CreateX's computeCreate2Address with a protected salt to ensure deterministic deployment.
+     * @param deployer The address of the deployer account.
+     * @param initCodeHash The keccak256 hash of the contract's initialization code.
+     * @param name The name used to generate the protected salt.
+     * @return The deterministic address where the contract will be deployed.
+     */
     function computeCrosschainAddress(
         address deployer,
         bytes32 initCodeHash,
         string memory name
     ) internal view returns (address) {
-        return createx.computeCreate2Address(computeProtectedSalt(deployer, name), initCodeHash);
+        return createx.computeCreate2Address(
+            keccak256(abi.encodePacked(bytes32(uint256(uint160(deployer))), computeProtectedSalt(deployer, name))),
+            initCodeHash
+        );
     }
 
     /*
-     * @notice Returns the predicted address of a `TransparentUpgradeableProxy` deployed with CreateX.
+     * @notice Computes the deterministic address where a crosschain upgradeable proxy will be deployed.
+     * @dev Computes the init code hash for a transparent upgradeable proxy and calls computeCrosschainAddress.
+     * @param adminAndDeployer The address that will be both the admin and deployer of the proxy.
+     * @param implementation The address of the implementation contract.
+     * @param name The name used to generate the protected salt.
+     * @return The deterministic address where the upgradeable proxy will be deployed.
      */
     function computeCrosschainUpgradeableProxyAddress(
         address adminAndDeployer,

@@ -11,19 +11,22 @@ contract CrosschainDeployLibTest is Test {
         vm.startPrank(deployer);
 
         // Test empty contract deployment
-        uint256 holeskyFork = vm.createSelectFork(vm.envString("RPC_HOLESKY"), 4089445);
+        uint holeskyFork = vm.createSelectFork(vm.envString("RPC_HOLESKY"), 4_089_445);
         address holeskyExpected = CrosschainDeployLib.deployEmptyContract(deployer);
-        uint256 mainnetFork = vm.createSelectFork(vm.envString("RPC_MAINNET"), 22819288);
+        uint mainnetFork = vm.createSelectFork(vm.envString("RPC_MAINNET"), 22_819_288);
         address mainnetExpected = CrosschainDeployLib.deployEmptyContract(deployer);
         assertEq(holeskyExpected, mainnetExpected, "holeskyExpected != mainnetExpected");
 
         // Test proxy deployment
         vm.selectFork(holeskyFork);
-        address holeskyProxy =
-            address(CrosschainDeployLib.deployCrosschainProxy(deployer, holeskyExpected, "ExampleContract"));
+        address holeskyProxy = address(CrosschainDeployLib.deployCrosschainProxy(deployer, holeskyExpected, "ExampleContract"));
         vm.selectFork(mainnetFork);
-        address mainnetProxy =
-            address(CrosschainDeployLib.deployCrosschainProxy(deployer, mainnetExpected, "ExampleContract"));
+        address mainnetProxy = address(CrosschainDeployLib.deployCrosschainProxy(deployer, mainnetExpected, "ExampleContract"));
         assertEq(holeskyProxy, mainnetProxy, "holeskyProxy != mainnetProxy");
+
+        assertEq(
+            CrosschainDeployLib.computeCrosschainAddress(deployer, keccak256(type(EmptyContract).creationCode), "EmptyContract"),
+            holeskyExpected
+        );
     }
 }
