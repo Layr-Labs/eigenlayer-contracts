@@ -24,9 +24,14 @@ contract CrosschainDeployLibTest is Test {
         address mainnetProxy = address(CrosschainDeployLib.deployCrosschainProxy(deployer, mainnetExpected, "ExampleContract"));
         assertEq(holeskyProxy, mainnetProxy, "holeskyProxy != mainnetProxy");
 
+        // Test address prediction
         assertEq(
             CrosschainDeployLib.computeCrosschainAddress(deployer, keccak256(type(EmptyContract).creationCode), "EmptyContract"),
             holeskyExpected
+        );
+        assertEq(
+            CrosschainDeployLib.computeCrosschainUpgradeableProxyAddress(deployer, holeskyExpected, "ExampleContract"),
+            holeskyProxy
         );
     }
 }
