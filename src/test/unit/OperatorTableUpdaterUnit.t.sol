@@ -671,7 +671,7 @@ contract OperatorTableUpdaterUnitTests_disableRoot is OperatorTableUpdaterUnitTe
 
         // Should revert when called by non-pauser
         cheats.prank(invalidCaller);
-        cheats.expectRevert("Pausable: caller is not the pauser");
+        cheats.expectRevert(IPausable.OnlyPauser.selector);
         operatorTableUpdater.disableRoot(globalTableRoot);
     }
 
