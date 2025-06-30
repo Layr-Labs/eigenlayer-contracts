@@ -5,19 +5,7 @@
     "phases": [
         {
             "type": "eoa",
-            "filename": "1-deploySourceChain.s.sol"
-        },
-        {
-            "type": "multisig",
-            "filename": "2-deployDestinationChainProxies.s.sol"
-        },
-        {
-            "type": "eoa",
-            "filename": "3-deployDestinationChainImpls.s.sol"
-        },
-        {
-            "type": "multisig",
-            "filename": "4-instantiateDestinationChainProxies.s.sol"
+            "filename": "1-deployContracts.s.sol"
         }
     ]
 }
