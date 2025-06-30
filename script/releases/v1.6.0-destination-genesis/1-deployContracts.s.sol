@@ -35,6 +35,17 @@ contract DeployDestinationGenesis is EOADeployer {
             salt: ++salt
         });
 
+        // Deploy pauserRegistry
+        address[] memory pausers = new address[](2);
+        pausers[0] = opsMultisig;
+        pausers[1] = pauserMultisig;
+
+        deployImpl({
+            name: type(PauserRegistry).name,
+            deployedTo: address(new PauserRegistry({_pausers: pausers, _unpauser: opsMultisig}))
+        });
+
+
         // Deploy proxyAdmin
         ProxyAdmin proxyAdmin = new ProxyAdmin();
         proxyAdmin.transferOwnership(opsMultisig);
@@ -60,6 +71,11 @@ contract DeployDestinationGenesis is EOADeployer {
         // Check that the multisigs are non-zero
         assertNotEq(Env.opsMultisig(), address(0));
         assertNotEq(Env.pauserMultisig(), address(0));
+
+        // Assert that the pauserRegistry is non-zero, and that the pausers are set correctly
+        assertTrue(Env.impl.pauserRegistry().isPauser(Env.opsMultisig()));
+        assertTrue(Env.impl.pauserRegistry().isPauser(Env.pauserMultisig()));
+        assertEq(Env.impl.pauserRegistry().unpauser(), Env.opsMultisig());
     }
 
     function deployMultisig(
