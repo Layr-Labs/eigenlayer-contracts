@@ -77,20 +77,6 @@ library SlashingLib {
         return scaledShares.mulWad(slashingFactor);
     }
 
-    /**
-     * @notice Scales shares according to the difference in an operator's magnitude before and
-     * after being slashed. This is used to calculate the number of slashable shares in the
-     * withdrawal queue.
-     * NOTE: max magnitude is guaranteed to only ever decrease.
-     */
-    function scaleForBurning(
-        uint256 scaledShares,
-        uint64 prevMaxMagnitude,
-        uint64 newMaxMagnitude
-    ) internal pure returns (uint256) {
-        return scaledShares.mulWad(prevMaxMagnitude - newMaxMagnitude);
-    }
-
     function update(
         DepositScalingFactor storage dsf,
         uint256 prevDepositShares,
@@ -184,6 +170,10 @@ library SlashingLib {
         uint256 prevMaxMagnitude,
         uint256 newMaxMagnitude
     ) internal pure returns (uint256) {
+        if (prevMaxMagnitude == 0) {
+            // TODO: consider throwing an error instead
+            return 0;
+        }
         // round up mulDiv so we don't overslash
         return operatorShares - operatorShares.mulDiv(newMaxMagnitude, prevMaxMagnitude, Math.Rounding.Up);
     }

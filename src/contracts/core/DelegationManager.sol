@@ -793,8 +793,8 @@ contract DelegationManager is
         // less than or equal to MIN_WITHDRAWAL_DELAY_BLOCKS ago. These shares are still slashable.
         uint256 scaledSharesAdded = curQueuedScaledShares - prevQueuedScaledShares;
 
-        return SlashingLib.scaleForBurning({
-            scaledShares: scaledSharesAdded,
+        return SlashingLib.calcSlashedAmount({
+            operatorShares: scaledSharesAdded.mulWad(prevMaxMagnitude),
             prevMaxMagnitude: prevMaxMagnitude,
             newMaxMagnitude: newMaxMagnitude
         });
