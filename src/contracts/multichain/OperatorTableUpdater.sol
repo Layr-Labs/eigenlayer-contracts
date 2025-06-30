@@ -31,6 +31,7 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
      * @param globalRootConfirmerSetInfo The operatorSetInfo for the global root confirmer set
      * @param globalRootConfirmerSetConfig The operatorSetConfig for the global root confirmer set
      * @dev We also update the operator table for the global root confirmer set, to begin signing off on global roots
+     * @dev Uses INITIAL_GLOBAL_TABLE_ROOT constant to break circular dependency for certificate verification
      */
     function initialize(
         address owner,
@@ -45,8 +46,17 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
         _setGlobalRootConfirmationThreshold(_globalRootConfirmationThreshold);
         _updateGlobalRootConfirmerSet(referenceTimestamp, globalRootConfirmerSetInfo, globalRootConfirmerSetConfig);
 
+        // Set the initial global table root to break circular dependency for certificate verification
+        _globalTableRoots[referenceTimestamp] = INITIAL_GLOBAL_TABLE_ROOT;
+        _isRootValid[INITIAL_GLOBAL_TABLE_ROOT] = true;
+        _referenceBlockNumbers[referenceTimestamp] = uint32(block.number);
+        _referenceTimestamps[uint32(block.number)] = referenceTimestamp;
+
         // Set the latest reference timestamp
         _latestReferenceTimestamp = referenceTimestamp;
+
+        // Emit the initial global table root event
+        emit NewGlobalTableRoot(referenceTimestamp, INITIAL_GLOBAL_TABLE_ROOT);
     }
 
     /**
