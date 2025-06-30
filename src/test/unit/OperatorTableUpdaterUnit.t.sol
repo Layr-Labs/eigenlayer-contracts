@@ -39,6 +39,16 @@ contract OperatorTableUpdaterUnitTests is
         });
         OperatorSetConfig memory initialOperatorSetConfig = OperatorSetConfig({owner: address(0xDEADBEEF), maxStalenessPeriod: 10_000});
 
+        // Compute the correct initial global table root containing the global root confirmer set
+        bytes memory globalRootConfirmerTable =
+            abi.encode(globalRootConfirmerSet, CurveType.BN254, initialOperatorSetConfig, abi.encode(initialOperatorSetInfo));
+        bytes32 globalRootConfirmerLeafHash = keccak256(globalRootConfirmerTable);
+
+        // Create a simple merkle tree with just the global root confirmer set
+        bytes32[] memory initialLeaves = new bytes32[](1);
+        initialLeaves[0] = globalRootConfirmerLeafHash;
+        bytes32 initialGlobalTableRoot = Merkle.merkleizeKeccak(initialLeaves);
+
         operatorTableUpdater =
             OperatorTableUpdater(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
 
@@ -59,7 +69,8 @@ contract OperatorTableUpdaterUnitTests is
                 GLOBAL_ROOT_CONFIRMATION_THRESHOLD, // globalRootConfirmationThreshold
                 block.timestamp - 1, // referenceTimestamp
                 initialOperatorSetInfo, // globalRootConfirmerSetInfo
-                initialOperatorSetConfig // globalRootConfirmerSetConfig
+                initialOperatorSetConfig, // globalRootConfirmerSetConfig
+                initialGlobalTableRoot // initialGlobalTableRoot
             )
         );
     }
@@ -189,6 +200,16 @@ contract OperatorTableUpdaterUnitTests_initialize is OperatorTableUpdaterUnitTes
     function test_initialize_revert_reinitialization() public {
         BN254OperatorSetInfo memory initialOperatorSetInfo;
         OperatorSetConfig memory initialOperatorSetConfig;
+
+        // Compute the correct initial global table root (same as setUp)
+        bytes memory globalRootConfirmerTable =
+            abi.encode(globalRootConfirmerSet, CurveType.BN254, initialOperatorSetConfig, abi.encode(initialOperatorSetInfo));
+        bytes32 globalRootConfirmerLeafHash = keccak256(globalRootConfirmerTable);
+
+        bytes32[] memory initialLeaves = new bytes32[](1);
+        initialLeaves[0] = globalRootConfirmerLeafHash;
+        bytes32 initialGlobalTableRoot = Merkle.merkleizeKeccak(initialLeaves);
+
         cheats.expectRevert("Initializable: contract is already initialized");
         operatorTableUpdater.initialize(
             address(this),
@@ -196,7 +217,8 @@ contract OperatorTableUpdaterUnitTests_initialize is OperatorTableUpdaterUnitTes
             GLOBAL_ROOT_CONFIRMATION_THRESHOLD,
             uint32(block.timestamp - 1),
             initialOperatorSetInfo,
-            initialOperatorSetConfig
+            initialOperatorSetConfig,
+            initialGlobalTableRoot
         );
     }
 }
