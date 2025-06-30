@@ -19,12 +19,17 @@ The `OperatorTableUpdater` is responsible for updating the `GlobalTableRoot` and
 The contract supports both BN254 and ECDSA operator tables and routes updates to the appropriate certificate verifier based on the curve type.
 
 ## Parameterization
-Upon initialization, the `generator` is updated. This operatorSet is a *"shadow-operatorSet"*. It does not exist in the core protocol, does not have stake backing it, and is not transported to other chains via the multichain protocol. It can only be updated upon initialization or by a [privileged role](#updategenerator). This entity is the same across all destination chains. 
+Upon initialization, the `generator` is updated. The `generator` is represented in storage as an operatorSet. The `generator` should be considered a ghost-operatorSet` since it does not exist in the core protocol, does not have stake backing it, and is not transported to other chains via the multichain protocol. It can only be updated upon initialization or by a [privileged role](#updategenerator). This entity is the same across all destination chains. 
 
-* `Generator` is an EigenLabs-run entity that signs off on `GlobalTableRoots`. The operatorSet is of size 1. 
-* `maxStalenessPeriod`: 0. Set to zero to confirm roots without updating the `generator`. See [`CertificateVerifier`](./CertificateVerifier.md#overview) for specifics
-* `globalRootConfirmationThreshold`: 10000. The threshold in basis points required for global root confirmation. Since the operatorSet is of size 1 a single signature is needed
-* `referenceTimestamp`: A past timestamp at which the `generator` is generated. This value is set to the initial `latestReferenceTimestamp` in the `OperatorTableUpdater. It is the same across all destination chains, even for destination chains that are supported after the initial deployment
+The following values are set upon initialization: 
+
+* `generator` is an EigenLabs-run entity that signs off on `globalTableRoots`. The operatorSet is of size 1. 
+* `globalRootConfirmationThreshold`: 10000. The threshold in basis points required for global root confirmation. Since the operatorSet is of size 1 a single signature is needed.
+* `referenceTimestamp`: A past timestamp at which the `generator` is set. We hardcode this value to 1 upon initialization. This value is also the `latestReferenceTimestamp`. Once roots are updated, then this value will become a more recent timestamp.
+* `generatorInfo`: The key material needed to verify certificates of the `generator`
+* `operatorSetConfig`: A configuration for the `generator` 
+    * `maxStalenessPeriod`: 0. Set to zero to confirm `globalTableRoots` without updating the `generator` operatorSet. See [`CertificateVerifier`](./CertificateVerifier.md#overview) for specifics`OperatorTableUpdater`. It is the same across all destination chains, even for destination chains that are supported after the initial deployment. 
+    * `owner`: Unused parameter for `Generator`
 
 
 ---
