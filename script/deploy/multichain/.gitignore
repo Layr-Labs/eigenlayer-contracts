@@ -1,0 +1,2 @@
+# Ignore wallet files to prevent sensitive information from being committed
+*.wallet.json 
