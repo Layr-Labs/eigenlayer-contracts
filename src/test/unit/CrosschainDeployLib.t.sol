@@ -1,0 +1,29 @@
+// SPDX-License-Identifier: BUSL-1.1
+pragma solidity ^0.8.12;
+
+import "forge-std/Test.sol";
+import "script/releases/CrosschainDeployLib.sol";
+
+contract CrosschainDeployLibTest is Test {
+    function test_SameAddressEveryChain() public {
+        address deployer = 0xC10E5F3AF465Fe85A7077390797dc5ae89DAB9F1;
+
+        vm.startPrank(deployer);
+
+        // Test empty contract deployment
+        uint256 holeskyFork = vm.createSelectFork(vm.envString("RPC_HOLESKY"), 4089445);
+        address holeskyExpected = CrosschainDeployLib.deployEmptyContract(deployer);
+        uint256 mainnetFork = vm.createSelectFork(vm.envString("RPC_MAINNET"), 22819288);
+        address mainnetExpected = CrosschainDeployLib.deployEmptyContract(deployer);
+        assertEq(holeskyExpected, mainnetExpected, "holeskyExpected != mainnetExpected");
+
+        // Test proxy deployment
+        vm.selectFork(holeskyFork);
+        address holeskyProxy =
+            address(CrosschainDeployLib.deployCrosschainProxy(deployer, holeskyExpected, "ExampleContract"));
+        vm.selectFork(mainnetFork);
+        address mainnetProxy =
+            address(CrosschainDeployLib.deployCrosschainProxy(deployer, mainnetExpected, "ExampleContract"));
+        assertEq(holeskyProxy, mainnetProxy, "holeskyProxy != mainnetProxy");
+    }
+}
