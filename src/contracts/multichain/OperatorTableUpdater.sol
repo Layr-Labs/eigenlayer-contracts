@@ -46,7 +46,9 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
         _setGlobalRootConfirmationThreshold(_globalRootConfirmationThreshold);
         _updateGlobalRootConfirmerSet(referenceTimestamp, globalRootConfirmerSetInfo, globalRootConfirmerSetConfig);
 
-        // Set the initial global table root to break circular dependency for certificate verification
+        /// @dev The first global table root is the `INITIAL_GLOBAL_TABLE_ROOT`
+        /// @dev This is used to enable the first call to `confirmGlobalTableRoot` to pass since it expects
+        /// @dev the `Generator` to have a valid initial global table root
         _globalTableRoots[referenceTimestamp] = INITIAL_GLOBAL_TABLE_ROOT;
         _isRootValid[INITIAL_GLOBAL_TABLE_ROOT] = true;
         _referenceBlockNumbers[referenceTimestamp] = uint32(block.number);
