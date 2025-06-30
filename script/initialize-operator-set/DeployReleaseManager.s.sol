@@ -22,8 +22,9 @@ contract DeployFromScratch is Script, Test {
     ProxyAdmin proxyAdmin;
 
     function run() public {
-        address emptyContract = CrosschainDeployLib.deployEmptyContract();
-        ReleaseManager proxy = ReleaseManager(address(emptyContract.deployCrosschainProxy("ReleaseManager")));
+        address deployer = msg.sender;
+        address emptyContract = CrosschainDeployLib.deployEmptyContract(deployer);
+        ReleaseManager proxy = ReleaseManager(address(deployer.deployCrosschainProxy(emptyContract, "ReleaseManager")));
         ReleaseManager implementation = new ReleaseManager(permissionController, semver);
         ITransparentUpgradeableProxy(address(proxy)).upgradeTo(address(implementation));
         ITransparentUpgradeableProxy(address(proxy)).changeAdmin(address(proxyAdmin));
