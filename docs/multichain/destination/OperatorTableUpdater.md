@@ -25,7 +25,7 @@ The following values are set upon initialization:
 
 * `generator` is an EigenLabs-run entity that signs off on `globalTableRoots`. The operatorSet is of size 1. 
 * `globalRootConfirmationThreshold`: 10000. The threshold in basis points required for global root confirmation. Since the operatorSet is of size 1 a single signature is needed.
-* `referenceTimestamp`: A past timestamp at which the `generator` is set. We hardcode this value to 1 upon initialization. This value is also the `latestReferenceTimestamp`. Once roots are updated, then this value will become a more recent timestamp.
+* `referenceTimestamp`: A past timestamp at which the `generator` is set. We hardcode this value to 1 upon initialization. This value is also the `latestReferenceTimestamp`. Once roots are updated, the `latestReferenceTimestamp` will increase. *Note: the reference timestamp for the `generator` operatorSet in the [`BN254CertificateVerifier`](./CertificateVerifier.md) will remain 1 unless [`updateGenerator`](#updategenerator) is called*.
 * `generatorInfo`: The key material needed to verify certificates of the `generator`
 * `operatorSetConfig`: A configuration for the `generator` 
     * `maxStalenessPeriod`: 0. Set to zero to confirm `globalTableRoots` without updating the `generator` operatorSet. See [`CertificateVerifier`](./CertificateVerifier.md#overview) for specifics`OperatorTableUpdater`. It is the same across all destination chains, even for destination chains that are supported after the initial deployment. 
