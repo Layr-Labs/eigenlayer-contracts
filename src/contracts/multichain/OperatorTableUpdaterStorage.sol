@@ -14,6 +14,9 @@ abstract contract OperatorTableUpdaterStorage is IOperatorTableUpdater {
     /// @notice The maximum BPS value
     uint16 public constant MAX_BPS = 10_000;
 
+    /// @notice Dummy initial global table root to break circular dependency for certificate verification
+    bytes32 public constant INITIAL_GLOBAL_TABLE_ROOT = keccak256("INITIAL_GLOBAL_TABLE_ROOT");
+
     // Immutable Storage
 
     /// @notice The BN254 certificate verifier
