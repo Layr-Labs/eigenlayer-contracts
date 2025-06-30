@@ -725,11 +725,7 @@ contract OperatorTableUpdaterUnitTests_updateGenerator is OperatorTableUpdaterUn
         cheats.expectCall(
             address(bn254CertificateVerifierMock),
             abi.encodeWithSelector(
-                IBN254CertificateVerifier.updateOperatorTable.selector,
-                generator,
-                referenceTimestamp,
-                operatorSetInfo,
-                operatorSetConfig
+                IBN254CertificateVerifier.updateOperatorTable.selector, generator, referenceTimestamp, operatorSetInfo, operatorSetConfig
             )
         );
         operatorTableUpdater.updateGenerator(referenceTimestamp, operatorSetInfo, operatorSetConfig);

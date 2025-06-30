@@ -263,9 +263,7 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
 
     /// @inheritdoc IOperatorTableUpdater
     function getGeneratorReferenceTimestamp() external view returns (uint32) {
-        return IBaseCertificateVerifier(address(bn254CertificateVerifier)).latestReferenceTimestamp(
-            _generator
-        );
+        return IBaseCertificateVerifier(address(bn254CertificateVerifier)).latestReferenceTimestamp(_generator);
     }
 
     /// @inheritdoc IOperatorTableUpdater
@@ -353,9 +351,7 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
         BN254OperatorSetInfo calldata generatorInfo,
         OperatorSetConfig calldata generatorConfig
     ) internal {
-        bn254CertificateVerifier.updateOperatorTable(
-            _generator, referenceTimestamp, generatorInfo, generatorConfig
-        );
+        bn254CertificateVerifier.updateOperatorTable(_generator, referenceTimestamp, generatorInfo, generatorConfig);
     }
 
     /**
