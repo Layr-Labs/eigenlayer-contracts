@@ -85,8 +85,8 @@ type OperatorSet struct {
 
 // OperatorTableUpdaterMetaData contains all meta data concerning the OperatorTableUpdater contract.
 var OperatorTableUpdaterMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"constructor\",\"inputs\":[{\"name\":\"_bn254CertificateVerifier\",\"type\":\"address\",\"internalType\":\"contractIBN254CertificateVerifier\"},{\"name\":\"_ecdsaCertificateVerifier\",\"type\":\"address\",\"internalType\":\"contractIECDSACertificateVerifier\"},{\"name\":\"_version\",\"type\":\"string\",\"internalType\":\"string\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"GLOBAL_TABLE_ROOT_CERT_TYPEHASH\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"INITIAL_GLOBAL_TABLE_ROOT\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"MAX_BPS\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint16\",\"internalType\":\"uint16\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"bn254CertificateVerifier\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIBN254CertificateVerifier\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"confirmGlobalTableRoot\",\"inputs\":[{\"name\":\"globalTableRootCert\",\"type\":\"tuple\",\"internalType\":\"structIBN254CertificateVerifierTypes.BN254Certificate\",\"components\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"messageHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"signature\",\"type\":\"tuple\",\"internalType\":\"structBN254.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"apk\",\"type\":\"tuple\",\"internalType\":\"structBN254.G2Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256[2]\",\"internalType\":\"uint256[2]\"},{\"name\":\"Y\",\"type\":\"uint256[2]\",\"internalType\":\"uint256[2]\"}]},{\"name\":\"nonSignerWitnesses\",\"type\":\"tuple[]\",\"internalType\":\"structIBN254CertificateVerifierTypes.BN254OperatorInfoWitness[]\",\"components\":[{\"name\":\"operatorIndex\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"operatorInfoProof\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"operatorInfo\",\"type\":\"tuple\",\"internalType\":\"structIOperatorTableCalculatorTypes.BN254OperatorInfo\",\"components\":[{\"name\":\"pubkey\",\"type\":\"tuple\",\"internalType\":\"structBN254.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"weights\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}]}]}]},{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"referenceBlockNumber\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"disableRoot\",\"inputs\":[{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"ecdsaCertificateVerifier\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIECDSACertificateVerifier\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCertificateVerifier\",\"inputs\":[{\"name\":\"curveType\",\"type\":\"uint8\",\"internalType\":\"enumIKeyRegistrarTypes.CurveType\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrentGlobalTableRoot\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getGlobalConfirmerSetReferenceTimestamp\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getGlobalRootConfirmerSet\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getGlobalTableRootByTimestamp\",\"inputs\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getGlobalTableUpdateMessageHash\",\"inputs\":[{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"referenceBlockNumber\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"pure\"},{\"type\":\"function\",\"name\":\"getLatestReferenceBlockNumber\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getLatestReferenceTimestamp\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getReferenceBlockNumberByTimestamp\",\"inputs\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getReferenceTimestampByBlockNumber\",\"inputs\":[{\"name\":\"referenceBlockNumber\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"globalRootConfirmationThreshold\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint16\",\"internalType\":\"uint16\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"initialize\",\"inputs\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"_globalRootConfirmerSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"_globalRootConfirmationThreshold\",\"type\":\"uint16\",\"internalType\":\"uint16\"},{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"globalRootConfirmerSetInfo\",\"type\":\"tuple\",\"internalType\":\"structIOperatorTableCalculatorTypes.BN254OperatorSetInfo\",\"components\":[{\"name\":\"operatorInfoTreeRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"numOperators\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"aggregatePubkey\",\"type\":\"tuple\",\"internalType\":\"structBN254.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"totalWeights\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}]},{\"name\":\"globalRootConfirmerSetConfig\",\"type\":\"tuple\",\"internalType\":\"structICrossChainRegistryTypes.OperatorSetConfig\",\"components\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"maxStalenessPeriod\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"isRootValid\",\"inputs\":[{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isRootValidByTimestamp\",\"inputs\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"owner\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"renounceOwnership\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setGlobalRootConfirmationThreshold\",\"inputs\":[{\"name\":\"bps\",\"type\":\"uint16\",\"internalType\":\"uint16\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setGlobalRootConfirmerSet\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"transferOwnership\",\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"updateGlobalRootConfirmerSet\",\"inputs\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"globalRootConfirmerSetInfo\",\"type\":\"tuple\",\"internalType\":\"structIOperatorTableCalculatorTypes.BN254OperatorSetInfo\",\"components\":[{\"name\":\"operatorInfoTreeRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"numOperators\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"aggregatePubkey\",\"type\":\"tuple\",\"internalType\":\"structBN254.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"totalWeights\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}]},{\"name\":\"globalRootConfirmerSetConfig\",\"type\":\"tuple\",\"internalType\":\"structICrossChainRegistryTypes.OperatorSetConfig\",\"components\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"maxStalenessPeriod\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"updateOperatorTable\",\"inputs\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"operatorSetIndex\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"proof\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"operatorTableBytes\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"version\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"string\",\"internalType\":\"string\"}],\"stateMutability\":\"view\"},{\"type\":\"event\",\"name\":\"GlobalRootConfirmationThresholdUpdated\",\"inputs\":[{\"name\":\"bps\",\"type\":\"uint16\",\"indexed\":false,\"internalType\":\"uint16\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"GlobalRootConfirmerSetUpdated\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"GlobalRootDisabled\",\"inputs\":[{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Initialized\",\"inputs\":[{\"name\":\"version\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"uint8\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"NewGlobalTableRoot\",\"inputs\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"indexed\":true,\"internalType\":\"uint32\"},{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OwnershipTransferred\",\"inputs\":[{\"name\":\"previousOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"CertificateInvalid\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"GlobalTableRootInFuture\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"GlobalTableRootStale\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidConfirmationThreshold\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidCurveType\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidGlobalTableRoot\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidMessageHash\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidOperatorSetProof\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidProofLength\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidRoot\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidShortString\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidSignatureLength\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"StringTooLong\",\"inputs\":[{\"name\":\"str\",\"type\":\"string\",\"internalType\":\"string\"}]},{\"type\":\"error\",\"name\":\"TableUpdateForPastTimestamp\",\"inputs\":[]}]",
-	Bin: "0x60e060405234801561000f575f5ffd5b5060405161240238038061240283398101604081905261002e91610188565b6001600160a01b03808416608052821660a0528061004b8161005f565b60c052506100576100a5565b5050506102b9565b5f5f829050601f81511115610092578260405163305a27a960e01b8152600401610089919061025e565b60405180910390fd5b805161009d82610293565b179392505050565b5f54610100900460ff161561010c5760405162461bcd60e51b815260206004820152602760248201527f496e697469616c697a61626c653a20636f6e747261637420697320696e697469604482015266616c697a696e6760c81b6064820152608401610089565b5f5460ff9081161461015b575f805460ff191660ff9081179091556040519081527f7f26b83ff96e1f2b6a682f133852f6798a09c465da95921460cefb38474024989060200160405180910390a15b565b6001600160a01b0381168114610171575f5ffd5b50565b634e487b7160e01b5f52604160045260245ffd5b5f5f5f6060848603121561019a575f5ffd5b83516101a58161015d565b60208501519093506101b68161015d565b60408501519092506001600160401b038111156101d1575f5ffd5b8401601f810186136101e1575f5ffd5b80516001600160401b038111156101fa576101fa610174565b604051601f8201601f19908116603f011681016001600160401b038111828210171561022857610228610174565b60405281815282820160200188101561023f575f5ffd5b8160208401602083015e5f602083830101528093505050509250925092565b602081525f82518060208401528060208501604085015e5f604082850101526040601f19601f83011684010191505092915050565b805160208083015191908110156102b3575f198160200360031b1b821691505b50919050565b60805160a05160c0516120ee6103145f395f61082201525f818161045d015281816108a30152610ac101525f8181610484015281816107780152818161086301528181610a1c01528181610cf00152610fc401526120ee5ff3fe608060405234801561000f575f5ffd5b50600436106101c6575f3560e01c806354fd4d50116100fe578063b8c143061161009e578063c5916a391161006e578063c5916a39146104ed578063eaaed9d514610512578063f2fde38b14610525578063fd967f4714610538575f5ffd5b8063b8c143061461047f578063c252aa22146104a6578063c3621f0a146104c7578063c3be1e33146104da575f5ffd5b8063715018a6116100d9578063715018a61461042c5780638da5cb5b146104345780639ea9477814610445578063ad0f958214610458575f5ffd5b806354fd4d50146103b757806364e1df84146103cc5780636f728c5014610401575f5ffd5b806328522d79116101695780633ef6cd7a116101445780633ef6cd7a1461030d5780634624e6a31461033457806346282889146103485780634af81d7a14610390575f5ffd5b806328522d791461028a57806330ef41b4146102b657806331a599d2146102e8575f5ffd5b8063193b79f3116101a4578063193b79f3146102145780631ab78d901461023c5780632370356c1461024f57806323b7b5b214610262575f5ffd5b8063021ab442146101ca5780630371406e146101df5780630f3f8edd146101f2575b5f5ffd5b6101dd6101d8366004611350565b610541565b005b6101dd6101ed3660046113e0565b61074b565b6101fa61075f565b60405163ffffffff90911681526020015b60405180910390f35b6101fa610222366004611401565b63ffffffff9081165f908152606960205260409020541690565b6101dd61024a36600461141c565b6107f2565b6101dd61025d366004611478565b61080a565b6101fa610270366004611401565b63ffffffff9081165f908152606860205260409020541690565b60655462010000900463ffffffff165f908152606760205260409020545b60405190815260200161020b565b6102d86102c4366004611491565b5f908152606a602052604090205460ff1690565b604051901515815260200161020b565b60655462010000900463ffffffff9081165f90815260686020526040902054166101fa565b6102a87f4491f5ee91595f938885ef73c9a1fa8a6d14ff9b9dab4aa24b8802bbb9bfc1cc81565b60655462010000900463ffffffff166101fa565b6040805180820182525f80825260209182015281518083019092526066546001600160a01b0381168352600160a01b900463ffffffff169082015260405161020b91906114c6565b6102a87f2eddfa6e51c2e0ba986436883fbc224e895ba21e8fc61421f6b10d11e25d008e81565b6103bf61081b565b60405161020b91906114d4565b6102d86103da366004611401565b63ffffffff165f908152606760209081526040808320548352606a90915290205460ff1690565b61041461040f366004611517565b610846565b6040516001600160a01b03909116815260200161020b565b6101dd6108e5565b6033546001600160a01b0316610414565b6101dd610453366004611574565b6108f8565b6104147f000000000000000000000000000000000000000000000000000000000000000081565b6104147f000000000000000000000000000000000000000000000000000000000000000081565b6065546104b49061ffff1681565b60405161ffff909116815260200161020b565b6101dd6104d5366004611491565b610b26565b6102a86104e836600461160f565b610b9b565b6102a86104fb366004611401565b63ffffffff165f9081526067602052604090205490565b6101dd61052036600461164e565b610c03565b6101dd6105333660046116ba565b610e35565b6104b461271081565b5f54610100900460ff161580801561055f57505f54600160ff909116105b806105785750303b15801561057857505f5460ff166001145b6105e05760405162461bcd60e51b815260206004820152602e60248201527f496e697469616c697a61626c653a20636f6e747261637420697320616c72656160448201526d191e481a5b9a5d1a585b1a5e995960921b60648201526084015b60405180910390fd5b5f805460ff191660011790558015610601575f805461ff0019166101001790555b61060a87610ea7565b61061386610ef8565b61061c85610f42565b610627848484610fad565b63ffffffff8481165f8181526067602090815260408083207f2eddfa6e51c2e0ba986436883fbc224e895ba21e8fc61421f6b10d11e25d008e908190557f10b2e5f6b212b2c1d8f17fc240726b9af6c45b2a8fff776e3ef5e5aff1c35965805460ff191660011790556068835281842080544390971663ffffffff19978816811790915584526069909252808320805490951684179094556065805462010000850265ffffffff00001990911617905592517f010dcbe0d1e019c93357711f7bb6287d543b7ff7de74f29df3fb5ecceec8d3699190a38015610742575f805461ff0019169055604051600181527f7f26b83ff96e1f2b6a682f133852f6798a09c465da95921460cefb38474024989060200160405180910390a15b50505050505050565b610753611029565b61075c81610ef8565b50565b604051635ddb9b5b60e01b81525f906001600160a01b037f00000000000000000000000000000000000000000000000000000000000000001690635ddb9b5b906107ae906066906004016116d5565b602060405180830381865afa1580156107c9573d5f5f3e3d5ffd5b505050506040513d601f19601f820116820180604052508101906107ed91906116fc565b905090565b6107fa611029565b610805838383610fad565b505050565b610812611029565b61075c81610f42565b60606107ed7f0000000000000000000000000000000000000000000000000000000000000000611083565b5f600282600281111561085b5761085b611717565b0361088757507f0000000000000000000000000000000000000000000000000000000000000000919050565b600182600281111561089b5761089b611717565b036108c757507f0000000000000000000000000000000000000000000000000000000000000000919050565b60405163fdea7c0960e01b815260040160405180910390fd5b919050565b6108ed611029565b6108f65f610ea7565b565b5f5f5f5f61090686866110c0565b5f8e8152606a60205260409020549397509195509350915060ff1661093e5760405163504570e360e01b815260040160405180910390fd5b61094783610846565b6001600160a01b0316635ddb9b5b856040518263ffffffff1660e01b815260040161097291906114c6565b602060405180830381865afa15801561098d573d5f5f3e3d5ffd5b505050506040513d601f19601f820116820180604052508101906109b191906116fc565b63ffffffff168b63ffffffff16116109dc5760405163207617df60e01b815260040160405180910390fd5b610a018b8b8b8b8b8b8b6040516109f492919061172b565b6040518091039020611107565b6002836002811115610a1557610a15611717565b03610aa6577f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316636738c40b858d610a54856111a8565b866040518563ffffffff1660e01b8152600401610a749493929190611774565b5f604051808303815f87803b158015610a8b575f5ffd5b505af1158015610a9d573d5f5f3e3d5ffd5b50505050610b19565b6001836002811115610aba57610aba611717565b036108c7577f00000000000000000000000000000000000000000000000000000000000000006001600160a01b03166356d482f5858d610af9856111ca565b866040518563ffffffff1660e01b8152600401610a7494939291906117f0565b5050505050505050505050565b610b2e611029565b5f818152606a602052604090205460ff16610b5c5760405163504570e360e01b815260040160405180910390fd5b5f818152606a6020526040808220805460ff191690555182917f8bd43de1250f58fe6ec9a78671a8b78dba70f0018656d157a3aeaabec389df3491a250565b604080517f4491f5ee91595f938885ef73c9a1fa8a6d14ff9b9dab4aa24b8802bbb9bfc1cc602082015290810184905263ffffffff8084166060830152821660808201525f9060a0016040516020818303038152906040528051906020012090509392505050565b428263ffffffff161115610c2a57604051635a119db560e11b815260040160405180910390fd5b60655463ffffffff62010000909104811690831611610c5c5760405163037fa86b60e31b815260040160405180910390fd5b610c67838383610b9b565b846020013514610c8a57604051638b56642d60e01b815260040160405180910390fd5b6040805160018082528183019092525f91602080830190803683375050606554825192935061ffff16918391505f90610cc557610cc56118a9565b61ffff90921660209283029190910190910152604051625f5e5d60e21b81525f906001600160a01b037f0000000000000000000000000000000000000000000000000000000000000000169063017d797490610d2a906066908a9087906004016119db565b6020604051808303815f875af1158015610d46573d5f5f3e3d5ffd5b505050506040513d601f19601f82011682018060405250810190610d6a9190611b68565b905080610d8a57604051633042041f60e21b815260040160405180910390fd5b6065805463ffffffff80871662010000810265ffffffff000019909316929092179092555f818152606860209081526040808320805495891663ffffffff1996871681179091558352606982528083208054909516841790945582825260678152838220899055888252606a9052828120805460ff19166001179055915187927f010dcbe0d1e019c93357711f7bb6287d543b7ff7de74f29df3fb5ecceec8d36991a3505050505050565b610e3d611029565b6001600160a01b038116610ea25760405162461bcd60e51b815260206004820152602660248201527f4f776e61626c653a206e6577206f776e657220697320746865207a65726f206160448201526564647265737360d01b60648201526084016105d7565b61075c815b603380546001600160a01b038381166001600160a01b0319831681179093556040519116919082907f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0905f90a35050565b806066610f058282611b87565b9050507f20100394950e66014c25009b45d12b675210a6e7a002044a0e3de6544e3c4b3781604051610f379190611c18565b60405180910390a150565b61271061ffff82161115610f69576040516307336f0360e11b815260040160405180910390fd5b6065805461ffff191661ffff83169081179091556040519081527ff5d1836df8fcd7c1e54047e94ac8773d2855395603e2ef9ba5f5f16905f2259290602001610f37565b604051636738c40b60e01b81526001600160a01b037f00000000000000000000000000000000000000000000000000000000000000001690636738c40b9061100090606690879087908790600401611c26565b5f604051808303815f87803b158015611017575f5ffd5b505af1158015610742573d5f5f3e3d5ffd5b6033546001600160a01b031633146108f65760405162461bcd60e51b815260206004820181905260248201527f4f776e61626c653a2063616c6c6572206973206e6f7420746865206f776e657260448201526064016105d7565b60605f61108f836111e0565b6040805160208082528183019092529192505f91906020820181803683375050509182525060208101929092525090565b604080518082019091525f8082526020820152604080518082019091525f808252602082018190529060606110f785870187611d79565b9299919850965090945092505050565b63ffffffff86165f90815260676020526040902054851461113b5760405163639d09b560e11b815260040160405180910390fd5b61118383838080601f0160208091040260200160405190810160405280939291908181526020018383808284375f920191909152508992508591505063ffffffff8816611207565b6111a05760405163afa42ca760e01b815260040160405180910390fd5b505050505050565b6111b06112b5565b818060200190518101906111c49190611eca565b92915050565b6060818060200190518101906111c49190611f79565b5f60ff8216601f8111156111c457604051632cd44ac360e21b815260040160405180910390fd5b5f8361121486858561121e565b1495945050505050565b5f6020845161122d919061207a565b1561124b576040516313717da960e21b815260040160405180910390fd5b8260205b855181116112ac5761126260028561207a565b5f0361128357815f528086015160205260405f20915060028404935061129a565b808601515f528160205260405f2091506002840493505b6112a5602082612099565b905061124f565b50949350505050565b60405180608001604052805f81526020015f81526020016112e760405180604001604052805f81526020015f81525090565b8152602001606081525090565b6001600160a01b038116811461075c575f5ffd5b5f60408284031215611318575f5ffd5b50919050565b803561ffff811681146108e0575f5ffd5b63ffffffff8116811461075c575f5ffd5b5f60a08284031215611318575f5ffd5b5f5f5f5f5f5f6101008789031215611366575f5ffd5b8635611371816112f4565b95506113808860208901611308565b945061138e6060880161131e565b9350608087013561139e8161132f565b925060a08701356001600160401b038111156113b8575f5ffd5b6113c489828a01611340565b9250506113d48860c08901611308565b90509295509295509295565b5f604082840312156113f0575f5ffd5b6113fa8383611308565b9392505050565b5f60208284031215611411575f5ffd5b81356113fa8161132f565b5f5f5f6080848603121561142e575f5ffd5b83356114398161132f565b925060208401356001600160401b03811115611453575f5ffd5b61145f86828701611340565b92505061146f8560408601611308565b90509250925092565b5f60208284031215611488575f5ffd5b6113fa8261131e565b5f602082840312156114a1575f5ffd5b5035919050565b80516001600160a01b0316825260209081015163ffffffff16910152565b604081016111c482846114a8565b602081525f82518060208401528060208501604085015e5f604082850101526040601f19601f83011684010191505092915050565b8035600381106108e0575f5ffd5b5f60208284031215611527575f5ffd5b6113fa82611509565b5f5f83601f840112611540575f5ffd5b5081356001600160401b03811115611556575f5ffd5b60208301915083602082850101111561156d575f5ffd5b9250929050565b5f5f5f5f5f5f5f60a0888a03121561158a575f5ffd5b87356115958161132f565b96506020880135955060408801356115ac8161132f565b945060608801356001600160401b038111156115c6575f5ffd5b6115d28a828b01611530565b90955093505060808801356001600160401b038111156115f0575f5ffd5b6115fc8a828b01611530565b989b979a50959850939692959293505050565b5f5f5f60608486031215611621575f5ffd5b8335925060208401356116338161132f565b915060408401356116438161132f565b809150509250925092565b5f5f5f5f60808587031215611661575f5ffd5b84356001600160401b03811115611676575f5ffd5b85016101208188031215611688575f5ffd5b935060208501359250604085013561169f8161132f565b915060608501356116af8161132f565b939692955090935050565b5f602082840312156116ca575f5ffd5b81356113fa816112f4565b604081016111c48284546001600160a01b038116825260a01c63ffffffff16602090910152565b5f6020828403121561170c575f5ffd5b81516113fa8161132f565b634e487b7160e01b5f52602160045260245ffd5b818382375f9101908152919050565b5f8151808452602084019350602083015f5b8281101561176a57815186526020958601959091019060010161174c565b5093949350505050565b61177e81866114a8565b63ffffffff8416604082015260c06060820152825160c0820152602083015160e08201525f60408401518051610100840152602081015161012084015250606084015160a06101408401526117d761016084018261173a565b9150506117e760808301846114a8565b95945050505050565b5f60c082016117ff83886114a8565b63ffffffff8616604084015260c0606084015280855180835260e08501915060e08160051b8601019250602087015f5b828110156118805786850360df19018452815180516001600160a01b0316865260209081015160409187018290529061186a9087018261173a565b955050602093840193919091019060010161182f565b50505050809150506117e760808301846114a8565b634e487b7160e01b5f52604160045260245ffd5b634e487b7160e01b5f52603260045260245ffd5b5f5f8335601e198436030181126118d2575f5ffd5b83016020810192503590506001600160401b038111156118f0575f5ffd5b8060051b360382131561156d575f5ffd5b81835281816020850137505f828201602090810191909152601f909101601f19169091010190565b5f8235605e1983360301811261193d575f5ffd5b90910192915050565b8183525f6001600160fb1b0383111561195d575f5ffd5b8260051b80836020870137939093016020019392505050565b80358252602080820135908301525f61199260408301836118bd565b606060408601526117e7606086018284611946565b5f8151808452602084019350602083015f5b8281101561176a57815161ffff168652602095860195909101906001016119b9565b6119fe8185546001600160a01b038116825260a01c63ffffffff16602090910152565b608060408201525f6101a082018435611a168161132f565b63ffffffff166080840152602085013560a0840152604085013560c0840152606085013560e0840152604060808601610100850137604060c08601610140850137611a656101008601866118bd565b610120610180860152828184526101c0860190506101c08260051b8701019350825f5b83811015611b47578786036101bf19018352611aa48286611929565b8035611aaf8161132f565b63ffffffff168752602081013536829003601e19018112611ace575f5ffd5b81016020810190356001600160401b03811115611ae9575f5ffd5b803603821315611af7575f5ffd5b606060208a0152611b0c60608a018284611901565b915050611b1c6040830183611929565b91508781036040890152611b308183611976565b975050506020928301929190910190600101611a88565b50505050508281036060840152611b5e81856119a7565b9695505050505050565b5f60208284031215611b78575f5ffd5b815180151581146113fa575f5ffd5b8135611b92816112f4565b81546001600160a01b031981166001600160a01b039290921691821783556020840135611bbe8161132f565b6001600160c01b03199190911690911760a09190911b63ffffffff60a01b1617905550565b8035611bee816112f4565b6001600160a01b031682526020810135611c078161132f565b63ffffffff81166020840152505050565b604081016111c48284611be3565b611c498186546001600160a01b038116825260a01c63ffffffff16602090910152565b63ffffffff841660408281019190915260c06060808401829052853591840191909152602085013560e0840152908401356101008301528301356101208201525f611c9760808501856118bd565b60a0610140850152611cae61016085018284611946565b925050506117e76080830184611be3565b604080519081016001600160401b0381118282101715611ce157611ce1611895565b60405290565b604051608081016001600160401b0381118282101715611ce157611ce1611895565b604051601f8201601f191681016001600160401b0381118282101715611d3157611d31611895565b604052919050565b5f60408284031215611d49575f5ffd5b611d51611cbf565b90508135611d5e816112f4565b81526020820135611d6e8161132f565b602082015292915050565b5f5f5f5f60c08587031215611d8c575f5ffd5b611d968686611d39565b9350611da460408601611509565b9250611db38660608701611d39565b915060a08501356001600160401b03811115611dcd575f5ffd5b8501601f81018713611ddd575f5ffd5b80356001600160401b03811115611df657611df6611895565b611e09601f8201601f1916602001611d09565b818152886020838501011115611e1d575f5ffd5b816020840160208301375f6020838301015280935050505092959194509250565b5f6001600160401b03821115611e5657611e56611895565b5060051b60200190565b5f82601f830112611e6f575f5ffd5b8151611e82611e7d82611e3e565b611d09565b8082825260208201915060208360051b860101925085831115611ea3575f5ffd5b602085015b83811015611ec0578051835260209283019201611ea8565b5095945050505050565b5f60208284031215611eda575f5ffd5b81516001600160401b03811115611eef575f5ffd5b820180840360a0811215611f01575f5ffd5b611f09611ce7565b82518152602080840151908201526040603f1983011215611f28575f5ffd5b611f30611cbf565b604084810151825260608501516020830152820152608083015191506001600160401b03821115611f5f575f5ffd5b611f6b86838501611e60565b606082015295945050505050565b5f60208284031215611f89575f5ffd5b81516001600160401b03811115611f9e575f5ffd5b8201601f81018413611fae575f5ffd5b8051611fbc611e7d82611e3e565b8082825260208201915060208360051b850101925086831115611fdd575f5ffd5b602084015b8381101561206f5780516001600160401b03811115611fff575f5ffd5b85016040818a03601f19011215612014575f5ffd5b61201c611cbf565b602082015161202a816112f4565b815260408201516001600160401b03811115612044575f5ffd5b6120538b602083860101611e60565b6020830152508085525050602083019250602081019050611fe2565b509695505050505050565b5f8261209457634e487b7160e01b5f52601260045260245ffd5b500690565b808201808211156111c457634e487b7160e01b5f52601160045260245ffdfea264697066735822122012eb492cbbec575de353e2536efc61488ab0d9e7cd4ad56b06e5d9334683404264736f6c634300081b0033",
+	ABI: "[{\"type\":\"constructor\",\"inputs\":[{\"name\":\"_bn254CertificateVerifier\",\"type\":\"address\",\"internalType\":\"contractIBN254CertificateVerifier\"},{\"name\":\"_ecdsaCertificateVerifier\",\"type\":\"address\",\"internalType\":\"contractIECDSACertificateVerifier\"},{\"name\":\"_version\",\"type\":\"string\",\"internalType\":\"string\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"GLOBAL_TABLE_ROOT_CERT_TYPEHASH\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"INITIAL_GLOBAL_TABLE_ROOT\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"MAX_BPS\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint16\",\"internalType\":\"uint16\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"bn254CertificateVerifier\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIBN254CertificateVerifier\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"confirmGlobalTableRoot\",\"inputs\":[{\"name\":\"globalTableRootCert\",\"type\":\"tuple\",\"internalType\":\"structIBN254CertificateVerifierTypes.BN254Certificate\",\"components\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"messageHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"signature\",\"type\":\"tuple\",\"internalType\":\"structBN254.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"apk\",\"type\":\"tuple\",\"internalType\":\"structBN254.G2Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256[2]\",\"internalType\":\"uint256[2]\"},{\"name\":\"Y\",\"type\":\"uint256[2]\",\"internalType\":\"uint256[2]\"}]},{\"name\":\"nonSignerWitnesses\",\"type\":\"tuple[]\",\"internalType\":\"structIBN254CertificateVerifierTypes.BN254OperatorInfoWitness[]\",\"components\":[{\"name\":\"operatorIndex\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"operatorInfoProof\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"operatorInfo\",\"type\":\"tuple\",\"internalType\":\"structIOperatorTableCalculatorTypes.BN254OperatorInfo\",\"components\":[{\"name\":\"pubkey\",\"type\":\"tuple\",\"internalType\":\"structBN254.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"weights\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}]}]}]},{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"referenceBlockNumber\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"disableRoot\",\"inputs\":[{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"ecdsaCertificateVerifier\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIECDSACertificateVerifier\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCertificateVerifier\",\"inputs\":[{\"name\":\"curveType\",\"type\":\"uint8\",\"internalType\":\"enumIKeyRegistrarTypes.CurveType\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrentGlobalTableRoot\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getGenerator\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getGeneratorReferenceTimestamp\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getGlobalTableRootByTimestamp\",\"inputs\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getGlobalTableUpdateMessageHash\",\"inputs\":[{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"referenceBlockNumber\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"pure\"},{\"type\":\"function\",\"name\":\"getLatestReferenceBlockNumber\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getLatestReferenceTimestamp\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getReferenceBlockNumberByTimestamp\",\"inputs\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getReferenceTimestampByBlockNumber\",\"inputs\":[{\"name\":\"referenceBlockNumber\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"globalRootConfirmationThreshold\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint16\",\"internalType\":\"uint16\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"initialize\",\"inputs\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"_generator\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"_globalRootConfirmationThreshold\",\"type\":\"uint16\",\"internalType\":\"uint16\"},{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"generatorInfo\",\"type\":\"tuple\",\"internalType\":\"structIOperatorTableCalculatorTypes.BN254OperatorSetInfo\",\"components\":[{\"name\":\"operatorInfoTreeRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"numOperators\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"aggregatePubkey\",\"type\":\"tuple\",\"internalType\":\"structBN254.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"totalWeights\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}]},{\"name\":\"generatorConfig\",\"type\":\"tuple\",\"internalType\":\"structICrossChainRegistryTypes.OperatorSetConfig\",\"components\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"maxStalenessPeriod\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"isRootValid\",\"inputs\":[{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isRootValidByTimestamp\",\"inputs\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"owner\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"renounceOwnership\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setGenerator\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setGlobalRootConfirmationThreshold\",\"inputs\":[{\"name\":\"bps\",\"type\":\"uint16\",\"internalType\":\"uint16\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"transferOwnership\",\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"updateGenerator\",\"inputs\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"generatorInfo\",\"type\":\"tuple\",\"internalType\":\"structIOperatorTableCalculatorTypes.BN254OperatorSetInfo\",\"components\":[{\"name\":\"operatorInfoTreeRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"numOperators\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"aggregatePubkey\",\"type\":\"tuple\",\"internalType\":\"structBN254.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"totalWeights\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}]},{\"name\":\"generatorConfig\",\"type\":\"tuple\",\"internalType\":\"structICrossChainRegistryTypes.OperatorSetConfig\",\"components\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"maxStalenessPeriod\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"updateOperatorTable\",\"inputs\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"operatorSetIndex\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"proof\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"operatorTableBytes\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"version\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"string\",\"internalType\":\"string\"}],\"stateMutability\":\"view\"},{\"type\":\"event\",\"name\":\"GeneratorUpdated\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"GlobalRootConfirmationThresholdUpdated\",\"inputs\":[{\"name\":\"bps\",\"type\":\"uint16\",\"indexed\":false,\"internalType\":\"uint16\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"GlobalRootDisabled\",\"inputs\":[{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Initialized\",\"inputs\":[{\"name\":\"version\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"uint8\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"NewGlobalTableRoot\",\"inputs\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"indexed\":true,\"internalType\":\"uint32\"},{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OwnershipTransferred\",\"inputs\":[{\"name\":\"previousOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"CertificateInvalid\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"GlobalTableRootInFuture\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"GlobalTableRootStale\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidConfirmationThreshold\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidCurveType\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidGlobalTableRoot\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidMessageHash\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidOperatorSetProof\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidProofLength\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidRoot\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidShortString\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidSignatureLength\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"StringTooLong\",\"inputs\":[{\"name\":\"str\",\"type\":\"string\",\"internalType\":\"string\"}]},{\"type\":\"error\",\"name\":\"TableUpdateForPastTimestamp\",\"inputs\":[]}]",
+	Bin: "0x60e060405234801561000f575f5ffd5b5060405161240238038061240283398101604081905261002e91610188565b6001600160a01b03808416608052821660a0528061004b8161005f565b60c052506100576100a5565b5050506102b9565b5f5f829050601f81511115610092578260405163305a27a960e01b8152600401610089919061025e565b60405180910390fd5b805161009d82610293565b179392505050565b5f54610100900460ff161561010c5760405162461bcd60e51b815260206004820152602760248201527f496e697469616c697a61626c653a20636f6e747261637420697320696e697469604482015266616c697a696e6760c81b6064820152608401610089565b5f5460ff9081161461015b575f805460ff191660ff9081179091556040519081527f7f26b83ff96e1f2b6a682f133852f6798a09c465da95921460cefb38474024989060200160405180910390a15b565b6001600160a01b0381168114610171575f5ffd5b50565b634e487b7160e01b5f52604160045260245ffd5b5f5f5f6060848603121561019a575f5ffd5b83516101a58161015d565b60208501519093506101b68161015d565b60408501519092506001600160401b038111156101d1575f5ffd5b8401601f810186136101e1575f5ffd5b80516001600160401b038111156101fa576101fa610174565b604051601f8201601f19908116603f011681016001600160401b038111828210171561022857610228610174565b60405281815282820160200188101561023f575f5ffd5b8160208401602083015e5f602083830101528093505050509250925092565b602081525f82518060208401528060208501604085015e5f604082850101526040601f19601f83011684010191505092915050565b805160208083015191908110156102b3575f198160200360031b1b821691505b50919050565b60805160a05160c0516120ee6103145f395f61076601525f818161044a015281816107ec0152610aa901525f8181610471015281816107ac0152818161085a01528181610a0401528181610cf00152610fc401526120ee5ff3fe608060405234801561000f575f5ffd5b50600436106101c6575f3560e01c8063715018a6116100fe578063c252aa221161009e578063e944e0a81161006e578063e944e0a8146104ff578063eaaed9d514610512578063f2fde38b14610525578063fd967f4714610538575f5ffd5b8063c252aa2214610493578063c3621f0a146104b4578063c3be1e33146104c7578063c5916a39146104da575f5ffd5b80638da5cb5b116100d95780638da5cb5b146104215780639ea9477814610432578063ad0f958214610445578063b8c143061461046c575f5ffd5b8063715018a6146103fe5780637551ba341461040657806377d90e941461040e575f5ffd5b806331a599d2116101695780634af81d7a116101445780634af81d7a1461036257806354fd4d501461038957806364e1df841461039e5780636f728c50146103d3575f5ffd5b806331a599d2146103025780633ef6cd7a146103275780634624e6a31461034e575f5ffd5b80632370356c116101a45780632370356c1461026957806323b7b5b21461027c57806328522d79146102a457806330ef41b4146102d0575f5ffd5b8063021ab442146101ca578063193b79f3146101df5780631e2ca26014610221575b5f5ffd5b6101dd6101d8366004611350565b610541565b005b6102076101ed3660046113e0565b63ffffffff9081165f908152606960205260409020541690565b60405163ffffffff90911681526020015b60405180910390f35b6040805180820182525f80825260209182015281518083019092526066546001600160a01b0381168352600160a01b900463ffffffff16908201526040516102189190611420565b6101dd61027736600461142e565b61074b565b61020761028a3660046113e0565b63ffffffff9081165f908152606860205260409020541690565b60655462010000900463ffffffff165f908152606760205260409020545b604051908152602001610218565b6102f26102de366004611447565b5f908152606a602052604090205460ff1690565b6040519015158152602001610218565b60655462010000900463ffffffff9081165f9081526068602052604090205416610207565b6102c27f4491f5ee91595f938885ef73c9a1fa8a6d14ff9b9dab4aa24b8802bbb9bfc1cc81565b60655462010000900463ffffffff16610207565b6102c27f2eddfa6e51c2e0ba986436883fbc224e895ba21e8fc61421f6b10d11e25d008e81565b61039161075f565b604051610218919061145e565b6102f26103ac3660046113e0565b63ffffffff165f908152606760209081526040808320548352606a90915290205460ff1690565b6103e66103e13660046114a1565b61078f565b6040516001600160a01b039091168152602001610218565b6101dd61082e565b610207610841565b6101dd61041c3660046114ba565b6108cf565b6033546001600160a01b03166103e6565b6101dd610440366004611518565b6108e0565b6103e67f000000000000000000000000000000000000000000000000000000000000000081565b6103e67f000000000000000000000000000000000000000000000000000000000000000081565b6065546104a19061ffff1681565b60405161ffff9091168152602001610218565b6101dd6104c2366004611447565b610b0e565b6102c26104d53660046115b3565b610b83565b6102c26104e83660046113e0565b63ffffffff165f9081526067602052604090205490565b6101dd61050d3660046115f2565b610beb565b6101dd61052036600461164e565b610c03565b6101dd6105333660046116ba565b610e35565b6104a161271081565b5f54610100900460ff161580801561055f57505f54600160ff909116105b806105785750303b15801561057857505f5460ff166001145b6105e05760405162461bcd60e51b815260206004820152602e60248201527f496e697469616c697a61626c653a20636f6e747261637420697320616c72656160448201526d191e481a5b9a5d1a585b1a5e995960921b60648201526084015b60405180910390fd5b5f805460ff191660011790558015610601575f805461ff0019166101001790555b61060a87610ea7565b61061386610ef8565b61061c85610f42565b610627848484610fad565b63ffffffff8481165f8181526067602090815260408083207f2eddfa6e51c2e0ba986436883fbc224e895ba21e8fc61421f6b10d11e25d008e908190557f10b2e5f6b212b2c1d8f17fc240726b9af6c45b2a8fff776e3ef5e5aff1c35965805460ff191660011790556068835281842080544390971663ffffffff19978816811790915584526069909252808320805490951684179094556065805462010000850265ffffffff00001990911617905592517f010dcbe0d1e019c93357711f7bb6287d543b7ff7de74f29df3fb5ecceec8d3699190a38015610742575f805461ff0019169055604051600181527f7f26b83ff96e1f2b6a682f133852f6798a09c465da95921460cefb38474024989060200160405180910390a15b50505050505050565b610753611029565b61075c81610f42565b50565b606061078a7f0000000000000000000000000000000000000000000000000000000000000000611083565b905090565b5f60028260028111156107a4576107a46116d5565b036107d057507f0000000000000000000000000000000000000000000000000000000000000000919050565b60018260028111156107e4576107e46116d5565b0361081057507f0000000000000000000000000000000000000000000000000000000000000000919050565b60405163fdea7c0960e01b815260040160405180910390fd5b919050565b610836611029565b61083f5f610ea7565b565b604051635ddb9b5b60e01b81525f906001600160a01b037f00000000000000000000000000000000000000000000000000000000000000001690635ddb9b5b90610890906066906004016116e9565b602060405180830381865afa1580156108ab573d5f5f3e3d5ffd5b505050506040513d601f19601f8201168201806040525081019061078a9190611710565b6108d7611029565b61075c81610ef8565b5f5f5f5f6108ee86866110c0565b5f8e8152606a60205260409020549397509195509350915060ff166109265760405163504570e360e01b815260040160405180910390fd5b61092f8361078f565b6001600160a01b0316635ddb9b5b856040518263ffffffff1660e01b815260040161095a9190611420565b602060405180830381865afa158015610975573d5f5f3e3d5ffd5b505050506040513d601f19601f820116820180604052508101906109999190611710565b63ffffffff168b63ffffffff16116109c45760405163207617df60e01b815260040160405180910390fd5b6109e98b8b8b8b8b8b8b6040516109dc92919061172b565b6040518091039020611107565b60028360028111156109fd576109fd6116d5565b03610a8e577f00000000000000000000000000000000000000000000000000000000000000006001600160a01b0316636738c40b858d610a3c856111a8565b866040518563ffffffff1660e01b8152600401610a5c9493929190611774565b5f604051808303815f87803b158015610a73575f5ffd5b505af1158015610a85573d5f5f3e3d5ffd5b50505050610b01565b6001836002811115610aa257610aa26116d5565b03610810577f00000000000000000000000000000000000000000000000000000000000000006001600160a01b03166356d482f5858d610ae1856111ca565b866040518563ffffffff1660e01b8152600401610a5c94939291906117f0565b5050505050505050505050565b610b16611029565b5f818152606a602052604090205460ff16610b445760405163504570e360e01b815260040160405180910390fd5b5f818152606a6020526040808220805460ff191690555182917f8bd43de1250f58fe6ec9a78671a8b78dba70f0018656d157a3aeaabec389df3491a250565b604080517f4491f5ee91595f938885ef73c9a1fa8a6d14ff9b9dab4aa24b8802bbb9bfc1cc602082015290810184905263ffffffff8084166060830152821660808201525f9060a0016040516020818303038152906040528051906020012090509392505050565b610bf3611029565b610bfe838383610fad565b505050565b428263ffffffff161115610c2a57604051635a119db560e11b815260040160405180910390fd5b60655463ffffffff62010000909104811690831611610c5c5760405163037fa86b60e31b815260040160405180910390fd5b610c67838383610b83565b846020013514610c8a57604051638b56642d60e01b815260040160405180910390fd5b6040805160018082528183019092525f91602080830190803683375050606554825192935061ffff16918391505f90610cc557610cc56118a9565b61ffff90921660209283029190910190910152604051625f5e5d60e21b81525f906001600160a01b037f0000000000000000000000000000000000000000000000000000000000000000169063017d797490610d2a906066908a9087906004016119db565b6020604051808303815f875af1158015610d46573d5f5f3e3d5ffd5b505050506040513d601f19601f82011682018060405250810190610d6a9190611b68565b905080610d8a57604051633042041f60e21b815260040160405180910390fd5b6065805463ffffffff80871662010000810265ffffffff000019909316929092179092555f818152606860209081526040808320805495891663ffffffff1996871681179091558352606982528083208054909516841790945582825260678152838220899055888252606a9052828120805460ff19166001179055915187927f010dcbe0d1e019c93357711f7bb6287d543b7ff7de74f29df3fb5ecceec8d36991a3505050505050565b610e3d611029565b6001600160a01b038116610ea25760405162461bcd60e51b815260206004820152602660248201527f4f776e61626c653a206e6577206f776e657220697320746865207a65726f206160448201526564647265737360d01b60648201526084016105d7565b61075c815b603380546001600160a01b038381166001600160a01b0319831681179093556040519116919082907f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0905f90a35050565b806066610f058282611b87565b9050507f3463431b09dfd43dec7349f8f24acfa753fe4cf40a26235402d213373df1585681604051610f379190611c18565b60405180910390a150565b61271061ffff82161115610f69576040516307336f0360e11b815260040160405180910390fd5b6065805461ffff191661ffff83169081179091556040519081527ff5d1836df8fcd7c1e54047e94ac8773d2855395603e2ef9ba5f5f16905f2259290602001610f37565b604051636738c40b60e01b81526001600160a01b037f00000000000000000000000000000000000000000000000000000000000000001690636738c40b9061100090606690879087908790600401611c26565b5f604051808303815f87803b158015611017575f5ffd5b505af1158015610742573d5f5f3e3d5ffd5b6033546001600160a01b0316331461083f5760405162461bcd60e51b815260206004820181905260248201527f4f776e61626c653a2063616c6c6572206973206e6f7420746865206f776e657260448201526064016105d7565b60605f61108f836111e0565b6040805160208082528183019092529192505f91906020820181803683375050509182525060208101929092525090565b604080518082019091525f8082526020820152604080518082019091525f808252602082018190529060606110f785870187611d79565b9299919850965090945092505050565b63ffffffff86165f90815260676020526040902054851461113b5760405163639d09b560e11b815260040160405180910390fd5b61118383838080601f0160208091040260200160405190810160405280939291908181526020018383808284375f920191909152508992508591505063ffffffff8816611207565b6111a05760405163afa42ca760e01b815260040160405180910390fd5b505050505050565b6111b06112b5565b818060200190518101906111c49190611eca565b92915050565b6060818060200190518101906111c49190611f79565b5f60ff8216601f8111156111c457604051632cd44ac360e21b815260040160405180910390fd5b5f8361121486858561121e565b1495945050505050565b5f6020845161122d919061207a565b1561124b576040516313717da960e21b815260040160405180910390fd5b8260205b855181116112ac5761126260028561207a565b5f0361128357815f528086015160205260405f20915060028404935061129a565b808601515f528160205260405f2091506002840493505b6112a5602082612099565b905061124f565b50949350505050565b60405180608001604052805f81526020015f81526020016112e760405180604001604052805f81526020015f81525090565b8152602001606081525090565b6001600160a01b038116811461075c575f5ffd5b5f60408284031215611318575f5ffd5b50919050565b803561ffff81168114610829575f5ffd5b63ffffffff8116811461075c575f5ffd5b5f60a08284031215611318575f5ffd5b5f5f5f5f5f5f6101008789031215611366575f5ffd5b8635611371816112f4565b95506113808860208901611308565b945061138e6060880161131e565b9350608087013561139e8161132f565b925060a08701356001600160401b038111156113b8575f5ffd5b6113c489828a01611340565b9250506113d48860c08901611308565b90509295509295509295565b5f602082840312156113f0575f5ffd5b81356113fb8161132f565b9392505050565b80516001600160a01b0316825260209081015163ffffffff16910152565b604081016111c48284611402565b5f6020828403121561143e575f5ffd5b6113fb8261131e565b5f60208284031215611457575f5ffd5b5035919050565b602081525f82518060208401528060208501604085015e5f604082850101526040601f19601f83011684010191505092915050565b803560038110610829575f5ffd5b5f602082840312156114b1575f5ffd5b6113fb82611493565b5f604082840312156114ca575f5ffd5b6113fb8383611308565b5f5f83601f8401126114e4575f5ffd5b5081356001600160401b038111156114fa575f5ffd5b602083019150836020828501011115611511575f5ffd5b9250929050565b5f5f5f5f5f5f5f60a0888a03121561152e575f5ffd5b87356115398161132f565b96506020880135955060408801356115508161132f565b945060608801356001600160401b0381111561156a575f5ffd5b6115768a828b016114d4565b90955093505060808801356001600160401b03811115611594575f5ffd5b6115a08a828b016114d4565b989b979a50959850939692959293505050565b5f5f5f606084860312156115c5575f5ffd5b8335925060208401356115d78161132f565b915060408401356115e78161132f565b809150509250925092565b5f5f5f60808486031215611604575f5ffd5b833561160f8161132f565b925060208401356001600160401b03811115611629575f5ffd5b61163586828701611340565b9250506116458560408601611308565b90509250925092565b5f5f5f5f60808587031215611661575f5ffd5b84356001600160401b03811115611676575f5ffd5b85016101208188031215611688575f5ffd5b935060208501359250604085013561169f8161132f565b915060608501356116af8161132f565b939692955090935050565b5f602082840312156116ca575f5ffd5b81356113fb816112f4565b634e487b7160e01b5f52602160045260245ffd5b604081016111c48284546001600160a01b038116825260a01c63ffffffff16602090910152565b5f60208284031215611720575f5ffd5b81516113fb8161132f565b818382375f9101908152919050565b5f8151808452602084019350602083015f5b8281101561176a57815186526020958601959091019060010161174c565b5093949350505050565b61177e8186611402565b63ffffffff8416604082015260c06060820152825160c0820152602083015160e08201525f60408401518051610100840152602081015161012084015250606084015160a06101408401526117d761016084018261173a565b9150506117e76080830184611402565b95945050505050565b5f60c082016117ff8388611402565b63ffffffff8616604084015260c0606084015280855180835260e08501915060e08160051b8601019250602087015f5b828110156118805786850360df19018452815180516001600160a01b0316865260209081015160409187018290529061186a9087018261173a565b955050602093840193919091019060010161182f565b50505050809150506117e76080830184611402565b634e487b7160e01b5f52604160045260245ffd5b634e487b7160e01b5f52603260045260245ffd5b5f5f8335601e198436030181126118d2575f5ffd5b83016020810192503590506001600160401b038111156118f0575f5ffd5b8060051b3603821315611511575f5ffd5b81835281816020850137505f828201602090810191909152601f909101601f19169091010190565b5f8235605e1983360301811261193d575f5ffd5b90910192915050565b8183525f6001600160fb1b0383111561195d575f5ffd5b8260051b80836020870137939093016020019392505050565b80358252602080820135908301525f61199260408301836118bd565b606060408601526117e7606086018284611946565b5f8151808452602084019350602083015f5b8281101561176a57815161ffff168652602095860195909101906001016119b9565b6119fe8185546001600160a01b038116825260a01c63ffffffff16602090910152565b608060408201525f6101a082018435611a168161132f565b63ffffffff166080840152602085013560a0840152604085013560c0840152606085013560e0840152604060808601610100850137604060c08601610140850137611a656101008601866118bd565b610120610180860152828184526101c0860190506101c08260051b8701019350825f5b83811015611b47578786036101bf19018352611aa48286611929565b8035611aaf8161132f565b63ffffffff168752602081013536829003601e19018112611ace575f5ffd5b81016020810190356001600160401b03811115611ae9575f5ffd5b803603821315611af7575f5ffd5b606060208a0152611b0c60608a018284611901565b915050611b1c6040830183611929565b91508781036040890152611b308183611976565b975050506020928301929190910190600101611a88565b50505050508281036060840152611b5e81856119a7565b9695505050505050565b5f60208284031215611b78575f5ffd5b815180151581146113fb575f5ffd5b8135611b92816112f4565b81546001600160a01b031981166001600160a01b039290921691821783556020840135611bbe8161132f565b6001600160c01b03199190911690911760a09190911b63ffffffff60a01b1617905550565b8035611bee816112f4565b6001600160a01b031682526020810135611c078161132f565b63ffffffff81166020840152505050565b604081016111c48284611be3565b611c498186546001600160a01b038116825260a01c63ffffffff16602090910152565b63ffffffff841660408281019190915260c06060808401829052853591840191909152602085013560e0840152908401356101008301528301356101208201525f611c9760808501856118bd565b60a0610140850152611cae61016085018284611946565b925050506117e76080830184611be3565b604080519081016001600160401b0381118282101715611ce157611ce1611895565b60405290565b604051608081016001600160401b0381118282101715611ce157611ce1611895565b604051601f8201601f191681016001600160401b0381118282101715611d3157611d31611895565b604052919050565b5f60408284031215611d49575f5ffd5b611d51611cbf565b90508135611d5e816112f4565b81526020820135611d6e8161132f565b602082015292915050565b5f5f5f5f60c08587031215611d8c575f5ffd5b611d968686611d39565b9350611da460408601611493565b9250611db38660608701611d39565b915060a08501356001600160401b03811115611dcd575f5ffd5b8501601f81018713611ddd575f5ffd5b80356001600160401b03811115611df657611df6611895565b611e09601f8201601f1916602001611d09565b818152886020838501011115611e1d575f5ffd5b816020840160208301375f6020838301015280935050505092959194509250565b5f6001600160401b03821115611e5657611e56611895565b5060051b60200190565b5f82601f830112611e6f575f5ffd5b8151611e82611e7d82611e3e565b611d09565b8082825260208201915060208360051b860101925085831115611ea3575f5ffd5b602085015b83811015611ec0578051835260209283019201611ea8565b5095945050505050565b5f60208284031215611eda575f5ffd5b81516001600160401b03811115611eef575f5ffd5b820180840360a0811215611f01575f5ffd5b611f09611ce7565b82518152602080840151908201526040603f1983011215611f28575f5ffd5b611f30611cbf565b604084810151825260608501516020830152820152608083015191506001600160401b03821115611f5f575f5ffd5b611f6b86838501611e60565b606082015295945050505050565b5f60208284031215611f89575f5ffd5b81516001600160401b03811115611f9e575f5ffd5b8201601f81018413611fae575f5ffd5b8051611fbc611e7d82611e3e565b8082825260208201915060208360051b850101925086831115611fdd575f5ffd5b602084015b8381101561206f5780516001600160401b03811115611fff575f5ffd5b85016040818a03601f19011215612014575f5ffd5b61201c611cbf565b602082015161202a816112f4565b815260408201516001600160401b03811115612044575f5ffd5b6120538b602083860101611e60565b6020830152508085525050602083019250602081019050611fe2565b509695505050505050565b5f8261209457634e487b7160e01b5f52601260045260245ffd5b500690565b808201808211156111c457634e487b7160e01b5f52601160045260245ffdfea2646970667358221220ea2c67407757dee4681cee5e8e6770618e0b9b7b41b36edddd03d470cabbb9e664736f6c634300081b0033",
 }
 
 // OperatorTableUpdaterABI is the input ABI used to generate the binding from.
@@ -473,43 +473,12 @@ func (_OperatorTableUpdater *OperatorTableUpdaterCallerSession) GetCurrentGlobal
 	return _OperatorTableUpdater.Contract.GetCurrentGlobalTableRoot(&_OperatorTableUpdater.CallOpts)
 }
 
-// GetGlobalConfirmerSetReferenceTimestamp is a free data retrieval call binding the contract method 0x0f3f8edd.
+// GetGenerator is a free data retrieval call binding the contract method 0x1e2ca260.
 //
-// Solidity: function getGlobalConfirmerSetReferenceTimestamp() view returns(uint32)
-func (_OperatorTableUpdater *OperatorTableUpdaterCaller) GetGlobalConfirmerSetReferenceTimestamp(opts *bind.CallOpts) (uint32, error) {
+// Solidity: function getGenerator() view returns((address,uint32))
+func (_OperatorTableUpdater *OperatorTableUpdaterCaller) GetGenerator(opts *bind.CallOpts) (OperatorSet, error) {
 	var out []interface{}
-	err := _OperatorTableUpdater.contract.Call(opts, &out, "getGlobalConfirmerSetReferenceTimestamp")
-
-	if err != nil {
-		return *new(uint32), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(uint32)).(*uint32)
-
-	return out0, err
-
-}
-
-// GetGlobalConfirmerSetReferenceTimestamp is a free data retrieval call binding the contract method 0x0f3f8edd.
-//
-// Solidity: function getGlobalConfirmerSetReferenceTimestamp() view returns(uint32)
-func (_OperatorTableUpdater *OperatorTableUpdaterSession) GetGlobalConfirmerSetReferenceTimestamp() (uint32, error) {
-	return _OperatorTableUpdater.Contract.GetGlobalConfirmerSetReferenceTimestamp(&_OperatorTableUpdater.CallOpts)
-}
-
-// GetGlobalConfirmerSetReferenceTimestamp is a free data retrieval call binding the contract method 0x0f3f8edd.
-//
-// Solidity: function getGlobalConfirmerSetReferenceTimestamp() view returns(uint32)
-func (_OperatorTableUpdater *OperatorTableUpdaterCallerSession) GetGlobalConfirmerSetReferenceTimestamp() (uint32, error) {
-	return _OperatorTableUpdater.Contract.GetGlobalConfirmerSetReferenceTimestamp(&_OperatorTableUpdater.CallOpts)
-}
-
-// GetGlobalRootConfirmerSet is a free data retrieval call binding the contract method 0x46282889.
-//
-// Solidity: function getGlobalRootConfirmerSet() view returns((address,uint32))
-func (_OperatorTableUpdater *OperatorTableUpdaterCaller) GetGlobalRootConfirmerSet(opts *bind.CallOpts) (OperatorSet, error) {
-	var out []interface{}
-	err := _OperatorTableUpdater.contract.Call(opts, &out, "getGlobalRootConfirmerSet")
+	err := _OperatorTableUpdater.contract.Call(opts, &out, "getGenerator")
 
 	if err != nil {
 		return *new(OperatorSet), err
@@ -521,18 +490,49 @@ func (_OperatorTableUpdater *OperatorTableUpdaterCaller) GetGlobalRootConfirmerS
 
 }
 
-// GetGlobalRootConfirmerSet is a free data retrieval call binding the contract method 0x46282889.
+// GetGenerator is a free data retrieval call binding the contract method 0x1e2ca260.
 //
-// Solidity: function getGlobalRootConfirmerSet() view returns((address,uint32))
-func (_OperatorTableUpdater *OperatorTableUpdaterSession) GetGlobalRootConfirmerSet() (OperatorSet, error) {
-	return _OperatorTableUpdater.Contract.GetGlobalRootConfirmerSet(&_OperatorTableUpdater.CallOpts)
+// Solidity: function getGenerator() view returns((address,uint32))
+func (_OperatorTableUpdater *OperatorTableUpdaterSession) GetGenerator() (OperatorSet, error) {
+	return _OperatorTableUpdater.Contract.GetGenerator(&_OperatorTableUpdater.CallOpts)
 }
 
-// GetGlobalRootConfirmerSet is a free data retrieval call binding the contract method 0x46282889.
+// GetGenerator is a free data retrieval call binding the contract method 0x1e2ca260.
 //
-// Solidity: function getGlobalRootConfirmerSet() view returns((address,uint32))
-func (_OperatorTableUpdater *OperatorTableUpdaterCallerSession) GetGlobalRootConfirmerSet() (OperatorSet, error) {
-	return _OperatorTableUpdater.Contract.GetGlobalRootConfirmerSet(&_OperatorTableUpdater.CallOpts)
+// Solidity: function getGenerator() view returns((address,uint32))
+func (_OperatorTableUpdater *OperatorTableUpdaterCallerSession) GetGenerator() (OperatorSet, error) {
+	return _OperatorTableUpdater.Contract.GetGenerator(&_OperatorTableUpdater.CallOpts)
+}
+
+// GetGeneratorReferenceTimestamp is a free data retrieval call binding the contract method 0x7551ba34.
+//
+// Solidity: function getGeneratorReferenceTimestamp() view returns(uint32)
+func (_OperatorTableUpdater *OperatorTableUpdaterCaller) GetGeneratorReferenceTimestamp(opts *bind.CallOpts) (uint32, error) {
+	var out []interface{}
+	err := _OperatorTableUpdater.contract.Call(opts, &out, "getGeneratorReferenceTimestamp")
+
+	if err != nil {
+		return *new(uint32), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(uint32)).(*uint32)
+
+	return out0, err
+
+}
+
+// GetGeneratorReferenceTimestamp is a free data retrieval call binding the contract method 0x7551ba34.
+//
+// Solidity: function getGeneratorReferenceTimestamp() view returns(uint32)
+func (_OperatorTableUpdater *OperatorTableUpdaterSession) GetGeneratorReferenceTimestamp() (uint32, error) {
+	return _OperatorTableUpdater.Contract.GetGeneratorReferenceTimestamp(&_OperatorTableUpdater.CallOpts)
+}
+
+// GetGeneratorReferenceTimestamp is a free data retrieval call binding the contract method 0x7551ba34.
+//
+// Solidity: function getGeneratorReferenceTimestamp() view returns(uint32)
+func (_OperatorTableUpdater *OperatorTableUpdaterCallerSession) GetGeneratorReferenceTimestamp() (uint32, error) {
+	return _OperatorTableUpdater.Contract.GetGeneratorReferenceTimestamp(&_OperatorTableUpdater.CallOpts)
 }
 
 // GetGlobalTableRootByTimestamp is a free data retrieval call binding the contract method 0xc5916a39.
@@ -920,23 +920,23 @@ func (_OperatorTableUpdater *OperatorTableUpdaterTransactorSession) DisableRoot(
 
 // Initialize is a paid mutator transaction binding the contract method 0x021ab442.
 //
-// Solidity: function initialize(address owner, (address,uint32) _globalRootConfirmerSet, uint16 _globalRootConfirmationThreshold, uint32 referenceTimestamp, (bytes32,uint256,(uint256,uint256),uint256[]) globalRootConfirmerSetInfo, (address,uint32) globalRootConfirmerSetConfig) returns()
-func (_OperatorTableUpdater *OperatorTableUpdaterTransactor) Initialize(opts *bind.TransactOpts, owner common.Address, _globalRootConfirmerSet OperatorSet, _globalRootConfirmationThreshold uint16, referenceTimestamp uint32, globalRootConfirmerSetInfo IOperatorTableCalculatorTypesBN254OperatorSetInfo, globalRootConfirmerSetConfig ICrossChainRegistryTypesOperatorSetConfig) (*types.Transaction, error) {
-	return _OperatorTableUpdater.contract.Transact(opts, "initialize", owner, _globalRootConfirmerSet, _globalRootConfirmationThreshold, referenceTimestamp, globalRootConfirmerSetInfo, globalRootConfirmerSetConfig)
+// Solidity: function initialize(address owner, (address,uint32) _generator, uint16 _globalRootConfirmationThreshold, uint32 referenceTimestamp, (bytes32,uint256,(uint256,uint256),uint256[]) generatorInfo, (address,uint32) generatorConfig) returns()
+func (_OperatorTableUpdater *OperatorTableUpdaterTransactor) Initialize(opts *bind.TransactOpts, owner common.Address, _generator OperatorSet, _globalRootConfirmationThreshold uint16, referenceTimestamp uint32, generatorInfo IOperatorTableCalculatorTypesBN254OperatorSetInfo, generatorConfig ICrossChainRegistryTypesOperatorSetConfig) (*types.Transaction, error) {
+	return _OperatorTableUpdater.contract.Transact(opts, "initialize", owner, _generator, _globalRootConfirmationThreshold, referenceTimestamp, generatorInfo, generatorConfig)
 }
 
 // Initialize is a paid mutator transaction binding the contract method 0x021ab442.
 //
-// Solidity: function initialize(address owner, (address,uint32) _globalRootConfirmerSet, uint16 _globalRootConfirmationThreshold, uint32 referenceTimestamp, (bytes32,uint256,(uint256,uint256),uint256[]) globalRootConfirmerSetInfo, (address,uint32) globalRootConfirmerSetConfig) returns()
-func (_OperatorTableUpdater *OperatorTableUpdaterSession) Initialize(owner common.Address, _globalRootConfirmerSet OperatorSet, _globalRootConfirmationThreshold uint16, referenceTimestamp uint32, globalRootConfirmerSetInfo IOperatorTableCalculatorTypesBN254OperatorSetInfo, globalRootConfirmerSetConfig ICrossChainRegistryTypesOperatorSetConfig) (*types.Transaction, error) {
-	return _OperatorTableUpdater.Contract.Initialize(&_OperatorTableUpdater.TransactOpts, owner, _globalRootConfirmerSet, _globalRootConfirmationThreshold, referenceTimestamp, globalRootConfirmerSetInfo, globalRootConfirmerSetConfig)
+// Solidity: function initialize(address owner, (address,uint32) _generator, uint16 _globalRootConfirmationThreshold, uint32 referenceTimestamp, (bytes32,uint256,(uint256,uint256),uint256[]) generatorInfo, (address,uint32) generatorConfig) returns()
+func (_OperatorTableUpdater *OperatorTableUpdaterSession) Initialize(owner common.Address, _generator OperatorSet, _globalRootConfirmationThreshold uint16, referenceTimestamp uint32, generatorInfo IOperatorTableCalculatorTypesBN254OperatorSetInfo, generatorConfig ICrossChainRegistryTypesOperatorSetConfig) (*types.Transaction, error) {
+	return _OperatorTableUpdater.Contract.Initialize(&_OperatorTableUpdater.TransactOpts, owner, _generator, _globalRootConfirmationThreshold, referenceTimestamp, generatorInfo, generatorConfig)
 }
 
 // Initialize is a paid mutator transaction binding the contract method 0x021ab442.
 //
-// Solidity: function initialize(address owner, (address,uint32) _globalRootConfirmerSet, uint16 _globalRootConfirmationThreshold, uint32 referenceTimestamp, (bytes32,uint256,(uint256,uint256),uint256[]) globalRootConfirmerSetInfo, (address,uint32) globalRootConfirmerSetConfig) returns()
-func (_OperatorTableUpdater *OperatorTableUpdaterTransactorSession) Initialize(owner common.Address, _globalRootConfirmerSet OperatorSet, _globalRootConfirmationThreshold uint16, referenceTimestamp uint32, globalRootConfirmerSetInfo IOperatorTableCalculatorTypesBN254OperatorSetInfo, globalRootConfirmerSetConfig ICrossChainRegistryTypesOperatorSetConfig) (*types.Transaction, error) {
-	return _OperatorTableUpdater.Contract.Initialize(&_OperatorTableUpdater.TransactOpts, owner, _globalRootConfirmerSet, _globalRootConfirmationThreshold, referenceTimestamp, globalRootConfirmerSetInfo, globalRootConfirmerSetConfig)
+// Solidity: function initialize(address owner, (address,uint32) _generator, uint16 _globalRootConfirmationThreshold, uint32 referenceTimestamp, (bytes32,uint256,(uint256,uint256),uint256[]) generatorInfo, (address,uint32) generatorConfig) returns()
+func (_OperatorTableUpdater *OperatorTableUpdaterTransactorSession) Initialize(owner common.Address, _generator OperatorSet, _globalRootConfirmationThreshold uint16, referenceTimestamp uint32, generatorInfo IOperatorTableCalculatorTypesBN254OperatorSetInfo, generatorConfig ICrossChainRegistryTypesOperatorSetConfig) (*types.Transaction, error) {
+	return _OperatorTableUpdater.Contract.Initialize(&_OperatorTableUpdater.TransactOpts, owner, _generator, _globalRootConfirmationThreshold, referenceTimestamp, generatorInfo, generatorConfig)
 }
 
 // RenounceOwnership is a paid mutator transaction binding the contract method 0x715018a6.
@@ -960,6 +960,27 @@ func (_OperatorTableUpdater *OperatorTableUpdaterTransactorSession) RenounceOwne
 	return _OperatorTableUpdater.Contract.RenounceOwnership(&_OperatorTableUpdater.TransactOpts)
 }
 
+// SetGenerator is a paid mutator transaction binding the contract method 0x77d90e94.
+//
+// Solidity: function setGenerator((address,uint32) operatorSet) returns()
+func (_OperatorTableUpdater *OperatorTableUpdaterTransactor) SetGenerator(opts *bind.TransactOpts, operatorSet OperatorSet) (*types.Transaction, error) {
+	return _OperatorTableUpdater.contract.Transact(opts, "setGenerator", operatorSet)
+}
+
+// SetGenerator is a paid mutator transaction binding the contract method 0x77d90e94.
+//
+// Solidity: function setGenerator((address,uint32) operatorSet) returns()
+func (_OperatorTableUpdater *OperatorTableUpdaterSession) SetGenerator(operatorSet OperatorSet) (*types.Transaction, error) {
+	return _OperatorTableUpdater.Contract.SetGenerator(&_OperatorTableUpdater.TransactOpts, operatorSet)
+}
+
+// SetGenerator is a paid mutator transaction binding the contract method 0x77d90e94.
+//
+// Solidity: function setGenerator((address,uint32) operatorSet) returns()
+func (_OperatorTableUpdater *OperatorTableUpdaterTransactorSession) SetGenerator(operatorSet OperatorSet) (*types.Transaction, error) {
+	return _OperatorTableUpdater.Contract.SetGenerator(&_OperatorTableUpdater.TransactOpts, operatorSet)
+}
+
 // SetGlobalRootConfirmationThreshold is a paid mutator transaction binding the contract method 0x2370356c.
 //
 // Solidity: function setGlobalRootConfirmationThreshold(uint16 bps) returns()
@@ -979,27 +1000,6 @@ func (_OperatorTableUpdater *OperatorTableUpdaterSession) SetGlobalRootConfirmat
 // Solidity: function setGlobalRootConfirmationThreshold(uint16 bps) returns()
 func (_OperatorTableUpdater *OperatorTableUpdaterTransactorSession) SetGlobalRootConfirmationThreshold(bps uint16) (*types.Transaction, error) {
 	return _OperatorTableUpdater.Contract.SetGlobalRootConfirmationThreshold(&_OperatorTableUpdater.TransactOpts, bps)
-}
-
-// SetGlobalRootConfirmerSet is a paid mutator transaction binding the contract method 0x0371406e.
-//
-// Solidity: function setGlobalRootConfirmerSet((address,uint32) operatorSet) returns()
-func (_OperatorTableUpdater *OperatorTableUpdaterTransactor) SetGlobalRootConfirmerSet(opts *bind.TransactOpts, operatorSet OperatorSet) (*types.Transaction, error) {
-	return _OperatorTableUpdater.contract.Transact(opts, "setGlobalRootConfirmerSet", operatorSet)
-}
-
-// SetGlobalRootConfirmerSet is a paid mutator transaction binding the contract method 0x0371406e.
-//
-// Solidity: function setGlobalRootConfirmerSet((address,uint32) operatorSet) returns()
-func (_OperatorTableUpdater *OperatorTableUpdaterSession) SetGlobalRootConfirmerSet(operatorSet OperatorSet) (*types.Transaction, error) {
-	return _OperatorTableUpdater.Contract.SetGlobalRootConfirmerSet(&_OperatorTableUpdater.TransactOpts, operatorSet)
-}
-
-// SetGlobalRootConfirmerSet is a paid mutator transaction binding the contract method 0x0371406e.
-//
-// Solidity: function setGlobalRootConfirmerSet((address,uint32) operatorSet) returns()
-func (_OperatorTableUpdater *OperatorTableUpdaterTransactorSession) SetGlobalRootConfirmerSet(operatorSet OperatorSet) (*types.Transaction, error) {
-	return _OperatorTableUpdater.Contract.SetGlobalRootConfirmerSet(&_OperatorTableUpdater.TransactOpts, operatorSet)
 }
 
 // TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.
@@ -1023,25 +1023,25 @@ func (_OperatorTableUpdater *OperatorTableUpdaterTransactorSession) TransferOwne
 	return _OperatorTableUpdater.Contract.TransferOwnership(&_OperatorTableUpdater.TransactOpts, newOwner)
 }
 
-// UpdateGlobalRootConfirmerSet is a paid mutator transaction binding the contract method 0x1ab78d90.
+// UpdateGenerator is a paid mutator transaction binding the contract method 0xe944e0a8.
 //
-// Solidity: function updateGlobalRootConfirmerSet(uint32 referenceTimestamp, (bytes32,uint256,(uint256,uint256),uint256[]) globalRootConfirmerSetInfo, (address,uint32) globalRootConfirmerSetConfig) returns()
-func (_OperatorTableUpdater *OperatorTableUpdaterTransactor) UpdateGlobalRootConfirmerSet(opts *bind.TransactOpts, referenceTimestamp uint32, globalRootConfirmerSetInfo IOperatorTableCalculatorTypesBN254OperatorSetInfo, globalRootConfirmerSetConfig ICrossChainRegistryTypesOperatorSetConfig) (*types.Transaction, error) {
-	return _OperatorTableUpdater.contract.Transact(opts, "updateGlobalRootConfirmerSet", referenceTimestamp, globalRootConfirmerSetInfo, globalRootConfirmerSetConfig)
+// Solidity: function updateGenerator(uint32 referenceTimestamp, (bytes32,uint256,(uint256,uint256),uint256[]) generatorInfo, (address,uint32) generatorConfig) returns()
+func (_OperatorTableUpdater *OperatorTableUpdaterTransactor) UpdateGenerator(opts *bind.TransactOpts, referenceTimestamp uint32, generatorInfo IOperatorTableCalculatorTypesBN254OperatorSetInfo, generatorConfig ICrossChainRegistryTypesOperatorSetConfig) (*types.Transaction, error) {
+	return _OperatorTableUpdater.contract.Transact(opts, "updateGenerator", referenceTimestamp, generatorInfo, generatorConfig)
 }
 
-// UpdateGlobalRootConfirmerSet is a paid mutator transaction binding the contract method 0x1ab78d90.
+// UpdateGenerator is a paid mutator transaction binding the contract method 0xe944e0a8.
 //
-// Solidity: function updateGlobalRootConfirmerSet(uint32 referenceTimestamp, (bytes32,uint256,(uint256,uint256),uint256[]) globalRootConfirmerSetInfo, (address,uint32) globalRootConfirmerSetConfig) returns()
-func (_OperatorTableUpdater *OperatorTableUpdaterSession) UpdateGlobalRootConfirmerSet(referenceTimestamp uint32, globalRootConfirmerSetInfo IOperatorTableCalculatorTypesBN254OperatorSetInfo, globalRootConfirmerSetConfig ICrossChainRegistryTypesOperatorSetConfig) (*types.Transaction, error) {
-	return _OperatorTableUpdater.Contract.UpdateGlobalRootConfirmerSet(&_OperatorTableUpdater.TransactOpts, referenceTimestamp, globalRootConfirmerSetInfo, globalRootConfirmerSetConfig)
+// Solidity: function updateGenerator(uint32 referenceTimestamp, (bytes32,uint256,(uint256,uint256),uint256[]) generatorInfo, (address,uint32) generatorConfig) returns()
+func (_OperatorTableUpdater *OperatorTableUpdaterSession) UpdateGenerator(referenceTimestamp uint32, generatorInfo IOperatorTableCalculatorTypesBN254OperatorSetInfo, generatorConfig ICrossChainRegistryTypesOperatorSetConfig) (*types.Transaction, error) {
+	return _OperatorTableUpdater.Contract.UpdateGenerator(&_OperatorTableUpdater.TransactOpts, referenceTimestamp, generatorInfo, generatorConfig)
 }
 
-// UpdateGlobalRootConfirmerSet is a paid mutator transaction binding the contract method 0x1ab78d90.
+// UpdateGenerator is a paid mutator transaction binding the contract method 0xe944e0a8.
 //
-// Solidity: function updateGlobalRootConfirmerSet(uint32 referenceTimestamp, (bytes32,uint256,(uint256,uint256),uint256[]) globalRootConfirmerSetInfo, (address,uint32) globalRootConfirmerSetConfig) returns()
-func (_OperatorTableUpdater *OperatorTableUpdaterTransactorSession) UpdateGlobalRootConfirmerSet(referenceTimestamp uint32, globalRootConfirmerSetInfo IOperatorTableCalculatorTypesBN254OperatorSetInfo, globalRootConfirmerSetConfig ICrossChainRegistryTypesOperatorSetConfig) (*types.Transaction, error) {
-	return _OperatorTableUpdater.Contract.UpdateGlobalRootConfirmerSet(&_OperatorTableUpdater.TransactOpts, referenceTimestamp, globalRootConfirmerSetInfo, globalRootConfirmerSetConfig)
+// Solidity: function updateGenerator(uint32 referenceTimestamp, (bytes32,uint256,(uint256,uint256),uint256[]) generatorInfo, (address,uint32) generatorConfig) returns()
+func (_OperatorTableUpdater *OperatorTableUpdaterTransactorSession) UpdateGenerator(referenceTimestamp uint32, generatorInfo IOperatorTableCalculatorTypesBN254OperatorSetInfo, generatorConfig ICrossChainRegistryTypesOperatorSetConfig) (*types.Transaction, error) {
+	return _OperatorTableUpdater.Contract.UpdateGenerator(&_OperatorTableUpdater.TransactOpts, referenceTimestamp, generatorInfo, generatorConfig)
 }
 
 // UpdateOperatorTable is a paid mutator transaction binding the contract method 0x9ea94778.
@@ -1063,6 +1063,140 @@ func (_OperatorTableUpdater *OperatorTableUpdaterSession) UpdateOperatorTable(re
 // Solidity: function updateOperatorTable(uint32 referenceTimestamp, bytes32 globalTableRoot, uint32 operatorSetIndex, bytes proof, bytes operatorTableBytes) returns()
 func (_OperatorTableUpdater *OperatorTableUpdaterTransactorSession) UpdateOperatorTable(referenceTimestamp uint32, globalTableRoot [32]byte, operatorSetIndex uint32, proof []byte, operatorTableBytes []byte) (*types.Transaction, error) {
 	return _OperatorTableUpdater.Contract.UpdateOperatorTable(&_OperatorTableUpdater.TransactOpts, referenceTimestamp, globalTableRoot, operatorSetIndex, proof, operatorTableBytes)
+}
+
+// OperatorTableUpdaterGeneratorUpdatedIterator is returned from FilterGeneratorUpdated and is used to iterate over the raw logs and unpacked data for GeneratorUpdated events raised by the OperatorTableUpdater contract.
+type OperatorTableUpdaterGeneratorUpdatedIterator struct {
+	Event *OperatorTableUpdaterGeneratorUpdated // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *OperatorTableUpdaterGeneratorUpdatedIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(OperatorTableUpdaterGeneratorUpdated)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(OperatorTableUpdaterGeneratorUpdated)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *OperatorTableUpdaterGeneratorUpdatedIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *OperatorTableUpdaterGeneratorUpdatedIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// OperatorTableUpdaterGeneratorUpdated represents a GeneratorUpdated event raised by the OperatorTableUpdater contract.
+type OperatorTableUpdaterGeneratorUpdated struct {
+	OperatorSet OperatorSet
+	Raw         types.Log // Blockchain specific contextual infos
+}
+
+// FilterGeneratorUpdated is a free log retrieval operation binding the contract event 0x3463431b09dfd43dec7349f8f24acfa753fe4cf40a26235402d213373df15856.
+//
+// Solidity: event GeneratorUpdated((address,uint32) operatorSet)
+func (_OperatorTableUpdater *OperatorTableUpdaterFilterer) FilterGeneratorUpdated(opts *bind.FilterOpts) (*OperatorTableUpdaterGeneratorUpdatedIterator, error) {
+
+	logs, sub, err := _OperatorTableUpdater.contract.FilterLogs(opts, "GeneratorUpdated")
+	if err != nil {
+		return nil, err
+	}
+	return &OperatorTableUpdaterGeneratorUpdatedIterator{contract: _OperatorTableUpdater.contract, event: "GeneratorUpdated", logs: logs, sub: sub}, nil
+}
+
+// WatchGeneratorUpdated is a free log subscription operation binding the contract event 0x3463431b09dfd43dec7349f8f24acfa753fe4cf40a26235402d213373df15856.
+//
+// Solidity: event GeneratorUpdated((address,uint32) operatorSet)
+func (_OperatorTableUpdater *OperatorTableUpdaterFilterer) WatchGeneratorUpdated(opts *bind.WatchOpts, sink chan<- *OperatorTableUpdaterGeneratorUpdated) (event.Subscription, error) {
+
+	logs, sub, err := _OperatorTableUpdater.contract.WatchLogs(opts, "GeneratorUpdated")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(OperatorTableUpdaterGeneratorUpdated)
+				if err := _OperatorTableUpdater.contract.UnpackLog(event, "GeneratorUpdated", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseGeneratorUpdated is a log parse operation binding the contract event 0x3463431b09dfd43dec7349f8f24acfa753fe4cf40a26235402d213373df15856.
+//
+// Solidity: event GeneratorUpdated((address,uint32) operatorSet)
+func (_OperatorTableUpdater *OperatorTableUpdaterFilterer) ParseGeneratorUpdated(log types.Log) (*OperatorTableUpdaterGeneratorUpdated, error) {
+	event := new(OperatorTableUpdaterGeneratorUpdated)
+	if err := _OperatorTableUpdater.contract.UnpackLog(event, "GeneratorUpdated", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
 }
 
 // OperatorTableUpdaterGlobalRootConfirmationThresholdUpdatedIterator is returned from FilterGlobalRootConfirmationThresholdUpdated and is used to iterate over the raw logs and unpacked data for GlobalRootConfirmationThresholdUpdated events raised by the OperatorTableUpdater contract.
@@ -1193,140 +1327,6 @@ func (_OperatorTableUpdater *OperatorTableUpdaterFilterer) WatchGlobalRootConfir
 func (_OperatorTableUpdater *OperatorTableUpdaterFilterer) ParseGlobalRootConfirmationThresholdUpdated(log types.Log) (*OperatorTableUpdaterGlobalRootConfirmationThresholdUpdated, error) {
 	event := new(OperatorTableUpdaterGlobalRootConfirmationThresholdUpdated)
 	if err := _OperatorTableUpdater.contract.UnpackLog(event, "GlobalRootConfirmationThresholdUpdated", log); err != nil {
-		return nil, err
-	}
-	event.Raw = log
-	return event, nil
-}
-
-// OperatorTableUpdaterGlobalRootConfirmerSetUpdatedIterator is returned from FilterGlobalRootConfirmerSetUpdated and is used to iterate over the raw logs and unpacked data for GlobalRootConfirmerSetUpdated events raised by the OperatorTableUpdater contract.
-type OperatorTableUpdaterGlobalRootConfirmerSetUpdatedIterator struct {
-	Event *OperatorTableUpdaterGlobalRootConfirmerSetUpdated // Event containing the contract specifics and raw log
-
-	contract *bind.BoundContract // Generic contract to use for unpacking event data
-	event    string              // Event name to use for unpacking event data
-
-	logs chan types.Log        // Log channel receiving the found contract events
-	sub  ethereum.Subscription // Subscription for errors, completion and termination
-	done bool                  // Whether the subscription completed delivering logs
-	fail error                 // Occurred error to stop iteration
-}
-
-// Next advances the iterator to the subsequent event, returning whether there
-// are any more events found. In case of a retrieval or parsing error, false is
-// returned and Error() can be queried for the exact failure.
-func (it *OperatorTableUpdaterGlobalRootConfirmerSetUpdatedIterator) Next() bool {
-	// If the iterator failed, stop iterating
-	if it.fail != nil {
-		return false
-	}
-	// If the iterator completed, deliver directly whatever's available
-	if it.done {
-		select {
-		case log := <-it.logs:
-			it.Event = new(OperatorTableUpdaterGlobalRootConfirmerSetUpdated)
-			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-				it.fail = err
-				return false
-			}
-			it.Event.Raw = log
-			return true
-
-		default:
-			return false
-		}
-	}
-	// Iterator still in progress, wait for either a data or an error event
-	select {
-	case log := <-it.logs:
-		it.Event = new(OperatorTableUpdaterGlobalRootConfirmerSetUpdated)
-		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-			it.fail = err
-			return false
-		}
-		it.Event.Raw = log
-		return true
-
-	case err := <-it.sub.Err():
-		it.done = true
-		it.fail = err
-		return it.Next()
-	}
-}
-
-// Error returns any retrieval or parsing error occurred during filtering.
-func (it *OperatorTableUpdaterGlobalRootConfirmerSetUpdatedIterator) Error() error {
-	return it.fail
-}
-
-// Close terminates the iteration process, releasing any pending underlying
-// resources.
-func (it *OperatorTableUpdaterGlobalRootConfirmerSetUpdatedIterator) Close() error {
-	it.sub.Unsubscribe()
-	return nil
-}
-
-// OperatorTableUpdaterGlobalRootConfirmerSetUpdated represents a GlobalRootConfirmerSetUpdated event raised by the OperatorTableUpdater contract.
-type OperatorTableUpdaterGlobalRootConfirmerSetUpdated struct {
-	OperatorSet OperatorSet
-	Raw         types.Log // Blockchain specific contextual infos
-}
-
-// FilterGlobalRootConfirmerSetUpdated is a free log retrieval operation binding the contract event 0x20100394950e66014c25009b45d12b675210a6e7a002044a0e3de6544e3c4b37.
-//
-// Solidity: event GlobalRootConfirmerSetUpdated((address,uint32) operatorSet)
-func (_OperatorTableUpdater *OperatorTableUpdaterFilterer) FilterGlobalRootConfirmerSetUpdated(opts *bind.FilterOpts) (*OperatorTableUpdaterGlobalRootConfirmerSetUpdatedIterator, error) {
-
-	logs, sub, err := _OperatorTableUpdater.contract.FilterLogs(opts, "GlobalRootConfirmerSetUpdated")
-	if err != nil {
-		return nil, err
-	}
-	return &OperatorTableUpdaterGlobalRootConfirmerSetUpdatedIterator{contract: _OperatorTableUpdater.contract, event: "GlobalRootConfirmerSetUpdated", logs: logs, sub: sub}, nil
-}
-
-// WatchGlobalRootConfirmerSetUpdated is a free log subscription operation binding the contract event 0x20100394950e66014c25009b45d12b675210a6e7a002044a0e3de6544e3c4b37.
-//
-// Solidity: event GlobalRootConfirmerSetUpdated((address,uint32) operatorSet)
-func (_OperatorTableUpdater *OperatorTableUpdaterFilterer) WatchGlobalRootConfirmerSetUpdated(opts *bind.WatchOpts, sink chan<- *OperatorTableUpdaterGlobalRootConfirmerSetUpdated) (event.Subscription, error) {
-
-	logs, sub, err := _OperatorTableUpdater.contract.WatchLogs(opts, "GlobalRootConfirmerSetUpdated")
-	if err != nil {
-		return nil, err
-	}
-	return event.NewSubscription(func(quit <-chan struct{}) error {
-		defer sub.Unsubscribe()
-		for {
-			select {
-			case log := <-logs:
-				// New log arrived, parse the event and forward to the user
-				event := new(OperatorTableUpdaterGlobalRootConfirmerSetUpdated)
-				if err := _OperatorTableUpdater.contract.UnpackLog(event, "GlobalRootConfirmerSetUpdated", log); err != nil {
-					return err
-				}
-				event.Raw = log
-
-				select {
-				case sink <- event:
-				case err := <-sub.Err():
-					return err
-				case <-quit:
-					return nil
-				}
-			case err := <-sub.Err():
-				return err
-			case <-quit:
-				return nil
-			}
-		}
-	}), nil
-}
-
-// ParseGlobalRootConfirmerSetUpdated is a log parse operation binding the contract event 0x20100394950e66014c25009b45d12b675210a6e7a002044a0e3de6544e3c4b37.
-//
-// Solidity: event GlobalRootConfirmerSetUpdated((address,uint32) operatorSet)
-func (_OperatorTableUpdater *OperatorTableUpdaterFilterer) ParseGlobalRootConfirmerSetUpdated(log types.Log) (*OperatorTableUpdaterGlobalRootConfirmerSetUpdated, error) {
-	event := new(OperatorTableUpdaterGlobalRootConfirmerSetUpdated)
-	if err := _OperatorTableUpdater.contract.UnpackLog(event, "GlobalRootConfirmerSetUpdated", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
