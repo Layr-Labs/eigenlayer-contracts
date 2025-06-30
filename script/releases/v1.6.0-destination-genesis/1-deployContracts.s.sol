@@ -14,7 +14,7 @@ contract DeployDestinationGenesis is EOADeployer {
 
         // Setup safe seploy parameters
         uint256 salt = uint256(keccak256(abi.encode(block.timestamp, block.chainid))); // Pseudo-random salt
-        address[] memory initialOwners = new address[](0);
+        address[] memory initialOwners = new address[](1);
         initialOwners[0] = msg.sender;
 
         vm.startBroadcast();
@@ -45,6 +45,21 @@ contract DeployDestinationGenesis is EOADeployer {
         zUpdate("proxyAdmin", address(proxyAdmin));
         zUpdate("operationsMultisig", opsMultisig);
         zUpdate("pauserMultisig", pauserMultisig);
+    }
+
+    function testScript() public virtual {
+        if (!Env.isDestinationChain()) {
+            return;
+        }
+
+        _runAsEOA();
+
+        // Check proxyAdmin owner
+        assertEq(Env.proxyAdmin(), Env.opsMultisig());
+
+        // Check that the multisigs are non-zero
+        assertNotEq(Env.opsMultisig(), address(0));
+        assertNotEq(Env.pauserMultisig(), address(0));
     }
 
     function deployMultisig(
