@@ -46,6 +46,7 @@ contract OperatorTableUpdaterUnitTests is
         operatorTableUpdaterImplementation = new OperatorTableUpdater(
             IBN254CertificateVerifier(address(bn254CertificateVerifierMock)),
             IECDSACertificateVerifier(address(ecdsaCertificateVerifierMock)),
+            pauserRegistry,
             "1.0.0"
         );
 
@@ -55,6 +56,7 @@ contract OperatorTableUpdaterUnitTests is
             abi.encodeWithSelector(
                 OperatorTableUpdater.initialize.selector,
                 address(this), // owner
+                0, // initialPausedStatus
                 generator, // generator
                 GLOBAL_ROOT_CONFIRMATION_THRESHOLD, // globalRootConfirmationThreshold
                 block.timestamp - 1, // referenceTimestamp
@@ -194,6 +196,7 @@ contract OperatorTableUpdaterUnitTests_initialize is OperatorTableUpdaterUnitTes
         cheats.expectRevert("Initializable: contract is already initialized");
         operatorTableUpdater.initialize(
             address(this),
+            uint(0),
             generator,
             GLOBAL_ROOT_CONFIRMATION_THRESHOLD,
             uint32(block.timestamp - 1),
@@ -661,14 +664,14 @@ contract OperatorTableUpdaterUnitTests_setGlobalRootConfirmationThreshold is Ope
 }
 
 contract OperatorTableUpdaterUnitTests_disableRoot is OperatorTableUpdaterUnitTests {
-    function testFuzz_revert_onlyOwner(Randomness r) public rand(r) {
+    function testFuzz_revert_onlyPauser(Randomness r) public rand(r) {
         address invalidCaller = r.Address();
-        cheats.assume(invalidCaller != address(this));
+        cheats.assume(invalidCaller != pauser && invalidCaller != address(this));
         bytes32 globalTableRoot = bytes32(r.Uint256());
 
-        // Should revert when called by non-owner
+        // Should revert when called by non-pauser
         cheats.prank(invalidCaller);
-        cheats.expectRevert("Ownable: caller is not the owner");
+        cheats.expectRevert("Pausable: caller is not the pauser");
         operatorTableUpdater.disableRoot(globalTableRoot);
     }
 
@@ -692,7 +695,8 @@ contract OperatorTableUpdaterUnitTests_disableRoot is OperatorTableUpdaterUnitTe
         // Verify the root is valid
         assertTrue(operatorTableUpdater.isRootValid(globalTableRoot));
 
-        // Disable the root
+        // Disable the root as pauser
+        cheats.prank(pauser);
         cheats.expectEmit(true, true, true, true);
         emit GlobalRootDisabled(globalTableRoot);
         operatorTableUpdater.disableRoot(globalTableRoot);
@@ -750,7 +754,8 @@ contract OperatorTableUpdaterUnitTests_isRootValid is OperatorTableUpdaterUnitTe
         // Should now be valid
         assertTrue(operatorTableUpdater.isRootValid(globalTableRoot));
 
-        // Disable the root
+        // Disable the root as pauser
+        cheats.prank(pauser);
         operatorTableUpdater.disableRoot(globalTableRoot);
 
         // Should now be invalid
@@ -773,7 +778,8 @@ contract OperatorTableUpdaterUnitTests_isRootValid is OperatorTableUpdaterUnitTe
         // Should be valid
         assertTrue(operatorTableUpdater.isRootValidByTimestamp(referenceTimestamp));
 
-        // Disable the root
+        // Disable the root as pauser
+        cheats.prank(pauser);
         operatorTableUpdater.disableRoot(globalTableRoot);
 
         // Should now be invalid when queried by timestamp
@@ -787,7 +793,8 @@ contract OperatorTableUpdaterUnitTests_IntegrationScenarios is OperatorTableUpda
         bytes32 oldGlobalTableRoot = bytes32(uint(1));
         _updateGlobalTableRoot(oldGlobalTableRoot);
 
-        // Step 2: Disable the old root
+        // Step 2: Disable the old root as pauser
+        cheats.prank(pauser);
         operatorTableUpdater.disableRoot(oldGlobalTableRoot);
 
         // Step 3: Set a new generator

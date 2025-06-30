@@ -135,7 +135,7 @@ interface IOperatorTableUpdater is
     /**
      * @notice Disables a global table root
      * @param globalTableRoot the global table root to disable
-     * @dev Only callable by the owner of the contract
+     * @dev Only callable by the pauser
      */
     function disableRoot(
         bytes32 globalTableRoot

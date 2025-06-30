@@ -174,7 +174,7 @@ Sets the stake proportion threshold required for confirming global table roots.
 /**
  * @notice Disables a global table root
  * @param globalTableRoot the global table root to disable
- * @dev Only callable by the owner of the contract
+ * @dev Only callable by the pauser
  */
 function disableRoot(
     bytes32 globalTableRoot
@@ -188,7 +188,7 @@ Disables a global table root, preventing further operator table updates against 
 * Emits a `GlobalRootDisabled` event
 
 *Requirements*:
-* Caller MUST be the `owner`
+* Caller MUST be the `pauser`
 * The `globalTableRoot` MUST exist and be currently valid
 
 ### `updateGenerator`
