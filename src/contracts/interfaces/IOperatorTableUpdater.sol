@@ -40,10 +40,10 @@ interface IOperatorTableUpdaterEvents {
     event NewGlobalTableRoot(uint32 indexed referenceTimestamp, bytes32 indexed globalTableRoot);
 
     /**
-     * @notice Emitted when the global root confirmer set is updated
+     * @notice Emitted when the generator is updated
      * @param operatorSet The operatorSet which certifies against global roots
      */
-    event GlobalRootConfirmerSetUpdated(OperatorSet operatorSet);
+    event GeneratorUpdated(OperatorSet operatorSet);
 
     /**
      * @notice Emitted when the global root confirmation threshold is updated
@@ -72,7 +72,7 @@ interface IOperatorTableUpdater is
      * @param globalTableRoot merkle root of all operatorSet tables
      * @param referenceTimestamp timestamp of the root
      * @param referenceBlockNumber block number of the root
-     * @dev Any entity can submit with a valid certificate signed off by the `globalRootConfirmerSet`
+     * @dev Any entity can submit with a valid certificate signed off by the `Generator`
      * @dev The `msgHash` in the `globalOperatorTableRootCert` is the hash of the `globalOperatorTableRoot`
      */
     function confirmGlobalTableRoot(
@@ -88,7 +88,7 @@ interface IOperatorTableUpdater is
      * @dev The `operatorSet` is used to verify the certificate of the global table root
      * @dev Only callable by the owner of the contract
      */
-    function setGlobalRootConfirmerSet(
+    function setGenerator(
         OperatorSet calldata operatorSet
     ) external;
 
@@ -101,18 +101,18 @@ interface IOperatorTableUpdater is
     ) external;
 
     /**
-     * @notice Updates the operator table for the global root confirmer set
+     * @notice Updates the operator table for the generator
      * @param referenceTimestamp The reference timestamp of the operator table update
-     * @param globalRootConfirmerSetInfo The operatorSetInfo for the global root confirmer set
-     * @param globalRootConfirmerSetConfig The operatorSetConfig for the global root confirmer set
+     * @param GeneratorInfo The operatorSetInfo for the generator
+     * @param GeneratorConfig The operatorSetConfig for the generator
      * @dev We have a separate function for updating this operatorSet since it's not transported and updated
      *      in the same way as the other operatorSets
      * @dev Only callable by the owner of the contract
      */
-    function updateGlobalRootConfirmerSet(
+    function updateGenerator(
         uint32 referenceTimestamp,
-        BN254OperatorSetInfo calldata globalRootConfirmerSetInfo,
-        OperatorSetConfig calldata globalRootConfirmerSetConfig
+        BN254OperatorSetInfo calldata GeneratorInfo,
+        OperatorSetConfig calldata GeneratorConfig
     ) external;
 
     /**
@@ -160,7 +160,7 @@ interface IOperatorTableUpdater is
      * @notice Get the operatorSet which certifies against global roots
      * @return The operatorSet which certifies against global roots
      */
-    function getGlobalRootConfirmerSet() external view returns (OperatorSet memory);
+    function getGenerator() external view returns (OperatorSet memory);
 
     /**
      * @notice Get the certificate verifier for a given key type
@@ -215,11 +215,11 @@ interface IOperatorTableUpdater is
     ) external view returns (bytes32);
 
     /**
-     * @notice Get the reference timestamp of the global confirmer set
-     * @return The reference timestamp of the global confirmer set
-     * @dev In V1, we only update the table of the global root confirmer set on initial deployment, and never update it again.
+     * @notice Get the reference timestamp of the generator
+     * @return The reference timestamp of the generator
+     * @dev In V1, we only update the table of the generator on initial deployment, and never update it again.
      */
-    function getGlobalConfirmerSetReferenceTimestamp() external view returns (uint32);
+    function getGeneratorReferenceTimestamp() external view returns (uint32);
 
     /**
      * @notice Get the validity status of a global table root

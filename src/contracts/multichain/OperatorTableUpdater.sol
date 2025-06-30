@@ -25,26 +25,26 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
     /**
      * @notice Initializes the OperatorTableUpdater
      * @param owner The owner of the OperatorTableUpdater
-     * @param _globalRootConfirmerSet The operatorSet which certifies against global roots
+     * @param _generator The operatorSet which certifies against global roots
      * @param _globalRootConfirmationThreshold The threshold, in bps, for a global root to be signed off on and updated
      * @param referenceTimestamp The reference timestamp for the global root confirmer set
-     * @param globalRootConfirmerSetInfo The operatorSetInfo for the global root confirmer set
-     * @param globalRootConfirmerSetConfig The operatorSetConfig for the global root confirmer set
+     * @param generatorInfo The operatorSetInfo for the global root confirmer set
+     * @param generatorConfig The operatorSetConfig for the global root confirmer set
      * @dev We also update the operator table for the global root confirmer set, to begin signing off on global roots
      * @dev Uses INITIAL_GLOBAL_TABLE_ROOT constant to break circular dependency for certificate verification
      */
     function initialize(
         address owner,
-        OperatorSet calldata _globalRootConfirmerSet,
+        OperatorSet calldata _generator,
         uint16 _globalRootConfirmationThreshold,
         uint32 referenceTimestamp,
-        BN254OperatorSetInfo calldata globalRootConfirmerSetInfo,
-        OperatorSetConfig calldata globalRootConfirmerSetConfig
+        BN254OperatorSetInfo calldata generatorInfo,
+        OperatorSetConfig calldata generatorConfig
     ) external initializer {
         _transferOwnership(owner);
-        _setGlobalRootConfirmerSet(_globalRootConfirmerSet);
+        _setGenerator(_generator);
         _setGlobalRootConfirmationThreshold(_globalRootConfirmationThreshold);
-        _updateGlobalRootConfirmerSet(referenceTimestamp, globalRootConfirmerSetInfo, globalRootConfirmerSetConfig);
+        _updateGenerator(referenceTimestamp, generatorInfo, generatorConfig);
 
         /// @dev The first global table root is the `INITIAL_GLOBAL_TABLE_ROOT`
         /// @dev This is used to enable the first call to `confirmGlobalTableRoot` to pass since it expects
@@ -87,7 +87,7 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
         uint16[] memory stakeProportionThresholds = new uint16[](1);
         stakeProportionThresholds[0] = globalRootConfirmationThreshold;
         bool isValid = bn254CertificateVerifier.verifyCertificateProportion(
-            _globalRootConfirmerSet, globalTableRootCert, stakeProportionThresholds
+            _generator, globalTableRootCert, stakeProportionThresholds
         );
 
         require(isValid, CertificateInvalid());
@@ -157,10 +157,10 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
      */
 
     /// @inheritdoc IOperatorTableUpdater
-    function setGlobalRootConfirmerSet(
+    function setGenerator(
         OperatorSet calldata operatorSet
     ) external onlyOwner {
-        _setGlobalRootConfirmerSet(operatorSet);
+        _setGenerator(operatorSet);
     }
 
     /// @inheritdoc IOperatorTableUpdater
@@ -182,12 +182,12 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
     }
 
     /// @inheritdoc IOperatorTableUpdater
-    function updateGlobalRootConfirmerSet(
+    function updateGenerator(
         uint32 referenceTimestamp,
-        BN254OperatorSetInfo calldata globalRootConfirmerSetInfo,
-        OperatorSetConfig calldata globalRootConfirmerSetConfig
+        BN254OperatorSetInfo calldata generatorInfo,
+        OperatorSetConfig calldata generatorConfig
     ) external onlyOwner {
-        _updateGlobalRootConfirmerSet(referenceTimestamp, globalRootConfirmerSetInfo, globalRootConfirmerSetConfig);
+        _updateGenerator(referenceTimestamp, generatorInfo, generatorConfig);
     }
 
     /**
@@ -209,8 +209,8 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
     }
 
     /// @inheritdoc IOperatorTableUpdater
-    function getGlobalRootConfirmerSet() external view returns (OperatorSet memory) {
-        return _globalRootConfirmerSet;
+    function getGenerator() external view returns (OperatorSet memory) {
+        return _generator;
     }
 
     /// @inheritdoc IOperatorTableUpdater
@@ -262,10 +262,8 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
     }
 
     /// @inheritdoc IOperatorTableUpdater
-    function getGlobalConfirmerSetReferenceTimestamp() external view returns (uint32) {
-        return IBaseCertificateVerifier(address(bn254CertificateVerifier)).latestReferenceTimestamp(
-            _globalRootConfirmerSet
-        );
+    function getGeneratorReferenceTimestamp() external view returns (uint32) {
+        return IBaseCertificateVerifier(address(bn254CertificateVerifier)).latestReferenceTimestamp(_generator);
     }
 
     /// @inheritdoc IOperatorTableUpdater
@@ -323,11 +321,11 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
      * @notice Sets the global root confirmer set
      * @param operatorSet The operatorSet which certifies against global roots
      */
-    function _setGlobalRootConfirmerSet(
+    function _setGenerator(
         OperatorSet calldata operatorSet
     ) internal {
-        _globalRootConfirmerSet = operatorSet;
-        emit GlobalRootConfirmerSetUpdated(operatorSet);
+        _generator = operatorSet;
+        emit GeneratorUpdated(operatorSet);
     }
 
     /**
@@ -345,17 +343,15 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
     /**
      * @notice Updates the operator table for the global root confirmer set
      * @param referenceTimestamp The reference timestamp of the operator table update
-     * @param globalRootConfirmerSetInfo The operatorSetInfo for the global root confirmer set
-     * @param globalRootConfirmerSetConfig The operatorSetConfig for the global root confirmer set
+     * @param generatorInfo The operatorSetInfo for the global root confirmer set
+     * @param generatorConfig The operatorSetConfig for the global root confirmer set
      */
-    function _updateGlobalRootConfirmerSet(
+    function _updateGenerator(
         uint32 referenceTimestamp,
-        BN254OperatorSetInfo calldata globalRootConfirmerSetInfo,
-        OperatorSetConfig calldata globalRootConfirmerSetConfig
+        BN254OperatorSetInfo calldata generatorInfo,
+        OperatorSetConfig calldata generatorConfig
     ) internal {
-        bn254CertificateVerifier.updateOperatorTable(
-            _globalRootConfirmerSet, referenceTimestamp, globalRootConfirmerSetInfo, globalRootConfirmerSetConfig
-        );
+        bn254CertificateVerifier.updateOperatorTable(_generator, referenceTimestamp, generatorInfo, generatorConfig);
     }
 
     /**
