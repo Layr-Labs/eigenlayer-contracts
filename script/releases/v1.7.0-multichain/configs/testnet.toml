@@ -1,0 +1,19 @@
+globalRootConfirmationThreshold = 10000
+referenceTimestamp = 1
+
+[globalRootConfirmerSet]
+avs = "0xda29bb71669f46f2a779b4b62f03644a84ee3479"
+id = 0
+
+[globalRootConfirmerSetConfig]
+maxStalenessPeriod = 0
+owner = "0x8736311E6b706AfF3D8132Adf351387092802bA6"
+
+[globalRootConfirmerSetInfo]
+numOperators = 1
+operatorInfoTreeRoot = "0x28422d2f3fa660e25c063fb34742fa02f7e75fba3c78f80031cd7e9a3a5c68d9"
+totalWeights = [1]
+
+[globalRootConfirmerSetInfo.aggregatePubkey]
+X = "9091272969368059399846805175941234921833445882000488923774697344827079706946"
+Y = "19134916441917375104496425063226216431905713150529026164932839559599921516998"
