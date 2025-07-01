@@ -50,6 +50,7 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
                 OperatorTableUpdater.initialize,
                 (
                     Env.opsMultisig(),
+                    0, // initial paused status
                     initParams.globalRootConfirmerSet,
                     initParams.globalRootConfirmationThreshold,
                     initParams.referenceTimestamp,
@@ -91,7 +92,8 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
     function _validateStorage() internal view {
         // Validate OperatorTableUpdater
         OperatorTableUpdater operatorTableUpdater = Env.proxy.operatorTableUpdater();
-        assertTrue(operatorTableUpdater.owner() == Env.opsMultisig(), "out.owner invalid");
+        assertTrue(operatorTableUpdater.owner() == Env.opsMultisig(), "otu.owner invalid");
+        assertTrue(operatorTableUpdater.paused() == 0, "otu.paused invalid");
         // TODO: add checks on global root confirmer set
 
         // Validate ECDSACertificateVerifier
@@ -160,6 +162,7 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
         vm.expectRevert(errInit);
         operatorTableUpdater.initialize(
             address(0), // owner
+            0, // initial paused status
             dummyOperatorSet, // globalRootConfirmerSet
             0, // globalRootConfirmationThreshold
             0, // referenceTimestamp

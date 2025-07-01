@@ -27,6 +27,7 @@ contract DeployDestinationChainImpls is EOADeployer, DeployDestinationChainProxi
                 new OperatorTableUpdater({
                     _bn254CertificateVerifier: Env.proxy.bn254CertificateVerifier(),
                     _ecdsaCertificateVerifier: Env.proxy.ecdsaCertificateVerifier(),
+                    _pauserRegistry: Env.impl.pauserRegistry(),
                     _version: Env.deployVersion()
                 })
             )
@@ -124,6 +125,7 @@ contract DeployDestinationChainImpls is EOADeployer, DeployDestinationChainProxi
         vm.expectRevert(errInit);
         operatorTableUpdater.initialize(
             address(0), // owner
+            0, // initial paused status
             dummyOperatorSet, // globalRootConfirmerSet
             0, // globalRootConfirmationThreshold
             0, // referenceTimestamp
