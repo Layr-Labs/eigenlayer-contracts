@@ -34,6 +34,7 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
     ) external checkCanCall(operatorSet.avs) returns (uint256 releaseId) {
         Release[] storage releases = _operatorSetReleases[operatorSet.key()];
 
+        require(bytes(_operatorSetMetadataURI[operatorSet.key()]).length != 0, MustPublishMetadataURI());
         require(release.upgradeByTime >= block.timestamp, InvalidUpgradeByTime());
 
         // New release id is the length of the array before this call.
@@ -47,6 +48,16 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
         releases[releaseId].upgradeByTime = release.upgradeByTime;
 
         emit ReleasePublished(operatorSet, releaseId, release);
+    }
+
+    /// @inheritdoc IReleaseManager
+    function publishMetadataURI(
+        OperatorSet calldata operatorSet,
+        string calldata metadataURI
+    ) external checkCanCall(operatorSet.avs) {
+        require(bytes(metadataURI).length != 0, InvalidMetadataURI());
+        _operatorSetMetadataURI[operatorSet.key()] = metadataURI;
+        emit MetadataURIPublished(operatorSet, metadataURI);
     }
 
     /**
@@ -88,5 +99,12 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
     /// @inheritdoc IReleaseManager
     function isValidRelease(OperatorSet memory operatorSet, uint256 releaseId) external view returns (bool) {
         return releaseId == getTotalReleases(operatorSet) - 1;
+    }
+
+    /// @inheritdoc IReleaseManager
+    function getMetadataURI(
+        OperatorSet memory operatorSet
+    ) external view returns (string memory) {
+        return _operatorSetMetadataURI[operatorSet.key()];
     }
 }
