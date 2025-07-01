@@ -69,6 +69,7 @@ Confirms a new global table root by verifying a BN254 certificate signed by the 
 * Emits a `NewGlobalTableRoot` event
 
 *Requirements*:
+* The contract MUST NOT be paused for global root updates
 * The `referenceTimestamp` MUST NOT be in the future
 * The `referenceTimestamp` MUST be greater than `_latestReferenceTimestamp`
 * The certificate's `messageHash` MUST match the expected EIP-712 hash
@@ -110,6 +111,7 @@ Updates an operator table by verifying its inclusion in a confirmed global table
   * Calls `ecdsaCertificateVerifier.updateOperatorTable` with the decoded operator info
 
 *Requirements*:
+* The contract MUST NOT be paused for operator table updates
 * The `globalTableRoot` MUST be valid (not disabled)
 * The `referenceTimestamp` MUST be greater than the latest timestamp for the operator set
 * The merkle proof MUST verify the operator table's inclusion in the global root
@@ -174,21 +176,21 @@ Sets the stake proportion threshold required for confirming global table roots.
 /**
  * @notice Disables a global table root
  * @param globalTableRoot the global table root to disable
- * @dev Only callable by the owner of the contract
+ * @dev Only callable by the pauser
  */
 function disableRoot(
     bytes32 globalTableRoot
 ) external;
 ```
 
-Disables a global table root, preventing further operator table updates against it. This function also prevents the `CertificateVerifier` from verifying certificates. The function is intended to prevent a malicious or invalid root from being used by downstream consumers. 
+Disables a global table root, preventing further operator table updates against it. This function also prevents the `CertificateVerifier` from verifying certificates. The function is intended to prevent a malicious or invalid root from being used by downstream consumers. Once a root is disabled, it cannot be re-enabled. 
 
 *Effects*:
 * Sets `_isRootValid[globalTableRoot]` to `false`
 * Emits a `GlobalRootDisabled` event
 
 *Requirements*:
-* Caller MUST be the `owner`
+* Caller MUST be the `pauser`
 * The `globalTableRoot` MUST exist and be currently valid
 
 ### `updateGenerator`
