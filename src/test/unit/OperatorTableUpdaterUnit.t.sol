@@ -46,6 +46,7 @@ contract OperatorTableUpdaterUnitTests is
         operatorTableUpdaterImplementation = new OperatorTableUpdater(
             IBN254CertificateVerifier(address(bn254CertificateVerifierMock)),
             IECDSACertificateVerifier(address(ecdsaCertificateVerifierMock)),
+            pauserRegistry,
             "1.0.0"
         );
 
@@ -55,6 +56,7 @@ contract OperatorTableUpdaterUnitTests is
             abi.encodeWithSelector(
                 OperatorTableUpdater.initialize.selector,
                 address(this), // owner
+                0, // initialPausedStatus
                 generator, // generator
                 GLOBAL_ROOT_CONFIRMATION_THRESHOLD, // globalRootConfirmationThreshold
                 block.timestamp - 1, // referenceTimestamp
@@ -194,6 +196,7 @@ contract OperatorTableUpdaterUnitTests_initialize is OperatorTableUpdaterUnitTes
         cheats.expectRevert("Initializable: contract is already initialized");
         operatorTableUpdater.initialize(
             address(this),
+            uint(0),
             generator,
             GLOBAL_ROOT_CONFIRMATION_THRESHOLD,
             uint32(block.timestamp - 1),
@@ -212,6 +215,23 @@ contract OperatorTableUpdaterUnitTests_confirmGlobalTableRoot is OperatorTableUp
 
         cheats.expectRevert(GlobalTableRootInFuture.selector);
         operatorTableUpdater.confirmGlobalTableRoot(mockCertificate, bytes32(0), referenceTimestamp + 1, referenceBlockNumber);
+    }
+
+    function testFuzz_revert_paused(Randomness r) public rand(r) {
+        // Pause the confirmGlobalTableRoot functionality (bit index 0)
+        uint pausedStatus = 1 << 0; // Set bit 0 to pause PAUSED_GLOBAL_ROOT_UPDATE
+        cheats.prank(pauser);
+        operatorTableUpdater.pause(pausedStatus);
+
+        uint32 referenceTimestamp = r.Uint32(operatorTableUpdater.getLatestReferenceTimestamp() + 1, type(uint32).max);
+        uint32 referenceBlockNumber = r.Uint32();
+        bytes32 globalTableRoot = bytes32(r.Uint256(1, type(uint).max));
+        mockCertificate.messageHash =
+            operatorTableUpdater.getGlobalTableUpdateMessageHash(globalTableRoot, referenceTimestamp, referenceBlockNumber);
+
+        // Try to confirm a global table root while paused
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
+        operatorTableUpdater.confirmGlobalTableRoot(mockCertificate, globalTableRoot, referenceTimestamp, referenceBlockNumber);
     }
 
     function testFuzz_revert_staleCertificate(Randomness r) public rand(r) {
@@ -271,6 +291,27 @@ contract OperatorTableUpdaterUnitTests_confirmGlobalTableRoot is OperatorTableUp
 contract OperatorTableUpdaterUnitTests_updateOperatorTable_BN254 is OperatorTableUpdaterUnitTests {
     function _setLatestReferenceTimestampBN254(OperatorSet memory operatorSet, uint32 referenceTimestamp) internal {
         bn254CertificateVerifierMock.setLatestReferenceTimestamp(operatorSet, referenceTimestamp);
+    }
+
+    function testFuzz_BN254_revert_paused(Randomness r) public rand(r) {
+        // Pause the updateOperatorTable functionality (bit index 1)
+        uint pausedStatus = 1 << 1; // Set bit 1 to pause PAUSED_OPERATOR_TABLE_UPDATE
+        cheats.prank(pauser);
+        operatorTableUpdater.pause(pausedStatus);
+
+        // Generate random operatorSetInfo and operatorSetConfig
+        BN254OperatorSetInfo memory operatorSetInfo = _generateRandomBN254OperatorSetInfo(r);
+        bytes memory operatorSetInfoBytes = abi.encode(operatorSetInfo);
+        OperatorSetConfig memory operatorSetConfig = _generateRandomOperatorSetConfig(r);
+        bytes memory operatorTable = abi.encode(defaultOperatorSet, CurveType.BN254, operatorSetConfig, operatorSetInfoBytes);
+
+        // First create a valid root
+        bytes32 globalTableRoot = bytes32(r.Uint256(1, type(uint).max));
+        _updateGlobalTableRoot(globalTableRoot);
+
+        // Try to update operator table while paused
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
+        operatorTableUpdater.updateOperatorTable(uint32(block.timestamp), globalTableRoot, 0, new bytes(0), operatorTable);
     }
 
     function testFuzz_BN254_revert_staleTableUpdate(Randomness r) public rand(r) {
@@ -392,6 +433,27 @@ contract OperatorTableUpdaterUnitTests_updateOperatorTable_BN254 is OperatorTabl
 contract OperatorTableUpdaterUnitTests_updateOperatorTable_ECDSA is OperatorTableUpdaterUnitTests {
     function _setLatestReferenceTimestampECDSA(OperatorSet memory operatorSet, uint32 referenceTimestamp) internal {
         ecdsaCertificateVerifierMock.setLatestReferenceTimestamp(operatorSet, referenceTimestamp);
+    }
+
+    function testFuzz_ECDSA_revert_paused(Randomness r) public rand(r) {
+        // Pause the updateOperatorTable functionality (bit index 1)
+        uint pausedStatus = 1 << 1; // Set bit 1 to pause PAUSED_OPERATOR_TABLE_UPDATE
+        cheats.prank(pauser);
+        operatorTableUpdater.pause(pausedStatus);
+
+        // Generate random operatorInfos and operatorSetConfig
+        ECDSAOperatorInfo[] memory operatorInfos = _generateRandomECDSAOperatorInfos(r);
+        bytes memory operatorInfosBytes = abi.encode(operatorInfos);
+        OperatorSetConfig memory operatorSetConfig = _generateRandomOperatorSetConfig(r);
+        bytes memory operatorTable = abi.encode(defaultOperatorSet, CurveType.ECDSA, operatorSetConfig, operatorInfosBytes);
+
+        // First create a valid root
+        bytes32 globalTableRoot = bytes32(r.Uint256(1, type(uint).max));
+        _updateGlobalTableRoot(globalTableRoot);
+
+        // Try to update operator table while paused
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
+        operatorTableUpdater.updateOperatorTable(uint32(block.timestamp), globalTableRoot, 0, new bytes(0), operatorTable);
     }
 
     function testFuzz_ECDSA_revert_rootDisabled(Randomness r) public rand(r) {
@@ -661,14 +723,14 @@ contract OperatorTableUpdaterUnitTests_setGlobalRootConfirmationThreshold is Ope
 }
 
 contract OperatorTableUpdaterUnitTests_disableRoot is OperatorTableUpdaterUnitTests {
-    function testFuzz_revert_onlyOwner(Randomness r) public rand(r) {
+    function testFuzz_revert_onlyPauser(Randomness r) public rand(r) {
         address invalidCaller = r.Address();
-        cheats.assume(invalidCaller != address(this));
+        cheats.assume(invalidCaller != pauser && invalidCaller != address(this));
         bytes32 globalTableRoot = bytes32(r.Uint256());
 
-        // Should revert when called by non-owner
+        // Should revert when called by non-pauser
         cheats.prank(invalidCaller);
-        cheats.expectRevert("Ownable: caller is not the owner");
+        cheats.expectRevert(IPausable.OnlyPauser.selector);
         operatorTableUpdater.disableRoot(globalTableRoot);
     }
 
@@ -692,7 +754,8 @@ contract OperatorTableUpdaterUnitTests_disableRoot is OperatorTableUpdaterUnitTe
         // Verify the root is valid
         assertTrue(operatorTableUpdater.isRootValid(globalTableRoot));
 
-        // Disable the root
+        // Disable the root as pauser
+        cheats.prank(pauser);
         cheats.expectEmit(true, true, true, true);
         emit GlobalRootDisabled(globalTableRoot);
         operatorTableUpdater.disableRoot(globalTableRoot);
@@ -750,7 +813,8 @@ contract OperatorTableUpdaterUnitTests_isRootValid is OperatorTableUpdaterUnitTe
         // Should now be valid
         assertTrue(operatorTableUpdater.isRootValid(globalTableRoot));
 
-        // Disable the root
+        // Disable the root as pauser
+        cheats.prank(pauser);
         operatorTableUpdater.disableRoot(globalTableRoot);
 
         // Should now be invalid
@@ -773,7 +837,8 @@ contract OperatorTableUpdaterUnitTests_isRootValid is OperatorTableUpdaterUnitTe
         // Should be valid
         assertTrue(operatorTableUpdater.isRootValidByTimestamp(referenceTimestamp));
 
-        // Disable the root
+        // Disable the root as pauser
+        cheats.prank(pauser);
         operatorTableUpdater.disableRoot(globalTableRoot);
 
         // Should now be invalid when queried by timestamp
@@ -787,7 +852,8 @@ contract OperatorTableUpdaterUnitTests_IntegrationScenarios is OperatorTableUpda
         bytes32 oldGlobalTableRoot = bytes32(uint(1));
         _updateGlobalTableRoot(oldGlobalTableRoot);
 
-        // Step 2: Disable the old root
+        // Step 2: Disable the old root as pauser
+        cheats.prank(pauser);
         operatorTableUpdater.disableRoot(oldGlobalTableRoot);
 
         // Step 3: Set a new generator

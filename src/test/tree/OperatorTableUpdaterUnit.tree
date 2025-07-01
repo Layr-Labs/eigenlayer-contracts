@@ -6,6 +6,8 @@
     │   └── given that the contract is not initialized
     │       └── it should set the owner, generator, threshold, and update operator table & emit events
     ├── when confirmGlobalTableRoot is called
+    │   ├── given that the contract is paused for global root updates
+    │   │   └── it should revert with CurrentlyPaused
     │   ├── given that the reference timestamp is in the future
     │   │   └── it should revert with GlobalTableRootInFuture
     │   ├── given that the reference timestamp is not greater than latest
@@ -17,6 +19,8 @@
     │   └── given that all parameters are valid
     │       └── it should update global table root, reference timestamp, block number mappings (both directions) & emit NewGlobalTableRoot event
     ├── when updateOperatorTable is called
+    │   ├── given that the contract is paused for operator table updates
+    │   │   └── it should revert with CurrentlyPaused
     │   ├── given that the reference timestamp is not greater than operator set's latest
     │   │   └── it should revert with TableUpdateForPastTimestamp
     │   ├── given that the global table root is not valid
@@ -44,11 +48,11 @@
     │   └── given that the caller is owner and threshold is valid
     │       └── it should update the threshold & emit GlobalRootConfirmationThresholdUpdated event
     ├── when disableRoot is called
-    │   ├── given that the caller is not the owner
+    │   ├── given that the caller is not the pauser
     │   │   └── it should revert
     │   ├── given that the root is invalid or doesn't exist
     │   │   └── it should revert with InvalidRoot
-    │   └── given that the caller is the owner and root is valid
+    │   └── given that the caller is the pauser and root is valid
     │       └── it should disable the root & emit GlobalRootDisabled event
     ├── when updateGenerator is called
     │   ├── given that the caller is not the owner
