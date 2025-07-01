@@ -1,24 +1,38 @@
 # v1.7.0 Multi Chain
 
-The multichain release enables AVSs to launch their services and make verified Operator outputs available on any EVM chain, meeting their customers where they are.
+The multichain release enables AVSs to launch their services and make verified Operator outputs available on any EVM chain, meeting their customers where they are. AVSs can specify custom operator weights to be transported to any destination chain. The release has 3 components:
+
+1. Core Contracts
+2. AVS Contracts
+3. Offchain Infrastructure
+
+The below release notes cover Core Contracts. For more information on the end to end protocol, see our [docs](../docs/multichain/README.md) and [ELIP-008](https://github.com/eigenfoundation/ELIPs/blob/main/ELIPs/ELIP-008.md).
 
 ## Release Manager
 
-@ypatil12
-
+@ypatil12 @eigenmikem
 
 ## Highlights
 
 This multichain release only introduces new standards and contracts. As a result, there are no breaking changes or deprecations. 
 
 🚀 New Features – Highlight major new functionality
-- ...
-- ...
+
+Source-Chain Contracts
+- `KeyRegistrar`: Manages cryptographic keys for operators across different operator sets. It supports both ECDSA and BN254 key types and ensures global uniqueness of keys across all operator sets
+- `CrossChainRegistry`: Enables AVSs to register to have their operator stakes transported to supported destination chains
+- `ReleaseManager`: Provides a standardized way for AVSs to publish software artifacts (binaries, docker images, etc.) that operators in their operator sets should upgrade to by specified deadlines
+
+Destination Chain Contracts
+- `CertificateVerifier`: Proves the offchain execution of a task, via a Certificate, by the operators of an operatorSet. Two types of key material are supported: ECDSA and BN254
+- `OperatorTableUpdater`: Updates operator tables in the `CertificateVerifier` to have tasks validated against up-to-date operator stake weights 
 
 🔧 Improvements – Enhancements to existing features.
-- ...
-- ...
 
+- The multichain protocol has protocol-ized several AVS-deployed contracts, enabling an simpler AVS developer experience. These include:
+    - `KeyRegistrar`: Manages BLS and ECDSA signing keys. AVSs no longer have to deploy a `BLSAPKRegistry`
+    - `CertficiateVerifier`: Handles signature verification for BLS and ECDSA keys. AVSs no longer have to deploy a `BLSSignatureChecker`
+    - Offchain Multichain Transport: AVSs no longer have to maintain [avs-sync](https://github.com/Layr-Labs/avs-sync) to keep operator stakes fresh
 
 ## Changelog
 
