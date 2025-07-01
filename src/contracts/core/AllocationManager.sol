@@ -463,10 +463,6 @@ contract AllocationManager is
         }
 
         for (uint256 j = 0; j < params.strategies.length; j++) {
-            if (isRedistributing) {
-                require(params.strategies[j] != eigenStrategy, InvalidStrategy());
-            }
-
             _addStrategyToOperatorSet(operatorSet, params.strategies[j], isRedistributing);
         }
     }
