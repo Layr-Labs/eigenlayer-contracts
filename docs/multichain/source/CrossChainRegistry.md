@@ -129,7 +129,7 @@ function setOperatorTableCalculator(
 ) external;
 ```
 
-Updates the operator table calculator contract for a given `operatorSet`. The operator table calculator is responsible for computing the operator table bytes that will be included in cross-chain transports.
+Updates the `operatorTableCalculator` contract for a given `operatorSet`. The `operatorTableCalculator` is deployed by the AVS and is responsible for computing the operator table bytes that will be included in cross-chain transports. For more information on the `operatorTableCalculator`, please see full documentation in the [middleware repository](https://github.com/Layr-Labs/eigenlayer-middleware/tree/dev/docs).
 
 *Effects*:
 * Updates the `_operatorTableCalculators` mapping for the `operatorSet`
