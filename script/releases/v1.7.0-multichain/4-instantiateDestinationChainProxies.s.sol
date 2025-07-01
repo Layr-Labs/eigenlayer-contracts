@@ -92,8 +92,8 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
     function _validateStorage() internal view {
         // Validate OperatorTableUpdater
         OperatorTableUpdater operatorTableUpdater = Env.proxy.operatorTableUpdater();
-        assertTrue(operatorTableUpdater.owner() == Env.opsMultisig(), "otu.owner invalid");
-        assertTrue(operatorTableUpdater.paused() == 0, "otu.paused invalid");
+        assertTrue(operatorTableUpdater.owner() == Env.opsMultisig(), "operatorTableUpdater.owner invalid");
+        assertTrue(operatorTableUpdater.paused() == 0, "operatorTableUpdater.paused invalid");
         // TODO: add checks on global root confirmer set
 
         // Validate ECDSACertificateVerifier
