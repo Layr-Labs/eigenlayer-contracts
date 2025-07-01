@@ -47,13 +47,16 @@ contract ReleaseManagerUnitTests is EigenLayerUnitTestSetup, IReleaseManagerErro
         // Setup default test data
         defaultOperatorSet = OperatorSet(defaultAVS, 0);
 
-        defaultArtifacts.push(Artifact({digest: keccak256("artifact1"), registryUrl: "https://example.com/artifact1"}));
-        defaultArtifacts.push(Artifact({digest: keccak256("artifact2"), registryUrl: "https://example.com/artifact2"}));
+        defaultArtifacts.push(Artifact({digest: keccak256("artifact1"), registry: "https://example.com/artifact1"}));
+        defaultArtifacts.push(Artifact({digest: keccak256("artifact2"), registry: "https://example.com/artifact2"}));
 
         defaultRelease.upgradeByTime = uint32(block.timestamp + 1 days);
 
         cheats.prank(defaultAVS);
         permissionController.setAppointee(defaultAVS, address(this), address(releaseManager), IReleaseManager.publishRelease.selector);
+
+        cheats.prank(defaultAVS);
+        releaseManager.publishMetadataURI(defaultOperatorSet, "https://example.com/metadata");
     }
 
     /// -----------------------------------------------------------------------
@@ -69,7 +72,7 @@ contract ReleaseManagerUnitTests is EigenLayerUnitTestSetup, IReleaseManagerErro
         for (uint i = 0; i < numArtifacts; i++) {
             artifacts[i] = Artifact({
                 digest: keccak256(abi.encodePacked("artifact", i)),
-                registryUrl: string(abi.encodePacked("https://example.com/artifact", i))
+                registry: string(abi.encodePacked("https://example.com/artifact", i))
             });
         }
         return _createRelease(artifacts, upgradeByTime);
@@ -92,7 +95,7 @@ contract ReleaseManagerUnitTests is EigenLayerUnitTestSetup, IReleaseManagerErro
 
         for (uint i = 0; i < actualRelease.artifacts.length; i++) {
             assertEq(actualRelease.artifacts[i].digest, expectedRelease.artifacts[i].digest, "artifact digest mismatch");
-            assertEq(actualRelease.artifacts[i].registryUrl, expectedRelease.artifacts[i].registryUrl, "artifact registryUrl mismatch");
+            assertEq(actualRelease.artifacts[i].registry, expectedRelease.artifacts[i].registry, "artifact registry mismatch");
         }
 
         console.log("Success!".green().bold());
@@ -108,6 +111,14 @@ contract ReleaseManagerUnitTests_Initialization is ReleaseManagerUnitTests {
 }
 
 contract ReleaseManagerUnitTests_publishRelease is ReleaseManagerUnitTests {
+    function test_revert_MustPublishMetadataURI() public {
+        OperatorSet memory operatorSet = OperatorSet(defaultAVS, 1);
+
+        cheats.prank(defaultAVS);
+        vm.expectRevert(IReleaseManagerErrors.MustPublishMetadataURI.selector);
+        releaseManager.publishRelease(operatorSet, defaultRelease);
+    }
+
     function test_revert_InvalidUpgradeByTime() public {
         // Create release with past timestamp
         Release memory pastRelease = _createRelease(defaultArtifacts, uint32(block.timestamp - 1));
@@ -204,6 +215,11 @@ contract ReleaseManagerUnitTests_publishRelease is ReleaseManagerUnitTests {
         OperatorSet memory operatorSet1 = OperatorSet(defaultAVS, operatorSetId1);
         OperatorSet memory operatorSet2 = OperatorSet(defaultAVS, operatorSetId2);
 
+        cheats.prank(operatorSet1.avs);
+        releaseManager.publishMetadataURI(operatorSet1, "https://example.com/metadata");
+        cheats.prank(operatorSet2.avs);
+        releaseManager.publishMetadataURI(operatorSet2, "https://example.com/metadata");
+
         // Publish to first operator set
         uint releaseId1 = _publishRelease(operatorSet1, defaultRelease);
         assertEq(releaseId1, 0, "first release in set1 should be 0");
@@ -246,6 +262,9 @@ contract ReleaseManagerUnitTests_getTotalReleases is ReleaseManagerUnitTests {
 
     function test_getTotalReleases_differentOperatorSets() public {
         OperatorSet memory operatorSet2 = OperatorSet(defaultAVS, 1);
+
+        cheats.prank(operatorSet2.avs);
+        releaseManager.publishMetadataURI(operatorSet2, "https://example.com/metadata");
 
         // Publish to different sets
         _publishRelease(defaultOperatorSet, defaultRelease);
@@ -395,6 +414,11 @@ contract ReleaseManagerUnitTests_EdgeCases is ReleaseManagerUnitTests {
         OperatorSet memory set1 = OperatorSet(defaultAVS, 1);
         OperatorSet memory set2 = OperatorSet(address(0x5678), 0);
 
+        cheats.prank(set1.avs);
+        releaseManager.publishMetadataURI(set1, "https://example.com/metadata");
+        cheats.prank(set2.avs);
+        releaseManager.publishMetadataURI(set2, "https://example.com/metadata");
+
         // Grant permission for second AVS
         cheats.prank(set2.avs);
         permissionController.setAppointee(set2.avs, address(this), address(releaseManager), IReleaseManager.publishRelease.selector);
@@ -472,5 +496,24 @@ contract ReleaseManagerUnitTests_isValidRelease is ReleaseManagerUnitTests {
 
         isLatest = releaseManager.isValidRelease(defaultOperatorSet, 1);
         assertEq(isLatest, true, "second release should be the latest");
+    }
+}
+
+contract ReleaseManagerUnitTests_publishMetadataURI is ReleaseManagerUnitTests {
+    function test_revert_InvalidMetadataURI() public {
+        cheats.prank(defaultAVS);
+        vm.expectRevert(IReleaseManagerErrors.InvalidMetadataURI.selector);
+        releaseManager.publishMetadataURI(defaultOperatorSet, "");
+    }
+
+    function test_publishMetadataURI_Correctness() public {
+        string memory registry = "https://example.com/metadata";
+        cheats.expectEmit(true, true, true, true, address(releaseManager));
+        emit MetadataURIPublished(defaultOperatorSet, registry);
+
+        cheats.prank(defaultAVS);
+        releaseManager.publishMetadataURI(defaultOperatorSet, registry);
+
+        assertEq(releaseManager.getMetadataURI(defaultOperatorSet), registry, "metadata URI not set correctly");
     }
 }
