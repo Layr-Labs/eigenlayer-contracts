@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.so
 import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
 import "../../../src/contracts/interfaces/IETHPOSDeposit.sol";
+import "../../../src/contracts/strategies/EigenStrategy.sol";
 
 import "../../../src/contracts/core/StrategyManager.sol";
 import "../../../src/contracts/core/DelegationManager.sol";
@@ -173,8 +174,6 @@ contract DeployFromScratch is Script, Test {
         operationsMultisig = stdJson.readAddress(config_data, ".multisig_addresses.operationsMultisig");
         pauserMultisig = stdJson.readAddress(config_data, ".multisig_addresses.pauserMultisig");
 
-        eigenStrategy = IStrategy(stdJson.readAddress(config_data, ".addresses.token.eigenStrategy"));
-
         // load token list
         bytes memory strategyConfigsRaw = stdJson.parseRaw(config_data, ".strategies");
         strategyConfigs = abi.decode(strategyConfigsRaw, (StrategyConfig[]));
@@ -223,6 +222,8 @@ contract DeployFromScratch is Script, Test {
         permissionController = PermissionController(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
+
+        eigenStrategy = IStrategy(new EigenStrategy(strategyManager, eigenLayerPauserReg, SEMVER));
 
         // if on mainnet, use the ETH2 deposit contract address
         if (chainId == 1) ethPOSDeposit = IETHPOSDeposit(0x00000000219ab540356cBB839Cbe05303d7705Fa);
