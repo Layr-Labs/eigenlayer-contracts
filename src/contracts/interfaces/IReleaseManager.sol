@@ -99,4 +99,9 @@ interface IReleaseManager is IReleaseManagerErrors, IReleaseManagerEvents {
     /// @param releaseId The id of the release to check.
     /// @return True if the release is the latest release, false otherwise.
     function isValidRelease(OperatorSet memory operatorSet, uint256 releaseId) external view returns (bool);
+
+    /// @notice Returns the metadata URI for an operator set.
+    /// @param operatorSet The operator set to query.
+    /// @return The metadata URI for the operator set.
+    function getMetadataURI(OperatorSet memory operatorSet) external view returns (string memory);
 }
