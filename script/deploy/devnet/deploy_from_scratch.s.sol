@@ -69,6 +69,8 @@ contract DeployFromScratch is Script, Test {
     address operationsMultisig;
     address pauserMultisig;
 
+    IStrategy eigenStrategy;
+
     // the ETH2 deposit contract -- if not on mainnet, we deploy a mock as stand-in
     IETHPOSDeposit public ethPOSDeposit;
 
@@ -163,6 +165,8 @@ contract DeployFromScratch is Script, Test {
         operationsMultisig = stdJson.readAddress(config_data, ".multisig_addresses.operationsMultisig");
         pauserMultisig = stdJson.readAddress(config_data, ".multisig_addresses.pauserMultisig");
 
+        eigenStrategy = IStrategy(stdJson.readAddress(config_data, ".addresses.token.eigenStrategy"));
+
         require(executorMultisig != address(0), "executorMultisig address not configured correctly!");
         require(operationsMultisig != address(0), "operationsMultisig address not configured correctly!");
 
@@ -252,6 +256,7 @@ contract DeployFromScratch is Script, Test {
         );
         allocationManagerImplementation = new AllocationManager(
             delegation,
+            eigenStrategy,
             eigenLayerPauserReg,
             permissionController,
             DEALLOCATION_DELAY,

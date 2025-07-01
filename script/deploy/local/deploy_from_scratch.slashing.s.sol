@@ -73,6 +73,8 @@ contract DeployFromScratch is Script, Test {
     address operationsMultisig;
     address pauserMultisig;
 
+    IStrategy eigenStrategy;
+
     string SEMVER;
 
     // the ETH2 deposit contract -- if not on mainnet, we deploy a mock as stand-in
@@ -170,6 +172,9 @@ contract DeployFromScratch is Script, Test {
         executorMultisig = stdJson.readAddress(config_data, ".multisig_addresses.executorMultisig");
         operationsMultisig = stdJson.readAddress(config_data, ".multisig_addresses.operationsMultisig");
         pauserMultisig = stdJson.readAddress(config_data, ".multisig_addresses.pauserMultisig");
+
+        eigenStrategy = IStrategy(stdJson.readAddress(config_data, ".addresses.token.eigenStrategy"));
+
         // load token list
         bytes memory strategyConfigsRaw = stdJson.parseRaw(config_data, ".strategies");
         strategyConfigs = abi.decode(strategyConfigsRaw, (StrategyConfig[]));
@@ -259,6 +264,7 @@ contract DeployFromScratch is Script, Test {
         );
         allocationManagerImplementation = new AllocationManager(
             delegation,
+            eigenStrategy,
             eigenLayerPauserReg,
             permissionController,
             DEALLOCATION_DELAY,

@@ -309,7 +309,13 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     /// Deploy an implementation contract for each contract in the system
     function _deployImplementations() public {
         allocationManagerImplementation = new AllocationManager(
-            delegationManager, eigenLayerPauserReg, permissionController, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY, version
+            delegationManager,
+            eigenStrategy,
+            eigenLayerPauserReg,
+            permissionController,
+            DEALLOCATION_DELAY,
+            ALLOCATION_CONFIGURATION_DELAY,
+            version
         );
         permissionControllerImplementation = new PermissionController(version);
         delegationManagerImplementation = new DelegationManager(

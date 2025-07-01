@@ -47,6 +47,7 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
     IStrategy[] defaultStrategies;
     address defaultOperator = address(this);
     address defaultAVS = address(new MockAVSRegistrar());
+    IStrategy eigenStrategy;
 
     /// -----------------------------------------------------------------------
     /// Internal Storage Helpers
@@ -59,6 +60,7 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
 
     function setUp() public virtual override {
         EigenLayerUnitTestSetup.setUp();
+        eigenStrategy = IStrategy(cheats.randomAddress());
         _initializeAllocationManager(pauserRegistry, 0);
         tokenMock = new ERC20PresetFixedSupply("Mock Token", "MOCK", type(uint).max, address(this));
         strategyMock = StrategyBase(
@@ -97,6 +99,7 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
                     address(
                         new AllocationManagerHarness(
                             IDelegationManager(address(delegationManagerMock)),
+                            eigenStrategy,
                             _pauserRegistry,
                             IPermissionController(address(permissionController)),
                             DEALLOCATION_DELAY,
@@ -3666,6 +3669,15 @@ contract AllocationManagerUnitTests_addStrategiesToOperatorSet is AllocationMana
         allocationManager.addStrategiesToOperatorSet(defaultAVS, defaultOperatorSet.id, defaultStrategies);
     }
 
+    function test_addStrategiesToOperatorSet_EigenStrategyInRedistributingSet() public {
+        OperatorSet memory operatorSet = OperatorSet(defaultAVS, 2);
+        _createRedistributingOperatorSet(operatorSet, defaultStrategies, cheats.randomAddress());
+
+        cheats.prank(defaultAVS);
+        cheats.expectRevert(InvalidStrategy.selector);
+        allocationManager.addStrategiesToOperatorSet(defaultAVS, operatorSet.id, IStrategy(address(eigenStrategy)).toArray());
+    }
+
     function test_addStrategiesToOperatorSet_BeaconChainStratInRedistributingSet() public {
         // Create a redistributing operator set
         CreateSetParams[] memory createSetParams = new CreateSetParams[](1);
@@ -3810,6 +3822,16 @@ contract AllocationManagerUnitTests_createRedistributingOperatorSets is Allocati
         cheats.expectRevert(InvalidOperatorSet.selector);
         allocationManager.createRedistributingOperatorSets(
             defaultAVS, CreateSetParams(defaultOperatorSet.id, defaultStrategies).toArray(), address(this).toArray()
+        );
+    }
+
+    function testRevert_createRedistributingOperatorSets_EigenStrategyInRedistributingSet() public {
+        cheats.prank(defaultAVS);
+        cheats.expectRevert(InvalidStrategy.selector);
+        allocationManager.createRedistributingOperatorSets(
+            defaultAVS,
+            CreateSetParams(defaultOperatorSet.id + 1, IStrategy(address(eigenStrategy)).toArray()).toArray(),
+            address(this).toArray()
         );
     }
 

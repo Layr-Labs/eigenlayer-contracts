@@ -38,13 +38,14 @@ contract AllocationManager is
      */
     constructor(
         IDelegationManager _delegation,
+        IStrategy _eigenStrategy,
         IPauserRegistry _pauserRegistry,
         IPermissionController _permissionController,
         uint32 _DEALLOCATION_DELAY,
         uint32 _ALLOCATION_CONFIGURATION_DELAY,
         string memory _version
     )
-        AllocationManagerStorage(_delegation, _DEALLOCATION_DELAY, _ALLOCATION_CONFIGURATION_DELAY)
+        AllocationManagerStorage(_delegation, _eigenStrategy, _DEALLOCATION_DELAY, _ALLOCATION_CONFIGURATION_DELAY)
         Pausable(_pauserRegistry)
         PermissionControllerMixin(_permissionController)
         SemVerMixin(_version)
@@ -290,6 +291,7 @@ contract AllocationManager is
     ) external checkCanCall(avs) {
         OperatorSet memory operatorSet = OperatorSet(avs, operatorSetId);
         require(_operatorSets[avs].contains(operatorSet.id), InvalidOperatorSet());
+
         for (uint256 i = 0; i < strategies.length; i++) {
             _addStrategyToOperatorSet(
                 operatorSet, strategies[i], isRedistributingOperatorSet(OperatorSet(avs, operatorSetId))
@@ -426,6 +428,7 @@ contract AllocationManager is
         // We do not currently support redistributing beaconchain ETH.
         if (isRedistributing) {
             require(strategy != BEACONCHAIN_ETH_STRAT, InvalidStrategy());
+            require(strategy != eigenStrategy, InvalidStrategy());
         }
 
         require(_operatorSetStrategies[operatorSet.key()].add(address(strategy)), StrategyAlreadyInOperatorSet());
@@ -460,6 +463,10 @@ contract AllocationManager is
         }
 
         for (uint256 j = 0; j < params.strategies.length; j++) {
+            if (isRedistributing) {
+                require(params.strategies[j] != eigenStrategy, InvalidStrategy());
+            }
+
             _addStrategyToOperatorSet(operatorSet, params.strategies[j], isRedistributing);
         }
     }
