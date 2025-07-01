@@ -34,6 +34,7 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
     ) external checkCanCall(operatorSet.avs) returns (uint256 releaseId) {
         Release[] storage releases = _operatorSetReleases[operatorSet.key()];
 
+        require(bytes(_operatorSetMetadataURI[operatorSet.key()]).length != 0, MustPublishMetadataURI());
         require(release.upgradeByTime >= block.timestamp, InvalidUpgradeByTime());
 
         // New release id is the length of the array before this call.
@@ -54,6 +55,7 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
         OperatorSet calldata operatorSet,
         string calldata metadataURI
     ) external checkCanCall(operatorSet.avs) {
+        require(bytes(metadataURI).length != 0, InvalidMetadataURI());
         _operatorSetMetadataURI[operatorSet.key()] = metadataURI;
         emit MetadataURIPublished(operatorSet, metadataURI);
     }

@@ -4,8 +4,14 @@ pragma solidity ^0.8.27;
 import "../libraries/OperatorSetLib.sol";
 
 interface IReleaseManagerErrors {
+    /// @notice Thrown when a metadata URI must be published before publishing a release.
+    error MustPublishMetadataURI();
+
     /// @notice Thrown when the upgrade by time is in the past.
     error InvalidUpgradeByTime();
+
+    /// @notice Thrown when the metadata URI is empty.
+    error InvalidMetadataURI();
 }
 
 interface IReleaseManagerTypes {
