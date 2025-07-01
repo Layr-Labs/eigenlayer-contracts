@@ -28,6 +28,7 @@ contract StrategyManager is
     StrategyManagerStorage,
     SignatureUtilsMixin
 {
+    using OperatorSetLib for *;
     using SlashingLib for *;
     using SafeERC20 for IERC20;
     using EnumerableMap for EnumerableMap.AddressToUintMap;
@@ -546,5 +547,22 @@ contract StrategyManager is
         }
 
         return (strategies, shares);
+    }
+
+    /// @inheritdoc IStrategyManager
+    function getPendingOperatorSets() external view returns (OperatorSet[] memory) {
+        uint256 totalEntries = _pendingOperatorSets.length();
+        OperatorSet[] memory operatorSets = new OperatorSet[](totalEntries);
+        for (uint256 i = 0; i < totalEntries; i++) {
+            operatorSets[i] = _pendingOperatorSets.at(i).decode();
+        }
+        return operatorSets;
+    }
+
+    /// @inheritdoc IStrategyManager
+    function getPendingSlashIds(
+        OperatorSet calldata operatorSet
+    ) external view returns (uint256[] memory) {
+        return _pendingSlashIds[operatorSet.key()].values();
     }
 }

@@ -285,4 +285,20 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
         uint256 nonce,
         uint256 expiry
     ) external view returns (bytes32);
+
+    /**
+     * @notice Returns the operator sets that have pending burn or redistributable shares.
+     * @return The operator sets that have pending burn or redistributable shares.
+     */
+    function getPendingOperatorSets() external view returns (OperatorSet[] memory);
+
+    /**
+     * @notice Returns the slash IDs that are pending to be burned or redistributed.
+     * @dev This function will return revert if the operator set has no pending burn or redistributable shares.
+     * @param operatorSet The operator set to get the pending slash IDs for.
+     * @return The slash IDs that are pending to be burned or redistributed.
+     */
+    function getPendingSlashIds(
+        OperatorSet calldata operatorSet
+    ) external view returns (uint256[] memory);
 }
