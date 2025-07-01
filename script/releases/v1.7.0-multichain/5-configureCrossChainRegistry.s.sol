@@ -2,6 +2,7 @@
 pragma solidity ^0.8.12;
 
 import {DeploySourceChain} from "./1-deploySourceChain.s.sol";
+import {CrosschainDeployLib} from "script/releases/CrosschainDeployLib.sol";
 import {DeployDestinationChainProxies} from "./2-deployDestinationChainProxies.s.sol";
 import "../Env.sol";
 
@@ -34,11 +35,14 @@ contract ConfigureCrossChainRegistry is DeploySourceChain, DeployDestinationChai
         }
 
         // Deploy source chain
+        _mode = OperationalMode.EOA; // Set to EOA mode so we can deploy the impls in the EOA script
         DeploySourceChain._runAsEOA();
 
         // Deploy destination chain
-        DeployDestinationChainProxies._runAsMultisig();
-        _unsafeResetHasPranked(); // reset hasPranked so we can use it in the execute()
+        if (!_areProxiesDeployed()) {
+            DeployDestinationChainProxies._runAsMultisig();
+            _unsafeResetHasPranked(); // reset hasPranked so we can use it in the execute()
+        }
 
         // Configure the registry
         execute();
@@ -151,5 +155,19 @@ contract ConfigureCrossChainRegistry is DeploySourceChain, DeployDestinationChai
         operatorTableUpdaters[1] = operatorTableUpdater;
 
         Env.proxy.crossChainRegistry().addChainIDsToWhitelist(chainIDs, operatorTableUpdaters);
+    }
+
+    function _areProxiesDeployed() internal view returns (bool) {
+        address expectedEmptyContract = CrosschainDeployLib.computeCrosschainAddress({
+            deployer: Env.multichainDeployerMultisig(),
+            initCodeHash: keccak256(type(EmptyContract).creationCode),
+            name: type(EmptyContract).name
+        });
+
+        // If the empty contract is deployed, then the proxies are deployed
+        if (expectedEmptyContract.code.length > 0) {
+            return true;
+        }
+        return false;
     }
 }
