@@ -3,9 +3,15 @@ pragma solidity ^0.8.12;
 
 import "forge-std/Test.sol";
 import "script/releases/CrosschainDeployLib.sol";
+import "src/test/integration/IntegrationDeployer.t.sol";
 
-contract CrosschainDeployLibTest is Test {
+/// @notice Sanity check for the crosschain deploy lib
+/// @dev We use the integration testing suite as it has RPC urls in our CI
+contract Integration_CrosschainDeployLibTest is IntegrationDeployer {
     function test_SameAddressEveryChain() public {
+        // Skip if we're not on a fork test profile
+        if (!isForktest()) return;
+
         address deployer = 0xC10E5F3AF465Fe85A7077390797dc5ae89DAB9F1;
 
         vm.startPrank(deployer);

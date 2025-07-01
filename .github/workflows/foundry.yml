@@ -73,7 +73,9 @@ jobs:
         env:
           FOUNDRY_PROFILE: ${{ matrix.suite == 'Fork' && 'forktest' || 'medium' }}
           RPC_MAINNET: https://billowing-capable-sound.quiknode.pro/
-
+          RPC_SEPOLIA: ${{ secrets.RPC_SEPOLIA }}
+          RPC_HOLESKY: ${{ secrets.RPC_HOLESKY }}
+          
   # -----------------------------------------------------------------------
   # Forge Storage Diff
   # -----------------------------------------------------------------------
