@@ -113,7 +113,9 @@ contract ConfigureCrossChainRegistry is DeploySourceChain, DeployDestinationChai
     }
 
     /// @dev On preprod, the source and destination chains are the same
-    function _callPreprod(address operatorTableUpdater) internal {
+    function _callPreprod(
+        address operatorTableUpdater
+    ) internal {
         uint256[] memory chainIDs = new uint256[](1);
         address[] memory operatorTableUpdaters = new address[](1);
 
@@ -123,7 +125,9 @@ contract ConfigureCrossChainRegistry is DeploySourceChain, DeployDestinationChai
         Env.proxy.crossChainRegistry().addChainIDsToWhitelist(chainIDs, operatorTableUpdaters);
     }
 
-    function _callTestnet(address operatorTableUpdater) internal {
+    function _callTestnet(
+        address operatorTableUpdater
+    ) internal {
         uint256[] memory chainIDs = new uint256[](2);
         address[] memory operatorTableUpdaters = new address[](2);
 
@@ -135,7 +139,9 @@ contract ConfigureCrossChainRegistry is DeploySourceChain, DeployDestinationChai
         Env.proxy.crossChainRegistry().addChainIDsToWhitelist(chainIDs, operatorTableUpdaters);
     }
 
-    function _callMainnet(address operatorTableUpdater) internal {
+    function _callMainnet(
+        address operatorTableUpdater
+    ) internal {
         uint256[] memory chainIDs = new uint256[](2);
         address[] memory operatorTableUpdaters = new address[](2);
 
