@@ -407,6 +407,14 @@ contract StrategyManager is
                 amountShares: sharesToRemove
             });
 
+            // Emit an event to notify the that burnable shares have been decreased.
+            emit BurnOrRedistributableSharesDecreased(operatorSet, slashId, strategy, sharesToRemove);
+        }
+
+        uint256 remainingStrategies = _burnOrRedistributableShares[operatorSet.key()][slashId].keys().length;
+
+        // If there are no more strategies to burn or redistribute...
+        if (remainingStrategies == 0) {
             // Remove the slash id from the pending slash ids.
             _pendingSlashIds[operatorSet.key()].remove(slashId);
 
@@ -414,9 +422,6 @@ contract StrategyManager is
             if (_pendingSlashIds[operatorSet.key()].length() == 0) {
                 _pendingOperatorSets.remove(operatorSet.key());
             }
-
-            // Emit an event to notify the that burnable shares have been decreased.
-            emit BurnOrRedistributableSharesDecreased(operatorSet, slashId, strategy, sharesToRemove);
         }
 
         return amountOut;
