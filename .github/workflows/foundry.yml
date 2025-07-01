@@ -72,7 +72,8 @@ jobs:
           esac
         env:
           FOUNDRY_PROFILE: ${{ matrix.suite == 'Fork' && 'forktest' || 'medium' }}
-          RPC_MAINNET: https://billowing-capable-sound.quiknode.pro/
+          RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
+          RPC_HOLESKY: ${{ secrets.RPC_HOLESKY }}
 
   # -----------------------------------------------------------------------
   # Forge Storage Diff

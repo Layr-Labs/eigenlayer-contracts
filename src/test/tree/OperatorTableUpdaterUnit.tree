@@ -1,0 +1,90 @@
+.
+└── OperatorTableUpdater (**** denotes that integration tests are needed to fully validate path)
+    ├── when initialize is called
+    │   ├── given that the contract is already initialized
+    │   │   └── it should revert
+    │   └── given that the contract is not initialized
+    │       └── it should set the owner, generator, threshold, and update operator table & emit events
+    ├── when confirmGlobalTableRoot is called
+    │   ├── given that the contract is paused for global root updates
+    │   │   └── it should revert with CurrentlyPaused
+    │   ├── given that the reference timestamp is in the future
+    │   │   └── it should revert with GlobalTableRootInFuture
+    │   ├── given that the reference timestamp is not greater than latest
+    │   │   └── it should revert with GlobalTableRootStale
+    │   ├── given that the message hash is invalid
+    │   │   └── it should revert with InvalidMessageHash
+    │   ├── given that the certificate is invalid
+    │   │   └── it should revert with CertificateInvalid
+    │   └── given that all parameters are valid
+    │       └── it should update global table root, reference timestamp, block number mappings (both directions) & emit NewGlobalTableRoot event
+    ├── when updateOperatorTable is called
+    │   ├── given that the contract is paused for operator table updates
+    │   │   └── it should revert with CurrentlyPaused
+    │   ├── given that the reference timestamp is not greater than operator set's latest
+    │   │   └── it should revert with TableUpdateForPastTimestamp
+    │   ├── given that the global table root is not valid
+    │   │   └── it should revert with InvalidRoot
+    │   ├── given that the global table root does not match the reference timestamp
+    │   │   └── it should revert with InvalidGlobalTableRoot
+    │   ├── given that the merkle proof is invalid
+    │   │   └── it should revert with InvalidOperatorSetProof
+    │   ├── given that the curve type is invalid
+    │   │   └── it should revert with InvalidCurveType
+    │   ├── given that the curve type is BN254
+    │   │   └── it should call bn254CertificateVerifier.updateOperatorTable with decoded info
+    │   └── given that the curve type is ECDSA
+    │       └── it should call ecdsaCertificateVerifier.updateOperatorTable with decoded info
+    ├── when setGenerator is called
+    │   ├── given that the caller is not the owner
+    │   │   └── it should revert
+    │   └── given that the caller is the owner
+    │       └── it should update the generator & emit GeneratorUpdated event
+    ├── when setGlobalRootConfirmationThreshold is called
+    │   ├── given that the caller is not the owner
+    │   │   └── it should revert
+    │   ├── given that the threshold exceeds MAX_BPS
+    │   │   └── it should revert with InvalidConfirmationThreshold
+    │   └── given that the caller is owner and threshold is valid
+    │       └── it should update the threshold & emit GlobalRootConfirmationThresholdUpdated event
+    ├── when disableRoot is called
+    │   ├── given that the caller is not the pauser
+    │   │   └── it should revert
+    │   ├── given that the root is invalid or doesn't exist
+    │   │   └── it should revert with InvalidRoot
+    │   └── given that the caller is the pauser and root is valid
+    │       └── it should disable the root & emit GlobalRootDisabled event
+    ├── when updateGenerator is called
+    │   ├── given that the caller is not the owner
+    │   │   └── it should revert
+    │   └── given that the caller is the owner
+    │       └── it should update the generator table
+    ├── when isRootValid(bytes32) is called
+    │   └── it should return the validity status of the given global table root
+    ├── when isRootValidByTimestamp(uint32) is called
+    │   └── it should return the validity status of the global table root at the given reference timestamp
+    ├── when getGlobalTableRootByTimestamp is called
+    │   └── it should return the global table root for the given timestamp
+    ├── when getCurrentGlobalTableRoot is called
+    │   └── it should return the global table root for the latest reference timestamp
+    ├── when getGenerator is called
+    │   └── it should return the current generator
+    ├── when getCertificateVerifier is called
+    │   ├── given that the curve type is BN254
+    │   │   └── it should return the bn254CertificateVerifier address
+    │   ├── given that the curve type is ECDSA
+    │   │   └── it should return the ecdsaCertificateVerifier address
+    │   └── given that the curve type is invalid
+    │       └── it should revert with InvalidCurveType
+    ├── when getLatestReferenceTimestamp is called
+    │   └── it should return the latest reference timestamp
+    ├── when getLatestReferenceBlockNumber is called
+    │   └── it should return the reference block number for the latest reference timestamp
+    ├── when getReferenceBlockNumberByTimestamp is called
+    │   └── it should return the reference block number for the given timestamp
+    ├── when getReferenceTimestampByBlockNumber is called
+    │   └── it should return the reference timestamp for the given block number
+    ├── when getGlobalTableUpdateMessageHash is called
+    │   └── it should return the keccak256 hash of encoded typehash, root, timestamp, and block number
+    └── when getGeneratorReferenceTimestamp is called
+        └── it should return the latest reference timestamp for the generator
