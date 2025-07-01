@@ -103,5 +103,7 @@ interface IReleaseManager is IReleaseManagerErrors, IReleaseManagerEvents {
     /// @notice Returns the metadata URI for an operator set.
     /// @param operatorSet The operator set to query.
     /// @return The metadata URI for the operator set.
-    function getMetadataURI(OperatorSet memory operatorSet) external view returns (string memory);
+    function getMetadataURI(
+        OperatorSet memory operatorSet
+    ) external view returns (string memory);
 }

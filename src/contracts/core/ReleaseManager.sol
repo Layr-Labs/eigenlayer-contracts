@@ -100,7 +100,9 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
     }
 
     /// @inheritdoc IReleaseManager
-    function getMetadataURI(OperatorSet memory operatorSet) external view returns (string memory) {
+    function getMetadataURI(
+        OperatorSet memory operatorSet
+    ) external view returns (string memory) {
         return _operatorSetMetadataURI[operatorSet.key()];
     }
 }
