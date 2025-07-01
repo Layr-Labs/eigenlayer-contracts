@@ -411,7 +411,7 @@ contract StrategyManager is
             emit BurnOrRedistributableSharesDecreased(operatorSet, slashId, strategy, sharesToRemove);
         }
 
-        uint256 remainingStrategies = _burnOrRedistributableShares[operatorSet.key()][slashId].keys().length;
+        uint256 remainingStrategies = burnOrRedistributableShares.keys().length;
 
         // If there are no more strategies to burn or redistribute...
         if (remainingStrategies == 0) {
