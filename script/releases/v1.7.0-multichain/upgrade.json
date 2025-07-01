@@ -18,6 +18,10 @@
         {
             "type": "multisig",
             "filename": "4-instantiateDestinationChainProxies.s.sol"
+        },
+        {
+            "type": "multisig",
+            "filename": "5-configureCrossChainRegistry.s.sol"
         }
     ]
 }
