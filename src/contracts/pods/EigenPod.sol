@@ -311,14 +311,12 @@ contract EigenPod is
         ConsolidationRequest[] calldata requests
     ) external payable onlyWhenNotPaused(PAUSED_CONSOLIDATIONS) onlyOwnerOrProofSubmitter {
         uint256 fee = getConsolidationRequestFee();
-        require(msg.value >= fee * requests.length, InsufficientFunds());
-        uint256 remainder = msg.value - (fee * requests.length);
+        uint256 totalFee = fee * requests.length;
+        require(msg.value >= totalFee, InsufficientFunds());
+        uint256 remainder = msg.value - totalFee;
 
         for (uint256 i = 0; i < requests.length; i++) {
             ConsolidationRequest calldata request = requests[i];
-            // Validate pubkeys are well-formed
-            require(request.srcPubkey.length == 48, InvalidPubKeyLength());
-            require(request.targetPubkey.length == 48, InvalidPubKeyLength());
 
             // Ensure target has verified withdrawal credentials pointed at this pod
             bytes32 sourcePubkeyHash = _calcPubkeyHash(request.srcPubkey);
@@ -347,16 +345,13 @@ contract EigenPod is
         WithdrawalRequest[] calldata requests
     ) external payable onlyWhenNotPaused(PAUSED_WITHDRAWAL_REQUESTS) onlyOwnerOrProofSubmitter {
         uint256 fee = getWithdrawalRequestFee();
-        require(msg.value >= fee * requests.length, InsufficientFunds());
-        uint256 remainder = msg.value - (fee * requests.length);
+        uint256 totalFee = fee * requests.length;
+        require(msg.value >= totalFee, InsufficientFunds());
+        uint256 remainder = msg.value - totalFee;
 
         for (uint256 i = 0; i < requests.length; i++) {
             WithdrawalRequest calldata request = requests[i];
-            // Validate pubkey is well-formed.
-            //
-            // It's not necessary to perform any additional validation; the worst-case
-            // scenario is just that the consensus layer skips an invalid request.
-            require(request.pubkey.length == 48, InvalidPubKeyLength());
+            bytes32 pubkeyHash = _calcPubkeyHash(request.pubkey);
 
             // Call the predeploy
             bytes memory callData = abi.encodePacked(request.pubkey, request.amountGwei);
@@ -364,7 +359,6 @@ contract EigenPod is
             require(ok, PredeployFailed());
 
             // Emit event depending on whether the request is a full exit or a partial withdrawal
-            bytes32 pubkeyHash = _calcPubkeyHash(request.pubkey);
             if (request.amountGwei == 0) emit ExitRequested(pubkeyHash);
             else emit WithdrawalRequested(pubkeyHash, request.amountGwei);
         }
