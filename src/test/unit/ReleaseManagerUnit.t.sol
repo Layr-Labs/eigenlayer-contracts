@@ -483,5 +483,7 @@ contract ReleaseManagerUnitTests_publishMetadataURI is ReleaseManagerUnitTests {
 
         cheats.prank(defaultAVS);
         releaseManager.publishMetadataURI(defaultOperatorSet, registry);
+
+        assertEq(releaseManager.getMetadataURI(defaultOperatorSet), registry, "metadata URI not set correctly");
     }
 }
