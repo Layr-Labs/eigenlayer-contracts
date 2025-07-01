@@ -72,10 +72,13 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
         }
 
         // 1. Deploy the destination chain contracts
-        DeployDestinationChainProxies._runAsMultisig();
-        _unsafeResetHasPranked(); // reset hasPranked so we can use it in the execute()
+        if (!_areProxiesDeployed()) {
+            DeployDestinationChainProxies._runAsMultisig();
+            _unsafeResetHasPranked(); // reset hasPranked so we can use it in the execute()
+        }
 
         // 2. Deploy the destination chain impls
+        _mode = OperationalMode.EOA; // Set to EOA mode so we can deploy the impls in the EOA script
         DeployDestinationChainImpls._runAsEOA();
 
         // 3. Instantiate the destination chain proxies

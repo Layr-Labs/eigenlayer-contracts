@@ -2,19 +2,14 @@
 pragma solidity ^0.8.12;
 
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {ScriptHelpers} from "zeus-templates/utils/ScriptHelpers.sol";
-import {ZEnvHelpers} from "zeus-templates/utils/ZEnvHelpers.sol";
 import {MultisigBuilder} from "zeus-templates/templates/MultisigBuilder.sol";
 import {CrosschainDeployLib} from "script/releases/CrosschainDeployLib.sol";
-import "forge-std/console.sol";
 import "../Env.sol";
 
 /**
  * Purpose: Deploy proxy contracts for the destination chain using a multisig.
  */
 contract DeployDestinationChainProxies is MultisigBuilder {
-    using ZEnvHelpers for *;
-    using ScriptHelpers for *;
     using Env for *;
 
     /// forgefmt: disable-next-item
@@ -53,11 +48,10 @@ contract DeployDestinationChainProxies is MultisigBuilder {
         _stopPrank();
 
         // Save all the contracts to the env
-        // NOTE: This is an antipattern, we should update the ZEnvHelpers to support this
-        ZEnvHelpers.state().__updateContract(type(EmptyContract).name.impl(), address(emptyContract));
-        ZEnvHelpers.state().__updateContract(type(OperatorTableUpdater).name.proxy(), address(operatorTableUpdaterProxy));
-        ZEnvHelpers.state().__updateContract(type(ECDSACertificateVerifier).name.proxy(), address(ecdsaCertificateVerifierProxy));
-        ZEnvHelpers.state().__updateContract(type(BN254CertificateVerifier).name.proxy(), address(bn254CertificateVerifierProxy));
+        _unsafeAddImplContract(type(EmptyContract).name, emptyContract);
+        _unsafeAddProxyContract(type(OperatorTableUpdater).name, address(operatorTableUpdaterProxy));
+        _unsafeAddProxyContract(type(ECDSACertificateVerifier).name, address(ecdsaCertificateVerifierProxy));
+        _unsafeAddProxyContract(type(BN254CertificateVerifier).name, address(bn254CertificateVerifierProxy));
     }
 
     function testScript() public virtual {

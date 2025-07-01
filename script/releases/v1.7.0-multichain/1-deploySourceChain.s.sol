@@ -103,7 +103,8 @@ contract DeploySourceChain is EOADeployer {
             return;
         }
 
-        _runAsEOA();
+        // Set the mode to EOA so we can deploy the contracts
+        super.runAsEOA();
 
         _validateStorage();
         _validateProxyAdmins();

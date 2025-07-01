@@ -3,6 +3,7 @@ pragma solidity ^0.8.12;
 
 import {EOADeployer} from "zeus-templates/templates/EOADeployer.sol";
 import {DeployDestinationChainProxies} from "./2-deployDestinationChainProxies.s.sol";
+import {CrosschainDeployLib} from "script/releases/CrosschainDeployLib.sol";
 import "src/contracts/interfaces/IOperatorTableCalculator.sol";
 import "../Env.sol";
 
@@ -62,10 +63,14 @@ contract DeployDestinationChainImpls is EOADeployer, DeployDestinationChainProxi
         }
 
         // 1. Deploy destination chain proxies
-        DeployDestinationChainProxies._runAsMultisig();
+        // Only deploy the proxies if they haven't been deployed yet
+        /// @dev This is needed in the production environment tests since this step would fail if the proxies are already deployed
+        if (!_areProxiesDeployed()) {
+            DeployDestinationChainProxies._runAsMultisig();
+        }
 
         // 2. Deploy destination chain impls
-        _runAsEOA();
+        super.runAsEOA();
 
         // Validate the destination chain
         _validateImplConstructors();
@@ -142,5 +147,19 @@ contract DeployDestinationChainImpls is EOADeployer, DeployDestinationChainProxi
         assertEq(Env.impl.operatorTableUpdater().version(), expected, "operatorTableUpdater version mismatch");
         assertEq(Env.impl.ecdsaCertificateVerifier().version(), expected, "ecdsaCertificateVerifier version mismatch");
         assertEq(Env.impl.bn254CertificateVerifier().version(), expected, "bn254CertificateVerifier version mismatch");
+    }
+
+    function _areProxiesDeployed() internal view returns (bool) {
+        address expectedEmptyContract = CrosschainDeployLib.computeCrosschainAddress({
+            deployer: Env.multichainDeployerMultisig(),
+            initCodeHash: keccak256(type(EmptyContract).creationCode),
+            name: type(EmptyContract).name
+        });
+
+        // If the empty contract is deployed, then the proxies are deployed
+        if (expectedEmptyContract.code.length > 0) {
+            return true;
+        }
+        return false;
     }
 }
