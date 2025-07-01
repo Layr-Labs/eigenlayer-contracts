@@ -5,10 +5,17 @@ import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 
 import "../libraries/Merkle.sol";
+import "../permissions/Pausable.sol";
 import "../mixins/SemVerMixin.sol";
 import "./OperatorTableUpdaterStorage.sol";
 
-contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTableUpdaterStorage, SemVerMixin {
+contract OperatorTableUpdater is
+    Initializable,
+    OwnableUpgradeable,
+    Pausable,
+    OperatorTableUpdaterStorage,
+    SemVerMixin
+{
     /**
      *
      *                         INITIALIZING FUNCTIONS
@@ -17,14 +24,20 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
     constructor(
         IBN254CertificateVerifier _bn254CertificateVerifier,
         IECDSACertificateVerifier _ecdsaCertificateVerifier,
+        IPauserRegistry _pauserRegistry,
         string memory _version
-    ) OperatorTableUpdaterStorage(_bn254CertificateVerifier, _ecdsaCertificateVerifier) SemVerMixin(_version) {
+    )
+        OperatorTableUpdaterStorage(_bn254CertificateVerifier, _ecdsaCertificateVerifier)
+        Pausable(_pauserRegistry)
+        SemVerMixin(_version)
+    {
         _disableInitializers();
     }
 
     /**
      * @notice Initializes the OperatorTableUpdater
      * @param owner The owner of the OperatorTableUpdater
+     * @param initialPausedStatus The initial paused status of the OperatorTableUpdater
      * @param _generator The operatorSet which certifies against global roots
      * @param _globalRootConfirmationThreshold The threshold, in bps, for a global root to be signed off on and updated
      * @param referenceTimestamp The reference timestamp for the global root confirmer set
@@ -35,6 +48,7 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
      */
     function initialize(
         address owner,
+        uint256 initialPausedStatus,
         OperatorSet calldata _generator,
         uint16 _globalRootConfirmationThreshold,
         uint32 referenceTimestamp,
@@ -42,6 +56,7 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
         OperatorSetConfig calldata generatorConfig
     ) external initializer {
         _transferOwnership(owner);
+        _setPausedStatus(initialPausedStatus);
         _setGenerator(_generator);
         _setGlobalRootConfirmationThreshold(_globalRootConfirmationThreshold);
         _updateGenerator(referenceTimestamp, generatorInfo, generatorConfig);
@@ -73,7 +88,7 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
         bytes32 globalTableRoot,
         uint32 referenceTimestamp,
         uint32 referenceBlockNumber
-    ) external {
+    ) external onlyWhenNotPaused(PAUSED_GLOBAL_ROOT_UPDATE) {
         // Table roots can only be updated for current or past timestamps and after the latest reference timestamp
         require(referenceTimestamp <= block.timestamp, GlobalTableRootInFuture());
         require(referenceTimestamp > _latestReferenceTimestamp, GlobalTableRootStale());
@@ -109,7 +124,7 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
         uint32 operatorSetIndex,
         bytes calldata proof,
         bytes calldata operatorTableBytes
-    ) external {
+    ) external onlyWhenNotPaused(PAUSED_OPERATOR_TABLE_UPDATE) {
         (
             OperatorSet memory operatorSet,
             CurveType curveType,
@@ -173,7 +188,7 @@ contract OperatorTableUpdater is Initializable, OwnableUpgradeable, OperatorTabl
     /// @inheritdoc IOperatorTableUpdater
     function disableRoot(
         bytes32 globalTableRoot
-    ) external onlyOwner {
+    ) external onlyPauser {
         // Check that the root already exists and is not disabled
         require(_isRootValid[globalTableRoot], InvalidRoot());
 
