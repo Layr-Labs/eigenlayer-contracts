@@ -36,6 +36,9 @@ Destination Chain Contracts
 
 ## Changelog
 
+- feat: multichain deploy scripts [PR #1487](https://github.com/layr-labs/eigenlayer-contracts/pull/1487)
+- feat: operator table updater pauser [PR #1501](https://github.com/layr-labs/eigenlayer-contracts/pull/1501)
+- feat: add `publishMetadataURI` [PR #1492](https://github.com/layr-labs/eigenlayer-contracts/pull/1492)
 - refactor: `globalRootConfirmerSet` -> `generator` [PR #1500](https://github.com/layr-labs/eigenlayer-contracts/pull/1500)
 - fix: circular dependency for initial global root update [PR #1499](https://github.com/layr-labs/eigenlayer-contracts/pull/1499)
 - chore: remove stale bindings [PR #1498](https://github.com/layr-labs/eigenlayer-contracts/pull/1498)
