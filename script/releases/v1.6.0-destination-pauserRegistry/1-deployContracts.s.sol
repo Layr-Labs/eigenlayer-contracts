@@ -12,12 +12,12 @@ contract DeployDestinationGenesis is EOADeployer {
             return;
         }
 
-        vm.startBroadcast();
-
-        // Deploy pauserRegistry
+        // Set pausers
         address[] memory pausers = new address[](2);
         pausers[0] = Env.opsMultisig();
         pausers[1] = Env.pauserMultisig();
+
+        vm.startBroadcast();
 
         deployImpl({
             name: type(PauserRegistry).name,
@@ -31,6 +31,8 @@ contract DeployDestinationGenesis is EOADeployer {
         if (!Env.isDestinationChain()) {
             return;
         }
+
+        _runAsEOA();
 
         // Assert that the pauserRegistry is non-zero, and that the pausers are set correctly
         assertTrue(Env.impl.pauserRegistry().isPauser(Env.opsMultisig()));
