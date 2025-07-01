@@ -8,6 +8,12 @@ import "../interfaces/IECDSACertificateVerifier.sol";
 abstract contract OperatorTableUpdaterStorage is IOperatorTableUpdater {
     // Constants
 
+    /// @notice Index for flag that pauses calling `updateGlobalTableRoot`
+    uint8 internal constant PAUSED_GLOBAL_ROOT_UPDATE = 0;
+
+    /// @notice Index for flag that pauses calling `updateOperatorTable`
+    uint8 internal constant PAUSED_OPERATOR_TABLE_UPDATE = 1;
+
     bytes32 public constant GLOBAL_TABLE_ROOT_CERT_TYPEHASH =
         keccak256("GlobalTableRootCert(bytes32 globalTableRoot,uint32 referenceTimestamp,uint32 referenceBlockNumber)");
 

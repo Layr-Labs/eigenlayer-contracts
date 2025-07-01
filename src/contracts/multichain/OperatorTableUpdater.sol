@@ -88,7 +88,7 @@ contract OperatorTableUpdater is
         bytes32 globalTableRoot,
         uint32 referenceTimestamp,
         uint32 referenceBlockNumber
-    ) external {
+    ) external onlyWhenNotPaused(PAUSED_GLOBAL_ROOT_UPDATE) {
         // Table roots can only be updated for current or past timestamps and after the latest reference timestamp
         require(referenceTimestamp <= block.timestamp, GlobalTableRootInFuture());
         require(referenceTimestamp > _latestReferenceTimestamp, GlobalTableRootStale());
@@ -124,7 +124,7 @@ contract OperatorTableUpdater is
         uint32 operatorSetIndex,
         bytes calldata proof,
         bytes calldata operatorTableBytes
-    ) external {
+    ) external onlyWhenNotPaused(PAUSED_OPERATOR_TABLE_UPDATE) {
         (
             OperatorSet memory operatorSet,
             CurveType curveType,
