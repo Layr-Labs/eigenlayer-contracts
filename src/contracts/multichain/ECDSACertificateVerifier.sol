@@ -182,7 +182,7 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
 
     /**
      * @notice Parse signatures from the concatenated signature bytes
-     * @param messageHash The message hash that was signed
+     * @param signableDigest The signable digest that was signed
      * @param signatures The concatenated signatures
      * @return signers Array of addresses that signed the message
      * @return valid Whether all signatures are valid
@@ -190,9 +190,9 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
      * @dev This does not support smart contract based signatures for multichain
      */
     function _parseSignatures(
-        bytes32 messageHash,
+        bytes32 signableDigest,
         bytes memory signatures
-    ) internal view returns (address[] memory signers, bool valid) {
+    ) internal pure returns (address[] memory signers, bool valid) {
         // Each ECDSA signature is 65 bytes: r (32 bytes) + s (32 bytes) + v (1 byte)
         require(signatures.length > 0 && signatures.length % 65 == 0, InvalidSignatureLength());
 
@@ -206,7 +206,7 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
             }
 
             // Recover the signer
-            (address recovered, ECDSA.RecoverError error) = ECDSA.tryRecover(messageHash, signature);
+            (address recovered, ECDSA.RecoverError error) = ECDSA.tryRecover(signableDigest, signature);
             if (error != ECDSA.RecoverError.NoError || recovered == address(0)) {
                 return (signers, false);
             }
@@ -215,9 +215,6 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
             if (i > 0 && recovered <= signers[i - 1]) {
                 return (signers, false);
             }
-
-            // Verify that the recovered address actually signed the message
-            _checkIsValidSignatureNow(recovered, messageHash, signature, type(uint256).max);
 
             signers[i] = recovered;
         }
