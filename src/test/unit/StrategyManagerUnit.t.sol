@@ -43,10 +43,7 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEv
     function setUp() public override {
         EigenLayerUnitTestSetup.setUp();
         strategyManagerImplementation = new StrategyManager(
-            IDelegationManager(address(delegationManagerMock)),
-            ISlashEscrowFactory(address(slashEscrowFactoryMock)),
-            pauserRegistry,
-            "9.9.9"
+            IAllocationManager(address(allocationManagerMock)), IDelegationManager(address(delegationManagerMock)), pauserRegistry, "9.9.9"
         );
         strategyManager = StrategyManager(
             address(
@@ -1117,6 +1114,16 @@ contract StrategyManagerUnitTests_increaseBurnOrRedistributableShares is Strateg
             "get burn or redistributable shares count is wrong"
         );
 
+        // Check pending operator sets and slash IDs
+        OperatorSet[] memory pendingOperatorSets = strategyManager.getPendingOperatorSets();
+        assertEq(pendingOperatorSets.length, 1, "should have 1 pending operator set");
+        assertEq(pendingOperatorSets[0].avs, defaultOperatorSet.avs, "pending operator set AVS mismatch");
+        assertEq(pendingOperatorSets[0].id, defaultOperatorSet.id, "pending operator set ID mismatch");
+
+        uint[] memory pendingSlashIds = strategyManager.getPendingSlashIds(defaultOperatorSet);
+        assertEq(pendingSlashIds.length, 1, "should have 1 pending slash ID");
+        assertEq(pendingSlashIds[0], defaultSlashId, "pending slash ID mismatch");
+
         // Sanity check that the strategy is not in the OLD burnable shares mapping
         assertEq(strategyManager.getBurnableShares(strategy), 0, "get burnable shares is wrong");
     }
@@ -1157,6 +1164,16 @@ contract StrategyManagerUnitTests_increaseBurnOrRedistributableShares is Strateg
             strategies.length,
             "get burn or redistributable shares count is wrong"
         );
+
+        // Check pending operator sets and slash IDs - still only 1 of each since same operator set and slash ID
+        OperatorSet[] memory pendingOperatorSets = strategyManager.getPendingOperatorSets();
+        assertEq(pendingOperatorSets.length, 1, "should have 1 pending operator set");
+        assertEq(pendingOperatorSets[0].avs, defaultOperatorSet.avs, "pending operator set AVS mismatch");
+        assertEq(pendingOperatorSets[0].id, defaultOperatorSet.id, "pending operator set ID mismatch");
+
+        uint[] memory pendingSlashIds = strategyManager.getPendingSlashIds(defaultOperatorSet);
+        assertEq(pendingSlashIds.length, 1, "should have 1 pending slash ID");
+        assertEq(pendingSlashIds[0], defaultSlashId, "pending slash ID mismatch");
     }
 
     function testFuzz_existingShares(uint existingBurnableShares, uint addedSharesToBurn) external {
@@ -1187,6 +1204,83 @@ contract StrategyManagerUnitTests_increaseBurnOrRedistributableShares is Strateg
             addedSharesToBurn,
             "added shares to burn wrong"
         );
+
+        // Check pending operator sets and slash IDs - should have 1 operator set but 2 slash IDs
+        OperatorSet[] memory pendingOperatorSets = strategyManager.getPendingOperatorSets();
+        assertEq(pendingOperatorSets.length, 1, "should have 1 pending operator set");
+        assertEq(pendingOperatorSets[0].avs, defaultOperatorSet.avs, "pending operator set AVS mismatch");
+        assertEq(pendingOperatorSets[0].id, defaultOperatorSet.id, "pending operator set ID mismatch");
+
+        uint[] memory pendingSlashIds = strategyManager.getPendingSlashIds(defaultOperatorSet);
+        assertEq(pendingSlashIds.length, 2, "should have 2 pending slash IDs");
+        // Note: We can't guarantee order, so just check both are present
+        bool hasDefaultSlashId = false;
+        bool hasNextSlashId = false;
+        for (uint i = 0; i < pendingSlashIds.length; i++) {
+            if (pendingSlashIds[i] == defaultSlashId) hasDefaultSlashId = true;
+            if (pendingSlashIds[i] == nextSlashId) hasNextSlashId = true;
+        }
+        assertTrue(hasDefaultSlashId, "should have default slash ID");
+        assertTrue(hasNextSlashId, "should have next slash ID");
+    }
+
+    function test_multipleOperatorSetsAndSlashIds_AllCleared() external {
+        IStrategy strategy = dummyStrat;
+        uint shares = 100;
+
+        // Create a second operator set
+        OperatorSet memory operatorSet2 = OperatorSet(address(0x2), 1);
+
+        // Add shares for multiple operator sets and slash IDs
+        cheats.startPrank(address(delegationManagerMock));
+
+        // Add to defaultOperatorSet with defaultSlashId
+        strategyManager.increaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, strategy, shares);
+
+        // Add to defaultOperatorSet with a different slashId
+        uint slashId2 = defaultSlashId + 1;
+        strategyManager.increaseBurnOrRedistributableShares(defaultOperatorSet, slashId2, strategy, shares);
+
+        // Add to operatorSet2 with defaultSlashId
+        strategyManager.increaseBurnOrRedistributableShares(operatorSet2, defaultSlashId, strategy, shares);
+
+        cheats.stopPrank();
+
+        // Check pending sets - should have 2 operator sets
+        OperatorSet[] memory pendingOperatorSets = strategyManager.getPendingOperatorSets();
+        assertEq(pendingOperatorSets.length, 2, "should have 2 pending operator sets");
+
+        // Check pending slash IDs for each operator set
+        assertEq(strategyManager.getPendingSlashIds(defaultOperatorSet).length, 2, "defaultOperatorSet should have 2 pending slash IDs");
+        assertEq(strategyManager.getPendingSlashIds(operatorSet2).length, 1, "operatorSet2 should have 1 pending slash ID");
+
+        // Deposit shares to strategies to enable clearing
+        _depositIntoStrategySuccessfully(strategy, address(this), shares * 3);
+
+        // Clear one slash ID from defaultOperatorSet
+        strategyManager.clearBurnOrRedistributableSharesByStrategy(defaultOperatorSet, defaultSlashId, strategy);
+
+        // Check pending sets - should still have 2 operator sets since defaultOperatorSet still has slashId2
+        pendingOperatorSets = strategyManager.getPendingOperatorSets();
+        assertEq(pendingOperatorSets.length, 2, "should still have 2 pending operator sets");
+        assertEq(strategyManager.getPendingSlashIds(defaultOperatorSet).length, 1, "defaultOperatorSet should have 1 pending slash ID");
+
+        // Clear the second slash ID from defaultOperatorSet
+        strategyManager.clearBurnOrRedistributableSharesByStrategy(defaultOperatorSet, slashId2, strategy);
+
+        // Now defaultOperatorSet should be removed from pending, but operatorSet2 should remain
+        pendingOperatorSets = strategyManager.getPendingOperatorSets();
+        assertEq(pendingOperatorSets.length, 1, "should have 1 pending operator set");
+        assertEq(pendingOperatorSets[0].avs, operatorSet2.avs, "remaining operator set should be operatorSet2");
+        assertEq(strategyManager.getPendingSlashIds(defaultOperatorSet).length, 0, "defaultOperatorSet should have no pending slash IDs");
+
+        // Clear operatorSet2
+        strategyManager.clearBurnOrRedistributableSharesByStrategy(operatorSet2, defaultSlashId, strategy);
+
+        // All pending sets should be cleared now
+        pendingOperatorSets = strategyManager.getPendingOperatorSets();
+        assertEq(pendingOperatorSets.length, 0, "should have no pending operator sets");
+        assertEq(strategyManager.getPendingSlashIds(operatorSet2).length, 0, "operatorSet2 should have no pending slash IDs");
     }
 }
 
@@ -1207,18 +1301,26 @@ contract StrategyManagerUnitTests_clearBurnOrRedistributableShares is StrategyMa
         IStrategy strategy = dummyStrat;
         _increaseBurnOrRedistributableShares(strategy, shares);
 
+        // Check that pending operator set and slash ID are added
+        assertEq(strategyManager.getPendingOperatorSets().length, 1, "should have 1 pending operator set after adding shares");
+        assertEq(strategyManager.getPendingSlashIds(defaultOperatorSet).length, 1, "should have 1 pending slash ID after adding shares");
+
         cheats.expectEmit(true, true, true, true, address(strategyManager));
         emit BurnOrRedistributableSharesDecreased(defaultOperatorSet, defaultSlashId, strategy, shares);
         strategyManager.clearBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
 
-        (IStrategy[] memory escrowStrats, uint[] memory escrowShares) =
+        (IStrategy[] memory slashStrats, uint[] memory slashShares) =
             strategyManager.getBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
-        assertEq(escrowStrats.length, 0, "strats length should be 0");
-        assertEq(escrowShares.length, 0, "shares length should be 0");
+        assertEq(slashStrats.length, 0, "strats length should be 0");
+        assertEq(slashShares.length, 0, "shares length should be 0");
         assertEq(strategyManager.getBurnOrRedistributableCount(defaultOperatorSet, defaultSlashId), 0, "count should be 0");
 
-        address slashEscrow = slashEscrowFactoryMock.getSlashEscrow(defaultOperatorSet, defaultSlashId);
-        assertEq(dummyToken.balanceOf(slashEscrow), shares, "strategy balance of slash escrow invalid");
+        // Check that pending operator set and slash ID are removed since all strategies are cleared
+        assertEq(strategyManager.getPendingOperatorSets().length, 0, "pending operator sets should be empty after clearing");
+        assertEq(strategyManager.getPendingSlashIds(defaultOperatorSet).length, 0, "pending slash ids should be empty after clearing");
+
+        address redistributionRecipient = allocationManagerMock.getRedistributionRecipient(defaultOperatorSet);
+        assertEq(dummyToken.balanceOf(redistributionRecipient), shares, "strategy balance of redistribution recipient invalid");
         assertEq(dummyToken.balanceOf(address(strategy)), 0, "strategy balance should be 0");
     }
 
@@ -1229,18 +1331,26 @@ contract StrategyManagerUnitTests_clearBurnOrRedistributableShares is StrategyMa
 
         console.log("strategy balance", dummyToken.balanceOf(address(strategy)));
 
+        // Check that pending operator set and slash ID are added
+        assertEq(strategyManager.getPendingOperatorSets().length, 1, "should have 1 pending operator set after adding shares");
+        assertEq(strategyManager.getPendingSlashIds(defaultOperatorSet).length, 1, "should have 1 pending slash ID after adding shares");
+
         cheats.expectEmit(true, true, true, true, address(strategyManager));
         emit BurnOrRedistributableSharesDecreased(defaultOperatorSet, defaultSlashId, strategy, shares);
         strategyManager.clearBurnOrRedistributableSharesByStrategy(defaultOperatorSet, defaultSlashId, strategy);
 
-        (IStrategy[] memory escrowStrats, uint[] memory escrowShares) =
+        (IStrategy[] memory slashStrats, uint[] memory slashShares) =
             strategyManager.getBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
-        assertEq(escrowStrats.length, 0, "strats length should be 0");
-        assertEq(escrowShares.length, 0, "shares length should be 0");
+        assertEq(slashStrats.length, 0, "strats length should be 0");
+        assertEq(slashShares.length, 0, "shares length should be 0");
         assertEq(strategyManager.getBurnOrRedistributableCount(defaultOperatorSet, defaultSlashId), 0, "count should be 0");
 
-        address slashEscrow = slashEscrowFactoryMock.getSlashEscrow(defaultOperatorSet, defaultSlashId);
-        assertEq(dummyToken.balanceOf(slashEscrow), shares, "strategy balance of slash escrow invalid");
+        // Check that pending operator set and slash ID are removed since all strategies are cleared
+        assertEq(strategyManager.getPendingOperatorSets().length, 0, "pending operator sets should be empty after clearing");
+        assertEq(strategyManager.getPendingSlashIds(defaultOperatorSet).length, 0, "pending slash ids should be empty after clearing");
+
+        address redistributionRecipient = allocationManagerMock.getRedistributionRecipient(defaultOperatorSet);
+        assertEq(dummyToken.balanceOf(redistributionRecipient), shares, "strategy balance of redistribution recipient invalid");
         assertEq(dummyToken.balanceOf(address(strategy)), 0, "strategy balance should be 0");
     }
 
@@ -1262,15 +1372,15 @@ contract StrategyManagerUnitTests_clearBurnOrRedistributableShares is StrategyMa
 
         strategyManager.clearBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
 
-        (IStrategy[] memory escrowStrats, uint[] memory escrowShares) =
+        (IStrategy[] memory slashStrats, uint[] memory slashShares) =
             strategyManager.getBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
-        assertEq(escrowStrats.length, 0, "strats length should be 0");
-        assertEq(escrowShares.length, 0, "shares length should be 0");
+        assertEq(slashStrats.length, 0, "strats length should be 0");
+        assertEq(slashShares.length, 0, "shares length should be 0");
         assertEq(strategyManager.getBurnOrRedistributableCount(defaultOperatorSet, defaultSlashId), 0, "count should be 0");
 
         // The dummyStrats all have the same token, assert total balance
-        address slashEscrow = slashEscrowFactoryMock.getSlashEscrow(defaultOperatorSet, defaultSlashId);
-        assertEq(dummyToken.balanceOf(slashEscrow), totalSharesToAdd, "total balance should be total shares to add");
+        address defaultRedistributionRecipient = allocationManagerMock.getRedistributionRecipient(defaultOperatorSet);
+        assertEq(dummyToken.balanceOf(defaultRedistributionRecipient), totalSharesToAdd, "total balance should be total shares to add");
         assertEq(dummyToken.balanceOf(address(strategies[0])), 0, "strategy balance should be 0");
         assertEq(dummyToken.balanceOf(address(strategies[1])), 0, "strategy balance should be 0");
         assertEq(dummyToken.balanceOf(address(strategies[2])), 0, "strategy balance should be 0");
@@ -1291,6 +1401,10 @@ contract StrategyManagerUnitTests_clearBurnOrRedistributableShares is StrategyMa
 
         _increaseBurnOrRedistributableShares(strategies, sharesToAdd);
 
+        // Check that pending operator set and slash ID are added
+        assertEq(strategyManager.getPendingOperatorSets().length, 1, "should have 1 pending operator set after adding shares");
+        assertEq(strategyManager.getPendingSlashIds(defaultOperatorSet).length, 1, "should have 1 pending slash ID after adding shares");
+
         // Remove shares in random order
         uint[] memory indices = new uint[](3);
         indices[0] = 1; // dummyStrat2
@@ -1309,11 +1423,23 @@ contract StrategyManagerUnitTests_clearBurnOrRedistributableShares is StrategyMa
                 strategies.length - i - 1,
                 "count not correct"
             );
+
+            // Check pending sets - should remain until last strategy is cleared
+            if (i < strategies.length - 1) {
+                assertEq(strategyManager.getPendingOperatorSets().length, 1, "should still have 1 pending operator set");
+                assertEq(strategyManager.getPendingSlashIds(defaultOperatorSet).length, 1, "should still have 1 pending slash ID");
+            } else {
+                // After last strategy is cleared, pending sets should be empty
+                assertEq(strategyManager.getPendingOperatorSets().length, 0, "pending operator sets should be empty after clearing all");
+                assertEq(
+                    strategyManager.getPendingSlashIds(defaultOperatorSet).length, 0, "pending slash ids should be empty after clearing all"
+                );
+            }
         }
 
         // The dummyStrats all have the same token, assert total balance
-        address slashEscrow = slashEscrowFactoryMock.getSlashEscrow(defaultOperatorSet, defaultSlashId);
-        assertEq(dummyToken.balanceOf(slashEscrow), totalShares, "total balance should be total shares to add");
+        address redistributionRecipient = allocationManagerMock.getRedistributionRecipient(defaultOperatorSet);
+        assertEq(dummyToken.balanceOf(redistributionRecipient), totalShares, "total balance should be total shares to add");
         assertEq(dummyToken.balanceOf(address(strategies[0])), 0, "strategy balance should be 0");
         assertEq(dummyToken.balanceOf(address(strategies[1])), 0, "strategy balance should be 0");
         assertEq(dummyToken.balanceOf(address(strategies[2])), 0, "strategy balance should be 0");
@@ -1508,5 +1634,133 @@ contract StrategyManagerUnitTests_removeStrategiesFromDepositWhitelist is Strate
                 );
             }
         }
+    }
+}
+
+contract StrategyManagerUnitTests_getPendingOperatorSets is StrategyManagerUnitTests {
+    function test_getPendingOperatorSets_InitiallyZero() external {
+        OperatorSet[] memory pendingOperatorSets = strategyManager.getPendingOperatorSets();
+        assertEq(pendingOperatorSets.length, 0, "should have 0 pending operator sets");
+    }
+
+    function test_getPendingOperatorSets_SingleOperatorSet() external {
+        IStrategy strategy = dummyStrat;
+        uint shares = 100;
+
+        // Staker must deposit first
+        address staker = address(this);
+        uint depositAmount = 1e18;
+        _depositIntoStrategySuccessfully(strategy, staker, depositAmount);
+
+        cheats.prank(address(delegationManagerMock));
+        strategyManager.increaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, strategy, shares);
+        OperatorSet[] memory pendingOperatorSets = strategyManager.getPendingOperatorSets();
+        assertEq(pendingOperatorSets.length, 1, "should have 1 pending operator set");
+        assertEq(pendingOperatorSets[0].avs, defaultOperatorSet.avs, "pending operator set AVS mismatch");
+        assertEq(pendingOperatorSets[0].id, defaultOperatorSet.id, "pending operator set ID mismatch");
+        // Clear shares
+        strategyManager.clearBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
+        pendingOperatorSets = strategyManager.getPendingOperatorSets();
+        assertEq(pendingOperatorSets.length, 0, "should have 0 pending operator sets");
+    }
+
+    function test_getPendingOperatorSets_MultipleOperatorSets() external {
+        IStrategy strategy = dummyStrat;
+        uint shares = 100;
+
+        // Staker must deposit first
+        address staker = address(this);
+        uint depositAmount = 1e18;
+        _depositIntoStrategySuccessfully(strategy, staker, depositAmount);
+
+        // Create multiple operator sets
+        OperatorSet memory operatorSet1 = OperatorSet(address(0x1), 1);
+        OperatorSet memory operatorSet2 = OperatorSet(address(0x2), 2);
+        OperatorSet memory operatorSet3 = OperatorSet(address(0x3), 3);
+
+        // Add shares for each operator set
+        cheats.startPrank(address(delegationManagerMock));
+        strategyManager.increaseBurnOrRedistributableShares(operatorSet1, defaultSlashId, strategy, shares);
+        strategyManager.increaseBurnOrRedistributableShares(operatorSet2, defaultSlashId, strategy, shares);
+        strategyManager.increaseBurnOrRedistributableShares(operatorSet3, defaultSlashId, strategy, shares);
+        cheats.stopPrank();
+
+        OperatorSet[] memory pendingOperatorSets = strategyManager.getPendingOperatorSets();
+        assertEq(pendingOperatorSets.length, 3, "should have 3 pending operator sets");
+
+        // Verify all operator sets are present
+        assertEq(pendingOperatorSets[0].avs, operatorSet1.avs, "pending operator set 1 AVS mismatch");
+        assertEq(pendingOperatorSets[0].id, operatorSet1.id, "pending operator set 1 ID mismatch");
+        assertEq(pendingOperatorSets[1].avs, operatorSet2.avs, "pending operator set 2 AVS mismatch");
+        assertEq(pendingOperatorSets[1].id, operatorSet2.id, "pending operator set 2 ID mismatch");
+        assertEq(pendingOperatorSets[2].avs, operatorSet3.avs, "pending operator set 3 AVS mismatch");
+        assertEq(pendingOperatorSets[2].id, operatorSet3.id, "pending operator set 3 ID mismatch");
+
+        strategyManager.clearBurnOrRedistributableShares(operatorSet1, defaultSlashId);
+        assertEq(strategyManager.getPendingOperatorSets().length, 2, "should have 2 pending operator sets");
+
+        strategyManager.clearBurnOrRedistributableShares(operatorSet2, defaultSlashId);
+        assertEq(strategyManager.getPendingOperatorSets().length, 1, "should have 1 pending operator sets");
+
+        strategyManager.clearBurnOrRedistributableShares(operatorSet3, defaultSlashId);
+        assertEq(strategyManager.getPendingOperatorSets().length, 0, "should have 0 pending operator sets");
+    }
+}
+
+contract StrategyManagerUnitTests_getPendingSlashIds is StrategyManagerUnitTests {
+    function test_getPendingSlashIds_InitiallyZero() external {
+        uint[] memory pendingSlashIds = strategyManager.getPendingSlashIds(defaultOperatorSet);
+        assertEq(pendingSlashIds.length, 0, "should have 0 pending slash IDs");
+    }
+
+    function test_getPendingSlashIds_SingleOperatorSet_SingleSlashId() external {
+        IStrategy strategy = dummyStrat;
+        uint shares = 100;
+
+        address staker = address(this);
+        uint depositAmount = 1e18;
+        _depositIntoStrategySuccessfully(strategy, staker, depositAmount);
+
+        cheats.prank(address(delegationManagerMock));
+        strategyManager.increaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, strategy, shares);
+        uint[] memory pendingSlashIds = strategyManager.getPendingSlashIds(defaultOperatorSet);
+        assertEq(pendingSlashIds.length, 1, "should have 1 pending slash ID");
+        assertEq(pendingSlashIds[0], defaultSlashId, "pending slash ID mismatch");
+    }
+
+    function test_getPendingSlashIds_SingleOperatorSet_MultipleSlashIds() external {
+        IStrategy strategy = dummyStrat;
+        uint shares = 100;
+
+        address staker = address(this);
+        uint depositAmount = 1e18;
+        _depositIntoStrategySuccessfully(strategy, staker, depositAmount);
+
+        cheats.startPrank(address(delegationManagerMock));
+        strategyManager.increaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, strategy, shares);
+        strategyManager.increaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId + 1, strategy, shares);
+        strategyManager.increaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId + 2, strategy, shares);
+        cheats.stopPrank();
+
+        uint[] memory pendingSlashIds = strategyManager.getPendingSlashIds(defaultOperatorSet);
+        assertEq(pendingSlashIds.length, 3, "should have 3 pending slash IDs");
+        assertEq(pendingSlashIds[0], defaultSlashId, "pending slash ID mismatch");
+        assertEq(pendingSlashIds[1], defaultSlashId + 1, "pending slash ID mismatch");
+        assertEq(pendingSlashIds[2], defaultSlashId + 2, "pending slash ID mismatch");
+
+        strategyManager.clearBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
+        pendingSlashIds = strategyManager.getPendingSlashIds(defaultOperatorSet);
+        assertEq(pendingSlashIds.length, 2, "should have 2 pending slash IDs");
+        assertEq(pendingSlashIds[1], defaultSlashId + 1, "pending slash ID mismatch");
+        assertEq(pendingSlashIds[0], defaultSlashId + 2, "pending slash ID mismatch");
+
+        strategyManager.clearBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId + 1);
+        pendingSlashIds = strategyManager.getPendingSlashIds(defaultOperatorSet);
+        assertEq(pendingSlashIds.length, 1, "should have 1 pending slash IDs");
+        assertEq(pendingSlashIds[0], defaultSlashId + 2, "pending slash ID mismatch");
+
+        strategyManager.clearBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId + 2);
+        pendingSlashIds = strategyManager.getPendingSlashIds(defaultOperatorSet);
+        assertEq(pendingSlashIds.length, 0, "should have 0 pending slash IDs");
     }
 }

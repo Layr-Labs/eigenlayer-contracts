@@ -33,6 +33,10 @@ abstract contract AllocationManagerStorage is IAllocationManager {
     /// @notice The DelegationManager contract for EigenLayer
     IDelegationManager public immutable delegation;
 
+    /// @notice The Eigen strategy contract
+    /// @dev Cannot be added to redistributing operator sets
+    IStrategy public immutable eigenStrategy;
+
     /// @notice Delay before deallocations are clearable and can be added back into freeMagnitude
     /// In this window, deallocations still remain slashable by the operatorSet they were allocated to.
     uint32 public immutable DEALLOCATION_DELAY;
@@ -111,8 +115,14 @@ abstract contract AllocationManagerStorage is IAllocationManager {
 
     // Construction
 
-    constructor(IDelegationManager _delegation, uint32 _DEALLOCATION_DELAY, uint32 _ALLOCATION_CONFIGURATION_DELAY) {
+    constructor(
+        IDelegationManager _delegation,
+        IStrategy _eigenStrategy,
+        uint32 _DEALLOCATION_DELAY,
+        uint32 _ALLOCATION_CONFIGURATION_DELAY
+    ) {
         delegation = _delegation;
+        eigenStrategy = _eigenStrategy;
         DEALLOCATION_DELAY = _DEALLOCATION_DELAY;
         ALLOCATION_CONFIGURATION_DELAY = _ALLOCATION_CONFIGURATION_DELAY;
     }
