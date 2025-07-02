@@ -44,7 +44,7 @@ contract OperatorTableUpdater is
      * @param generatorInfo The operatorSetInfo for the global root confirmer set
      * @param generatorConfig The operatorSetConfig for the global root confirmer set
      * @dev We also update the operator table for the global root confirmer set, to begin signing off on global roots
-     * @dev Uses INITIAL_GLOBAL_TABLE_ROOT constant to break circular dependency for certificate verification
+     * @dev Uses GENERATOR_GLOBAL_TABLE_ROOT constant to break circular dependency for certificate verification
      */
     function initialize(
         address owner,
@@ -61,19 +61,11 @@ contract OperatorTableUpdater is
         _setGlobalRootConfirmationThreshold(_globalRootConfirmationThreshold);
         _updateGenerator(referenceTimestamp, generatorInfo, generatorConfig);
 
-        /// @dev The first global table root is the `INITIAL_GLOBAL_TABLE_ROOT`
-        /// @dev This is used to enable the first call to `confirmGlobalTableRoot` to pass since it expects
-        /// @dev the `Generator` to have a valid initial global table root
-        _globalTableRoots[referenceTimestamp] = INITIAL_GLOBAL_TABLE_ROOT;
-        _isRootValid[INITIAL_GLOBAL_TABLE_ROOT] = true;
-        _referenceBlockNumbers[referenceTimestamp] = uint32(block.number);
-        _referenceTimestamps[uint32(block.number)] = referenceTimestamp;
-
         // Set the latest reference timestamp
         _latestReferenceTimestamp = referenceTimestamp;
 
         // Emit the initial global table root event
-        emit NewGlobalTableRoot(referenceTimestamp, INITIAL_GLOBAL_TABLE_ROOT);
+        emit NewGlobalTableRoot(referenceTimestamp, GENERATOR_GLOBAL_TABLE_ROOT);
     }
 
     /**
@@ -367,6 +359,19 @@ contract OperatorTableUpdater is
         OperatorSetConfig calldata generatorConfig
     ) internal {
         bn254CertificateVerifier.updateOperatorTable(_generator, referenceTimestamp, generatorInfo, generatorConfig);
+
+        // Require that the referenceTimestamp doesn't already exist
+        require(_globalTableRoots[referenceTimestamp] == bytes32(0), InvalidReferenceTimestamp());
+        require(_referenceBlockNumbers[referenceTimestamp] == 0, InvalidReferenceBlockNumber());
+        require(_referenceTimestamps[uint32(block.number)] == 0, InvalidReferenceTimestamp());
+
+        /// @dev The generator's initial global table root is the `GENERATOR_GLOBAL_TABLE_ROOT`
+        /// @dev This is used to enable the call to `confirmGlobalTableRoot` to pass since it expects
+        /// @dev the `Generator` to have a valid initial global table root
+        _globalTableRoots[referenceTimestamp] = GENERATOR_GLOBAL_TABLE_ROOT;
+        _isRootValid[GENERATOR_GLOBAL_TABLE_ROOT] = true;
+        _referenceBlockNumbers[referenceTimestamp] = uint32(block.number);
+        _referenceTimestamps[uint32(block.number)] = referenceTimestamp;
     }
 
     /**
