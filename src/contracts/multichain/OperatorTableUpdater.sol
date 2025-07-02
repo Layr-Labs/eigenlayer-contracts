@@ -363,7 +363,6 @@ contract OperatorTableUpdater is
         // Require that the referenceTimestamp doesn't already exist
         require(_globalTableRoots[referenceTimestamp] == bytes32(0), InvalidReferenceTimestamp());
         require(_referenceBlockNumbers[referenceTimestamp] == 0, InvalidReferenceBlockNumber());
-        require(_referenceTimestamps[uint32(block.number)] == 0, InvalidReferenceTimestamp());
 
         /// @dev The generator's initial global table root is the `GENERATOR_GLOBAL_TABLE_ROOT`
         /// @dev This is used to enable the call to `confirmGlobalTableRoot` to pass since it expects
