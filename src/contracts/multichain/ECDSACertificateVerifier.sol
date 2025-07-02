@@ -182,7 +182,7 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
 
     /**
      * @notice Parse signatures from the concatenated signature bytes
-     * @param messageHash The message hash that was signed
+     * @param signableDigest The signable digest that was signed
      * @param signatures The concatenated signatures
      * @return signers Array of addresses that signed the message
      * @return valid Whether all signatures are valid
