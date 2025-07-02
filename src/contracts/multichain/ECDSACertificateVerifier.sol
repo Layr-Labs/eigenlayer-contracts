@@ -206,7 +206,7 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
             }
 
             // Recover the signer
-            (address recovered, ECDSA.RecoverError error) = ECDSA.tryRecover(messageHash, signature);
+            (address recovered, ECDSA.RecoverError error) = ECDSA.tryRecover(signableDigest, signature);
             if (error != ECDSA.RecoverError.NoError || recovered == address(0)) {
                 return (signers, false);
             }
