@@ -2,6 +2,7 @@
 pragma solidity ^0.8.12;
 
 import {DeploySourceChain} from "./1-deploySourceChain.s.sol";
+import {CrosschainDeployLib} from "script/releases/CrosschainDeployLib.sol";
 import {DeployDestinationChainProxies} from "./2-deployDestinationChainProxies.s.sol";
 import "../Env.sol";
 
@@ -34,11 +35,17 @@ contract ConfigureCrossChainRegistry is DeploySourceChain, DeployDestinationChai
         }
 
         // Deploy source chain
+        _mode = OperationalMode.EOA; // Set to EOA mode so we can deploy the impls in the EOA script
         DeploySourceChain._runAsEOA();
 
         // Deploy destination chain
-        DeployDestinationChainProxies._runAsMultisig();
-        _unsafeResetHasPranked(); // reset hasPranked so we can use it in the execute()
+        if (!_areProxiesDeployed()) {
+            DeployDestinationChainProxies._runAsMultisig();
+            _unsafeResetHasPranked(); // reset hasPranked so we can use it in the execute()
+        } else {
+            // Since the proxies are already deployed, we need to update the env with the proper addresses
+            _addContractsToEnv();
+        }
 
         // Configure the registry
         execute();

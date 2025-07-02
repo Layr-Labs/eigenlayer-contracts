@@ -3,6 +3,7 @@ pragma solidity ^0.8.12;
 
 import {EOADeployer} from "zeus-templates/templates/EOADeployer.sol";
 import {DeployDestinationChainProxies} from "./2-deployDestinationChainProxies.s.sol";
+import {CrosschainDeployLib} from "script/releases/CrosschainDeployLib.sol";
 import "src/contracts/interfaces/IOperatorTableCalculator.sol";
 import "../Env.sol";
 
@@ -62,10 +63,18 @@ contract DeployDestinationChainImpls is EOADeployer, DeployDestinationChainProxi
         }
 
         // 1. Deploy destination chain proxies
-        DeployDestinationChainProxies._runAsMultisig();
+        // Only deploy the proxies if they haven't been deployed yet
+        /// @dev This is needed in the production environment tests since this step would fail if the proxies are already deployed
+        if (!_areProxiesDeployed()) {
+            DeployDestinationChainProxies._runAsMultisig();
+            _unsafeResetHasPranked(); // reset hasPranked so we can use it in the execute()
+        } else {
+            // Since the proxies are already deployed, we need to update the env with the proper addresses
+            _addContractsToEnv();
+        }
 
         // 2. Deploy destination chain impls
-        _runAsEOA();
+        super.runAsEOA();
 
         // Validate the destination chain
         _validateImplConstructors();
