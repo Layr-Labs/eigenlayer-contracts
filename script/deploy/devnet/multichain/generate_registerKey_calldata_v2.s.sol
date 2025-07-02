@@ -130,6 +130,7 @@ contract GenerateRegisterKeyCalldataV2 is Script, Test {
         // console.log("  Message Hash:", vm.toString(messageHash));
 
         bytes32 messageHash = keyRegistrar.getECDSAKeyRegistrationMessageHash(_operator, operatorSet, keyAddress);
+        console.log("Message Hash:", vm.toString(messageHash));
         
         // Sign the message
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(privKey, messageHash);
