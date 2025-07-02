@@ -39,6 +39,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
     IStrategyManager immutable strategyManager;
     IStrategyFactory immutable strategyFactory;
     TimeMachine immutable timeMachine;
+    IKeyRegistrar immutable keyRegistrar;
     string _NAME;
 
     uint32 totalOperatorSets;
@@ -51,6 +52,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
         strategyManager = deployer.strategyManager();
         strategyFactory = deployer.strategyFactory();
         timeMachine = deployer.timeMachine();
+        keyRegistrar = deployer.keyRegistrar();
         _NAME = name;
         cheats.label(address(this), NAME_COLORED());
     }

@@ -104,5 +104,5 @@ abstract contract StrategyManagerStorage is IStrategyManager {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[31] private __gap;
+    uint256[32] private __gap;
 }
