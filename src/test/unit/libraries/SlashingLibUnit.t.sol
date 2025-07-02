@@ -17,6 +17,7 @@ contract SlashingLibHarness {
 }
 
 contract SlashingLibUnitTests is Test {
+    /// @dev We use a harness so that `vm.expectRevert()` can be used.
     SlashingLibHarness harness;
 
     function setUp() public {
