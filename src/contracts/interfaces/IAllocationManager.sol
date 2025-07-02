@@ -19,6 +19,8 @@ interface IAllocationManagerErrors {
     error InvalidAVSRegistrar();
     /// @dev Thrown when an invalid strategy is provided.
     error InvalidStrategy();
+    /// @dev Thrown when an invalid redistribution recipient is provided.
+    error InvalidRedistributionRecipient();
 
     /// Caller
 
