@@ -8,12 +8,21 @@ contract AllocationManagerHarness is AllocationManager {
 
     constructor(
         IDelegationManager _delegation,
+        IStrategy _eigenStrategy,
         IPauserRegistry _pauserRegistry,
         IPermissionController _permissionController,
         uint32 _DEALLOCATION_DELAY,
         uint32 _ALLOCATION_CONFIGURATION_DELAY
     )
-        AllocationManager(_delegation, _pauserRegistry, _permissionController, _DEALLOCATION_DELAY, _ALLOCATION_CONFIGURATION_DELAY, "9.9.9")
+        AllocationManager(
+            _delegation,
+            _eigenStrategy,
+            _pauserRegistry,
+            _permissionController,
+            _DEALLOCATION_DELAY,
+            _ALLOCATION_CONFIGURATION_DELAY,
+            TestConstants.TEST_VERSION
+        )
     {}
 
     function deallocationQueueAtIndex(address operator, IStrategy strategy, uint index) external view returns (bytes32) {
