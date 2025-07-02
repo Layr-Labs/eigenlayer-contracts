@@ -119,16 +119,6 @@ You can view the deployed contract addresses below, or check out the code itself
 | [`AllocationManager`](https://github.com/Layr-Labs/eigenlayer-contracts/blob//v1.5.0-rc.0/src/contracts/core/AllocationManager.sol) | [`0x78469728304326CBc65f8f95FA756B0B73164462`](https://holesky.etherscan.io/address/0x78469728304326CBc65f8f95FA756B0B73164462) | [`0x5912...A04Ea`](https://holesky.etherscan.io/address/0x5912005643201649542F5AE6CCE96C12b4DA04Ea) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 | [`PermissionController`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.4.2/src/contracts/permissions/PermissionController.sol) | [`0x598cb226B591155F767dA17AfE7A2241a68C5C10`](https://holesky.etherscan.io/address/0x598cb226B591155F767dA17AfE7A2241a68C5C10) | [`0x7ab0...a2b9`](https://holesky.etherscan.io/address/0x7ab0ebd25d5ffe7527600ca5b2858c1a3faba2b9#code) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 
-###### Slashing
-
-These contracts handle the burning/redistribution of slashed funds. The `SlashEscrowFactory` is upgradeable by the `SlashEscrowProxyAdmin`:
-
-| Name | Proxy | Implementation | Notes |
-| -------- | -------- | -------- | -------- |
-| [`OZ Proxy Admin (SlashEscrowProxyAdmin)`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/ProxyAdmin.sol) | - | [`0x18dc...966b`](https://holesky.etherscan.io/address/0x0AA4F4791872211374d5912B67F5673E757CE430) | |
-| [`SlashEscrowFactory`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.5.0-rc.0/src/contracts/core/SlashEscrowFactory.sol) | [`0xcc444eccD13E29033A46D3cbd4d30a2f70c10cbe`](https://holesky..etherscan.io/address/0xA5022befe84Ad0f5aAdc12e9c59230bc076083A5) | [`0xB643...348B`](https://holesky.etherscan.io/address/0xB64333C42F3c187744ad9F5d317C243A7788348B) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
-| [`SlashEscrow (Clone Implementation)`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.5.0-rc.0/src/contracts/core/SlashEscrow.sol) | - | [`0xa84b...ab2d`](https://holesky.etherscan.io/address/0x9c4cAc1e205cB33B4596E4f612eFdFDAe278A9CC) | [`EIP-1167 Clone`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/ClonesUpgradeable.sol) |
-
 ###### Strategies
 
 Anyone can deploy and whitelist strategies for standard ERC20s by using the `StrategyFactory` deployed to the address below (see [docs](./docs/core/StrategyManager.md#strategyfactorydeploynewstrategy)). Strategies deployed from the `StrategyFactory` are deployed using the beacon proxy pattern:
@@ -211,16 +201,6 @@ You can view the deployed contract addresses below, or check out the code itself
 | [`AllocationManager`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.5.0-rc.0/src/contracts/core/AllocationManager.sol) | [`0x42583067658071247ec8CE0A516A58f682002d07`](https://sepolia.etherscan.io/address/0x42583067658071247ec8CE0A516A58f682002d07) | [`0xb368...DAd6`](https://sepolia.etherscan.io/address/0xb36883818b5a4D25C409A81946DE9067cdC8DAd6) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 | [`PermissionController`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.3.0/src/contracts/permissions/PermissionController.sol) | [`0x44632dfBdCb6D3E21EF613B0ca8A6A0c618F5a37`](https://sepolia.etherscan.io/address/0x44632dfBdCb6D3E21EF613B0ca8A6A0c618F5a37) | [`0x59B1...f525`](https://sepolia.etherscan.io/address/0x59B11b191B572888703E150E45F5015e0fFcf525) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 
-###### Slashing
-
-These contracts handle the burning/redistribution of slashed funds. The `SlashEscrowFactory` is upgradeable by the `SlashEscrowProxyAdmin`:
-
-| Name | Proxy | Implementation | Notes |
-| -------- | -------- | -------- | -------- | 
-| [`OZ Proxy Admin (SlashEscrowProxyAdmin)`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/ProxyAdmin.sol) | - | [`0x18dc...966b`](https://sepolia.etherscan.io/address/0x18dc7D96d26b4F43ac464349D5D4af0310Ca966b) | `SlashEscrowFactory` proxy admin | 
-| [`SlashEscrowFactory`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.5.0-rc.0/src/contracts/core/SlashEscrowFactory.sol) | [`0xA5022befe84Ad0f5aAdc12e9c59230bc076083A5`](https://sepolia.etherscan.io/address/0xA5022befe84Ad0f5aAdc12e9c59230bc076083A5) | [`0x7A0D...883E`](https://sepolia.etherscan.io/address/0x7A0D6553941BFc3864E5EEdEa7B2d9EA6Eb5883E) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) | - |
-| [`SlashEscrow`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.5.0-rc.0/src/contracts/core/SlashEscrow.sol) | - | [`0xa84b596F9456f473AD3241431fde8C135a63ab2d`](https://sepolia.etherscan.io/address/0xa84b596F9456f473AD3241431fde8C135a63ab2d) | [`EIP-1167 Clone`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/ClonesUpgradeable.sol) |
-
 ###### Strategies
 
 Anyone can deploy and whitelist strategies for standard ERC20s by using the `StrategyFactory` deployed to the address below (see [docs](./docs/core/StrategyManager.md#strategyfactorydeploynewstrategy)). Strategies deployed from the `StrategyFactory` are deployed using the beacon proxy pattern:
@@ -288,15 +268,6 @@ The following strategies differ significantly from the other strategies deployed
 | [`AllocationManager`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.5.0-rc.0/src/contracts/core/AllocationManager.sol) | [`0x95a7431400F362F3647a69535C5666cA0133CAA0`](https://hoodi.etherscan.io/address/0x95a7431400F362F3647a69535C5666cA0133CAA0) | [`0x5ae8...9349`](https://hoodi.etherscan.io/address/0x5ae8152fb88c26ff9ca5C014c94fca3c68029349) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 | [`PermissionController`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.4.1/src/contracts/permissions/PermissionController.sol) | [`0xdcCF401fD121d8C542E96BC1d0078884422aFAD2`](https://hoodi.etherscan.io/address/0xdcCF401fD121d8C542E96BC1d0078884422aFAD2) | [`0x2D73...eA27`](https://hoodi.etherscan.io/address/0x2D731E7993a100afd19454B98eEEC7b90366eA27) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 
-###### Slashing
-
-These contracts handle the burning/redistribution of slashed funds. The `SlashEscrowFactory` is upgradeable by the `SlashEscrowProxyAdmin`:
-
-| Name | Proxy | Implementation | Notes |
-| -------- | -------- | -------- | -------- |
-| [`OZ Proxy Admin (SlashEscrowProxyAdmin)`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/ProxyAdmin.sol) | - | [`0xa789...F545`](https://hoodi.etherscan.io/address/0xa789c91ECDdae96865913130B786140Ee17aF545) | |
-| [`SlashEscrowFactory`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.5.0-rc.0/src/contracts/core/SlashEscrowFactory.sol) | [`0x885C0CC8118E428a2C04de58A93eB15Ed4F0e064`](https://hoodi..etherscan.io/address/0x885C0CC8118E428a2C04de58A93eB15Ed4F0e064) | [`0x4258...2d07`](https://hoodi.etherscan.io/address/0x42583067658071247ec8CE0A516A58f682002d07) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
-| [`SlashEscrow (Clone Implementation)`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.5.0-rc.0/src/contracts/core/SlashEscrow.sol) | - | [`0x889B...420d`](https://hoodi.etherscan.io/address/0x889B040116f453D89e9d6d692Ad70Edd7357420d) | [`EIP-1167 Clone`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/ClonesUpgradeable.sol) |
 
 ###### Strategies
 

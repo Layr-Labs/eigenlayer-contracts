@@ -14,11 +14,9 @@ import "../../../src/contracts/core/AVSDirectory.sol";
 import "../../../src/contracts/core/RewardsCoordinator.sol";
 import "../../../src/contracts/core/AllocationManager.sol";
 import "../../../src/contracts/permissions/PermissionController.sol";
-import "../../../src/contracts/core/SlashEscrowFactory.sol";
 import "../../../src/contracts/strategies/StrategyBaseTVLLimits.sol";
 import "../../../src/contracts/strategies/StrategyFactory.sol";
 import "../../../src/contracts/strategies/StrategyBase.sol";
-import "../../../src/contracts/core/SlashEscrow.sol";
 
 import "../../../src/contracts/pods/EigenPod.sol";
 import "../../../src/contracts/pods/EigenPodManager.sol";
@@ -64,14 +62,14 @@ contract DeployFromScratch is Script, Test {
     AllocationManager public allocationManager;
     PermissionController public permissionController;
     PermissionController public permissionControllerImplementation;
-    SlashEscrowFactory public slashEscrowFactory;
-    SlashEscrowFactory public slashEscrowFactoryImplementation;
 
     EmptyContract public emptyContract;
 
     address executorMultisig;
     address operationsMultisig;
     address pauserMultisig;
+
+    IStrategy eigenStrategy;
 
     // the ETH2 deposit contract -- if not on mainnet, we deploy a mock as stand-in
     IETHPOSDeposit public ethPOSDeposit;
@@ -167,6 +165,8 @@ contract DeployFromScratch is Script, Test {
         operationsMultisig = stdJson.readAddress(config_data, ".multisig_addresses.operationsMultisig");
         pauserMultisig = stdJson.readAddress(config_data, ".multisig_addresses.pauserMultisig");
 
+        eigenStrategy = IStrategy(stdJson.readAddress(config_data, ".addresses.token.eigenStrategy"));
+
         require(executorMultisig != address(0), "executorMultisig address not configured correctly!");
         require(operationsMultisig != address(0), "operationsMultisig address not configured correctly!");
 
@@ -214,9 +214,6 @@ contract DeployFromScratch is Script, Test {
         permissionController = PermissionController(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
-        slashEscrowFactory = SlashEscrowFactory(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
-        );
 
         // if on mainnet, use the ETH2 deposit contract address
         if (chainId == 1) ethPOSDeposit = IETHPOSDeposit(0x00000000219ab540356cBB839Cbe05303d7705Fa);
@@ -238,7 +235,7 @@ contract DeployFromScratch is Script, Test {
             SEMVER
         );
 
-        strategyManagerImplementation = new StrategyManager(delegation, slashEscrowFactory, eigenLayerPauserReg, SEMVER);
+        strategyManagerImplementation = new StrategyManager(allocationManager, delegation, eigenLayerPauserReg, SEMVER);
         avsDirectoryImplementation = new AVSDirectory(delegation, eigenLayerPauserReg, SEMVER);
         eigenPodManagerImplementation =
             new EigenPodManager(ethPOSDeposit, eigenPodBeacon, delegation, eigenLayerPauserReg, SEMVER);
@@ -259,6 +256,7 @@ contract DeployFromScratch is Script, Test {
         );
         allocationManagerImplementation = new AllocationManager(
             delegation,
+            eigenStrategy,
             eigenLayerPauserReg,
             permissionController,
             DEALLOCATION_DELAY,
@@ -267,8 +265,6 @@ contract DeployFromScratch is Script, Test {
         );
         permissionControllerImplementation = new PermissionController(SEMVER);
         strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg, SEMVER);
-        slashEscrowFactoryImplementation =
-            new SlashEscrowFactory(allocationManager, strategyManager, eigenLayerPauserReg, new SlashEscrow(), SEMVER);
 
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
         {
