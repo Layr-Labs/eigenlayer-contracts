@@ -64,46 +64,49 @@ contract Execute is QueueUpgrade {
     /// @dev Mirrors the checks done in 1-deployContracts, but now we check each contract's
     /// proxy, as the upgrade should mean that each proxy can see these methods/immutables
     function _validateProxyConstructors() internal view {
-        {
-            /// AllocationManager
-            AllocationManager allocationManager = Env.impl.allocationManager();
-            assertTrue(
-                allocationManager.delegation() == Env.proxy.delegationManager(), "allocationManager.delegation invalid"
-            );
-            assertTrue(
-                allocationManager.eigenStrategy() == Env.proxy.eigenStrategy(),
-                "allocationManager.eigenStrategy invalid"
-            );
-            assertTrue(
-                allocationManager.pauserRegistry() == Env.impl.pauserRegistry(),
-                "allocationManager.pauserRegistry invalid"
-            );
-            assertTrue(
-                allocationManager.permissionController() == Env.proxy.permissionController(),
-                "allocationManager.permissionController invalid"
-            );
-            assertTrue(allocationManager.DEALLOCATION_DELAY() == 1 days, "allocationManager.DEALLOCATION_DELAY invalid");
-            assertTrue(
-                allocationManager.ALLOCATION_CONFIGURATION_DELAY() == 1 days,
-                "allocationManager.ALLOCATION_CONFIGURATION_DELAY invalid"
-            );
-            assertEq(allocationManager.version(), Env.deployVersion(), "allocationManager.version failed");
-        }
+        AllocationManager allocationManager = Env.proxy.allocationManager();
+        assertTrue(allocationManager.delegation() == Env.proxy.delegationManager(), "alm.dm invalid");
+        assertTrue(allocationManager.eigenStrategy() == Env.proxy.eigenStrategy(), "alm.es invalid");
+        assertTrue(allocationManager.pauserRegistry() == Env.impl.pauserRegistry(), "alm.pR invalid");
+        assertTrue(allocationManager.permissionController() == Env.proxy.permissionController(), "alm.pc invalid");
+        assertTrue(allocationManager.DEALLOCATION_DELAY() == Env.MIN_WITHDRAWAL_DELAY(), "alm.deallocDelay invalid");
+        assertTrue(
+            allocationManager.ALLOCATION_CONFIGURATION_DELAY() == Env.ALLOCATION_CONFIGURATION_DELAY(),
+            "alm.configDelay invalid"
+        );
 
-        {
-            /// StrategyManager
-            StrategyManager strategyManager = Env.impl.strategyManager();
-            assertTrue(
-                strategyManager.allocationManager() == Env.proxy.allocationManager(),
-                "strategyManager.allocationManager invalid"
-            );
-            assertTrue(
-                strategyManager.delegation() == Env.proxy.delegationManager(), "strategyManager.delegation invalid"
-            );
-            assertTrue(
-                strategyManager.pauserRegistry() == Env.impl.pauserRegistry(), "strategyManager.pauserRegistry invalid"
-            );
-            assertEq(strategyManager.version(), Env.deployVersion(), "strategyManager.version failed");
+        DelegationManager delegation = Env.proxy.delegationManager();
+        assertTrue(delegation.strategyManager() == Env.proxy.strategyManager(), "dm.sm invalid");
+        assertTrue(delegation.eigenPodManager() == Env.proxy.eigenPodManager(), "dm.epm invalid");
+        assertTrue(delegation.allocationManager() == Env.proxy.allocationManager(), "dm.alm invalid");
+        assertTrue(delegation.pauserRegistry() == Env.impl.pauserRegistry(), "dm.pR invalid");
+        assertTrue(delegation.permissionController() == Env.proxy.permissionController(), "dm.pc invalid");
+        assertTrue(delegation.minWithdrawalDelayBlocks() == Env.MIN_WITHDRAWAL_DELAY(), "dm.withdrawalDelay invalid");
+
+        StrategyManager strategyManager = Env.proxy.strategyManager();
+        assertTrue(strategyManager.delegation() == Env.proxy.delegationManager(), "sm.dm invalid");
+        assertTrue(strategyManager.pauserRegistry() == Env.impl.pauserRegistry(), "sm.pR invalid");
+
+        EigenPodManager eigenPodManager = Env.proxy.eigenPodManager();
+        assertTrue(eigenPodManager.ethPOS() == Env.ethPOS(), "epm.ethPOS invalid");
+        assertTrue(eigenPodManager.eigenPodBeacon() == Env.beacon.eigenPod(), "epm.epBeacon invalid");
+        assertTrue(eigenPodManager.delegationManager() == Env.proxy.delegationManager(), "epm.dm invalid");
+        assertTrue(eigenPodManager.pauserRegistry() == Env.impl.pauserRegistry(), "epm.pR invalid");
+
+        /// strategies/
+        EigenStrategy eigenStrategy = Env.proxy.eigenStrategy();
+        assertTrue(eigenStrategy.strategyManager() == Env.proxy.strategyManager(), "eigStrat.sm invalid");
+        assertTrue(eigenStrategy.pauserRegistry() == Env.impl.pauserRegistry(), "eigStrat.pR invalid");
+
+        UpgradeableBeacon strategyBeacon = Env.beacon.strategyBase();
+        assertTrue(strategyBeacon.implementation() == address(Env.impl.strategyBase()), "strategyBeacon.impl invalid");
+
+        uint256 count = Env.instance.strategyBaseTVLLimits_Count();
+        for (uint256 i = 0; i < count; i++) {
+            StrategyBaseTVLLimits strategy = Env.instance.strategyBaseTVLLimits(i);
+
+            assertTrue(strategy.strategyManager() == Env.proxy.strategyManager(), "sFact.sm invalid");
+            assertTrue(strategy.pauserRegistry() == Env.impl.pauserRegistry(), "sFact.pR invalid");
         }
     }
 
@@ -112,14 +115,55 @@ contract Execute is QueueUpgrade {
     function _validateProxiesInitialized() internal {
         bytes memory errInit = "Initializable: contract is already initialized";
 
-        /// AllocationManager
-        AllocationManager allocationManager = Env.impl.allocationManager();
+        AllocationManager allocationManager = Env.proxy.allocationManager();
         vm.expectRevert(errInit);
         allocationManager.initialize(0);
+        assertTrue(allocationManager.paused() == 0, "alm.paused invalid");
 
-        /// StrategyManager
-        StrategyManager strategyManager = Env.impl.strategyManager();
+        DelegationManager delegation = Env.proxy.delegationManager();
+        vm.expectRevert(errInit);
+        delegation.initialize(0);
+        assertTrue(delegation.paused() == 0, "dm.paused invalid");
+
+        StrategyManager strategyManager = Env.proxy.strategyManager();
         vm.expectRevert(errInit);
         strategyManager.initialize(address(0), address(0), 0);
+        assertTrue(strategyManager.owner() == Env.executorMultisig(), "sm.owner invalid");
+        assertTrue(strategyManager.paused() == 0, "sm.paused invalid");
+        assertTrue(
+            strategyManager.strategyWhitelister() == address(Env.proxy.strategyFactory()), "sm.whitelister invalid"
+        );
+
+        EigenPodManager eigenPodManager = Env.proxy.eigenPodManager();
+        vm.expectRevert(errInit);
+        eigenPodManager.initialize(address(0), 0);
+        assertTrue(eigenPodManager.owner() == Env.executorMultisig(), "epm.owner invalid");
+        // For sepolia, eigenpodmanager is paused
+        if (block.chainid != 11_155_111) {
+            assertTrue(eigenPodManager.paused() == 0, "epm.paused invalid");
+        } else {
+            assertTrue(eigenPodManager.paused() == 487, "epm.paused invalid");
+        }
+
+        EigenStrategy eigenStrategy = Env.proxy.eigenStrategy();
+        vm.expectRevert(errInit);
+        eigenStrategy.initialize(IEigen(address(0)), IBackingEigen(address(0)));
+        assertTrue(eigenStrategy.paused() == 0, "eigenStrat.paused invalid");
+        assertTrue(address(eigenStrategy.EIGEN()) == address(Env.proxy.eigen()), "eigenStrat.EIGEN invalid");
+        assertTrue(eigenStrategy.underlyingToken() == Env.proxy.beigen(), "eigenStrat.underlying invalid");
+
+        // StrategyBase proxies are initialized when deployed by factory
+
+        uint256 count = Env.instance.strategyBaseTVLLimits_Count();
+        for (uint256 i = 0; i < count; i++) {
+            StrategyBaseTVLLimits strategy = Env.instance.strategyBaseTVLLimits(i);
+
+            emit log_named_address("strat", address(strategy));
+
+            vm.expectRevert(errInit);
+            strategy.initialize(0, 0, IERC20(address(0)));
+            assertTrue(strategy.maxPerDeposit() == type(uint256).max, "stratTVLLim.maxPerDeposit invalid");
+            assertTrue(strategy.maxTotalDeposits() == type(uint256).max, "stratTVLLim.maxPerDeposit invalid");
+        }
     }
 }
