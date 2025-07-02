@@ -67,6 +67,10 @@ contract DeployDestinationChainImpls is EOADeployer, DeployDestinationChainProxi
         /// @dev This is needed in the production environment tests since this step would fail if the proxies are already deployed
         if (!_areProxiesDeployed()) {
             DeployDestinationChainProxies._runAsMultisig();
+            _unsafeResetHasPranked(); // reset hasPranked so we can use it in the execute()
+        } else {
+            // Since the proxies are already deployed, we need to update the env with the proper addresses
+            _addContractsToEnv();
         }
 
         // 2. Deploy destination chain impls
