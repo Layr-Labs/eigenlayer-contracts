@@ -280,27 +280,9 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
         // First, deploy the new contracts as empty contracts
         emptyContract = new EmptyContract();
-
-        slashEscrowFactory =
-            SlashEscrowFactory(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
-
-        // Multichain
-        keyRegistrar = KeyRegistrar(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
-
         // Deploy new implementation contracts and upgrade all proxies to point to them
         _deployImplementations();
         _upgradeProxies();
-
-        // Initialize the newly-deployed proxy
-        slashEscrowFactory.initialize({
-            initialOwner: communityMultisig,
-            initialPausedStatus: 0,
-            initialGlobalDelayBlocks: INITIAL_GLOBAL_DELAY_BLOCKS
-        });
-
-        // Key Registrar is not initializable. OperatorTableCalculator is not upgradeable.
-        // So we don't need to initialize them.
-
         cheats.stopPrank();
     }
 
@@ -320,8 +302,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             AllocationManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
         permissionController =
             PermissionController(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
-        slashEscrowFactory =
-            SlashEscrowFactory(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
         eigenPodBeacon = new UpgradeableBeacon(address(emptyContract));
         strategyBeacon = new UpgradeableBeacon(address(emptyContract));
 
@@ -332,7 +312,13 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     /// Deploy an implementation contract for each contract in the system
     function _deployImplementations() public {
         allocationManagerImplementation = new AllocationManager(
-            delegationManager, eigenLayerPauserReg, permissionController, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY, version
+            delegationManager,
+            eigenStrategy,
+            eigenLayerPauserReg,
+            permissionController,
+            DEALLOCATION_DELAY,
+            ALLOCATION_CONFIGURATION_DELAY,
+            version
         );
         permissionControllerImplementation = new PermissionController(version);
         delegationManagerImplementation = new DelegationManager(
@@ -344,7 +330,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS,
             version
         );
-        strategyManagerImplementation = new StrategyManager(delegationManager, slashEscrowFactory, eigenLayerPauserReg, version);
+        strategyManagerImplementation = new StrategyManager(allocationManager, delegationManager, eigenLayerPauserReg, version);
         rewardsCoordinatorImplementation = new RewardsCoordinator(
             IRewardsCoordinatorTypes.RewardsCoordinatorConstructorParams({
                 delegationManager: delegationManager,
@@ -364,8 +350,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         eigenPodManagerImplementation =
             new EigenPodManager(DEPOSIT_CONTRACT, eigenPodBeacon, delegationManager, eigenLayerPauserReg, "9.9.9");
         strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg, "9.9.9");
-        slashEscrowFactoryImplementation =
-            new SlashEscrowFactory(allocationManager, strategyManager, eigenLayerPauserReg, new SlashEscrow(), "9.9.9");
 
         // Beacon implementations
         eigenPodImplementation = new EigenPod(DEPOSIT_CONTRACT, eigenPodManager, "v9.9.9");
@@ -417,11 +401,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             ITransparentUpgradeableProxy(payable(address(strategyFactory))), address(strategyFactoryImplementation)
         );
 
-        // SlashEscrowFactory
-        eigenLayerProxyAdmin.upgrade(
-            ITransparentUpgradeableProxy(payable(address(slashEscrowFactory))), address(slashEscrowFactoryImplementation)
-        );
-
         // EigenPod beacon
         eigenPodBeacon.upgradeTo(address(eigenPodImplementation));
 
@@ -456,12 +435,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         allocationManager.initialize({initialPausedStatus: 0});
 
         strategyFactory.initialize({_initialOwner: executorMultisig, _initialPausedStatus: 0, _strategyBeacon: strategyBeacon});
-
-        slashEscrowFactory.initialize({
-            initialOwner: communityMultisig,
-            initialPausedStatus: 0,
-            initialGlobalDelayBlocks: INITIAL_GLOBAL_DELAY_BLOCKS
-        });
     }
 
     /// @dev Deploy a strategy and its underlying token, push to global lists of tokens/strategies, and whitelist

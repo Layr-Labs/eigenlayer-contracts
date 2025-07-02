@@ -51,7 +51,7 @@ interface IStrategyManagerEvents {
         OperatorSet operatorSet, uint256 slashId, IStrategy strategy, uint256 shares
     );
 
-    /// @notice Emitted when shares marked for burning or redistribution are decreased and transferred to the `SlashEscrow`
+    /// @notice Emitted when shares marked for burning or redistribution are decreased and transferred to the operator set's redistribution recipient
     event BurnOrRedistributableSharesDecreased(
         OperatorSet operatorSet, uint256 slashId, IStrategy strategy, uint256 shares
     );
@@ -136,11 +136,11 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
     ) external;
 
     /**
-     * @notice Removes burned shares from storage and transfers the underlying tokens for the slashId to the slash escrow.
+     * @notice Removes burned shares from storage and transfers the underlying tokens for the slashId to the redistribution recipient.
      * @dev Reentrancy is checked in the `clearBurnOrRedistributableSharesByStrategy` function.
      * @param operatorSet The operator set to burn shares in.
      * @param slashId The slash ID to burn shares in.
-     * @return The amounts of tokens transferred to the slash escrow for each strategy
+     * @return The amounts of tokens transferred to the redistribution recipient for each strategy
      */
     function clearBurnOrRedistributableShares(
         OperatorSet calldata operatorSet,
@@ -148,11 +148,11 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
     ) external returns (uint256[] memory);
 
     /**
-     * @notice Removes a single strategy's shares from storage and transfers the underlying tokens for the slashId to the slash escrow.
+     * @notice Removes a single strategy's shares from storage and transfers the underlying tokens for the slashId to the redistribution recipient.
      * @param operatorSet The operator set to burn shares in.
      * @param slashId The slash ID to burn shares in.
      * @param strategy The strategy to burn shares in.
-     * @return The amount of tokens transferred to the slash escrow for the strategy.
+     * @return The amount of tokens transferred to the redistribution recipient for the strategy.
      */
     function clearBurnOrRedistributableSharesByStrategy(
         OperatorSet calldata operatorSet,
@@ -161,7 +161,7 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
     ) external returns (uint256);
 
     /**
-     * @notice Returns the strategies and shares that have NOT been sent to escrow for a given slashId.
+     * @notice Returns the strategies and shares that have NOT been sent to the redistribution recipient for a given slashId.
      * @param operatorSet The operator set to burn or redistribute shares in.
      * @param slashId The slash ID to burn or redistribute shares in.
      * @return The strategies and shares for the given slashId.
@@ -177,7 +177,7 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
      * @param slashId The slash ID to burn or redistribute shares in.
      * @param strategy The strategy to get the shares for.
      * @return The shares for the given strategy for the given slashId.
-     * @dev This function will return revert if the shares have already been sent to escrow.
+     * @dev This function will return revert if the shares have already been sent to the redistribution recipient.
      */
     function getBurnOrRedistributableShares(
         OperatorSet calldata operatorSet,
@@ -186,7 +186,7 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
     ) external view returns (uint256);
 
     /**
-     * @notice Returns the number of strategies that have NOT been sent to escrow for a given slashId.
+     * @notice Returns the number of strategies that have NOT been sent to the redistribution recipient for a given slashId.
      * @param operatorSet The operator set to burn or redistribute shares in.
      * @param slashId The slash ID to burn or redistribute shares in.
      * @return The number of strategies for the given slashId.
@@ -285,4 +285,20 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
         uint256 nonce,
         uint256 expiry
     ) external view returns (bytes32);
+
+    /**
+     * @notice Returns the operator sets that have pending burn or redistributable shares.
+     * @return The operator sets that have pending burn or redistributable shares.
+     */
+    function getPendingOperatorSets() external view returns (OperatorSet[] memory);
+
+    /**
+     * @notice Returns the slash IDs that are pending to be burned or redistributed.
+     * @dev This function will return revert if the operator set has no pending burn or redistributable shares.
+     * @param operatorSet The operator set to get the pending slash IDs for.
+     * @return The slash IDs that are pending to be burned or redistributed.
+     */
+    function getPendingSlashIds(
+        OperatorSet calldata operatorSet
+    ) external view returns (uint256[] memory);
 }

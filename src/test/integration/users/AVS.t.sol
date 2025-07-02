@@ -6,7 +6,6 @@ import "forge-std/Test.sol";
 import "src/contracts/interfaces/IAllocationManager.sol";
 import "src/contracts/interfaces/IPermissionController.sol";
 import "src/contracts/interfaces/IStrategyFactory.sol";
-import "src/contracts/interfaces/ISlashEscrowFactory.sol";
 
 import "src/test/mocks/ERC20Mock.sol";
 import "src/test/integration/users/User.t.sol";
@@ -23,7 +22,6 @@ interface IAVSDeployer {
     function strategyManager() external view returns (IStrategyManager);
     function strategyFactory() external view returns (IStrategyFactory);
     function permissionController() external view returns (IPermissionController);
-    function slashEscrowFactory() external view returns (ISlashEscrowFactory);
     function timeMachine() external view returns (TimeMachine);
     function keyRegistrar() external view returns (IKeyRegistrar);
 }
@@ -40,8 +38,6 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
     IDelegationManager immutable delegationManager;
     IStrategyManager immutable strategyManager;
     IStrategyFactory immutable strategyFactory;
-    ISlashEscrowFactory immutable slashEscrowFactory;
-    IKeyRegistrar immutable keyRegistrar;
     TimeMachine immutable timeMachine;
     string _NAME;
 
@@ -54,8 +50,6 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
         delegationManager = deployer.delegationManager();
         strategyManager = deployer.strategyManager();
         strategyFactory = deployer.strategyFactory();
-        slashEscrowFactory = deployer.slashEscrowFactory();
-        keyRegistrar = deployer.keyRegistrar();
         timeMachine = deployer.timeMachine();
         _NAME = name;
         cheats.label(address(this), NAME_COLORED());
@@ -189,7 +183,6 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
                 )
             );
         }
-        cheats.label(address(slashEscrowFactory.getSlashEscrow(OperatorSet(address(this), params.operatorSetId), slashId)), "slashEscrow");
         _tryPrankAppointee_AllocationManager(IAllocationManager.slashOperator.selector);
         (slashId, shares) = allocationManager.slashOperator(address(this), params);
         print.gasUsed();

@@ -1441,23 +1441,6 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
             uint slashedAtLeast = prevShares[i] - curShares[i];
             // Not factoring in slashable shares in queue here, because that gets more complex (TODO)
             assertTrue(curBurnable >= (prevBurnable + slashedAtLeast), err);
-
-            // TODO: Improve this check in the future, it's not very optimized.
-            // In the future, we can simply use a flag to communicate whether the operator set is redistributable.
-            if (curShares[i] == prevShares[i]) continue;
-            bool flag = false;
-            for (uint j = 0; j < params.strategies.length; j++) {
-                if (params.strategies[j] == BEACONCHAIN_ETH_STRAT) flag = true;
-            }
-            if (flag) continue;
-
-            assertTrue(_getIsPendingOperatorSet(operatorSet), "operator set should be pending");
-
-            assertTrue(_getIsPendingSlashId(operatorSet, slashId), "slash id should be pending");
-            assertFalse(_getPrevIsPendingSlashId(operatorSet, slashId), "slash id should not be pending");
-
-            assertTrue(_getIsDeployedSlashEscrow(operatorSet, slashId), "escrow should be deployed");
-            assertFalse(_getPrevIsDeployedSlashEscrow(operatorSet, slashId), "escrow should not be deployed");
         }
     }
 
@@ -2605,10 +2588,6 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         cheats.roll(latest + 1);
     }
 
-    function _rollBlocksForCompleteSlashEscrow() internal {
-        cheats.roll(block.number + INITIAL_GLOBAL_DELAY_BLOCKS + 1);
-    }
-
     /// @dev Uses timewarp modifier to get the operator set strategy allocations at the last snapshot.
     function _getPrevAllocations(User operator, OperatorSet memory operatorSet, IStrategy[] memory strategies)
         internal
@@ -2801,38 +2780,6 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         return strategy == beaconChainETHStrategy
             ? eigenPodManager.burnableETHShares()
             : strategyManager.getBurnOrRedistributableShares(operatorSet, slashId, strategy);
-    }
-
-    function _getPrevIsPendingOperatorSet(OperatorSet memory operatorSet) internal timewarp returns (bool) {
-        return _getIsPendingOperatorSet(operatorSet);
-    }
-
-    function _getIsPendingOperatorSet(OperatorSet memory operatorSet) internal view returns (bool) {
-        return slashEscrowFactory.isPendingOperatorSet(operatorSet);
-    }
-
-    function _getPrevIsPendingSlashId(OperatorSet memory operatorSet, uint slashId) internal timewarp returns (bool) {
-        return _getIsPendingSlashId(operatorSet, slashId);
-    }
-
-    function _getIsPendingSlashId(OperatorSet memory operatorSet, uint slashId) internal view returns (bool) {
-        return slashEscrowFactory.isPendingSlashId(operatorSet, slashId);
-    }
-
-    function _getPrevEscrowCompleteBlock(OperatorSet memory operatorSet, uint slashId) internal timewarp returns (uint) {
-        return _getEscrowCompleteBlock(operatorSet, slashId);
-    }
-
-    function _getEscrowCompleteBlock(OperatorSet memory operatorSet, uint slashId) internal view returns (uint) {
-        return slashEscrowFactory.getEscrowCompleteBlock(operatorSet, slashId);
-    }
-
-    function _getPrevIsDeployedSlashEscrow(OperatorSet memory operatorSet, uint slashId) internal timewarp returns (bool) {
-        return _getIsDeployedSlashEscrow(operatorSet, slashId);
-    }
-
-    function _getIsDeployedSlashEscrow(OperatorSet memory operatorSet, uint slashId) internal view returns (bool) {
-        return slashEscrowFactory.isDeployedSlashEscrow(operatorSet, slashId);
     }
 
     function _getPrevSlashableSharesInQueue(User operator, IStrategy[] memory strategies) internal timewarp returns (uint[] memory) {

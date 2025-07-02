@@ -2,11 +2,12 @@
 pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
+import "../interfaces/IAllocationManager.sol";
 import "../interfaces/IAVSDirectory.sol";
 import "../interfaces/IDelegationManager.sol";
 import "../interfaces/IEigenPodManager.sol";
-import "../interfaces/ISlashEscrowFactory.sol";
 import "../interfaces/IStrategy.sol";
 import "../interfaces/IStrategyManager.sol";
 
@@ -34,9 +35,9 @@ abstract contract StrategyManagerStorage is IStrategyManager {
 
     // Immutables
 
-    IDelegationManager public immutable delegation;
+    IAllocationManager public immutable allocationManager;
 
-    ISlashEscrowFactory public immutable slashEscrowFactory;
+    IDelegationManager public immutable delegation;
 
     // Mutatables
 
@@ -82,14 +83,20 @@ abstract contract StrategyManagerStorage is IStrategyManager {
     mapping(bytes32 operatorSetKey => mapping(uint256 slashId => EnumerableMap.AddressToUintMap)) internal
         _burnOrRedistributableShares;
 
+    /// @notice Returns a list of operator sets who have pending burn or redistributable shares.
+    EnumerableSet.Bytes32Set internal _pendingOperatorSets;
+
+    /// @notice Returns a list of slash ids for each operator set who have pending burn or redistributable shares.
+    mapping(bytes32 operatorSetKey => EnumerableSet.UintSet) internal _pendingSlashIds;
+
     // Construction
 
     /**
      * @param _delegation The delegation contract of EigenLayer.
      */
-    constructor(IDelegationManager _delegation, ISlashEscrowFactory _slashEscrowFactory) {
+    constructor(IAllocationManager _allocationManager, IDelegationManager _delegation) {
+        allocationManager = _allocationManager;
         delegation = _delegation;
-        slashEscrowFactory = _slashEscrowFactory;
     }
 
     /**
@@ -97,5 +104,5 @@ abstract contract StrategyManagerStorage is IStrategyManager {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[35] private __gap;
+    uint256[31] private __gap;
 }
