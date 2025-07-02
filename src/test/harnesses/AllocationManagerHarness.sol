@@ -18,6 +18,7 @@ contract AllocationManagerHarness is AllocationManager {
     )
         AllocationManager(
             _delegation,
+            _eigenStrategy,
             _pauserRegistry,
             _permissionController,
             _DEALLOCATION_DELAY,

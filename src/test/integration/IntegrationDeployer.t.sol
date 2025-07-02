@@ -280,28 +280,10 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
         // First, deploy the new contracts as empty contracts
         emptyContract = new EmptyContract();
-
-        slashEscrowFactory =
-            SlashEscrowFactory(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
-
-        // Multichain
-        keyRegistrar = KeyRegistrar(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
-
         // Deploy new implementation contracts and upgrade all proxies to point to them
         _deployProxies(); // deploy proxies (if undeployed)
         _deployImplementations();
         _upgradeProxies();
-
-        // Initialize the newly-deployed proxy
-        slashEscrowFactory.initialize({
-            initialOwner: communityMultisig,
-            initialPausedStatus: 0,
-            initialGlobalDelayBlocks: INITIAL_GLOBAL_DELAY_BLOCKS
-        });
-
-        // Key Registrar is not initializable. OperatorTableCalculator is not upgradeable.
-        // So we don't need to initialize them.
-
         cheats.stopPrank();
     }
 
@@ -321,8 +303,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             AllocationManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
         permissionController =
             PermissionController(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
-        slashEscrowFactory =
-            SlashEscrowFactory(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
         eigenPodBeacon = new UpgradeableBeacon(address(emptyContract));
         strategyBeacon = new UpgradeableBeacon(address(emptyContract));
 

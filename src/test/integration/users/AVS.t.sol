@@ -38,8 +38,6 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
     IDelegationManager immutable delegationManager;
     IStrategyManager immutable strategyManager;
     IStrategyFactory immutable strategyFactory;
-    ISlashEscrowFactory immutable slashEscrowFactory;
-    IKeyRegistrar immutable keyRegistrar;
     TimeMachine immutable timeMachine;
     IKeyRegistrar immutable keyRegistrar;
     string _NAME;
@@ -53,8 +51,6 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
         delegationManager = deployer.delegationManager();
         strategyManager = deployer.strategyManager();
         strategyFactory = deployer.strategyFactory();
-        slashEscrowFactory = deployer.slashEscrowFactory();
-        keyRegistrar = deployer.keyRegistrar();
         timeMachine = deployer.timeMachine();
         keyRegistrar = deployer.keyRegistrar();
         _NAME = name;
