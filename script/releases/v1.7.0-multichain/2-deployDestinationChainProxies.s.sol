@@ -90,4 +90,49 @@ contract DeployDestinationChainProxies is MultisigBuilder {
         address admin = address(uint160(uint256(vm.load(address(_proxy), adminSlot))));
         return admin;
     }
+
+    /// @dev Check if the proxies are deployed by checking if the empty contract is deployed
+    function _areProxiesDeployed() internal view returns (bool) {
+        address expectedEmptyContract = CrosschainDeployLib.computeCrosschainAddress({
+            deployer: Env.multichainDeployerMultisig(),
+            initCodeHash: keccak256(type(EmptyContract).creationCode),
+            name: type(EmptyContract).name
+        });
+
+        // If the empty contract is deployed, then the proxies are deployed
+        if (expectedEmptyContract.code.length > 0) {
+            return true;
+        }
+        return false;
+    }
+
+    /// @dev Add the contracts to the env
+    function _addContractsToEnv() internal {
+        address emptyContract = CrosschainDeployLib.computeCrosschainAddress({
+            deployer: Env.multichainDeployerMultisig(),
+            initCodeHash: keccak256(type(EmptyContract).creationCode),
+            name: type(EmptyContract).name
+        });
+        _unsafeAddProxyContract(
+            type(OperatorTableUpdater).name,
+            _computeExpectedProxyAddress(type(OperatorTableUpdater).name, emptyContract)
+        );
+        _unsafeAddProxyContract(
+            type(ECDSACertificateVerifier).name,
+            _computeExpectedProxyAddress(type(ECDSACertificateVerifier).name, emptyContract)
+        );
+        _unsafeAddProxyContract(
+            type(BN254CertificateVerifier).name,
+            _computeExpectedProxyAddress(type(BN254CertificateVerifier).name, emptyContract)
+        );
+    }
+
+    /// @dev Compute the expected proxy address for a given name and empty contract
+    function _computeExpectedProxyAddress(string memory name, address emptyContract) internal view returns (address) {
+        return CrosschainDeployLib.computeCrosschainUpgradeableProxyAddress({
+            adminAndDeployer: Env.multichainDeployerMultisig(),
+            implementation: emptyContract,
+            name: name
+        });
+    }
 }

@@ -42,6 +42,9 @@ contract ConfigureCrossChainRegistry is DeploySourceChain, DeployDestinationChai
         if (!_areProxiesDeployed()) {
             DeployDestinationChainProxies._runAsMultisig();
             _unsafeResetHasPranked(); // reset hasPranked so we can use it in the execute()
+        } else {
+            // Since the proxies are already deployed, we need to update the env with the proper addresses
+            _addContractsToEnv();
         }
 
         // Configure the registry
@@ -155,19 +158,5 @@ contract ConfigureCrossChainRegistry is DeploySourceChain, DeployDestinationChai
         operatorTableUpdaters[1] = operatorTableUpdater;
 
         Env.proxy.crossChainRegistry().addChainIDsToWhitelist(chainIDs, operatorTableUpdaters);
-    }
-
-    function _areProxiesDeployed() internal view returns (bool) {
-        address expectedEmptyContract = CrosschainDeployLib.computeCrosschainAddress({
-            deployer: Env.multichainDeployerMultisig(),
-            initCodeHash: keccak256(type(EmptyContract).creationCode),
-            name: type(EmptyContract).name
-        });
-
-        // If the empty contract is deployed, then the proxies are deployed
-        if (expectedEmptyContract.code.length > 0) {
-            return true;
-        }
-        return false;
     }
 }

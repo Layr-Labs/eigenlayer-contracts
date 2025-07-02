@@ -4,6 +4,7 @@ pragma solidity ^0.8.12;
 import {MultisigBuilder} from "zeus-templates/templates/MultisigBuilder.sol";
 import {DeployDestinationChainProxies} from "./2-deployDestinationChainProxies.s.sol";
 import {DeployDestinationChainImpls} from "./3-deployDestinationChainImpls.s.sol";
+import {CrosschainDeployLib} from "script/releases/CrosschainDeployLib.sol";
 import "../Env.sol";
 
 import "src/contracts/interfaces/ICrossChainRegistry.sol";
@@ -72,9 +73,13 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
         }
 
         // 1. Deploy the destination chain contracts
+        // If proxies are not deployed, deploy them
         if (!_areProxiesDeployed()) {
             DeployDestinationChainProxies._runAsMultisig();
             _unsafeResetHasPranked(); // reset hasPranked so we can use it in the execute()
+        } else {
+            // Since the proxies are already deployed, we need to update the env with the proper addresses
+            _addContractsToEnv();
         }
 
         // 2. Deploy the destination chain impls
