@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        env: [preprod, testnet, mainnet, testnet-sepolia, testnet-hoodi]
+        env: [preprod, testnet, mainnet, testnet-sepolia, testnet-hoodi, testnet-base-sepolia]
 
     steps:
       # Check out repository with all submodules for complete codebase access.
@@ -67,7 +67,7 @@ jobs:
       - name: Validate Solidity Scripts
         run: |
           # Find all .sol files under /script/releases
-          RELEASE_FILES=$(find script/releases -type f -name "*.sol" ! -name "Env.sol" 2>/dev/null || echo "")
+          RELEASE_FILES=$(find script/releases -type f -name "*.sol" ! -name "Env.sol" ! -name "CrosschainDeployLib.sol" 2>/dev/null || echo "")
           
           # Combine file lists
           FILES="$RELEASE_FILES"
@@ -88,6 +88,8 @@ jobs:
             RPC_URL="${{ secrets.RPC_SEPOLIA }}"
           elif [ "${{ matrix.env }}" = "testnet-hoodi" ]; then
             RPC_URL="${{ secrets.RPC_HOODI }}"
+          elif [ "${{ matrix.env }}" = "testnet-base-sepolia" ]; then
+            RPC_URL="${{ secrets.RPC_BASE_SEPOLIA }}"
           elif [ "${{ matrix.env }}" = "mainnet" ]; then
             RPC_URL="${{ secrets.RPC_MAINNET }}"
           fi

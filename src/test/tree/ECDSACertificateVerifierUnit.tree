@@ -1,0 +1,65 @@
+.
+└── ECDSACertificateVerifier (**** denotes that integration tests are needed to fully validate path)
+    ├── when updateOperatorTable is called
+    │   ├── given that the caller is not the table updater
+    │   │   └── it should revert
+    │   ├── given that the reference timestamp is not greater than the latest
+    │   │   └── it should revert
+    │   └── given that all parameters are valid
+    │       └── it should update operator infos, timestamp, owner, and staleness period & emit event
+    ├── when verifyCertificate is called
+    │   ├── given that the reference timestamp does not exist
+    │   │   └── it should revert
+    │   ├── given that the certificate is stale
+    │   │   └── it should revert
+    │   ├── given that the signature is invalid
+    │   │   └── it should revert
+    │   ├── given that a signer is not an operator
+    │   │   └── it should revert
+    │   ├── given that signatures are not ordered by address
+    │   │   └── it should revert
+    │   ├── given that all operators are signers
+    │   │   └── it should return full stake amounts
+    │   └── given that some operators are non-signers
+    │       └── it should deduct non-signer stakes from total
+    ├── when verifyCertificateProportion is called
+    │   ├── given that array lengths mismatch
+    │   │   └── it should revert
+    │   ├── given that the certificate meets thresholds
+    │   │   └── it should return true
+    │   └── given that the certificate does not meet thresholds
+    │       └── it should return false
+    ├── when verifyCertificateNominal is called
+    │   ├── given that array lengths mismatch
+    │   │   └── it should revert
+    │   ├── given that the certificate meets thresholds
+    │   │   └── it should return true
+    │   └── given that the certificate does not meet thresholds
+    │       └── it should return false
+    └── when view functions are called
+        ├── getOperatorSetOwner
+        │   └── it should return the correct owner address
+        ├── maxOperatorTableStaleness
+        │   └── it should return the correct staleness period
+        ├── latestReferenceTimestamp
+        │   └── it should return the latest timestamp
+        ├── getOperatorInfos
+        │   └── it should return all operator infos for the given timestamp
+        ├── getOperatorInfo
+        │   ├── given an out of bounds index
+        │   │   └── it should revert
+        │   └── given a valid index
+        │       └── it should return the correct operator info
+        ├── getOperatorCount
+        │   └── it should return the correct number of operators
+        ├── getTotalStakes
+        │   ├── given that reference timestamp does not exist
+        │   │   └── it should revert
+        │   ├── given that there are no operators
+        │   │   └── it should revert
+        │   └── given valid operators exist
+        │       └── it should return the sum of all operator weights
+        ├── domainSeparator
+        │   └── it should return the EIP-712 domain separator
+        └── calculateCertificateDigest
+            └── it should return the correct digest for given timestamp and message hash 

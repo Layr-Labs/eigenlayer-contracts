@@ -284,6 +284,9 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         slashEscrowFactory =
             SlashEscrowFactory(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
 
+        // Multichain
+        keyRegistrar = KeyRegistrar(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
+
         // Deploy new implementation contracts and upgrade all proxies to point to them
         _deployImplementations();
         _upgradeProxies();
@@ -294,6 +297,9 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             initialPausedStatus: 0,
             initialGlobalDelayBlocks: INITIAL_GLOBAL_DELAY_BLOCKS
         });
+
+        // Key Registrar is not initializable. OperatorTableCalculator is not upgradeable.
+        // So we don't need to initialize them.
 
         cheats.stopPrank();
     }
@@ -318,6 +324,9 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             SlashEscrowFactory(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
         eigenPodBeacon = new UpgradeableBeacon(address(emptyContract));
         strategyBeacon = new UpgradeableBeacon(address(emptyContract));
+
+        // multichain
+        keyRegistrar = KeyRegistrar(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
     }
 
     /// Deploy an implementation contract for each contract in the system
@@ -364,6 +373,9 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
         // Pre-longtail StrategyBaseTVLLimits implementation
         // TODO - need to update ExistingDeploymentParser
+
+        // multichain
+        keyRegistrarImplementation = new KeyRegistrar(permissionController, allocationManager, "9.9.9");
     }
 
     function _upgradeProxies() public noTracing {
@@ -423,6 +435,9 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
                 ITransparentUpgradeableProxy(payable(address(deployedStrategyArray[i]))), address(baseStrategyImplementation)
             );
         }
+
+        // Key Registrar
+        eigenLayerProxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(keyRegistrar))), address(keyRegistrarImplementation));
     }
 
     function _initializeProxies() public noTracing {

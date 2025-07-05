@@ -63,8 +63,6 @@ interface IEigenPodErrors {
 
     /// @dev Thrown when a predeploy request is initiated with insufficient msg.value
     error InsufficientFunds();
-    /// @dev Thrown when refunding excess fees from a predeploy fails
-    error RefundFailed();
     /// @dev Thrown when calling the predeploy fails
     error PredeployFailed();
     /// @dev Thrown when querying a predeploy for its current fee fails
@@ -167,7 +165,7 @@ interface IEigenPodEvents is IEigenPodTypes {
     /// @notice Emitted when a validator is proven for a given checkpoint
     event ValidatorCheckpointed(uint64 indexed checkpointTimestamp, bytes32 indexed pubkeyHash);
 
-    /// @notice Emitted when a validaor is proven to have 0 balance at a given checkpoint
+    /// @notice Emitted when a validator is proven to have 0 balance at a given checkpoint
     event ValidatorWithdrawn(uint64 indexed checkpointTimestamp, bytes32 indexed pubkeyHash);
 
     /// @notice Emitted when a consolidation request is initiated where source == target
@@ -300,8 +298,8 @@ interface IEigenPod is IEigenPodErrors, IEigenPodEvents, ISemVerMixin {
     /// consolidate their validators on the beacon chain.
     /// @param requests An array of requests consisting of the source and target pubkeys
     /// of the validators to be consolidated
-    /// @dev Both the source and target validator MUST have active withdrawal credentials
-    /// pointed at the pod
+    /// @dev The target validator MUST have ACTIVE (proven) withdrawal credentials pointed at
+    /// the pod. This prevents cross-pod consolidations.
     /// @dev The consolidation request predeploy requires a fee is sent with each request;
     /// this is pulled from msg.value. After submitting all requests, any remaining fee is
     /// refunded to the caller by calling its fallback function.
@@ -332,7 +330,8 @@ interface IEigenPod is IEigenPodErrors, IEigenPodEvents, ISemVerMixin {
     /// Some requirements that are NOT checked by the pod:
     /// - If request.srcPubkey == request.targetPubkey, the validator MUST have 0x01 credentials
     /// - If request.srcPubkey != request.targetPubkey, the target validator MUST have 0x02 credentials
-    /// - Both the source and target validators MUST be active and MUST NOT have initiated exits
+    /// - Both the source and target validators MUST be active on the beacon chain and MUST NOT have
+    ///   initiated exits
     /// - The source validator MUST NOT have pending partial withdrawal requests (via `requestWithdrawal`)
     /// - If the source validator is slashed after requesting consolidation (but before processing),
     ///   the consolidation will be skipped.

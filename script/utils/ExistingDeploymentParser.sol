@@ -23,6 +23,9 @@ import "../../src/contracts/pods/EigenPod.sol";
 import "../../src/contracts/pods/EigenPodManager.sol";
 
 import "../../src/contracts/permissions/PauserRegistry.sol";
+import "../../src/contracts/permissions/KeyRegistrar.sol";
+import "../../src/contracts/multichain/BN254CertificateVerifier.sol";
+import "../../src/contracts/multichain/OperatorTableUpdater.sol";
 
 import "../../src/test/mocks/EmptyContract.sol";
 
@@ -149,6 +152,10 @@ contract ExistingDeploymentParser is Script, Logger {
     IBackingEigen public bEIGENImpl;
     EigenStrategy public eigenStrategy;
     EigenStrategy public eigenStrategyImpl;
+
+    /// @dev Multichain
+    KeyRegistrar public keyRegistrar;
+    KeyRegistrar public keyRegistrarImplementation;
 
     /// -----------------------------------------------------------------------
     /// Storage
