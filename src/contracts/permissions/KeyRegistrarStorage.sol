@@ -5,14 +5,6 @@ import "../interfaces/IAllocationManager.sol";
 import "../interfaces/IKeyRegistrar.sol";
 
 abstract contract KeyRegistrarStorage is IKeyRegistrar {
-    // Constants
-
-    /// @dev Gas limit for pairing operations to prevent DoS
-    uint256 internal constant PAIRING_EQUALITY_CHECK_GAS = 400_000;
-
-    /// @dev Hash of zero ECDSA public key (0x04 + 64 zero bytes)
-    bytes32 internal constant ZERO_ECDSA_PUBKEY_HASH = keccak256(abi.encodePacked(bytes1(0x04), new bytes(64)));
-
     // Immutables
 
     /// @dev Reference to the AllocationManager contract
