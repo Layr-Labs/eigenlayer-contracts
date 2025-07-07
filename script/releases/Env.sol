@@ -422,6 +422,12 @@ library Env {
         return ZEnvHelpers.state().envU16(key);
     }
 
+    function _envBool(
+        string memory key
+    ) private view returns (bool) {
+        return ZEnvHelpers.state().envBool(key);
+    }
+
     address internal constant VM_ADDRESS = address(uint160(uint256(keccak256("hevm cheat code"))));
     Vm internal constant vm = Vm(VM_ADDRESS);
 
