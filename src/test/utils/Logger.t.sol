@@ -46,25 +46,11 @@ abstract contract Logger is Test {
     /// Modifiers
     /// -----------------------------------------------------------------------
 
-    // Address used to store a trace counter to allow us to use noTracing
-    // across any contract that inherits Logger
-    address constant LOG_STATE_ADDR = address(0xDEADBEEF);
-    bytes32 constant LOG_STATE_SLOT = bytes32(0);
-
     modifier noTracing() {
-        uint traceCounter = _getTraceCounter();
-        if (traceCounter == 0) cheats.pauseTracing();
-
-        traceCounter++;
-        _setTraceCounter(traceCounter);
-
+        // cheats.pauseTracing();
+        // _;
+        // cheats.resumeTracing();
         _;
-
-        traceCounter = _getTraceCounter();
-        traceCounter--;
-        _setTraceCounter(traceCounter);
-
-        if (traceCounter == 0) cheats.resumeTracing();
     }
 
     modifier noLogging() {
@@ -127,18 +113,6 @@ abstract contract Logger is Test {
     function _toggleLog() internal {
         logging = !logging;
         console.log("\n%s logging %s...", NAME_COLORED(), logging ? "enabled" : "disabled");
-    }
-
-    /// -----------------------------------------------------------------------
-    /// Trace Counter get/set
-    /// -----------------------------------------------------------------------
-
-    function _getTraceCounter() internal view returns (uint) {
-        return uint(cheats.load(LOG_STATE_ADDR, LOG_STATE_SLOT));
-    }
-
-    function _setTraceCounter(uint _newValue) internal {
-        cheats.store(LOG_STATE_ADDR, LOG_STATE_SLOT, bytes32(_newValue));
     }
 }
 
