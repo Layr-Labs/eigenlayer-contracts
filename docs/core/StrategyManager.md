@@ -320,12 +320,12 @@ function clearBurnOrRedistributableSharesByStrategy(
 ) external returns (uint256);
 ```
 
-Anyone can call this method to transfer slashed shares to the slash's `redistributionRecipient`. This method sets the `burnOrRedistributableShares` for the given `slashId` and `operatorSet` to 0. To accommodate the unlimited number of strategies that can be added to an operatorSet, users can also pass in a strategy to clear via `clearBurnOrRedistributableSharesByStrategy`. The strategies that haven not been cleared can be retrieved by calling `getBurnOrRedistributableShares(operatorSet, slashId)`. 
+Anyone can call this method to transfer slashed shares to the operator sets's `redistributionRecipient`. This method sets the `burnOrRedistributableShares` for the given `slashId` and `operatorSet` to 0. To accommodate the unlimited number of strategies that can be added to an operatorSet, users can also pass in a strategy to clear via `clearBurnOrRedistributableSharesByStrategy`. The strategies that haven not been cleared can be retrieved by calling `getBurnOrRedistributableShares(operatorSet, slashId)`. 
 
 *Effects*:
 * Resets the strategy's burn or redistributable shares for the operatorSet and slashId to 0
 * If the shares to remove are nonzero:
-    * Calls `withdraw` on the `strategy`, withdrawing shares and sending a corresponding amount of tokens to the slash's `redistributionRecipient`
+    * Calls `withdraw` on the `strategy`, withdrawing shares and sending a corresponding amount of tokens to the operator sets's `redistributionRecipient`
     * Emits a `BurnOrRedistributableSharesDecreased`
 
 #### `burnShares`

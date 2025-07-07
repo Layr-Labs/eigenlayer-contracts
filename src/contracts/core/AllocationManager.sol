@@ -425,7 +425,7 @@ contract AllocationManager is
         IStrategy strategy,
         bool isRedistributing
     ) internal {
-        // We do not currently support redistributing beaconchain ETH.
+        // We do not currently support redistributing beaconchain ETH or EIGEN.
         if (isRedistributing) {
             require(strategy != BEACONCHAIN_ETH_STRAT && strategy != eigenStrategy, InvalidStrategy());
         }
