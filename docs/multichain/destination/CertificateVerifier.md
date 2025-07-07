@@ -496,6 +496,6 @@ The operator table is updated every 10 days. The staleness period is 5 days. The
 1. Day 1: Table updated
 2. Day 2: Certificate passes
 3. Day 6: Certifiacte verification *fails*
-4. Day 7: A certificate is re-generated. However, even if the
+4. Day 7: A certificate is re-generated. However, this will stale fail as the `referenceTimestamp` would still be day 1 given that was the latest table update
 
-Note that we cannot re-generate a certificate on Day 7
+Note that we cannot re-generate a certificate on Day 7. This is why we recommend that the `stalenessPeriod` is greater than or equal to the update cadence of operator tables. 
