@@ -50,6 +50,8 @@ contract OperatorTableUpdaterUnitTests is
             "1.0.0"
         );
 
+        _setLatestReferenceTimestampBN254(generator, uint32(block.timestamp - 1));
+
         eigenLayerProxyAdmin.upgradeAndCall(
             ITransparentUpgradeableProxy(payable(address(operatorTableUpdater))),
             address(operatorTableUpdaterImplementation),
@@ -64,6 +66,10 @@ contract OperatorTableUpdaterUnitTests is
                 initialOperatorSetConfig // generatorConfig
             )
         );
+    }
+
+    function _setLatestReferenceTimestampBN254(OperatorSet memory operatorSet, uint32 referenceTimestamp) internal {
+        bn254CertificateVerifierMock.setLatestReferenceTimestamp(operatorSet, referenceTimestamp);
     }
 
     /// @dev Sets a valid certificate for the BN254 certificate verifier
@@ -289,10 +295,6 @@ contract OperatorTableUpdaterUnitTests_confirmGlobalTableRoot is OperatorTableUp
 }
 
 contract OperatorTableUpdaterUnitTests_updateOperatorTable_BN254 is OperatorTableUpdaterUnitTests {
-    function _setLatestReferenceTimestampBN254(OperatorSet memory operatorSet, uint32 referenceTimestamp) internal {
-        bn254CertificateVerifierMock.setLatestReferenceTimestamp(operatorSet, referenceTimestamp);
-    }
-
     function testFuzz_BN254_revert_paused(Randomness r) public rand(r) {
         // Pause the updateOperatorTable functionality (bit index 1)
         uint pausedStatus = 1 << 1; // Set bit 1 to pause PAUSED_OPERATOR_TABLE_UPDATE
