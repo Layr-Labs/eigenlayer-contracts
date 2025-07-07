@@ -51,11 +51,12 @@ interface IECDSACertificateVerifier is IECDSACertificateVerifierEvents, IBaseCer
      * @param cert a certificate
      * @return signedStakes amount of stake that signed the certificate for each stake
      * type. Each index corresponds to a stake type in the `weights` array in the `ECDSAOperatorInfo`
+     * @return signers array of addresses that signed the certificate
      */
     function verifyCertificate(
         OperatorSet calldata operatorSet,
         ECDSACertificate memory cert
-    ) external returns (uint256[] memory signedStakes);
+    ) external returns (uint256[] memory signedStakes, address[] memory signers);
 
     /**
      * @notice verifies a certificate and makes sure that the signed stakes meet
@@ -65,12 +66,13 @@ interface IECDSACertificateVerifier is IECDSACertificateVerifierEvents, IBaseCer
      * the signed stake of the certificate should meet. Each index corresponds to
      * a stake type in the `weights` array in the `ECDSAOperatorInfo`
      * @return Whether or not the certificate is valid and meets thresholds
+     * @return signers array of addresses that signed the certificate
      */
     function verifyCertificateProportion(
         OperatorSet calldata operatorSet,
         ECDSACertificate memory cert,
         uint16[] memory totalStakeProportionThresholds
-    ) external returns (bool);
+    ) external returns (bool, address[] memory signers);
 
     /**
      * @notice verifies a certificate and makes sure that the signed stakes meet
@@ -80,12 +82,13 @@ interface IECDSACertificateVerifier is IECDSACertificateVerifierEvents, IBaseCer
      * the signed stake of the certificate should meet. Each index corresponds to
      * a stake type in the `weights` array in the `ECDSAOperatorInfo`
      * @return Whether or not the certificate is valid and meets thresholds
+     * @return signers array of addresses that signed the certificate
      */
     function verifyCertificateNominal(
         OperatorSet calldata operatorSet,
         ECDSACertificate memory cert,
         uint256[] memory totalStakeNominalThresholds
-    ) external returns (bool);
+    ) external returns (bool, address[] memory signers);
 
     /**
      * @notice Get operator infos for a timestamp

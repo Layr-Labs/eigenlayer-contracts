@@ -74,8 +74,9 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
     function verifyCertificate(
         OperatorSet calldata operatorSet,
         ECDSACertificate calldata cert
-    ) external view returns (uint256[] memory) {
-        return _verifyECDSACertificate(operatorSet, cert);
+    ) external view returns (uint256[] memory, address[] memory) {
+        (uint256[] memory signedStakes, address[] memory signers) = _verifyECDSACertificate(operatorSet, cert);
+        return (signedStakes, signers);
     }
 
     ///@inheritdoc IECDSACertificateVerifier
@@ -83,17 +84,17 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
         OperatorSet calldata operatorSet,
         ECDSACertificate calldata cert,
         uint16[] calldata totalStakeProportionThresholds
-    ) external view returns (bool) {
-        uint256[] memory signedStakes = _verifyECDSACertificate(operatorSet, cert);
+    ) external view returns (bool, address[] memory) {
+        (uint256[] memory signedStakes, address[] memory signers) = _verifyECDSACertificate(operatorSet, cert);
         uint256[] memory totalStakes = getTotalStakes(operatorSet, cert.referenceTimestamp);
         require(signedStakes.length == totalStakeProportionThresholds.length, ArrayLengthMismatch());
         for (uint256 i = 0; i < signedStakes.length; i++) {
             uint256 threshold = (totalStakes[i] * totalStakeProportionThresholds[i]) / 10_000;
             if (signedStakes[i] < threshold) {
-                return false;
+                return (false, signers);
             }
         }
-        return true;
+        return (true, signers);
     }
 
     ///@inheritdoc IECDSACertificateVerifier
@@ -101,15 +102,15 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
         OperatorSet calldata operatorSet,
         ECDSACertificate calldata cert,
         uint256[] memory totalStakeNominalThresholds
-    ) external view returns (bool) {
-        uint256[] memory signedStakes = _verifyECDSACertificate(operatorSet, cert);
+    ) external view returns (bool, address[] memory) {
+        (uint256[] memory signedStakes, address[] memory signers) = _verifyECDSACertificate(operatorSet, cert);
         require(signedStakes.length == totalStakeNominalThresholds.length, ArrayLengthMismatch());
         for (uint256 i = 0; i < signedStakes.length; i++) {
             if (signedStakes[i] < totalStakeNominalThresholds[i]) {
-                return false;
+                return (false, signers);
             }
         }
-        return true;
+        return (true, signers);
     }
 
     /**
@@ -120,7 +121,7 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
     function _verifyECDSACertificate(
         OperatorSet calldata operatorSet,
         ECDSACertificate calldata cert
-    ) internal view returns (uint256[] memory) {
+    ) internal view returns (uint256[] memory, address[] memory) {
         bytes32 operatorSetKey = operatorSet.key();
 
         // Assert that reference timestamp is not stale
@@ -171,7 +172,7 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
             }
         }
 
-        return signedStakes;
+        return (signedStakes, signers);
     }
 
     /**
