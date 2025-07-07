@@ -32,11 +32,8 @@ abstract contract CrossChainRegistryStorage is ICrossChainRegistry {
     /// @dev Index for flag that pauses operator set config modifications when set
     uint8 internal constant PAUSED_OPERATOR_SET_CONFIG = 2;
 
-    /// @dev Index for flag that pauses transport destination modifications when set
-    uint8 internal constant PAUSED_TRANSPORT_DESTINATIONS = 3;
-
     /// @dev Index for flag that pauses chain whitelist modifications when set
-    uint8 internal constant PAUSED_CHAIN_WHITELIST = 4;
+    uint8 internal constant PAUSED_CHAIN_WHITELIST = 3;
 
     // Immutables
 
@@ -58,9 +55,6 @@ abstract contract CrossChainRegistryStorage is ICrossChainRegistry {
 
     /// @dev Mapping from operator set key to operator set configuration
     mapping(bytes32 operatorSetKey => OperatorSetConfig) internal _operatorSetConfigs;
-
-    /// @dev Mapping from operator set key to set of chain IDs for transport destinations
-    mapping(bytes32 operatorSetKey => EnumerableSet.UintSet) internal _transportDestinations;
 
     /// CHAIN WHITELISTING
 
