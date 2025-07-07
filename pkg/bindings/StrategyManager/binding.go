@@ -50,7 +50,7 @@ var StrategyManagerABI = StrategyManagerMetaData.ABI
 var StrategyManagerBin = StrategyManagerMetaData.Bin
 
 // DeployStrategyManager deploys a new Ethereum contract, binding an instance of StrategyManager to it.
-func DeployStrategyManager(auth *bind.TransactOpts, backend bind.ContractBackend, _delegation common.Address, _slashEscrowFactory common.Address, _pauserRegistry common.Address, _version string) (common.Address, *types.Transaction, *StrategyManager, error) {
+func DeployStrategyManager(auth *bind.TransactOpts, backend bind.ContractBackend, _allocationManager common.Address, _delegation common.Address, _pauserRegistry common.Address, _version string) (common.Address, *types.Transaction, *StrategyManager, error) {
 	parsed, err := StrategyManagerMetaData.GetAbi()
 	if err != nil {
 		return common.Address{}, nil, nil, err
@@ -59,7 +59,7 @@ func DeployStrategyManager(auth *bind.TransactOpts, backend bind.ContractBackend
 		return common.Address{}, nil, nil, errors.New("GetABI returned nil")
 	}
 
-	address, tx, contract, err := bind.DeployContract(auth, *parsed, common.FromHex(StrategyManagerBin), backend, _delegation, _slashEscrowFactory, _pauserRegistry, _version)
+	address, tx, contract, err := bind.DeployContract(auth, *parsed, common.FromHex(StrategyManagerBin), backend, _allocationManager, _delegation, _pauserRegistry, _version)
 	if err != nil {
 		return common.Address{}, nil, nil, err
 	}
@@ -268,6 +268,37 @@ func (_StrategyManager *StrategyManagerSession) DEPOSITTYPEHASH() ([32]byte, err
 // Solidity: function DEPOSIT_TYPEHASH() view returns(bytes32)
 func (_StrategyManager *StrategyManagerCallerSession) DEPOSITTYPEHASH() ([32]byte, error) {
 	return _StrategyManager.Contract.DEPOSITTYPEHASH(&_StrategyManager.CallOpts)
+}
+
+// AllocationManager is a free data retrieval call binding the contract method 0xca8aa7c7.
+//
+// Solidity: function allocationManager() view returns(address)
+func (_StrategyManager *StrategyManagerCaller) AllocationManager(opts *bind.CallOpts) (common.Address, error) {
+	var out []interface{}
+	err := _StrategyManager.contract.Call(opts, &out, "allocationManager")
+
+	if err != nil {
+		return *new(common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+
+	return out0, err
+
+}
+
+// AllocationManager is a free data retrieval call binding the contract method 0xca8aa7c7.
+//
+// Solidity: function allocationManager() view returns(address)
+func (_StrategyManager *StrategyManagerSession) AllocationManager() (common.Address, error) {
+	return _StrategyManager.Contract.AllocationManager(&_StrategyManager.CallOpts)
+}
+
+// AllocationManager is a free data retrieval call binding the contract method 0xca8aa7c7.
+//
+// Solidity: function allocationManager() view returns(address)
+func (_StrategyManager *StrategyManagerCallerSession) AllocationManager() (common.Address, error) {
+	return _StrategyManager.Contract.AllocationManager(&_StrategyManager.CallOpts)
 }
 
 // CalculateStrategyDepositDigestHash is a free data retrieval call binding the contract method 0x9ac01d61.
@@ -520,6 +551,68 @@ func (_StrategyManager *StrategyManagerCallerSession) GetDeposits(staker common.
 	return _StrategyManager.Contract.GetDeposits(&_StrategyManager.CallOpts, staker)
 }
 
+// GetPendingOperatorSets is a free data retrieval call binding the contract method 0x3f292b08.
+//
+// Solidity: function getPendingOperatorSets() view returns((address,uint32)[])
+func (_StrategyManager *StrategyManagerCaller) GetPendingOperatorSets(opts *bind.CallOpts) ([]OperatorSet, error) {
+	var out []interface{}
+	err := _StrategyManager.contract.Call(opts, &out, "getPendingOperatorSets")
+
+	if err != nil {
+		return *new([]OperatorSet), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([]OperatorSet)).(*[]OperatorSet)
+
+	return out0, err
+
+}
+
+// GetPendingOperatorSets is a free data retrieval call binding the contract method 0x3f292b08.
+//
+// Solidity: function getPendingOperatorSets() view returns((address,uint32)[])
+func (_StrategyManager *StrategyManagerSession) GetPendingOperatorSets() ([]OperatorSet, error) {
+	return _StrategyManager.Contract.GetPendingOperatorSets(&_StrategyManager.CallOpts)
+}
+
+// GetPendingOperatorSets is a free data retrieval call binding the contract method 0x3f292b08.
+//
+// Solidity: function getPendingOperatorSets() view returns((address,uint32)[])
+func (_StrategyManager *StrategyManagerCallerSession) GetPendingOperatorSets() ([]OperatorSet, error) {
+	return _StrategyManager.Contract.GetPendingOperatorSets(&_StrategyManager.CallOpts)
+}
+
+// GetPendingSlashIds is a free data retrieval call binding the contract method 0x7def1564.
+//
+// Solidity: function getPendingSlashIds((address,uint32) operatorSet) view returns(uint256[])
+func (_StrategyManager *StrategyManagerCaller) GetPendingSlashIds(opts *bind.CallOpts, operatorSet OperatorSet) ([]*big.Int, error) {
+	var out []interface{}
+	err := _StrategyManager.contract.Call(opts, &out, "getPendingSlashIds", operatorSet)
+
+	if err != nil {
+		return *new([]*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([]*big.Int)).(*[]*big.Int)
+
+	return out0, err
+
+}
+
+// GetPendingSlashIds is a free data retrieval call binding the contract method 0x7def1564.
+//
+// Solidity: function getPendingSlashIds((address,uint32) operatorSet) view returns(uint256[])
+func (_StrategyManager *StrategyManagerSession) GetPendingSlashIds(operatorSet OperatorSet) ([]*big.Int, error) {
+	return _StrategyManager.Contract.GetPendingSlashIds(&_StrategyManager.CallOpts, operatorSet)
+}
+
+// GetPendingSlashIds is a free data retrieval call binding the contract method 0x7def1564.
+//
+// Solidity: function getPendingSlashIds((address,uint32) operatorSet) view returns(uint256[])
+func (_StrategyManager *StrategyManagerCallerSession) GetPendingSlashIds(operatorSet OperatorSet) ([]*big.Int, error) {
+	return _StrategyManager.Contract.GetPendingSlashIds(&_StrategyManager.CallOpts, operatorSet)
+}
+
 // GetStakerStrategyList is a free data retrieval call binding the contract method 0xde44acb6.
 //
 // Solidity: function getStakerStrategyList(address staker) view returns(address[])
@@ -736,37 +829,6 @@ func (_StrategyManager *StrategyManagerSession) PauserRegistry() (common.Address
 // Solidity: function pauserRegistry() view returns(address)
 func (_StrategyManager *StrategyManagerCallerSession) PauserRegistry() (common.Address, error) {
 	return _StrategyManager.Contract.PauserRegistry(&_StrategyManager.CallOpts)
-}
-
-// SlashEscrowFactory is a free data retrieval call binding the contract method 0x5b84087f.
-//
-// Solidity: function slashEscrowFactory() view returns(address)
-func (_StrategyManager *StrategyManagerCaller) SlashEscrowFactory(opts *bind.CallOpts) (common.Address, error) {
-	var out []interface{}
-	err := _StrategyManager.contract.Call(opts, &out, "slashEscrowFactory")
-
-	if err != nil {
-		return *new(common.Address), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
-
-	return out0, err
-
-}
-
-// SlashEscrowFactory is a free data retrieval call binding the contract method 0x5b84087f.
-//
-// Solidity: function slashEscrowFactory() view returns(address)
-func (_StrategyManager *StrategyManagerSession) SlashEscrowFactory() (common.Address, error) {
-	return _StrategyManager.Contract.SlashEscrowFactory(&_StrategyManager.CallOpts)
-}
-
-// SlashEscrowFactory is a free data retrieval call binding the contract method 0x5b84087f.
-//
-// Solidity: function slashEscrowFactory() view returns(address)
-func (_StrategyManager *StrategyManagerCallerSession) SlashEscrowFactory() (common.Address, error) {
-	return _StrategyManager.Contract.SlashEscrowFactory(&_StrategyManager.CallOpts)
 }
 
 // StakerDepositShares is a free data retrieval call binding the contract method 0xfe243a17.
