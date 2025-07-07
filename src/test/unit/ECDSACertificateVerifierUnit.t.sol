@@ -441,7 +441,7 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificate is ECDSACertificate
         IECDSACertificateVerifierTypes.ECDSACertificate memory cert =
             _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators, signerPrivKeys);
 
-        uint[] memory signedStakes = verifier.verifyCertificate(defaultOperatorSet, cert);
+        (uint[] memory signedStakes, address[] memory signers) = verifier.verifyCertificate(defaultOperatorSet, cert);
 
         // Calculate total stakes
         uint[] memory totalStakes = new uint[](2);
@@ -470,7 +470,7 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificate is ECDSACertificate
         IECDSACertificateVerifierTypes.ECDSACertificate memory cert =
             _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators, signerPrivKeys);
 
-        uint[] memory signedStakes = verifier.verifyCertificate(defaultOperatorSet, cert);
+        (uint[] memory signedStakes, address[] memory signers) = verifier.verifyCertificate(defaultOperatorSet, cert);
 
         // Check that the signed stakes are correct
         assertEq(signedStakes.length, 2, "Wrong number of stake types");
@@ -525,7 +525,7 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificate is ECDSACertificate
         IECDSACertificateVerifierTypes.ECDSACertificate memory cert =
             _createCertificate(secondTimestamp, defaultMsgHash, nonSignerIndices, operators, signerPrivKeys);
 
-        uint[] memory signedStakes = verifier.verifyCertificate(defaultOperatorSet, cert);
+        (uint[] memory signedStakes, address[] memory signers) = verifier.verifyCertificate(defaultOperatorSet, cert);
 
         // Verify all stakes are signed
         uint[] memory totalStakes = new uint[](2);
@@ -565,7 +565,7 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificate is ECDSACertificate
         IECDSACertificateVerifierTypes.ECDSACertificate memory cert =
             _createCertificate(secondTimestamp, defaultMsgHash, nonSignerIndices, secondOperators, signerPrivKeys);
 
-        uint[] memory signedStakes = verifier.verifyCertificate(defaultOperatorSet, cert);
+        (uint[] memory signedStakes, address[] memory signers) = verifier.verifyCertificate(defaultOperatorSet, cert);
 
         // Verify only signers' stakes are counted
         uint[] memory expectedSignedStakes = new uint[](2);
@@ -800,7 +800,7 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificateProportion is ECDSAC
         thresholds[0] = 6000; // 60%
         thresholds[1] = 6000; // 60%
 
-        bool meetsThresholds = verifier.verifyCertificateProportion(defaultOperatorSet, cert, thresholds);
+        (bool meetsThresholds, address[] memory signers) = verifier.verifyCertificateProportion(defaultOperatorSet, cert, thresholds);
 
         // Calculate expected result based on the number of signers
         uint signedPercentage = (numSigners * 10_000) / numOperators;
@@ -829,10 +829,10 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificateProportion is ECDSAC
         thresholds[0] = 9000; // 90%
         thresholds[1] = 9000; // 90%
 
-        bool meetsThresholds = verifier.verifyCertificateProportion(defaultOperatorSet, cert, thresholds);
+        (bool meetsThresholds, address[] memory signers) = verifier.verifyCertificateProportion(defaultOperatorSet, cert, thresholds);
 
         // Calculate percentage of signed stakes to determine if it should meet threshold
-        uint[] memory signedStakes = verifier.verifyCertificate(defaultOperatorSet, cert);
+        (uint[] memory signedStakes, address[] memory certSigners) = verifier.verifyCertificate(defaultOperatorSet, cert);
         uint[] memory totalStakes = verifier.getTotalStakes(defaultOperatorSet, referenceTimestamp);
         uint signedPercentage0 = (signedStakes[0] * 10_000) / totalStakes[0];
         uint signedPercentage1 = (signedStakes[1] * 10_000) / totalStakes[1];
@@ -864,10 +864,10 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificateProportion is ECDSAC
         thresholds[0] = threshold0;
         thresholds[1] = threshold1;
 
-        bool meetsThresholds = verifier.verifyCertificateProportion(defaultOperatorSet, cert, thresholds);
+        (bool meetsThresholds, address[] memory signers) = verifier.verifyCertificateProportion(defaultOperatorSet, cert, thresholds);
 
         // Calculate expected result
-        uint[] memory signedStakes = verifier.verifyCertificate(defaultOperatorSet, cert);
+        (uint[] memory signedStakes, address[] memory certSigners) = verifier.verifyCertificate(defaultOperatorSet, cert);
         uint[] memory totalStakes = verifier.getTotalStakes(defaultOperatorSet, referenceTimestamp);
 
         bool expectedResult = true;
@@ -927,14 +927,14 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificateNominal is ECDSACert
             _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators, signerPrivKeys);
 
         // Get the signed stakes for reference
-        uint[] memory signedStakes = verifier.verifyCertificate(defaultOperatorSet, cert);
+        (uint[] memory signedStakes, address[] memory certSigners) = verifier.verifyCertificate(defaultOperatorSet, cert);
 
         // Test with thresholds lower than signed stakes (should pass)
         uint[] memory passThresholds = new uint[](2);
         passThresholds[0] = signedStakes[0] > 10 ? signedStakes[0] - 10 : 0;
         passThresholds[1] = signedStakes[1] > 10 ? signedStakes[1] - 10 : 0;
 
-        bool meetsThresholds = verifier.verifyCertificateNominal(defaultOperatorSet, cert, passThresholds);
+        (bool meetsThresholds, address[] memory signers) = verifier.verifyCertificateNominal(defaultOperatorSet, cert, passThresholds);
         assertTrue(meetsThresholds, "Certificate should meet nominal thresholds");
     }
 
@@ -954,14 +954,14 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificateNominal is ECDSACert
             _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators, signerPrivKeys);
 
         // Get the signed stakes for reference
-        uint[] memory signedStakes = verifier.verifyCertificate(defaultOperatorSet, cert);
+        (uint[] memory signedStakes, address[] memory certSigners) = verifier.verifyCertificate(defaultOperatorSet, cert);
 
         // Test with thresholds higher than signed stakes (should fail)
         uint[] memory failThresholds = new uint[](2);
         failThresholds[0] = signedStakes[0] + 10;
         failThresholds[1] = signedStakes[1] + 10;
 
-        bool meetsThresholds = verifier.verifyCertificateNominal(defaultOperatorSet, cert, failThresholds);
+        (bool meetsThresholds, address[] memory signers) = verifier.verifyCertificateNominal(defaultOperatorSet, cert, failThresholds);
         assertFalse(meetsThresholds, "Certificate should not meet impossible nominal thresholds");
     }
 
@@ -982,20 +982,20 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificateNominal is ECDSACert
             _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators, signerPrivKeys);
 
         // Get the signed stakes for reference
-        uint[] memory signedStakes = verifier.verifyCertificate(defaultOperatorSet, cert);
+        (uint[] memory signedStakes,) = verifier.verifyCertificate(defaultOperatorSet, cert);
 
         // Bound thresholds to reasonable values
-        threshold0 = bound(threshold0, 0, signedStakes[0] * 2);
-        threshold1 = bound(threshold1, 0, signedStakes[1] * 2);
+        uint boundedThreshold0 = bound(threshold0, 0, signedStakes[0] * 2);
+        uint boundedThreshold1 = bound(threshold1, 0, signedStakes[1] * 2);
 
         uint[] memory thresholds = new uint[](2);
-        thresholds[0] = threshold0;
-        thresholds[1] = threshold1;
+        thresholds[0] = boundedThreshold0;
+        thresholds[1] = boundedThreshold1;
 
-        bool meetsThresholds = verifier.verifyCertificateNominal(defaultOperatorSet, cert, thresholds);
+        (bool meetsThresholds,) = verifier.verifyCertificateNominal(defaultOperatorSet, cert, thresholds);
 
         // Expected result
-        bool expectedResult = (signedStakes[0] >= threshold0) && (signedStakes[1] >= threshold1);
+        bool expectedResult = (signedStakes[0] >= boundedThreshold0) && (signedStakes[1] >= boundedThreshold1);
 
         assertEq(meetsThresholds, expectedResult, "Nominal threshold check mismatch");
     }
