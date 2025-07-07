@@ -76,7 +76,7 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
         ECDSACertificate calldata cert
     ) external view returns (uint256[] memory, address[] memory) {
         (uint256[] memory signedStakes, address[] memory signers) = _verifyECDSACertificate(operatorSet, cert);
-        return (signedStakes, signers)
+        return (signedStakes, signers);
     }
 
     ///@inheritdoc IECDSACertificateVerifier
@@ -91,7 +91,7 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
         for (uint256 i = 0; i < signedStakes.length; i++) {
             uint256 threshold = (totalStakes[i] * totalStakeProportionThresholds[i]) / 10_000;
             if (signedStakes[i] < threshold) {
-                return false;
+                return (false, signers);
             }
         }
         return (true, signers);
@@ -107,7 +107,7 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
         require(signedStakes.length == totalStakeNominalThresholds.length, ArrayLengthMismatch());
         for (uint256 i = 0; i < signedStakes.length; i++) {
             if (signedStakes[i] < totalStakeNominalThresholds[i]) {
-                return false;
+                return (false, signers);
             }
         }
         return (true, signers);
