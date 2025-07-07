@@ -128,7 +128,6 @@ contract DeployDestinationChainImpls is EOADeployer, DeployDestinationChainProxi
             0, // initial paused status
             dummyOperatorSet, // generator
             0, // globalRootConfirmationThreshold
-            bytes32(0), // initialGlobalTableRoot
             0, // referenceTimestamp
             dummyBN254Info, // generatorInfo
             dummyConfig // generatorConfig

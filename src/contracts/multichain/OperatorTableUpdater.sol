@@ -40,8 +40,7 @@ contract OperatorTableUpdater is
      * @param initialPausedStatus The initial paused status of the OperatorTableUpdater
      * @param generator The operatorSet which certifies against global roots
      * @param _globalRootConfirmationThreshold The threshold, in bps, for a global root to be signed off on and updated
-     * @param initialGlobalTableRoot The initial global table root containing the generator as the only leaf
-     * @param referenceTimestamp The reference timestamp for I'mthe global root confirmer set
+     * @param referenceTimestamp The reference timestamp for the global root confirmer set
      * @param generatorInfo The operatorSetInfo for the global root confirmer set
      * @param generatorConfig The operatorSetConfig for the global root confirmer set
      */
@@ -50,7 +49,6 @@ contract OperatorTableUpdater is
         uint256 initialPausedStatus,
         OperatorSet calldata generator,
         uint16 _globalRootConfirmationThreshold,
-        bytes32 initialGlobalTableRoot,
         uint32 referenceTimestamp,
         BN254OperatorSetInfo calldata generatorInfo,
         OperatorSetConfig calldata generatorConfig
@@ -59,6 +57,17 @@ contract OperatorTableUpdater is
         _setPausedStatus(initialPausedStatus);
         _generator = generator;
         _setGlobalRootConfirmationThreshold(_globalRootConfirmationThreshold);
+
+        // Calculate the initial global table root containing the generator as the only leaf
+        bytes memory generatorOperatorTable =
+            abi.encode(generator, CurveType.BN254, generatorConfig, abi.encode(generatorInfo));
+        bytes32 generatorLeafHash = keccak256(generatorOperatorTable);
+
+        // Create merkle tree with generator as first leaf and dummy data for additional leaves
+        bytes32[] memory leaves = new bytes32[](2);
+        leaves[0] = generatorLeafHash;
+        leaves[1] = bytes32(uint256(1));
+        bytes32 initialGlobalTableRoot = Merkle.merkleizeKeccak(leaves);
 
         // Set the initial global table root first, before updating the generator
         _globalTableRoots[referenceTimestamp] = initialGlobalTableRoot;

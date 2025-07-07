@@ -31,13 +31,16 @@ contract OperatorTableUpdaterUnitTests is
         EigenLayerMultichainUnitTestSetup.setUp();
 
         // Setup a mock Bn254OperatorSetInfo for the initial table update on initialization
-        BN254OperatorSetInfo memory initialOperatorSetInfo = BN254OperatorSetInfo({
-            operatorInfoTreeRoot: bytes32(0),
-            numOperators: 1,
-            aggregatePubkey: BN254.G1Point({X: 1, Y: 2}),
-            totalWeights: new uint[](1)
-        });
-        OperatorSetConfig memory initialOperatorSetConfig = OperatorSetConfig({owner: address(0xDEADBEEF), maxStalenessPeriod: 10_000});
+        BN254OperatorSetInfo memory initialOperatorSetInfo;
+        initialOperatorSetInfo.numOperators = 1;
+        initialOperatorSetInfo.operatorInfoTreeRoot = bytes32(uint(1));
+        initialOperatorSetInfo.totalWeights = new uint[](1);
+        initialOperatorSetInfo.totalWeights[0] = 1;
+        initialOperatorSetInfo.aggregatePubkey = BN254.G1Point({X: 1, Y: 2});
+
+        OperatorSetConfig memory initialOperatorSetConfig;
+        initialOperatorSetConfig.owner = address(0xDEADBEEF);
+        initialOperatorSetConfig.maxStalenessPeriod = 0;
 
         operatorTableUpdater =
             OperatorTableUpdater(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
@@ -52,9 +55,6 @@ contract OperatorTableUpdaterUnitTests is
 
         _setLatestReferenceTimestampBN254(generator, uint32(block.timestamp - 1));
 
-        // Create initial global table root
-        bytes32 initialGlobalTableRoot = _createInitialGlobalTableRoot(initialOperatorSetInfo, initialOperatorSetConfig);
-
         eigenLayerProxyAdmin.upgradeAndCall(
             ITransparentUpgradeableProxy(payable(address(operatorTableUpdater))),
             address(operatorTableUpdaterImplementation),
@@ -64,7 +64,6 @@ contract OperatorTableUpdaterUnitTests is
                 0, // initialPausedStatus
                 generator, // generator
                 GLOBAL_ROOT_CONFIRMATION_THRESHOLD, // globalRootConfirmationThreshold
-                initialGlobalTableRoot, // initialGlobalTableRoot
                 uint32(block.timestamp - 1), // referenceTimestamp
                 initialOperatorSetInfo, // generatorInfo
                 initialOperatorSetConfig // generatorConfig
@@ -226,7 +225,6 @@ contract OperatorTableUpdaterUnitTests_initialize is OperatorTableUpdaterUnitTes
             uint(0),
             generator,
             GLOBAL_ROOT_CONFIRMATION_THRESHOLD,
-            bytes32(0), // dummy value for reinitialization test
             uint32(block.timestamp - 1),
             initialOperatorSetInfo,
             initialOperatorSetConfig
