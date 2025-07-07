@@ -356,6 +356,14 @@ library Env {
     /**
      * Helpers
      */
+    function isSourceChain() internal view returns (bool) {
+        return _envBool("SOURCE_CHAIN");
+    }
+
+    function isDestinationChain() internal view returns (bool) {
+        return _envBool("DESTINATION_CHAIN");
+    }
+
     function _deployedInstance(string memory name, uint256 idx) private view returns (address) {
         return ZEnvHelpers.state().deployedInstance(name, idx);
     }
@@ -412,6 +420,12 @@ library Env {
         string memory key
     ) private view returns (uint16) {
         return ZEnvHelpers.state().envU16(key);
+    }
+
+    function _envBool(
+        string memory key
+    ) private view returns (bool) {
+        return ZEnvHelpers.state().envBool(key);
     }
 
     address internal constant VM_ADDRESS = address(uint160(uint256(keccak256("hevm cheat code"))));

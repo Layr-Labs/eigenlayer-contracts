@@ -321,10 +321,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         }
         if (address(eigenPodBeacon) == address(0)) eigenPodBeacon = new UpgradeableBeacon(address(emptyContract));
         if (address(strategyBeacon) == address(0)) strategyBeacon = new UpgradeableBeacon(address(emptyContract));
-        // multichain
-        if (address(keyRegistrar) == address(0)) {
-            keyRegistrar = KeyRegistrar(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
-        }
     }
 
     /// Deploy an implementation contract for each contract in the system

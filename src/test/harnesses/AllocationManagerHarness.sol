@@ -21,7 +21,7 @@ contract AllocationManagerHarness is AllocationManager {
             _permissionController,
             _DEALLOCATION_DELAY,
             _ALLOCATION_CONFIGURATION_DELAY,
-            TestConstants.TEST_VERSION
+            "9.9.9"
         )
     {}
 
