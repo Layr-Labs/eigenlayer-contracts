@@ -10,7 +10,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
  * Purpose: use an EOA to deploy all of the new contracts for this upgrade.
- * This upgrade deploys a `SlashEscrowFactory` and a `SlashEscrow`. In addition it also upgrades:
+ * This upgrade upgrades:
  * - `AllocationManager`
  * - `DelegationManager`
  * - `StrategyManager`
@@ -22,47 +22,6 @@ contract Deploy is EOADeployer {
 
     function _runAsEOA() internal override {
         vm.startBroadcast();
-
-        /// SlashEscrow
-        deployImpl({name: type(SlashEscrow).name, deployedTo: address(new SlashEscrow())});
-
-        /// SlashEscrowFactory
-
-        // For the `SlashEscrowFactory`, we use a different proxy admin where the community multisig is the admin
-        address communityMultisig = Env.communityMultisig();
-        ProxyAdmin proxyAdmin = new ProxyAdmin();
-        proxyAdmin.transferOwnership(communityMultisig);
-
-        deployImpl({
-            name: type(SlashEscrowFactory).name,
-            deployedTo: address(
-                new SlashEscrowFactory({
-                    _allocationManager: Env.proxy.allocationManager(),
-                    _strategyManager: Env.proxy.strategyManager(),
-                    _pauserRegistry: Env.impl.pauserRegistry(),
-                    _slashEscrowImplementation: Env.impl.slashEscrow(),
-                    _version: Env.deployVersion()
-                })
-            )
-        });
-
-        deployProxy({
-            name: type(SlashEscrowFactory).name,
-            deployedTo: address(
-                new TransparentUpgradeableProxy({
-                    _logic: address(Env.impl.slashEscrowFactory()),
-                    admin_: address(proxyAdmin),
-                    _data: abi.encodeCall(
-                        SlashEscrowFactory.initialize,
-                        (
-                            Env.executorMultisig(), // initialOwner
-                            0, // initialPausedStatus
-                            Env.SLASH_ESCROW_DELAY() // initialGlobalDelayBlocks
-                        )
-                    )
-                })
-            )
-        });
 
         // Core contracts: AllocationManager, DelegationManager, StrategyManager, EigenPodManager, Strategies
 
@@ -103,7 +62,6 @@ contract Deploy is EOADeployer {
             deployedTo: address(
                 new StrategyManager({
                     _delegation: Env.proxy.delegationManager(),
-                    _slashEscrowFactory: Env.proxy.slashEscrowFactory(),
                     _pauserRegistry: Env.impl.pauserRegistry(),
                     _version: Env.deployVersion()
                 })
@@ -160,19 +118,10 @@ contract Deploy is EOADeployer {
         });
 
         vm.stopBroadcast();
-
-        // Update environment variables
-        zUpdate("slashEscrowProxyAdmin", address(proxyAdmin));
     }
 
     function testScript() public virtual {
         _runAsEOA();
-
-        // Validate slashEscrowFactory-specific variable
-        SlashEscrowFactory slashEscrowFactory = Env.proxy.slashEscrowFactory();
-        assertTrue(slashEscrowFactory.owner() == Env.executorMultisig(), "sef.owner invalid");
-        assertTrue(slashEscrowFactory.paused() == 0, "sef.paused invalid");
-        assertTrue(slashEscrowFactory.getGlobalEscrowDelay() == Env.SLASH_ESCROW_DELAY(), "sef.globalDelay invalid");
 
         _validateNewImplAddresses({areMatching: false});
         _validateProxyAdmins();
@@ -189,8 +138,6 @@ contract Deploy is EOADeployer {
     function _validateNewImplAddresses(
         bool areMatching
     ) internal view {
-        /// can't check `SlashEscrowFactory` because it wasn't previously deployed
-
         function (bool, string memory) internal pure assertion = areMatching ? _assertTrue : _assertFalse;
 
         assertion(
@@ -225,11 +172,8 @@ contract Deploy is EOADeployer {
     }
 
     /// @dev Ensure each deployed TUP/beacon is owned by the proxyAdmin/executorMultisig
-    /// @dev Ensure the `SlashEscrowProxyAdmin` is owned by the slashEscrowProxyAdmin/communityMultisig
     function _validateProxyAdmins() internal view {
         address pa = Env.proxyAdmin();
-        address slashEscrowProxyAdmin = Env.slashEscrowProxyAdmin();
-        assertFalse(slashEscrowProxyAdmin == pa, "slashEscrowProxyAdmin invalid");
 
         assertTrue(
             _getProxyAdmin(address(Env.proxy.delegationManager())) == pa, "delegationManager proxyAdmin incorrect"
@@ -256,29 +200,10 @@ contract Deploy is EOADeployer {
                 "strategyBaseTVLLimits proxyAdmin incorrect"
             );
         }
-
-        // SlashEscrowProxyAdmin - proxyAdmin is unique and its admin is the community multisig
-        assertTrue(
-            _getSlashEscrowProxyAdmin(address(Env.proxy.slashEscrowFactory())) == slashEscrowProxyAdmin,
-            "slashEscrowFactory proxyAdmin incorrect"
-        );
-        assertTrue(
-            Ownable(address(slashEscrowProxyAdmin)).owner() == Env.communityMultisig(),
-            "slashEscrowProxyAdmin owner incorrect"
-        );
     }
 
     /// @dev Validate the immutables set in the new implementation constructors
     function _validateImplConstructors() internal view {
-        // SlashEscrow has no constructor
-        {
-            SlashEscrowFactory slashEscrowFactory = Env.impl.slashEscrowFactory();
-            assertTrue(slashEscrowFactory.allocationManager() == Env.proxy.allocationManager(), "sef.alm invalid");
-            assertTrue(slashEscrowFactory.strategyManager() == Env.proxy.strategyManager(), "sef.sm invalid");
-            assertTrue(slashEscrowFactory.pauserRegistry() == Env.impl.pauserRegistry(), "sef.pR invalid");
-            assertTrue(slashEscrowFactory.slashEscrowImplementation() == Env.impl.slashEscrow(), "sef.se invalid");
-        }
-
         {
             DelegationManager delegation = Env.impl.delegationManager();
             assertTrue(delegation.strategyManager() == Env.proxy.strategyManager(), "dm.sm invalid");
@@ -306,7 +231,6 @@ contract Deploy is EOADeployer {
         {
             StrategyManager strategyManager = Env.impl.strategyManager();
             assertTrue(strategyManager.delegation() == Env.proxy.delegationManager(), "sm.dm invalid");
-            assertTrue(strategyManager.slashEscrowFactory() == Env.proxy.slashEscrowFactory(), "sm.sef invalid");
             assertTrue(strategyManager.pauserRegistry() == Env.impl.pauserRegistry(), "sm.pR invalid");
         }
 
@@ -339,10 +263,6 @@ contract Deploy is EOADeployer {
     /// @dev Call initialize on all deployed implementations to ensure initializers are disabled
     function _validateImplsInitialized() internal {
         bytes memory errInit = "Initializable: contract is already initialized";
-
-        SlashEscrowFactory slashEscrowFactory = Env.impl.slashEscrowFactory();
-        vm.expectRevert(errInit);
-        slashEscrowFactory.initialize(address(0), 0, 0);
 
         AllocationManager allocationManager = Env.impl.allocationManager();
         vm.expectRevert(errInit);
@@ -378,7 +298,6 @@ contract Deploy is EOADeployer {
         // On future upgrades, just tick the major/minor/patch to validate
         string memory expected = Env.deployVersion();
 
-        assertEq(Env.impl.slashEscrowFactory().version(), expected, "slashEscrowFactory version mismatch");
         assertEq(Env.impl.delegationManager().version(), expected, "delegationManager version mismatch");
         assertEq(Env.impl.allocationManager().version(), expected, "allocationManager version mismatch");
         assertEq(Env.impl.strategyManager().version(), expected, "strategyManager version mismatch");
@@ -400,12 +319,6 @@ contract Deploy is EOADeployer {
         address proxy
     ) internal view returns (address) {
         return ProxyAdmin(Env.proxyAdmin()).getProxyAdmin(ITransparentUpgradeableProxy(proxy));
-    }
-
-    function _getSlashEscrowProxyAdmin(
-        address proxy
-    ) internal view returns (address) {
-        return ProxyAdmin(Env.slashEscrowProxyAdmin()).getProxyAdmin(ITransparentUpgradeableProxy(proxy));
     }
 
     function _assertTrue(bool b, string memory err) private pure {
