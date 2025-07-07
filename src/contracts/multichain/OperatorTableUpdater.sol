@@ -59,7 +59,7 @@ contract OperatorTableUpdater is
         _setPausedStatus(initialPausedStatus);
         _setGenerator(_generator);
         _setGlobalRootConfirmationThreshold(_globalRootConfirmationThreshold);
-        _updateGenerator(referenceTimestamp, generatorInfo, generatorConfig);
+        _updateGenerator(generatorInfo, generatorConfig);
 
         // Set the latest reference timestamp
         _latestReferenceTimestamp = referenceTimestamp;
@@ -349,12 +349,10 @@ contract OperatorTableUpdater is
 
     /**
      * @notice Updates the operator table for the global root confirmer set
-     * @param referenceTimestamp The reference timestamp of the operator table update
      * @param generatorInfo The operatorSetInfo for the global root confirmer set
      * @param generatorConfig The operatorSetConfig for the global root confirmer set
      */
     function _updateGenerator(
-        uint32 referenceTimestamp,
         BN254OperatorSetInfo calldata generatorInfo,
         OperatorSetConfig calldata generatorConfig
     ) internal {
