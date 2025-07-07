@@ -39,7 +39,6 @@ contract QueueUpgrade is MultisigBuilder, Deploy {
 
         execute();
 
-
         assertTrue(
             Env.proxy.strategyFactory().isBlacklisted(IERC20(address(Env.proxy.eigen()))), "eigen should be blacklisted"
         );
