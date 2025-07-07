@@ -250,7 +250,9 @@ contract BN254CertificateVerifierUnitTests is
             _createOperatorsWithSplitKeys(123, numOperators, 0);
         BN254OperatorSetInfo memory operatorSetInfo = _createOperatorSetInfo(operatorInfos);
         vm.prank(address(operatorTableUpdaterMock));
-        verifier.updateOperatorTable(defaultOperatorSet, uint32(block.timestamp), operatorSetInfo, defaultOperatorSetConfig);
+        referenceTimestamp = uint32(block.timestamp);
+        verifier.updateOperatorTable(defaultOperatorSet, referenceTimestamp, operatorSetInfo, defaultOperatorSetConfig);
+        return referenceTimestamp;
     }
 }
 

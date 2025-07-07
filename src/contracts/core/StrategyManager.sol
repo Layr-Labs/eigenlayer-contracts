@@ -28,9 +28,12 @@ contract StrategyManager is
     StrategyManagerStorage,
     SignatureUtilsMixin
 {
+    using OperatorSetLib for *;
     using SlashingLib for *;
     using SafeERC20 for IERC20;
     using EnumerableMap for EnumerableMap.AddressToUintMap;
+    using EnumerableSet for EnumerableSet.Bytes32Set;
+    using EnumerableSet for EnumerableSet.UintSet;
 
     modifier onlyStrategyWhitelister() {
         require(msg.sender == strategyWhitelister, OnlyStrategyWhitelister());
@@ -53,15 +56,11 @@ contract StrategyManager is
      * @param _delegation The delegation contract of EigenLayer.
      */
     constructor(
+        IAllocationManager _allocationManager,
         IDelegationManager _delegation,
-        ISlashEscrowFactory _slashEscrowFactory,
         IPauserRegistry _pauserRegistry,
         string memory _version
-    )
-        StrategyManagerStorage(_delegation, _slashEscrowFactory)
-        Pausable(_pauserRegistry)
-        SignatureUtilsMixin(_version)
-    {
+    ) StrategyManagerStorage(_allocationManager, _delegation) Pausable(_pauserRegistry) SignatureUtilsMixin(_version) {
         _disableInitializers();
     }
 
@@ -162,8 +161,10 @@ contract StrategyManager is
         // Add the shares to the operator set's burn or redistributable shares.
         require(burnOrRedistributableShares.set(address(strategy), sharesToBurn), StrategyAlreadyInSlash());
 
-        // Notify the `SlashEscrowFactory` contract that it received underlying tokens to burn or redistribute.
-        slashEscrowFactory.initiateSlashEscrow(operatorSet, slashId, strategy);
+        // NOTE: Duplicate operator sets and slash ids will not revert, but will not be added.
+        _pendingOperatorSets.add(operatorSet.key());
+        _pendingSlashIds[operatorSet.key()].add(slashId);
+
         emit BurnOrRedistributableSharesIncreased(operatorSet, slashId, strategy, sharesToBurn);
     }
 
@@ -179,7 +180,12 @@ contract StrategyManager is
 
         // Note: We don't need to iterate backwards since we're indexing into the `EnumerableMap` directly.
         for (uint256 i = 0; i < length; ++i) {
-            amounts[i] = clearBurnOrRedistributableSharesByStrategy(operatorSet, slashId, IStrategy(strategies[i]));
+            amounts[i] = _clearBurnOrRedistributableShares({
+                operatorSet: operatorSet,
+                slashId: slashId,
+                strategy: IStrategy(strategies[i]),
+                recipient: allocationManager.getRedistributionRecipient(operatorSet)
+            });
         }
 
         return amounts;
@@ -190,27 +196,13 @@ contract StrategyManager is
         OperatorSet calldata operatorSet,
         uint256 slashId,
         IStrategy strategy
-    ) public returns (uint256) {
-        EnumerableMap.AddressToUintMap storage burnOrRedistributableShares =
-            _burnOrRedistributableShares[operatorSet.key()][slashId];
-
-        (, uint256 sharesToRemove) = burnOrRedistributableShares.tryGet(address(strategy));
-        burnOrRedistributableShares.remove(address(strategy));
-
-        uint256 amountOut;
-        if (sharesToRemove != 0) {
-            // Withdraw the shares to the slash escrow.
-            amountOut = IStrategy(strategy).withdraw({
-                recipient: address(slashEscrowFactory.getSlashEscrow(operatorSet, slashId)),
-                token: IStrategy(strategy).underlyingToken(),
-                amountShares: sharesToRemove
-            });
-
-            // Emit an event to notify the that burnable shares have been decreased.
-            emit BurnOrRedistributableSharesDecreased(operatorSet, slashId, strategy, sharesToRemove);
-        }
-
-        return amountOut;
+    ) external nonReentrant returns (uint256) {
+        return _clearBurnOrRedistributableShares({
+            operatorSet: operatorSet,
+            slashId: slashId,
+            strategy: strategy,
+            recipient: allocationManager.getRedistributionRecipient(operatorSet)
+        });
     }
 
     /// @inheritdoc IStrategyManager
@@ -388,6 +380,54 @@ contract StrategyManager is
     }
 
     /**
+     * @notice Clears burn/redistributable shares and sends underlying tokens to recipient.
+     * @param operatorSet The operator set to clear the shares for.
+     * @param slashId The slash id to clear the shares for.
+     * @param strategy The strategy to clear the shares for.
+     * @param recipient The recipient to withdraw the shares to.
+     */
+    function _clearBurnOrRedistributableShares(
+        OperatorSet calldata operatorSet,
+        uint256 slashId,
+        IStrategy strategy,
+        address recipient
+    ) internal returns (uint256) {
+        EnumerableMap.AddressToUintMap storage burnOrRedistributableShares =
+            _burnOrRedistributableShares[operatorSet.key()][slashId];
+
+        (, uint256 sharesToRemove) = burnOrRedistributableShares.tryGet(address(strategy));
+        burnOrRedistributableShares.remove(address(strategy));
+
+        uint256 amountOut;
+        if (sharesToRemove != 0) {
+            // Withdraw the shares to the burn address.
+            amountOut = IStrategy(strategy).withdraw({
+                recipient: recipient,
+                token: IStrategy(strategy).underlyingToken(),
+                amountShares: sharesToRemove
+            });
+
+            // Emit an event to notify the that burnable shares have been decreased.
+            emit BurnOrRedistributableSharesDecreased(operatorSet, slashId, strategy, sharesToRemove);
+        }
+
+        uint256 remainingStrategies = burnOrRedistributableShares.keys().length;
+
+        // If there are no more strategies to burn or redistribute...
+        if (remainingStrategies == 0) {
+            // Remove the slash id from the pending slash ids.
+            _pendingSlashIds[operatorSet.key()].remove(slashId);
+
+            // If there are no more pending slash ids for this operator set, remove the operator set from the pending operator sets.
+            if (_pendingSlashIds[operatorSet.key()].length() == 0) {
+                _pendingOperatorSets.remove(operatorSet.key());
+            }
+        }
+
+        return amountOut;
+    }
+
+    /**
      * @notice Internal function for modifying the `strategyWhitelister`. Used inside of the `setStrategyWhitelister` and `initialize` functions.
      * @param newStrategyWhitelister The new address for the `strategyWhitelister` to take.
      */
@@ -512,5 +552,22 @@ contract StrategyManager is
         }
 
         return (strategies, shares);
+    }
+
+    /// @inheritdoc IStrategyManager
+    function getPendingOperatorSets() external view returns (OperatorSet[] memory) {
+        uint256 totalEntries = _pendingOperatorSets.length();
+        OperatorSet[] memory operatorSets = new OperatorSet[](totalEntries);
+        for (uint256 i = 0; i < totalEntries; i++) {
+            operatorSets[i] = _pendingOperatorSets.at(i).decode();
+        }
+        return operatorSets;
+    }
+
+    /// @inheritdoc IStrategyManager
+    function getPendingSlashIds(
+        OperatorSet calldata operatorSet
+    ) external view returns (uint256[] memory) {
+        return _pendingSlashIds[operatorSet.key()].values();
     }
 }

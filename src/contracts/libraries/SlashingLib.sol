@@ -36,6 +36,9 @@ library SlashingLib {
     using SlashingLib for uint256;
     using SafeCastUpgradeable for uint256;
 
+    /// @dev Thrown if an updated deposit scaling factor is 0 to avoid underflow.
+    error InvalidDepositScalingFactor();
+
     // WAD MATH
 
     function mulWad(uint256 x, uint256 y) internal pure returns (uint256) {
@@ -135,6 +138,9 @@ library SlashingLib {
             .divWad(slashingFactor);
 
         dsf._scalingFactor = newDepositScalingFactor;
+
+        // Avoid potential underflow.
+        require(newDepositScalingFactor != 0, InvalidDepositScalingFactor());
     }
 
     /// @dev Reset the staker's DSF for a strategy by setting it to 0. This is the same
