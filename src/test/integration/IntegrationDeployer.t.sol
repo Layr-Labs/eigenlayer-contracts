@@ -281,32 +281,50 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         // First, deploy the new contracts as empty contracts
         emptyContract = new EmptyContract();
         // Deploy new implementation contracts and upgrade all proxies to point to them
+        _deployProxies(); // deploy proxies (if undeployed)
         _deployImplementations();
         _upgradeProxies();
         cheats.stopPrank();
     }
 
     function _deployProxies() public {
-        delegationManager =
-            DelegationManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
-        strategyManager =
-            StrategyManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
-        eigenPodManager =
-            EigenPodManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
-        rewardsCoordinator =
-            RewardsCoordinator(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
-        avsDirectory = AVSDirectory(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
-        strategyFactory =
-            StrategyFactory(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
-        allocationManager =
-            AllocationManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
-        permissionController =
-            PermissionController(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
-        eigenPodBeacon = new UpgradeableBeacon(address(emptyContract));
-        strategyBeacon = new UpgradeableBeacon(address(emptyContract));
-
+        if (address(delegationManager) == address(0)) {
+            delegationManager =
+                DelegationManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
+        }
+        if (address(strategyManager) == address(0)) {
+            strategyManager =
+                StrategyManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
+        }
+        if (address(eigenPodManager) == address(0)) {
+            eigenPodManager =
+                EigenPodManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
+        }
+        if (address(rewardsCoordinator) == address(0)) {
+            rewardsCoordinator =
+                RewardsCoordinator(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
+        }
+        if (address(avsDirectory) == address(0)) {
+            avsDirectory = AVSDirectory(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
+        }
+        if (address(strategyFactory) == address(0)) {
+            strategyFactory =
+                StrategyFactory(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
+        }
+        if (address(allocationManager) == address(0)) {
+            allocationManager =
+                AllocationManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
+        }
+        if (address(permissionController) == address(0)) {
+            permissionController =
+                PermissionController(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
+        }
+        if (address(eigenPodBeacon) == address(0)) eigenPodBeacon = new UpgradeableBeacon(address(emptyContract));
+        if (address(strategyBeacon) == address(0)) strategyBeacon = new UpgradeableBeacon(address(emptyContract));
         // multichain
-        keyRegistrar = KeyRegistrar(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
+        if (address(keyRegistrar) == address(0)) {
+            keyRegistrar = KeyRegistrar(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
+        }
     }
 
     /// Deploy an implementation contract for each contract in the system
