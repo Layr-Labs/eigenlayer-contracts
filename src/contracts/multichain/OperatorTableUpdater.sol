@@ -38,42 +38,42 @@ contract OperatorTableUpdater is
      * @notice Initializes the OperatorTableUpdater
      * @param owner The owner of the OperatorTableUpdater
      * @param initialPausedStatus The initial paused status of the OperatorTableUpdater
-     * @param _generator The operatorSet which certifies against global roots
+     * @param generator The operatorSet which certifies against global roots
      * @param _globalRootConfirmationThreshold The threshold, in bps, for a global root to be signed off on and updated
-     * @param referenceTimestamp The reference timestamp for the global root confirmer set
+     * @param initialGlobalTableRoot The initial global table root containing the generator as the only leaf
+     * @param referenceTimestamp The reference timestamp for I'mthe global root confirmer set
      * @param generatorInfo The operatorSetInfo for the global root confirmer set
      * @param generatorConfig The operatorSetConfig for the global root confirmer set
-     * @dev We also update the operator table for the global root confirmer set, to begin signing off on global roots
-     * @dev Uses INITIAL_GLOBAL_TABLE_ROOT constant to break circular dependency for certificate verification
      */
     function initialize(
         address owner,
         uint256 initialPausedStatus,
-        OperatorSet calldata _generator,
+        OperatorSet calldata generator,
         uint16 _globalRootConfirmationThreshold,
+        bytes32 initialGlobalTableRoot,
         uint32 referenceTimestamp,
         BN254OperatorSetInfo calldata generatorInfo,
         OperatorSetConfig calldata generatorConfig
     ) external initializer {
         _transferOwnership(owner);
         _setPausedStatus(initialPausedStatus);
-        _setGenerator(_generator);
+        _generator = generator;
         _setGlobalRootConfirmationThreshold(_globalRootConfirmationThreshold);
-        _updateGenerator(referenceTimestamp, generatorInfo, generatorConfig);
 
-        /// @dev The first global table root is the `INITIAL_GLOBAL_TABLE_ROOT`
-        /// @dev This is used to enable the first call to `confirmGlobalTableRoot` to pass since it expects
-        /// @dev the `Generator` to have a valid initial global table root
-        _globalTableRoots[referenceTimestamp] = INITIAL_GLOBAL_TABLE_ROOT;
-        _isRootValid[INITIAL_GLOBAL_TABLE_ROOT] = true;
+        // Set the initial global table root first, before updating the generator
+        _globalTableRoots[referenceTimestamp] = initialGlobalTableRoot;
+        _isRootValid[initialGlobalTableRoot] = true;
         _referenceBlockNumbers[referenceTimestamp] = uint32(block.number);
         _referenceTimestamps[uint32(block.number)] = referenceTimestamp;
 
         // Set the latest reference timestamp
         _latestReferenceTimestamp = referenceTimestamp;
 
+        // Now update the generator's operator table
+        _updateGenerator(referenceTimestamp, generatorInfo, generatorConfig);
+
         // Emit the initial global table root event
-        emit NewGlobalTableRoot(referenceTimestamp, INITIAL_GLOBAL_TABLE_ROOT);
+        emit NewGlobalTableRoot(referenceTimestamp, initialGlobalTableRoot);
     }
 
     /**
@@ -172,13 +172,6 @@ contract OperatorTableUpdater is
      */
 
     /// @inheritdoc IOperatorTableUpdater
-    function setGenerator(
-        OperatorSet calldata operatorSet
-    ) external onlyOwner {
-        _setGenerator(operatorSet);
-    }
-
-    /// @inheritdoc IOperatorTableUpdater
     function setGlobalRootConfirmationThreshold(
         uint16 bps
     ) external onlyOwner {
@@ -194,15 +187,6 @@ contract OperatorTableUpdater is
 
         _isRootValid[globalTableRoot] = false;
         emit GlobalRootDisabled(globalTableRoot);
-    }
-
-    /// @inheritdoc IOperatorTableUpdater
-    function updateGenerator(
-        uint32 referenceTimestamp,
-        BN254OperatorSetInfo calldata generatorInfo,
-        OperatorSetConfig calldata generatorConfig
-    ) external onlyOwner {
-        _updateGenerator(referenceTimestamp, generatorInfo, generatorConfig);
     }
 
     /**
@@ -330,17 +314,6 @@ contract OperatorTableUpdater is
             }),
             InvalidOperatorSetProof()
         );
-    }
-
-    /**
-     * @notice Sets the global root confirmer set
-     * @param operatorSet The operatorSet which certifies against global roots
-     */
-    function _setGenerator(
-        OperatorSet calldata operatorSet
-    ) internal {
-        _generator = operatorSet;
-        emit GeneratorUpdated(operatorSet);
     }
 
     /**

@@ -52,6 +52,9 @@ contract OperatorTableUpdaterUnitTests is
 
         _setLatestReferenceTimestampBN254(generator, uint32(block.timestamp - 1));
 
+        // Create initial global table root
+        bytes32 initialGlobalTableRoot = _createInitialGlobalTableRoot(initialOperatorSetInfo, initialOperatorSetConfig);
+
         eigenLayerProxyAdmin.upgradeAndCall(
             ITransparentUpgradeableProxy(payable(address(operatorTableUpdater))),
             address(operatorTableUpdaterImplementation),
@@ -61,11 +64,28 @@ contract OperatorTableUpdaterUnitTests is
                 0, // initialPausedStatus
                 generator, // generator
                 GLOBAL_ROOT_CONFIRMATION_THRESHOLD, // globalRootConfirmationThreshold
-                block.timestamp - 1, // referenceTimestamp
+                initialGlobalTableRoot, // initialGlobalTableRoot
+                uint32(block.timestamp - 1), // referenceTimestamp
                 initialOperatorSetInfo, // generatorInfo
                 initialOperatorSetConfig // generatorConfig
             )
         );
+    }
+
+    function _createInitialGlobalTableRoot(
+        BN254OperatorSetInfo memory initialOperatorSetInfo,
+        OperatorSetConfig memory initialOperatorSetConfig
+    ) internal view returns (bytes32) {
+        // Create global table root containing the generator operator set
+        bytes memory generatorOperatorTable =
+            abi.encode(generator, CurveType.BN254, initialOperatorSetConfig, abi.encode(initialOperatorSetInfo));
+        bytes32 generatorLeafHash = keccak256(generatorOperatorTable);
+
+        // Create merkle tree with generator as first leaf and dummy data for additional leaves
+        bytes32[] memory leaves = new bytes32[](2);
+        leaves[0] = generatorLeafHash;
+        leaves[1] = bytes32(uint(1));
+        return Merkle.merkleizeKeccak(leaves);
     }
 
     function _setLatestReferenceTimestampBN254(OperatorSet memory operatorSet, uint32 referenceTimestamp) internal {
@@ -199,12 +219,14 @@ contract OperatorTableUpdaterUnitTests_initialize is OperatorTableUpdaterUnitTes
     function test_initialize_revert_reinitialization() public {
         BN254OperatorSetInfo memory initialOperatorSetInfo;
         OperatorSetConfig memory initialOperatorSetConfig;
+
         cheats.expectRevert("Initializable: contract is already initialized");
         operatorTableUpdater.initialize(
             address(this),
             uint(0),
             generator,
             GLOBAL_ROOT_CONFIRMATION_THRESHOLD,
+            bytes32(0), // dummy value for reinitialization test
             uint32(block.timestamp - 1),
             initialOperatorSetInfo,
             initialOperatorSetConfig
@@ -663,34 +685,6 @@ contract OperatorTableUpdaterUnitTests_getters is OperatorTableUpdaterUnitTests 
     }
 }
 
-contract OperatorTableUpdaterUnitTests_setGenerator is OperatorTableUpdaterUnitTests {
-    function testFuzz_revert_onlyOwner(Randomness r) public rand(r) {
-        address invalidCaller = r.Address();
-        cheats.assume(invalidCaller != address(this));
-        OperatorSet memory newSet;
-
-        // Should revert when called by non-owner
-        cheats.prank(invalidCaller);
-        cheats.expectRevert("Ownable: caller is not the owner");
-        operatorTableUpdater.setGenerator(newSet);
-    }
-
-    function testFuzz_correctness(Randomness r) public rand(r) {
-        // Generate random operator set
-        OperatorSet memory newOperatorSet = OperatorSet({avs: r.Address(), id: r.Uint32()});
-
-        // Set the generator
-        cheats.expectEmit(true, true, true, true);
-        emit GeneratorUpdated(newOperatorSet);
-        operatorTableUpdater.setGenerator(newOperatorSet);
-
-        // Verify the storage was updated
-        OperatorSet memory updatedGenerator = operatorTableUpdater.getGenerator();
-        assertEq(updatedGenerator.avs, newOperatorSet.avs);
-        assertEq(updatedGenerator.id, newOperatorSet.id);
-    }
-}
-
 contract OperatorTableUpdaterUnitTests_setGlobalRootConfirmationThreshold is OperatorTableUpdaterUnitTests {
     function testFuzz_revert_onlyOwner(Randomness r) public rand(r) {
         address invalidCaller = r.Address();
@@ -767,41 +761,6 @@ contract OperatorTableUpdaterUnitTests_disableRoot is OperatorTableUpdaterUnitTe
     }
 }
 
-contract OperatorTableUpdaterUnitTests_updateGenerator is OperatorTableUpdaterUnitTests {
-    function testFuzz_revert_onlyOwner(Randomness r) public rand(r) {
-        address invalidCaller = r.Address();
-        cheats.assume(invalidCaller != address(this));
-        BN254OperatorSetInfo memory operatorSetInfo;
-        OperatorSetConfig memory operatorSetConfig;
-
-        // Should revert when called by non-owner
-        cheats.prank(invalidCaller);
-        cheats.expectRevert("Ownable: caller is not the owner");
-        operatorTableUpdater.updateGenerator(uint32(block.timestamp), operatorSetInfo, operatorSetConfig);
-    }
-
-    function testFuzz_correctness(Randomness r) public rand(r) {
-        // Generate random operator set info and config
-        BN254OperatorSetInfo memory operatorSetInfo = _generateRandomBN254OperatorSetInfo(r);
-        OperatorSetConfig memory operatorSetConfig = _generateRandomOperatorSetConfig(r);
-        uint32 referenceTimestamp = r.Uint32(uint32(block.timestamp), type(uint32).max);
-
-        // Update the generator
-        cheats.expectCall(
-            address(bn254CertificateVerifierMock),
-            abi.encodeWithSelector(
-                IBN254CertificateVerifier.updateOperatorTable.selector, generator, referenceTimestamp, operatorSetInfo, operatorSetConfig
-            )
-        );
-        operatorTableUpdater.updateGenerator(referenceTimestamp, operatorSetInfo, operatorSetConfig);
-
-        // Check that the generator is updated
-        OperatorSet memory updatedGenerator = operatorTableUpdater.getGenerator();
-        assertEq(updatedGenerator.avs, generator.avs);
-        assertEq(updatedGenerator.id, generator.id);
-    }
-}
-
 contract OperatorTableUpdaterUnitTests_isRootValid is OperatorTableUpdaterUnitTests {
     function testFuzz_isRootValid_byRoot(Randomness r) public rand(r) {
         bytes32 globalTableRoot = bytes32(r.Uint256());
@@ -848,8 +807,137 @@ contract OperatorTableUpdaterUnitTests_isRootValid is OperatorTableUpdaterUnitTe
     }
 }
 
+contract OperatorTableUpdaterUnitTests_generatorUpdateFlow is OperatorTableUpdaterUnitTests {
+    function test_generatorUpdate_viaStandardFlow() public {
+        // Create updated generator information
+        BN254OperatorSetInfo memory newGeneratorInfo = BN254OperatorSetInfo({
+            operatorInfoTreeRoot: bytes32(uint(123)),
+            numOperators: 5,
+            aggregatePubkey: BN254.G1Point({X: 999, Y: 888}),
+            totalWeights: new uint[](2)
+        });
+        newGeneratorInfo.totalWeights[0] = 100;
+        newGeneratorInfo.totalWeights[1] = 200;
+
+        OperatorSetConfig memory newGeneratorConfig = OperatorSetConfig({owner: address(0x1234), maxStalenessPeriod: 5000});
+
+        // Encode the generator operator table
+        bytes memory generatorOperatorTable = abi.encode(generator, CurveType.BN254, newGeneratorConfig, abi.encode(newGeneratorInfo));
+        bytes32 generatorLeafHash = keccak256(generatorOperatorTable);
+
+        // Create global table root containing the updated generator
+        bytes32[] memory leaves = new bytes32[](4);
+        leaves[0] = generatorLeafHash;
+        leaves[1] = bytes32(uint(1));
+        leaves[2] = bytes32(uint(2));
+        leaves[3] = bytes32(uint(3));
+        bytes32 newGlobalTableRoot = Merkle.merkleizeKeccak(leaves);
+
+        // Confirm the new global table root
+        uint32 newReferenceTimestamp = uint32(block.timestamp + 100);
+        uint32 newReferenceBlockNumber = uint32(block.number + 10);
+
+        cheats.warp(uint(newReferenceTimestamp));
+        cheats.roll(uint(newReferenceBlockNumber));
+
+        BN254Certificate memory certificate;
+        certificate.messageHash =
+            operatorTableUpdater.getGlobalTableUpdateMessageHash(newGlobalTableRoot, newReferenceTimestamp, newReferenceBlockNumber);
+        _setIsValidCertificate(certificate, true);
+
+        operatorTableUpdater.confirmGlobalTableRoot(certificate, newGlobalTableRoot, newReferenceTimestamp, newReferenceBlockNumber);
+
+        // Update the generator using the standard updateOperatorTable flow
+        bytes memory proof = Merkle.getProofKeccak(leaves, 0);
+
+        cheats.expectCall(
+            address(bn254CertificateVerifierMock),
+            abi.encodeWithSelector(
+                IBN254CertificateVerifier.updateOperatorTable.selector,
+                generator,
+                newReferenceTimestamp,
+                newGeneratorInfo,
+                newGeneratorConfig
+            )
+        );
+
+        operatorTableUpdater.updateOperatorTable(newReferenceTimestamp, newGlobalTableRoot, 0, proof, generatorOperatorTable);
+
+        // Update mock state to reflect the change
+        _setLatestReferenceTimestampBN254(generator, newReferenceTimestamp);
+
+        // Verify the generator reference timestamp was updated
+        assertEq(operatorTableUpdater.getGeneratorReferenceTimestamp(), newReferenceTimestamp);
+    }
+
+    function test_generatorUpdate_sequential() public {
+        // Verify initial generator state from initialization
+        OperatorSet memory initialGenerator = operatorTableUpdater.getGenerator();
+        assertEq(initialGenerator.avs, generator.avs);
+        assertEq(initialGenerator.id, generator.id);
+
+        // Create updated generator information
+        BN254OperatorSetInfo memory updatedGeneratorInfo = BN254OperatorSetInfo({
+            operatorInfoTreeRoot: bytes32(uint(456)),
+            numOperators: 3,
+            aggregatePubkey: BN254.G1Point({X: 777, Y: 555}),
+            totalWeights: new uint[](1)
+        });
+        updatedGeneratorInfo.totalWeights[0] = 300;
+
+        OperatorSetConfig memory updatedGeneratorConfig = OperatorSetConfig({owner: address(0x5678), maxStalenessPeriod: 8000});
+
+        // Encode the updated generator operator table
+        bytes memory updatedGeneratorOperatorTable =
+            abi.encode(generator, CurveType.BN254, updatedGeneratorConfig, abi.encode(updatedGeneratorInfo));
+
+        bytes32 updatedGeneratorLeafHash = keccak256(updatedGeneratorOperatorTable);
+
+        // Create new global table root with updated generator
+        bytes32[] memory newLeaves = new bytes32[](2);
+        newLeaves[0] = updatedGeneratorLeafHash;
+        newLeaves[1] = bytes32(uint(999));
+        bytes32 updatedGlobalTableRoot = Merkle.merkleizeKeccak(newLeaves);
+
+        // Confirm the updated global table root
+        uint32 updatedReferenceTimestamp = uint32(block.timestamp + 200);
+        uint32 updatedReferenceBlockNumber = uint32(block.number + 20);
+
+        cheats.warp(uint(updatedReferenceTimestamp));
+        cheats.roll(uint(updatedReferenceBlockNumber));
+
+        BN254Certificate memory updatedCertificate;
+        updatedCertificate.messageHash = operatorTableUpdater.getGlobalTableUpdateMessageHash(
+            updatedGlobalTableRoot, updatedReferenceTimestamp, updatedReferenceBlockNumber
+        );
+        _setIsValidCertificate(updatedCertificate, true);
+
+        operatorTableUpdater.confirmGlobalTableRoot(
+            updatedCertificate, updatedGlobalTableRoot, updatedReferenceTimestamp, updatedReferenceBlockNumber
+        );
+
+        // Update the generator through standard flow
+        bytes memory updatedProof = Merkle.getProofKeccak(newLeaves, 0);
+
+        operatorTableUpdater.updateOperatorTable(
+            updatedReferenceTimestamp, updatedGlobalTableRoot, 0, updatedProof, updatedGeneratorOperatorTable
+        );
+
+        // Update mock state to reflect the change
+        _setLatestReferenceTimestampBN254(generator, updatedReferenceTimestamp);
+
+        // Verify the generator reference timestamp was updated
+        assertEq(operatorTableUpdater.getGeneratorReferenceTimestamp(), updatedReferenceTimestamp);
+
+        // Verify the generator operator set identifier remains unchanged
+        OperatorSet memory finalGenerator = operatorTableUpdater.getGenerator();
+        assertEq(finalGenerator.avs, generator.avs);
+        assertEq(finalGenerator.id, generator.id);
+    }
+}
+
 contract OperatorTableUpdaterUnitTests_IntegrationScenarios is OperatorTableUpdaterUnitTests {
-    function test_disableRoot_updateConfirmerSet_confirmGlobalTableRoot_succeeds() public {
+    function test_disableRoot_setGenerator_confirmGlobalTableRoot_succeeds() public {
         // Step 1: Set an initial global table root
         bytes32 oldGlobalTableRoot = bytes32(uint(1));
         _updateGlobalTableRoot(oldGlobalTableRoot);
@@ -858,26 +946,12 @@ contract OperatorTableUpdaterUnitTests_IntegrationScenarios is OperatorTableUpda
         cheats.prank(pauser);
         operatorTableUpdater.disableRoot(oldGlobalTableRoot);
 
-        // Step 3: Set a new generator
-        OperatorSet memory newGenerator = OperatorSet({avs: address(0xBEEF), id: 1});
-        operatorTableUpdater.setGenerator(newGenerator);
+        // Note: Generator updates now follow the standard operator table update flow:
+        // 1. Create a new global table root that includes the updated generator
+        // 2. Call confirmGlobalTableRoot() with the new root
+        // 3. Call updateOperatorTable() with the generator's proof against the new root
 
-        // Step 4: Update the generator operator table
-        BN254OperatorSetInfo memory newOperatorSetInfo = BN254OperatorSetInfo({
-            operatorInfoTreeRoot: bytes32(uint(2)),
-            numOperators: 2,
-            aggregatePubkey: BN254.G1Point({X: 3, Y: 4}),
-            totalWeights: new uint[](1)
-        });
-        newOperatorSetInfo.totalWeights[0] = 100 ether;
-        OperatorSetConfig memory newOperatorSetConfig = OperatorSetConfig({owner: address(0xBEEF), maxStalenessPeriod: 20_000});
-
-        // Set the generator reference timestamp in the mock
-        bn254CertificateVerifierMock.setLatestReferenceTimestamp(newGenerator, uint32(block.timestamp));
-
-        operatorTableUpdater.updateGenerator(uint32(block.timestamp), newOperatorSetInfo, newOperatorSetConfig);
-
-        // Step 5: Confirm a new global table root with the new generator
+        // Step 3: Confirm a new global table root
         bytes32 newGlobalTableRoot = bytes32(uint(2));
         uint32 newReferenceTimestamp = uint32(block.timestamp + 1);
         uint32 newReferenceBlockNumber = uint32(block.number + 1);
@@ -898,29 +972,5 @@ contract OperatorTableUpdaterUnitTests_IntegrationScenarios is OperatorTableUpda
 
         // Verify the new root was set
         assertEq(operatorTableUpdater.getCurrentGlobalTableRoot(), newGlobalTableRoot);
-    }
-
-    function test_setNewGenerator_withoutUpdatingTable_confirmGlobalTableRoot_fails() public {
-        // Step 1: Set a new generator without updating its operator table
-        OperatorSet memory newGenerator = OperatorSet({avs: address(0xDEAD), id: 2});
-        operatorTableUpdater.setGenerator(newGenerator);
-
-        // Step 2: Try to confirm a new global table root
-        bytes32 newGlobalTableRoot = bytes32(uint(3));
-        uint32 newReferenceTimestamp = uint32(block.timestamp + 1);
-        uint32 newReferenceBlockNumber = uint32(block.number + 1);
-
-        BN254Certificate memory newCertificate;
-        newCertificate.messageHash =
-            operatorTableUpdater.getGlobalTableUpdateMessageHash(newGlobalTableRoot, newReferenceTimestamp, newReferenceBlockNumber);
-
-        // Simulate that the certificate verification should fail because we have a new generator
-        _setIsValidCertificate(newCertificate, false);
-
-        cheats.warp(newReferenceTimestamp);
-
-        // This should fail because the operator table for the new generator was not updated
-        cheats.expectRevert(CertificateInvalid.selector);
-        operatorTableUpdater.confirmGlobalTableRoot(newCertificate, newGlobalTableRoot, newReferenceTimestamp, newReferenceBlockNumber);
     }
 }

@@ -192,7 +192,7 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
     function _parseSignatures(
         bytes32 signableDigest,
         bytes memory signatures
-    ) internal view returns (address[] memory signers, bool valid) {
+    ) internal pure returns (address[] memory signers, bool valid) {
         // Each ECDSA signature is 65 bytes: r (32 bytes) + s (32 bytes) + v (1 byte)
         require(signatures.length > 0 && signatures.length % 65 == 0, InvalidSignatureLength());
 
@@ -206,7 +206,7 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
             }
 
             // Recover the signer
-            (address recovered, ECDSA.RecoverError error) = ECDSA.tryRecover(messageHash, signature);
+            (address recovered, ECDSA.RecoverError error) = ECDSA.tryRecover(signableDigest, signature);
             if (error != ECDSA.RecoverError.NoError || recovered == address(0)) {
                 return (signers, false);
             }

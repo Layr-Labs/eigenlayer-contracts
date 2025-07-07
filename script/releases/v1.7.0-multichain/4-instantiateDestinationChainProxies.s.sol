@@ -53,6 +53,7 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
                     0, // initial paused status
                     initParams.globalRootConfirmerSet,
                     initParams.globalRootConfirmationThreshold,
+                    initParams.initialGlobalTableRoot,
                     initParams.referenceTimestamp,
                     initParams.globalRootConfirmerSetInfo,
                     initParams.globalRootConfirmerSetConfig
@@ -163,11 +164,12 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
         operatorTableUpdater.initialize(
             address(0), // owner
             0, // initial paused status
-            dummyOperatorSet, // globalRootConfirmerSet
+            dummyOperatorSet, // generator
             0, // globalRootConfirmationThreshold
+            bytes32(0), // initialGlobalTableRoot
             0, // referenceTimestamp
-            dummyBN254Info, // globalRootConfirmerSetInfo
-            dummyConfig // globalRootConfirmerSetConfig
+            dummyBN254Info, // generatorInfo
+            dummyConfig // generatorConfig
         );
 
         // ECDSACertificateVerifier and BN254CertificateVerifier don't have initialize functions
@@ -234,6 +236,9 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
         uint256 apkY = toml.readUint(".globalRootConfirmerSetInfo.aggregatePubkey.Y");
         initParams.globalRootConfirmerSetInfo.aggregatePubkey = BN254.G1Point({X: apkX, Y: apkY});
 
+        // Parse initialGlobalTableRoot
+        initParams.initialGlobalTableRoot = toml.readBytes32(".initialGlobalTableRoot");
+
         return initParams;
     }
 
@@ -242,6 +247,7 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
         OperatorSet globalRootConfirmerSet;
         ICrossChainRegistryTypes.OperatorSetConfig globalRootConfirmerSetConfig;
         IOperatorTableCalculatorTypes.BN254OperatorSetInfo globalRootConfirmerSetInfo;
+        bytes32 initialGlobalTableRoot;
         uint32 referenceTimestamp;
     }
 }
