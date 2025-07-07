@@ -21,6 +21,10 @@ The `CrossChainRegistry` manages the registration/deregistration of operatorSets
  * @notice A per-operatorSet configuration struct that is transported from the CrossChainRegistry on L1.
  * @param owner the permissioned owner of the OperatorSet on L2 that can call the CertificateVerifier specific setters
  * @param maxStalenessPeriod the maximum staleness period of the operatorSet
+ * 
+ * @dev A staleness period of 0 allows for certificates to be verified against any timestamp in the past
+ * @dev Staleness periods should not be greater than 0 and less than the update cadence of the `OperatorTables`, since
+ *      certificates would be unable to be validated against. The update cadence is communicated off-chain
  */
 struct OperatorSetConfig {
     address owner;
@@ -150,6 +154,7 @@ Updates the `operatorTableCalculator` contract for a given `operatorSet`. The `o
  * @param config the config to set
  * @dev msg.sender must be UAM permissioned for operatorSet.avs
  * @dev operatorSet must have an active generation reservation
+ * @dev The max staleness period is NOT checkpointed and is applied globally regardless of the reference timestamp of a certificate
  */
 function setOperatorSetConfig(
     OperatorSet calldata operatorSet, 

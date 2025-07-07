@@ -11,7 +11,8 @@ interface IECDSACertificateVerifierTypes is IOperatorTableCalculatorTypes {
 
     /**
      * @notice A ECDSA Certificate
-     * @param referenceTimestamp the timestamp at which the certificate was created
+     * @param referenceTimestamp the timestamp at which the certificate was created,
+     *        which corresponds to a reference timestamp of the operator table update
      * @param messageHash the hash of the message that was signed by operators
      * @param sig the concatenated signature of each signing operator
      */
@@ -36,7 +37,7 @@ interface IECDSACertificateVerifier is IECDSACertificateVerifierEvents, IBaseCer
      * @param referenceTimestamp the timestamp at which the operatorInfos were sourced
      * @param operatorInfos the operatorInfos to update the operator table with
      * @param operatorSetConfig the configuration of the operatorSet
-     * @dev only callable by the operatorTableUpdater for the given operatorSet
+     * @dev Only callable by the `OperatorTableUpdater`
      * @dev The `referenceTimestamp` must be greater than the latest reference timestamp for the given operatorSet
      */
     function updateOperatorTable(
@@ -129,7 +130,7 @@ interface IECDSACertificateVerifier is IECDSACertificateVerifierEvents, IBaseCer
      * @notice Get the total stakes for all operators at a given reference timestamp
      * @param operatorSet The operator set to calculate stakes for
      * @param referenceTimestamp The reference timestamp
-     * @return totalStakes The total stakes for all operators
+     * @return totalStakes The total stakes for all operators,
      */
     function getTotalStakes(
         OperatorSet calldata operatorSet,

@@ -19,7 +19,7 @@ interface IBaseCertificateVerifierErrors {
     error TableUpdateStale();
     /// @notice Thrown when array lengths mismatch
     error ArrayLengthMismatch();
-    /// @notice Thrown when the certificate is too stale
+    /// @notice Thrown when the certificate is too stale, per the max staleness period of the operatorSet
     error CertificateStale();
     /// @notice Thrown when the reference timestamp does not exist
     error ReferenceTimestampDoesNotExist();
@@ -31,23 +31,43 @@ interface IBaseCertificateVerifierErrors {
 
 /// @notice A base interface that verifies certificates for a given operatorSet
 /// @notice This is a base interface that all curve certificate verifiers (eg. BN254, ECDSA) must implement
-/// @dev A single `CertificateVerifier` can be used for multiple operatorSets, but a single key type
+/// @dev A single `CertificateVerifier` is used for all operatorSets for a given key type
 interface IBaseCertificateVerifier is
     IBaseCertificateVerifierEvents,
     IBaseCertificateVerifierErrors,
     ICrossChainRegistryTypes
 {
-    /// @notice the address of the owner of the OperatorSet
+    /**
+     * @notice The address of the owner of the OperatorSet
+     * @param operatorSet The operatorSet to get the owner of
+     * @return The owner
+     * @dev The owner of the OperatorSet is not used by this contract, but can be used by external contracts
+     *      to gate access control for on-chain operations
+     */
     function getOperatorSetOwner(
         OperatorSet memory operatorSet
     ) external view returns (address);
 
-    /// @return the maximum amount of seconds that a operator table can be in the past for a given operatorSet
+    /**
+     * @notice The max staleness period of the operator table for a given operatorSet. This value is AVS-set and
+     *         transported by the multichain protocol
+     * @param operatorSet The operatorSet to get the max staleness period of
+     * @return The max staleness period
+     * @dev A staleness period of 0 allows for certificates to be verified against any timestamp in the past
+     * @dev Staleness periods should not be greater than 0 and less than the update cadence of the `OperatorTables`, since
+     *      certificates would be unable to be validated against
+     *
+     */
     function maxOperatorTableStaleness(
         OperatorSet memory operatorSet
     ) external view returns (uint32);
 
-    /// @notice The latest reference timestamp of the operator table for a given operatorSet
+    /**
+     * @notice The latest reference timestamp of the operator table for a given operatorSet. This value is
+     *         updated each time an operator table is updated
+     * @param operatorSet The operatorSet to get the latest reference timestamp of
+     * @return The latest reference timestamp
+     */
     function latestReferenceTimestamp(
         OperatorSet memory operatorSet
     ) external view returns (uint32);
