@@ -26,7 +26,8 @@ The CertificateVerifier contracts are responsible for verifying certificates fro
 
 Both verifiers implement staleness checks based on a `maxStalenessPeriod` to ensure certificates are not verified against outdated operator information. 
 
-**Note: Setting a max staleness period to 0 enables certificates to be confirmed against any `referenceTimestamp`. In addition, setting a `maxStalenessPeriod` that is greater than 0 and less than the frequency of table updates (daily on testnet, weekly on mainnet) can result in certificates be unable to be confirmed.**
+**Note: Setting a max staleness period to 0 enables certificates to be confirmed against any `referenceTimestamp`. In addition, setting a `maxStalenessPeriod` that is greater than 0 and less than the frequency of table updates (daily on testnet, weekly on mainnet) can result in certificates be unable to be confirmed.** See the [staleness period](#staleness-period) in the appendix for some examples. 
+
 ---
 
 ## ECDSACertificateVerifier
@@ -472,3 +473,29 @@ flowchart TB
     N1 --> L2[[Leaf 2<br/>BN254OperatorInfo #2]]
     N1 --> L3[[Leaf 3<br/>BN254OperatorInfo #3]]
 ```
+
+---
+
+## Appendix
+
+### Staleness Period
+
+For the below examples, let's assume that the operator table is updated on Day 1
+
+#### Eg. 1: Normal Functioning
+Assume the the staleness period is 10 days and the `referenceTimestamp` of a certificate is Day 1. 
+
+1. Day 1: Table Updated
+2. Day 9: Certificate passes
+3. Day 10: Certificate passes
+4. Day 11: Certificate verification *fails*
+
+#### Eg. 2: Low staleness period
+The operator table is updated every 10 days. The staleness period is 5 days. The `referenceTimestamp` of a certificate is Day 1. 
+
+1. Day 1: Table updated
+2. Day 2: Certificate passes
+3. Day 6: Certifiacte verification *fails*
+4. Day 7: A certificate is re-generated. However, even if the
+
+Note that we cannot re-generate a certificate on Day 7
