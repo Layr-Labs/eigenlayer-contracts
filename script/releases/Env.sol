@@ -356,6 +356,14 @@ library Env {
     /**
      * Helpers
      */
+    function isSourceChain() internal view returns (bool) {
+        return _envBool("SOURCE_CHAIN");
+    }
+
+    function isDestinationChain() internal view returns (bool) {
+        return _envBool("DESTINATION_CHAIN");
+    }
+
     function _deployedInstance(string memory name, uint256 idx) private view returns (address) {
         return ZEnvHelpers.state().deployedInstance(name, idx);
     }

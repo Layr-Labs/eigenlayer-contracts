@@ -21,6 +21,10 @@ contract QueueUpgrade is MultisigBuilder, Deploy {
     using Encode for *;
 
     function _runAsMultisig() internal virtual override prank(Env.opsMultisig()) {
+        if (!Env.isSourceChain()) {
+            return;
+        }
+
         bytes memory calldata_to_executor = _getCalldataToExecutor();
 
         TimelockController timelock = Env.timelockController();
@@ -98,6 +102,10 @@ contract QueueUpgrade is MultisigBuilder, Deploy {
     }
 
     function testScript() public virtual override {
+        if (!Env.isSourceChain()) {
+            return;
+        }
+
         runAsEOA();
 
         TimelockController timelock = Env.timelockController();

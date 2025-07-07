@@ -11,6 +11,10 @@ contract Execute is QueueUpgrade {
     using Env for *;
 
     function _runAsMultisig() internal override prank(Env.protocolCouncilMultisig()) {
+        if (!Env.isSourceChain()) {
+            return;
+        }
+
         bytes memory calldata_to_executor = _getCalldataToExecutor();
 
         TimelockController timelock = Env.timelockController();
@@ -24,6 +28,10 @@ contract Execute is QueueUpgrade {
     }
 
     function testScript() public virtual override {
+        if (!Env.isSourceChain()) {
+            return;
+        }
+
         runAsEOA();
 
         TimelockController timelock = Env.timelockController();

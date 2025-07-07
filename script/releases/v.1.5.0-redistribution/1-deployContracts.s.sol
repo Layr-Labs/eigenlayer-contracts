@@ -21,6 +21,10 @@ contract Deploy is EOADeployer {
     using Env for *;
 
     function _runAsEOA() internal override {
+        if (!Env.isSourceChain()) {
+            return;
+        }
+
         vm.startBroadcast();
 
         // Core contracts: AllocationManager, DelegationManager, StrategyManager, EigenPodManager, Strategies
@@ -125,6 +129,10 @@ contract Deploy is EOADeployer {
     }
 
     function testScript() public virtual {
+        if (!Env.isSourceChain()) {
+            return;
+        }
+
         _runAsEOA();
 
         _validateNewImplAddresses({areMatching: false});
