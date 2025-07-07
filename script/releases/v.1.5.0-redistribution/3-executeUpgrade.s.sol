@@ -64,18 +64,9 @@ contract Execute is QueueUpgrade {
     /// @dev Mirrors the checks done in 1-deployContracts, but now we check each contract's
     /// proxy, as the upgrade should mean that each proxy can see these methods/immutables
     function _validateProxyConstructors() internal view {
-        SlashEscrowFactory slashEscrowFactory = Env.proxy.slashEscrowFactory();
-        assertTrue(slashEscrowFactory.allocationManager() == Env.proxy.allocationManager(), "sef.alm invalid");
-        assertTrue(slashEscrowFactory.strategyManager() == Env.proxy.strategyManager(), "sef.sm invalid");
-        assertTrue(slashEscrowFactory.pauserRegistry() == Env.impl.pauserRegistry(), "sef.pR invalid");
-        assertTrue(slashEscrowFactory.slashEscrowImplementation() == Env.impl.slashEscrow(), "sef.se invalid");
-        // Check slashEscrowFactory local vars again for sanity
-        assertTrue(slashEscrowFactory.owner() == Env.executorMultisig(), "sef.owner invalid");
-        assertTrue(slashEscrowFactory.paused() == 0, "sef.paused invalid");
-        assertTrue(slashEscrowFactory.getGlobalEscrowDelay() == Env.SLASH_ESCROW_DELAY(), "sef.globalDelay invalid");
-
         AllocationManager allocationManager = Env.proxy.allocationManager();
         assertTrue(allocationManager.delegation() == Env.proxy.delegationManager(), "alm.dm invalid");
+        assertTrue(allocationManager.eigenStrategy() == Env.proxy.eigenStrategy(), "alm.es invalid");
         assertTrue(allocationManager.pauserRegistry() == Env.impl.pauserRegistry(), "alm.pR invalid");
         assertTrue(allocationManager.permissionController() == Env.proxy.permissionController(), "alm.pc invalid");
         assertTrue(allocationManager.DEALLOCATION_DELAY() == Env.MIN_WITHDRAWAL_DELAY(), "alm.deallocDelay invalid");
@@ -124,13 +115,6 @@ contract Execute is QueueUpgrade {
     function _validateProxiesInitialized() internal {
         bytes memory errInit = "Initializable: contract is already initialized";
 
-        // SlashEscrow is immutable and uninitializable
-        SlashEscrowFactory slashEscrowFactory = Env.proxy.slashEscrowFactory();
-        vm.expectRevert(errInit);
-        slashEscrowFactory.initialize(address(0), 0, 0);
-        assertTrue(slashEscrowFactory.owner() == Env.executorMultisig(), "sef.owner invalid");
-        assertTrue(slashEscrowFactory.paused() == 0, "sef.paused invalid");
-
         AllocationManager allocationManager = Env.proxy.allocationManager();
         vm.expectRevert(errInit);
         allocationManager.initialize(0);
@@ -165,7 +149,7 @@ contract Execute is QueueUpgrade {
         vm.expectRevert(errInit);
         eigenStrategy.initialize(IEigen(address(0)), IBackingEigen(address(0)));
         assertTrue(eigenStrategy.paused() == 0, "eigenStrat.paused invalid");
-        assertTrue(eigenStrategy.EIGEN() == Env.proxy.eigen(), "eigenStrat.EIGEN invalid");
+        assertTrue(address(eigenStrategy.EIGEN()) == address(Env.proxy.eigen()), "eigenStrat.EIGEN invalid");
         assertTrue(eigenStrategy.underlyingToken() == Env.proxy.beigen(), "eigenStrat.underlying invalid");
 
         // StrategyBase proxies are initialized when deployed by factory
