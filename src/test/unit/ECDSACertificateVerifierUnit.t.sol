@@ -441,7 +441,7 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificate is ECDSACertificate
         IECDSACertificateVerifierTypes.ECDSACertificate memory cert =
             _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators, signerPrivKeys);
 
-        (uint256[] memory signedStakes, address[] memory signers) = verifier.verifyCertificate(defaultOperatorSet, cert);
+        (uint[] memory signedStakes, address[] memory signers) = verifier.verifyCertificate(defaultOperatorSet, cert);
 
         // Calculate total stakes
         uint[] memory totalStakes = new uint[](2);
@@ -470,7 +470,7 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificate is ECDSACertificate
         IECDSACertificateVerifierTypes.ECDSACertificate memory cert =
             _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators, signerPrivKeys);
 
-        (uint256[] memory signedStakes, address[] memory signers) = verifier.verifyCertificate(defaultOperatorSet, cert);
+        (uint[] memory signedStakes, address[] memory signers) = verifier.verifyCertificate(defaultOperatorSet, cert);
 
         // Check that the signed stakes are correct
         assertEq(signedStakes.length, 2, "Wrong number of stake types");
@@ -525,7 +525,7 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificate is ECDSACertificate
         IECDSACertificateVerifierTypes.ECDSACertificate memory cert =
             _createCertificate(secondTimestamp, defaultMsgHash, nonSignerIndices, operators, signerPrivKeys);
 
-        (uint256[] memory signedStakes, address[] memory signers) = verifier.verifyCertificate(defaultOperatorSet, cert);
+        (uint[] memory signedStakes, address[] memory signers) = verifier.verifyCertificate(defaultOperatorSet, cert);
 
         // Verify all stakes are signed
         uint[] memory totalStakes = new uint[](2);
@@ -565,7 +565,7 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificate is ECDSACertificate
         IECDSACertificateVerifierTypes.ECDSACertificate memory cert =
             _createCertificate(secondTimestamp, defaultMsgHash, nonSignerIndices, secondOperators, signerPrivKeys);
 
-        (uint256[] memory signedStakes, address[] memory signers) = verifier.verifyCertificate(defaultOperatorSet, cert);
+        (uint[] memory signedStakes, address[] memory signers) = verifier.verifyCertificate(defaultOperatorSet, cert);
 
         // Verify only signers' stakes are counted
         uint[] memory expectedSignedStakes = new uint[](2);
@@ -832,7 +832,7 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificateProportion is ECDSAC
         (bool meetsThresholds, address[] memory signers) = verifier.verifyCertificateProportion(defaultOperatorSet, cert, thresholds);
 
         // Calculate percentage of signed stakes to determine if it should meet threshold
-        (uint256[] memory signedStakes, address[] memory certSigners) = verifier.verifyCertificate(defaultOperatorSet, cert);
+        (uint[] memory signedStakes, address[] memory certSigners) = verifier.verifyCertificate(defaultOperatorSet, cert);
         uint[] memory totalStakes = verifier.getTotalStakes(defaultOperatorSet, referenceTimestamp);
         uint signedPercentage0 = (signedStakes[0] * 10_000) / totalStakes[0];
         uint signedPercentage1 = (signedStakes[1] * 10_000) / totalStakes[1];
@@ -867,7 +867,7 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificateProportion is ECDSAC
         (bool meetsThresholds, address[] memory signers) = verifier.verifyCertificateProportion(defaultOperatorSet, cert, thresholds);
 
         // Calculate expected result
-        (uint256[] memory signedStakes, address[] memory certSigners) = verifier.verifyCertificate(defaultOperatorSet, cert);
+        (uint[] memory signedStakes, address[] memory certSigners) = verifier.verifyCertificate(defaultOperatorSet, cert);
         uint[] memory totalStakes = verifier.getTotalStakes(defaultOperatorSet, referenceTimestamp);
 
         bool expectedResult = true;
@@ -927,7 +927,7 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificateNominal is ECDSACert
             _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators, signerPrivKeys);
 
         // Get the signed stakes for reference
-        (uint256[] memory signedStakes, address[] memory certSigners) = verifier.verifyCertificate(defaultOperatorSet, cert);
+        (uint[] memory signedStakes, address[] memory certSigners) = verifier.verifyCertificate(defaultOperatorSet, cert);
 
         // Test with thresholds lower than signed stakes (should pass)
         uint[] memory passThresholds = new uint[](2);
@@ -954,7 +954,7 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificateNominal is ECDSACert
             _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators, signerPrivKeys);
 
         // Get the signed stakes for reference
-        (uint256[] memory signedStakes, address[] memory certSigners) = verifier.verifyCertificate(defaultOperatorSet, cert);
+        (uint[] memory signedStakes, address[] memory certSigners) = verifier.verifyCertificate(defaultOperatorSet, cert);
 
         // Test with thresholds higher than signed stakes (should fail)
         uint[] memory failThresholds = new uint[](2);
@@ -982,7 +982,7 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificateNominal is ECDSACert
             _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators, signerPrivKeys);
 
         // Get the signed stakes for reference
-        (uint256[] memory signedStakes,) = verifier.verifyCertificate(defaultOperatorSet, cert);
+        (uint[] memory signedStakes,) = verifier.verifyCertificate(defaultOperatorSet, cert);
 
         // Bound thresholds to reasonable values
         uint boundedThreshold0 = bound(threshold0, 0, signedStakes[0] * 2);
