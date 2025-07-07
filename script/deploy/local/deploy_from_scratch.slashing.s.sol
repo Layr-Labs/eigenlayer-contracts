@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.so
 import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
 import "../../../src/contracts/interfaces/IETHPOSDeposit.sol";
+import "../../../src/contracts/strategies/EigenStrategy.sol";
 
 import "../../../src/contracts/core/StrategyManager.sol";
 import "../../../src/contracts/core/DelegationManager.sol";
@@ -14,8 +15,6 @@ import "../../../src/contracts/core/AVSDirectory.sol";
 import "../../../src/contracts/core/RewardsCoordinator.sol";
 import "../../../src/contracts/core/AllocationManager.sol";
 import "../../../src/contracts/permissions/PermissionController.sol";
-import "../../../src/contracts/core/SlashEscrowFactory.sol";
-import "../../../src/contracts/core/SlashEscrow.sol";
 
 import "../../../src/contracts/strategies/StrategyBaseTVLLimits.sol";
 
@@ -68,14 +67,14 @@ contract DeployFromScratch is Script, Test {
     AllocationManager public allocationManager;
     PermissionController public permissionControllerImplementation;
     PermissionController public permissionController;
-    SlashEscrowFactory public slashEscrowFactory;
-    SlashEscrowFactory public slashEscrowFactoryImplementation;
 
     EmptyContract public emptyContract;
 
     address executorMultisig;
     address operationsMultisig;
     address pauserMultisig;
+
+    IStrategy eigenStrategy;
 
     string SEMVER;
 
@@ -174,6 +173,7 @@ contract DeployFromScratch is Script, Test {
         executorMultisig = stdJson.readAddress(config_data, ".multisig_addresses.executorMultisig");
         operationsMultisig = stdJson.readAddress(config_data, ".multisig_addresses.operationsMultisig");
         pauserMultisig = stdJson.readAddress(config_data, ".multisig_addresses.pauserMultisig");
+
         // load token list
         bytes memory strategyConfigsRaw = stdJson.parseRaw(config_data, ".strategies");
         strategyConfigs = abi.decode(strategyConfigsRaw, (StrategyConfig[]));
@@ -222,9 +222,8 @@ contract DeployFromScratch is Script, Test {
         permissionController = PermissionController(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
-        slashEscrowFactory = SlashEscrowFactory(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
-        );
+
+        eigenStrategy = IStrategy(new EigenStrategy(strategyManager, eigenLayerPauserReg, SEMVER));
 
         // if on mainnet, use the ETH2 deposit contract address
         if (chainId == 1) ethPOSDeposit = IETHPOSDeposit(0x00000000219ab540356cBB839Cbe05303d7705Fa);
@@ -245,7 +244,7 @@ contract DeployFromScratch is Script, Test {
             MIN_WITHDRAWAL_DELAY,
             SEMVER
         );
-        strategyManagerImplementation = new StrategyManager(delegation, slashEscrowFactory, eigenLayerPauserReg, SEMVER);
+        strategyManagerImplementation = new StrategyManager(allocationManager, delegation, eigenLayerPauserReg, SEMVER);
         avsDirectoryImplementation = new AVSDirectory(delegation, eigenLayerPauserReg, SEMVER);
         eigenPodManagerImplementation =
             new EigenPodManager(ethPOSDeposit, eigenPodBeacon, delegation, eigenLayerPauserReg, SEMVER);
@@ -266,6 +265,7 @@ contract DeployFromScratch is Script, Test {
         );
         allocationManagerImplementation = new AllocationManager(
             delegation,
+            eigenStrategy,
             eigenLayerPauserReg,
             permissionController,
             DEALLOCATION_DELAY,
@@ -273,8 +273,6 @@ contract DeployFromScratch is Script, Test {
             SEMVER
         );
         permissionControllerImplementation = new PermissionController(SEMVER);
-        slashEscrowFactoryImplementation =
-            new SlashEscrowFactory(allocationManager, strategyManager, eigenLayerPauserReg, new SlashEscrow(), SEMVER);
 
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
         {
