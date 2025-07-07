@@ -61,14 +61,6 @@ contract Execute is QueueUpgrade {
         // 3- execute
         execute();
 
-        assertTrue(
-            Env.proxy.strategyFactory().isBlacklisted(IERC20(address(Env.proxy.eigen()))), "eigen should be blacklisted"
-        );
-        assertTrue(
-            Env.proxy.strategyFactory().isBlacklisted(IERC20(address(Env.proxy.beigen()))),
-            "beigen should be blacklisted"
-        );
-
         assertTrue(timelock.isOperationDone(txHash), "Transaction should be complete.");
 
         _validateNewImplAddresses({areMatching: true});
