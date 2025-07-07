@@ -36,6 +36,10 @@ contract QueueUpgrade is MultisigBuilder, Deploy {
 
     /// @dev Get the calldata to be sent from the timelock to the executor
     function _getCalldataToExecutor() internal returns (bytes memory) {
+        IERC20[] memory tokensToBlacklist = new IERC20[](2);
+        tokensToBlacklist[0] = IERC20(address(Env.proxy.eigen()));
+        tokensToBlacklist[1] = IERC20(address(Env.proxy.beigen()));
+
         MultisigCall[] storage executorCalls = Encode.newMultisigCalls().append({
             to: Env.proxyAdmin(),
             data: Encode.proxyAdmin.upgrade({
@@ -69,6 +73,9 @@ contract QueueUpgrade is MultisigBuilder, Deploy {
         }).append({
             to: address(Env.beacon.strategyBase()),
             data: Encode.upgradeableBeacon.upgradeTo({newImpl: address(Env.impl.strategyBase())})
+        }).append({
+            to: address(Env.proxy.strategyFactory()),
+            data: abi.encodeWithSelector(StrategyFactory.blacklistTokens.selector, tokensToBlacklist)
         });
 
         // Add call to upgrade each pre-longtail strategy instance
