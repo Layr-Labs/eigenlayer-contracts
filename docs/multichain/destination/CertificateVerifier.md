@@ -26,7 +26,7 @@ The CertificateVerifier contracts are responsible for verifying certificates fro
 
 Both verifiers implement staleness checks based on a `maxStalenessPeriod` to ensure certificates are not verified against outdated operator information. 
 
-*Note: Setting a max staleness period to 0 enables certificates to be confirmed against any `referenceTimestamp`*. In addition, setting a `maxStalenessPeriod` that is greater than 0 and less than the frequency of table updates (daily on testnet, weekly on mainnet) can result in certificates be unable to be confirmed. 
+**Note: Setting a max staleness period to 0 enables certificates to be confirmed against any `referenceTimestamp`. In addition, setting a `maxStalenessPeriod` that is greater than 0 and less than the frequency of table updates (daily on testnet, weekly on mainnet) can result in certificates be unable to be confirmed.**
 ---
 
 ## ECDSACertificateVerifier
