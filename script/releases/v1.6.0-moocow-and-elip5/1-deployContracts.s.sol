@@ -34,12 +34,8 @@ contract Deploy is EOADeployer {
             name: type(Eigen).name,
             deployedTo: address(
                 new Eigen({
-<<<<<<< HEAD
                    _bEIGEN: Env.proxy.beigen(),
                    _version: Env.deployVersion()
-=======
-                   _bEIGEN: Env.proxy.beigen() 
->>>>>>> db0e54e4 (feat: release scripts for moocow and elip5)
                 })
             )
         });
