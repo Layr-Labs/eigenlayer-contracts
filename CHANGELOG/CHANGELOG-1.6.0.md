@@ -42,3 +42,7 @@
 - feat: release scripts for moocow and elip5
 - feat: currentCheckpoint now returns finalized checkpoint
 - feat: implement consolidation and withdrawal requests
+- chore: update eigenpod and eigen impls addresses in holesky and hoodi by @bowenli86 in https://github.com/Layr-Labs/eigenlayer-contracts/pull/1448
+- chore: add multisend parser to scripts directory by @nadir-akhtar in https://github.com/Layr-Labs/eigenlayer-contracts/pull/1486
+- docs: update version matrix by @ypatil12 in https://github.com/Layr-Labs/eigenlayer-contracts/pull/1491
+- chore: MOOCOW audit fixes by @wadealexc in https://github.com/Layr-Labs/eigenlayer-contracts/pull/1496
