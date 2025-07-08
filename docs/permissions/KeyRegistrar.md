@@ -10,6 +10,10 @@ Key features:
 * **Per-OperatorSet Configuration**: Each operator set must be configured with a specific curve type before keys can be registered
 * **Global Key Registry**: Keys are globally unique - once registered, a key cannot be reused across operatorSets or operators
 
+Keys are stored in a 2-way mapping:
+1. (operator, operatorSet) to key
+2. keyHash to operator address
+
 ---
 
 ## Operator Set Configuration
@@ -75,6 +79,7 @@ For ECDSA keys:
 *Effects*:
 * Registers the key for the operator in the specified operator set
 * Adds the key to the global registry
+* Associates the key hash with the operator address
 * Emits a `KeyRegistered` event with curve type ECDSA
 
 *Requirements*:

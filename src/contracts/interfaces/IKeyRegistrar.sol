@@ -151,6 +151,20 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
     function getKeyHash(OperatorSet memory operatorSet, address operator) external view returns (bytes32);
 
     /**
+     * @notice Gets the operator from signing key
+     * @param operatorSet The operator set to get the operator for
+     * @param keyData The key data. For ECDSA, this is the signing key address. For BN254, this can be either the G1 key or the G1 and G2 key combined.
+     * @return operator. Returns 0x0 if the key is not registered
+     * @return status registration status. Returns false if the key is not registered
+     * @dev This function decodes the key data based on the curve type of the operator set
+     * @dev This function will return the operator address even if the operator is not registered for the operator set
+     */
+    function getOperatorFromSigningKey(
+        OperatorSet memory operatorSet,
+        bytes memory keyData
+    ) external view returns (address, bool);
+
+    /**
      * @notice Returns the message hash for ECDSA key registration
      * @param operator The operator address
      * @param operatorSet The operator set
