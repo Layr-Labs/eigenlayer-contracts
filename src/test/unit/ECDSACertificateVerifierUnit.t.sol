@@ -376,7 +376,23 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificate is ECDSACertificate
             sig: "" // Empty signatures
         });
 
-        vm.expectRevert(InvalidSignatureLength.selector);
+        vm.expectRevert(IECDSACertificateVerifierTypes.InvalidSignatureLength.selector);
+        verifier.verifyCertificate(defaultOperatorSet, cert);
+    }
+
+    function test_revert_invalidSignatureLength() public {
+        uint32 referenceTimestamp = _initializeOperatorTableBase();
+
+        // Create certificate with wrong signature length (not a multiple of 65)
+        bytes memory invalidLengthSig = new bytes(64); // Should be 65 bytes for ECDSA
+
+        IECDSACertificateVerifierTypes.ECDSACertificate memory cert = IECDSACertificateVerifierTypes.ECDSACertificate({
+            referenceTimestamp: referenceTimestamp,
+            messageHash: defaultMsgHash,
+            sig: invalidLengthSig
+        });
+
+        vm.expectRevert(IECDSACertificateVerifierTypes.InvalidSignatureLength.selector);
         verifier.verifyCertificate(defaultOperatorSet, cert);
     }
 
@@ -678,7 +694,7 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificate is ECDSACertificate
         });
 
         // Should revert because signatures are not ordered by address
-        vm.expectRevert(VerificationFailed.selector);
+        vm.expectRevert(IECDSACertificateVerifierTypes.SignersNotOrdered.selector);
         verifier.verifyCertificate(defaultOperatorSet, cert);
     }
 
@@ -713,7 +729,7 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificate is ECDSACertificate
         });
 
         // Should revert because signature recovery returns an error
-        vm.expectRevert(VerificationFailed.selector);
+        vm.expectRevert(ISignatureUtilsMixinErrors.InvalidSignature.selector);
         verifier.verifyCertificate(defaultOperatorSet, cert);
     }
 
@@ -749,7 +765,7 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificate is ECDSACertificate
         });
 
         // Should revert because recovered address is zero
-        vm.expectRevert(VerificationFailed.selector);
+        vm.expectRevert(ISignatureUtilsMixinErrors.InvalidSignature.selector);
         verifier.verifyCertificate(defaultOperatorSet, cert);
     }
 }
