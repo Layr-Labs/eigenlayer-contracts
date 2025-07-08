@@ -992,6 +992,17 @@ contract KeyRegistrarUnitTests_ViewFunctions is KeyRegistrarUnitTests {
         assertEq(retrievedOperator, address(0));
         assertFalse(isReg);
     }
+
+    function test_getOperatorFromSigningKey_revertUnconfiguredOperatorSet() public {
+        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
+
+        // Don't configure the operator set - it will have CurveType.NONE
+        bytes memory someKey = abi.encodePacked(address(0xdeadbeef));
+        
+        // This should revert because the operator set is not configured
+        vm.expectRevert();
+        keyRegistrar.getOperatorFromSigningKey(operatorSet, someKey);
+    }
 }
 
 /**
