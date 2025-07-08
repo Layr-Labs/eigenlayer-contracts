@@ -365,6 +365,11 @@ contract KeyRegistrarUnitTests_registerKey_ECDSA is KeyRegistrarUnitTests {
 
         address storedAddress = keyRegistrar.getECDSAAddress(operatorSet, operator1);
         assertEq(storedAddress, ecdsaAddress1);
+
+        // Verify getOperatorFromSigningKey returns the correct operator and registration status
+        (address retrievedOperator, bool isReg) = keyRegistrar.getOperatorFromSigningKey(operatorSet, ecdsaKey1);
+        assertEq(retrievedOperator, operator1);
+        assertTrue(isReg);
     }
 }
 
@@ -534,6 +539,11 @@ contract KeyRegistrarUnitTests_registerKey_BN254 is KeyRegistrarUnitTests {
         assertEq(storedG2.X[1], bn254G2Key2.X[1]);
         assertEq(storedG2.Y[0], bn254G2Key2.Y[0]);
         assertEq(storedG2.Y[1], bn254G2Key2.Y[1]);
+
+        // Verify getOperatorFromSigningKey returns the correct operator and registration status
+        (address retrievedOperator, bool isReg) = keyRegistrar.getOperatorFromSigningKey(operatorSet, encodedKey);
+        assertEq(retrievedOperator, operator1);
+        assertTrue(isReg);
     }
 
     function test_registerBN254Key() public {
@@ -557,6 +567,11 @@ contract KeyRegistrarUnitTests_registerKey_BN254 is KeyRegistrarUnitTests {
         assertEq(storedG2.X[1], bn254G2Key1.X[1]);
         assertEq(storedG2.Y[0], bn254G2Key1.Y[0]);
         assertEq(storedG2.Y[1], bn254G2Key1.Y[1]);
+
+        // Verify getOperatorFromSigningKey returns the correct operator and registration status
+        (address retrievedOperator, bool isReg) = keyRegistrar.getOperatorFromSigningKey(operatorSet, bn254Key1);
+        assertEq(retrievedOperator, operator1);
+        assertTrue(isReg);
     }
 }
 
@@ -839,6 +854,154 @@ contract KeyRegistrarUnitTests_ViewFunctions is KeyRegistrarUnitTests {
         // Should return NONE for unconfigured operator set
         CurveType curveType = keyRegistrar.getOperatorSetCurveType(operatorSet);
         assertEq(uint8(curveType), uint8(CurveType.NONE));
+    }
+
+    function test_getOperatorFromSigningKey_ECDSA() public {
+        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
+
+        vm.prank(avs1);
+        keyRegistrar.configureOperatorSet(operatorSet, CurveType.ECDSA);
+
+        // Before registration, should return address(0) and false
+        (address retrievedOperator, bool isReg) = keyRegistrar.getOperatorFromSigningKey(operatorSet, ecdsaKey1);
+        assertEq(retrievedOperator, address(0));
+        assertFalse(isReg);
+
+        // Register key
+        bytes memory signature = _generateECDSASignature(operator1, operatorSet, ecdsaAddress1, ecdsaPrivKey1);
+        vm.prank(operator1);
+        keyRegistrar.registerKey(operator1, operatorSet, ecdsaKey1, signature);
+
+        // After registration, should return the operator and true
+        (retrievedOperator, isReg) = keyRegistrar.getOperatorFromSigningKey(operatorSet, ecdsaKey1);
+        assertEq(retrievedOperator, operator1);
+        assertTrue(isReg);
+    }
+
+    function test_getOperatorFromSigningKey_BN254() public {
+        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
+
+        vm.prank(avs1);
+        keyRegistrar.configureOperatorSet(operatorSet, CurveType.BN254);
+
+        // Before registration, should return address(0) and false
+        (address retrievedOperator, bool isReg) = keyRegistrar.getOperatorFromSigningKey(operatorSet, bn254Key1);
+        assertEq(retrievedOperator, address(0));
+        assertFalse(isReg);
+
+        // Register key
+        bytes memory signature = _generateBN254Signature(operator1, operatorSet, bn254Key1, bn254PrivKey1);
+        vm.prank(operator1);
+        keyRegistrar.registerKey(operator1, operatorSet, bn254Key1, signature);
+
+        // After registration, should return the operator and true
+        // Only pass in the G1 key
+        bytes memory g1Key = abi.encode(bn254G1Key1.X, bn254G1Key1.Y);
+        (retrievedOperator, isReg) = keyRegistrar.getOperatorFromSigningKey(operatorSet, g1Key);
+        assertEq(retrievedOperator, operator1);
+        assertTrue(isReg);
+    }
+
+    function test_getOperatorFromSigningKey_multipleOperators() public {
+        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
+
+        vm.prank(avs1);
+        keyRegistrar.configureOperatorSet(operatorSet, CurveType.ECDSA);
+
+        // Register different keys for different operators
+        bytes memory signature1 = _generateECDSASignature(operator1, operatorSet, ecdsaAddress1, ecdsaPrivKey1);
+        vm.prank(operator1);
+        keyRegistrar.registerKey(operator1, operatorSet, ecdsaKey1, signature1);
+
+        bytes memory signature2 = _generateECDSASignature(operator2, operatorSet, ecdsaAddress2, ecdsaPrivKey2);
+        vm.prank(operator2);
+        keyRegistrar.registerKey(operator2, operatorSet, ecdsaKey2, signature2);
+
+        // Verify each key returns the correct operator and registration status
+        (address retrievedOperator1, bool isReg1) = keyRegistrar.getOperatorFromSigningKey(operatorSet, ecdsaKey1);
+        assertEq(retrievedOperator1, operator1);
+        assertTrue(isReg1);
+
+        (address retrievedOperator2, bool isReg2) = keyRegistrar.getOperatorFromSigningKey(operatorSet, ecdsaKey2);
+        assertEq(retrievedOperator2, operator2);
+        assertTrue(isReg2);
+    }
+
+    function test_getOperatorFromSigningKey_sameKeyDifferentOperatorSets() public {
+        OperatorSet memory operatorSet1 = _createOperatorSet(avs1, 0);
+        OperatorSet memory operatorSet2 = _createOperatorSet(avs1, 1);
+
+        vm.startPrank(avs1);
+        keyRegistrar.configureOperatorSet(operatorSet1, CurveType.ECDSA);
+        keyRegistrar.configureOperatorSet(operatorSet2, CurveType.ECDSA);
+        vm.stopPrank();
+
+        // Register same operator with same key in first operator set
+        bytes memory signature = _generateECDSASignature(operator1, operatorSet1, ecdsaAddress1, ecdsaPrivKey1);
+        vm.prank(operator1);
+        keyRegistrar.registerKey(operator1, operatorSet1, ecdsaKey1, signature);
+
+        // The same key should return the same operator for both operator sets
+        // But registration status will differ - true for operatorSet1, false for operatorSet2
+        (address retrievedOperator1, bool isReg1) = keyRegistrar.getOperatorFromSigningKey(operatorSet1, ecdsaKey1);
+        assertEq(retrievedOperator1, operator1);
+        assertTrue(isReg1); // Registered in operatorSet1
+
+        (address retrievedOperator2, bool isReg2) = keyRegistrar.getOperatorFromSigningKey(operatorSet2, ecdsaKey1);
+        assertEq(retrievedOperator2, operator1);
+        assertFalse(isReg2); // NOT registered in operatorSet2
+    }
+
+    function test_getOperatorFromSigningKey_afterDeregistration() public {
+        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
+
+        vm.prank(avs1);
+        keyRegistrar.configureOperatorSet(operatorSet, CurveType.ECDSA);
+
+        // Register key
+        bytes memory signature = _generateECDSASignature(operator1, operatorSet, ecdsaAddress1, ecdsaPrivKey1);
+        vm.prank(operator1);
+        keyRegistrar.registerKey(operator1, operatorSet, ecdsaKey1, signature);
+
+        // Verify registration
+        (address retrievedOperator, bool isReg) = keyRegistrar.getOperatorFromSigningKey(operatorSet, ecdsaKey1);
+        assertEq(retrievedOperator, operator1);
+        assertTrue(isReg);
+
+        // Deregister
+        allocationManagerMock.setIsOperatorSlashable(operator1, operatorSet, false);
+        vm.prank(operator1);
+        keyRegistrar.deregisterKey(operator1, operatorSet);
+
+        // After deregistration, the key should still map to the operator (global registry persists)
+        // but the registration status should be false
+        (retrievedOperator, isReg) = keyRegistrar.getOperatorFromSigningKey(operatorSet, ecdsaKey1);
+        assertEq(retrievedOperator, operator1);
+        assertFalse(isReg);
+    }
+
+    function test_getOperatorFromSigningKey_nonExistentKey() public {
+        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
+
+        vm.prank(avs1);
+        keyRegistrar.configureOperatorSet(operatorSet, CurveType.ECDSA);
+
+        // Query for a key that was never registered
+        bytes memory nonExistentKey = abi.encodePacked(address(0xdeadbeef));
+        (address retrievedOperator, bool isReg) = keyRegistrar.getOperatorFromSigningKey(operatorSet, nonExistentKey);
+        assertEq(retrievedOperator, address(0));
+        assertFalse(isReg);
+    }
+
+    function test_getOperatorFromSigningKey_revertUnconfiguredOperatorSet() public {
+        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
+
+        // Don't configure the operator set - it will have CurveType.NONE
+        bytes memory someKey = abi.encodePacked(address(0xdeadbeef));
+
+        // This should revert because the operator set is not configured
+        vm.expectRevert();
+        keyRegistrar.getOperatorFromSigningKey(operatorSet, someKey);
     }
 }
 
