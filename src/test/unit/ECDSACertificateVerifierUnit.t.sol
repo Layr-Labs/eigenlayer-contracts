@@ -439,8 +439,9 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificate is ECDSACertificate
         // Modify the certificate to use a different message hash
         cert.messageHash = keccak256("different message");
 
-        // Verification should fail
-        vm.expectRevert(VerificationFailed.selector);
+        // Verification should fail - expect SignersNotOrdered because signature recovery
+        // with wrong message hash produces different addresses that break ordering
+        vm.expectRevert(IECDSACertificateVerifierTypes.SignersNotOrdered.selector);
         verifier.verifyCertificate(defaultOperatorSet, cert);
     }
 
@@ -764,8 +765,8 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificate is ECDSACertificate
             sig: zeroRecoverySignature
         });
 
-        // Should revert because recovered address is zero
-        vm.expectRevert(ISignatureUtilsMixinErrors.InvalidSignature.selector);
+        // Should revert because recovered address is zero - now throws VerificationFailed
+        vm.expectRevert(VerificationFailed.selector);
         verifier.verifyCertificate(defaultOperatorSet, cert);
     }
 }
