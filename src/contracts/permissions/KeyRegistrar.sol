@@ -227,6 +227,9 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
 
         // Update global key registry
         _globalKeyRegistry[keyHash] = true;
+
+        // Store the operator for the key hash
+        _keyHashToOperator[keyHash] = operator;
     }
 
     /**
@@ -253,7 +256,7 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
      */
 
     /// @inheritdoc IKeyRegistrar
-    function isRegistered(OperatorSet memory operatorSet, address operator) external view returns (bool) {
+    function isRegistered(OperatorSet memory operatorSet, address operator) public view returns (bool) {
         return _operatorKeyInfo[operatorSet.key()][operator].isRegistered;
     }
 
@@ -319,6 +322,29 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         }
 
         return _getKeyHashForKeyData(keyInfo.keyData, curveType);
+    }
+
+    /// @inheritdoc IKeyRegistrar
+    function getOperatorFromSigningKey(
+        OperatorSet memory operatorSet,
+        bytes memory keyData
+    ) external view returns (address, bool) {
+        CurveType curveType = _operatorSetCurveTypes[operatorSet.key()];
+
+        // We opt to not use _getKeyHashForKeyData here because it expects the G1 and G2 key encoded together for BN254
+        bytes32 keyHash;
+        if (curveType == CurveType.ECDSA) {
+            keyHash = keccak256(keyData);
+        } else if (curveType == CurveType.BN254) {
+            /// We cannot use _getKeyHashForKeyData here because it expects the G1 and G2 key encoded together
+            (uint256 g1X, uint256 g1Y) = abi.decode(keyData, (uint256, uint256));
+            keyHash = BN254.hashG1Point(BN254.G1Point(g1X, g1Y));
+        } else {
+            revert InvalidCurveType();
+        }
+
+        address operator = _keyHashToOperator[keyHash];
+        return (operator, isRegistered(operatorSet, operator));
     }
 
     /// @inheritdoc IKeyRegistrar
