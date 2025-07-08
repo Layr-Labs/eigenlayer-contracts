@@ -998,7 +998,7 @@ contract KeyRegistrarUnitTests_ViewFunctions is KeyRegistrarUnitTests {
 
         // Don't configure the operator set - it will have CurveType.NONE
         bytes memory someKey = abi.encodePacked(address(0xdeadbeef));
-        
+
         // This should revert because the operator set is not configured
         vm.expectRevert();
         keyRegistrar.getOperatorFromSigningKey(operatorSet, someKey);
