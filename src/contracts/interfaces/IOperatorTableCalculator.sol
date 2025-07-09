@@ -85,7 +85,7 @@ interface IOperatorTableCalculator {
      * @dev The `weights` array can be defined as a list of arbitrary groupings. For example,
      * it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]
      */
-    function getOperatorWeight(
+    function getOperatorWeights(
         OperatorSet calldata operatorSet,
         address operator
     ) external view returns (uint256[] memory weights);
