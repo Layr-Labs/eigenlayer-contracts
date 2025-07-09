@@ -87,7 +87,7 @@ For ECDSA keys:
 * The operator MUST NOT be already registered for the operatorSet in the `KeyRegistrar`
 * The key MUST be exactly 20 bytes
 * The key MUST NOT be the zero address
-* The key MUST NOT already be registered globally
+* The key MUST NOT already be registered globally (by hash)
 * The signature MUST be valid
 
 #### `getECDSAKeyRegistrationMessageHash`
