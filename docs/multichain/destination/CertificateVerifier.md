@@ -22,7 +22,7 @@ Libraries and Mixins:
 
 ## Overview
 
-The CertificateVerifier contracts are responsible for verifying certificates from an offchain task, on-chain. The operatorSet tables are updated by the [`OperatorTableUpdater`](./OperatorTableUpdater.md) to. These contracts support two signature schemes: ECDSA for individual signatures and BN254 for aggregated signatures.
+The CertificateVerifier contracts are responsible for verifying certificates from an offchain task, on-chain. The operatorSet tables are configured by the [`OperatorTableUpdater`](./OperatorTableUpdater.md) and updated in the `CertificateVerifier` by an offchain process. These contracts support two signature schemes: ECDSA for individual signatures and BN254 for aggregated signatures.
 
 Both verifiers implement staleness checks based on a `maxStalenessPeriod` to ensure certificates are not verified against outdated operator information. 
 
