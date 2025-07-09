@@ -7,8 +7,10 @@ import "./IOperatorTableCalculator.sol";
 
 interface IECDSACertificateVerifierTypes is IOperatorTableCalculatorTypes {
     // Errors
+    /// @notice Thrown when the signature length is invalid
     error InvalidSignatureLength();
-
+    /// @notice Thrown when the signatures are not ordered by signer address
+    error SignersNotOrdered();
     /**
      * @notice A ECDSA Certificate
      * @param referenceTimestamp the timestamp at which the certificate was created,
@@ -16,6 +18,7 @@ interface IECDSACertificateVerifierTypes is IOperatorTableCalculatorTypes {
      * @param messageHash the hash of the message that was signed by operators
      * @param sig the concatenated signature of each signing operator
      */
+
     struct ECDSACertificate {
         uint32 referenceTimestamp;
         bytes32 messageHash;

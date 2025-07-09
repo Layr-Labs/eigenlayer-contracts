@@ -141,8 +141,7 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
         bytes32 signableDigest = calculateCertificateDigest(cert.referenceTimestamp, cert.messageHash);
 
         // Parse the signatures
-        (address[] memory signers, bool validSignatures) = _parseSignatures(signableDigest, cert.sig);
-        require(validSignatures, VerificationFailed());
+        address[] memory signers = _parseSignatures(signableDigest, cert.sig);
 
         // Process each recovered signer
         for (uint256 i = 0; i < signers.length; i++) {
@@ -186,14 +185,13 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
      * @param signableDigest The signable digest that was signed
      * @param signatures The concatenated signatures
      * @return signers Array of addresses that signed the message
-     * @return valid Whether all signatures are valid
      * @dev Signatures must be ordered by signer address (ascending)
      * @dev This does not support smart contract based signatures for multichain
      */
     function _parseSignatures(
         bytes32 signableDigest,
         bytes memory signatures
-    ) internal pure returns (address[] memory signers, bool valid) {
+    ) internal pure returns (address[] memory signers) {
         // Each ECDSA signature is 65 bytes: r (32 bytes) + s (32 bytes) + v (1 byte)
         require(signatures.length > 0 && signatures.length % 65 == 0, InvalidSignatureLength());
 
@@ -207,20 +205,16 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
             }
 
             // Recover the signer
-            (address recovered, ECDSA.RecoverError error) = ECDSA.tryRecover(signableDigest, signature);
-            if (error != ECDSA.RecoverError.NoError || recovered == address(0)) {
-                return (signers, false);
-            }
+            (address recovered, ECDSA.RecoverError err) = ECDSA.tryRecover(signableDigest, signature);
+            require(err == ECDSA.RecoverError.NoError, InvalidSignature());
 
             // Check that signatures are ordered by signer address
-            if (i > 0 && recovered <= signers[i - 1]) {
-                return (signers, false);
-            }
+            require(i == 0 || recovered > signers[i - 1], SignersNotOrdered());
 
             signers[i] = recovered;
         }
 
-        return (signers, true);
+        return signers;
     }
 
     /**
