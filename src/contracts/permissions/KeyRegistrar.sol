@@ -225,7 +225,7 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         // Store key data
         _operatorKeyInfo[operatorSet.key()][operator] = KeyInfo({isRegistered: true, keyData: pubkey});
 
-        // Update global key registry
+        // Mark the key hash as spent
         _globalKeyRegistry[keyHash] = true;
 
         // Store the operator for the key hash
