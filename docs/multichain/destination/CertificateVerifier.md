@@ -91,8 +91,8 @@ Note that updating operator tables for a `referenceTimestamp` that is less than 
 ### Certificate Verification
 The contract supports 3 verification patterns:
 1. [Basic verification](#verifycertificate) - Returns the signed stakes for further processing
-2. [Nominal verification](#verifycertificatenominal) - Verifies against absolute stake thresholds
-3. [Proportional verification](#verifycertificateproportion) - Verifies against percentage-based thresholds
+2. [Proportional verification](#verifycertificateproportion) - Verifies against percentage-based thresholds
+3. [Nominal verification](#verifycertificatenominal) - Verifies against absolute stake thresholds
 
 #### `verifyCertificate`
 
@@ -143,38 +143,6 @@ Verifies an ECDSA certificate by checking individual signatures from operators. 
 * All signers MUST be registered operators
 * Each signature MUST be valid
 
-#### `verifyCertificateNominal`
-
-```solidity
-/**
- * @notice verifies a certificate and makes sure that the signed stakes meet
- * provided portions of the total stake on the AVS
- * @param operatorSet the operatorSet to verify the certificate for
- * @param cert a certificate
- * @param totalStakeNominalThresholds the nominal amount of total stake that
- * the signed stake of the certificate should meet. Each index corresponds to 
- * a stake type in the `weights` array in the `ECDSAOperatorInfo`
- * @return Whether or not the certificate is valid and meets thresholds
- */
-function verifyCertificateNominal(
-    OperatorSet calldata operatorSet,
-    ECDSACertificate memory cert,
-    uint256[] memory totalStakeNominalThresholds
-) external returns (bool);
-```
-
-Verifies that a certificate meets specified nominal (absolute) stake thresholds for each stake type.
-
-*Process*:
-* Performs the same verification as `verifyCertificate` to get signed stakes
-* Compares signed stakes against absolute thresholds
-* Returns true only if all thresholds are met
-
-*Requirements*:
-* All requirements from `verifyCertificate`
-* `signedStakes.length` MUST equal `totalStakeNominalThresholds.length`
-* For each stake type: `signedStakes[i] >= totalStakeNominalThresholds[i]`
-
 #### `verifyCertificateProportion`
 
 ```solidity
@@ -207,6 +175,38 @@ Verifies that a certificate meets specified proportion thresholds as a percentag
 * All requirements from `verifyCertificate`
 * `signedStakes.length` MUST equal `totalStakeProportionThresholds.length`
 * For each stake type: `signedStakes[i] >= (totalStakes[i] * totalStakeProportionThresholds[i]) / 10000`
+
+#### `verifyCertificateNominal`
+
+```solidity
+/**
+ * @notice verifies a certificate and makes sure that the signed stakes meet
+ * provided nominal stake thresholds
+ * @param operatorSet the operatorSet that the certificate is for
+ * @param cert a certificate
+ * @param totalStakeNominalThresholds the nominal amount of stake that
+ * the signed stake of the certificate should meet. Each index corresponds to
+ * a stake type in the `weights` array in the `ECDSAOperatorInfo`
+ * @return whether or not certificate is valid and meets nominal thresholds
+ */
+function verifyCertificateNominal(
+    OperatorSet calldata operatorSet,
+    ECDSACertificate memory cert,
+    uint256[] memory totalStakeNominalThresholds
+) external returns (bool);
+```
+
+Verifies that a certificate meets specified nominal (absolute) stake thresholds for each stake type.
+
+*Process*:
+* Performs the same verification as `verifyCertificate` to get signed stakes
+* Compares signed stakes against absolute thresholds
+* Returns true only if all thresholds are met
+
+*Requirements*:
+* All requirements from `verifyCertificate`
+* `signedStakes.length` MUST equal `totalStakeNominalThresholds.length`
+* For each stake type: `signedStakes[i] >= totalStakeNominalThresholds[i]`
 
 ### Utility Functions
 
@@ -336,8 +336,8 @@ Note that updating operator tables for a `referenceTimestamp` that is less than 
 ### Certificate Verification
 The contract supports 3 verification patterns:
 1. [Basic verification](#verifycertificate-1) - Returns the signed stakes for further processing
-2. [Nominal verification](#verifycertificatenominal-1) - Verifies against absolute stake thresholds
-3. [Proportional verification](#verifycertificateproportion-1) - Verifies against percentage-based thresholds
+2. [Proportional verification](#verifycertificateproportion-1) - Verifies against percentage-based thresholds
+3. [Nominal verification](#verifycertificatenominal-1) - Verifies against absolute stake thresholds
 
 #### `verifyCertificate`
 
@@ -391,40 +391,6 @@ Verifies a BN254 certificate by checking the aggregated signature against the op
 * All merkle proofs MUST be valid
 * The BLS signature MUST verify correctly
 
-#### `verifyCertificateNominal`
-
-```solidity
-/**
- * @notice verifies a certificate and makes sure that the signed stakes meet
- * provided nominal stake thresholds
- * @param operatorSet the operatorSet that the certificate is for
- * @param cert a certificate
- * @param totalStakeNominalThresholds the nominal amount of stake that
- * the signed stake of the certificate should meet. Each index corresponds to
- * a stake type in the `totalWeights` array in the `BN254OperatorSetInfo`.
- * @return whether or not certificate is valid and meets nominal thresholds
- */
-function verifyCertificateNominal(
-    OperatorSet memory operatorSet,
-    BN254Certificate memory cert,
-    uint256[] memory totalStakeNominalThresholds
-) external returns (bool);
-```
-
-Verifies that a certificate meets specified nominal (absolute) stake thresholds for each stake type.
-
-*Process*:
-* Performs the same verification as `verifyCertificate` to get signed stakes
-* Compares signed stakes against absolute thresholds
-* Returns true only if all thresholds are met
-
-*Requirements*:
-* All requirements from `verifyCertificate`
-* `signedStakes.length` MUST equal `totalStakeNominalThresholds.length`
-* For each stake type: `signedStakes[i] >= totalStakeNominalThresholds[i]`
-
-*Note*: This function has state-changing effects due to non-signer caching
-
 #### `verifyCertificateProportion`
 
 ```solidity
@@ -460,6 +426,40 @@ Verifies that a certificate meets specified proportion thresholds as a percentag
 
 *Note*: This function has state-changing effects due to non-signer caching
 
+#### `verifyCertificateNominal`
+
+```solidity
+/**
+ * @notice verifies a certificate and makes sure that the signed stakes meet
+ * provided nominal stake thresholds
+ * @param operatorSet the operatorSet that the certificate is for
+ * @param cert a certificate
+ * @param totalStakeNominalThresholds the nominal amount of stake that
+ * the signed stake of the certificate should meet. Each index corresponds to
+ * a stake type in the `totalWeights` array in the `BN254OperatorSetInfo`.
+ * @return whether or not certificate is valid and meets nominal thresholds
+ */
+function verifyCertificateNominal(
+    OperatorSet memory operatorSet,
+    BN254Certificate memory cert,
+    uint256[] memory totalStakeNominalThresholds
+) external returns (bool);
+```
+
+Verifies that a certificate meets specified nominal (absolute) stake thresholds for each stake type.
+
+*Process*:
+* Performs the same verification as `verifyCertificate` to get signed stakes
+* Compares signed stakes against absolute thresholds
+* Returns true only if all thresholds are met
+
+*Requirements*:
+* All requirements from `verifyCertificate`
+* `signedStakes.length` MUST equal `totalStakeNominalThresholds.length`
+* For each stake type: `signedStakes[i] >= totalStakeNominalThresholds[i]`
+
+*Note*: This function has state-changing effects due to non-signer caching
+
 ### Caching Mechanism
 
 ```solidity
@@ -478,7 +478,7 @@ struct BN254OperatorInfoWitness {
 }
 ```
 
-The `BN254CertificateVerifier` requires merkle proofs of nonSigning operators. When an operator is proven against an `operatorInfoTreeRoot` for the first time, it will be stored in the `operatorInfos` mapping so it doesn’t need to be proven for future `referenceTimestamps`. This results in the stake table of all proven operators being cached over time for a given `operatorSet's` table. Once cached, future `certificates` do not need to pass in a proof for the `nonSigner`. 
+The `BN254CertificateVerifier` requires merkle proofs of nonSigning operators. When an operator is proven against an `operatorInfoTreeRoot` for the first time, it will be stored in the `operatorInfos` mapping so it doesn't need to be proven for future `referenceTimestamps`. This results in the stake table of all proven operators being cached over time for a given `operatorSet's` table. Once cached, future `certificates` do not need to pass in a proof for the `nonSigner`. 
 
 ```mermaid
 flowchart TB
@@ -512,7 +512,7 @@ The operator table is updated every 10 days. The staleness period is 5 days. The
 
 1. Day 1: Table updated
 2. Day 2: Certificate passes
-3. Day 6: Certifiacte verification *fails*
+3. Day 6: Certificate verification *fails*
 4. Day 7: A certificate is re-generated. However, this will stale fail as the `referenceTimestamp` would still be day 1 given that was the latest table update
 
-Note that we cannot re-generate a certificate on Day 7. This is why we recommend that the `stalenessPeriod` is greater than or equal to the update cadence of operator tables. 
+Note that we cannot re-generate a certificate on Day 7. This is why we recommend that the `stalenessPeriod` is greater than or equal to the update cadence of operator tables.
