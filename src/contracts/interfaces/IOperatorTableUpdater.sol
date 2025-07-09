@@ -40,12 +40,6 @@ interface IOperatorTableUpdaterEvents {
     event NewGlobalTableRoot(uint32 indexed referenceTimestamp, bytes32 indexed globalTableRoot);
 
     /**
-     * @notice Emitted when the generator is updated
-     * @param operatorSet The operatorSet which certifies against global roots
-     */
-    event GeneratorUpdated(OperatorSet operatorSet);
-
-    /**
      * @notice Emitted when the global root confirmation threshold is updated
      * @param bps The threshold, in bps, for a global root to be signed off on and updated
      */
@@ -83,36 +77,11 @@ interface IOperatorTableUpdater is
     ) external;
 
     /**
-     * @notice Set the operatorSet which certifies against global roots
-     * @param operatorSet the operatorSet which certifies against global roots
-     * @dev The `operatorSet` is used to verify the certificate of the global table root
-     * @dev Only callable by the owner of the contract
-     */
-    function setGenerator(
-        OperatorSet calldata operatorSet
-    ) external;
-
-    /**
      * @notice The threshold, in bps, for a global root to be signed off on and updated
      * @dev Only callable by the owner of the contract
      */
     function setGlobalRootConfirmationThreshold(
         uint16 bps
-    ) external;
-
-    /**
-     * @notice Updates the operator table for the generator
-     * @param referenceTimestamp The reference timestamp of the operator table update
-     * @param GeneratorInfo The operatorSetInfo for the generator
-     * @param GeneratorConfig The operatorSetConfig for the generator
-     * @dev We have a separate function for updating this operatorSet since it's not transported and updated
-     *      in the same way as the other operatorSets
-     * @dev Only callable by the owner of the contract
-     */
-    function updateGenerator(
-        uint32 referenceTimestamp,
-        BN254OperatorSetInfo calldata GeneratorInfo,
-        OperatorSetConfig calldata GeneratorConfig
     ) external;
 
     /**

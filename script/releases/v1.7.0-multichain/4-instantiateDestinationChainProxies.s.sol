@@ -163,11 +163,11 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
         operatorTableUpdater.initialize(
             address(0), // owner
             0, // initial paused status
-            dummyOperatorSet, // globalRootConfirmerSet
+            dummyOperatorSet, // generator
             0, // globalRootConfirmationThreshold
             0, // referenceTimestamp
-            dummyBN254Info, // globalRootConfirmerSetInfo
-            dummyConfig // globalRootConfirmerSetConfig
+            dummyBN254Info, // generatorInfo
+            dummyConfig // generatorConfig
         );
 
         // ECDSACertificateVerifier and BN254CertificateVerifier don't have initialize functions
