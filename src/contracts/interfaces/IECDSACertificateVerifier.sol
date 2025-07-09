@@ -115,7 +115,7 @@ interface IECDSACertificateVerifier is IECDSACertificateVerifierEvents, IBaseCer
     function getOperatorInfo(
         OperatorSet calldata operatorSet,
         uint32 referenceTimestamp,
-        uint32 operatorIndex
+        uint256 operatorIndex
     ) external view returns (ECDSAOperatorInfo memory);
 
     /**

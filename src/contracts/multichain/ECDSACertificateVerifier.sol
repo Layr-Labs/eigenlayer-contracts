@@ -60,7 +60,7 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
 
         // Store each operator info in the indexed mapping
         for (uint256 i = 0; i < operatorInfos.length; i++) {
-            _operatorInfos[operatorSetKey][referenceTimestamp][uint32(i)] = operatorInfos[i];
+            _operatorInfos[operatorSetKey][referenceTimestamp][i] = operatorInfos[i];
         }
 
         _latestReferenceTimestamps[operatorSetKey] = referenceTimestamp;
@@ -152,7 +152,7 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
             ECDSAOperatorInfo memory operatorInfo;
 
             for (uint256 j = 0; j < _numOperators[operatorSetKey][cert.referenceTimestamp]; j++) {
-                operatorInfo = _operatorInfos[operatorSetKey][cert.referenceTimestamp][uint32(j)];
+                operatorInfo = _operatorInfos[operatorSetKey][cert.referenceTimestamp][j];
                 if (operatorInfo.pubkey == signer) {
                     isOperator = true;
                     break;
@@ -256,7 +256,7 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
         uint32 numOperators = uint32(_numOperators[operatorSetKey][referenceTimestamp]);
         ECDSAOperatorInfo[] memory operatorInfos = new ECDSAOperatorInfo[](numOperators);
 
-        for (uint32 i = 0; i < numOperators; i++) {
+        for (uint256 i = 0; i < numOperators; i++) {
             operatorInfos[i] = _operatorInfos[operatorSetKey][referenceTimestamp][i];
         }
 
@@ -267,7 +267,7 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
     function getOperatorInfo(
         OperatorSet memory operatorSet,
         uint32 referenceTimestamp,
-        uint32 operatorIndex
+        uint256 operatorIndex
     ) external view returns (ECDSAOperatorInfo memory) {
         bytes32 operatorSetKey = operatorSet.key();
         require(operatorIndex < _numOperators[operatorSetKey][referenceTimestamp], "Operator index out of bounds");
@@ -295,7 +295,7 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
         uint256 stakeTypesCount = _operatorInfos[operatorSetKey][referenceTimestamp][0].weights.length;
         uint256[] memory totalStakes = new uint256[](stakeTypesCount);
         for (uint256 i = 0; i < operatorCount; i++) {
-            uint256[] memory weights = _operatorInfos[operatorSetKey][referenceTimestamp][uint32(i)].weights;
+            uint256[] memory weights = _operatorInfos[operatorSetKey][referenceTimestamp][i].weights;
             for (uint256 j = 0; j < weights.length && j < stakeTypesCount; j++) {
                 totalStakes[j] += weights[j];
             }
