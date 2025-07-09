@@ -143,7 +143,8 @@ interface IECDSACertificateVerifier is IECDSACertificateVerifierEvents, IBaseCer
     /**
      * @notice Override domainSeparator to not include chainId
      * @return The domain separator hash without chainId
-     * @dev This function overrides the base domainSeparator to not include chainId
+     * @dev This function overrides the base domainSeparator to not include chainId to replay
+     *      certificates across multiple destination chains
      */
     function domainSeparator() external view returns (bytes32);
 
@@ -154,6 +155,8 @@ interface IECDSACertificateVerifier is IECDSACertificateVerifierEvents, IBaseCer
      * @return The EIP-712 digest
      * @dev This function is public to allow offchain tools to calculate the same digest
      * @dev Note: This does not support smart contract based signatures for multichain
+     * @dev This is a chain-agnostic digest, so it can be used to verify certificates across
+     *      multiple destination chains
      */
     function calculateCertificateDigest(
         uint32 referenceTimestamp,

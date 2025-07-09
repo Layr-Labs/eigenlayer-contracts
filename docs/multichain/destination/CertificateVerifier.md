@@ -210,6 +210,21 @@ Verifies that a certificate meets specified proportion thresholds as a percentag
 
 ### Utility Functions
 
+#### `domainSeparator`
+
+```solidity
+/**
+ * @notice Override domainSeparator to not include chainId
+ * @return The domain separator hash without chainId
+ * @dev This function overrides the base domainSeparator to not include chainId to replay
+ *      certificates across multiple destination chains
+ */
+function domainSeparator() external view returns (bytes32);
+```
+
+The ECDSA Certificate Verifier uses a modified domain separator that intentionally **excludes the chainId**. This design choice enables cross-chain certificate reuse. 
+
+
 #### `calculateCertificateDigest`
 
 ```solidity
@@ -229,8 +244,10 @@ function calculateCertificateDigest(
 
 Computes the EIP-712 structured data hash for ECDSA certificate signing. This digest is what operators must sign to create a valid certificate.
 
+**Multichain Design**: This function creates a chain-agnostic digest by using a domain separator that doesn't include the chainId. This allows the same certificate to be verified across multiple destination chains without requiring separate signatures.
+
 *Returns*:
-* EIP-712 digest using domain separator and certificate type hash
+* EIP-712 digest using domain separator (without chainId) and certificate type hash
 
 ---
 
