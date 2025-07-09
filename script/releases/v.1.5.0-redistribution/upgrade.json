@@ -13,7 +13,11 @@
         },
         {
             "type": "multisig",
-            "filename": "3-executeUpgrade.s.sol"
+            "filename": "3-blacklistTokens.s.sol"
+        },
+        {
+            "type": "multisig",
+            "filename": "4-executeUpgrade.s.sol"
         }
     ]
 }

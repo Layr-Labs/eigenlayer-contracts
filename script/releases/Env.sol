@@ -15,10 +15,6 @@ import "src/contracts/core/RewardsCoordinator.sol";
 import "src/contracts/interfaces/IRewardsCoordinator.sol";
 import "src/contracts/core/StrategyManager.sol";
 
-/// slashEscrow/
-import "src/contracts/core/SlashEscrow.sol";
-import "src/contracts/core/SlashEscrowFactory.sol";
-
 /// permissions/
 import "src/contracts/permissions/PauserRegistry.sol";
 import "src/contracts/permissions/PermissionController.sol";
@@ -94,10 +90,6 @@ library Env {
 
     function proxyAdmin() internal view returns (address) {
         return _envAddress("proxyAdmin");
-    }
-
-    function slashEscrowProxyAdmin() internal view returns (address) {
-        return _envAddress("slashEscrowProxyAdmin");
     }
 
     function ethPOS() internal view returns (IETHPOSDeposit) {
@@ -335,27 +327,6 @@ library Env {
     }
 
     /**
-     * slashEscrow/
-     */
-    function slashEscrow(
-        DeployedImpl
-    ) internal view returns (SlashEscrow) {
-        return SlashEscrow(_deployedImpl(type(SlashEscrow).name));
-    }
-
-    function slashEscrowFactory(
-        DeployedProxy
-    ) internal view returns (SlashEscrowFactory) {
-        return SlashEscrowFactory(_deployedProxy(type(SlashEscrowFactory).name));
-    }
-
-    function slashEscrowFactory(
-        DeployedImpl
-    ) internal view returns (SlashEscrowFactory) {
-        return SlashEscrowFactory(_deployedImpl(type(SlashEscrowFactory).name));
-    }
-
-    /**
      * token/
      */
     function eigen(
@@ -385,6 +356,14 @@ library Env {
     /**
      * Helpers
      */
+    function isSourceChain() internal view returns (bool) {
+        return _envBool("SOURCE_CHAIN");
+    }
+
+    function isDestinationChain() internal view returns (bool) {
+        return _envBool("DESTINATION_CHAIN");
+    }
+
     function _deployedInstance(string memory name, uint256 idx) private view returns (address) {
         return ZEnvHelpers.state().deployedInstance(name, idx);
     }
@@ -441,6 +420,12 @@ library Env {
         string memory key
     ) private view returns (uint16) {
         return ZEnvHelpers.state().envU16(key);
+    }
+
+    function _envBool(
+        string memory key
+    ) private view returns (bool) {
+        return ZEnvHelpers.state().envBool(key);
     }
 
     address internal constant VM_ADDRESS = address(uint160(uint256(keccak256("hevm cheat code"))));

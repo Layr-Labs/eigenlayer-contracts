@@ -251,7 +251,7 @@ This method directs the `strategy` to convert the input deposit shares to tokens
 ## Increasing/Clearing Slashed Shares
 
 Slashes shares are marked as burnable or redistributable. Anybody can call
-`clearBurnOrRedistributableShares` to send tokens to the slash's `SlashEscrow` contract. Shares to clear are stored in `_burnOrRedistributableShares`, a nested [EnumerableMap](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/utils/structs/EnumerableMap.sol). The operatorSet and slashId are used to index into the enumerableMap of strategies to shares. The following methods handle clearing burn or redistributable shares:
+`clearBurnOrRedistributableShares` to send tokens to the slash's `redistributionRecipient`. Shares to clear are stored in `_burnOrRedistributableShares`, a nested [EnumerableMap](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/utils/structs/EnumerableMap.sol). The operatorSet and slashId are used to index into the enumerableMap of strategies to shares. The following methods handle clearing burn or redistributable shares:
 * [`StrategyManager.increaseBurnOrRedistributableShares`](#increaseburnorredistributableshares)
 * [`StrategyManager.clearBurnOrRedistributableShares`](#clearBurnOrRedistributableShares)
 * [`StrategyManager.clearBurnOrRedistributableSharesByStrategy](#clearburnorredistributableshares)
@@ -284,7 +284,7 @@ Anyone can then convert the shares to tokens and trigger a burn via `burnShares`
 *Effects*:
 * Sets `burnOrRedistributableShares` for the given `operatorSet`, `slashId`, and `strategy`
 * Emits a `BurnOrRedistributableSharesIncreased` event
-* See [`SlashEscrowFactory.initiateSlashEscrow`](./SlashEscrowFactory.md#initiateslashescrow)
+
 
 
 *Requirements*:
@@ -320,12 +320,12 @@ function clearBurnOrRedistributableSharesByStrategy(
 ) external returns (uint256);
 ```
 
-Anyone can call this method to transfer slashed shares to the slash's `SlashEscrow` contract. This method sets the `burnOrRedistributableShares` for the given `slashId` and `operatorSet` to 0. To accommodate the unlimited number of strategies that can be added to an operatorSet, users can also pass in a strategy to clear via `clearBurnOrRedistributableSharesByStrategy`. The strategies that haven not been cleared can be retrieved by calling `getBurnOrRedistributableShares(operatorSet, slashId)`. 
+Anyone can call this method to transfer slashed shares to the operator sets's `redistributionRecipient`. This method sets the `burnOrRedistributableShares` for the given `slashId` and `operatorSet` to 0. To accommodate the unlimited number of strategies that can be added to an operatorSet, users can also pass in a strategy to clear via `clearBurnOrRedistributableSharesByStrategy`. The strategies that haven not been cleared can be retrieved by calling `getBurnOrRedistributableShares(operatorSet, slashId)`. 
 
 *Effects*:
 * Resets the strategy's burn or redistributable shares for the operatorSet and slashId to 0
 * If the shares to remove are nonzero:
-    * Calls `withdraw` on the `strategy`, withdrawing shares and sending a corresponding amount of tokens to the slash's `slashEscrow` contract
+    * Calls `withdraw` on the `strategy`, withdrawing shares and sending a corresponding amount of tokens to the operator sets's `redistributionRecipient`
     * Emits a `BurnOrRedistributableSharesDecreased`
 
 #### `burnShares`
