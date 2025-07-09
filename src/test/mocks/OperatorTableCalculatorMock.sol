@@ -19,7 +19,7 @@ contract OperatorTableCalculatorMock is IOperatorTableCalculator {
         _operatorTableBytes[operatorSet.key()] = operatorTableBytes;
     }
 
-    function getOperatorWeights(OperatorSet calldata operatorSet)
+    function getOperatorSetWeights(OperatorSet calldata operatorSet)
         external
         view
         returns (address[] memory operators, uint[][] memory weights)
@@ -36,8 +36,10 @@ contract OperatorTableCalculatorMock is IOperatorTableCalculator {
         return (operators, weights);
     }
 
-    function getOperatorWeight(OperatorSet calldata operatorSet, address operator) external view returns (uint weight) {
-        return _operatorWeights[operatorSet.key()][operator];
+    function getOperatorWeights(OperatorSet calldata operatorSet, address operator) external view returns (uint[] memory weights) {
+        weights = new uint[](1);
+        weights[0] = _operatorWeights[operatorSet.key()][operator];
+        return weights;
     }
 
     // Helper functions for testing
