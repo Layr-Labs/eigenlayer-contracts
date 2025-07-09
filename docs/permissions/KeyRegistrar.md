@@ -214,6 +214,7 @@ Removes an operator's key from the specified operator set. Note that the key rem
 
 *Requirements*:
 * Caller MUST be authorized for the AVS (via PermissionController)
+* The operator MUST not be slashable for the AVS, to prevent off-chain race conditions
 * The operator set MUST be configured
 * The operator MUST have a registered key for this operator set
 
