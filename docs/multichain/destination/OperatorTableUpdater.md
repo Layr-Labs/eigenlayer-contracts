@@ -31,7 +31,7 @@ The following values are set upon initialization:
     * `maxStalenessPeriod`: 0. Set to zero to confirm `globalTableRoots` without updating the `generator` operatorSet. See [`CertificateVerifier`](./CertificateVerifier.md#overview) for specifics`OperatorTableUpdater`. It is the same across all destination chains, even for destination chains that are supported after the initial deployment. 
     * `owner`: Unused parameter for `Generator`
 
-
+Operator tables are updated daily on testnet and weekly on mainnet. 
 ---
 
 ## Global Root Confirmation

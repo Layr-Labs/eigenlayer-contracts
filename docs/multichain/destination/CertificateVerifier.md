@@ -26,7 +26,7 @@ The CertificateVerifier contracts are responsible for verifying certificates fro
 
 Both verifiers implement staleness checks based on a `maxStalenessPeriod` to ensure certificates are not verified against outdated operator information. 
 
-*Note: Setting a max staleness period to 0 enables certificates to be confirmed against any `referenceTimestamp`*. 
+**Note: Setting a max staleness period to 0 enables certificates to be confirmed against any `referenceTimestamp`. In addition, setting a `maxStalenessPeriod` that is greater than 0 and less than the frequency of table updates (daily on testnet, weekly on mainnet) can result in certificates be unable to be confirmed.** See the [staleness period](#staleness-period) in the appendix for some examples. 
 
 ---
 
@@ -60,7 +60,7 @@ struct ECDSAOperatorInfo {
  * @param referenceTimestamp the timestamp at which the operatorInfos were sourced
  * @param operatorInfos the operatorInfos to update the operator table with
  * @param operatorSetConfig the configuration of the operatorSet
- * @dev only callable by the operatorTableUpdater for the given operatorSet
+ * @dev Only callable by the `OperatorTableUpdater`
  * @dev The `referenceTimestamp` must be greater than the latest reference timestamp for the given operatorSet
  */
 function updateOperatorTable(
@@ -72,6 +72,8 @@ function updateOperatorTable(
 ```
 
 Updates the operator table with new `operatorInfos` and `operatorSetConfig`. All operators and weights are written to storage. 
+
+Note that updating operator tables for a `referenceTimestamp` that is less than the latest reference timestamp is not possible. Thus, operator tables cannot be updated retroactively. AVS developers should keep this in mind when building their off-chain signature aggregation logic. 
 
 *Effects*:
 * Stores the number of operators at `_numOperators[operatorSetKey][referenceTimestamp]`
@@ -97,7 +99,8 @@ The contract supports 3 verification patterns:
 ```solidity
 /**
  * @notice A ECDSA Certificate
- * @param referenceTimestamp the timestamp at which the certificate was created
+ * @param referenceTimestamp the timestamp at which the certificate was created, 
+ *        which corresponds to a reference timestamp of the operator table update
  * @param messageHash the hash of the message that was signed by operators
  * @param sig the concatenated signature of each signing operator
  */
@@ -282,8 +285,9 @@ struct BN254OperatorSetInfo {
  * @param referenceTimestamp the timestamp at which the operatorInfos were sourced
  * @param operatorSetInfo the operatorInfos to update the operator table with
  * @param operatorSetConfig the configuration of the operatorSet
- * @dev only callable by the operatorTableUpdater for the given operatorSet
- * @dev The `referenceTimestamp` must be greater than the latest reference timestamp for the given operatorSet
+ * @dev Only callable by the `OperatorTableUpdater`
+ * @dev The `referenceTimestamp` must correspond to a reference timestamp for a globalTableRoot stored in the `OperatorTableUpdater`. 
+ *     It must also be greater than the latest reference timestamp for the given operatorSet.
  */
 function updateOperatorTable(
     OperatorSet calldata operatorSet,
@@ -294,6 +298,8 @@ function updateOperatorTable(
 ```
 
 Updates the operator table with new `operatorSetInfo` and `operatorSetConfig`. 
+
+Note that updating operator tables for a `referenceTimestamp` that is less than the latest reference timestamp is not possible. Thus, operator tables cannot be updated retroactively. AVS developers should keep this in mind when building their off-chain signature aggregation logic. 
 
 *Effects*:
 * Stores `operatorSetInfo` at `_operatorSetInfos[operatorSetKey][referenceTimestamp]` containing:
@@ -321,7 +327,8 @@ The contract supports 3 verification patterns:
 ```solidity
 /**
  * @notice A BN254 Certificate
- * @param referenceTimestamp the timestamp at which the certificate was created
+ * @param referenceTimestamp the timestamp at which the certificate was created,
+ *        which corresponds to the reference timestamp of the operator table update
  * @param messageHash the hash of the message that was signed by operators and used to verify the aggregated signature
  * @param signature the G1 signature of the message
  * @param apk the G2 aggregate public key
@@ -339,8 +346,8 @@ struct BN254Certificate {
  * @notice verifies a certificate
  * @param operatorSet the operatorSet that the certificate is for
  * @param cert a certificate
- * @return signedStakes amount of stake that signed the certificate for each stake
- * type. Each index corresponds to a stake type in the `totalWeights` array in the `BN254OperatorSetInfo`. 
+ * @return signedStakes amount of stake that signed the certificate for each stake type. Each index
+ *         corresponds to a stake type in the `totalWeights` array in the `BN254OperatorSetInfo`.
  */
 function verifyCertificate(
     OperatorSet memory operatorSet,
@@ -376,9 +383,9 @@ Verifies a BN254 certificate by checking the aggregated signature against the op
  * @param operatorSet the operatorSet that the certificate is for
  * @param cert a certificate
  * @param totalStakeNominalThresholds the nominal amount of stake that
- * the signed stake of the certificate should meet. Each index corresponds to 
- * a stake type in the `totalWeights` array in the `BN254OperatorSetInfo`. 
- * @return whether or not certificate is valid and meets thresholds
+ * the signed stake of the certificate should meet. Each index corresponds to
+ * a stake type in the `totalWeights` array in the `BN254OperatorSetInfo`.
+ * @return whether or not certificate is valid and meets nominal thresholds
  */
 function verifyCertificateNominal(
     OperatorSet memory operatorSet,
@@ -408,11 +415,11 @@ Verifies that a certificate meets specified nominal (absolute) stake thresholds 
  * @notice verifies a certificate and makes sure that the signed stakes meet
  * provided portions of the total stake on the AVS
  * @param operatorSet the operatorSet that the certificate is for
- * @param cert a certificate
+ * @param cert the certificate
  * @param totalStakeProportionThresholds the proportion, in BPS,of total stake that
- * the signed stake of the certificate should meet. Each index corresponds to 
- * a stake type in the `totalWeights` array in the `BN254OperatorSetInfo`. 
- * @return whether or not certificate is valid and meets thresholds
+ * the signed stake of the certificate should meet. Each index corresponds to
+ * a stake type in the `totalWeights` array in the `BN254OperatorSetInfo`.
+ * @return whether or not certificate is valid and meets proportion thresholds
  */
 function verifyCertificateProportion(
     OperatorSet memory operatorSet,
@@ -440,10 +447,12 @@ Verifies that a certificate meets specified proportion thresholds as a percentag
 
 ```solidity
 /**
- * @notice A witness for an operator
+ * @notice A witness for an operator, used to identify the non-signers for a given certificate
  * @param operatorIndex the index of the nonsigner in the `BN254OperatorInfo` tree
- * @param operatorInfoProof merkle proofs of the nonsigner at the index. Empty if operator is in cache.
- * @param operatorInfo the `BN254OperatorInfo` for the operator. Empty if operator is in cache
+ * @param operatorInfoProofs merkle proof of the nonsigner at the index. Empty if the non-signing operator is already stored from a previous verification
+ * @param operatorInfo the `BN254OperatorInfo` for the operator. Empty if the non-signing operator is already stored from a previous verification
+ * @dev Non-signing operators are stored in the `BN254CertificateVerifier` upon the first successful certificate verification. This is done to avoid
+ *      the need for resupplying proofs of non-signing operators for each certificate verification.
  */
 struct BN254OperatorInfoWitness {
     uint32 operatorIndex;
@@ -464,3 +473,29 @@ flowchart TB
     N1 --> L2[[Leaf 2<br/>BN254OperatorInfo #2]]
     N1 --> L3[[Leaf 3<br/>BN254OperatorInfo #3]]
 ```
+
+---
+
+## Appendix
+
+### Staleness Period
+
+For the below examples, let's assume that the operator table is updated on Day 1
+
+#### Eg. 1: Normal Functioning
+Assume the the staleness period is 10 days and the `referenceTimestamp` of a certificate is Day 1. 
+
+1. Day 1: Table Updated
+2. Day 9: Certificate passes
+3. Day 10: Certificate passes
+4. Day 11: Certificate verification *fails*
+
+#### Eg. 2: Low staleness period
+The operator table is updated every 10 days. The staleness period is 5 days. The `referenceTimestamp` of a certificate is Day 1. 
+
+1. Day 1: Table updated
+2. Day 2: Certificate passes
+3. Day 6: Certifiacte verification *fails*
+4. Day 7: A certificate is re-generated. However, this will stale fail as the `referenceTimestamp` would still be day 1 given that was the latest table update
+
+Note that we cannot re-generate a certificate on Day 7. This is why we recommend that the `stalenessPeriod` is greater than or equal to the update cadence of operator tables. 
