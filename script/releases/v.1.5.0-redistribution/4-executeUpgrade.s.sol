@@ -92,6 +92,7 @@ contract Execute is QueueUpgrade {
         assertTrue(delegation.minWithdrawalDelayBlocks() == Env.MIN_WITHDRAWAL_DELAY(), "dm.withdrawalDelay invalid");
 
         StrategyManager strategyManager = Env.proxy.strategyManager();
+        assertTrue(strategyManager.allocationManager() == Env.proxy.allocationManager(), "sm.alm invalid");
         assertTrue(strategyManager.delegation() == Env.proxy.delegationManager(), "sm.dm invalid");
         assertTrue(strategyManager.pauserRegistry() == Env.impl.pauserRegistry(), "sm.pR invalid");
 

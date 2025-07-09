@@ -262,6 +262,7 @@ contract Deploy is EOADeployer {
         // StrategyManager
         {
             StrategyManager strategyManager = Env.impl.strategyManager();
+            assertTrue(strategyManager.allocationManager() == Env.proxy.allocationManager(), "sm.alm invalid");
             assertTrue(strategyManager.delegation() == Env.proxy.delegationManager(), "sm.dm invalid");
             assertTrue(strategyManager.pauserRegistry() == Env.impl.pauserRegistry(), "sm.pR invalid");
         }
