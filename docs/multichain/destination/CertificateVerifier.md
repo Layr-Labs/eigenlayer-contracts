@@ -112,15 +112,15 @@ struct ECDSACertificate {
 
 /**
  * @notice verifies a certificate
- * @param operatorSet the operatorSet to verify the certificate for
  * @param cert a certificate
  * @return signedStakes amount of stake that signed the certificate for each stake
  * type. Each index corresponds to a stake type in the `weights` array in the `ECDSAOperatorInfo`
+ * @return signers array of addresses that signed the certificate
  */
 function verifyCertificate(
     OperatorSet calldata operatorSet,
     ECDSACertificate memory cert
-) external returns (uint256[] memory signedStakes);
+) external returns (uint256[] memory signedStakes, address[] memory signers);
 ```
 
 Verifies an ECDSA certificate by checking individual signatures from operators. Each individual operator must sign off on a `signableDigest` given by [`calculateCertificateDigest`](#calculatecertificatedigest).
