@@ -89,7 +89,7 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
         uint256[] memory totalStakes = getTotalStakes(operatorSet, cert.referenceTimestamp);
         require(signedStakes.length == totalStakeProportionThresholds.length, ArrayLengthMismatch());
         for (uint256 i = 0; i < signedStakes.length; i++) {
-            uint256 threshold = (totalStakes[i] * totalStakeProportionThresholds[i]) / 10_000;
+            uint256 threshold = (totalStakes[i] * totalStakeProportionThresholds[i]) / BPS_DENOMINATOR;
             if (signedStakes[i] < threshold) {
                 return (false, signers);
             }
