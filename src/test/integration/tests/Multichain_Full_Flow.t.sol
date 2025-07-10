@@ -104,9 +104,8 @@ contract Multichain_Full_Flow is MultichainIntegrationBase {
         proportionalThresholds[0] = 6000; // 60% in basis points
         proportionalThresholds[1] = 6000; // 60% in basis points
 
-        bool meetsProportionalThresholds = bn254CertificateVerifier.verifyCertificateProportion(
-            operatorSet, certificate, proportionalThresholds
-        );
+        bool meetsProportionalThresholds =
+            bn254CertificateVerifier.verifyCertificateProportion(operatorSet, certificate, proportionalThresholds);
 
         // Calculate expected result - with 1 operator (100% signing), should meet 60% threshold
         assertTrue(meetsProportionalThresholds, "Certificate should meet 60% proportional threshold");
@@ -116,9 +115,7 @@ contract Multichain_Full_Flow is MultichainIntegrationBase {
         proportionalThresholds[0] = 8000; // 80%
         proportionalThresholds[1] = 8000; // 80%
 
-        bool meetsHigherThreshold = bn254CertificateVerifier.verifyCertificateProportion(
-            operatorSet, certificate, proportionalThresholds
-        );
+        bool meetsHigherThreshold = bn254CertificateVerifier.verifyCertificateProportion(operatorSet, certificate, proportionalThresholds);
 
         assertTrue(meetsHigherThreshold, "Certificate should meet 80% proportional threshold");
         console.log("Proportional verification (80% threshold): PASSED");
@@ -127,9 +124,7 @@ contract Multichain_Full_Flow is MultichainIntegrationBase {
         proportionalThresholds[0] = 9900; // 99%
         proportionalThresholds[1] = 9900; // 99%
 
-        bool meetsVeryHighThreshold = bn254CertificateVerifier.verifyCertificateProportion(
-            operatorSet, certificate, proportionalThresholds
-        );
+        bool meetsVeryHighThreshold = bn254CertificateVerifier.verifyCertificateProportion(operatorSet, certificate, proportionalThresholds);
 
         // With 100% signing, this should still pass
         assertTrue(meetsVeryHighThreshold, "Certificate should meet 99% proportional threshold with 100% signing");
@@ -182,9 +177,7 @@ contract Multichain_Full_Flow is MultichainIntegrationBase {
         nominalThresholds[0] = signedStakes[0] > 100 ? signedStakes[0] - 100 : 0;
         nominalThresholds[1] = signedStakes[1] > 100 ? signedStakes[1] - 100 : 0;
 
-        bool meetsNominalThresholds = bn254CertificateVerifier.verifyCertificateNominal(
-            operatorSet, certificate, nominalThresholds
-        );
+        bool meetsNominalThresholds = bn254CertificateVerifier.verifyCertificateNominal(operatorSet, certificate, nominalThresholds);
 
         assertTrue(meetsNominalThresholds, "Certificate should meet nominal thresholds below signed stakes");
         console.log("Nominal verification (below signed stakes): PASSED");
@@ -193,9 +186,7 @@ contract Multichain_Full_Flow is MultichainIntegrationBase {
         nominalThresholds[0] = signedStakes[0];
         nominalThresholds[1] = signedStakes[1];
 
-        bool meetsExactThresholds = bn254CertificateVerifier.verifyCertificateNominal(
-            operatorSet, certificate, nominalThresholds
-        );
+        bool meetsExactThresholds = bn254CertificateVerifier.verifyCertificateNominal(operatorSet, certificate, nominalThresholds);
 
         assertTrue(meetsExactThresholds, "Certificate should meet exact nominal thresholds");
         console.log("Nominal verification (exact signed stakes): PASSED");
@@ -204,9 +195,7 @@ contract Multichain_Full_Flow is MultichainIntegrationBase {
         nominalThresholds[0] = signedStakes[0] + 100;
         nominalThresholds[1] = signedStakes[1] + 100;
 
-        bool meetsHighThresholds = bn254CertificateVerifier.verifyCertificateNominal(
-            operatorSet, certificate, nominalThresholds
-        );
+        bool meetsHighThresholds = bn254CertificateVerifier.verifyCertificateNominal(operatorSet, certificate, nominalThresholds);
 
         assertFalse(meetsHighThresholds, "Certificate should not meet nominal thresholds above signed stakes");
         console.log("Nominal verification (above signed stakes): CORRECTLY FAILED");

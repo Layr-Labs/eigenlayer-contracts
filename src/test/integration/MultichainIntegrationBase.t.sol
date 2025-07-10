@@ -90,8 +90,9 @@ abstract contract MultichainIntegrationBase is IntegrationBase {
         );
 
         // Deploy OperatorTableUpdater (placeholder addresses for certificate verifiers initially)
-        operatorTableUpdaterImplementation =
-            new OperatorTableUpdater(IBN254CertificateVerifier(address(0)), IECDSACertificateVerifier(address(0)), eigenLayerPauserReg, "1.0.0");
+        operatorTableUpdaterImplementation = new OperatorTableUpdater(
+            IBN254CertificateVerifier(address(0)), IECDSACertificateVerifier(address(0)), eigenLayerPauserReg, "1.0.0"
+        );
 
         operatorTableUpdater = OperatorTableUpdater(
             address(new TransparentUpgradeableProxy(address(operatorTableUpdaterImplementation), address(eigenLayerProxyAdmin), ""))
