@@ -36,6 +36,33 @@ Destination Chain Contracts
 
 ## Changelog
 
+- refactor: table calc interface [PR #1525](https://github.com/layr-labs/eigenlayer-contracts/pull/1525)
+- docs: update README for v1.5.0 & v1.6.0 [PR #1526](https://github.com/layr-labs/eigenlayer-contracts/pull/1526)
+- docs: update ecdsa vc func
+- docs: fix ordering of cv funcs
+- chore: use bps_denominator in ecdsa cv
+- chore: domain separator no chain id doc
+- chore: use uint256 for index
+- chore: is spent
+- fix: cert verifier typo
+- fix: by hash docs consistency
+- refactor: cleaner reverts for `ECDSACertificateVerifier` [PR #1521](https://github.com/layr-labs/eigenlayer-contracts/pull/1521)
+- docs: clear up certificate verification  [PR #1515](https://github.com/layr-labs/eigenlayer-contracts/pull/1515)
+- docs: add final audit reports
+- feat: key data reverse lookup  [PR #1520](https://github.com/layr-labs/eigenlayer-contracts/pull/1520)
+- fix: remove unused constants and add gap [PR #1519](https://github.com/layr-labs/eigenlayer-contracts/pull/1519)
+- refactor: remove unnecessary signature validation and change param name [PR #1509](https://github.com/layr-labs/eigenlayer-contracts/pull/1509)
+- docs: update CHANGELOG [PR #1514](https://github.com/layr-labs/eigenlayer-contracts/pull/1514)
+- docs(redistribution-changes): cleanup [PR #1513](https://github.com/layr-labs/eigenlayer-contracts/pull/1513)
+- test(redistribution-changes): passing [PR #1511](https://github.com/layr-labs/eigenlayer-contracts/pull/1511)
+- fix: strategy manager gap [PR #1508](https://github.com/layr-labs/eigenlayer-contracts/pull/1508)
+- refactor: remove redistribution delay [PR #1485](https://github.com/layr-labs/eigenlayer-contracts/pull/1485)
+- docs(audit): note upgrade rescue flow [PR #1467](https://github.com/layr-labs/eigenlayer-contracts/pull/1467)
+- fix(audit): assert redistribution recipient != burn address [PR #1466](https://github.com/layr-labs/eigenlayer-contracts/pull/1466)
+- fix(audit): more reentrancy checks [PR #1450](https://github.com/layr-labs/eigenlayer-contracts/pull/1450)
+- fix(audit): out-of-gas issue [PR #1459](https://github.com/layr-labs/eigenlayer-contracts/pull/1459)
+- chore: add final moocow audit
+- docs: changelog [PR #1504](https://github.com/layr-labs/eigenlayer-contracts/pull/1504)
 - feat: multichain deploy scripts [PR #1487](https://github.com/layr-labs/eigenlayer-contracts/pull/1487)
 - feat: operator table updater pauser [PR #1501](https://github.com/layr-labs/eigenlayer-contracts/pull/1501)
 - feat: add `publishMetadataURI` [PR #1492](https://github.com/layr-labs/eigenlayer-contracts/pull/1492)
@@ -76,7 +103,4 @@ Destination Chain Contracts
 - feat: bn254 certificate verifier [PR #1431](https://github.com/layr-labs/eigenlayer-contracts/pull/1431)
 - chore: bindings + interface update [PR #1438](https://github.com/layr-labs/eigenlayer-contracts/pull/1438)
 - chore: update multichain interfaces [PR #1433](https://github.com/layr-labs/eigenlayer-contracts/pull/1433)
-- feat: multi chain interfaces [PR #1423](https://github.com/layr-labs/eigenlayer-contracts/pull/1423)
-- docs: update version matrix [PR #1491](https://github.com/layr-labs/eigenlayer-contracts/pull/1491)
-- chore: add multisend parser to scripts directory [PR #1486](https://github.com/layr-labs/eigenlayer-contracts/pull/1486)
-- chore: update eigenpod and eigen impls addresses in holesky and hoodi [PR #1448](https://github.com/layr-labs/eigenlayer-contracts/pull/1448)
+- feat: multi chain interfaces [PR #1423](https://github.com/layr-labs/eigenlayer-contracts/pull/1423)% 
