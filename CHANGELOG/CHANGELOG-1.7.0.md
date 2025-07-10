@@ -36,6 +36,9 @@ Destination Chain Contracts
 
 ## Changelog
 
+- fix: multichain deploy scripts [PR #1510](https://github.com/layr-labs/eigenlayer-contracts/pull/1510)
+- test: multichain integration tests [PR #1528](https://github.com/layr-labs/eigenlayer-contracts/pull/1528)
+- fix: multichain clarity updates [PR #1527](https://github.com/layr-labs/eigenlayer-contracts/pull/1527)
 - refactor: table calc interface [PR #1525](https://github.com/layr-labs/eigenlayer-contracts/pull/1525)
 - docs: update README for v1.5.0 & v1.6.0 [PR #1526](https://github.com/layr-labs/eigenlayer-contracts/pull/1526)
 - docs: update ecdsa vc func
@@ -103,4 +106,4 @@ Destination Chain Contracts
 - feat: bn254 certificate verifier [PR #1431](https://github.com/layr-labs/eigenlayer-contracts/pull/1431)
 - chore: bindings + interface update [PR #1438](https://github.com/layr-labs/eigenlayer-contracts/pull/1438)
 - chore: update multichain interfaces [PR #1433](https://github.com/layr-labs/eigenlayer-contracts/pull/1433)
-- feat: multi chain interfaces [PR #1423](https://github.com/layr-labs/eigenlayer-contracts/pull/1423)% 
+- feat: multi chain interfaces [PR #1423](https://github.com/layr-labs/eigenlayer-contracts/pull/1423)
