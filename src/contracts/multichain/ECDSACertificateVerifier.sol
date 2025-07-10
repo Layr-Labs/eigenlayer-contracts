@@ -117,6 +117,7 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
      * @notice Internal function to verify a certificate
      * @param cert The certificate to verify
      * @return signedStakes The amount of stake that signed the certificate for each stake type
+     * @return signers The addresses that signed the certificate
      */
     function _verifyECDSACertificate(
         OperatorSet calldata operatorSet,
@@ -133,43 +134,15 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
         // Assert that the root that corresponds to the reference timestamp is not disabled
         require(operatorTableUpdater.isRootValidByTimestamp(cert.referenceTimestamp), RootDisabled());
 
-        // Get the total stakes
-        uint256[] memory totalStakes = getTotalStakes(operatorSet, cert.referenceTimestamp);
-        uint256[] memory signedStakes = new uint256[](totalStakes.length);
-
         // Compute the EIP-712 digest for signature recovery
         bytes32 signableDigest = calculateCertificateDigest(cert.referenceTimestamp, cert.messageHash);
 
         // Parse the signatures
         address[] memory signers = _parseSignatures(signableDigest, cert.sig);
 
-        // Process each recovered signer
-        for (uint256 i = 0; i < signers.length; i++) {
-            address signer = signers[i];
-
-            // Check if this signer is an operator
-            bool isOperator = false;
-            ECDSAOperatorInfo memory operatorInfo;
-
-            for (uint256 j = 0; j < _numOperators[operatorSetKey][cert.referenceTimestamp]; j++) {
-                operatorInfo = _operatorInfos[operatorSetKey][cert.referenceTimestamp][j];
-                if (operatorInfo.pubkey == signer) {
-                    isOperator = true;
-                    break;
-                }
-            }
-
-            // If not an operator, the certificate is invalid
-            if (!isOperator) {
-                revert VerificationFailed();
-            }
-
-            // Add this operator's weights to the signed stakes
-            uint256[] memory weights = operatorInfo.weights;
-            for (uint256 j = 0; j < weights.length && j < signedStakes.length; j++) {
-                signedStakes[j] += weights[j];
-            }
-        }
+        // Verify that signers are operators and add their weights to the signed stakes
+        uint256 numStakeCategories = getTotalStakes(operatorSet, cert.referenceTimestamp).length;
+        uint256[] memory signedStakes = _processSigners(operatorSetKey, cert.referenceTimestamp, signers, numStakeCategories);
 
         return (signedStakes, signers);
     }
@@ -215,6 +188,53 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
         }
 
         return signers;
+    }
+
+    /**
+     * @notice Process the signers and add their weights to the signed stakes
+     * @param operatorSetKey The key of the operator set
+     * @param referenceTimestamp The reference timestamp of the certificate
+     * @param signers The signers of the certificate
+     * @param numStakeCategories The number of stake types
+     * @return signedStakes The signed stakes
+     */
+    function _processSigners(
+        bytes32 operatorSetKey,
+        uint32 referenceTimestamp,
+        address[] memory signers,
+        uint256 numStakeCategories
+    ) internal view returns (uint256[] memory signedStakes) {
+        uint256 operatorCount = _numOperators[operatorSetKey][referenceTimestamp];
+
+        signedStakes = new uint256[](numStakeCategories);
+
+        // Process each recovered signer
+        for (uint256 i = 0; i < signers.length; i++) {
+            address signer = signers[i];
+
+            // Check if this signer is an operator
+            bool isOperator = false;
+            ECDSAOperatorInfo memory operatorInfo;
+
+            for (uint256 j = 0; j < operatorCount; j++) {
+                operatorInfo = _operatorInfos[operatorSetKey][referenceTimestamp][j];
+                if (operatorInfo.pubkey == signer) {
+                    isOperator = true;
+                    break;
+                }
+            }
+
+            // If not an operator, the certificate is invalid
+            if (!isOperator) {
+                revert VerificationFailed();
+            }
+
+            // Add this operator's weights to the signed stakes
+            uint256[] memory weights = operatorInfo.weights;
+            for (uint256 j = 0; j < weights.length && j < numStakeCategories; j++) {
+                signedStakes[j] += weights[j];
+            }
+        }
     }
 
     /**
