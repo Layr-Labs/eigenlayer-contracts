@@ -77,7 +77,7 @@ The protocol proceeds in the following process:
 1. AVS deploys `AVSRegistrar` , configures metadata in EL, and gets operator registration
     1. AVS registers for generation/transport calling `CrossChainRegistry.makeGenerationReservation`
     2. The AVS deploys an `OperatorTableCalculator` 
-2. At some cadence, the `Generator`` process gets all active generations from the `CrossChainRegistry` against the latest `finalizedBlock` 
+2. At some cadence, the `Generator` process gets all active generations from the `CrossChainRegistry` against the latest `finalizedBlock` 
     1. It then creates and signs a `globalTableRoot` of all operator table commitments
 3. The transporter will generate a Certificate to validate that the Eigen Labs Operator signed off on the `globalTableRoot`. The root is then transported to ALL destination chains 
 4. Lastly, the transporter will update all Operator Tables with a certificate. The sidecar will generate the proof data to then update tables via the `OperatorTableUpdater`
