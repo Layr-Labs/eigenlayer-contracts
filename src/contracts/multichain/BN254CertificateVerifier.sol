@@ -313,8 +313,7 @@ contract BN254CertificateVerifier is Initializable, BN254CertificateVerifierStor
         bytes32 operatorSetKey = operatorSet.key();
         return _latestReferenceTimestamps[operatorSetKey];
     }
-    
-         
+
     ///@inheritdoc IBN254CertificateVerifier
     function trySignatureVerification(
         bytes32 msgHash,
@@ -362,5 +361,4 @@ contract BN254CertificateVerifier is Initializable, BN254CertificateVerifierStor
         bytes32 operatorSetKey = operatorSet.key();
         return _operatorSetInfos[operatorSetKey][referenceTimestamp];
     }
-
 }
