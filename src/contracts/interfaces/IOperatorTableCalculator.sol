@@ -71,20 +71,22 @@ interface IOperatorTableCalculator {
      * @param operatorSet The operatorSet to get the weights for
      * @return operators The addresses of the operators in the operatorSet
      * @return weights The weights for each operator in the operatorSet, this is a 2D array where the first index is the operator
-     * and the second index is the type of weight. In this case its of length 1 and returns the slashable stake for the operatorSet.
+     * and the second index is the type of weight
      */
-    function getOperatorWeights(
+    function getOperatorSetWeights(
         OperatorSet calldata operatorSet
     ) external view returns (address[] memory operators, uint256[][] memory weights);
 
     /**
-     * @notice Get the weight for a given operator in a given operatorSet based on the slashable stake.
+     * @notice Get the weights for a given operator in a given operatorSet based on the slashable stake.
      * @param operatorSet The operatorSet to get the weight for
      * @param operator The operator to get the weight for
-     * @return weight The weight for the operator in the operatorSet
+     * @return weights The weights for the operator in the operatorSet
+     * @dev The `weights` array can be defined as a list of arbitrary groupings. For example,
+     * it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]
      */
-    function getOperatorWeight(
+    function getOperatorWeights(
         OperatorSet calldata operatorSet,
         address operator
-    ) external view returns (uint256 weight);
+    ) external view returns (uint256[] memory weights);
 }
