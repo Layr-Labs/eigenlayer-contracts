@@ -132,23 +132,6 @@ contract BN254CertificateVerifier is Initializable, BN254CertificateVerifierStor
         return true;
     }
 
-    ///@inheritdoc IBN254CertificateVerifier
-    function trySignatureVerification(
-        bytes32 msgHash,
-        BN254.G1Point memory aggPubkey,
-        BN254.G2Point memory apkG2,
-        BN254.G1Point memory signature
-    ) public view returns (bool pairingSuccessful, bool signatureValid) {
-        return BN254SignatureVerifier.verifySignature(
-            msgHash,
-            signature,
-            aggPubkey,
-            apkG2,
-            true, // use gas limit
-            PAIRING_EQUALITY_CHECK_GAS
-        );
-    }
-
     /**
      *
      *                         INTERNAL FUNCTIONS
@@ -307,6 +290,47 @@ contract BN254CertificateVerifier is Initializable, BN254CertificateVerifierStor
      *
      */
 
+    ///@inheritdoc IBaseCertificateVerifier
+    function getOperatorSetOwner(
+        OperatorSet memory operatorSet
+    ) external view returns (address) {
+        bytes32 operatorSetKey = operatorSet.key();
+        return _operatorSetOwners[operatorSetKey];
+    }
+
+    ///@inheritdoc IBaseCertificateVerifier
+    function maxOperatorTableStaleness(
+        OperatorSet memory operatorSet
+    ) external view returns (uint32) {
+        bytes32 operatorSetKey = operatorSet.key();
+        return _maxStalenessPeriods[operatorSetKey];
+    }
+
+    ///@inheritdoc IBaseCertificateVerifier
+    function latestReferenceTimestamp(
+        OperatorSet memory operatorSet
+    ) external view returns (uint32) {
+        bytes32 operatorSetKey = operatorSet.key();
+        return _latestReferenceTimestamps[operatorSetKey];
+    }
+
+    ///@inheritdoc IBN254CertificateVerifier
+    function trySignatureVerification(
+        bytes32 msgHash,
+        BN254.G1Point memory aggPubkey,
+        BN254.G2Point memory apkG2,
+        BN254.G1Point memory signature
+    ) public view returns (bool pairingSuccessful, bool signatureValid) {
+        return BN254SignatureVerifier.verifySignature(
+            msgHash,
+            signature,
+            aggPubkey,
+            apkG2,
+            true, // use gas limit
+            PAIRING_EQUALITY_CHECK_GAS
+        );
+    }
+
     ///@inheritdoc IBN254CertificateVerifier
     function getNonsignerOperatorInfo(
         OperatorSet memory operatorSet,
@@ -336,29 +360,5 @@ contract BN254CertificateVerifier is Initializable, BN254CertificateVerifierStor
     ) external view returns (BN254OperatorSetInfo memory) {
         bytes32 operatorSetKey = operatorSet.key();
         return _operatorSetInfos[operatorSetKey][referenceTimestamp];
-    }
-
-    ///@inheritdoc IBaseCertificateVerifier
-    function getOperatorSetOwner(
-        OperatorSet memory operatorSet
-    ) external view returns (address) {
-        bytes32 operatorSetKey = operatorSet.key();
-        return _operatorSetOwners[operatorSetKey];
-    }
-
-    ///@inheritdoc IBaseCertificateVerifier
-    function maxOperatorTableStaleness(
-        OperatorSet memory operatorSet
-    ) external view returns (uint32) {
-        bytes32 operatorSetKey = operatorSet.key();
-        return _maxStalenessPeriods[operatorSetKey];
-    }
-
-    ///@inheritdoc IBaseCertificateVerifier
-    function latestReferenceTimestamp(
-        OperatorSet memory operatorSet
-    ) external view returns (uint32) {
-        bytes32 operatorSetKey = operatorSet.key();
-        return _latestReferenceTimestamps[operatorSetKey];
     }
 }

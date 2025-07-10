@@ -70,6 +70,161 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
         emit TableUpdated(operatorSet, referenceTimestamp, operatorInfos);
     }
 
+    /**
+     *
+     *                         INTERNAL FUNCTIONS
+     *
+     */
+
+    /**
+     * @notice Internal function to verify a certificate
+     * @param cert The certificate to verify
+     * @return signedStakes The amount of stake that signed the certificate for each stake type
+     * @return signers The addresses that signed the certificate
+     */
+    function _verifyECDSACertificate(
+        OperatorSet calldata operatorSet,
+        ECDSACertificate calldata cert
+    ) internal view returns (uint256[] memory, address[] memory) {
+        bytes32 operatorSetKey = operatorSet.key();
+
+        // Assert that reference timestamp is not stale
+        require(block.timestamp <= cert.referenceTimestamp + _maxStalenessPeriods[operatorSetKey], CertificateStale());
+
+        // Assert that the reference timestamp exists
+        require(_latestReferenceTimestamps[operatorSetKey] == cert.referenceTimestamp, ReferenceTimestampDoesNotExist());
+
+        // Assert that the root that corresponds to the reference timestamp is not disabled
+        require(operatorTableUpdater.isRootValidByTimestamp(cert.referenceTimestamp), RootDisabled());
+
+        // Compute the EIP-712 digest for signature recovery
+        bytes32 signableDigest = calculateCertificateDigest(cert.referenceTimestamp, cert.messageHash);
+
+        // Parse the signatures
+        address[] memory signers = _parseSignatures(signableDigest, cert.sig);
+
+        // Verify that signers are operators and add their weights to the signed stakes
+        uint256 numStakeCategories = getTotalStakes(operatorSet, cert.referenceTimestamp).length;
+        uint256[] memory signedStakes =
+            _processSigners(operatorSetKey, cert.referenceTimestamp, signers, numStakeCategories);
+
+        return (signedStakes, signers);
+    }
+
+    /**
+     * @notice Parse signatures from the concatenated signature bytes
+     * @param signableDigest The signable digest that was signed
+     * @param signatures The concatenated signatures
+     * @return signers Array of addresses that signed the message
+     * @dev Signatures must be ordered by signer address (ascending)
+     * @dev This does not support smart contract based signatures for multichain
+     */
+    function _parseSignatures(
+        bytes32 signableDigest,
+        bytes memory signatures
+    ) internal pure returns (address[] memory signers) {
+        // Each ECDSA signature is 65 bytes: r (32 bytes) + s (32 bytes) + v (1 byte)
+        require(signatures.length > 0 && signatures.length % 65 == 0, InvalidSignatureLength());
+
+        uint256 signatureCount = signatures.length / 65;
+        signers = new address[](signatureCount);
+
+        for (uint256 i = 0; i < signatureCount; i++) {
+            bytes memory signature = new bytes(65);
+            for (uint256 j = 0; j < 65; j++) {
+                signature[j] = signatures[i * 65 + j];
+            }
+
+            // Recover the signer
+            (address recovered, ECDSA.RecoverError err) = ECDSA.tryRecover(signableDigest, signature);
+            require(err == ECDSA.RecoverError.NoError, InvalidSignature());
+
+            // Check that signatures are ordered by signer address
+            require(i == 0 || recovered > signers[i - 1], SignersNotOrdered());
+
+            signers[i] = recovered;
+        }
+
+        return signers;
+    }
+
+    /**
+     * @notice Process the signers and add their weights to the signed stakes
+     * @param operatorSetKey The key of the operator set
+     * @param referenceTimestamp The reference timestamp of the certificate
+     * @param signers The signers of the certificate
+     * @param numStakeCategories The number of stake types
+     * @return signedStakes The signed stakes
+     */
+    function _processSigners(
+        bytes32 operatorSetKey,
+        uint32 referenceTimestamp,
+        address[] memory signers,
+        uint256 numStakeCategories
+    ) internal view returns (uint256[] memory signedStakes) {
+        uint256 operatorCount = _numOperators[operatorSetKey][referenceTimestamp];
+
+        signedStakes = new uint256[](numStakeCategories);
+
+        // Process each recovered signer
+        for (uint256 i = 0; i < signers.length; i++) {
+            address signer = signers[i];
+
+            // Check if this signer is an operator
+            bool isOperator = false;
+            ECDSAOperatorInfo memory operatorInfo;
+
+            for (uint256 j = 0; j < operatorCount; j++) {
+                operatorInfo = _operatorInfos[operatorSetKey][referenceTimestamp][j];
+                if (operatorInfo.pubkey == signer) {
+                    isOperator = true;
+                    break;
+                }
+            }
+
+            // If not an operator, the certificate is invalid
+            if (!isOperator) {
+                revert VerificationFailed();
+            }
+
+            // Add this operator's weights to the signed stakes
+            uint256[] memory weights = operatorInfo.weights;
+            for (uint256 j = 0; j < weights.length && j < numStakeCategories; j++) {
+                signedStakes[j] += weights[j];
+            }
+        }
+    }
+
+    /**
+     *
+     *                         VIEW FUNCTIONS
+     *
+     */
+
+    ///@inheritdoc IBaseCertificateVerifier
+    function getOperatorSetOwner(
+        OperatorSet memory operatorSet
+    ) external view returns (address) {
+        bytes32 operatorSetKey = operatorSet.key();
+        return _operatorSetOwners[operatorSetKey];
+    }
+
+    ///@inheritdoc IBaseCertificateVerifier
+    function maxOperatorTableStaleness(
+        OperatorSet memory operatorSet
+    ) external view returns (uint32) {
+        bytes32 operatorSetKey = operatorSet.key();
+        return _maxStalenessPeriods[operatorSetKey];
+    }
+
+    ///@inheritdoc IBaseCertificateVerifier
+    function latestReferenceTimestamp(
+        OperatorSet memory operatorSet
+    ) external view returns (uint32) {
+        bytes32 operatorSetKey = operatorSet.key();
+        return _latestReferenceTimestamps[operatorSetKey];
+    }
+
     ///@inheritdoc IECDSACertificateVerifier
     function verifyCertificate(
         OperatorSet calldata operatorSet,
@@ -111,140 +266,6 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
             }
         }
         return (true, signers);
-    }
-
-    /**
-     * @notice Internal function to verify a certificate
-     * @param cert The certificate to verify
-     * @return signedStakes The amount of stake that signed the certificate for each stake type
-     */
-    function _verifyECDSACertificate(
-        OperatorSet calldata operatorSet,
-        ECDSACertificate calldata cert
-    ) internal view returns (uint256[] memory, address[] memory) {
-        bytes32 operatorSetKey = operatorSet.key();
-
-        // Assert that reference timestamp is not stale
-        require(block.timestamp <= cert.referenceTimestamp + _maxStalenessPeriods[operatorSetKey], CertificateStale());
-
-        // Assert that the reference timestamp exists
-        require(_latestReferenceTimestamps[operatorSetKey] == cert.referenceTimestamp, ReferenceTimestampDoesNotExist());
-
-        // Assert that the root that corresponds to the reference timestamp is not disabled
-        require(operatorTableUpdater.isRootValidByTimestamp(cert.referenceTimestamp), RootDisabled());
-
-        // Get the total stakes
-        uint256[] memory totalStakes = getTotalStakes(operatorSet, cert.referenceTimestamp);
-        uint256[] memory signedStakes = new uint256[](totalStakes.length);
-
-        // Compute the EIP-712 digest for signature recovery
-        bytes32 signableDigest = calculateCertificateDigest(cert.referenceTimestamp, cert.messageHash);
-
-        // Parse the signatures
-        address[] memory signers = _parseSignatures(signableDigest, cert.sig);
-
-        // Process each recovered signer
-        for (uint256 i = 0; i < signers.length; i++) {
-            address signer = signers[i];
-
-            // Check if this signer is an operator
-            bool isOperator = false;
-            ECDSAOperatorInfo memory operatorInfo;
-
-            for (uint256 j = 0; j < _numOperators[operatorSetKey][cert.referenceTimestamp]; j++) {
-                operatorInfo = _operatorInfos[operatorSetKey][cert.referenceTimestamp][j];
-                if (operatorInfo.pubkey == signer) {
-                    isOperator = true;
-                    break;
-                }
-            }
-
-            // If not an operator, the certificate is invalid
-            if (!isOperator) {
-                revert VerificationFailed();
-            }
-
-            // Add this operator's weights to the signed stakes
-            uint256[] memory weights = operatorInfo.weights;
-            for (uint256 j = 0; j < weights.length && j < signedStakes.length; j++) {
-                signedStakes[j] += weights[j];
-            }
-        }
-
-        return (signedStakes, signers);
-    }
-
-    /**
-     *
-     *                         INTERNAL FUNCTIONS
-     *
-     */
-
-    /**
-     * @notice Parse signatures from the concatenated signature bytes
-     * @param signableDigest The signable digest that was signed
-     * @param signatures The concatenated signatures
-     * @return signers Array of addresses that signed the message
-     * @dev Signatures must be ordered by signer address (ascending)
-     * @dev This does not support smart contract based signatures for multichain
-     */
-    function _parseSignatures(
-        bytes32 signableDigest,
-        bytes memory signatures
-    ) internal pure returns (address[] memory signers) {
-        // Each ECDSA signature is 65 bytes: r (32 bytes) + s (32 bytes) + v (1 byte)
-        require(signatures.length > 0 && signatures.length % 65 == 0, InvalidSignatureLength());
-
-        uint256 signatureCount = signatures.length / 65;
-        signers = new address[](signatureCount);
-
-        for (uint256 i = 0; i < signatureCount; i++) {
-            bytes memory signature = new bytes(65);
-            for (uint256 j = 0; j < 65; j++) {
-                signature[j] = signatures[i * 65 + j];
-            }
-
-            // Recover the signer
-            (address recovered, ECDSA.RecoverError err) = ECDSA.tryRecover(signableDigest, signature);
-            require(err == ECDSA.RecoverError.NoError, InvalidSignature());
-
-            // Check that signatures are ordered by signer address
-            require(i == 0 || recovered > signers[i - 1], SignersNotOrdered());
-
-            signers[i] = recovered;
-        }
-
-        return signers;
-    }
-
-    /**
-     *
-     *                         VIEW FUNCTIONS
-     *
-     */
-
-    ///@inheritdoc IBaseCertificateVerifier
-    function getOperatorSetOwner(
-        OperatorSet memory operatorSet
-    ) external view returns (address) {
-        bytes32 operatorSetKey = operatorSet.key();
-        return _operatorSetOwners[operatorSetKey];
-    }
-
-    ///@inheritdoc IBaseCertificateVerifier
-    function maxOperatorTableStaleness(
-        OperatorSet memory operatorSet
-    ) external view returns (uint32) {
-        bytes32 operatorSetKey = operatorSet.key();
-        return _maxStalenessPeriods[operatorSetKey];
-    }
-
-    ///@inheritdoc IBaseCertificateVerifier
-    function latestReferenceTimestamp(
-        OperatorSet memory operatorSet
-    ) external view returns (uint32) {
-        bytes32 operatorSetKey = operatorSet.key();
-        return _latestReferenceTimestamps[operatorSetKey];
     }
 
     /// @inheritdoc IECDSACertificateVerifier

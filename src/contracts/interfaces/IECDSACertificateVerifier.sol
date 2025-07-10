@@ -52,6 +52,7 @@ interface IECDSACertificateVerifier is IECDSACertificateVerifierEvents, IBaseCer
 
     /**
      * @notice verifies a certificate
+     * @param operatorSet the operatorSet that the certificate is for
      * @param cert a certificate
      * @return signedStakes amount of stake that signed the certificate for each stake
      * type. Each index corresponds to a stake type in the `weights` array in the `ECDSAOperatorInfo`
@@ -60,11 +61,12 @@ interface IECDSACertificateVerifier is IECDSACertificateVerifierEvents, IBaseCer
     function verifyCertificate(
         OperatorSet calldata operatorSet,
         ECDSACertificate memory cert
-    ) external returns (uint256[] memory signedStakes, address[] memory signers);
+    ) external view returns (uint256[] memory signedStakes, address[] memory signers);
 
     /**
      * @notice verifies a certificate and makes sure that the signed stakes meet
      * provided portions of the total stake on the AVS
+     * @param operatorSet the operatorSet to verify the certificate for
      * @param cert a certificate
      * @param totalStakeProportionThresholds the proportion, in BPS, of total stake that
      * the signed stake of the certificate should meet. Each index corresponds to
@@ -76,11 +78,12 @@ interface IECDSACertificateVerifier is IECDSACertificateVerifierEvents, IBaseCer
         OperatorSet calldata operatorSet,
         ECDSACertificate memory cert,
         uint16[] memory totalStakeProportionThresholds
-    ) external returns (bool, address[] memory signers);
+    ) external view returns (bool, address[] memory signers);
 
     /**
      * @notice verifies a certificate and makes sure that the signed stakes meet
-     * provided portions of the total stake on the AVS
+     * provided nominal stake thresholds
+     * @param operatorSet the operatorSet that the certificate is for
      * @param cert a certificate
      * @param totalStakeNominalThresholds the nominal amount of total stake that
      * the signed stake of the certificate should meet. Each index corresponds to
@@ -92,7 +95,7 @@ interface IECDSACertificateVerifier is IECDSACertificateVerifierEvents, IBaseCer
         OperatorSet calldata operatorSet,
         ECDSACertificate memory cert,
         uint256[] memory totalStakeNominalThresholds
-    ) external returns (bool, address[] memory signers);
+    ) external view returns (bool, address[] memory signers);
 
     /**
      * @notice Get operator infos for a timestamp

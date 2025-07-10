@@ -155,12 +155,13 @@ Verifies an ECDSA certificate by checking individual signatures from operators. 
  * the signed stake of the certificate should meet. Each index corresponds to 
  * a stake type in the `weights` array in the `ECDSAOperatorInfo`
  * @return Whether or not the certificate is valid and meets thresholds
+ * @return signers array of addresses that signed the certificate
  */
 function verifyCertificateProportion(
     OperatorSet calldata operatorSet,
     ECDSACertificate memory cert,
     uint16[] memory totalStakeProportionThresholds
-) external returns (bool);
+) external view returns (bool, address[] memory signers);
 ```
 
 Verifies that a certificate meets specified proportion thresholds as a percentage of total stake for each stake type.
@@ -174,7 +175,7 @@ Verifies that a certificate meets specified proportion thresholds as a percentag
 *Requirements*:
 * All requirements from `verifyCertificate`
 * `signedStakes.length` MUST equal `totalStakeProportionThresholds.length`
-* For each stake type: `signedStakes[i] >= (totalStakes[i] * totalStakeProportionThresholds[i]) / 10000`
+* For each stake type: `signedStakes[i] >= (totalStakes[i] * totalStakeProportionThresholds[i]) / 10_000`
 
 #### `verifyCertificateNominal`
 
@@ -187,13 +188,14 @@ Verifies that a certificate meets specified proportion thresholds as a percentag
  * @param totalStakeNominalThresholds the nominal amount of stake that
  * the signed stake of the certificate should meet. Each index corresponds to
  * a stake type in the `weights` array in the `ECDSAOperatorInfo`
- * @return whether or not certificate is valid and meets nominal thresholds
+ * @return Whether or not certificate is valid and meets nominal thresholds
+ * @return signers array of addresses that signed the certificate
  */
 function verifyCertificateNominal(
     OperatorSet calldata operatorSet,
     ECDSACertificate memory cert,
     uint256[] memory totalStakeNominalThresholds
-) external returns (bool);
+) external returns (bool, address[] memory signers);
 ```
 
 Verifies that a certificate meets specified nominal (absolute) stake thresholds for each stake type.
