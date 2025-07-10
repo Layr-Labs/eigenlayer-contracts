@@ -70,48 +70,11 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
         emit TableUpdated(operatorSet, referenceTimestamp, operatorInfos);
     }
 
-    ///@inheritdoc IECDSACertificateVerifier
-    function verifyCertificate(
-        OperatorSet calldata operatorSet,
-        ECDSACertificate calldata cert
-    ) external view returns (uint256[] memory, address[] memory) {
-        (uint256[] memory signedStakes, address[] memory signers) = _verifyECDSACertificate(operatorSet, cert);
-        return (signedStakes, signers);
-    }
-
-    ///@inheritdoc IECDSACertificateVerifier
-    function verifyCertificateProportion(
-        OperatorSet calldata operatorSet,
-        ECDSACertificate calldata cert,
-        uint16[] calldata totalStakeProportionThresholds
-    ) external view returns (bool, address[] memory) {
-        (uint256[] memory signedStakes, address[] memory signers) = _verifyECDSACertificate(operatorSet, cert);
-        uint256[] memory totalStakes = getTotalStakes(operatorSet, cert.referenceTimestamp);
-        require(signedStakes.length == totalStakeProportionThresholds.length, ArrayLengthMismatch());
-        for (uint256 i = 0; i < signedStakes.length; i++) {
-            uint256 threshold = (totalStakes[i] * totalStakeProportionThresholds[i]) / BPS_DENOMINATOR;
-            if (signedStakes[i] < threshold) {
-                return (false, signers);
-            }
-        }
-        return (true, signers);
-    }
-
-    ///@inheritdoc IECDSACertificateVerifier
-    function verifyCertificateNominal(
-        OperatorSet calldata operatorSet,
-        ECDSACertificate calldata cert,
-        uint256[] memory totalStakeNominalThresholds
-    ) external view returns (bool, address[] memory) {
-        (uint256[] memory signedStakes, address[] memory signers) = _verifyECDSACertificate(operatorSet, cert);
-        require(signedStakes.length == totalStakeNominalThresholds.length, ArrayLengthMismatch());
-        for (uint256 i = 0; i < signedStakes.length; i++) {
-            if (signedStakes[i] < totalStakeNominalThresholds[i]) {
-                return (false, signers);
-            }
-        }
-        return (true, signers);
-    }
+    /**
+     *
+     *                         INTERNAL FUNCTIONS
+     *
+     */
 
     /**
      * @notice Internal function to verify a certificate
@@ -146,12 +109,6 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
 
         return (signedStakes, signers);
     }
-
-    /**
-     *
-     *                         INTERNAL FUNCTIONS
-     *
-     */
 
     /**
      * @notice Parse signatures from the concatenated signature bytes
@@ -265,6 +222,49 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
     ) external view returns (uint32) {
         bytes32 operatorSetKey = operatorSet.key();
         return _latestReferenceTimestamps[operatorSetKey];
+    }
+
+    ///@inheritdoc IECDSACertificateVerifier
+    function verifyCertificate(
+        OperatorSet calldata operatorSet,
+        ECDSACertificate calldata cert
+    ) external view returns (uint256[] memory, address[] memory) {
+        (uint256[] memory signedStakes, address[] memory signers) = _verifyECDSACertificate(operatorSet, cert);
+        return (signedStakes, signers);
+    }
+
+    ///@inheritdoc IECDSACertificateVerifier
+    function verifyCertificateProportion(
+        OperatorSet calldata operatorSet,
+        ECDSACertificate calldata cert,
+        uint16[] calldata totalStakeProportionThresholds
+    ) external view returns (bool, address[] memory) {
+        (uint256[] memory signedStakes, address[] memory signers) = _verifyECDSACertificate(operatorSet, cert);
+        uint256[] memory totalStakes = getTotalStakes(operatorSet, cert.referenceTimestamp);
+        require(signedStakes.length == totalStakeProportionThresholds.length, ArrayLengthMismatch());
+        for (uint256 i = 0; i < signedStakes.length; i++) {
+            uint256 threshold = (totalStakes[i] * totalStakeProportionThresholds[i]) / BPS_DENOMINATOR;
+            if (signedStakes[i] < threshold) {
+                return (false, signers);
+            }
+        }
+        return (true, signers);
+    }
+
+    ///@inheritdoc IECDSACertificateVerifier
+    function verifyCertificateNominal(
+        OperatorSet calldata operatorSet,
+        ECDSACertificate calldata cert,
+        uint256[] memory totalStakeNominalThresholds
+    ) external view returns (bool, address[] memory) {
+        (uint256[] memory signedStakes, address[] memory signers) = _verifyECDSACertificate(operatorSet, cert);
+        require(signedStakes.length == totalStakeNominalThresholds.length, ArrayLengthMismatch());
+        for (uint256 i = 0; i < signedStakes.length; i++) {
+            if (signedStakes[i] < totalStakeNominalThresholds[i]) {
+                return (false, signers);
+            }
+        }
+        return (true, signers);
     }
 
     /// @inheritdoc IECDSACertificateVerifier
