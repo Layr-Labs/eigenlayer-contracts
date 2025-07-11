@@ -105,8 +105,8 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
         // Checks on the generator
         OperatorTableUpdaterInitParams memory initParams = _getTableUpdaterInitParams();
         assertEq(
-            operatorTableUpdater.getGenerator(),
-            initParams.globalRootConfirmerSet,
+            operatorTableUpdater.getGenerator().key(),
+            initParams.globalRootConfirmerSet.key(),
             "operatorTableUpdater.generator invalid"
         );
         assertEq(
@@ -146,7 +146,7 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
         BN254CertificateVerifier bn254CertificateVerifier = Env.proxy.bn254CertificateVerifier();
         assertTrue(address(bn254CertificateVerifier) != address(0), "bn254CertificateVerifier not deployed");
         assertEq(
-            bn254CertificateVerifier.getLatestReferenceTimestamp(initParams.globalRootConfirmerSet),
+            bn254CertificateVerifier.latestReferenceTimestamp(initParams.globalRootConfirmerSet),
             1,
             "bn254CertificateVerifier.latestReferenceTimestamp invalid"
         );
