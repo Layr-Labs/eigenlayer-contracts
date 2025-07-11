@@ -20,6 +20,7 @@ Libraries and Mixins:
 
 ## Prior Reading
 
+* [Hourglass Framework](https://github.com/Layr-Labs/hourglass-monorepo/blob/master/README.md) - for understanding the task-based AVS execution model
 * [AllocationManager](../../core/AllocationManager.md) - for understanding operator sets
 * [KeyRegistrar](../../permissions/KeyRegistrar.md) - for understanding operator key management
 * [CertificateVerifier](../../multichain/destination/CertificateVerifier.md) - for understanding certificate verification
