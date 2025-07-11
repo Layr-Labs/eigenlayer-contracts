@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
+import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
+
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
@@ -160,9 +162,10 @@ contract ExistingDeploymentParser is Script, Logger {
 
     address executorMultisig;
     address operationsMultisig;
+    address protocolCouncilMultisig;
     address communityMultisig;
     address pauserMultisig;
-    address timelock;
+    TimelockController timelockController;
 
     // strategies deployed
     uint256 numStrategiesDeployed;
@@ -208,25 +211,10 @@ contract ExistingDeploymentParser is Script, Logger {
         operationsMultisig = json.readAddress(".parameters.operationsMultisig");
         communityMultisig = json.readAddress(".parameters.communityMultisig");
         pauserMultisig = json.readAddress(".parameters.pauserMultisig");
-        timelock = json.readAddress(".parameters.timelock");
+        timelockController = TimelockController(payable(json.readAddress(".parameters.timelockController")));
 
         eigenLayerProxyAdmin = ProxyAdmin(json.readAddress(".addresses.eigenLayerProxyAdmin"));
         eigenLayerPauserReg = PauserRegistry(json.readAddress(".addresses.eigenLayerPauserReg"));
-
-        // FIXME: hotfix - remove later...
-        permissionControllerImplementation = new PermissionController(SEMVER);
-        permissionController = PermissionController(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(permissionControllerImplementation), address(eigenLayerProxyAdmin), ""
-                )
-            )
-        );
-
-        // AllocationManager
-        allocationManager = AllocationManager(json.readAddress(".addresses.allocationManager"));
-        allocationManagerImplementation =
-            AllocationManager(json.readAddress(".addresses.allocationManagerImplementation"));
 
         // AVSDirectory
         avsDirectory = AVSDirectory(json.readAddress(".addresses.avsDirectory"));
@@ -743,9 +731,10 @@ contract ExistingDeploymentParser is Script, Logger {
         string memory parameters = "parameters";
         parameters.serialize("executorMultisig", executorMultisig);
         parameters.serialize("operationsMultisig", operationsMultisig);
+        parameters.serialize("protocolCouncilMultisig", protocolCouncilMultisig);
         parameters.serialize("communityMultisig", communityMultisig);
         parameters.serialize("pauserMultisig", pauserMultisig);
-        parameters.serialize("timelock", timelock);
+        parameters.serialize("timelockController", address(timelockController));
         string memory parameters_output = parameters.serialize("operationsMultisig", operationsMultisig);
 
         string memory chain_info = "chainInfo";
