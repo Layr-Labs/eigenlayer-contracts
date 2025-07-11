@@ -530,6 +530,12 @@ contract TaskMailboxUnitTests_createTask is TaskMailboxUnitTests {
         uint expectedTaskCount = 0;
         bytes32 expectedTaskHash = keccak256(abi.encode(expectedTaskCount, address(taskMailbox), block.chainid, taskParams));
 
+        // Expect Transfer event for fee transfer from creator to taskMailbox
+        if (fuzzAvsFee > 0) {
+            vm.expectEmit(true, true, false, true, address(mockToken));
+            emit IERC20.Transfer(creator, address(taskMailbox), fuzzAvsFee);
+        }
+
         // Expect event
         vm.expectEmit(true, true, true, true, address(taskMailbox));
         emit TaskCreated(
@@ -545,6 +551,13 @@ contract TaskMailboxUnitTests_createTask is TaskMailboxUnitTests {
 
         // Verify global task count incremented by creating another task and checking its hash
         bytes32 nextExpectedTaskHash = keccak256(abi.encode(expectedTaskCount + 1, address(taskMailbox), block.chainid, taskParams));
+
+        // Expect Transfer event for fee transfer from creator to taskMailbox for second task
+        if (fuzzAvsFee > 0) {
+            vm.expectEmit(true, true, false, true, address(mockToken));
+            emit IERC20.Transfer(creator, address(taskMailbox), fuzzAvsFee);
+        }
+
         vm.prank(creator);
         bytes32 nextTaskHash = taskMailbox.createTask(taskParams);
         assertEq(nextTaskHash, nextExpectedTaskHash);
@@ -754,6 +767,11 @@ contract TaskMailboxUnitTests_createTask is TaskMailboxUnitTests {
 
         // Create task
         TaskParams memory taskParams = _createValidTaskParams();
+
+        // Expect Transfer event for fee transfer from creator to taskMailbox
+        vm.expectEmit(true, true, false, true, address(mockToken));
+        emit IERC20.Transfer(creator, address(taskMailbox), avsFee);
+
         vm.prank(creator);
         bytes32 taskHash = taskMailbox.createTask(taskParams);
 
@@ -770,6 +788,11 @@ contract TaskMailboxUnitTests_createTask is TaskMailboxUnitTests {
         taskMailbox.setFeeSplitCollector(newFeeSplitCollector);
 
         // Create another task
+
+        // Expect Transfer event for fee transfer from creator to taskMailbox
+        vm.expectEmit(true, true, false, true, address(mockToken));
+        emit IERC20.Transfer(creator, address(taskMailbox), avsFee);
+
         vm.prank(creator);
         bytes32 newTaskHash = taskMailbox.createTask(taskParams);
 
@@ -1344,6 +1367,11 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
 
         // Create task with fee
         TaskParams memory taskParams = _createValidTaskParams();
+
+        // Expect Transfer event for fee transfer from creator to taskMailbox
+        vm.expectEmit(true, true, false, true, address(mockToken));
+        emit IERC20.Transfer(creator, address(taskMailbox), avsFee);
+
         vm.prank(creator);
         bytes32 newTaskHash = taskMailbox.createTask(taskParams);
 
@@ -1370,6 +1398,11 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
             abi.encode(true)
         );
 
+        // Expect Transfer event for fee transfer from taskMailbox to feeCollector
+        // Since feeSplit is 0 by default, all avsFee goes to feeCollector
+        vm.expectEmit(true, true, false, true, address(mockToken));
+        emit IERC20.Transfer(address(taskMailbox), feeCollector, avsFee);
+
         vm.prank(aggregator);
         taskMailbox.submitResult(newTaskHash, abi.encode(cert), bytes("result"));
 
@@ -1394,6 +1427,11 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
 
         // Create task
         TaskParams memory taskParams = _createValidTaskParams();
+
+        // Expect Transfer event for fee transfer from creator to taskMailbox
+        vm.expectEmit(true, true, false, true, address(mockToken));
+        emit IERC20.Transfer(creator, address(taskMailbox), avsFee);
+
         vm.prank(creator);
         bytes32 newTaskHash = taskMailbox.createTask(taskParams);
 
@@ -1405,12 +1443,21 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         vm.warp(block.timestamp + 1);
         bytes memory executorCert = abi.encode(_createValidBN254Certificate(newTaskHash));
 
-        vm.prank(aggregator);
-        taskMailbox.submitResult(newTaskHash, executorCert, bytes("result"));
-
-        // Verify fee distribution
+        // Calculate expected amounts
         uint expectedFeeSplitAmount = (avsFee * feeSplit) / 10_000;
         uint expectedFeeCollectorAmount = avsFee - expectedFeeSplitAmount;
+
+        // Expect Transfer events for fee distribution
+        // First, transfer to fee split collector
+        vm.expectEmit(true, true, false, true, address(mockToken));
+        emit IERC20.Transfer(address(taskMailbox), localFeeSplitCollector, expectedFeeSplitAmount);
+
+        // Then, transfer remaining to fee collector
+        vm.expectEmit(true, true, false, true, address(mockToken));
+        emit IERC20.Transfer(address(taskMailbox), feeCollector, expectedFeeCollectorAmount);
+
+        vm.prank(aggregator);
+        taskMailbox.submitResult(newTaskHash, executorCert, bytes("result"));
 
         assertEq(mockToken.balanceOf(localFeeSplitCollector), feeSplitCollectorBalanceBefore + expectedFeeSplitAmount);
         assertEq(mockToken.balanceOf(feeCollector), feeCollectorBalanceBefore + expectedFeeCollectorAmount);
@@ -1427,6 +1474,11 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
 
         // Create task
         TaskParams memory taskParams = _createValidTaskParams();
+
+        // Expect Transfer event for fee transfer from creator to taskMailbox
+        vm.expectEmit(true, true, false, true, address(mockToken));
+        emit IERC20.Transfer(creator, address(taskMailbox), avsFee);
+
         vm.prank(creator);
         bytes32 newTaskHash = taskMailbox.createTask(taskParams);
 
@@ -1438,12 +1490,21 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         vm.warp(block.timestamp + 1);
         bytes memory executorCert = abi.encode(_createValidBN254Certificate(newTaskHash));
 
-        vm.prank(aggregator);
-        taskMailbox.submitResult(newTaskHash, executorCert, bytes("result"));
-
-        // Verify fee distribution - should be equal split
+        // Calculate expected amounts - should be equal split
         uint expectedFeeSplitAmount = avsFee / 2;
         uint expectedFeeCollectorAmount = avsFee - expectedFeeSplitAmount;
+
+        // Expect Transfer events for fee distribution
+        // First, transfer to fee split collector
+        vm.expectEmit(true, true, false, true, address(mockToken));
+        emit IERC20.Transfer(address(taskMailbox), localFeeSplitCollector, expectedFeeSplitAmount);
+
+        // Then, transfer remaining to fee collector
+        vm.expectEmit(true, true, false, true, address(mockToken));
+        emit IERC20.Transfer(address(taskMailbox), feeCollector, expectedFeeCollectorAmount);
+
+        vm.prank(aggregator);
+        taskMailbox.submitResult(newTaskHash, executorCert, bytes("result"));
 
         assertEq(mockToken.balanceOf(localFeeSplitCollector), feeSplitCollectorBalanceBefore + expectedFeeSplitAmount);
         assertEq(mockToken.balanceOf(feeCollector), feeCollectorBalanceBefore + expectedFeeCollectorAmount);
@@ -1460,6 +1521,11 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
 
         // Create task
         TaskParams memory taskParams = _createValidTaskParams();
+
+        // Expect Transfer event for fee transfer from creator to taskMailbox
+        vm.expectEmit(true, true, false, true, address(mockToken));
+        emit IERC20.Transfer(creator, address(taskMailbox), avsFee);
+
         vm.prank(creator);
         bytes32 newTaskHash = taskMailbox.createTask(taskParams);
 
@@ -1470,6 +1536,11 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         // Submit result
         vm.warp(block.timestamp + 1);
         bytes memory executorCert = abi.encode(_createValidBN254Certificate(newTaskHash));
+
+        // Expect Transfer event for fee transfer to fee collector only (no fee split)
+        // Since feeSplit is 0, all avsFee goes to feeCollector
+        vm.expectEmit(true, true, false, true, address(mockToken));
+        emit IERC20.Transfer(address(taskMailbox), feeCollector, avsFee);
 
         vm.prank(aggregator);
         taskMailbox.submitResult(newTaskHash, executorCert, bytes("result"));
@@ -1490,6 +1561,11 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
 
         // Create task
         TaskParams memory taskParams = _createValidTaskParams();
+
+        // Expect Transfer event for fee transfer from creator to taskMailbox
+        vm.expectEmit(true, true, false, true, address(mockToken));
+        emit IERC20.Transfer(creator, address(taskMailbox), avsFee);
+
         vm.prank(creator);
         bytes32 newTaskHash = taskMailbox.createTask(taskParams);
 
@@ -1500,6 +1576,11 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         // Submit result
         vm.warp(block.timestamp + 1);
         bytes memory executorCert = abi.encode(_createValidBN254Certificate(newTaskHash));
+
+        // Expect Transfer event for fee transfer to fee split collector only
+        // Since feeSplit is 100%, all avsFee goes to feeSplitCollector
+        vm.expectEmit(true, true, false, true, address(mockToken));
+        emit IERC20.Transfer(address(taskMailbox), localFeeSplitCollector, avsFee);
 
         vm.prank(aggregator);
         taskMailbox.submitResult(newTaskHash, executorCert, bytes("result"));
@@ -1557,6 +1638,11 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
 
         // Create task
         TaskParams memory taskParams = _createValidTaskParams();
+
+        // Expect Transfer event for fee transfer from creator to taskMailbox
+        vm.expectEmit(true, true, false, true, address(mockToken));
+        emit IERC20.Transfer(creator, address(taskMailbox), smallFee);
+
         vm.prank(creator);
         bytes32 newTaskHash = taskMailbox.createTask(taskParams);
 
@@ -1568,12 +1654,21 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         vm.warp(block.timestamp + 1);
         bytes memory executorCert = abi.encode(_createValidBN254Certificate(newTaskHash));
 
-        vm.prank(aggregator);
-        taskMailbox.submitResult(newTaskHash, executorCert, bytes("result"));
-
-        // Verify fee distribution with rounding
+        // Calculate expected fee distribution
         uint expectedFeeSplitAmount = (smallFee * feeSplit) / 10_000; // 33 wei
         uint expectedFeeCollectorAmount = smallFee - expectedFeeSplitAmount; // 67 wei
+
+        // Expect Transfer events for fee distribution
+        // First, transfer to fee split collector
+        vm.expectEmit(true, true, false, true, address(mockToken));
+        emit IERC20.Transfer(address(taskMailbox), localFeeSplitCollector, expectedFeeSplitAmount);
+
+        // Then, transfer remaining to fee collector
+        vm.expectEmit(true, true, false, true, address(mockToken));
+        emit IERC20.Transfer(address(taskMailbox), feeCollector, expectedFeeCollectorAmount);
+
+        vm.prank(aggregator);
+        taskMailbox.submitResult(newTaskHash, executorCert, bytes("result"));
 
         assertEq(mockToken.balanceOf(localFeeSplitCollector), feeSplitCollectorBalanceBefore + expectedFeeSplitAmount);
         assertEq(mockToken.balanceOf(feeCollector), feeCollectorBalanceBefore + expectedFeeCollectorAmount);
@@ -1595,6 +1690,11 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
 
         // Create task
         TaskParams memory taskParams = _createValidTaskParams();
+
+        // Expect Transfer event for fee transfer from creator to taskMailbox
+        vm.expectEmit(true, true, false, true, address(mockToken));
+        emit IERC20.Transfer(creator, address(taskMailbox), oddFee);
+
         vm.prank(creator);
         bytes32 newTaskHash = taskMailbox.createTask(taskParams);
 
@@ -1602,12 +1702,21 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         vm.warp(block.timestamp + 1);
         bytes memory executorCert = abi.encode(_createValidBN254Certificate(newTaskHash));
 
-        vm.prank(aggregator);
-        taskMailbox.submitResult(newTaskHash, executorCert, bytes("result"));
-
-        // Verify rounding down occurs for fee split
+        // Calculate expected fee distribution
         uint expectedFeeSplitAmount = (oddFee * feeSplit) / 10_000; // 1 wei (rounded down from 1.0001)
         uint expectedFeeCollectorAmount = oddFee - expectedFeeSplitAmount; // 10000 wei
+
+        // Expect Transfer events for fee distribution
+        // First, transfer to fee split collector
+        vm.expectEmit(true, true, false, true, address(mockToken));
+        emit IERC20.Transfer(address(taskMailbox), localFeeSplitCollector, expectedFeeSplitAmount);
+
+        // Then, transfer remaining to fee collector
+        vm.expectEmit(true, true, false, true, address(mockToken));
+        emit IERC20.Transfer(address(taskMailbox), feeCollector, expectedFeeCollectorAmount);
+
+        vm.prank(aggregator);
+        taskMailbox.submitResult(newTaskHash, executorCert, bytes("result"));
 
         assertEq(mockToken.balanceOf(localFeeSplitCollector), expectedFeeSplitAmount);
         assertEq(mockToken.balanceOf(feeCollector), expectedFeeCollectorAmount);
@@ -1632,6 +1741,13 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
 
         // Create task
         TaskParams memory taskParams = _createValidTaskParams();
+
+        // Expect Transfer event for fee transfer from creator to taskMailbox
+        if (_avsFee > 0) {
+            vm.expectEmit(true, true, false, true, address(mockToken));
+            emit IERC20.Transfer(creator, address(taskMailbox), _avsFee);
+        }
+
         vm.prank(creator);
         bytes32 newTaskHash = taskMailbox.createTask(taskParams);
 
@@ -1644,12 +1760,27 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         vm.warp(block.timestamp + 1);
         bytes memory executorCert = abi.encode(_createValidBN254Certificate(newTaskHash));
 
-        vm.prank(aggregator);
-        taskMailbox.submitResult(newTaskHash, executorCert, bytes("result"));
-
         // Calculate expected amounts
         uint expectedFeeSplitAmount = (uint(_avsFee) * _feeSplit) / 10_000;
         uint expectedAvsAmount = _avsFee - expectedFeeSplitAmount;
+
+        // Expect Transfer events for fee distribution
+        if (_avsFee > 0) {
+            if (expectedFeeSplitAmount > 0) {
+                // First, transfer to fee split collector
+                vm.expectEmit(true, true, false, true, address(mockToken));
+                emit IERC20.Transfer(address(taskMailbox), localFeeSplitCollector, expectedFeeSplitAmount);
+            }
+
+            if (expectedAvsAmount > 0) {
+                // Then, transfer remaining to fee collector
+                vm.expectEmit(true, true, false, true, address(mockToken));
+                emit IERC20.Transfer(address(taskMailbox), feeCollector, expectedAvsAmount);
+            }
+        }
+
+        vm.prank(aggregator);
+        taskMailbox.submitResult(newTaskHash, executorCert, bytes("result"));
 
         // Verify balances
         assertEq(mockToken.balanceOf(localFeeSplitCollector), feeSplitCollectorBalanceBefore + expectedFeeSplitAmount);
@@ -1670,6 +1801,11 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
 
         // Create task
         TaskParams memory taskParams = _createValidTaskParams();
+
+        // Expect Transfer event for fee transfer from creator to taskMailbox
+        vm.expectEmit(true, true, false, true, address(mockToken));
+        emit IERC20.Transfer(creator, address(taskMailbox), avsFee);
+
         vm.prank(creator);
         bytes32 newTaskHash = taskMailbox.createTask(taskParams);
 
@@ -1690,12 +1826,21 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         vm.warp(block.timestamp + 1);
         bytes memory executorCert = abi.encode(_createValidBN254Certificate(newTaskHash));
 
-        vm.prank(aggregator);
-        taskMailbox.submitResult(newTaskHash, executorCert, bytes("result"));
-
-        // Verify fee distribution uses snapshot feeSplit (20%) but current collector (newFeeSplitCollector)
+        // Calculate expected fee distribution using snapshot feeSplit (20%) but current collector
         uint expectedFeeSplitAmount = (avsFee * initialFeeSplit) / 10_000;
         uint expectedFeeCollectorAmount = avsFee - expectedFeeSplitAmount;
+
+        // Expect Transfer events for fee distribution
+        // First, transfer to current fee split collector (not the initial one)
+        vm.expectEmit(true, true, false, true, address(mockToken));
+        emit IERC20.Transfer(address(taskMailbox), newFeeSplitCollector, expectedFeeSplitAmount);
+
+        // Then, transfer remaining to fee collector
+        vm.expectEmit(true, true, false, true, address(mockToken));
+        emit IERC20.Transfer(address(taskMailbox), feeCollector, expectedFeeCollectorAmount);
+
+        vm.prank(aggregator);
+        taskMailbox.submitResult(newTaskHash, executorCert, bytes("result"));
 
         assertEq(mockToken.balanceOf(initialFeeSplitCollector), initialCollectorBalanceBefore); // No change
         assertEq(mockToken.balanceOf(feeCollector), feeCollectorBalanceBefore + expectedFeeCollectorAmount);
@@ -1721,6 +1866,11 @@ contract TaskMailboxUnitTests_refundFee is TaskMailboxUnitTests {
 
         // Create a task with fee
         TaskParams memory taskParams = _createValidTaskParams();
+
+        // Expect Transfer event for fee transfer from creator to taskMailbox
+        vm.expectEmit(true, true, false, true, address(mockToken));
+        emit IERC20.Transfer(creator, address(taskMailbox), avsFee);
+
         vm.prank(creator);
         taskHash = taskMailbox.createTask(taskParams);
     }
@@ -1732,6 +1882,10 @@ contract TaskMailboxUnitTests_refundFee is TaskMailboxUnitTests {
         // Check initial balances
         uint mailboxBalanceBefore = mockToken.balanceOf(address(taskMailbox));
         uint refundCollectorBalanceBefore = mockToken.balanceOf(refundCollector);
+
+        // Expect Transfer event for fee refund from taskMailbox to refundCollector
+        vm.expectEmit(true, true, false, true, address(mockToken));
+        emit IERC20.Transfer(address(taskMailbox), refundCollector, avsFee);
 
         // Refund fee as refund collector
         vm.expectEmit(true, true, false, true);
@@ -1861,6 +2015,11 @@ contract TaskMailboxUnitTests_refundFee is TaskMailboxUnitTests {
 
         // Create task
         TaskParams memory taskParams = _createValidTaskParams();
+
+        // Expect Transfer event for fee transfer from creator to taskMailbox
+        vm.expectEmit(true, true, false, true, address(mockToken));
+        emit IERC20.Transfer(creator, address(taskMailbox), avsFee);
+
         vm.prank(creator);
         bytes32 newTaskHash = taskMailbox.createTask(taskParams);
 
@@ -1869,6 +2028,11 @@ contract TaskMailboxUnitTests_refundFee is TaskMailboxUnitTests {
 
         // Move time forward to expire the task
         vm.warp(block.timestamp + taskSLA + 1);
+
+        // Expect Transfer event for fee refund from taskMailbox to refundCollector
+        // Note: fee split doesn't apply to refunds, full amount is refunded
+        vm.expectEmit(true, true, false, true, address(mockToken));
+        emit IERC20.Transfer(address(taskMailbox), refundCollector, avsFee);
 
         // Refund fee
         vm.prank(refundCollector);
