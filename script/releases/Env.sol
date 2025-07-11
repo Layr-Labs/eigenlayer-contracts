@@ -177,6 +177,10 @@ library Env {
         return _envU256("CROSS_CHAIN_REGISTRY_INIT_PAUSE_STATUS");
     }
 
+    function TABLE_UPDATE_CADENCE() internal view returns (uint32) {
+        return _envU32("TABLE_UPDATE_CADENCE");
+    }
+
     function isSourceChain() internal view returns (bool) {
         return _envBool("SOURCE_CHAIN");
     }

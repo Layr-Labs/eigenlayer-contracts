@@ -303,9 +303,10 @@ Removes chain IDs from the global whitelist, preventing them from being used as 
 
 ```solidity
 /**
- * @notice Sets the global table update cadence
- * @param tableUpdateCadence The table update cadence to set
+ * @notice Sets the table update cadence in seconds
+ * @param tableUpdateCadence the table update cadence
  * @dev msg.sender must be the owner of the CrossChainRegistry
+ * @dev The table update cadence cannot be 0
  */
 function setTableUpdateCadence(
     uint32 tableUpdateCadence

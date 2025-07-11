@@ -21,10 +21,12 @@
     ├── when updateOperatorTable is called
     │   ├── given that the contract is paused for operator table updates
     │   │   └── it should revert with CurrentlyPaused
-    │   ├── given that the reference timestamp is not greater than operator set's latest
-    │   │   └── it should revert with TableUpdateForPastTimestamp
     │   ├── given that the global table root is not valid
     │   │   └── it should revert with InvalidRoot
+    │   ├── given that the operatorSet is the generator
+    │   │   └── it should revert with InvalidOperatorSet
+    │   ├── given that the reference timestamp is not greater than operator set's latest
+    │   │   └── it should revert with TableUpdateForPastTimestamp
     │   ├── given that the global table root does not match the reference timestamp
     │   │   └── it should revert with InvalidGlobalTableRoot
     │   ├── given that the merkle proof is invalid

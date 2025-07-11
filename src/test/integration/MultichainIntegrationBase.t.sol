@@ -183,7 +183,6 @@ abstract contract MultichainIntegrationBase is IntegrationBase {
             0, // initialPausedStatus
             globalRootConfirmerSet, // globalRootConfirmerSet
             6600, // globalRootConfirmationThreshold (66%)
-            uint32(block.timestamp - 1), // referenceTimestamp
             initialOperatorSetInfo, // globalRootConfirmerSetInfo
             initialOperatorSetConfig // globalRootConfirmerSetConfig
         );

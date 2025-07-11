@@ -182,7 +182,7 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
     ) external;
 
     /**
-     * @notice Sets the table update cadence
+     * @notice Sets the table update cadence in seconds
      * @param tableUpdateCadence the table update cadence
      * @dev msg.sender must be the owner of the CrossChainRegistry
      * @dev The table update cadence cannot be 0
