@@ -196,6 +196,18 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
     }
 
     /**
+     * @notice Calculate the EIP-712 digest bytes for a certificate
+     * @param referenceTimestamp The reference timestamp of the certificate
+     * @param messageHash The hash of the message that was signed
+     * @return The EIP-712 digest bytes
+     */
+    function _calculateCertificateDigestBytes(uint32 referenceTimestamp, bytes32 messageHash) internal view returns (bytes memory) {
+        bytes32 structHash = keccak256(abi.encode(ECDSA_CERTIFICATE_TYPEHASH, referenceTimestamp, messageHash));
+        return abi.encodePacked("\x19\x01", domainSeparator(), structHash);
+    }
+
+
+    /**
      *
      *                         VIEW FUNCTIONS
      *
@@ -337,8 +349,12 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
     }
 
     /// @inheritdoc IECDSACertificateVerifier
+    function calculateCertificateDigestBytes(uint32 referenceTimestamp, bytes32 messageHash) public view returns (bytes memory) {
+        return _calculateCertificateDigestBytes(referenceTimestamp, messageHash);
+    }
+
+    /// @inheritdoc IECDSACertificateVerifier
     function calculateCertificateDigest(uint32 referenceTimestamp, bytes32 messageHash) public view returns (bytes32) {
-        bytes32 structHash = keccak256(abi.encode(ECDSA_CERTIFICATE_TYPEHASH, referenceTimestamp, messageHash));
-        return _calculateSignableDigest(structHash);
+        return keccak256(_calculateCertificateDigestBytes(referenceTimestamp, messageHash));
     }
 }
