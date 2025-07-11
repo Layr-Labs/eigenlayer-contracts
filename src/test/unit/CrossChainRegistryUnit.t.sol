@@ -161,7 +161,9 @@ contract CrossChainRegistryUnitTests_initialize is CrossChainRegistryUnitTests {
                 new TransparentUpgradeableProxy(
                     address(freshImplementation),
                     address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(CrossChainRegistry.initialize.selector, newOwner, initialMinimumStalenessPeriod, initialPausedStatus)
+                    abi.encodeWithSelector(
+                        CrossChainRegistry.initialize.selector, newOwner, initialMinimumStalenessPeriod, initialPausedStatus
+                    )
                 )
             )
         );
@@ -1154,7 +1156,7 @@ contract CrossChainRegistryUnitTests_getSupportedChains is CrossChainRegistryUni
 contract CrossChainRegistryUnitTests_setMinimumStalenessPeriod is CrossChainRegistryUnitTests {
     function test_Revert_NotOwner() public {
         uint32 newMinimumStalenessPeriod = 14 days;
-        
+
         cheats.prank(notPermissioned);
         cheats.expectRevert("Ownable: caller is not the owner");
         crossChainRegistry.setMinimumStalenessPeriod(newMinimumStalenessPeriod);
@@ -1190,7 +1192,7 @@ contract CrossChainRegistryUnitTests_setMinimumStalenessPeriod is CrossChainRegi
         // Verify setting a valid config works
         OperatorSetConfig memory validConfig = _createOperatorSetConfig(cheats.randomAddress(), 3 days);
         crossChainRegistry.setOperatorSetConfig(defaultOperatorSet, validConfig);
-        
+
         OperatorSetConfig memory retrievedConfig = crossChainRegistry.getOperatorSetConfig(defaultOperatorSet);
         assertEq(retrievedConfig.maxStalenessPeriod, 3 days, "Valid config should be set");
     }

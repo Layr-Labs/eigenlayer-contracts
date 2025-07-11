@@ -281,7 +281,10 @@ contract CrossChainRegistry is
      * @dev The 0 staleness period is special case and is allowed, since it allows for certificates to ALWAYS be valid
      */
     function _setOperatorSetConfig(OperatorSet memory operatorSet, OperatorSetConfig memory config) internal {
-        require(config.maxStalenessPeriod == 0 || config.maxStalenessPeriod >= _minimumStalenessPeriod, InvalidStalenessPeriod());
+        require(
+            config.maxStalenessPeriod == 0 || config.maxStalenessPeriod >= _minimumStalenessPeriod,
+            InvalidStalenessPeriod()
+        );
         _operatorSetConfigs[operatorSet.key()] = config;
         emit OperatorSetConfigSet(operatorSet, config);
     }
