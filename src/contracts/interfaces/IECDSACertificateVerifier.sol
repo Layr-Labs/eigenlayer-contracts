@@ -152,6 +152,23 @@ interface IECDSACertificateVerifier is IECDSACertificateVerifierEvents, IBaseCer
     function domainSeparator() external view returns (bytes32);
 
     /**
+     * @notice Calculate the EIP-712 digest bytes for a certificate
+     * @param referenceTimestamp The reference timestamp
+     * @param messageHash The message hash
+     * @return The EIP-712 digest
+     * @dev This function is public to allow offchain tools to calculate the same digest
+     * @dev Note: This does not support smart contract based signatures for multichain
+     * @dev This is a chain-agnostic digest, so it can be used to verify certificates across
+     *      multiple destination chains
+     * @dev this function returns the raw bytes of the digest, which still need to be hashed
+     *      before signing with ECDSA
+     */
+    function calculateCertificateDigestBytes(
+        uint32 referenceTimestamp,
+        bytes32 messageHash
+    ) external view returns (bytes memory);
+
+    /**
      * @notice Calculate the EIP-712 digest for a certificate
      * @param referenceTimestamp The reference timestamp
      * @param messageHash The message hash
