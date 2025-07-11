@@ -217,8 +217,6 @@ contract ExistingDeploymentParser is Script, Logger {
         operationsMultisig = json.readAddress(".parameters.operationsMultisig");
         communityMultisig = json.readAddress(".parameters.communityMultisig");
         pauserMultisig = json.readAddress(".parameters.pauserMultisig");
-        timelockController = TimelockController(payable(json.readAddress(".parameters.timelockController")));
-
         eigenLayerProxyAdmin = ProxyAdmin(json.readAddress(".addresses.eigenLayerProxyAdmin"));
         eigenLayerPauserReg = PauserRegistry(json.readAddress(".addresses.eigenLayerPauserReg"));
 
