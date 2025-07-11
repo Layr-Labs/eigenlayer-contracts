@@ -101,7 +101,42 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
         OperatorTableUpdater operatorTableUpdater = Env.proxy.operatorTableUpdater();
         assertTrue(operatorTableUpdater.owner() == Env.opsMultisig(), "operatorTableUpdater.owner invalid");
         assertTrue(operatorTableUpdater.paused() == 0, "operatorTableUpdater.paused invalid");
-        // TODO: add checks on global root confirmer set
+
+        // Checks on the generator
+        OperatorTableUpdaterInitParams memory initParams = _getTableUpdaterInitParams();
+        assertEq(
+            operatorTableUpdater.getGenerator(),
+            initParams.globalRootConfirmerSet,
+            "operatorTableUpdater.generator invalid"
+        );
+        assertEq(
+            operatorTableUpdater.getGeneratorReferenceTimestamp(),
+            operatorTableUpdater.GENERATOR_REFERENCE_TIMESTAMP(),
+            "operatorTableUpdater.generatorReferenceTimestamp invalid"
+        );
+        assertEq(
+            operatorTableUpdater.getGeneratorReferenceTimestamp(),
+            1,
+            "operatorTableUpdater.generatorReferenceTimestamp invalid"
+        );
+        assertEq(
+            operatorTableUpdater.getGlobalTableRootByTimestamp(1),
+            operatorTableUpdater.GENERATOR_GLOBAL_TABLE_ROOT(),
+            "operatorTableUpdater.generatorGlobalTableRoot invalid"
+        );
+        assertEq(
+            operatorTableUpdater.getLatestReferenceTimestamp(),
+            0,
+            "operatorTableUpdater.latestReferenceTimestamp invalid"
+        );
+        assertTrue(
+            operatorTableUpdater.isRootValid(operatorTableUpdater.GENERATOR_GLOBAL_TABLE_ROOT()),
+            "operatorTableUpdater.generatorGlobalTableRoot invalid"
+        );
+        assertTrue(
+            operatorTableUpdater.isRootValidByTimestamp(operatorTableUpdater.GENERATOR_REFERENCE_TIMESTAMP()),
+            "operatorTableUpdater.generatorGlobalTableRoot invalid"
+        );
 
         // Validate ECDSACertificateVerifier
         ECDSACertificateVerifier ecdsaCertificateVerifier = Env.proxy.ecdsaCertificateVerifier();
@@ -110,6 +145,11 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
         // Validate BN254CertificateVerifier
         BN254CertificateVerifier bn254CertificateVerifier = Env.proxy.bn254CertificateVerifier();
         assertTrue(address(bn254CertificateVerifier) != address(0), "bn254CertificateVerifier not deployed");
+        assertEq(
+            bn254CertificateVerifier.getLatestReferenceTimestamp(initParams.globalRootConfirmerSet),
+            1,
+            "bn254CertificateVerifier.latestReferenceTimestamp invalid"
+        );
     }
 
     /// @dev Ensure each deployed TUP/beacon is owned by the proxyAdmin/executorMultisig

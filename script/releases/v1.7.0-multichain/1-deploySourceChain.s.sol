@@ -68,7 +68,7 @@ contract DeploySourceChain is EOADeployer {
                         CrossChainRegistry.initialize,
                         (
                             Env.opsMultisig(), // initialOwner
-                            1 days, // initialMinimumStalenessPeriod
+                            Env.TABLE_UPDATE_CADENCE(),
                             Env.CROSS_CHAIN_REGISTRY_PAUSE_STATUS()
                         )
                     )

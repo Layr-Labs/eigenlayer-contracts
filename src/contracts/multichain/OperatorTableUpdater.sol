@@ -314,7 +314,7 @@ contract OperatorTableUpdater is
             InvalidOperatorSetProof()
         );
     }
-    
+
     /**
      * @notice Sets the global root confirmation threshold
      * @param bps The threshold, in bps, for a global root to be signed off on and updated
