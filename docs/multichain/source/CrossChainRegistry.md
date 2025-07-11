@@ -36,7 +36,7 @@ struct OperatorSetConfig {
 * `SupportedChains` (via `getSupportedChains`) are `Mainnet` and `Base`
     * These are chains to which tables can be transported to
     * On Testnet, the supported chains are `Sepolia` and `Base-Sepolia`
-* `TableUpdateCadence` is the frequency at which tables are transported to destination chains
+* `TableUpdateCadence` is the frequency at which tables are *expected* to be transported to destination chains
     * When setting an operator set config, the `maxStalenessPeriod` must be either:
         * 0 (special case allowing certificates to always be valid)
         * Greater than or equal to the table update cadence
@@ -312,7 +312,7 @@ function setTableUpdateCadence(
 ) external;
 ```
 
-Sets the global table update cadence that operator set configurations must respect. This value acts as a floor for all non-zero `maxStalenessPeriod` values in operator set configurations.
+Sets the global table update cadence - the cadence at which operator tables are *expected* to be updated. This value acts as a floor for all non-zero `maxStalenessPeriod` values in operator set configurations.
 
 *Effects*:
 * Updates the `_tableUpdateCadence` storage variable
