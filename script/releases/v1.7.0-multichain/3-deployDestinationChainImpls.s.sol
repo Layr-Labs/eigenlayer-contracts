@@ -137,7 +137,6 @@ contract DeployDestinationChainImpls is EOADeployer, DeployDestinationChainProxi
             0, // initial paused status
             dummyOperatorSet, // globalRootConfirmerSet
             0, // globalRootConfirmationThreshold
-            0, // referenceTimestamp
             dummyBN254Info, // globalRootConfirmerSetInfo
             dummyConfig // globalRootConfirmerSetConfig
         );

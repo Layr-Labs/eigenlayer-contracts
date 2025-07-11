@@ -54,7 +54,6 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
                     0, // initial paused status
                     initParams.globalRootConfirmerSet,
                     initParams.globalRootConfirmationThreshold,
-                    initParams.referenceTimestamp,
                     initParams.globalRootConfirmerSetInfo,
                     initParams.globalRootConfirmerSetConfig
                 )
@@ -173,7 +172,6 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
             0, // initial paused status
             dummyOperatorSet, // globalRootConfirmerSet
             0, // globalRootConfirmationThreshold
-            0, // referenceTimestamp
             dummyBN254Info, // globalRootConfirmerSetInfo
             dummyConfig // globalRootConfirmerSetConfig
         );

@@ -40,40 +40,27 @@ contract OperatorTableUpdater is
      * @param initialPausedStatus The initial paused status of the OperatorTableUpdater
      * @param _generator The operatorSet which certifies against global roots
      * @param _globalRootConfirmationThreshold The threshold, in bps, for a global root to be signed off on and updated
-     * @param referenceTimestamp The reference timestamp for the global root confirmer set
-     * @param generatorInfo The operatorSetInfo for the global root confirmer set
-     * @param generatorConfig The operatorSetConfig for the global root confirmer set
-     * @dev We also update the operator table for the global root confirmer set, to begin signing off on global roots
-     * @dev Uses INITIAL_GLOBAL_TABLE_ROOT constant to break circular dependency for certificate verification
+     * @param generatorInfo The operatorSetInfo for the Generator
+     * @param generatorConfig The operatorSetConfig for Generator
+     * @dev We also update the operator table for the Generator, to begin signing off on global roots
      */
     function initialize(
         address owner,
         uint256 initialPausedStatus,
         OperatorSet calldata _generator,
         uint16 _globalRootConfirmationThreshold,
-        uint32 referenceTimestamp,
         BN254OperatorSetInfo calldata generatorInfo,
         OperatorSetConfig calldata generatorConfig
     ) external initializer {
         _transferOwnership(owner);
         _setPausedStatus(initialPausedStatus);
-        _setGenerator(_generator);
+        _updateGenerator(_generator, generatorInfo, generatorConfig);
         _setGlobalRootConfirmationThreshold(_globalRootConfirmationThreshold);
-        _updateGenerator(referenceTimestamp, generatorInfo, generatorConfig);
 
-        /// @dev The first global table root is the `INITIAL_GLOBAL_TABLE_ROOT`
-        /// @dev This is used to enable the first call to `confirmGlobalTableRoot` to pass since it expects
-        /// @dev the `Generator` to have a valid initial global table root
-        _globalTableRoots[referenceTimestamp] = INITIAL_GLOBAL_TABLE_ROOT;
-        _isRootValid[INITIAL_GLOBAL_TABLE_ROOT] = true;
-        _referenceBlockNumbers[referenceTimestamp] = uint32(block.number);
-        _referenceTimestamps[uint32(block.number)] = referenceTimestamp;
-
-        // Set the latest reference timestamp
-        _latestReferenceTimestamp = referenceTimestamp;
-
-        // Emit the initial global table root event
-        emit NewGlobalTableRoot(referenceTimestamp, INITIAL_GLOBAL_TABLE_ROOT);
+        // The generator's global table root is the `GENERATOR_GLOBAL_TABLE_ROOT`.
+        // The constant is used to enable the call to `confirmGlobalTableRoot` to pass since the `BN254CertificateVerifier` expects the `Generator` to have a valid root associated with it.
+        _globalTableRoots[GENERATOR_REFERENCE_TIMESTAMP] = GENERATOR_GLOBAL_TABLE_ROOT;
+        _isRootValid[GENERATOR_GLOBAL_TABLE_ROOT] = true;
     }
 
     /**
@@ -135,6 +122,9 @@ contract OperatorTableUpdater is
         // Check that the `globalTableRoot` is not disabled
         require(_isRootValid[globalTableRoot], InvalidRoot());
 
+        // Check that the `operatorSet` is not the `Generator`
+        require(operatorSet.key() != _generator.key(), InvalidOperatorSet());
+
         // Check that the `referenceTimestamp` is greater than the latest reference timestamp
         require(
             referenceTimestamp
@@ -172,13 +162,6 @@ contract OperatorTableUpdater is
      */
 
     /// @inheritdoc IOperatorTableUpdater
-    function setGenerator(
-        OperatorSet calldata operatorSet
-    ) external onlyOwner {
-        _setGenerator(operatorSet);
-    }
-
-    /// @inheritdoc IOperatorTableUpdater
     function setGlobalRootConfirmationThreshold(
         uint16 bps
     ) external onlyOwner {
@@ -198,11 +181,11 @@ contract OperatorTableUpdater is
 
     /// @inheritdoc IOperatorTableUpdater
     function updateGenerator(
-        uint32 referenceTimestamp,
+        OperatorSet calldata generator,
         BN254OperatorSetInfo calldata generatorInfo,
         OperatorSetConfig calldata generatorConfig
     ) external onlyOwner {
-        _updateGenerator(referenceTimestamp, generatorInfo, generatorConfig);
+        _updateGenerator(generator, generatorInfo, generatorConfig);
     }
 
     /**
@@ -333,7 +316,7 @@ contract OperatorTableUpdater is
     }
 
     /**
-     * @notice Sets the global root confirmer set
+     * @notice Sets the `Generator`
      * @param operatorSet The operatorSet which certifies against global roots
      */
     function _setGenerator(
@@ -356,17 +339,36 @@ contract OperatorTableUpdater is
     }
 
     /**
-     * @notice Updates the operator table for the global root confirmer set
-     * @param referenceTimestamp The reference timestamp of the operator table update
-     * @param generatorInfo The operatorSetInfo for the global root confirmer set
-     * @param generatorConfig The operatorSetConfig for the global root confirmer set
+     * @notice Updates the `Generator` to a new operatorSet
+     * @param generator The operatorSet which certifies against global roots
+     * @param generatorInfo The operatorSetInfo for the generator
+     * @param generatorInfo The operatorSetConfig for the generator
+     * @dev We have a separate function for updating this operatorSet since it's not transported and updated
+     *      in the same way as the other operatorSets
+     * @dev Only callable by the owner of the contract
+     * @dev Uses GENERATOR_GLOBAL_TABLE_ROOT constant to break circular dependency for certificate verification
+     * @dev We ensure that there are no collisions with other reference timestamps because we expect the generator to have an initial reference timestamp of 0
+     * @dev The `_latestReferenceTimestamp` is not updated since this root is ONLY used for the `Generator`
+     * @dev The `_referenceBlockNumber` and `_referenceTimestamps` mappings are not updated since they are only used for introspection for official operatorSets
      */
     function _updateGenerator(
-        uint32 referenceTimestamp,
+        OperatorSet calldata generator,
         BN254OperatorSetInfo calldata generatorInfo,
         OperatorSetConfig calldata generatorConfig
     ) internal {
-        bn254CertificateVerifier.updateOperatorTable(_generator, referenceTimestamp, generatorInfo, generatorConfig);
+        // Set the generator
+        _generator = generator;
+
+        // Get the latest reference timestamp for the Generator
+        uint32 referenceTimestamp = bn254CertificateVerifier.latestReferenceTimestamp(generator);
+        require(referenceTimestamp == 0, InvalidGenerator());
+
+        // Update the operator table for the Generator
+        bn254CertificateVerifier.updateOperatorTable(
+            generator, GENERATOR_REFERENCE_TIMESTAMP, generatorInfo, generatorConfig
+        );
+
+        emit GeneratorUpdated(generator);
     }
 
     /**
