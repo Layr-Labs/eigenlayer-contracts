@@ -84,15 +84,16 @@ contract CrossChainRegistry is
     /**
      * @notice Initializes the contract with the initial paused status and owner
      * @param initialOwner The initial owner of the contract
+     * @param initialTableUpdateCadence The initial table update cadence
      * @param initialPausedStatus The initial paused status bitmap
      */
     function initialize(
         address initialOwner,
-        uint32 initialMinimumStalenessPeriod,
+        uint32 initialTableUpdateCadence,
         uint256 initialPausedStatus
     ) external initializer {
         _transferOwnership(initialOwner);
-        _setMinimumStalenessPeriod(initialMinimumStalenessPeriod);
+        _setTableUpdateCadence(initialTableUpdateCadence);
         _setPausedStatus(initialPausedStatus);
     }
 
@@ -249,10 +250,10 @@ contract CrossChainRegistry is
     }
 
     /// @inheritdoc ICrossChainRegistry
-    function setMinimumStalenessPeriod(
-        uint32 minimumStalenessPeriod
+    function setTableUpdateCadence(
+        uint32 tableUpdateCadence
     ) external onlyOwner {
-        _setMinimumStalenessPeriod(minimumStalenessPeriod);
+        _setTableUpdateCadence(tableUpdateCadence);
     }
 
     /**
@@ -282,8 +283,7 @@ contract CrossChainRegistry is
      */
     function _setOperatorSetConfig(OperatorSet memory operatorSet, OperatorSetConfig memory config) internal {
         require(
-            config.maxStalenessPeriod == 0 || config.maxStalenessPeriod >= _minimumStalenessPeriod,
-            InvalidStalenessPeriod()
+            config.maxStalenessPeriod == 0 || config.maxStalenessPeriod >= _tableUpdateCadence, InvalidStalenessPeriod()
         );
         _operatorSetConfigs[operatorSet.key()] = config;
         emit OperatorSetConfigSet(operatorSet, config);
@@ -337,16 +337,16 @@ contract CrossChainRegistry is
     }
 
     /**
-     * @dev Internal function to set the minimum staleness period
-     * @param minimumStalenessPeriod the minimum staleness period
-     * @dev The minimum staleness period cannot be 0 as that is special-cased to allow for certificates to ALWAYS be valid
+     * @dev Internal function to set the table update cadence
+     * @param tableUpdateCadence the table update cadence
+     * @dev The table update cadence cannot be 0 as that is special-cased to allow for certificates to ALWAYS be valid
      */
-    function _setMinimumStalenessPeriod(
-        uint32 minimumStalenessPeriod
+    function _setTableUpdateCadence(
+        uint32 tableUpdateCadence
     ) internal {
-        require(minimumStalenessPeriod > 0, InvalidMinimumStalenessPeriod());
-        _minimumStalenessPeriod = minimumStalenessPeriod;
-        emit MinimumStalenessPeriodSet(minimumStalenessPeriod);
+        require(tableUpdateCadence > 0, InvalidTableUpdateCadence());
+        _tableUpdateCadence = tableUpdateCadence;
+        emit TableUpdateCadenceSet(tableUpdateCadence);
     }
 
     /**
@@ -458,7 +458,7 @@ contract CrossChainRegistry is
     }
 
     /// @inheritdoc ICrossChainRegistry
-    function getMinimumStalenessPeriod() external view returns (uint32) {
-        return _minimumStalenessPeriod;
+    function getTableUpdateCadence() external view returns (uint32) {
+        return _tableUpdateCadence;
     }
 }

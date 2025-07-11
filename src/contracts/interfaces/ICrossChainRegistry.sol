@@ -41,8 +41,8 @@ interface ICrossChainRegistryErrors {
     /// @notice Thrown when the staleness period set by an operatorSet is invalid
     error InvalidStalenessPeriod();
 
-    /// @notice Thrown when the minimum staleness period is invalid
-    error InvalidMinimumStalenessPeriod();
+    /// @notice Thrown when the table update cadence is invalid
+    error InvalidTableUpdateCadence();
 }
 
 interface ICrossChainRegistryTypes {
@@ -95,8 +95,8 @@ interface ICrossChainRegistryEvents is ICrossChainRegistryTypes {
     /// @notice Emitted when a chainID is removed from the whitelist
     event ChainIDRemovedFromWhitelist(uint256 chainID);
 
-    /// @notice Emitted when the minimum staleness period is set
-    event MinimumStalenessPeriodSet(uint32 minimumStalenessPeriod);
+    /// @notice Emitted when the table update cadence is set
+    event TableUpdateCadenceSet(uint32 tableUpdateCadence);
 }
 
 interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryEvents {
@@ -182,13 +182,13 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
     ) external;
 
     /**
-     * @notice Sets the minimum staleness period
-     * @param minimumStalenessPeriod the minimum staleness period
+     * @notice Sets the table update cadence
+     * @param tableUpdateCadence the table update cadence
      * @dev msg.sender must be the owner of the CrossChainRegistry
-     * @dev The minimum staleness period cannot be 0 as that is special-cased to allow for certificates to ALWAYS be valid
+     * @dev The table update cadence cannot be 0
      */
-    function setMinimumStalenessPeriod(
-        uint32 minimumStalenessPeriod
+    function setTableUpdateCadence(
+        uint32 tableUpdateCadence
     ) external;
 
     /**
@@ -259,10 +259,9 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
     function getSupportedChains() external view returns (uint256[] memory, address[] memory);
 
     /**
-     * @notice Gets the minimum staleness period
-     * @return The minimum staleness period
-     * @dev The minimum staleness period is applicable to all chains
-     * @dev The staleness period of 0 is special case and is allowed
+     * @notice Gets the table update cadence
+     * @return The table update cadence
+     * @dev The table update cadence is applicable to all chains
      */
-    function getMinimumStalenessPeriod() external view returns (uint32);
+    function getTableUpdateCadence() external view returns (uint32);
 }

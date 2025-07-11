@@ -59,7 +59,7 @@ contract CrossChainRegistryUnitTests is
                     abi.encodeWithSelector(
                         CrossChainRegistry.initialize.selector,
                         address(this), // initial owner
-                        1 days, // initial minimum staleness period
+                        1 days, // initial table update cadence
                         0 // initial paused status
                     )
                 )
@@ -153,7 +153,7 @@ contract CrossChainRegistryUnitTests_initialize is CrossChainRegistryUnitTests {
         );
 
         address newOwner = cheats.randomAddress();
-        uint32 initialMinimumStalenessPeriod = 7 days;
+        uint32 initialTableUpdateCadence = 7 days;
         uint initialPausedStatus = (1 << PAUSED_GENERATION_RESERVATIONS) | (1 << PAUSED_TRANSPORT_DESTINATIONS);
 
         CrossChainRegistry freshRegistry = CrossChainRegistry(
@@ -161,15 +161,13 @@ contract CrossChainRegistryUnitTests_initialize is CrossChainRegistryUnitTests {
                 new TransparentUpgradeableProxy(
                     address(freshImplementation),
                     address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(
-                        CrossChainRegistry.initialize.selector, newOwner, initialMinimumStalenessPeriod, initialPausedStatus
-                    )
+                    abi.encodeWithSelector(CrossChainRegistry.initialize.selector, newOwner, initialTableUpdateCadence, initialPausedStatus)
                 )
             )
         );
 
         assertEq(freshRegistry.owner(), newOwner, "Owner not set correctly");
-        assertEq(freshRegistry.getMinimumStalenessPeriod(), initialMinimumStalenessPeriod, "Minimum staleness period not set correctly");
+        assertEq(freshRegistry.getTableUpdateCadence(), initialTableUpdateCadence, "Table update cadence not set correctly");
         assertTrue(freshRegistry.paused(PAUSED_GENERATION_RESERVATIONS), "PAUSED_GENERATION_RESERVATIONS not set");
         assertTrue(freshRegistry.paused(PAUSED_TRANSPORT_DESTINATIONS), "PAUSED_TRANSPORT_DESTINATIONS not set");
         assertFalse(freshRegistry.paused(PAUSED_OPERATOR_TABLE_CALCULATOR), "PAUSED_OPERATOR_TABLE_CALCULATOR should not be set");
@@ -226,11 +224,11 @@ contract CrossChainRegistryUnitTests_createGenerationReservation is CrossChainRe
     }
 
     function test_Revert_InvalidStalenessPeriod() public {
-        // Set a minimum staleness period
-        uint32 minimumStalenessPeriod = 7 days;
-        crossChainRegistry.setMinimumStalenessPeriod(minimumStalenessPeriod);
+        // Set a table update cadence
+        uint32 tableUpdateCadence = 7 days;
+        crossChainRegistry.setTableUpdateCadence(tableUpdateCadence);
 
-        // Try to create with a config that has staleness period less than minimum (but not 0)
+        // Try to create with a config that has staleness period less than cadence (but not 0)
         OperatorSetConfig memory invalidConfig = _createOperatorSetConfig(cheats.randomAddress(), 1 days);
 
         cheats.expectRevert(InvalidStalenessPeriod.selector);
@@ -278,9 +276,9 @@ contract CrossChainRegistryUnitTests_createGenerationReservation is CrossChainRe
     }
 
     function test_createGenerationReservation_ZeroStalenessPeriod() public {
-        // Set a minimum staleness period
-        uint32 minimumStalenessPeriod = 7 days;
-        crossChainRegistry.setMinimumStalenessPeriod(minimumStalenessPeriod);
+        // Set a table update cadence
+        uint32 tableUpdateCadence = 7 days;
+        crossChainRegistry.setTableUpdateCadence(tableUpdateCadence);
 
         // Create config with 0 staleness period (should be allowed as special case)
         OperatorSetConfig memory zeroStalenessConfig = _createOperatorSetConfig(cheats.randomAddress(), 0);
@@ -524,9 +522,9 @@ contract CrossChainRegistryUnitTests_setOperatorSetConfig is CrossChainRegistryU
     }
 
     function test_Revert_InvalidStalenessPeriod() public {
-        // Set a minimum staleness period
-        uint32 minimumStalenessPeriod = 7 days;
-        crossChainRegistry.setMinimumStalenessPeriod(minimumStalenessPeriod);
+        // Set a table update cadence
+        uint32 tableUpdateCadence = 7 days;
+        crossChainRegistry.setTableUpdateCadence(tableUpdateCadence);
 
         // Try to set config with staleness period less than minimum (but not 0)
         OperatorSetConfig memory invalidConfig = _createOperatorSetConfig(cheats.randomAddress(), 1 days);
@@ -536,9 +534,9 @@ contract CrossChainRegistryUnitTests_setOperatorSetConfig is CrossChainRegistryU
     }
 
     function test_setOperatorSetConfig_ZeroStalenessPeriod() public {
-        // Set a minimum staleness period
-        uint32 minimumStalenessPeriod = 7 days;
-        crossChainRegistry.setMinimumStalenessPeriod(minimumStalenessPeriod);
+        // Set a table update cadence
+        uint32 tableUpdateCadence = 7 days;
+        crossChainRegistry.setTableUpdateCadence(tableUpdateCadence);
 
         // Create config with 0 staleness period (should be allowed as special case)
         OperatorSetConfig memory zeroStalenessConfig = _createOperatorSetConfig(cheats.randomAddress(), 0);
@@ -1150,41 +1148,41 @@ contract CrossChainRegistryUnitTests_getSupportedChains is CrossChainRegistryUni
 }
 
 /**
- * @title CrossChainRegistryUnitTests_setMinimumStalenessPeriod
- * @notice Unit tests for CrossChainRegistry.setMinimumStalenessPeriod
+ * @title CrossChainRegistryUnitTests_setTableUpdateCadence
+ * @notice Unit tests for CrossChainRegistry.setTableUpdateCadence
  */
-contract CrossChainRegistryUnitTests_setMinimumStalenessPeriod is CrossChainRegistryUnitTests {
+contract CrossChainRegistryUnitTests_setTableUpdateCadence is CrossChainRegistryUnitTests {
     function test_Revert_NotOwner() public {
-        uint32 newMinimumStalenessPeriod = 14 days;
+        uint32 newTableUpdateCadence = 14 days;
 
         cheats.prank(notPermissioned);
         cheats.expectRevert("Ownable: caller is not the owner");
-        crossChainRegistry.setMinimumStalenessPeriod(newMinimumStalenessPeriod);
+        crossChainRegistry.setTableUpdateCadence(newTableUpdateCadence);
     }
 
-    function test_setMinimumStalenessPeriod_Success() public {
-        uint32 newMinimumStalenessPeriod = 14 days;
+    function test_setTableUpdateCadence_Success() public {
+        uint32 newTableUpdateCadence = 14 days;
 
         // Expect event
         cheats.expectEmit(true, true, true, true, address(crossChainRegistry));
-        emit MinimumStalenessPeriodSet(newMinimumStalenessPeriod);
+        emit TableUpdateCadenceSet(newTableUpdateCadence);
 
-        // Set minimum staleness period
-        crossChainRegistry.setMinimumStalenessPeriod(newMinimumStalenessPeriod);
+        // Set table update cadence
+        crossChainRegistry.setTableUpdateCadence(newTableUpdateCadence);
 
         // Verify state
-        assertEq(crossChainRegistry.getMinimumStalenessPeriod(), newMinimumStalenessPeriod, "Minimum staleness period not set correctly");
+        assertEq(crossChainRegistry.getTableUpdateCadence(), newTableUpdateCadence, "Table update cadence not set correctly");
     }
 
-    function test_setMinimumStalenessPeriod_AffectsConfigValidation() public {
+    function test_setTableUpdateCadence_AffectsConfigValidation() public {
         // Create a reservation with a config
         crossChainRegistry.createGenerationReservation(defaultOperatorSet, defaultCalculator, defaultConfig, defaultChainIDs);
 
-        // Update minimum staleness period to be higher than existing config
-        uint32 newMinimumStalenessPeriod = 2 days;
-        crossChainRegistry.setMinimumStalenessPeriod(newMinimumStalenessPeriod);
+        // Update table update cadence to be higher than existing config
+        uint32 newTableUpdateCadence = 2 days;
+        crossChainRegistry.setTableUpdateCadence(newTableUpdateCadence);
 
-        // Try to set a config with staleness period less than new minimum
+        // Try to set a config with staleness period less than new cadence
         OperatorSetConfig memory invalidConfig = _createOperatorSetConfig(cheats.randomAddress(), 1 days);
         cheats.expectRevert(InvalidStalenessPeriod.selector);
         crossChainRegistry.setOperatorSetConfig(defaultOperatorSet, invalidConfig);
@@ -1197,15 +1195,15 @@ contract CrossChainRegistryUnitTests_setMinimumStalenessPeriod is CrossChainRegi
         assertEq(retrievedConfig.maxStalenessPeriod, 3 days, "Valid config should be set");
     }
 
-    function testFuzz_setMinimumStalenessPeriod(uint32 minimumStalenessPeriod) public {
-        minimumStalenessPeriod = uint32(bound(minimumStalenessPeriod, 1, 365 days));
+    function testFuzz_setTableUpdateCadence(uint32 tableUpdateCadence) public {
+        tableUpdateCadence = uint32(bound(tableUpdateCadence, 1, 365 days));
 
-        crossChainRegistry.setMinimumStalenessPeriod(minimumStalenessPeriod);
-        assertEq(crossChainRegistry.getMinimumStalenessPeriod(), minimumStalenessPeriod, "Minimum staleness period not set correctly");
+        crossChainRegistry.setTableUpdateCadence(tableUpdateCadence);
+        assertEq(crossChainRegistry.getTableUpdateCadence(), tableUpdateCadence, "Table update cadence not set correctly");
     }
 
-    function test_Revert_MinimumStalenessPeriodZero() public {
-        cheats.expectRevert(InvalidMinimumStalenessPeriod.selector);
-        crossChainRegistry.setMinimumStalenessPeriod(0);
+    function test_Revert_TableUpdateCadenceZero() public {
+        cheats.expectRevert(InvalidTableUpdateCadence.selector);
+        crossChainRegistry.setTableUpdateCadence(0);
     }
 }

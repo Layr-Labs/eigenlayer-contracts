@@ -86,7 +86,7 @@ abstract contract MultichainIntegrationBase is IntegrationBase {
         // Initialize CrossChainRegistry
         crossChainRegistry.initialize(
             address(this), // owner
-            1 hours, // initialMinimumStalenessPeriod (1 hour = 3600 seconds)
+            1 hours, // initialTableUpdateCadence (1 hour = 3600 seconds)
             0 // initialPausedStatus
         );
 
