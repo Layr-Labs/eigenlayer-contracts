@@ -37,6 +37,12 @@ interface ICrossChainRegistryErrors {
 
     /// @notice Thrown when the lengths between two arrays are not the same
     error ArrayLengthMismatch();
+
+    /// @notice Thrown when the staleness period set by an operatorSet is invalid
+    error InvalidStalenessPeriod();
+
+    /// @notice Thrown when the minimum staleness period is invalid
+    error InvalidMinimumStalenessPeriod();
 }
 
 interface ICrossChainRegistryTypes {
@@ -88,6 +94,9 @@ interface ICrossChainRegistryEvents is ICrossChainRegistryTypes {
 
     /// @notice Emitted when a chainID is removed from the whitelist
     event ChainIDRemovedFromWhitelist(uint256 chainID);
+
+    /// @notice Emitted when the minimum staleness period is set
+    event MinimumStalenessPeriodSet(uint32 minimumStalenessPeriod);
 }
 
 interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryEvents {
@@ -173,6 +182,16 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
     ) external;
 
     /**
+     * @notice Sets the minimum staleness period
+     * @param minimumStalenessPeriod the minimum staleness period
+     * @dev msg.sender must be the owner of the CrossChainRegistry
+     * @dev The minimum staleness period cannot be 0 as that is special-cased to allow for certificates to ALWAYS be valid
+     */
+    function setMinimumStalenessPeriod(
+        uint32 minimumStalenessPeriod
+    ) external;
+
+    /**
      *
      *                         VIEW FUNCTIONS
      *
@@ -238,4 +257,12 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
      * @return An array of operatorTableUpdaters corresponding to each chainID
      */
     function getSupportedChains() external view returns (uint256[] memory, address[] memory);
+
+    /**
+     * @notice Gets the minimum staleness period
+     * @return The minimum staleness period
+     * @dev The minimum staleness period is applicable to all chains
+     * @dev The staleness period of 0 is special case and is allowed
+     */
+    function getMinimumStalenessPeriod() external view returns (uint32);
 }

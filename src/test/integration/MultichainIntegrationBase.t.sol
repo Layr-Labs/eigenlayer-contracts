@@ -86,6 +86,7 @@ abstract contract MultichainIntegrationBase is IntegrationBase {
         // Initialize CrossChainRegistry
         crossChainRegistry.initialize(
             address(this), // owner
+            0, // initialMinimumStalenessPeriod
             0 // initialPausedStatus
         );
 

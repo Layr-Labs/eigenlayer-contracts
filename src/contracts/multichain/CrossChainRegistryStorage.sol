@@ -67,6 +67,9 @@ abstract contract CrossChainRegistryStorage is ICrossChainRegistry {
     /// @dev Map of whitelisted chain IDs to operator table updaters
     EnumerableMap.UintToAddressMap internal _whitelistedChainIDs;
 
+    /// @dev Minimum staleness period, applicable to all chains
+    uint32 internal _minimumStalenessPeriod;
+
     // Construction
 
     constructor(IAllocationManager _allocationManager, IKeyRegistrar _keyRegistrar) {

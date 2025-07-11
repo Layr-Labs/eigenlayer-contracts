@@ -86,8 +86,13 @@ contract CrossChainRegistry is
      * @param initialOwner The initial owner of the contract
      * @param initialPausedStatus The initial paused status bitmap
      */
-    function initialize(address initialOwner, uint256 initialPausedStatus) external initializer {
+    function initialize(
+        address initialOwner,
+        uint32 initialMinimumStalenessPeriod,
+        uint256 initialPausedStatus
+    ) external initializer {
         _transferOwnership(initialOwner);
+        _setMinimumStalenessPeriod(initialMinimumStalenessPeriod);
         _setPausedStatus(initialPausedStatus);
     }
 
@@ -243,6 +248,13 @@ contract CrossChainRegistry is
         }
     }
 
+    /// @inheritdoc ICrossChainRegistry
+    function setMinimumStalenessPeriod(
+        uint32 minimumStalenessPeriod
+    ) external onlyOwner {
+        _setMinimumStalenessPeriod(minimumStalenessPeriod);
+    }
+
     /**
      *
      *                         INTERNAL FUNCTIONS
@@ -266,8 +278,10 @@ contract CrossChainRegistry is
      * @dev Internal function to set the operator set config for an operator set
      * @param operatorSet The operator set to set the config for
      * @param config The operator set config
+     * @dev The 0 staleness period is special case and is allowed, since it allows for certificates to ALWAYS be valid
      */
     function _setOperatorSetConfig(OperatorSet memory operatorSet, OperatorSetConfig memory config) internal {
+        require(config.maxStalenessPeriod == 0 || config.maxStalenessPeriod >= _minimumStalenessPeriod, InvalidStalenessPeriod());
         _operatorSetConfigs[operatorSet.key()] = config;
         emit OperatorSetConfigSet(operatorSet, config);
     }
@@ -317,6 +331,19 @@ contract CrossChainRegistry is
         // Ensure that at least one destination remains
         // If a user wants to remove all destinations, they should call `removeGenerationReservation` instead
         require(_transportDestinations[operatorSetKey].length() > 0, RequireAtLeastOneTransportDestination());
+    }
+
+    /**
+     * @dev Internal function to set the minimum staleness period
+     * @param minimumStalenessPeriod the minimum staleness period
+     * @dev The minimum staleness period cannot be 0 as that is special-cased to allow for certificates to ALWAYS be valid
+     */
+    function _setMinimumStalenessPeriod(
+        uint32 minimumStalenessPeriod
+    ) internal {
+        require(minimumStalenessPeriod > 0, InvalidMinimumStalenessPeriod());
+        _minimumStalenessPeriod = minimumStalenessPeriod;
+        emit MinimumStalenessPeriodSet(minimumStalenessPeriod);
     }
 
     /**
@@ -425,5 +452,10 @@ contract CrossChainRegistry is
         }
 
         return (chainIDs, operatorTableUpdaters);
+    }
+
+    /// @inheritdoc ICrossChainRegistry
+    function getMinimumStalenessPeriod() external view returns (uint32) {
+        return _minimumStalenessPeriod;
     }
 }
