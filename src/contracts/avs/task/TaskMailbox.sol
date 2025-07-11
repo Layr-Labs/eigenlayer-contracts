@@ -10,12 +10,10 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import {IAVSTaskHook} from "../../interfaces/IAVSTaskHook.sol";
 import {
-    IBN254CertificateVerifier,
-    IBN254CertificateVerifierTypes
+    IBN254CertificateVerifier, IBN254CertificateVerifierTypes
 } from "../../interfaces/IBN254CertificateVerifier.sol";
 import {
-    IECDSACertificateVerifier,
-    IECDSACertificateVerifierTypes
+    IECDSACertificateVerifier, IECDSACertificateVerifierTypes
 } from "../../interfaces/IECDSACertificateVerifier.sol";
 import {IBaseCertificateVerifier} from "../../interfaces/IBaseCertificateVerifier.sol";
 import {IKeyRegistrarTypes} from "../../interfaces/IKeyRegistrar.sol";
@@ -403,9 +401,8 @@ contract TaskMailbox is
                 // Validate that the certificate has a non-empty signature
                 require(ecdsaCert.sig.length > 0, EmptyCertificateSignature());
 
-                isCertificateValid = IECDSACertificateVerifier(ECDSA_CERTIFICATE_VERIFIER).verifyCertificateProportion(
-                    executorOperatorSet, ecdsaCert, totalStakeProportionThresholds
-                );
+                (isCertificateValid,) = IECDSACertificateVerifier(ECDSA_CERTIFICATE_VERIFIER)
+                    .verifyCertificateProportion(executorOperatorSet, ecdsaCert, totalStakeProportionThresholds);
             } else {
                 revert InvalidCurveType();
             }
