@@ -132,15 +132,15 @@ contract Deploy is EOADeployer {
         return ProxyAdmin(Env.proxyAdmin()).getProxyAdmin(ITransparentUpgradeableProxy(proxy));
     }
 
-    function _assertTrue(bool b, string memory err) private pure {
+    function _assertTrue(bool b, string memory err) internal pure {
         assertTrue(b, err);
     }
 
-    function _assertFalse(bool b, string memory err) private pure {
+    function _assertFalse(bool b, string memory err) internal pure {
         assertFalse(b, err);
     }
 
-    function _strEq(string memory a, string memory b) private pure returns (bool) {
+    function _strEq(string memory a, string memory b) internal pure returns (bool) {
         return keccak256(bytes(a)) == keccak256(bytes(b));
     }
 }
