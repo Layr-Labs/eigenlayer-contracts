@@ -1108,36 +1108,6 @@ contract IntegrationCheckUtils is IntegrationBase {
         );
     }
 
-    function check_releaseSlashEscrow_State(
-        OperatorSet memory operatorSet,
-        uint slashId,
-        IStrategy[] memory strategies,
-        uint[] memory initTokenBalances,
-        address redistributionRecipient
-    ) internal {
-        assert_HasUnderlyingTokenBalances(
-            User(payable(redistributionRecipient)),
-            strategies,
-            initTokenBalances,
-            "redistribution recipient should have underlying token balances"
-        );
-
-        assertFalse(_getIsPendingSlashId(operatorSet, slashId), "slash id should not be pending");
-        assertEq(_getEscrowStartBlock(operatorSet, slashId), 0, "escrow start block should be deleted after");
-        assertTrue(_getIsDeployedSlashEscrow(operatorSet, slashId), "escrow should be deployed after");
-    }
-
-    function check_releaseSlashEscrow_State_NoneRemaining(
-        OperatorSet memory operatorSet,
-        uint slashId,
-        IStrategy[] memory strategies,
-        uint[] memory initTokenBalances,
-        address redistributionRecipient
-    ) internal {
-        check_releaseSlashEscrow_State(operatorSet, slashId, strategies, initTokenBalances, redistributionRecipient);
-        assertFalse(_getIsPendingOperatorSet(operatorSet), "operator set should not be pending");
-    }
-
     /**
      *
      *                             DUAL SLASHING CHECKS

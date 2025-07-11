@@ -10,19 +10,15 @@
 
 - Redistribution is a feature that gives Service Builders a means to not just burn, but repurpose slashed funds.
 - We introduce a new operatorSet creation mechanism: [`AllocationManager.createRedistributingOperatorSets`](../docs/core/AllocationManager.md#createredistributingoperatorsets), which allows slashed funds to be redistributed to a `RedistributionRecipient`. *Note: The redistribution recipient can be set only once and is immutable*. 
-- *All slashed funds will now be routed to individual `SlashEscrow` contracts.* The release of funds from escrow is gated by the `SlashEscrowFactory`. The `SlashEscrowFactory` deploys individual `SlashEscrow` contracts per slash, enforces a global delay for all escrowed funds, and handles pausing/unpausing of escrowed funds. 
+- *All slashed funds now follow a two-step process.* During a slash, we increase burn or redistributable shares. A cronjob then handles the actual redistribution or burning of these shares.
 - The original `createOperatorSets` function still exists. This function creates operatorSets whose slashed funds will eventually be burned. There is no mechanism to convert an operatorSet to be redistributing. 
 - See [ELIP-006](https://github.com/eigenfoundation/ELIPs/blob/main/ELIPs/ELIP-006.md) for a full description. 
-
-⛔ Breaking changes
-- Funds marked for burning now go through a 4-day escrow period via `SlashEscrow` contracts. These funds are burned by calling [`SlashEscrowFactory.releaseSlashEscrow`](../docs/core/SlashEscrowFactory.md#releaseslashescrow).
 
 📌 Future Deprecations 
 - The pre-redistribution burn pathway [`StrategyManager.decreaseBurnableShares`](../docs/core/StrategyManager.md#burnshares) will be deprecated in an upgrade *after* the redistribution release. This function can still be used to burn shares that have been slashed at any point prior to the redistribution upgrade. 
 
 🛠️ Security Updates
-- The slashing of burned funds is no longer instantaneous. All slashed funds (burned or redistributed) now go through a 4-day escrow delay. The eventual burning or redistribution of slashed funds can be paused by the `PauserMultisig`. 
-- The upgradability of the `SlashEscrowFactory` is controlled by the `CommunityMultisig`. The contract will have a separate `ProxyAdmin` from the rest of the EigenLayer core protocol. Each individual `SlashEscrow` contract is an immutable clone. 
+- The slashing of burned funds is no longer instantaneous. All slashed funds (burned or redistributed) now go through a two-step process where shares are first marked for burning/redistribution, then processed by a cronjob. The burning or redistribution of slashed funds can be paused by the `PauserMultisig`. 
 
 🔧 Improvements
 - The [`AllocationManager.slashOperator`](../docs/core/AllocationManager.md#slashoperator) function now returns a `slashId` and array of `shares` to be burned/redistributed. **The function selector remains the same.**
@@ -35,7 +31,6 @@
 
 
 ## Changelog
-
 - feat(draft): `AllocationManager` redistribution support [PR #1346](https://github.com/layr-labs/eigenlayer-contracts/pull/1346)
 - feat: redistribution upgrade script [PR #1396](https://github.com/layr-labs/eigenlayer-contracts/pull/1396)
 - chore: bindings [PR #1422](https://github.com/layr-labs/eigenlayer-contracts/pull/1422)
@@ -83,3 +78,10 @@
 - docs: update addresses for mainnet [PR #1341](https://github.com/layr-labs/eigenlayer-contracts/pull/1341)
 - docs: enrich MAINTENANCE.md re: release branches [PR #1340](https://github.com/layr-labs/eigenlayer-contracts/pull/1340)
 - ci: enable auto delete branch upon eigengit launch [PR #1339](https://github.com/layr-labs/eigenlayer-contracts/pull/1339)
+- test(redistribution-changes): passing [PR #1511](https://github.com/layr-labs/eigenlayer-contracts/pull/1511)
+- fix: strategy manager gap [PR #1508](https://github.com/layr-labs/eigenlayer-contracts/pull/1508)
+- refactor: remove redistribution delay [PR #1485](https://github.com/layr-labs/eigenlayer-contracts/pull/1485)
+- docs(audit): note upgrade rescue flow [PR #1467](https://github.com/layr-labs/eigenlayer-contracts/pull/1467)
+- fix(audit): assert redistribution recipient != burn address [PR #1466](https://github.com/layr-labs/eigenlayer-contracts/pull/1466)
+- fix(audit): more reentrancy checks [PR #1450](https://github.com/layr-labs/eigenlayer-contracts/pull/1450)
+- fix(audit): out-of-gas issue [PR #1459](https://github.com/layr-labs/eigenlayer-contracts/pull/1459)

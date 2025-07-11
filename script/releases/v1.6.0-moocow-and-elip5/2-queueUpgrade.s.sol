@@ -5,7 +5,7 @@ import {Deploy} from "./1-deployContracts.s.sol";
 import "../Env.sol";
 
 import {MultisigBuilder} from "zeus-templates/templates/MultisigBuilder.sol";
-import "zeus-templates/utils/Encode.sol";
+import {MultisigCall, Encode} from "zeus-templates/utils/Encode.sol";
 
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 
