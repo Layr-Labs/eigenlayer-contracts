@@ -36,6 +36,11 @@ struct OperatorSetConfig {
 * `SupportedChains` (via `getSupportedChains`) are `Mainnet` and `Base`
     * These are chains to which tables can be transported to
     * On Testnet, the supported chains are `Sepolia` and `Base-Sepolia`
+* `MinimumStalenessPeriod` is the global minimum staleness period. It corresponds to the frequency at which tables are transported to destination chains
+    * When setting an operator set config, the `maxStalenessPeriod` must be either:
+        * 0 (special case allowing certificates to always be valid)
+        * Greater than or equal to the minimum staleness period
+    * The minimum staleness period itself cannot be 0
 
 ---
 
@@ -175,6 +180,9 @@ Updates the operator set configuration for a given `operatorSet`. The config con
 * Caller MUST be UAM permissioned for `operatorSet.avs`
 * The `operatorSet` MUST exist in the `AllocationManager`
 * A generation reservation MUST exist for the `operatorSet`
+* The `maxStalenessPeriod` MUST be either:
+  * 0 (special case allowing certificates to always be valid)
+  * Greater than or equal to the global minimum staleness period
 
 ### `addTransportDestinations` 
 
@@ -290,6 +298,29 @@ Removes chain IDs from the global whitelist, preventing them from being used as 
 * Caller MUST be the `owner` of the contract
 * The global paused status MUST NOT be set: `PAUSED_CHAIN_WHITELIST`
 * Each `chainID` MUST be currently whitelisted 
+
+### `setMinimumStalenessPeriod`
+
+```solidity
+/**
+ * @notice Sets the global minimum staleness period
+ * @param minimumStalenessPeriod The minimum staleness period to set
+ * @dev msg.sender must be the owner of the CrossChainRegistry
+ */
+function setMinimumStalenessPeriod(
+    uint32 minimumStalenessPeriod
+) external;
+```
+
+Sets the global minimum staleness period that operator set configurations must respect. This value acts as a floor for all non-zero `maxStalenessPeriod` values in operator set configurations.
+
+*Effects*:
+* Updates the `_minimumStalenessPeriod` storage variable
+* Emits a `MinimumStalenessPeriodSet` event
+
+*Requirements*:
+* Caller MUST be the `owner` of the contract
+* The `minimumStalenessPeriod` MUST be greater than 0 (cannot be 0 as that is reserved for the special case in operator set configs)
 
 ---
 
