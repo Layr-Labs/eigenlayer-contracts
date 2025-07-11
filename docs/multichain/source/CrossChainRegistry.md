@@ -37,10 +37,9 @@ struct OperatorSetConfig {
     * These are chains to which tables can be transported to
     * On Testnet, the supported chains are `Sepolia` and `Base-Sepolia`
 * `MinimumStalenessPeriod` is the global minimum staleness period. It corresponds to the frequency at which tables are transported to destination chains
-    * When setting an operator set config, the `maxStalenessPeriod` must be either:
+    * When an AVS sets an operator set config, the `maxStalenessPeriod` must be either:
         * 0 (special case allowing certificates to always be valid)
         * Greater than or equal to the minimum staleness period
-    * The minimum staleness period itself cannot be 0
 
 ---
 
