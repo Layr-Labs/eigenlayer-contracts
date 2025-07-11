@@ -314,18 +314,7 @@ contract OperatorTableUpdater is
             InvalidOperatorSetProof()
         );
     }
-
-    /**
-     * @notice Sets the `Generator`
-     * @param operatorSet The operatorSet which certifies against global roots
-     */
-    function _setGenerator(
-        OperatorSet calldata operatorSet
-    ) internal {
-        _generator = operatorSet;
-        emit GeneratorUpdated(operatorSet);
-    }
-
+    
     /**
      * @notice Sets the global root confirmation threshold
      * @param bps The threshold, in bps, for a global root to be signed off on and updated

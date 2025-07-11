@@ -19,7 +19,7 @@ The `OperatorTableUpdater` is responsible for updating the `GlobalTableRoot` and
 The contract supports both BN254 and ECDSA operator tables and routes updates to the appropriate certificate verifier based on the curve type.
 
 ## Parameterization
-Upon initialization, the `generator` is updated. The `generator` is represented in storage as an operatorSet. The `generator` should be considered a ghost-operatorSet` since it does not exist in the core protocol, does not have stake backing it, and is not transported to other chains via the multichain protocol. It can only be updated upon initialization or by a [privileged role](#updategenerator). This entity is the same across all destination chains. 
+Upon initialization, the `generator` is updated. The `generator` is represented in storage as an operatorSet. The `generator` should be considered a ghost-operatorSet` since it does not exist in the core protocol, does not have stake backing it, and is not transported to other chains via the multichain protocol. It can only be set upon initialization and a new generator can be set by [privileged role](#updategenerator). This entity is the same across all destination chains. 
 
 The following values are set upon initialization: 
 
@@ -29,6 +29,8 @@ The following values are set upon initialization:
 * `operatorSetConfig`: A configuration for the `generator` 
     * `maxStalenessPeriod`: 0. Set to zero to confirm `globalTableRoots` without updating the `generator` operatorSet. See [`CertificateVerifier`](./CertificateVerifier.md#overview) for specifics
     * `owner`: Unused parameter for `Generator`
+* The `latestReferenceTimestamp` for the `Generator` is 1 (`GENERATOR_REFERENCE_TIMESTAMP`)
+* The `globalTableRoot` for the `Generator` is `GENERATOR_GLOBAL_TABLE_ROOT`
 
 Operator tables are updated daily on testnet and weekly on mainnet. 
 ---
