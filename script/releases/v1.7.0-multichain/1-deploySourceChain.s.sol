@@ -68,6 +68,7 @@ contract DeploySourceChain is EOADeployer {
                         CrossChainRegistry.initialize,
                         (
                             Env.opsMultisig(), // initialOwner
+                            1 days, // initialMinimumStalenessPeriod
                             Env.CROSS_CHAIN_REGISTRY_PAUSE_STATUS()
                         )
                     )
@@ -197,7 +198,7 @@ contract DeploySourceChain is EOADeployer {
         /// CrossChainRegistry
         CrossChainRegistry crossChainRegistry = Env.impl.crossChainRegistry();
         vm.expectRevert(errInit);
-        crossChainRegistry.initialize(address(0), 0);
+        crossChainRegistry.initialize(address(0), 1 days, 0);
     }
 
     function _validateProxyConstructors() internal view {
@@ -243,7 +244,7 @@ contract DeploySourceChain is EOADeployer {
         /// CrossChainRegistry
         CrossChainRegistry crossChainRegistry = Env.proxy.crossChainRegistry();
         vm.expectRevert(errInit);
-        crossChainRegistry.initialize(address(0), 0);
+        crossChainRegistry.initialize(address(0), 1 days, 0);
 
         // ReleaseManager and KeyRegistrar don't have initialize functions
     }

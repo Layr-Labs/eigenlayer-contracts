@@ -36,6 +36,11 @@ struct OperatorSetConfig {
 * `SupportedChains` (via `getSupportedChains`) are `Mainnet` and `Base`
     * These are chains to which tables can be transported to
     * On Testnet, the supported chains are `Sepolia` and `Base-Sepolia`
+* `TableUpdateCadence` is the frequency at which tables are *expected* to be transported to destination chains
+    * When setting an operator set config, the `maxStalenessPeriod` must be either:
+        * 0 (special case allowing certificates to always be valid)
+        * Greater than or equal to the table update cadence
+    * The table update cadence itself cannot be 0
 
 ---
 
@@ -175,6 +180,9 @@ Updates the operator set configuration for a given `operatorSet`. The config con
 * Caller MUST be UAM permissioned for `operatorSet.avs`
 * The `operatorSet` MUST exist in the `AllocationManager`
 * A generation reservation MUST exist for the `operatorSet`
+* The `maxStalenessPeriod` MUST be either:
+  * 0 (special case allowing certificates to always be valid)
+  * Greater than or equal to the table update cadence
 
 ### `addTransportDestinations` 
 
@@ -290,6 +298,29 @@ Removes chain IDs from the global whitelist, preventing them from being used as 
 * Caller MUST be the `owner` of the contract
 * The global paused status MUST NOT be set: `PAUSED_CHAIN_WHITELIST`
 * Each `chainID` MUST be currently whitelisted 
+
+### `setTableUpdateCadence`
+
+```solidity
+/**
+ * @notice Sets the global table update cadence
+ * @param tableUpdateCadence The table update cadence to set
+ * @dev msg.sender must be the owner of the CrossChainRegistry
+ */
+function setTableUpdateCadence(
+    uint32 tableUpdateCadence
+) external;
+```
+
+Sets the global table update cadence - the cadence at which operator tables are *expected* to be updated. This value acts as a floor for all non-zero `maxStalenessPeriod` values in operator set configurations.
+
+*Effects*:
+* Updates the `_tableUpdateCadence` storage variable
+* Emits a `TableUpdateCadenceSet` event
+
+*Requirements*:
+* Caller MUST be the `owner` of the contract
+* The `tableUpdateCadence` MUST be greater than 0
 
 ---
 

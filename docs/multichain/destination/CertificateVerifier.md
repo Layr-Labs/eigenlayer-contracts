@@ -26,7 +26,7 @@ The CertificateVerifier contracts are responsible for verifying certificates fro
 
 Both verifiers implement staleness checks based on a `maxStalenessPeriod` to ensure certificates are not verified against outdated operator information. 
 
-**Note: Setting a max staleness period to 0 enables certificates to be confirmed against any `referenceTimestamp`. In addition, setting a `maxStalenessPeriod` that is greater than 0 and less than the frequency of table updates (daily on testnet, weekly on mainnet) can result in certificates be unable to be confirmed.** See the [staleness period](#staleness-period) in the appendix for some examples. 
+**Note: Setting a max staleness period to 0 enables certificates to be confirmed against any `referenceTimestamp`. In addition, setting a `maxStalenessPeriod` that is greater than 0 and less than the frequency of table updates (daily on testnet, weekly on mainnet) is impossible due bounds enfroced by the [`CrossChainRegistry`](../source/CrossChainRegistry.md#parameterization).** See the [staleness period](#staleness-period) in the appendix for some examples. 
 
 ---
 
@@ -517,4 +517,4 @@ The operator table is updated every 10 days. The staleness period is 5 days. The
 3. Day 6: Certificate verification *fails*
 4. Day 7: A certificate is re-generated. However, this will stale fail as the `referenceTimestamp` would still be day 1 given that was the latest table update
 
-Note that we cannot re-generate a certificate on Day 7. This is why we recommend that the `stalenessPeriod` is greater than or equal to the update cadence of operator tables.
+Note that we cannot re-generate a certificate on Day 7. This is why we prevent the `stalenessPeriod` from being less than 10 days `CrossChainRegistry`.

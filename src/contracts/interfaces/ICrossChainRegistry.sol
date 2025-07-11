@@ -37,6 +37,12 @@ interface ICrossChainRegistryErrors {
 
     /// @notice Thrown when the lengths between two arrays are not the same
     error ArrayLengthMismatch();
+
+    /// @notice Thrown when the staleness period set by an operatorSet is invalid
+    error InvalidStalenessPeriod();
+
+    /// @notice Thrown when the table update cadence is invalid
+    error InvalidTableUpdateCadence();
 }
 
 interface ICrossChainRegistryTypes {
@@ -88,6 +94,9 @@ interface ICrossChainRegistryEvents is ICrossChainRegistryTypes {
 
     /// @notice Emitted when a chainID is removed from the whitelist
     event ChainIDRemovedFromWhitelist(uint256 chainID);
+
+    /// @notice Emitted when the table update cadence is set
+    event TableUpdateCadenceSet(uint32 tableUpdateCadence);
 }
 
 interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryEvents {
@@ -173,6 +182,16 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
     ) external;
 
     /**
+     * @notice Sets the table update cadence
+     * @param tableUpdateCadence the table update cadence
+     * @dev msg.sender must be the owner of the CrossChainRegistry
+     * @dev The table update cadence cannot be 0
+     */
+    function setTableUpdateCadence(
+        uint32 tableUpdateCadence
+    ) external;
+
+    /**
      *
      *                         VIEW FUNCTIONS
      *
@@ -238,4 +257,11 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
      * @return An array of operatorTableUpdaters corresponding to each chainID
      */
     function getSupportedChains() external view returns (uint256[] memory, address[] memory);
+
+    /**
+     * @notice Gets the table update cadence
+     * @return The table update cadence
+     * @dev The table update cadence is applicable to all chains
+     */
+    function getTableUpdateCadence() external view returns (uint32);
 }

@@ -84,10 +84,16 @@ contract CrossChainRegistry is
     /**
      * @notice Initializes the contract with the initial paused status and owner
      * @param initialOwner The initial owner of the contract
+     * @param initialTableUpdateCadence The initial table update cadence
      * @param initialPausedStatus The initial paused status bitmap
      */
-    function initialize(address initialOwner, uint256 initialPausedStatus) external initializer {
+    function initialize(
+        address initialOwner,
+        uint32 initialTableUpdateCadence,
+        uint256 initialPausedStatus
+    ) external initializer {
         _transferOwnership(initialOwner);
+        _setTableUpdateCadence(initialTableUpdateCadence);
         _setPausedStatus(initialPausedStatus);
     }
 
@@ -243,6 +249,13 @@ contract CrossChainRegistry is
         }
     }
 
+    /// @inheritdoc ICrossChainRegistry
+    function setTableUpdateCadence(
+        uint32 tableUpdateCadence
+    ) external onlyOwner {
+        _setTableUpdateCadence(tableUpdateCadence);
+    }
+
     /**
      *
      *                         INTERNAL FUNCTIONS
@@ -266,8 +279,12 @@ contract CrossChainRegistry is
      * @dev Internal function to set the operator set config for an operator set
      * @param operatorSet The operator set to set the config for
      * @param config The operator set config
+     * @dev The 0 staleness period is special case and is allowed, since it allows for certificates to ALWAYS be valid
      */
     function _setOperatorSetConfig(OperatorSet memory operatorSet, OperatorSetConfig memory config) internal {
+        require(
+            config.maxStalenessPeriod == 0 || config.maxStalenessPeriod >= _tableUpdateCadence, InvalidStalenessPeriod()
+        );
         _operatorSetConfigs[operatorSet.key()] = config;
         emit OperatorSetConfigSet(operatorSet, config);
     }
@@ -317,6 +334,19 @@ contract CrossChainRegistry is
         // Ensure that at least one destination remains
         // If a user wants to remove all destinations, they should call `removeGenerationReservation` instead
         require(_transportDestinations[operatorSetKey].length() > 0, RequireAtLeastOneTransportDestination());
+    }
+
+    /**
+     * @dev Internal function to set the table update cadence
+     * @param tableUpdateCadence the table update cadence
+     * @dev The table update cadence cannot be 0 as that is special-cased to allow for certificates to ALWAYS be valid
+     */
+    function _setTableUpdateCadence(
+        uint32 tableUpdateCadence
+    ) internal {
+        require(tableUpdateCadence > 0, InvalidTableUpdateCadence());
+        _tableUpdateCadence = tableUpdateCadence;
+        emit TableUpdateCadenceSet(tableUpdateCadence);
     }
 
     /**
@@ -425,5 +455,10 @@ contract CrossChainRegistry is
         }
 
         return (chainIDs, operatorTableUpdaters);
+    }
+
+    /// @inheritdoc ICrossChainRegistry
+    function getTableUpdateCadence() external view returns (uint32) {
+        return _tableUpdateCadence;
     }
 }

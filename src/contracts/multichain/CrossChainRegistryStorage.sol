@@ -50,7 +50,7 @@ abstract contract CrossChainRegistryStorage is ICrossChainRegistry {
 
     /// GENERATION RESERVATIONS
 
-    /// @dev Set of operator sets with active generation reservations
+    /// @notice Mapping of generation reservations for operator sets
     EnumerableSet.Bytes32Set internal _activeGenerationReservations;
 
     /// @dev Mapping from operator set key to operator table calculator for active reservations
@@ -66,6 +66,9 @@ abstract contract CrossChainRegistryStorage is ICrossChainRegistry {
 
     /// @dev Map of whitelisted chain IDs to operator table updaters
     EnumerableMap.UintToAddressMap internal _whitelistedChainIDs;
+
+    /// @notice Table update cadence for all chains
+    uint32 internal _tableUpdateCadence;
 
     // Construction
 

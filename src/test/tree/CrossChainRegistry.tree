@@ -4,7 +4,7 @@
     │   ├── given that the contract is already initialized
     │   │   └── it should revert
     │   └── given that the contract is not initialized
-    │       └── it should set the owner and paused status correctly
+    │       └── it should set the owner, minimum staleness period, and paused status correctly
     ├── when createGenerationReservation is called
     │   ├── given that the function is paused
     │   │   └── it should revert
@@ -17,6 +17,8 @@
     │   ├── given that the chain IDs array is empty
     │   │   └── it should revert
     │   ├── given that a chain ID is not whitelisted
+    │   │   └── it should revert
+    │   ├── given that the config staleness period is invalid
     │   │   └── it should revert
     │   └── given that all parameters are valid
     │       └── it should create the reservation, set calculator, config, and destinations & emit events
@@ -50,6 +52,8 @@
     │   ├── given that the operator set is invalid
     │   │   └── it should revert
     │   ├── given that the generation reservation does not exist
+    │   │   └── it should revert
+    │   ├── given that the config staleness period is invalid
     │   │   └── it should revert
     │   └── given that all parameters are valid
     │       └── it should update the config and emit event
@@ -100,12 +104,19 @@
     │   │   └── it should revert
     │   └── given that all parameters are valid
     │       └── it should add chains to whitelist and emit events
-    └── when removeChainIDsFromWhitelist is called
+    ├── when removeChainIDsFromWhitelist is called
+    │   ├── given that the caller is not the owner
+    │   │   └── it should revert
+    │   ├── given that the function is paused
+    │   │   └── it should revert
+    │   ├── given that a chain ID is not whitelisted
+    │   │   └── it should revert
+    │   └── given that all parameters are valid
+    │       └── it should remove chains from whitelist and emit events
+    └── when setMinimumStalenessPeriod is called
         ├── given that the caller is not the owner
         │   └── it should revert
-        ├── given that the function is paused
+        ├── given that the minimum staleness period is zero
         │   └── it should revert
-        ├── given that a chain ID is not whitelisted
-        │   └── it should revert
-        └── given that all parameters are valid
-            └── it should remove chains from whitelist and emit events 
+        └── given that the caller is the owner
+            └── it should update the minimum staleness period and emit event 
