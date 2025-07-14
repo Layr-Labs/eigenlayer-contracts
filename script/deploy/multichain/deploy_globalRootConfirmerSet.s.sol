@@ -65,21 +65,12 @@ contract DeployGlobalRootConfirmerSet is Script, Test {
 
         /**
          *
-         *                     Create the `operatorSetConfig` struct
-         *
-         */
-        ICrossChainRegistry.OperatorSetConfig memory operatorSetConfig;
-        operatorSetConfig.owner = operator.key.addr;
-        operatorSetConfig.maxStalenessPeriod = 0;
-
-        /**
-         *
          *                     OUTPUT - OPERATOR SET INFO (TOML FORMAT)
          *
          */
 
         // Write operator set info to TOML file
-        _writeOperatorSetToml(network, operatorSetInfo, operatorSetConfig);
+        _writeOperatorSetToml(network, operatorSetInfo);
 
         /**
          *
@@ -129,28 +120,19 @@ contract DeployGlobalRootConfirmerSet is Script, Test {
 
     function _writeOperatorSetToml(
         string memory network,
-        IOperatorTableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo,
-        ICrossChainRegistry.OperatorSetConfig memory operatorSetConfig
+        IOperatorTableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo
     ) internal {
         // Build JSON object using serializeJson
         string memory json_obj = "toml_output";
 
         // Top level fields
         vm.serializeUint(json_obj, "globalRootConfirmationThreshold", 10_000);
-        vm.serializeUint(json_obj, "referenceTimestamp", block.timestamp);
 
         // globalRootConfirmerSet object
         string memory confirmerSet_obj = "globalRootConfirmerSet";
         vm.serializeString(confirmerSet_obj, "avs", AVS.toHexString());
         string memory confirmerSetOutput = vm.serializeUint(confirmerSet_obj, "id", 0);
         vm.serializeString(json_obj, "globalRootConfirmerSet", confirmerSetOutput);
-
-        // globalRootConfirmerSetConfig object
-        string memory confirmerSetConfig_obj = "globalRootConfirmerSetConfig";
-        vm.serializeUint(confirmerSetConfig_obj, "maxStalenessPeriod", operatorSetConfig.maxStalenessPeriod);
-        string memory confirmerSetConfigOutput =
-            vm.serializeAddress(confirmerSetConfig_obj, "owner", operatorSetConfig.owner);
-        vm.serializeString(json_obj, "globalRootConfirmerSetConfig", confirmerSetConfigOutput);
 
         // globalRootConfirmerSetInfo object
         string memory confirmerSetInfo_obj = "globalRootConfirmerSetInfo";
