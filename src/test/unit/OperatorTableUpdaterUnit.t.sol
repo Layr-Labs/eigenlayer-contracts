@@ -2,6 +2,7 @@
 pragma solidity ^0.8.27;
 
 import "src/contracts/multichain/OperatorTableUpdater.sol";
+import "src/contracts/interfaces/IOperatorTableUpdater.sol";
 import "src/test/utils/EigenLayerMultichainUnitTestSetup.sol";
 
 contract OperatorTableUpdaterUnitTests is
@@ -61,6 +62,9 @@ contract OperatorTableUpdaterUnitTests is
                 initialOperatorSetInfo // generatorInfo
             )
         );
+
+        // Configure the BN254CertificateVerifierMock to point to the actual OperatorTableUpdater
+        bn254CertificateVerifierMock.setOperatorTableUpdater(IOperatorTableUpdater(address(operatorTableUpdater)));
     }
 
     function _setLatestReferenceTimestampBN254(OperatorSet memory operatorSet, uint32 referenceTimestamp) internal {
@@ -170,6 +174,8 @@ contract OperatorTableUpdaterUnitTests is
     function _updateGlobalTableRoot(bytes32 globalTableRoot) internal {
         BN254Certificate memory mockCertificate;
         uint32 referenceBlockNumber = uint32(block.number);
+        // Use the generator reference timestamp (1) for the certificate since it always has a valid root
+        mockCertificate.referenceTimestamp = 1; // GENERATOR_REFERENCE_TIMESTAMP
         mockCertificate.messageHash =
             operatorTableUpdater.getGlobalTableUpdateMessageHash(globalTableRoot, uint32(block.timestamp), referenceBlockNumber);
         _setIsValidCertificate(mockCertificate, true);
@@ -211,6 +217,12 @@ contract OperatorTableUpdaterUnitTests_initialize is OperatorTableUpdaterUnitTes
 
 contract OperatorTableUpdaterUnitTests_confirmGlobalTableRoot is OperatorTableUpdaterUnitTests {
     BN254Certificate mockCertificate;
+
+    function setUp() public virtual override {
+        super.setUp();
+        // Initialize the mockCertificate with the generator reference timestamp
+        mockCertificate.referenceTimestamp = 1; // GENERATOR_REFERENCE_TIMESTAMP
+    }
 
     function testFuzz_revert_futureTableRoot(Randomness r) public rand(r) {
         uint32 referenceTimestamp = r.Uint32(uint32(block.timestamp + 1), type(uint32).max);
@@ -664,6 +676,7 @@ contract OperatorTableUpdaterUnitTests_getters is OperatorTableUpdaterUnitTests 
 
         // Set a global table root
         BN254Certificate memory mockCertificate;
+        mockCertificate.referenceTimestamp = 1; // GENERATOR_REFERENCE_TIMESTAMP
         mockCertificate.messageHash =
             operatorTableUpdater.getGlobalTableUpdateMessageHash(globalTableRoot, referenceTimestamp, referenceBlockNumber);
         _setIsValidCertificate(mockCertificate, true);
@@ -869,6 +882,7 @@ contract OperatorTableUpdaterUnitTests_isRootValid is OperatorTableUpdaterUnitTe
         bytes32 globalTableRoot = bytes32(r.Uint256(1, type(uint).max));
 
         BN254Certificate memory mockCertificate;
+        mockCertificate.referenceTimestamp = 1; // GENERATOR_REFERENCE_TIMESTAMP
         mockCertificate.messageHash =
             operatorTableUpdater.getGlobalTableUpdateMessageHash(globalTableRoot, referenceTimestamp, referenceBlockNumber);
         _setIsValidCertificate(mockCertificate, true);
@@ -933,8 +947,9 @@ contract OperatorTableUpdaterUnitTests_IntegrationScenarios is OperatorTableUpda
 
     /// @notice This test simulates a real-world ops scenario of disabling a root, updating the generator, and confirming a new global table root
     function test_disableRoot_updateConfirmerSet_confirmGlobalTableRoot() public {
-        // Step 1: Set an initial global table root
-        bytes32 oldGlobalTableRoot = bytes32(uint(1));
+        // Step 1: Set an initial global table root at a different timestamp to avoid conflicting with generator
+        vm.warp(100); // Use a different timestamp
+        bytes32 oldGlobalTableRoot = bytes32(uint(999)); // Use a different value to avoid conflicts
         _updateGlobalTableRoot(oldGlobalTableRoot);
 
         // Step 2: Disable the old root as pauser
@@ -962,6 +977,7 @@ contract OperatorTableUpdaterUnitTests_IntegrationScenarios is OperatorTableUpda
         uint32 newReferenceBlockNumber = uint32(block.number + 1);
 
         BN254Certificate memory newCertificate;
+        newCertificate.referenceTimestamp = 1; // GENERATOR_REFERENCE_TIMESTAMP
         newCertificate.messageHash =
             operatorTableUpdater.getGlobalTableUpdateMessageHash(newGlobalTableRoot, newReferenceTimestamp, newReferenceBlockNumber);
 
@@ -1083,9 +1099,10 @@ contract OperatorTableUpdaterUnitTests_IntegrationScenarios is OperatorTableUpda
         bytes32 globalTableRoot2 = Merkle.merkleizeKeccak(leaves2);
 
         // Create a certificate for the new global table root signed by the new generator
-        BN254Certificate memory newCertificate;
         uint32 newReferenceTimestamp = uint32(block.timestamp);
         uint32 newReferenceBlockNumber = uint32(block.number);
+        BN254Certificate memory newCertificate;
+        newCertificate.referenceTimestamp = 1; // GENERATOR_REFERENCE_TIMESTAMP
         newCertificate.messageHash =
             operatorTableUpdater.getGlobalTableUpdateMessageHash(globalTableRoot2, newReferenceTimestamp, newReferenceBlockNumber);
         _setIsValidCertificate(newCertificate, true);
