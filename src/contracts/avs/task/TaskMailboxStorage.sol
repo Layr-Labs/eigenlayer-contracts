@@ -26,7 +26,7 @@ abstract contract TaskMailboxStorage is ITaskMailbox {
     mapping(bytes32 operatorSetKey => bool isRegistered) public isExecutorOperatorSetRegistered;
 
     /// @notice Mapping from executor operator set key to its task configuration
-    mapping(bytes32 operatorSetKey => ExecutorOperatorSetTaskConfig config) public executorOperatorSetTaskConfigs;
+    mapping(bytes32 operatorSetKey => ExecutorOperatorSetTaskConfig config) internal _executorOperatorSetTaskConfigs;
 
     /// @notice The fee split percentage in basis points (0-10000)
     uint16 public feeSplit;

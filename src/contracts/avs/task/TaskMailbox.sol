@@ -85,7 +85,7 @@ contract TaskMailbox is
         // Validate operator set ownership
         _validateOperatorSetOwner(operatorSet, config.curveType);
 
-        executorOperatorSetTaskConfigs[operatorSet.key()] = config;
+        _executorOperatorSetTaskConfigs[operatorSet.key()] = config;
         emit ExecutorOperatorSetTaskConfigSet(msg.sender, operatorSet.avs, operatorSet.id, config);
 
         // If executor operator set is not registered, register it.
@@ -96,7 +96,7 @@ contract TaskMailbox is
 
     /// @inheritdoc ITaskMailbox
     function registerExecutorOperatorSet(OperatorSet memory operatorSet, bool isRegistered) external {
-        ExecutorOperatorSetTaskConfig memory taskConfig = executorOperatorSetTaskConfigs[operatorSet.key()];
+        ExecutorOperatorSetTaskConfig memory taskConfig = _executorOperatorSetTaskConfigs[operatorSet.key()];
 
         // Validate that task config has been set before registration can be toggled.
         require(
@@ -121,7 +121,7 @@ contract TaskMailbox is
         );
 
         ExecutorOperatorSetTaskConfig memory taskConfig =
-            executorOperatorSetTaskConfigs[taskParams.executorOperatorSet.key()];
+            _executorOperatorSetTaskConfigs[taskParams.executorOperatorSet.key()];
         require(
             taskConfig.curveType != IKeyRegistrarTypes.CurveType.NONE && address(taskConfig.taskHook) != address(0)
                 && taskConfig.taskSLA > 0 && taskConfig.consensus.consensusType != ConsensusType.NONE,
@@ -421,7 +421,7 @@ contract TaskMailbox is
     function getExecutorOperatorSetTaskConfig(
         OperatorSet memory operatorSet
     ) external view returns (ExecutorOperatorSetTaskConfig memory) {
-        return executorOperatorSetTaskConfigs[operatorSet.key()];
+        return _executorOperatorSetTaskConfigs[operatorSet.key()];
     }
 
     /// @inheritdoc ITaskMailbox
@@ -476,15 +476,5 @@ contract TaskMailbox is
         IECDSACertificateVerifierTypes.ECDSACertificate memory cert
     ) external pure returns (bytes memory) {
         return abi.encode(cert);
-    }
-
-    /// @inheritdoc ITaskMailbox
-    function getFeeSplit() external view returns (uint16) {
-        return feeSplit;
-    }
-
-    /// @inheritdoc ITaskMailbox
-    function getFeeSplitCollector() external view returns (address) {
-        return feeSplitCollector;
     }
 }

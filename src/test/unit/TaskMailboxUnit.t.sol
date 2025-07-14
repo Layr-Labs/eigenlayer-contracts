@@ -143,8 +143,8 @@ contract TaskMailboxUnitTests_Constructor is TaskMailboxUnitTests {
         assertEq(newTaskMailbox.ECDSA_CERTIFICATE_VERIFIER(), ecdsaVerifier);
         assertEq(newTaskMailbox.version(), "1.0.0");
         assertEq(newTaskMailbox.owner(), owner);
-        assertEq(newTaskMailbox.getFeeSplit(), 0);
-        assertEq(newTaskMailbox.getFeeSplitCollector(), feeSplitCollector);
+        assertEq(newTaskMailbox.feeSplit(), 0);
+        assertEq(newTaskMailbox.feeSplitCollector(), feeSplitCollector);
     }
 }
 
@@ -445,7 +445,7 @@ contract TaskMailboxUnitTests_setFeeSplit is TaskMailboxUnitTests {
 
         vm.prank(owner);
         taskMailbox.setFeeSplit(newFeeSplit);
-        assertEq(taskMailbox.getFeeSplit(), newFeeSplit);
+        assertEq(taskMailbox.feeSplit(), newFeeSplit);
     }
 
     function test_SetFeeSplit_MaxValue() public {
@@ -456,7 +456,7 @@ contract TaskMailboxUnitTests_setFeeSplit is TaskMailboxUnitTests {
 
         vm.prank(owner);
         taskMailbox.setFeeSplit(maxFeeSplit);
-        assertEq(taskMailbox.getFeeSplit(), maxFeeSplit);
+        assertEq(taskMailbox.feeSplit(), maxFeeSplit);
     }
 
     function test_Revert_SetFeeSplit_NotOwner() public {
@@ -482,7 +482,7 @@ contract TaskMailboxUnitTests_setFeeSplitCollector is TaskMailboxUnitTests {
 
         vm.prank(owner);
         taskMailbox.setFeeSplitCollector(newCollector);
-        assertEq(taskMailbox.getFeeSplitCollector(), newCollector);
+        assertEq(taskMailbox.feeSplitCollector(), newCollector);
     }
 
     function test_Revert_SetFeeSplitCollector_NotOwner() public {
@@ -2103,8 +2103,8 @@ contract TaskMailboxUnitTests_ViewFunctions is TaskMailboxUnitTests {
         assertEq(taskMailbox.owner(), owner);
 
         // Test fee split getters
-        assertEq(taskMailbox.getFeeSplit(), 0); // Default value from initialization
-        assertEq(taskMailbox.getFeeSplitCollector(), feeSplitCollector); // Default value from initialization
+        assertEq(taskMailbox.feeSplit(), 0); // Default value from initialization
+        assertEq(taskMailbox.feeSplitCollector(), feeSplitCollector); // Default value from initialization
     }
 
     function test_getExecutorOperatorSetTaskConfig() public {
@@ -2290,7 +2290,7 @@ contract TaskMailboxUnitTests_Storage is TaskMailboxUnitTests {
         assertFalse(taskMailbox.isExecutorOperatorSetRegistered(operatorSet.key()));
     }
 
-    function test_executorOperatorSetTaskConfigs() public {
+    function test_getExecutorOperatorSetTaskConfig() public {
         OperatorSet memory operatorSet = OperatorSet(avs, executorOperatorSetId);
         ExecutorOperatorSetTaskConfig memory config = _createValidExecutorOperatorSetTaskConfig();
 

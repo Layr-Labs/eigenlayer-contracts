@@ -282,6 +282,14 @@ interface ITaskMailbox is ITaskMailboxErrors, ITaskMailboxEvents {
      */
 
     /**
+     * @notice Initializes the TaskMailbox
+     * @param owner The owner of the contract
+     * @param feeSplit The initial fee split in basis points
+     * @param feeSplitCollector The initial fee split collector address
+     */
+    function initialize(address owner, uint16 feeSplit, address feeSplitCollector) external;
+
+    /**
      * @notice Sets the task configuration for an executor operator set
      * @param operatorSet The operator set to configure
      * @param config Task configuration for the operator set
@@ -330,20 +338,20 @@ interface ITaskMailbox is ITaskMailboxErrors, ITaskMailboxEvents {
 
     /**
      * @notice Sets the fee split percentage
-     * @param _feeSplit The fee split in basis points (0-10000)
+     * @param feeSplit The fee split in basis points (0-10000)
      * @dev Only callable by the owner
      */
     function setFeeSplit(
-        uint16 _feeSplit
+        uint16 feeSplit
     ) external;
 
     /**
      * @notice Sets the fee split collector address
-     * @param _feeSplitCollector The address to receive fee splits
+     * @param feeSplitCollector The address to receive fee splits
      * @dev Only callable by the owner
      */
     function setFeeSplitCollector(
-        address _feeSplitCollector
+        address feeSplitCollector
     ) external;
 
     /**
@@ -419,11 +427,23 @@ interface ITaskMailbox is ITaskMailboxErrors, ITaskMailboxEvents {
      * @notice Gets the current fee split percentage
      * @return The fee split in basis points
      */
-    function getFeeSplit() external view returns (uint16);
+    function feeSplit() external view returns (uint16);
 
     /**
      * @notice Gets the current fee split collector address
      * @return The address that receives fee splits
      */
-    function getFeeSplitCollector() external view returns (address);
+    function feeSplitCollector() external view returns (address);
+
+    /**
+     * @notice Gets the BN254 certificate verifier address
+     * @return The address of the BN254 certificate verifier
+     */
+    function BN254_CERTIFICATE_VERIFIER() external view returns (address);
+
+    /**
+     * @notice Gets the ECDSA certificate verifier address
+     * @return The address of the ECDSA certificate verifier
+     */
+    function ECDSA_CERTIFICATE_VERIFIER() external view returns (address);
 }
