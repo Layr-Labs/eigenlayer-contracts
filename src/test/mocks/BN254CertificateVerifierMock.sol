@@ -52,7 +52,7 @@ contract BN254CertificateVerifierMock is Test, IBN254CertificateVerifierTypes, I
     ) external view returns (bool) {
         // Always validate certificate timestamp like the real contract does
         _validateCertificateTimestamp(operatorSet.key(), certificate.referenceTimestamp);
-        
+
         bytes32 certificateHash = keccak256(abi.encode(certificate));
         return _isValidCertificate[certificateHash];
     }
