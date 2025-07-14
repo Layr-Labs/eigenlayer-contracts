@@ -129,7 +129,6 @@ contract DeployDestinationChainImpls is EOADeployer, DeployDestinationChainProxi
         OperatorTableUpdater operatorTableUpdater = Env.impl.operatorTableUpdater();
         OperatorSet memory dummyOperatorSet = OperatorSet({avs: address(0), id: 0});
         IOperatorTableCalculatorTypes.BN254OperatorSetInfo memory dummyBN254Info;
-        ICrossChainRegistryTypes.OperatorSetConfig memory dummyConfig;
 
         vm.expectRevert(errInit);
         operatorTableUpdater.initialize(
@@ -137,9 +136,7 @@ contract DeployDestinationChainImpls is EOADeployer, DeployDestinationChainProxi
             0, // initial paused status
             dummyOperatorSet, // globalRootConfirmerSet
             0, // globalRootConfirmationThreshold
-            0, // referenceTimestamp
-            dummyBN254Info, // globalRootConfirmerSetInfo
-            dummyConfig // globalRootConfirmerSetConfig
+            dummyBN254Info // globalRootConfirmerSetInfo
         );
 
         // ECDSACertificateVerifier and BN254CertificateVerifier don't have initialize functions

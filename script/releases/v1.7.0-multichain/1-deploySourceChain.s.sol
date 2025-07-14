@@ -68,7 +68,7 @@ contract DeploySourceChain is EOADeployer {
                         CrossChainRegistry.initialize,
                         (
                             Env.opsMultisig(), // initialOwner
-                            1 days, // initialMinimumStalenessPeriod
+                            Env.TABLE_UPDATE_CADENCE(),
                             Env.CROSS_CHAIN_REGISTRY_PAUSE_STATUS()
                         )
                     )
@@ -125,6 +125,9 @@ contract DeploySourceChain is EOADeployer {
         CrossChainRegistry crossChainRegistry = Env.proxy.crossChainRegistry();
         assertTrue(crossChainRegistry.owner() == Env.opsMultisig(), "ccr.owner invalid");
         assertTrue(crossChainRegistry.paused() == Env.CROSS_CHAIN_REGISTRY_PAUSE_STATUS(), "ccr.paused invalid");
+        assertEq(
+            crossChainRegistry.getTableUpdateCadence(), Env.TABLE_UPDATE_CADENCE(), "ccr.tableUpdateCadence invalid"
+        );
 
         // Validate ReleaseManager
         ReleaseManager releaseManager = Env.proxy.releaseManager();

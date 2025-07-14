@@ -29,6 +29,12 @@ interface IOperatorTableUpdaterErrors {
     error InvalidCurveType();
     /// @notice Thrown when a root is invalid
     error InvalidRoot();
+    /// @notice Thrown when the generator is invalid (via a non-zero reference timestamp)
+    error InvalidGenerator();
+    /// @notice Thrown when the operator set to update is the generator
+    error InvalidOperatorSet();
+    /// @notice Thrown when the generator's global table root is being disabled
+    error CannotDisableGeneratorRoot();
 }
 
 interface IOperatorTableUpdaterEvents {
@@ -83,16 +89,6 @@ interface IOperatorTableUpdater is
     ) external;
 
     /**
-     * @notice Set the operatorSet which certifies against global roots
-     * @param operatorSet the operatorSet which certifies against global roots
-     * @dev The `operatorSet` is used to verify the certificate of the global table root
-     * @dev Only callable by the owner of the contract
-     */
-    function setGenerator(
-        OperatorSet calldata operatorSet
-    ) external;
-
-    /**
      * @notice The threshold, in bps, for a global root to be signed off on and updated
      * @dev Only callable by the owner of the contract
      */
@@ -101,19 +97,18 @@ interface IOperatorTableUpdater is
     ) external;
 
     /**
-     * @notice Updates the operator table for the generator
-     * @param referenceTimestamp The reference timestamp of the operator table update
-     * @param GeneratorInfo The operatorSetInfo for the generator
-     * @param GeneratorConfig The operatorSetConfig for the generator
+     * @notice Updates the `Generator` to a new operatorSet
+     * @param generator The operatorSet which certifies against global roots
+     * @param generatorInfo The operatorSetInfo for the generator
      * @dev We have a separate function for updating this operatorSet since it's not transported and updated
      *      in the same way as the other operatorSets
      * @dev Only callable by the owner of the contract
+     * @dev Uses GENERATOR_GLOBAL_TABLE_ROOT constant to break circular dependency for certificate verification
+     * @dev We ensure that there are no collisions with other reference timestamps because we expect the generator to have an initial reference timestamp of 0
+     * @dev The `_latestReferenceTimestamp` is not updated since this root is ONLY used for the `Generator`
+     * @dev The `_referenceBlockNumber` and `_referenceTimestamps` mappings are not updated since they are only used for introspection for official operatorSets
      */
-    function updateGenerator(
-        uint32 referenceTimestamp,
-        BN254OperatorSetInfo calldata GeneratorInfo,
-        OperatorSetConfig calldata GeneratorConfig
-    ) external;
+    function updateGenerator(OperatorSet calldata generator, BN254OperatorSetInfo calldata generatorInfo) external;
 
     /**
      * @notice Updates an operator table
@@ -136,6 +131,7 @@ interface IOperatorTableUpdater is
      * @notice Disables a global table root
      * @param globalTableRoot the global table root to disable
      * @dev Only callable by the pauser
+     * @dev Cannot disable the GENERATOR_GLOBAL_TABLE_ROOT
      */
     function disableRoot(
         bytes32 globalTableRoot
@@ -220,6 +216,13 @@ interface IOperatorTableUpdater is
      * @dev In V1, we only update the table of the generator on initial deployment, and never update it again.
      */
     function getGeneratorReferenceTimestamp() external view returns (uint32);
+
+    /**
+     * @notice Get the operator set config for the Generator
+     * @return The operator set config for the Generator
+     * @dev The Generator's config has maxStalenessPeriod = 0 and owner = address(operatorTableUpdater)
+     */
+    function getGeneratorConfig() external view returns (OperatorSetConfig memory);
 
     /**
      * @notice Get the validity status of a global table root

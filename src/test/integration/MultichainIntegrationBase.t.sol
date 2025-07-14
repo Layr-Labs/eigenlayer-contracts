@@ -162,7 +162,7 @@ abstract contract MultichainIntegrationBase is IntegrationBase {
         });
 
         ICrossChainRegistryTypes.OperatorSetConfig memory initialOperatorSetConfig =
-            ICrossChainRegistryTypes.OperatorSetConfig({owner: address(0xDEADBEEF), maxStalenessPeriod: 10_000});
+            ICrossChainRegistryTypes.OperatorSetConfig({owner: address(0xDEADBEEF), maxStalenessPeriod: 0});
 
         OperatorSet memory globalRootConfirmerSet = OperatorSet({avs: address(0x6), id: 1});
 
@@ -183,9 +183,7 @@ abstract contract MultichainIntegrationBase is IntegrationBase {
             0, // initialPausedStatus
             globalRootConfirmerSet, // globalRootConfirmerSet
             6600, // globalRootConfirmationThreshold (66%)
-            uint32(block.timestamp - 1), // referenceTimestamp
-            initialOperatorSetInfo, // globalRootConfirmerSetInfo
-            initialOperatorSetConfig // globalRootConfirmerSetConfig
+            initialOperatorSetInfo // globalRootConfirmerSetInfo
         );
 
         console.log("Multichain contracts deployed successfully");

@@ -19,17 +19,18 @@ The `OperatorTableUpdater` is responsible for updating the `GlobalTableRoot` and
 The contract supports both BN254 and ECDSA operator tables and routes updates to the appropriate certificate verifier based on the curve type.
 
 ## Parameterization
-Upon initialization, the `generator` is updated. The `generator` is represented in storage as an operatorSet. The `generator` should be considered a ghost-operatorSet` since it does not exist in the core protocol, does not have stake backing it, and is not transported to other chains via the multichain protocol. It can only be updated upon initialization or by a [privileged role](#updategenerator). This entity is the same across all destination chains. 
+Upon initialization, the `generator` is updated. The `generator` is represented in storage as an operatorSet. The `generator` should be considered a ghost-operatorSet` since it does not exist in the core protocol, does not have stake backing it, and is not transported to other chains via the multichain protocol. It can only be set upon initialization and a new generator can be set by [privileged role](#updategenerator). This entity is the same across all destination chains. 
 
 The following values are set upon initialization: 
 
 * `generator` is an EigenLabs-run entity that signs off on `globalTableRoots`. The operatorSet is of size 1. 
 * `globalRootConfirmationThreshold`: 10000. The threshold in basis points required for global root confirmation. Since the operatorSet is of size 1 a single signature is needed.
-* `referenceTimestamp`: A past timestamp at which the `generator` is set. We hardcode this value to 1 upon initialization. This value is also the `latestReferenceTimestamp`. Once roots are updated, the `latestReferenceTimestamp` will increase. *Note: the reference timestamp for the `generator`, given by `operatorTableUpdater.getGeneratorReferenceTimestamp` will remain 1 unless [`updateGenerator`](#updategenerator) is called*.
 * `generatorInfo`: The key material needed to verify certificates of the `generator`
 * `operatorSetConfig`: A configuration for the `generator` 
-    * `maxStalenessPeriod`: 0. Set to zero to confirm `globalTableRoots` without updating the `generator` operatorSet. See [`CertificateVerifier`](./CertificateVerifier.md#overview) for specifics`OperatorTableUpdater`. It is the same across all destination chains, even for destination chains that are supported after the initial deployment. 
-    * `owner`: Unused parameter for `Generator`
+    * `maxStalenessPeriod`: 0 (`GENERATOR_MAX_STALENESS_PERIOD`). Set to zero to allow confirmation of generator certificates regardless of `referenceTimestamp`. See [`CertificateVerifier`](./CertificateVerifier.md#overview) for speccifics
+    * `owner`: Unused parameter for `Generator`. Set to the address of the `OperatorTableUpdater`
+* The `latestReferenceTimestamp` for the `Generator` is 1 (`GENERATOR_REFERENCE_TIMESTAMP`)
+* The `globalTableRoot` for the `Generator` is `GENERATOR_GLOBAL_TABLE_ROOT`
 
 Operator tables are updated daily on testnet and weekly on mainnet. 
 ---
@@ -113,6 +114,7 @@ Updates an operator table by verifying its inclusion in a confirmed global table
 *Requirements*:
 * The contract MUST NOT be paused for operator table updates
 * The `globalTableRoot` MUST be valid (not disabled)
+* The `operatorSet` MUST NOT be the `generator` (generator updates are handled separately)
 * The `referenceTimestamp` MUST be greater than the latest timestamp for the operator set
 * The merkle proof MUST verify the operator table's inclusion in the global root
 * The `globalTableRoot` at `referenceTimestamp` MUST match the provided root
@@ -124,28 +126,40 @@ Updates an operator table by verifying its inclusion in a confirmed global table
 
 The `owner` can configure the `generator` and confirmation parameters.
 
-### `setGenerator`
+### `updateGenerator`
 
 ```solidity
 /**
- * @notice Set the operatorSet which certifies against global roots
- * @param operatorSet the operatorSet which certifies against global roots
- * @dev The `operatorSet` is used to verify the certificate of the global table root
+ * @notice Updates the `Generator` to a new operatorSet
+ * @param generator The operatorSet which certifies against global roots
+ * @param GeneratorInfo The operatorSetInfo for the generator
+ * @param GeneratorConfig The operatorSetConfig for the generator
+ * @dev We have a separate function for updating this operatorSet since it's not transported and updated
+ *      in the same way as the other operatorSets
  * @dev Only callable by the owner of the contract
+ * @dev Uses GENERATOR_GLOBAL_TABLE_ROOT constant to break circular dependency for certificate verification
+ * @dev We ensure that there are no collisions with other reference timestamps because we expect the generator to have an initial reference timestamp of 0
+ * @dev The `_latestReferenceTimestamp` is not updated since this root is ONLY used for the `Generator`
  */
-function setGenerator(
-    OperatorSet calldata operatorSet
+function updateGenerator(
+    OperatorSet calldata generator,
+    BN254OperatorSetInfo calldata GeneratorInfo,
+    OperatorSetConfig calldata GeneratorConfig
 ) external;
 ```
 
-Updates the operator set responsible for confirming global table roots.
+Updates the operator set responsible for confirming global table roots. This function can only be called for operatorSets that have an uninitialized `latestReferenceTimestamp` in the `BN254CertificateVerifier`, ensuring that only *new* operatorSets can be the generator. Once set, the `latestReferenceTimestamp` for the generator is always 1 (`GENERATOR_REFERENCE_TIMESTAMP`).
 
 *Effects*:
 * Updates `_generator` to the new `operatorSet`
+* Calls [`bn254CertificateVerifier.updateOperatorTable`](./CertificateVerifier.md#updateoperatortable-1)
 * Emits a `GeneratorUpdated` event
+* Sets the `GENERATOR_GLOBAL_TABLE_ROOT` to be valid
 
 *Requirements*:
 * Caller MUST be the `owner`
+* The `latestReferenceTimestamp` for the `generator` MUST be zero
+* Meet all requirements in [`bn254CertificateVerifier.updateOperatorTable`](../destination/CertificateVerifier.md#updateoperatortable-1)
 
 ### `setGlobalRootConfirmationThreshold`
 
@@ -192,31 +206,4 @@ Disables a global table root, preventing further operator table updates against 
 *Requirements*:
 * Caller MUST be the `pauser`
 * The `globalTableRoot` MUST exist and be currently valid
-
-### `updateGenerator`
-
-```solidity
-/**
- * @notice Updates the operator table for the generator
- * @param referenceTimestamp The reference timestamp of the operator table update
- * @param generatorInfo The operatorSetInfo for the generator
- * @param generatorConfig The operatorSetConfig for the generator
- * @dev We have a separate function for updating this operatorSet since it's not transported and updated
- *      in the same way as the other operatorSets
- * @dev Only callable by the owner of the contract
- */
-function updateGenerator(
-    uint32 referenceTimestamp,
-    BN254OperatorSetInfo calldata generatorInfo,
-    OperatorSetConfig calldata generatorConfig
-) external;
-```
-
-Updates the operator table for the `generator` itself. This operatorSet is a ["shadow-operatorSet"](#parameterization), so it must be updated manually
-
-*Effects*:
-* Calls `bn254CertificateVerifier.updateOperatorTable` for the `generator`
-
-*Requirements*:
-* Caller MUST be the `owner`
-* Meet all requirements in [`bn254CertificateVerifier.updateOperatorTable`](../destination/CertificateVerifier.md#updateoperatortable-1)
+* The `globalTableRoot` MUST NOT be the `GENERATOR_GLOBAL_TABLE_ROOT`

@@ -54,9 +54,7 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
                     0, // initial paused status
                     initParams.globalRootConfirmerSet,
                     initParams.globalRootConfirmationThreshold,
-                    initParams.referenceTimestamp,
-                    initParams.globalRootConfirmerSetInfo,
-                    initParams.globalRootConfirmerSetConfig
+                    initParams.globalRootConfirmerSetInfo
                 )
             )
         );
@@ -102,7 +100,45 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
         OperatorTableUpdater operatorTableUpdater = Env.proxy.operatorTableUpdater();
         assertTrue(operatorTableUpdater.owner() == Env.opsMultisig(), "operatorTableUpdater.owner invalid");
         assertTrue(operatorTableUpdater.paused() == 0, "operatorTableUpdater.paused invalid");
-        // TODO: add checks on global root confirmer set
+
+        // Checks on the generator
+        OperatorTableUpdaterInitParams memory initParams = _getTableUpdaterInitParams();
+        assertEq(
+            operatorTableUpdater.getGenerator().key(),
+            initParams.globalRootConfirmerSet.key(),
+            "operatorTableUpdater.generator invalid"
+        );
+        assertEq(
+            operatorTableUpdater.getGeneratorReferenceTimestamp(),
+            operatorTableUpdater.GENERATOR_REFERENCE_TIMESTAMP(),
+            "operatorTableUpdater.generatorReferenceTimestamp invalid"
+        );
+        assertEq(
+            operatorTableUpdater.getGeneratorReferenceTimestamp(),
+            1,
+            "operatorTableUpdater.generatorReferenceTimestamp invalid"
+        );
+        assertEq(
+            operatorTableUpdater.getGlobalTableRootByTimestamp(1),
+            operatorTableUpdater.GENERATOR_GLOBAL_TABLE_ROOT(),
+            "operatorTableUpdater.generatorGlobalTableRoot invalid"
+        );
+        assertEq(
+            operatorTableUpdater.getLatestReferenceTimestamp(),
+            0,
+            "operatorTableUpdater.latestReferenceTimestamp invalid"
+        );
+        assertTrue(
+            operatorTableUpdater.isRootValid(operatorTableUpdater.GENERATOR_GLOBAL_TABLE_ROOT()),
+            "operatorTableUpdater.generatorGlobalTableRoot invalid"
+        );
+        assertTrue(
+            operatorTableUpdater.isRootValidByTimestamp(operatorTableUpdater.GENERATOR_REFERENCE_TIMESTAMP()),
+            "operatorTableUpdater.generatorGlobalTableRoot invalid"
+        );
+        ICrossChainRegistryTypes.OperatorSetConfig memory generatorConfig = operatorTableUpdater.getGeneratorConfig();
+        assertEq(generatorConfig.maxStalenessPeriod, 0, "generatorConfig.maxStalenessPeriod invalid");
+        assertEq(generatorConfig.owner, address(operatorTableUpdater), "generatorConfig.owner invalid");
 
         // Validate ECDSACertificateVerifier
         ECDSACertificateVerifier ecdsaCertificateVerifier = Env.proxy.ecdsaCertificateVerifier();
@@ -111,6 +147,11 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
         // Validate BN254CertificateVerifier
         BN254CertificateVerifier bn254CertificateVerifier = Env.proxy.bn254CertificateVerifier();
         assertTrue(address(bn254CertificateVerifier) != address(0), "bn254CertificateVerifier not deployed");
+        assertEq(
+            bn254CertificateVerifier.latestReferenceTimestamp(initParams.globalRootConfirmerSet),
+            1,
+            "bn254CertificateVerifier.latestReferenceTimestamp invalid"
+        );
     }
 
     /// @dev Ensure each deployed TUP/beacon is owned by the proxyAdmin/executorMultisig
@@ -165,7 +206,6 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
         OperatorTableUpdater operatorTableUpdater = Env.proxy.operatorTableUpdater();
         OperatorSet memory dummyOperatorSet = OperatorSet({avs: address(0), id: 0});
         IOperatorTableCalculatorTypes.BN254OperatorSetInfo memory dummyBN254Info;
-        ICrossChainRegistryTypes.OperatorSetConfig memory dummyConfig;
 
         vm.expectRevert(errInit);
         operatorTableUpdater.initialize(
@@ -173,9 +213,7 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
             0, // initial paused status
             dummyOperatorSet, // globalRootConfirmerSet
             0, // globalRootConfirmationThreshold
-            0, // referenceTimestamp
-            dummyBN254Info, // globalRootConfirmerSetInfo
-            dummyConfig // globalRootConfirmerSetConfig
+            dummyBN254Info // globalRootConfirmerSetInfo
         );
 
         // ECDSACertificateVerifier and BN254CertificateVerifier don't have initialize functions
@@ -217,19 +255,10 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
         // Parse globalRootConfirmationThreshold
         initParams.globalRootConfirmationThreshold = uint16(toml.readUint(".globalRootConfirmationThreshold"));
 
-        // Parse referenceTimestamp
-        initParams.referenceTimestamp = uint32(toml.readUint(".referenceTimestamp"));
-
         // Parse globalRootConfirmerSet
         address avs = toml.readAddress(".globalRootConfirmerSet.avs");
         uint32 id = uint32(toml.readUint(".globalRootConfirmerSet.id"));
         initParams.globalRootConfirmerSet = OperatorSet({avs: avs, id: id});
-
-        // Parse globalRootConfirmerSetConfig
-        address owner = toml.readAddress(".globalRootConfirmerSetConfig.owner");
-        uint32 maxStalenessPeriod = uint32(toml.readUint(".globalRootConfirmerSetConfig.maxStalenessPeriod"));
-        initParams.globalRootConfirmerSetConfig =
-            ICrossChainRegistryTypes.OperatorSetConfig({owner: owner, maxStalenessPeriod: maxStalenessPeriod});
 
         // Parse globalRootConfirmerSetInfo
         initParams.globalRootConfirmerSetInfo.numOperators =
@@ -248,8 +277,6 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
     struct OperatorTableUpdaterInitParams {
         uint16 globalRootConfirmationThreshold;
         OperatorSet globalRootConfirmerSet;
-        ICrossChainRegistryTypes.OperatorSetConfig globalRootConfirmerSetConfig;
         IOperatorTableCalculatorTypes.BN254OperatorSetInfo globalRootConfirmerSetInfo;
-        uint32 referenceTimestamp;
     }
 }

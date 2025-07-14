@@ -1,18 +1,9 @@
-# Global root confirmation threshold in basis points (e.g., 10000 = 100%)
+
 globalRootConfirmationThreshold = 10000
-
-# Reference timestamp
-referenceTimestamp = 1700000000
-
 # Global root confirmer set configuration
 [globalRootConfirmerSet]
 avs = "0x0000000000000000000000000000000000000042"
 id = 0
-
-# Global root confirmer set config
-[globalRootConfirmerSetConfig]
-maxStalenessPeriod = 0
-owner = "0x0000000000000000000000000000000000000042"
 
 # Global root confirmer set info
 [globalRootConfirmerSetInfo]
