@@ -366,6 +366,43 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificate is ECDSACertificate
         verifier.verifyCertificate(defaultOperatorSet, cert);
     }
 
+    function test_zeroStalenessPeriod_neverStale() public {
+        // Create operator set config with 0 staleness period
+        ICrossChainRegistryTypes.OperatorSetConfig memory zeroStalenessConfig = ICrossChainRegistryTypes.OperatorSetConfig({
+            owner: operatorSetOwner,
+            maxStalenessPeriod: 0 // 0 means certificate never becomes stale
+        });
+
+        uint32 referenceTimestamp = uint32(block.timestamp);
+        (
+            IECDSACertificateVerifierTypes.ECDSAOperatorInfo[] memory operators,
+            uint32[] memory nonSignerIndices,
+            uint[] memory signerPrivKeys
+        ) = _createOperatorsWithSplitKeys(123, 4, 0);
+
+        vm.prank(address(operatorTableUpdaterMock));
+        verifier.updateOperatorTable(defaultOperatorSet, referenceTimestamp, operators, zeroStalenessConfig);
+
+        // Create certificate
+        IECDSACertificateVerifierTypes.ECDSACertificate memory cert =
+            _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators, signerPrivKeys);
+
+        // Jump forward in time far beyond any reasonable staleness period
+        vm.warp(block.timestamp + 365 days);
+
+        // Certificate should still be valid with 0 staleness period
+        (uint[] memory signedStakes, address[] memory signers) = verifier.verifyCertificate(defaultOperatorSet, cert);
+
+        // Verify all stakes are signed
+        uint[] memory totalStakes = new uint[](2);
+        for (uint i = 0; i < operators.length; i++) {
+            totalStakes[0] += operators[i].weights[0];
+            totalStakes[1] += operators[i].weights[1];
+        }
+        assertEq(signedStakes[0], totalStakes[0], "All stake should be signed for type 0");
+        assertEq(signedStakes[1], totalStakes[1], "All stake should be signed for type 1");
+    }
+
     function test_revert_emptySignatures() public {
         uint32 referenceTimestamp = _initializeOperatorTableBase();
 
@@ -405,6 +442,24 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificate is ECDSACertificate
 
         vm.expectRevert(ReferenceTimestampDoesNotExist.selector);
         verifier.verifyCertificate(defaultOperatorSet, cert);
+    }
+
+    function test_isReferenceTimestampSet() public {
+        uint32 referenceTimestamp = uint32(block.timestamp);
+        (IECDSACertificateVerifierTypes.ECDSAOperatorInfo[] memory operators,,) = _createOperatorsWithSplitKeys(123, 4, 0);
+
+        // Before updating operator table, timestamp should not be set
+        assertFalse(verifier.isReferenceTimestampSet(defaultOperatorSet, referenceTimestamp), "Timestamp should not be set before update");
+
+        // Update operator table
+        vm.prank(address(operatorTableUpdaterMock));
+        verifier.updateOperatorTable(defaultOperatorSet, referenceTimestamp, operators, defaultOperatorSetConfig);
+
+        // After updating, timestamp should be set
+        assertTrue(verifier.isReferenceTimestampSet(defaultOperatorSet, referenceTimestamp), "Timestamp should be set after update");
+
+        // A different timestamp should not be set
+        assertFalse(verifier.isReferenceTimestampSet(defaultOperatorSet, referenceTimestamp + 1), "Different timestamp should not be set");
     }
 
     function test_revert_rootDisabled() public {

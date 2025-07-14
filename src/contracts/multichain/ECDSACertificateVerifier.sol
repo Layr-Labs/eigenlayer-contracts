@@ -66,6 +66,7 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
         _latestReferenceTimestamps[operatorSetKey] = referenceTimestamp;
         _operatorSetOwners[operatorSetKey] = operatorSetConfig.owner;
         _maxStalenessPeriods[operatorSetKey] = operatorSetConfig.maxStalenessPeriod;
+        _referenceTimestampsSet[operatorSetKey][referenceTimestamp] = true;
 
         emit TableUpdated(operatorSet, referenceTimestamp, operatorInfos);
     }
@@ -89,10 +90,14 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
         bytes32 operatorSetKey = operatorSet.key();
 
         // Assert that reference timestamp is not stale
-        require(block.timestamp <= cert.referenceTimestamp + _maxStalenessPeriods[operatorSetKey], CertificateStale());
+        require(
+            _maxStalenessPeriods[operatorSetKey] == 0
+                || block.timestamp <= cert.referenceTimestamp + _maxStalenessPeriods[operatorSetKey],
+            CertificateStale()
+        );
 
         // Assert that the reference timestamp exists
-        require(_latestReferenceTimestamps[operatorSetKey] == cert.referenceTimestamp, ReferenceTimestampDoesNotExist());
+        require(_referenceTimestampsSet[operatorSetKey][cert.referenceTimestamp], ReferenceTimestampDoesNotExist());
 
         // Assert that the root that corresponds to the reference timestamp is not disabled
         require(operatorTableUpdater.isRootValidByTimestamp(cert.referenceTimestamp), RootDisabled());
@@ -223,6 +228,15 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
     ) external view returns (uint32) {
         bytes32 operatorSetKey = operatorSet.key();
         return _latestReferenceTimestamps[operatorSetKey];
+    }
+
+    ///@inheritdoc IBaseCertificateVerifier
+    function isReferenceTimestampSet(
+        OperatorSet memory operatorSet,
+        uint32 referenceTimestamp
+    ) external view returns (bool) {
+        bytes32 operatorSetKey = operatorSet.key();
+        return _referenceTimestampsSet[operatorSetKey][referenceTimestamp];
     }
 
     ///@inheritdoc IECDSACertificateVerifier

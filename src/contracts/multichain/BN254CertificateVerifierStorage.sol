@@ -38,6 +38,9 @@ abstract contract BN254CertificateVerifierStorage is IBN254CertificateVerifier {
     /// This is used to cache operator info that has been proven against a tree root
     mapping(bytes32 => mapping(uint32 => mapping(uint256 => BN254OperatorInfo))) internal _operatorInfos;
 
+    /// @dev Mapping from operatorSet key to reference timestamp to whether it has been updated
+    mapping(bytes32 operatorSetKey => mapping(uint32 referenceTimestamp => bool set)) internal _referenceTimestampsSet;
+
     // Construction
 
     constructor(
@@ -51,5 +54,5 @@ abstract contract BN254CertificateVerifierStorage is IBN254CertificateVerifier {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[45] private __gap;
+    uint256[44] private __gap;
 }

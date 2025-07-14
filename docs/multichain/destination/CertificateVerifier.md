@@ -81,6 +81,7 @@ Note that updating operator tables for a `referenceTimestamp` that is less than 
 * Updates `_latestReferenceTimestamps[operatorSetKey]` to `referenceTimestamp`
 * Updates `_operatorSetOwners[operatorSetKey]` to `operatorSetConfig.owner`
 * Updates `_maxStalenessPeriods[operatorSetKey]` to `operatorSetConfig.maxStalenessPeriod`
+* Updates `_isReferenceTimestampSet[operatorSetKey][referenceTimestamp]` to `true`
 * Emits a `TableUpdated` event
 
 *Requirements*:
@@ -329,6 +330,7 @@ Note that updating operator tables for a `referenceTimestamp` that is less than 
 * Updates `_latestReferenceTimestamps[operatorSetKey]` to `referenceTimestamp`
 * Updates `_operatorSetOwners[operatorSetKey]` to `operatorSetConfig.owner`
 * Updates `_maxStalenessPeriods[operatorSetKey]` to `operatorSetConfig.maxStalenessPeriod`
+* Updates `_isReferenceTimestampSet[operatorSetKey][referenceTimestamp]` to `true`
 * Emits a `TableUpdated` event
 
 *Requirements*:

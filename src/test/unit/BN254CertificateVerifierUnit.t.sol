@@ -392,6 +392,35 @@ contract BN254CertificateVerifierUnitTests_verifyCertificate is BN254Certificate
         verifier.verifyCertificate(defaultOperatorSet, cert);
     }
 
+    function test_zeroStalenessPeriod_neverStale() public {
+        // Create operator set config with 0 staleness period
+        OperatorSetConfig memory zeroStalenessConfig = OperatorSetConfig({
+            owner: operatorSetOwner,
+            maxStalenessPeriod: 0 // 0 means certificate never becomes stale
+        });
+
+        uint32 referenceTimestamp = uint32(block.timestamp);
+        (BN254OperatorInfo[] memory operators, uint32[] memory nonSignerIndices, BN254.G1Point memory signature) =
+            _createOperatorsWithSplitKeys(123, 4, 0);
+        BN254OperatorSetInfo memory operatorSetInfo = _createOperatorSetInfo(operators);
+
+        vm.prank(address(operatorTableUpdaterMock));
+        verifier.updateOperatorTable(defaultOperatorSet, referenceTimestamp, operatorSetInfo, zeroStalenessConfig);
+
+        // Create certificate
+        BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators, signature);
+
+        // Jump forward in time far beyond any reasonable staleness period
+        vm.warp(block.timestamp + 365 days);
+
+        // Certificate should still be valid with 0 staleness period
+        uint[] memory signedStakes = verifier.verifyCertificate(defaultOperatorSet, cert);
+
+        // Verify all stakes are signed
+        assertEq(signedStakes[0], operatorSetInfo.totalWeights[0], "All stake should be signed for type 0");
+        assertEq(signedStakes[1], operatorSetInfo.totalWeights[1], "All stake should be signed for type 1");
+    }
+
     function test_revert_referenceTimestampDoesNotExist() public {
         uint32 referenceTimestamp = _initializeOperatorTableBase();
         uint32 nonExistentTimestamp = referenceTimestamp + 1000;
@@ -401,6 +430,25 @@ contract BN254CertificateVerifierUnitTests_verifyCertificate is BN254Certificate
 
         vm.expectRevert(ReferenceTimestampDoesNotExist.selector);
         verifier.verifyCertificate(defaultOperatorSet, cert);
+    }
+
+    function test_isReferenceTimestampSet() public {
+        uint32 referenceTimestamp = uint32(block.timestamp);
+        (BN254OperatorInfo[] memory operators,,) = _createOperatorsWithSplitKeys(123, 4, 0);
+        BN254OperatorSetInfo memory operatorSetInfo = _createOperatorSetInfo(operators);
+
+        // Before updating operator table, timestamp should not be set
+        assertFalse(verifier.isReferenceTimestampSet(defaultOperatorSet, referenceTimestamp), "Timestamp should not be set before update");
+
+        // Update operator table
+        vm.prank(address(operatorTableUpdaterMock));
+        verifier.updateOperatorTable(defaultOperatorSet, referenceTimestamp, operatorSetInfo, defaultOperatorSetConfig);
+
+        // After updating, timestamp should be set
+        assertTrue(verifier.isReferenceTimestampSet(defaultOperatorSet, referenceTimestamp), "Timestamp should be set after update");
+
+        // A different timestamp should not be set
+        assertFalse(verifier.isReferenceTimestampSet(defaultOperatorSet, referenceTimestamp + 1), "Different timestamp should not be set");
     }
 
     function test_revert_rootDisabled() public {
@@ -890,6 +938,20 @@ contract BN254CertificateVerifierUnitTests_ViewFunctions is BN254CertificateVeri
                 );
             }
         }
+    }
+
+    function test_isReferenceTimestampSet_view() public view {
+        // Check that the reference timestamp is set (from setUp)
+        assertTrue(verifier.isReferenceTimestampSet(defaultOperatorSet, referenceTimestamp), "Reference timestamp should be set");
+
+        // Check that a different timestamp is not set
+        assertFalse(verifier.isReferenceTimestampSet(defaultOperatorSet, referenceTimestamp + 1), "Different timestamp should not be set");
+
+        // Check for a different operator set
+        OperatorSet memory differentOperatorSet = OperatorSet({avs: address(0x99), id: 10});
+        assertFalse(
+            verifier.isReferenceTimestampSet(differentOperatorSet, referenceTimestamp), "Different operator set timestamp should not be set"
+        );
     }
 }
 
