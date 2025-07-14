@@ -112,7 +112,7 @@ interface IOperatorTableUpdater is
 
     /**
      * @notice Updates an operator table
-     * @param referenceTimestamp the reference block number of the globalTableRoot
+     * @param referenceTimestamp the reference timestamp of the globalTableRoot
      * @param globalTableRoot the new globalTableRoot
      * @param operatorSetIndex the index of the given operatorSet being updated
      * @param proof the proof of the leaf at index against the globalTableRoot

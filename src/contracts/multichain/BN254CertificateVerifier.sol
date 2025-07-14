@@ -74,6 +74,7 @@ contract BN254CertificateVerifier is Initializable, BN254CertificateVerifierStor
         _latestReferenceTimestamps[operatorSetKey] = referenceTimestamp;
         _operatorSetOwners[operatorSetKey] = operatorSetConfig.owner;
         _maxStalenessPeriods[operatorSetKey] = operatorSetConfig.maxStalenessPeriod;
+        _referenceTimestampsSet[operatorSetKey][referenceTimestamp] = true;
 
         emit TableUpdated(operatorSet, referenceTimestamp, operatorSetInfo);
     }
@@ -154,8 +155,6 @@ contract BN254CertificateVerifier is Initializable, BN254CertificateVerifierStor
         _validateCertificateTimestamp(ctx.operatorSetKey, cert.referenceTimestamp);
         ctx.operatorSetInfo = _operatorSetInfos[ctx.operatorSetKey][cert.referenceTimestamp];
 
-        require(ctx.operatorSetInfo.operatorInfoTreeRoot != bytes32(0), ReferenceTimestampDoesNotExist());
-
         // Initialize signed stakes with total stakes
         ctx.signedStakes = new uint256[](ctx.operatorSetInfo.totalWeights.length);
         for (uint256 i = 0; i < ctx.operatorSetInfo.totalWeights.length; i++) {
@@ -175,8 +174,12 @@ contract BN254CertificateVerifier is Initializable, BN254CertificateVerifierStor
      * @param referenceTimestamp The reference timestamp to validate
      */
     function _validateCertificateTimestamp(bytes32 operatorSetKey, uint32 referenceTimestamp) internal view {
+        // Assert that the certificate is not stale
         uint32 maxStaleness = _maxStalenessPeriods[operatorSetKey];
         require(maxStaleness == 0 || block.timestamp <= referenceTimestamp + maxStaleness, CertificateStale());
+
+        // Assert that the reference timestamp has been set
+        require(_referenceTimestampsSet[operatorSetKey][referenceTimestamp], ReferenceTimestampDoesNotExist());
 
         // Assert that the root that corresponds to the reference timestamp is not disabled
         require(operatorTableUpdater.isRootValidByTimestamp(referenceTimestamp), RootDisabled());
@@ -312,6 +315,15 @@ contract BN254CertificateVerifier is Initializable, BN254CertificateVerifierStor
     ) external view returns (uint32) {
         bytes32 operatorSetKey = operatorSet.key();
         return _latestReferenceTimestamps[operatorSetKey];
+    }
+
+    ///@inheritdoc IBaseCertificateVerifier
+    function isReferenceTimestampSet(
+        OperatorSet memory operatorSet,
+        uint32 referenceTimestamp
+    ) external view returns (bool) {
+        bytes32 operatorSetKey = operatorSet.key();
+        return _referenceTimestampsSet[operatorSetKey][referenceTimestamp];
     }
 
     ///@inheritdoc IBN254CertificateVerifier

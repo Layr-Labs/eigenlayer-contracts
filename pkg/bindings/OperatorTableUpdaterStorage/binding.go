@@ -85,7 +85,7 @@ type OperatorSet struct {
 
 // OperatorTableUpdaterStorageMetaData contains all meta data concerning the OperatorTableUpdaterStorage contract.
 var OperatorTableUpdaterStorageMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"GLOBAL_TABLE_ROOT_CERT_TYPEHASH\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"INITIAL_GLOBAL_TABLE_ROOT\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"MAX_BPS\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint16\",\"internalType\":\"uint16\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"bn254CertificateVerifier\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIBN254CertificateVerifier\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"confirmGlobalTableRoot\",\"inputs\":[{\"name\":\"globalTableRootCert\",\"type\":\"tuple\",\"internalType\":\"structIBN254CertificateVerifierTypes.BN254Certificate\",\"components\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"messageHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"signature\",\"type\":\"tuple\",\"internalType\":\"structBN254.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"apk\",\"type\":\"tuple\",\"internalType\":\"structBN254.G2Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256[2]\",\"internalType\":\"uint256[2]\"},{\"name\":\"Y\",\"type\":\"uint256[2]\",\"internalType\":\"uint256[2]\"}]},{\"name\":\"nonSignerWitnesses\",\"type\":\"tuple[]\",\"internalType\":\"structIBN254CertificateVerifierTypes.BN254OperatorInfoWitness[]\",\"components\":[{\"name\":\"operatorIndex\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"operatorInfoProof\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"operatorInfo\",\"type\":\"tuple\",\"internalType\":\"structIOperatorTableCalculatorTypes.BN254OperatorInfo\",\"components\":[{\"name\":\"pubkey\",\"type\":\"tuple\",\"internalType\":\"structBN254.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"weights\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}]}]}]},{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"referenceBlockNumber\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"disableRoot\",\"inputs\":[{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"ecdsaCertificateVerifier\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIECDSACertificateVerifier\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCertificateVerifier\",\"inputs\":[{\"name\":\"curveType\",\"type\":\"uint8\",\"internalType\":\"enumIKeyRegistrarTypes.CurveType\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrentGlobalTableRoot\",\"inputs\":[],\"outputs\":[{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getGenerator\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getGeneratorReferenceTimestamp\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getGlobalTableRootByTimestamp\",\"inputs\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"tableRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getGlobalTableUpdateMessageHash\",\"inputs\":[{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"referenceBlockNumber\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getLatestReferenceBlockNumber\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getLatestReferenceTimestamp\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getReferenceBlockNumberByTimestamp\",\"inputs\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getReferenceTimestampByBlockNumber\",\"inputs\":[{\"name\":\"referenceBlockNumber\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"globalRootConfirmationThreshold\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint16\",\"internalType\":\"uint16\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isRootValid\",\"inputs\":[{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isRootValidByTimestamp\",\"inputs\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"setGenerator\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setGlobalRootConfirmationThreshold\",\"inputs\":[{\"name\":\"bps\",\"type\":\"uint16\",\"internalType\":\"uint16\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"updateGenerator\",\"inputs\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"GeneratorInfo\",\"type\":\"tuple\",\"internalType\":\"structIOperatorTableCalculatorTypes.BN254OperatorSetInfo\",\"components\":[{\"name\":\"operatorInfoTreeRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"numOperators\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"aggregatePubkey\",\"type\":\"tuple\",\"internalType\":\"structBN254.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"totalWeights\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}]},{\"name\":\"GeneratorConfig\",\"type\":\"tuple\",\"internalType\":\"structICrossChainRegistryTypes.OperatorSetConfig\",\"components\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"maxStalenessPeriod\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"updateOperatorTable\",\"inputs\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"operatorSetIndex\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"proof\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"operatorTableBytes\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"GeneratorUpdated\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"GlobalRootConfirmationThresholdUpdated\",\"inputs\":[{\"name\":\"bps\",\"type\":\"uint16\",\"indexed\":false,\"internalType\":\"uint16\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"GlobalRootDisabled\",\"inputs\":[{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"NewGlobalTableRoot\",\"inputs\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"indexed\":true,\"internalType\":\"uint32\"},{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"CertificateInvalid\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"GlobalTableRootInFuture\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"GlobalTableRootStale\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidConfirmationThreshold\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidCurveType\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidGlobalTableRoot\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidMessageHash\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidOperatorSetProof\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidRoot\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidSignatureLength\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"SignersNotOrdered\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"TableUpdateForPastTimestamp\",\"inputs\":[]}]",
+	ABI: "[{\"type\":\"function\",\"name\":\"GENERATOR_GLOBAL_TABLE_ROOT\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"GENERATOR_MAX_STALENESS_PERIOD\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"GENERATOR_REFERENCE_TIMESTAMP\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"GLOBAL_TABLE_ROOT_CERT_TYPEHASH\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"MAX_BPS\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint16\",\"internalType\":\"uint16\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"bn254CertificateVerifier\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIBN254CertificateVerifier\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"confirmGlobalTableRoot\",\"inputs\":[{\"name\":\"globalTableRootCert\",\"type\":\"tuple\",\"internalType\":\"structIBN254CertificateVerifierTypes.BN254Certificate\",\"components\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"messageHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"signature\",\"type\":\"tuple\",\"internalType\":\"structBN254.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"apk\",\"type\":\"tuple\",\"internalType\":\"structBN254.G2Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256[2]\",\"internalType\":\"uint256[2]\"},{\"name\":\"Y\",\"type\":\"uint256[2]\",\"internalType\":\"uint256[2]\"}]},{\"name\":\"nonSignerWitnesses\",\"type\":\"tuple[]\",\"internalType\":\"structIBN254CertificateVerifierTypes.BN254OperatorInfoWitness[]\",\"components\":[{\"name\":\"operatorIndex\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"operatorInfoProof\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"operatorInfo\",\"type\":\"tuple\",\"internalType\":\"structIOperatorTableCalculatorTypes.BN254OperatorInfo\",\"components\":[{\"name\":\"pubkey\",\"type\":\"tuple\",\"internalType\":\"structBN254.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"weights\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}]}]}]},{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"referenceBlockNumber\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"disableRoot\",\"inputs\":[{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"ecdsaCertificateVerifier\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIECDSACertificateVerifier\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCertificateVerifier\",\"inputs\":[{\"name\":\"curveType\",\"type\":\"uint8\",\"internalType\":\"enumIKeyRegistrarTypes.CurveType\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrentGlobalTableRoot\",\"inputs\":[],\"outputs\":[{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getGenerator\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getGeneratorConfig\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structICrossChainRegistryTypes.OperatorSetConfig\",\"components\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"maxStalenessPeriod\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getGeneratorReferenceTimestamp\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getGlobalTableRootByTimestamp\",\"inputs\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"tableRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getGlobalTableUpdateMessageHash\",\"inputs\":[{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"referenceBlockNumber\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getLatestReferenceBlockNumber\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getLatestReferenceTimestamp\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getReferenceBlockNumberByTimestamp\",\"inputs\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getReferenceTimestampByBlockNumber\",\"inputs\":[{\"name\":\"referenceBlockNumber\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"globalRootConfirmationThreshold\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint16\",\"internalType\":\"uint16\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isRootValid\",\"inputs\":[{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isRootValidByTimestamp\",\"inputs\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"setGlobalRootConfirmationThreshold\",\"inputs\":[{\"name\":\"bps\",\"type\":\"uint16\",\"internalType\":\"uint16\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"updateGenerator\",\"inputs\":[{\"name\":\"generator\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"generatorInfo\",\"type\":\"tuple\",\"internalType\":\"structIOperatorTableCalculatorTypes.BN254OperatorSetInfo\",\"components\":[{\"name\":\"operatorInfoTreeRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"numOperators\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"aggregatePubkey\",\"type\":\"tuple\",\"internalType\":\"structBN254.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"totalWeights\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"updateOperatorTable\",\"inputs\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"operatorSetIndex\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"proof\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"operatorTableBytes\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"GeneratorUpdated\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"GlobalRootConfirmationThresholdUpdated\",\"inputs\":[{\"name\":\"bps\",\"type\":\"uint16\",\"indexed\":false,\"internalType\":\"uint16\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"GlobalRootDisabled\",\"inputs\":[{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"NewGlobalTableRoot\",\"inputs\":[{\"name\":\"referenceTimestamp\",\"type\":\"uint32\",\"indexed\":true,\"internalType\":\"uint32\"},{\"name\":\"globalTableRoot\",\"type\":\"bytes32\",\"indexed\":true,\"internalType\":\"bytes32\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"CannotDisableGeneratorRoot\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"CertificateInvalid\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"GlobalTableRootInFuture\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"GlobalTableRootStale\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidConfirmationThreshold\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidCurveType\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidGenerator\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidGlobalTableRoot\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidMessageHash\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidOperatorSet\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidOperatorSetProof\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidRoot\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidSignatureLength\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"SignersNotOrdered\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"TableUpdateForPastTimestamp\",\"inputs\":[]}]",
 }
 
 // OperatorTableUpdaterStorageABI is the input ABI used to generate the binding from.
@@ -234,6 +234,99 @@ func (_OperatorTableUpdaterStorage *OperatorTableUpdaterStorageTransactorRaw) Tr
 	return _OperatorTableUpdaterStorage.Contract.contract.Transact(opts, method, params...)
 }
 
+// GENERATORGLOBALTABLEROOT is a free data retrieval call binding the contract method 0x1bdc0deb.
+//
+// Solidity: function GENERATOR_GLOBAL_TABLE_ROOT() view returns(bytes32)
+func (_OperatorTableUpdaterStorage *OperatorTableUpdaterStorageCaller) GENERATORGLOBALTABLEROOT(opts *bind.CallOpts) ([32]byte, error) {
+	var out []interface{}
+	err := _OperatorTableUpdaterStorage.contract.Call(opts, &out, "GENERATOR_GLOBAL_TABLE_ROOT")
+
+	if err != nil {
+		return *new([32]byte), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
+
+	return out0, err
+
+}
+
+// GENERATORGLOBALTABLEROOT is a free data retrieval call binding the contract method 0x1bdc0deb.
+//
+// Solidity: function GENERATOR_GLOBAL_TABLE_ROOT() view returns(bytes32)
+func (_OperatorTableUpdaterStorage *OperatorTableUpdaterStorageSession) GENERATORGLOBALTABLEROOT() ([32]byte, error) {
+	return _OperatorTableUpdaterStorage.Contract.GENERATORGLOBALTABLEROOT(&_OperatorTableUpdaterStorage.CallOpts)
+}
+
+// GENERATORGLOBALTABLEROOT is a free data retrieval call binding the contract method 0x1bdc0deb.
+//
+// Solidity: function GENERATOR_GLOBAL_TABLE_ROOT() view returns(bytes32)
+func (_OperatorTableUpdaterStorage *OperatorTableUpdaterStorageCallerSession) GENERATORGLOBALTABLEROOT() ([32]byte, error) {
+	return _OperatorTableUpdaterStorage.Contract.GENERATORGLOBALTABLEROOT(&_OperatorTableUpdaterStorage.CallOpts)
+}
+
+// GENERATORMAXSTALENESSPERIOD is a free data retrieval call binding the contract method 0x790961ea.
+//
+// Solidity: function GENERATOR_MAX_STALENESS_PERIOD() view returns(uint32)
+func (_OperatorTableUpdaterStorage *OperatorTableUpdaterStorageCaller) GENERATORMAXSTALENESSPERIOD(opts *bind.CallOpts) (uint32, error) {
+	var out []interface{}
+	err := _OperatorTableUpdaterStorage.contract.Call(opts, &out, "GENERATOR_MAX_STALENESS_PERIOD")
+
+	if err != nil {
+		return *new(uint32), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(uint32)).(*uint32)
+
+	return out0, err
+
+}
+
+// GENERATORMAXSTALENESSPERIOD is a free data retrieval call binding the contract method 0x790961ea.
+//
+// Solidity: function GENERATOR_MAX_STALENESS_PERIOD() view returns(uint32)
+func (_OperatorTableUpdaterStorage *OperatorTableUpdaterStorageSession) GENERATORMAXSTALENESSPERIOD() (uint32, error) {
+	return _OperatorTableUpdaterStorage.Contract.GENERATORMAXSTALENESSPERIOD(&_OperatorTableUpdaterStorage.CallOpts)
+}
+
+// GENERATORMAXSTALENESSPERIOD is a free data retrieval call binding the contract method 0x790961ea.
+//
+// Solidity: function GENERATOR_MAX_STALENESS_PERIOD() view returns(uint32)
+func (_OperatorTableUpdaterStorage *OperatorTableUpdaterStorageCallerSession) GENERATORMAXSTALENESSPERIOD() (uint32, error) {
+	return _OperatorTableUpdaterStorage.Contract.GENERATORMAXSTALENESSPERIOD(&_OperatorTableUpdaterStorage.CallOpts)
+}
+
+// GENERATORREFERENCETIMESTAMP is a free data retrieval call binding the contract method 0x612abcb0.
+//
+// Solidity: function GENERATOR_REFERENCE_TIMESTAMP() view returns(uint32)
+func (_OperatorTableUpdaterStorage *OperatorTableUpdaterStorageCaller) GENERATORREFERENCETIMESTAMP(opts *bind.CallOpts) (uint32, error) {
+	var out []interface{}
+	err := _OperatorTableUpdaterStorage.contract.Call(opts, &out, "GENERATOR_REFERENCE_TIMESTAMP")
+
+	if err != nil {
+		return *new(uint32), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(uint32)).(*uint32)
+
+	return out0, err
+
+}
+
+// GENERATORREFERENCETIMESTAMP is a free data retrieval call binding the contract method 0x612abcb0.
+//
+// Solidity: function GENERATOR_REFERENCE_TIMESTAMP() view returns(uint32)
+func (_OperatorTableUpdaterStorage *OperatorTableUpdaterStorageSession) GENERATORREFERENCETIMESTAMP() (uint32, error) {
+	return _OperatorTableUpdaterStorage.Contract.GENERATORREFERENCETIMESTAMP(&_OperatorTableUpdaterStorage.CallOpts)
+}
+
+// GENERATORREFERENCETIMESTAMP is a free data retrieval call binding the contract method 0x612abcb0.
+//
+// Solidity: function GENERATOR_REFERENCE_TIMESTAMP() view returns(uint32)
+func (_OperatorTableUpdaterStorage *OperatorTableUpdaterStorageCallerSession) GENERATORREFERENCETIMESTAMP() (uint32, error) {
+	return _OperatorTableUpdaterStorage.Contract.GENERATORREFERENCETIMESTAMP(&_OperatorTableUpdaterStorage.CallOpts)
+}
+
 // GLOBALTABLEROOTCERTTYPEHASH is a free data retrieval call binding the contract method 0x3ef6cd7a.
 //
 // Solidity: function GLOBAL_TABLE_ROOT_CERT_TYPEHASH() view returns(bytes32)
@@ -263,37 +356,6 @@ func (_OperatorTableUpdaterStorage *OperatorTableUpdaterStorageSession) GLOBALTA
 // Solidity: function GLOBAL_TABLE_ROOT_CERT_TYPEHASH() view returns(bytes32)
 func (_OperatorTableUpdaterStorage *OperatorTableUpdaterStorageCallerSession) GLOBALTABLEROOTCERTTYPEHASH() ([32]byte, error) {
 	return _OperatorTableUpdaterStorage.Contract.GLOBALTABLEROOTCERTTYPEHASH(&_OperatorTableUpdaterStorage.CallOpts)
-}
-
-// INITIALGLOBALTABLEROOT is a free data retrieval call binding the contract method 0x4af81d7a.
-//
-// Solidity: function INITIAL_GLOBAL_TABLE_ROOT() view returns(bytes32)
-func (_OperatorTableUpdaterStorage *OperatorTableUpdaterStorageCaller) INITIALGLOBALTABLEROOT(opts *bind.CallOpts) ([32]byte, error) {
-	var out []interface{}
-	err := _OperatorTableUpdaterStorage.contract.Call(opts, &out, "INITIAL_GLOBAL_TABLE_ROOT")
-
-	if err != nil {
-		return *new([32]byte), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
-
-	return out0, err
-
-}
-
-// INITIALGLOBALTABLEROOT is a free data retrieval call binding the contract method 0x4af81d7a.
-//
-// Solidity: function INITIAL_GLOBAL_TABLE_ROOT() view returns(bytes32)
-func (_OperatorTableUpdaterStorage *OperatorTableUpdaterStorageSession) INITIALGLOBALTABLEROOT() ([32]byte, error) {
-	return _OperatorTableUpdaterStorage.Contract.INITIALGLOBALTABLEROOT(&_OperatorTableUpdaterStorage.CallOpts)
-}
-
-// INITIALGLOBALTABLEROOT is a free data retrieval call binding the contract method 0x4af81d7a.
-//
-// Solidity: function INITIAL_GLOBAL_TABLE_ROOT() view returns(bytes32)
-func (_OperatorTableUpdaterStorage *OperatorTableUpdaterStorageCallerSession) INITIALGLOBALTABLEROOT() ([32]byte, error) {
-	return _OperatorTableUpdaterStorage.Contract.INITIALGLOBALTABLEROOT(&_OperatorTableUpdaterStorage.CallOpts)
 }
 
 // MAXBPS is a free data retrieval call binding the contract method 0xfd967f47.
@@ -480,6 +542,37 @@ func (_OperatorTableUpdaterStorage *OperatorTableUpdaterStorageSession) GetGener
 // Solidity: function getGenerator() view returns((address,uint32))
 func (_OperatorTableUpdaterStorage *OperatorTableUpdaterStorageCallerSession) GetGenerator() (OperatorSet, error) {
 	return _OperatorTableUpdaterStorage.Contract.GetGenerator(&_OperatorTableUpdaterStorage.CallOpts)
+}
+
+// GetGeneratorConfig is a free data retrieval call binding the contract method 0xb0cb3a24.
+//
+// Solidity: function getGeneratorConfig() view returns((address,uint32))
+func (_OperatorTableUpdaterStorage *OperatorTableUpdaterStorageCaller) GetGeneratorConfig(opts *bind.CallOpts) (ICrossChainRegistryTypesOperatorSetConfig, error) {
+	var out []interface{}
+	err := _OperatorTableUpdaterStorage.contract.Call(opts, &out, "getGeneratorConfig")
+
+	if err != nil {
+		return *new(ICrossChainRegistryTypesOperatorSetConfig), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(ICrossChainRegistryTypesOperatorSetConfig)).(*ICrossChainRegistryTypesOperatorSetConfig)
+
+	return out0, err
+
+}
+
+// GetGeneratorConfig is a free data retrieval call binding the contract method 0xb0cb3a24.
+//
+// Solidity: function getGeneratorConfig() view returns((address,uint32))
+func (_OperatorTableUpdaterStorage *OperatorTableUpdaterStorageSession) GetGeneratorConfig() (ICrossChainRegistryTypesOperatorSetConfig, error) {
+	return _OperatorTableUpdaterStorage.Contract.GetGeneratorConfig(&_OperatorTableUpdaterStorage.CallOpts)
+}
+
+// GetGeneratorConfig is a free data retrieval call binding the contract method 0xb0cb3a24.
+//
+// Solidity: function getGeneratorConfig() view returns((address,uint32))
+func (_OperatorTableUpdaterStorage *OperatorTableUpdaterStorageCallerSession) GetGeneratorConfig() (ICrossChainRegistryTypesOperatorSetConfig, error) {
+	return _OperatorTableUpdaterStorage.Contract.GetGeneratorConfig(&_OperatorTableUpdaterStorage.CallOpts)
 }
 
 // GetGeneratorReferenceTimestamp is a free data retrieval call binding the contract method 0x7551ba34.
@@ -834,27 +927,6 @@ func (_OperatorTableUpdaterStorage *OperatorTableUpdaterStorageTransactorSession
 	return _OperatorTableUpdaterStorage.Contract.DisableRoot(&_OperatorTableUpdaterStorage.TransactOpts, globalTableRoot)
 }
 
-// SetGenerator is a paid mutator transaction binding the contract method 0x77d90e94.
-//
-// Solidity: function setGenerator((address,uint32) operatorSet) returns()
-func (_OperatorTableUpdaterStorage *OperatorTableUpdaterStorageTransactor) SetGenerator(opts *bind.TransactOpts, operatorSet OperatorSet) (*types.Transaction, error) {
-	return _OperatorTableUpdaterStorage.contract.Transact(opts, "setGenerator", operatorSet)
-}
-
-// SetGenerator is a paid mutator transaction binding the contract method 0x77d90e94.
-//
-// Solidity: function setGenerator((address,uint32) operatorSet) returns()
-func (_OperatorTableUpdaterStorage *OperatorTableUpdaterStorageSession) SetGenerator(operatorSet OperatorSet) (*types.Transaction, error) {
-	return _OperatorTableUpdaterStorage.Contract.SetGenerator(&_OperatorTableUpdaterStorage.TransactOpts, operatorSet)
-}
-
-// SetGenerator is a paid mutator transaction binding the contract method 0x77d90e94.
-//
-// Solidity: function setGenerator((address,uint32) operatorSet) returns()
-func (_OperatorTableUpdaterStorage *OperatorTableUpdaterStorageTransactorSession) SetGenerator(operatorSet OperatorSet) (*types.Transaction, error) {
-	return _OperatorTableUpdaterStorage.Contract.SetGenerator(&_OperatorTableUpdaterStorage.TransactOpts, operatorSet)
-}
-
 // SetGlobalRootConfirmationThreshold is a paid mutator transaction binding the contract method 0x2370356c.
 //
 // Solidity: function setGlobalRootConfirmationThreshold(uint16 bps) returns()
@@ -876,25 +948,25 @@ func (_OperatorTableUpdaterStorage *OperatorTableUpdaterStorageTransactorSession
 	return _OperatorTableUpdaterStorage.Contract.SetGlobalRootConfirmationThreshold(&_OperatorTableUpdaterStorage.TransactOpts, bps)
 }
 
-// UpdateGenerator is a paid mutator transaction binding the contract method 0xe944e0a8.
+// UpdateGenerator is a paid mutator transaction binding the contract method 0x9f7e206f.
 //
-// Solidity: function updateGenerator(uint32 referenceTimestamp, (bytes32,uint256,(uint256,uint256),uint256[]) GeneratorInfo, (address,uint32) GeneratorConfig) returns()
-func (_OperatorTableUpdaterStorage *OperatorTableUpdaterStorageTransactor) UpdateGenerator(opts *bind.TransactOpts, referenceTimestamp uint32, GeneratorInfo IOperatorTableCalculatorTypesBN254OperatorSetInfo, GeneratorConfig ICrossChainRegistryTypesOperatorSetConfig) (*types.Transaction, error) {
-	return _OperatorTableUpdaterStorage.contract.Transact(opts, "updateGenerator", referenceTimestamp, GeneratorInfo, GeneratorConfig)
+// Solidity: function updateGenerator((address,uint32) generator, (bytes32,uint256,(uint256,uint256),uint256[]) generatorInfo) returns()
+func (_OperatorTableUpdaterStorage *OperatorTableUpdaterStorageTransactor) UpdateGenerator(opts *bind.TransactOpts, generator OperatorSet, generatorInfo IOperatorTableCalculatorTypesBN254OperatorSetInfo) (*types.Transaction, error) {
+	return _OperatorTableUpdaterStorage.contract.Transact(opts, "updateGenerator", generator, generatorInfo)
 }
 
-// UpdateGenerator is a paid mutator transaction binding the contract method 0xe944e0a8.
+// UpdateGenerator is a paid mutator transaction binding the contract method 0x9f7e206f.
 //
-// Solidity: function updateGenerator(uint32 referenceTimestamp, (bytes32,uint256,(uint256,uint256),uint256[]) GeneratorInfo, (address,uint32) GeneratorConfig) returns()
-func (_OperatorTableUpdaterStorage *OperatorTableUpdaterStorageSession) UpdateGenerator(referenceTimestamp uint32, GeneratorInfo IOperatorTableCalculatorTypesBN254OperatorSetInfo, GeneratorConfig ICrossChainRegistryTypesOperatorSetConfig) (*types.Transaction, error) {
-	return _OperatorTableUpdaterStorage.Contract.UpdateGenerator(&_OperatorTableUpdaterStorage.TransactOpts, referenceTimestamp, GeneratorInfo, GeneratorConfig)
+// Solidity: function updateGenerator((address,uint32) generator, (bytes32,uint256,(uint256,uint256),uint256[]) generatorInfo) returns()
+func (_OperatorTableUpdaterStorage *OperatorTableUpdaterStorageSession) UpdateGenerator(generator OperatorSet, generatorInfo IOperatorTableCalculatorTypesBN254OperatorSetInfo) (*types.Transaction, error) {
+	return _OperatorTableUpdaterStorage.Contract.UpdateGenerator(&_OperatorTableUpdaterStorage.TransactOpts, generator, generatorInfo)
 }
 
-// UpdateGenerator is a paid mutator transaction binding the contract method 0xe944e0a8.
+// UpdateGenerator is a paid mutator transaction binding the contract method 0x9f7e206f.
 //
-// Solidity: function updateGenerator(uint32 referenceTimestamp, (bytes32,uint256,(uint256,uint256),uint256[]) GeneratorInfo, (address,uint32) GeneratorConfig) returns()
-func (_OperatorTableUpdaterStorage *OperatorTableUpdaterStorageTransactorSession) UpdateGenerator(referenceTimestamp uint32, GeneratorInfo IOperatorTableCalculatorTypesBN254OperatorSetInfo, GeneratorConfig ICrossChainRegistryTypesOperatorSetConfig) (*types.Transaction, error) {
-	return _OperatorTableUpdaterStorage.Contract.UpdateGenerator(&_OperatorTableUpdaterStorage.TransactOpts, referenceTimestamp, GeneratorInfo, GeneratorConfig)
+// Solidity: function updateGenerator((address,uint32) generator, (bytes32,uint256,(uint256,uint256),uint256[]) generatorInfo) returns()
+func (_OperatorTableUpdaterStorage *OperatorTableUpdaterStorageTransactorSession) UpdateGenerator(generator OperatorSet, generatorInfo IOperatorTableCalculatorTypesBN254OperatorSetInfo) (*types.Transaction, error) {
+	return _OperatorTableUpdaterStorage.Contract.UpdateGenerator(&_OperatorTableUpdaterStorage.TransactOpts, generator, generatorInfo)
 }
 
 // UpdateOperatorTable is a paid mutator transaction binding the contract method 0x9ea94778.

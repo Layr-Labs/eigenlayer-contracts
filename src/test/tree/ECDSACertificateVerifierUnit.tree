@@ -10,7 +10,11 @@
     ├── when verifyCertificate is called
     │   ├── given that the reference timestamp does not exist
     │   │   └── it should revert
-    │   ├── given that the certificate is stale
+    │   ├── given that the certificate is stale (non-zero staleness period)
+    │   │   └── it should revert
+    │   ├── given that the staleness period is zero
+    │   │   └── it should never consider the certificate stale
+    │   ├── given that the root at the reference timestamp is disabled
     │   │   └── it should revert
     │   ├── given that the signature is invalid
     │   │   └── it should revert
@@ -43,6 +47,11 @@
         │   └── it should return the correct staleness period
         ├── latestReferenceTimestamp
         │   └── it should return the latest timestamp
+        ├── isReferenceTimestampSet
+        │   ├── given that the timestamp has been set via updateOperatorTable
+        │   │   └── it should return true
+        │   └── given that the timestamp has not been set
+        │       └── it should return false
         ├── getOperatorInfos
         │   └── it should return all operator infos for the given timestamp
         ├── getOperatorInfo

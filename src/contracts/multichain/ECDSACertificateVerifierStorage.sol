@@ -43,6 +43,9 @@ abstract contract ECDSACertificateVerifierStorage is IECDSACertificateVerifier {
     mapping(bytes32 operatorSetKey => mapping(uint32 referenceTimestamp => mapping(uint256 => ECDSAOperatorInfo)))
         internal _operatorInfos;
 
+    /// @dev Mapping from operatorSetKey to referenceTimestamp to whether it has been updated
+    mapping(bytes32 operatorSetKey => mapping(uint32 referenceTimestamp => bool set)) internal _referenceTimestampsSet;
+
     // Construction
 
     constructor(
