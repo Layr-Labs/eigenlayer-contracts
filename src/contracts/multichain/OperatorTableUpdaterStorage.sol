@@ -26,6 +26,10 @@ abstract contract OperatorTableUpdaterStorage is IOperatorTableUpdater {
     /// @notice The reference timestamp for the generator
     uint32 public constant GENERATOR_REFERENCE_TIMESTAMP = 1;
 
+    /// @notice The `maxStalenessPeriods` for the generator
+    /// @dev This is set to 0 to allow certificates to always be valid, regardless of the `referenceTimestamp`
+    uint32 public constant GENERATOR_MAX_STALENESS_PERIOD = 0;
+
     // Immutable Storage
 
     /// @notice The BN254 certificate verifier
@@ -57,6 +61,11 @@ abstract contract OperatorTableUpdaterStorage is IOperatorTableUpdater {
     /// @notice Mapping from global table root to validity status
     mapping(bytes32 globalTableRoot => bool valid) internal _isRootValid;
 
+    /// @notice The operatorSetConfig for the generator
+    /// @dev The `maxStalenessPeriod` is set to `GENERATOR_MAX_STALENESS_PERIOD` to allow certificates to always be valid, regardless of the `referenceTimestamp`
+    /// @dev The `owner` is set to the address of the `OperatorTableUpdater`
+    OperatorSetConfig internal _generatorConfig;
+
     // Constructor
     constructor(
         IBN254CertificateVerifier _bn254CertificateVerifier,
@@ -71,5 +80,5 @@ abstract contract OperatorTableUpdaterStorage is IOperatorTableUpdater {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[44] private __gap;
+    uint256[43] private __gap;
 }

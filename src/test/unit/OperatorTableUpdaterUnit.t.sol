@@ -37,7 +37,6 @@ contract OperatorTableUpdaterUnitTests is
             aggregatePubkey: BN254.G1Point({X: 1, Y: 2}),
             totalWeights: new uint[](1)
         });
-        OperatorSetConfig memory initialOperatorSetConfig = OperatorSetConfig({owner: address(0xDEADBEEF), maxStalenessPeriod: 10_000});
 
         operatorTableUpdater =
             OperatorTableUpdater(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
@@ -59,8 +58,7 @@ contract OperatorTableUpdaterUnitTests is
                 0, // initialPausedStatus
                 generator, // generator
                 GLOBAL_ROOT_CONFIRMATION_THRESHOLD, // globalRootConfirmationThreshold
-                initialOperatorSetInfo, // generatorInfo
-                initialOperatorSetConfig // generatorConfig
+                initialOperatorSetInfo // generatorInfo
             )
         );
     }
@@ -197,15 +195,17 @@ contract OperatorTableUpdaterUnitTests_initialize is OperatorTableUpdaterUnitTes
 
         uint16 threshold = operatorTableUpdater.globalRootConfirmationThreshold();
         assertEq(threshold, GLOBAL_ROOT_CONFIRMATION_THRESHOLD);
+
+        // Test that the generator config is properly set during initialization
+        OperatorSetConfig memory generatorConfig = operatorTableUpdater.getGeneratorConfig();
+        assertEq(generatorConfig.maxStalenessPeriod, 0, "Generator maxStalenessPeriod should be 0");
+        assertEq(generatorConfig.owner, address(operatorTableUpdater), "Generator owner should be operatorTableUpdater");
     }
 
     function test_initialize_revert_reinitialization() public {
         BN254OperatorSetInfo memory initialOperatorSetInfo;
-        OperatorSetConfig memory initialOperatorSetConfig;
         cheats.expectRevert("Initializable: contract is already initialized");
-        operatorTableUpdater.initialize(
-            address(this), uint(0), generator, GLOBAL_ROOT_CONFIRMATION_THRESHOLD, initialOperatorSetInfo, initialOperatorSetConfig
-        );
+        operatorTableUpdater.initialize(address(this), uint(0), generator, GLOBAL_ROOT_CONFIRMATION_THRESHOLD, initialOperatorSetInfo);
     }
 }
 
@@ -766,6 +766,19 @@ contract OperatorTableUpdaterUnitTests_disableRoot is OperatorTableUpdaterUnitTe
         operatorTableUpdater.disableRoot(globalTableRoot);
     }
 
+    function test_revert_cannotDisableGeneratorRoot() public {
+        // The GENERATOR_GLOBAL_TABLE_ROOT is valid by default after initialization
+        bytes32 generatorRoot = operatorTableUpdater.GENERATOR_GLOBAL_TABLE_ROOT();
+
+        // Verify the generator root is valid
+        assertTrue(operatorTableUpdater.isRootValid(generatorRoot), "Generator root should be valid");
+
+        // Try to disable the generator root as pauser (should revert)
+        cheats.prank(pauser);
+        cheats.expectRevert(CannotDisableGeneratorRoot.selector);
+        operatorTableUpdater.disableRoot(generatorRoot);
+    }
+
     function testFuzz_correctness(Randomness r) public rand(r) {
         bytes32 globalTableRoot = bytes32(r.Uint256());
 
@@ -792,12 +805,11 @@ contract OperatorTableUpdaterUnitTests_updateGenerator is OperatorTableUpdaterUn
         cheats.assume(invalidCaller != address(this));
         OperatorSet memory newGenerator = OperatorSet({avs: r.Address(), id: r.Uint32()});
         BN254OperatorSetInfo memory operatorSetInfo;
-        OperatorSetConfig memory operatorSetConfig;
 
         // Should revert when called by non-owner
         cheats.prank(invalidCaller);
         cheats.expectRevert("Ownable: caller is not the owner");
-        operatorTableUpdater.updateGenerator(newGenerator, operatorSetInfo, operatorSetConfig);
+        operatorTableUpdater.updateGenerator(newGenerator, operatorSetInfo);
     }
 
     function testFuzz_correctness(Randomness r) public rand(r) {
@@ -806,21 +818,20 @@ contract OperatorTableUpdaterUnitTests_updateGenerator is OperatorTableUpdaterUn
 
         // Generate random operator set info and config
         BN254OperatorSetInfo memory operatorSetInfo = _generateRandomBN254OperatorSetInfo(r);
-        OperatorSetConfig memory operatorSetConfig = _generateRandomOperatorSetConfig(r);
 
-        // The reference timestamp will be 1 (incremented in _updateGenerator)
+        // The reference timestamp will be 1 (GENERATOR_REFERENCE_TIMESTAMP)
+        // The config will have maxStalenessPeriod = 0 and owner = address(operatorTableUpdater)
+        OperatorSetConfig memory expectedConfig = OperatorSetConfig({owner: address(operatorTableUpdater), maxStalenessPeriod: 0});
         cheats.expectCall(
             address(bn254CertificateVerifierMock),
-            abi.encodeWithSelector(
-                IBN254CertificateVerifier.updateOperatorTable.selector, newGenerator, 1, operatorSetInfo, operatorSetConfig
-            )
+            abi.encodeWithSelector(IBN254CertificateVerifier.updateOperatorTable.selector, newGenerator, 1, operatorSetInfo, expectedConfig)
         );
 
         // Expect the GeneratorUpdated event
         cheats.expectEmit(true, true, true, true);
         emit GeneratorUpdated(newGenerator);
 
-        operatorTableUpdater.updateGenerator(newGenerator, operatorSetInfo, operatorSetConfig);
+        operatorTableUpdater.updateGenerator(newGenerator, operatorSetInfo);
 
         // Check that the generator is updated
         OperatorSet memory updatedGenerator = operatorTableUpdater.getGenerator();
@@ -891,11 +902,10 @@ contract OperatorTableUpdaterUnitTests_IntegrationScenarios is OperatorTableUpda
             totalWeights: new uint[](1)
         });
         newOperatorSetInfo.totalWeights[0] = 100 ether;
-        OperatorSetConfig memory newOperatorSetConfig = OperatorSetConfig({owner: address(0xDEAD), maxStalenessPeriod: 20_000});
 
         // This should fail because the generator already has a non-zero reference timestamp
         cheats.expectRevert(InvalidGenerator.selector);
-        operatorTableUpdater.updateGenerator(newGenerator, newOperatorSetInfo, newOperatorSetConfig);
+        operatorTableUpdater.updateGenerator(newGenerator, newOperatorSetInfo);
     }
 
     function test_updateGenerator_success() public {
@@ -908,12 +918,11 @@ contract OperatorTableUpdaterUnitTests_IntegrationScenarios is OperatorTableUpda
             totalWeights: new uint[](1)
         });
         newOperatorSetInfo.totalWeights[0] = 100 ether;
-        OperatorSetConfig memory newOperatorSetConfig = OperatorSetConfig({owner: address(0xBEEF), maxStalenessPeriod: 20_000});
 
         // Update generator
         cheats.expectEmit(true, true, true, true);
         emit GeneratorUpdated(newGenerator);
-        operatorTableUpdater.updateGenerator(newGenerator, newOperatorSetInfo, newOperatorSetConfig);
+        operatorTableUpdater.updateGenerator(newGenerator, newOperatorSetInfo);
 
         // Verify the generator was updated
         OperatorSet memory updatedGenerator = operatorTableUpdater.getGenerator();
@@ -945,7 +954,7 @@ contract OperatorTableUpdaterUnitTests_IntegrationScenarios is OperatorTableUpda
         newOperatorSetInfo.totalWeights[0] = 100 ether;
         OperatorSetConfig memory newOperatorSetConfig = OperatorSetConfig({owner: address(0xBEEF), maxStalenessPeriod: 20_000});
 
-        operatorTableUpdater.updateGenerator(newGenerator, newOperatorSetInfo, newOperatorSetConfig);
+        operatorTableUpdater.updateGenerator(newGenerator, newOperatorSetInfo);
 
         // Step 5: Confirm a new global table root with the new generator
         bytes32 newGlobalTableRoot = bytes32(uint(2));
@@ -1032,10 +1041,8 @@ contract OperatorTableUpdaterUnitTests_IntegrationScenarios is OperatorTableUpda
         });
         newGeneratorInfo.totalWeights[0] = 300 ether;
 
-        OperatorSetConfig memory newGeneratorConfig = OperatorSetConfig({owner: address(0xBEEF), maxStalenessPeriod: 20_000});
-
         // Update the generator
-        operatorTableUpdater.updateGenerator(newGenerator, newGeneratorInfo, newGeneratorConfig);
+        operatorTableUpdater.updateGenerator(newGenerator, newGeneratorInfo);
 
         // Verify the generator was updated
         OperatorSet memory updatedGenerator = operatorTableUpdater.getGenerator();

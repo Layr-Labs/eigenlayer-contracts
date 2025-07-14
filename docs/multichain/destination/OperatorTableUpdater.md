@@ -27,8 +27,8 @@ The following values are set upon initialization:
 * `globalRootConfirmationThreshold`: 10000. The threshold in basis points required for global root confirmation. Since the operatorSet is of size 1 a single signature is needed.
 * `generatorInfo`: The key material needed to verify certificates of the `generator`
 * `operatorSetConfig`: A configuration for the `generator` 
-    * `maxStalenessPeriod`: 0. Set to zero to confirm `globalTableRoots` without updating the `generator` operatorSet. See [`CertificateVerifier`](./CertificateVerifier.md#overview) for specifics
-    * `owner`: Unused parameter for `Generator`
+    * `maxStalenessPeriod`: 0 (`GENERATOR_MAX_STALENESS_PERIOD`). Set to zero to allow confirmation of generator certificates regardless of `referenceTimestamp`. See [`CertificateVerifier`](./CertificateVerifier.md#overview) for speccifics
+    * `owner`: Unused parameter for `Generator`. Set to the address of the `OperatorTableUpdater`
 * The `latestReferenceTimestamp` for the `Generator` is 1 (`GENERATOR_REFERENCE_TIMESTAMP`)
 * The `globalTableRoot` for the `Generator` is `GENERATOR_GLOBAL_TABLE_ROOT`
 
@@ -206,3 +206,4 @@ Disables a global table root, preventing further operator table updates against 
 *Requirements*:
 * Caller MUST be the `pauser`
 * The `globalTableRoot` MUST exist and be currently valid
+* The `globalTableRoot` MUST NOT be the `GENERATOR_GLOBAL_TABLE_ROOT`

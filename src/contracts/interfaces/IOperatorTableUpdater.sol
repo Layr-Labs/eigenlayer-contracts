@@ -33,6 +33,8 @@ interface IOperatorTableUpdaterErrors {
     error InvalidGenerator();
     /// @notice Thrown when the operator set to update is the generator
     error InvalidOperatorSet();
+    /// @notice Thrown when the generator's global table root is being disabled
+    error CannotDisableGeneratorRoot();
 }
 
 interface IOperatorTableUpdaterEvents {
@@ -98,7 +100,6 @@ interface IOperatorTableUpdater is
      * @notice Updates the `Generator` to a new operatorSet
      * @param generator The operatorSet which certifies against global roots
      * @param generatorInfo The operatorSetInfo for the generator
-     * @param generatorConfig The operatorSetConfig for the generator
      * @dev We have a separate function for updating this operatorSet since it's not transported and updated
      *      in the same way as the other operatorSets
      * @dev Only callable by the owner of the contract
@@ -107,11 +108,7 @@ interface IOperatorTableUpdater is
      * @dev The `_latestReferenceTimestamp` is not updated since this root is ONLY used for the `Generator`
      * @dev The `_referenceBlockNumber` and `_referenceTimestamps` mappings are not updated since they are only used for introspection for official operatorSets
      */
-    function updateGenerator(
-        OperatorSet calldata generator,
-        BN254OperatorSetInfo calldata generatorInfo,
-        OperatorSetConfig calldata generatorConfig
-    ) external;
+    function updateGenerator(OperatorSet calldata generator, BN254OperatorSetInfo calldata generatorInfo) external;
 
     /**
      * @notice Updates an operator table
@@ -134,6 +131,7 @@ interface IOperatorTableUpdater is
      * @notice Disables a global table root
      * @param globalTableRoot the global table root to disable
      * @dev Only callable by the pauser
+     * @dev Cannot disable the GENERATOR_GLOBAL_TABLE_ROOT
      */
     function disableRoot(
         bytes32 globalTableRoot
@@ -218,6 +216,13 @@ interface IOperatorTableUpdater is
      * @dev In V1, we only update the table of the generator on initial deployment, and never update it again.
      */
     function getGeneratorReferenceTimestamp() external view returns (uint32);
+
+    /**
+     * @notice Get the operator set config for the Generator
+     * @return The operator set config for the Generator
+     * @dev The Generator's config has maxStalenessPeriod = 0 and owner = address(operatorTableUpdater)
+     */
+    function getGeneratorConfig() external view returns (OperatorSetConfig memory);
 
     /**
      * @notice Get the validity status of a global table root

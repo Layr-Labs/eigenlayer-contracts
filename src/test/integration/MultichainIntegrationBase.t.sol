@@ -183,8 +183,7 @@ abstract contract MultichainIntegrationBase is IntegrationBase {
             0, // initialPausedStatus
             globalRootConfirmerSet, // globalRootConfirmerSet
             6600, // globalRootConfirmationThreshold (66%)
-            initialOperatorSetInfo, // globalRootConfirmerSetInfo
-            initialOperatorSetConfig // globalRootConfirmerSetConfig
+            initialOperatorSetInfo // globalRootConfirmerSetInfo
         );
 
         console.log("Multichain contracts deployed successfully");
