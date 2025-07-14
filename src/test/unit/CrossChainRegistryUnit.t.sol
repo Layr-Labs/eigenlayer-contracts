@@ -149,6 +149,7 @@ contract CrossChainRegistryUnitTests_initialize is CrossChainRegistryUnitTests {
         );
 
         address newOwner = cheats.randomAddress();
+        uint32 initialTableUpdateCadence = 1 days;
         uint initialPausedStatus = (1 << PAUSED_GENERATION_RESERVATIONS) | (1 << PAUSED_OPERATOR_TABLE_CALCULATOR);
 
         CrossChainRegistry freshRegistry = CrossChainRegistry(
@@ -213,7 +214,7 @@ contract CrossChainRegistryUnitTests_createGenerationReservation is CrossChainRe
         OperatorSetConfig memory invalidConfig = _createOperatorSetConfig(cheats.randomAddress(), 1 days);
 
         cheats.expectRevert(InvalidStalenessPeriod.selector);
-        crossChainRegistry.createGenerationReservation(defaultOperatorSet, defaultCalculator, invalidConfig, defaultChainIDs);
+        crossChainRegistry.createGenerationReservation(defaultOperatorSet, defaultCalculator, invalidConfig);
     }
 
     function test_createGenerationReservation_Success() public {
@@ -802,7 +803,7 @@ contract CrossChainRegistryUnitTests_setTableUpdateCadence is CrossChainRegistry
 
     function test_setTableUpdateCadence_AffectsConfigValidation() public {
         // Create a reservation with a config
-        crossChainRegistry.createGenerationReservation(defaultOperatorSet, defaultCalculator, defaultConfig, defaultChainIDs);
+        crossChainRegistry.createGenerationReservation(defaultOperatorSet, defaultCalculator, defaultConfig);
 
         // Update table update cadence to be higher than existing config
         uint32 newTableUpdateCadence = 2 days;

@@ -255,6 +255,19 @@ contract CrossChainRegistry is
     }
 
     /**
+     * @dev Internal function to set the table update cadence
+     * @param tableUpdateCadence the table update cadence
+     * @dev The table update cadence cannot be 0 as that is special-cased to allow for certificates to ALWAYS be valid
+     */
+    function _setTableUpdateCadence(
+        uint32 tableUpdateCadence
+    ) internal {
+        require(tableUpdateCadence > 0, InvalidTableUpdateCadence());
+        _tableUpdateCadence = tableUpdateCadence;
+        emit TableUpdateCadenceSet(tableUpdateCadence);
+    }
+
+    /**
      *
      *                         VIEW FUNCTIONS
      *
