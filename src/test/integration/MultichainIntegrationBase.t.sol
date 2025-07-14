@@ -162,7 +162,7 @@ abstract contract MultichainIntegrationBase is IntegrationBase {
         });
 
         ICrossChainRegistryTypes.OperatorSetConfig memory initialOperatorSetConfig =
-            ICrossChainRegistryTypes.OperatorSetConfig({owner: address(0xDEADBEEF), maxStalenessPeriod: 10_000});
+            ICrossChainRegistryTypes.OperatorSetConfig({owner: address(0xDEADBEEF), maxStalenessPeriod: 0});
 
         OperatorSet memory globalRootConfirmerSet = OperatorSet({avs: address(0x6), id: 1});
 
