@@ -116,6 +116,23 @@
         "./src/contracts/**/*"
     ]
 
+[profile.default.lint]
+    # Specifies which lints to run based on severity.
+    severity = [
+        "high", 
+        "med", 
+        "low", 
+        "info", 
+        "gas"
+    ]
+    # List of lint IDs to exclude from checking (e.g., "mixed-case-function").
+    exclude_lints = []
+    # List of files or patterns to ignore when running the linter (can use glob patterns)
+    ignore = [
+        "src/test/**/*",
+        "script/**/*"
+    ]
+
 [profile.forktest.fuzz]    
     optimizer = false
     runs = 16
@@ -123,7 +140,6 @@
 [profile.coverage.fuzz]
     optimizer = false
     runs = 1
-    gas_limit = "18446744073709551615" # u64::MAX
 
 [profile.medium.fuzz]
     optimizer = false
