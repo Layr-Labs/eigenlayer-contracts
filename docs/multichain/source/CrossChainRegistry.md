@@ -189,7 +189,7 @@ The `owner` of the `CrossChainRegistry` can update the whitelisted chain IDs. If
 
 ```solidity
 /**
- * @notice Adds chainIDs to the whitelist of chainIDs that can be transported to
+ * @notice Adds chainIDs to the whitelist of chainIDs that are transported to by the multichain protocol
  * @param chainIDs the chainIDs to add to the whitelist
  * @param operatorTableUpdaters the operatorTableUpdaters for each whitelisted chainID
  * @dev msg.sender must be the owner of the CrossChainRegistry
@@ -292,7 +292,7 @@ function calculateOperatorTableBytes(
 ) external view returns (bytes memory);
 ```
 
-3. `getSupportedChains`: Gets all chains that can be transported to
+3. `getSupportedChains`: Gets all chains that can be transported to by the multichain protocol
 
 ```solidity
 /**

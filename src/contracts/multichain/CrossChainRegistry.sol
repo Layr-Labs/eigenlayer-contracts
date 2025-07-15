@@ -315,7 +315,7 @@ contract CrossChainRegistry is
     }
 
     /// @inheritdoc ICrossChainRegistry
-    function getSupportedChains() public view returns (uint256[] memory, address[] memory) {
+    function getSupportedChains() external view returns (uint256[] memory, address[] memory) {
         uint256 length = _whitelistedChainIDs.length();
         uint256[] memory chainIDs = new uint256[](length);
         address[] memory operatorTableUpdaters = new address[](length);

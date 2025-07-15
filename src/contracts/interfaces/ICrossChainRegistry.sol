@@ -128,7 +128,7 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
     function setOperatorSetConfig(OperatorSet calldata operatorSet, OperatorSetConfig calldata config) external;
 
     /**
-     * @notice Adds chainIDs to the whitelist of chainIDs that can be transported to
+     * @notice Adds chainIDs to the whitelist of chainIDs that are transported to by the multichain protocol
      * @param chainIDs the chainIDs to add to the whitelist
      * @param operatorTableUpdaters the operatorTableUpdaters for each whitelisted chainID
      * @dev msg.sender must be the owner of the CrossChainRegistry
@@ -136,7 +136,7 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
     function addChainIDsToWhitelist(uint256[] calldata chainIDs, address[] calldata operatorTableUpdaters) external;
 
     /**
-     * @notice Removes chainIDs from the whitelist of chainIDs that can be transported to
+     * @notice Removes chainIDs from the whitelist of chainIDs
      * @param chainIDs the chainIDs to remove from the whitelist
      * @dev msg.sender must be the owner of the CrossChainRegistry
      */
