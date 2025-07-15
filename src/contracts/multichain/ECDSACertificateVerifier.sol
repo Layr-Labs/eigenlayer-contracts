@@ -351,8 +351,16 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
     }
 
     /// @inheritdoc IECDSACertificateVerifier
-    function calculateCertificateDigest(uint32 referenceTimestamp, bytes32 messageHash) public view returns (bytes32) {
+    function calculateCertificateDigestBytes(
+        uint32 referenceTimestamp,
+        bytes32 messageHash
+    ) public view returns (bytes memory) {
         bytes32 structHash = keccak256(abi.encode(ECDSA_CERTIFICATE_TYPEHASH, referenceTimestamp, messageHash));
-        return _calculateSignableDigest(structHash);
+        return abi.encodePacked("\x19\x01", domainSeparator(), structHash);
+    }
+
+    /// @inheritdoc IECDSACertificateVerifier
+    function calculateCertificateDigest(uint32 referenceTimestamp, bytes32 messageHash) public view returns (bytes32) {
+        return keccak256(calculateCertificateDigestBytes(referenceTimestamp, messageHash));
     }
 }

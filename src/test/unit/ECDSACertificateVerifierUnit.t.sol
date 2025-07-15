@@ -1176,6 +1176,27 @@ contract ECDSACertificateVerifierUnitTests_ViewFunctions is ECDSACertificateVeri
         assertTrue(digest != differentDigest, "Different inputs should produce different digests");
     }
 
+    function test_calculateCertificateDigestBytes() public view {
+        bytes32 messageHash = keccak256("test");
+        uint32 timestamp = uint32(block.timestamp);
+
+        // Get the digest bytes
+        bytes memory digestBytes = verifier.calculateCertificateDigestBytes(timestamp, messageHash);
+
+        // Verify the bytes have the expected structure:
+        // - First 2 bytes should be "\x19\x01" (EIP-712 prefix)
+        // - Next 32 bytes should be the domain separator
+        // - Last 32 bytes should be the struct hash
+        assertEq(digestBytes.length, 66, "Digest bytes should be 66 bytes long (2 + 32 + 32)");
+        assertEq(digestBytes[0], bytes1(0x19), "First byte should be 0x19");
+        assertEq(digestBytes[1], bytes1(0x01), "Second byte should be 0x01");
+
+        // Verify that keccak256 of the digest bytes equals calculateCertificateDigest
+        bytes32 digestFromBytes = keccak256(digestBytes);
+        bytes32 digestDirect = verifier.calculateCertificateDigest(timestamp, messageHash);
+        assertEq(digestFromBytes, digestDirect, "Keccak256 of digest bytes should equal calculateCertificateDigest");
+    }
+
     function test_domainSeparator() public view {
         bytes32 domainSep = verifier.domainSeparator();
 
