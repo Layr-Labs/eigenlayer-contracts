@@ -76,5 +76,5 @@ abstract contract CrossChainRegistryStorage is ICrossChainRegistry {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[43] private __gap;
+    uint256[42] private __gap;
 }
