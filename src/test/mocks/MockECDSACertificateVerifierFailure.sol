@@ -106,4 +106,16 @@ contract MockECDSACertificateVerifierFailure is IECDSACertificateVerifier {
     function calculateCertificateDigest(uint32, /*referenceTimestamp*/ bytes32 /*messageHash*/ ) external pure returns (bytes32) {
         return bytes32(0);
     }
+
+    function getTotalStakeWeights(OperatorSet calldata, uint32) external pure returns (uint[] memory) {
+        return new uint[](0);
+    }
+
+    function calculateCertificateDigestBytes(uint32, bytes32) external pure returns (bytes memory) {
+        return "";
+    }
+
+    function isReferenceTimestampSet(OperatorSet memory, uint32) external pure returns (bool) {
+        return true;
+    }
 }
