@@ -34,6 +34,7 @@ Both verifiers implement staleness checks based on a `maxStalenessPeriod` to ens
 
 The `ECDSACertificateVerifier` implements ECDSA signature verification where each operator signs individually. For a given operatorSet, it stores the list of all operators and their corresponding weights. 
 
+
 ### Update Table
 The `operatorTableUpdater` will update the via a merkle proof of the table against the `globalTableRoot`. See [`operatorTableUpdater`](./OperatorTableUpdater.md#updateoperatortable) for more information. 
 
@@ -94,6 +95,8 @@ The contract supports 3 verification patterns:
 1. [Basic verification](#verifycertificate) - Returns the signed stakes for further processing
 2. [Proportional verification](#verifycertificateproportion) - Verifies against percentage-based thresholds
 3. [Nominal verification](#verifycertificatenominal) - Verifies against absolute stake thresholds
+
+For the `msgHash`, it is up to the off-chain AVS software to add relevant metadata to ensure that the `Certificate` cannot be reused across the same tasks. For example, an AVS can include a UID on the message hash for every task it creates. 
 
 #### `verifyCertificate`
 

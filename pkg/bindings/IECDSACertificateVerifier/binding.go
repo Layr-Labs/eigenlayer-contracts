@@ -236,6 +236,37 @@ func (_IECDSACertificateVerifier *IECDSACertificateVerifierCallerSession) Calcul
 	return _IECDSACertificateVerifier.Contract.CalculateCertificateDigest(&_IECDSACertificateVerifier.CallOpts, referenceTimestamp, messageHash)
 }
 
+// CalculateCertificateDigestBytes is a free data retrieval call binding the contract method 0x702ca531.
+//
+// Solidity: function calculateCertificateDigestBytes(uint32 referenceTimestamp, bytes32 messageHash) view returns(bytes)
+func (_IECDSACertificateVerifier *IECDSACertificateVerifierCaller) CalculateCertificateDigestBytes(opts *bind.CallOpts, referenceTimestamp uint32, messageHash [32]byte) ([]byte, error) {
+	var out []interface{}
+	err := _IECDSACertificateVerifier.contract.Call(opts, &out, "calculateCertificateDigestBytes", referenceTimestamp, messageHash)
+
+	if err != nil {
+		return *new([]byte), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([]byte)).(*[]byte)
+
+	return out0, err
+
+}
+
+// CalculateCertificateDigestBytes is a free data retrieval call binding the contract method 0x702ca531.
+//
+// Solidity: function calculateCertificateDigestBytes(uint32 referenceTimestamp, bytes32 messageHash) view returns(bytes)
+func (_IECDSACertificateVerifier *IECDSACertificateVerifierSession) CalculateCertificateDigestBytes(referenceTimestamp uint32, messageHash [32]byte) ([]byte, error) {
+	return _IECDSACertificateVerifier.Contract.CalculateCertificateDigestBytes(&_IECDSACertificateVerifier.CallOpts, referenceTimestamp, messageHash)
+}
+
+// CalculateCertificateDigestBytes is a free data retrieval call binding the contract method 0x702ca531.
+//
+// Solidity: function calculateCertificateDigestBytes(uint32 referenceTimestamp, bytes32 messageHash) view returns(bytes)
+func (_IECDSACertificateVerifier *IECDSACertificateVerifierCallerSession) CalculateCertificateDigestBytes(referenceTimestamp uint32, messageHash [32]byte) ([]byte, error) {
+	return _IECDSACertificateVerifier.Contract.CalculateCertificateDigestBytes(&_IECDSACertificateVerifier.CallOpts, referenceTimestamp, messageHash)
+}
+
 // DomainSeparator is a free data retrieval call binding the contract method 0xf698da25.
 //
 // Solidity: function domainSeparator() view returns(bytes32)
