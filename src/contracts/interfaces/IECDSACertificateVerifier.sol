@@ -18,7 +18,7 @@ interface IECDSACertificateVerifierTypes is IOperatorTableCalculatorTypes {
      * @param referenceTimestamp the timestamp at which the certificate was
      *        created, which MUST correspond to a reference timestamp of the operator table update
      * @param messageHash the hash of the message that was signed by the operators. The messageHash
-     *        should be calculated using `calculateCertificateDigest`
+     *        MUST be calculated using `calculateCertificateDigest`
      * @param sig the concatenated signature of each signing operator, in ascending order of signer address
      * @dev ECDSA certificates DO NOT support smart contract signatures
      */
