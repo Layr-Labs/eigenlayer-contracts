@@ -5,20 +5,20 @@ import {OperatorSet} from "../libraries/OperatorSetLib.sol";
 import "./IBaseCertificateVerifier.sol";
 import "./IOperatorTableCalculator.sol";
 
-interface IECDSACertificateVerifierTypes is IOperatorTableCalculatorTypes {
-    // Errors
+interface IECDSACertificateVerifierErrors {
     /// @notice Thrown when the signature length is invalid
     error InvalidSignatureLength();
     /// @notice Thrown when the signatures are not ordered by signer address
     error SignersNotOrdered();
+}
+interface IECDSACertificateVerifierTypes is IOperatorTableCalculatorTypes {    
     /**
-     * @notice A ECDSA Certificate
+     * @notice A Certificate used to verify a set of ECDSA signatures
      * @param referenceTimestamp the timestamp at which the certificate was created,
-     *        which corresponds to a reference timestamp of the operator table update
-     * @param messageHash the hash of the message that was signed by operators
+     *        which MUST correspond to a reference timestamp of the operator table update
+     * @param messageHash the hash of the message that was signed by the operators
      * @param sig the concatenated signature of each signing operator
      */
-
     struct ECDSACertificate {
         uint32 referenceTimestamp;
         bytes32 messageHash;
@@ -33,7 +33,7 @@ interface IECDSACertificateVerifierEvents is IECDSACertificateVerifierTypes {
 
 /// @notice An interface for verifying ECDSA certificates
 /// @notice This implements the base `IBaseCertificateVerifier` interface
-interface IECDSACertificateVerifier is IECDSACertificateVerifierEvents, IBaseCertificateVerifier {
+interface IECDSACertificateVerifier is IECDSACertificateVerifierEvents, IECDSACertificateVerifierErrors, IBaseCertificateVerifier {
     /**
      * @notice updates the operator table
      * @param operatorSet the operatorSet to update the operator table for
@@ -41,6 +41,7 @@ interface IECDSACertificateVerifier is IECDSACertificateVerifierEvents, IBaseCer
      * @param operatorInfos the operatorInfos to update the operator table with
      * @param operatorSetConfig the configuration of the operatorSet
      * @dev Only callable by the `OperatorTableUpdater`
+     * @dev The `referenceTimestamp` must correspond to a reference timestamp for a globalTableRoot stored in the `OperatorTableUpdater`
      * @dev The `referenceTimestamp` must be greater than the latest reference timestamp for the given operatorSet
      */
     function updateOperatorTable(
@@ -54,8 +55,7 @@ interface IECDSACertificateVerifier is IECDSACertificateVerifierEvents, IBaseCer
      * @notice verifies a certificate
      * @param operatorSet the operatorSet that the certificate is for
      * @param cert a certificate
-     * @return signedStakes amount of stake that signed the certificate for each stake
-     * type. Each index corresponds to a stake type in the `weights` array in the `ECDSAOperatorInfo`
+     * @return signedStakes total stake weight that signed the certificate for each stake type. Each index corresponds to a stake type in the `weights` array in the `ECDSAOperatorInfo`
      * @return signers array of addresses that signed the certificate
      */
     function verifyCertificate(
@@ -101,7 +101,7 @@ interface IECDSACertificateVerifier is IECDSACertificateVerifierEvents, IBaseCer
      * @notice Get operator infos for a timestamp
      * @param operatorSet The operator set
      * @param referenceTimestamp The reference timestamp
-     * @return The operator infos
+     * @return The operator infos, empty if the operatorSet has not been updated for the given reference timestamp
      */
     function getOperatorInfos(
         OperatorSet calldata operatorSet,
@@ -113,7 +113,7 @@ interface IECDSACertificateVerifier is IECDSACertificateVerifierEvents, IBaseCer
      * @param operatorSet The operator set
      * @param referenceTimestamp The reference timestamp
      * @param operatorIndex The index of the operator
-     * @return The operator info
+     * @return The operator info, empty if the operatorSet has not been updated for the given reference timestamp
      */
     function getOperatorInfo(
         OperatorSet calldata operatorSet,
@@ -125,7 +125,7 @@ interface IECDSACertificateVerifier is IECDSACertificateVerifierEvents, IBaseCer
      * @notice Get the total number of operators for a given reference timestamp
      * @param operatorSet The operator set
      * @param referenceTimestamp The reference timestamp
-     * @return The number of operators
+     * @return The number of operators, 0 if the operatorSet has not been updated for the given reference timestamp
      */
     function getOperatorCount(
         OperatorSet calldata operatorSet,

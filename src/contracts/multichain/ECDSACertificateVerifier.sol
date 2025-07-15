@@ -109,9 +109,9 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
         address[] memory signers = _parseSignatures(signableDigest, cert.sig);
 
         // Verify that signers are operators and add their weights to the signed stakes
-        uint256 numStakeCategories = getTotalStakes(operatorSet, cert.referenceTimestamp).length;
+        uint256 numStakeTypes = getTotalStakes(operatorSet, cert.referenceTimestamp).length;
         uint256[] memory signedStakes =
-            _processSigners(operatorSetKey, cert.referenceTimestamp, signers, numStakeCategories);
+            _processSigners(operatorSetKey, cert.referenceTimestamp, signers, numStakeTypes);
 
         return (signedStakes, signers);
     }
@@ -158,18 +158,18 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
      * @param operatorSetKey The key of the operator set
      * @param referenceTimestamp The reference timestamp of the certificate
      * @param signers The signers of the certificate
-     * @param numStakeCategories The number of stake types
+     * @param numStakeTypes The number of stake types
      * @return signedStakes The signed stakes
      */
     function _processSigners(
         bytes32 operatorSetKey,
         uint32 referenceTimestamp,
         address[] memory signers,
-        uint256 numStakeCategories
+        uint256 numStakeTypes
     ) internal view returns (uint256[] memory signedStakes) {
         uint256 operatorCount = _numOperators[operatorSetKey][referenceTimestamp];
 
-        signedStakes = new uint256[](numStakeCategories);
+        signedStakes = new uint256[](numStakeTypes);
 
         // Process each recovered signer
         for (uint256 i = 0; i < signers.length; i++) {
@@ -194,7 +194,7 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
 
             // Add this operator's weights to the signed stakes
             uint256[] memory weights = operatorInfo.weights;
-            for (uint256 j = 0; j < weights.length && j < numStakeCategories; j++) {
+            for (uint256 j = 0; j < weights.length && j < numStakeTypes; j++) {
                 signedStakes[j] += weights[j];
             }
         }

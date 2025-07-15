@@ -18,6 +18,7 @@ import "src/test/utils/Random.sol";
  */
 contract ECDSACertificateVerifierUnitTests is
     EigenLayerMultichainUnitTestSetup,
+    IECDSACertificateVerifierErrors,
     IECDSACertificateVerifierTypes,
     IECDSACertificateVerifierEvents,
     IBaseCertificateVerifierErrors
@@ -413,7 +414,7 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificate is ECDSACertificate
             sig: "" // Empty signatures
         });
 
-        vm.expectRevert(IECDSACertificateVerifierTypes.InvalidSignatureLength.selector);
+        vm.expectRevert(IECDSACertificateVerifierErrors.InvalidSignatureLength.selector);
         verifier.verifyCertificate(defaultOperatorSet, cert);
     }
 
@@ -429,7 +430,7 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificate is ECDSACertificate
             sig: invalidLengthSig
         });
 
-        vm.expectRevert(IECDSACertificateVerifierTypes.InvalidSignatureLength.selector);
+        vm.expectRevert(IECDSACertificateVerifierErrors.InvalidSignatureLength.selector);
         verifier.verifyCertificate(defaultOperatorSet, cert);
     }
 
@@ -496,7 +497,7 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificate is ECDSACertificate
 
         // Verification should fail - expect SignersNotOrdered because signature recovery
         // with wrong message hash produces different addresses that break ordering
-        vm.expectRevert(IECDSACertificateVerifierTypes.SignersNotOrdered.selector);
+        vm.expectRevert(IECDSACertificateVerifierErrors.SignersNotOrdered.selector);
         verifier.verifyCertificate(defaultOperatorSet, cert);
     }
 
@@ -750,7 +751,7 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificate is ECDSACertificate
         });
 
         // Should revert because signatures are not ordered by address
-        vm.expectRevert(IECDSACertificateVerifierTypes.SignersNotOrdered.selector);
+        vm.expectRevert(IECDSACertificateVerifierErrors.SignersNotOrdered.selector);
         verifier.verifyCertificate(defaultOperatorSet, cert);
     }
 
