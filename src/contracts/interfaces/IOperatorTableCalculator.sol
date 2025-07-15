@@ -12,7 +12,6 @@ interface IOperatorTableCalculatorTypes {
      * @param weights The weights of the operator for a single operatorSet
      * @dev The `weights` array can be defined as a list of arbitrary stake types. For example,
      * it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]
-     * 
      */
     struct BN254OperatorInfo {
         BN254.G1Point pubkey;
@@ -24,7 +23,7 @@ interface IOperatorTableCalculatorTypes {
      * @param operatorInfoTreeRoot The root of the operatorInfo tree
      * @param numOperators The number of operators in the operatorSet
      * @param aggregatePubkey The aggregate G1 public key of the operators in the operatorSet
-     * @param totalWeights The total weights of the operators in the operatorSet
+     * @param totalWeights The total stake weights of the operators in the operatorSet
      *
      * @dev The operatorInfoTreeRoot is the root of a merkle tree that contains the operatorInfos for each operator in the operatorSet.
      * It is calculated on-chain by the `BN254TableCalculator` and used by the `IBN254CertificateVerifier` to verify stakes against the non-signing operators

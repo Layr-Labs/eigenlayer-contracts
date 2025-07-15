@@ -73,13 +73,13 @@ interface IOperatorTableUpdater is
     ICrossChainRegistryTypes
 {
     /**
-     * @notice Confirms Global operator table root
-     * @param globalTableRootCert certificate of the root
+     * @notice Sets the global table root
+     * @param globalTableRootCert certificate of the global table root, signed by the `Generator`
      * @param globalTableRoot merkle root of all operatorSet tables
-     * @param referenceTimestamp timestamp of the root
-     * @param referenceBlockNumber block number of the root
+     * @param referenceTimestamp block timestamp at which the global table root was calculated
+     * @param referenceBlockNumber block number, corresponding to the `referenceTimestamp` of the global table root
      * @dev Any entity can submit with a valid certificate signed off by the `Generator`
-     * @dev The `msgHash` in the `globalOperatorTableRootCert` is the hash of the `globalOperatorTableRoot`
+     * @dev The `msgHash` in the `globalOperatorTableRootCert` is the hash of the `globalTableRoot`, `referenceTimestamp`, and `referenceBlockNumber`
      */
     function confirmGlobalTableRoot(
         BN254Certificate calldata globalTableRootCert,
@@ -117,7 +117,8 @@ interface IOperatorTableUpdater is
      * @param operatorSetIndex the index of the given operatorSet being updated
      * @param proof the proof of the leaf at index against the globalTableRoot
      * @param operatorTableBytes the bytes of the operator table
-     * @dev Depending on the decoded KeyType, the tableInfo will be decoded
+     * @dev This function calls `updateOperatorTable` on the `ECDSACertificateVerifier` or `BN254CertificateVerifier`
+     *      depending on the `KeyType` of the operatorSet, which is encoded in the `operatorTableBytes`
      */
     function updateOperatorTable(
         uint32 referenceTimestamp,
@@ -213,7 +214,7 @@ interface IOperatorTableUpdater is
     /**
      * @notice Get the reference timestamp of the generator
      * @return The reference timestamp of the generator
-     * @dev In V1, we only update the table of the generator on initial deployment, and never update it again.
+     * @dev The `Generator's` referenceTimestamp is hardcoded to 1. See `GENERATOR_REFERENCE_TIMESTAMP` in `OperatorTableUpdaterStorage.sol`
      */
     function getGeneratorReferenceTimestamp() external view returns (uint32);
 

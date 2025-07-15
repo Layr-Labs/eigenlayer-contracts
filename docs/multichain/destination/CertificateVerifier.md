@@ -284,9 +284,9 @@ struct BN254OperatorInfo {
 /**
  * @notice A struct that contains information about all operators for a given operatorSet
  * @param operatorInfoTreeRoot The root of the operatorInfo tree. Each leaf is a `BN254OperatorInfo` struct
- * @param numOperators The number of operators in the operatorSet.
- * @param aggregatePubkey The aggregate G1 public key of the operators in the operatorSet.
- * @param totalWeights The total weights of the operators in the operatorSet.
+ * @param numOperators The number of operators in the operatorSet
+ * @param aggregatePubkey The aggregate G1 public key of the operators in the operatorSet
+ * @param totalWeights The total stake weights of the operators in the operatorSet
  *
  * @dev The operatorInfoTreeRoot is the root of a merkle tree that contains the operatorInfos for each operator in the operatorSet.
  * It is calculated in this function and used by the `IBN254CertificateVerifier` to verify stakes against the non-signing operators
