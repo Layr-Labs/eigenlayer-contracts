@@ -42,13 +42,15 @@ The `operatorTableUpdater` will update the via a merkle proof of the table again
 
 ```solidity
 /**
- * @notice A struct that contains information about a single operator
+ * @notice A struct that contains information about a single operator for an ECDSA signing key
  * @param pubkey The address of the signing ECDSA key of the operator and not the operator address itself.
  * This is read from the KeyRegistrar contract.
  * @param weights The weights of the operator for a single operatorSet
- * @dev The `weights` array can be defined as a list of stake types. For example,
+ * 
+ * @dev The `weights` array can be defined as a list of arbitrary stake types. For example,
  * it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]
- * @dev The `weights` array should be the same length for each operator in the operatorSet.
+ * 
+ * @dev It is up to the AVS to define the `weights` array, which is used by the `IECDSACertificateVerifier` to verify Certificates
  */
 struct ECDSAOperatorInfo {
     address pubkey;
@@ -269,11 +271,14 @@ The `operatorTableUpdater` will update the table via a merkle proof against the 
 
 ```solidity
 /**
- * @notice A struct that contains information about a single operator
- * @param pubkey The G1 public key of the operator.
- * @param weights The weights of the operator for a single operatorSet.
- * @dev The `weights` array can be defined as a list of stake types. For example,
+ * @notice A struct that contains information about a single operator for a given BN254 operatorSet
+ * @param pubkey The G1 public key of the operator
+ * @param weights The weights of the operator for a single operatorSet
+ * 
+ * @dev The `weights` array is as a list of arbitrary stake types. For example,
  * it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]
+ * 
+ * @dev It is up to the AVS to define the `weights` array, which is used by the `IBN254CertificateVerifier` to verify Certificates
  */
 struct BN254OperatorInfo {
     BN254.G1Point pubkey;

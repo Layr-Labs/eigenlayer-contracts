@@ -10,8 +10,11 @@ interface IOperatorTableCalculatorTypes {
      * @notice A struct that contains information about a single operator for a given BN254 operatorSet
      * @param pubkey The G1 public key of the operator
      * @param weights The weights of the operator for a single operatorSet
-     * @dev The `weights` array can be defined as a list of arbitrary stake types. For example,
+     * 
+     * @dev The `weights` array is as a list of arbitrary stake types. For example,
      * it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]
+     * 
+     * @dev It is up to the AVS to define the `weights` array, which is used by the `IBN254CertificateVerifier` to verify Certificates
      */
     struct BN254OperatorInfo {
         BN254.G1Point pubkey;
@@ -46,8 +49,11 @@ interface IOperatorTableCalculatorTypes {
      * @param pubkey The address of the signing ECDSA key of the operator and not the operator address itself.
      * This is read from the KeyRegistrar contract.
      * @param weights The weights of the operator for a single operatorSet
+     * 
      * @dev The `weights` array can be defined as a list of arbitrary stake types. For example,
      * it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]
+     * 
+     * @dev It is up to the AVS to define the `weights` array, which is used by the `IECDSACertificateVerifier` to verify Certificates
      */
     struct ECDSAOperatorInfo {
         address pubkey;
@@ -56,7 +62,7 @@ interface IOperatorTableCalculatorTypes {
 }
 
 /// @notice A base operator table calculator that all operator table calculators (ECDSA, BN254) must implement
-/// @dev This interface is implemented by the AVS in their own `OperatorTableCalculator` contract, see the LayrLabs/middleware repository for an example implementation
+/// @dev This interface is implemented by the AVS in their own `OperatorTableCalculator` contract, see the Lay-Labs/middleware repository for an example implementation
 interface IOperatorTableCalculator {
     /**
      * @notice Calculates the operator table, in bytes, for a given operatorSet
@@ -84,7 +90,7 @@ interface IOperatorTableCalculator {
      * @param operatorSet The operatorSet to get the weight for
      * @param operator The operator to get the weight for
      * @return weights The weights for the operator in the operatorSet
-     * @dev The `weights` array can be defined as a list of stake types. For example,
+     * @dev The `weights` array is as a list of arbitrary stake types. For example,
      * it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]
      */
     function getOperatorWeights(
