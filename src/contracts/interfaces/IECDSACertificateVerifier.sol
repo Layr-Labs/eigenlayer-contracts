@@ -170,7 +170,7 @@ interface IECDSACertificateVerifier is
      * @dev Note: This does not support smart contract based signatures for multichain
      * @dev This is a chain-agnostic digest, so it can be used to verify certificates across
      *      multiple destination chains
-     * @dev this function returns the raw bytes of the digest, which still need to be hashed
+     * @dev This function returns the raw bytes of the digest, which still need to be hashed
      *      before signing with ECDSA
      */
     function calculateCertificateDigestBytes(
