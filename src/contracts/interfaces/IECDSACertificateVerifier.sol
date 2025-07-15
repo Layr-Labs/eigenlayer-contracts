@@ -15,10 +15,11 @@ interface IECDSACertificateVerifierErrors {
 interface IECDSACertificateVerifierTypes is IOperatorTableCalculatorTypes {
     /**
      * @notice A Certificate used to verify a set of ECDSA signatures
-     * @param referenceTimestamp the timestamp at which the certificate was created,
-     *        which MUST correspond to a reference timestamp of the operator table update
+     * @param referenceTimestamp the timestamp at which the certificate was 
+     *        created, which MUST correspond to a reference timestamp of the operator table update
      * @param messageHash the hash of the message that was signed by the operators
      * @param sig the concatenated signature of each signing operator
+     * @dev ECDSA certificates DO NOT support smart contract signatures
      */
     struct ECDSACertificate {
         uint32 referenceTimestamp;
@@ -60,8 +61,11 @@ interface IECDSACertificateVerifier is
      * @notice verifies a certificate
      * @param operatorSet the operatorSet that the certificate is for
      * @param cert a certificate
-     * @return signedStakes total stake weight that signed the certificate for each stake type. Each index corresponds to a stake type in the `weights` array in the `ECDSAOperatorInfo`
+     * @return signedStakes total stake weight that signed the certificate for each stake type. Each
+     * index corresponds to a stake type in the `weights` array in the `ECDSAOperatorInfo`
      * @return signers array of addresses that signed the certificate
+     * @dev Signed stakes are the total stake weight that has been signed for each stake type
+     * @dev This function DOES NOT support smart contact signatures
      */
     function verifyCertificate(
         OperatorSet calldata operatorSet,

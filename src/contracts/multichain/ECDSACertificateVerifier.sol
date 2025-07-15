@@ -158,7 +158,7 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
      * @param referenceTimestamp The reference timestamp of the certificate
      * @param signers The signers of the certificate
      * @param numStakeTypes The number of stake types
-     * @return signedStakes The signed stakes
+     * @return signedStakes The total stake weight that has been signed for each stake type
      */
     function _processSigners(
         bytes32 operatorSetKey,

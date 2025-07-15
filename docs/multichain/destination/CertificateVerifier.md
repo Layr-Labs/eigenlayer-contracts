@@ -110,6 +110,7 @@ For the `msgHash`, it is up to the off-chain AVS software to add relevant metada
  *        created, which MUST correspond to a reference timestamp of the operator table update
  * @param messageHash the hash of the message that was signed by the operators
  * @param sig the concatenated signature of each signing operator
+ * @dev ECDSA certificates DO NOT support smart contract signatures
  */
 struct ECDSACertificate {
     uint32 referenceTimestamp;
