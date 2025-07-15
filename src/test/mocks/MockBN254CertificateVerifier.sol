@@ -107,4 +107,8 @@ contract MockBN254CertificateVerifier is IBN254CertificateVerifier {
             totalWeights: totalWeights
         });
     }
+
+    function isReferenceTimestampSet(OperatorSet memory, uint32) external pure returns (bool) {
+        return true;
+    }
 }
