@@ -443,14 +443,14 @@ func (_IECDSACertificateVerifier *IECDSACertificateVerifierCaller) GetTotalStake
 //
 // Solidity: function getTotalStakes((address,uint32) operatorSet, uint32 referenceTimestamp) view returns(uint256[])
 func (_IECDSACertificateVerifier *IECDSACertificateVerifierSession) GetTotalStakes(operatorSet OperatorSet, referenceTimestamp uint32) ([]*big.Int, error) {
-	return _IECDSACertificateVerifier.Contract.GetTotalStakes(&_IECDSACertificateVerifier.CallOpts, operatorSet, referenceTimestamp)
+	return _IECDSACertificateVerifier.Contract.getTotalStakeWeights(&_IECDSACertificateVerifier.CallOpts, operatorSet, referenceTimestamp)
 }
 
 // GetTotalStakes is a free data retrieval call binding the contract method 0x04cdbae4.
 //
 // Solidity: function getTotalStakes((address,uint32) operatorSet, uint32 referenceTimestamp) view returns(uint256[])
 func (_IECDSACertificateVerifier *IECDSACertificateVerifierCallerSession) GetTotalStakes(operatorSet OperatorSet, referenceTimestamp uint32) ([]*big.Int, error) {
-	return _IECDSACertificateVerifier.Contract.GetTotalStakes(&_IECDSACertificateVerifier.CallOpts, operatorSet, referenceTimestamp)
+	return _IECDSACertificateVerifier.Contract.getTotalStakeWeights(&_IECDSACertificateVerifier.CallOpts, operatorSet, referenceTimestamp)
 }
 
 // IsReferenceTimestampSet is a free data retrieval call binding the contract method 0xcd83a72b.

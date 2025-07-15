@@ -109,7 +109,7 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
         address[] memory signers = _parseSignatures(signableDigest, cert.sig);
 
         // Verify that signers are operators and add their weights to the signed stakes
-        uint256 numStakeTypes = getTotalStakes(operatorSet, cert.referenceTimestamp).length;
+        uint256 numStakeTypes = getTotalStakeWeights(operatorSet, cert.referenceTimestamp).length;
         uint256[] memory signedStakes = _processSigners(operatorSetKey, cert.referenceTimestamp, signers, numStakeTypes);
 
         return (signedStakes, signers);
@@ -254,7 +254,7 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
         uint16[] calldata totalStakeProportionThresholds
     ) external view returns (bool, address[] memory) {
         (uint256[] memory signedStakes, address[] memory signers) = _verifyECDSACertificate(operatorSet, cert);
-        uint256[] memory totalStakes = getTotalStakes(operatorSet, cert.referenceTimestamp);
+        uint256[] memory totalStakes = getTotalStakeWeights(operatorSet, cert.referenceTimestamp);
         require(signedStakes.length == totalStakeProportionThresholds.length, ArrayLengthMismatch());
         for (uint256 i = 0; i < signedStakes.length; i++) {
             uint256 threshold = (totalStakes[i] * totalStakeProportionThresholds[i]) / BPS_DENOMINATOR;
@@ -318,7 +318,7 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
     }
 
     /// @inheritdoc IECDSACertificateVerifier
-    function getTotalStakes(
+    function getTotalStakeWeights(
         OperatorSet calldata operatorSet,
         uint32 referenceTimestamp
     ) public view returns (uint256[] memory) {

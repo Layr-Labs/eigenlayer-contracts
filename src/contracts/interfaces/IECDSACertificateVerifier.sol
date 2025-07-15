@@ -17,8 +17,9 @@ interface IECDSACertificateVerifierTypes is IOperatorTableCalculatorTypes {
      * @notice A Certificate used to verify a set of ECDSA signatures
      * @param referenceTimestamp the timestamp at which the certificate was
      *        created, which MUST correspond to a reference timestamp of the operator table update
-     * @param messageHash the hash of the message that was signed by the operators
-     * @param sig the concatenated signature of each signing operator
+     * @param messageHash the hash of the message that was signed by the operators. The messageHash
+     *        should be calculated using `calculateCertificateDigest`
+     * @param sig the concatenated signature of each signing operator, in ascending order of signer address
      * @dev ECDSA certificates DO NOT support smart contract signatures
      */
     struct ECDSACertificate {
@@ -145,9 +146,9 @@ interface IECDSACertificateVerifier is
      * @notice Get the total stake weights for all operators at a given reference timestamp
      * @param operatorSet The operator set to calculate stakes for
      * @param referenceTimestamp The reference timestamp
-     * @return totalStakes The total stake weights for all operators,
+     * @return totalStakes The sum of stake weights for each stake type, empty if the operatorSet has not been updated for the given reference timestamp
      */
-    function getTotalStakes(
+    function getTotalStakeWeights(
         OperatorSet calldata operatorSet,
         uint32 referenceTimestamp
     ) external view returns (uint256[] memory);
