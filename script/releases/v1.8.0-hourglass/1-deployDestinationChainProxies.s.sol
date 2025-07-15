@@ -1,0 +1,113 @@
+// SPDX-License-Identifier: BUSL-1.1
+pragma solidity ^0.8.12;
+
+import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {MultisigBuilder} from "zeus-templates/templates/MultisigBuilder.sol";
+import {CrosschainDeployLib} from "script/releases/CrosschainDeployLib.sol";
+import "../Env.sol";
+
+/**
+ * Purpose: Deploy proxy contracts for the TaskMailbox on destination chains using a multisig.
+ */
+contract DeployDestinationChainProxies is MultisigBuilder {
+    using Env for *;
+
+    /// forgefmt: disable-next-item
+    function _runAsMultisig() internal virtual override {
+        // If we're not on a destination chain, we don't need to deploy any contracts
+        if (!Env.isDestinationChain()) {
+            return;
+        }
+
+        // We don't use the prank modifier here, since we have to write to the env
+        _startPrank(Env.multichainDeployerMultisig());
+
+        // Check if empty contract already exists, if not deploy it
+        address emptyContract = CrosschainDeployLib.computeCrosschainAddress({
+            deployer: Env.multichainDeployerMultisig(),
+            initCodeHash: keccak256(type(EmptyContract).creationCode),
+            name: type(EmptyContract).name
+        });
+        
+        if (emptyContract.code.length == 0) {
+            emptyContract = CrosschainDeployLib.deployEmptyContract(Env.multichainDeployerMultisig());
+        }
+
+        // Deploy the proxy pointing to an empty contract
+        ITransparentUpgradeableProxy taskMailboxProxy = CrosschainDeployLib.deployCrosschainProxy({
+            implementation: emptyContract,
+            adminAndDeployer: Env.multichainDeployerMultisig(),
+            name: type(TaskMailbox).name
+        });
+
+        // Stop pranking
+        _stopPrank();
+
+        _unsafeAddProxyContract(type(TaskMailbox).name, address(taskMailboxProxy));
+    }
+
+    function testScript() public virtual {
+        if (!Env.isDestinationChain()) {
+            return;
+        }
+
+        execute();
+
+        _validateProxyAdminIsMultisig();
+    }
+
+    /// @dev Validate that proxies are owned by the multichain deployer multisig (temporarily)
+    function _validateProxyAdminIsMultisig() internal view {
+        address multisig = Env.multichainDeployerMultisig();
+
+        assertTrue(
+            _getProxyAdminBySlot(address(Env.proxy.taskMailbox())) == multisig,
+            "taskMailbox proxyAdmin should be multisig"
+        );
+    }
+
+    /// @dev We have to use the slot directly since _getProxyAdmin expects the caller to be the actual proxy admin
+    function _getProxyAdminBySlot(
+        address _proxy
+    ) internal view returns (address) {
+        bytes32 adminSlot = 0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
+        address admin = address(uint160(uint256(vm.load(address(_proxy), adminSlot))));
+        return admin;
+    }
+
+    /// @dev Check if the proxies are deployed by checking if the empty contract is deployed
+    function _areProxiesDeployed() internal view returns (bool) {
+        address expectedEmptyContract = CrosschainDeployLib.computeCrosschainAddress({
+            deployer: Env.multichainDeployerMultisig(),
+            initCodeHash: keccak256(type(EmptyContract).creationCode),
+            name: type(EmptyContract).name
+        });
+
+        // If the empty contract is deployed, then the proxies are deployed
+        if (expectedEmptyContract.code.length > 0) {
+            return true;
+        }
+        return false;
+    }
+
+    /// @dev Add the contracts to the env
+    function _addContractsToEnv() internal {
+        address emptyContract = CrosschainDeployLib.computeCrosschainAddress({
+            deployer: Env.multichainDeployerMultisig(),
+            initCodeHash: keccak256(type(EmptyContract).creationCode),
+            name: type(EmptyContract).name
+        });
+        _unsafeAddProxyContract(
+            type(TaskMailbox).name, _computeExpectedProxyAddress(type(TaskMailbox).name, emptyContract)
+        );
+    }
+
+    /// @dev Compute the expected proxy address for a given name and empty contract
+    function _computeExpectedProxyAddress(string memory name, address emptyContract) internal view returns (address) {
+        return CrosschainDeployLib.computeCrosschainUpgradeableProxyAddress({
+            adminAndDeployer: Env.multichainDeployerMultisig(),
+            implementation: emptyContract,
+            name: name
+        });
+    }
+}
