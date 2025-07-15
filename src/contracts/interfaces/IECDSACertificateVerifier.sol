@@ -11,7 +11,8 @@ interface IECDSACertificateVerifierErrors {
     /// @notice Thrown when the signatures are not ordered by signer address
     error SignersNotOrdered();
 }
-interface IECDSACertificateVerifierTypes is IOperatorTableCalculatorTypes {    
+
+interface IECDSACertificateVerifierTypes is IOperatorTableCalculatorTypes {
     /**
      * @notice A Certificate used to verify a set of ECDSA signatures
      * @param referenceTimestamp the timestamp at which the certificate was created,
@@ -33,7 +34,11 @@ interface IECDSACertificateVerifierEvents is IECDSACertificateVerifierTypes {
 
 /// @notice An interface for verifying ECDSA certificates
 /// @notice This implements the base `IBaseCertificateVerifier` interface
-interface IECDSACertificateVerifier is IECDSACertificateVerifierEvents, IECDSACertificateVerifierErrors, IBaseCertificateVerifier {
+interface IECDSACertificateVerifier is
+    IECDSACertificateVerifierEvents,
+    IECDSACertificateVerifierErrors,
+    IBaseCertificateVerifier
+{
     /**
      * @notice updates the operator table
      * @param operatorSet the operatorSet to update the operator table for

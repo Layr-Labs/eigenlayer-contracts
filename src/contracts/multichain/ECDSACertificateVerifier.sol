@@ -110,8 +110,7 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
 
         // Verify that signers are operators and add their weights to the signed stakes
         uint256 numStakeTypes = getTotalStakes(operatorSet, cert.referenceTimestamp).length;
-        uint256[] memory signedStakes =
-            _processSigners(operatorSetKey, cert.referenceTimestamp, signers, numStakeTypes);
+        uint256[] memory signedStakes = _processSigners(operatorSetKey, cert.referenceTimestamp, signers, numStakeTypes);
 
         return (signedStakes, signers);
     }
