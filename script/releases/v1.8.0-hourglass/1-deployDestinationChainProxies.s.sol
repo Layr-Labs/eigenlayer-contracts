@@ -43,6 +43,8 @@ contract DeployDestinationChainProxies is MultisigBuilder {
         // Stop pranking
         _stopPrank();
 
+        // Save all the contracts to the env
+        _unsafeAddImplContract(type(EmptyContract).name, emptyContract);
         _unsafeAddProxyContract(type(TaskMailbox).name, address(taskMailboxProxy));
     }
 
