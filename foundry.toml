@@ -140,6 +140,7 @@
 [profile.coverage.fuzz]
     optimizer = false
     runs = 1
+    gas_limit = "18446744073709551615" # u64::MAX
 
 [profile.medium.fuzz]
     optimizer = false
