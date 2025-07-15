@@ -15,7 +15,7 @@ interface IECDSACertificateVerifierErrors {
 interface IECDSACertificateVerifierTypes is IOperatorTableCalculatorTypes {
     /**
      * @notice A Certificate used to verify a set of ECDSA signatures
-     * @param referenceTimestamp the timestamp at which the certificate was 
+     * @param referenceTimestamp the timestamp at which the certificate was
      *        created, which MUST correspond to a reference timestamp of the operator table update
      * @param messageHash the hash of the message that was signed by the operators
      * @param sig the concatenated signature of each signing operator
