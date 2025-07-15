@@ -10,6 +10,9 @@ import {IKeyRegistrarTypes} from "../../interfaces/IKeyRegistrar.sol";
  * @notice Storage contract for the TaskMailbox contract.
  */
 abstract contract TaskMailboxStorage is ITaskMailbox {
+    /// @notice Equivalent to 100%, but in basis points.
+    uint16 internal constant ONE_HUNDRED_IN_BIPS = 10_000;
+
     /// @notice Immutable BN254 certificate verifier
     address public immutable BN254_CERTIFICATE_VERIFIER;
 

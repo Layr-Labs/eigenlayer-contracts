@@ -205,7 +205,7 @@ contract TaskMailbox is
         // Transfer fee to the fee collector if there's a fee to transfer
         if (task.executorOperatorSetTaskConfig.feeToken != IERC20(address(0)) && task.avsFee > 0) {
             // Calculate fee split amount
-            uint96 feeSplitAmount = ((uint256(task.avsFee) * task.feeSplit) / 10_000).toUint96();
+            uint96 feeSplitAmount = ((uint256(task.avsFee) * task.feeSplit) / ONE_HUNDRED_IN_BIPS).toUint96();
 
             // Transfer split to fee split collector if there's a split
             if (feeSplitAmount > 0) {
@@ -276,7 +276,7 @@ contract TaskMailbox is
     function _setFeeSplit(
         uint16 _feeSplit
     ) internal {
-        require(_feeSplit <= 10_000, InvalidFeeSplit());
+        require(_feeSplit <= ONE_HUNDRED_IN_BIPS, InvalidFeeSplit());
         feeSplit = _feeSplit;
         emit FeeSplitSet(_feeSplit);
     }
@@ -355,7 +355,7 @@ contract TaskMailbox is
             // Decode and validate the stake proportion threshold
             require(consensus.value.length == 32, InvalidConsensusValue());
             uint16 stakeProportionThreshold = abi.decode(consensus.value, (uint16));
-            require(stakeProportionThreshold <= 10_000, InvalidConsensusValue());
+            require(stakeProportionThreshold <= ONE_HUNDRED_IN_BIPS, InvalidConsensusValue());
         } else {
             revert InvalidConsensusType();
         }
