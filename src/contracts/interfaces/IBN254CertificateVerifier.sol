@@ -87,10 +87,10 @@ interface IBN254CertificateVerifier is
 
     /**
      * @notice verifies a certificate and makes sure that the signed stakes meet
-     * provided portions of the total stake on the AVS
+     * provided portions of the total stake weight on the AVS
      * @param operatorSet the operatorSet that the certificate is for
      * @param cert the certificate
-     * @param totalStakeProportionThresholds the proportion, in BPS,of total stake that
+     * @param totalStakeProportionThresholds the proportion, in BPS, of total stake weight that
      * the signed stake of the certificate should meet. Each index corresponds to
      * a stake type in the `totalWeights` array in the `BN254OperatorSetInfo`.
      * @return whether or not certificate is valid and meets proportion thresholds

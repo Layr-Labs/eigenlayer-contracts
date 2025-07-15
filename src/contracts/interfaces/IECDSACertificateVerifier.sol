@@ -65,10 +65,10 @@ interface IECDSACertificateVerifier is IECDSACertificateVerifierEvents, IBaseCer
 
     /**
      * @notice verifies a certificate and makes sure that the signed stakes meet
-     * provided portions of the total stake on the AVS
+     * provided portions of the total stake weight on the AVS
      * @param operatorSet the operatorSet to verify the certificate for
      * @param cert a certificate
-     * @param totalStakeProportionThresholds the proportion, in BPS, of total stake that
+     * @param totalStakeProportionThresholds the proportion, in BPS, of total stake weight that
      * the signed stake of the certificate should meet. Each index corresponds to
      * a stake type in the `weights` array in the `ECDSAOperatorInfo`
      * @return Whether or not the certificate is valid and meets thresholds
@@ -85,7 +85,7 @@ interface IECDSACertificateVerifier is IECDSACertificateVerifierEvents, IBaseCer
      * provided nominal stake thresholds
      * @param operatorSet the operatorSet that the certificate is for
      * @param cert a certificate
-     * @param totalStakeNominalThresholds the nominal amount of total stake that
+     * @param totalStakeNominalThresholds the nominal amount of total stake weight that
      * the signed stake of the certificate should meet. Each index corresponds to
      * a stake type in the `weights` array in the `ECDSAOperatorInfo`
      * @return Whether or not the certificate is valid and meets thresholds
@@ -133,10 +133,10 @@ interface IECDSACertificateVerifier is IECDSACertificateVerifierEvents, IBaseCer
     ) external view returns (uint32);
 
     /**
-     * @notice Get the total stakes for all operators at a given reference timestamp
+     * @notice Get the total stake weights for all operators at a given reference timestamp
      * @param operatorSet The operator set to calculate stakes for
      * @param referenceTimestamp The reference timestamp
-     * @return totalStakes The total stakes for all operators,
+     * @return totalStakes The total stake weights for all operators,
      */
     function getTotalStakes(
         OperatorSet calldata operatorSet,

@@ -102,7 +102,7 @@ contract BN254CertificateVerifier is Initializable, BN254CertificateVerifierStor
         require(signedStakes.length == totalStakeProportionThresholds.length, ArrayLengthMismatch());
 
         for (uint256 i = 0; i < signedStakes.length; i++) {
-            // Calculate threshold as proportion of total stake
+            // Calculate threshold as proportion of total stake weight
             // totalStakeProportionThresholds is in basis points (e.g. 6600 = 66%)
             uint256 threshold = (totalStakes[i] * totalStakeProportionThresholds[i]) / BPS_DENOMINATOR;
 
@@ -155,7 +155,7 @@ contract BN254CertificateVerifier is Initializable, BN254CertificateVerifierStor
         _validateCertificateTimestamp(ctx.operatorSetKey, cert.referenceTimestamp);
         ctx.operatorSetInfo = _operatorSetInfos[ctx.operatorSetKey][cert.referenceTimestamp];
 
-        // Initialize signed stakes with total stakes
+        // Initialize signed stakes with total stake weights
         ctx.signedStakes = new uint256[](ctx.operatorSetInfo.totalWeights.length);
         for (uint256 i = 0; i < ctx.operatorSetInfo.totalWeights.length; i++) {
             ctx.signedStakes[i] = ctx.operatorSetInfo.totalWeights[i];
