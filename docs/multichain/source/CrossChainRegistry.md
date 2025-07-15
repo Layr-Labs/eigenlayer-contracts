@@ -16,6 +16,8 @@ Libraries and Mixins:
 
 The `CrossChainRegistry` manages the registration/deregistration of operatorSets to the multichain protocol. The contract also exposes read-only functions to calculate an operator table, which is used offchain by the `Generator` to generate a `GlobalTableRoot` and `Transporter` to transport the operator table. See [ELIP-007](https://github.com/eigenfoundation/ELIPs/blob/main/ELIPs/ELIP-007.md) for more information.
 
+*Note: Operator tables are transported to all destination chains, regardless if the operatorSet is consumed on a destination chain.*
+
 ```solidity
 /**
  * @notice A per-operatorSet configuration struct that is transported from the CrossChainRegistry on L1.
@@ -55,28 +57,24 @@ A generation reservation registers the operatorSet to be included in the `Global
  * @param operatorSet the operatorSet to make a reservation for
  * @param operatorTableCalculator the address of the operatorTableCalculator
  * @param config the config to set for the operatorSet
- * @param chainIDs the chainIDs to add as transport destinations
  * @dev msg.sender must be UAM permissioned for operatorSet.avs
  */
 function createGenerationReservation(
     OperatorSet calldata operatorSet,
     IOperatorTableCalculator operatorTableCalculator,
-    OperatorSetConfig calldata config,
-    uint256[] calldata chainIDs
+    OperatorSetConfig calldata config
 ) external;
 ```
 
-Creates a generation reservation for a given `operatorSet`, which enables the operatorSet to be included in the `GlobalTableRoot` generation and transported to specified destination chains. This function sets up the complete configuration for cross-chain operations in a single transaction.
+Creates a generation reservation for a given `operatorSet`, which enables the operatorSet to be included in the `GlobalTableRoot` generation and transported to all destination chains. This function sets up the complete configuration for cross-chain operations in a single transaction.
 
 *Effects*:
 * Adds the `operatorSet` to `_activeGenerationReservations`
 * Sets the `operatorTableCalculator` for the `operatorSet`
 * Sets the `OperatorSetConfig` containing the `owner` and `maxStalenessPeriod`
-* Adds all specified `chainIDs` as transport destinations
 * Emits a `GenerationReservationCreated` event
 * Emits an `OperatorTableCalculatorSet` event
 * Emits an `OperatorSetConfigSet` event
-* Emits a `TransportDestinationChainAdded` event for each added chain
 
 *Requirements*:
 * The global paused status MUST NOT be set: `PAUSED_GENERATION_RESERVATIONS`
@@ -104,11 +102,9 @@ Removes a generation reservation for a given `operatorSet` and clears all associ
 *Effects*:
 * Removes the `operatorTableCalculator` mapping for the `operatorSet`
 * Removes the `operatorSetConfig` mapping for the `operatorSet`
-* Removes all transport destinations for the `operatorSet`
 * Removes the `operatorSet` from `_activeGenerationReservations`
 * Emits an `OperatorTableCalculatorRemoved` event
 * Emits an `OperatorSetConfigRemoved` event
-* Emits a `TransportDestinationsRemoved` event
 * Emits a `GenerationReservationRemoved` event
 
 *Requirements*:
@@ -184,67 +180,6 @@ Updates the operator set configuration for a given `operatorSet`. The config con
   * 0 (special case allowing certificates to always be valid)
   * Greater than or equal to the table update cadence
 
-### `addTransportDestinations` 
-
-```solidity
-/**
- * @notice Adds destination chains to transport to
- * @param operatorSet the operatorSet to add transport destinations for
- * @param chainIDs to add transport to
- * @dev msg.sender must be UAM permissioned for operatorSet.avs
- * @dev Will create a transport reservation if one doesn't exist
- */
-function addTransportDestinations(
-    OperatorSet calldata operatorSet, 
-    uint256[] calldata chainIDs
-) external;
-```
-
-Adds destination chain IDs to the transport list for a given `operatorSet`. These chains will receive the operator table data during cross-chain transports.
-
-*Effects*:
-* Adds each `chainID` to the `_transportDestinations` set for the `operatorSet`
-* Emits a `TransportDestinationChainAdded` event for each successfully added chain
-
-*Requirements*:
-* The global paused status MUST NOT be set: `PAUSED_TRANSPORT_DESTINATIONS`
-* Caller MUST be UAM permissioned for `operatorSet.avs`
-* The `operatorSet` MUST exist in the `AllocationManager`
-* A generation reservation MUST exist for the `operatorSet`
-* At least one `chainID` MUST be provided
-* All provided `chainIDs` MUST be whitelisted
-* Each `chainID` MUST NOT already be a transport destination
-
-### `removeTransportDestinations`
-
-```solidity
-/**
- * @notice Removes destination chains to transport to
- * @param operatorSet the operatorSet to remove transport destinations for
- * @param chainIDs to remove transport to
- * @dev msg.sender must be UAM permissioned for operatorSet.avs
- * @dev Will remove the transport reservation if all destinations are removed
- */
-function removeTransportDestinations(
-    OperatorSet calldata operatorSet, 
-    uint256[] calldata chainIDs
-) external;
-```
-
-Removes destination chain IDs from the transport list for a given `operatorSet`. 
-
-*Effects*:
-* Removes each `chainID` from the `_transportDestinations` set for the `operatorSet`
-* Emits a `TransportDestinationChainRemoved` event for each successfully removed chain
-
-*Requirements*:
-* The global paused status MUST NOT be set: `PAUSED_TRANSPORT_DESTINATIONS`
-* Caller MUST be UAM permissioned for `operatorSet.avs`
-* The `operatorSet` MUST exist in the `AllocationManager`
-* A generation reservation MUST exist for the `operatorSet`
-* Each `chainID` MUST exist in the transport destinations
-* At least one transport destination MUST remain after removal (use `removeGenerationReservation` to remove all)
-
 ---
 
 ## System Configuration
@@ -254,7 +189,7 @@ The `owner` of the `CrossChainRegistry` can update the whitelisted chain IDs. If
 
 ```solidity
 /**
- * @notice Adds chainIDs to the whitelist of chainIDs that can be transported to
+ * @notice Adds chainIDs to the whitelist of chainIDs that are transported to by the multichain protocol
  * @param chainIDs the chainIDs to add to the whitelist
  * @param operatorTableUpdaters the operatorTableUpdaters for each whitelisted chainID
  * @dev msg.sender must be the owner of the CrossChainRegistry
@@ -262,7 +197,7 @@ The `owner` of the `CrossChainRegistry` can update the whitelisted chain IDs. If
 function addChainIDsToWhitelist(uint256[] calldata chainIDs, address[] calldata operatorTableUpdaters) external;
 ```
 
-Adds chain IDs to the global whitelist, enabling them as valid transport destinations. Each chain ID is associated with an operator table updater address that will be responsible for updating operator tables on that chain.
+Adds chain IDs to the global whitelist, enabling them as valid transport destinations. Each chain ID is associated with an `OperatorTableUpdater` address that will be responsible for updating operator tables on that chain. In practice, the `OperatorTableUpdater` address will be the same across all chains. 
 
 *Effects*:
 * Adds each `chainID` and its corresponding `operatorTableUpdater` to the `_whitelistedChainIDs` mapping
@@ -288,7 +223,7 @@ function removeChainIDsFromWhitelist(
 ) external;
 ```
 
-Removes chain IDs from the global whitelist, preventing them from being used as transport destinations. Note that existing transport destinations for operator sets will continue to filter out non-whitelisted chains when queried.
+Removes chain IDs from the global whitelist, preventing them from being used as transport destinations. 
 
 *Effects*:
 * Removes each `chainID` from the `_whitelistedChainIDs` mapping
@@ -357,13 +292,13 @@ function calculateOperatorTableBytes(
 ) external view returns (bytes memory);
 ```
 
-3. `getActiveTransportReservations`: Gets all operatorSets with active transport reservations and their destinations
+3. `getSupportedChains`: Gets all chains that can be transported to by the multichain protocol
 
 ```solidity
 /**
- * @notice Gets the active transport reservations
- * @return An array of operatorSets with active transport reservations
- * @return An array of chainIDs that the operatorSet is configured to transport to
+ * @notice Gets the list of chains that are supported by the CrossChainRegistry
+ * @return An array of chainIDs that are supported by the CrossChainRegistry
+ * @return An array of operatorTableUpdaters corresponding to each chainID
  */
-function getActiveTransportReservations() external view returns (OperatorSet[] memory, uint256[][] memory);
+function getSupportedChains() external view returns(uint256[] memory, address[] memory);
 ```

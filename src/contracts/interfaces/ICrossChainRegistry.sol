@@ -14,12 +14,6 @@ interface ICrossChainRegistryErrors {
     /// @notice Thrown when a generation reservation does not exist for the operator set
     error GenerationReservationDoesNotExist();
 
-    /// @notice Thrown when a transport destination is already added for the operator set
-    error TransportDestinationAlreadyAdded();
-
-    /// @notice Thrown when a transport destination is not found for the operator set
-    error TransportDestinationNotFound();
-
     /// @notice Thrown when a chain ID is already whitelisted
     error ChainIDAlreadyWhitelisted();
 
@@ -31,9 +25,6 @@ interface ICrossChainRegistryErrors {
 
     /// @notice Thrown when the chainIDs array is empty
     error EmptyChainIDsArray();
-
-    /// @notice Thrown when a at least one transport destination is required
-    error RequireAtLeastOneTransportDestination();
 
     /// @notice Thrown when the lengths between two arrays are not the same
     error ArrayLengthMismatch();
@@ -80,15 +71,6 @@ interface ICrossChainRegistryEvents is ICrossChainRegistryTypes {
     /// @notice Emitted when an operatorSetConfig is removed, when a generation reservation is removed
     event OperatorSetConfigRemoved(OperatorSet operatorSet);
 
-    /// @notice Emitted when a transport destination is added
-    event TransportDestinationChainAdded(OperatorSet operatorSet, uint256 chainID);
-
-    /// @notice Emitted when a transport destination is removed
-    event TransportDestinationChainRemoved(OperatorSet operatorSet, uint256 chainID);
-
-    /// @notice Emitted when transport destinations are removed, when a generation reservation is removed
-    event TransportDestinationsRemoved(OperatorSet operatorSet);
-
     /// @notice Emitted when a chainID is added to the whitelist
     event ChainIDAddedToWhitelist(uint256 chainID, address operatorTableUpdater);
 
@@ -105,14 +87,13 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
      * @param operatorSet the operatorSet to make a reservation for
      * @param operatorTableCalculator the address of the operatorTableCalculator
      * @param config the config to set for the operatorSet
-     * @param chainIDs the chainIDs to add as transport destinations
      * @dev msg.sender must be UAM permissioned for operatorSet.avs
+     * @dev Once a generation reservation is created, the operator table will be transported to all chains that are whitelisted
      */
     function createGenerationReservation(
         OperatorSet calldata operatorSet,
         IOperatorTableCalculator operatorTableCalculator,
-        OperatorSetConfig calldata config,
-        uint256[] calldata chainIDs
+        OperatorSetConfig calldata config
     ) external;
 
     /**
@@ -147,25 +128,7 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
     function setOperatorSetConfig(OperatorSet calldata operatorSet, OperatorSetConfig calldata config) external;
 
     /**
-     * @notice Adds destination chains to transport to
-     * @param operatorSet the operatorSet to add transport destinations for
-     * @param chainIDs to add transport to
-     * @dev msg.sender must be UAM permissioned for operatorSet.avs
-     * @dev Will create a transport reservation if one doesn't exist
-     */
-    function addTransportDestinations(OperatorSet calldata operatorSet, uint256[] calldata chainIDs) external;
-
-    /**
-     * @notice Removes destination chains to transport to
-     * @param operatorSet the operatorSet to remove transport destinations for
-     * @param chainIDs to remove transport to
-     * @dev msg.sender must be UAM permissioned for operatorSet.avs
-     * @dev Will remove the transport reservation if all destinations are removed
-     */
-    function removeTransportDestinations(OperatorSet calldata operatorSet, uint256[] calldata chainIDs) external;
-
-    /**
-     * @notice Adds chainIDs to the whitelist of chainIDs that can be transported to
+     * @notice Adds chainIDs to the whitelist of chainIDs that are transported to by the multichain protocol
      * @param chainIDs the chainIDs to add to the whitelist
      * @param operatorTableUpdaters the operatorTableUpdaters for each whitelisted chainID
      * @dev msg.sender must be the owner of the CrossChainRegistry
@@ -173,7 +136,7 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
     function addChainIDsToWhitelist(uint256[] calldata chainIDs, address[] calldata operatorTableUpdaters) external;
 
     /**
-     * @notice Removes chainIDs from the whitelist of chainIDs that can be transported to
+     * @notice Removes chainIDs from the whitelist of chainIDs
      * @param chainIDs the chainIDs to remove from the whitelist
      * @dev msg.sender must be the owner of the CrossChainRegistry
      */
@@ -234,22 +197,6 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
     function calculateOperatorTableBytes(
         OperatorSet calldata operatorSet
     ) external view returns (bytes memory);
-
-    /**
-     * @notice Gets the active transport reservations
-     * @return An array of operatorSets with active transport reservations
-     * @return An array of chainIDs that the operatorSet is configured to transport to
-     */
-    function getActiveTransportReservations() external view returns (OperatorSet[] memory, uint256[][] memory);
-
-    /**
-     * @notice Gets the transport destinations for a given operatorSet
-     * @param operatorSet the operatorSet to get the transport destinations for
-     * @return An array of chainIDs that the operatorSet is configured to transport to
-     */
-    function getTransportDestinations(
-        OperatorSet memory operatorSet
-    ) external view returns (uint256[] memory);
 
     /**
      * @notice Gets the list of chains that are supported by the CrossChainRegistry

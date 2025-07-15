@@ -122,10 +122,6 @@ contract Multichain_Generation_Reservation_Removal is MultichainIntegrationBase 
         assertEq(config.owner, address(0), "Operator set config should be cleared");
         assertEq(config.maxStalenessPeriod, 0, "Max staleness period should be cleared");
 
-        // Verify that transport destinations are cleared
-        uint[] memory destinations = crossChainRegistry.getTransportDestinations(operatorSet);
-        assertEq(destinations.length, 0, "Transport destinations should be cleared");
-
         console.log("State validation passed: All operator set data cleared after generation reservation removal");
         console.log("Tables cannot be transported because source chain data is no longer available");
     }

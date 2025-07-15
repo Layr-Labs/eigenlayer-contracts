@@ -32,11 +32,8 @@ abstract contract CrossChainRegistryStorage is ICrossChainRegistry {
     /// @dev Index for flag that pauses operator set config modifications when set
     uint8 internal constant PAUSED_OPERATOR_SET_CONFIG = 2;
 
-    /// @dev Index for flag that pauses transport destination modifications when set
-    uint8 internal constant PAUSED_TRANSPORT_DESTINATIONS = 3;
-
     /// @dev Index for flag that pauses chain whitelist modifications when set
-    uint8 internal constant PAUSED_CHAIN_WHITELIST = 4;
+    uint8 internal constant PAUSED_CHAIN_WHITELIST = 3;
 
     // Immutables
 
@@ -59,9 +56,6 @@ abstract contract CrossChainRegistryStorage is ICrossChainRegistry {
     /// @dev Mapping from operator set key to operator set configuration
     mapping(bytes32 operatorSetKey => OperatorSetConfig) internal _operatorSetConfigs;
 
-    /// @dev Mapping from operator set key to set of chain IDs for transport destinations
-    mapping(bytes32 operatorSetKey => EnumerableSet.UintSet) internal _transportDestinations;
-
     /// CHAIN WHITELISTING
 
     /// @dev Map of whitelisted chain IDs to operator table updaters
@@ -82,5 +76,5 @@ abstract contract CrossChainRegistryStorage is ICrossChainRegistry {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[42] private __gap;
+    uint256[43] private __gap;
 }

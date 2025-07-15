@@ -560,10 +560,7 @@ abstract contract MultichainIntegrationBase is IntegrationBase {
             });
 
             // Create generation reservation
-            crossChainRegistry.createGenerationReservation(operatorSet, operatorTableCalculatorMock, config, chainIDs);
-        } else {
-            // Add chain as transport destination to existing reservation
-            crossChainRegistry.addTransportDestinations(operatorSet, chainIDs);
+            crossChainRegistry.createGenerationReservation(operatorSet, operatorTableCalculatorMock, config);
         }
     }
 
@@ -690,16 +687,10 @@ abstract contract MultichainIntegrationBase is IntegrationBase {
         }
 
         if (!reservationExists) {
-            uint[] memory destinations = new uint[](1);
-            destinations[0] = 137; // Destination chain
-
             IOperatorTableCalculator mockCalculator = IOperatorTableCalculator(address(operatorTableCalculatorMock));
 
             crossChainRegistry.createGenerationReservation(
-                operatorSet,
-                mockCalculator,
-                ICrossChainRegistryTypes.OperatorSetConfig({owner: address(this), maxStalenessPeriod: 3600}),
-                destinations
+                operatorSet, mockCalculator, ICrossChainRegistryTypes.OperatorSetConfig({owner: address(this), maxStalenessPeriod: 3600})
             );
         }
     }

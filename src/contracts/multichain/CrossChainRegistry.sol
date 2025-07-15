@@ -107,8 +107,7 @@ contract CrossChainRegistry is
     function createGenerationReservation(
         OperatorSet calldata operatorSet,
         IOperatorTableCalculator operatorTableCalculator,
-        OperatorSetConfig calldata config,
-        uint256[] calldata chainIDs
+        OperatorSetConfig calldata config
     )
         external
         onlyWhenNotPaused(PAUSED_GENERATION_RESERVATIONS)
@@ -123,8 +122,6 @@ contract CrossChainRegistry is
         _setOperatorTableCalculator(operatorSet, operatorTableCalculator);
         // Set the operator set config
         _setOperatorSetConfig(operatorSet, config);
-        // Add transport destinations
-        _addTransportDestinations(operatorSet, chainIDs);
     }
 
     /// @inheritdoc ICrossChainRegistry
@@ -148,11 +145,7 @@ contract CrossChainRegistry is
         delete _operatorSetConfigs[operatorSetKey];
         emit OperatorSetConfigRemoved(operatorSet);
 
-        // 3. Remove all transport destinations
-        delete _transportDestinations[operatorSetKey];
-        emit TransportDestinationsRemoved(operatorSet);
-
-        // 4. Remove from active generation reservations
+        // 3. Remove from active generation reservations
         _activeGenerationReservations.remove(operatorSetKey);
         emit GenerationReservationRemoved(operatorSet);
     }
@@ -185,34 +178,6 @@ contract CrossChainRegistry is
     {
         // Set the operator set config
         _setOperatorSetConfig(operatorSet, config);
-    }
-
-    /// @inheritdoc ICrossChainRegistry
-    function addTransportDestinations(
-        OperatorSet calldata operatorSet,
-        uint256[] calldata chainIDs
-    )
-        external
-        onlyWhenNotPaused(PAUSED_TRANSPORT_DESTINATIONS)
-        checkCanCall(operatorSet.avs)
-        isValidOperatorSet(operatorSet)
-        hasActiveGenerationReservation(operatorSet)
-    {
-        _addTransportDestinations(operatorSet, chainIDs);
-    }
-
-    /// @inheritdoc ICrossChainRegistry
-    function removeTransportDestinations(
-        OperatorSet calldata operatorSet,
-        uint256[] calldata chainIDs
-    )
-        external
-        onlyWhenNotPaused(PAUSED_TRANSPORT_DESTINATIONS)
-        checkCanCall(operatorSet.avs)
-        isValidOperatorSet(operatorSet)
-        hasActiveGenerationReservation(operatorSet)
-    {
-        _removeTransportDestinations(operatorSet, chainIDs);
     }
 
     /// @inheritdoc ICrossChainRegistry
@@ -290,53 +255,6 @@ contract CrossChainRegistry is
     }
 
     /**
-     * @dev Internal function to add transport destinations for an operator set
-     * @param operatorSet The operator set to add destinations for
-     * @param chainIDs The chain IDs to add as destinations
-     */
-    function _addTransportDestinations(OperatorSet memory operatorSet, uint256[] memory chainIDs) internal {
-        // Validate chainIDs array is not empty. This is to prevent users from
-        // creating a generation reservation with no destinations.
-        require(chainIDs.length > 0, EmptyChainIDsArray());
-
-        bytes32 operatorSetKey = operatorSet.key();
-
-        for (uint256 i = 0; i < chainIDs.length; i++) {
-            uint256 chainID = chainIDs[i];
-
-            // Check if chainID is whitelisted
-            require(_whitelistedChainIDs.contains(chainID), ChainIDNotWhitelisted());
-
-            // Add transport destination
-            require(_transportDestinations[operatorSetKey].add(chainID), TransportDestinationAlreadyAdded());
-
-            emit TransportDestinationChainAdded(operatorSet, chainID);
-        }
-    }
-
-    /**
-     * @dev Internal function to remove transport destinations for an operator set
-     * @param operatorSet The operator set to remove destinations from
-     * @param chainIDs The chain IDs to remove as destinations
-     */
-    function _removeTransportDestinations(OperatorSet memory operatorSet, uint256[] memory chainIDs) internal {
-        bytes32 operatorSetKey = operatorSet.key();
-
-        for (uint256 i = 0; i < chainIDs.length; i++) {
-            uint256 chainID = chainIDs[i];
-
-            // Remove transport destination
-            require(_transportDestinations[operatorSetKey].remove(chainID), TransportDestinationNotFound());
-
-            emit TransportDestinationChainRemoved(operatorSet, chainID);
-        }
-
-        // Ensure that at least one destination remains
-        // If a user wants to remove all destinations, they should call `removeGenerationReservation` instead
-        require(_transportDestinations[operatorSetKey].length() > 0, RequireAtLeastOneTransportDestination());
-    }
-
-    /**
      * @dev Internal function to set the table update cadence
      * @param tableUpdateCadence the table update cadence
      * @dev The table update cadence cannot be 0 as that is special-cased to allow for certificates to ALWAYS be valid
@@ -394,52 +312,6 @@ contract CrossChainRegistry is
             getOperatorSetConfig(operatorSet),
             getOperatorTableCalculator(operatorSet).calculateOperatorTableBytes(operatorSet)
         );
-    }
-
-    /// @inheritdoc ICrossChainRegistry
-    function getActiveTransportReservations() external view returns (OperatorSet[] memory, uint256[][] memory) {
-        uint256 length = _activeGenerationReservations.length();
-        OperatorSet[] memory operatorSets = new OperatorSet[](length);
-        uint256[][] memory chainIDs = new uint256[][](length);
-
-        for (uint256 i = 0; i < length; i++) {
-            bytes32 operatorSetKey = _activeGenerationReservations.at(i);
-            OperatorSet memory operatorSet = OperatorSetLib.decode(operatorSetKey);
-
-            operatorSets[i] = operatorSet;
-            chainIDs[i] = getTransportDestinations(operatorSet);
-        }
-
-        return (operatorSets, chainIDs);
-    }
-
-    /// @inheritdoc ICrossChainRegistry
-    function getTransportDestinations(
-        OperatorSet memory operatorSet
-    ) public view returns (uint256[] memory) {
-        EnumerableSet.UintSet storage chainIDs = _transportDestinations[operatorSet.key()];
-        uint256 length = chainIDs.length();
-
-        // Create result array with maximum possible size
-        uint256[] memory result = new uint256[](length);
-        uint256 count = 0;
-
-        // Single loop to filter whitelisted chains
-        for (uint256 i = 0; i < length; i++) {
-            uint256 chainID = chainIDs.at(i);
-            if (_whitelistedChainIDs.contains(chainID)) {
-                result[count] = chainID;
-                count++;
-            }
-        }
-
-        // Resize the array to the actual count using assembly
-        assembly {
-            mstore(result, count)
-        }
-
-        // Only return chains that are whitelisted
-        return result;
     }
 
     /// @inheritdoc ICrossChainRegistry
