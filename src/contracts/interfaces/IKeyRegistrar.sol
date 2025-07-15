@@ -58,6 +58,8 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @param signature Signature proving ownership (only needed for BN254 keys)
      * @dev Can be called by operator directly or by addresses they've authorized via PermissionController
      * @dev Reverts if key is already registered
+     * @dev There exist no restriction on the state of the operator with respect to the operatorSet. That is, an operator
+     *      does not have to be registered for the operator in the `AllocationManager` to register a key for it
      */
     function registerKey(
         address operator,

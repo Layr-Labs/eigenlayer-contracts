@@ -43,13 +43,13 @@ Global table roots must be confirmed by the `generator` before operator tables c
 
 ```solidity
 /**
- * @notice Confirms Global operator table root
- * @param globalTableRootCert certificate of the root
+ * @notice Sets the global table root
+ * @param globalTableRootCert certificate of the global table root, signed by the `Generator`
  * @param globalTableRoot merkle root of all operatorSet tables
- * @param referenceTimestamp timestamp of the root
- * @param referenceBlockNumber block number of the root
- * @dev Any entity can submit with a valid certificate signed off by the `generator`
- * @dev The `msgHash` in the `globalOperatorTableRootCert` is the hash of the `globalOperatorTableRoot`
+ * @param referenceTimestamp block timestamp at which the global table root was calculated
+ * @param referenceBlockNumber block number, corresponding to the `referenceTimestamp` of the global table root
+ * @dev Any entity can submit with a valid certificate signed off by the `Generator`
+ * @dev The `msgHash` in the `globalOperatorTableRootCert` is the hash of the `globalTableRoot`, `referenceTimestamp`, and `referenceBlockNumber`
  */
 function confirmGlobalTableRoot(
     BN254Certificate calldata globalTableRootCert,

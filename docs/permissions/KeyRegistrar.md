@@ -72,6 +72,8 @@ function registerKey(
 ) external;
 ```
 
+There are restrictions on the state of the operator with respect to the operatorSet. That is, an operator does not have to be registered for the operator in the `AllocationManager` to register a key for it. 
+
 For ECDSA keys:
 - `pubkey`: 20 bytes representing the Ethereum address
 - `signature`: EIP-712 signature from the key's private key
@@ -133,6 +135,7 @@ function registerKey(
     bytes calldata signature
 ) external;
 ```
+There are restrictions on the state of the operator with respect to the operatorSet. That is, an operator does not have to be registered for the operator in the `AllocationManager` to register a key for it. 
 
 For BN254 keys:
 - `pubkey`: [Encoded](#encodebn254keydata) BN254 key data containing G1 and G2 points

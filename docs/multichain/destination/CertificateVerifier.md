@@ -42,13 +42,15 @@ The `operatorTableUpdater` will update the via a merkle proof of the table again
 
 ```solidity
 /**
- * @notice A struct that contains information about a single operator
+ * @notice A struct that contains information about a single operator for an ECDSA signing key
  * @param pubkey The address of the signing ECDSA key of the operator and not the operator address itself.
  * This is read from the KeyRegistrar contract.
  * @param weights The weights of the operator for a single operatorSet
- * @dev The `weights` array can be defined as a list of arbitrary groupings. For example,
+ * 
+ * @dev The `weights` array can be defined as a list of arbitrary stake types. For example,
  * it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]
- * @dev The `weights` array should be the same length for each operator in the operatorSet.
+ * 
+ * @dev It is up to the AVS to define the `weights` array, which is used by the `IECDSACertificateVerifier` to verify Certificates
  */
 struct ECDSAOperatorInfo {
     address pubkey;
@@ -62,6 +64,7 @@ struct ECDSAOperatorInfo {
  * @param operatorInfos the operatorInfos to update the operator table with
  * @param operatorSetConfig the configuration of the operatorSet
  * @dev Only callable by the `OperatorTableUpdater`
+ * @dev The `referenceTimestamp` must correspond to a reference timestamp for a globalTableRoot stored in the `OperatorTableUpdater`
  * @dev The `referenceTimestamp` must be greater than the latest reference timestamp for the given operatorSet
  */
 function updateOperatorTable(
@@ -102,11 +105,13 @@ For the `msgHash`, it is up to the off-chain AVS software to add relevant metada
 
 ```solidity
 /**
- * @notice A ECDSA Certificate
- * @param referenceTimestamp the timestamp at which the certificate was created, 
- *        which corresponds to a reference timestamp of the operator table update
- * @param messageHash the hash of the message that was signed by operators
- * @param sig the concatenated signature of each signing operator
+ * @notice A Certificate used to verify a set of ECDSA signatures
+ * @param referenceTimestamp the timestamp at which the certificate was
+ *        created, which MUST correspond to a reference timestamp of the operator table update
+ * @param messageHash the hash of the message that was signed by the operators. 
+ * The messageHash should be calculated using `calculateCertificateDigest`
+ * @param sig the concatenated signature of each signing operator, in ascending order of signer address
+ * @dev ECDSA certificates DO NOT support smart contract signatures
  */
 struct ECDSACertificate {
     uint32 referenceTimestamp;
@@ -268,11 +273,14 @@ The `operatorTableUpdater` will update the table via a merkle proof against the 
 
 ```solidity
 /**
- * @notice A struct that contains information about a single operator
- * @param pubkey The G1 public key of the operator.
- * @param weights The weights of the operator for a single operatorSet.
- * @dev The `weights` array can be defined as a list of arbitrary groupings. For example,
+ * @notice A struct that contains information about a single operator for a given BN254 operatorSet
+ * @param pubkey The G1 public key of the operator
+ * @param weights The weights of the operator for a single operatorSet
+ * 
+ * @dev The `weights` array is as a list of arbitrary stake types. For example,
  * it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]
+ * 
+ * @dev It is up to the AVS to define the `weights` array, which is used by the `IBN254CertificateVerifier` to verify Certificates
  */
 struct BN254OperatorInfo {
     BN254.G1Point pubkey;
@@ -283,9 +291,9 @@ struct BN254OperatorInfo {
 /**
  * @notice A struct that contains information about all operators for a given operatorSet
  * @param operatorInfoTreeRoot The root of the operatorInfo tree. Each leaf is a `BN254OperatorInfo` struct
- * @param numOperators The number of operators in the operatorSet.
- * @param aggregatePubkey The aggregate G1 public key of the operators in the operatorSet.
- * @param totalWeights The total weights of the operators in the operatorSet.
+ * @param numOperators The number of operators in the operatorSet
+ * @param aggregatePubkey The aggregate G1 public key of the operators in the operatorSet
+ * @param totalWeights The total stake weights of the operators in the operatorSet
  *
  * @dev The operatorInfoTreeRoot is the root of a merkle tree that contains the operatorInfos for each operator in the operatorSet.
  * It is calculated in this function and used by the `IBN254CertificateVerifier` to verify stakes against the non-signing operators
@@ -303,14 +311,14 @@ struct BN254OperatorSetInfo {
 }
 
 /**
- * @notice updates the operator table
+ * @notice updates the operator table with stake weights for an operatorSet
  * @param operatorSet the operatorSet to update the operator table for
- * @param referenceTimestamp the timestamp at which the operatorInfos were sourced
+ * @param referenceTimestamp the timestamp at which the operatorInfos were sourced via the `globalTableRoot`
  * @param operatorSetInfo the operatorInfos to update the operator table with
- * @param operatorSetConfig the configuration of the operatorSet
+ * @param operatorSetConfig the configuration of the operatorSet, which includes the owner and max staleness period
  * @dev Only callable by the `OperatorTableUpdater`
- * @dev The `referenceTimestamp` must correspond to a reference timestamp for a globalTableRoot stored in the `OperatorTableUpdater`. 
- *     It must also be greater than the latest reference timestamp for the given operatorSet.
+ * @dev The `referenceTimestamp` must correspond to a reference timestamp for a globalTableRoot stored in the `OperatorTableUpdater`
+ * @dev The `referenceTimestamp` must be greater than the latest reference timestamp for the given operatorSet
  */
 function updateOperatorTable(
     OperatorSet calldata operatorSet,
@@ -352,7 +360,7 @@ The contract supports 3 verification patterns:
 /**
  * @notice A BN254 Certificate
  * @param referenceTimestamp the timestamp at which the certificate was created,
- *        which corresponds to the reference timestamp of the operator table update
+ *         which MUST correspond to a reference timestamp of the operator table update
  * @param messageHash the hash of the message that was signed by operators and used to verify the aggregated signature
  * @param signature the G1 signature of the message
  * @param apk the G2 aggregate public key
@@ -370,8 +378,8 @@ struct BN254Certificate {
  * @notice verifies a certificate
  * @param operatorSet the operatorSet that the certificate is for
  * @param cert a certificate
- * @return signedStakes amount of stake that signed the certificate for each stake type. Each index
- *         corresponds to a stake type in the `totalWeights` array in the `BN254OperatorSetInfo`.
+ * @return signedStakes total stake weight that signed the certificate for each stake type. Each index corresponds to a stake type in the `weights` array in the `ECDSAOperatorInfo`
+ * @return signers array of addresses that signed the certificate
  */
 function verifyCertificate(
     OperatorSet memory operatorSet,
@@ -408,7 +416,7 @@ Verifies a BN254 certificate by checking the aggregated signature against the op
  * @param cert the certificate
  * @param totalStakeProportionThresholds the proportion, in BPS,of total stake that
  * the signed stake of the certificate should meet. Each index corresponds to
- * a stake type in the `totalWeights` array in the `BN254OperatorSetInfo`.
+ * a stake type in the `totalWeights` array in the `BN254OperatorSetInfo`
  * @return whether or not certificate is valid and meets proportion thresholds
  */
 function verifyCertificateProportion(
@@ -440,11 +448,11 @@ Verifies that a certificate meets specified proportion thresholds as a percentag
  * @notice verifies a certificate and makes sure that the signed stakes meet
  * provided nominal stake thresholds
  * @param operatorSet the operatorSet that the certificate is for
- * @param cert a certificate
+ * @param cert the certificate
  * @param totalStakeNominalThresholds the nominal amount of stake that
  * the signed stake of the certificate should meet. Each index corresponds to
- * a stake type in the `totalWeights` array in the `BN254OperatorSetInfo`.
- * @return whether or not certificate is valid and meets nominal thresholds
+ * a stake type in the `totalWeights` array in the `BN254OperatorSetInfo`
+ * @return Whether or not certificate is valid and meets nominal thresholds
  */
 function verifyCertificateNominal(
     OperatorSet memory operatorSet,
@@ -475,7 +483,7 @@ Verifies that a certificate meets specified nominal (absolute) stake thresholds 
  * @param operatorIndex the index of the nonsigner in the `BN254OperatorInfo` tree
  * @param operatorInfoProofs merkle proof of the nonsigner at the index. Empty if the non-signing operator is already stored from a previous verification
  * @param operatorInfo the `BN254OperatorInfo` for the operator. Empty if the non-signing operator is already stored from a previous verification
- * @dev Non-signing operators are stored in the `BN254CertificateVerifier` upon the first successful certificate verification. This is done to avoid
+ * @dev Non-signing operators are stored in the `BN254CertificateVerifier` upon the first successful certificate verification that includes a merkle proof for the non-signing operator. This is done to avoid
  *      the need for resupplying proofs of non-signing operators for each certificate verification.
  */
 struct BN254OperatorInfoWitness {

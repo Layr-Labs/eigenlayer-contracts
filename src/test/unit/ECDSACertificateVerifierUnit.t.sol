@@ -18,6 +18,7 @@ import "src/test/utils/Random.sol";
  */
 contract ECDSACertificateVerifierUnitTests is
     EigenLayerMultichainUnitTestSetup,
+    IECDSACertificateVerifierErrors,
     IECDSACertificateVerifierTypes,
     IECDSACertificateVerifierEvents,
     IBaseCertificateVerifierErrors
@@ -413,7 +414,7 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificate is ECDSACertificate
             sig: "" // Empty signatures
         });
 
-        vm.expectRevert(IECDSACertificateVerifierTypes.InvalidSignatureLength.selector);
+        vm.expectRevert(IECDSACertificateVerifierErrors.InvalidSignatureLength.selector);
         verifier.verifyCertificate(defaultOperatorSet, cert);
     }
 
@@ -429,7 +430,7 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificate is ECDSACertificate
             sig: invalidLengthSig
         });
 
-        vm.expectRevert(IECDSACertificateVerifierTypes.InvalidSignatureLength.selector);
+        vm.expectRevert(IECDSACertificateVerifierErrors.InvalidSignatureLength.selector);
         verifier.verifyCertificate(defaultOperatorSet, cert);
     }
 
@@ -496,7 +497,7 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificate is ECDSACertificate
 
         // Verification should fail - expect SignersNotOrdered because signature recovery
         // with wrong message hash produces different addresses that break ordering
-        vm.expectRevert(IECDSACertificateVerifierTypes.SignersNotOrdered.selector);
+        vm.expectRevert(IECDSACertificateVerifierErrors.SignersNotOrdered.selector);
         verifier.verifyCertificate(defaultOperatorSet, cert);
     }
 
@@ -750,7 +751,7 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificate is ECDSACertificate
         });
 
         // Should revert because signatures are not ordered by address
-        vm.expectRevert(IECDSACertificateVerifierTypes.SignersNotOrdered.selector);
+        vm.expectRevert(IECDSACertificateVerifierErrors.SignersNotOrdered.selector);
         verifier.verifyCertificate(defaultOperatorSet, cert);
     }
 
@@ -905,7 +906,7 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificateProportion is ECDSAC
 
         // Calculate percentage of signed stakes to determine if it should meet threshold
         (uint[] memory signedStakes, address[] memory certSigners) = verifier.verifyCertificate(defaultOperatorSet, cert);
-        uint[] memory totalStakes = verifier.getTotalStakes(defaultOperatorSet, referenceTimestamp);
+        uint[] memory totalStakes = verifier.getTotalStakeWeights(defaultOperatorSet, referenceTimestamp);
         uint signedPercentage0 = (signedStakes[0] * 10_000) / totalStakes[0];
         uint signedPercentage1 = (signedStakes[1] * 10_000) / totalStakes[1];
 
@@ -940,7 +941,7 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificateProportion is ECDSAC
 
         // Calculate expected result
         (uint[] memory signedStakes, address[] memory certSigners) = verifier.verifyCertificate(defaultOperatorSet, cert);
-        uint[] memory totalStakes = verifier.getTotalStakes(defaultOperatorSet, referenceTimestamp);
+        uint[] memory totalStakes = verifier.getTotalStakeWeights(defaultOperatorSet, referenceTimestamp);
 
         bool expectedResult = true;
         for (uint i = 0; i < 2; i++) {
@@ -1146,9 +1147,9 @@ contract ECDSACertificateVerifierUnitTests_ViewFunctions is ECDSACertificateVeri
         assertEq(operatorCount, operators.length, "Operator count mismatch");
     }
 
-    function test_getTotalStakes() public view {
+    function test_getTotalStakeWeights() public view {
         IECDSACertificateVerifierTypes.ECDSAOperatorInfo[] memory operators = _getOperators();
-        uint[] memory totalStakes = verifier.getTotalStakes(defaultOperatorSet, referenceTimestamp);
+        uint[] memory totalStakes = verifier.getTotalStakeWeights(defaultOperatorSet, referenceTimestamp);
 
         // Calculate expected total stakes
         uint[] memory expectedTotalStakes = new uint[](2);
@@ -1218,7 +1219,7 @@ contract ECDSACertificateVerifierUnitTests_ViewFunctions is ECDSACertificateVeri
         uint32 nonExistentTimestamp = uint32(block.timestamp + 1000);
 
         vm.expectRevert(ReferenceTimestampDoesNotExist.selector);
-        verifier.getTotalStakes(defaultOperatorSet, nonExistentTimestamp);
+        verifier.getTotalStakeWeights(defaultOperatorSet, nonExistentTimestamp);
     }
 
     function test_revert_noOperators() public {
@@ -1231,6 +1232,6 @@ contract ECDSACertificateVerifierUnitTests_ViewFunctions is ECDSACertificateVeri
         verifier.updateOperatorTable(defaultOperatorSet, referenceTimestamp, operators, defaultOperatorSetConfig);
 
         vm.expectRevert(ReferenceTimestampDoesNotExist.selector);
-        verifier.getTotalStakes(defaultOperatorSet, referenceTimestamp);
+        verifier.getTotalStakeWeights(defaultOperatorSet, referenceTimestamp);
     }
 }

@@ -41,7 +41,7 @@ interface IBaseCertificateVerifier is
      * @notice The address of the owner of the OperatorSet
      * @param operatorSet The operatorSet to get the owner of
      * @return The owner
-     * @dev The owner of the OperatorSet is not used by this contract, but can be used by external contracts
+     * @dev The owner of the OperatorSet is not used by this contract, but can be used by periphery contracts
      *      to gate access control for on-chain operations
      */
     function getOperatorSetOwner(
@@ -56,7 +56,6 @@ interface IBaseCertificateVerifier is
      * @dev A staleness period of 0 allows for certificates to be verified against any timestamp in the past
      * @dev Staleness periods should not be greater than 0 and less than the update cadence of the `OperatorTables`, since
      *      certificates would be unable to be validated against
-     *
      */
     function maxOperatorTableStaleness(
         OperatorSet memory operatorSet
@@ -66,7 +65,7 @@ interface IBaseCertificateVerifier is
      * @notice The latest reference timestamp of the operator table for a given operatorSet. This value is
      *         updated each time an operator table is updated
      * @param operatorSet The operatorSet to get the latest reference timestamp of
-     * @return The latest reference timestamp
+     * @return The latest reference timestamp, 0 if the operatorSet has never been updated
      */
     function latestReferenceTimestamp(
         OperatorSet memory operatorSet
