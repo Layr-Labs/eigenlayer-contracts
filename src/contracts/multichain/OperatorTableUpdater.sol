@@ -38,9 +38,9 @@ contract OperatorTableUpdater is
 
     /**
      * @notice Initializes the OperatorTableUpdater
-     * @param owner The owner of the OperatorTableUpdater
+     * @param _owner The owner of the OperatorTableUpdater
      * @param initialPausedStatus The initial paused status of the OperatorTableUpdater
-     * @param _generator The operatorSet which certifies against global roots
+     * @param _initialGenerator The operatorSet which certifies against global roots
      * @param _globalRootConfirmationThreshold The threshold, in bps, for a global root to be signed off on and updated
      * @param generatorInfo The operatorSetInfo for the Generator
      * @dev We also update the operator table for the Generator, to begin signing off on global roots
@@ -145,7 +145,6 @@ contract OperatorTableUpdater is
 
         // Verify the operator table update
         _verifyMerkleInclusion({
-            referenceTimestamp: referenceTimestamp,
             globalTableRoot: globalTableRoot,
             operatorSetIndex: operatorSetIndex,
             proof: proof,
@@ -304,7 +303,6 @@ contract OperatorTableUpdater is
 
     /**
      * @notice Verifies that the operator table update is valid by checking the `proof` against a `globalTableRoot`
-     * @param referenceTimestamp The reference timestamp of the operator table update
      * @param globalTableRoot The global table root of the operator table update
      * @param operatorSetIndex The index of the operator set in the operator table
      * @param proof The proof of the operator table update
@@ -312,12 +310,11 @@ contract OperatorTableUpdater is
      * @dev Reverts if there does not exist a `globalTableRoot` for the given `referenceTimestamp`
      */
     function _verifyMerkleInclusion(
-        uint32 referenceTimestamp,
         bytes32 globalTableRoot,
         uint32 operatorSetIndex,
         bytes calldata proof,
         bytes32 operatorSetLeafHash
-    ) internal view {
+    ) internal pure {
         // Verify inclusion of the operatorSet and operatorSetLeaf in the merkle tree
         require(
             Merkle.verifyInclusionKeccak({
