@@ -43,7 +43,15 @@ contract DeployDestinationChainProxies is MultisigBuilder {
 
         execute();
 
+        _validateExpectedProxyAddress();
         _validateProxyAdminIsMultisig();
+    }
+
+    /// @dev Validate that the expected proxy address is deployed
+    function _validateExpectedProxyAddress() internal view {
+        address expectedProxy = _computeExpectedProxyAddress(type(TaskMailbox).name, address(Env.impl.emptyContract()));
+        address actualProxy = address(Env.proxy.taskMailbox());
+        assertEq(expectedProxy, actualProxy, "taskMailbox proxy address mismatch");
     }
 
     /// @dev Validate that proxies are owned by the multichain deployer multisig (temporarily)
