@@ -3,6 +3,7 @@ pragma solidity ^0.8.27;
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
+import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 
 import "../libraries/Merkle.sol";
 import "../permissions/Pausable.sol";
@@ -14,7 +15,8 @@ contract OperatorTableUpdater is
     OwnableUpgradeable,
     Pausable,
     OperatorTableUpdaterStorage,
-    SemVerMixin
+    SemVerMixin,
+    ReentrancyGuardUpgradeable
 {
     /**
      *
@@ -45,15 +47,15 @@ contract OperatorTableUpdater is
      * @dev We set the `_latestReferenceTimestamp` to the current timestamp, so that only *new* roots can be confirmed
      */
     function initialize(
-        address owner,
+        address _owner,
         uint256 initialPausedStatus,
-        OperatorSet calldata _generator,
+        OperatorSet calldata _initialGenerator,
         uint16 _globalRootConfirmationThreshold,
         BN254OperatorSetInfo calldata generatorInfo
     ) external initializer {
-        _transferOwnership(owner);
+        _transferOwnership(_owner);
         _setPausedStatus(initialPausedStatus);
-        _updateGenerator(_generator, generatorInfo);
+        _updateGenerator(_initialGenerator, generatorInfo);
         _setGlobalRootConfirmationThreshold(_globalRootConfirmationThreshold);
 
         // The generator's global table root is the `GENERATOR_GLOBAL_TABLE_ROOT`.
@@ -81,7 +83,7 @@ contract OperatorTableUpdater is
         bytes32 globalTableRoot,
         uint32 referenceTimestamp,
         uint32 referenceBlockNumber
-    ) external onlyWhenNotPaused(PAUSED_GLOBAL_ROOT_UPDATE) {
+    ) external onlyWhenNotPaused(PAUSED_GLOBAL_ROOT_UPDATE) nonReentrant {
         // Table roots can only be updated for current or past timestamps and after the latest reference timestamp
         require(referenceTimestamp <= block.timestamp, GlobalTableRootInFuture());
         require(referenceTimestamp > _latestReferenceTimestamp, GlobalTableRootStale());
@@ -117,7 +119,7 @@ contract OperatorTableUpdater is
         uint32 operatorSetIndex,
         bytes calldata proof,
         bytes calldata operatorTableBytes
-    ) external onlyWhenNotPaused(PAUSED_OPERATOR_TABLE_UPDATE) {
+    ) external onlyWhenNotPaused(PAUSED_OPERATOR_TABLE_UPDATE) nonReentrant {
         (
             OperatorSet memory operatorSet,
             CurveType curveType,
@@ -137,9 +139,12 @@ contract OperatorTableUpdater is
                 > IBaseCertificateVerifier(getCertificateVerifier(curveType)).latestReferenceTimestamp(operatorSet),
             TableUpdateForPastTimestamp()
         );
+        
+        // Check that the `globalTableRoot` matches the `referenceTimestamp`
+        require(_globalTableRoots[referenceTimestamp] == globalTableRoot, InvalidGlobalTableRoot());
 
         // Verify the operator table update
-        _verifyOperatorTableUpdate({
+        _verifyMerkleInclusion({
             referenceTimestamp: referenceTimestamp,
             globalTableRoot: globalTableRoot,
             operatorSetIndex: operatorSetIndex,
@@ -306,16 +311,13 @@ contract OperatorTableUpdater is
      * @param operatorSetLeafHash The leaf hash of the operator set
      * @dev Reverts if there does not exist a `globalTableRoot` for the given `referenceTimestamp`
      */
-    function _verifyOperatorTableUpdate(
+    function _verifyMerkleInclusion(
         uint32 referenceTimestamp,
         bytes32 globalTableRoot,
         uint32 operatorSetIndex,
         bytes calldata proof,
         bytes32 operatorSetLeafHash
     ) internal view {
-        // Check that the `globalTableRoot` matches the `referenceTimestamp`
-        require(_globalTableRoots[referenceTimestamp] == globalTableRoot, InvalidGlobalTableRoot());
-
         // Verify inclusion of the operatorSet and operatorSetLeaf in the merkle tree
         require(
             Merkle.verifyInclusionKeccak({

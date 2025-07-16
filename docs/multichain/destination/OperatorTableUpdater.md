@@ -23,7 +23,7 @@ Upon initialization, the `generator` is updated. The `generator` is represented 
 
 The following values are set upon initialization: 
 
-* `generator` is an EigenLabs-run entity that signs off on `globalTableRoots`. The operatorSet is of size 1. 
+* `generator` is an EigenLabs-run entity that signs off on `globalTableRoots`. The operatorSet is of size 1. The `generator` is always expected to use BN254 signing keys, hence the use of the BN254OperatorSetInfo when setting the generator.
 * `globalRootConfirmationThreshold`: 10000. The threshold in basis points required for global root confirmation. Since the operatorSet is of size 1 a single signature is needed.
 * `generatorInfo`: The key material needed to verify certificates of the `generator`
 * `operatorSetConfig`: A configuration for the `generator` 
