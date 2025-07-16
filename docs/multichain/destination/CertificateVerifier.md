@@ -530,4 +530,4 @@ The operator table is updated every 10 days. The staleness period is 5 days. The
 3. Day 6: Certificate verification *fails*
 4. Day 7: A certificate is re-generated. However, this will stale fail as the `referenceTimestamp` would still be day 1 given that was the latest table update
 
-Note that we cannot re-generate a certificate on Day 7. This is why we prevent the `stalenessPeriod` from being less than 10 days `CrossChainRegistry`.
+Note that we cannot re-generate a certificate on Day 7. This is why we prevent the `stalenessPeriod` from being less than 10 days in the `CrossChainRegistry`.

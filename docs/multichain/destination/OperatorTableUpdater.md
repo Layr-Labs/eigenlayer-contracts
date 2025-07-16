@@ -29,8 +29,9 @@ The following values are set upon initialization:
 * `operatorSetConfig`: A configuration for the `generator` 
     * `maxStalenessPeriod`: 0 (`GENERATOR_MAX_STALENESS_PERIOD`). Set to zero to allow confirmation of generator certificates regardless of `referenceTimestamp`. See [`CertificateVerifier`](./CertificateVerifier.md#overview) for speccifics
     * `owner`: Unused parameter for `Generator`. Set to the address of the `OperatorTableUpdater`
-* The `latestReferenceTimestamp` for the `Generator` is 1 (`GENERATOR_REFERENCE_TIMESTAMP`)
+* The `latestReferenceTimestamp` for the `Generator` is 1 (`GENERATOR_REFERENCE_TIMESTAMP`). This value is stored in the `BN254CertificateVerifier`
 * The `globalTableRoot` for the `Generator` is `GENERATOR_GLOBAL_TABLE_ROOT`
+* The `latestReferenceTimestamp` for the `OperatorTableUpdater` is set to `block.timestamp`. Doing so prevents past certificates for `globalTableRoots` to be used on a new destination chain deployment of the `OperatorTableUpdater`
 
 Operator tables are updated daily on testnet and weekly on mainnet. 
 ---
@@ -50,6 +51,8 @@ Global table roots must be confirmed by the `generator` before operator tables c
  * @param referenceBlockNumber block number, corresponding to the `referenceTimestamp` of the global table root
  * @dev Any entity can submit with a valid certificate signed off by the `Generator`
  * @dev The `msgHash` in the `globalOperatorTableRootCert` is the hash of the `globalTableRoot`, `referenceTimestamp`, and `referenceBlockNumber`
+ * @dev The `referenceTimestamp` nested in the `globalTableRootCert` should be `getGeneratorReferenceTimestamp`, whereas
+ *      the `referenceTimestamp` passed directly in the calldata is the block timestamp at which the global table root was calculated
  */
 function confirmGlobalTableRoot(
     BN254Certificate calldata globalTableRootCert,

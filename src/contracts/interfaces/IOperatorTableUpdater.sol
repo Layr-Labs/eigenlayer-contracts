@@ -80,6 +80,8 @@ interface IOperatorTableUpdater is
      * @param referenceBlockNumber block number, corresponding to the `referenceTimestamp` of the global table root
      * @dev Any entity can submit with a valid certificate signed off by the `Generator`
      * @dev The `msgHash` in the `globalOperatorTableRootCert` is the hash of the `globalTableRoot`, `referenceTimestamp`, and `referenceBlockNumber`
+     * @dev The `referenceTimestamp` nested in the `globalTableRootCert` should be `getGeneratorReferenceTimestamp`, whereas
+     *      the `referenceTimestamp` passed directly in the calldata is the block timestamp at which the global table root was calculated
      */
     function confirmGlobalTableRoot(
         BN254Certificate calldata globalTableRootCert,

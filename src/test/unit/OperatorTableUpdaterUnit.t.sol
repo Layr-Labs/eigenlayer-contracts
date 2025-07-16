@@ -65,6 +65,9 @@ contract OperatorTableUpdaterUnitTests is
 
         // Configure the BN254CertificateVerifierMock to point to the actual OperatorTableUpdater
         bn254CertificateVerifierMock.setOperatorTableUpdater(IOperatorTableUpdater(address(operatorTableUpdater)));
+
+        // Warp past the latest reference timestamp so that only *new* roots can be confirmed
+        cheats.warp(operatorTableUpdater.getLatestReferenceTimestamp() + 1);
     }
 
     function _setLatestReferenceTimestampBN254(OperatorSet memory operatorSet, uint32 referenceTimestamp) internal {
@@ -188,8 +191,12 @@ contract OperatorTableUpdaterUnitTests_initialize is OperatorTableUpdaterUnitTes
         OperatorSet memory confirmerSet = operatorTableUpdater.getGenerator();
         assertEq(confirmerSet.avs, address(0xDEADBEEF));
         assertEq(confirmerSet.id, 0);
-        // _latestReferenceTimestamp is not updated during generator initialization
-        assertEq(operatorTableUpdater.getLatestReferenceTimestamp(), 0, "latestReferenceTimestamp should be 0");
+        // _latestReferenceTimestamp is set to block.timestamp during initialization
+        assertEq(
+            operatorTableUpdater.getLatestReferenceTimestamp(),
+            uint32(block.timestamp) - 1,
+            "latestReferenceTimestamp should be block.timestamp - 1"
+        );
         // Generator reference timestamp is set to 1 in _updateGenerator
         assertEq(operatorTableUpdater.getGeneratorReferenceTimestamp(), 1, "generatorReferenceTimestamp should be 1");
         // Check that the GENERATOR_GLOBAL_TABLE_ROOT is valid
@@ -225,11 +232,11 @@ contract OperatorTableUpdaterUnitTests_confirmGlobalTableRoot is OperatorTableUp
     }
 
     function testFuzz_revert_futureTableRoot(Randomness r) public rand(r) {
-        uint32 referenceTimestamp = r.Uint32(uint32(block.timestamp + 1), type(uint32).max);
+        uint32 referenceTimestamp = r.Uint32(operatorTableUpdater.getLatestReferenceTimestamp() + 1, type(uint32).max);
         uint32 referenceBlockNumber = r.Uint32();
 
         cheats.expectRevert(GlobalTableRootInFuture.selector);
-        operatorTableUpdater.confirmGlobalTableRoot(mockCertificate, bytes32(0), referenceTimestamp + 1, referenceBlockNumber);
+        operatorTableUpdater.confirmGlobalTableRoot(mockCertificate, bytes32(0), referenceTimestamp, referenceBlockNumber);
     }
 
     function testFuzz_revert_paused(Randomness r) public rand(r) {
@@ -251,11 +258,6 @@ contract OperatorTableUpdaterUnitTests_confirmGlobalTableRoot is OperatorTableUp
 
     function testFuzz_revert_staleCertificate(Randomness r) public rand(r) {
         uint32 referenceBlockNumber = uint32(block.number);
-        mockCertificate.messageHash =
-            operatorTableUpdater.getGlobalTableUpdateMessageHash(bytes32(0), uint32(block.timestamp), referenceBlockNumber);
-        _setIsValidCertificate(mockCertificate, true);
-        operatorTableUpdater.confirmGlobalTableRoot(mockCertificate, bytes32(0), uint32(block.timestamp), referenceBlockNumber);
-
         uint32 referenceTimestamp = r.Uint32(0, operatorTableUpdater.getLatestReferenceTimestamp() - 1);
         cheats.expectRevert(GlobalTableRootStale.selector);
         operatorTableUpdater.confirmGlobalTableRoot(mockCertificate, bytes32(0), referenceTimestamp, referenceBlockNumber);

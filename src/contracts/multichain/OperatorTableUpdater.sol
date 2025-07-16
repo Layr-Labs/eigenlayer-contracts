@@ -42,6 +42,7 @@ contract OperatorTableUpdater is
      * @param _globalRootConfirmationThreshold The threshold, in bps, for a global root to be signed off on and updated
      * @param generatorInfo The operatorSetInfo for the Generator
      * @dev We also update the operator table for the Generator, to begin signing off on global roots
+     * @dev We set the `_latestReferenceTimestamp` to the current timestamp, so that only *new* roots can be confirmed
      */
     function initialize(
         address owner,
@@ -63,6 +64,9 @@ contract OperatorTableUpdater is
         // Set the `operatorSetConfig` for the `Generator`
         _generatorConfig.maxStalenessPeriod = GENERATOR_MAX_STALENESS_PERIOD;
         _generatorConfig.owner = address(this);
+
+        // Set the `latestReferenceTimestamp` so that only *new* roots can be confirmed
+        _latestReferenceTimestamp = uint32(block.timestamp);
     }
 
     /**
