@@ -192,7 +192,11 @@ contract OperatorTableUpdaterUnitTests_initialize is OperatorTableUpdaterUnitTes
         assertEq(confirmerSet.avs, address(0xDEADBEEF));
         assertEq(confirmerSet.id, 0);
         // _latestReferenceTimestamp is set to block.timestamp during initialization
-        assertEq(operatorTableUpdater.getLatestReferenceTimestamp(), uint32(block.timestamp) - 1, "latestReferenceTimestamp should be block.timestamp - 1");
+        assertEq(
+            operatorTableUpdater.getLatestReferenceTimestamp(),
+            uint32(block.timestamp) - 1,
+            "latestReferenceTimestamp should be block.timestamp - 1"
+        );
         // Generator reference timestamp is set to 1 in _updateGenerator
         assertEq(operatorTableUpdater.getGeneratorReferenceTimestamp(), 1, "generatorReferenceTimestamp should be 1");
         // Check that the GENERATOR_GLOBAL_TABLE_ROOT is valid
