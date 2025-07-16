@@ -541,5 +541,147 @@ contract MultichainIntegrationCheckUtils is MultichainIntegrationBase {
         assertEq(registeredPubkey, expectedPubkey, "Registered ECDSA pubkey should match expected");
     }
 
+    /**
+     *
+     *                              STALENESS PERIOD CHECKS
+     *
+     */
+
+    function check_BN254Certificate_PostStaleness_Reverts(
+        OperatorSet memory operatorSet,
+        IBN254CertificateVerifierTypes.BN254Certificate memory certificate
+    ) internal {
+        vm.expectRevert(abi.encodeWithSignature("CertificateStale()"));
+        bn254CertificateVerifier.verifyCertificate(operatorSet, certificate);
+    }
+
+    function check_ECDSACertificate_PostStaleness_Reverts(
+        OperatorSet memory operatorSet,
+        IECDSACertificateVerifierTypes.ECDSACertificate memory certificate
+    ) internal {
+        vm.expectRevert(abi.encodeWithSignature("CertificateStale()"));
+        ecdsaCertificateVerifier.verifyCertificate(operatorSet, certificate);
+    }
+
+    function check_BN254Certificate_AtStalenessBoundary_Succeeds(
+        OperatorSet memory operatorSet,
+        IBN254CertificateVerifierTypes.BN254Certificate memory certificate
+    ) internal {
+        // Should succeed at the exact boundary
+        check_BN254Certificate_Basic_State(operatorSet, certificate);
+    }
+
+    function check_ECDSACertificate_AtStalenessBoundary_Succeeds(
+        OperatorSet memory operatorSet,
+        IECDSACertificateVerifierTypes.ECDSACertificate memory certificate
+    ) internal {
+        // Should succeed at the exact boundary
+        check_ECDSACertificate_Basic_State(operatorSet, certificate);
+    }
+
+    function check_BN254StalenessPeriod_Updated_State(
+        OperatorSet memory operatorSet,
+        uint32 expectedStalenessPeriod
+    ) internal view {
+        uint32 actualStalenessPeriod = bn254CertificateVerifier.maxOperatorTableStaleness(operatorSet);
+        assertEq(actualStalenessPeriod, expectedStalenessPeriod, "BN254 staleness period should match expected value");
+    }
+
+    function check_ECDSAStalenessPeriod_Updated_State(
+        OperatorSet memory operatorSet,
+        uint32 expectedStalenessPeriod
+    ) internal view {
+        uint32 actualStalenessPeriod = ecdsaCertificateVerifier.maxOperatorTableStaleness(operatorSet);
+        assertEq(actualStalenessPeriod, expectedStalenessPeriod, "ECDSA staleness period should match expected value");
+    }
+
+    function check_Certificate_WithinStalenessPeriod_Succeeds(
+        OperatorSet memory operatorSet,
+        IBN254CertificateVerifierTypes.BN254Certificate memory bn254Certificate,
+        IECDSACertificateVerifierTypes.ECDSACertificate memory ecdsaCertificate,
+        bool isBN254
+    ) internal {
+        if (isBN254) {
+            check_BN254Certificate_Basic_State(operatorSet, bn254Certificate);
+        } else {
+            check_ECDSACertificate_Basic_State(operatorSet, ecdsaCertificate);
+        }
+    }
+
+    function check_StalenessUpdate_CompleteFlow_State(
+        OperatorSet memory operatorSet,
+        uint32 initialStalenessPeriod,
+        uint32 newStalenessPeriod,
+        bool isBN254
+    ) internal view {
+        if (isBN254) {
+            check_BN254StalenessPeriod_Updated_State(operatorSet, newStalenessPeriod);
+        } else {
+            check_ECDSAStalenessPeriod_Updated_State(operatorSet, newStalenessPeriod);
+        }
+        
+        // Verify that the new staleness period is different from the initial one
+        assertTrue(newStalenessPeriod != initialStalenessPeriod, "New staleness period should be different from initial");
+    }
+
+    /**
+     *
+     *                              TIME MANIPULATION HELPERS
+     *
+     */
+
+    function check_TimeAdvance_PostStaleness_State(
+        uint32 referenceTimestamp,
+        uint32 stalenessPeriod,
+        uint256 expectedBlockTimestamp
+    ) internal view {
+        uint256 expectedStaleTimestamp = referenceTimestamp + stalenessPeriod;
+        assertTrue(block.timestamp > expectedStaleTimestamp, "Should be past staleness period");
+        assertEq(block.timestamp, expectedBlockTimestamp, "Block timestamp should match expected value");
+    }
+
+    function check_TimeAdvance_AtBoundary_State(
+        uint32 referenceTimestamp,
+        uint32 stalenessPeriod
+    ) internal view {
+        uint256 expectedBoundaryTimestamp = referenceTimestamp + stalenessPeriod;
+        assertEq(block.timestamp, expectedBoundaryTimestamp, "Should be exactly at staleness boundary");
+    }
+
+    /**
+     *
+     *                              COMBINED VALIDATION HELPERS
+     *
+     */
+
+    function check_StalenessScenario_Complete_State(
+        OperatorSet memory operatorSet,
+        uint32 referenceTimestamp,
+        uint32 stalenessPeriod,
+        bool certificateShouldSucceed,
+        bool isBN254,
+        string memory scenarioDescription
+    ) internal view {
+        // Check timing
+        if (certificateShouldSucceed) {
+            assertTrue(
+                block.timestamp <= referenceTimestamp + stalenessPeriod,
+                string.concat(scenarioDescription, ": Should be within staleness period")
+            );
+        } else {
+            assertTrue(
+                block.timestamp > referenceTimestamp + stalenessPeriod,
+                string.concat(scenarioDescription, ": Should be past staleness period")
+            );
+        }
+
+        // Check staleness period configuration
+        if (isBN254) {
+            check_BN254StalenessPeriod_Updated_State(operatorSet, stalenessPeriod);
+        } else {
+            check_ECDSAStalenessPeriod_Updated_State(operatorSet, stalenessPeriod);
+        }
+    }
+
 
 } 
