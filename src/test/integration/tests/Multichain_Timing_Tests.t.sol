@@ -1,22 +1,14 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "../MultichainIntegrationBase.t.sol";
-import "src/contracts/interfaces/IBN254CertificateVerifier.sol";
-import "src/contracts/interfaces/IECDSACertificateVerifier.sol";
-import "src/contracts/interfaces/ICrossChainRegistry.sol";
-import "src/contracts/interfaces/IAllocationManager.sol";
-import "src/contracts/interfaces/IKeyRegistrar.sol";
-import "src/contracts/interfaces/IOperatorTableUpdater.sol";
-import "src/contracts/libraries/BN254.sol";
-import "src/contracts/libraries/Merkle.sol";
+import "../MultichainIntegrationChecks.t.sol";
 
 /**
  * @title Multichain_Timing_Tests
  * @notice Integration tests for multichain timing constraints and edge cases
  * @dev Tests the temporal behavior of global table root confirmations and operator table updates
  */
-contract Multichain_Timing_Tests is MultichainIntegrationBase {
+contract Multichain_Timing_Tests is MultichainIntegrationCheckUtils {
     using StdStyle for *;
     using BN254 for BN254.G1Point;
 
@@ -52,7 +44,7 @@ contract Multichain_Timing_Tests is MultichainIntegrationBase {
         console.log("Latest reference timestamp:", latestReferenceTimestamp);
 
         // Verify that the latest timestamp matches what we posted
-        assertEq(latestReferenceTimestamp, firstReferenceTimestamp, "Latest reference timestamp should match first posted timestamp");
+        check_LatestReferenceTimestamp_Updated_State(firstReferenceTimestamp);
 
         // Try to post another root with the same timestamp - this should fail
         bytes memory operatorTable = abi.encode(
@@ -79,13 +71,7 @@ contract Multichain_Timing_Tests is MultichainIntegrationBase {
         );
 
         // This should revert with GlobalTableRootStale error
-        vm.expectRevert(abi.encodeWithSignature("GlobalTableRootStale()"));
-        operatorTableUpdater.confirmGlobalTableRoot(
-            confirmationCertificate,
-            globalTableRoot,
-            firstReferenceTimestamp, // Same timestamp
-            uint32(block.number)
-        );
+        check_GlobalTableRoot_PostSameTimestamp_Reverts(globalTableRoot, firstReferenceTimestamp, confirmationCertificate);
 
         console.log("Successfully verified that posting root with same timestamp reverts");
     }
@@ -118,6 +104,7 @@ contract Multichain_Timing_Tests is MultichainIntegrationBase {
         console.log("Successfully posted initial root with timestamp:", firstReferenceTimestamp);
 
         // Get the latest reference timestamp from the OperatorTableUpdater
+        check_LatestReferenceTimestamp_Updated_State(firstReferenceTimestamp);
         uint32 latestReferenceTimestamp = operatorTableUpdater.getLatestReferenceTimestamp();
         console.log("Latest reference timestamp:", latestReferenceTimestamp);
 
@@ -146,13 +133,12 @@ contract Multichain_Timing_Tests is MultichainIntegrationBase {
         );
 
         // This should succeed
-        operatorTableUpdater.confirmGlobalTableRoot(confirmationCertificate, globalTableRoot, nextReferenceTimestamp, uint32(block.number));
+        check_GlobalTableRoot_PostSuccess_State(globalTableRoot, nextReferenceTimestamp, confirmationCertificate);
 
         console.log("Successfully posted root with timestamp right after latest reference timestamp");
 
         // Verify that the latest reference timestamp has been updated
         uint32 newLatestReferenceTimestamp = operatorTableUpdater.getLatestReferenceTimestamp();
-        assertEq(newLatestReferenceTimestamp, nextReferenceTimestamp, "Latest reference timestamp should be updated");
         console.log("New latest reference timestamp:", newLatestReferenceTimestamp);
     }
 
@@ -188,7 +174,7 @@ contract Multichain_Timing_Tests is MultichainIntegrationBase {
         console.log("Operator set latest reference timestamp:", operatorSetLatestTimestamp);
 
         // Verify that the operator set timestamp matches what we posted
-        assertEq(operatorSetLatestTimestamp, firstReferenceTimestamp, "Operator set timestamp should match first posted timestamp");
+        check_OperatorSetLatestTimestamp_State(operatorSet, firstReferenceTimestamp);
 
         // Post a new global root with a later timestamp
         uint32 newGlobalTimestamp = firstReferenceTimestamp + 500;
@@ -205,9 +191,75 @@ contract Multichain_Timing_Tests is MultichainIntegrationBase {
         console.log("Successfully verified that transporting tables with stale timestamp reverts");
 
         // Verify that the operator set timestamp hasn't changed
+        check_OperatorSetLatestTimestamp_State(operatorSet, operatorSetLatestTimestamp);
         uint32 finalTimestamp = bn254CertificateVerifier.latestReferenceTimestamp(operatorSet);
-        assertEq(finalTimestamp, operatorSetLatestTimestamp, "Operator set timestamp should remain unchanged after failed update");
         console.log("Operator set timestamp remains:", finalTimestamp);
+    }
+
+    /**
+     * @notice Test that transporting tables right after updating the latest reference timestamp succeeds
+     * @dev This tests that table transport works immediately after the global timestamp is updated
+     */
+    function test_TransportTables_RightAfterLatestReferenceTimestamp_Succeeds() external {
+        console.log("Testing transport tables right after latest reference timestamp - should succeed:");
+        vm.warp(50_000);
+
+        // Setup test environment
+        _configAssetTypes(HOLDS_LST | HOLDS_ETH | HOLDS_ALL);
+        _createTestOperatorSet(1);
+        OperatorSet memory operatorSet = OperatorSet({avs: address(this), id: 1});
+
+        // Configure operator set for BN254 curve
+        keyRegistrar.configureOperatorSet(operatorSet, IKeyRegistrarTypes.CurveType.BN254);
+        _setupAVSAndChains();
+
+        // Register operator keys and generate operator table
+        User[] memory operators = _registerBN254Keys(operatorSet);
+        IOperatorTableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo = _generateBN254OperatorTable(operatorSet, operators);
+        _createGenerationReservation(operatorSet);
+
+        // Post initial root and transport tables successfully
+        uint32 firstReferenceTimestamp = uint32(block.timestamp - 1000);
+        _confirmGlobalTableRootAndUpdateBN254(operatorSet, operatorSetInfo, firstReferenceTimestamp);
+        console.log("Successfully transported initial table with timestamp:", firstReferenceTimestamp);
+
+        // Verify that global and operator set reference timestamps are correct
+        check_LatestReferenceTimestamp_Updated_State(firstReferenceTimestamp);
+        check_OperatorSetLatestTimestamp_State(operatorSet, firstReferenceTimestamp);
+
+        // Post a new global root with timestamp = latestReferenceTimestamp + 1
+        uint32 newGlobalTimestamp = firstReferenceTimestamp + 1;
+        _postNewGlobalRoot(operatorSet, operatorSetInfo, newGlobalTimestamp);
+        console.log("Successfully posted new global root with timestamp:", newGlobalTimestamp);
+
+        // Immediately transport the table with the new timestamp (should succeed)
+        uint32 transportTimestamp = newGlobalTimestamp; // Same timestamp as global root
+        console.log("Attempting to transport table with timestamp:", transportTimestamp);
+
+        bytes memory operatorTable = abi.encode(
+            operatorSet,
+            IKeyRegistrarTypes.CurveType.BN254,
+            ICrossChainRegistryTypes.OperatorSetConfig({owner: address(this), maxStalenessPeriod: 3600}),
+            abi.encode(operatorSetInfo)
+        );
+
+        bytes32 operatorSetLeafHash = keccak256(operatorTable);
+        bytes32[] memory leaves = new bytes32[](1);
+        leaves[0] = operatorSetLeafHash;
+        bytes32 globalTableRoot = Merkle.merkleizeKeccak(leaves);
+
+        // Transport should succeed since timestamp matches the global root timestamp
+        uint32 operatorSetIndex = 0; // Single leaf in merkle tree
+        bytes memory proof = new bytes(0); // Empty proof for single leaf
+
+        operatorTableUpdater.updateOperatorTable(transportTimestamp, globalTableRoot, operatorSetIndex, proof, operatorTable);
+
+        console.log("Successfully transported table right after latest reference timestamp");
+
+        // Verify that the operator set timestamp was updated correctly
+        check_OperatorSetLatestTimestamp_State(operatorSet, transportTimestamp);
+        uint32 finalOperatorSetTimestamp = bn254CertificateVerifier.latestReferenceTimestamp(operatorSet);
+        console.log("Final operator set timestamp:", finalOperatorSetTimestamp);
     }
 
     /**
@@ -255,13 +307,370 @@ contract Multichain_Timing_Tests is MultichainIntegrationBase {
 
         // This should revert with TableUpdateForPastTimestamp error
         // because the timestamp is stale, even though the global root is valid
-        vm.expectRevert(abi.encodeWithSignature("TableUpdateForPastTimestamp()"));
-        operatorTableUpdater.updateOperatorTable(
-            staleTimestamp, // Stale timestamp
-            validGlobalTableRoot, // Valid global root from latest timestamp
-            0, // operatorSetIndex
-            new bytes(0), // proof (will fail later, but timestamp check comes first)
-            staleOperatorTable
+        check_TableTransport_StaleTimestamp_Reverts(staleTimestamp, validGlobalTableRoot, staleOperatorTable);
+    }
+
+    /**
+     * @notice Test that verifying BN254 certificate after staleness period expires reverts
+     * @dev This tests that certificates become invalid after the maxStalenessPeriod
+     */
+    function test_VerifyBN254Certificate_AfterStalenessPeriod_Reverts() external {
+        console.log("Testing BN254 certificate verification after staleness period - should revert:");
+        vm.warp(50_000);
+
+        // Setup test environment
+        _configAssetTypes(HOLDS_LST | HOLDS_ETH | HOLDS_ALL);
+        _createTestOperatorSet(1);
+        OperatorSet memory operatorSet = OperatorSet({avs: address(this), id: 1});
+
+        // Configure operator set for BN254 curve
+        keyRegistrar.configureOperatorSet(operatorSet, IKeyRegistrarTypes.CurveType.BN254);
+        _setupAVSAndChains();
+
+        // Register operator keys and generate operator table
+        User[] memory operators = _registerBN254Keys(operatorSet);
+        IOperatorTableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo = _generateBN254OperatorTable(operatorSet, operators);
+        _createGenerationReservation(operatorSet);
+
+        // Set a short staleness period for testing (1 hour)
+        uint32 stalenessPeriod = 3600;
+        uint32 referenceTimestamp = uint32(block.timestamp - 1000);
+        _confirmGlobalTableRootAndUpdateBN254WithStaleness(operatorSet, operatorSetInfo, referenceTimestamp, stalenessPeriod);
+
+        // Generate certificate with the reference timestamp
+        IBN254CertificateVerifierTypes.BN254Certificate memory certificate =
+            _generateBN254Certificate(operatorSet, referenceTimestamp, keccak256("test message"), operators, _getBN254PrivateKeys());
+
+        // Verify certificate works initially
+        check_BN254Certificate_Basic_State(operatorSet, certificate);
+        console.log("Certificate verification successful before staleness period");
+
+        // Jump forward past the staleness period
+        _rollForwardTime(stalenessPeriod + 1);
+        console.log("Jumped forward past staleness period to timestamp:", block.timestamp);
+
+        // Verify certificate should now revert due to staleness
+        vm.expectRevert(abi.encodeWithSignature("CertificateStale()"));
+        bn254CertificateVerifier.verifyCertificate(operatorSet, certificate);
+
+        console.log("Successfully verified that BN254 certificate verification reverts after staleness period");
+    }
+
+    /**
+     * @notice Test that verifying BN254 certificate right at staleness period boundary succeeds
+     * @dev This tests the exact boundary condition where block.timestamp = referenceTimestamp + maxStalenessPeriod
+     */
+    function test_VerifyBN254Certificate_RightOnStalenessPeriod_Succeeds() external {
+        console.log("Testing BN254 certificate verification right on staleness period boundary - should succeed:");
+        vm.warp(50_000);
+
+        // Setup test environment
+        _configAssetTypes(HOLDS_LST | HOLDS_ETH | HOLDS_ALL);
+        _createTestOperatorSet(1);
+        OperatorSet memory operatorSet = OperatorSet({avs: address(this), id: 1});
+
+        // Configure operator set for BN254 curve
+        keyRegistrar.configureOperatorSet(operatorSet, IKeyRegistrarTypes.CurveType.BN254);
+        _setupAVSAndChains();
+
+        // Register operator keys and generate operator table
+        User[] memory operators = _registerBN254Keys(operatorSet);
+        IOperatorTableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo = _generateBN254OperatorTable(operatorSet, operators);
+        _createGenerationReservation(operatorSet);
+
+        // Set a staleness period for testing (1 hour)
+        uint32 stalenessPeriod = 3600;
+        uint32 referenceTimestamp = uint32(block.timestamp - 1000);
+        _confirmGlobalTableRootAndUpdateBN254WithStaleness(operatorSet, operatorSetInfo, referenceTimestamp, stalenessPeriod);
+
+        // Generate certificate with the reference timestamp
+        IBN254CertificateVerifierTypes.BN254Certificate memory certificate =
+            _generateBN254Certificate(operatorSet, referenceTimestamp, keccak256("test message"), operators, _getBN254PrivateKeys());
+
+        // Jump forward to exactly the staleness boundary (referenceTimestamp + stalenessPeriod)
+        uint32 boundaryTimestamp = referenceTimestamp + stalenessPeriod;
+        vm.warp(boundaryTimestamp);
+        console.log("Set timestamp to staleness boundary:", boundaryTimestamp);
+
+        // Verify certificate should still succeed at the boundary
+        check_BN254Certificate_Basic_State(operatorSet, certificate);
+
+        console.log("Successfully verified that BN254 certificate verification succeeds right at staleness period boundary");
+    }
+
+    /**
+     * @notice Test that verifying ECDSA certificate after staleness period expires reverts
+     * @dev This tests that ECDSA certificates become invalid after the maxStalenessPeriod
+     */
+    function test_VerifyECDSACertificate_AfterStalenessPeriod_Reverts() external {
+        console.log("Testing ECDSA certificate verification after staleness period - should revert:");
+        vm.warp(50_000);
+
+        // Setup test environment
+        _configAssetTypes(HOLDS_LST | HOLDS_ETH | HOLDS_ALL);
+        _createTestOperatorSet(2);
+        OperatorSet memory operatorSet = OperatorSet({avs: address(this), id: 2});
+
+        // Configure operator set for ECDSA curve
+        keyRegistrar.configureOperatorSet(operatorSet, IKeyRegistrarTypes.CurveType.ECDSA);
+        _setupAVSAndChains();
+
+        // Register operator keys and generate operator table
+        User[] memory operators = _registerECDSAKeys(operatorSet);
+        IOperatorTableCalculatorTypes.ECDSAOperatorInfo[] memory operatorInfos = _generateECDSAOperatorTable(operatorSet, operators);
+        _createGenerationReservation(operatorSet);
+
+        // Set a short staleness period for testing (1 hour)
+        uint32 stalenessPeriod = 3600;
+        uint32 referenceTimestamp = uint32(block.timestamp - 1000);
+        _confirmGlobalTableRootAndUpdateECDSAWithStaleness(operatorSet, operatorInfos, referenceTimestamp, stalenessPeriod);
+
+        // Generate certificate with the reference timestamp
+        IECDSACertificateVerifierTypes.ECDSACertificate memory certificate =
+            _generateECDSACertificate(operatorSet, referenceTimestamp, keccak256("test message"), operators, _getECDSAPrivateKeys());
+
+        // Verify certificate works initially
+        check_ECDSACertificate_Basic_State(operatorSet, certificate);
+        console.log("Certificate verification successful before staleness period");
+
+        // Jump forward past the staleness period
+        _rollForwardTime(stalenessPeriod + 1);
+        console.log("Jumped forward past staleness period to timestamp:", block.timestamp);
+
+        // Verify certificate should now revert due to staleness
+        vm.expectRevert(abi.encodeWithSignature("CertificateStale()"));
+        ecdsaCertificateVerifier.verifyCertificate(operatorSet, certificate);
+
+        console.log("Successfully verified that ECDSA certificate verification reverts after staleness period");
+    }
+
+    /**
+     * @notice Test that verifying ECDSA certificate right at staleness period boundary succeeds
+     * @dev This tests the exact boundary condition for ECDSA certificates
+     */
+    function test_VerifyECDSACertificate_RightOnStalenessPeriod_Succeeds() external {
+        console.log("Testing ECDSA certificate verification right on staleness period boundary - should succeed:");
+        vm.warp(50_000);
+
+        // Setup test environment
+        _configAssetTypes(HOLDS_LST | HOLDS_ETH | HOLDS_ALL);
+        _createTestOperatorSet(2);
+        OperatorSet memory operatorSet = OperatorSet({avs: address(this), id: 2});
+
+        // Configure operator set for ECDSA curve
+        keyRegistrar.configureOperatorSet(operatorSet, IKeyRegistrarTypes.CurveType.ECDSA);
+        _setupAVSAndChains();
+
+        // Register operator keys and generate operator table
+        User[] memory operators = _registerECDSAKeys(operatorSet);
+        IOperatorTableCalculatorTypes.ECDSAOperatorInfo[] memory operatorInfos = _generateECDSAOperatorTable(operatorSet, operators);
+        _createGenerationReservation(operatorSet);
+
+        // Set a staleness period for testing (1 hour)
+        uint32 stalenessPeriod = 3600;
+        uint32 referenceTimestamp = uint32(block.timestamp - 1000);
+        _confirmGlobalTableRootAndUpdateECDSAWithStaleness(operatorSet, operatorInfos, referenceTimestamp, stalenessPeriod);
+
+        // Generate certificate with the reference timestamp
+        IECDSACertificateVerifierTypes.ECDSACertificate memory certificate =
+            _generateECDSACertificate(operatorSet, referenceTimestamp, keccak256("test message"), operators, _getECDSAPrivateKeys());
+
+        // Jump forward to exactly the staleness boundary
+        uint32 boundaryTimestamp = referenceTimestamp + stalenessPeriod;
+        vm.warp(boundaryTimestamp);
+        console.log("Set timestamp to staleness boundary:", boundaryTimestamp);
+
+        // Verify certificate should still succeed at the boundary
+        check_ECDSACertificate_Basic_State(operatorSet, certificate);
+
+        console.log("Successfully verified that ECDSA certificate verification succeeds right at staleness period boundary");
+    }
+
+    /**
+     * @notice Test complex scenario: verify after staleness -> revert -> update staleness period -> verify again -> pass (BN254)
+     * @dev This tests the complete staleness period update flow for BN254
+     */
+    function test_BN254Certificate_StalenessUpdate_ComplexFlow() external {
+        console.log("Testing BN254 complex staleness update flow:");
+        vm.warp(50_000);
+
+        // Setup test environment
+        _configAssetTypes(HOLDS_LST | HOLDS_ETH | HOLDS_ALL);
+        _createTestOperatorSet(1);
+        OperatorSet memory operatorSet = OperatorSet({avs: address(this), id: 1});
+
+        // Configure operator set for BN254 curve
+        keyRegistrar.configureOperatorSet(operatorSet, IKeyRegistrarTypes.CurveType.BN254);
+        _setupAVSAndChains();
+
+        // Register operator keys and generate operator table
+        User[] memory operators = _registerBN254Keys(operatorSet);
+        IOperatorTableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo = _generateBN254OperatorTable(operatorSet, operators);
+        _createGenerationReservation(operatorSet);
+
+        // Set initial short staleness period (1 hour)
+        uint32 initialStalenessPeriod = 3600;
+        uint32 referenceTimestamp = uint32(block.timestamp - 1000);
+        _confirmGlobalTableRootAndUpdateBN254WithStaleness(operatorSet, operatorSetInfo, referenceTimestamp, initialStalenessPeriod);
+
+        // Generate certificate with the reference timestamp
+        IBN254CertificateVerifierTypes.BN254Certificate memory certificate =
+            _generateBN254Certificate(operatorSet, referenceTimestamp, keccak256("test message"), operators, _getBN254PrivateKeys());
+
+        // Jump forward past the initial staleness period
+        _rollForwardTime(initialStalenessPeriod + 1);
+        console.log("Jumped past initial staleness period");
+
+        // Verify certificate should revert due to staleness
+        vm.expectRevert(abi.encodeWithSignature("CertificateStale()"));
+        bn254CertificateVerifier.verifyCertificate(operatorSet, certificate);
+        console.log("Certificate verification correctly reverted after staleness period");
+
+        // Update the staleness period to be longer (2 hours from original reference timestamp)
+        uint32 newStalenessPeriod = 7200;
+        uint32 newReferenceTimestamp = uint32(block.timestamp);
+        _confirmGlobalTableRootAndUpdateBN254WithStaleness(operatorSet, operatorSetInfo, newReferenceTimestamp, newStalenessPeriod);
+        console.log("Updated staleness period to:", newStalenessPeriod);
+
+        // Generate new certificate with the new reference timestamp
+        IBN254CertificateVerifierTypes.BN254Certificate memory newCertificate =
+            _generateBN254Certificate(operatorSet, newReferenceTimestamp, keccak256("test message 2"), operators, _getBN254PrivateKeys());
+
+        // Verify new certificate should work with updated staleness period
+        check_BN254Certificate_Basic_State(operatorSet, newCertificate);
+        console.log("New certificate verification successful with updated staleness period");
+
+        // Verify that the staleness period was actually updated
+        uint32 retrievedStalenessPeriod = bn254CertificateVerifier.maxOperatorTableStaleness(operatorSet);
+        assertEq(retrievedStalenessPeriod, newStalenessPeriod, "Staleness period should be updated");
+
+        console.log("Successfully completed BN254 complex staleness update flow");
+    }
+
+    /**
+     * @notice Test complex scenario: verify after staleness -> revert -> update staleness period -> verify again -> pass (ECDSA)
+     * @dev This tests the complete staleness period update flow for ECDSA
+     */
+    function test_ECDSACertificate_StalenessUpdate_ComplexFlow() external {
+        console.log("Testing ECDSA complex staleness update flow:");
+        vm.warp(50_000);
+
+        // Setup test environment
+        _configAssetTypes(HOLDS_LST | HOLDS_ETH | HOLDS_ALL);
+        _createTestOperatorSet(2);
+        OperatorSet memory operatorSet = OperatorSet({avs: address(this), id: 2});
+
+        // Configure operator set for ECDSA curve
+        keyRegistrar.configureOperatorSet(operatorSet, IKeyRegistrarTypes.CurveType.ECDSA);
+        _setupAVSAndChains();
+
+        // Register operator keys and generate operator table
+        User[] memory operators = _registerECDSAKeys(operatorSet);
+        IOperatorTableCalculatorTypes.ECDSAOperatorInfo[] memory operatorInfos = _generateECDSAOperatorTable(operatorSet, operators);
+        _createGenerationReservation(operatorSet);
+
+        // Set initial short staleness period (1 hour)
+        uint32 initialStalenessPeriod = 3600;
+        uint32 referenceTimestamp = uint32(block.timestamp - 1000);
+        _confirmGlobalTableRootAndUpdateECDSAWithStaleness(operatorSet, operatorInfos, referenceTimestamp, initialStalenessPeriod);
+
+        // Generate certificate with the reference timestamp
+        IECDSACertificateVerifierTypes.ECDSACertificate memory certificate =
+            _generateECDSACertificate(operatorSet, referenceTimestamp, keccak256("test message"), operators, _getECDSAPrivateKeys());
+
+        // Jump forward past the initial staleness period
+        _rollForwardTime(initialStalenessPeriod + 1);
+        console.log("Jumped past initial staleness period");
+
+        // Verify certificate should revert due to staleness
+        vm.expectRevert(abi.encodeWithSignature("CertificateStale()"));
+        ecdsaCertificateVerifier.verifyCertificate(operatorSet, certificate);
+        console.log("Certificate verification correctly reverted after staleness period");
+
+        // Update the staleness period to be longer (2 hours from original reference timestamp)
+        uint32 newStalenessPeriod = 7200;
+        uint32 newReferenceTimestamp = uint32(block.timestamp);
+        _confirmGlobalTableRootAndUpdateECDSAWithStaleness(operatorSet, operatorInfos, newReferenceTimestamp, newStalenessPeriod);
+        console.log("Updated staleness period to:", newStalenessPeriod);
+
+        // Generate new certificate with the new reference timestamp
+        IECDSACertificateVerifierTypes.ECDSACertificate memory newCertificate =
+            _generateECDSACertificate(operatorSet, newReferenceTimestamp, keccak256("test message 2"), operators, _getECDSAPrivateKeys());
+
+        // Verify new certificate should work with updated staleness period
+        check_ECDSACertificate_Basic_State(operatorSet, newCertificate);
+        console.log("New certificate verification successful with updated staleness period");
+
+        // Verify that the staleness period was actually updated
+        uint32 retrievedStalenessPeriod = ecdsaCertificateVerifier.maxOperatorTableStaleness(operatorSet);
+        assertEq(retrievedStalenessPeriod, newStalenessPeriod, "Staleness period should be updated");
+
+        console.log("Successfully completed ECDSA complex staleness update flow");
+    }
+
+    /**
+     * @notice Helper function to confirm global table root and update BN254 table with custom staleness period
+     */
+    function _confirmGlobalTableRootAndUpdateBN254WithStaleness(
+        OperatorSet memory operatorSet,
+        IOperatorTableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo,
+        uint32 referenceTimestamp,
+        uint32 stalenessPeriod
+    ) internal {
+        // Create the operator table data for transport with custom staleness period
+        bytes memory operatorTable = abi.encode(
+            operatorSet,
+            IKeyRegistrarTypes.CurveType.BN254,
+            ICrossChainRegistryTypes.OperatorSetConfig({owner: address(this), maxStalenessPeriod: stalenessPeriod}),
+            abi.encode(operatorSetInfo)
         );
+
+        // Create global table root containing the operator table
+        bytes32 operatorSetLeafHash = keccak256(operatorTable);
+        bytes32[] memory leaves = new bytes32[](1);
+        leaves[0] = operatorSetLeafHash;
+        bytes32 globalTableRoot = Merkle.merkleizeKeccak(leaves);
+
+        // Update the global table root with confirmation
+        _updateGlobalTableRoot(globalTableRoot, referenceTimestamp);
+
+        // Update the operator table using the confirmed global root
+        uint32 operatorSetIndex = 0; // Single leaf in merkle tree
+        bytes memory proof = new bytes(0); // Empty proof for single leaf
+
+        operatorTableUpdater.updateOperatorTable(referenceTimestamp, globalTableRoot, operatorSetIndex, proof, operatorTable);
+    }
+
+    /**
+     * @notice Helper function to confirm global table root and update ECDSA table with custom staleness period
+     */
+    function _confirmGlobalTableRootAndUpdateECDSAWithStaleness(
+        OperatorSet memory operatorSet,
+        IOperatorTableCalculatorTypes.ECDSAOperatorInfo[] memory operatorInfos,
+        uint32 referenceTimestamp,
+        uint32 stalenessPeriod
+    ) internal {
+        // Create the operator table data for transport with custom staleness period
+        bytes memory operatorTable = abi.encode(
+            operatorSet,
+            IKeyRegistrarTypes.CurveType.ECDSA,
+            ICrossChainRegistryTypes.OperatorSetConfig({owner: address(this), maxStalenessPeriod: stalenessPeriod}),
+            abi.encode(operatorInfos)
+        );
+
+        // Create global table root containing the operator table
+        bytes32 operatorSetLeafHash = keccak256(operatorTable);
+        bytes32[] memory leaves = new bytes32[](1);
+        leaves[0] = operatorSetLeafHash;
+        bytes32 globalTableRoot = Merkle.merkleizeKeccak(leaves);
+
+        // Update the global table root with confirmation
+        _updateGlobalTableRoot(globalTableRoot, referenceTimestamp);
+
+        // Update the operator table using the confirmed global root
+        uint32 operatorSetIndex = 0; // Single leaf in merkle tree
+        bytes memory proof = new bytes(0); // Empty proof for single leaf
+
+        operatorTableUpdater.updateOperatorTable(referenceTimestamp, globalTableRoot, operatorSetIndex, proof, operatorTable);
     }
 }

@@ -1,14 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "../MultichainIntegrationBase.t.sol";
-import "src/contracts/interfaces/IBN254CertificateVerifier.sol";
-import "src/contracts/interfaces/IECDSACertificateVerifier.sol";
-import "src/contracts/interfaces/ICrossChainRegistry.sol";
-import "src/contracts/interfaces/IAllocationManager.sol";
-import "src/contracts/interfaces/IKeyRegistrar.sol";
-import "src/contracts/libraries/BN254.sol";
-import "src/contracts/libraries/Merkle.sol";
+import "../MultichainIntegrationChecks.t.sol";
 
 /**
  * @title Multichain_Full_Flow
@@ -16,7 +9,7 @@ import "src/contracts/libraries/Merkle.sol";
  * @dev Tests the complete flow: key registration -> table calculation ->
  *      transport simulation -> table update -> certificate verification
  */
-contract Multichain_Full_Flow is MultichainIntegrationBase {
+contract Multichain_Full_Flow is MultichainIntegrationCheckUtils {
     using StdStyle for *;
     using BN254 for BN254.G1Point;
 
@@ -54,12 +47,10 @@ contract Multichain_Full_Flow is MultichainIntegrationBase {
         IBN254CertificateVerifierTypes.BN254Certificate memory certificate =
             _generateBN254Certificate(operatorSet, referenceTimestamp, keccak256("test message"), operators, _getBN254PrivateKeys());
 
-        uint[] memory signedStakes = bn254CertificateVerifier.verifyCertificate(operatorSet, certificate);
-
-        // Validate results
-        assertGt(signedStakes.length, 0, "Should return signed stakes");
-        assertEq(signedStakes.length, 2, "Should have two stake types");
-        console.log("BN254 certificate verified successfully with", signedStakes.length, "stake types");
+        // Validate certificate verification
+        check_BN254Certificate_Basic_State(operatorSet, certificate);
+        check_BN254MultichainFlow_Complete_State(operatorSet, certificate, referenceTimestamp);
+        console.log("BN254 certificate verified successfully");
     }
 
     /**
@@ -95,39 +86,36 @@ contract Multichain_Full_Flow is MultichainIntegrationBase {
         IBN254CertificateVerifierTypes.BN254Certificate memory certificate =
             _generateBN254Certificate(operatorSet, referenceTimestamp, keccak256("test message"), operators, _getBN254PrivateKeys());
 
-        // First verify with regular method to get signed stakes
-        uint[] memory signedStakes = bn254CertificateVerifier.verifyCertificate(operatorSet, certificate);
-        console.log("Regular verification returned", signedStakes.length, "stake types");
+        // First verify with regular method
+        check_BN254Certificate_Basic_State(operatorSet, certificate);
+        console.log("Regular verification completed");
 
         // Test proportional verification with 60% threshold
         uint16[] memory proportionalThresholds = new uint16[](2);
         proportionalThresholds[0] = 6000; // 60% in basis points
         proportionalThresholds[1] = 6000; // 60% in basis points
 
-        bool meetsProportionalThresholds =
-            bn254CertificateVerifier.verifyCertificateProportion(operatorSet, certificate, proportionalThresholds);
-
-        // Calculate expected result - with 1 operator (100% signing), should meet 60% threshold
-        assertTrue(meetsProportionalThresholds, "Certificate should meet 60% proportional threshold");
+        check_BN254Certificate_ProportionalVerification_State(
+            operatorSet, certificate, proportionalThresholds, true, "Certificate should meet 60% proportional threshold"
+        );
         console.log("Proportional verification (60% threshold): PASSED");
 
         // Test with higher threshold that should still pass (80%)
         proportionalThresholds[0] = 8000; // 80%
         proportionalThresholds[1] = 8000; // 80%
 
-        bool meetsHigherThreshold = bn254CertificateVerifier.verifyCertificateProportion(operatorSet, certificate, proportionalThresholds);
-
-        assertTrue(meetsHigherThreshold, "Certificate should meet 80% proportional threshold");
+        check_BN254Certificate_ProportionalVerification_State(
+            operatorSet, certificate, proportionalThresholds, true, "Certificate should meet 80% proportional threshold"
+        );
         console.log("Proportional verification (80% threshold): PASSED");
 
-        // Test with very high threshold that should fail (99%)
+        // Test with very high threshold that should still pass (99%)
         proportionalThresholds[0] = 9900; // 99%
         proportionalThresholds[1] = 9900; // 99%
 
-        bool meetsVeryHighThreshold = bn254CertificateVerifier.verifyCertificateProportion(operatorSet, certificate, proportionalThresholds);
-
-        // With 100% signing, this should still pass
-        assertTrue(meetsVeryHighThreshold, "Certificate should meet 99% proportional threshold with 100% signing");
+        check_BN254Certificate_ProportionalVerification_State(
+            operatorSet, certificate, proportionalThresholds, true, "Certificate should meet 99% proportional threshold with 100% signing"
+        );
         console.log("Proportional verification (99% threshold): PASSED");
 
         console.log("BN254 proportional verification tests completed successfully");
@@ -168,7 +156,8 @@ contract Multichain_Full_Flow is MultichainIntegrationBase {
 
         // First verify with regular method to get signed stakes
         uint[] memory signedStakes = bn254CertificateVerifier.verifyCertificate(operatorSet, certificate);
-        console.log("Regular verification returned", signedStakes.length, "stake types");
+        check_BN254Certificate_Basic_State(operatorSet, certificate);
+        console.log("Regular verification completed");
         console.log("Signed stakes - Type 0:", signedStakes[0]);
         console.log("Signed stakes - Type 1:", signedStakes[1]);
 
@@ -177,27 +166,27 @@ contract Multichain_Full_Flow is MultichainIntegrationBase {
         nominalThresholds[0] = signedStakes[0] > 100 ? signedStakes[0] - 100 : 0;
         nominalThresholds[1] = signedStakes[1] > 100 ? signedStakes[1] - 100 : 0;
 
-        bool meetsNominalThresholds = bn254CertificateVerifier.verifyCertificateNominal(operatorSet, certificate, nominalThresholds);
-
-        assertTrue(meetsNominalThresholds, "Certificate should meet nominal thresholds below signed stakes");
+        check_BN254Certificate_NominalVerification_State(
+            operatorSet, certificate, nominalThresholds, true, "Certificate should meet nominal thresholds below signed stakes"
+        );
         console.log("Nominal verification (below signed stakes): PASSED");
 
         // Test with thresholds equal to signed stakes (should pass)
         nominalThresholds[0] = signedStakes[0];
         nominalThresholds[1] = signedStakes[1];
 
-        bool meetsExactThresholds = bn254CertificateVerifier.verifyCertificateNominal(operatorSet, certificate, nominalThresholds);
-
-        assertTrue(meetsExactThresholds, "Certificate should meet exact nominal thresholds");
+        check_BN254Certificate_NominalVerification_State(
+            operatorSet, certificate, nominalThresholds, true, "Certificate should meet exact nominal thresholds"
+        );
         console.log("Nominal verification (exact signed stakes): PASSED");
 
         // Test with thresholds above signed stakes (should fail)
         nominalThresholds[0] = signedStakes[0] + 100;
         nominalThresholds[1] = signedStakes[1] + 100;
 
-        bool meetsHighThresholds = bn254CertificateVerifier.verifyCertificateNominal(operatorSet, certificate, nominalThresholds);
-
-        assertFalse(meetsHighThresholds, "Certificate should not meet nominal thresholds above signed stakes");
+        check_BN254Certificate_NominalVerification_State(
+            operatorSet, certificate, nominalThresholds, false, "Certificate should not meet nominal thresholds above signed stakes"
+        );
         console.log("Nominal verification (above signed stakes): CORRECTLY FAILED");
 
         console.log("BN254 nominal verification tests completed successfully");
@@ -237,13 +226,9 @@ contract Multichain_Full_Flow is MultichainIntegrationBase {
         IECDSACertificateVerifierTypes.ECDSACertificate memory certificate =
             _generateECDSACertificate(operatorSet, referenceTimestamp, keccak256("test message"), operators, _getECDSAPrivateKeys());
 
-        (uint[] memory signedStakes, address[] memory signers) = ecdsaCertificateVerifier.verifyCertificate(operatorSet, certificate);
-
-        // Validate results
-        assertGt(signedStakes.length, 0, "Should return signed stakes");
-        assertEq(signedStakes.length, 2, "Should have two stake types");
-        assertGt(signers.length, 0, "Should return signers");
-        console.log("ECDSA certificate verified successfully with", signedStakes.length, "stake types");
-        console.log("Number of signers:", signers.length);
+        // Validate certificate verification
+        check_ECDSACertificate_Basic_State(operatorSet, certificate);
+        check_ECDSAMultichainFlow_Complete_State(operatorSet, certificate, referenceTimestamp);
+        console.log("ECDSA certificate verified successfully");
     }
 }
