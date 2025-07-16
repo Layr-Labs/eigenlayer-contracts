@@ -96,11 +96,7 @@ contract Multichain_Full_Flow is MultichainIntegrationCheckUtils {
         proportionalThresholds[1] = 6000; // 60% in basis points
 
         check_BN254Certificate_ProportionalVerification_State(
-            operatorSet, 
-            certificate, 
-            proportionalThresholds, 
-            true, 
-            "Certificate should meet 60% proportional threshold"
+            operatorSet, certificate, proportionalThresholds, true, "Certificate should meet 60% proportional threshold"
         );
         console.log("Proportional verification (60% threshold): PASSED");
 
@@ -109,11 +105,7 @@ contract Multichain_Full_Flow is MultichainIntegrationCheckUtils {
         proportionalThresholds[1] = 8000; // 80%
 
         check_BN254Certificate_ProportionalVerification_State(
-            operatorSet, 
-            certificate, 
-            proportionalThresholds, 
-            true, 
-            "Certificate should meet 80% proportional threshold"
+            operatorSet, certificate, proportionalThresholds, true, "Certificate should meet 80% proportional threshold"
         );
         console.log("Proportional verification (80% threshold): PASSED");
 
@@ -122,11 +114,7 @@ contract Multichain_Full_Flow is MultichainIntegrationCheckUtils {
         proportionalThresholds[1] = 9900; // 99%
 
         check_BN254Certificate_ProportionalVerification_State(
-            operatorSet, 
-            certificate, 
-            proportionalThresholds, 
-            true, 
-            "Certificate should meet 99% proportional threshold with 100% signing"
+            operatorSet, certificate, proportionalThresholds, true, "Certificate should meet 99% proportional threshold with 100% signing"
         );
         console.log("Proportional verification (99% threshold): PASSED");
 
@@ -179,11 +167,7 @@ contract Multichain_Full_Flow is MultichainIntegrationCheckUtils {
         nominalThresholds[1] = signedStakes[1] > 100 ? signedStakes[1] - 100 : 0;
 
         check_BN254Certificate_NominalVerification_State(
-            operatorSet, 
-            certificate, 
-            nominalThresholds, 
-            true, 
-            "Certificate should meet nominal thresholds below signed stakes"
+            operatorSet, certificate, nominalThresholds, true, "Certificate should meet nominal thresholds below signed stakes"
         );
         console.log("Nominal verification (below signed stakes): PASSED");
 
@@ -192,11 +176,7 @@ contract Multichain_Full_Flow is MultichainIntegrationCheckUtils {
         nominalThresholds[1] = signedStakes[1];
 
         check_BN254Certificate_NominalVerification_State(
-            operatorSet, 
-            certificate, 
-            nominalThresholds, 
-            true, 
-            "Certificate should meet exact nominal thresholds"
+            operatorSet, certificate, nominalThresholds, true, "Certificate should meet exact nominal thresholds"
         );
         console.log("Nominal verification (exact signed stakes): PASSED");
 
@@ -205,11 +185,7 @@ contract Multichain_Full_Flow is MultichainIntegrationCheckUtils {
         nominalThresholds[1] = signedStakes[1] + 100;
 
         check_BN254Certificate_NominalVerification_State(
-            operatorSet, 
-            certificate, 
-            nominalThresholds, 
-            false, 
-            "Certificate should not meet nominal thresholds above signed stakes"
+            operatorSet, certificate, nominalThresholds, false, "Certificate should not meet nominal thresholds above signed stakes"
         );
         console.log("Nominal verification (above signed stakes): CORRECTLY FAILED");
 

@@ -21,7 +21,6 @@ contract MultichainIntegrationCheckUtils is MultichainIntegrationBase {
      *                              CERTIFICATE VERIFICATION CHECKS
      *
      */
-
     function check_BN254Certificate_Basic_State(
         OperatorSet memory operatorSet,
         IBN254CertificateVerifierTypes.BN254Certificate memory certificate
@@ -35,7 +34,7 @@ contract MultichainIntegrationCheckUtils is MultichainIntegrationBase {
         uint expectedStakeTypes
     ) internal {
         uint[] memory signedStakes = bn254CertificateVerifier.verifyCertificate(operatorSet, certificate);
-        
+
         assertGt(signedStakes.length, 0, "Should return signed stakes");
         assertEq(signedStakes.length, expectedStakeTypes, "Should have expected number of stake types");
     }
@@ -47,14 +46,16 @@ contract MultichainIntegrationCheckUtils is MultichainIntegrationBase {
         uint[] memory expectedMinStakes
     ) internal returns (uint[] memory signedStakes) {
         signedStakes = bn254CertificateVerifier.verifyCertificate(operatorSet, certificate);
-        
+
         assertGt(signedStakes.length, 0, "Should return signed stakes");
         assertEq(signedStakes.length, expectedStakeTypes, "Should have expected number of stake types");
-        
+
         if (expectedMinStakes.length > 0) {
             assertEq(signedStakes.length, expectedMinStakes.length, "Signed stakes length should match expected min stakes length");
             for (uint i = 0; i < signedStakes.length; i++) {
-                assertGe(signedStakes[i], expectedMinStakes[i], string.concat("Signed stake at index ", vm.toString(i), " should meet minimum"));
+                assertGe(
+                    signedStakes[i], expectedMinStakes[i], string.concat("Signed stake at index ", vm.toString(i), " should meet minimum")
+                );
             }
         }
     }
@@ -67,12 +68,9 @@ contract MultichainIntegrationCheckUtils is MultichainIntegrationBase {
         string memory message
     ) internal {
         bool meetsThresholds = bn254CertificateVerifier.verifyCertificateProportion(operatorSet, certificate, proportionalThresholds);
-        
-        if (expectedResult) {
-            assertTrue(meetsThresholds, message);
-        } else {
-            assertFalse(meetsThresholds, message);
-        }
+
+        if (expectedResult) assertTrue(meetsThresholds, message);
+        else assertFalse(meetsThresholds, message);
     }
 
     function check_BN254Certificate_NominalVerification_State(
@@ -83,12 +81,9 @@ contract MultichainIntegrationCheckUtils is MultichainIntegrationBase {
         string memory message
     ) internal {
         bool meetsThresholds = bn254CertificateVerifier.verifyCertificateNominal(operatorSet, certificate, nominalThresholds);
-        
-        if (expectedResult) {
-            assertTrue(meetsThresholds, message);
-        } else {
-            assertFalse(meetsThresholds, message);
-        }
+
+        if (expectedResult) assertTrue(meetsThresholds, message);
+        else assertFalse(meetsThresholds, message);
     }
 
     function check_ECDSACertificate_Basic_State(
@@ -105,7 +100,7 @@ contract MultichainIntegrationCheckUtils is MultichainIntegrationBase {
         uint expectedMinSigners
     ) internal {
         (uint[] memory signedStakes, address[] memory signers) = ecdsaCertificateVerifier.verifyCertificate(operatorSet, certificate);
-        
+
         assertGt(signedStakes.length, 0, "Should return signed stakes");
         assertEq(signedStakes.length, expectedStakeTypes, "Should have expected number of stake types");
         assertGe(signers.length, expectedMinSigners, "Should have at least expected minimum number of signers");
@@ -119,15 +114,17 @@ contract MultichainIntegrationCheckUtils is MultichainIntegrationBase {
         uint[] memory expectedMinStakes
     ) internal returns (uint[] memory signedStakes, address[] memory signers) {
         (signedStakes, signers) = ecdsaCertificateVerifier.verifyCertificate(operatorSet, certificate);
-        
+
         assertGt(signedStakes.length, 0, "Should return signed stakes");
         assertEq(signedStakes.length, expectedStakeTypes, "Should have expected number of stake types");
         assertGe(signers.length, expectedMinSigners, "Should have at least expected minimum number of signers");
-        
+
         if (expectedMinStakes.length > 0) {
             assertEq(signedStakes.length, expectedMinStakes.length, "Signed stakes length should match expected min stakes length");
             for (uint i = 0; i < signedStakes.length; i++) {
-                assertGe(signedStakes[i], expectedMinStakes[i], string.concat("Signed stake at index ", vm.toString(i), " should meet minimum"));
+                assertGe(
+                    signedStakes[i], expectedMinStakes[i], string.concat("Signed stake at index ", vm.toString(i), " should meet minimum")
+                );
             }
         }
     }
@@ -137,7 +134,6 @@ contract MultichainIntegrationCheckUtils is MultichainIntegrationBase {
      *                              GENERATION RESERVATION CHECKS
      *
      */
-
     function check_GenerationReservation_Exists_State(OperatorSet memory operatorSet) internal {
         OperatorSet[] memory activeReservations = crossChainRegistry.getActiveGenerationReservations();
         bool reservationFound = false;
@@ -186,7 +182,6 @@ contract MultichainIntegrationCheckUtils is MultichainIntegrationBase {
      *                              TIMESTAMP AND TIMING CHECKS
      *
      */
-
     function check_LatestReferenceTimestamp_Updated_State(uint32 expectedTimestamp) internal {
         uint32 latestReferenceTimestamp = operatorTableUpdater.getLatestReferenceTimestamp();
         assertEq(latestReferenceTimestamp, expectedTimestamp, "Latest reference timestamp should match expected value");
@@ -207,19 +202,13 @@ contract MultichainIntegrationCheckUtils is MultichainIntegrationBase {
      *                              GLOBAL TABLE ROOT CHECKS
      *
      */
-
     function check_GlobalTableRoot_PostSameTimestamp_Reverts(
         bytes32 globalTableRoot,
         uint32 referenceTimestamp,
         IBN254CertificateVerifierTypes.BN254Certificate memory confirmationCertificate
     ) internal {
         vm.expectRevert(abi.encodeWithSignature("GlobalTableRootStale()"));
-        operatorTableUpdater.confirmGlobalTableRoot(
-            confirmationCertificate,
-            globalTableRoot,
-            referenceTimestamp,
-            uint32(block.number)
-        );
+        operatorTableUpdater.confirmGlobalTableRoot(confirmationCertificate, globalTableRoot, referenceTimestamp, uint32(block.number));
     }
 
     function check_GlobalTableRoot_PostSuccess_State(
@@ -231,11 +220,9 @@ contract MultichainIntegrationCheckUtils is MultichainIntegrationBase {
         check_LatestReferenceTimestamp_Updated_State(referenceTimestamp);
     }
 
-    function check_TableTransport_StaleTimestamp_Reverts(
-        uint32 staleTimestamp,
-        bytes32 validGlobalTableRoot,
-        bytes memory operatorTable
-    ) internal {
+    function check_TableTransport_StaleTimestamp_Reverts(uint32 staleTimestamp, bytes32 validGlobalTableRoot, bytes memory operatorTable)
+        internal
+    {
         check_TableTransport_StaleTimestamp_Reverts(staleTimestamp, validGlobalTableRoot, operatorTable, 0, new bytes(0));
     }
 
@@ -247,13 +234,7 @@ contract MultichainIntegrationCheckUtils is MultichainIntegrationBase {
         bytes memory proof
     ) internal {
         vm.expectRevert(abi.encodeWithSignature("TableUpdateForPastTimestamp()"));
-        operatorTableUpdater.updateOperatorTable(
-            staleTimestamp,
-            validGlobalTableRoot,
-            operatorSetIndex,
-            proof,
-            operatorTable
-        );
+        operatorTableUpdater.updateOperatorTable(staleTimestamp, validGlobalTableRoot, operatorSetIndex, proof, operatorTable);
     }
 
     /**
@@ -261,7 +242,6 @@ contract MultichainIntegrationCheckUtils is MultichainIntegrationBase {
      *                              COMPLETE FLOW CHECKS
      *
      */
-
     function check_BN254MultichainFlow_Complete_State(
         OperatorSet memory operatorSet,
         IBN254CertificateVerifierTypes.BN254Certificate memory certificate,
@@ -278,7 +258,7 @@ contract MultichainIntegrationCheckUtils is MultichainIntegrationBase {
     ) internal {
         // Verify certificate works
         check_BN254Certificate_Basic_State(operatorSet, certificate, expectedStakeTypes);
-        
+
         // Verify timestamp is correctly set
         check_OperatorSetLatestTimestamp_State(operatorSet, referenceTimestamp);
     }
@@ -292,7 +272,7 @@ contract MultichainIntegrationCheckUtils is MultichainIntegrationBase {
     ) internal returns (uint[] memory signedStakes) {
         // Verify certificate works and return signed stakes
         signedStakes = check_BN254Certificate_Basic_State(operatorSet, certificate, expectedStakeTypes, expectedMinStakes);
-        
+
         // Verify timestamp is correctly set
         check_OperatorSetLatestTimestamp_State(operatorSet, referenceTimestamp);
     }
@@ -314,7 +294,7 @@ contract MultichainIntegrationCheckUtils is MultichainIntegrationBase {
     ) internal {
         // Verify certificate works
         check_ECDSACertificate_Basic_State(operatorSet, certificate, expectedStakeTypes, expectedMinSigners);
-        
+
         // Verify timestamp is correctly set
         check_ECDSAOperatorSetLatestTimestamp_State(operatorSet, referenceTimestamp);
     }
@@ -328,8 +308,9 @@ contract MultichainIntegrationCheckUtils is MultichainIntegrationBase {
         uint[] memory expectedMinStakes
     ) internal returns (uint[] memory signedStakes, address[] memory signers) {
         // Verify certificate works and return signed stakes and signers
-        (signedStakes, signers) = check_ECDSACertificate_Basic_State(operatorSet, certificate, expectedStakeTypes, expectedMinSigners, expectedMinStakes);
-        
+        (signedStakes, signers) =
+            check_ECDSACertificate_Basic_State(operatorSet, certificate, expectedStakeTypes, expectedMinSigners, expectedMinStakes);
+
         // Verify timestamp is correctly set
         check_ECDSAOperatorSetLatestTimestamp_State(operatorSet, referenceTimestamp);
     }
@@ -339,7 +320,6 @@ contract MultichainIntegrationCheckUtils is MultichainIntegrationBase {
      *                              CERTIFICATE GENERATION HELPERS
      *
      */
-
     function check_CertificateGeneration_BN254_State(
         OperatorSet memory operatorSet,
         uint32 referenceTimestamp,
@@ -348,7 +328,7 @@ contract MultichainIntegrationCheckUtils is MultichainIntegrationBase {
         uint[] memory privateKeys
     ) internal returns (IBN254CertificateVerifierTypes.BN254Certificate memory certificate) {
         certificate = _generateBN254Certificate(operatorSet, referenceTimestamp, messageHash, operators, privateKeys);
-        
+
         // Basic validation that certificate was generated correctly
         assertEq(certificate.referenceTimestamp, referenceTimestamp, "Certificate should have correct reference timestamp");
         assertEq(certificate.messageHash, messageHash, "Certificate should have correct message hash");
@@ -364,7 +344,7 @@ contract MultichainIntegrationCheckUtils is MultichainIntegrationBase {
         uint[] memory privateKeys
     ) internal returns (IECDSACertificateVerifierTypes.ECDSACertificate memory certificate) {
         certificate = _generateECDSACertificate(operatorSet, referenceTimestamp, messageHash, operators, privateKeys);
-        
+
         // Basic validation that certificate was generated correctly
         assertEq(certificate.referenceTimestamp, referenceTimestamp, "Certificate should have correct reference timestamp");
         assertEq(certificate.messageHash, messageHash, "Certificate should have correct message hash");
@@ -380,7 +360,7 @@ contract MultichainIntegrationCheckUtils is MultichainIntegrationBase {
         uint expectedSigLength
     ) internal returns (IECDSACertificateVerifierTypes.ECDSACertificate memory certificate) {
         certificate = _generateECDSACertificate(operatorSet, referenceTimestamp, messageHash, operators, privateKeys);
-        
+
         // Basic validation that certificate was generated correctly
         assertEq(certificate.referenceTimestamp, referenceTimestamp, "Certificate should have correct reference timestamp");
         assertEq(certificate.messageHash, messageHash, "Certificate should have correct message hash");
@@ -392,35 +372,30 @@ contract MultichainIntegrationCheckUtils is MultichainIntegrationBase {
      *                              GRANULAR VALIDATION HELPERS
      *
      */
-
-    function check_SignedStakes_MinimumThresholds(
-        uint[] memory signedStakes,
-        uint[] memory minimumThresholds,
-        string memory context
-    ) internal pure {
+    function check_SignedStakes_MinimumThresholds(uint[] memory signedStakes, uint[] memory minimumThresholds, string memory context)
+        internal
+        pure
+    {
         require(signedStakes.length == minimumThresholds.length, "SignedStakes and thresholds length mismatch");
-        
+
         for (uint i = 0; i < signedStakes.length; i++) {
             assertGe(
-                signedStakes[i], 
-                minimumThresholds[i], 
+                signedStakes[i],
+                minimumThresholds[i],
                 string.concat(context, ": Stake type ", vm.toString(i), " should meet minimum threshold")
             );
         }
     }
 
-    function check_SignedStakes_ExactValues(
-        uint[] memory signedStakes,
-        uint[] memory expectedValues,
-        string memory context
-    ) internal pure {
+    function check_SignedStakes_ExactValues(uint[] memory signedStakes, uint[] memory expectedValues, string memory context)
+        internal
+        pure
+    {
         require(signedStakes.length == expectedValues.length, "SignedStakes and expected values length mismatch");
-        
+
         for (uint i = 0; i < signedStakes.length; i++) {
             assertEq(
-                signedStakes[i], 
-                expectedValues[i], 
-                string.concat(context, ": Stake type ", vm.toString(i), " should match expected value")
+                signedStakes[i], expectedValues[i], string.concat(context, ": Stake type ", vm.toString(i), " should match expected value")
             );
         }
     }
@@ -433,36 +408,31 @@ contract MultichainIntegrationCheckUtils is MultichainIntegrationBase {
     ) internal pure {
         require(signedStakes.length == totalStakes.length, "SignedStakes and totalStakes length mismatch");
         require(signedStakes.length == expectedProportionsBPS.length, "SignedStakes and proportions length mismatch");
-        
+
         for (uint i = 0; i < signedStakes.length; i++) {
-            uint expectedMinStake = (totalStakes[i] * expectedProportionsBPS[i]) / 10000;
+            uint expectedMinStake = (totalStakes[i] * expectedProportionsBPS[i]) / 10_000;
             assertGe(
-                signedStakes[i], 
-                expectedMinStake, 
+                signedStakes[i],
+                expectedMinStake,
                 string.concat(context, ": Stake type ", vm.toString(i), " should meet proportional threshold")
             );
         }
     }
 
-    function check_Signers_ValidAddresses(
-        address[] memory signers,
-        string memory context
-    ) internal pure {
+    function check_Signers_ValidAddresses(address[] memory signers, string memory context) internal pure {
         for (uint i = 0; i < signers.length; i++) {
             assertTrue(
-                signers[i] != address(0), 
-                string.concat(context, ": Signer at index ", vm.toString(i), " should not be zero address")
+                signers[i] != address(0), string.concat(context, ": Signer at index ", vm.toString(i), " should not be zero address")
             );
         }
     }
 
-    function check_Signers_ExpectedAddresses(
-        address[] memory signers,
-        address[] memory expectedSigners,
-        string memory context
-    ) internal pure {
+    function check_Signers_ExpectedAddresses(address[] memory signers, address[] memory expectedSigners, string memory context)
+        internal
+        pure
+    {
         assertEq(signers.length, expectedSigners.length, string.concat(context, ": Signers length should match expected"));
-        
+
         for (uint i = 0; i < signers.length; i++) {
             bool found = false;
             for (uint j = 0; j < expectedSigners.length; j++) {
@@ -471,23 +441,12 @@ contract MultichainIntegrationCheckUtils is MultichainIntegrationBase {
                     break;
                 }
             }
-            assertTrue(
-                found, 
-                string.concat(context, ": Signer ", vm.toString(signers[i]), " should be in expected signers list")
-            );
+            assertTrue(found, string.concat(context, ": Signer ", vm.toString(signers[i]), " should be in expected signers list"));
         }
     }
 
-    function check_Signers_MinimumCount(
-        address[] memory signers,
-        uint minimumCount,
-        string memory context
-    ) internal pure {
-        assertGe(
-            signers.length, 
-            minimumCount, 
-            string.concat(context, ": Should have at least ", vm.toString(minimumCount), " signers")
-        );
+    function check_Signers_MinimumCount(address[] memory signers, uint minimumCount, string memory context) internal pure {
+        assertGe(signers.length, minimumCount, string.concat(context, ": Should have at least ", vm.toString(minimumCount), " signers"));
     }
 
     /**
@@ -495,24 +454,21 @@ contract MultichainIntegrationCheckUtils is MultichainIntegrationBase {
      *                              TRANSPORT AND UPDATE CHECKS
      *
      */
-
-    function check_TableTransport_Success_State(
-        OperatorSet memory operatorSet,
-        uint32 referenceTimestamp,
-        bytes32 expectedGlobalTableRoot
-    ) internal {
+    function check_TableTransport_Success_State(OperatorSet memory operatorSet, uint32 referenceTimestamp, bytes32 expectedGlobalTableRoot)
+        internal
+    {
         // Verify that the global table root was updated correctly
         bytes32 currentGlobalTableRoot = operatorTableUpdater.getCurrentGlobalTableRoot();
         assertEq(currentGlobalTableRoot, expectedGlobalTableRoot, "Global table root should match expected value");
-        
+
         // Verify that the latest reference timestamp was updated
         check_LatestReferenceTimestamp_Updated_State(referenceTimestamp);
     }
 
-    function check_OperatorSetRegistration_State(
-        OperatorSet memory operatorSet,
-        IKeyRegistrarTypes.CurveType expectedCurveType
-    ) internal view {
+    function check_OperatorSetRegistration_State(OperatorSet memory operatorSet, IKeyRegistrarTypes.CurveType expectedCurveType)
+        internal
+        view
+    {
         IKeyRegistrarTypes.CurveType actualCurveType = keyRegistrar.getOperatorSetCurveType(operatorSet);
         assertTrue(actualCurveType == expectedCurveType, "Operator set should be configured for expected curve type");
     }
@@ -522,21 +478,18 @@ contract MultichainIntegrationCheckUtils is MultichainIntegrationBase {
      *                              KEY REGISTRATION CHECKS
      *
      */
-
-    function check_BN254KeyRegistration_State(
-        User operator,
-        OperatorSet memory operatorSet,
-        BN254.G1Point memory expectedPubkey
-    ) internal view {
-        (BN254.G1Point memory registeredG1Pubkey, ) = keyRegistrar.getBN254Key(operatorSet, address(operator));
-        assertTrue(registeredG1Pubkey.X == expectedPubkey.X && registeredG1Pubkey.Y == expectedPubkey.Y, "Registered BN254 pubkey should match expected");
+    function check_BN254KeyRegistration_State(User operator, OperatorSet memory operatorSet, BN254.G1Point memory expectedPubkey)
+        internal
+        view
+    {
+        (BN254.G1Point memory registeredG1Pubkey,) = keyRegistrar.getBN254Key(operatorSet, address(operator));
+        assertTrue(
+            registeredG1Pubkey.X == expectedPubkey.X && registeredG1Pubkey.Y == expectedPubkey.Y,
+            "Registered BN254 pubkey should match expected"
+        );
     }
 
-    function check_ECDSAKeyRegistration_State(
-        User operator,
-        OperatorSet memory operatorSet,
-        address expectedPubkey
-    ) internal view {
+    function check_ECDSAKeyRegistration_State(User operator, OperatorSet memory operatorSet, address expectedPubkey) internal view {
         address registeredPubkey = keyRegistrar.getECDSAAddress(operatorSet, address(operator));
         assertEq(registeredPubkey, expectedPubkey, "Registered ECDSA pubkey should match expected");
     }
@@ -546,7 +499,6 @@ contract MultichainIntegrationCheckUtils is MultichainIntegrationBase {
      *                              STALENESS PERIOD CHECKS
      *
      */
-
     function check_BN254Certificate_PostStaleness_Reverts(
         OperatorSet memory operatorSet,
         IBN254CertificateVerifierTypes.BN254Certificate memory certificate
@@ -579,18 +531,12 @@ contract MultichainIntegrationCheckUtils is MultichainIntegrationBase {
         check_ECDSACertificate_Basic_State(operatorSet, certificate);
     }
 
-    function check_BN254StalenessPeriod_Updated_State(
-        OperatorSet memory operatorSet,
-        uint32 expectedStalenessPeriod
-    ) internal view {
+    function check_BN254StalenessPeriod_Updated_State(OperatorSet memory operatorSet, uint32 expectedStalenessPeriod) internal view {
         uint32 actualStalenessPeriod = bn254CertificateVerifier.maxOperatorTableStaleness(operatorSet);
         assertEq(actualStalenessPeriod, expectedStalenessPeriod, "BN254 staleness period should match expected value");
     }
 
-    function check_ECDSAStalenessPeriod_Updated_State(
-        OperatorSet memory operatorSet,
-        uint32 expectedStalenessPeriod
-    ) internal view {
+    function check_ECDSAStalenessPeriod_Updated_State(OperatorSet memory operatorSet, uint32 expectedStalenessPeriod) internal view {
         uint32 actualStalenessPeriod = ecdsaCertificateVerifier.maxOperatorTableStaleness(operatorSet);
         assertEq(actualStalenessPeriod, expectedStalenessPeriod, "ECDSA staleness period should match expected value");
     }
@@ -601,11 +547,8 @@ contract MultichainIntegrationCheckUtils is MultichainIntegrationBase {
         IECDSACertificateVerifierTypes.ECDSACertificate memory ecdsaCertificate,
         bool isBN254
     ) internal {
-        if (isBN254) {
-            check_BN254Certificate_Basic_State(operatorSet, bn254Certificate);
-        } else {
-            check_ECDSACertificate_Basic_State(operatorSet, ecdsaCertificate);
-        }
+        if (isBN254) check_BN254Certificate_Basic_State(operatorSet, bn254Certificate);
+        else check_ECDSACertificate_Basic_State(operatorSet, ecdsaCertificate);
     }
 
     function check_StalenessUpdate_CompleteFlow_State(
@@ -614,12 +557,9 @@ contract MultichainIntegrationCheckUtils is MultichainIntegrationBase {
         uint32 newStalenessPeriod,
         bool isBN254
     ) internal view {
-        if (isBN254) {
-            check_BN254StalenessPeriod_Updated_State(operatorSet, newStalenessPeriod);
-        } else {
-            check_ECDSAStalenessPeriod_Updated_State(operatorSet, newStalenessPeriod);
-        }
-        
+        if (isBN254) check_BN254StalenessPeriod_Updated_State(operatorSet, newStalenessPeriod);
+        else check_ECDSAStalenessPeriod_Updated_State(operatorSet, newStalenessPeriod);
+
         // Verify that the new staleness period is different from the initial one
         assertTrue(newStalenessPeriod != initialStalenessPeriod, "New staleness period should be different from initial");
     }
@@ -629,22 +569,17 @@ contract MultichainIntegrationCheckUtils is MultichainIntegrationBase {
      *                              TIME MANIPULATION HELPERS
      *
      */
-
-    function check_TimeAdvance_PostStaleness_State(
-        uint32 referenceTimestamp,
-        uint32 stalenessPeriod,
-        uint256 expectedBlockTimestamp
-    ) internal view {
-        uint256 expectedStaleTimestamp = referenceTimestamp + stalenessPeriod;
+    function check_TimeAdvance_PostStaleness_State(uint32 referenceTimestamp, uint32 stalenessPeriod, uint expectedBlockTimestamp)
+        internal
+        view
+    {
+        uint expectedStaleTimestamp = referenceTimestamp + stalenessPeriod;
         assertTrue(block.timestamp > expectedStaleTimestamp, "Should be past staleness period");
         assertEq(block.timestamp, expectedBlockTimestamp, "Block timestamp should match expected value");
     }
 
-    function check_TimeAdvance_AtBoundary_State(
-        uint32 referenceTimestamp,
-        uint32 stalenessPeriod
-    ) internal view {
-        uint256 expectedBoundaryTimestamp = referenceTimestamp + stalenessPeriod;
+    function check_TimeAdvance_AtBoundary_State(uint32 referenceTimestamp, uint32 stalenessPeriod) internal view {
+        uint expectedBoundaryTimestamp = referenceTimestamp + stalenessPeriod;
         assertEq(block.timestamp, expectedBoundaryTimestamp, "Should be exactly at staleness boundary");
     }
 
@@ -653,7 +588,6 @@ contract MultichainIntegrationCheckUtils is MultichainIntegrationBase {
      *                              COMBINED VALIDATION HELPERS
      *
      */
-
     function check_StalenessScenario_Complete_State(
         OperatorSet memory operatorSet,
         uint32 referenceTimestamp,
@@ -676,12 +610,7 @@ contract MultichainIntegrationCheckUtils is MultichainIntegrationBase {
         }
 
         // Check staleness period configuration
-        if (isBN254) {
-            check_BN254StalenessPeriod_Updated_State(operatorSet, stalenessPeriod);
-        } else {
-            check_ECDSAStalenessPeriod_Updated_State(operatorSet, stalenessPeriod);
-        }
+        if (isBN254) check_BN254StalenessPeriod_Updated_State(operatorSet, stalenessPeriod);
+        else check_ECDSAStalenessPeriod_Updated_State(operatorSet, stalenessPeriod);
     }
-
-
-} 
+}
