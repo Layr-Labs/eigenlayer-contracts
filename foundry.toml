@@ -117,6 +117,8 @@
     ]
 
 [profile.default.lint]
+    # Whether to run the linter when building.
+    lint_on_build = false
     # Specifies which lints to run based on severity.
     severity = [
         "high", 
@@ -146,7 +148,7 @@
 
         # Gas
         # "asm-keccak256",
-        # "unwrapped-modifier"
+        # "unwrapped-modifier-logic"
     ]
     # List of files or patterns to ignore when running the linter (can use glob patterns)
     ignore = [
