@@ -139,7 +139,7 @@ contract OperatorTableUpdater is
                 > IBaseCertificateVerifier(getCertificateVerifier(curveType)).latestReferenceTimestamp(operatorSet),
             TableUpdateForPastTimestamp()
         );
-        
+
         // Check that the `globalTableRoot` matches the `referenceTimestamp`
         require(_globalTableRoots[referenceTimestamp] == globalTableRoot, InvalidGlobalTableRoot());
 
