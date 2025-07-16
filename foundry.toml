@@ -125,8 +125,29 @@
         "info", 
         "gas"
     ]
-    # List of lint IDs to exclude from checking (e.g., "mixed-case-function").
-    exclude_lints = []
+    # List of lints to exclude from linting.
+    exclude_lints = [
+        # High
+        # "incorrect-shift",
+        # "unchecked-call",
+        # "erc20-unchecked-transfer",
+
+        # Medium
+        # "divide-before-multiply",
+
+        # Info
+        # "unused-import",
+        # "unaliased-plain-import",
+        # "mixed-case-function",
+        # "mixed-case-variable",
+        # "pascal-case-struct",
+        # "screaming-snake-case-const",
+        # "screaming-snake-case-immutable",
+
+        # Gas
+        # "asm-keccak256",
+        # "unwrapped-modifier"
+    ]
     # List of files or patterns to ignore when running the linter (can use glob patterns)
     ignore = [
         "src/test/**/*",
