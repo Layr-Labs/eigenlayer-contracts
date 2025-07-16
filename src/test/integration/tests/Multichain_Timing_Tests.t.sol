@@ -1,22 +1,14 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "../MultichainIntegrationBase.t.sol";
-import "src/contracts/interfaces/IBN254CertificateVerifier.sol";
-import "src/contracts/interfaces/IECDSACertificateVerifier.sol";
-import "src/contracts/interfaces/ICrossChainRegistry.sol";
-import "src/contracts/interfaces/IAllocationManager.sol";
-import "src/contracts/interfaces/IKeyRegistrar.sol";
-import "src/contracts/interfaces/IOperatorTableUpdater.sol";
-import "src/contracts/libraries/BN254.sol";
-import "src/contracts/libraries/Merkle.sol";
+import "../MultichainIntegrationChecks.t.sol";
 
 /**
  * @title Multichain_Timing_Tests
  * @notice Integration tests for multichain timing constraints and edge cases
  * @dev Tests the temporal behavior of global table root confirmations and operator table updates
  */
-contract Multichain_Timing_Tests is MultichainIntegrationBase {
+contract Multichain_Timing_Tests is MultichainIntegrationCheckUtils {
     using StdStyle for *;
     using BN254 for BN254.G1Point;
 
@@ -52,7 +44,7 @@ contract Multichain_Timing_Tests is MultichainIntegrationBase {
         console.log("Latest reference timestamp:", latestReferenceTimestamp);
 
         // Verify that the latest timestamp matches what we posted
-        assertEq(latestReferenceTimestamp, firstReferenceTimestamp, "Latest reference timestamp should match first posted timestamp");
+        check_LatestReferenceTimestamp_Updated_State(firstReferenceTimestamp);
 
         // Try to post another root with the same timestamp - this should fail
         bytes memory operatorTable = abi.encode(
@@ -79,13 +71,7 @@ contract Multichain_Timing_Tests is MultichainIntegrationBase {
         );
 
         // This should revert with GlobalTableRootStale error
-        vm.expectRevert(abi.encodeWithSignature("GlobalTableRootStale()"));
-        operatorTableUpdater.confirmGlobalTableRoot(
-            confirmationCertificate,
-            globalTableRoot,
-            firstReferenceTimestamp, // Same timestamp
-            uint32(block.number)
-        );
+        check_GlobalTableRoot_PostSameTimestamp_Reverts(globalTableRoot, firstReferenceTimestamp, confirmationCertificate);
 
         console.log("Successfully verified that posting root with same timestamp reverts");
     }
@@ -118,6 +104,7 @@ contract Multichain_Timing_Tests is MultichainIntegrationBase {
         console.log("Successfully posted initial root with timestamp:", firstReferenceTimestamp);
 
         // Get the latest reference timestamp from the OperatorTableUpdater
+        check_LatestReferenceTimestamp_Updated_State(firstReferenceTimestamp);
         uint32 latestReferenceTimestamp = operatorTableUpdater.getLatestReferenceTimestamp();
         console.log("Latest reference timestamp:", latestReferenceTimestamp);
 
@@ -146,13 +133,12 @@ contract Multichain_Timing_Tests is MultichainIntegrationBase {
         );
 
         // This should succeed
-        operatorTableUpdater.confirmGlobalTableRoot(confirmationCertificate, globalTableRoot, nextReferenceTimestamp, uint32(block.number));
+        check_GlobalTableRoot_PostSuccess_State(globalTableRoot, nextReferenceTimestamp, confirmationCertificate);
 
         console.log("Successfully posted root with timestamp right after latest reference timestamp");
 
         // Verify that the latest reference timestamp has been updated
         uint32 newLatestReferenceTimestamp = operatorTableUpdater.getLatestReferenceTimestamp();
-        assertEq(newLatestReferenceTimestamp, nextReferenceTimestamp, "Latest reference timestamp should be updated");
         console.log("New latest reference timestamp:", newLatestReferenceTimestamp);
     }
 
@@ -188,7 +174,7 @@ contract Multichain_Timing_Tests is MultichainIntegrationBase {
         console.log("Operator set latest reference timestamp:", operatorSetLatestTimestamp);
 
         // Verify that the operator set timestamp matches what we posted
-        assertEq(operatorSetLatestTimestamp, firstReferenceTimestamp, "Operator set timestamp should match first posted timestamp");
+        check_OperatorSetLatestTimestamp_State(operatorSet, firstReferenceTimestamp);
 
         // Post a new global root with a later timestamp
         uint32 newGlobalTimestamp = firstReferenceTimestamp + 500;
@@ -205,8 +191,8 @@ contract Multichain_Timing_Tests is MultichainIntegrationBase {
         console.log("Successfully verified that transporting tables with stale timestamp reverts");
 
         // Verify that the operator set timestamp hasn't changed
+        check_OperatorSetLatestTimestamp_State(operatorSet, operatorSetLatestTimestamp);
         uint32 finalTimestamp = bn254CertificateVerifier.latestReferenceTimestamp(operatorSet);
-        assertEq(finalTimestamp, operatorSetLatestTimestamp, "Operator set timestamp should remain unchanged after failed update");
         console.log("Operator set timestamp remains:", finalTimestamp);
     }
 
@@ -255,13 +241,6 @@ contract Multichain_Timing_Tests is MultichainIntegrationBase {
 
         // This should revert with TableUpdateForPastTimestamp error
         // because the timestamp is stale, even though the global root is valid
-        vm.expectRevert(abi.encodeWithSignature("TableUpdateForPastTimestamp()"));
-        operatorTableUpdater.updateOperatorTable(
-            staleTimestamp, // Stale timestamp
-            validGlobalTableRoot, // Valid global root from latest timestamp
-            0, // operatorSetIndex
-            new bytes(0), // proof (will fail later, but timestamp check comes first)
-            staleOperatorTable
-        );
+        check_TableTransport_StaleTimestamp_Reverts(staleTimestamp, validGlobalTableRoot, staleOperatorTable);
     }
 }

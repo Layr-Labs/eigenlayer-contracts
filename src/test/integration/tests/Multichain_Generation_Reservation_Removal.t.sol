@@ -1,21 +1,14 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "../MultichainIntegrationBase.t.sol";
-import "src/contracts/interfaces/IBN254CertificateVerifier.sol";
-import "src/contracts/interfaces/IECDSACertificateVerifier.sol";
-import "src/contracts/interfaces/ICrossChainRegistry.sol";
-import "src/contracts/interfaces/IAllocationManager.sol";
-import "src/contracts/interfaces/IKeyRegistrar.sol";
-import "src/contracts/libraries/BN254.sol";
-import "src/contracts/libraries/Merkle.sol";
+import "../MultichainIntegrationChecks.t.sol";
 
 /**
  * @title Multichain_Generation_Reservation_Removal
  * @notice Integration tests for generation reservation removal functionality
  * @dev Tests the behavior when generation reservations are removed and tables can no longer be transported
  */
-contract Multichain_Generation_Reservation_Removal is MultichainIntegrationBase {
+contract Multichain_Generation_Reservation_Removal is MultichainIntegrationCheckUtils {
     using StdStyle for *;
     using BN254 for BN254.G1Point;
 
@@ -70,19 +63,10 @@ contract Multichain_Generation_Reservation_Removal is MultichainIntegrationBase 
         _createGenerationReservation(operatorSet);
 
         // Verify generation reservation exists
-        OperatorSet[] memory activeReservations = crossChainRegistry.getActiveGenerationReservations();
-        bool reservationFound = false;
-        for (uint i = 0; i < activeReservations.length; i++) {
-            if (activeReservations[i].avs == operatorSet.avs && activeReservations[i].id == operatorSet.id) {
-                reservationFound = true;
-                break;
-            }
-        }
-        assertTrue(reservationFound, "Generation reservation should exist");
+        check_GenerationReservation_Exists_State(operatorSet);
 
         // Test that we can generate operator table bytes before removal
-        bytes memory operatorTableBytes = crossChainRegistry.calculateOperatorTableBytes(operatorSet);
-        assertTrue(operatorTableBytes.length > 0, "Should be able to generate operator table bytes");
+        check_OperatorTableBytes_Generation_State(operatorSet, true);
         console.log("Successfully generated operator table bytes before removing generation reservation");
 
         // Generate operator table and transport it successfully
@@ -97,30 +81,15 @@ contract Multichain_Generation_Reservation_Removal is MultichainIntegrationBase 
         console.log("Removed generation reservation");
 
         // Verify generation reservation no longer exists
-        activeReservations = crossChainRegistry.getActiveGenerationReservations();
-        reservationFound = false;
-        for (uint i = 0; i < activeReservations.length; i++) {
-            if (activeReservations[i].avs == operatorSet.avs && activeReservations[i].id == operatorSet.id) {
-                reservationFound = true;
-                break;
-            }
-        }
-        assertFalse(reservationFound, "Generation reservation should no longer exist");
+        check_GenerationReservation_NotExists_State(operatorSet);
 
         // Try to generate operator table bytes after removal - this should fail
         // because the operator table calculator and config have been deleted
-        vm.expectRevert(); // Should revert due to no generation reservation data
-        crossChainRegistry.calculateOperatorTableBytes(operatorSet);
+        check_OperatorTableBytes_Generation_State(operatorSet, false);
         console.log("Successfully verified that operator table bytes cannot be generated after removing generation reservation");
 
-        // Verify that operator table calculator is no longer set
-        IOperatorTableCalculator calculator = crossChainRegistry.getOperatorTableCalculator(operatorSet);
-        assertEq(address(calculator), address(0), "Operator table calculator should be cleared");
-
-        // Verify that operator set config is cleared
-        ICrossChainRegistryTypes.OperatorSetConfig memory config = crossChainRegistry.getOperatorSetConfig(operatorSet);
-        assertEq(config.owner, address(0), "Operator set config should be cleared");
-        assertEq(config.maxStalenessPeriod, 0, "Max staleness period should be cleared");
+        // Verify that operator set config and calculator are cleared
+        check_OperatorSetConfig_Cleared_State(operatorSet);
 
         console.log("State validation passed: All operator set data cleared after generation reservation removal");
         console.log("Tables cannot be transported because source chain data is no longer available");
