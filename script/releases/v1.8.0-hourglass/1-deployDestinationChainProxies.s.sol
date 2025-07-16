@@ -41,6 +41,7 @@ contract DeployDestinationChainProxies is MultisigBuilder {
             return;
         }
 
+        // 1. Deploy the destination chain proxies
         execute();
 
         _validateExpectedProxyAddress();
@@ -71,25 +72,6 @@ contract DeployDestinationChainProxies is MultisigBuilder {
         bytes32 adminSlot = 0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
         address admin = address(uint160(uint256(vm.load(address(_proxy), adminSlot))));
         return admin;
-    }
-
-    /// @dev Check if the TaskMailbox proxy is deployed by checking if it's code size is greater than 0
-    function _areProxiesDeployed() internal view returns (bool) {
-        EmptyContract emptyContract = Env.impl.emptyContract();
-        address taskMailboxProxy = _computeExpectedProxyAddress(type(TaskMailbox).name, address(emptyContract));
-
-        if (taskMailboxProxy.code.length > 0) {
-            return true;
-        }
-        return false;
-    }
-
-    /// @dev Add the contracts to the env
-    function _addContractsToEnv() internal {
-        EmptyContract emptyContract = Env.impl.emptyContract();
-        _unsafeAddProxyContract(
-            type(TaskMailbox).name, _computeExpectedProxyAddress(type(TaskMailbox).name, address(emptyContract))
-        );
     }
 
     /// @dev Compute the expected proxy address for a given name and empty contract
