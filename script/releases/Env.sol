@@ -45,6 +45,9 @@ import "src/contracts/multichain/OperatorTableUpdater.sol";
 import "src/contracts/multichain/ECDSACertificateVerifier.sol";
 import "src/contracts/multichain/BN254CertificateVerifier.sol";
 
+/// avs/
+import "src/contracts/avs/task/TaskMailbox.sol";
+
 // For destination chains
 import "src/test/mocks/EmptyContract.sol";
 
@@ -465,6 +468,18 @@ library Env {
         DeployedImpl
     ) internal view returns (BN254CertificateVerifier) {
         return BN254CertificateVerifier(_deployedImpl(type(BN254CertificateVerifier).name));
+    }
+
+    function taskMailbox(
+        DeployedProxy
+    ) internal view returns (TaskMailbox) {
+        return TaskMailbox(_deployedProxy(type(TaskMailbox).name));
+    }
+
+    function taskMailbox(
+        DeployedImpl
+    ) internal view returns (TaskMailbox) {
+        return TaskMailbox(_deployedImpl(type(TaskMailbox).name));
     }
 
     /**
