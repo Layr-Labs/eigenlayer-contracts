@@ -22,20 +22,9 @@ contract DeployDestinationChainProxies is MultisigBuilder {
         // We don't use the prank modifier here, since we have to write to the env
         _startPrank(Env.multichainDeployerMultisig());
 
-        // Check if empty contract already exists, if not deploy it
-        address emptyContract = CrosschainDeployLib.computeCrosschainAddress({
-            deployer: Env.multichainDeployerMultisig(),
-            initCodeHash: keccak256(type(EmptyContract).creationCode),
-            name: type(EmptyContract).name
-        });
-        
-        if (emptyContract.code.length == 0) {
-            emptyContract = CrosschainDeployLib.deployEmptyContract(Env.multichainDeployerMultisig());
-        }
-
         // Deploy the proxy pointing to an empty contract
         ITransparentUpgradeableProxy taskMailboxProxy = CrosschainDeployLib.deployCrosschainProxy({
-            implementation: emptyContract,
+            implementation: address(Env.impl.emptyContract()),
             adminAndDeployer: Env.multichainDeployerMultisig(),
             name: type(TaskMailbox).name
         });
@@ -44,7 +33,6 @@ contract DeployDestinationChainProxies is MultisigBuilder {
         _stopPrank();
 
         // Save all the contracts to the env
-        _unsafeAddImplContract(type(EmptyContract).name, emptyContract);
         _unsafeAddProxyContract(type(TaskMailbox).name, address(taskMailboxProxy));
     }
 
@@ -77,16 +65,12 @@ contract DeployDestinationChainProxies is MultisigBuilder {
         return admin;
     }
 
-    /// @dev Check if the proxies are deployed by checking if the empty contract is deployed
+    /// @dev Check if the TaskMailbox proxy is deployed by checking if it's code size is greater than 0
     function _areProxiesDeployed() internal view returns (bool) {
-        address expectedEmptyContract = CrosschainDeployLib.computeCrosschainAddress({
-            deployer: Env.multichainDeployerMultisig(),
-            initCodeHash: keccak256(type(EmptyContract).creationCode),
-            name: type(EmptyContract).name
-        });
+        EmptyContract emptyContract = Env.impl.emptyContract();
+        address taskMailboxProxy = _computeExpectedProxyAddress(type(TaskMailbox).name, address(emptyContract));
 
-        // If the empty contract is deployed, then the proxies are deployed
-        if (expectedEmptyContract.code.length > 0) {
+        if (taskMailboxProxy.code.length > 0) {
             return true;
         }
         return false;
@@ -94,13 +78,9 @@ contract DeployDestinationChainProxies is MultisigBuilder {
 
     /// @dev Add the contracts to the env
     function _addContractsToEnv() internal {
-        address emptyContract = CrosschainDeployLib.computeCrosschainAddress({
-            deployer: Env.multichainDeployerMultisig(),
-            initCodeHash: keccak256(type(EmptyContract).creationCode),
-            name: type(EmptyContract).name
-        });
+        EmptyContract emptyContract = Env.impl.emptyContract();
         _unsafeAddProxyContract(
-            type(TaskMailbox).name, _computeExpectedProxyAddress(type(TaskMailbox).name, emptyContract)
+            type(TaskMailbox).name, _computeExpectedProxyAddress(type(TaskMailbox).name, address(emptyContract))
         );
     }
 
