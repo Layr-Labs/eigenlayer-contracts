@@ -258,13 +258,6 @@ contract OperatorTableUpdaterUnitTests_confirmGlobalTableRoot is OperatorTableUp
 
     function testFuzz_revert_staleCertificate(Randomness r) public rand(r) {
         uint32 referenceBlockNumber = uint32(block.number);
-        // Use a timestamp greater than the latestReferenceTimestamp set during initialization
-        uint32 newReferenceTimestamp = operatorTableUpdater.getLatestReferenceTimestamp() + 1;
-        mockCertificate.messageHash =
-            operatorTableUpdater.getGlobalTableUpdateMessageHash(bytes32(0), newReferenceTimestamp, referenceBlockNumber);
-        _setIsValidCertificate(mockCertificate, true);
-        operatorTableUpdater.confirmGlobalTableRoot(mockCertificate, bytes32(0), newReferenceTimestamp, referenceBlockNumber);
-
         uint32 referenceTimestamp = r.Uint32(0, operatorTableUpdater.getLatestReferenceTimestamp() - 1);
         cheats.expectRevert(GlobalTableRootStale.selector);
         operatorTableUpdater.confirmGlobalTableRoot(mockCertificate, bytes32(0), referenceTimestamp, referenceBlockNumber);
