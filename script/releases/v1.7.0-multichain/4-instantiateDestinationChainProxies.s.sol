@@ -123,10 +123,10 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
             operatorTableUpdater.GENERATOR_GLOBAL_TABLE_ROOT(),
             "operatorTableUpdater.generatorGlobalTableRoot invalid"
         );
-        assertEq(
-            operatorTableUpdater.getLatestReferenceTimestamp(),
-            0,
-            "operatorTableUpdater.latestReferenceTimestamp invalid"
+        // latestReferenceTimestamp is set to block.timestamp during initialization
+        assertTrue(
+            operatorTableUpdater.getLatestReferenceTimestamp() > 0,
+            "operatorTableUpdater.latestReferenceTimestamp should be > 0"
         );
         assertTrue(
             operatorTableUpdater.isRootValid(operatorTableUpdater.GENERATOR_GLOBAL_TABLE_ROOT()),
