@@ -6,16 +6,25 @@ import {BN254} from "../libraries/BN254.sol";
 import "./ISemVerMixin.sol";
 
 interface IKeyRegistrarErrors {
-    /// Key Management
+    /// @notice Error thrown when a key is already registered
     error KeyAlreadyRegistered();
+    /// @notice Error thrown when the key format is invalid
     error InvalidKeyFormat();
+    /// @notice Error thrown when the address is zero
     error ZeroAddress();
+    /// @notice Error thrown when the public key is zero
     error ZeroPubkey();
+    /// @notice Error thrown when the curve type is invalid
     error InvalidCurveType();
+    /// @notice Error thrown when the keypair is invalid
     error InvalidKeypair();
+    /// @notice Error thrown when the configuration is already set
     error ConfigurationAlreadySet();
+    /// @notice Error thrown when the operator set is not configured
     error OperatorSetNotConfigured();
+    /// @notice Error thrown when the key is not found
     error KeyNotFound(OperatorSet operatorSet, address operator);
+    /// @notice Error thrown when the operator is still slashable when trying to deregister a key
     error OperatorStillSlashable(OperatorSet operatorSet, address operator);
 }
 
@@ -35,9 +44,13 @@ interface IKeyRegistrarTypes {
 }
 
 interface IKeyRegistrarEvents is IKeyRegistrarTypes {
+    /// @notice Emitted when a key is registered
     event KeyRegistered(OperatorSet operatorSet, address indexed operator, CurveType curveType, bytes pubkey);
+    /// @notice Emitted when a key is deregistered
     event KeyDeregistered(OperatorSet operatorSet, address indexed operator, CurveType curveType);
+    /// @notice Emitted when the aggregate BN254 key is updated
     event AggregateBN254KeyUpdated(OperatorSet operatorSet, BN254.G1Point newAggregateKey);
+    /// @notice Emitted when an operator set is configured
     event OperatorSetConfigured(OperatorSet operatorSet, CurveType curveType);
 }
 
@@ -54,8 +67,8 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @notice Registers a cryptographic key for an operator with a specific operator set
      * @param operator Address of the operator to register key for
      * @param operatorSet The operator set to register the key for
-     * @param pubkey Public key bytes
-     * @param signature Signature proving ownership (only needed for BN254 keys)
+     * @param pubkey Public key bytes. For ECDSA, this is the address of the key. For BN254, this is the G1 and G2 key combined (see `encodeBN254KeyData`)
+     * @param signature Signature proving ownership. For ECDSA this is a signature of the `getECDSAKeyRegistrationMessageHash`. For BN254 this is a signature of the `getBN254KeyRegistrationMessageHash`.
      * @dev Can be called by operator directly or by addresses they've authorized via PermissionController
      * @dev Reverts if key is already registered
      * @dev There exist no restriction on the state of the operator with respect to the operatorSet. That is, an operator
@@ -80,28 +93,18 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
     function deregisterKey(address operator, OperatorSet memory operatorSet) external;
 
     /**
-     * @notice Checks if an operator has a registered key
-     * @param operatorSet The operator set to check and update
-     * @param operator Address of the operator
-     * @return whether the operator has a registered key
-     * @dev This function is called by the AVSRegistrar when an operator registers for an AVS
-     * @dev Only authorized callers for the AVS can call this function
-     * @dev Reverts if operator doesn't have a registered key for this operator set
-     */
-    function checkKey(OperatorSet memory operatorSet, address operator) external view returns (bool);
-
-    /**
      * @notice Checks if a key is registered for an operator with a specific operator set
      * @param operatorSet The operator set to check
      * @param operator Address of the operator
-     * @return True if the key is registered
+     * @return True if the key is registered, false otherwise
+     * @dev If the operatorSet is not configured, this function will return false
      */
     function isRegistered(OperatorSet memory operatorSet, address operator) external view returns (bool);
 
     /**
-     * @notice Gets the configuration for an operator set
-     * @param operatorSet The operator set to get configuration for
-     * @return The operator set configuration
+     * @notice Gets the curve type for an operator set
+     * @param operatorSet The operator set to get the curve type for
+     * @return The curve type, either ECDSA, BN254, or NONE
      */
     function getOperatorSetCurveType(
         OperatorSet memory operatorSet
@@ -113,6 +116,7 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @param operator Address of the operator
      * @return g1Point The BN254 G1 public key
      * @return g2Point The BN254 G2 public key
+     * @dev Reverts if the operatorSet is not configured for BN254
      */
     function getBN254Key(
         OperatorSet memory operatorSet,
@@ -123,7 +127,8 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @notice Gets the ECDSA public key for an operator with a specific operator set as bytes
      * @param operatorSet The operator set to get the key for
      * @param operator Address of the operator
-     * @return pubkey The ECDSA public key
+     * @return pubkey The ECDSA public key in bytes format
+     * @dev Reverts if the operatorSet is not configured for ECDSA
      */
     function getECDSAKey(OperatorSet memory operatorSet, address operator) external view returns (bytes memory);
 
@@ -131,7 +136,8 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @notice Gets the ECDSA public key for an operator with a specific operator set
      * @param operatorSet The operator set to get the key for
      * @param operator Address of the operator
-     * @return pubkey The ECDSA public key
+     * @return pubkey The ECDSA public key in address format
+     * @dev Reverts if the operatorSet is not configured for ECDSA
      */
     function getECDSAAddress(OperatorSet memory operatorSet, address operator) external view returns (address);
 
@@ -149,6 +155,7 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @param operatorSet The operator set to get the key hash for
      * @param operator Address of the operator
      * @return keyHash The key hash
+     * @dev Reverts if the operatorSet is not configured
      */
     function getKeyHash(OperatorSet memory operatorSet, address operator) external view returns (bytes32);
 
