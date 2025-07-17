@@ -230,7 +230,32 @@ The `KeyRegistrar` introduces new operator/avs registration patterns. Note that 
 
 ### Operator/AVS Registration
 
+```mermaid
+sequenceDiagram
+    participant OP as Operator
+    participant KR as KeyRegistrar
+    participant AM as AllocationManager
+    participant AVR as AVSRegistrar
+
+    OP->>KR: Tx1: registerKey
+    OP->>AM: Tx2: registerForOperatorSets
+    AM-->>AVR: registerForOperatorSets
+    AVR-->>KR: isRegistered
+```
 
 
+### Deregistration/Key Rotation
 
-### Operator Key Deregistration
+Deregistration takes a dependency on the `AllocationManager`. In particular, operators are only allowed to deregister their keys if they are not slashable by an operatorSet. To rotate a key, an operator must wait until it is not slashable and then register a new key. If the operator was not slashable, it can rotate its key without a delay. 
+
+```mermaid
+sequenceDiagram
+    participant OP as Operator
+    participant AM as AllocationManager
+    participant KR as KeyRegistrar
+
+    OP->>AM: deregisterFromOperatorSets
+    Note over OP: Wait 14 days<br>(if previously allocated)
+    OP->>KR: deregisterKey
+    OP->>AM: register new key to operatorSet
+```
